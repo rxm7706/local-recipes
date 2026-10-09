@@ -29,7 +29,7 @@ from .config import _suppress_downstream_pipe_close, repo_root
 
 PRESERVE_FLAG_KEY = "pyforge.marshal.preserve_refs"
 
-_HELP = "Write and list local preserve tags (refs/tags/preserve/…)."
+_HELP = "Write and list local preserve tags (AD-81 preserve namespace)."
 _DISABLED_HELP = disabled_help(_HELP, PRESERVE_FLAG_KEY)
 
 

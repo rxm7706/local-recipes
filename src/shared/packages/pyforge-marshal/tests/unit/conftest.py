@@ -15,6 +15,9 @@ from __future__ import annotations
 import pytest
 
 from pyforge.marshal.cli.init import ENV_LOOP_HOME_ROOT
+from pyforge.testing_kit import make_flag_provider_fixture
+
+flag_provider = make_flag_provider_fixture()
 
 
 @pytest.fixture(autouse=True)

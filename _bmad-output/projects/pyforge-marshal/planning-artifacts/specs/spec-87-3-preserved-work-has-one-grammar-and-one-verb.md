@@ -2,7 +2,8 @@
 title: "87.3: Preserved work has one grammar and one verb"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '09fc2a68ece8e0a4d6b96d361622204b82c2c313'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:

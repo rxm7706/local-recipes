@@ -876,6 +876,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
     "pyforge.steward.sync_github_only_marker": ("steward", "84-4-", "2026-10-03", "", ""),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
+    "pyforge.marshal.preserve_refs": ("marshal", "87-3-", "2026-10-04", "", ""),
     "pyforge.warden.fix_target_resolution": (
         "warden",
         "14-1-",
@@ -1012,6 +1013,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.ledger_query_herald_facts": False,
         "pyforge.steward.ledger_query_jira_github_matrix": False,
         "pyforge.steward.glass_export": False,
+        "pyforge.marshal.preserve_refs": False,
     }
     # Story 84.4 / 85.3 / 74.2: per-environment booleans (object_store_consumer, sync_github_only_marker and
     # verify_fix_loop on in dev/staging, off in production).

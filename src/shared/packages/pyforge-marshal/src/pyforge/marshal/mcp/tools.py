@@ -227,6 +227,26 @@ def marshal_watch(
     )
 
 
+def marshal_preserve_list(
+    station: str | None = None,
+    story: str | None = None,
+    producer: str | None = None,
+    state: str | None = None,
+    *,
+    main: Callable[[list[str] | None], int] | None = None,
+) -> dict[str, Any]:
+    return run_marshal(
+        _build_argv(
+            "marshal_preserve_list",
+            station=station,
+            story=story,
+            producer=producer,
+            state=state,
+        ),
+        main=main,
+    )
+
+
 def mcp_server_registration_spec() -> Mapping[str, Mapping[str, object]]:
     """Policy-shaped ``mcp_servers`` entry for Marshal itself (FR-154).
 
