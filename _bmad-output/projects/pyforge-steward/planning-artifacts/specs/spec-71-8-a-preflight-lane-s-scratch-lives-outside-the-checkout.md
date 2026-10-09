@@ -2,8 +2,8 @@
 title: "71.8: A preflight lane's scratch lives outside the checkout"
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
-baseline_revision: '09bdfcf17b179c377a84657ab7a8854c065e9921'
+status: 'done'
+baseline_revision: 'd5a23fb37a857f657bb4d5338697891ec385509d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -216,4 +216,28 @@ Type / Effort / Deps: fix / S / S-71.7.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract and matrix tests cover all rows)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `run_preflight` now creates each run's scratch with `tempfile.mkdtemp` outside the checkout (optional `scratch_parent` for tests). Green runs remove the tree; red or interrupted runs keep it and print log paths on stderr. Scratch inside the repo is refused with exit 2. Legacy `.steward/preflight/` is gitignored.
+
+**Files changed:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — external scratch, cleanup, guard, stderr naming
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` — Story 71.8 acceptance and matrix tests
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` — outside-repo scratch assertions; `scratch_parent` on red-lane tests
+- `.gitignore` — `.steward/preflight/` guard for pre-71.8 trees
+
+**Review:** No patch/defer/intent_gap items.
+
+**Verification:** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2232 passed, 5 skipped. `python scripts/spec_surface_reconcile.py` — OK.
+
+**Surface reconcile (memlog paths named):**
+- `spec-pyforge-steward/.memlog.md`: `preflight.py`, `test_preflight_concurrency.py`, `test_preflight_scratch.py`, `.gitignore`
+- `spec-pyforge-core/.memlog.md` (co-governor): `preflight.py`
+
+**Residual risk:** SIGINT test is timing-sensitive; full suite passed once in this run.
