@@ -75,6 +75,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.marshal.preserve_refs": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "87-3-preserved-work-has-one-grammar-and-one-verb",
+        "created": "2026-10-04",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.atlas.dependency_history_sensor": {
       "state": "ENABLED",
       "variants": {

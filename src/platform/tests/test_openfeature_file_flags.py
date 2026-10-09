@@ -669,6 +669,7 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.marshal.preserve_refs": False,
     "pyforge.herald.deck_publish": {
         "dev": True,
         "staging": True,
