@@ -4887,7 +4887,7 @@ a stop on red; and SIGINT between segments breaks with `lane_exit` 0 (`:317`), s
 lane `cancelled` (`interrupt`); `--keep-going` is unchanged; the 71.1-71.10 preflight tests pass unchanged; three mutations (drop the
 registration check, drop the segment stop check, restore `lane_exit = 0`) fail the new tests; `pixi run --frozen -e pyforge-steward
 pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
