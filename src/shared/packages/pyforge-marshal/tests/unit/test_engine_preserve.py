@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.preserve_refs import list_local_preserve_tags, ref_on_origin, short_ref_name
-from pyforge.testing_kit.flags import flag_states, flagd_tree
+from pyforge.testing_kit.flags import flag_states
 
 from pyforge.marshal.ports.harness import DeferredStory, TaskPhaseSnapshot
 from pyforge.marshal.supervisor.engine_preserve import (
@@ -126,6 +126,7 @@ def test_promote_uses_rev_parse_not_journal_sha(git_pair: tuple[Path, Path], fla
     _git(repo, "add", "moved.txt")
     _git(repo, "commit", "-m", "move tip")
     live_tip = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    _git(repo, "branch", "-f", "attempt-preserve/run1-00000000", live_tip)
     outcome = promote_engine_ref(
         repo,
         engine_ref="attempt-preserve/run1-00000000",
@@ -138,7 +139,7 @@ def test_promote_uses_rev_parse_not_journal_sha(git_pair: tuple[Path, Path], fla
     )
     assert outcome is not None
     tags = list_local_preserve_tags(repo)
-    assert tags[0].commit.startswith(live_tip[:8])
+    assert tags[0].commit == live_tip
 
 
 @flag_states(_FLAG)
@@ -146,9 +147,11 @@ def test_reconcile_lists_unpromoted_scratch(git_pair: tuple[Path, Path], flag_pr
     if not flag_provider[_FLAG]:
         pytest.skip("preserve_refs flag off")
     repo, _ = git_pair
-    _git(repo, "branch", "attempt-preserve/orphan-abc12345", "HEAD")
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    branch = f"attempt-preserve/orphan-{head[:8]}"
+    _git(repo, "branch", branch, head)
     scratch = reconcile_unpromoted_engine_refs(repo)
-    assert "attempt-preserve/orphan-abc12345" in scratch
+    assert branch in scratch
 
 
 @flag_states(_FLAG)
@@ -195,12 +198,10 @@ def test_targets_from_run_snapshot_skips_preserve_tags():
     assert targets[0].engine_ref == "attempt-preserve/run-y"
 
 
-def test_mutation_promotion_required(flagd_tree: Path, git_pair: tuple[Path, Path], monkeypatch):
-    """Removing promotion leaves unpromoted scratch (flag on)."""
+def test_mutation_promotion_required(git_pair: tuple[Path, Path]):
+    """Reconcile scan surfaces scratch when no preserve tag holds the commit."""
     repo, _ = git_pair
-    _git(repo, "branch", "attempt-preserve/mut-deadbeef", "HEAD")
-    monkeypatch.setattr(
-        "pyforge.marshal.supervisor.engine_preserve.promote_engine_ref",
-        lambda *a, **k: None,
-    )
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    branch = f"attempt-preserve/mut-{head[:8]}"
+    _git(repo, "branch", branch, head)
     assert reconcile_unpromoted_engine_refs(repo)
