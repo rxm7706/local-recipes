@@ -1597,6 +1597,10 @@ depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "l
 description = "Story 71.1 (spec-pyforge-steward CAP-159): run pr-preflight-lanes serially, journal each lane's wall time and exit code to .steward/preflight-runs.jsonl, stop on the first red leg — same lanes and verdict as pr-preflight-lanes. The pre-push hook still calls pixi run --frozen -e pyforge-guild pr-preflight."
 cmd = "python -m pyforge.steward.preflight"
 
+[feature.guild-tasks.tasks.preflight-budget]
+description = "Story 71.7 (spec-pyforge-steward CAP-159 FR-32): read .steward/preflight-runs.jsonl and judge the newest run (or --run <id>) against the one-minute wall-clock budget for single-station branches. Exit 0 under budget or for shared-surface runs, 1 when a single-station run exceeds --seconds (default 60), 2 when the journal cannot be evaluated. Never part of pr-preflight, not a detector or PR gate."
+cmd = "python -m pyforge.steward.preflight --budget"
+
 [feature.local-recipes.tasks.eval-quality-smoke]
 description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."
 cmd = "python evals/review-catches-planted-defect/driver.py smoke"
