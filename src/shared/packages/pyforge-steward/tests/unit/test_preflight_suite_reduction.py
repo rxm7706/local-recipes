@@ -229,7 +229,8 @@ def test_doctor_shape_single_complement_no_tests_selected(tmp_path: Path) -> Non
     station_pkg = _fixture_station_no_slow(repo, "doctorish")
     tests = station_pkg / "tests"
     shutil.rmtree(tests / "integration")
-    parsed = psr._parse_single_pytest(f"pytest {tests} -q")
+    task_cmd = f"pytest {tests} -q"
+    parsed = psr._parse_single_pytest(task_cmd)
     gate_run = _gate_unit_run(repo, station_pkg) | {"station": "doctorish"}
     gate_run["test_paths"] = [
         str((tests / "unit").relative_to(repo)),
@@ -245,6 +246,7 @@ def test_doctor_shape_single_complement_no_tests_selected(tmp_path: Path) -> Non
         env="pyforge-doctorish",
         override=override,
         task="pyforge-doctorish-test",
+        task_cmd=task_cmd,
     )
     assert code == 0
     assert journal["suite_reduction_task_collect_exit"] == 0
