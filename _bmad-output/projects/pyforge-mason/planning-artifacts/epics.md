@@ -2147,7 +2147,7 @@ entry), `.claude/skills/conda-forge-expert/MANIFEST.yaml` and `config/skill-conf
 carries a dated minor-version entry naming Epic 19 (a "guidance held" entry if nothing else is found)
 **And** the commit subject is `retro(cfe): …` and touches only the CFE surface; mason's sanctioned-retro meta-test and the
 CFE suite stay green; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 20: No station or environment caps pixi (spec-pyforge-mason CAP-30)
 
