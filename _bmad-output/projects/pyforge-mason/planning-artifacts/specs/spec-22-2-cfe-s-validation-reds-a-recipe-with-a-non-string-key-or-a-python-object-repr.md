@@ -2,7 +2,8 @@
 title: "22.2: CFE's validation reds a recipe with a non-string key or a Python object repr"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '400a0d0f77d58d0c115fdd959796a1653162e13a'
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
 followup_review_recommended: false
