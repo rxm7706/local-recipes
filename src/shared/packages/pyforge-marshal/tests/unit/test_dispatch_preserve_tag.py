@@ -275,6 +275,38 @@ def test_gather_journal_reads_preserve_tag(git_pair: tuple[Path, Path]):
 
 
 @flag_states(_FLAG)
+def test_supervisor_tags_untracked_only_when_flag_on(
+    git_pair: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Patch capture omits untracked files; the tag path must still run (Story 87.5)."""
+    repo, _bare = git_pair
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(repo, {_FLAG: "on"})))
+    (repo / "only-untracked.txt").write_text("orphan\n", encoding="utf-8")
+    run_dir = _run_dir(repo)
+    fs = LocalFs()
+    vcs = GitVcs()
+    baseline = vcs.worktree_head_sha(repo)
+    counter = supervisor_main._journal_dispatch_preserve(
+        fs=fs,
+        vcs=vcs,
+        run_dir=run_dir,
+        run_id=_RUN_ID,
+        writer_id="dispatch-supervisor-test",
+        counter=0,
+        story_key=_STORY,
+        worktree=repo,
+        baseline_head_sha=baseline,
+        repo_root=repo,
+        project_slug=_SLUG,
+        completion_verdict="stopped_externally",
+    )
+    assert counter == 2
+    facts = gather_dispatch_journal_facts(fs, run_dir, _RUN_ID)
+    assert facts.preserve_tag is not None
+    assert facts.preserve_ref is None
+
+
 def test_untracked_file_in_preserve_tree(
     git_pair: tuple[Path, Path],
     flag_provider: dict[str, bool],

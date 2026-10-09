@@ -159,11 +159,13 @@ def tag_dispatch_worktree_preserve(
 
 def dispatch_preserve_outcome_payload(
     *,
-    preserve_ref: str,
+    preserve_ref: str = "",
     preserve_tag: str | None = None,
     preserve_pushed: bool | None = None,
 ) -> dict[str, object]:
-    payload: dict[str, object] = {"preserve_ref": preserve_ref, "ok": True}
+    payload: dict[str, object] = {"ok": True}
+    if preserve_ref:
+        payload["preserve_ref"] = preserve_ref
     if preserve_tag is not None:
         payload["preserve_tag"] = preserve_tag
     if preserve_pushed is not None:

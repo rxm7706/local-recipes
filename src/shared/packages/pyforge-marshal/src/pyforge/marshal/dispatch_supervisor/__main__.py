@@ -337,19 +337,22 @@ def _journal_dispatch_preserve(
             file=sys.stderr,
         )
         return counter
-    if not patch_body.strip():
+    patch_nonempty = bool(patch_body.strip())
+    if not patch_nonempty and not preserve_refs_flag_on():
         return counter
-    patch_path = failed_patch_path(run_dir, story_key)
-    try:
-        fs.ensure_dir(patch_path.parent)
-        fs.write_text_atomic(patch_path, patch_body)
-    except FsError as exc:
-        print(
-            f"dispatch supervisor: cannot write preserve patch for {run_id!r}: {exc}",
-            file=sys.stderr,
-        )
-        return counter
-    preserve_ref = relative_preserve_ref(run_dir, patch_path)
+    preserve_ref = ""
+    if patch_nonempty:
+        patch_path = failed_patch_path(run_dir, story_key)
+        try:
+            fs.ensure_dir(patch_path.parent)
+            fs.write_text_atomic(patch_path, patch_body)
+        except FsError as exc:
+            print(
+                f"dispatch supervisor: cannot write preserve patch for {run_id!r}: {exc}",
+                file=sys.stderr,
+            )
+            return counter
+        preserve_ref = relative_preserve_ref(run_dir, patch_path)
     preserve_tag: str | None = None
     preserve_pushed: bool | None = None
     tag_refname: str | None = None
@@ -368,7 +371,9 @@ def _journal_dispatch_preserve(
         if tag_outcome is not None:
             preserve_tag = tag_outcome.preserve_tag
             tag_refname = tag_outcome.refname
-    intent_payload: dict[str, object] = {"preserve_ref": preserve_ref, "story_key": story_key}
+    intent_payload: dict[str, object] = {"story_key": story_key}
+    if preserve_ref:
+        intent_payload["preserve_ref"] = preserve_ref
     if preserve_tag is not None:
         intent_payload["preserve_tag"] = preserve_tag
     intent_entry = build_entry(
