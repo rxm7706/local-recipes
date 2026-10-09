@@ -4834,7 +4834,7 @@ end to end through `build_suite_lane_overrides` and `run_preflight`, a task whos
 partition by real, non-empty node ids; the 71.1-71.4 preflight tests pass with only `test_complement_marker_variants`'s equal-marker assertion
 changed and the partition test asserting non-empty sets; a lane run whole keeps exit 5 red; the gate driver, `pixi.toml` and lane selection do
 not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 71.10: A stopped lane is journaled cancelled, and the lane that stopped the run red
 
