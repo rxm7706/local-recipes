@@ -577,7 +577,7 @@
    "docs/how-to/station-cli-operations.md": "9e2551ec419f3541373843fc98f5d229fe9774bc",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "2004c621597698815362cf1f6432e2c7bf25c799",
    "docs/how-to/troubleshooting-recipe-builds.md": "74ae1f42e23b84bbdbfbd9e2b5eec92898e6bd96",
-   "docs/map.yaml": "990832f194a1d98cc8b945127130a93a5cd98c91",
+   "docs/map.yaml": "1bf4230c89fec4c8892dd9607e17ff67afbdc028",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "9512c037ee900086236de08a42ec8fa22e3274b2",
    "docs/tutorials/local-platform-development.md": "907305d6aef172982d8b5ea7824964704af83b51",
@@ -761,7 +761,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "1456dbbe7956975ab44ac835e2bf8d3aac9f23d3"
+  "memlog": "f6904079a37c33a60e2e5cd066957ecc4cdf4b65"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
