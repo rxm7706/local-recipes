@@ -2260,7 +2260,7 @@ sees `gitgres-backend` print its usage
 **And** the rendered build and test environments resolve PostgreSQL 17, never 18; Windows is skipped
 (`build.skip: win`, CFE G102); the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's
 `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.4: opengrep is repackaged from its release binaries as a local-only recipe
 
