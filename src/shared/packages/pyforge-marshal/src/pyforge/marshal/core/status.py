@@ -1234,7 +1234,9 @@ def derive_preserve_debt(
             for project, key in tagged_stories
         ):
             continue
-        patches.append(str(entry.get("path")))
+        path = entry.get("path")
+        if path is not None:
+            patches.append(str(path))
     if not (tags or scratch or patches):
         return None
     return {

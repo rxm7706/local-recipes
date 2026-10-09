@@ -2,9 +2,10 @@
 title: "87.9: Every preserve reader sees preserve tags and origin"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '1904e212ec107230d35882f2f2fc96f6742db926'
 flag-exempt: detector-or-gate   # the readers and status's durability dimension project the unpushed-work detector (AD-48); a gated reader reports a silent clean
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -90,4 +91,30 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 10 findings — high 0, medium 0, low 1, false 6, maybe-false 3
+- findings:
+  - `[low]` `[patch]` `derive_preserve_debt` appended `"None"` when a failed-patch entry lacked `path` — skipped entries with missing `path`.
+  - `[false]` `[reject]` Origin-only preserve tag with no `attempt-preserve` branch omitted from `recovery_refs_for_run` — local/remote tag discovery still runs when `Preserve-Run` matches on local tags; remote-only tag without branch is deferred (operator promotion path).
+  - `[false]` `[reject]` `recovery_refs_for_run` empty on any `PreserveGitError` — same fail-closed pattern as other preserve readers; tests cover happy path.
+  - `[false]` `[reject]` Scratch durability git calls lack timeout — `_git_via` defaults apply where used; unchanged pre-existing `merge-base` calls elsewhere in status.
+  - `[false]` `[reject]` Preserve debt dropped when `ls-remote` fails mid-observe — returns `could_not_observe`, never silent clean (AC).
+  - `[false]` `[reject]` Unpushed detector failure conflated with preserve debt — row `preserve_debt.could_not_observe` is explicit; MRS-STATUS-009 message names unpushed script only.
+  - `[false]` `[reject]` `normalize_ref` treats unknown bare refs as heads — intentional for journal `attempt-preserve/*` short names; dirty refs use dedicated prefix handling.
+  - `[maybe-false]` `[defer]` Per-run full preserve tag scan cost in baseline drift — acceptable for runtime detector; no fleet-scale regression observed in tests.
+  - `[maybe-false]` `[defer]` `ref_on_origin` false on unreadable remote treated as absent in `preserve_artifact_reachable` — matches Story 87.2 fail-closed remote semantics; document in operator runbook if needed.
+  - `[maybe-false]` `[defer]` Tarball preserve debt not implemented — no tarball fixtures in estate; patches covered under MRS-STATUS-018.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Preserve readers (`missing_preserve_check`, `bmad_loop_baseline_drift_check`, `fleet_picture`) route ref presence through `pyforge.core.preserve_refs` (`ref_on_origin` via `ls-remote`, `preserve_artifact_reachable`, `recovery_refs_for_run`). `marshal status` keeps all unpushed refs, reports unmatched refs fleet-wide (`MRS-STATUS-015`), and per-row preserve debt (`MRS-STATUS-016`–`018`); rows with debt are never clean.
+
+Files changed: `preserve_refs.py` and unit tests; three marshal-owned scripts; marshal `cli/status.py`, `core/status.py`, `findings.py`, `verdict.py` and tests; script acceptance tests.
+
+Review: one patch applied (failed-patch path guard); remainder rejected or deferred as above.
+
+Verification: `pyforge-marshal-test` exit 0; `pyforge-deps-test` exit 0; `lint-types` exit 0; script pytest suite 52 passed; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal` and `spec-pyforge-core`.
+
+Residual risk: tarball-shaped preserve debt deferred; origin-only preserve tag without any local tag and no matching branch is a narrow recovery edge case until promotion stories land.
