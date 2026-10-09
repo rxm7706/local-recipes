@@ -269,7 +269,7 @@ def find_dangling(min_files: int, safe: set[str]) -> list[dict]:
         if sha in safe:
             continue
         subject = git_optional("log", "-1", "--format=%s", sha)
-        if subject.endswith(SYNTHETIC_SUBJECT_SUFFIX):
+        if SYNTHETIC_SUBJECT_SUFFIX and subject.endswith(SYNTHETIC_SUBJECT_SUFFIX):
             continue
         files = [f for f in git_optional("diff", "--name-only", f"{sha}^", sha).splitlines() if f]
         if len(files) <= min_files:
