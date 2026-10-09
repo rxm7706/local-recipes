@@ -148,7 +148,7 @@ _GIT_FETCH_TIMEOUT_S = 120.0
 # ``add_worktree_for_tree`` until ``remove_worktree`` drops the home (the
 # worktree's HEAD must keep resolving). ``is_branch_merged`` uses a scoped
 # context manager instead and deletes its store before returning.
-_PREVIEW_EPHEMERAL_OBJECT_DIRS: dict[Path, Path] = {}
+_PREVIEW_EPHEMERAL_OBJECT_DIRS: dict[Path, tuple[Path, Path]] = {}
 
 
 def _ephemeral_git_object_env_for(repo_root: Path) -> tuple[Mapping[str, str], Path]:
@@ -181,10 +181,45 @@ def _ephemeral_git_object_env(repo_root: Path) -> Iterator[Mapping[str, str]]:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def _repo_objects_info_dir(repo_root: Path) -> Path:
+    info_path = _run(["git", "-C", str(repo_root), "rev-parse", "--git-path", "objects/info"])
+    if info_path.returncode != 0:
+        raise VcsCommandError(
+            f"cannot resolve git objects/info path for {repo_root}: {info_path.stderr.strip()}"
+        )
+    return (repo_root / info_path.stdout.strip()).resolve()
+
+
+def _register_preview_alternate(repo_root: Path, ephem_objects: Path) -> Path:
+    """Link preview-only objects through ``objects/info/alternates`` (not the primary store)."""
+    alternates_file = _repo_objects_info_dir(repo_root) / "alternates"
+    alternates_file.parent.mkdir(parents=True, exist_ok=True)
+    line = str(ephem_objects.resolve())
+    existing = alternates_file.read_text(encoding="utf-8") if alternates_file.exists() else ""
+    lines = [entry for entry in existing.splitlines() if entry.strip() and entry.strip() != line]
+    lines.append(line)
+    alternates_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return alternates_file
+
+
+def _unregister_preview_alternate(alternates_file: Path, ephem_objects: Path) -> None:
+    if not alternates_file.is_file():
+        return
+    line = str(ephem_objects.resolve())
+    remaining = [entry for entry in alternates_file.read_text(encoding="utf-8").splitlines() if entry.strip() != line]
+    if remaining:
+        alternates_file.write_text("\n".join(remaining) + "\n", encoding="utf-8")
+    else:
+        alternates_file.unlink(missing_ok=True)
+
+
 def _discard_preview_ephemeral_object_dir(home: Path) -> None:
-    tmp = _PREVIEW_EPHEMERAL_OBJECT_DIRS.pop(home.resolve(), None)
-    if tmp is not None:
-        shutil.rmtree(tmp, ignore_errors=True)
+    entry = _PREVIEW_EPHEMERAL_OBJECT_DIRS.pop(home.resolve(), None)
+    if entry is None:
+        return
+    ephem_tmp, alternates_file = entry
+    _unregister_preview_alternate(alternates_file, ephem_tmp / "objects")
+    shutil.rmtree(ephem_tmp, ignore_errors=True)
 
 
 def _run(
@@ -1681,7 +1716,8 @@ class GitVcs:
             shutil.rmtree(ephem_tmp, ignore_errors=True)
             raise
         _discard_preview_ephemeral_object_dir(home)
-        _PREVIEW_EPHEMERAL_OBJECT_DIRS[home.resolve()] = ephem_tmp
+        alternates_file = _register_preview_alternate(repo_root, ephem_tmp / "objects")
+        _PREVIEW_EPHEMERAL_OBJECT_DIRS[home.resolve()] = (ephem_tmp, alternates_file)
 
     def _paths_changed_between(self, repo_root: Path, old_sha: str, new_sha: str) -> frozenset[str]:
         """Every path ``git diff`` names between two commits (Story 68.1). ``--no-renames`` so a

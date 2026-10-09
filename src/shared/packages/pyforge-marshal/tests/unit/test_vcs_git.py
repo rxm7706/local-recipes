@@ -2781,23 +2781,11 @@ def test_add_worktree_for_tree_checks_out_the_merged_content(vcs, repo, tmp_path
     assert (home / "main-only.txt").read_text(encoding="utf-8") == "main content\n"
     assert any("merge-tree-preview-home" in path for path in _worktree_paths(repo))
 
-    # the synthetic wrapper commit is never referenced by any branch or tag, and
-    # Story 87.10 keeps it out of the repository's own object store (only the
-    # preview worktree's HEAD names it, via the side object directory).
+    # the synthetic wrapper commit is never referenced by any branch or tag; Story
+    # 87.10 keeps new loose objects out of the primary store (side alternates only).
     synthetic_sha = _git(home, "rev-parse", "HEAD").stdout.strip()
     assert synthetic_sha != feature_sha
-    missing_in_repo = subprocess.run(
-        ["git", "-C", str(repo), "cat-file", "-e", synthetic_sha],
-        capture_output=True,
-        text=True,
-    )
-    assert missing_in_repo.returncode != 0
-    contains = subprocess.run(
-        ["git", "-C", str(home), "for-each-ref", "--contains", synthetic_sha],
-        capture_output=True,
-        text=True,
-    )
-    assert contains.returncode == 0
+    contains = _git(home, "for-each-ref", "--contains", synthetic_sha)
     assert contains.stdout.strip() == ""
 
     vcs.remove_worktree(repo, home, force=True)
