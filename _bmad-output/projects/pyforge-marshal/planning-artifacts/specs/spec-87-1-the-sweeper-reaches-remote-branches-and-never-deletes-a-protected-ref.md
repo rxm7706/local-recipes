@@ -2,10 +2,10 @@
 title: "87.1: The sweeper reaches remote branches and never deletes a protected ref"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: '20b7e853c38ea344441e911109f76ad7ee504d43'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -127,4 +127,35 @@ Minted 2026-10-04 at the operator's request ("retire the 30, keep the 3, and cha
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
+- findings:
+  - `[false]` `[reject]` Manifest on disk omitted archive_tag after twin push — post-execute manifest rewrite added in `execute_remote_deletes` / `run_retire_branches`.
+  - `[false]` `[reject]` `--remote` skips worktree sweep path — intentional early return per spec remote mode.
+  - `[false]` `[reject]` `--retire` requires protected branch name — matches AC (explicit protected retirement only).
+  - `[low]` `[reject]` No dedicated content-gate refusal integration test — gate path exercised via `push_preserve_ref` unit coverage elsewhere; orphan-delete test covers happy twin path.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended `scripts/worktree_sweep.py` with `--remote` (KEEP/DELETE/INSPECT over every `origin` head, manifest-before-delete, archive twins through `pyforge.core.preserve_refs`) and `--retire` (explicit protected branch names only, ruleset refusal findings). Protected prefixes union roster `protected_refs` with the code floor. Tests use bare remotes and injectable PR readers; mutation guards pin verdict rules.
+
+**Files changed:**
+- `scripts/worktree_sweep.py` — remote classify/execute, retire, protected list, archive twin push, manifest I/O
+- `tests/scripts/test_worktree_sweep.py` — remote/retire fixtures, execute, mutation tests
+- `docs/how-to/manage-worktrees-with-bmad.md` — document `--remote` / `--retire`
+- Story spec metadata, review triage, and this result block
+
+**Review:** One patch (manifest `archive_tag` rows rewritten after execute). Three findings rejected as false or low-not-worth-fixing.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass
+- `pixi run --frozen -e pyforge-guild lint-types` — pass
+- `python -m pytest tests/scripts/test_worktree_sweep.py -q` — 43 passed
+- `python scripts/spec_surface_reconcile.py` — OK
+
+**Residual risks:** Live GitHub ruleset 422 responses are reported as findings but not replayed in CI; `live_dispatch_branches()` journal scan has no dedicated fixture test yet.
