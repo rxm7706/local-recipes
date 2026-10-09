@@ -524,9 +524,7 @@ def test_capture_transcripts_confirm_yes_writes_full_sentence_at_truncation_boun
     assert long_sentence not in _combined_output(result)
 
 
-def test_capture_transcripts_forwards_cap_warnings_to_stderr(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_capture_transcripts_forwards_cap_warnings_to_stderr(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     _scaffold_memory_root(tmp_path)
     transcript_root = tmp_path / "transcripts"
