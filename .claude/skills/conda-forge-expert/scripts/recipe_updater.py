@@ -83,14 +83,27 @@ def get_current_recipe_info(recipe_path: Path) -> Dict[str, Any]:
     with open(recipe_path) as f:
         data = yaml.load(f)
     
-    context = data.get("context", {})
-    package_name = context.get("name")
+    context = data.get("context") or {}
     current_version = context.get("version")
-    
+
+    # Name resolution order: context.name, then extra.cfe-upstream-name, then a
+    # literal package.name. Recipes generated since CFE v8.10.0 carry a literal
+    # package.name and no context.name (the billiard shape), so the context-only
+    # read made the autotick path refuse every one of them.
+    package_name = context.get("name")
+    if not package_name:
+        upstream = (data.get("extra") or {}).get("cfe-upstream-name")
+        if upstream and str(upstream).lower() != "none":
+            package_name = str(upstream)
+    if not package_name:
+        literal = (data.get("package") or {}).get("name")
+        if isinstance(literal, str) and literal and "${{" not in literal:
+            package_name = literal
+
     if not package_name or not current_version:
         raise ValueError("Could not determine package name and version from recipe context.")
-        
-    return {"name": package_name, "version": str(current_version)}
+
+    return {"name": str(package_name), "version": str(current_version)}
 
 def update_recipe(recipe_path: Path, dry_run: bool = False) -> Dict[str, Any]:
     """

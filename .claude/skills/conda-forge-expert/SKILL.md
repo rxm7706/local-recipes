@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.98.0
+version: 8.99.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -867,6 +867,12 @@ Use the **move-aside + fresh-generate + diff + selective-apply** pattern:
 6. **Present the categorization to the user** in a 3-column table before applying — this is the inspection checkpoint. Surface the regressions explicitly with one-line justifications; the user is the final reviewer on whether grayskull dropping `glib` is genuinely safe.
 7. On approval: `rm -rf recipes/<name> && mv recipes/<name>.current recipes/<name>` to restore the live recipe as the base, then apply only the approved corrections via `edit_recipe` or `Edit`. Restoring the base avoids accidentally inheriting any grayskull-emitted bug (e.g., the line-folded source URL caveat below) that wasn't on the categorization list.
 8. Re-run steps 2–7 of the main loop (`validate_recipe` / `optimize_recipe` / `check_dependencies` / `scan_for_vulnerabilities` / build) on the merged result.
+
+**Bulk refresh waves (v8.99.0) — `refresh-wave`.** When the same refresh runs over many existing local recipes (a wave of the feedstock-refresh campaign), do not hand-roll a batch script: `pixi run -e local-recipes refresh-wave <manifest> [--apply] [--gates] [--build]` (`scripts/refresh_wave.py`) bumps each `recipes/<name>/` to its feedstock's published version through `recipe_editor` only. The manifest (YAML or JSON) names a `track` (`A` sole-maintainer, `B` co-maintained), a `wave` id and the `recipes` (optional per-recipe `feedstock` and `version`). It is dry-run by default and writes only its report (`.claude/data/conda-forge-expert/refresh-waves/<track>-<wave>/report.{json,md}`; `report.json` is the resume state). It is the autotick path's structural sibling, not a replacement for the diff-before-apply pattern above: it refreshes version, `build.number` (reset to 0), sha256 and maintainers (union with the deployed list, G53), and everything else lands in the report as `needs-review`:
+- a hashed or version-baked `source.url`, a recomputed sha256 that differs from the feedstock's, a feedstock tag that differs from the published version (landmine 1), or a `host`/`run` difference from the feedstock (G96, `dependency-fix`; a maintainer-commented pin is never changed, landmine 12). It never rewrites a `source.url`.
+- A feedstock still on v0 keeps its local `meta.yaml`, rewritten byte-for-byte from the feedstock (C1; never renamed, moved or deleted; `--build` targets `recipe.yaml` explicitly); a v1 feedstock drops the local `meta.yaml` (C2, G94). A missing local directory or `recipe.yaml` is `blocked` (v0-to-v1 authoring and create-missing stay manual steps).
+- Every write is re-checked (parses; one `#### CFE metadata`, one `cfe-conda-name` (G92); no new FMT-001) and restored on failure; the run is local only (no `git`, PR, fork, submit or ship step), so landing the result is still your explicit step.
+- **`--repair`** is the undo for the Wave H damage and nothing else: hashed `files.pythonhosted.org` sdist URLs back to `pypi.org/packages/source/...` (sha256 verified unchanged; `<dist>` from `extra.cfe-upstream-name`, never `package.name`), FMT-001 list items re-indented whitespace-only, and a `.meta.yaml*` hold file with no `meta.yaml` restored from the feedstock (or renamed back when the feedstock is unreadable). It changes no version, build number, requirement or maintainer. `--build` is refused with it.
 
 **Known grayskull-path emit drifts** to expect during step 4 (do not silently inherit):
 - Long `source.url` line-folded across two lines by ruamel.yaml's default `width=80` — looks like `weasyprint-${{ version \n    }}.tar.gz`. Cosmetic only; recipe still builds. The v8.11.1 line-fold fix landed in `edit_recipe` but not in the grayskull subprocess emit path. Restore the clean single-line form.
@@ -4428,6 +4434,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 | `pixi run -e local-recipes sync-upstream-conda-forge` | Sync fork with `conda-forge/staged-recipes` |
 | `pixi run -e local-recipes submit-pr <name>` | Submit a finished recipe to conda-forge |
 | `pixi run -e local-recipes autotick <path>` | Manually run the autotick bot on a recipe |
+| `pixi run -e local-recipes refresh-wave <manifest> [--apply] [--gates] [--build]` | Bulk-refresh the recipes in a wave manifest to their feedstock's published version (dry-run by default; local only; resume state in `report.json`) |
+| `pixi run -e local-recipes refresh-wave <manifest> --repair [--apply]` | Undo the Wave H damage: hashed PyPI URLs, FMT-001 list indentation, a hidden `meta.yaml` (changes nothing else) |
 | `pixi run -e local-recipes update-cve-db` | Refresh the local CVE database |
 | `pixi run -e local-recipes update-mapping-cache` | Refresh the PyPI name mapping cache |
 | `python build-locally.py linux-64` | Build for a specific platform (Docker on Linux) |
@@ -4439,6 +4447,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.99.0** (Oct 9, 2026) — **mason Story 25.3: `refresh_wave.py`, a tracked bulk recipe-refresh driver with `--repair` for the Wave H damage (MINOR).** Dry-run by default, resumable, idempotent, local only; `recipe_updater` reads a recipe with no `context.name`. See `CHANGELOG.md`.
 - **v8.98.0** (Oct 9, 2026) — **mason Story 22.1 Rule-2 retro: G121, conda-recipe-manager's leaked `SentinelType` key, and the corpus check that refuses the next one (MINOR).** Revised the same day after the independent review (still unreleased): the corpus scan is recursive with a per-location allowlist that admits one leak per entry (Stories 22.3 and 22.4), and G121 corrects the `track_features` claim and adds the staging build-env, staging build-string and minijinja string-vs-int traps; G1 is retitled for its 0.76.1 re-verification. See `CHANGELOG.md`.
 - **v8.93.0** (Oct 8, 2026) — **pyforge-mason Epic 19 closing Rule-2 retro: CFE names Mason's skill cell (MINOR; Story 19.5).** See `CHANGELOG.md`.
 - **v8.91.9** (Oct 5, 2026) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** See `CHANGELOG.md`.

@@ -65,6 +65,7 @@ SCRIPTS = [
     "pypi_intelligence.py",
     "recipe_optimizer.py",
     "recipe_updater.py",
+    "refresh_wave.py",
     "release_cadence.py",
     "scan_project.py",
     "spdx_schema_gap.py",
