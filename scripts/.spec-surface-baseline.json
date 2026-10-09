@@ -2865,7 +2865,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "b45c4eca3102ed90e3865ce565c49520aa3ca568",
+   "pixi.toml": "2d9c530009fabe981b98a82c1838355e890529ac",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "f634eebb7d280de9667527361cb160b786242fd0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "52923d5b2ec955c7f91f434f710d7d166bcd8398",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3487,7 +3487,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "8b41e7a08d0fa01be4026cba5563835ae09d9ef7"
+  "memlog": "939902b0024c61ee624f34ad5b3c6c1a76cf808a"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
