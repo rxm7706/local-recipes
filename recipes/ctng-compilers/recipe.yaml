@@ -683,9 +683,9 @@ outputs:
       build:
       host:
         - if: not osx
-          then: ${{ pin_subpackage("libgomp", exact=True) }}
+          then: ${{ pin_subpackage("libgomp", upper_bound=None) }}
         - if: not osx
-          then: ${{ pin_subpackage('_openmp_mutex', exact=True) }}
+          then: ${{ pin_subpackage('_openmp_mutex', upper_bound=None) }}
         - if: cross_target_stdlib != "None"
           then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
@@ -733,7 +733,7 @@ outputs:
     requirements:
       build:
       host:
-        - ${{ pin_subpackage('libgomp', exact=True) }}
+        - ${{ pin_subpackage('libgomp', upper_bound=None) }}
         - if: cross_target_stdlib != "None"
           then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
