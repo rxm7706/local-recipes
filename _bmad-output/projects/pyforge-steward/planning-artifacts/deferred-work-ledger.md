@@ -6206,7 +6206,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-09 (dispatch-land finalize: Merge pyforge-steward/78-1 into main)
+  status: closed
 
 ### DW-FRR-8-7: Follow-up review still recommended for story 8.7
 
