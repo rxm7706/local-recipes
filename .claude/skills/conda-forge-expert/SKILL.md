@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.97.0
+version: 8.98.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4364,6 +4364,38 @@ The result matched upstream's 55 shaded classes. The only remaining differences 
 - **Windows:** a `build.bat` too, because staged-recipes builds noarch on Windows ([G102](#g102)).
 - **Install and test:** install the jar where its consumer auto-loads it, and test through that consumer (`liquibase --version` lists `postgresql.jar`).
 
+### G121. conda-recipe-manager's v0→v1 conversion can leak a `SentinelType` repr as a YAML mapping key — and exits 100, not an error
+
+**Symptom**: a converted `recipe.yaml` carries a key that is literally `<conda_recipe_manager.types.SentinelType object at 0x…>`. rattler-build refuses the file at parse time. PyYAML reads the key as a plain string, so a parse-only gate passes it. Before Story 22.2, `validate_recipe` passed six of the twelve such files in `recipes/`. conda-smithy flagged only a top-level key and crashed on multi-output recipes.
+
+**Why**: crm writes its sentinel wherever a `meta.yaml` construct has no v1 translation. The 2026-08-16 bulk conversion (`20b2f459fa`) hit five shapes:
+- a commented-out key (`#patches:`, `#host:`);
+- a test left with only `requires:` once its commands were commented out;
+- an `imports:` list split from its key by comments;
+- `test.requires` orphaned at the top level;
+- jinja `{% for %}` / `{% if %}` blocks inside test commands.
+
+crm 0.10.6 still writes the sentinel and exits **100** ("warnings"), so re-running the conversion repairs nothing.
+
+**Fix**: repair by hand against the sibling `meta.yaml`, one construct at a time.
+- Drop a commented-out key and keep its comment lines indented in place.
+- Remove a test element that has nothing left to run.
+- Rejoin a split `imports:` list.
+- Fold an orphaned requirement into the surviving script test. Move commented test lines to the bottom `# CFE comments` block (G93).
+- Turn a flattened jinja loop into one shell loop per platform in the element's own `script:` (G1): a `for` loop under `if: unix`, a `for %%X in (…) do (…)` block under `if: win`. Build the lists from `context` with jinja, e.g. `${{ (libs + ([] if ppc64le else long_double_libs)) | join(" ") }}`.
+
+Then render the file on a platform it builds (`rattler-build build --render-only`), and run `validate_recipe` and the CI-parity lint. Keep `meta.yaml` while the feedstock is v0. `tests/meta/test_recipe_yaml_parse_audit.py::test_no_crm_sentinel_keys_in_recipe_yaml` reds any `recipes/*/recipe.yaml` with a non-string key, or a key or whole scalar that is an object repr. Its allowlist names the story that removes each entry; mason Story 22.3 owns `ctng-compilers`.
+
+**Traps the twelve-recipe repair hit** (mason Story 22.1, rattler-build 0.76.1):
+- **render-only does not evaluate test scripts.** An undefined variable in a test (`${{ each_lib }}`, `${{ dllname }}`) renders green and fails only when the test runs. Check a test-script expression by putting it in a field the render evaluates (e.g. an output's `about.description` in a scratch copy).
+- **A multi-output v1 recipe has no top-level `requirements`** (`unknown field 'requirements'`). conda-build's top-level build (its `build.sh` and requirements) becomes a `staging` output. Outputs inherit it with `inherit: {from: <name>, run_exports: false}`; without `run_exports: false`, the staging host's run_exports (`python_abi`, `numpy`, …) leak into every output. A top-level `build.script` is merged into every output that defines none, metapackages included.
+- **Other v1 differences:** minijinja has no `str.startswith`; use `x is startingwith("win")`. `build.track_features` is rejected; the v1 field is `build.variant.down_prioritize_variant`. `script_interpreter` is not a v1 field; call the script with its arguments in `build.script`. v0 `py` (the python nodot) is `${{ python | version_to_buildstring }}`; for an output that does not vary by python, conda-build's first variant is `python_min`.
+- **v1 lint R-013** requires a top-level `about.license_file`, which v0 did not. Outputs inherit it, so set `license_file: []` on an output whose `meta.yaml` ships no licence file.
+- **The CI-parity lint stops at "both `meta.yaml` and `recipe.yaml`"** on a v0-mirror directory. Lint a copy without `meta.yaml` to see the v1 lints.
+- **Jinja block syntax in a `# CFE comments` line crashes conda-smithy's v1 lint.** It renders the round-tripped YAML, comments included, through jinja2, so a note quoting meta.yaml's `{% for … %}` or `{% if … %}` raises `TemplateSyntaxError`. Describe the construct in words in the comment.
+- **The bulk conversion dropped fixes its own CFE comments record.** `psycopg2-yugabytedb`'s CFE block still described `setuptools` in host (G55) and a `>=3.13` skip (G50) that the regenerated body had lost. After any regeneration, re-read the CFE comments against the body.
+- **Mirror directories can lack the feedstock's build scripts.** `lerc` had no `build.sh`, so a local build packages nothing. Fetch the feedstock's `recipe/` files before building (G94).
+
 ---
 
 ## Skill Automation
@@ -4402,6 +4434,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.98.0** (Oct 9, 2026) — **mason Story 22.1 Rule-2 retro: G121, conda-recipe-manager's leaked `SentinelType` key, and the corpus check that refuses the next one (MINOR).** See `CHANGELOG.md`.
 - **v8.93.0** (Oct 8, 2026) — **pyforge-mason Epic 19 closing Rule-2 retro: CFE names Mason's skill cell (MINOR; Story 19.5).** See `CHANGELOG.md`.
 - **v8.91.9** (Oct 5, 2026) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** See `CHANGELOG.md`.
 - **v8.91.8** (Oct 4, 2026) — **G62 survivor gate uses anchored line matching (PATCH; mason Story 27.2 review).** See `CHANGELOG.md`.

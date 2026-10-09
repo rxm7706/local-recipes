@@ -151,3 +151,96 @@ def test_no_unquoted_hash_in_cfe_list_items() -> None:
         "value at the comment marker (G92 extension class b); double-quote the "
         "item:\n" + "\n".join(offenders)
     )
+
+
+# --- G121: conda-recipe-manager SentinelType leaks (mason Story 22.1) ---------
+#
+# crm's v0->v1 conversion writes the repr of its internal sentinel,
+# `<conda_recipe_manager.types.SentinelType object at 0x...>`, as a mapping key
+# wherever a meta.yaml construct has no v1 translation, and exits 100, not an
+# error. PyYAML reads the key as a plain string, so test_all_recipe_yaml_parse
+# passes the file; rattler-build refuses it at parse time. Same predicate as
+# validate_recipe_yaml's tree walk (Story 22.2): a non-string mapping key, or a
+# key or WHOLE scalar that is a Python object repr. Prose that only mentions a
+# repr inside a longer string is not flagged.
+
+_OBJECT_REPR_RE = re.compile(r"^<[A-Za-z_][\w.]* object at 0x[0-9a-fA-F]+>$")
+
+# One entry per file that may still carry a leak, each naming the story that
+# removes it. An entry whose file no longer offends fails the test, so the
+# allowlist cannot outlive its reason.
+SENTINEL_ALLOWLIST: dict[str, str] = {
+    "recipes/ctng-compilers/recipe.yaml": (
+        "mason Story 22.3: the repaired file hits rattler-build 0.76.1's "
+        "'Cycle detected in recipe outputs'; split from Story 22.1 by operator "
+        "ruling 2026-10-09"
+    ),
+}
+
+
+def _sentinel_findings(tree: object, where: str = "") -> list[str]:
+    found: list[str] = []
+    if isinstance(tree, dict):
+        for key, value in tree.items():
+            here = f"{where}.{key}" if where else str(key)
+            if not isinstance(key, str):
+                found.append(f"{here}: non-string key {key!r} ({type(key).__name__})")
+            elif _OBJECT_REPR_RE.match(key):
+                found.append(f"{where or '<root>'}: object-repr key {key!r}")
+            found.extend(_sentinel_findings(value, here))
+    elif isinstance(tree, list):
+        for i, item in enumerate(tree):
+            found.extend(_sentinel_findings(item, f"{where}[{i}]"))
+    elif isinstance(tree, str) and _OBJECT_REPR_RE.match(tree):
+        found.append(f"{where}: object-repr value {tree!r}")
+    return found
+
+
+def _scan_for_sentinels(paths: list[Path], root: Path) -> dict[str, list[str]]:
+    hits: dict[str, list[str]] = {}
+    for p in paths:
+        try:
+            tree = yaml.safe_load(p.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 -- parse failures belong to test_all_recipe_yaml_parse
+            continue
+        found = _sentinel_findings(tree)
+        if found:
+            hits[p.relative_to(root).as_posix()] = found
+    return hits
+
+
+def test_no_crm_sentinel_keys_in_recipe_yaml() -> None:
+    hits = _scan_for_sentinels(_recipe_files(), REPO_ROOT)
+    unexpected = {f: v for f, v in hits.items() if f not in SENTINEL_ALLOWLIST}
+    stale = sorted(set(SENTINEL_ALLOWLIST) - set(hits))
+    assert not unexpected, (
+        "conda-recipe-manager SentinelType leak or other object-repr / non-string "
+        "key (G121); repair by hand against the sibling meta.yaml:\n"
+        + "\n".join(f"{f}: {'; '.join(v)}" for f, v in sorted(unexpected.items()))
+    )
+    assert not stale, (
+        "allowlisted file(s) no longer carry a leak; remove the entry:\n" + "\n".join(stale)
+    )
+
+
+def test_sentinel_scan_reds_a_planted_key(tmp_path: Path) -> None:
+    clean = (
+        "schema_version: 1\n"
+        "package:\n  name: demo\n  version: '1.0'\n"
+        "about:\n  description: prose naming <conda_recipe_manager.types.SentinelType object at 0x1> is fine\n"
+    )
+    planted = clean + (
+        "tests:\n"
+        "  - <conda_recipe_manager.types.SentinelType object at 0x7f00deadbeef>:\n"
+        "      requirements:\n        run:\n          - pip\n"
+    )
+    (tmp_path / "recipes" / "clean").mkdir(parents=True)
+    (tmp_path / "recipes" / "planted").mkdir(parents=True)
+    (tmp_path / "recipes" / "clean" / "recipe.yaml").write_text(clean)
+    (tmp_path / "recipes" / "planted" / "recipe.yaml").write_text(planted)
+    (tmp_path / "recipes" / "intkey").mkdir(parents=True)
+    (tmp_path / "recipes" / "intkey" / "recipe.yaml").write_text(clean + "extra:\n  1: one\n")
+    hits = _scan_for_sentinels(sorted((tmp_path / "recipes").glob("*/recipe.yaml")), tmp_path)
+    assert set(hits) == {"recipes/planted/recipe.yaml", "recipes/intkey/recipe.yaml"}
+    assert "object-repr key" in hits["recipes/planted/recipe.yaml"][0]
+    assert "non-string key" in hits["recipes/intkey/recipe.yaml"][0]
