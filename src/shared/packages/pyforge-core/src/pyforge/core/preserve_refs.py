@@ -22,8 +22,10 @@ from typing import Literal
 
 from pyforge.core.process import PosixProcess, ProcessError
 
-_PRESERVE_PREFIX = "refs/tags/preserve/"
-_ARCHIVE_PREFIX = "refs/tags/archive/"
+PRESERVE_REF_PREFIX = "refs/tags/preserve/"
+ARCHIVE_REF_PREFIX = "refs/tags/archive/"
+_PRESERVE_PREFIX = PRESERVE_REF_PREFIX
+_ARCHIVE_PREFIX = ARCHIVE_REF_PREFIX
 
 PRESERVE_PRODUCERS: frozenset[str] = frozenset(
     {
@@ -323,8 +325,8 @@ def snapshot_worktree_commit(repo: Path) -> str | None:
     return commit
 
 
-def _existing_tag_object(repo: Path, refname: str) -> str | None:
-    rc, out, _ = _git(repo, "rev-parse", "--verify", f"{refname}^{{object}}")
+def _existing_tag_commit(repo: Path, refname: str) -> str | None:
+    rc, out, _ = _git(repo, "rev-parse", "--verify", f"{refname}^{{commit}}")
     if rc != 0:
         return None
     return out.strip()
@@ -399,7 +401,7 @@ def tag_preserve(
     full_commit = _full_sha(repo, commit)
     if trailers.commit != full_commit:
         raise PreserveRefError("Preserve-Commit trailer must match the tagged commit")
-    existing = _existing_tag_object(repo, refname)
+    existing = _existing_tag_commit(repo, refname)
     if existing is not None:
         if existing == full_commit:
             return TagPreserveResult(refname, full_commit, True)

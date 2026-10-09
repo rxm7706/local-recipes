@@ -102,7 +102,7 @@ def test_snapshot_includes_untracked_without_moving_head(git_pair: tuple[Path, P
     assert head_after == head_before
     assert _run(repo, "symbolic-ref", "HEAD").stdout.strip() == branch_before
     assert "new.txt" in _run(repo, "ls-tree", "-r", "--name-only", snap).stdout
-    assert "tracked.txt" in _run(repo, "show", f"{snap}:tracked.txt").stdout
+    assert _run(repo, "show", f"{snap}:tracked.txt").stdout.strip() == "v2"
 
 
 def test_tag_noop_same_name_same_object(git_pair: tuple[Path, Path]):
@@ -126,13 +126,15 @@ def test_tag_refuses_same_name_different_object(git_pair: tuple[Path, Path]):
     tag_preserve(repo, refname=ref, commit=base, trailers=_trailers(base))
     (repo / "tracked.txt").write_text("other\n", encoding="utf-8")
     _run(repo, "add", "tracked.txt")
-    other = _run(repo, "commit", "-m", "other").stdout.strip().split()[-1]
+    _run(repo, "commit", "-m", "other")
+    other = _run(repo, "rev-parse", "HEAD").stdout.strip()
     with pytest.raises(PreserveRefConflictError):
         tag_preserve(repo, refname=ref, commit=other, trailers=_trailers(other))
 
 
 def test_story_tree_dedup_is_noop(git_pair: tuple[Path, Path]):
     repo, _ = git_pair
+    (repo / "tracked.txt").write_text("dedup\n", encoding="utf-8")
     snap = snapshot_worktree_commit(repo)
     assert snap is not None
     ref_a = render_preserve_ref(

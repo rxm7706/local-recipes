@@ -91,7 +91,9 @@ _MRS_RETIRE_002 = "MRS-RETIRE-002"
 _MRS_RETIRE_003 = "MRS-RETIRE-003"
 _MRS_RETIRE_004 = "MRS-RETIRE-004"
 _ORIGIN_MAIN_REF = "refs/remotes/origin/main"
-_PRESERVE_ARCHIVE_TAG_PREFIXES = ("refs/tags/preserve/", "refs/tags/archive/")
+from pyforge.core.preserve_refs import ARCHIVE_REF_PREFIX, PRESERVE_REF_PREFIX
+
+_PRESERVE_ARCHIVE_TAG_PREFIXES = (PRESERVE_REF_PREFIX, ARCHIVE_REF_PREFIX)
 
 # The exact literal `supervisor/durability.py::_DONE_PHASE` already uses --
 # reused, not re-spelled, for the "the harness's own recorded terminus"
