@@ -813,7 +813,8 @@ verify_commands = [
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts
   # and their tests (the parity detector, the pre-push hook), AGENTS.md (the guardrails section), the flagd tree (85.5's
-  # flag), the generated detector reference docs, and every Spec memlog.
+  # flag), the generated detector reference docs, and every Spec memlog. Widened 2026-10-09 for Story 85.8: the hook's
+  # registrations in .claude/settings.json (the MCP PreToolUse matcher) and .cursor/hooks.json.
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
@@ -823,6 +824,8 @@ verify_commands = [
   "pixi.lock",
   "environment.yaml",
   ".claude/hooks/pre-shell.py",
+  ".claude/settings.json",
+  ".cursor/hooks.json",
   "docs/governance/guild-roster.json",
   "docs/governance/rulesets/**",
   "scripts/**",
