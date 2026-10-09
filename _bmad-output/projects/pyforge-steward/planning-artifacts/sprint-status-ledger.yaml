@@ -301,7 +301,7 @@ development_status:
   71-5-the-two-lanes-every-branch-runs-fit-the-budget: done
   71-6-the-large-suites-run-under-pytest-xdist-locally-and-in-ci-alike: done
   71-7-the-one-minute-budget-is-a-check-that-reads-the-journal: done
-  71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: backlog
+  71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: done
   71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: backlog
   72-1-the-guild-environment-answers-pyforge-mason: backlog
   72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: blocked

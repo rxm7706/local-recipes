@@ -4805,7 +4805,7 @@ lane; a lane whose pytest asserts `git -C <tmp_path> rev-parse` fails passes, an
 exists after a green run; the four `tests/scripts/` tests pass under `pixi run -e pyforge-guild pr-preflight` (manual); the 71.1-71.4 preflight
 tests pass, with only `test_each_lane_gets_isolated_scratch_env`'s location assertion moved; which lanes run, what each runs, the hook and the
 four tests do not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 71.9: A reduced suite lane never fails on a segment that selects no tests
 

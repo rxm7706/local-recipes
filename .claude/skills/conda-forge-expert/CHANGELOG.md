@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.94.0** (Oct 9, 2026, current) — **Story 22.2: `validate_recipe_yaml` reds non-string keys and object repr leaks (MINOR).** After parse, a recursive walk reports non-string mapping keys and whole-key/whole-value Python object repr strings (conda-recipe-manager `SentinelType` converter leaks). v0 `meta.yaml` unchanged. Fixtures and unit tests under `tests/fixtures/recipes/v1-*` and `tests/unit/test_validate_recipe.py`.
+**v8.95.0** (Oct 9, 2026, current) — **Story 23.1: `license-checker --check-source` refuses GPL-family `-only` when LICENSE grants any later version (MINOR).** Ports `check_license_semantics` from auto-recipe@8b53eda into `license-checker.py`; missing `license_file` in source now counts toward a non-zero exit. Fixtures under `tests/fixtures/license-semantics/` and unit tests in `tests/unit/test_license_semantics.py`.
+
+**v8.94.0** (Oct 9, 2026) — **Story 22.2: `validate_recipe_yaml` reds non-string keys and object repr leaks (MINOR).** After parse, a recursive walk reports non-string mapping keys and whole-key/whole-value Python object repr strings (conda-recipe-manager `SentinelType` converter leaks). v0 `meta.yaml` unchanged. Fixtures and unit tests under `tests/fixtures/recipes/v1-*` and `tests/unit/test_validate_recipe.py`.
 
 **v8.93.5** (Oct 9, 2026) — **Story 21.5 pptxgenjs-plus-jsx local recipe retro (PATCH).** Bumped sibling `recipes/pptxgenjs-plus` **4.2.1 → 4.3.4** (G109/G69: JSX pins the engine exactly). New `recipes/pptxgenjs-plus-jsx` **4.3.4**: canonical bin-less npm `noarch: generic` shape, `install -D` of `third-party-licenses.txt` into the global install tree, ESM export test via absolute `dist/` file URLs (ESM ignores `NODE_PATH`), run pin `pptxgenjs-plus ==4.3.4`. Green linux-64 `recipe-build` on both; conda-smithy lint clean.
 

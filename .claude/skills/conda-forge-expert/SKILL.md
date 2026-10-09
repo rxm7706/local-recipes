@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.94.0
+version: 8.95.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -676,6 +676,8 @@ When pattern (2) is used, ship the LICENSE in-recipe and remove the stale "upstr
 Confirm against `unzip -l <upstream>.whl | grep static/` — only paths present there need licenses. Live: `reactpy-django 6.0.0b1` (2026-07-14) declared `BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause` over ~200 enumerated `node_modules` LICENSE files; the artifact actually ships only `@pyscript/core` (Apache-2.0), `morphdom` (MIT), and `@reactpy/client` (MIT, inlining preact + event-to-object + json-pointer, all MIT). Correct answer: **`MIT AND Apache-2.0`** over 8 entries. The spurious `EPL-2.0` / `BSD-*` came purely from dev-only tooling.
 
 Why this matters: the conda-forge web-service review accepts any of the three patterns, but reviewers occasionally flag (3) ("can this be simplified?"). (1) is invisible; (2) reads as deliberate and gets a free conversational checkpoint with reviewers ("ship LICENSE in-recipe because upstream archive omits it").
+
+**GPL-family `-only` vs `-or-later` (v8.95.0).** On `license-checker.py --check-source`, CFE compares `about.license` to upstream `LICENSE` / `LICENCE` / `COPYING` text for GPL, LGPL, AGPL, and GFDL identifiers that carry the `-only` or `-or-later` axis. When the file grants "any later version" but the recipe declares `-only`, the check exits non-zero and names the matching `-or-later` identifier. Permissive licences skip; ambiguous text skips with a note to read the file by hand. A missing `license_file` in the extracted source also fails the run.
 
 **Apache-2.0 `NOTICE` files.** If the upstream source ships a `NOTICE` file, Apache-2.0 §4(d) requires it to be redistributed alongside the license. List both in `license_file` as a YAML list:
 
