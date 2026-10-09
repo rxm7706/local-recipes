@@ -2,7 +2,7 @@
 title: "21.4: opengrep is repackaged from its release binaries as a local-only recipe"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
