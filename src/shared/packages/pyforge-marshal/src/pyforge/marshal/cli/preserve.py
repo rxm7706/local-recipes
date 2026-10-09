@@ -68,6 +68,7 @@ def add_preserve_subparser(subparsers: argparse._SubParsersAction) -> None:
     list_p.add_argument("--state", choices=("open", "landed"), help="Filter by derived state.")
     list_p.set_defaults(handler=run_preserve_list, preserve_subcommand="list")
 
+
 def _require_flag() -> None:
     require(PRESERVE_FLAG_KEY)
 

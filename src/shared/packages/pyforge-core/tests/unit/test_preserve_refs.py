@@ -66,9 +66,7 @@ def test_preserve_name_round_trip(producer: str):
         (None, None),
     )
     for slug, story in shapes:
-        ref = render_preserve_ref(
-            commit_sha=commit, producer=producer, project_slug=slug, story_key=story
-        )
+        ref = render_preserve_ref(commit_sha=commit, producer=producer, project_slug=slug, story_key=story)
         assert "2026-" not in ref and "2025-" not in ref
         parsed = parse_preserve_ref(ref)
         assert parsed.producer == producer
@@ -108,9 +106,7 @@ def test_snapshot_includes_untracked_without_moving_head(git_pair: tuple[Path, P
 def test_tag_noop_same_name_same_object(git_pair: tuple[Path, Path]):
     repo, _ = git_pair
     commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
-    ref = render_preserve_ref(
-        commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key="87.3"
-    )
+    ref = render_preserve_ref(commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key="87.3")
     first = tag_preserve(repo, refname=ref, commit=commit, trailers=_trailers(commit))
     second = tag_preserve(repo, refname=ref, commit=commit, trailers=_trailers(commit))
     assert first.noop is False
@@ -120,9 +116,7 @@ def test_tag_noop_same_name_same_object(git_pair: tuple[Path, Path]):
 def test_tag_refuses_same_name_different_object(git_pair: tuple[Path, Path]):
     repo, _ = git_pair
     base = _run(repo, "rev-parse", "HEAD").stdout.strip()
-    ref = render_preserve_ref(
-        commit_sha=base, producer="hand", project_slug="pyforge-marshal", story_key="87.3"
-    )
+    ref = render_preserve_ref(commit_sha=base, producer="hand", project_slug="pyforge-marshal", story_key="87.3")
     tag_preserve(repo, refname=ref, commit=base, trailers=_trailers(base))
     (repo / "tracked.txt").write_text("other\n", encoding="utf-8")
     _run(repo, "add", "tracked.txt")
@@ -137,12 +131,8 @@ def test_story_tree_dedup_is_noop(git_pair: tuple[Path, Path]):
     (repo / "tracked.txt").write_text("dedup\n", encoding="utf-8")
     snap = snapshot_worktree_commit(repo)
     assert snap is not None
-    ref_a = render_preserve_ref(
-        commit_sha=snap, producer="hand", project_slug="pyforge-marshal", story_key="87.3"
-    )
-    ref_b = render_preserve_ref(
-        commit_sha=snap, producer="dispatch", project_slug="pyforge-marshal", story_key="87.3"
-    )
+    ref_a = render_preserve_ref(commit_sha=snap, producer="hand", project_slug="pyforge-marshal", story_key="87.3")
+    ref_b = render_preserve_ref(commit_sha=snap, producer="dispatch", project_slug="pyforge-marshal", story_key="87.3")
     tag_preserve(repo, refname=ref_a, commit=snap, trailers=_trailers(snap, producer="hand"))
     result = tag_preserve(repo, refname=ref_b, commit=snap, trailers=_trailers(snap, producer="dispatch"))
     assert result.noop is True
@@ -160,9 +150,7 @@ def test_list_filters_and_landed_state(git_pair: tuple[Path, Path]):
     _run(repo, "add", "tracked.txt")
     _run(repo, "commit", "-m", "side")
     side = _run(repo, "rev-parse", "HEAD").stdout.strip()
-    ref_open = render_preserve_ref(
-        commit_sha=side, producer="dispatch", project_slug="pyforge-mason", story_key="2.4"
-    )
+    ref_open = render_preserve_ref(commit_sha=side, producer="dispatch", project_slug="pyforge-mason", story_key="2.4")
     tag_preserve(repo, refname=ref_open, commit=side, trailers=_trailers(side, producer="dispatch"))
     landed = list_preserves(repo, state=PreserveState.LANDED)
     assert len(landed) == 1

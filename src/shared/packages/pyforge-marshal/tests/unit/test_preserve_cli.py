@@ -38,7 +38,9 @@ def git_repo(tmp_path: Path) -> Path:
 
 
 @flag_states(_FLAG)
-def test_preserve_tag_and_list_when_flag_on(git_repo: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch):
+def test_preserve_tag_and_list_when_flag_on(
+    git_repo: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
+):
     if not flag_provider[_FLAG]:
         pytest.skip("covered by flag-off test")
     flags_path = flagd_tree(git_repo, {_FLAG: "on"})
@@ -74,7 +76,9 @@ def test_preserve_tag_and_list_when_flag_on(git_repo: Path, flag_provider: dict[
 
 
 @flag_states(_FLAG)
-def test_preserve_refuses_when_flag_off(flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_preserve_refuses_when_flag_off(
+    flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     if flag_provider[_FLAG]:
         pytest.skip("covered by flag-on test")
     flags_path = flagd_tree(tmp_path, {_FLAG: "off"})
@@ -118,18 +122,21 @@ def test_preserve_tag_story_tree_dedup_mutation(git_repo: Path, monkeypatch: pyt
         str(git_repo),
     ]
     assert main(base_argv) == 0
-    assert main(
-        [
-            "preserve",
-            "tag",
-            "--story",
-            "pyforge-marshal",
-            "87.3",
-            "--producer",
-            "dispatch",
-            "--from",
-            str(git_repo),
-        ]
-    ) == 0
+    assert (
+        main(
+            [
+                "preserve",
+                "tag",
+                "--story",
+                "pyforge-marshal",
+                "87.3",
+                "--producer",
+                "dispatch",
+                "--from",
+                str(git_repo),
+            ]
+        )
+        == 0
+    )
     tags = subprocess.check_output(["git", "tag"], cwd=git_repo, text=True).splitlines()
     assert len([t for t in tags if t.startswith("preserve/pyforge-marshal/87.3/")]) == 1
