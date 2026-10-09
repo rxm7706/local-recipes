@@ -58,6 +58,7 @@ class _FakeVcs:
         fast_forward_raises: bool = False,
         commit_paths_raises: bool = False,
         remote_ledger_text: str | None = None,
+        remote_branch_on_origin: bool = False,
     ) -> None:
         self.existing_branches = existing_branches
         self.branch_exists_raises = branch_exists_raises
@@ -85,6 +86,7 @@ class _FakeVcs:
         # Story 68.1: the `preflight_skip_reason` each publish carried, parallel to the calls above.
         self.isolated_promote_reasons: list[str | None] = []
         self.remote_ledger_text = remote_ledger_text
+        self.remote_branch_on_origin = remote_branch_on_origin
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -93,6 +95,9 @@ class _FakeVcs:
         if self.branch_exists_raises:
             raise VcsCommandError("git rev-parse --verify failed")
         return branch in self.existing_branches
+
+    def remote_branch_exists(self, repo_root, branch, *, remote="origin"):
+        return self.remote_branch_on_origin
 
     def merge_base(self, repo_root, a, b):
         if self.merge_base_raises:

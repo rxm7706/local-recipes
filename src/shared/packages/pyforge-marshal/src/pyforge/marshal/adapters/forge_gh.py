@@ -408,6 +408,29 @@ class GhForge:
             args.extend(["--subject", subject.value])
         result = _run(args, timeout_s=_GH_WRITE_TIMEOUT_S)
         if result.returncode != 0:
+            # Story 87.6: a ruleset-refused branch delete can fail after the
+            # merge itself succeeded -- never treat that as a failed landing.
+            if delete_branch:
+                state_result = _run(
+                    [
+                        "gh",
+                        "pr",
+                        "view",
+                        str(number),
+                        "--repo",
+                        repo_value,
+                        "--json",
+                        "state",
+                    ],
+                    timeout_s=_GH_READ_TIMEOUT_S,
+                )
+                if state_result.returncode == 0:
+                    state_payload = _parse_json(
+                        state_result.stdout,
+                        context=f"gh pr view {number} --repo {repo_value} --json state",
+                    )
+                    if isinstance(state_payload, Mapping) and state_payload.get("state") == "MERGED":
+                        return
             raise ForgeCommandError(
                 f"gh pr merge {number} --repo {repo_value} --{strategy_value} "
                 f"--match-head-commit {sha_value} "

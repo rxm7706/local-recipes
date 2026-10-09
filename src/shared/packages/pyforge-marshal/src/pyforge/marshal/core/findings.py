@@ -1571,6 +1571,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-RETIRE-001",
         "MRS-RETIRE-002",
         "MRS-RETIRE-003",
+        "MRS-RETIRE-004",
         "MRS-STATUS-002",
         "MRS-STATUS-003",
         "MRS-STATUS-004",
@@ -1624,6 +1625,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-009",
         "MRS-LAND-010",
         "MRS-LAND-011",
+        "MRS-LAND-012",
+        "MRS-LAND-013",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
         # Story 82.8 (DW-FU-4-14-10): a non-empty history in which nothing
