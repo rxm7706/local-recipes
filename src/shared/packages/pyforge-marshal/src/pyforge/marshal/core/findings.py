@@ -2080,6 +2080,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-CHK-003",
         # Story 87.3: `marshal preserve list` could not read local preserve tags (git/ref error).
         "MRS-PRESERVE-001",
+        # Story 87.15: content gate refused a preserve/archive push, or a push cap fired.
+        "MRS-PRESERVE-002",
+        "MRS-PRESERVE-003",
         # Story 82.4 (spec-pyforge-marshal CAP-2, DW-FU-3-4-3/6/7/8): the
         # supervisor stops being silenceable through its own journal, and the
         # run journal finally records the supervisor spawn. MRS-SUPV-011 --

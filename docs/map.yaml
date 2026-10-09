@@ -98,6 +98,10 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/purge-preserved-refs.md
+    quadrant: how-to
+    owner: marshal
+    kind: authored
   - path: how-to/recipe-testing-and-builds.md
     quadrant: how-to
     owner: fleet

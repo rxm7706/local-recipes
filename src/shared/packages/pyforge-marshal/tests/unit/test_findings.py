@@ -454,6 +454,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-CHK-002",
             "MRS-CHK-003",
             "MRS-PRESERVE-001",
+            "MRS-PRESERVE-002",
+            "MRS-PRESERVE-003",
             "MRS-SUPV-011",
             "MRS-SUPV-012",
             "MRS-SUPV-013",

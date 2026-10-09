@@ -10,6 +10,7 @@ Stdlib-only (plus ``pyforge.core.process`` for git); imports no ``pyforge.<stati
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import tempfile
@@ -55,6 +56,21 @@ PRESERVE_TRAILERS: frozenset[str] = frozenset(
 PROVENANCE_VALUES: frozenset[str] = frozenset({"machine", "human"})
 
 ORIGIN_MAIN = "refs/remotes/origin/main"
+ORIGIN_REMOTE = "origin"
+
+DEFAULT_PER_FILE_MAX_BYTES = 5 * 1024 * 1024
+DEFAULT_PUSH_CAP_PER_RUN = 20
+DEFAULT_PUSH_CAP_PER_STORY = 20
+
+PREFLIGHT_PRESERVE_TAGS_PROOF_ENV = "PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF"
+
+PRESERVE_PURGE_LIST_REL = "docs/governance/preserve-purge-list.json"
+
+_SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("anthropic-api-key", re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")),
+    ("github-pat", re.compile(r"ghp_[A-Za-z0-9]{20,}")),
+    ("pem-private-key-header", re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")),
+)
 
 _DATE_IN_NAME_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _SHA8_RE = re.compile(r"^[0-9a-f]{8}$")
@@ -83,6 +99,35 @@ class PreserveGitError(PreserveRefError):
 class PreserveState(StrEnum):
     OPEN = "open"
     LANDED = "landed"
+    RETIRED = "retired"
+
+
+class ContentGateReason(StrEnum):
+    PURGE_SHA = "purge-listed-sha"
+    PURGE_PATH = "purge-listed-path"
+    SECRET = "secret-scan"
+    SIZE_CAP = "size-cap"
+    PUSH_CAP_RUN = "push-cap-run"
+    PUSH_CAP_STORY = "push-cap-story"
+
+
+@dataclass(frozen=True, slots=True)
+class ContentGateFinding:
+    reason: ContentGateReason
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class PurgeList:
+    commit_shas: frozenset[str]
+    paths: frozenset[str]
+
+
+@dataclass(frozen=True, slots=True)
+class PushPreserveResult:
+    refname: str
+    pushed: bool
+    findings: tuple[ContentGateFinding, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -468,3 +513,188 @@ def list_preserves(
         )
     records.sort(key=lambda r: r.refname)
     return records
+
+
+def _repo_root_from(repo: Path) -> Path:
+    return Path(_git_out(repo, "rev-parse", "--show-toplevel"))
+
+
+def default_purge_list_path(repo: Path) -> Path:
+    return _repo_root_from(repo) / PRESERVE_PURGE_LIST_REL
+
+
+def load_purge_list(path: Path) -> PurgeList:
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    shas = frozenset(str(s).lower() for s in raw.get("commit_shas", ()))
+    paths = frozenset(str(p) for p in raw.get("paths", ()))
+    return PurgeList(commit_shas=shas, paths=paths)
+
+
+def _is_preserve_or_archive_tag(refname: str) -> bool:
+    return refname.startswith(PRESERVE_REF_PREFIX) or refname.startswith(ARCHIVE_REF_PREFIX)
+
+
+def _tree_paths(repo: Path, tree: str) -> set[str]:
+    rc, out, err = _git(repo, "ls-tree", "-r", "--name-only", tree)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git ls-tree failed")
+    return {line.strip() for line in out.splitlines() if line.strip()}
+
+
+def _commit_descends_from(repo: Path, commit: str, ancestor: str) -> bool:
+    rc, _, _ = _git(repo, "merge-base", "--is-ancestor", ancestor, commit)
+    return rc == 0
+
+
+def _scan_blob_for_secrets(repo: Path, blob: str) -> ContentGateFinding | None:
+    rc, out, err = _git(repo, "cat-file", "-p", blob)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git cat-file failed")
+    text = out.replace("\x00", "")
+    for name, pattern in _SECRET_PATTERNS:
+        if pattern.search(text):
+            return ContentGateFinding(
+                ContentGateReason.SECRET,
+                f"secret scan matched {name} (blob {blob[:8]})",
+            )
+    return None
+
+
+def _blob_size(repo: Path, blob: str) -> int:
+    rc, out, err = _git(repo, "cat-file", "-s", blob)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git cat-file -s failed")
+    return int(out.strip())
+
+
+def run_content_gate(
+    repo: Path,
+    *,
+    commit: str,
+    purge_list: PurgeList,
+    per_file_max_bytes: int = DEFAULT_PER_FILE_MAX_BYTES,
+) -> tuple[ContentGateFinding, ...]:
+    """Refuse (a) purge-listed ancestry, (b) purge-listed paths, (c) secrets, (d) oversize blobs."""
+    findings: list[ContentGateFinding] = []
+    full_commit = _full_sha(repo, commit)
+    for listed in purge_list.commit_shas:
+        if full_commit.startswith(listed) or listed.startswith(full_commit):
+            findings.append(
+                ContentGateFinding(ContentGateReason.PURGE_SHA, f"commit matches purge-listed sha {listed[:8]}")
+            )
+            break
+        if _commit_descends_from(repo, full_commit, listed):
+            findings.append(
+                ContentGateFinding(
+                    ContentGateReason.PURGE_SHA,
+                    f"commit descends from purge-listed sha {listed[:8]}",
+                )
+            )
+            break
+    tree = _git_out(repo, "rev-parse", f"{full_commit}^{{tree}}")
+    if purge_list.paths:
+        paths_in_tree = _tree_paths(repo, tree)
+        for banned in purge_list.paths:
+            if banned in paths_in_tree:
+                findings.append(
+                    ContentGateFinding(ContentGateReason.PURGE_PATH, f"tree carries purge-listed path {banned!r}")
+                )
+    rc, out, err = _git(repo, "ls-tree", "-r", tree)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git ls-tree failed")
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        _mode, _type, blob, path = line.split(None, 3)
+        size = _blob_size(repo, blob)
+        if size > per_file_max_bytes:
+            findings.append(
+                ContentGateFinding(
+                    ContentGateReason.SIZE_CAP,
+                    f"file {path!r} exceeds cap ({size} > {per_file_max_bytes} bytes)",
+                )
+            )
+        secret_hit = _scan_blob_for_secrets(repo, blob)
+        if secret_hit is not None:
+            findings.append(secret_hit)
+    return tuple(findings)
+
+
+def _remote_has_ref(repo: Path, refname: str, remote: str = ORIGIN_REMOTE) -> bool:
+    rc, out, _ = _git(repo, "ls-remote", remote, refname)
+    if rc != 0:
+        return False
+    return bool(out.strip())
+
+
+def list_pending_preserve_refs(repo: Path, *, remote: str = ORIGIN_REMOTE) -> list[str]:
+    """Local preserve/archive tags not listed on ``remote``."""
+    pending: list[str] = []
+    for prefix in (PRESERVE_REF_PREFIX, ARCHIVE_REF_PREFIX):
+        rc, out, err = _git(repo, "for-each-ref", "--format=%(refname)", prefix)
+        if rc != 0:
+            raise PreserveGitError(err.strip() or "git for-each-ref failed")
+        for line in out.splitlines():
+            ref = line.strip()
+            if not ref:
+                continue
+            if not _remote_has_ref(repo, ref, remote=remote):
+                pending.append(ref)
+    pending.sort()
+    return pending
+
+
+def push_preserve_ref(
+    repo: Path,
+    refname: str,
+    *,
+    purge_list_path: Path | None = None,
+    remote: str = ORIGIN_REMOTE,
+    per_file_max_bytes: int = DEFAULT_PER_FILE_MAX_BYTES,
+    run_push_count: int = 0,
+    story_push_counts: dict[str, int] | None = None,
+    max_per_run: int = DEFAULT_PUSH_CAP_PER_RUN,
+    max_per_story: int = DEFAULT_PUSH_CAP_PER_STORY,
+) -> PushPreserveResult:
+    """Run the content gate, then push one tag refspec (never ``--tags``)."""
+    if not _is_preserve_or_archive_tag(refname):
+        raise PreserveRefNameError(f"not a preserve or archive tag: {refname!r}")
+    story_push_counts = story_push_counts if story_push_counts is not None else {}
+    cap_findings: list[ContentGateFinding] = []
+    if run_push_count >= max_per_run:
+        cap_findings.append(
+            ContentGateFinding(ContentGateReason.PUSH_CAP_RUN, f"per-run push cap ({max_per_run}) exceeded")
+        )
+    story_key: str | None = None
+    try:
+        if refname.startswith(PRESERVE_REF_PREFIX):
+            parsed = parse_preserve_ref(refname)
+            if parsed.project_slug and parsed.story_key:
+                story_key = f"{parsed.project_slug}/{parsed.story_key}"
+    except PreserveRefNameError:
+        pass
+    if story_key is not None and story_push_counts.get(story_key, 0) >= max_per_story:
+        cap_findings.append(
+            ContentGateFinding(
+                ContentGateReason.PUSH_CAP_STORY,
+                f"per-story push cap ({max_per_story}) exceeded for {story_key}",
+            )
+        )
+    if cap_findings:
+        return PushPreserveResult(refname, False, tuple(cap_findings))
+
+    commit = _full_sha(repo, f"{refname}^{{commit}}")
+    plist_path = purge_list_path if purge_list_path is not None else default_purge_list_path(repo)
+    purge_list = load_purge_list(plist_path)
+    gate_findings = run_content_gate(repo, commit=commit, purge_list=purge_list, per_file_max_bytes=per_file_max_bytes)
+    if gate_findings:
+        return PushPreserveResult(refname, False, gate_findings)
+
+    refspec = f"{refname}:{refname}"
+    with _with_env({PREFLIGHT_PRESERVE_TAGS_PROOF_ENV: "1"}):
+        rc, out, err = _git(repo, "push", remote, refspec)
+    if rc != 0:
+        raise PreserveGitError(err.strip() or out.strip() or "git push failed")
+    if not _remote_has_ref(repo, refname, remote=remote):
+        raise PreserveGitError(f"ls-remote did not list {refname} after push")
+    return PushPreserveResult(refname, True, ())

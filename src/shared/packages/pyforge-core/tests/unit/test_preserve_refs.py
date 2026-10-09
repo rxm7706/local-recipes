@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -9,16 +10,20 @@ import pytest
 
 from pyforge.core.preserve_refs import (
     PRESERVE_PRODUCERS,
+    ContentGateReason,
     PreserveRefConflictError,
     PreserveRefNameError,
     PreserveState,
     PreserveTrailers,
+    PurgeList,
     list_preserves,
     parse_archive_ref,
     parse_preserve_ref,
+    push_preserve_ref,
     render_archive_heads_ref,
     render_archive_tags_ref,
     render_preserve_ref,
+    run_content_gate,
     snapshot_worktree_commit,
     tag_preserve,
 )
@@ -158,3 +163,110 @@ def test_list_filters_and_landed_state(git_pair: tuple[Path, Path]):
     open_rows = list_preserves(repo, station="pyforge-mason", producer="dispatch", state=PreserveState.OPEN)
     assert len(open_rows) == 1
     assert open_rows[0].trailers.producer == "dispatch"
+
+
+def _write_purge_list(repo: Path, *, shas: tuple[str, ...] = (), paths: tuple[str, ...] = ()) -> Path:
+    path = repo / "purge-list.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"schema_version": 1, "commit_shas": list(shas), "paths": list(paths)}),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_content_gate_refuses_secret_and_oversize(git_pair: tuple[Path, Path]):
+    repo, _bare = git_pair
+    (repo / "tracked.txt").write_text("sk-ant-api03-SYNTHETICTEST0000000000000000\n", encoding="utf-8")
+    _run(repo, "add", "tracked.txt")
+    _run(repo, "commit", "-m", "secret")
+    bad = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    secret_hits = run_content_gate(repo, commit=bad, purge_list=PurgeList(frozenset(), frozenset()))
+    assert any(f.reason is ContentGateReason.SECRET for f in secret_hits)
+
+    (repo / "big.bin").write_bytes(b"x" * (5 * 1024 * 1024 + 1))
+    _run(repo, "add", "big.bin")
+    _run(repo, "commit", "-m", "big")
+    big = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    size_hits = run_content_gate(repo, commit=big, purge_list=PurgeList(frozenset(), frozenset()))
+    assert any(f.reason is ContentGateReason.SIZE_CAP for f in size_hits)
+
+    ancestor = _run(repo, "rev-parse", "HEAD~1").stdout.strip()
+    purge = PurgeList(frozenset({ancestor}), frozenset())
+    sha_hits = run_content_gate(repo, commit=bad, purge_list=purge)
+    assert any(f.reason is ContentGateReason.PURGE_SHA for f in sha_hits)
+
+    purge_path = PurgeList(frozenset(), frozenset({"tracked.txt"}))
+    path_hits = run_content_gate(repo, commit=bad, purge_list=purge_path)
+    assert any(f.reason is ContentGateReason.PURGE_PATH for f in path_hits)
+
+
+def test_push_one_refspec_and_verifies_remote(git_pair: tuple[Path, Path]):
+    repo, bare = git_pair
+    commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    ref = render_preserve_ref(commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key="87.15")
+    tag_preserve(repo, refname=ref, commit=commit, trailers=_trailers(commit))
+    purge_path = _write_purge_list(repo)
+    result = push_preserve_ref(repo, ref, purge_list_path=purge_path, remote="origin")
+    assert result.pushed is True
+    remote_out = _run(repo, "ls-remote", "origin", ref).stdout.strip()
+    assert remote_out
+
+
+def test_push_refused_tag_stays_local(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    (repo / "tracked.txt").write_text("sk-ant-api03-SYNTHETICTEST0000000000000000\n", encoding="utf-8")
+    _run(repo, "add", "tracked.txt")
+    _run(repo, "commit", "-m", "secret")
+    commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    ref = render_preserve_ref(commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key="87.15")
+    tag_preserve(repo, refname=ref, commit=commit, trailers=_trailers(commit))
+    purge_path = _write_purge_list(repo)
+    result = push_preserve_ref(repo, ref, purge_list_path=purge_path)
+    assert result.pushed is False
+    assert any(f.reason is ContentGateReason.SECRET for f in result.findings)
+    remote = subprocess.run(["git", "ls-remote", "origin", ref], cwd=repo, capture_output=True, text=True)
+    assert remote.stdout.strip() == ""
+
+
+def test_push_cap_refuses_excess(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    purge_path = _write_purge_list(repo)
+    refs: list[str] = []
+    for i in range(3):
+        ref = render_preserve_ref(
+            commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key=f"87.{i}"
+        )
+        tag_preserve(repo, refname=ref, commit=commit, trailers=_trailers(commit))
+        refs.append(ref)
+    result = push_preserve_ref(
+        repo,
+        refs[0],
+        purge_list_path=purge_path,
+        run_push_count=20,
+        max_per_run=20,
+    )
+    assert result.pushed is False
+    assert any(f.reason is ContentGateReason.PUSH_CAP_RUN for f in result.findings)
+
+
+def test_content_gate_mutation_secret_rule_required(git_pair: tuple[Path, Path]):
+    """Removing the secret-scan rule must fail this guard."""
+    import pyforge.core.preserve_refs as mod
+
+    repo, _ = git_pair
+    (repo / "tracked.txt").write_text("sk-ant-api03-SYNTHETICTEST0000000000000000\n", encoding="utf-8")
+    _run(repo, "add", "tracked.txt")
+    _run(repo, "commit", "-m", "secret")
+    commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    empty_patterns: tuple[tuple[str, object], ...] = ()
+    original = mod._SECRET_PATTERNS
+    mod._SECRET_PATTERNS = empty_patterns  # type: ignore[assignment]
+    try:
+        findings = run_content_gate(repo, commit=commit, purge_list=PurgeList(frozenset(), frozenset()))
+        assert not any(f.reason is ContentGateReason.SECRET for f in findings)
+    finally:
+        mod._SECRET_PATTERNS = original
+    findings = run_content_gate(repo, commit=commit, purge_list=PurgeList(frozenset(), frozenset()))
+    assert any(f.reason is ContentGateReason.SECRET for f in findings)
