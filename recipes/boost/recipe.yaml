@@ -3,10 +3,42 @@ schema_version: 1
 
 context:
   version: "1.91.0"
+  boost_libs:
+    - atomic
+    - charconv
+    - chrono
+    - cobalt
+    - container
+    - context
+    - contract
+    - coroutine
+    - date_time
+    - filesystem
+    - graph
+    - iostreams
+    - locale
+    - log
+    - log_setup
+    - math_c99
+    - math_c99f
+    - math_tr1
+    - math_tr1f
+    - prg_exec_monitor
+    - program_options
+    - random
+    - regex
+    - serialization
+    - thread
+    - timer
+    - type_erasure
+    - unit_test_framework
+    - wave
+    - wserialization
+    - math_c99l
+    - math_tr1l
   boost_libs_static_only:
     - exception
     - test_exec_monitor
-  boost_libs_py: '["python%s" % py, "numpy%s" % py]'
 
 recipe:
   name: boost-split
@@ -22,28 +54,6 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-    - ${{ compiler('cxx') }}
-    - ${{ stdlib('c') }}
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
-    - if: build_platform != target_platform
-      then: python ${{ python_min }}.* *_cpython
-    - if: build_platform != target_platform
-      then: numpy
-    - ruby *
-  host:
-    - if: unix
-      then: icu
-    - if: unix
-      then: liblzma-devel
-    - bzip2
-    - zlib
-    - zstd
-    - python ${{ python_min }}.* *_cpython
-    - numpy
-
 outputs:
   - package:
       name: libboost-headers
@@ -51,11 +61,28 @@ outputs:
       script:
         file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
     requirements:
-      # dummy build env to avoid EnvironmentLocationNotFound on win
-      build:  # [win]
+      build:
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: python ${{ python_min }}.* *_cpython
+        - if: build_platform != target_platform
+          then: numpy
+        - ruby *
         - if: win
           then: cmake
       host:
+        - if: unix
+          then: icu
+        - if: unix
+          then: liblzma-devel
+        - bzip2
+        - zlib
+        - zstd
+        - python ${{ python_min }}.* *_cpython
+        - numpy
       run_constraints:
         - boost-cpp <0.0a0
     tests:
@@ -76,22 +103,8 @@ outputs:
             then: test ! -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
-          - if: linux
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
           - if: unix
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.a
-          - if: win
-            then: if exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_${{ each_lib }}-${{ version }}
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_${{ each_lib }}-${{ version }} exit 1
+            then: bash ${{ RECIPE_DIR }}/test_libboost_headers_absent.sh
   # libraries without the headers (for run-export)
   - package:
       name: libboost
@@ -117,42 +130,14 @@ outputs:
         - if: win
           then: __win >=10
     tests:
-      - <conda_recipe_manager.types.SentinelType object at 0x766cd2c2dbe0>:
-          - if: linux
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
-          - if: win
-            then: if not exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if not exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
-          - if: linux
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
-          - if: win
-            then: if exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.a
-          - if: win
-            then: if not exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.a
-          - if: win
-            then: if exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_${{ each_lib }}-${{ version }}
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_${{ each_lib }}-${{ version }} exit 1
+      - files:
+          recipe:
+            - test_libboost_libs.sh
         script:
           - if: unix
-            then: test ! -d $PREFIX/include/boost
+            then: bash ${{ RECIPE_DIR }}/test_libboost_libs.sh
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
   # libboost headers + libs + metadata
@@ -175,9 +160,7 @@ outputs:
     tests:
       - files:
           recipe:
-            - test
-            - test_lib.sh
-            - test_lib.bat
+            - test_libboost_devel_cmake.sh
         requirements:
           run:
             - if: build_platform == target_platform
@@ -188,21 +171,7 @@ outputs:
           - if: win
             then: if not exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
           - if: unix
-            then: test -d $PREFIX/lib/cmake/boost_${{ each_lib }}-${{ version }}
-          - if: win
-            then: if not exist %LIBRARY_LIB%\cmake\boost_${{ each_lib }}-${{ version }} exit 1
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_numpy-${{ version }}
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_python-${{ version }} exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_numpy-${{ version }} exit 1
-          - if: unix
-            then: ./test_lib.sh
-          - if: win
-            then: ./test_lib.bat
+            then: bash ${{ RECIPE_DIR }}/test_libboost_devel_cmake.sh
   # the python libraries (no headers)
   - package:
       name: libboost-python
@@ -237,31 +206,14 @@ outputs:
         - boost <0.0a0
         - py-boost <0.0a0
     tests:
-      - script:
+      - files:
+          recipe:
+            - test_libboost_python_libs.sh
+        script:
           - if: unix
-            then: test ! -d $PREFIX/include/boost
+            then: bash ${{ RECIPE_DIR }}/test_libboost_python_libs.sh
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
-          - if: linux
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
-          - if: win
-            then: if not exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if not exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.a
-          - if: win
-            then: if exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_numpy-${{ version }}
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_python-${{ version }} exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_numpy-${{ version }} exit 1
   # python libs w/ headers
   - package:
       name: libboost-python-devel

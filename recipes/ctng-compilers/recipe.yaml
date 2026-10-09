@@ -590,7 +590,6 @@ outputs:
       summary: The GNU C++ Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    target: ${{ cross_target_platform }}
   - package:
       name: libsanitizer
     build:
@@ -631,7 +630,6 @@ outputs:
       summary: The GCC runtime libraries for sanitizers
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
-    target: ${{ cross_target_platform }}
   - package:
       name: libgomp
     build:
@@ -650,9 +648,9 @@ outputs:
         - if: cross_target_stdlib != "None"
           then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
       run_exports:
-        - strong:
-            - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
-            - ${{ pin_subpackage("libgomp", upper_bound=None) }}
+        strong:
+          - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
+          - ${{ pin_subpackage("libgomp", upper_bound=None) }}
       run_constraints:
         - if: win
           then: msys2-conda-epoch <0.0a0
@@ -668,7 +666,6 @@ outputs:
       summary: The GCC OpenMP implementation.
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
-    target: ${{ cross_target_platform }}
   - package:
       name: libgcc
     build:
@@ -722,7 +719,6 @@ outputs:
       summary: The GCC low-level runtime library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
-    target: ${{ cross_target_platform }}
   - package:
       name: _openmp_mutex
       version: ${{ openmp_ver }}
@@ -742,8 +738,8 @@ outputs:
       run:
         - libgomp >=7.5.0
       run_exports:
-        - strong:
-            - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
+        strong:
+          - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
       run_constraints:
         - openmp_impl <0.0a0
         - if: win
@@ -785,7 +781,6 @@ outputs:
       summary: The GNU Fortran Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    target: ${{ cross_target_platform }}
   - package:
       name: libgfortran
     build:
@@ -803,7 +798,6 @@ outputs:
       summary: The GNU Fortran Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    target: ${{ cross_target_platform }}
   # compatibility outputs for previous naming of the runtime libraries
   # with "-ng" suffix; for windows the suffix had never been introduced
   - package:
@@ -817,8 +811,8 @@ outputs:
       run:
         - ${{ pin_subpackage("libgcc", exact=True) }}
       run_exports:
-        - strong:
-            - libgcc
+        strong:
+          - libgcc
     tests:
       - script:
           - echo "empty wrapper for compatibility with previous naming"
@@ -826,7 +820,6 @@ outputs:
       summary: The GCC low-level runtime library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
-    target: ${{ cross_target_platform }}
   - package:
       name: libstdcxx-ng
     build:
@@ -840,8 +833,8 @@ outputs:
       run:
         - ${{ pin_subpackage("libstdcxx", exact=True) }}
       run_exports:
-        - strong:
-            - libstdcxx
+        strong:
+          - libstdcxx
     tests:
       - script:
           - echo "empty wrapper for compatibility with previous naming"
@@ -849,7 +842,6 @@ outputs:
       summary: The GNU C++ Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    target: ${{ cross_target_platform }}
   - package:
       name: libgfortran-ng
     build:
@@ -861,8 +853,8 @@ outputs:
       run:
         - ${{ pin_subpackage('libgfortran', exact=True) }}
       run_exports:
-        - strong:
-            - libgfortran
+        strong:
+          - libgfortran
     tests:
       - script:
           - echo "empty wrapper for compatibility with previous naming"
@@ -870,8 +862,6 @@ outputs:
       summary: The GNU Fortran Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    target: ${{ cross_target_platform }}
-
 about:
   summary: GNU Compiler Collection
   license: GPL-3.0-only WITH GCC-exception-3.1
