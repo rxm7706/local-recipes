@@ -91,7 +91,7 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 **Manual checks (not a dispatch gate):**
 - `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (the grammar, snapshot and meta-tests live in pyforge-core).
-- The two-state flag test: `src/shared/packages/pyforge-marshal/tests/unit/test_preserve_cli.py` — runs `pyforge.marshal.preserve_refs` on and off.
+- Two-state flag coverage (CAP-4): `src/shared/packages/pyforge-marshal/tests/unit/test_preserve_cli.py` — `@flag_states("pyforge.marshal.preserve_refs")` from `pyforge.testing_kit.flags` parametrizes on then off (`test_preserve_tag_and_list_when_flag_on`, `test_preserve_refuses_when_flag_off`).
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 
 ## Spec Change Log
