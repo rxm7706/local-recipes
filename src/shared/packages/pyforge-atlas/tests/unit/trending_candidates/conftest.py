@@ -9,6 +9,7 @@ path end-to-end without any live Kedro project / network / real data.
 from __future__ import annotations
 
 import contextlib
+import logging
 
 import pandas as pd
 import pytest
@@ -18,6 +19,16 @@ from kedro_datasets.pandas import ParquetDataset
 from pyforge.atlas.mcp import session as _session_mod
 
 DATASET_NAME = "trending_candidates_classified"
+
+
+@pytest.fixture(autouse=True)
+def _quiet_kedro_info_logging(caplog):
+    """These tests assert on ``main()``'s stdout. A test that ran ``bootstrap_project``
+    earlier in the same process (``test_import_smoke.py``) leaves kedro's rich handler
+    attached, so ``catalog.load`` INFO lines land in stdout too; under pytest-xdist
+    (Story 71.6) that ordering depends on the worker. Hold kedro at WARNING per test.
+    """
+    caplog.set_level(logging.WARNING, logger="kedro")
 
 
 class _FakeContext:
