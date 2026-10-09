@@ -438,6 +438,7 @@ from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.commit_vcs import CommittingVcs
+from ..core.dispatch_preserve import preserve_refs_flag_on
 from ..core.egress import to_redacted
 from ..core.identity import normalize, render_feed_key
 from ..core.journal import (
@@ -473,7 +474,6 @@ from ..core.supervise import (
     rung_index,
     shows_fresh_output,
 )
-from ..core.dispatch_preserve import preserve_refs_flag_on
 from ..core.worktree_checkpoint import commit_worktree_checkpoint
 from ..ports.clock import ClockPort
 from ..ports.fs import AppendHandle, FsPort, HeldFileState

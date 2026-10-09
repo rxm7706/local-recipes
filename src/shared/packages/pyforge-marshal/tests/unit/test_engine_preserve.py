@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 
 import pytest
-from pyforge.core.preserve_refs import list_local_preserve_tags, ref_on_origin, short_ref_name
+from pyforge.core.preserve_refs import list_local_preserve_tags, ref_on_origin
 from pyforge.testing_kit.flags import flag_states
 
 from pyforge.marshal.ports.harness import DeferredStory, TaskPhaseSnapshot
@@ -88,7 +87,6 @@ def test_promote_engine_ref_tags_and_pushes(git_pair: tuple[Path, Path], flag_pr
         pytest.skip("preserve_refs flag off in this parametrization")
     repo, _bare = git_pair
     _git(repo, "branch", "-f", "attempt-preserve/run1-deadbeef", "HEAD")
-    tip = _git(repo, "rev-parse", "HEAD").stdout.strip()
     first = promote_engine_ref(
         repo,
         engine_ref="attempt-preserve/run1-deadbeef",
