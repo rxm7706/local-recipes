@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.93.1** (Oct 8, 2026, current) — **Story 21.1 git-pkgs local recipe retro (PATCH).** Packaged `git-pkgs/git-pkgs` v0.21.0 (G109 over mint v0.20.0): pure Go via `go-nocgo`, `GOTOOLCHAIN=local`, upstream goreleaser pre-hooks (`generate-man`, `generate-docs`), `go-licenses save` with `--force` and linux `--ignore=github.com/oapi-codegen/nullable` (G79). Existing Go template + wuphf/skillsctl patterns held; no failure-catalog change.
+**v8.93.2** (Oct 8, 2026, current) — **Story 21.2 forge local recipe retro (PATCH).** Packaged `git-pkgs/forge` v0.10.0 (G109: v0.10.1 upstream; AC pinned 0.10.0): pure Go via `go-nocgo`, `GOTOOLCHAIN=local`, `./cmd/forge` with `-X …/internal/cli.Version`, `go-licenses save ./cmd/forge` (no G79 ignores needed on linux-64). G58/G118 channel absence recorded in CFE comments. Existing git-pkgs/wuphf Go patterns held; no failure-catalog change.
+
+**v8.93.1** (Oct 8, 2026) — **Story 21.1 git-pkgs local recipe retro (PATCH).** Packaged `git-pkgs/git-pkgs` v0.21.0 (G109 over mint v0.20.0): pure Go via `go-nocgo`, `GOTOOLCHAIN=local`, upstream goreleaser pre-hooks (`generate-man`, `generate-docs`), `go-licenses save` with `--force` and linux `--ignore=github.com/oapi-codegen/nullable` (G79). Existing Go template + wuphf/skillsctl patterns held; no failure-catalog change.
 
 **v8.93.0** (Oct 8,  2026) — **pyforge-mason Epic 19 closing Rule-2 retro: CFE names Mason's skill cell (MINOR; Story 19.5).** `SKILL.md` gains a short Mason station routing table — `pyforge-mason` delegates recipe work here; `mason-package`, `mason-environment`, and the two feedstock campaign skills are named by path without moving gotchas or procedures out of CFE. `guides/feedstock-platform-expansion.md` names `mason-feedstock-platform-expansion` as its parameterized runner. Retro triage of Stories 19.1–19.4 found no other recipe-authoring corrections; existing guidance held for everything else checked.
 
