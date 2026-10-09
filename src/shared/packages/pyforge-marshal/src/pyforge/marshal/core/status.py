@@ -1424,8 +1424,13 @@ def is_run_live(facts: FleetHomeFacts) -> bool:
 
 
 def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:
-    """``_build_fleet_row`` plus the row's own ``preserve_debt`` (Story 87.9), never re-derived here."""
+    """``_build_fleet_row`` plus the row's own ``preserve_debt`` (Story 87.9), never re-derived here.
+
+    The key is additive: present only when there is debt to report or the read could not be made
+    (``could_not_observe``) -- a row with nothing owed keeps the shape it always had."""
     row, finding = _build_fleet_row(facts)
+    if facts.preserve_debt is None:
+        return row, finding
     return {**row, "preserve_debt": facts.preserve_debt}, finding
 
 
