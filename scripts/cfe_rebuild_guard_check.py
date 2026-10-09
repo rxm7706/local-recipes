@@ -43,12 +43,14 @@ clause (b) in two halves ((b) against git history, (b') against the brief):
                                     retro commit in this repo's history
                                     actually uses. For every slice with a
                                     non-null `brief_path`, if the newest
-                                    qualifying retro SHA in range differs
-                                    from that slice's `brief_mirrored_through`,
-                                    that is a finding. Slices with
-                                    `brief_path: null` are never checked --
-                                    no brief exists yet for anything to go
-                                    stale.
+                                    qualifying retro SHA in range is not
+                                    named by that slice's
+                                    `brief_mirrored_through` (read as a SHA
+                                    candidate from YAML and compared by the
+                                    shared prefix rule below), that is a
+                                    finding. Slices with `brief_path: null`
+                                    are never checked -- no brief exists yet
+                                    for anything to go stale.
 
     (b') brief-defect              the brief a set `brief_path` names is
                                     opened: a non-string path, a missing or
@@ -57,11 +59,16 @@ clause (b) in two halves ((b) against git history, (b') against the brief):
                                     null/empty, or a scope without a `type`
                                     is a finding; so is any qualifying retro
                                     at or older than `brief_mirrored_through`
-                                    that no `retro-mirror` amendment names in
-                                    a SHA field (the full SHA or a prefix of
-                                    at least 10 hex characters as the field's
+                                    (same SHA reading as clause (b)) that no
+                                    `retro-mirror` amendment names in a SHA
+                                    field (the full SHA or a prefix of at
+                                    least 10 hex characters as the field's
                                     whole value -- never a substring of free
-                                    text such as `reason`).
+                                    text such as `reason`). Two SHA candidates
+                                    name the same commit when, stripped and
+                                    lower-cased, both are hex tokens of 10 to
+                                    40 characters and one is a prefix of the
+                                    other.
 
     (c) legacy-caller-at-endgame   only evaluated when
                                     `campaign.endgame_declared: true`; any
@@ -201,39 +208,52 @@ def is_cfe_path(path: str) -> bool:
     return path in CFE_SURFACE_FILES or any(path.startswith(p) for p in CFE_SURFACE_PREFIXES)
 
 
-class _YamlInt(int):
-    """An int loaded from YAML that retains the scalar's source text (needed
-    when PyYAML resolves an octal- or binary-shaped token to a different int)."""
-
-    __slots__ = ("yaml_scalar",)
-
-    def __new__(cls, value: int, yaml_scalar: str) -> _YamlInt:
-        obj = int.__new__(cls, value)
-        obj.yaml_scalar = yaml_scalar
-        return obj
-
-
 def _construct_yaml_int(loader: object, node: object) -> int:
     from yaml.constructor import SafeConstructor
 
     scalar = node.value  # type: ignore[union-attr]
     value = SafeConstructor.construct_yaml_int(loader, node)  # type: ignore[arg-type]
     if isinstance(value, int) and not isinstance(value, bool):
-        return _YamlInt(value, scalar)
+        int_scalars = getattr(loader, "int_scalars", None)
+        if isinstance(int_scalars, dict):
+            int_scalars[value] = scalar
     return value
 
 
 def _yaml_load(text: str) -> object:
+    import io
+
     import yaml
 
     class _ShaPreservingLoader(yaml.SafeLoader):
-        pass
+        int_scalars: dict[int, str]
+
+        def __init__(self, stream: object) -> None:
+            super().__init__(stream)
+            self.int_scalars = {}
 
     _ShaPreservingLoader.add_constructor(
         "tag:yaml.org,2002:int",
         _construct_yaml_int,
     )
-    return yaml.load(text, Loader=_ShaPreservingLoader)
+    loader = _ShaPreservingLoader(io.StringIO(text))
+    data = loader.get_single_data()
+    if isinstance(data, dict):
+        data["__yaml_int_scalars__"] = loader.int_scalars
+    return data
+
+
+def _yaml_int_scalars(root: object) -> dict[int, str]:
+    if isinstance(root, dict):
+        raw = root.get("__yaml_int_scalars__")
+        if isinstance(raw, dict):
+            return raw
+    return {}
+
+
+def _strip_yaml_loader_metadata(root: object) -> None:
+    if isinstance(root, dict):
+        root.pop("__yaml_int_scalars__", None)
 
 
 def campaign_state(path: pathlib.Path) -> dict | None:
