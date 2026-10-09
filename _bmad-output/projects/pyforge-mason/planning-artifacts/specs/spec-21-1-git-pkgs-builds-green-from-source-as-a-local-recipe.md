@@ -2,7 +2,9 @@
 title: "21.1: git-pkgs builds green from source as a local recipe"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '4698aee11b33774892315bf5606ff560ec158af2'
+followup_review_recommended: false
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -158,5 +160,46 @@ Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability be
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
-  landing it as `Merge pyforge-mason/21-1-git-pkgs-builds-green-from-source-as-a-local-recipe into main`.
+### 2026-10-09 — Review pass
+- verdicts: 12 findings — high 0, medium 1, low 2, false 5, maybe-false 0
+- findings:
+  - `[medium]` `[patch]` Recipe test did not assert packaged version string — added `git-pkgs --version | grep -F "${{ version }}"`.
+  - `[low]` `[patch]` `cfe-generated-by-version` lagged retro 8.93.1 — updated in recipe CFE metadata.
+  - `[low]` `[reject]` Win build not exercised locally — G102 satisfied by script presence; linux-64 green build ends story scope.
+  - `[false]` `[reject]` Must pin v0.20.0 — Task 1 G109 and I/O matrix authorize v0.21.0; documented in CFE comments and retro.
+  - `[false]` `[reject]` Gates not run — validate, lint-optimize, scan-vulnerabilities, conda-smithy lint, and recipe-build ran in this session (exit 0).
+  - `[false]` `[reject]` Missing commit/date ldflags — tag tarball has no `.git`; CFE comments document intentional omission per skillsctl precedent.
+  - `[false]` `[reject]` Must declare `run: git` — ships standalone `git-pkgs` binary; git is operational dependency at use time, not import-time.
+  - `[false]` `[reject]` Must install man pages — story approach is source binary build; upstream embed/generate steps satisfy compile only.
+  - `[low]` `[reject]` Nullable ignore on Windows without proof — harmless superset of linux fix; win build unverified this session.
+  - `[medium]` `[defer]` AC prose still cites 0.20.0 — `<intent-contract>` read-only; G109 deviation recorded in CFE block and retro, not spec body.
+  - `[medium]` `[defer]` Ledger row still backlog — harness-owned; story forbids hand-editing ledger.
+  - `[medium]` `[defer]` Separate commit hygiene — addressed by landing commits (recipe vs retro(cfe)).
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `recipes/git-pkgs` (v0.21.0 per G109): pure-Go rattler recipe with `build.sh`/`build.bat`, `go-licenses`, and green linux-64 build producing `git-pkgs version 0.21.0`.
+
+Files changed:
+- `recipes/git-pkgs/recipe.yaml` — v1 recipe, CFE metadata, tests with version grep
+- `recipes/git-pkgs/build.sh` / `build.bat` — goreleaser-aligned build and license bundle
+- `.claude/skills/conda-forge-expert/*` — retro(cfe) v8.93.1
+- Memlogs on `spec-pyforge-mason` and `spec-packaging-factory`
+- This story spec — run metadata and review triage
+
+Review: 2 patches applied; 3 deferred (ledger, AC prose, commit hygiene note); 5 rejected as false or out of scope.
+
+Follow-up review recommended: false (no high patches; one medium patch only).
+
+Verification:
+- `pixi run -e local-recipes validate recipes/git-pkgs` — exit 0
+- `pixi run -e local-recipes lint-optimize recipes/git-pkgs` — exit 0
+- `pixi run -e local-recipes scan-vulnerabilities recipes/git-pkgs` — exit 0
+- `pixi exec … conda-smithy recipe-lint --conda-forge recipes/git-pkgs` — exit 0
+- `pixi run -e local-recipes recipe-build recipes/git-pkgs` — exit 0; artifact under `build_artifacts/linux64/`
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+Residual risks: Windows and macOS builds unverified locally; `git-pkgs` not on conda-forge yet (expected). Operator reviews before landing as `Merge pyforge-mason/21-1-git-pkgs-builds-green-from-source-as-a-local-recipe into main`.

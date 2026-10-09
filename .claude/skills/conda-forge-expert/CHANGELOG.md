@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.93.0** (Oct 8, 2026, current) — **pyforge-mason Epic 19 closing Rule-2 retro: CFE names Mason's skill cell (MINOR; Story 19.5).** `SKILL.md` gains a short Mason station routing table — `pyforge-mason` delegates recipe work here; `mason-package`, `mason-environment`, and the two feedstock campaign skills are named by path without moving gotchas or procedures out of CFE. `guides/feedstock-platform-expansion.md` names `mason-feedstock-platform-expansion` as its parameterized runner. Retro triage of Stories 19.1–19.4 found no other recipe-authoring corrections; existing guidance held for everything else checked.
+**v8.93.1** (Oct 8, 2026, current) — **Story 21.1 git-pkgs local recipe retro (PATCH).** Packaged `git-pkgs/git-pkgs` v0.21.0 (G109 over mint v0.20.0): pure Go via `go-nocgo`, `GOTOOLCHAIN=local`, upstream goreleaser pre-hooks (`generate-man`, `generate-docs`), `go-licenses save` with `--force` and linux `--ignore=github.com/oapi-codegen/nullable` (G79). Existing Go template + wuphf/skillsctl patterns held; no failure-catalog change.
+
+**v8.93.0** (Oct 8,  2026) — **pyforge-mason Epic 19 closing Rule-2 retro: CFE names Mason's skill cell (MINOR; Story 19.5).** `SKILL.md` gains a short Mason station routing table — `pyforge-mason` delegates recipe work here; `mason-package`, `mason-environment`, and the two feedstock campaign skills are named by path without moving gotchas or procedures out of CFE. `guides/feedstock-platform-expansion.md` names `mason-feedstock-platform-expansion` as its parameterized runner. Retro triage of Stories 19.1–19.4 found no other recipe-authoring corrections; existing guidance held for everything else checked.
 
 **v8.92.0** (Oct 8, 2026) — **Estate install docs name `pyforge-foundry-full` as laptop SBOM (MINOR; steward Story 67.5 / fnd:CAP-12).** Added Pixi environment policy to `SKILL.md`, install callout on `quickref/commands-cheatsheet.md`, and aligned onboarding prose with `AGENTS.md`: laptop `pixi install -e pyforge-foundry-full`, recipe factory `local-recipes` at scale only. Verified existing recipe-task guidance unchanged.
 
