@@ -108,10 +108,12 @@ def test_each_lane_gets_isolated_scratch_env(tmp_path: Path) -> None:
     values = list(seen.values())
     assert values[0]["TMPDIR"] != values[1]["TMPDIR"]
     assert values[0]["COVERAGE_FILE"] != values[1]["COVERAGE_FILE"]
-    run_id_dirs = list((repo / preflight.RUN_SCRATCH_RELATIVE).iterdir())
-    assert len(run_id_dirs) == 1
-    scratch = run_id_dirs[0]
-    assert all(path.startswith(str(scratch)) for path in (values[0]["TMPDIR"], values[1]["TMPDIR"]))
+    repo_resolved = repo.resolve()
+    roots = {Path(values[0]["TMPDIR"]).resolve().parent, Path(values[1]["TMPDIR"]).resolve().parent}
+    assert len(roots) == 1
+    shared_root = next(iter(roots))
+    assert not shared_root.is_relative_to(repo_resolved)
+    assert not (repo / ".steward" / "preflight").exists()
 
 
 def test_install_phase_runs_before_lanes_and_is_journaled(tmp_path: Path) -> None:
@@ -169,7 +171,13 @@ def test_red_lane_cancels_others(tmp_path: Path) -> None:
         time.sleep(0.2)
         return 0
 
-    code = preflight.run_preflight(repo, jobs=3, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx)
+    code = preflight.run_preflight(
+        repo,
+        jobs=3,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+        scratch_parent=tmp_path / "scratch",
+    )
     assert code == preflight.EXIT_LANE_RED
     record = _run_record(repo)
     statuses = {entry["task"]: entry["status"] for entry in record["lanes"]}
@@ -191,6 +199,7 @@ def test_keep_going_runs_every_lane_and_names_reds(tmp_path: Path, capsys) -> No
         keep_going=True,
         install_environment=_NOOP_INSTALL,
         run_lane_ctx=run_ctx,
+        scratch_parent=tmp_path / "scratch",
     )
     assert code == preflight.EXIT_LANE_RED
     record = _run_record(repo)
@@ -198,6 +207,7 @@ def test_keep_going_runs_every_lane_and_names_reds(tmp_path: Path, capsys) -> No
     err = capsys.readouterr().err
     assert "red lane 'a'" in err
     assert "red lane 'c'" in err
+    assert "lane logs and scratch kept at" in err
 
 
 def test_lane_logs_are_contiguous_blocks(tmp_path: Path, capsys) -> None:
@@ -286,7 +296,13 @@ def test_lane_runner_exception_counts_as_red(tmp_path: Path) -> None:
     def run_ctx(_ctx: preflight.LaneRunContext) -> int:
         raise RuntimeError("boom")
 
-    code = preflight.run_preflight(repo, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx)
+    code = preflight.run_preflight(
+        repo,
+        jobs=1,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+        scratch_parent=tmp_path / "scratch",
+    )
     assert code == preflight.EXIT_LANE_RED
     record = _run_record(repo)
     assert record["lanes"][0]["status"] == "red"
