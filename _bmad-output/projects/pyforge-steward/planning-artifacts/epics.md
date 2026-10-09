@@ -5182,7 +5182,7 @@ override that persists nothing, accepting the tree keys (the old short names map
 **And** each gated formatter's OFF path refuses as today, naming the tree key; exit codes are unchanged; the meta-test reds
 a module that reads `.steward/flags.json` or a `FLAGS_` variable; the Guild stays under CAP-5's 2 GB bound, re-measured and
 recorded; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 76.4: The pyforge.three_surfaces demo flag leaves the tree
 
