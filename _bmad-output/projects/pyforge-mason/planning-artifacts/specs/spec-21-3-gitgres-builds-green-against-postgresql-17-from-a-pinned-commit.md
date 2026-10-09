@@ -2,7 +2,8 @@
 title: "21.3: gitgres builds green against PostgreSQL 17 from a pinned commit"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '1560c1fbcf187bcf729be8aff1705b0ffb3687e6'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
