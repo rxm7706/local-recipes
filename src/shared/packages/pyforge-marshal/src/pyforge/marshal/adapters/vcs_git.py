@@ -71,11 +71,13 @@ path, conflict or CAS failure included."""
 from __future__ import annotations
 
 import logging
+import os
 import re
 import shutil
 import subprocess
 import tempfile
 from collections.abc import Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
@@ -141,7 +143,39 @@ _TREE_OID = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 _GIT_FETCH_TIMEOUT_S = 120.0
 
 
-def _run(args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S) -> ProcessResult:
+@contextmanager
+def _ephemeral_git_object_env(repo_root: Path) -> Iterator[Mapping[str, str]]:
+    """Story 87.10: write throwaway ``commit-tree`` objects outside the repo store.
+
+    ``GIT_OBJECT_DIRECTORY`` receives new objects; ``GIT_ALTERNATE_OBJECT_DIRECTORIES``
+    points at the repository's real ``objects/`` so reads still resolve. The temp
+    directory is removed when the context exits (success or failure)."""
+    tmp = Path(tempfile.mkdtemp(prefix="marshal-ephemeral-git-objects-"))
+    ephem_objects = tmp / "objects"
+    ephem_objects.mkdir()
+    (ephem_objects / "info").mkdir()
+    (ephem_objects / "pack").mkdir()
+    try:
+        objects_path = _run(["git", "-C", str(repo_root), "rev-parse", "--git-path", "objects"])
+        if objects_path.returncode != 0:
+            raise VcsCommandError(
+                f"cannot resolve git objects path for {repo_root}: {objects_path.stderr.strip()}"
+            )
+        real_objects = (repo_root / objects_path.stdout.strip()).resolve()
+        child_env = os.environ.copy()
+        child_env["GIT_OBJECT_DIRECTORY"] = str(ephem_objects)
+        child_env["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = str(real_objects)
+        yield child_env
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _run(
+    args: list[str],
+    *,
+    timeout_s: float = _GIT_TIMEOUT_S,
+    env: Mapping[str, str] | None = None,
+) -> ProcessResult:
     """Story 14.4, SPEC-pyforge-core CAP-6: delegates the actual launch to
     ``pyforge.core.process.PosixProcess().run(...)`` -- ``cwd=Path.cwd()``
     since every ``args`` list already carries its own ``-C <repo_root>``
@@ -156,7 +190,7 @@ def _run(args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S) -> ProcessResult
     subprocess.TimeoutExpired)`` branch keeps working unchanged -- this
     story's own I/O matrix)."""
     try:
-        return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s)
+        return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s, env=env)
     except ProcessError as exc:
         cause = exc.__cause__
         if isinstance(cause, FileNotFoundError):
@@ -607,44 +641,49 @@ class GitVcs:
         # -c user.name/user.email/commit.gpgsign=false: pinned explicitly so
         # this NEVER depends on (or blocks on) the operator's global git
         # config in an unattended context (Story 1.8's own Boundaries &
-        # Constraints) -- the resulting object is never referenced by any
-        # ref, so its identity has no lasting effect beyond this comparison.
-        commit_tree_result = _run(
-            [
-                "git",
-                "-C",
-                str(repo_root),
-                "-c",
-                "user.name=marshal-teardown",
-                "-c",
-                "user.email=marshal-teardown@localhost",
-                "-c",
-                "commit.gpgsign=false",
-                "commit-tree",
-                tree,
-                "-p",
-                merge_base,
-                "-m",
-                "marshal teardown merged-check (not a real commit)",
-            ]
-        )
-        if commit_tree_result.returncode != 0:
-            raise VcsCommandError(
-                f"cannot build the virtual merged-check commit for {branch_ref}: {commit_tree_result.stderr.strip()}"
+        # Constraints). Story 87.10: the virtual commit is written through
+        # ``_ephemeral_git_object_env`` so it never enters the repository's
+        # own object store (``git count-objects`` unchanged).
+        with _ephemeral_git_object_env(repo_root) as git_env:
+            commit_tree_result = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "-c",
+                    "user.name=marshal-teardown",
+                    "-c",
+                    "user.email=marshal-teardown@localhost",
+                    "-c",
+                    "commit.gpgsign=false",
+                    "commit-tree",
+                    tree,
+                    "-p",
+                    merge_base,
+                    "-m",
+                    "marshal teardown merged-check (not a real commit)",
+                ],
+                env=git_env,
             )
-        virtual_commit = commit_tree_result.stdout.strip()
+            if commit_tree_result.returncode != 0:
+                raise VcsCommandError(
+                    f"cannot build the virtual merged-check commit for {branch_ref}: "
+                    f"{commit_tree_result.stderr.strip()}"
+                )
+            virtual_commit = commit_tree_result.stdout.strip()
 
-        # _GIT_CHECKOUT_TIMEOUT_S, not the default query timeout: `git
-        # cherry` computes a patch-id (a full diff) for every commit on
-        # `into` since the merge base -- history-proportional work, and loop
-        # homes routinely fork long before teardown, so on a large repo a
-        # cold-cache scan can exceed 30s (review finding: the same
-        # large-repo reasoning remove_worktree's own extended timeout
-        # already applies).
-        cherry_result = _run(
-            ["git", "-C", str(repo_root), "cherry", target_ref, virtual_commit],
-            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
-        )
+            # _GIT_CHECKOUT_TIMEOUT_S, not the default query timeout: `git
+            # cherry` computes a patch-id (a full diff) for every commit on
+            # `into` since the merge base -- history-proportional work, and loop
+            # homes routinely fork long before teardown, so on a large repo a
+            # cold-cache scan can exceed 30s (review finding: the same
+            # large-repo reasoning remove_worktree's own extended timeout
+            # already applies).
+            cherry_result = _run(
+                ["git", "-C", str(repo_root), "cherry", target_ref, virtual_commit],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+                env=git_env,
+            )
         if cherry_result.returncode != 0:
             raise VcsCommandError(
                 f"git cherry failed comparing {branch_ref} against {target_ref}: {cherry_result.stderr.strip()}"
@@ -1601,22 +1640,24 @@ class GitVcs:
         if second_parent is not None:
             commit_args.extend(["-p", second_parent])
         commit_args.extend(["-m", "marshal merge-tree preview (not a real commit)"])
-        commit_result = _run(commit_args)
-        if commit_result.returncode != 0:
-            raise VcsCommandError(
-                f"cannot build the merge-tree preview commit for tree "
-                f"{tree_oid} onto {parent}: {commit_result.stderr.strip()}"
-            )
-        synthetic_sha = commit_result.stdout.strip()
+        with _ephemeral_git_object_env(repo_root) as git_env:
+            commit_result = _run(commit_args, env=git_env)
+            if commit_result.returncode != 0:
+                raise VcsCommandError(
+                    f"cannot build the merge-tree preview commit for tree "
+                    f"{tree_oid} onto {parent}: {commit_result.stderr.strip()}"
+                )
+            synthetic_sha = commit_result.stdout.strip()
 
-        add_result = _run(
-            ["git", "-C", str(repo_root), "worktree", "add", "--detach", str(home), synthetic_sha],
-            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
-        )
-        if add_result.returncode != 0:
-            raise VcsCommandError(
-                f"git worktree add --detach {home} {synthetic_sha} failed: {add_result.stderr.strip()}"
+            add_result = _run(
+                ["git", "-C", str(repo_root), "worktree", "add", "--detach", str(home), synthetic_sha],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+                env=git_env,
             )
+            if add_result.returncode != 0:
+                raise VcsCommandError(
+                    f"git worktree add --detach {home} {synthetic_sha} failed: {add_result.stderr.strip()}"
+                )
 
     def _paths_changed_between(self, repo_root: Path, old_sha: str, new_sha: str) -> frozenset[str]:
         """Every path ``git diff`` names between two commits (Story 68.1). ``--no-renames`` so a

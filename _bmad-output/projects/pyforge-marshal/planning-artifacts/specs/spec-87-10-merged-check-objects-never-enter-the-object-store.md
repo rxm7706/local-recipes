@@ -2,7 +2,8 @@
 title: "87.10: Merged-check objects never enter the object store"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '3cd4a1e205e47bcdd521e7372117594ad2110424'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
