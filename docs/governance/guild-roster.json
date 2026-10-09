@@ -267,7 +267,7 @@
     "script serves both harnesses (Claude Code's `PreToolUse` on `Bash` and on",
     "`Edit`/`Write`; Cursor's `beforeShellExecution` deny and `afterFileEdit`",
     "warn -- Cursor has no before-edit deny). Gemini CLI, GitHub Copilot CLI",
-    "and Devin have no verified deny surface for this hook; the twelve rules stay",
+    "and Devin have no verified deny surface for this hook; the sixteen rules stay",
     "instruction-only there, as written in AGENTS.md.",
     "",
     "Each entry's `id` MUST have exactly one matching callable in the script's",
@@ -397,6 +397,30 @@
         "unreachable": "This ref's tip is not on origin/main and no preserve/ or archive/ tag holds it -- hand the operator what you need deleted before deleting from an agent session.",
         "fetch_remedy": "Cannot resolve this remote branch's tip -- run `git fetch origin` so refs/remotes/origin/<branch> exists, then retry or hand the operator the deletion request."
       }
+    },
+    {
+      "id": "outward-git-push",
+      "applies_to": "bash",
+      "trigger": "git push to a network destination other than rxm7706/local-recipes; git remote add/set-url of a foreign URL in this repository or a worktree (shared git config)",
+      "reason": "Outward git pushes and foreign remotes in this checkout are the operator's -- hand them the `git push` or `git remote` command and wait for explicit confirmation. Local paths and `git push origin` to rxm7706/local-recipes stay allowed; unresolvable remotes: run `git remote -v`."
+    },
+    {
+      "id": "outward-github-write",
+      "applies_to": "bash",
+      "trigger": "gh repo fork/create, gh gist create|edit|delete; gh pr/issue/release write verbs on another repository; gh api writes outside rxm7706/local-recipes or on fork/user/org repo endpoints",
+      "reason": "Writing on another GitHub repository is outward work -- hand the operator the `gh` command and wait for explicit confirmation. Reads and writes aimed at rxm7706/local-recipes stay allowed; gh api graphql stays instruction-only (AGENTS.md)."
+    },
+    {
+      "id": "outward-package-submission",
+      "applies_to": "bash",
+      "trigger": "mason recipe submit or package ship with --yes; CFE submit-pr/prepare-pr without --dry-run; feedrattler; conda-smithy register-github/register-ci/register-feedstock-token/update-anaconda-token and aliases",
+      "reason": "Package and feedstock submission is outward work -- hand the operator `pyforge mason recipe submit <recipe_dir> --yes`, `pyforge mason package ship --to <targets>`, or `pixi run -e local-recipes submit-pr <name> --dry-run` (dry run only) and wait for explicit confirmation before any real submit."
+    },
+    {
+      "id": "outward-mcp-submission",
+      "applies_to": "mcp",
+      "trigger": "mcp__conda_forge_server__submit_pr or prepare_submission_branch with dry_run not true; mcp__conda_forge_server__migrate_to_v1",
+      "reason": "conda_forge_server MCP submission without dry_run, and migrate_to_v1, are outward work -- hand the operator the tool call (dry_run true for submit/prepare only) and wait for explicit confirmation."
     }
   ]
 }
