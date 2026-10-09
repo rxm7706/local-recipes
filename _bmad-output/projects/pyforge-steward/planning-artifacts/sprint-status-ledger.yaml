@@ -299,7 +299,7 @@ development_status:
   71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: done
   71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: done
   71-5-the-two-lanes-every-branch-runs-fit-the-budget: done
-  71-6-the-large-suites-run-under-pytest-xdist-locally-and-in-ci-alike: backlog
+  71-6-the-large-suites-run-under-pytest-xdist-locally-and-in-ci-alike: done
   71-7-the-one-minute-budget-is-a-check-that-reads-the-journal: backlog
   71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: backlog
   71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: backlog
