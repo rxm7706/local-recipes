@@ -91,6 +91,15 @@ extra:
 #    # authored this v1 recipe.yaml alongside it. Both coexist until the
 #    # feedstock completes its v0->v1 switch. updates-needed records the owed
 #    # migration + platform-expansion.
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion split `imports:` from its
+#    # `- psycopg2` item and left a SentinelType key (G121); imports rejoined, with meta.yaml's two upstream
+#    # comments (yugabyte #12283) kept above the item. The same regeneration had dropped the host setuptools
+#    # (G55) and the >=3.13 skip (G50) recorded below; both restored. LOCAL BUILD 2026-10-09 (linux-64):
+#    # py3.11 and py3.12 built, imports and pip check passed; py3.13/3.14 skipped.
+#    # Platform expansion: feedstock .ci_support ships linux_64 + osx_64 + win_64 only (py3.9-3.12).
+#    # Candidate to widen to osx-arm64 + linux-aarch64 at submission (libpq is
+#    # available on those subdirs). Recorded in updates-needed; conda-forge.yml
+#    # not edited here.
 # build:
 #    # C extension building psycopg2._psycopg via setup.py; links libpq.
 #    # skip match(python, ">=3.13"): psycopg/utils.c uses the private CPython
@@ -117,14 +126,4 @@ extra:
 #    # import name `psycopg2` (setup.py package_dir={'psycopg2': 'lib'}).
 #    # Compiled recipe -> import block + pip_check, no python_version matrix
 #    # (the build matrix supplies per-Python coverage).
-# platform-expansion:
-#    # feedstock .ci_support ships linux_64 + osx_64 + win_64 only (py3.9-3.12).
-#    # Candidate to widen to osx-arm64 + linux-aarch64 at submission (libpq is
-#    # available on those subdirs). Recorded in updates-needed; conda-forge.yml
-#    # not edited here.
-# mason-22.1:
-#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion split `imports:` from its
-#    # `- psycopg2` item and left a SentinelType key (G121); imports rejoined. The same regeneration had
-#    # dropped the host setuptools (G55) and the >=3.13 skip (G50) recorded above; both restored. LOCAL BUILD
-#    # 2026-10-09 (linux-64): py3.11 and py3.12 built, imports and pip check passed; py3.13/3.14 skipped.
 ####

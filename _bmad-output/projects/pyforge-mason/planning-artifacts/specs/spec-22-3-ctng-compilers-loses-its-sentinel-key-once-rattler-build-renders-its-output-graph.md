@@ -36,10 +36,10 @@ The file then parses and passes `validate_recipe`. `rattler-build build --render
 stack. rattler-build #2531 (a false cycle from `pin_subpackage` in `run_constraints`) closed on 2026-07-03 with PR #2537,
 and 0.76.1 (2026-09-14) carries that fix, so this is a case it did not cover.
 
-Operator ruling, 2026-10-09: Story 22.1 lands for the other eleven recipes, and `ctng-compilers` moves to this story.
-22.1 restored the file to `main`'s copy, sentinel included. 22.1's corpus check
-(`test_no_crm_sentinel_keys_in_recipe_yaml`) allowlists exactly `recipes/ctng-compilers/recipe.yaml`, naming this
-story. The draft repair is kept in branch history: `git show 0dc82240c5:recipes/ctng-compilers/recipe.yaml`.
+Operator ruling, 2026-10-09: Story 22.1 lands without `ctng-compilers`, which moves to this story. A second ruling the
+same day also moved `vc` out, to Story 22.4, so 22.1 lands ten recipes. 22.1 restored the file to `main`'s copy,
+sentinel included. 22.1's corpus check (`test_no_crm_sentinel_keys_in_recipe_yaml`) allowlists exactly one leak here,
+`recipes/ctng-compilers/recipe.yaml` at `outputs[6].tests[0]`, naming this story; a second leak in the file still reds. The draft repair is kept in branch history: `git show 0dc82240c5:recipes/ctng-compilers/recipe.yaml`.
 
 **Approach:**
 
@@ -51,8 +51,8 @@ story. The draft repair is kept in branch history: `git show 0dc82240c5:recipes/
    config.
 4. Gates: render-only on linux-64 with at least one output rendered, `validate_recipe`, and the CI-parity lint on a copy
    without `meta.yaml`. No build: ctng-compilers is heavyweight.
-5. In the story's `retro(cfe):` commit, remove the allowlist entry from the corpus check and bump CFE (PATCH unless the
-   retro adds guidance).
+5. In the story's `retro(cfe):` commit, remove the `ctng-compilers` allowlist entry from the corpus check and bump CFE
+   (PATCH unless the retro adds guidance).
 
 Ledger key: `22-3-ctng-compilers-loses-its-sentinel-key-once-rattler-build-renders-its-output-graph`.
 Ledger status: `blocked` (minted blocked by the 2026-10-09 split; the operator flips it).
@@ -78,12 +78,12 @@ Reporting the cycle upstream (a rattler-build issue) is outward work and waits f
 
 ## Acceptance Criteria
 
-- Given `recipes/` When `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` runs Then it finds nothing
+- Given `recipes/` When `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` runs Then it does not list `recipes/ctng-compilers/recipe.yaml`
 - Given `recipes/ctng-compilers/recipe.yaml` When `rattler-build build --render-only` runs with `.ci_support/linux64.yaml` and the local pinning (or the feedstock-faithful variant set) Then it exits 0 with at least one output rendered, not skipped
 - Given the file When `validate_recipe` and `pixi exec --spec "conda-smithy>=2026.6.14" conda-smithy recipe-lint --conda-forge` run on a copy without `meta.yaml` Then neither reports an error
 - Given the repaired `gxx_impl` test When it is compared with `meta.yaml` Then it runs the same commands under the same conditions, in the same order
 - Given the recipe directory When it is listed Then `meta.yaml` is still there
-- Given the story's `retro(cfe):` commit When `pixi run -e local-recipes test` runs Then `test_no_crm_sentinel_keys_in_recipe_yaml` passes with an empty allowlist
+- Given the story's `retro(cfe):` commit When `pixi run -e local-recipes test` runs Then `test_no_crm_sentinel_keys_in_recipe_yaml` passes with no `ctng-compilers` allowlist entry
 - Given the story closes When the Rule-2 retro runs Then its `retro(cfe):` commit carries a CFE `CHANGELOG.md` semver entry and its version carriers
 
 ## Boundaries & Constraints
@@ -120,12 +120,12 @@ Flag: `flag-exempt: recipe-build` (a recipe repair ships no runtime capability b
   changes no Mason code).
 
 **Manual checks:**
-- `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` — expected: no output.
+- `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` — expected: no `recipes/ctng-compilers/recipe.yaml`.
 - `pixi run -e local-recipes rattler-build build --render-only --recipe recipes/ctng-compilers/recipe.yaml --variant-config .ci_support/linux64.yaml --variant-config .pixi/envs/local-recipes/conda_build_config.yaml`
   — expected: exit 0 with at least one rendered output.
 - `pixi run -e local-recipes validate recipes/ctng-compilers` and the CI-parity lint on a copy without `meta.yaml` —
   expected: no error.
-- `pixi run -e local-recipes test` — expected: pass, the corpus check with an empty allowlist.
+- `pixi run -e local-recipes test` — expected: pass, with no `ctng-compilers` allowlist entry.
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamps.
 
 ## Spec Change Log
@@ -133,6 +133,10 @@ Flag: `flag-exempt: recipe-build` (a recipe repair ships no runtime capability b
 - 2026-10-09: Minted blocked from the operator's ruling that split `ctng-compilers` out of Story 22.1. The 22.1 run's
   render evidence: `Cycle detected in recipe outputs` on rattler-build 0.76.1 after the sentinel and output-level
   `run_exports` repairs (Story 22.1's `deferred:` entry, now pointing here).
+- 2026-10-09: Corrected after the second independent review of the 22.1 landing. The text assumed the other eleven
+  recipes were fixed and that this story empties the allowlist. A second ruling moved `vc` to Story 22.4, so the
+  allowlist holds two entries, keyed by file and location. The ACs, Approach step 5 and Verification now say this
+  story removes the `ctng-compilers` entry and the grep no longer lists `recipes/ctng-compilers/recipe.yaml`.
 
 ## Review Triage Log
 

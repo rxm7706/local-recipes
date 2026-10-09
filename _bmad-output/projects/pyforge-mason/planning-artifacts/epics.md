@@ -2349,13 +2349,15 @@ test commands (boost, ctng-compilers, vc)
 **When** each sentinel is replaced by that construct's v1 form, and the conversion defects found beside it are fixed
 (the bare `python ${{ python_min }}` host specs, pyobjc's `name.replace(...)`, boost's loops and context lists,
 ctng-compilers' output-level `run_exports`, vc's `run_exports` shape)
-**Then** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds nothing, and each file renders with
+**Then** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds only `recipes/ctng-compilers/recipe.yaml`
+(Story 22.3) and `recipes/vc/recipe.yaml` (Story 22.4), and each of the ten files renders with
 `rattler-build build --render-only` on a platform it builds and passes `validate_recipe` and the CI-parity lint
 **And** shodan, django-pygwalker, amundsen-databuilder, lerc, StringZilla, psycopg2-yugabytedb and pyautogui build on
-linux-64, with a test env that cannot solve recorded per G95; semgrep, pyobjc-framework-systemconfiguration, boost,
-ctng-compilers and vc are render, validate and lint only; `meta.yaml` stays; the story's `retro(cfe):` commit adds the
-gotcha and a corpus meta-test that reds any `recipes/*/recipe.yaml` carrying a non-string key or an object repr;
-`pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+linux-64, with a test env that cannot solve recorded per G95; semgrep, pyobjc-framework-systemconfiguration and boost
+are render, validate and lint only; `meta.yaml` stays; the story's `retro(cfe):` commit adds the gotcha and a corpus
+meta-test that reds any `recipe.yaml` under `recipes/` (recursively) carrying a non-string key or an object repr, with
+one allowlisted leak per split story, keyed by file and location; `pixi run --frozen -e pyforge-mason pyforge-mason-test`
+green
 **Split 2026-10-09 (two operator rulings):** 22.1 lands for ten recipes; `ctng-compilers` moves to Story 22.3 and `vc`
 to Story 22.4. 22.1's corpus check allowlists each of those two leaks by file and location until its story removes the
 entry.
@@ -2388,8 +2390,9 @@ green
 ### Story 22.3: ctng-compilers loses its sentinel key once rattler-build renders its output graph
 
 As the fleet steward who reads `recipes/` as the local mirror of each feedstock,
-I want `recipes/ctng-compilers/recipe.yaml` to say in v1 what its `meta.yaml` says, as the other eleven now do,
-So that the last converter-leaked sentinel in `recipes/` is gone and 22.1's corpus check needs no allowlist.
+I want `recipes/ctng-compilers/recipe.yaml` to say in v1 what its `meta.yaml` says, as the ten Story 22.1 landed do,
+So that ctng-compilers' converter-leaked sentinel is gone and 22.1's corpus check loses its `ctng-compilers` allowlist
+entry.
 
 **Type:** fix • **Effort:** M • **Deps:** S-22.1 • **FR/AD:** spec-pyforge-mason CAP-32 (FR-54); AD-1; AD-15; CFE G93, G95,
 G121; CFE Rule 1 + Rule 2
@@ -2402,10 +2405,11 @@ rattler-build release renders the repaired file, or a feedstock-faithful variant
 **Given** the 22.1 run's draft repair (the `gxx_impl` test's two nested `if:` blocks, the output-level `run_exports` moved
 under `requirements`, the context the render asks for), kept in the history of `dispatch/pyforge-mason/22.1`
 **When** a rattler-build release or a variant set renders the gcc output graph
-**Then** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` finds nothing, and the file renders on linux-64 with at
-least one output, passes `validate_recipe` and the CI-parity lint, and its repaired test says what `meta.yaml` says
+**Then** `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` no longer lists `recipes/ctng-compilers/recipe.yaml`, and
+the file renders on linux-64 with at least one output, passes `validate_recipe` and the CI-parity lint, and its repaired
+test says what `meta.yaml` says
 **And** the allowlist entry for `recipes/ctng-compilers/recipe.yaml` leaves 22.1's corpus check, which then passes with no
-allowlist; `meta.yaml` stays; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
+`ctng-compilers` entry; `meta.yaml` stays; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 **Status:** blocked
 

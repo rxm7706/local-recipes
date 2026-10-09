@@ -58,6 +58,7 @@ tests:
         imports:
           - pyautogui
         pip_check: false
+  # Disabling test suite for now so many of them requires
   - files:
       source:
         - tests
@@ -120,9 +121,8 @@ extra:
 #    # imports pyautogui. The linux test's backgrounded `xvfb-run python -c "import mouseinfo" &` raised
 #    # DisplayConnectionError under the shim and cannot fail the test either way.
 # tests:
-#    # Upstream's meta.yaml carries this comment and these commented-out lines; crm moved them, and
-#    # Story 22.1 parks them here:
-#    # Disabling test suite for now so many of them requires
+#    # Upstream's meta.yaml carries these commented-out lines below its "Disabling test suite" comment (which
+#    # is back in the body, above the test element); crm moved them, and Story 22.1 parks them here:
 #    #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs" tests  # [win]
 #    #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not TestMouse and not TestFailSafe" tests  # [linux]
 #    #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not test_pause" tests  # [osx]

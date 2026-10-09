@@ -447,10 +447,10 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   are repaired, `rattler-build build --render-only` 0.76.1 (`.ci_support/linux64.yaml` plus the local pinning) still
   exits 1 with `Cycle detected in recipe outputs` across the gcc stack. rattler-build #2531 (a false cycle from
   `pin_subpackage` in `run_constraints`) closed on 2026-07-03 and 0.76.1 carries its fix, so this is a case that fix did
-  not cover. **What it looks like when real:** 22.1 lands its eleven. `ctng-compilers/recipe.yaml` stays as `main` has
-  it, sentinel included, and 22.1's corpus check allowlists that one file by name. A new story repairs it once a
-  rattler-build release, or a feedstock-faithful variant set, renders the gcc output graph, and it removes the allowlist
-  entry. **Constraints:** a `fix` story under CAP-32, no new CAP, no flag (`flag-exempt: recipe-build`). It stays
+  not cover. **What it looks like when real:** 22.1 lands its eleven (ten after the second ruling below).
+  `ctng-compilers/recipe.yaml` stays as `main` has it, sentinel included, and 22.1's corpus check allowlists that one
+  leak by file and location. A new story repairs it once a rattler-build release, or a feedstock-faithful variant set,
+  renders the gcc output graph, and it removes the allowlist entry. **Constraints:** a `fix` story under CAP-32, no new CAP, no flag (`flag-exempt: recipe-build`). It stays
   `blocked` until the operator flips it. Reporting the cycle upstream is outward work and waits for the operator.
   Owner: mason. → `spec-pyforge-mason` CAP-32 / Epic 22 / Story 22.3 (FR-54), specced 2026-10-09.
 - **2026-10-09 (later) — Ruled: Story 22.1 lands for ten recipes, and vc waits for a named track feature.** Second

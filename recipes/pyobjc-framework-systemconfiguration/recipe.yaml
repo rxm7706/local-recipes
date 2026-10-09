@@ -78,9 +78,9 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-systemconfiguration-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-12.2.1, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [version-bump-to-12.2.2, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-10-09T11:45:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: not-attempted
@@ -95,4 +95,8 @@ extra:
 #    # a SentinelType key (G121); the comments stay indented under source. source.url's
 #    # `name.replace(...)` (minijinja has no str.replace method) is now the literal URL meta.yaml renders;
 #    # sha256 re-verified. Rendered on osx-64 only (osx-only). The feedstock has since moved to 12.2.2.
+#    # conda_build_config.yaml is the feedstock's, copied verbatim at 7cd5763fa158 (the last 12.2.1 commit,
+#    # whose meta.yaml matches this mirror's byte for byte): c_stdlib_version 11.3 on osx-arm64 (G94).
+#    # The local 0001-Remove-werror-from-compile-flags.patch.txt has no feedstock counterpart; meta.yaml
+#    # keeps its patch line commented out.
 ####

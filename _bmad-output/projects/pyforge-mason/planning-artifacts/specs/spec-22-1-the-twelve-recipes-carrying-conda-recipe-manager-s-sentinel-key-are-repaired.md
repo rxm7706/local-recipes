@@ -5,7 +5,7 @@ created: '2026-09-28'
 status: 'done'
 baseline_revision: 'f0eeddddb3c9a05a95235c872be495801457c1ff'
 flag-exempt: recipe-build
-review_loop_iteration: 0
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
@@ -107,7 +107,8 @@ Each repair follows CFE's own conventions:
    - add a corpus check to `tests/meta/test_recipe_yaml_parse_audit.py` that reds any `recipe.yaml` under `recipes/`
      (recursively) whose parsed tree has a non-string mapping key or a key or whole scalar matching an object repr,
      with two allowlist entries, each a file and the location of its leak: `ctng-compilers` (Story 22.3) and `vc`
-     (Story 22.4). A second leak in an allowlisted file reds, and an entry whose leak is gone fails;
+     (Story 22.4). Each entry admits exactly one object-repr key at its location, so a second leak in an allowlisted
+     file reds, even a second key in the same mapping, and an entry whose leak is gone fails;
    - regenerate `config/failure-catalog.yaml`.
 
 Ledger key: `22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired`.
@@ -130,7 +131,7 @@ Type / Effort / Deps: fix / L / —.
 - Given shodan, django-pygwalker, amundsen-databuilder, lerc, StringZilla, psycopg2-yugabytedb and pyautogui When each builds on linux-64 with the recipe pointed at explicitly Then the build exits 0 and its CFE block records the real outcome (`success`, or `build-clean-test-blocked` naming the unsolvable dependency, or the missing system tool such as pyautogui's `xvfb-run`, which its feedstock takes from `yum_requirements.txt`; G95)
 - Given each repaired construct When it is compared with its `meta.yaml` Then it says the same thing: the same commands under the same conditions, the same test requirements, and the same comments kept
 - Given each recipe directory When it is listed Then `meta.yaml` is still there
-- Given the story's `retro(cfe):` commit When `pixi run -e local-recipes test` runs Then the new corpus check passes on the repaired tree (the ctng-compilers and vc leaks allowlisted by location for Stories 22.3 and 22.4) and fails when a sentinel key is planted, at top level or one directory deeper, or when a second leak is planted in an allowlisted file
+- Given the story's `retro(cfe):` commit When `pixi run -e local-recipes test` runs Then the new corpus check passes on the repaired tree (the ctng-compilers and vc leaks allowlisted by location for Stories 22.3 and 22.4) and fails when a sentinel key is planted, at top level or one directory deeper, or when a second leak is planted in an allowlisted file, in another element or in the same mapping as the allowlisted key
 - Given the story closes When the Rule-2 retro runs Then its `retro(cfe):` commit carries a CFE `CHANGELOG.md` semver entry, the new gotcha and its version carriers
 
 ## Tasks
@@ -261,12 +262,21 @@ Flag: `flag-exempt: recipe-build` (recipe repairs ship no runtime capability beh
   `boost`; `shodan`'s python test runs on `python_min` and the newest python. The corpus check scans `recipes/`
   recursively. The CFE retro stays `8.98.0` (unreleased) and lands a second `retro(cfe):` commit, so the Verification
   line on the CFE commits now reads "every subject starts `retro(cfe):`" instead of "exactly one".
+- 2026-10-09: **Second review fixes** (the Review Triage Log has each finding): the corpus check's allowlist admits
+  exactly one object-repr key per entry; Story 22.3's spec, its epics entry, this story's epics entry and the Dream no
+  longer assume eleven fixed recipes or an empty allowlist; boost's mirror gains the feedstock's recipe/ files at its
+  1.91.0 commit and pyobjc-framework-systemconfiguration's gains the feedstock's `conda_build_config.yaml` at its 12.2.1
+  commit (G94); boost's CFE comments record its staging-inherited build strings; three more upstream comments are back
+  in the body (shodan, pyautogui, lerc); pyobjc's CFE metadata is refreshed; psycopg2-yugabytedb's and semgrep's CFE
+  blocks follow the convention. The CFE retro stays `8.98.0` and lands a third `retro(cfe):` commit.
 
 ## Run results
 
 Measured 2026-10-09 on the merged tree (origin/main d377581be4 + this branch), rattler-build 0.76.1. After the review
 fixes, pyautogui, psycopg2-yugabytedb, semgrep, django-pygwalker, amundsen-databuilder, shodan and boost were re-run
-through render, validate and the CI-parity lint, and pyautogui and shodan were rebuilt:
+through render, validate and the CI-parity lint, and pyautogui and shodan were rebuilt. After the second review's fixes,
+pyautogui, shodan, lerc, semgrep, psycopg2-yugabytedb, boost and pyobjc-framework-systemconfiguration were re-run
+through render, validate and the CI-parity lint (comment, metadata and recipe-dir file changes; no rebuild):
 
 | Recipe | grep | render-only (platform: outputs) | validate_recipe | CI-parity lint (no meta.yaml) | Local build (linux-64) |
 |---|---|---|---|---|---|
@@ -278,8 +288,8 @@ through render, validate and the CI-parity lint, and pyautogui and shodan were r
 | psycopg2-yugabytedb | clean | linux-64: 2 (+2 skipped, >=3.13) | pass | in fine form | success (py3.11, py3.12) |
 | pyautogui | clean | linux-64: 4 | pass | in fine form | success (py3.11-3.14) on a scratch copy with a pass-through `xvfb-run` shim on PATH: the host has no Xvfb, and `setup.py` never imports pyautogui (the feedstock gets xvfb-run from yum_requirements.txt, now copied here). The first run, without the shim, failed with `xvfb-run: command not found` |
 | shodan | clean | linux-64: 1 | pass | in fine form | success (imports and pip check on `python_min` and the newest python, then `shodan --help`) |
-| pyobjc-framework-systemconfiguration | clean | osx-64: 4 | pass | in fine form | not built (osx-only) |
-| boost | clean | linux-64: 11 | pass (G29 "no tests" warning) | in fine form | not built (heavyweight) |
+| pyobjc-framework-systemconfiguration | clean | osx-64: 4 (render reads the feedstock's `conda_build_config.yaml`) | pass | in fine form | not built (osx-only) |
+| boost | clean | linux-64: 11 (render reads the feedstock's `conda_build_config.yaml`) | pass (G29 "no tests" warning) | one suggestion: rename `bld.bat` to `build.bat` (the staging output names `bld.bat`, the feedstock's file) | not built (heavyweight) |
 | vc | sentinel (main's copy) | — | — | — | Story 22.4 |
 | ctng-compilers | sentinel (main's copy) | — | — | — | Story 22.3 |
 
@@ -289,6 +299,48 @@ django-pygwalker and amundsen-databuilder mirror their feedstocks' `meta.yaml` a
 present in all twelve directories. Each built recipe's CFE block records its outcome (G95).
 
 ## Review Triage Log
+
+- 2026-10-09 second independent review (`261e814a2a`, `a799b822f4`, `f81e67e87b`): every first-review finding verified
+  resolved; landing **blocked** on two new MEDIUM findings. Evidence in the session scratchpad `review-221b/`.
+  Dispositions:
+  1. **MEDIUM: Story 22.3's spec and epics entry assumed the other eleven fixed** (the grep "finds nothing", an empty
+     allowlist). **Fixed** as 22.4 words it: the grep "does not list `recipes/ctng-compilers/recipe.yaml`" and the check
+     passes "with no `ctng-compilers` allowlist entry"; 22.3's Spec Change Log and spec-pyforge-mason's memlog record the
+     correction. The same stale text is fixed in this story's epics entry (the grep finds only ctng-compilers and vc; the
+     corpus check scans recursively), in 22.3's Intent ("allowlists exactly one leak here", by location) and in the
+     Dream's 22.3 entry ("by file and location", not "by name").
+  2. **MEDIUM: `_triage` let any number of object-repr keys pass at an allowlisted location.** **Fixed:** each entry is
+     consumed by the first object-repr key at its location; any other finding there is unexpected.
+     `test_sentinel_allowlist_is_per_location` gains the same-mapping case, and the new
+     `test_second_sentinel_key_in_an_allowlisted_mapping_reds` parses a YAML element with two sentinel keys. On a
+     scratch copy of `recipes/`, the review's `plant.py` gives: unmodified copy green; a second key in the same mapping
+     red for both ctng-compilers and vc; a second leak in another element red; a repr value, a top-level leak and a
+     nested-recipe leak red; a removed ctng leak red as a stale entry.
+  3. **LOW: boost's mirror lacked every file its recipe.yaml references; pyobjc lacked its `conda_build_config.yaml`.**
+     **Fixed** (G94): boost's `build.sh`, `bld.bat`, `build-py.*`, `install-lib.*`, `install-py.*`, `test_lib.*`, `test/`,
+     `patches/0001-…` and `conda_build_config.yaml` copied verbatim from the feedstock's 1.91.0 commit `306f17e6d3e2`,
+     whose `meta.yaml` matches the mirror's byte for byte; file modes match and every blob hash was checked.
+     pyobjc's `conda_build_config.yaml` (`c_stdlib_version` 11.3 on osx-arm64) copied from `7cd5763fa158`, the last
+     12.2.1 commit, whose `meta.yaml` matches. Both renders now load the recipe-dir config. Epic 22's surface names the
+     new paths.
+  4. **LOW: boost's staging inheritance changes three build strings** (`np2he8b8257_0` against conda-forge's
+     `ha770c72_N`). **Recorded** in boost's CFE comments and in G121: `inherit:` takes only `from` and `run_exports`, so
+     no inherit form drops the staging variant keys, and a hardcoded `build.string` would hide the variant.
+  5. **CFE: G1's heading and catalog title still said env vars do not carry; G121's "first variant is `python_min`"
+     lacked its condition.** **Fixed** in the third `retro(cfe):` commit: G1 is retitled, its Why says the behavior
+     depends on the rattler-build version, and its one anchor link is updated; the `python_min` sentence states that it
+     holds only while `python_min` is the matrix's lowest python. The regenerated catalog changes only G1's title and
+     the source hash.
+  6. **LOW: upstream comments still relocated.** **Fixed:** shodan's "Skip test suite becuase it requires Shodan API
+     key" is back after `shodan --help`; pyautogui's "Disabling test suite for now so many of them requires" is back
+     above its test element, indented (G93); lerc's "No real information, keep conda-forge defaults" is back above
+     `run_exports`. The commented-out `pytest` lines stay in the CFE comments blocks: they sit at column 0 in
+     `meta.yaml` (G93).
+  7. **LOW: pyobjc's CFE metadata named `version-bump-to-12.2.1`** while the feedstock is at 12.2.2. **Fixed:**
+     `version-bump-to-12.2.2`, `cfe-last-checked` refreshed.
+  8. **LOW: housekeeping.** **Fixed:** `review_loop_iteration: 2`; psycopg2-yugabytedb's `# mason-22.1:` and
+     `# platform-expansion:` notes folded into `# Header:`; semgrep's block gains the canonical `# CFE metadata` section
+     (no feedstock on conda-forge, checked 2026-10-09; `cfe-local-build-status: not-attempted`).
 
 - 2026-10-09 independent review of the landing (`2ebf09ea75`, `56b56f62cd`, `348a7c9af1`): **failed**. Evidence in the
   session scratchpad `review-221/`. Dispositions:

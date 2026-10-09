@@ -447,6 +447,18 @@ extra:
 #    # build.sh / bld.bat and requirements) is the `boost-build` staging output. Every package output
 #    # inherits it with `run_exports: false`, so the staging host's run_exports stay out of the outputs as in
 #    # meta.yaml. `# [win]` on the two dummy `build:` keys removed (v1 lint: comment selectors).
+#    # Build strings differ from conda-forge's: an inheriting output takes the staging output's variant keys
+#    # (numpy, python_min, icu, zlib, ...), so rattler-build 0.76.1 renders libboost-headers and libboost as
+#    # np2he8b8257_0 and libboost-devel as np2h4c93d4d_0 on linux-64, where the v0 feedstock publishes
+#    # ha770c72_N-style strings. `inherit:` takes only `from` and `run_exports`, so no inherit form drops
+#    # the keys; a hardcoded build.string would hide the variant instead. Left as is for a v1 port to decide.
+# files:
+#    # The feedstock's recipe/ files at its 1.91.0 commit 306f17e6d3e2 (whose meta.yaml matches this mirror
+#    # byte for byte) are copied verbatim, blob hashes checked (G94): build.sh, bld.bat, build-py.sh/.bat,
+#    # install-lib.sh/.bat, install-py.sh/.bat, test_lib.sh/.bat, test/, patches/0001-…, and
+#    # conda_build_config.yaml (MACOSX_SDK_VERSION 12.3 on osx). The feedstock has since moved to 1.92.0.
+#    # conda-smithy's v1 lint suggests renaming bld.bat to build.bat (a suggestion, not a lint): the staging
+#    # output names bld.bat explicitly, so the feedstock's file name stays.
 # tests:
 #    # Each flattened loop is one `if: unix` shell loop and one `if: win` `for %%L` block per element, with
 #    # the same checks as meta.yaml: shared libs present for boost_libs, absent for static-only and python

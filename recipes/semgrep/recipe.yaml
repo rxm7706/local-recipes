@@ -64,11 +64,39 @@ extra:
     - rxm7706
 
 #### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: semgrep
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: semgrep
+  cfe-purls:
+    - pkg:conda/semgrep@${{ version }}?channel=conda-forge
+    - pkg:pypi/semgrep@${{ version }}
+  cfe-upstream-repo: https://github.com/returntocorp/semgrep
+  cfe-upstream-homepage: https://github.com/returntocorp/semgrep
+  cfe-import-names: [semdep, semgrep]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:semgrep-attrs-requirement-vs-glom-attrs-pin"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: []
+  cfe-forge-blocker-list:
+    - "packaging shape: the sdist ships a prebuilt semgrep-core, which a noarch: python build would repackage"
+  cfe-last-checked: 2026-10-09T11:45:00Z
+  cfe-generated-by-version: 8.98.0
+  cfe-generated-at-datetime: 2026-10-09T11:45:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
 # CFE comments
 # Header:
 #    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion left a SentinelType key on a
 #    # second test element that held only `requires: [pip]` once its pip-check command was commented out
 #    # (G121). Removed; the python test keeps its imports and pip_check: false. Rendered on linux-64 only;
 #    # not built: the sdist ships a prebuilt semgrep-core that a noarch: python build would repackage.
-#    # semgrep has no conda-forge feedstock.
+#    # semgrep has no conda-forge feedstock (conda-forge channeldata and the feedstock repo checked 2026-10-09).
+#    # cfe-pip-check mirrors meta.yaml's commented-out pip check: semgrep needs attrs >=21.3 while glom's
+#    # pin solved attrs 19.1.0 at the time (the reason is in the body above pip_check).
 ####

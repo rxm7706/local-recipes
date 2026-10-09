@@ -369,6 +369,22 @@ verify_commands = [
   "recipes/vc/activate.bat",
   "recipes/vc/LICENSE.TXT",
   "recipes/vc/conda_build_config.yaml",
+  # 2026-10-09 second review (LOW 3, G94): the feedstock recipe/ files boost's recipe.yaml references, copied at the
+  # 1.91.0 commit, and pyobjc-framework-systemconfiguration's feedstock conda_build_config.yaml at its 12.2.1 commit.
+  "recipes/boost/build.sh",
+  "recipes/boost/bld.bat",
+  "recipes/boost/build-py.sh",
+  "recipes/boost/build-py.bat",
+  "recipes/boost/install-lib.sh",
+  "recipes/boost/install-lib.bat",
+  "recipes/boost/install-py.sh",
+  "recipes/boost/install-py.bat",
+  "recipes/boost/test_lib.sh",
+  "recipes/boost/test_lib.bat",
+  "recipes/boost/test/**",
+  "recipes/boost/patches/**",
+  "recipes/boost/conda_build_config.yaml",
+  "recipes/pyobjc-framework-systemconfiguration/conda_build_config.yaml",
   # 22.1's retro (gotcha + corpus meta-test) and 22.2's check, each in its own retro(cfe): commit
   ".claude/skills/conda-forge-expert/**",
   # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)
