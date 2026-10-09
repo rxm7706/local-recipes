@@ -2,10 +2,10 @@
 title: "24.1: CFE's host-gate tests pass in any developer shell"
 type: 'fix'
 created: '2026-09-29'
-status: 'done'
+status: 'in-review'
 baseline_revision: '3e047430cf'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
   - docs/dreams/pyforge-mason.md
