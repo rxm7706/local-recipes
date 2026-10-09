@@ -2,11 +2,36 @@
 title: 'Package scaffold + direct capture into team memory (Story 1.1)'
 type: 'feature'
 created: '2026-07-25'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: ['oversized']
+deferred:
+  - summary: >-
+      CLI capture tests omit MEMORY.md index assertions that library tests already cover.
+    evidence: |-
+      test_capture.py asserts memory_index_line counts; test_cli.py happy-path and
+      slug-collision cases assert files only on current HEAD.
+    location: >-
+      src/shared/packages/pyforge-scribe/tests/unit/test_cli.py:113
+    severity: low
+  - summary: >-
+      No CLI test that capture without .claude/memory/ exits 2 and writes nothing.
+    evidence: |-
+      test_missing_memory_root_fails_loudly_instead_of_auto_creating covers capture()
+      only; graph compile has a CLI missing-root test on a different subcommand.
+    location: >-
+      src/shared/packages/pyforge-scribe/tests/unit/test_capture.py:162
+    severity: low
+  - summary: >-
+      Optional hardening for rare OSError/UTF-8/Windows lock edge paths in capture().
+    evidence: |-
+      Not in Story 1.1 I/O matrix; normal local capture path uses UTF-8 scaffold and
+      stdlib locking already exercised by concurrency regression test.
+    location: >-
+      src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py:411
+    severity: low
 baseline_revision: 'bbe44fa5af21f205640eb6001909c5729a6cb7a8'
 final_revision: '09c851f4c6'
 ---
@@ -113,6 +138,21 @@ final_revision: '09c851f4c6'
   - `MEMORY.md`'s 200-line cap asserted but not enforced in code — explicitly out of scope per the PRD's FR-2 ("no tooling gate required" in Wave 1); reviewer lacked that context.
   - `_truncate()` can split a multi-codepoint grapheme cluster mid-truncation for exotic Unicode `--text` — real but cosmetic-only (affects only the preview `description` field, not the stored body); fixing correctly needs a grapheme-cluster library, disproportionate to a v1 scaffold.
 
+### 2026-10-08 — Review pass (follow-up)
+- verdicts: 35 findings — high 0, medium 0, low 2, false 22, maybe-false 0, reject 11
+- findings:
+  - `[false]` `[reject]` Diff lacks root `pixi.toml` pyforge-scribe feature — branch HEAD includes full `[feature.pyforge-scribe.*]` wiring; historical diff scope only.
+  - `[false]` `[reject]` `requires-python >=3.12` vs 3.14 — current `pyproject.toml` declares `>=3.14`.
+  - `[false]` `[reject]` CLI uncaught `TimeoutError` — `cli.py` catches `(ValueError, TimeoutError)` on capture path.
+  - `[false]` `[reject]` Blind-hunter meta/tests/ruff gaps against landing diff — superseded by later epics on HEAD; not regressions in Story 1.1 contract.
+  - `[low]` `[reject]` Index link text uses slug not Title — cosmetic; `description` carries human text; unlikely to confuse daily use.
+  - `[low]` `[reject]` Wave-1 omits provenance fields on disk — spec explicitly allows; Epic 2+ owns consumption.
+  - `[defer]` `[defer]` CLI `test_capture_happy_path` / slug-collision omit `MEMORY.md` assertions — library tests assert index lines; CLI gap pre-dates follow-up and is not caused by this pass (would touch post-1.1 CLI surface).
+  - `[defer]` `[defer]` Missing CLI test for capture without `.claude/memory/` — `test_graph_compile_missing_memory_root_exits_2` covers another command; capture missing-root covered in `test_capture.py` only.
+  - `[defer]` `[defer]` Edge-case OSError/UTF-8/Windows lock branches — defensive hardening beyond Story 1.1 I/O matrix; not demonstrated reachable in normal capture use.
+  - `[false]` `[reject]` Temp-dir advisory lock violates write boundary — documented Story 1.1 review fix; intentional.
+  - Remaining blind-hunter, edge-case JSON, verification-gap, and intent-alignment items: `[false]` `[reject]` — audited against `bbe44fa5..09c851f4` diff while acceptance oracle is current HEAD (`424 passed` station suite).
+
 ## Design Notes
 
 - **Frontmatter schema was verified against live ground truth, not the architecture doc's shorthand.** AD-3/FR-1 describe the target schema in prose as flat `name`/`description`/`type`. The actual, currently-produced auto-memory files (this session's own memory-writing instructions, and the most-recently-written on-disk entries such as `feedback_python_test_convention.md` and `project_pyforge_warden.md`) nest `type` under a `metadata:` key instead — older files use the flat form, showing the upstream schema has already drifted once. Scribe targets the CURRENT nested form because that is what a Story 1.3+ promotion will actually need to read/write for byte-compatible parity; `models.py`'s frontmatter (de)serializer isolates this choice into one function so a future upstream change touches one place, not every caller.
@@ -130,12 +170,13 @@ final_revision: '09c851f4c6'
 
 ## Auto Run Result
 
-**Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.
-**Summary:** landed on `main` as `8a90d7025c` (2026-07-25, "mason + steward: record Story 1.1 in the spec memlogs; re-baseline surfaces"); also `c9c5b33930` (2026-07-25, "mason + steward: Story 1.1 — two stations reach code, chain 8/9 -> 9/9"). Ledger row `1-1-package-scaffold-direct-capture-into-team-memory: done`.
-**Verification:** the station's `verify_commands` ran in the landing session; the durable record here is git only — see the landing commit(s) above.
-**Files changed:** `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/.memlog.md`, `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md`, `docs/dashboard/data.js`, `scripts/.spec-surface-baseline.json`
-**Residual risks:** none recorded — no run record survived to carry them.
-**Follow-up review recommendation:** false
+**Status:** done (follow-up review pass, dispatch `dispatch/pyforge-scribe/1.1`, 2026-10-08).
+**Summary:** Story 1.1 implementation was already landed (`09c851f4c6`); this run consumed the single allowed follow-up review (`followup_review_recommended` cleared at route). No code patches applied — review diff `bbe44fa5..09c851f4` for `pyforge-scribe` + `.claude/memory/` re-verified against current HEAD behavior.
+**Review findings:** 0 patches applied; 3 items deferred (CLI-level MEMORY.md / missing-root test gaps vs library coverage); remaining findings rejected as false (historical-diff artifacts) or low cosmetic.
+**Follow-up review recommendation:** false (forced for follow-up pass).
+**Verification:** `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — 424 passed, 12 skipped, exit 0; `python scripts/spec_surface_reconcile.py` — OK, exit 0. No governed implementation paths modified — no `.memlog.md` surface reconcile entries required.
+**Files changed (this run):** `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-1-1-package-scaffold-direct-capture-into-team-memory.md` (review triage + auto run result + `status: done`).
+**Residual risks:** Residual CLI-vs-library test asymmetry on MEMORY.md index assertions (deferred); does not block Story 1.1 acceptance on current branch.
 
 ## Status reconcile 2026-09-20
 
