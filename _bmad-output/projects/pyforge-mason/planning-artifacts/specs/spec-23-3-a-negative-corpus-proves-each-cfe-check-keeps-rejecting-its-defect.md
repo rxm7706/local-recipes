@@ -2,7 +2,8 @@
 title: "23.3: A negative corpus proves each CFE check keeps rejecting its defect"
 type: 'feature'
 created: '2026-09-29'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '4e575e49a7403ae08fa6a989739f18e9e4ae6813'
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -158,4 +159,32 @@ Flag: `flag-exempt: detector-or-gate` (a gate on CFE's own checks; flagging it O
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract ACs; offline verification green)
+
+## Auto Run Result
+
+Status: done
+
+Summary: CFE v8.97.0 adds `tests/fixtures/negative/` (verbatim auto-recipe grayskull ports, compiler-no-stdlib, README), native optimizer check **SEL-005** for `build.skip` on `noarch: python`, and `tests/unit/test_negative_corpus.py` asserting TEST-002, SEL-005, SEL-004, STD-001, licence semantics, and Story 22.2 sentinel-key rejection by reference.
+
+Files changed:
+- `.claude/skills/conda-forge-expert/scripts/recipe_optimizer.py` — SEL-005
+- `.claude/skills/conda-forge-expert/tests/fixtures/negative/**` — corpus + README
+- `.claude/skills/conda-forge-expert/tests/unit/test_negative_corpus.py` — gate tests
+- Version carriers + SKILL.md negative-corpus testing guidance (8.97.0)
+- `spec-packaging-factory/.memlog.md` — surface reconcile entry
+
+Review: 0 patch/defer/intent_gap items.
+
+Follow-up review recommended: false
+
+Verification:
+- `pytest …/test_negative_corpus.py -q` — 9 passed
+- `pixi run -e local-recipes test-ci` — 9307 passed
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — green after retro commit
+- `python scripts/spec_surface_reconcile.py` — OK
+- `git log origin/main..HEAD --format=%s -- .claude/skills/conda-forge-expert` — one `retro(cfe):` subject
+
+Residual risk: starlette fixture references `${{ python_min }}.*` without defining `python_min` (verbatim port); TEST-002 and licence semantics still fire offline.
