@@ -2,10 +2,10 @@
 title: 'The scanner surfaces what sessions said but memory missed'
 type: 'feature'
 created: '2026-08-22'
-status: 'done'
+status: 'in-review'
 baseline_revision: '214ce8fa897149d6b45a1b5bb51b7863b14fb395'
-review_loop_iteration: 1
-followup_review_recommended: true
+review_loop_iteration: 0
+followup_review_recommended: false
 context: []
 warnings: ['oversized']
 deferred: []
