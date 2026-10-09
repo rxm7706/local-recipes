@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "e18996e1f08569632c6236abbcb62caf9c8fa51cbb616bd831558cd25e0311d2"
+source_sha256: "d747f607711f1c7b582d3bb0cf62004fa4302abfe17341863fa5b862017c6d4a"
 rows:
   - id: G1
     title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
@@ -29,6 +29,7 @@ rows:
   - id: G4
     title: "Sdist may omit LICENSE — `pip install` succeeds, build fails with \"No license files were copied\""
     symptom_signature:
+      - "validate_recipe"
       - "Copying license files"
       - "No license files were copied"
       - "LICENSE"
@@ -51,6 +52,7 @@ rows:
     title: "Grayskull's inferred Python import name can be wrong — verify against the sdist"
     symptom_signature:
       - "generate_recipe_from_pypi"
+      - "validate_recipe"
       - "optimize_recipe"
     enforced_by: null
   - id: G8
@@ -143,6 +145,7 @@ rows:
     title: "v0 jinja `{{ X }}` syntax in v1 recipe.yaml is silently rendered as literal text"
     symptom_signature:
       - "schema_version: 1"
+      - "validate_recipe"
       - "conda-smithy lint"
     enforced_by: null
   - id: G21
@@ -171,6 +174,7 @@ rows:
   - id: G24
     title: "Conda label ≠ wheel `dist-info` version — when upstream's `pyproject.toml` hardcodes a placeholder, `pip check` fails downstream"
     symptom_signature:
+      - "validate_recipe"
       - "build"
       - "pip_check: true"
       - "<pkg>-<X.Y.Z>-*.conda"
@@ -193,6 +197,7 @@ rows:
     symptom_signature:
       - "pkg==X"
       - "pkg >=X"
+      - "validate_recipe"
       - "optimize_recipe"
       - "check_dependencies"
     enforced_by: null
@@ -215,6 +220,7 @@ rows:
       - "requirements:"
       - "optimize_recipe"
       - "Recipe has no tests section"
+      - "validate_recipe"
       - "No tests section defined"
     enforced_by: null
   - id: G30
@@ -723,6 +729,7 @@ rows:
   - id: G93
     title: "conda-recipe-manager CRASHES on column-0 comments inside indented blocks — conda-smithy lint calls the recipe unparseable while rattler-build builds it fine; col-0 comments are safe ONLY at the document tail"
     symptom_signature:
+      - "validate_recipe"
       - "RecipeReader"
       - "IndexError: pop from empty list"
       - "_construct_parse_tree"
@@ -730,6 +737,7 @@ rows:
   - id: G94
     title: "Local mirror dirs accumulate STALE feedstock files that fail local gates — prune against the LIVE feedstock on every refresh"
     symptom_signature:
+      - "validate_recipe"
       - "regeneration"
     enforced_by: null
   - id: G95
