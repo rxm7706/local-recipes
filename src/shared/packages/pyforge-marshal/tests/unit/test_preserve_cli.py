@@ -15,8 +15,8 @@ from pyforge.testing_kit.flags import assert_flag_off_verb, flag_states, flagd_t
 
 from pyforge.marshal.cli import preserve as preserve_module
 from pyforge.marshal.cli.main import main
-from pyforge.marshal.core.verdict import EXIT_USAGE, exit_code_for
 from pyforge.marshal.core.model import Verdict
+from pyforge.marshal.core.verdict import EXIT_USAGE, exit_code_for
 
 _FLAG = "pyforge.marshal.preserve_refs"
 
@@ -254,18 +254,22 @@ def test_preserve_list_text_output(git_repo: Path, monkeypatch: pytest.MonkeyPat
         ),
     )
     monkeypatch.setattr(preserve_module, "list_preserves", lambda *_a, **_k: [row])
-    assert preserve_module.run_preserve_list(argparse.Namespace(format="text", station=None, story=None, producer=None, state=None)) == 0
+    assert (
+        preserve_module.run_preserve_list(
+            argparse.Namespace(format="text", station=None, story=None, producer=None, state=None)
+        )
+        == 0
+    )
     out = capsys.readouterr().out
     assert "refs/tags/preserve/unbound/hand-deadbeef" in out
     assert "open" in out
 
 
 @pytest.mark.parametrize("fmt", ["text", "json"])
-def test_preserve_list_surfaces_git_errors(
-    git_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys, fmt: str
-):
+def test_preserve_list_surfaces_git_errors(git_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys, fmt: str):
     _flag_on(monkeypatch, git_repo)
     monkeypatch.setattr(preserve_module, "repo_root", lambda: git_repo)
+
     def fail_list(*_a, **_k):
         raise PreserveGitError("list failed")
 
@@ -292,6 +296,9 @@ def test_preserve_list_json_pipe_close(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr("builtins.print", broken_print)
     monkeypatch.setattr(preserve_module, "_suppress_downstream_pipe_close", lambda: None)
-    assert preserve_module.run_preserve_list(
-        argparse.Namespace(format="json", station=None, story=None, producer=None, state=None)
-    ) == 0
+    assert (
+        preserve_module.run_preserve_list(
+            argparse.Namespace(format="json", station=None, story=None, producer=None, state=None)
+        )
+        == 0
+    )
