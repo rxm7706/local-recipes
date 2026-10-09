@@ -209,6 +209,84 @@ def extract_license_info(recipe_path: Path) -> tuple[Optional[str], Optional[str
     return license_id, license_file
 
 
+# Provenance: check_license_semantics ported from OpenTeams-WFT-CDO/auto-recipe@8b53eda
+# src/auto_recipe/verify/checks.py (operator-owned org).
+_COPYLEFT_AXIS_RE = re.compile(
+    r"^(GPL|LGPL|AGPL|GFDL)-[\d.]+-(only|or-later)$",
+    re.IGNORECASE,
+)
+_LICENSE_BASENAME_RE = re.compile(r"(?i)^(LICEN[CS]E|COPYING)")
+_ANY_LATER_VERSION_RE = re.compile(r"any later version", re.IGNORECASE)
+_EXPLICIT_ONLY_RE = re.compile(
+    r"(?:\bversion\s+\d+(?:\.\d+)*\s+only\b|"
+    r"\b(?:GPL|LGPL|AGPL|GFDL)[\s-]*[\d.]+\s+only\b|"
+    r"\bonly\s+version\s+\d+)",
+    re.IGNORECASE,
+)
+
+
+def _declared_copyleft_axis(license_id: str) -> Optional[str]:
+    """Return the declared identifier if it carries a copyleft -only/-or-later axis."""
+    if not license_id:
+        return None
+    parts = re.split(r"\s+(?:AND|OR|WITH)\s+", license_id)
+    for part in parts:
+        token = part.strip("()")
+        if _COPYLEFT_AXIS_RE.match(token):
+            return token
+    return None
+
+
+def _collect_license_text(source_dir: Path) -> str:
+    if not source_dir.is_dir():
+        return ""
+    chunks: list[str] = []
+    for path in source_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        if _LICENSE_BASENAME_RE.match(path.name):
+            try:
+                chunks.append(path.read_text(encoding="utf-8", errors="replace"))
+            except OSError:
+                continue
+    return "\n".join(chunks)
+
+
+def check_license_semantics(declared: str, source_dir: Path) -> tuple[str, str]:
+    """Compare declared SPDX copyleft axis against upstream licence text.
+
+    Returns (status, message) where status is ``pass``, ``fail``, or ``skip``.
+    Pure: no printing, no exit, no network.
+    """
+    axis_id = _declared_copyleft_axis(declared)
+    if not axis_id:
+        return "skip", "licence has no copyleft -only/-or-later axis"
+
+    text = _collect_license_text(source_dir)
+    if not text.strip():
+        return "skip", "no licence file found; needs a human read"
+
+    has_or_later = bool(_ANY_LATER_VERSION_RE.search(text))
+    has_only = bool(_EXPLICIT_ONLY_RE.search(text))
+
+    if has_or_later:
+        if axis_id.lower().endswith("-only"):
+            suggested = re.sub(
+                r"-only$", "-or-later", axis_id, count=1, flags=re.IGNORECASE
+            )
+            return (
+                "fail",
+                f"LICENSE grants any later version but recipe declares {axis_id}; "
+                f"use {suggested}",
+            )
+        return "pass", "declared licence matches or-later grant in LICENSE"
+
+    if has_only:
+        return "pass", "LICENSE text states an explicit version-only grant"
+
+    return "skip", "LICENSE states neither only nor any later version; needs a human read"
+
+
 def check_license_file_exists(source_dir: Path, license_file: str) -> bool:
     """Check if license file exists in source."""
     if not source_dir.exists():
@@ -328,13 +406,27 @@ def main():
 
     # Summary
     print("\n" + "=" * 50)
-    errors = []
+    errors: list[str] = []
     if not license_id:
         errors.append("missing license")
     elif not is_valid_spdx(license_id):
         errors.append("invalid SPDX license")
     if not license_file:
         errors.append("missing license_file")
+
+    if args.check_source and license_file:
+        if not check_license_file_exists(args.check_source, license_file):
+            errors.append("license_file not found in source")
+
+    if args.check_source and license_id:
+        status, message = check_license_semantics(license_id, args.check_source)
+        if status == "fail":
+            print(f"  [ERROR] {message}")
+            errors.append("licence semantics mismatch")
+        elif status == "skip":
+            print(f"  [NOTE] Licence semantics check skipped: {message}")
+        elif status == "pass":
+            print(f"  [OK] Licence semantics: {message}")
 
     if errors:
         print(f"[FAIL] Issues found: {', '.join(errors)}")
