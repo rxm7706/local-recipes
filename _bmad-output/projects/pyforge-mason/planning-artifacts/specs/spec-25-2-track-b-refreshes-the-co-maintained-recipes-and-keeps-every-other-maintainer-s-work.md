@@ -2,7 +2,7 @@
 title: "25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work"
 type: 'feature'
 created: '2026-09-29'
-status: 'blocked'
+status: 'ready-for-dev'
 baseline_revision: '3ca5abbe0e8b0190f4d4014f4696d79874c23564'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -229,7 +229,14 @@ gates exit 0; linux-64 build success (`build_artifacts/assemblyai`). B1 five-rec
 
 ## Auto Run Result
 
-Status: blocked
+**Resume 2026-10-09 (second pass).** The previous run stopped `blocked` because work remains, not on an operator
+decision. Continue in this order: (1) the 14 Wave 0 recipes left `needs-review` or `failed` (report under
+`.claude/data/conda-forge-expert/refresh-waves/A-W0-repair-25-1/`), each fixed through CFE or recorded `needs-review`
+with its reason; (2) Track B in batches of at most five through `refresh-wave`, committing each batch as a
+`recipes:` commit; (3) record any driver gap (unrenderable URL, missing CFE block) as a deferred row naming Story
+25.3's driver rather than stopping. All work stays local.
+
+Previous run — Status: blocked
 
 Blocking condition: Wave 0 applied for 62/78 recipes; 14 need manual CFE follow-up. Track B refresh queue
 (95 of 96 v1-refresh) not started at scale — driver dry-run shows url/CFE-block review work on most co-maintained
