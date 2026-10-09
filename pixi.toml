@@ -3015,6 +3015,7 @@ pytest = ">=9.1.1"                # test runner
 [feature.pyforge-doctor.tasks.pyforge-doctor-test]
 description = "Run the pyforge.doctor test suite"
 cmd = "pytest src/shared/packages/pyforge-doctor/tests -q -n auto --dist loadgroup"
+env = { PYTEST_XDIST_AUTO_NUM_WORKERS = "4" }
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-aggregate-scripts-test]
 description = "Story 39.1 (spec-pyforge-doctor; follows Story 38.5; Story 41.1 added the second file): tests/scripts/test_detectors_doctor_sources.py and tests/scripts/test_apply_verification_verdicts.py where Doctor's run-deps (jsonschema, pyyaml, pyforge-core) are installed. The aggregate tests load Doctor's dispatch table and the verdict-writer tests import its citation predicate, so both skip under pyforge-doctor-scripts-test (pyforge-ci, stdlib-only by design) and this is where they run. The Detectors scripts-suite job and pr-preflight call this task verbatim."

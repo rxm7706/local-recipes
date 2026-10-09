@@ -49,8 +49,6 @@ _BUDGET_SECONDS = 5.0
 _WARMUP_ITERATIONS = 1
 _ITERATIONS = 5
 
-pytestmark = pytest.mark.xdist_group(name="doctor_check_speed_budget")
-
 
 def test_doctor_check_completes_within_the_five_second_budget(capsys):
     if _REPO_ROOT is None or not (_REPO_ROOT / ".claude").is_dir():
