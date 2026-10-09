@@ -1657,7 +1657,7 @@ def run_supervisor(
             nonlocal last_durability_push_monotonic
             try:
                 repo_root = vcs.repo_common_root(home)
-            except (VcsCommandError, OSError, subprocess.SubprocessError):
+            except VcsCommandError, OSError, subprocess.SubprocessError:
                 return
             bmad_journal = str(bmad_loop_journal_path(home, harness_run_id))
             try:
@@ -3232,7 +3232,7 @@ def run_supervisor(
                             if preserve_refs_flag_on():
                                 try:
                                     repo_root_for_preserve = vcs.repo_common_root(home)
-                                except (VcsCommandError, OSError, subprocess.SubprocessError):
+                                except VcsCommandError, OSError, subprocess.SubprocessError:
                                     repo_root_for_preserve = None
                             parked = park_preserve_artifact(
                                 captured,

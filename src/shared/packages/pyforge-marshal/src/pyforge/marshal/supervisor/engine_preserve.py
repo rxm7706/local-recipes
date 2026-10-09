@@ -193,7 +193,7 @@ def promote_engine_ref(
             commit=commit,
         )
         tagged = tag_preserve(repo, refname=refname, commit=commit, trailers=trailers)
-    except (PreserveRefError, PreserveGitError):
+    except PreserveRefError, PreserveGitError:
         return None
     pushed = False
     if push:
@@ -250,7 +250,7 @@ def tag_intent_gap_attempt(
             commit=tip_sha,
         )
         tagged = tag_preserve(repo, refname=refname, commit=tip_sha, trailers=trailers)
-    except (PreserveRefError, PreserveGitError):
+    except PreserveRefError, PreserveGitError:
         return None
     pushed = False
     if push:
