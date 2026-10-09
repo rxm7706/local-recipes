@@ -332,7 +332,13 @@ jobs:
   # wiring -- see spec-10-3-one-image-both-engines.md's Design Notes for
   # the full investigation and evidence. Both steps are expected green.
   container:
-    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
+    # Paused on pull_request/push while repo variable PAUSE_PLATFORM_CONTAINER_BUILDS is 'true'
+    # (operator 2026-10-09, separate from guild-container's PAUSE_CONTAINER_BUILDS); a
+    # workflow_dispatch with jobs=all still builds. golden-path-promotion needs this job and
+    # skips with it. Resume: `gh variable set PAUSE_PLATFORM_CONTAINER_BUILDS --body false`.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') ||
+      (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -820,7 +826,10 @@ jobs:
   # own top-of-file comment for why this image is built from a separate,
   # isolated `dbgpt-sidecar` pixi env in the first place.
   container-dbgpt:
-    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
+    # Paused with `container` above while PAUSE_PLATFORM_CONTAINER_BUILDS is 'true'.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') ||
+      (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')
     strategy:
       fail-fast: false
       matrix:
