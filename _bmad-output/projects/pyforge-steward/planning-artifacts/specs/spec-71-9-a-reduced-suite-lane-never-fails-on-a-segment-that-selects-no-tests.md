@@ -2,8 +2,8 @@
 title: "71.9: A reduced suite lane never fails on a segment that selects no tests"
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
-baseline_revision: '875f418334a256da1d3e47186ca0e21942906049'
+status: 'in-progress'
+baseline_revision: '5525712c62b310d8f0a499e3ac08296234e762eb'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import shutil
 import signal
 import subprocess
@@ -228,6 +229,7 @@ class _RunCoordinator:
     suite_lane_plan: dict[str, preflight_suite_reduction.SuiteLaneOverride | dict[str, Any]] = field(
         default_factory=dict
     )
+    suite_reduction_runtime_journal: dict[str, dict[str, Any]] = field(default_factory=dict)
     xdist_workers: dict[str, int] = field(default_factory=dict)
 
     def service_lock(self, key: str | None) -> threading.Lock | None:
@@ -264,27 +266,113 @@ class _RunCoordinator:
                     proc.kill()
 
 
+def _segment_outcome(exit_code: int) -> str:
+    if exit_code == 0:
+        return "passed"
+    if exit_code == preflight_suite_reduction.PYTEST_EXIT_NO_TESTS_COLLECTED:
+        return "no-tests-selected"
+    return "failed"
+
+
+def _run_pixi_argv(
+    coord: _RunCoordinator,
+    ctx: LaneRunContext,
+    argv: list[str],
+    log_handle: Any,
+) -> int:
+    proc = subprocess.Popen(
+        argv,
+        cwd=coord.repo_root,
+        env=ctx.env,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+    coord.register_proc(proc)
+    try:
+        return int(proc.wait())
+    finally:
+        coord.unregister_proc(proc)
+
+
+def _subprocess_reduced_suite_lane(
+    coord: _RunCoordinator,
+    ctx: LaneRunContext,
+    override: preflight_suite_reduction.SuiteLaneOverride,
+) -> int:
+    ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
+    segment_rows: list[dict[str, Any]] = []
+    task_collect_exit: int | None = None
+    lane_exit = 0
+    prefix = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, "--"]
+    with ctx.log_path.open("wb") as log_handle:
+        for index, segment in enumerate(override.segments):
+            if coord.cancel.is_set():
+                for pending in override.segments[index:]:
+                    segment_rows.append(
+                        {
+                            "label": pending.label,
+                            "command": shlex.join(pending.argv),
+                            "exit_code": None,
+                            "outcome": "not-run",
+                        }
+                    )
+                break
+            cmd = [*prefix, *segment.argv]
+            code = _run_pixi_argv(coord, ctx, cmd, log_handle)
+            outcome = _segment_outcome(code)
+            segment_rows.append(
+                {
+                    "label": segment.label,
+                    "command": shlex.join(segment.argv),
+                    "exit_code": code,
+                    "outcome": outcome,
+                }
+            )
+            if outcome == "failed":
+                lane_exit = code
+                for pending in override.segments[index + 1 :]:
+                    segment_rows.append(
+                        {
+                            "label": pending.label,
+                            "command": shlex.join(pending.argv),
+                            "exit_code": None,
+                            "outcome": "not-run",
+                        }
+                    )
+                break
+        else:
+            if segment_rows and all(row["outcome"] == "no-tests-selected" for row in segment_rows):
+                collect_argv = [
+                    "pixi",
+                    "run",
+                    "--frozen",
+                    "-e",
+                    ctx.lane.environment,
+                    ctx.lane.task,
+                    "--collect-only",
+                ]
+                task_collect_exit = _run_pixi_argv(coord, ctx, collect_argv, log_handle)
+                lane_exit = task_collect_exit
+            else:
+                lane_exit = 0
+
+    journal_extra = dict(override.journal)
+    journal_extra["suite_reduction_segments"] = segment_rows
+    if task_collect_exit is not None:
+        journal_extra["suite_reduction_task_collect_exit"] = task_collect_exit
+    coord.suite_reduction_runtime_journal[ctx.lane.task] = journal_extra
+    return lane_exit
+
+
 def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
     ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
     plan_entry = coord.suite_lane_plan.get(ctx.lane.task)
     if isinstance(plan_entry, preflight_suite_reduction.SuiteLaneOverride):
-        argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, *plan_entry.argv]
-    else:
-        argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task]
+        return _subprocess_reduced_suite_lane(coord, ctx, plan_entry)
+    argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task]
     with ctx.log_path.open("wb") as log_handle:
-        proc = subprocess.Popen(
-            argv,
-            cwd=coord.repo_root,
-            env=ctx.env,
-            stdout=log_handle,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
-        coord.register_proc(proc)
-        try:
-            return int(proc.wait())
-        finally:
-            coord.unregister_proc(proc)
+        return _run_pixi_argv(coord, ctx, argv, log_handle)
 
 
 def _default_run_lane_ctx(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
@@ -310,6 +398,9 @@ def _print_lane_log(log_path: Path) -> None:
 
 
 def _lane_journal_extra(coord: _RunCoordinator, task: str) -> dict[str, Any] | None:
+    runtime = coord.suite_reduction_runtime_journal.get(task)
+    if runtime is not None:
+        return dict(runtime)
     entry = coord.suite_lane_plan.get(task)
     if isinstance(entry, preflight_suite_reduction.SuiteLaneOverride):
         return dict(entry.journal)
