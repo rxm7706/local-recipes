@@ -34,6 +34,7 @@ context:
     - unit_test_framework
     - wave
     - wserialization
+  boost_libs_long_double:
     - math_c99l
     - math_tr1l
   boost_libs_static_only:
@@ -55,11 +56,11 @@ build:
   number: 0
 
 outputs:
-  - package:
-      name: libboost-headers
+  - staging:
+      name: boost-build
     build:
       script:
-        file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
+        file: ${{ 'bld.bat' if win else 'build.sh' }}
     requirements:
       build:
         - ${{ compiler('cxx') }}
@@ -71,8 +72,6 @@ outputs:
         - if: build_platform != target_platform
           then: numpy
         - ruby *
-        - if: win
-          then: cmake
       host:
         - if: unix
           then: icu
@@ -83,6 +82,20 @@ outputs:
         - zstd
         - python ${{ python_min }}.* *_cpython
         - numpy
+  - package:
+      name: libboost-headers
+    inherit:
+      from: boost-build
+      run_exports: false
+    build:
+      script:
+        file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
+    requirements:
+      # dummy build env to avoid EnvironmentLocationNotFound on win
+      build:
+        - if: win
+          then: cmake
+      host:
       run_constraints:
         - boost-cpp <0.0a0
     tests:
@@ -104,10 +117,26 @@ outputs:
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
           - if: unix
-            then: bash ${{ RECIPE_DIR }}/test_libboost_headers_absent.sh
+            then: |
+              for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only + ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))]) | join(" ") }}; do
+                test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+          - if: win
+            then: |
+              for %%L in (${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only + ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))]) | join(" ") }}) do (
+                if exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
   # libraries without the headers (for run-export)
   - package:
       name: libboost
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
@@ -130,19 +159,58 @@ outputs:
         - if: win
           then: __win >=10
     tests:
-      - files:
-          recipe:
-            - test_libboost_libs.sh
-        script:
+      - script:
           - if: unix
-            then: bash ${{ RECIPE_DIR }}/test_libboost_libs.sh
+            then: test ! -d $PREFIX/include/boost
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
+          - if: unix
+            then: test ! -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
+          - if: unix
+            then: |
+              for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double)) | join(" ") }}; do
+                test -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+              for each_lib in ${{ boost_libs_static_only | join(" ") }}; do
+                test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                test -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+              for each_lib in ${{ ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))] | join(" ") }}; do
+                test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+          - if: win
+            then: |
+              for %%L in (${{ (boost_libs + ([] if ppc64le else boost_libs_long_double)) | join(" ") }}) do (
+                if not exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if not exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
+              for %%L in (${{ boost_libs_static_only | join(" ") }}) do (
+                if exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if not exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
+              for %%L in (${{ ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))] | join(" ") }}) do (
+                if exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
   # libboost headers + libs + metadata
   - package:
       name: libboost-devel
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
@@ -160,7 +228,9 @@ outputs:
     tests:
       - files:
           recipe:
-            - test_libboost_devel_cmake.sh
+            - test
+            - test_lib.sh
+            - test_lib.bat
         requirements:
           run:
             - if: build_platform == target_platform
@@ -171,10 +241,33 @@ outputs:
           - if: win
             then: if not exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
           - if: unix
-            then: bash ${{ RECIPE_DIR }}/test_libboost_devel_cmake.sh
+            then: |
+              for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only) | join(" ") }}; do
+                test -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+          - if: win
+            then: |
+              for %%L in (${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only) | join(" ") }}) do (
+                if not exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
+          - if: unix
+            then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
+          - if: unix
+            then: test ! -d $PREFIX/lib/cmake/boost_numpy-${{ version }}
+          - if: win
+            then: if exist %LIBRARY_LIB%\cmake\boost_python-${{ version }} exit 1
+          - if: win
+            then: if exist %LIBRARY_LIB%\cmake\boost_numpy-${{ version }} exit 1
+          - if: unix
+            then: ./test_lib.sh
+          - if: win
+            then: ./test_lib.bat
   # the python libraries (no headers)
   - package:
       name: libboost-python
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'build-py.bat' if win else 'build-py.sh' if unix else '' }}
@@ -206,23 +299,44 @@ outputs:
         - boost <0.0a0
         - py-boost <0.0a0
     tests:
-      - files:
-          recipe:
-            - test_libboost_python_libs.sh
-        script:
+      - script:
           - if: unix
-            then: bash ${{ RECIPE_DIR }}/test_libboost_python_libs.sh
+            then: test ! -d $PREFIX/include/boost
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
+          - if: unix
+            then: |
+              for each_lib in ${{ ["python" ~ (python | version_to_buildstring), "numpy" ~ (python | version_to_buildstring)] | join(" ") }}; do
+                test -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+              done
+          - if: win
+            then: |
+              for %%L in (${{ ["python" ~ (python | version_to_buildstring), "numpy" ~ (python | version_to_buildstring)] | join(" ") }}) do (
+                if not exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if not exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+              )
+          - if: unix
+            then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
+          - if: unix
+            then: test ! -d $PREFIX/lib/cmake/boost_numpy-${{ version }}
+          - if: win
+            then: if exist %LIBRARY_LIB%\cmake\boost_python-${{ version }} exit 1
+          - if: win
+            then: if exist %LIBRARY_LIB%\cmake\boost_numpy-${{ version }} exit 1
   # python libs w/ headers
   - package:
       name: libboost-python-devel
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'install-py.bat' if win else 'install-py.sh' if unix else '' }}
     requirements:
       # dummy build env to avoid EnvironmentLocationNotFound on win
-      build:  # [win]
+      build:
         - if: win
           then: cmake
       host:
@@ -272,3 +386,28 @@ extra:
     - matthiasdiener
     - h-vetinari
   feedstock-name: boost
+
+#### CFE metadata AND comments
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion flattened meta.yaml's jinja
+#    # for-each_lib test loops, leaving an each_lib reference outside any loop and a SentinelType
+#    # key on the libboost test (G121). Rendered on linux-64 only; not built (heavyweight). The feedstock is
+#    # still v0 and has since moved to 1.92.0; meta.yaml (1.91.0) stays beside this file.
+# context:
+#    # boost_libs mirrors meta.yaml's list; boost_libs_long_double holds math_c99l/math_tr1l, which meta.yaml
+#    # adds only `# [not ppc64le]` (the loops add them `if not ppc64le`). meta.yaml's boost_libs_py
+#    # ("python" plus py) is built in each loop: python_min for libboost-headers and libboost (they do not
+#    # vary by python, so conda-build rendered them with the first python variant), and
+#    # the python variant through version_to_buildstring for libboost-python.
+# outputs:
+#    # A multi-output v1 recipe has no top-level `requirements`, so conda-build's top-level build (its
+#    # build.sh / bld.bat and requirements) is the `boost-build` staging output. Every package output
+#    # inherits it with `run_exports: false`, so the staging host's run_exports stay out of the outputs as in
+#    # meta.yaml. `# [win]` on the two dummy `build:` keys removed (v1 lint: comment selectors).
+# tests:
+#    # Each flattened loop is one `if: unix` shell loop and one `if: win` `for %%L` block per element, with
+#    # the same checks as meta.yaml: shared libs present for boost_libs, absent for static-only and python
+#    # libs; static libs present only for static-only; no per-lib CMake metadata outside libboost-devel.
+#    # .so on linux, .dylib on osx. libboost-devel keeps meta.yaml's test files and ./test_lib.sh / .bat.
+####

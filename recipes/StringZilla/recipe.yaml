@@ -61,3 +61,41 @@ extra:
   recipe-maintainers:
     - mukhery
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: stringzilla
+  cfe-upstream-registry: github
+  cfe-upstream-name: ashvardanian/StringZilla
+  cfe-purls:
+    - pkg:conda/stringzilla@${{ version }}?channel=conda-forge
+    - pkg:github/ashvardanian/stringzilla@v${{ version }}
+    - pkg:pypi/stringzilla@${{ version }}
+  cfe-upstream-repo: https://github.com/ashvardanian/StringZilla
+  cfe-upstream-homepage: https://github.com/ashvardanian/StringZilla
+  cfe-import-names: [cli]
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/stringzilla-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-09T10:08:00Z
+  cfe-generated-by-version: 8.98.0
+  cfe-generated-at-datetime: 2026-10-09T10:08:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T10:06:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion turned the commented-out
+#    # `#patches:` into a SentinelType key (G121). The key is gone; its two comment lines stay under source.
+#    # The feedstock is still v0 and has since moved to 5.2.0; this mirror and its meta.yaml are at 4.6.3.
+#    # The recipe-dir conda_build_config.yaml (c_stdlib_version 10.13 on osx, below the 11.0 baseline) is
+#    # removed: the feedstock has none (G94), and it failed validate_recipe's lint.
+# tests:
+#    # LOCAL BUILD 2026-10-09 (linux-64): py3.11-3.14 built; imports, pip check and both CLIs passed.
+####

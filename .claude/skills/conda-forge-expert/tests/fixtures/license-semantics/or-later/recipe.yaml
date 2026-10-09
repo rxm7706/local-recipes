@@ -1,0 +1,17 @@
+schema_version: 1
+context:
+  version: "1.0.0"
+package:
+  name: semantics-fixture-or-later
+  version: ${{ version }}
+source:
+  url: https://example.invalid/src-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+build:
+  number: 0
+  noarch: python
+  script: echo ok
+about:
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Fixture for matching or-later declaration

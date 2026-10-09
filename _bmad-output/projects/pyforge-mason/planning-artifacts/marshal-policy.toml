@@ -350,6 +350,18 @@ verify_commands = [
   "recipes/lerc/recipe.yaml",
   "recipes/amundsen-databuilder/recipe.yaml",
   "recipes/shodan/recipe.yaml",
+  # 2026-10-09 landing (operator ruling: 22.1 lands for eleven, 22.3 split out): the files the gates needed beside the
+  # recipe.yaml repairs (StringZilla's stale CBC removed per G94, lerc's feedstock build scripts added for its build, bld.bat under the v1 name build.bat),
+  # and the 22.3 chain (Dream entry, epics.md, PRD/spine currency re-stamps, regenerated test-architecture).
+  "recipes/StringZilla/conda_build_config.yaml",
+  "recipes/lerc/build.sh",
+  "recipes/lerc/build.bat",
+  "docs/dreams/pyforge-mason.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md",
   # 22.1's retro (gotcha + corpus meta-test) and 22.2's check, each in its own retro(cfe): commit
   ".claude/skills/conda-forge-expert/**",
   # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)

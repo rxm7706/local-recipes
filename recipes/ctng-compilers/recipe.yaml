@@ -5,21 +5,10 @@
 schema_version: 1
 
 context:
-  gcc_version: "15.3.0"
-  version: "15.3.0"
+  version: gcc_version
   build_num: 1
   gcc_maj_ver: 15
   cross_target_platform: linux-64
-  cross_target_stdlib: sysroot
-  cross_target_stdlib_version: "2.17"
-  cross_target_cxx_stdlib: libstdcxx
-  TARGET: x86_64-conda-linux-gnu
-  binutils_version: "2.46.1"
-  with_conda_specs: true
-  openmp_ver: "4.5"
-  libgomp_ver: "1.0.0"
-  libgfortran_soname: 5
-  libgcc_devel_build_num: ${{ build_num + 100 if target_platform == cross_target_platform else build_num }}
 
 recipe:
   name: gcc_compilers
@@ -76,6 +65,17 @@ build:
   prefix_detection:
     ignore_binary_files: true
 
+requirements:
+  build:
+    # Build dependencies are installed in setup_compilers.sh due to
+    # conda-build bugs
+  host:
+    - if: cross_target_stdlib != "None"
+      then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+  ignore_run_exports:
+    from_package:
+      - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+
 outputs:
   - package:
       name: libgcc-devel_${{ cross_target_platform }}
@@ -93,7 +93,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
       run:
         - if: unix
           then: __unix
@@ -101,7 +101,7 @@ outputs:
           then: m2-conda-epoch
       ignore_run_exports:
         from_package:
-          - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
     tests:
       - script:
           - echo ${{ cross_target_stdlib_version }}
@@ -139,7 +139,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
       run:
         - if: unix
           then: __unix
@@ -175,7 +175,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
         - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
           then: ${{ pin_subpackage("libgomp", exact=True) }}
         - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
@@ -207,9 +207,6 @@ outputs:
           then: ${{ pin_subpackage("libsanitizer", exact=True) }}
         - if: target_platform == cross_target_platform
           then: ${{ pin_subpackage("libgcc", upper_bound=None) }}
-      run_exports:
-        strong:
-          - libgcc >=${{ gcc_version }}
       ignore_run_exports:
         from_package:
           - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
@@ -220,7 +217,7 @@ outputs:
         requirements:
           run:
             - if: cross_target_stdlib != "None"
-              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
         script:
           - echo ${{ c_stdlib }}
           - echo ${{ c_stdlib_version }}
@@ -265,10 +262,17 @@ outputs:
       summary: GNU C Compiler
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    run_exports:
+      # impose this requirement across the build/host boundary
+      strong:
+        - libgcc >=${{ gcc_version }}
   - package:
       name: gcc
     build:
       skip: target_platform != cross_target_platform
+      track_features:  # [not with_conda_specs]
+        - if: not with_conda_specs
+          then: gcc_no_conda_specs
       script:
         file: install-symlinks.sh
     requirements:
@@ -378,7 +382,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
         # For cpp and crt{i,n}.o
         - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
         - if: cross_target_platform not in ("osx-arm64", "osx-64")
@@ -402,20 +406,23 @@ outputs:
       ignore_run_exports:
         from_package:
           - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
-      run_exports:
-        strong:
-          - if: cross_target_cxx_stdlib == "libstdcxx"
-            then: libstdcxx >=${{ gcc_version }}
-          - if: cross_target_cxx_stdlib == "libcxx"
-            then: libcxx
     tests:
-      - files:
+      - <conda_recipe_manager.types.SentinelType object at 0x7a7153e51be0>:
+          - ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb-override.cpp -c -o tzdb-override.o -v
+          - ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb.cpp -c -o tzdb.o -v
+          - ${CXX} tzdb-override.o -o tzdb-override -v && ./tzdb-override
+          - ${CXX} tzdb.o -o tzdb -v && ./tzdb
+          - strace ./tzdb 2>&1 | grep ${CONDA_PREFIX}/lib/../share/zoneinfo/tzdata.zi
+          - unset PREFIX
+          - unset CONDA_PREFIX
+          - ./tzdb
+        files:
           recipe:
             - tests
         requirements:
           run:
             - if: cross_target_stdlib != "None"
-              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
         script:
           - test -f ${PREFIX}/bin/${{ TARGET }}-g++
           - CXX=$(${PREFIX}/bin/*-gcc -dumpmachine)-g++
@@ -425,26 +432,17 @@ outputs:
             then: ${CXX} -Wall cpp_aligned.o -o cpp_aligned --std=c++17 && ./cpp_aligned
           - ${CXX} -Wall tests/hello_world.cpp -c -o hello_world.o --std=c++17 -v
           - ${CXX} -Wall hello_world.o -o hello_world --std=c++17 -v
-          - if: cross_target_cxx_stdlib == "libstdcxx"
-            then: ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb-override.cpp -c -o tzdb-override.o -v
-          - if: cross_target_cxx_stdlib == "libstdcxx"
-            then: ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb.cpp -c -o tzdb.o -v
-          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
-            then: ${CXX} tzdb-override.o -o tzdb-override -v && ./tzdb-override
-          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
-            then: ${CXX} tzdb.o -o tzdb -v && ./tzdb
-          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
-            then: strace ./tzdb 2>&1 | grep ${CONDA_PREFIX}/lib/../share/zoneinfo/tzdata.zi
-          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
-            then: unset PREFIX
-          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
-            then: unset CONDA_PREFIX
-          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
-            then: ./tzdb
     about:
       summary: GNU C++ Compiler
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    run_exports:
+      # impose this requirement across the build/host boundary
+      strong:
+        - if: cross_target_cxx_stdlib == "libstdcxx"
+          then: libstdcxx >=${{ gcc_version }}
+        - if: cross_target_cxx_stdlib == "libcxx"
+          then: libcxx
   - package:
       name: gxx
     build:
@@ -489,7 +487,7 @@ outputs:
           then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
         # not needed due to pinning above but marks this build as using the new sysroots
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
       run:
         # For cpp and crt{i,n}.o
         - gcc_impl_${{ cross_target_platform }} >=${{ gcc_version }}
@@ -501,10 +499,6 @@ outputs:
           then: ${{ pin_subpackage("libstdcxx", upper_bound=None) }}
         - if: cross_target_stdlib != "None"
           then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
-      run_exports:
-        strong:
-          - libgfortran${{ libgfortran_soname }} ${{ gcc_version }}.*
-          - libgcc >=${{ gcc_version }}
       ignore_run_exports:
         from_package:
           - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
@@ -517,7 +511,7 @@ outputs:
             - if: x86_64 or aarch64 or ppc64le
               then: cmake >=3.11,<4
             - if: cross_target_stdlib != "None"
-              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
         script:
           - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.so
           - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.dylib
@@ -535,6 +529,11 @@ outputs:
       summary: GNU Fortran Compiler
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    run_exports:
+      # impose this requirement across the build/host boundary
+      strong:
+        - libgfortran${{ libgfortran_soname }} ${{ gcc_version }}.*
+        - libgcc >=${{ gcc_version }}
   - package:
       name: gfortran
     build:
@@ -577,12 +576,12 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
         - ${{ pin_subpackage("libgcc", exact=True) }}
       run:
         - ${{ pin_subpackage("libgcc", exact=True) }}
       run_constraints:
-        - libstdcxx-ng >=${{ version }}
+        - libstdcxx-ng ==${{ version }}=*_${{ build_num }}
     tests:
       - script:
           - test -f ${PREFIX}/lib/libstdc++.so
@@ -590,6 +589,7 @@ outputs:
       summary: The GNU C++ Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
   - package:
       name: libsanitizer
     build:
@@ -606,13 +606,12 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
       run:
         - libgcc >=${{ gcc_version }}
         - libstdcxx >=${{ gcc_version }}
       run_exports:
-        strong:
-          - libsanitizer >=${{ gcc_version }}
+        - libsanitizer ${{ gcc_version }}
     tests:
       - requirements:
           run:
@@ -631,6 +630,7 @@ outputs:
       summary: The GCC runtime libraries for sanitizers
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
   - package:
       name: libgomp
     build:
@@ -647,11 +647,11 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
       run_exports:
-        strong:
-          - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
-          - ${{ pin_subpackage("libgomp", upper_bound=None) }}
+        - strong:
+            - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
+            - ${{ pin_subpackage("libgomp", upper_bound=None) }}
       run_constraints:
         - if: win
           then: msys2-conda-epoch <0.0a0
@@ -667,6 +667,7 @@ outputs:
       summary: The GCC OpenMP implementation.
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
   - package:
       name: libgcc
     build:
@@ -683,21 +684,21 @@ outputs:
       build:
       host:
         - if: not osx
-          then: ${{ pin_subpackage("libgomp", upper_bound=None) }}
+          then: ${{ pin_subpackage("libgomp", exact=True) }}
         - if: not osx
-          then: ${{ pin_subpackage('_openmp_mutex', upper_bound=None) }}
+          then: ${{ pin_subpackage('_openmp_mutex', exact=True) }}
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
       run:
         - if: not osx
           then: ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
         - if: osx
           then: _openmp_mutex
       run_constraints:
-        - ${{ pin_subpackage("libgomp", upper_bound=None) }}
+        - ${{ pin_subpackage("libgomp", exact=True) }}
         - if: win
           then: msys2-conda-epoch <0.0a0
-        - libgcc-ng >=${{ version }}
+        - libgcc-ng ==${{ version }}=*_${{ build_num }}
     tests:
       - requirements:
           run:
@@ -720,6 +721,7 @@ outputs:
       summary: The GCC low-level runtime library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
   - package:
       name: _openmp_mutex
       version: ${{ openmp_ver }}
@@ -733,14 +735,14 @@ outputs:
     requirements:
       build:
       host:
-        - ${{ pin_subpackage('libgomp', upper_bound=None) }}
+        - ${{ pin_subpackage('libgomp', exact=True) }}
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
       run:
         - libgomp >=7.5.0
       run_exports:
-        strong:
-          - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
+        - strong:
+            - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
       run_constraints:
         - openmp_impl <0.0a0
         - if: win
@@ -770,11 +772,11 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
       run:
         - libgcc >=${{ gcc_version }}
       run_constraints:
-        - libgfortran >=${{ gcc_version }}
+        - libgfortran ${{ gcc_version }}
     tests:
       - script:
           - test -f ${PREFIX}/lib/libgfortran${SHLIB_EXT}
@@ -782,6 +784,7 @@ outputs:
       summary: The GNU Fortran Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
   - package:
       name: libgfortran
     build:
@@ -791,7 +794,7 @@ outputs:
       run:
         - ${{ pin_subpackage('libgfortran' ~ libgfortran_soname, exact=True) }}
       run_constraints:
-        - libgfortran-ng >=${{ version }}
+        - libgfortran-ng ==${{ version }}=*_${{ build_num }}
     tests:
       - script:
           - test -f ${PREFIX}/lib/libgfortran${SHLIB_EXT}
@@ -799,6 +802,7 @@ outputs:
       summary: The GNU Fortran Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
   # compatibility outputs for previous naming of the runtime libraries
   # with "-ng" suffix; for windows the suffix had never been introduced
   - package:
@@ -812,8 +816,8 @@ outputs:
       run:
         - ${{ pin_subpackage("libgcc", exact=True) }}
       run_exports:
-        strong:
-          - libgcc
+        - strong:
+            - libgcc
     tests:
       - script:
           - echo "empty wrapper for compatibility with previous naming"
@@ -821,6 +825,7 @@ outputs:
       summary: The GCC low-level runtime library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
   - package:
       name: libstdcxx-ng
     build:
@@ -834,8 +839,8 @@ outputs:
       run:
         - ${{ pin_subpackage("libstdcxx", exact=True) }}
       run_exports:
-        strong:
-          - libstdcxx
+        - strong:
+            - libstdcxx
     tests:
       - script:
           - echo "empty wrapper for compatibility with previous naming"
@@ -843,6 +848,7 @@ outputs:
       summary: The GNU C++ Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
   - package:
       name: libgfortran-ng
     build:
@@ -854,8 +860,8 @@ outputs:
       run:
         - ${{ pin_subpackage('libgfortran', exact=True) }}
       run_exports:
-        strong:
-          - libgfortran
+        - strong:
+            - libgfortran
     tests:
       - script:
           - echo "empty wrapper for compatibility with previous naming"
@@ -863,6 +869,8 @@ outputs:
       summary: The GNU Fortran Runtime Library
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
+
 about:
   summary: GNU Compiler Collection
   license: GPL-3.0-only WITH GCC-exception-3.1

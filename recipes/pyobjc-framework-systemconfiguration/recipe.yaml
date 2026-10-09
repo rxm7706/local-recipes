@@ -91,4 +91,8 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 conversion turned the commented-out `#patches:` into
+#    # a SentinelType key (G121); the comments stay indented under source. source.url's
+#    # `name.replace(...)` (minijinja has no str.replace method) is now the literal URL meta.yaml renders;
+#    # sha256 re-verified. Rendered on osx-64 only (osx-only). The feedstock has since moved to 12.2.2.
 ####

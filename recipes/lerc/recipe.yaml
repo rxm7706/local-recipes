@@ -65,3 +65,41 @@ about:
 extra:
   recipe-maintainers:
     - hmaarrfk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lerc
+  cfe-upstream-registry: github
+  cfe-upstream-name: Esri/lerc
+  cfe-purls:
+    - pkg:conda/lerc@${{ version }}?channel=conda-forge
+    - pkg:github/esri/lerc@v${{ version }}
+  cfe-upstream-repo: https://github.com/Esri/lerc
+  cfe-upstream-homepage: https://github.com/Esri/lerc
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: false:not-a-python-package
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lerc-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-09T09:52:00Z
+  cfe-generated-by-version: 8.98.0
+  cfe-generated-at-datetime: 2026-10-09T09:52:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T09:37:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion turned a commented-out `#host:`
+#    # block into a SentinelType key (G121). The key is gone; the upstream comments stay in place.
+#    # The feedstock is still v0; meta.yaml stays beside this file.
+# build:
+#    # build.sh and bld.bat copied verbatim from the feedstock's recipe/ (G94): the local mirror had
+#    # neither, so a local build would package nothing. bld.bat is saved as build.bat, the name
+#    # rattler-build runs for a v1 recipe on Windows; the feedstock keeps bld.bat for its meta.yaml.
+#    # LOCAL BUILD 2026-10-09 (linux-64): build and all tests passed.
+####

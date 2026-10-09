@@ -92,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-08T15:38:46-05:00'
-      tree: e2eb8057a9755c3a5e072165920a4e1cadd36a9a
+      derived_at: '2026-10-08T23:58:41-05:00'
+      tree: e3d49342f972fc7790defe194653e3d81a7f39f4-dirty
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -177,8 +177,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-08T14:37:46-05:00'
-      tree: 343bdf9a2e49a9650b0402f9a0de27209fd670b9-dirty
+      derived_at: '2026-10-09T00:50:03-05:00'
+      tree: 4f8ad495cee49e4caa6eea28d25fa708d7851af7-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
@@ -222,8 +222,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-10-04T09:57:30-05:00'
-      tree: adc10a8b2c5d8d777fc3c612d286563314b5478e
+      derived_at: '2026-10-09T00:50:03-05:00'
+      tree: 4f8ad495cee49e4caa6eea28d25fa708d7851af7
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet

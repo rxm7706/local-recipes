@@ -294,16 +294,16 @@ development_status:
   7-5-the-image-proves-itself-at-build-time: done
   70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs: done
   71-1-every-preflight-run-journals-each-lane-s-wall-time-and-exit-code: done
-  71-10-a-stopped-lane-is-journaled-cancelled-and-the-lane-that-stopped-the-run-red: backlog
+  71-10-a-stopped-lane-is-journaled-cancelled-and-the-lane-that-stopped-the-run-red: done
   71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: done
   71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: done
   71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: done
   71-5-the-two-lanes-every-branch-runs-fit-the-budget: done
-  71-6-the-large-suites-run-under-pytest-xdist-locally-and-in-ci-alike: backlog
-  71-7-the-one-minute-budget-is-a-check-that-reads-the-journal: backlog
-  71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: backlog
-  71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: backlog
-  72-1-the-guild-environment-answers-pyforge-mason: backlog
+  71-6-the-large-suites-run-under-pytest-xdist-locally-and-in-ci-alike: done
+  71-7-the-one-minute-budget-is-a-check-that-reads-the-journal: done
+  71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: done
+  71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: done
+  72-1-the-guild-environment-answers-pyforge-mason: done
   72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: blocked
   73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: done
   74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it: done
@@ -311,7 +311,7 @@ development_status:
   75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity: done
   76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value: done
   76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata: done
-  76-3-the-ledger-query-s-flags-fold-into-the-one-tree-and-evaluate-through-openfeature: backlog
+  76-3-the-ledger-query-s-flags-fold-into-the-one-tree-and-evaluate-through-openfeature: done
   76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: backlog
   77-1-the-console-lists-tier-2-specs-and-the-archived-dreams: done
   78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request: done
@@ -484,9 +484,9 @@ development_status:
   epic-7-retrospective: optional
   epic-70: done
   epic-70-retrospective: optional
-  epic-71: in-progress
+  epic-71: done
   epic-71-retrospective: optional
-  epic-72: backlog
+  epic-72: in-progress
   epic-72-retrospective: optional
   epic-73: done
   epic-73-retrospective: optional

@@ -1,7 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-#     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs" tests  # [win]
-#     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not TestMouse and not TestFailSafe" tests  # [linux]
-#     - pytest
 schema_version: 1
 
 context:
@@ -81,7 +78,49 @@ extra:
     - jschueller
 
 #### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyautogui
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyautogui
+  cfe-purls:
+    - pkg:conda/pyautogui@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyautogui@${{ version }}
+  cfe-upstream-repo: https://github.com/asweigart/pyautogui
+  cfe-upstream-homepage: https://github.com/asweigart/pyautogui
+  cfe-import-names: [pyautogui]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: false:feedstock-mirror-no-pip-check
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyautogui-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-09T09:52:00Z
+  cfe-generated-by-version: 8.98.0
+  cfe-generated-at-datetime: 2026-10-09T09:52:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-09T09:36:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
 # CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion left a SentinelType key at the
+#    # top level, holding the orphaned `test.requires: [pip]` (G121). Removed: nothing in the script test
+#    # needs pip. The feedstock is still v0; meta.yaml stays beside this file.
+# build:
+#    # Per-platform, not noarch: platform-conditional host/run deps; no compiler.
+#    # LOCAL BUILD 2026-10-09 (linux-64): the build script itself failed, status 127,
+#    # `xvfb-run: command not found`. The linux script runs `DISPLAY=localhost:1.0 xvfb-run pip install`,
+#    # and the feedstock gets xvfb-run from its yum_requirements.txt (the CI image); this host has none.
+#    # A host-tool gap, not a recipe defect (G95); not re-run.
 # tests:
-#     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not test_pause" tests  # [osx]
+#    # Upstream's meta.yaml carries this comment and these commented-out lines; crm moved them, and
+#    # Story 22.1 parks them here:
+#    # Disabling test suite for now so many of them requires
+#    #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs" tests  # [win]
+#    #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not TestMouse and not TestFailSafe" tests  # [linux]
+#    #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not test_pause" tests  # [osx]
+#    # requires:
+#    #     - pytest
 ####

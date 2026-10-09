@@ -205,6 +205,29 @@ def test_plan_stdout_stays_json_when_format_only_paths_skipped(driver, monkeypat
     json.loads(out)
 
 
+def test_run_pytest_cov_carries_station_test_task_xdist_flags(driver, monkeypatch):
+    captured: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        captured.append(list(cmd))
+        class _Proc:
+            returncode = 0
+
+        return _Proc()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    root = REPO / "src" / "shared" / "packages" / "pyforge-marshal"
+    report = REPO / ".coverage-report-marshal-unit.json"
+    try:
+        driver._run_pytest_cov(station="marshal", suite="unit", report=report)
+    finally:
+        report.unlink(missing_ok=True)
+    assert captured
+    cmd = captured[0]
+    assert "-n" in cmd and "auto" in cmd
+    assert "--dist" in cmd and "loadgroup" in cmd
+
+
 def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):
     paths_file = tmp_path / "paths.txt"
     paths_file.write_text("pixi.toml\n", encoding="utf-8")

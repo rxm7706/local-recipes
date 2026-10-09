@@ -4805,7 +4805,7 @@ lane; a lane whose pytest asserts `git -C <tmp_path> rev-parse` fails passes, an
 exists after a green run; the four `tests/scripts/` tests pass under `pixi run -e pyforge-guild pr-preflight` (manual); the 71.1-71.4 preflight
 tests pass, with only `test_each_lane_gets_isolated_scratch_env`'s location assertion moved; which lanes run, what each runs, the hook and the
 four tests do not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 71.9: A reduced suite lane never fails on a segment that selects no tests
 
@@ -4834,7 +4834,7 @@ end to end through `build_suite_lane_overrides` and `run_preflight`, a task whos
 partition by real, non-empty node ids; the 71.1-71.4 preflight tests pass with only `test_complement_marker_variants`'s equal-marker assertion
 changed and the partition test asserting non-empty sets; a lane run whole keeps exit 5 red; the gate driver, `pixi.toml` and lane selection do
 not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 71.10: A stopped lane is journaled cancelled, and the lane that stopped the run red
 
@@ -4861,7 +4861,7 @@ the verdict and the stderr red-lane lines name only lanes that failed on their o
 lane and `red_lanes == [failing lane]`; a SIGINT test journals both running lanes `cancelled` (`interrupt`) and exits 130 with no process left;
 a lane that exits non-zero on its own before the stop's signal stays `red`; a Story 71.9 reduced lane stopped mid-segment is `cancelled`
 with that segment `cancelled`; the 71.1-71.9 preflight tests pass unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
@@ -4898,7 +4898,7 @@ stays under CAP-5's bound as restated 2026-09-28, 2 GB (measured and recorded in
 Guild's resolved pixi does not move and `pixi-version-check` exits 0; virtualenv reads 20.x and filelock 3.x (recorded) and no
 other Guild package changes version; `pyforge-station-tests` and `detectors-ci` green;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 **Amended 2026-09-28 (later):** the banner rewrite also records **atlas's exclusion beside warden's** — a comment in
 `[feature.pyforge-guild.dependencies]` naming why `pyforge-atlas` is not there (the steward memlog's 2026-09-28 decision:
 it solves, but its closure adds 257 packages / ~841 MB installed and moves the Guild's libabseil, nodejs, protobuf and
@@ -5182,7 +5182,7 @@ override that persists nothing, accepting the tree keys (the old short names map
 **And** each gated formatter's OFF path refuses as today, naming the tree key; exit codes are unchanged; the meta-test reds
 a module that reads `.steward/flags.json` or a `FLAGS_` variable; the Guild stays under CAP-5's 2 GB bound, re-measured and
 recorded; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 76.4: The pyforge.three_surfaces demo flag leaves the tree
 

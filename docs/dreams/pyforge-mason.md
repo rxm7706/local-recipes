@@ -441,6 +441,18 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   surface (`mason-cfe-surface-check`). DW-PRESENTON-PHASE0-1 stays open: its exits wait on decisions and access outside
   this repo. The 71 open rows that carry no severity, and the one open high row, are outside these two phases. Owner:
   mason (`spec-pyforge-mason`, no new CAP). → Epic 27 / Stories 27.1–27.2, specced 2026-10-03.
+- **2026-10-09 — Ruled: Story 22.1 lands for eleven recipes, and ctng-compilers waits for rattler-build.** Operator
+  ruling, 2026-10-09. The 22.1 dispatch repaired all twelve sentinel keys. Eleven of the twelve then render, validate and
+  lint clean on a platform each builds. `ctng-compilers` does not: once its sentinel and its output-level `run_exports`
+  are repaired, `rattler-build build --render-only` 0.76.1 (`.ci_support/linux64.yaml` plus the local pinning) still
+  exits 1 with `Cycle detected in recipe outputs` across the gcc stack. rattler-build #2531 (a false cycle from
+  `pin_subpackage` in `run_constraints`) closed on 2026-07-03 and 0.76.1 carries its fix, so this is a case that fix did
+  not cover. **What it looks like when real:** 22.1 lands its eleven. `ctng-compilers/recipe.yaml` stays as `main` has
+  it, sentinel included, and 22.1's corpus check allowlists that one file by name. A new story repairs it once a
+  rattler-build release, or a feedstock-faithful variant set, renders the gcc output graph, and it removes the allowlist
+  entry. **Constraints:** a `fix` story under CAP-32, no new CAP, no flag (`flag-exempt: recipe-build`). It stays
+  `blocked` until the operator flips it. Reporting the cycle upstream is outward work and waits for the operator.
+  Owner: mason. → `spec-pyforge-mason` CAP-32 / Epic 22 / Story 22.3 (FR-54), specced 2026-10-09.
 
 ## One-chain fold — 2026-09-17
 

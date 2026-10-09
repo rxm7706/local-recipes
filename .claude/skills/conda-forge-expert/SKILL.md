@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.93.5
+version: 8.97.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -233,6 +233,15 @@ Two properties worth preserving if you touch the helper:
 
 `tests/unit/test_path_guard.py` covers the escapes; add a case there rather than
 re-deriving the rules at a new call site.
+
+### Negative corpus (offline regression gate)
+
+`tests/fixtures/negative/` holds deliberately bad recipes (ported grayskull outputs,
+compiler-without-stdlib, plus a by-reference sentinel-key path). `tests/unit/test_negative_corpus.py`
+asserts each defect is still rejected by its named check (`TEST-002`, `SEL-005`, `STD-001`,
+licence semantics, and so on). **Never edit a fixture to green a test.** Run the corpus with
+`pytest .claude/skills/conda-forge-expert/tests/unit/test_negative_corpus.py -q` or as part of
+`pixi run -e local-recipes test-ci`.
 
 ### New Scripts Resolve the Data Dir / Repo Root Through `_paths`, Never a Hand-Rolled Walk
 
@@ -541,6 +550,8 @@ extra:
 
 The `# CFE comments` block mirrors the recipe's structure (location keys `build` / `context` / `host` / `run` / `requirements` / `about` / `tests`) so each parked note shows where it would belong if promoted. Both the `# CFE metadata` and `# CFE comments` sections are CFE-local-only and are **stripped before any push** (along with `extra.cfe-*` keys). `recipe-generator.py` must emit new rationale into this block, never inline.
 
+**PyPI generator questions (v8.96.0, Story 23.2 — Operating Principle 1).** On the `pypi` subcommand, when metadata or the sdist cannot settle build backend, import name, licence, licence file, Python floor, or noarch (no sdist), `recipe-generator.py` still writes the recipe using each field's **existing default**, prints a `Questions (N):` block to stdout, and mirrors the same list under `# CFE comments` → `# Header:`. Do not silently pick among plausible values — the defaults are the same heuristics as before (see **G7** import-name divergence, **G55** backend-from-source vs wheel, **G90** licence/classifier gaps). Use `recipe-generator.py pypi … --strict` to refuse file output when any question exists (exit non-zero). The v0 `legacy` path prints questions but writes no CFE block.
+
 **The 4 identity/decision fields are the cached "hard-won" answers** (added v8.37.0; from the 4-analyst deep-analysis synthesis, 2026-06-19). They sit at the end of the identity/upstream block (after `cfe-upstream-homepage`, before `cfe-on-conda-forge-status`). Each caches a value that authoring would otherwise have to recompute — and that a **regen** (`grayskull` / `recipe-generator.py` re-running over a version bump) would re-guess, possibly *wrong*. Value semantics:
 
 - **`cfe-import-names`** — the **verified** top-level Python import name(s) — the names the CFEP-25 test `imports:` use. This **caches the G7/G10 divergence**: when the import name does NOT match the distribution name (`altk`, `OpenDsStar`, `pymilvus.model`, `ibm_boto3`, `baidubce`, `data_diff`), grayskull re-guesses it wrong on every regen and the import test breaks. With the verified value cached, a regen **restores** the correct import instead of re-deriving it from the sdist. This is the **single highest-frequency authoring recompute**, and is especially load-bearing for the feedstock-refresh effort (256 regens). Non-Python recipes: `[]`.
@@ -676,6 +687,8 @@ When pattern (2) is used, ship the LICENSE in-recipe and remove the stale "upstr
 Confirm against `unzip -l <upstream>.whl | grep static/` — only paths present there need licenses. Live: `reactpy-django 6.0.0b1` (2026-07-14) declared `BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause` over ~200 enumerated `node_modules` LICENSE files; the artifact actually ships only `@pyscript/core` (Apache-2.0), `morphdom` (MIT), and `@reactpy/client` (MIT, inlining preact + event-to-object + json-pointer, all MIT). Correct answer: **`MIT AND Apache-2.0`** over 8 entries. The spurious `EPL-2.0` / `BSD-*` came purely from dev-only tooling.
 
 Why this matters: the conda-forge web-service review accepts any of the three patterns, but reviewers occasionally flag (3) ("can this be simplified?"). (1) is invisible; (2) reads as deliberate and gets a free conversational checkpoint with reviewers ("ship LICENSE in-recipe because upstream archive omits it").
+
+**GPL-family `-only` vs `-or-later` (v8.95.0).** On `license-checker.py --check-source`, CFE compares `about.license` to upstream `LICENSE` / `LICENCE` / `COPYING` text for GPL, LGPL, AGPL, and GFDL identifiers that carry the `-only` or `-or-later` axis. When the file grants "any later version" but the recipe declares `-only`, the check exits non-zero and names the matching `-or-later` identifier. Permissive licences skip; ambiguous text skips with a note to read the file by hand. A missing `license_file` in the extracted source also fails the run.
 
 **Apache-2.0 `NOTICE` files.** If the upstream source ships a `NOTICE` file, Apache-2.0 §4(d) requires it to be redistributed alongside the license. List both in `license_file` as a YAML list:
 
@@ -1324,9 +1337,9 @@ extra:
 ### Validation & Quality
 | Tool | Description | Example |
 |---|---|---|
-| `validate_recipe` | Schema, license, checksums + `rattler-build lint` pass | `validate_recipe(recipe_path="recipes/numpy")` |
+| `validate_recipe` | Schema, license, checksums, conda-smithy lint, and (v1 `recipe.yaml` only) a tree walk that reds non-string mapping keys and whole-key/whole-value Python object reprs (e.g. conda-recipe-manager `SentinelType` leaks — see Story 22.1 corpus repair) | `validate_recipe(recipe_path="recipes/numpy")` |
 | `check_dependencies` | Verifies all deps exist on conda-forge. Batch repodata.json — fast, air-gapped-friendly, JFrog Artifactory-compatible | `check_dependencies(recipe_path="recipes/numpy")` |
-| `optimize_recipe` | 18 check codes — **critical** (STD-001: compiler without stdlib; STD-002: format mixing; SCHEMA-001: missing v1 schema header), **security** (SEC-001: no sha256), **completeness** (MAINT-001: no maintainers; TEST-001: no tests; TEST-002: noarch:python tests pinned to a single Python version instead of `[python_min, "*"]` ([staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932)); TEST-003: package_contents substituted for python.imports without justification; ABT-001: no license_file; ABT-002: v0 about-fields in v1 recipe; **LIC-001: secondary-source LICENSE pattern (3) detected, convert to in-recipe pattern (2)** [v8.12.0]), **formatting** (**FMT-001: list items indented at parent-key depth instead of 2 spaces deeper** [v8.12.0]), **quality** (DEP-001/002, PIN-001, SCRIPT-001/002, SEL-001/002/003) | `optimize_recipe(recipe_path="recipes/numpy")` |
+| `optimize_recipe` | 19 check codes — **critical** (STD-001: compiler without stdlib; STD-002: format mixing; SCHEMA-001: missing v1 schema header), **security** (SEC-001: no sha256), **completeness** (MAINT-001: no maintainers; TEST-001: no tests; TEST-002: noarch:python tests pinned to a single Python version instead of `[python_min, "*"]` ([staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932)); TEST-003: package_contents substituted for python.imports without justification; ABT-001: no license_file; ABT-002: v0 about-fields in v1 recipe; **LIC-001: secondary-source LICENSE pattern (3) detected, convert to in-recipe pattern (2)** [v8.12.0]), **formatting** (**FMT-001: list items indented at parent-key depth instead of 2 spaces deeper** [v8.12.0]), **quality** (DEP-001/002, PIN-001, SCRIPT-001/002, SEL-001/002/003/004/005) | `optimize_recipe(recipe_path="recipes/numpy")` |
 
 ### Build & Debug
 | Tool | Description | Example |

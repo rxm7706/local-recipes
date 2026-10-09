@@ -60,3 +60,13 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion left a SentinelType key on a
+#    # second test element that held only `requires: [pip]` once its pip-check command was commented out
+#    # (G121). Removed; the python test keeps its imports and pip_check: false. Rendered on linux-64 only;
+#    # not built: the sdist ships a prebuilt semgrep-core that a noarch: python build would repackage.
+#    # semgrep has no conda-forge feedstock.
+####

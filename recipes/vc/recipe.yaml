@@ -46,13 +46,25 @@ source:
 build:
   number: ${{ build_num }}
   skip: not win
-  script: |
-    python ${{ RECIPE_DIR }}/vc_repack.py --extract --runtime-version ${{ runtime_version }} --target-platform ${{ cross_target_platform }}
 
 outputs:
+  - staging:
+      name: vc-extract
+    build:
+      script: python ${{ RECIPE_DIR }}/vc_repack.py --extract --runtime-version ${{ runtime_version }} --target-platform ${{ cross_target_platform }}
+    requirements:
+      build:
+        - if: build_platform is startingwith("win")
+          then: m2-p7zip <10
+        - if: build_platform is not startingwith("win")
+          then: p7zip
+        - python *
   - package:
       name: vcomp${{ vc_major }}
       version: ${{ runtime_version }}
+    inherit:
+      from: vc-extract
+      run_exports: false
     build:
       skip: cross_target_platform != target_platform
       always_copy_files:
@@ -64,8 +76,7 @@ outputs:
         missing_dso_allowlist:
           - "*.dll"
           - "*.DLL"
-      script:
-        file: vc_repack.py
+      script: python ${{ RECIPE_DIR }}/vc_repack.py --install-vcomp
     requirements:
       build:
       host:
@@ -94,6 +105,9 @@ outputs:
   - package:
       name: vc${{ vc_major }}_runtime
       version: ${{ runtime_version }}
+    inherit:
+      from: vc-extract
+      run_exports: false
     build:
       skip: cross_target_platform != target_platform
       always_copy_files:
@@ -105,8 +119,7 @@ outputs:
         missing_dso_allowlist:
           - "*.dll"
           - "*.DLL"
-      script:
-        file: vc_repack.py
+      script: python ${{ RECIPE_DIR }}/vc_repack.py --install-runtime
     requirements:
       build:
       host:
@@ -122,8 +135,79 @@ outputs:
     tests:
       - script:
           - dir %PREFIX%\\Library\\bin\\*.dll
-          - if not exist %LIBRARY_BIN%\${{ dllname }} exit 1
-          - if not exist %PREFIX%\${{ dllname }} exit 1
+          - |
+              for %%D in (
+                  api-ms-win-core-console-l1-1-0.dll
+                  api-ms-win-core-datetime-l1-1-0.dll
+                  api-ms-win-core-debug-l1-1-0.dll
+                  api-ms-win-core-errorhandling-l1-1-0.dll
+                  api-ms-win-core-file-l1-1-0.dll
+                  api-ms-win-core-file-l1-2-0.dll
+                  api-ms-win-core-file-l2-1-0.dll
+                  api-ms-win-core-handle-l1-1-0.dll
+                  api-ms-win-core-heap-l1-1-0.dll
+                  api-ms-win-core-interlocked-l1-1-0.dll
+                  api-ms-win-core-libraryloader-l1-1-0.dll
+                  api-ms-win-core-localization-l1-2-0.dll
+                  api-ms-win-core-memory-l1-1-0.dll
+                  api-ms-win-core-namedpipe-l1-1-0.dll
+                  api-ms-win-core-processenvironment-l1-1-0.dll
+                  api-ms-win-core-processthreads-l1-1-0.dll
+                  api-ms-win-core-processthreads-l1-1-1.dll
+                  api-ms-win-core-profile-l1-1-0.dll
+                  api-ms-win-core-rtlsupport-l1-1-0.dll
+                  api-ms-win-core-string-l1-1-0.dll
+                  api-ms-win-core-synch-l1-1-0.dll
+                  api-ms-win-core-synch-l1-2-0.dll
+                  api-ms-win-core-sysinfo-l1-1-0.dll
+                  api-ms-win-core-timezone-l1-1-0.dll
+                  api-ms-win-core-util-l1-1-0.dll
+                  api-ms-win-crt-conio-l1-1-0.dll
+                  api-ms-win-crt-convert-l1-1-0.dll
+                  api-ms-win-crt-environment-l1-1-0.dll
+                  api-ms-win-crt-filesystem-l1-1-0.dll
+                  api-ms-win-crt-heap-l1-1-0.dll
+                  api-ms-win-crt-locale-l1-1-0.dll
+                  api-ms-win-crt-math-l1-1-0.dll
+                  api-ms-win-crt-multibyte-l1-1-0.dll
+                  api-ms-win-crt-private-l1-1-0.dll
+                  api-ms-win-crt-process-l1-1-0.dll
+                  api-ms-win-crt-runtime-l1-1-0.dll
+                  api-ms-win-crt-stdio-l1-1-0.dll
+                  api-ms-win-crt-string-l1-1-0.dll
+                  api-ms-win-crt-time-l1-1-0.dll
+                  api-ms-win-crt-utility-l1-1-0.dll
+                  concrt140.dll
+                  msvcp140_1.dll
+                  msvcp140_2.dll
+                  msvcp140.dll
+                  ucrtbase.dll
+                  vcamp140.dll
+                  vccorlib140.dll
+                  vcomp140.dll
+                  vcruntime140.dll
+              ) do (
+                if not exist %LIBRARY_BIN%\%%D exit 1
+                if not exist %PREFIX%\%%D exit 1
+              )
+          - if: vsyear | int >= 2019
+            then: |
+                for %%D in (
+                    msvcp140_atomic_wait.dll
+                    msvcp140_codecvt_ids.dll
+                    vcruntime140_1.dll
+                ) do (
+                  if not exist %LIBRARY_BIN%\%%D exit 1
+                  if not exist %PREFIX%\%%D exit 1
+                )
+          - if: vsyear | int >= 2022
+            then: |
+                for %%D in (
+                    vcruntime140_threads.dll
+                ) do (
+                  if not exist %LIBRARY_BIN%\%%D exit 1
+                  if not exist %PREFIX%\%%D exit 1
+                )
     about:
       summary: MSVC runtimes associated with cl.exe version ${{ cl_version }} (VS ${{ vsyear }} update ${{ update_version }})
       license: LicenseRef-MicrosoftVisualCpp2015-2022Runtime
@@ -144,12 +228,15 @@ outputs:
       - script: echo "this is an empty wrapper package"
     about:
       license: BSD-3-Clause
+      license_file: []
       summary: A backwards compatible meta-package. See vc${{ vc_major }}_runtime for the new package.
       homepage: https://github.com/conda-forge/vc-feedstock
   - package:
       name: vc
       version: ${{ vcver }}
     build:
+      variant:
+        down_prioritize_variant: 1
       skip: cross_target_platform != target_platform
     requirements:
       run:
@@ -162,6 +249,7 @@ outputs:
       - script: echo "this is an empty wrapper package"
     about:
       license: BSD-3-Clause
+      license_file: []
       summary: >-
         A meta-package to impose mutual exclusivity among software
         built with different VS versions
@@ -174,9 +262,13 @@ outputs:
   - package:
       name: vs${{ vsyear }}_${{ cross_target_platform }}
       version: ${{ cl_version }}
+    inherit:
+      from: vc-extract
+      run_exports: false
     build:
-      script:
-        file: vc_repack.py
+      variant:
+        down_prioritize_variant: 1
+      script: python ${{ RECIPE_DIR }}/vc_repack.py --activate --host-platform ${{ target_platform }} --target-platform ${{ cross_target_platform }} --runtime-version ${{ runtime_version }} --vsyear ${{ vsyear }} --vsver ${{ vsver }} --vcver ${{ vcver }} --vcvars-ver ${{ vcvars_ver }} --update-version ${{ update_version }}
     requirements:
       run:
         # Used to set up the path in the activate script
@@ -197,9 +289,13 @@ outputs:
     about:
       summary: Activation and version verification of MSVC ${{ vcver }} (VS ${{ vsyear }} compiler, update ${{ update_version }})
       license: BSD-3-Clause
+      license_file: []
   - package:
       name: vs_${{ cross_target_platform }}
       version: ${{ vsyear }}.${{ update_version }}
+    build:
+      variant:
+        down_prioritize_variant: 1
     requirements:
       run:
         - vs${{ vsyear }}_${{ cross_target_platform }} ${{ cl_version }}.*
@@ -229,10 +325,12 @@ outputs:
     about:
       summary: Activation and version verification of MSVC ${{ vcver }} (VS ${{ vsyear }} compiler, update ${{ update_version }})
       license: BSD-3-Clause
+      license_file: []
 
 about:
   summary: Activation and version verification of MSVC ${{ vcver }} (VS ${{ vsyear }} compiler, update ${{ update_version }})
   license: LicenseRef-ProprietaryMicrosoft
+  license_file: LICENSE.TXT
   homepage: https://docs.microsoft.com/en-us/visualstudio/windows/?view=vs-${{ vsyear }}
 
 extra:
@@ -245,3 +343,33 @@ extra:
     - msarahan
     - isuruf
     - h-vetinari
+
+#### CFE metadata AND comments
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion left a SentinelType key on the
+#    # vs_<target> test, holding meta.yaml's vsyear-at-least-2022 clang checks (G121). Rendered on
+#    # win-64 only; not built (Windows-only). The feedstock is still v0; meta.yaml stays beside this file.
+# context:
+#    # vsyear, vsver, vcver, runtime_version, update_version, cl_version, uuid, sha256 and
+#    # cross_target_platform come from the feedstock's conda_build_config.yaml, first zip (VS 2026, win-64).
+#    # The local mirror has no CBC, and meta.yaml's own defaults (vsyear "") do not render.
+# outputs:
+#    # The top-level build (vc_repack --extract, with m2-p7zip/p7zip and python) is the `vc-extract` staging
+#    # output; vcomp, vc_runtime and vs<year>_<target> inherit it with `run_exports: false`. A top-level v1
+#    # build.script would be merged into every output, the metapackages included. Each output's
+#    # `script_interpreter: python -m vc_repack --<mode>` (not a v1 field) is now
+#    # a `python <RECIPE_DIR>/vc_repack.py --<mode>` script. `build_platform.startswith("win")` is
+#    # `build_platform is startingwith("win")` (minijinja has no str.startswith). `track_features: [vc14]`
+#    # is rejected by rattler-build 0.76.1: `variant.down_prioritize_variant: 1`. `run_exports: - strong:`
+#    # is the v1 mapping `run_exports: strong:`. The vs_<target> run_constraint gained `.*` (conda-build read
+#    # the bare `2026.1` as a prefix).
+# about:
+#    # v1 lint R-013 needs a top-level license_file: LICENSE.TXT (the feedstock's recipe/LICENSE.TXT,
+#    # Microsoft's runtime terms, matching LicenseRef-ProprietaryMicrosoft). The BSD-3-Clause metapackages
+#    # set `license_file: []` so they do not inherit it; meta.yaml ships them with no licence file.
+# tests:
+#    # The vs_<target> clang checks and their `clang` test requirement run under
+#    # win and vsyear >= 2022. vc_runtime's flattened jinja dllname loop is three `for %%D`
+#    # blocks: the base DLL list, plus the >=2019 and >=2022 lists.
+####

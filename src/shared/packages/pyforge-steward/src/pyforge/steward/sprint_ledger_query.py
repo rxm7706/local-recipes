@@ -14,15 +14,13 @@ Supports:
   default and wraps the tracked-twin parser below).
 - Lifecycle hooks (`LedgerQueryHook`: `pre_query` / `post_query` / `on_export`); a hook
   that raises is reported on stderr and in `QueryResult.warnings`, never aborts the query.
-- Feature flags, resolved by `eval_flag()` in this order and with NO SDK dependency
-  (nothing here imports `openfeature`; the `flags.json` entry shape is merely
-  OpenFeature-shaped): (1) a caller's `flag_overrides` dict -- the CLI's repeatable
-  `--flag name=value`; (2) the `FLAGS_<NAME>` environment variable (an empty value
-  counts as unset); (3) a `flags.json` file -- the explicit `flags_file_path`, else
-  `<repo-root>/.steward/flags.json`; an explicit path that does not exist falls through
-  to the default, never to a cwd-relative file; (4) the caller's `default_value`.
-  Every optional integration sits behind one of these flags (`FORMATTER_FLAGS`,
-  `FLAG_POSTGRES_SYNC`); a flag left off produces no write to its target.
+- Feature flags on the one flagd tree (`src/platform/config/flags.json`), keys such as
+  `pyforge.steward.ledger_query_dossier_export`, read through `pyforge.core.flags.read_boolean`
+  (OpenFeature FILE provider when installed). Resolution:
+  (1) a caller's `flag_overrides` dict -- the CLI's repeatable `--flag name=value` (short
+  legacy names map to tree keys); (2) the tree via `read_boolean`; (3) the caller's
+  `default_value` when the tree cannot be read. Every optional integration sits behind one
+  tree key (`FORMATTER_FLAGS`, `FLAG_POSTGRES_SYNC`); a flag left off produces no write.
 - Work Passports: a deterministic UUIDv5 identity per story (`passport_id`) that
   outlives renames; Jira / GitHub ids are aliases bound to it. `sync_to_postgres()` is
   a thin call into the `pyforge-steward[dashboard]` extra's `passport_sync`.
@@ -47,7 +45,6 @@ import csv
 import html
 import io
 import json
-import os
 import re
 import sys
 import uuid
@@ -66,7 +63,6 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 # cross-duty) ─────────────────────────────────────────────────────────────────
 
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
-_FLAGS_RELATIVE_PATH = Path(".steward/flags.json")
 _PROJECTS_RELATIVE_PATH = Path("_bmad-output/projects")
 
 # The JSON schema the `json` formatter's `$schema` URN promises.
@@ -94,11 +90,21 @@ def _warn(message: str) -> None:
 
 # --- Feature Flags ---
 
-FLAG_POSTGRES_SYNC = "enable_postgres_sync"
-FLAG_DOSSIER_EXPORT = "enable_dossier_export"
-FLAG_VIZRO_DATASET = "enable_vizro_dataset"
-FLAG_HERALD_FACTS = "enable_herald_facts"
-FLAG_JIRA_GITHUB_MATRIX = "enable_jira_github_matrix"
+FLAG_POSTGRES_SYNC = "pyforge.steward.ledger_query_postgres_sync"
+FLAG_DOSSIER_EXPORT = "pyforge.steward.ledger_query_dossier_export"
+FLAG_VIZRO_DATASET = "pyforge.steward.ledger_query_vizro_dataset"
+FLAG_HERALD_FACTS = "pyforge.steward.ledger_query_herald_facts"
+FLAG_JIRA_GITHUB_MATRIX = "pyforge.steward.ledger_query_jira_github_matrix"
+
+_LEGACY_FLAG_ALIASES: Dict[str, str] = {
+    "enable_postgres_sync": FLAG_POSTGRES_SYNC,
+    "enable_dossier_export": FLAG_DOSSIER_EXPORT,
+    "enable_vizro_dataset": FLAG_VIZRO_DATASET,
+    "enable_herald_facts": FLAG_HERALD_FACTS,
+    "enable_jira_github_matrix": FLAG_JIRA_GITHUB_MATRIX,
+    "enable_glass_export": "pyforge.steward.glass_export",
+}
+_TREE_TO_LEGACY: Dict[str, str] = {tree: short for short, tree in _LEGACY_FLAG_ALIASES.items()}
 
 # Formatter name -> the flag that gates it (every optional integration, CAP-2).
 FORMATTER_FLAGS: Dict[str, str] = {
@@ -114,12 +120,16 @@ _TRUTHY = frozenset({"true", "1", "yes", "on"})
 _FALSY = frozenset({"false", "0", "no", "off"})
 
 
-def flag_env_var(flag_name: str) -> str:
-    return f"FLAGS_{flag_name.upper().replace('-', '_')}"
+def resolve_flag_key(flag_name: str) -> str:
+    """Map a CLI short name or a tree key to the canonical tree key."""
+    return _LEGACY_FLAG_ALIASES.get(flag_name, flag_name)
 
 
-def flag_off_message(flag_name: str) -> str:
-    return f"flag {flag_name} is off (set {flag_env_var(flag_name)}=true, flags.json, or --flag {flag_name}=true)"
+def flag_off_message(flag_key: str) -> str:
+    short = _TREE_TO_LEGACY.get(flag_key, flag_key)
+    return (
+        f"flag {flag_key} is off (set flag-overlays.json variant on, or --flag {short}=true or --flag {flag_key}=true)"
+    )
 
 
 def _coerce_flag_value(raw: Any) -> Any:
@@ -145,52 +155,24 @@ def parse_flag_overrides(pairs: Optional[List[str]]) -> Dict[str, Any]:
     return overrides
 
 
-def _default_flags_file() -> Optional[Path]:
-    try:
-        return repo_root() / _FLAGS_RELATIVE_PATH
-    except RuntimeError:
-        return None
-
-
 def eval_flag(
     flag_name: str,
     default_value: Any,
     flag_overrides: Optional[Dict[str, Any]] = None,
-    flags_file_path: Optional[Path] = None,
+    flags_path: Optional[Path] = None,
 ) -> Any:
-    """Evaluate a feature flag with hierarchical resolution:
-    1. Direct CLI / function call override (`flag_overrides`)
-    2. Environment variable (`FLAGS_<FLAG_NAME_UPPER>`; empty = unset)
-    3. `flags.json` (`flags_file_path`, else `<repo-root>/.steward/flags.json`;
-       an explicit path that does not exist is NOT replaced by a cwd fallback)
-    4. Provided `default_value`
+    """Evaluate a feature flag: CLI overrides, then the one tree via ``read_boolean``."""
+    from pyforge.core.flags import read_boolean  # noqa: PLC0415
 
-    A `flags.json` entry is either a bare value or `{"state": "ENABLED"|"DISABLED",
-    "value": ...}`; `DISABLED` is False regardless of `value`.
-    """
-    if flag_overrides and flag_name in flag_overrides:
-        return _coerce_flag_value(flag_overrides[flag_name])
+    tree_key = resolve_flag_key(flag_name)
+    if flag_overrides:
+        legacy = _TREE_TO_LEGACY.get(tree_key)
+        for candidate in (flag_name, tree_key, legacy):
+            if candidate and candidate in flag_overrides:
+                return _coerce_flag_value(flag_overrides[candidate])
 
-    raw_env = os.environ.get(flag_env_var(flag_name))
-    if raw_env is not None and raw_env.strip() != "":
-        return _coerce_flag_value(raw_env)
-
-    path = flags_file_path if flags_file_path is not None else _default_flags_file()
-    if path is not None and path.is_file():
-        try:
-            flags_data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            _warn(f"ignoring unreadable flags file {path}: {exc}")
-            flags_data = {}
-        if isinstance(flags_data, dict) and flag_name in flags_data:
-            entry = flags_data[flag_name]
-            if isinstance(entry, dict) and "state" in entry:
-                if str(entry["state"]).upper() == "DISABLED":
-                    return False
-                return entry.get("value", True)
-            return entry
-
-    return default_value
+    default_bool = bool(default_value) if isinstance(default_value, bool) else False
+    return read_boolean(tree_key, default_bool, flags_path=flags_path)
 
 
 # --- Statuses ---
@@ -1324,11 +1306,11 @@ class SprintLedgerQueryEngine:
     def __init__(
         self,
         root_dir: Optional[Path] = None,
-        flags_file_path: Optional[Path] = None,
+        flags_path: Optional[Path] = None,
         process: Optional[ProcessPort] = None,
     ) -> None:
         self.root_dir = Path(root_dir) if root_dir is not None else repo_root()
-        self.flags_file_path = flags_file_path
+        self.flags_path = flags_path
         self.process: ProcessPort = process if process is not None else PosixProcess()
         self.formatters = FormatterRegistry()
         self.sources = SourceRegistry()
@@ -1350,7 +1332,7 @@ class SprintLedgerQueryEngine:
 
     def flag(self, flag_name: str, default_value: Any = False, flag_overrides: Optional[Dict[str, Any]] = None) -> Any:
         """`eval_flag` bound to this engine's flags file."""
-        return eval_flag(flag_name, default_value, flag_overrides, self.flags_file_path)
+        return eval_flag(flag_name, default_value, flag_overrides, self.flags_path)
 
     def query(
         self,
