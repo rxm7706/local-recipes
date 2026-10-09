@@ -2361,7 +2361,7 @@ green
 **Split 2026-10-09 (two operator rulings):** 22.1 lands for ten recipes; `ctng-compilers` moves to Story 22.3 and `vc`
 to Story 22.4. 22.1's corpus check allowlists each of those two leaks by file and location until its story removes the
 entry.
-**Status:** backlog
+**Status:** done
 
 ### Story 22.2: CFE's validation reds a recipe with a non-string key or a Python object repr
 
