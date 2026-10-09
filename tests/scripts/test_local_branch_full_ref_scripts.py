@@ -146,7 +146,7 @@ def test_worktree_sweep_never_reads_a_feature_as_merged_through_a_stray_tag_main
     wt = sweep.gather(sweep.Worktree(path=str(home), branch="feature", category="scratch"), [], {}, set())
     assert (wt.merged, wt.unmerged_commits) == (False, 1)
     _git(repo, "worktree", "remove", "--force", str(home))
-    deleted, _kept = sweep.delete_merged_local_branches()
+    deleted, _kept, _patch_eq = sweep.delete_merged_local_branches()
 
     assert deleted == 0
     assert _git(repo, "rev-parse", "refs/heads/feature") == feature

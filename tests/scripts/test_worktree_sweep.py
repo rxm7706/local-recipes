@@ -153,6 +153,56 @@ def test_bmad_loops_not_in_orphan_roots():
     assert not any(str(ws.LOOP_HOMES_ROOT) in r for r in roots)
 
 
+def test_list_worktrees_parses_agent_lock_reason(monkeypatch):
+    porcelain = "\n".join(
+        [
+            "worktree /tmp/agent-wt",
+            "HEAD deadbeef",
+            "branch refs/heads/worktree-agent-abc",
+            "locked claude agent agent-abc (pid 4242 start 100000)",
+            "",
+        ]
+    )
+
+    def fake_git(*args, cwd=None):
+        if args[:2] == ("worktree", "list"):
+            return porcelain, 0
+        return "", 1
+
+    monkeypatch.setattr(ws, "_git", fake_git)
+    items = ws.list_worktrees()
+    assert len(items) == 1
+    assert items[0].locked
+    assert items[0].lock_reason == "claude agent agent-abc (pid 4242 start 100000)"
+
+
+def test_delete_merged_local_branches_dry_run_does_not_delete(monkeypatch):
+    calls: list[list[str]] = []
+
+    def fake_git(*args, cwd=None):
+        calls.append(list(args))
+        if args[:2] == ("branch", "--merged"):
+            return "feature-x \n", 0
+        if args[:2] == ("merge-base", "--is-ancestor"):
+            return "", 0
+        if args[:2] == ("branch", "-D"):
+            raise AssertionError("dry report must not delete branches")
+        return "", 0
+
+    monkeypatch.setattr(ws, "_git", fake_git)
+    deleted, _, _ = ws.delete_merged_local_branches(apply=False)
+    assert deleted == 0
+    assert not any(c[:2] == ["branch", "-D"] for c in calls)
+
+
+def test_remove_orphan_dir_empty(tmp_path):
+    d = tmp_path / "empty-orphan"
+    d.mkdir()
+    od = ws.OrphanDir(path=str(d), empty=True, verdict="ORPHAN-DIR")
+    assert ws.remove_orphan_dir(od)
+    assert not d.exists()
+
+
 def test_locked_worktree_mutation():
     """Removing the stale-lock branch must change verdict (mutation guard)."""
     lookup = _lookup({4242: 100000})

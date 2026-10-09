@@ -467,10 +467,11 @@ def remove_worktree(wt: Worktree, *, unlock_first: bool = False) -> bool:
     p = Path(wt.path)
     if not p.is_dir():
         return False
-    if unlock_first and wt.locked:
-        unlock_worktree(wt.path)
+    if unlock_first and wt.locked and not unlock_worktree(wt.path):
+        return False
     st, _ = _git("status", "--porcelain", "--untracked-files=normal", cwd=p)
-    if wt.verdict == "DELETE" and not wt.dirty_files and st.strip():
+    exec_v = effective_execute_verdict(wt)
+    if exec_v == "DELETE" and not wt.dirty_files and st.strip():
         return False  # became dirty since classification
     _, rc = _git("worktree", "remove", "--force", wt.path)
     if rc != 0:
@@ -488,11 +489,14 @@ def remove_orphan_dir(od: OrphanDir) -> bool:
             return False
     except OSError:
         return False
-    shutil.rmtree(p)
+    try:
+        shutil.rmtree(p)
+    except OSError:
+        return False
     return not p.exists()
 
 
-def delete_merged_local_branches() -> tuple[int, list[str], list[str]]:
+def delete_merged_local_branches(*, apply: bool = True) -> tuple[int, list[str], list[str]]:
     out, _ = _git("branch", "--merged", MAIN_REF, "--format=%(refname:lstrip=2) %(worktreepath)")
     deleted, kept, patch_equivalent = 0, [], []
     for line in out.splitlines():
@@ -506,8 +510,9 @@ def delete_merged_local_branches() -> tuple[int, list[str], list[str]]:
             else:
                 kept.append(name)
             continue
-        _, rc = _git("branch", "-D", name)
-        deleted += 1 if rc == 0 else 0
+        if apply:
+            _, rc = _git("branch", "-D", name)
+            deleted += 1 if rc == 0 else 0
     return deleted, kept, patch_equivalent
 
 
@@ -525,7 +530,7 @@ def main(argv: list[str] | None = None) -> int:
     items = [gather(wt, cwds, ledgers, heads) for wt in list_worktrees()]
     for wt in items:
         wt.verdict, wt.reason = verdict_for(wt)
-    registered = {wt.path for wt in items}
+    registered = {str(Path(wt.path).resolve()) for wt in items}
     orphans = list_orphan_dirs(registered)
     for od in orphans:
         od.verdict, od.reason = verdict_for_orphan(od)
@@ -570,7 +575,7 @@ def main(argv: list[str] | None = None) -> int:
                 if r != "origin":
                     _git("remote", "prune", r)
     elif args.delete_merged_local_branches:
-        _, _, patch_eq = delete_merged_local_branches()
+        _, _, patch_eq = delete_merged_local_branches(apply=False)
         results["patch_equivalent_branches"] = patch_eq
 
     if args.format == "json":

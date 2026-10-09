@@ -2,7 +2,7 @@
 title: "87.14: The sweeper reports stale-locked agent worktrees and orphan directories"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'a0d4662b82abab4e75cb79e199bd87f7eef1e0e7'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -13,7 +13,21 @@ context:
   - scripts/worktree_sweep.py
   - tests/scripts/test_worktree_sweep.py
   - docs/how-to/manage-worktrees-with-bmad.md
-deferred: []
+deferred:
+  - summary: >-
+      Clone-based test for patch-equivalent branch reporting in delete_merged_local_branches.
+    evidence: |-
+      branch_merged_by_patch_id is only exercised indirectly; a squash-merged fixture would pin reporting vs deletion.
+    location: >-
+      tests/scripts/test_worktree_sweep.py
+    severity: medium (unverified)
+  - summary: >-
+      Integration test for merged STALE-LOCK unlock and worktree remove on --execute.
+    evidence: |-
+      Unit tests cover classification and effective_execute_verdict; git worktree lock/unlock path untested end-to-end.
+    location: >-
+      scripts/worktree_sweep.py:465
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
@@ -82,8 +96,56 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Shipped STALE-LOCK, ORPHAN-DIR, patch-equivalent reporting, and doc fixes in `scripts/worktree_sweep.py` with unit tests; review pass fixed dry-run branch deletion (`apply=False`).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 18 findings — high 1, medium 4, low 3, false 6, maybe-false 4
+- findings:
+  - `[high]` `[patch]` Dry run with `--delete-merged-local-branches` called `delete_merged_local_branches()` which still ran `git branch -D` — added `apply=False` on non-execute path; test `test_delete_merged_local_branches_dry_run_does_not_delete`.
+  - `[medium]` `[patch]` `remove_worktree` skipped late dirty check for merged STALE-LOCK — uses `effective_execute_verdict(wt) == "DELETE"`.
+  - `[medium]` `[patch]` Unlock failure ignored before remove — return False when `unlock_worktree` fails.
+  - `[medium]` `[patch]` `test_local_branch_full_ref_scripts` two-tuple unpack — updated to three-tuple.
+  - `[medium]` `[patch]` Missing porcelain lock parse test — added `test_list_worktrees_parses_agent_lock_reason`.
+  - `[medium]` `[patch]` Empty orphan removal untested — added `test_remove_orphan_dir_empty`.
+  - `[low]` `[reject]` macOS `/proc` absence — operator tool already Linux-oriented; stale-lock uses injected lookup in tests only.
+  - `[low]` `[reject]` `/proc/stat` comm parsing — pre-existing pattern; out of 87.14 scope.
+  - `[low]` `[reject]` CLI help text verbosity — cosmetic.
+  - `[false]` `[reject]` recover/rescue prefixes vs roster — sweeper prefixes match hook/session_denials and Story 87.6 protected floor.
+  - `[false]` `[reject]` Unmerged stale lock should be INSPECT verdict — AC requires STALE-LOCK string with unmerged evidence.
+  - `[false]` `[reject]` Bare `locked` line agent lock — non-agent locks correctly stay KEEP.
+  - `[false]` `[reject]` Path resolve orphan duplicate — fixed via resolved registered set.
+  - `[false]` `[reject]` Race lock becomes live at execute — acceptable operator-tool window.
+  - `[false]` `[reject]` Dangling commit-tree objects on dry-run — dry-run no longer invokes deletion path that loops all branches for `-D`; patch-id check only on non-ancestor candidates.
+  - `[maybe-false]` `[defer]` Full git integration test for patch-equivalent branch reporting — `branch_merged_by_patch_id` untested against real cherry; add clone fixture in a follow-up.
+  - `[maybe-false]` `[defer]` Full `--execute` STALE-LOCK unlock+remove integration — classification and `remove_orphan_dir` covered; end-to-end git lock fixture deferred.
+  - `[maybe-false]` `[defer]` Mutation test per orphan/patch rule — stale-lock mutation present; additional mutation guards optional.
+  - `[maybe-false]` `[defer]` Assert bmad-loops never appears in full sweep JSON output — orphan roots exclusion tested; loop-home KEEP category pre-existing.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Extended `scripts/worktree_sweep.py` with STALE-LOCK (injectable process start lookup), ORPHAN-DIR discovery/removal, patch-equivalent branch reporting, and corrected hygiene docs. Review fixed dry-run branch deletion and tightened remove/unlock guards.
+
+Files changed:
+- `scripts/worktree_sweep.py` — verdict engine, orphan scan, patch-id branch report, execute paths
+- `tests/scripts/test_worktree_sweep.py` — stale-lock, orphan, porcelain, dry-run branch tests
+- `tests/scripts/test_local_branch_full_ref_scripts.py` — three-tuple API
+- `docs/how-to/manage-worktrees-with-bmad.md` — sweeper home, protected prefixes, new verdicts
+- `spec-pyforge-marshal/.memlog.md`, `spec-pyforge-doctor/.memlog.md` — surface reconcile (Story 87.14)
+
+Review: 6 patches applied; 4 deferred (integration depth); 9 rejected/false.
+
+Follow-up review recommended: false (high-severity dry-run defect patched and covered by test).
+
+Verification:
+- `pytest tests/scripts/test_worktree_sweep.py` — 26 passed
+- `pytest tests/scripts/test_worktree_sweep.py tests/scripts/test_local_branch_full_ref_scripts.py` — 34 passed
+- `pyforge-marshal-test` — 12033 passed
+- `pyforge-deps-test` — 130 passed
+- `lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Residual risks: `branch_merged_by_patch_id` relies on git cherry/commit-tree without a clone-based regression test; non-Linux hosts lack `/proc` for live stale-lock detection.
