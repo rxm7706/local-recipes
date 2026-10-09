@@ -65,7 +65,7 @@ def test_preserve_tag_and_list_when_flag_on(git_repo: Path, flag_provider: dict[
     assert head_after == head_before
     listed = invoke_cli(main, ["preserve", "list", "--format", "json"])
     assert listed.exit_code == 0
-    payload = json.loads(listed.stdout)
+    payload = json.loads(listed.output)
     rows = payload["data"]["preserves"]
     assert len(rows) == 1
     assert rows[0]["station"] == "pyforge-marshal"
@@ -102,9 +102,10 @@ def test_preserve_tag_dedup_mutation(git_repo: Path, monkeypatch: pytest.MonkeyP
     assert len([t for t in tags if t.startswith("preserve/")]) == 1
 
 
-def test_preserve_tag_conflict_mutation(git_repo: Path, monkeypatch: pytest.MonkeyPatch):
+def test_preserve_tag_story_tree_dedup_mutation(git_repo: Path, monkeypatch: pytest.MonkeyPatch):
     flags_path = flagd_tree(git_repo, {_FLAG: "on"})
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flags_path))
+    (git_repo / "f.txt").write_text("dedup\n", encoding="utf-8")
     base_argv = [
         "preserve",
         "tag",
@@ -117,7 +118,18 @@ def test_preserve_tag_conflict_mutation(git_repo: Path, monkeypatch: pytest.Monk
         str(git_repo),
     ]
     assert main(base_argv) == 0
-    (git_repo / "f.txt").write_text("conflict\n", encoding="utf-8")
-    _git(git_repo, "add", "f.txt")
-    _git(git_repo, "commit", "-m", "conflict")
-    assert main(base_argv) == 2
+    assert main(
+        [
+            "preserve",
+            "tag",
+            "--story",
+            "pyforge-marshal",
+            "87.3",
+            "--producer",
+            "dispatch",
+            "--from",
+            str(git_repo),
+        ]
+    ) == 0
+    tags = subprocess.check_output(["git", "tag"], cwd=git_repo, text=True).splitlines()
+    assert len([t for t in tags if t.startswith("preserve/pyforge-marshal/87.3/")]) == 1

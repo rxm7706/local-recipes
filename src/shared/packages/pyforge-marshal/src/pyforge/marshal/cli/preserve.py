@@ -23,8 +23,8 @@ from pyforge.core.preserve_refs import (
 
 from pyforge.core.process import PosixProcess
 
-from ..core.model import Finding, Severity, Verdict, build_envelope, compute_verdict
-from ..core.verdict import EXIT_USAGE, exit_code_for
+from ..core.model import Finding, Severity, Verdict, build_envelope
+from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
 
 PRESERVE_FLAG_KEY = "pyforge.marshal.preserve_refs"
