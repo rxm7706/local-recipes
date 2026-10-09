@@ -584,7 +584,7 @@ def test_probe_rejects_leftovers_of_an_outermost_parse_known_args(
 def test_probe_never_runs_a_script_without_argparse(tmp_path: Path) -> None:
     script, marker = _fixture(tmp_path, _NO_ARGPARSE)
     err = _script_accepts_argv(script, ["--known"])
-    assert err is not None and "unprobeable" in err and script.as_posix() in err
+    assert err is not None and "unprobeable" in err and _display(script) in err
     assert not marker.exists()
 
 
