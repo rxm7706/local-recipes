@@ -17,7 +17,10 @@ go run scripts/generate-docs/main.go
 rm -rf "${SRC_DIR}/library_licenses"
 mkdir -p "${SRC_DIR}/library_licenses"
 
-go-licenses save . --save_path "${SRC_DIR}/library_licenses" --force
+go-licenses save . \
+    --save_path "${SRC_DIR}/library_licenses" \
+    --force \
+    --ignore=github.com/oapi-codegen/nullable
 
 go build \
     -trimpath \
