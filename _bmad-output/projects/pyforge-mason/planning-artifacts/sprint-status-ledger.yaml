@@ -71,7 +71,7 @@ development_status:
   21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling: done
   22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired: backlog
   22-2-cfe-s-validation-reds-a-recipe-with-a-non-string-key-or-a-python-object-repr: done
-  23-1-cfe-refuses-a-copyleft-only-licence-whose-license-grants-any-later-version: backlog
+  23-1-cfe-refuses-a-copyleft-only-licence-whose-license-grants-any-later-version: done
   23-2-cfe-s-recipe-generator-asks-instead-of-guessing: backlog
   23-3-a-negative-corpus-proves-each-cfe-check-keeps-rejecting-its-defect: backlog
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
@@ -137,7 +137,7 @@ development_status:
   epic-21-retrospective: optional
   epic-22: in-progress
   epic-22-retrospective: optional
-  epic-23: backlog
+  epic-23: in-progress
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
