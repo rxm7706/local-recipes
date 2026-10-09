@@ -66,7 +66,7 @@ development_status:
   20-1-mason-s-pixi-run-dependency-is-a-floor-and-a-guard-reds-any-pixi-ceiling: done
   21-1-git-pkgs-builds-green-from-source-as-a-local-recipe: done
   21-2-forge-builds-green-from-source-as-a-local-recipe: done
-  21-3-gitgres-builds-green-against-postgresql-17-from-a-pinned-commit: backlog
+  21-3-gitgres-builds-green-against-postgresql-17-from-a-pinned-commit: done
   21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe: backlog
   21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling: backlog
   22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired: backlog
