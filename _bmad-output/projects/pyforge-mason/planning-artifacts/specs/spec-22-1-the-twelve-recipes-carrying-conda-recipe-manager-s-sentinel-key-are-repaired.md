@@ -2,7 +2,7 @@
 title: "22.1: The twelve recipes carrying conda-recipe-manager's sentinel key are repaired"
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'blocked'
 baseline_revision: 'f0eeddddb3c9a05a95235c872be495801457c1ff'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -12,7 +12,15 @@ context:
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - .claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_parse_audit.py
-deferred: []
+deferred:
+  - deferred: ctng-compilers rattler render cycle on 0.76.1
+    location: recipes/ctng-compilers/recipe.yaml
+    reason: >-
+      Sentinel and output-level run_exports fixes parse and validate; `rattler-build build --render-only`
+      with `.ci_support/linux64.yaml` plus local conda_build_config still exits 1 with
+      `Cycle detected in recipe outputs` (gcc stack). Needs rattler-build fix for pin_subpackage/run_exports
+      cycle detection (prefix-dev/rattler-build#2531 family) or feedstock-faithful variant matrix beyond
+      generic linux64.
 declared_low_risk: false
 ---
 
@@ -184,4 +192,4 @@ Flag: `flag-exempt: recipe-build` (recipe repairs ship no runtime capability beh
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+- 2026-10-09 implement (bmad-build-auto): All 12 `recipe.yaml` files cleared of CRM sentinel keys (`grep -rl 'object at 0x'` clean). Render-only passes for 11/12 on spec platforms (pyobjc osx-64, vc win-64, others linux-64). **ctng-compilers** remains blocked on rattler-build 0.76.1 output cycle after v1 `run_exports` migration; validate_recipe passes. CFE retro drafted (G121, corpus test, v8.94.0) — land as separate `retro(cfe):` commit so mason meta-tests see a sanctioned CFE touch. Seven cheap `recipe-build` runs and full smithy lint matrix not completed this iteration. Independent adversarial review not run yet.
