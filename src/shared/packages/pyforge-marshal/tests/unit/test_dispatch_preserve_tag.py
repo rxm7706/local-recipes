@@ -6,7 +6,14 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from pyforge.core.preserve_refs import list_local_preserve_tags, ref_on_origin
+from pyforge.core.preserve_refs import (
+    PreserveTrailers,
+    list_local_preserve_tags,
+    ref_on_origin,
+    render_preserve_ref,
+    snapshot_worktree_commit,
+    tag_preserve,
+)
 from pyforge.testing_kit.flags import flag_states, flagd_tree
 
 from pyforge.marshal.adapters.fs_local import LocalFs
@@ -225,8 +232,6 @@ def test_mutation_dedup_second_tag_would_fail_without_noop(git_pair: tuple[Path,
         push=False,
     )
     tag_dispatch_worktree_preserve(**kwargs)
-    from pyforge.core.preserve_refs import tag_preserve, PreserveTrailers, render_preserve_ref, snapshot_worktree_commit
-
     commit = snapshot_worktree_commit(repo) or vcs.worktree_head_sha(repo)
     refname = render_preserve_ref(
         commit_sha=commit,
