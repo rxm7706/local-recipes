@@ -2,7 +2,7 @@
 title: "23.2: CFE's recipe generator asks instead of guessing"
 type: 'fix'
 created: '2026-09-29'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
