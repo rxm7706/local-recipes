@@ -30,7 +30,10 @@ tests:
       - git-pkgs --help
   - package_contents:
       bin:
-        - git-pkgs${{ executable_ext }}
+        - if: unix
+          then: git-pkgs
+        - if: win
+          then: git-pkgs.exe
 
 about:
   homepage: https://github.com/git-pkgs/git-pkgs
