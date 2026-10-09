@@ -27,9 +27,7 @@ def _pixi() -> dict:
 
 def test_mason_is_a_guild_feature_dependency() -> None:
     deps = _pixi()["feature"]["pyforge-guild"]["dependencies"]
-    assert "pyforge-mason" in deps, (
-        "pyforge-mason must be a [feature.pyforge-guild.dependencies] member (CAP-161)"
-    )
+    assert "pyforge-mason" in deps, "pyforge-mason must be a [feature.pyforge-guild.dependencies] member (CAP-161)"
     assert deps["pyforge-mason"] == {"path": "src/shared/packages/pyforge-mason"}
 
 
