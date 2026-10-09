@@ -384,3 +384,36 @@ sibling ledgers and the detector both use.
   severity: medium (unverified)
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-scribe-1-1: CLI capture tests omit MEMORY.md index assertions that library tests already cover.
+
+- source_spec: `planning-artifacts/specs/spec-1-1-package-scaffold-direct-capture-into-team-memory.md`
+  summary: CLI capture tests omit MEMORY.md index assertions that library tests already cover.
+  evidence: test_capture.py asserts memory_index_line counts; test_cli.py happy-path and slug-collision cases assert files only on current HEAD.
+  location: src/shared/packages/pyforge-scribe/tests/unit/test_cli.py:113
+  origin: spec-deferred a3531003945e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-scribe-1-1-2: No CLI test that capture without .claude/memory/ exits 2 and writes nothing.
+
+- source_spec: `planning-artifacts/specs/spec-1-1-package-scaffold-direct-capture-into-team-memory.md`
+  summary: No CLI test that capture without .claude/memory/ exits 2 and writes nothing.
+  evidence: test_missing_memory_root_fails_loudly_instead_of_auto_creating covers capture() only; graph compile has a CLI missing-root test on a different subcommand.
+  location: src/shared/packages/pyforge-scribe/tests/unit/test_capture.py:162
+  origin: spec-deferred e884592a0536 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-scribe-1-1-3: Optional hardening for rare OSError/UTF-8/Windows lock edge paths in capture().
+
+- source_spec: `planning-artifacts/specs/spec-1-1-package-scaffold-direct-capture-into-team-memory.md`
+  summary: Optional hardening for rare OSError/UTF-8/Windows lock edge paths in capture().
+  evidence: Not in Story 1.1 I/O matrix; normal local capture path uses UTF-8 scaffold and stdlib locking already exercised by concurrency regression test.
+  location: src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py:411
+  origin: spec-deferred e8e747ba4c1b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
