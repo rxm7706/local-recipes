@@ -2215,7 +2215,7 @@ So that adopting it is a channel install, not a download.
 **And** the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; its CFE block records the real
 build; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.2: forge builds green from source as a local recipe
 
