@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: wagtailmenus
-  version: "4.0.7"
+  version: "4.1.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/jazzband/wagtailmenus/archive/v${{ version }}.tar.gz
-  sha256: 9d14c5835bd0b0f1829ed9f8a3fb4931753f818dd27b522319546b9c65bdc9f1
+  sha256: 94c7cde0903b13613bd0a0c1c756d166e4693ffab9a5a339dd31b9b9dea3dc36
 
 build:
   number: 0
@@ -20,23 +20,23 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - requests
-    - django
-    - django-modelcluster
-    - python >=${{ python_min }}
-    - wagtail >=6.3
-    - django-cogwheels ==0.3
+  - requests
+  - django
+  - django-modelcluster
+  - python >=${{ python_min }}
+  - wagtail >=6.3
+  - django-cogwheels ==0.3
 
 tests:
-  - python:
-      imports:
-        - wagtailmenus
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - wagtailmenus
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: An app to help you manage menus in your Wagtail projects more consistently.
@@ -46,7 +46,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -54,8 +54,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailmenus
   cfe-purls:
-    - pkg:conda/wagtailmenus@${{ version }}?channel=conda-forge
-    - pkg:pypi/wagtailmenus@${{ version }}
+  - pkg:conda/wagtailmenus@${{ version }}?channel=conda-forge
+  - pkg:pypi/wagtailmenus@${{ version }}
   cfe-upstream-repo: https://github.com/jazzband/wagtailmenus
   cfe-upstream-homepage: https://github.com/jazzband/wagtailmenus
   cfe-import-names: [wagtailmenus]
