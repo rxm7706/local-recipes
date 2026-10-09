@@ -284,6 +284,24 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"28" = [  # The CFE-rebuild guard reads a SHA field whatever type YAML gives it (fix under spec-pyforge-mason CAP-16), added 2026-10-09
+  # The station default, restated because a declared entry replaces it outright, plus what Story 28.1 touches: the
+  # guard script and its test (repo tooling, not the CFE surface, so no retro(cfe) commit), the station ledger, and
+  # every Spec memlog a surface reconcile names (no Spec's surface lists either file at mint).
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/cfe_rebuild_guard_check.py",
+  "tests/scripts/test_cfe_rebuild_guard_check.py",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
