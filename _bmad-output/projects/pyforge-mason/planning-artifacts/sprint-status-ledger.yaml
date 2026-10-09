@@ -68,7 +68,7 @@ development_status:
   21-2-forge-builds-green-from-source-as-a-local-recipe: done
   21-3-gitgres-builds-green-against-postgresql-17-from-a-pinned-commit: done
   21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe: done
-  21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling: backlog
+  21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling: done
   22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired: backlog
   22-2-cfe-s-validation-reds-a-recipe-with-a-non-string-key-or-a-python-object-repr: backlog
   23-1-cfe-refuses-a-copyleft-only-licence-whose-license-grants-any-later-version: backlog
@@ -133,7 +133,7 @@ development_status:
   epic-2-retrospective: optional
   epic-20: done
   epic-20-retrospective: optional
-  epic-21: in-progress
+  epic-21: done
   epic-21-retrospective: optional
   epic-22: backlog
   epic-22-retrospective: optional
