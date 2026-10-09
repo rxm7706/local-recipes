@@ -2,7 +2,7 @@
 title: "21.2: forge builds green from source as a local recipe"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: f0106f44bdd30530f4613812542bd285a8a0672e
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -138,5 +138,37 @@ Flag: `flag-exempt: recipe-build`.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
-  landing it as `Merge pyforge-mason/21-2-forge-builds-green-from-source-as-a-local-recipe into main`.
+### 2026-10-09 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, maybe-false 1
+- findings:
+  - `[false]` `[reject]` AC pins v0.10.0 while v0.10.1 exists — CFE comments and retro document G109; intent-contract AC is explicit.
+  - `[false]` `[reject]` Version test uses grep not bare `forge version` — `grep -Fx 'forge 0.10.0'` asserts exact line per AC.
+  - `[false]` `[reject]` Missing `go mod tidy` before build — upstream forge tag tarball builds clean without extra hooks (unlike git-pkgs).
+  - `[maybe-false]` `[reject]` Windows go-licenses may fatal (G79) — unverified on this host; git-pkgs forge sibling pattern matches; linux-64 oracle satisfied.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added local v1 recipe `recipes/forge` for `git-pkgs/forge` v0.10.0 — pure Go build of `./cmd/forge` with version ldflag, dependency licenses, and Windows branch. Green linux-64 `recipe-build`; validate, lint-optimize, vulnerability scan, and conda-smithy lint passed. Rule-2 retro bumps CFE to v8.93.2 (PATCH).
+
+Files changed:
+- `recipes/forge/recipe.yaml`, `build.sh`, `build.bat` — new local recipe
+- `.claude/skills/conda-forge-expert/CHANGELOG.md`, `SKILL.md`, `MANIFEST.yaml`, `config/skill-config.yaml` — retro v8.93.2
+- `spec-packaging-factory/.memlog.md`, `spec-conda-forge-expert-rebuild/.memlog.md` — surface reconcile entries
+
+Review: 0 patches applied; 4 findings rejected (3 false, 1 maybe-false unverified low risk on win-only path).
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run -e local-recipes validate recipes/forge` — exit 0
+- `pixi run -e local-recipes lint-optimize recipes/forge` — exit 0
+- `pixi run -e local-recipes scan-vulnerabilities recipes/forge` — exit 0
+- `pixi exec --spec "conda-smithy>=2026.6.14" conda-smithy recipe-lint --conda-forge recipes/forge` — exit 0
+- `pixi run -e local-recipes recipe-build recipes/forge` — exit 0; test printed `forge 0.10.0`
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+- `pixi run -e pyforge-guild spec-surface-check` — exit 0 (pre-existing stale-surface warns only)
+
+Residual risks: Windows `go-licenses save` not exercised locally (G79); upstream v0.10.1 available if operator rebases version later.
