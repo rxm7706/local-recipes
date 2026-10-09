@@ -13,9 +13,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import tomllib
@@ -32,7 +34,7 @@ from pyforge.steward import preflight_ci, preflight_suite_reduction, preflight_x
 ROOT_AGGREGATE = "pr-preflight-lanes"
 DEFAULT_INVOKING_ENV = "pyforge-guild"
 JOURNAL_RELATIVE = Path(".steward") / "preflight-runs.jsonl"
-RUN_SCRATCH_RELATIVE = Path(".steward") / "preflight"
+SCRATCH_DIR_PREFIX = "pyforge-preflight-"
 
 EXIT_OK = 0
 EXIT_LANE_RED = 1
@@ -160,6 +162,32 @@ def _git_head(repo_root: Path) -> tuple[str, str]:
         return sha, branch or "(detached)"
     except subprocess.CalledProcessError, FileNotFoundError:
         return "unknown", "unknown"
+
+
+def _mk_scratch_root(scratch_parent: Path | None) -> Path:
+    kwargs: dict[str, str] = {"prefix": SCRATCH_DIR_PREFIX}
+    if scratch_parent is not None:
+        scratch_parent.mkdir(parents=True, exist_ok=True)
+        kwargs["dir"] = str(scratch_parent)
+    return Path(tempfile.mkdtemp(**kwargs))
+
+
+def _scratch_inside_repo(scratch_root: Path, repo_root: Path) -> bool:
+    try:
+        return scratch_root.resolve().is_relative_to(repo_root.resolve())
+    except ValueError:
+        return False
+
+
+def _remove_scratch(scratch_root: Path) -> None:
+    try:
+        shutil.rmtree(scratch_root)
+    except OSError as exc:
+        print(f"preflight: could not remove scratch at {scratch_root}: {exc}", file=sys.stderr)
+
+
+def _announce_scratch_kept(scratch_root: Path) -> None:
+    print(f"preflight: lane logs and scratch kept at {scratch_root}", file=sys.stderr)
 
 
 def _lane_scratch_env(scratch_dir: Path) -> dict[str, str]:
@@ -359,6 +387,7 @@ def run_preflight(
     jobs: int | None = None,
     keep_going: bool = False,
     install_environment: Callable[[str], int] | None = None,
+    scratch_parent: Path | None = None,
 ) -> int:
     """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130."""
     repo_root = repo_root.resolve()
@@ -448,8 +477,14 @@ def run_preflight(
         },
     )
 
-    scratch_root = repo_root / RUN_SCRATCH_RELATIVE / run_id
-    scratch_root.mkdir(parents=True, exist_ok=True)
+    scratch_root = _mk_scratch_root(scratch_parent)
+    if _scratch_inside_repo(scratch_root, repo_root):
+        _remove_scratch(scratch_root)
+        print(
+            f"preflight: scratch root must not live inside the checkout: {scratch_root}",
+            file=sys.stderr,
+        )
+        return EXIT_CONFIG
 
     xdist_workers = preflight_xdist.lane_xdist_worker_map(
         lane_tasks=[lane.task for lane in lanes],
@@ -549,6 +584,7 @@ def run_preflight(
                 "lanes": [_lane_result_dict(r) for r in ordered],
             },
         )
+        _announce_scratch_kept(scratch_root)
         return EXIT_INTERRUPT
 
     ordered_results: list[LaneResult] = []
@@ -563,15 +599,18 @@ def run_preflight(
         ordered_results.append(result)
         if result.status == "red":
             exit_code = EXIT_LANE_RED
+            lane_log = scratch_root / f"{lane.task}.log"
             print(
-                f"preflight: lane {lane.task!r} in environment {lane.environment!r} exited {result.exit_code}",
+                f"preflight: lane {lane.task!r} in environment {lane.environment!r} "
+                f"exited {result.exit_code} (log: {lane_log})",
                 file=sys.stderr,
             )
 
     if keep_going and coord.red_lanes:
         exit_code = EXIT_LANE_RED
         for name in coord.red_lanes:
-            print(f"preflight: red lane {name!r}", file=sys.stderr)
+            lane_log = scratch_root / f"{name}.log"
+            print(f"preflight: red lane {name!r} (log: {lane_log})", file=sys.stderr)
 
     total_seconds = time.monotonic() - t0
     verdict = "ok" if exit_code == EXIT_OK else "red"
@@ -592,6 +631,10 @@ def run_preflight(
             "lanes": [_lane_result_dict(r) for r in ordered_results],
         },
     )
+    if exit_code == EXIT_OK:
+        _remove_scratch(scratch_root)
+    else:
+        _announce_scratch_kept(scratch_root)
     return exit_code
 
 
