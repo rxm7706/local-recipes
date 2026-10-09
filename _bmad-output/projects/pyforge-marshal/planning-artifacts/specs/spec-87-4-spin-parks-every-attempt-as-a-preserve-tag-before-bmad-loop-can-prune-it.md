@@ -2,7 +2,8 @@
 title: "87.4: Spin parks every attempt as a preserve tag before bmad-loop can prune it"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: d04dd6475647896d9dccd99dbf2424a23dce0873
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -87,8 +88,14 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Implemented engine preserve promotion (`supervisor/engine_preserve.py`), stage-boundary flush and intent-gap preserve tags behind `pyforge.marshal.preserve_refs`.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`, and `python scripts/spec_surface_reconcile.py` green (2026-10-09).
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-09: Implementation review against AC — engine journal tail + reconcile scan + stage-boundary tag/push wired in supervisor; intent-gap uses preserve tag when flag on; two-state tests in `test_engine_preserve.py` and `test_intent_gap_preserve.py`. No blocking findings.
