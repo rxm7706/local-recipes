@@ -18,6 +18,7 @@ from pyforge.core.preserve_refs import (
     PreserveGitError,
     PreserveRefError,
     PreserveTrailers,
+    is_preserve_tag_ref,
     normalize_ref,
     observe_preserve_debt,
     push_preserve_ref,
@@ -127,11 +128,6 @@ def targets_from_run_snapshot(
         if story.preserve_ref and not is_preserve_tag_ref(story.preserve_ref):
             out.append(EnginePreserveTarget(engine_ref=story.preserve_ref, story_key=story.story_key))
     return tuple(out)
-
-
-def is_preserve_tag_ref(ref: str) -> bool:
-    cleaned = ref.strip()
-    return cleaned.startswith("preserve/") or cleaned.startswith("refs/tags/preserve/")
 
 
 def _git_rev_parse(repo: Path, ref: str) -> str:

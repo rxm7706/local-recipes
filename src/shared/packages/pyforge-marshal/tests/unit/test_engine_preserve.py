@@ -11,6 +11,7 @@ from pyforge.testing_kit.flags import flag_states
 
 from pyforge.marshal.ports.harness import DeferredStory, TaskPhaseSnapshot
 from pyforge.marshal.supervisor.engine_preserve import (
+    bmad_loop_journal_path,
     promote_engine_ref,
     read_new_journal_objects,
     reconcile_unpromoted_engine_refs,
@@ -51,6 +52,33 @@ def git_pair(tmp_path: Path) -> tuple[Path, Path]:
     _git(repo, "push", "-u", "origin", "main")
     _git(repo, "fetch", "origin")
     return repo, bare
+
+
+def test_bmad_loop_journal_path():
+    home = Path("/tmp/loop-home")
+    assert bmad_loop_journal_path(home, "run-abc") == home / ".bmad-loop" / "runs" / "run-abc" / "journal.jsonl"
+
+
+def test_read_new_journal_objects_missing_and_malformed(tmp_path: Path):
+    missing, off = read_new_journal_objects(tmp_path / "nope.jsonl", byte_offset=0)
+    assert missing == ()
+    assert off == 0
+    journal = tmp_path / "j.jsonl"
+    journal.write_text("\nnot-json\n{\"kind\": \"ok\"}\n", encoding="utf-8")
+    events, new_off = read_new_journal_objects(journal, byte_offset=0)
+    assert len(events) == 1
+    assert events[0]["kind"] == "ok"
+    assert new_off == len(journal.read_bytes())
+
+
+def test_journal_event_extraction_skips_incomplete():
+    events = (
+        {"kind": "unknown-kind", "payload": {"ref": "attempt-preserve/x"}},
+        {"kind": "worktree-kept", "payload": {"story_key": "1.1"}},
+        {"kind": "story-deferred", "payload": {"story_key": "87-4"}},
+        {"kind": "attempt-commits-preserved", "payload": {"ref": "  "}},
+    )
+    assert targets_from_journal_events(events) == ()
 
 
 def test_journal_event_extraction():
@@ -198,6 +226,63 @@ def test_targets_from_run_snapshot_skips_preserve_tags():
     targets = targets_from_run_snapshot([task], deferred)
     assert len(targets) == 1
     assert targets[0].engine_ref == "attempt-preserve/run-y"
+
+
+def test_promote_engine_ref_invalid_ref_returns_none(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    assert (
+        promote_engine_ref(
+            repo,
+            engine_ref="refs/heads/does-not-exist-87-4",
+            project_slug=_SLUG,
+            story_key=_STORY,
+            run_id=_RUN,
+            journal_path="j",
+            reason="test",
+            push=False,
+        )
+        is None
+    )
+
+
+def test_reconcile_non_git_repo_returns_empty(tmp_path: Path):
+    assert reconcile_unpromoted_engine_refs(tmp_path / "not-a-repo") == ()
+
+
+def test_tag_intent_gap_empty_story_key_returns_none(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    tip = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert (
+        tag_intent_gap_attempt(
+            repo,
+            tip_sha=tip,
+            project_slug=_SLUG,
+            story_key="",
+            run_id=_RUN,
+            journal_path="j",
+            push=False,
+        )
+        is None
+    )
+
+
+@flag_states(_FLAG)
+def test_tag_intent_gap_push(git_pair: tuple[Path, Path], flag_provider: dict[str, bool]):
+    if not flag_provider[_FLAG]:
+        pytest.skip("preserve_refs flag off")
+    repo, _ = git_pair
+    tip = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    out = tag_intent_gap_attempt(
+        repo,
+        tip_sha=tip,
+        project_slug=_SLUG,
+        story_key=_STORY,
+        run_id=_RUN,
+        journal_path="j",
+        push=True,
+    )
+    assert out is not None
+    assert out.pushed
 
 
 def test_mutation_promotion_required(git_pair: tuple[Path, Path]):
