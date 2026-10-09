@@ -106,9 +106,7 @@ def test_empty_journal_exits_2(tmp_path: Path) -> None:
     assert result.exit_code == preflight_budget.EXIT_CANNOT_EVALUATE
 
 
-def test_malformed_line_warns_and_judges_valid_run(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_malformed_line_warns_and_judges_valid_run(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     journal = tmp_path / preflight.JOURNAL_RELATIVE
     journal.parent.mkdir(parents=True)
     good = json.dumps(
