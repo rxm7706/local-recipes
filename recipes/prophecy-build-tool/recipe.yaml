@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: prophecy-build-tool
-  version: "1.3.4"
+  version: "1.4.6"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 6d3692a3b7b59e4c0b0fd8685a8e293f0260234ffe3cff881fb4c4aee00604c3
+  url: https://files.pythonhosted.org/packages/0a/18/7d4ceb901b920837056d1006be1dbdcdb50650274b128e40a36ba62a6a44/prophecy_build_tool-1.4.6.tar.gz
+  sha256: 2defbccb95e6e835039a72e824e14a7c25e4244e22efcc3ca24ffeb1d3fc2936
 
 build:
   number: 0
@@ -19,48 +19,48 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - pbt = pbt:main
+    - pbt = pbt:main
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - requests >=2.28.0
-    - pyyaml >=6.0
-    - databricks-cli >=0.17.7,<=0.18.0
-    - rich >=12.5.1
-    - wheel >=0.41.3,<0.42.dev0
-    - python-build
-    - google-cloud-secret-manager >=2.22.0,<2.23.0
-    - google-cloud-storage ==2.10.0
-    - pydantic >=1.10,<2.0
-    - pydantic-yaml ==1.1.1
-    - boto3 >=1.34.120,<1.35.0
-    - tenacity ==8.2.3
-    - gitpython
+  - python >=${{ python_min }}
+  - requests >=2.28.0
+  - pyyaml >=6.0
+  - databricks-cli >=0.17.7,<=0.18.0
+  - rich >=12.5.1
+  - wheel >=0.41.3,<0.42.dev0
+  - python-build
+  - google-cloud-secret-manager >=2.22.0,<2.23.0
+  - google-cloud-storage ==2.10.0
+  - pydantic >=1.10,<2.0
+  - pydantic-yaml ==1.1.1
+  - boto3 >=1.34.120,<1.35.0
+  - tenacity ==8.2.3
+  - gitpython
     # necessary for gitpython
-    - git
-    - semver
-    - twine
-    - jaraco.functools <=4.1.0
-    - setuptools >=75.3.2,<81
+  - git
+  - semver
+  - twine
+  - jaraco.functools <=4.1.0
+  - setuptools >=75.3.2,<81
 
 tests:
-  - python:
-      imports:
-        - pbt
-      pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - git
-        - python ${{ python_min }}
-    script:
-      - pbt --help
+- python:
+    imports:
+    - pbt
+    pip_check: true
+    python_version: ${{ python_min }}
+- requirements:
+    run:
+    - pip
+    - git
+    - python ${{ python_min }}.*
+  script:
+  - pbt --help
 
 about:
   summary: Prophecy-build-tool (PBT) provides utilities to build and distribute projects created from the Prophecy IDE.
@@ -70,7 +70,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -78,8 +78,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: prophecy-build-tool
   cfe-purls:
-    - pkg:conda/prophecy-build-tool@${{ version }}?channel=conda-forge
-    - pkg:pypi/prophecy-build-tool@${{ version }}
+  - pkg:conda/prophecy-build-tool@${{ version }}?channel=conda-forge
+  - pkg:pypi/prophecy-build-tool@${{ version }}
   cfe-upstream-repo: https://github.com/SimpleDataLabsInc/prophecy-build-tool
   cfe-upstream-homepage: https://github.com/SimpleDataLabsInc/prophecy-build-tool
   cfe-import-names: [pbt]
@@ -89,8 +89,8 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/prophecy-build-tool-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
-    - recipe-regenerate
+  - meta-yaml-to-recipe-yaml
+  - recipe-regenerate
   cfe-last-checked: 2026-07-03T22:07:06Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
