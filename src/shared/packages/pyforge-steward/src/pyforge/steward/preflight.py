@@ -260,9 +260,10 @@ class _RunCoordinator:
         for proc, _pid in procs:
             if proc.poll() is not None:
                 continue
-            lane_task = self.proc_lane_task.get(proc.pid)
-            if lane_task is not None:
-                self.terminated_lane_tasks.add(lane_task)
+            with self.proc_lock:
+                lane_task = self.proc_lane_task.get(proc.pid)
+                if lane_task is not None:
+                    self.terminated_lane_tasks.add(lane_task)
             try:
                 os.killpg(proc.pid, signal.SIGTERM)
             except ProcessLookupError, PermissionError:

@@ -2,7 +2,7 @@
 title: "71.10: A stopped lane is journaled cancelled, and the lane that stopped the run red"
 type: 'fix'
 created: '2026-10-08'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '4c3cbb94c56f42f94c61f14839f1f41c92a0343c'
 review_loop_iteration: 0
 followup_review_recommended: false
