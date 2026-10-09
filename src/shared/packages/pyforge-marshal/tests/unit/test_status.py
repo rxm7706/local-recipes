@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -2010,12 +2011,22 @@ class _FakeProcess:
         *,
         run_result: ProcessResult | None = None,
         run_raises: bool = False,
+        git_handler: Callable[[tuple[str, ...]], ProcessResult] | None = None,
     ) -> None:
         self.alive_pids = alive_pids
         self.calls: list[int] = []
         self.run_calls: list[tuple[tuple[str, ...], Path]] = []
         self.run_result = run_result
         self.run_raises = run_raises
+        # Story 87.9: the preserve-debt read shells to ``git`` through this same port. A bare fake
+        # answers every git call with an empty, successful read (no tags, no scratch refs); a test
+        # that wants debt passes ``git_handler`` and answers by argv.
+        self.git_handler = git_handler
+
+    @property
+    def detector_calls(self) -> list[tuple[tuple[str, ...], Path]]:
+        """``run_calls`` minus the ``git`` reads -- the unpushed-work detector invocations."""
+        return [call for call in self.run_calls if call[0][0] != "git"]
 
     def is_alive(self, pid: int) -> bool:
         self.calls.append(pid)
@@ -2025,6 +2036,10 @@ class _FakeProcess:
         self.run_calls.append((tuple(argv), cwd))
         if self.run_raises:
             raise ProcessError("cannot launch the unpushed-work detector")
+        if argv[0] == "git":
+            if self.git_handler is not None:
+                return self.git_handler(tuple(argv))
+            return ProcessResult(returncode=0, stdout="", stderr="")
         if self.run_result is not None:
             return self.run_result
         return ProcessResult(
@@ -4534,8 +4549,8 @@ class TestUnpushedWork:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
         # The detector ran exactly once for the whole sweep.
-        assert len(process.run_calls) == 1
-        argv, cwd = process.run_calls[0]
+        assert len(process.detector_calls) == 1
+        argv, cwd = process.detector_calls[0]
         # Code review (2026-08-07, Edge Case Hunter): `sys.executable`,
         # never a bare `"python3"` off PATH.
         assert argv[0] == sys.executable
