@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 502
+# stories: 503
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -301,6 +301,7 @@ development_status:
   71-6-the-large-suites-run-under-pytest-xdist-locally-and-in-ci-alike: backlog
   71-7-the-one-minute-budget-is-a-check-that-reads-the-journal: backlog
   71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: backlog
+  71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: backlog
   72-1-the-guild-environment-answers-pyforge-mason: backlog
   72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: blocked
   73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: done
