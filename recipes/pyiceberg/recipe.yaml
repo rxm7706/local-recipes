@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/85/08/bde71e0bbcf1a62c92d7fa457b508691596c65fa7e52c1982c78c461cd1c/pyiceberg-0.12.0.tar.gz
+  url: https://pypi.org/packages/source/p/pyiceberg/pyiceberg-${{ version }}.tar.gz
   sha256: 19f165d298054f9436108691098b60fa0fa99d0eff5fb884700c43b29334a39d
 
 build:
@@ -18,42 +18,42 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-    - pyiceberg = pyiceberg.cli.console:run
+      - pyiceberg = pyiceberg.cli.console:run
 
 requirements:
   build:
-  - if: build_platform != target_platform
-    then:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython >=3.0.0
+        - numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+  host:
     - python
-    - cross-python_${{ target_platform }}
+    - poetry-core >=1.0.0
+    - wheel
     - cython >=3.0.0
     - numpy
-  - ${{ compiler('c') }}
-  - ${{ stdlib('c') }}
-  - ${{ compiler('cxx') }}
-  host:
-  - python
-  - poetry-core >=1.0.0
-  - wheel
-  - cython >=3.0.0
-  - numpy
-  - setuptools
-  - pip
+    - setuptools
+    - pip
   run:
-  - python
-  - mmh3 >=4.0.0,<6.0.0
-  - requests >=2.20.0,<3.0.0
-  - click >=7.1.1,<9.0.0
-  - rich >=10.11.0,<15.0.0
-  - strictyaml >=1.7.0,<2.0.0
-  - pydantic >=2.0,<3.0,!=2.4.0,!=2.4.1,!=2.12.0,!=2.12.1    # 2.4.0, 2.4.1, 2.12.0, 2.12.1 has a critical bug
-  - sortedcontainers 2.4.0.*
-  - fsspec >=2023.1.0
-  - pyparsing >=3.1.0,<4.0.0
-  - zstandard >=0.13.0,<1.0.0
-  - tenacity >=8.2.3,<10.0.0
-  - pyroaring >=1.0.0,<2.0.0
-  - cachetools >=5.5.0,<7.0.0
+    - python
+    - mmh3 >=4.0.0,<6.0.0
+    - requests >=2.20.0,<3.0.0
+    - click >=7.1.1,<9.0.0
+    - rich >=10.11.0,<15.0.0
+    - strictyaml >=1.7.0,<2.0.0
+    - pydantic >=2.0,<3.0,!=2.4.0,!=2.4.1,!=2.12.0,!=2.12.1    # 2.4.0, 2.4.1, 2.12.0, 2.12.1 has a critical bug
+    - sortedcontainers 2.4.0.*
+    - fsspec >=2023.1.0
+    - pyparsing >=3.1.0,<4.0.0
+    - zstandard >=0.13.0,<1.0.0
+    - tenacity >=8.2.3,<10.0.0
+    - pyroaring >=1.0.0,<2.0.0
+    - cachetools >=5.5.0,<7.0.0
   run_constraints:
     # https://github.com/apache/iceberg-python/blob/main/pyproject.toml#L60C1-L60C59
   - pyarrow >=17.0.0
@@ -78,16 +78,16 @@ requirements:
 tests:
 - python:
     imports:
-    - fb303
-    - hive_metastore
-    - pyiceberg
-    - pyiceberg.avro.decoder_fast     # Test compiled module
+      - fb303
+      - hive_metastore
+      - pyiceberg
+      - pyiceberg.avro.decoder_fast     # Test compiled module
     pip_check: true
 - requirements:
     run:
-    - pip
+      - pip
   script:
-  - pyiceberg --help
+    - pyiceberg --help
 
 about:
   summary: Apache Iceberg is an open table format for huge analytic datasets
@@ -100,12 +100,12 @@ about:
   documentation: https://iceberg.apache.org/docs/nightly/
   license: Apache-2.0
   license_file:
-  - LICENSE
-  - NOTICE
+    - LICENSE
+    - NOTICE
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -113,8 +113,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pyiceberg
   cfe-purls:
-  - pkg:conda/pyiceberg@${{ version }}?channel=conda-forge
-  - pkg:pypi/pyiceberg@${{ version }}
+    - pkg:conda/pyiceberg@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyiceberg@${{ version }}
   cfe-upstream-repo: https://github.com/apache/iceberg-python
   cfe-upstream-homepage: https://iceberg.apache.org/
   cfe-import-names: [pyiceberg]
