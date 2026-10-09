@@ -188,7 +188,7 @@ outputs:
           - if: (vsver >=17 or (vsver == 16 and update_version >= 10)) and (cross_target_platform == "win-64" or cross_target_platform == "win-32")
             then: ucrt >=10.0.20348.0
       run_constraints:
-        - vs_${{ cross_target_platform }} ${{ vsyear }}.${{ update_version }}
+        - vs_${{ cross_target_platform }} ${{ vsyear }}.${{ update_version }}.*
     tests:
       - script:
           - echo "%CMAKE_GENERATOR%"

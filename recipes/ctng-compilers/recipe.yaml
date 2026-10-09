@@ -573,7 +573,7 @@ outputs:
       run:
         - ${{ pin_subpackage("libgcc", exact=True) }}
       run_constraints:
-        - libstdcxx-ng ==${{ version }}=*_${{ build_num }}
+        - libstdcxx-ng >=${{ version }}
     tests:
       - script:
           - test -f ${PREFIX}/lib/libstdc++.so
@@ -597,12 +597,12 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
         - libgcc >=${{ gcc_version }}
         - libstdcxx >=${{ gcc_version }}
       run_exports:
-        - libsanitizer ${{ gcc_version }}
+        - libsanitizer >=${{ gcc_version }}
     tests:
       - requirements:
           run:
@@ -637,7 +637,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run_exports:
         strong:
           - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
@@ -677,7 +677,7 @@ outputs:
         - if: not osx
           then: ${{ pin_subpackage('_openmp_mutex', exact=True) }}
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
         - if: not osx
           then: ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
@@ -687,7 +687,7 @@ outputs:
         - ${{ pin_subpackage("libgomp", exact=True) }}
         - if: win
           then: msys2-conda-epoch <0.0a0
-        - libgcc-ng ==${{ version }}=*_${{ build_num }}
+        - libgcc-ng >=${{ version }}
     tests:
       - requirements:
           run:
@@ -725,7 +725,7 @@ outputs:
       host:
         - ${{ pin_subpackage('libgomp', exact=True) }}
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
         - libgomp >=7.5.0
       run_exports:
@@ -764,7 +764,7 @@ outputs:
       run:
         - libgcc >=${{ gcc_version }}
       run_constraints:
-        - libgfortran ${{ gcc_version }}
+        - libgfortran >=${{ gcc_version }}
     tests:
       - script:
           - test -f ${PREFIX}/lib/libgfortran${SHLIB_EXT}
@@ -781,7 +781,7 @@ outputs:
       run:
         - ${{ pin_subpackage('libgfortran' ~ libgfortran_soname, exact=True) }}
       run_constraints:
-        - libgfortran-ng ==${{ version }}=*_${{ build_num }}
+        - libgfortran-ng >=${{ version }}
     tests:
       - script:
           - test -f ${PREFIX}/lib/libgfortran${SHLIB_EXT}
