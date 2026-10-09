@@ -27,7 +27,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pyforge.steward import preflight_ci, preflight_suite_reduction
+from pyforge.steward import preflight_ci, preflight_suite_reduction, preflight_xdist
 
 ROOT_AGGREGATE = "pr-preflight-lanes"
 DEFAULT_INVOKING_ENV = "pyforge-guild"
@@ -200,6 +200,7 @@ class _RunCoordinator:
     suite_lane_plan: dict[str, preflight_suite_reduction.SuiteLaneOverride | dict[str, Any]] = field(
         default_factory=dict
     )
+    xdist_workers: dict[str, int] = field(default_factory=dict)
 
     def service_lock(self, key: str | None) -> threading.Lock | None:
         if key is None:
@@ -320,6 +321,9 @@ def _run_lane_in_pool(
         lane_dir = scratch_root / lane.task
         log_path = scratch_root / f"{lane.task}.log"
         env = _lane_scratch_env(lane_dir)
+        workers = coord.xdist_workers.get(lane.task)
+        if workers is not None:
+            env["PYTEST_XDIST_AUTO_NUM_WORKERS"] = str(workers)
         ctx = LaneRunContext(lane=lane, scratch_dir=lane_dir, log_path=log_path, env=env)
         start_offset = time.monotonic() - coord.run_start
         lane_start = time.monotonic()
@@ -447,6 +451,12 @@ def run_preflight(
     scratch_root = repo_root / RUN_SCRATCH_RELATIVE / run_id
     scratch_root.mkdir(parents=True, exist_ok=True)
 
+    xdist_workers = preflight_xdist.lane_xdist_worker_map(
+        lane_tasks=[lane.task for lane in lanes],
+        pixi_data=pixi_data,
+        logical_cores=_logical_core_count(),
+        pool_jobs=worker_count,
+    )
     coord = _RunCoordinator(
         repo_root=repo_root,
         run_id=run_id,
@@ -454,6 +464,7 @@ def run_preflight(
         jobs=worker_count,
         keep_going=keep_going,
         suite_lane_plan=suite_lane_plan,
+        xdist_workers=xdist_workers,
     )
     if injected_runner is not None:
         runner = injected_runner
