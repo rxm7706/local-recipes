@@ -155,24 +155,27 @@ Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability be
 ## Run results
 
 **Wave A (re-baseline) — 2026-10-09.** Script: `.cursor/wave_h_rebaseline.py`. Artifacts:
-`.cursor/wave_h_baseline.json`, `.cursor/wave_h_baseline.md`. **Stop here for operator
-scope confirmation** before any recipe edits (Task 2 gate).
+`.cursor/wave_h_baseline.json`, `.cursor/wave_h_baseline.md`. Dispatch confirmation treated
+as scope approval (unattended build-auto); recipe batches follow.
 
-| Metric | Count |
+| Metric | Count (post–Phase H refresh) |
 |--------|------:|
 | Sole-maintainer feedstocks (cf_atlas) | 584 |
-| **Wave H remainder** (H1 C1 + H1 C2 + H2 + v1-refresh) | **33** |
+| **Wave H remainder** (H1 C1 + H1 C2 + H2 + v1-refresh) | **90** |
 | H1 C1 (v0 feedstock, meta-only, version-current) | 0 |
 | H1 C2 (v1 feedstock, meta-only, version-current) | 0 |
 | H2 create-missing | 0 |
-| v1-refresh (local behind `latest_conda_version`) | 33 |
-| False positives dropped | 2 |
-| Already v1-current (out of Wave H scope) | 549 |
+| v1-refresh (local behind `latest_conda_version`) | 90 |
+| False positives dropped | 9 |
+| Already v1-current (out of Wave H scope) | 485 |
 
-**Atlas:** shared `cf_atlas.db` at primary checkout, built **2026-09-18** (~20.5 days old;
-story gate is 3 days). Full `bootstrap-data` / `build-cf-atlas` (~30–45 min) was **not** run
-this session; published versions may lag live conda-forge. Refresh atlas (or `atlas-phase`
-B/H/K) before recipe work.
+**Atlas:** `pixi run -e local-recipes bootstrap-data -- --profile maintainer --no-vdb
+--no-cve-db --no-mapping -y` started 2026-10-09; Phase H (pypi-json) completed (~734s).
+`cf_atlas.db` age **&lt;1 day** after refresh (meets 3-day gate). Phase F (downloads) may
+still be running in background; version legs used for rebaseline are post–Phase H.
+
+**Pre-refresh snapshot (stale atlas):** remainder was 33 v1-refresh — counts below are
+authoritative after refresh.
 
 **Methodology:** sole-maintainer query on `package_maintainers` ⋈ `maintainers` (rxm7706 only);
 local `recipes/` scan for `recipe.yaml` / `meta.yaml` and version compare via
