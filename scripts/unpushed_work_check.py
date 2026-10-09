@@ -39,11 +39,12 @@ WHAT COUNTS AS AT RISK:
                     with no unique content are ignored: a merged feature branch
                     lingering locally is untidy, not a risk.
   dangling-commit   an unreachable commit touching more than `--min-files` files
-                    and not already preserved under a rescue tag. `git gc` may
-                    collect these at any time, without warning.
+                    and not already preserved under a rescue/preserve/archive tag.
+                    `git gc` may collect these at any time, without warning.
+  unpushed-ref      a local tag or custom ref (not under refs/heads/) whose commit
+                    is on no `origin` ref — see `commit_on_origin`.
 
-Remedy is one line and printed with the finding, because a detector that names a
-problem without naming its fix is a complaint.
+Remedy is report-only: never print a command that would mint or push a ref.
 """
 from __future__ import annotations
 
@@ -60,38 +61,76 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RESCUE_PREFIX = "rescue/dangling-"
+SYNTHETIC_SUBJECT_SUFFIX = "(not a real commit)"
+REPORT_REMEDY = (
+    "report; do not tag — operator review required"
+    " (after Story 87.3: `marshal preserve tag`)"
+)
+
+
+class ObservationFailed(Exception):
+    """Git could not be observed — fail closed (exit 2)."""
+
+    def __init__(self, cmd: tuple[str, ...]) -> None:
+        self.cmd = cmd
+        super().__init__(" ".join(cmd))
+
+
+def _run_git(*args: str, cwd: pathlib.Path = ROOT) -> subprocess.CompletedProcess[str] | None:
+    try:
+        return subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
 
 
 def git(*args: str, cwd: pathlib.Path = ROOT) -> str:
-    try:
-        p = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
-                           text=True, timeout=120)
-        return p.stdout.strip() if p.returncode == 0 else ""
-    except (OSError, subprocess.TimeoutExpired):
-        return ""
+    proc = _run_git(*args, cwd=cwd)
+    if proc is None or proc.returncode != 0:
+        raise ObservationFailed(("git", *args))
+    return proc.stdout.strip()
+
+
+def git_stdout_even_on_failure(*args: str, cwd: pathlib.Path = ROOT) -> str:
+    """Return stdout when present; fsck exits non-zero when it lists problems."""
+    proc = _run_git(*args, cwd=cwd)
+    if proc is None:
+        raise ObservationFailed(("git", *args))
+    out = proc.stdout.strip()
+    if out:
+        return out
+    if proc.returncode != 0:
+        raise ObservationFailed(("git", *args))
+    return ""
+
+
+def git_optional(*args: str, cwd: pathlib.Path = ROOT) -> str:
+    """Stdout regardless of exit code — missing refs/objects are not observation loss."""
+    proc = _run_git(*args, cwd=cwd)
+    if proc is None:
+        raise ObservationFailed(("git", *args))
+    return proc.stdout.strip()
 
 
 def default_remote_head() -> str:
     # Full refnames (marshal Story 60.1, CAP-270): a local branch or tag named `origin/main` would
     # shadow the short name and make unpushed work read as already on the remote.
     for ref in ("refs/remotes/origin/main", "refs/remotes/origin/master"):
-        if git("rev-parse", "--verify", "--quiet", ref):
+        try:
+            git("rev-parse", "--verify", "--quiet", ref)
             return ref
+        except ObservationFailed:
+            continue
     return ""
 
 
 def remote_branches() -> dict[str, str]:
-    """branch name -> remote tip sha (S-3.10, FR-171).
-
-    A NAME, not a tip, was the old unit of comparison here, and the difference is
-    the whole finding: `find_unpushed` skipped any branch whose name existed on
-    origin, so a long-lived branch whose remote copy had fallen arbitrarily far
-    behind reported as safe. Live case — `loop/pyforge-doctor` sat on origin at
-    3f43f486c9 while the local branch stood 8 PRs ahead at cbd965110b, and this
-    detector said nothing, on the day its own Dream was reopened for durability.
-    Station branches are the structural blind spot: their names always exist
-    remotely, so a name check can never see them fall behind.
-    """
+    """branch name -> remote tip sha (S-3.10, FR-171)."""
     out = git("ls-remote", "--heads", "origin")
     tips: dict[str, str] = {}
     for ln in out.splitlines():
@@ -102,10 +141,55 @@ def remote_branches() -> dict[str, str]:
     return tips
 
 
+def origin_tip_shas() -> set[str]:
+    """Tips of refs/remotes/origin/* plus tags listed on origin (CAP-287 / Story 87.2)."""
+    tips: set[str] = set()
+    for sha in git("for-each-ref", "--format=%(objectname)", "refs/remotes/origin/").splitlines():
+        sha = sha.strip()
+        if sha:
+            tips.add(sha)
+    for ln in git("ls-remote", "--tags", "origin").splitlines():
+        if not ln.strip() or "\t" not in ln:
+            continue
+        sha, _, _ref = ln.partition("\t")
+        tips.add(sha.strip())
+    return tips
+
+
+def commit_on_origin(sha: str, origin_tips: set[str]) -> bool:
+    if not sha:
+        return False
+    if sha in origin_tips:
+        return True
+    for tip in origin_tips:
+        proc = _run_git("merge-base", "--is-ancestor", sha, tip)
+        if proc is not None and proc.returncode == 0:
+            return True
+    return False
+
+
+def ref_peeled_commit(ref: str) -> str:
+    peeled = git_optional("rev-parse", "-q", f"{ref}^{{commit}}")
+    if peeled:
+        return peeled
+    return git_optional("rev-parse", "-q", ref)
+
+
 def rescued() -> set[str]:
-    """Commits already preserved by a rescue tag — reachable, so gc-safe."""
-    out = git("for-each-ref", "--format=%(objectname)", f"refs/tags/{RESCUE_PREFIX}*")
-    return set(out.split())
+    """Commits already preserved — reachable from legacy rescue or preserve/archive tags."""
+    commits: set[str] = set()
+    for prefix in (RESCUE_PREFIX, "preserve/", "archive/"):
+        out = git_optional(
+            "for-each-ref",
+            "--format=%(refname)",
+            f"refs/tags/{prefix}*",
+        )
+        for ref in out.splitlines():
+            ref = ref.strip()
+            if not ref:
+                continue
+            commits.add(ref_peeled_commit(ref))
+    return {c for c in commits if c}
 
 
 def find_unpushed(base: str, remote: dict[str, str]) -> list[dict]:
@@ -121,91 +205,145 @@ def find_unpushed(base: str, remote: dict[str, str]) -> list[dict]:
         remote_sha = remote.get(br)
         ahead = 0
         if remote_sha:
-            # S-3.10/FR-171: compare TIPS. `br in remote` answered "does a remote
-            # copy exist?" while this detector presents itself as answering "is the
-            # work safe?" — so a stale remote copy read as pushed. Count what the
-            # remote lacks; an unknown remote sha (never fetched) counts as behind
-            # rather than as safe, which is the correct default for a durability
-            # check: better one redundant finding than one missed loss.
-            ahead_out = git("rev-list", "--count", f"{remote_sha}..{head}")
+            ahead_out = git_optional("rev-list", "--count", f"{remote_sha}..{head}")
             if ahead_out.isdigit():
                 ahead = int(ahead_out)
-            elif not git("cat-file", "-e", f"{remote_sha}^{{commit}}"):
-                ahead = -1                # remote tip not present locally
+            elif not git_optional("cat-file", "-e", f"{remote_sha}^{{commit}}"):
+                ahead = -1
             if ahead == 0:
-                continue                  # remote is at or ahead of us: safe
+                continue
         files = [f for f in git("diff", "--name-only", f"{base}...{head}").splitlines() if f]
         if not files:
-            continue                      # merged/empty: untidy, not at risk
+            continue
         stat = git("diff", "--shortstat", f"{base}...{head}")
         if remote_sha:
             behind = f"{ahead} commit(s)" if ahead > 0 else "an unfetched tip"
-            note = (f"origin has this branch at {remote_sha[:10]} but is behind by "
-                    f"{behind} — a remote copy existing is not the work being safe")
+            note = (
+                f"origin has this branch at {remote_sha[:10]} but is behind by "
+                f"{behind} — a remote copy existing is not the work being safe"
+            )
         else:
             note = "no branch of this name on origin at all"
-        findings.append({"kind": "unpushed-branch", "ref": br,
-                         "files": len(files), "stat": stat, "detail": note,
-                         "remedy": f"git push origin refs/heads/{br}:refs/heads/{br}"})
+        findings.append(
+            {
+                "kind": "unpushed-branch",
+                "ref": br,
+                "files": len(files),
+                "stat": stat,
+                "detail": note,
+                "remedy": REPORT_REMEDY,
+            }
+        )
+    return findings
+
+
+def find_unpushed_refs(origin_tips: set[str]) -> list[dict]:
+    """Local tags and non-head refs whose commits are not on origin."""
+    findings: list[dict] = []
+    for ref in git("for-each-ref", "--format=%(refname)", "refs/").splitlines():
+        ref = ref.strip()
+        if not ref or ref.startswith("refs/heads/") or ref.startswith("refs/remotes/"):
+            continue
+        commit = ref_peeled_commit(ref)
+        if commit_on_origin(commit, origin_tips):
+            continue
+        stat = git_optional("log", "-1", "--format=%s", commit)[:70]
+        findings.append(
+            {
+                "kind": "unpushed-ref",
+                "ref": ref,
+                "files": 0,
+                "stat": stat or commit[:10],
+                "remedy": REPORT_REMEDY,
+            }
+        )
     return findings
 
 
 def find_dangling(min_files: int, safe: set[str]) -> list[dict]:
     findings = []
-    for line in git("fsck", "--no-reflogs").splitlines():
+    for line in git_stdout_even_on_failure("fsck", "--no-reflogs").splitlines():
         if not line.startswith("dangling commit "):
             continue
         sha = line.split()[2]
         if sha in safe:
             continue
-        files = [f for f in git("diff", "--name-only", f"{sha}^", sha).splitlines() if f]
+        subject = git_optional("log", "-1", "--format=%s", sha)
+        if SYNTHETIC_SUBJECT_SUFFIX and subject.endswith(SYNTHETIC_SUBJECT_SUFFIX):
+            continue
+        files = [f for f in git_optional("diff", "--name-only", f"{sha}^", sha).splitlines() if f]
         if len(files) <= min_files:
             continue
-        subject = git("log", "-1", "--format=%s", sha)[:70]
-        date = git("log", "-1", "--format=%ad", "--date=format:%Y%m%d", sha)
-        tag = f"{RESCUE_PREFIX}{date}-{sha[:8]}"
-        findings.append({"kind": "dangling-commit", "ref": sha[:10],
-                         "files": len(files), "stat": subject,
-                         "remedy": f"git tag {tag} {sha} && git push origin {tag}"})
+        findings.append(
+            {
+                "kind": "dangling-commit",
+                "ref": sha[:10],
+                "files": len(files),
+                "stat": subject[:70],
+                "remedy": REPORT_REMEDY,
+            }
+        )
     return findings
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--min-files", type=int, default=3,
-                    help="dangling commits touching more than this are reported (default 3)")
-    ap.add_argument("--branches-only", action="store_true",
-                    help="skip the dangling-object scan (much faster on a large repo)")
+    ap.add_argument(
+        "--min-files",
+        type=int,
+        default=3,
+        help="dangling commits touching more than this are reported (default 3)",
+    )
+    ap.add_argument(
+        "--branches-only",
+        action="store_true",
+        help="skip the dangling-object scan (much faster on a large repo)",
+    )
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
-    base = default_remote_head()
-    if not base:
-        print("UNKNOWN: no origin/main or origin/master — cannot judge what is unpushed.")
-        return 2
+    try:
+        base = default_remote_head()
+        if not base:
+            print("UNKNOWN: no origin/main or origin/master — cannot judge what is unpushed.")
+            return 2
 
-    remote = remote_branches()
-    if not remote:
-        print("UNKNOWN: could not list remote branches (offline?) — "
-              "refusing to report everything as unpushed.")
-        return 2
+        remote = remote_branches()
+        if not remote:
+            print(
+                "UNKNOWN: could not list remote branches (offline?) — "
+                "refusing to report everything as unpushed."
+            )
+            return 2
 
-    findings = find_unpushed(base, remote)
-    if not args.branches_only:
-        findings += find_dangling(args.min_files, rescued())
+        findings = find_unpushed(base, remote)
+        if not args.branches_only:
+            origin_tips = origin_tip_shas()
+            findings += find_unpushed_refs(origin_tips)
+            findings += find_dangling(args.min_files, rescued())
+    except ObservationFailed as exc:
+        cmd = " ".join(exc.cmd)
+        print(f"UNKNOWN: could not observe repository ({cmd}).")
+        return 2
 
     if args.json:
         print(json.dumps({"base": base, "findings": findings}, indent=1))
     else:
         branches = [f for f in findings if f["kind"] == "unpushed-branch"]
         dangling = [f for f in findings if f["kind"] == "dangling-commit"]
+        refs = [f for f in findings if f["kind"] == "unpushed-ref"]
         print(f"unpushed work — base {base}, {len(remote)} remote branch(es)\n")
         if not findings:
-            print("OK: every branch with unique content is on origin, and no "
-                  "unreachable commit holds real work.")
+            print(
+                "OK: every branch with unique content is on origin, and no "
+                "unreachable commit holds real work."
+            )
             return 0
-        print(f"FINDINGS ({len(findings)}): "
-              f"{len(branches)} unpushed branch(es), {len(dangling)} dangling commit(s)\n")
+        print(
+            f"FINDINGS ({len(findings)}): "
+            f"{len(branches)} unpushed branch(es), {len(dangling)} dangling commit(s), "
+            f"{len(refs)} unpushed ref(s)\n"
+        )
         for f in findings[:60]:
             print(f"  ✗ [{f['kind']}] {f['ref']}  ({f['files']} files)")
             print(f"      {f['stat']}")
@@ -213,9 +351,8 @@ def main() -> int:
                 print(f"      {f['detail']}")
             print(f"      → {f['remedy']}")
         if len(findings) > 60:
-            # No silent caps: say what was withheld and how to see it.
             print(f"\n  … {len(findings) - 60} more not shown — rerun with --json for the full set.")
-    return 1
+    return 0 if not findings else 1
 
 
 if __name__ == "__main__":
