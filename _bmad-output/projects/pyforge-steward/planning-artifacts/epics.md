@@ -5236,7 +5236,7 @@ raises the named `RuntimeError`, and nothing in `src/platform`, `django-pyforge`
 before; `pyforge.cutover_root`, the chart's flags ConfigMap and the `flags` MCP face are unchanged; doctor's kill-switch
 `--flag` help example names no tree key, while its tests keep their arbitrary temp-tree key;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 77: The console's specs and archived pages follow the retired tier and the archive (spec-one-chain-per-station CAP-11)
 
