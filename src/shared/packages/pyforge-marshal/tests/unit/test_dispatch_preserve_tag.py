@@ -307,6 +307,7 @@ def test_supervisor_tags_untracked_only_when_flag_on(
     assert facts.preserve_ref is None
 
 
+@flag_states(_FLAG)
 def test_untracked_file_in_preserve_tree(
     git_pair: tuple[Path, Path],
     flag_provider: dict[str, bool],
