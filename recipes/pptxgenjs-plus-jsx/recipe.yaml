@@ -52,7 +52,7 @@ tests:
       - if: not win
         then:
           - test -f "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/package.json"
-          - test -f "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/third-party-licenses.txt"
+          - test -f "${PREFIX}/share/licenses/pptxgenjs-plus-jsx/third-party-licenses.txt"
           - test ! -d "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/node_modules/.bin"
           - |
             node <<'EOF'
