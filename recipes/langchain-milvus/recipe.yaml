@@ -2,15 +2,15 @@
 schema_version: 1
 
 context:
-  version: "0.3.3"
+  version: "0.4.0"
 
 package:
   name: langchain-milvus
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/l/langchain-milvus/langchain_milvus-${{ version }}.tar.gz
-  sha256: 406c2d88da133741f5cc3e2fea4b36386182b35500205c70d003382ded210e41
+  url: https://files.pythonhosted.org/packages/25/56/a763b0cd81d1e70df8d1b4dd409f03e90968c42db86046d973b516c05b63/langchain_milvus-0.4.0.tar.gz
+  sha256: 5fd962874bd0fec1dfd87513610807fcf7abf8c1ec8a868819c0b02483c9708f
 
 build:
   number: 0
@@ -19,22 +19,22 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - poetry-core
-    - pip
+  - python ${{ python_min }}.*
+  - poetry-core
+  - pip
   run:
-    - python >=${{ python_min }}
-    - langchain-core >=1.0.0
-    - pymilvus >=2.6.0,<3.0
+  - python >=${{ python_min }}
+  - langchain-core >=1.0.0
+  - pymilvus >=2.6.0,<3.0
 
 tests:
-  - python:
-      imports:
-        - langchain_milvus
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+- python:
+    imports:
+    - langchain_milvus
+    pip_check: true
+    python_version:
+    - ${{ python_min }}.*
+    - "*"
 
 about:
   homepage: https://pypi.org/project/langchain-milvus/
@@ -53,7 +53,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -61,10 +61,10 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: langchain-milvus
   cfe-name-aliases:
-    - langchain_milvus
+  - langchain_milvus
   cfe-purls:
-    - pkg:conda/langchain-milvus@${{ version }}?channel=conda-forge
-    - pkg:pypi/langchain-milvus@${{ version }}
+  - pkg:conda/langchain-milvus@${{ version }}?channel=conda-forge
+  - pkg:pypi/langchain-milvus@${{ version }}
   cfe-upstream-repo: https://github.com/langchain-ai/langchain-milvus
   cfe-upstream-homepage: https://pypi.org/project/langchain-milvus/
   cfe-import-names: [langchain_milvus]
