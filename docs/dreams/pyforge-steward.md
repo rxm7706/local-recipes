@@ -953,6 +953,28 @@ Drift — orphaned between stations.
   landed or what is already gone. Owners `spec-pyforge-steward` CAP-152 (`platform-ci-local`, a task a station shells
   to), CAP-165 with CAP-5 (the session hook's reasons) and CAP-107 / CAP-108 (workspace clean and its bookkeeping).
   → Stories 63.7, 85.6 and 13.5, specced 2026-10-07; 63.7 and 13.5 reopen Epics 63 and 13.
+- **2026-10-08 (denial probe) — Found: Story 85.6's form check stamps the real spec-surface baseline.** Measured on
+  `488837c504`. `tests/scripts/test_session_denial_forms.py` learns whether a script's parser accepts the flags a
+  `session_denials` reason names by running the script: `_script_accepts_argv` (`:109`) runs
+  `[sys.executable, script, *argv]` with `cwd=REPO_ROOT` and counts the argv accepted unless the output says
+  `unrecognized arguments` or `invalid choice:`. The `spec-surface-bare-write-baseline` reason
+  (`docs/governance/guild-roster.json:374`) names `python scripts/spec_surface_check.py --write-baseline --spec
+  <project>/<spec>`, which `_PLACEHOLDERS` (`:30`) fills in as `pyforge-steward/spec-pyforge-steward`. So
+  `test_live_roster_session_denial_forms_resolve`, `test_broken_retire_form_in_reason_fails` and
+  `test_historical_roster_with_retire_and_marshal_preserve_fails` each run a real scoped stamp of steward's Spec in
+  whatever checkout runs the scripts suite: `pyforge-doctor-scripts-test`, and `pr-preflight`'s leg of it
+  (`pixi.toml:1592`), which the `pre-push` hook runs. In a fresh worktree of `488837c504`, one run of the first test
+  rewrote `scripts/.spec-surface-baseline.json` from 1,073,738 to 1,075,879 bytes (only the
+  `pyforge-steward/spec-pyforge-steward` entry: its memlog hash and 35 file hashes) and left the `.lock` sidecar. It was
+  first seen on 2026-10-08 during marshal Story 69.1's fix, when the file's mtime moved after each of those tests. A
+  `git add -A` after a local test run commits a stamp nobody reconciled. The same probe runs the whole body of any
+  script whose parser accepts the argv, and counts a script that crashes before it parses as accepted. **What it looks
+  like when fixed:** the check decides whether a parser accepts the argv without running the script's body. A bootstrap
+  stops the process at the first successful top-level parse, a rejection still fails naming the flag, a script that
+  does not use argparse is reported unprobeable and never run, and the scripts suite leaves the baseline
+  byte-identical. **Constraints:** a fix story, no CAP, no flag, test code only. The roster, the hook and
+  `spec_surface_check.py` do not change, and no reason text moves. Owner `spec-pyforge-steward` CAP-165 with CAP-5
+  (Story 85.6's check). → Epic 85 / Story 85.7, specced 2026-10-08.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 500
+# stories: 501
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -337,6 +337,7 @@ development_status:
   85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits: done
   85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: blocked
   85-6-every-command-a-session-denial-names-as-the-sanctioned-form-exists: done
+  85-7-the-session-denial-form-check-never-stamps-the-real-spec-surface-baseline: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
