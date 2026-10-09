@@ -147,9 +147,13 @@ def test_reconcile_lists_unpromoted_scratch(git_pair: tuple[Path, Path], flag_pr
     if not flag_provider[_FLAG]:
         pytest.skip("preserve_refs flag off")
     repo, _ = git_pair
+    (repo / "orphan.txt").write_text("orphan\n", encoding="utf-8")
+    _git(repo, "add", "orphan.txt")
+    _git(repo, "commit", "-m", "orphan commit")
     head = _git(repo, "rev-parse", "HEAD").stdout.strip()
     branch = f"attempt-preserve/orphan-{head[:8]}"
     _git(repo, "branch", branch, head)
+    _git(repo, "reset", "--hard", "HEAD~1")
     scratch = reconcile_unpromoted_engine_refs(repo)
     assert branch in scratch
 
@@ -201,7 +205,11 @@ def test_targets_from_run_snapshot_skips_preserve_tags():
 def test_mutation_promotion_required(git_pair: tuple[Path, Path]):
     """Reconcile scan surfaces scratch when no preserve tag holds the commit."""
     repo, _ = git_pair
+    (repo / "mut.txt").write_text("mut\n", encoding="utf-8")
+    _git(repo, "add", "mut.txt")
+    _git(repo, "commit", "-m", "mut commit")
     head = _git(repo, "rev-parse", "HEAD").stdout.strip()
     branch = f"attempt-preserve/mut-{head[:8]}"
     _git(repo, "branch", branch, head)
+    _git(repo, "reset", "--hard", "HEAD~1")
     assert reconcile_unpromoted_engine_refs(repo)
