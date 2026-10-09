@@ -55,8 +55,8 @@ evaluation through OpenFeature; neither changes what is stated here).
   tree (``read_boolean``, :func:`render`, ``read_cutover_root``) refuses a tree that breaks it.
   A tree with no ``flag-overlays.json`` beside it is not composed and is read as it is.
 
-Stdlib-only apart from its sibling ``cutover_root`` and a function-local OpenFeature
-import in :func:`read_boolean` (Story 76.3); no environment-variable provider and no
+Stdlib-only apart from its sibling ``cutover_root`` and a dynamic OpenFeature load via
+``importlib`` in :func:`read_boolean` (Story 76.3); no environment-variable provider and no
 station-specific logic belong here.
 """
 
@@ -65,6 +65,7 @@ from __future__ import annotations
 import atexit
 import copy
 import hashlib
+import importlib
 import json
 import os
 import re
@@ -401,7 +402,10 @@ def _evaluation_path(resolved: Path, environment: str) -> Path:
 
 
 def _wait_file_provider_ready(probe_key: str, *, timeout_s: float = 8.0) -> bool:
-    from openfeature import api  # noqa: PLC0415
+    try:
+        api = importlib.import_module("openfeature.api")
+    except ImportError:
+        return False
 
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
@@ -415,11 +419,14 @@ def _wait_file_provider_ready(probe_key: str, *, timeout_s: float = 8.0) -> bool
 def _read_boolean_openfeature(key: str, default: bool, evaluation_path: Path) -> bool | None:
     """Evaluate through OpenFeature's in-process FILE provider; ``None`` when OpenFeature is absent."""
     try:
-        from openfeature import api
-        from openfeature.contrib.provider.flagd import FlagdProvider
-        from openfeature.contrib.provider.flagd.config import ResolverType
+        api = importlib.import_module("openfeature.api")
+        flagd = importlib.import_module("openfeature.contrib.provider.flagd")
+        flagd_config = importlib.import_module("openfeature.contrib.provider.flagd.config")
     except ImportError:
         return None
+
+    FlagdProvider = flagd.FlagdProvider
+    ResolverType = flagd_config.ResolverType
 
     global _PROVIDER_SOURCE  # noqa: PLW0603
     source = str(evaluation_path.resolve())
