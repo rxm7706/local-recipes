@@ -56,6 +56,16 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
         "optional_flags": {"project": "--project", "run": "--run"},
         "store_true_flags": {"fleet": "--fleet"},
     },
+    "marshal_preserve_list": {
+        "description": "List local preserve tags (marshal preserve list --format json).",
+        "cli": ["preserve", "list", "--format", "json"],
+        "optional_flags": {
+            "station": "--station",
+            "story": "--story",
+            "producer": "--producer",
+            "state": "--state",
+        },
+    },
 }
 
 _ABS_PATH_RE = re.compile(r"^(/|[A-Za-z]:\\|\\\\)")
