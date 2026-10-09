@@ -2847,7 +2847,7 @@ whenever the older retro's 10-character prefix is all digits and loads as an int
 - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` and `pixi run --frozen -e pyforge-mason
   pyforge-mason-test` are green.
 
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
