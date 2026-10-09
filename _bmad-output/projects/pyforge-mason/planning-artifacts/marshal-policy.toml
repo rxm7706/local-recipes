@@ -350,6 +350,41 @@ verify_commands = [
   "recipes/lerc/recipe.yaml",
   "recipes/amundsen-databuilder/recipe.yaml",
   "recipes/shodan/recipe.yaml",
+  # 2026-10-09 landing (operator ruling: 22.1 lands for eleven, 22.3 split out): the files the gates needed beside the
+  # recipe.yaml repairs (StringZilla's stale CBC removed per G94, lerc's feedstock build scripts added for its build, bld.bat under the v1 name build.bat),
+  # and the 22.3 chain (Dream entry, epics.md, PRD/spine currency re-stamps, regenerated test-architecture).
+  "recipes/StringZilla/conda_build_config.yaml",
+  "recipes/lerc/build.sh",
+  "recipes/lerc/build.bat",
+  "docs/dreams/pyforge-mason.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md",
+  # 2026-10-09 review fixes and second ruling (22.1 lands for ten, 22.4 split out): pyautogui's feedstock
+  # yum_requirements.txt (G94), and the feedstock recipe files 22.4's vc port must carry.
+  "recipes/pyautogui/yum_requirements.txt",
+  "recipes/vc/vc_repack.py",
+  "recipes/vc/activate.bat",
+  "recipes/vc/LICENSE.TXT",
+  "recipes/vc/conda_build_config.yaml",
+  # 2026-10-09 second review (LOW 3, G94): the feedstock recipe/ files boost's recipe.yaml references, copied at the
+  # 1.91.0 commit, and pyobjc-framework-systemconfiguration's feedstock conda_build_config.yaml at its 12.2.1 commit.
+  "recipes/boost/build.sh",
+  "recipes/boost/bld.bat",
+  "recipes/boost/build-py.sh",
+  "recipes/boost/build-py.bat",
+  "recipes/boost/install-lib.sh",
+  "recipes/boost/install-lib.bat",
+  "recipes/boost/install-py.sh",
+  "recipes/boost/install-py.bat",
+  "recipes/boost/test_lib.sh",
+  "recipes/boost/test_lib.bat",
+  "recipes/boost/test/**",
+  "recipes/boost/patches/**",
+  "recipes/boost/conda_build_config.yaml",
+  "recipes/pyobjc-framework-systemconfiguration/conda_build_config.yaml",
   # 22.1's retro (gotcha + corpus meta-test) and 22.2's check, each in its own retro(cfe): commit
   ".claude/skills/conda-forge-expert/**",
   # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)
