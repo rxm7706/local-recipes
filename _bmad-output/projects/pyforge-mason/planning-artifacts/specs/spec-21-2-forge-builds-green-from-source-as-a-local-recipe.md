@@ -2,7 +2,7 @@
 title: "21.2: forge builds green from source as a local recipe"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: f0106f44bdd30530f4613812542bd285a8a0672e
 flag-exempt: recipe-build
 review_loop_iteration: 0
