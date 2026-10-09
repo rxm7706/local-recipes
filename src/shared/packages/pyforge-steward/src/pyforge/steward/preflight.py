@@ -235,6 +235,7 @@ class _RunCoordinator:
     )
     suite_reduction_runtime_journal: dict[str, dict[str, Any]] = field(default_factory=dict)
     xdist_workers: dict[str, int] = field(default_factory=dict)
+    subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None
 
     def service_lock(self, key: str | None) -> threading.Lock | None:
         if key is None:
@@ -399,7 +400,10 @@ def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
     plan_entry = coord.suite_lane_plan.get(ctx.lane.task)
     if isinstance(plan_entry, preflight_suite_reduction.SuiteLaneOverride):
         return _subprocess_reduced_suite_lane(coord, ctx, plan_entry)
-    argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task]
+    if coord.subprocess_argv_for_lane is not None:
+        argv = coord.subprocess_argv_for_lane(ctx.lane)
+    else:
+        argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task]
     with ctx.log_path.open("wb") as log_handle:
         return _run_pixi_argv(coord, ctx, argv, log_handle)
 
@@ -525,6 +529,7 @@ def run_preflight(
     keep_going: bool = False,
     install_environment: Callable[[str], int] | None = None,
     scratch_parent: Path | None = None,
+    subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None,
 ) -> int:
     """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130."""
     repo_root = repo_root.resolve()
@@ -637,6 +642,7 @@ def run_preflight(
         keep_going=keep_going,
         suite_lane_plan=suite_lane_plan,
         xdist_workers=xdist_workers,
+        subprocess_argv_for_lane=subprocess_argv_for_lane,
     )
     if injected_runner is not None:
         runner = injected_runner
@@ -662,7 +668,7 @@ def run_preflight(
             lane_iter = iter(lanes)
 
             while True:
-                if coord.cancel.is_set():
+                if coord.cancel.is_set() and not futures:
                     break
                 while len(futures) < worker_count and not (coord.stop_on_red.is_set() and not coord.keep_going):
                     try:
