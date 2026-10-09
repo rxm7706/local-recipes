@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.97.0
+version: 8.97.1
 allowed-tools: [conda_forge_server]
 ---
 
