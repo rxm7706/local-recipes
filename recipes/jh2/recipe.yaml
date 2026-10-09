@@ -3,58 +3,58 @@ schema_version: 1
 
 context:
   name: jh2
-  version: "5.0.13"
+  version: "5.0.15"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jh2-${{ version }}.tar.gz
-  sha256: f8c78cffb3a35c4410513c3eb7989de36028c84277c04f07c97909dd94c23a75
+  url: https://files.pythonhosted.org/packages/57/fa/a3ba1417800b142d6777c48657f6b01fc46bd1a4777aba979463e36d78c5/jh2-5.0.15.tar.gz
+  sha256: 53fb377caca50441fd1892f60745c44d3ba8c43844c3792e73c34bf9f841adaf
 
 build:
-  number: 1
+  number: 0
   script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+  - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
   build:
-    - if: build_platform != target_platform
-      then: python
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
-    - ${{ compiler('rust') }}
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
-    - maturin
-    - cargo-bundle-licenses
+  - if: build_platform != target_platform
+    then: python
+  - if: build_platform != target_platform
+    then: cross-python_${{ target_platform }}
+  - ${{ compiler('rust') }}
+  - ${{ compiler('c') }}
+  - ${{ stdlib('c') }}
+  - maturin
+  - cargo-bundle-licenses
   host:
-    - python
-    - maturin >=1.2,<2.0
-    - pip
+  - python
+  - maturin >=1.2,<2.0
+  - pip
   run:
-    - python
+  - python
 
 tests:
-  - python:
-      imports:
-        - jh2
-      pip_check: true
+- python:
+    imports:
+    - jh2
+    pip_check: true
 
 about:
   summary: HTTP/2 State-Machine based protocol implementation
   license: MIT
   license_file:
-    - LICENSE
-    - tests/http2-frame-test-case/LICENSE
-    - THIRDPARTY.yml
+  - LICENSE
+  - tests/http2-frame-test-case/LICENSE
+  - THIRDPARTY.yml
   homepage: https://github.com/jawah/h2
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -62,8 +62,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: jh2
   cfe-purls:
-    - pkg:conda/jh2@${{ version }}?channel=conda-forge
-    - pkg:pypi/jh2@${{ version }}
+  - pkg:conda/jh2@${{ version }}?channel=conda-forge
+  - pkg:pypi/jh2@${{ version }}
   cfe-upstream-repo: https://github.com/jawah/h2
   cfe-upstream-homepage: https://github.com/jawah/h2
   cfe-import-names: [jh2]
@@ -73,8 +73,8 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jh2-feedstock
   cfe-forge-recipe-updates-needed:
-    - dependency-fix
-    - platform-expansion
+  - dependency-fix
+  - platform-expansion
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-04T22:21:47Z
   cfe-generated-by-version: 8.37.0
