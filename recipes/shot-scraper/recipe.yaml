@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: shot-scraper
-  version: "1.11"
+  version: "1.12"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/shot_scraper-${{ version }}.tar.gz
-  sha256: af3efcad697f3b001f624ccdb2499417e4169bee5bf01672840a55175eef6d92
+  url: https://files.pythonhosted.org/packages/9b/3c/34a1ace0396f0e48a3122cbba241cd3bb5bf9dfe5717a73b01a03ead0843/shot_scraper-1.12.tar.gz
+  sha256: 2baed3e5510d759de5eac0a1ef554d0d321d03a561ccbfd3af8c7b29edfe244b
 
 build:
   number: 0
@@ -19,32 +19,32 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - shot-scraper = shot_scraper.cli:cli
+    - shot-scraper = shot_scraper.cli:cli
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - uv-build >=0.9.7,<0.10.0
+  - python ${{ python_min }}.*
+  - pip
+  - uv-build >=0.9.7,<0.10.0
   run:
-    - pydantic
-    - playwright >=1.61.0
-    - python >=${{ python_min }}
-    - click
-    - pyyaml
-    - playwright-python
-    - click-default-group
+  - pydantic
+  - playwright >=1.61.0
+  - python >=${{ python_min }}
+  - click
+  - pyyaml
+  - playwright-python
+  - click-default-group
 
 tests:
-  - python:
-      imports:
-        - shot_scraper
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
+- python:
+    imports:
+    - shot_scraper
+    pip_check: false
+    python_version: ${{ python_min }}
+- requirements:
+    run:
+    - pip
+    - python ${{ python_min }}.*
 
 about:
   summary: A command-line utility for taking automated screenshots of websites
@@ -54,7 +54,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -62,8 +62,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: shot-scraper
   cfe-purls:
-    - pkg:conda/shot-scraper@${{ version }}?channel=conda-forge
-    - pkg:pypi/shot-scraper@${{ version }}
+  - pkg:conda/shot-scraper@${{ version }}?channel=conda-forge
+  - pkg:pypi/shot-scraper@${{ version }}
   cfe-upstream-repo: https://shot-scraper.datasette.io/
   cfe-upstream-homepage: https://shot-scraper.datasette.io/
   cfe-import-names: [shot_scraper]
