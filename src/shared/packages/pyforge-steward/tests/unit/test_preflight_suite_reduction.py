@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import copy
 import json
+import os
+import shutil
+import subprocess
+import sys
 import textwrap
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyforge.steward import preflight_suite_reduction as psr
+from pyforge.steward import preflight, preflight_suite_reduction as psr
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 
@@ -49,6 +53,29 @@ def _fixture_station(repo: Path, name: str = "alphatest") -> Path:
     return pkg
 
 
+def _fixture_station_no_slow(repo: Path, name: str = "noslow") -> Path:
+    pkg = repo / "src" / "shared" / "packages" / f"pyforge-{name}"
+    tests = pkg / "tests"
+    _write(
+        tests / "conftest.py",
+        """
+        import pytest
+
+        def pytest_configure(config):
+            config.addinivalue_line("markers", "slow: slow test")
+        """,
+    )
+    for suite in ("unit", "meta", "integration"):
+        _write(
+            tests / suite / f"test_{suite}_sample.py",
+            f"""
+            def test_fast_{suite}():
+                assert True
+            """,
+        )
+    return pkg
+
+
 def _gate_unit_run(repo: Path, station_pkg: Path) -> dict:
     unit = station_pkg / "tests" / "unit"
     meta = station_pkg / "tests" / "meta"
@@ -77,8 +104,211 @@ def test_reduced_and_gate_collections_partition_task(tmp_path: Path, task_cmd: s
     task_ids = psr.collect_pytest_node_ids(repo, task_cmd.format(tests=tests))
     gate_ids = psr.collect_pytest_node_ids(repo, psr.gate_collect_shell(repo, gate_run))
     reduced_ids = psr.collect_pytest_node_ids(repo, reduced_shell)
+    assert task_ids
+    assert gate_ids
+    assert reduced_ids
     assert gate_ids.isdisjoint(reduced_ids)
     assert gate_ids | reduced_ids == task_ids
+
+
+def _run_reduced_lane_via_preflight(
+    repo: Path,
+    *,
+    station: str,
+    env: str,
+    override: psr.SuiteLaneOverride,
+    task: str,
+    task_cmd: str | None = None,
+) -> tuple[int, dict]:
+    coord = preflight._RunCoordinator(
+        repo_root=repo,
+        run_id="test",
+        run_start=0.0,
+        jobs=1,
+        keep_going=False,
+    )
+    lane_dir = repo / "scratch" / task
+    log_path = repo / "scratch" / f"{task}.log"
+    ctx = preflight.LaneRunContext(
+        lane=preflight.Lane(task=task, environment=env),
+        scratch_dir=lane_dir,
+        log_path=log_path,
+        env=os.environ.copy(),
+    )
+
+    resolved_task_cmd = task_cmd or ""
+
+    def _direct_pixi_argv(_coord, _ctx, argv, log_handle):
+        if argv[-1] == "--collect-only":
+            assert resolved_task_cmd
+            parsed = psr._parse_single_pytest(resolved_task_cmd)
+            assert parsed
+            rel = [str(Path(p).resolve().relative_to(repo)) if not Path(p).is_absolute() else str(p) for p in parsed.test_paths]
+            seg = [sys.executable, "-m", "pytest", "--collect-only", "-q", *rel, *parsed.suffix]
+            if parsed.marker_expr:
+                seg.extend(["-m", parsed.marker_expr])
+        else:
+            dash = argv.index("--")
+            seg = [sys.executable, "-m", *argv[dash + 1 :]]
+        proc = subprocess.run(
+            seg,
+            cwd=repo,
+            env=_ctx.env,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+        )
+        return int(proc.returncode)
+
+    with patch.object(preflight, "_run_pixi_argv", side_effect=_direct_pixi_argv):
+        code = preflight._subprocess_reduced_suite_lane(coord, ctx, override)
+    extra = coord.suite_reduction_runtime_journal[task]
+    return code, extra
+
+
+def test_empty_gate_directory_segment_passes(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    station_pkg = _fixture_station_no_slow(repo, "heraldish")
+    tests = station_pkg / "tests"
+    parsed = psr._parse_single_pytest(f"pytest {tests} -q")
+    assert parsed is not None
+    gate_run = _gate_unit_run(repo, station_pkg) | {"station": "heraldish"}
+    segments = psr._build_reduced_segments(parsed, repo, gate_run)
+    assert segments is not None
+    override = psr.SuiteLaneOverride(
+        segments=tuple(segments),
+        journal={"suite_reduction": True},
+    )
+    code, journal = _run_reduced_lane_via_preflight(
+        repo,
+        station="heraldish",
+        env="pyforge-heraldish",
+        override=override,
+        task="pyforge-heraldish-test",
+    )
+    assert code == 0
+    rows = {row["label"]: row for row in journal["suite_reduction_segments"]}
+    assert rows["rest-of-task"]["outcome"] == "passed"
+    assert rows["gate-dirs-complement"]["outcome"] == "no-tests-selected"
+    assert rows["gate-dirs-complement"]["exit_code"] == psr.PYTEST_EXIT_NO_TESTS_COLLECTED
+
+
+def test_failing_segment_still_reds_lane(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    station_pkg = _fixture_station_no_slow(repo, "fail")
+    tests = station_pkg / "tests"
+    _write(
+        tests / "integration" / "test_fail.py",
+        """
+        def test_will_fail():
+            assert False
+        """,
+    )
+    parsed = psr._parse_single_pytest(f"pytest {tests} -q")
+    gate_run = _gate_unit_run(repo, station_pkg) | {"station": "fail"}
+    segments = psr._build_reduced_segments(parsed, repo, gate_run)
+    assert segments
+    override = psr.SuiteLaneOverride(segments=tuple(segments), journal={"suite_reduction": True})
+    code, journal = _run_reduced_lane_via_preflight(
+        repo,
+        station="fail",
+        env="pyforge-fail",
+        override=override,
+        task="pyforge-fail-test",
+    )
+    assert code == 1
+    rows = {row["label"]: row for row in journal["suite_reduction_segments"]}
+    assert rows["rest-of-task"]["outcome"] == "failed"
+    assert rows["gate-dirs-complement"]["outcome"] == "not-run"
+
+
+def test_doctor_shape_single_complement_no_tests_selected(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    station_pkg = _fixture_station_no_slow(repo, "doctorish")
+    tests = station_pkg / "tests"
+    shutil.rmtree(tests / "integration")
+    parsed = psr._parse_single_pytest(f"pytest {tests} -q")
+    gate_run = _gate_unit_run(repo, station_pkg) | {"station": "doctorish"}
+    gate_run["test_paths"] = [
+        str((tests / "unit").relative_to(repo)),
+        str((tests / "meta").relative_to(repo)),
+    ]
+    segments = psr._build_reduced_segments(parsed, repo, gate_run)
+    assert segments and len(segments) == 1
+    assert segments[0].label == "gate-dirs-complement"
+    override = psr.SuiteLaneOverride(segments=tuple(segments), journal={"suite_reduction": True})
+    code, journal = _run_reduced_lane_via_preflight(
+        repo,
+        station="doctorish",
+        env="pyforge-doctorish",
+        override=override,
+        task="pyforge-doctorish-test",
+    )
+    assert code == 0
+    assert journal["suite_reduction_task_collect_exit"] == 0
+    assert journal["suite_reduction_segments"][0]["outcome"] == "no-tests-selected"
+
+
+def test_all_segments_no_tests_and_task_collects_nothing_reds(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    station_pkg = _fixture_station_no_slow(repo, "empty")
+    tests = station_pkg / "tests"
+    task_cmd = f'pytest {tests} -q -m "never_pick_abcdef"'
+    parsed = psr._parse_single_pytest(task_cmd)
+    assert parsed
+    gate_run = _gate_unit_run(repo, station_pkg) | {"station": "empty"}
+    segments = psr._build_reduced_segments(parsed, repo, gate_run)
+    assert segments
+    override = psr.SuiteLaneOverride(segments=tuple(segments), journal={"suite_reduction": True})
+    code, journal = _run_reduced_lane_via_preflight(
+        repo,
+        station="empty",
+        env="pyforge-empty",
+        override=override,
+        task="pyforge-empty-test",
+        task_cmd=task_cmd,
+    )
+    assert code == psr.PYTEST_EXIT_NO_TESTS_COLLECTED
+    assert all(row["outcome"] == "no-tests-selected" for row in journal["suite_reduction_segments"])
+    assert journal["suite_reduction_task_collect_exit"] == psr.PYTEST_EXIT_NO_TESTS_COLLECTED
+
+
+def test_equal_marker_omits_gate_complement_segment(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    station_pkg = _fixture_station(repo, "equal")
+    tests = station_pkg / "tests"
+    task_cmd = f'pytest {tests} -q -m "not slow"'
+    parsed = psr._parse_single_pytest(task_cmd)
+    assert parsed
+    gate_run = _gate_unit_run(repo, station_pkg) | {"station": "equal"}
+    segments = psr._build_reduced_segments(parsed, repo, gate_run)
+    assert segments
+    assert all(seg.label != "gate-dirs-complement" for seg in segments)
+    reduced_shell = psr._build_reduced_shell_cmd(parsed, repo, gate_run)
+    assert reduced_shell
+    task_ids = psr.collect_pytest_node_ids(repo, task_cmd)
+    gate_ids = psr.collect_pytest_node_ids(repo, psr.gate_collect_shell(repo, gate_run))
+    reduced_ids = psr.collect_pytest_node_ids(repo, reduced_shell)
+    assert task_ids and gate_ids and reduced_ids
+    slow_unit = f"{tests / 'unit' / 'test_unit_sample.py'}::test_slow_unit"
+    assert slow_unit not in task_ids
+    assert slow_unit not in gate_ids
+    assert slow_unit not in reduced_ids
+    assert gate_ids.isdisjoint(reduced_ids)
+    assert gate_ids | reduced_ids == task_ids
+
+
+def test_collect_pytest_node_ids_exit_five_is_empty(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    station_pkg = _fixture_station_no_slow(repo, "coll")
+    tests = station_pkg / "tests"
+    cmd = f"pytest {tests / 'unit'} {tests / 'meta'} -q -m slow"
+    assert psr.collect_pytest_node_ids(repo, cmd) == set()
 
 
 def test_two_pytest_task_is_not_reduced(tmp_path: Path) -> None:
@@ -149,7 +379,7 @@ def test_parse_single_pytest_rejects_and_accepts() -> None:
 
 
 def test_complement_marker_variants() -> None:
-    assert psr._complement_marker("not slow", "not slow") == "slow"
+    assert psr._complement_marker("not slow", "not slow") is None
     assert psr._complement_marker("unit", "not slow") == "(unit) and not (not slow)"
     assert psr._complement_marker(None, "not slow") == "slow"
 
