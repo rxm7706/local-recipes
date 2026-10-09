@@ -986,6 +986,7 @@ def _merge_dispatch_overlay(
         dispatch_baseline_revision=journal.baseline_revision,
         dispatch_final_revision=journal.final_revision,
         dispatch_preserve_ref=journal.preserve_ref,
+        dispatch_preserve_tag=journal.preserve_tag,
         dispatch_landing_verdict=journal.landing_verdict,
         dispatch_wave_id=wave_id,
         dispatch_in_flight_stories=in_flight,

@@ -413,6 +413,7 @@ def test_registered_codes_contains_the_real_codes():
             # INFO-severity (follow-ups waiting on the per-campaign cap), both classified WARN.
             "MRS-DRAIN-018",
             "MRS-DRAIN-019",
+            "MRS-DRAIN-020",
             "MRS-DRAIN-013",
             "MRS-DRAIN-014",
             "MRS-DRAIN-015",

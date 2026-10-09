@@ -819,7 +819,8 @@ def test_journal_dispatch_timing_reports_an_fs_failure(tmp_path: Path, capsys: p
     assert "cannot journal timing" in capsys.readouterr().err
 
 
-def _preserve(fs: FakeFs, vcs: FakeVcs, run_dir: Path, worktree: Path) -> int:
+def _preserve(fs: FakeFs, vcs: FakeVcs, run_dir: Path, worktree: Path, repo_root: Path | None = None) -> int:
+    root = repo_root if repo_root is not None else run_dir.parent.parent.parent
     return supervisor_main._journal_dispatch_preserve(
         fs=fs,
         vcs=vcs,
@@ -830,6 +831,9 @@ def _preserve(fs: FakeFs, vcs: FakeVcs, run_dir: Path, worktree: Path) -> int:
         story_key=_STORY_KEY,
         worktree=worktree,
         baseline_head_sha=_BASELINE,
+        repo_root=root,
+        project_slug=_SLUG,
+        completion_verdict="failed",
     )
 
 

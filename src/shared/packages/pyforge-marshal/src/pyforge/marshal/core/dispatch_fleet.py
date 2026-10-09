@@ -332,11 +332,14 @@ class MemberOutcome:
     status: StationCycleStatus
     detail: str | None = None
     refuse_predicate: dict[str, str] | None = None
+    preserve_tag: str | None = None
 
     def to_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {"story": self.story, "status": self.status.value, "detail": self.detail}
         if self.refuse_predicate is not None:
             payload["refuse_predicate"] = dict(self.refuse_predicate)
+        if self.preserve_tag is not None:
+            payload["preserve_tag"] = self.preserve_tag
         return payload
 
 
@@ -358,6 +361,7 @@ class StationCycleResult:
     #: (Story 82.10); empty unless more than one story was attempted -- the aggregate fields above are then the
     #: one outcome. The next cycle's block rebuild reads these, so a refused member is never lost to a sibling.
     members: tuple[MemberOutcome, ...] = field(default=())
+    preserve_tag: str | None = None
 
     def to_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -370,11 +374,23 @@ class StationCycleResult:
         }
         if self.refuse_predicate is not None:
             payload["refuse_predicate"] = dict(self.refuse_predicate)
+        if self.preserve_tag is not None:
+            payload["preserve_tag"] = self.preserve_tag
         if self.followup_reviews:
             payload[FOLLOWUP_REVIEWS_PAYLOAD_KEY] = list(self.followup_reviews)
         if self.members:
             payload[MEMBERS_PAYLOAD_KEY] = [member.to_payload() for member in self.members]
         return payload
+
+
+#: Story 87.5: fleet-cycle rows that hold, block or stop a story name its dispatch preserve tag.
+FLEET_CYCLE_PRESERVE_STATUSES: frozenset[StationCycleStatus] = frozenset(
+    {
+        StationCycleStatus.BLOCKED,
+        StationCycleStatus.HELD,
+        StationCycleStatus.REFUSED,
+    }
+)
 
 
 def fleet_station_slugs(slugs: Iterable[str]) -> tuple[str, ...]:

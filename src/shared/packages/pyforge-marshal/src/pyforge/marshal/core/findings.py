@@ -1850,6 +1850,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # the per-campaign cap is spent.
         "MRS-DRAIN-018",
         "MRS-DRAIN-019",
+        # Story 87.5 (FR-234): a fleet cycle held/blocked/stopped a story whose latest dispatch run
+        # journaled no ``preserve_tag`` while ``pyforge.marshal.preserve_refs`` is on.
+        "MRS-DRAIN-020",
         # Story 28.2 (wire compression at the harness seam,
         # SPEC-marshal-token-economy CAP-2): the declared `[context]`
         # `wire` layer was ENABLED but could not be applied to this launch
