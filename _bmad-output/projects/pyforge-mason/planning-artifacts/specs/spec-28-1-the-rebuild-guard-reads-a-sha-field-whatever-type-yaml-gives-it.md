@@ -2,7 +2,8 @@
 title: "28.1: The rebuild guard reads a SHA field whatever type YAML gives it"
 type: 'fix'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f7ce163b6991281695ea93a121b5c96fad299cf9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

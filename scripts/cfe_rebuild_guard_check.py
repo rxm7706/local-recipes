@@ -201,12 +201,47 @@ def is_cfe_path(path: str) -> bool:
     return path in CFE_SURFACE_FILES or any(path.startswith(p) for p in CFE_SURFACE_PREFIXES)
 
 
+class _YamlInt(int):
+    """An int loaded from YAML that retains the scalar's source text (needed
+    when PyYAML resolves an octal- or binary-shaped token to a different int)."""
+
+    __slots__ = ("yaml_scalar",)
+
+    def __new__(cls, value: int, yaml_scalar: str) -> _YamlInt:
+        obj = int.__new__(cls, value)
+        obj.yaml_scalar = yaml_scalar
+        return obj
+
+
+def _construct_yaml_int(loader: object, node: object) -> int:
+    from yaml.constructor import SafeConstructor
+
+    scalar = node.value  # type: ignore[union-attr]
+    value = SafeConstructor.construct_yaml_int(loader, node)  # type: ignore[arg-type]
+    if isinstance(value, int) and not isinstance(value, bool):
+        return _YamlInt(value, scalar)
+    return value
+
+
+def _yaml_load(text: str) -> object:
+    import yaml
+
+    class _ShaPreservingLoader(yaml.SafeLoader):
+        pass
+
+    _ShaPreservingLoader.add_constructor(
+        "tag:yaml.org,2002:int",
+        _construct_yaml_int,
+    )
+    return yaml.load(text, Loader=_ShaPreservingLoader)
+
+
 def campaign_state(path: pathlib.Path) -> dict | None:
     """Parsed campaign-state.yaml, or None if the file is missing, unreadable,
     or not valid YAML mapping at its top level — the exit-2 "could not run"
     case."""
     try:
-        import yaml
+        import yaml  # noqa: F401 — presence check only
     except ModuleNotFoundError:
         return None
     try:
@@ -214,7 +249,7 @@ def campaign_state(path: pathlib.Path) -> dict | None:
     except OSError:
         return None
     try:
-        data = yaml.safe_load(text)
+        data = _yaml_load(text)
     except yaml.YAMLError:
         return None
     return data if isinstance(data, dict) else None
@@ -269,24 +304,46 @@ def _is_hex_sha_token(value: str) -> bool:
             and all(ch in "0123456789abcdef" for ch in value))
 
 
+def _sha_candidate_from_yaml_value(value: object) -> str | None:
+    """A YAML field value read as a SHA candidate, or None if it is not one."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped if stripped else None
+    if isinstance(value, int):
+        if isinstance(value, _YamlInt):
+            return value.yaml_scalar.strip()
+        return str(value)
+    return None
+
+
 def _sha_matches(token: str, sha: str) -> bool:
-    """`token` (a field's whole value) names `sha`: the full SHA, or a hex
-    prefix of at least MIN_SHA_PREFIX characters. Case-insensitive."""
+    """Two SHA candidates name the same commit when both are hex tokens of
+    10–40 characters and one is a prefix of the other (case-insensitive)."""
     token = token.strip().lower()
-    return _is_hex_sha_token(token) and sha.strip().lower().startswith(token)
+    sha = sha.strip().lower()
+    if not _is_hex_sha_token(token) or not _is_hex_sha_token(sha):
+        return False
+    return token.startswith(sha) or sha.startswith(token)
 
 
 def _amendment_sha_tokens(amend: dict) -> list[str]:
-    """Every string an amendment carries as a whole field value, or as one
-    item of a list value -- the only places a SHA field can live. Free text
-    (`reason: "mirrored 565ef7d194 into ..."`) is one token that is not a SHA,
+    """Every SHA candidate an amendment carries as a whole field value, or as
+    one item of a list value -- the only places a SHA field can live. Free
+    text (`reason: "mirrored 565ef7d194 into ..."`) is not a SHA candidate,
     so a SHA quoted inside prose never matches."""
     tokens: list[str] = []
     for value in amend.values():
-        if isinstance(value, str):
-            tokens.append(value)
-        elif isinstance(value, list):
-            tokens.extend(item for item in value if isinstance(item, str))
+        if isinstance(value, list):
+            for item in value:
+                cand = _sha_candidate_from_yaml_value(item)
+                if cand is not None:
+                    tokens.append(cand)
+        else:
+            cand = _sha_candidate_from_yaml_value(value)
+            if cand is not None:
+                tokens.append(cand)
     return tokens
 
 
@@ -366,7 +423,7 @@ def _brief_defect_findings(root: pathlib.Path, slices: list, retros: list[str]) 
         except ModuleNotFoundError:
             continue
         try:
-            brief = yaml.safe_load(abs_path.read_text(encoding="utf-8"))
+            brief = _yaml_load(abs_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, yaml.YAMLError):
             findings.append(_brief_defect(
                 slice_id, brief_path,
@@ -394,10 +451,10 @@ def _brief_defect_findings(root: pathlib.Path, slices: list, retros: list[str]) 
                 f"brief at {brief_path!r} has a hollow or missing scope",
                 "restore a complete skill-brief scope block or clear brief_path until one exists"))
             continue
-        mirrored = sl.get("brief_mirrored_through")
-        if not isinstance(mirrored, str) or not mirrored.strip():
+        mirrored = _sha_candidate_from_yaml_value(sl.get("brief_mirrored_through"))
+        if mirrored is None:
             continue
-        missing = [sha for sha in _required_mirror_shas(mirrored.strip(), retros)
+        missing = [sha for sha in _required_mirror_shas(mirrored, retros)
                    if not _brief_covers_retro_sha(brief, sha)]
         if missing:
             short = [sha[:MIN_SHA_PREFIX] for sha in missing]
@@ -496,9 +553,12 @@ def scan(state: dict, retros: list[str], *, root: pathlib.Path) -> list[dict]:
             if not brief_path:
                 continue
             slice_id = _slice_ref(sl)
-            mirrored_through = sl.get("brief_mirrored_through")
-            if mirrored_through == newest_retro:
+            mirrored_raw = sl.get("brief_mirrored_through")
+            mirrored_through = _sha_candidate_from_yaml_value(mirrored_raw)
+            if (mirrored_through is not None
+                    and _sha_matches(mirrored_through, newest_retro)):
                 continue
+            accepted = newest_retro[:MIN_SHA_PREFIX]
             findings.append({
                 "kind": "unmirrored-retro",
                 "ref": slice_id,
@@ -506,10 +566,11 @@ def scan(state: dict, retros: list[str], *, root: pathlib.Path) -> list[dict]:
                 "detail": f"slice '{slice_id}': newest qualifying CFE retro "
                           f"{newest_retro[:10]} (CFE surface + CHANGELOG.md "
                           f"touched) differs from brief_mirrored_through="
-                          f"{mirrored_through!r} — the slice's brief may be stale",
+                          f"{mirrored_raw!r} — the slice's brief may be stale",
                 "remedy": "mirror the retro's CFE-surface delta into the "
                           "slice's brief, then set brief_mirrored_through to "
-                          f"{newest_retro[:10]}",
+                          f"{accepted!r} (a >=10-character hex prefix the "
+                          "check accepts)",
             })
 
     # Clause (c): legacy-caller-at-endgame. Only evaluated once the campaign
