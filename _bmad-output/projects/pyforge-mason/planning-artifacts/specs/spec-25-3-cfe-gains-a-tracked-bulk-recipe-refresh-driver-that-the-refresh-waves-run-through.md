@@ -2,7 +2,8 @@
 title: "25.3: CFE gains a tracked bulk recipe-refresh driver that the refresh waves run through"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '222530149e164d7d7929c175b8418d82afedc5bc'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
