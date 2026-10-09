@@ -2,8 +2,8 @@
 title: "85.8: An agent session never writes outside this repository"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
-baseline_revision: 'fc68067136997eb67751cfbc03f656442230581c'
+status: 'in-progress'
+baseline_revision: 'fe98582a06cfb1e3b69edde46eaab05efe292c79'
 flag-exempt: detector-or-gate   # a session guardrail; a gated guardrail allows silently
 review_loop_iteration: 0
 followup_review_recommended: false
