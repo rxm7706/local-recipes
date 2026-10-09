@@ -1229,7 +1229,10 @@ def derive_preserve_debt(
         if entry.get("done") is True:
             continue
         story = entry.get("story_key")
-        if any(tag_belongs_to_station(project, slug) and story is not None and key == str(story) for project, key in tagged_stories):
+        if any(
+            tag_belongs_to_station(project, slug) and story is not None and key == str(story)
+            for project, key in tagged_stories
+        ):
             continue
         patches.append(str(entry.get("path")))
     if not (tags or scratch or patches):

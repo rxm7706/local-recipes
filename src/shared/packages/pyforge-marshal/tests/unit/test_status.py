@@ -6681,7 +6681,11 @@ class TestStatusReadsLandingsTheWayDeployDoes:
 def _codes_without_preserve_debt(payload: dict) -> list[str]:
     """Finding codes minus Story 87.9's preserve-debt ones: a patch with no tag is debt (``MRS-STATUS-018``)
     in every fixture below, which is orthogonal to the landed-history classification they pin."""
-    return [f["code"] for f in payload["findings"] if f["code"] not in {"MRS-STATUS-016", "MRS-STATUS-017", "MRS-STATUS-018"}]
+    return [
+        f["code"]
+        for f in payload["findings"]
+        if f["code"] not in {"MRS-STATUS-016", "MRS-STATUS-017", "MRS-STATUS-018"}
+    ]
 
 
 class TestAHistoryThatShowsNothingIsSaidSo:
@@ -7080,9 +7084,7 @@ class TestPreserveDebt:
 
     def test_a_scratch_ref_of_another_home_is_not_this_rows_debt(self, tmp_path, capsys, monkeypatch):
         """No run of this home names it: it surfaces fleet-wide instead of on the wrong row."""
-        _exit, payload, row = _debt_sweep(
-            capsys, monkeypatch, tmp_path, git=_git_answers(scratch=(_ACME_SCRATCH,))
-        )
+        _exit, payload, row = _debt_sweep(capsys, monkeypatch, tmp_path, git=_git_answers(scratch=(_ACME_SCRATCH,)))
 
         assert "preserve_debt" not in row
         assert _debt_codes(payload) == ["MRS-STATUS-017"]
@@ -7185,9 +7187,7 @@ class TestPreserveDebt:
 
 
 class TestUnmatchedUnpushedRefs:
-    def test_every_unpushed_branch_is_kept_and_only_unaccounted_ones_are_reported(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_every_unpushed_branch_is_kept_and_only_unaccounted_ones_are_reported(self, tmp_path, capsys, monkeypatch):
         accounted = (
             _unpushed_finding("loop/acme"),
             _unpushed_finding("dispatch/acme/4.11"),
@@ -7258,11 +7258,38 @@ class TestPreserveDebtPureCore:
 
         debt = self._debt(failed_patches=patches, tagged_stories=[("acme", "1.2"), ("beta", "1.3")])
 
-        assert debt["patches_without_tag"] == ["p/untagged", "p/unknown"]
+        assert debt["patches_without_tag"] == ["p/unknown", "p/untagged"]
 
     def test_matched_refs_cover_loop_dispatch_legacy_and_stranded_branches(self):
-        facts = status.FleetHomeFacts(slug="acme", branch="loop/acme", dispatch_story="4.11") if False else None
-        by_ref = {r: {} for r in ("loop/acme", "dispatch/acme/4.11", "dispatch/beta/1.1", "x/y")}
-        unmatched = status.unmatched_unpushed_refs(by_ref, {"loop/acme", "dispatch/acme/4.11"})
-        assert [e["ref"] for e in unmatched] == ["dispatch/beta/1.1", "x/y"]
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=False,
+            dispatch_story="4.11",
+            dispatch_stranded_work={"ref": "stranded/acme"},
+        )
+        by_ref = {
+            ref: {}
+            for ref in (
+                "loop/acme",
+                "dispatch/acme/4.11",
+                "dispatch/pyforge-acme/4.12",
+                "marshal/4.11",
+                "stranded/acme",
+                "dispatch/beta/1.1",
+                "x/y",
+            )
+        }
+
+        matched = status.unpushed_refs_matched_to_row(facts, by_ref)
+
+        assert matched == {
+            "loop/acme",
+            "dispatch/acme/4.11",
+            "dispatch/pyforge-acme/4.12",
+            "marshal/4.11",
+            "stranded/acme",
+        }
+        assert [e["ref"] for e in status.unmatched_unpushed_refs(by_ref, matched)] == ["dispatch/beta/1.1", "x/y"]
+        assert status.unpushed_refs_matched_to_row(facts, None) == frozenset()
         assert status.unmatched_unpushed_refs(None, set()) == []

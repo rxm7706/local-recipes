@@ -421,4 +421,3 @@ def test_observe_preserve_debt_is_none_not_empty_when_origin_cannot_be_read(git_
     _tagged(repo)
     _run(repo, "remote", "set-url", "origin", str(repo / "no-such-remote.git"))
     assert observe_preserve_debt(repo) is None
-

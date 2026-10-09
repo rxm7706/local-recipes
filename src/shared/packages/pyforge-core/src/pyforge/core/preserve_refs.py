@@ -862,9 +862,7 @@ def list_local_preserve_tags(repo: Path, *, process: ProcessPort | None = None) 
     whose name does not parse: a reader that crashed on one bad tag would report nothing.
     """
     fmt = f"%(refname){_FIELD_SEP}%(*objectname){_FIELD_SEP}%(objectname){_FIELD_SEP}%(contents){_RECORD_SEP}"
-    rc, out, err = _git_via(
-        process, repo, ("for-each-ref", f"--format={fmt}", PRESERVE_REF_PREFIX), timeout_s=60.0
-    )
+    rc, out, err = _git_via(process, repo, ("for-each-ref", f"--format={fmt}", PRESERVE_REF_PREFIX), timeout_s=60.0)
     if rc != 0:
         raise PreserveGitError(err.strip() or "git for-each-ref failed")
     tags: list[LocalPreserveTag] = []
@@ -1024,9 +1022,7 @@ def observe_preserve_debt(
     try:
         tags = list_local_preserve_tags(repo, process=process)
         scratch = _scratch_refs(repo, process)
-        unpromoted = tuple(
-            refname for refname, commit in scratch if not _scratch_is_durable(repo, commit, process)
-        )
+        unpromoted = tuple(refname for refname, commit in scratch if not _scratch_is_durable(repo, commit, process))
     except PreserveGitError:
         return None
     local_only: tuple[LocalPreserveTag, ...] = ()

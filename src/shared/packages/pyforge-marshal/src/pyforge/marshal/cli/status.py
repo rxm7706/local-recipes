@@ -2325,9 +2325,7 @@ def run_status(
                 )
             )
         if preserve_observation is not None:
-            stray_tags = [
-                t.refname for t in preserve_observation.local_only_tags if t.refname not in claimed_debt_tags
-            ]
+            stray_tags = [t.refname for t in preserve_observation.local_only_tags if t.refname not in claimed_debt_tags]
             stray_scratch = [ref for ref in preserve_observation.unpromoted_scratch if ref not in claimed_debt_scratch]
             if stray_tags or stray_scratch:
                 stray = {"local_only_tags": stray_tags, "unpromoted_scratch_refs": stray_scratch}
