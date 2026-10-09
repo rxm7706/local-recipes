@@ -2,7 +2,7 @@
 title: "72.1: The Guild environment answers pyforge mason"
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'd5a23fb37a857f657bb4d5338697891ec385509d'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -167,5 +167,31 @@ virtualenv / filelock moves accepted on evidence. Key and status kept; no ledger
 - Cold install: delete `.pixi/envs/pyforge-guild`, `pixi install -e pyforge-guild`, then `du -sh` / `du -sm` it — expected: under 2 GB, recorded here.
 - `pixi run -e pyforge-guild detectors-ci` and `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0.
 - `pixi run -e pyforge-guild docs-station-cli -- --check` and `pixi run -e pyforge-guild docs-environments -- --check` — expected: exit 0 after regeneration.
+
+## Implementation measurements (Story 72.1, linux-64, 2026-10-09)
+
+| Metric | Before mason (2026-09-28) | After mason (cold install) |
+|--------|---------------------------|----------------------------|
+| `du -sh` | 1.5 GB | 1.8G |
+| `du -sm` | 1,461 MiB | 1,816 MiB |
+| `conda-meta` package count | 243 | 295 |
+
+Guild `pixi` version: **0.81.0** before and after (`pixi-version-check` exit 0).
+
+Accepted pin moves from re-solve (conda-lock `virtualenv <21`): **virtualenv** 21.12.1 → 20.39.0; **filelock** 4.0.3 → 3.32.6; **python-discovery** left the closure. No other Guild package version moves observed.
+
+## Auto Run Result
+
+Status: done
+
+Summary: `[feature.pyforge-guild.dependencies]` now installs `pyforge-mason`, documents why `pyforge-atlas` stays out, and carries a steward meta-test so the dependency cannot regress. Lock, `environment.yaml`, and CAP-84 reference docs were regenerated; cold Guild install remains under the 2 GB CAP-5 bound.
+
+Files changed: `pixi.toml`, `pixi.lock`, `environment.yaml`, `test_guild_environment_stations.py`, generated docs under `docs/reference/`, `docs/map.yaml`, story spec and steward/doctor memlogs.
+
+Review findings breakdown: patches 0, deferred 0; review pass skipped subagent layers (implementation verified against ACs locally).
+
+Follow-up review recommendation: false
+
+Verification: `pyforge-steward-test` pass; `pyforge mason --help` and `pyforge mason doctor --format json` exit 0 in `-e pyforge-guild`; `pixi-version-check` exit 0; docs generators `--check` green; `spec_surface_reconcile.py` exit 0 after memlog reconcile naming all governed paths.
 
 ## Review Triage Log
