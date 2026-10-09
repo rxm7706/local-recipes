@@ -2,7 +2,7 @@
 title: "28.1: The rebuild guard reads a SHA field whatever type YAML gives it"
 type: 'fix'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'f7ce163b6991281695ea93a121b5c96fad299cf9'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -236,4 +236,29 @@ Minted 2026-10-09 on the operator's ruling of that day ("yes mint both stories a
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — adversarial self-review against diff and AC matrix; no patch/defer routes)
+
+## Auto Run Result
+
+Status: done
+
+Summary: `cfe_rebuild_guard_check.py` now reads SHA candidates from YAML strings and ints (scalar text preserved via a SafeLoader int map for octal/binary tokens), compares SHAs with one symmetric prefix rule, and applies the same reading to `brief_mirrored_through` in clauses (b) and (b'). Clause (b)'s remedy names an accepted prefix value.
+
+Files changed:
+- `scripts/cfe_rebuild_guard_check.py` — SHA reader, loader int scalars, comparison rule, docstring/remedy
+- `tests/scripts/test_cfe_rebuild_guard_check.py` — Story 28.1 AC coverage (fixed SHAs, no commits)
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml` — ledger sync for 28.1 done
+
+Red-first (AC 7): new parametrized/unit tests fail against `origin/main`'s guard (int commit fields dropped); pass on this branch.
+
+Verification:
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — exit 0 (1419 passed)
+- `pixi run -e pyforge-guild cfe-rebuild-guard-check` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 (no governed-path memlog entries required; script on allowlist)
+
+Follow-up review recommended: false
+
+Residual risk: two distinct YAML int scalars that parse to the same integer in one document would share one map entry (unlikely for SHA/order fields in practice).
