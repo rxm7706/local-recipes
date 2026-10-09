@@ -1716,8 +1716,21 @@ class GitVcs:
             shutil.rmtree(ephem_tmp, ignore_errors=True)
             raise
         _discard_preview_ephemeral_object_dir(home)
-        alternates_file = _register_preview_alternate(repo_root, ephem_tmp / "objects")
-        _PREVIEW_EPHEMERAL_OBJECT_DIRS[home.resolve()] = (ephem_tmp, alternates_file)
+        try:
+            alternates_file = _register_preview_alternate(repo_root, ephem_tmp / "objects")
+            _PREVIEW_EPHEMERAL_OBJECT_DIRS[home.resolve()] = (ephem_tmp, alternates_file)
+        except BaseException:
+            remove_result = _run(
+                ["git", "-C", str(repo_root), "worktree", "remove", "--force", str(home)],
+                timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+            )
+            if remove_result.returncode != 0:
+                raise VcsCommandError(
+                    f"git worktree remove --force {home} failed after alternates registration error: "
+                    f"{remove_result.stderr.strip()}"
+                ) from None
+            shutil.rmtree(ephem_tmp, ignore_errors=True)
+            raise
 
     def _paths_changed_between(self, repo_root: Path, old_sha: str, new_sha: str) -> frozenset[str]:
         """Every path ``git diff`` names between two commits (Story 68.1). ``--no-renames`` so a

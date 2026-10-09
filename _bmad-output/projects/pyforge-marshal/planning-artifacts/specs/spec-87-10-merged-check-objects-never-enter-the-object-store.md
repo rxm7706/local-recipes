@@ -2,7 +2,7 @@
 title: "87.10: Merged-check objects never enter the object store"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '3cd4a1e205e47bcdd521e7372117594ad2110424'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -72,8 +72,37 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Story 87.10 implemented — ephemeral `GIT_OBJECT_DIRECTORY` for merged-check; preview alternates until `remove_worktree`.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 6 findings — high 0, medium 2, low 4, false 0, maybe-false 0
+- findings:
+  - `[medium]` `[defer]` Preview ephemeral/alternates not discarded when `remove_worktree` fails — worktree still live; same as pre-87.10 orphan worktree policy — evidence: `remove_worktree` only discards preview store after successful `git worktree remove` (`src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:775`).
+  - `[medium]` `[defer]` `dispatch_land` rmtree fallback does not call preview discard — pre-existing cleanup seam, out of story surface — evidence: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:235`.
+  - `[low]` `[defer]` `prune_worktrees` does not reconcile preview alternates — evidence: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:780`.
+  - `[low]` `[patch]` Alternates registration failure could leak preview worktree — fixed with forced remove + ephem rmtree — evidence: try/except around `_register_preview_alternate` in `add_worktree_for_tree`.
+  - `[low]` `[reject]` No preview-path mutation test — preview covered by object-count test + alternates lifecycle test; merged-check mutation test guards regression — evidence: `test_vcs_git_merged_check_objects.py`.
+  - `[low]` `[patch]` Added alternates cleanup test after `remove_worktree` — evidence: `test_preview_alternates_removed_after_worktree_remove`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: `is_branch_merged` builds its virtual `commit-tree` object in a process-local `GIT_OBJECT_DIRECTORY` (alternates to the real store) and deletes it before returning, so `git count-objects` on the repository is unchanged. Merge-tree preview commits use the same side store, registered in `objects/info/alternates` until `remove_worktree` removes the preview home.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` — ephemeral object env helpers, merged-check + preview paths, alternates lifecycle.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git_merged_check_objects.py` — object-count and mutation guards (new).
+- `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py` — cherry mock accepts `env=`; preview ref assertions.
+
+Review: 2 patches applied (registration failure cleanup, alternates remove test); 3 deferred (failed remove, dispatch_land fallback, prune); 1 rejected (duplicate mutation scope).
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (12030 tests).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass.
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile.
+
+Residual risk: preview alternates persist if a preview worktree is removed without `GitVcs.remove_worktree` (same class of leak as orphan worktrees pre-story).

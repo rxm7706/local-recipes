@@ -130,6 +130,26 @@ def test_add_worktree_for_tree_does_not_mint_repo_objects(vcs, repo, tmp_path):
     vcs.remove_worktree(repo, home, force=True)
 
 
+def test_preview_alternates_removed_after_worktree_remove(vcs, repo, tmp_path):
+    _git(repo, "checkout", "-b", "feature/alternates")
+    (repo / "alt.txt").write_text("alt\n", encoding="utf-8")
+    _git(repo, "add", "alt.txt")
+    _git(repo, "commit", "-m", "alt feature")
+    feature_sha = _git(repo, "rev-parse", "feature/alternates").stdout.strip()
+    _git(repo, "checkout", "main")
+    tree_oid = vcs.merge_tree_write(repo, "main", "feature/alternates")
+    assert tree_oid is not None
+    home = tmp_path / "alt-home"
+    vcs.add_worktree_for_tree(repo, home, tree_oid, parent=feature_sha)
+
+    objects_info = _git(repo, "rev-parse", "--git-path", "objects/info").stdout.strip()
+    alternates_file = (repo / objects_info / "alternates").resolve()
+    assert alternates_file.is_file()
+
+    vcs.remove_worktree(repo, home, force=True)
+    assert not alternates_file.is_file()
+
+
 def test_is_branch_merged_fails_when_synthetic_commit_enters_repo_store(vcs, repo, monkeypatch):
     """Mutation guard: writing the virtual commit into the repository store increases loose objects."""
     _git(repo, "checkout", "-b", "loop/mutation")
