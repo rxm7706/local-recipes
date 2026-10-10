@@ -88,7 +88,7 @@ extra:
 # Header:
 #    # Mirror source: conda-forge/zxing-cpp-python-feedstock @ 2054c6d6307f303951e102e2b8c3ddbd7ad06bb3 (2026-10-10).
 #    # source.url: feedstock uses files.pythonhosted.org/packages/source/z/zxing-cpp/…; local mirror uses the
-#    # canonical literal https://pypi.org/packages/source/z/zxing-cpp/zxing_cpp-${{ version }}.tar.gz
+#    # canonical literal https://pypi.org/packages/source/z/zxing-cpp/zxing_cpp-<version>.tar.gz
 #    # (sha256 verified identical). Added schema_version: 1 header (feedstock recipe omits it). Park upstream URL
 #    # alignment under cfe-forge-recipe-updates-needed above.
 ####

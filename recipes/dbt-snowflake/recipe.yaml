@@ -82,7 +82,7 @@ extra:
 # CFE comments
 # Header:
 #    # Mirror source: conda-forge/dbt-snowflake-feedstock @ 6d78e08c6ddec23c54f2649cd4dc6cb399b68177 (2026-10-10).
-#    # source.url: feedstock uses ${{ name[0] }}/${{ name }}/… templated pypi.org path; local mirror uses the
-#    # canonical literal https://pypi.org/packages/source/d/dbt-snowflake/dbt_snowflake-${{ version }}.tar.gz
+#    # source.url: feedstock uses a templated pypi.org path (name[0]/name segments); local mirror uses the
+#    # canonical literal https://pypi.org/packages/source/d/dbt-snowflake/dbt_snowflake-<version>.tar.gz
 #    # (sha256 verified identical). Park upstream URL alignment under cfe-forge-recipe-updates-needed above.
 ####
