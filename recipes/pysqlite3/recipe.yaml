@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: pysqlite3
-  version: "0.6.0"
+  version: "0.6.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pysqlite3/pysqlite3-${{ version }}.tar.gz
-  sha256: ecf5112b62a4e6c04438957e343fe9672707bd3191f789ecae6c95b226aa6bb6
+  sha256: dd7d2b7f3a29aebdbf569c359658b091d3345b5691d9ea765a5c3febe8872bf9
 
 build:
   number: 0
@@ -68,7 +68,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pysqlite3-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T13:40:00Z
+  cfe-last-checked: 2026-10-10T13:59:50Z
   cfe-generated-by-version: 8.99.9
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
   cfe-local-build-status: not-attempted
@@ -79,4 +79,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 0.6.0 -> 0.6.1
 ####
