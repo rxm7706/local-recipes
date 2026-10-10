@@ -30,8 +30,24 @@ from pathlib import Path
 
 import yaml
 from pyforge.core.atomic_write import atomic_write
+from pyforge.core.flags import read_boolean
+from pyforge.core.preserve_refs import (
+    PreserveGitError,
+    PreserveRefError,
+    PreserveTrailers,
+    default_purge_list_path,
+    normalize_ref,
+    push_preserve_ref,
+    render_preserve_ref,
+    short_ref_name,
+    snapshot_worktree_commit,
+    tag_preserve,
+)
 
 from .interfaces import DutyResult
+
+WORKSPACE_PRESERVE_TAG_FLAG = "pyforge.steward.workspace_preserve_tag"
+_STATION_TOKENS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
 
 _BMAD_LOOP_WORKTREE_RELATIVE_PATH = Path("scripts/bmad-loop-worktree")
 _BOOKKEEPING_RELATIVE_PATH = Path(".steward/workspaces.yaml")
@@ -775,6 +791,152 @@ def _source_commit(source: str, *, root: Path) -> str | None:
     return _commit_of(name, cwd=root)
 
 
+def default_flags_path() -> Path:
+    return repo_root() / "src/platform/config/flags.json"
+
+
+def workspace_preserve_tag_enabled(*, flags_path: Path | None = None) -> bool:
+    """Story 85.5: whether ``clean`` parks unlanded commits as a preserve tag first."""
+    path = flags_path if flags_path is not None else default_flags_path()
+    return read_boolean(WORKSPACE_PRESERVE_TAG_FLAG, default=False, flags_path=path)
+
+
+def _feed_story_key(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    m = re.match(r"^(\d+)-(\d+)([a-z])?$", raw)
+    if m:
+        suffix = m.group(3) or ""
+        return f"{m.group(1)}.{m.group(2)}{suffix}"
+    return raw
+
+
+def _story_key_from_branch(branch: str) -> str | None:
+    seg = branch.split("/")[-1]
+    m = re.search(r"-(%s)-(\d+)-(\d+)" % "|".join(_STATION_TOKENS), seg)
+    if m:
+        return f"{m.group(2)}-{m.group(3)}"
+    m = re.match(r"(?:story-)?([a-z]?\d+)[-.](\d+)[a-z]?(?:-|$)", seg)
+    return f"{m.group(1)}-{m.group(2)}" if m else None
+
+
+def _preserve_project_slug(record: WorkspaceRecord) -> str | None:
+    branch = record.branch
+    m = re.match(r"dispatch/pyforge-([a-z]+)/", branch)
+    if m:
+        return f"pyforge-{m.group(1)}"
+    m = re.search(r"-(%s)-\d+-\d+" % "|".join(_STATION_TOKENS), branch)
+    if m:
+        return f"pyforge-{m.group(1)}"
+    return None
+
+
+def _preserve_ref_parts(record: WorkspaceRecord) -> tuple[str | None, str | None]:
+    """Return ``(project_slug, feed_story_key)`` for ``render_preserve_ref``, or unbound."""
+    raw_story = _story_key_from_branch(record.branch)
+    feed_story = _feed_story_key(raw_story)
+    project = _preserve_project_slug(record)
+    if project and feed_story:
+        return project, feed_story
+    return None, None
+
+
+@dataclass(frozen=True)
+class _PreserveParkOutcome:
+    refname: str
+    preserve_tag: str
+    pushed: bool
+    debt: str | None
+
+
+@dataclass(frozen=True)
+class ArchiveWorktreeResult:
+    """Outcome of ``_archive_worktree`` — archive path, branch disposition, preserve metadata."""
+
+    archive_path: Path
+    branch_kept: bool
+    preserve_tag: str | None = None
+    preserve_debt: str | None = None
+    host_local: bool = False
+    failed: bool = False
+    failure_reason: str | None = None
+
+
+def _park_unlanded_preserve(
+    record: WorkspaceRecord,
+    *,
+    wt: Path,
+    root: Path,
+) -> _PreserveParkOutcome:
+    """Write a local ``preserve/…/workspace-<sha8>`` tag; push or record debt (Story 85.5)."""
+    try:
+        commit = snapshot_worktree_commit(wt)
+    except PreserveGitError as exc:
+        raise WorkspaceError(f"preserve snapshot failed: {exc}") from exc
+    if commit is None:
+        head = _commit_of("HEAD", cwd=wt)
+        if head is None:
+            raise WorkspaceError("preserve snapshot failed: cannot read HEAD")
+        commit = head
+    project, story = _preserve_ref_parts(record)
+    refname = render_preserve_ref(
+        commit_sha=commit,
+        producer="workspace",
+        project_slug=project,
+        story_key=story,
+    )
+    source = normalize_ref(record.branch)
+    trailers = PreserveTrailers(
+        producer="workspace",
+        provenance="machine",
+        reason=f"steward workspace clean {record.slug!r}",
+        source=source,
+        run="",
+        journal="",
+        commit=commit,
+    )
+    try:
+        tagged = tag_preserve(root, refname=refname, commit=commit, trailers=trailers)
+    except (PreserveRefError, PreserveGitError) as exc:
+        raise WorkspaceError(f"preserve tag refused: {exc}") from exc
+    preserve_tag = short_ref_name(tagged.refname)
+    pushed = False
+    debt: str | None = None
+    try:
+        push_result = push_preserve_ref(root, tagged.refname, purge_list_path=default_purge_list_path(root))
+        pushed = push_result.pushed
+        if not pushed:
+            debt = "; ".join(f.message for f in push_result.findings) or "content gate refused push"
+    except PreserveGitError as exc:
+        debt = str(exc)
+    return _PreserveParkOutcome(tagged.refname, preserve_tag, pushed, debt)
+
+
+def _git_ignored_relative_paths(wt: Path) -> list[str]:
+    listed = _git_bytes("-c", "status.showUntrackedFiles=normal", "status", "--ignored", "--porcelain", "-z", cwd=wt)
+    if listed.returncode != 0:
+        raise WorkspaceError("could not list git-ignored paths for host-local archive")
+    raw_ignored = [entry[3:] for entry in listed.stdout.split(b"\0") if entry.startswith(b"!! ")]
+    return [raw.decode("utf-8", "backslashreplace") for raw in raw_ignored]
+
+
+def _write_host_local_ignored_tarball(wt: Path, archive_path: Path, *, arcname: str) -> None:
+    """Tar only git-ignored paths (Story 85.5); empty when there are none."""
+    ignored = _git_ignored_relative_paths(wt)
+    if not ignored:
+        archive_path.write_text(
+            f"workspace host-local archive: no git-ignored paths under {wt}\n",
+            encoding="utf-8",
+        )
+        return
+    with tarfile.open(archive_path, "w:gz") as tar:
+        for rel in ignored:
+            path = wt / rel.rstrip("/")
+            if path.is_symlink() or not path.exists():
+                continue
+            tar.add(path, arcname=f"{arcname}/{rel}", recursive=path.is_dir())
+
+
 def _landed_note_text(record: WorkspaceRecord, *, root: Path, stamp: str) -> str | None:
     """Story 69.1 (CAP-157): the note a worktree leaves instead of a tarball, or None when git
     cannot prove it holds nothing unlanded -- then it archives exactly as CAP-155 does. The
@@ -868,42 +1030,65 @@ def _archive_worktree(
     *,
     root: Path,
     archive_dir: Path,
-) -> tuple[Path, bool]:
+    preserve_tag_enabled: bool | None = None,
+) -> ArchiveWorktreeResult:
     """Archive-not-delete: tar the tree, then ``git worktree remove``.
 
     A worktree git proves already landed keeps a ``.landed.txt`` note instead
     of a tar (Story 69.1, CAP-157): there is no unlanded content to archive.
-    After a successful remove/prune, the local branch is deleted when it is on
-    the record's source, so a later ``start`` with the same slug can recreate
-    ``-b`` cleanly; an unmerged branch is kept -- its commits exist nowhere
-    else, since a tar holds files, never history -- and a later ``start`` of
-    that slug needs it deleted by hand. Returns the archive (or note or
-    marker) path and whether the branch was kept.
+    Story 85.5: when ``preserve_tag_enabled``, an unlanded branch is tagged
+    through ``pyforge.core.preserve_refs`` before remove; the tarball holds
+    only git-ignored bytes (host-local). A tag that cannot be written keeps
+    the worktree and reports ``branch_kept`` with the reason.
     """
     try:
         archive_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         safe = record.slug.replace("/", "-")
         wt = Path(record.path)
+        preserve_on = (
+            workspace_preserve_tag_enabled() if preserve_tag_enabled is None else preserve_tag_enabled
+        )
+        unlanded_branch = wt.is_dir() and not _branch_merged_into(root, record.branch, record.source)
+        preserve_meta: _PreserveParkOutcome | None = None
+        if preserve_on and unlanded_branch:
+            try:
+                preserve_meta = _park_unlanded_preserve(record, wt=wt, root=root)
+            except WorkspaceError as exc:
+                return ArchiveWorktreeResult(
+                    archive_path=archive_dir / f"{safe}-{stamp}.preserve-failed.txt",
+                    branch_kept=True,
+                    failed=True,
+                    failure_reason=str(exc),
+                )
+
         note = _landed_note_text(record, root=root, stamp=stamp) if wt.is_dir() else None
+        host_local = False
         if note is not None:
             archive_path = archive_dir / f"{safe}-{stamp}.landed.txt"
             archive_path.write_text(note, encoding="utf-8")
         elif wt.is_dir():
-            archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
-            try:
-                with tarfile.open(archive_path, "w:gz") as tar:
-                    tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
-            except BaseException as exc:
-                # A half-written archive is not an archive -- whatever stopped the tar,
-                # a Ctrl-C included; the record is kept and retried by the next sweep,
-                # so leaving it would leak one per sweep (Story 68.1 reviews 1 and 2).
-                archive_path.unlink(missing_ok=True)
-                if isinstance(exc, (OSError, tarfile.TarError)):
-                    raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
-                raise
+            if preserve_on and unlanded_branch:
+                archive_path = archive_dir / f"{safe}-{stamp}.host-local.tar.gz"
+                host_local = True
+                try:
+                    _write_host_local_ignored_tarball(wt, archive_path, arcname=wt.name)
+                except BaseException as exc:
+                    archive_path.unlink(missing_ok=True)
+                    if isinstance(exc, (OSError, tarfile.TarError, WorkspaceError)):
+                        raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
+                    raise
+            else:
+                archive_path = archive_dir / f"{safe}-{stamp}.tar.gz"
+                try:
+                    with tarfile.open(archive_path, "w:gz") as tar:
+                        tar.add(wt, arcname=wt.name, filter=_without_reinstallable_envs(wt.name))
+                except BaseException as exc:
+                    archive_path.unlink(missing_ok=True)
+                    if isinstance(exc, (OSError, tarfile.TarError)):
+                        raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
+                    raise
         else:
-            # Path already gone — still write a marker so clean is recoverable.
             archive_path = archive_dir / f"{safe}-{stamp}.missing.txt"
             archive_path.write_text(
                 f"workspace {record.slug!r} path missing at clean: {record.path}\n",
@@ -913,7 +1098,6 @@ def _archive_worktree(
         if wt.exists():
             result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
             if result.returncode != 0:
-                # Fall back: detach registration by prune after moving aside.
                 retired = archive_dir / f"{safe}-{stamp}-dir"
                 try:
                     shutil.move(str(wt), str(retired))
@@ -926,9 +1110,6 @@ def _archive_worktree(
         else:
             _git_ok("worktree", "prune", cwd=root)
 
-        # Branch may still exist after worktree remove; drop it so slug reuse works -- but only
-        # when it is on the source. An unmerged branch's commits exist nowhere else (a tarball
-        # holds files, never history), so it is kept (Story 69.1 review 1).
         branch_kept = False
         if _git_ok("rev-parse", "--verify", "--quiet", f"refs/heads/{record.branch}", cwd=root).returncode == 0:
             source_sha = _commit_of(_source_ref(record.source), cwd=root)
@@ -940,7 +1121,13 @@ def _archive_worktree(
                 _git_ok("branch", "-D", record.branch, cwd=root)
             else:
                 branch_kept = True
-        return archive_path, branch_kept
+        return ArchiveWorktreeResult(
+            archive_path=archive_path,
+            branch_kept=branch_kept,
+            preserve_tag=preserve_meta.preserve_tag if preserve_meta else None,
+            preserve_debt=preserve_meta.debt if preserve_meta and preserve_meta.debt else None,
+            host_local=host_local,
+        )
     except OSError as exc:
         raise WorkspaceError(f"could not archive {record.path}: {exc}") from exc
 
@@ -1072,19 +1259,35 @@ def clean_workspaces(
                         remaining.append(record)
                         in_flight = None
                         continue
-                    archive_path, branch_kept = _archive_worktree(record, root=root, archive_dir=archive_dir)
+                    outcome = _archive_worktree(record, root=root, archive_dir=archive_dir)
             except WorkspaceError as exc:
                 skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
                 in_flight = None
                 continue
             in_flight = None
+            if outcome.failed:
+                skipped.append(
+                    {
+                        **record.to_dict(),
+                        "reason": outcome.failure_reason or "preserve tag refused",
+                        "branch_kept": record.branch,
+                    }
+                )
+                remaining.append(record)
+                continue
             if delete:
                 deleted.append(record.to_dict())
             else:
-                row = {**record.to_dict(), "archive": str(archive_path)}
-                if branch_kept:
+                row = {**record.to_dict(), "archive": str(outcome.archive_path)}
+                if outcome.branch_kept:
                     row["branch_kept"] = record.branch  # unmerged: its commits exist nowhere else (Story 69.1)
+                if outcome.preserve_tag:
+                    row["preserve_tag"] = outcome.preserve_tag
+                if outcome.preserve_debt:
+                    row["preserve_debt"] = outcome.preserve_debt
+                if outcome.host_local:
+                    row["host_local"] = "true"
                 archived.append(row)
     finally:
         # Persist removals already archived even if a later record fails —
@@ -1178,7 +1381,10 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
         member = item.get("member")
         prefix = f"archived {member}/" if member else "archived "
         kept = f" (branch {item['branch_kept']} kept: not on its source)" if item.get("branch_kept") else ""
-        lines.append(f"{prefix}{item['slug']} -> {item['archive']}{kept}")
+        tag = f" preserve={item['preserve_tag']}" if item.get("preserve_tag") else ""
+        debt = f" debt={item['preserve_debt']}" if item.get("preserve_debt") else ""
+        host = " host-local" if item.get("host_local") == "true" else ""
+        lines.append(f"{prefix}{item['slug']} -> {item['archive']}{kept}{tag}{debt}{host}")
     for item in deleted:
         member = item.get("member")
         prefix = f"deleted {member}/" if member else "deleted "

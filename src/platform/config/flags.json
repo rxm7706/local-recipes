@@ -60,6 +60,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.steward.workspace_preserve_tag": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree",
+        "created": "2026-10-04",
+        "on_everywhere": "",
+        "cleanup_by": "90 days after ON in every environment (Q4)"
+      }
+    },
     "pyforge.marshal.verify_fix_loop": {
       "state": "ENABLED",
       "variants": {

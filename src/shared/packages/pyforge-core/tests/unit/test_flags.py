@@ -875,6 +875,13 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.ghe_fleet_credentials": ("steward", "75-1-", "2026-09-29", "", ""),
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
     "pyforge.steward.sync_github_only_marker": ("steward", "84-4-", "2026-10-03", "", ""),
+    "pyforge.steward.workspace_preserve_tag": (
+        "steward",
+        "85-5-",
+        "2026-10-04",
+        "",
+        "90 days after ON in every environment (Q4)",
+    ),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
     # Stories 87.3/87.7/87.15 share this key (default off in every environment).
     "pyforge.marshal.preserve_refs": ("marshal", "87-3-", "2026-10-04", "", ""),
@@ -1021,6 +1028,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
     per_environment = {
         "pyforge.steward.object_store_consumer": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
+        "pyforge.steward.workspace_preserve_tag": {"dev": False, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
