@@ -2606,8 +2606,7 @@ def run_teardown(
         unpreserved_set = frozenset(item.abandon_token for item in unpreserved_items)
         if unpreserved_set:
             reasons.append(
-                f"home holds {len(unpreserved_set)} unpreserved item(s): "
-                f"{', '.join(sorted(unpreserved_set))}"
+                f"home holds {len(unpreserved_set)} unpreserved item(s): {', '.join(sorted(unpreserved_set))}"
             )
         if preserve_debt_tags:
             data["preserve_debt"] = sorted(preserve_debt_tags)
@@ -2663,8 +2662,7 @@ def run_teardown(
             )
 
     if reasons and (
-        not force
-        or ((unreachable or undetermined_reachability or unpreserved_set) and not abandon_authorized)
+        not force or ((unreachable or undetermined_reachability or unpreserved_set) and not abandon_authorized)
     ):
         for item in unpreserved_items:
             findings.append(

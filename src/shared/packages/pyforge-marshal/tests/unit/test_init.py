@@ -146,9 +146,7 @@ class FakeVcs:
     def is_commit_ancestor(self, repo_root: Path, ancestor: str, descendant: str) -> bool:
         return ancestor == "refs/remotes/origin/main"
 
-    def commit_contained_in_tag_prefixes(
-        self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]
-    ) -> bool:
+    def commit_contained_in_tag_prefixes(self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]) -> bool:
         return False
 
     def commit_contained_in_remote_refs(self, repo_root: Path, commit: str) -> bool:

@@ -58,11 +58,7 @@ def _run_ids_under_home(home: Path) -> frozenset[str]:
     runs_dir = home / ".bmad-loop" / "runs"
     if not runs_dir.is_dir():
         return frozenset()
-    return frozenset(
-        child.name
-        for child in runs_dir.iterdir()
-        if child.is_dir() and not child.name.startswith(".")
-    )
+    return frozenset(child.name for child in runs_dir.iterdir() if child.is_dir() and not child.name.startswith("."))
 
 
 def _reportable_failed_patches(home: Path) -> tuple[Path, ...]:

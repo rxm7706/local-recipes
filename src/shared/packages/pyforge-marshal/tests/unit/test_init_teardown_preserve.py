@@ -71,9 +71,7 @@ def git_pair(repo_root: Path) -> tuple[Path, Path]:
 
 
 @flag_states(_FLAG)
-def test_teardown_flag_off_ignores_unpreserved_patch(
-    repo_root, tmp_path, capsys, flag_provider: dict[str, bool]
-):
+def test_teardown_flag_off_ignores_unpreserved_patch(repo_root, tmp_path, capsys, flag_provider: dict[str, bool]):
     if flag_provider[_FLAG]:
         pytest.skip("flag-on path covered by other tests")
     home = Path(os.environ[ENV_LOOP_HOME_ROOT]) / "acme"
