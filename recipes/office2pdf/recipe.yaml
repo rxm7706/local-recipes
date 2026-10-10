@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.6.7"
+  version: "0.8.1"
 
 package:
   name: office2pdf
@@ -15,7 +15,7 @@ source:
   # be fetched in an offline build, while the published crate resolves every
   # dependency from the registry and ships a Cargo.lock for a reproducible build.
   - url: https://static.crates.io/crates/office2pdf-cli/office2pdf-cli-${{ version }}.crate
-    sha256: d75bb9771c8dcaed381a834460cf5758f83b733a6ff71e18355481258264a24a
+    sha256: ce917f40098c32da510dc24d163967be5e58bb25f2c4ccf19aeaa0e54bc007be
   # The published crate carries only the SPDX license string, not the license
   # text, so fetch LICENSE from the matching git tag.
   - url: https://raw.githubusercontent.com/developer0hye/office2pdf/v${{ version }}/LICENSE
@@ -97,7 +97,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/office2pdf-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-28T00:16:58Z
+  cfe-last-checked: 2026-10-10T13:37:01Z
   cfe-generated-by-version: manual
   cfe-generated-at-datetime: 2026-07-28T00:16:58Z
   cfe-local-build-status: success
@@ -111,6 +111,7 @@ extra:
 #    # (merge of PR #6, 2026-07-28T00:11:26Z). recipe/ upstream contains ONLY
 #    # recipe.yaml — no build.sh / build.bat / patches. The feedstock's root
 #    # conda-forge.yml is mirrored alongside this file.
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 0.6.7 -> 0.8.1
 # source:
 #    # BOTH former blockers are RESOLVED as of the crates.io source strategy:
 #    #   1. The vendored git-fork deps (umya-spreadsheet @19d82bc, docx-rs
