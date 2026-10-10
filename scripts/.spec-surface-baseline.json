@@ -4131,7 +4131,7 @@
    "src/shared/packages/pyforge-marshal/tests/meta/test_cli_tool_parity.py": "a54ad50e9c57390fd1ad00ff520f8e3d5101febe",
    "src/shared/packages/pyforge-marshal/tests/meta/test_commit_text_is_redacted_at_every_call_site.py": "44971e30c018c3e6cf7eae16b0b9d3d5aa1a65ea",
    "src/shared/packages/pyforge-marshal/tests/meta/test_derived_context_skill_contract.py": "c7435517aadbad9d2f0717b4acdafc00fc4961df",
-   "src/shared/packages/pyforge-marshal/tests/meta/test_dispatch_supervisor_main_coverage_floor.py": "25c412b511abd767b6773a6d7cd4b33e5ee50d29",
+   "src/shared/packages/pyforge-marshal/tests/meta/test_dispatch_supervisor_main_coverage_floor.py": "73521bafcf754e695ebafd6e510772e47f356aba",
    "src/shared/packages/pyforge-marshal/tests/meta/test_engine_version_range_sync.py": "d70de6f6fb1d2e745ea031f023c6cee500b8ceca",
    "src/shared/packages/pyforge-marshal/tests/meta/test_finding_remedy_reference_sync.py": "8fd60e2ca7cb702714d63b3742c42f70b291274a",
    "src/shared/packages/pyforge-marshal/tests/meta/test_flag_mandate_overrides.py": "e8b12bc70ba8481567a33dd0a529cf8f804bb672",
@@ -4354,7 +4354,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "0f60f51dbd313d407d964edf4f322cc4681ec7a3"
+  "memlog": "c3b48637dc188aa4d97e97f28faa32b2ec533748"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
