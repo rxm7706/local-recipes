@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -34,12 +34,12 @@ requirements:
     - requests
     - uvicorn
     - python >=${{ python_min }}
-    - azure-core <2.0.0,>=1.28.0
+    - azure-core <2.0.0,>=1.38.0
     - azure-identity >=1.17,<2.dev0
     - fixedint ==0.1.6
     - msrest >=0.6.10
-    - opentelemetry-api >=1.43.0,<1.44.dev0
-    - opentelemetry-sdk >=1.43.0,<1.44.dev0
+    - opentelemetry-api >=1.45.0,<1.46.dev0
+    - opentelemetry-sdk >=1.45.0,<1.46.dev0
     - psutil <8,>=5.9
 
 tests:
