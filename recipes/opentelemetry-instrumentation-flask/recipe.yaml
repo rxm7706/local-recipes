@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-flask
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-flask/opentelemetry_instrumentation_flask-${{ version }}.tar.gz
-  sha256: 887de3a97c09953da09ae713fbb777172900f33b2924d85dad314a033156ef66
+  sha256: 10f788aff95236f0dbaaa066687283bf6345bb3c77bbb437f0fb67cb6222d5eb
 
 build:
   number: 0
@@ -26,10 +26,10 @@ requirements:
     - python >=${{ python_min }}
     - flask
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-wsgi ==0.65b0
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
-    - opentelemetry-util-http ==0.65b0
+    - opentelemetry-instrumentation-wsgi ==0.66b1
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
+    - opentelemetry-util-http ==0.66b1
     - packaging >=21.0
 
 tests:
@@ -72,20 +72,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-flask-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:38:40Z
+  cfe-last-checked: 2026-10-10T17:30:05Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:38:40Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-08-18T10:38:40Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:30:52Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # added run deps from import test: ['flask']
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
 ####

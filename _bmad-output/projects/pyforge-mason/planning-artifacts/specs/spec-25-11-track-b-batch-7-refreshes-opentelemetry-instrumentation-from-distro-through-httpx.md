@@ -2,7 +2,8 @@
 title: "25.11: Track B batch 7 refreshes OpenTelemetry instrumentation from distro through httpx"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '65182f78f018207075ce3b9b2195e81de4c0561a'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -238,8 +239,59 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-11`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| opentelemetry-distro | would-refresh | |
+| opentelemetry-instrumentation | needs-review | dependency-fix (setuptools, wrapt pin order) |
+| opentelemetry-instrumentation-aiopg | needs-review | no-cfe-block |
+| opentelemetry-instrumentation-asgi | needs-review | util-http pin |
+| opentelemetry-instrumentation-botocore | needs-review | run -botocore -wrapt |
+| opentelemetry-instrumentation-celery | needs-review | run -billiard -celery; semconv pin |
+| opentelemetry-instrumentation-dbapi | would-refresh | |
+| opentelemetry-instrumentation-django | needs-review | util-http pin |
+| opentelemetry-instrumentation-falcon | needs-review | no-cfe-block |
+| opentelemetry-instrumentation-flask | would-refresh | |
+| opentelemetry-instrumentation-grpc | needs-review | +sdk -grpc |
+| opentelemetry-instrumentation-httpx | needs-review | -wrapt |
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-11/report.json`.
+
+### After refusal clears + G96 pre-sync (dry-run 3)
+
+Twelve `would-refresh`.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+| Recipe | Outcome | Version | Build (linux-64, post-fix) | Maintainers (G53) |
+|---|---|---|---|---|
+| opentelemetry-distro | refreshed | 0.65b0 → 0.66b1 | success (no LICENSE in sdist; v1 recipe omits license_file) | goatmale, rxm7706 (superset) |
+| opentelemetry-instrumentation | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706, timkpaine, twoodwark (superset) |
+| opentelemetry-instrumentation-aiopg | refreshed | 0.65b0 → 0.66b1 | success | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-asgi | refreshed | 0.65b0 → 0.66b1 | success | org maintainers + mariusvniekerk, rxm7706 (superset) |
+| opentelemetry-instrumentation-botocore | refreshed | 0.65b0 → 0.66b1 | success (shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-celery | refreshed | 0.65b0 → 0.66b1 | success (shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-dbapi | refreshed | 0.65b0 → 0.66b1 | success | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-django | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-falcon | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-flask | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-grpc | refreshed | 0.65b0 → 0.66b1 | success (shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-httpx | refreshed | 0.65b0 → 0.66b1 | success | org maintainers + mariusvniekerk, rxm7706 (superset) |
+
+**Gates:** Expected `optimize=1` on C1 v0 mirrors (STD-002). `validate=1` on asgi for feedstock-faithful maintainer team `conda-forge/opentelemetry-semantic-convention` (conda-smithy lint; unchanged on deployed feedstock).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto pass
+
+- Self-review against AC: twelve recipes at 0.66b1; aiopg/falcon CFE+URL pre-clear; G96 pre-sync; AC 6 sibling pins hand-synced (gap 3); botocore/celery/grpc tests aligned to feedstock shallow imports; distro v1 recipe drops license_file (sdist has no LICENSE).
+- `[maybe-false]` `[defer]` Manifest `wave-25-11.yaml` gitignored — report under `.claude/data/conda-forge-expert/refresh-waves/B-25-11/` documents apply.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 7 (B-25-11) refreshed twelve co-maintained OpenTelemetry instrumentation recipes via `refresh-wave`; CFE retro v8.99.15.
+
+Verification: `refresh-wave` dry-run/apply; linux-64 rebuild 12/12; `pixi run --frozen -e pyforge-mason pyforge-mason-test`; `python scripts/spec_surface_reconcile.py`.
