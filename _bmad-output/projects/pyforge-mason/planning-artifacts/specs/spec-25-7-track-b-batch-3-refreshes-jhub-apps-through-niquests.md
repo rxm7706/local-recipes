@@ -2,7 +2,7 @@
 title: "25.7: Track B batch 3 refreshes jhub-apps through niquests"
 type: 'feature'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2d90c634f324c68d67a41a3e0e9477061113a8f8'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -329,7 +329,7 @@ Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-7/report.json`.
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
 
 Summary: Track B batch 3 (B-25-7) refreshed ten co-maintained recipes; langflow re-mirrored with `patch_deps.py`; CFE retro v8.99.8.
 
