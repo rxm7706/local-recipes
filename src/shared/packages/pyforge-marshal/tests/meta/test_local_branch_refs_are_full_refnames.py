@@ -90,8 +90,6 @@ _NOT_A_REF = {
     ("fetch", "remote"),
     ("file_text_at_ref", "path"),
     ("line_blame_facts", "path"),
-    ("line_blame_facts", "repo_root"),
-    ("line_blame_facts", "worktree"),
     ("commit_paths_onto_remote_tip", "remote"),  # a remote's NAME, wrapped in a VcsRef
     ("push", "proven_on_main_sha"),  # a sha the adapter re-proves against the full origin/main ref
     ("spec_text_at_ref", "slug"),
