@@ -12,14 +12,13 @@ explicit `herald` command by hand, or the HMAC-verified webhook handlers
 Story 13.4 built (`src/pyforge/herald/webhook.py`'s `on-ship`/
 `on-pr-close`, see [The webhook endpoint](#the-webhook-endpoint-ci-calls-story-134)
 below), mounted behind a real ASGI host as of Story 13.6
-(`src/pyforge/herald/webhook_host.py`). **This package still ships no
-persistent, always-on webhook listener** — the mount point is
-`.github/workflows/herald-live-demo.yml`, a bounded, CI-contained
-demonstration that starts `webhook_host:application` behind `daphne` for
-one job's lifetime and discards it when the job ends (proven real on
-every push to `main`, every PR close, and a weekly schedule), never a
-publicly-reachable deployment. An operator can still create every record
-by hand at any time; the webhook path is additive, not a replacement.
+(`src/pyforge/herald/webhook_host.py`). **Story 19.2 — persistent local host:**
+loopback `config.asgi:application`, SQLite at `<primary checkout>/.herald/herald.db`,
+and `herald-ship-local` — see
+[`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md).
+The disabled `.github/workflows/herald-live-demo.yml` demo uses throwaway runner
+stores and is not that proof. An operator can still create every record by hand;
+the webhook path is additive, not a replacement.
 `herald scheduler run`'s derived-state refresh (Story 13.5, see [How to
 run the scheduled
 job](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
