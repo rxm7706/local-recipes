@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_aiopg-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-aiopg/opentelemetry_instrumentation_aiopg-${{ version }}.tar.gz
   sha256: 9a0935a673dcd43ed1d0639d439581d334454d3403b496190408e0bc2547c178
 
 build:
@@ -110,3 +110,33 @@ extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-aiopg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-aiopg
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-aiopg@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-aiopg@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-aiopg
+  cfe-import-names: [opentelemetry.instrumentation.aiopg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-aiopg-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T12:00:00Z
+  cfe-generated-by-version: 8.99.14
+  cfe-generated-at-datetime: 2026-10-10T12:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T12:00:00Z
+####
+# CFE comments
+####
