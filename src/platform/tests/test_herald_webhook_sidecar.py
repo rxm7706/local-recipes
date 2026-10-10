@@ -234,6 +234,11 @@ def _webhook_scope(body: bytes, extra_headers: list[tuple[bytes, bytes]] | None 
 def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    # The flag is OFF in every environment until Story 87.4 lands; force it ON here.
+    monkeypatch.setattr(
+        "django_pyforge.sidecar_forward.evaluate_boolean",
+        lambda key, default=False: True,
+    )
     body = b"payload-bytes"
     sent: list[dict] = []
 
@@ -274,6 +279,11 @@ def test_host_forward_sidecar_down_one_error_log(
 ) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:1")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    # The flag is OFF in every environment until Story 87.4 lands; force it ON here.
+    monkeypatch.setattr(
+        "django_pyforge.sidecar_forward.evaluate_boolean",
+        lambda key, default=False: True,
+    )
     sent: list[dict] = []
 
     async def receive():
