@@ -70,10 +70,10 @@ extra:
     - rxm7706
     - conda-forge/openllm-client
     - conda-forge/openllm-core
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
-    - pb01ka
   cfe-conda-name: openllm
   cfe-upstream-registry: pypi
   cfe-upstream-name: openllm

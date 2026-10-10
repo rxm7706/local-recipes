@@ -1,0 +1,15 @@
+--- a/integration/airflow/pyproject.toml
++++ b/integration/airflow/pyproject.toml
+@@ -24,9 +24,9 @@
+
+ dependencies = [
+     "attrs>=20.0",
+-    "openlineage-integration-common==1.40.0",
+-    "openlineage_sql==1.40.0",
+-    "openlineage-python==1.40.0",
++    "openlineage-integration-common==1.41.0",
++    "openlineage_sql==1.41.0",
++    "openlineage-python==1.41.0",
+ ]
+
+ [project.optional-dependencies]

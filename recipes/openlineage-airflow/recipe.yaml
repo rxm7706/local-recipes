@@ -3,20 +3,24 @@ schema_version: 1
 
 context:
   name: openlineage-airflow
-  version: "1.14.0"
+  version: "1.41.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/openlineage-airflow/openlineage-airflow-${{ version }}.tar.gz
-  sha256: 6e9b987445f0e1c143ef4b14d3a1f05aa9e2909d28ee10c73d91d04cc588cd1d
+  url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
+  sha256: fb188ea7ea7316900f5bb67959d95070255d5d8f69d8ba426dc9719003267780
+  patches:
+    - patches/fix-dependency-pins.patch
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - cd integration/airflow
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
