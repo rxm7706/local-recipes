@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: import-linter
-  version: "2.13"
+  version: "2.15"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/import_linter-${{ version }}.tar.gz
-  sha256: 13af4a1d6b06044c58ea784e8732fd7fe48eec821a75feb4d6a1a2de36dd5c27
+  url: https://pypi.org/packages/source/i/import-linter/import_linter-${{ version }}.tar.gz
+  sha256: 1da912bea5e172a82a3ce617b5543f75cf64dc0d8f4d9b46c5578b68ccb81590
 
 build:
   number: 0
@@ -23,17 +23,16 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
-    - nox
     - fastapi
     - uvicorn
     - rich >=14.2.0
     - python >=${{ python_min }}
     - click >=6
-    - grimp >=3.14
+    - grimp >=3.17
     - tomli >=1.2.1
     - typing-extensions >=3.10.0.0
     - typing_extensions >=3.10.0.0
@@ -47,7 +46,7 @@ tests:
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - lint-imports --help
 
@@ -81,15 +80,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/import-linter-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-2.12, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-10-10T11:43:09Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T11:43:45Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 2.13 -> 2.15
 ####

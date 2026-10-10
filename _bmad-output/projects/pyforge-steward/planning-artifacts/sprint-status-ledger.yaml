@@ -279,7 +279,7 @@ development_status:
   67-1-the-sbom-composes-the-laptop-bill-of-materials-on-three-platforms-with-postgresql-17-held: done
   67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: done
   67-3-every-gap-and-every-fat-only-pin-has-a-disposition-and-an-owner: done
-  67-4-upstream-tickets-for-the-gaps-that-need-one: backlog
+  67-4-upstream-tickets-for-the-gaps-that-need-one: done
   67-5-the-estate-points-at-the-sbom: done
   67-6-index-herald-s-dossier-states-the-cutover-s-control-plane-herald-26-1: done
   67-7-index-scribe-s-instruction-surface-names-the-estate-first-scribe-21-1: done

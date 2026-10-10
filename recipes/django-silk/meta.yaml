@@ -1,5 +1,5 @@
 {% set name = "django-silk" %}
-{% set version = "5.5.2" %}
+{% set version = "5.6.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: c488ee1eab763a6f3d0db09a969e7a91b637743f04159cd8d10141386157ec0d
+  sha256: bb741fb8af45eba663e8ed832207d16ecd731496313311f6dfae5fe776bed38e
 
 build:
   noarch: python
@@ -22,7 +22,7 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
-    - django >=4.2
+    - django >=5.2
     - sqlparse
     - autopep8
     - gprof2dot >=2017.09.19

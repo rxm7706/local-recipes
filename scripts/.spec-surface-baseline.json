@@ -536,7 +536,7 @@
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
-   "docs/MAP.md": "12543e87cf5714c178041a354862b4313edbeb61",
+   "docs/MAP.md": "ddc2455a08ca9ff2246683a70c5ef84b5ad8ed38",
    "docs/_STYLE_GUIDE.md": "e6990a6bfdc55d153bfcad31dd5c457eba39b327",
    "docs/explanation/README.md": "81b1b482086c5e46ff8536f0e22e69866da460b5",
    "docs/explanation/airgap-distribution-contract.md": "02160d11cded02af845a6d238562b99ae3a29df8",
@@ -567,7 +567,7 @@
    "docs/how-to/monitor-the-fleet.md": "9fd532b364f8ff1d692772334318a058d67df868",
    "docs/how-to/ocp-cluster-bringup.md": "5ea5280ff7a623932860118e4b811de1cfe39506",
    "docs/how-to/one-chain-station-ops.md": "9ab588ab903bb5073ffcca1064044c9e921565d2",
-   "docs/how-to/pixi-tasks.md": "28453a4085b5ff0a2f4ef71006fabe8fc704b02b",
+   "docs/how-to/pixi-tasks.md": "f3cc97a01ed927cb8b50a787865023774fbc4fd8",
    "docs/how-to/presentation-deck.md": "f974bcc7eec95e35edc2a464ab085a26a9ab6da5",
    "docs/how-to/purge-preserved-refs.md": "d398c6312bbaebc754e4ec6bacd30b0e6ebc8caf",
    "docs/how-to/recipe-testing-and-builds.md": "558bf19fae242667f02575630f78b2dec39f21d0",
@@ -575,9 +575,10 @@
    "docs/how-to/restore-operations.md": "50eb40bfd6b76462878a403e547625ffb0217f14",
    "docs/how-to/run-and-understand-detectors.md": "360ba71515c1199d7100819b2c266ce16537ec65",
    "docs/how-to/station-cli-operations.md": "9e2551ec419f3541373843fc98f5d229fe9774bc",
+   "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "eaa8847213d7d598588a9186bdc42df3b6248051",
    "docs/how-to/troubleshooting-recipe-builds.md": "74ae1f42e23b84bbdbfbd9e2b5eec92898e6bd96",
-   "docs/map.yaml": "51b75703f018d7210ea477146d8ad158f54cfcdd",
+   "docs/map.yaml": "580447e2428e467dbf0018e117d4e7bec9a0a538",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "9512c037ee900086236de08a42ec8fa22e3274b2",
    "docs/tutorials/local-platform-development.md": "907305d6aef172982d8b5ea7824964704af83b51",
@@ -761,7 +762,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "3739ddd1932911be81e12ac743a16e043385b393"
+  "memlog": "3c04ac14400c3f3b765cf62c5377bf371411c5f2"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -6014,7 +6015,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "d12d9cbf8911293266d6ab7d3781879b591f4b39",
+   "pixi.toml": "03b6f6596a26b70e05ce632c0bdc4c8e2ea89c75",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -7069,7 +7070,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "3335a8bf01652258d72a3f4f0ee287f1a74dccf0"
+  "memlog": "53d7b932a20c301c39b244b427a5f7e57cff16bc"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},

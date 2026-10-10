@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: grimp
-  version: "3.15"
+  version: "3.17"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grimp-${{ version }}.tar.gz
-  sha256: 91b57d4d801dc107ebfb5a7040d4777a152c579b5dc202426e1185e50931fe1e
+  url: https://pypi.org/packages/source/g/grimp/grimp-${{ version }}.tar.gz
+  sha256: 5161e03c6f518fe4da43b06c97ff49a1e224ecb0e4b9fd6ef48235373d1b7b33
 
 build:
   number: 0
@@ -70,3 +70,36 @@ extra:
     - cshaley
     - peterbygrave
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grimp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grimp
+  cfe-purls:
+    - pkg:conda/grimp@${{ version }}?channel=conda-forge
+    - pkg:pypi/grimp@${{ version }}
+  cfe-upstream-repo: https://github.com/seddonym/grimp
+  cfe-upstream-homepage: https://pypi.org/project/grimp/
+  cfe-import-names: [grimp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/grimp-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T11:38:58Z
+  cfe-generated-by-version: 8.99.6
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T11:43:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 3.15 -> 3.17
+####

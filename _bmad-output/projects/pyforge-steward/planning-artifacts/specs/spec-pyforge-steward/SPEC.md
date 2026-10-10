@@ -105,6 +105,11 @@ surface:
   - scripts/sbom_gap_derive.py
   - tests/scripts/test_sbom_gap_derive.py
   - docs/foundry/sbom-gaps.md
+  - scripts/upstream_todos_check.py
+  - tests/scripts/test_upstream_todos_check.py
+  - docs/foundry/upstream-todos.yaml
+  - docs/foundry/upstream-drafts/**
+  - docs/how-to/track-upstream-todos.md
   - scripts/pixi_env_matrix.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
