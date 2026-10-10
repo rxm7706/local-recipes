@@ -21,7 +21,8 @@ from pyforge.core.preserve_refs import (
     short_ref_name,
 )
 
-from ..ports.vcs import VcsCommandError, VcsPort, WorktreeEntry
+from ..adapters.vcs_git import VcsCommandError
+from ..ports.vcs import VcsPort, WorktreeEntry
 
 _ORIGIN_MAIN = "refs/remotes/origin/main"
 _PRESERVE_ARCHIVE_PREFIXES = (PRESERVE_REF_PREFIX, ARCHIVE_REF_PREFIX)

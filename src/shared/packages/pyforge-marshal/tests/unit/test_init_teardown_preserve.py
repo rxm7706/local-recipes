@@ -11,7 +11,7 @@ from pyforge.testing_kit.flags import flag_states
 from pyforge.marshal.cli.init import run_teardown
 from pyforge.marshal.core.verdict import EXIT_OK
 
-from .test_init import FakeFs, FakeVcs, _provisioned_teardown_vcs, _teardown_namespace
+from tests.unit.test_init import FakeFs, FakeVcs, _provisioned_teardown_vcs, _teardown_namespace
 
 _FLAG = "pyforge.marshal.preserve_refs"
 
