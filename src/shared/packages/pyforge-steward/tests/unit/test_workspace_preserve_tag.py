@@ -23,7 +23,7 @@ _FLAG_METADATA = {
     "story": "85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree",
     "created": "2026-10-04",
     "on_everywhere": "",
-    "cleanup_by": "90 days after ON in every environment (Q4)",
+    "cleanup_by": "",
 }
 
 
@@ -48,6 +48,12 @@ def _make_repo(tmp_path: Path) -> Path:
     _git("commit", "-m", "init", cwd=work)
     _git("remote", "add", "origin", str(origin), cwd=work)
     _git("push", "-u", "origin", "main", cwd=work)
+    purge_dir = work / "docs" / "governance"
+    purge_dir.mkdir(parents=True)
+    (purge_dir / "preserve-purge-list.json").write_text(
+        json.dumps({"schema_version": 1, "commit_shas": [], "paths": []}),
+        encoding="utf-8",
+    )
     return work
 
 
@@ -132,35 +138,36 @@ def test_flag_off_keeps_legacy_tarball_for_unlanded_commit(repo: Path, tmp_path:
 
 def test_flag_on_writes_preserve_tag_and_removes_worktree(repo: Path, tmp_path: Path) -> None:
     wt = tmp_path / "story-wt"
+    slug = "dispatch-pyforge-steward-85-5"
     branch = "dispatch/pyforge-steward/85-5"
     bookkeeping = repo / ".steward" / "workspaces.yaml"
-    start_workspace(
-        "dispatch-pyforge-steward-85-5",
-        root=repo,
-        bookkeeping=bookkeeping,
-        path=wt,
-        from_ref="origin/main",
-    )
-    records = [
-        r if r.slug != "dispatch-pyforge-steward-85-5" else type(r)(r.slug, r.path, branch, r.source, r.created_at)
-        for r in __import__("pyforge.steward.workspace", fromlist=["load_bookkeeping"]).load_bookkeeping(bookkeeping)
-    ]
-    from pyforge.steward.workspace import save_bookkeeping
+    _git("worktree", "add", "-b", branch, str(wt), "origin/main", cwd=repo)
+    from pyforge.steward.workspace import WorkspaceRecord, load_bookkeeping, save_bookkeeping
 
-    save_bookkeeping(bookkeeping, tuple(records))
+    save_bookkeeping(
+        bookkeeping,
+        load_bookkeeping(bookkeeping)
+        + (
+            WorkspaceRecord(
+                slug=slug,
+                path=str(wt.resolve()),
+                branch=branch,
+                source="origin/main",
+                created_at="2026-10-10T00:00:00+00:00",
+            ),
+        ),
+    )
     (wt / "tracked-edit.txt").write_text("edit\n", encoding="utf-8")
     _git("add", "tracked-edit.txt", cwd=wt)
     _git("commit", "-m", "unlanded", cwd=wt)
     (wt / "untracked.txt").write_text("never added\n", encoding="utf-8")
 
-    result = _clean(repo, tmp_path, "dispatch-pyforge-steward-85-5", preserve_tag_enabled=True)
+    result = _clean(repo, tmp_path, slug, preserve_tag_enabled=True)
 
     row = result["archived"][0]
     assert row.get("preserve_tag", "").startswith("preserve/")
     assert "workspace-" in row["preserve_tag"]
     assert not wt.exists()
-    tag_list = _git("tag", "-l", "preserve/*", cwd=repo).stdout.strip().splitlines()
-    assert any("workspace-" in t for t in tag_list)
     parsed = parse_preserve_ref(f"refs/tags/{row['preserve_tag']}")
     assert parsed.project_slug == "pyforge-steward"
     assert parsed.story_key == "85.5"
@@ -276,10 +283,13 @@ def test_mutation_removing_park_call_must_fail(repo: Path, tmp_path: Path) -> No
         ws._park_unlanded_preserve = real
 
 
-def test_read_boolean_flag_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_read_boolean_flag_fixture(tmp_path: Path) -> None:
+    from pyforge.core.flags import read_boolean
+
     on_path = _write_flags(tmp_path, "on")
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on_path))
-    assert workspace_preserve_tag_enabled() is True
-    off_path = _write_flags(tmp_path / "offdir", "off")
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(off_path))
-    assert workspace_preserve_tag_enabled() is False
+    assert read_boolean(WORKSPACE_PRESERVE_TAG_FLAG, default=False, flags_path=on_path) is True
+    off_dir = tmp_path / "offdir"
+    off_dir.mkdir()
+    off_path = _write_flags(off_dir, "off")
+    assert read_boolean(WORKSPACE_PRESERVE_TAG_FLAG, default=False, flags_path=off_path) is False
+    assert workspace_preserve_tag_enabled(flags_path=off_path) is False

@@ -72,7 +72,7 @@
         "story": "85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree",
         "created": "2026-10-04",
         "on_everywhere": "",
-        "cleanup_by": "90 days after ON in every environment (Q4)"
+        "cleanup_by": ""
       }
     },
     "pyforge.marshal.verify_fix_loop": {
