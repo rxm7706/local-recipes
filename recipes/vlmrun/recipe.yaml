@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.6.3"
+  version: "0.9.0"
 
 package:
   name: vlmrun
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/v/vlmrun/vlmrun-${{ version }}.tar.gz
-  sha256: a1d611125b1d2f00ba4e0066b2389f29714629f643c397fea67756c8887edb0c
+  sha256: 5582b979defa226ed2b1ea106c6be5088a347f02b3b01a9fc389aea7aa535644
 
 build:
   number: 0
@@ -72,6 +72,7 @@ extra:
 
 #### CFE metadata AND comments
 # CFE metadata
+    - pb01ka
   cfe-conda-name: vlmrun
   cfe-upstream-registry: pypi
   cfe-upstream-name: vlmrun
@@ -89,7 +90,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-04T22:21:00Z
+  cfe-last-checked: 2026-10-10T14:52:32Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
@@ -103,4 +104,8 @@ extra:
 #    # declares only under the `cli`/`openai` extras (not the base deps), so a
 #    # base-only install cannot run `vlmrun --help`. The CFEP-25 import + pip
 #    # check triad below is the canonical base-install test.
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-9: refreshed 0.6.3 -> 0.9.0; maintainers added: pb01ka
 ####
