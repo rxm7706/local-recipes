@@ -44,7 +44,7 @@ supersedes.
 | `kedro-dagster` | 0.8.0 → 0.8.1 | v1 | gtauzin, rxm7706 | no CFE block; `${{ name… }}` in `source.url` |
 | `kedro-viz` | 12.4.0 → 12.5.0 | v1 | cshaley, elanqo, millsks, rxm7706, zaigner | — |
 | `langchain-litellm` | 0.7.0 → 0.11.0 | v1 | pb01ka, rxm7706 | — |
-| `langflow` | 1.11.4 → 1.12.4 | v1 | pb01ka, rxm7706 | multi-output `langflow-suite` (also builds `lfx`, `langflow-base`, `langflow-sdk`); three patches |
+| `langflow` | 1.11.4 → 1.12.4 | v1 | pb01ka, rxm7706 | multi-output `langflow-suite` (also builds `lfx`, `langflow-base`, `langflow-sdk`); five local patches, which the feedstock replaced with `patch_deps.py` (AC 12) |
 | `llm` | 0.31 → 0.36 | v1: drop the local `meta.yaml` (C2) | pavelzw, rxm7706 | no CFE block; `${{ name… }}` in `source.url` |
 | `milvus-lite` | 3.0 → 3.2.1 | v1 | pb01ka, rxm7706 | — |
 | `modelsearch` | 1.3.1 → 1.3.2 | v1 | darynwhite, rxm7706 | no CFE block; `${{ name… }}` in `source.url` |
@@ -65,9 +65,18 @@ line and the ledger key stand.
   `langflow-sdk`, `lfx`, four `lfx-*` bundles, `langflow-base` and `langflow`, with `lfx` at langflow's own version
   (`recipe.yaml:75-77`). Refreshing `langflow` 1.11.4 → 1.12.4 moves `lfx` with it. (Amended 2026-10-09 under ruling
   2: the separate `recipes/lfx` is no longer in this batch; Story 25.15 retires it.)
-- `recipes/langflow` carries three patches that strip integration dependencies on purpose (`patches/0001` to `0003`,
-  `recipe.yaml:21-30`). They are a maintainer choice: each still applies at 1.12.4, or is re-based through CFE, never
-  dropped (coordination rule 2).
+- `recipes/langflow` carries five patches (`patches/0001` to `0005`, `recipe.yaml:27-40`). Three strip integration
+  dependencies on purpose; 0004 and 0005 loosen the `bcrypt` and `onnxruntime` pins. They encode a maintainer choice,
+  which the story never drops (coordination rule 2).
+- **Correction (2026-10-10), read live.** This bullet said "three patches", and AC 12 had each one re-based at 1.12.4.
+  The feedstock no longer carries patches. `conda-forge/langflow-feedstock`'s PR #21 (langflow v1.12.0, merged
+  2026-09-25; commit `1d1fe0bae3`) removed `recipe/patches/0001` to `0005` and added `recipe/patch_deps.py`. The
+  script edits upstream's `pyproject.toml` dependencies by package name at build time, for the `langflow-base`,
+  `langflow` and `lfx-ibm` outputs; its docstring says it replaces the patches, which only removed or replaced
+  dependency entries, and its edits include the `bcrypt` and `onnxruntime` loosening. The feedstock's `main`
+  (`0a271a8b65`, 1.12.4, build 0) carries `recipe.yaml`, `patch_deps.py` and `license-checker-format.json` in
+  `recipe/`, and no `patches/` directory. The maintainers' choice stands, in the feedstock's new form. So the story
+  re-mirrors `recipes/langflow` from the feedstock instead of re-basing patches (AC 12, mirror first).
 - `langflow` and `lfx` carry large dependency sets, so expect `dependency-fix` (AC 5). `langchain-litellm` moves 0.7.0
   → 0.11.0 and `llm` 0.31 → 0.36.
 
@@ -155,9 +164,25 @@ Type / Effort / Deps: feature / M / S-25.3.
     a CFE `CHANGELOG.md` semver entry, with the four version carriers in lockstep: PATCH, or MINOR for a new gotcha. If
     another Epic 25 story's retro reached `main` first, this one takes the next version when it merges `main`. Also
     `pixi run --frozen -e pyforge-mason pyforge-mason-test` passes.
-12. **langflow's patches survive.** Given `recipes/langflow`'s three patches When it is refreshed Then each applies at
-    the new version, re-based through CFE where it no longer applies; a patch that cannot be re-based leaves the
-    recipe `needs-review` with the reason, never refreshed without it.
+12. **langflow follows its feedstock's `patch_deps.py`.** Given `conda-forge/langflow-feedstock` replaced
+    `recipe/patches/0001` to `0005` with `recipe/patch_deps.py` (PR #21, merged 2026-09-25) When the story refreshes
+    `recipes/langflow` Then the recipe is re-mirrored from the feedstock's `recipe/` directory, read live, not
+    version-bumped:
+    - `recipe.yaml` and `patch_deps.py` come from the feedstock, and each output runs `patch_deps.py` as the
+      feedstock's does;
+    - the local `patches/` directory is removed (G94), with the five `patches:` entries;
+    - each edit the five patches made is either among `patch_deps.py`'s edits (its `langflow-base` removals and the
+      `bcrypt` and `onnxruntime` replacements, its `langflow` `lfx-*` removal, its `lfx-ibm` `ibm-db` removal) or
+      recorded in § *Run results* with its reason;
+    - a local difference the story keeps, such as `conda-forge.yml`, is listed in § *Run results*, and a proposal is
+      parked in the CFE comments block (coordination rule 2).
+
+    Its `recipe-maintainers` is a superset of the feedstock's live list (AC 4), and it passes AC 8's gates and builds
+    every output on linux-64 under AC 9. The re-mirror also takes the feedstock's `sdk_version` and bundle versions;
+    Story 25.14 then finds those outputs current. The driver's dry-run verdict on `recipes/langflow` is recorded, not
+    acted on: the driver moves `context.version` only. (Corrected 2026-10-10. This AC read "langflow's patches
+    survive": each of three patches re-based at 1.12.4. The feedstock dropped its patches on 2026-09-25, so mirroring
+    it means taking `patch_deps.py` instead.)
 
 ## Tasks
 
@@ -209,7 +234,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 | test env pollution | a dependency solve fails for a package on conda-forge | rebuild isolated before recording a block | G52, landmine 13 |
 | now sole | the feedstock lost its other maintainers | refreshed; noted in § *Run results* | — |
 | multi-output recipe | `langflow-suite` builds `lfx` too | `lfx` moves with the suite's `version`; `recipes/lfx` is not in the batch | Story 25.15 retires `recipes/lfx` |
-| patch no longer applies | `patches/0002` fails at 1.12.4 | re-based through CFE | needs-review, never dropped |
+| feedstock dropped its patches | `langflow-feedstock` carries `patch_deps.py`, no `patches/` | re-mirrored: `patch_deps.py` taken, local `patches/` pruned | an edit `patch_deps.py` does not make is recorded (AC 12) |
 
 </intent-contract>
 
@@ -223,6 +248,8 @@ Ledger status at mint: `backlog`.
 Deps: S-25.3 (done).
 Amended 2026-10-09 (night, latest) on the operator's ruling "Retire in a fix story": `recipes/lfx` left the batch
 (11 → 10 recipes) for Story 25.15 to retire.
+Corrected 2026-10-10 against `langflow-feedstock`'s live `recipe/` (read-only GETs): AC 12 re-mirrors
+`recipes/langflow` with the feedstock's `patch_deps.py`, which replaced its five patches on 2026-09-25 (PR #21).
 Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability behind a flag).
 Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split rest").
 

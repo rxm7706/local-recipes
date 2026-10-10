@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 66e7898e8965cace
-story_count: 109
+source_fingerprint: 304bcaf0869d2940
+story_count: 110
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 109
+- **Stories parsed:** 110
 - **Epics parsed:** 28
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `66e7898e8965cace`
+- **Source fingerprint:** `304bcaf0869d2940`
 
 ## Risk Assessment
 
@@ -222,7 +222,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.12 | Track B batch 8 refreshes OpenTelemetry instrumentation from mysql through wsgi | none observed |
 | 25.13 | Wave F mirrors the two co-maintained feedstocks that have no local recipe | none observed |
 | 25.14 | Wave F's other 18 packages are built by their feedstock's own mirror | none observed |
-| 25.15 | Five duplicate langflow-suite directories retire into recipes/langflow | none observed |
+| 25.15 | Six duplicate recipe directories retire into recipes/langflow and recipes/dbt | none observed |
+| 25.16 | Three dbt adapter recipes are re-mirrored from their own feedstocks | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |
