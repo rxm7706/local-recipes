@@ -2,7 +2,8 @@
 title: "25.14: Wave F's other 18 packages are built by their feedstock's own mirror"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '086436de5eb3bc317eb778a542786c613c491e45'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
