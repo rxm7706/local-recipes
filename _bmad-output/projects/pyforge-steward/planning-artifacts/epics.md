@@ -5827,6 +5827,32 @@ So that a signed ship reaches herald with no change to the image env, and herald
 **And** the lock moves through `pixi lock` only, and only the `mcp-host` environment block changes (`mcp` 2.x, `psycopg` 3.2.10, no `postgresql` or `libpq` at 18). `pixi run --frozen -e mcp-host mcp-host-serve` binds `127.0.0.1:8090` and answers `/health`. MCP forwarding is unchanged (`test_mcp_host_sidecar.py`, `test_mcp_transport_auth.py` unedited). The flag is registered in its four places, and `flag-gate-check` passes. The docs name the route, the flag, the allowlist and the local task. The chart's `platform.mcpHostEnv`, compose's `mcp-host` service, the store's volume and the paused image build become one steward deferred-work row. `environment.yaml` and the derived docs come from their tools. `pyforge-steward-test`, `pyforge-station-tests`, `platform-ci-local -- --test`, `lint-types`, `sbom-gaps-check` and `llms-full-check` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp.
 **Status:** backlog
 
+## Epic 88: The preflight runs each task once, after its dependencies (fix under CAP-159)
+
+Minted 2026-10-10 from the station Dream's entry of the same date (preflight deps run twice) and the operator's ruling
+"Mint both (Recommended)". `pr-preflight` runs a task's `depends-on` both as separate lanes and again inside the task's
+own `pixi run`, all at once, so the pages lanes collide in one `docs-site/` and one `dist/`, and the red lane cancels
+the rest of the run. A defect against CAP-159 (Epic 71), so no CAP is minted; a new epic because Epic 71 is `done`.
+**HARD boundaries:** the dependency graph is read from `pixi.toml` only (AD-1); every task keeps its own lane, exit
+code and journal row (AD-8); lanes with no order between them stay concurrent; the lanes CI's rules select do not
+change; `pr-preflight`'s command line, the `pre-push` hook and `PYFORGE_PREFLIGHT_SKIP` do not change.
+
+### Story 88.1: The preflight runs each task once, after its dependencies
+
+As the operator whose herald-sidecar pushes lost the whole preflight to a `pages-check` collision,
+I want each task in a preflight to run once, after its dependencies are green,
+So that a lane never rebuilds what another lane is building, and a red dependency is named once.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Stories 71.1, 71.2, 71.3, 71.10, 71.11); AD-1, AD-8 • Dream 2026-10-10 (preflight deps run twice) • operator ruling 2026-10-10 "Mint both (Recommended)"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`_expand_task` about :96-:117, the default lane argv at about :438, the pool at about :700-:745), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` (only if a selected lane's dependency must be pulled in), `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py`, `test_preflight_concurrency.py`, `test_preflight_selection.py`
+**Spec:** `planning-artifacts/specs/spec-88-1-the-preflight-runs-each-task-once-after-its-dependencies.md`
+**Given** `5f141b983e`, where `_expand_task` turns `pages-check`'s `depends-on` into the lanes `docs-site-install`, `docs-site-sidebar` and `pages-build` and keeps `pages-check` as a lane too, every lane starts with no order between them, and each runs `pixi run --frozen -e <env> <task>`, which re-runs the task's dependencies. On the herald-sidecar pushes (runs `ced93a76…` and `fdba8d13…`, head `71f555eeb5`) the four pages lanes started together, and `pages-check` failed with "download size mismatch" and then "assemble_pages: collision at herald/"; each red cancelled `detectors-ci` and two doctor lanes, and `pixi run --frozen -e site pages-check` alone exits 0
+**When** the preflight runs
+**Then** every task with a `cmd` is one lane that carries its dependencies from `pixi.toml`. A lane starts only after its dependencies finish `ok` and runs as `pixi run --frozen --skip-deps -e <env> <task>`, so within one preflight no task runs twice, and the journal holds one row per task. Lanes with no order between them stay concurrent
+**And** a red dependency is the only lane reported red. Its dependents never start: they are journaled `cancelled` (`cancelled_by` the dependency), or `not-run` with `blocked_by` under `--keep-going`. Selection is unchanged: `PAGES_CHECK_LEAVES` stays the same four lanes, selected only when `docsite-check.yml`'s paths fire (Story 71.2), with a new assertion on their dependency edges. Dropping `--skip-deps` or the dependency wait fails the new tests (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
