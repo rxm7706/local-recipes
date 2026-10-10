@@ -2,7 +2,7 @@
 title: "87.8: The sweeper preserves to tags and retires promoted engine scratch"
 type: 'feature'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '02167e79f48afd9fb8cacd8ce3369c435302f1ab'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -87,7 +87,12 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Implemented CAP-287 sweeper preserve tags (`pyforge.marshal.preserve_refs`), engine scratch retirement, local archive twins, and how-to update.
+
+## Auto Run Result
+
+Status: done
+Verification: pyforge-marshal-test, pyforge-doctor-scripts-test (worktree_sweep), lint-types, flag-gate-check green locally.
 
 ## Review Triage Log
 

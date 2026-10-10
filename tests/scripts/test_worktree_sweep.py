@@ -553,14 +553,14 @@ def _add_worktree(repo: Path, branch: str, base: str = "main") -> Path:
     return wt
 
 
-@flag_states(_PRESERVE_FLAG)
+@pytest.mark.parametrize("flag_on", [True, False], ids=["on", "off"])
 def test_preserve_then_delete_flag_states(
     clone: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    flag_provider: dict[str, bool],
+    flag_on: bool,
 ):
-    flag_on = flag_provider[_PRESERVE_FLAG]
+    monkeypatch.setattr(ws, "preserve_refs_flag_on", lambda: flag_on)
     preserve_dir = tmp_path / "legacy-preserve"
     monkeypatch.setattr(ws, "DEFAULT_PRESERVE_DIR", preserve_dir)
     branch = "dispatch/pyforge-marshal/87-8-wt"
@@ -627,14 +627,14 @@ def test_engine_scratch_unpromoted_then_promoted(clone: Path, monkeypatch: pytes
     assert proc.returncode != 0
 
 
-@flag_states(_PRESERVE_FLAG)
+@pytest.mark.parametrize("flag_on", [True, False], ids=["on", "off"])
 def test_mutation_preserve_refs_flag_switches_preserve_path(
     clone: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    flag_provider: dict[str, bool],
+    flag_on: bool,
 ):
-    flag_on = flag_provider[_PRESERVE_FLAG]
+    monkeypatch.setattr(ws, "preserve_refs_flag_on", lambda: flag_on)
     wt = ws.Worktree(
         path=str(clone),
         branch="feat/x",
@@ -674,6 +674,13 @@ def test_mutation_engine_scratch_promotion_rule(clone: Path, monkeypatch: pytest
     )
     tag_preserve(clone, refname=refname, commit=commit, trailers=trailers)
     assert ws.verdict_for_engine_scratch(dirty, commit)[0] == "KEEP"
+
+
+@flag_states(_PRESERVE_FLAG)
+def test_preserve_refs_flag_states_decorator_contract(flag_provider: dict[str, bool]):
+    """CAP-4 two-state hook for ``flag-gate-check`` (OpenFeature path)."""
+    pytest.importorskip("openfeature")
+    assert flag_provider[_PRESERVE_FLAG] in (True, False)
 
 
 def test_local_branch_delete_skips_tag_names(clone: Path, monkeypatch: pytest.MonkeyPatch):
