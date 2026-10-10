@@ -2,7 +2,7 @@
 title: "25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work"
 type: 'feature'
 created: '2026-09-29'
-status: 'blocked'
+status: 'done'
 baseline_revision: '91d99bb44111cf03947dd5b911049873e92885a2'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -252,6 +252,19 @@ gates exit 0; linux-64 build success (`build_artifacts/assemblyai`). B1 five-rec
 (`killua156`, `rxm7706`). `cron-descriptor` — matches (`mariusvniekerk`, `rxm7706`).
 
 ## Auto Run Result
+
+**Landed under the re-scope (operator ruling 2026-10-09: land 25.2 now, split the rest).** Story 25.2 now
+covers Wave A discovery, Wave 0 (78-recipe repair of Story 25.1's landing: 62 repaired, 2 already-clean, 10
+needs-review, 4 failed, every leftover recorded with its reason), the four Track B pilots (assemblyai 1.0.0->1.3.0,
+bmad-method 6.12.0->6.12.1, cron-descriptor 2.1.0->2.1.1, cssselect2 0.9.0->0.10.1) and its closing
+`retro(cfe):` commit (CFE v8.99.1). The 14 Wave 0 leftovers move to Story 25.4 and the remaining 92 Track B
+recipes to Stories 25.5-25.12 (`epics.md` § Story 25.2, re-scope note). Landing fixes: `recipes/mem0ai` test
+comments moved back to their key's column (the Wave 0 re-indent had broken conda-smithy lint; `validate`
+passes), and the CFE retro's surface reconciled on spec-packaging-factory and spec-conda-forge-expert-rebuild.
+
+Status: done
+
+Previous pass, before the re-scope:
 
 **Third pass 2026-10-09.** Continued Track B batch B2 after resume commit `91d99bb441`.
 
