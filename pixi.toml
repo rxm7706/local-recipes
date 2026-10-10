@@ -1593,6 +1593,10 @@ depends-on = [
 description = "Story 67.3 (fnd:CAP-13): read-only check that docs/foundry/sbom-gaps.md lists every feature outside pyforge-foundry-full and pyforge-foundry-full-stack and every fat-only local-recipes pin, each with promote / won't-do / upstream, a reason and an owner — derived from pixi.toml via scripts/sbom_gap_derive.py. Exit 0 pass / 1 findings (docs/reference/judgement-vocabulary.md)."
 cmd = "python scripts/sbom_gap_derive.py"
 
+[feature.guild-tasks.tasks.upstream-todos-check]
+description = "Story 67.4: read-only check that docs/foundry/upstream-todos.yaml covers every upstream sbom-gaps row, draft files match schema, and operator-only states are well-formed. Exit 0 pass / 1 findings / 2 could not run (docs/reference/judgement-vocabulary.md)."
+cmd = "python scripts/upstream_todos_check.py"
+
 [feature.guild-tasks.tasks.pr-preflight-lanes]
 description = """Serial reference for every lane a PR gates on — same graph ``pr-preflight`` runs, without journaling. Story 71.1 moved this aggregate here unchanged; ``pr-preflight`` is now ``python -m pyforge.steward.preflight``.
 
