@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import asyncio
 import hashlib
 import hmac
@@ -110,37 +111,37 @@ def test_mcp_host_health_and_unknown_path_unchanged(mcp_client: TestClient) -> N
     assert mcp_client.get("/stations/nope/mcp").status_code == HTTPStatus.NOT_FOUND
 
 
-class _HeraldAbsentFinder:
-    def find_spec(self, fullname, path, target=None):
-        if fullname == "pyforge.herald" or fullname.startswith("pyforge.herald."):
-            raise ModuleNotFoundError(name=fullname)
-        return None
+def test_mcp_host_sidecar_herald_absent_returns_404_json(
+    mcp_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_import = importlib.import_module
 
+    def _import(name: str, *args, **kwargs):
+        if name == "pyforge.herald.webhook_host":
+            raise ModuleNotFoundError("pyforge.herald.webhook_host")
+        return real_import(name, *args, **kwargs)
 
-def test_mcp_host_sidecar_herald_absent_returns_404_json(mcp_client: TestClient) -> None:
-    sys.meta_path.insert(0, _HeraldAbsentFinder())
-    try:
-        response = mcp_client.post(webhook.ON_SHIP_PATH, content=b"{}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
-        assert "pyforge.herald" in response.json()["detail"]
-        assert mcp_client.get("/health").status_code == HTTPStatus.OK
-        init = mcp_client.post(
-            "/stations/atlas/mcp",
-            json={
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "initialize",
-                "params": {
-                    "protocolVersion": "2025-06-18",
-                    "capabilities": {},
-                    "clientInfo": {"name": "t", "version": "0"},
-                },
+    monkeypatch.setattr(importlib, "import_module", _import)
+    response = mcp_client.post(webhook.ON_SHIP_PATH, content=b"{}")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert "pyforge.herald" in response.json()["detail"]
+    assert mcp_client.get("/health").status_code == HTTPStatus.OK
+    init = mcp_client.post(
+        "/stations/atlas/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-06-18",
+                "capabilities": {},
+                "clientInfo": {"name": "t", "version": "0"},
             },
-            headers={"content-type": "application/json"},
-        )
-        assert init.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
-    finally:
-        sys.meta_path.remove(_HeraldAbsentFinder())
+        },
+        headers={"content-type": "application/json"},
+    )
+    assert init.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 def test_mcp_host_sidecar_missing_secret_503(
@@ -210,8 +211,7 @@ def _webhook_scope(body: bytes, extra_headers: list[tuple[bytes, bytes]] | None 
     }
 
 
-@pytest.mark.asyncio
-async def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
     body = b"payload-bytes"
@@ -223,9 +223,11 @@ async def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch)
     async def send(message):
         sent.append(message)
 
-    with patch("httpx.AsyncClient", return_value=_CaptureClient()):
-        handled = await dispatch_herald_webhook_forward(_webhook_scope(body), receive, send)
-    assert handled is True
+    async def _run():
+        with patch("httpx.AsyncClient", return_value=_CaptureClient()):
+            return await dispatch_herald_webhook_forward(_webhook_scope(body), receive, send)
+
+    assert asyncio.run(_run()) is True
     assert _CaptureClient.last is not None
     assert _CaptureClient.last["method"] == "POST"
     assert _CaptureClient.last["url"] == (
@@ -242,8 +244,7 @@ async def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch)
     assert start["status"] == 201
 
 
-@pytest.mark.asyncio
-async def test_host_forward_sidecar_down_one_error_log(
+def test_host_forward_sidecar_down_one_error_log(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -257,8 +258,11 @@ async def test_host_forward_sidecar_down_one_error_log(
     async def send(message):
         sent.append(message)
 
-    with caplog.at_level(logging.ERROR):
-        await dispatch_herald_webhook_forward(_webhook_scope(b"x"), receive, send)
+    async def _run():
+        with caplog.at_level(logging.ERROR):
+            await dispatch_herald_webhook_forward(_webhook_scope(b"x"), receive, send)
+
+    asyncio.run(_run())
     errors = [r for r in caplog.records if r.levelname == "ERROR"]
     assert len(errors) == 1
     assert "http://127.0.0.1:1" in errors[0].getMessage()
@@ -266,10 +270,13 @@ async def test_host_forward_sidecar_down_one_error_log(
     assert start["status"] == HTTPStatus.BAD_GATEWAY
 
 
-@pytest.mark.asyncio
-async def test_host_does_not_forward_when_flag_off(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_host_does_not_forward_when_flag_off(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
+    monkeypatch.setattr(
+        "django_pyforge.sidecar_forward.evaluate_boolean",
+        lambda key, default=False: False,
+    )
 
     async def receive():
         return {"type": "http.request", "body": b"x", "more_body": False}
@@ -277,12 +284,13 @@ async def test_host_does_not_forward_when_flag_off(monkeypatch: pytest.MonkeyPat
     async def send(message):
         raise AssertionError("should not forward")
 
-    handled = await dispatch_herald_webhook_forward(_webhook_scope(b"x"), receive, send)
-    assert handled is False
+    async def _run():
+        return await dispatch_herald_webhook_forward(_webhook_scope(b"x"), receive, send)
+
+    assert asyncio.run(_run()) is False
 
 
-@pytest.mark.asyncio
-async def test_host_does_not_forward_non_webhook_paths(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_host_does_not_forward_non_webhook_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
     scope = {
@@ -298,30 +306,36 @@ async def test_host_does_not_forward_non_webhook_paths(monkeypatch: pytest.Monke
     async def send(message):
         raise AssertionError("should not forward health")
 
-    assert await dispatch_herald_webhook_forward(scope, receive, send) is False
+    async def _run():
+        return await dispatch_herald_webhook_forward(scope, receive, send)
+
+    assert asyncio.run(_run()) is False
 
 
-@pytest.mark.asyncio
-async def test_asgi_integration_forward_when_flag_on(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_asgi_integration_forward_when_flag_on(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://fake-sidecar:8090")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
     from config.asgi import application
 
     body = b"integration-body"
-    with patch("httpx.AsyncClient", return_value=_CaptureClient()):
-        transport = ASGITransport(app=application)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-            response = await client.post(
-                "/stations/herald/api/v1/webhooks/on-ship?x=1",
-                content=body,
-                headers={
-                    "Content-Type": "application/json",
-                    "X-Hub-Signature-256": "sha256=abc",
-                    "X-Hub-Timestamp": "1",
-                    "Authorization": "Bearer x",
-                    "Cookie": "s=1",
-                },
-            )
+
+    async def _run():
+        with patch("httpx.AsyncClient", return_value=_CaptureClient()):
+            transport = ASGITransport(app=application)
+            async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+                return await client.post(
+                    "/stations/herald/api/v1/webhooks/on-ship?x=1",
+                    content=body,
+                    headers={
+                        "Content-Type": "application/json",
+                        "X-Hub-Signature-256": "sha256=abc",
+                        "X-Hub-Timestamp": "1",
+                        "Authorization": "Bearer x",
+                        "Cookie": "s=1",
+                    },
+                )
+
+    response = asyncio.run(_run())
     assert response.status_code == 201
     assert _CaptureClient.last is not None
     assert _CaptureClient.last["content"] == body
@@ -332,8 +346,8 @@ def test_sidecar_forward_does_not_import_pyforge_in_platform() -> None:
     assert "import pyforge" not in asgi_source
     assert "from pyforge" not in asgi_source
     mcp_source = (_PLATFORM_ROOT / "mcp_host" / "app.py").read_text(encoding="utf-8")
-    assert "from pyforge" not in mcp_source
     assert "import pyforge" not in mcp_source
+    assert "from pyforge" not in mcp_source
 
 
 def test_herald_webhook_sidecar_flag_registered() -> None:

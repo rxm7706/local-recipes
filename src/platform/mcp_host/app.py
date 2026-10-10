@@ -47,11 +47,10 @@ async def _dispatch_herald_webhook(scope: dict, receive, send) -> bool:
             f"pyforge.herald is not installed ({exc.name})",
         )
         return True
-    from pyforge.herald.errors import HeraldError
-
+    herald_errors = importlib.import_module("pyforge.herald.errors")
     try:
         herald_app = webhook_host.application
-    except HeraldError as exc:
+    except herald_errors.HeraldError as exc:
         await _json_detail(send, HTTPStatus.SERVICE_UNAVAILABLE, str(exc))
         return True
     await herald_app(scope, receive, send)
