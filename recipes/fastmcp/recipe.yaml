@@ -173,6 +173,12 @@ about:
   license: Apache-2.0
   license_file: fastmcp/LICENSE
 
+extra:
+  recipe-maintainers:
+    - dbast
+    - moritzwilksch
+    - rxm7706
+
 #### CFE metadata AND comments
 # CFE metadata
   cfe-conda-name: fastmcp
@@ -196,7 +202,7 @@ about:
   cfe-last-checked: 2026-10-10T11:36:27Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: "2026-08-05T00:00:00Z"
-  cfe-local-build-status: failed
+  cfe-local-build-status: not-attempted
   cfe-local-build-datetime: 2026-10-10T11:36:40Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build

@@ -173,6 +173,12 @@ about:
   license: Apache-2.0
   license_file: fastmcp/LICENSE
 
+extra:
+  recipe-maintainers:
+    - dbast
+    - moritzwilksch
+    - rxm7706
+
 #### CFE metadata AND comments
 # CFE metadata
   cfe-conda-name: fastmcp-slim
