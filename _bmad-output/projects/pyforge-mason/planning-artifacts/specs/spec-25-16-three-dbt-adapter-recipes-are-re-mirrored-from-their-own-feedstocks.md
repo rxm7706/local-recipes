@@ -2,7 +2,7 @@
 title: "25.16: Three dbt adapter recipes are re-mirrored from their own feedstocks"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-review'
+status: 'done'
 baseline_revision: '647abbc9b21d09c54e75cc59f1e93c1ea4331f4b'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -368,4 +368,17 @@ Exit 0. Output: `dbt-core declared by: ['dbt']`; ok line for adapters. Pre-run w
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[defer]` Intermediate `wip: 25.16 (auto-checkpoint)` commits carry recipe diffs instead of per-recipe `recipes:` subjects — dispatch checkpoint artifact; content matches AC 2–7.
+  - `[false]` `[reject]` Missing linux-64 builds — build logs under `build_artifacts/` and Run results table record three green builds.
+
+## Auto Run Result
+
+- **Summary:** Re-mirrored `recipes/dbt-bigquery`, `recipes/dbt-postgres`, and `recipes/dbt-redshift` from their adapter feedstocks; CFE retro v8.99.6; AC 9 parse exit 0; `pyforge-mason-test` and `spec_surface_reconcile.py` green.
+- **Files changed:** Three recipe trees; CFE skill carriers; story spec run results and deferred row; spec-surface memlogs on `spec-pyforge-mason`, `spec-fleet-stewardship`, `spec-conda-forge-expert-rebuild`.
+- **Review:** 0 patches; 1 deferred (checkpoint commit subjects); 1 rejected false finding.
+- **Follow-up review recommended:** false
+- **Verification:** Gates/builds documented in Run results; `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0; AC 9 parse exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog.
+- **Residual risks:** Two recipes still fail feedstock-name vs CFE identity parse (`recipes/dspy`, `recipes/lance-namespace-urllib3-client`) — deferred, not built here.
