@@ -37,10 +37,12 @@ returns.
 Story 4.1 (story-spec promotion, AD-13/AD-24/AD-29/AD-33) adds
 ``commit_subjects`` (``git log <ref> --format=%s``, read-only) and
 ``commit_paths`` (the one real, PERSISTENT write this module adds since
-``push``: an individual ``git add -- <path>`` per entry, then ``git commit
--m <message> -- <path> ...``, unlike ``is_branch_merged``'s own throwaway
-``commit-tree`` object -- this commit is meant to survive, so it uses the
-operator's own git identity/signing config, never a pinned fake one).
+``push``: one staging decision per named path via ``_git_add_named_path``
+(``git add -u -- <path>`` when the index already tracks it, else ``git add
+-- <path>`` -- Story 88.1), then ``git commit -m <message> -- <path> ...``,
+unlike ``is_branch_merged``'s own throwaway ``commit-tree`` object -- this
+commit is meant to survive, so it uses the operator's own git identity/signing
+config, never a pinned fake one).
 Story 4.1's own review-fix pass adds one more, ``path_has_uncommitted_changes``
 (``git status --porcelain -- <path>``, read-only) -- the per-path
 counterpart ``cli/deploy.py``'s "already promoted" check needs, closing a
@@ -78,7 +80,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -411,6 +413,28 @@ def _repo_relative(repo_root: Path, path: Path) -> str:
         except ValueError:
             return path.as_posix()
     return path.as_posix()
+
+
+def _index_tracked_paths(repo_root: Path, repo_relative_paths: Iterable[str]) -> frozenset[str]:
+    """Which of the given repo-relative path literals the index already tracks (intent-to-add included)."""
+    paths = tuple(repo_relative_paths)
+    if not paths:
+        return frozenset()
+    result = _run(["git", "-C", str(repo_root), "ls-files", "-z", "--", *paths])
+    if result.returncode != 0:
+        return frozenset()
+    return frozenset(entry for entry in result.stdout.split("\0") if entry)
+
+
+def _git_add_named_path(repo_root: Path, path: Path | str, *, tracked_in_index: frozenset[str]) -> subprocess.CompletedProcess[str]:
+    """Stage one named path: ``git add -u --`` when the index tracks it, else ``git add --`` (Story 88.1)."""
+    path_for_git = str(path)
+    rel = _repo_relative(repo_root, Path(path)) if isinstance(path, Path) else path
+    cmd = ["git", "-C", str(repo_root), "add"]
+    if rel in tracked_in_index:
+        cmd.append("-u")
+    cmd.extend(["--", path_for_git])
+    return _run(cmd)
 
 
 def _require_redacted(value: object, name: str) -> Redacted:
@@ -1128,8 +1152,9 @@ class GitVcs:
         return tuple(result.stdout.splitlines())
 
     def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
-        """Story 4.1 (AD-29): stages exactly ``paths`` (one ``git add --
-        <path>`` per entry, never ``git add -A``) then commits ONLY those
+        """Story 4.1 (AD-29): stages exactly ``paths`` (one ``_git_add_named_path``
+        per entry -- ``git add -u --`` when the index tracks the path, else
+        ``git add --``; never ``git add -A``) then commits ONLY those
         paths (``git commit -m <message> -- <path> ...``, never a bare
         ``git commit`` that would sweep in a pre-existing index), returning
         ``git rev-parse HEAD``'s output. Refuses (``VcsCommandError``,
@@ -1172,13 +1197,13 @@ class GitVcs:
             raise VcsCommandError(
                 f"git status --porcelain -z failed in {repo_root} before committing: {status_result.stderr.strip()}"
             )
-        staged_deletions, rename_sources = _commit_status_facts(
-            status_result.stdout, {_repo_relative(repo_root, path) for path in paths}
-        )
+        named_relative = {_repo_relative(repo_root, path) for path in paths}
+        staged_deletions, rename_sources = _commit_status_facts(status_result.stdout, named_relative)
+        tracked_in_index = _index_tracked_paths(repo_root, named_relative)
         for path in paths:
             if _repo_relative(repo_root, path) in staged_deletions:
                 continue
-            add_result = _run(["git", "-C", str(repo_root), "add", "--", str(path)])
+            add_result = _git_add_named_path(repo_root, path, tracked_in_index=tracked_in_index)
             if add_result.returncode != 0:
                 raise VcsCommandError(f"git add -- {path} failed: {add_result.stderr.strip()}")
         commit_args = [
@@ -1574,13 +1599,14 @@ class GitVcs:
                 raise VcsCommandError(
                     f"merge of {ref_name} into {worktree_path} conflicts outside the resolvable paths: {', '.join(unresolved)}"
                 )
+            tracked_in_index = _index_tracked_paths(Path(wt), conflicted)
             for rel in conflicted:
                 try:
                     (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
                     (worktree_path / rel).write_text(resolutions[rel], encoding="utf-8")
                 except OSError as exc:
                     raise VcsCommandError(f"cannot write the resolution of {rel} in {worktree_path}: {exc}") from exc
-                added = _run(["git", "-C", wt, "add", "--", rel])
+                added = _git_add_named_path(Path(wt), rel, tracked_in_index=tracked_in_index)
                 if added.returncode != 0:
                     raise VcsCommandError(f"git add -- {rel} failed in {worktree_path}: {added.stderr.strip()}")
             committed = _run(["git", "-C", wt, "commit", "-m", commit_text])
@@ -1968,19 +1994,23 @@ def stage_index_paths(
 ) -> int:
     """Story 21.4 CAP-4: stage paths into the index without committing.
 
-    ``update=False`` → ``git add -- <paths>`` (new/modified).
     ``update=True`` → ``git add -u -- <paths>`` (tracked deletions/mods).
+    ``update=False`` → one ``_git_add_named_path`` per entry (``-u`` when the
+    index tracks the path, else plain ``git add --``; Story 88.1).
     Returns the number of path arguments accepted (0 on empty input or
     non-zero git exit). Never runs ``git commit`` / ``git push``.
     """
     if not paths:
         return 0
-    cmd = ["git", "-C", str(repo_root), "add"]
     if update:
-        cmd.append("-u")
-    cmd.append("--")
-    cmd.extend(str(p) for p in paths)
-    result = _run(cmd)
-    if result.returncode != 0:
-        return 0
+        cmd = ["git", "-C", str(repo_root), "add", "-u", "--", *(str(p) for p in paths)]
+        result = _run(cmd)
+        if result.returncode != 0:
+            return 0
+        return len(tuple(paths))
+    tracked_in_index = _index_tracked_paths(repo_root, paths)
+    for path in paths:
+        result = _git_add_named_path(repo_root, path, tracked_in_index=tracked_in_index)
+        if result.returncode != 0:
+            return 0
     return len(tuple(paths))

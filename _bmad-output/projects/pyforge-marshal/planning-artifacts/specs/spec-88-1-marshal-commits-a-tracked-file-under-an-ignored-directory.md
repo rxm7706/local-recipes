@@ -2,7 +2,8 @@
 title: "88.1: Marshal commits a tracked file under an ignored directory"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f7ea239f7ad45159be9b3223aba1308085084763'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
