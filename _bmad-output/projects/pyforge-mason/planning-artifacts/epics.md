@@ -2823,7 +2823,7 @@ Each one's `cfe-local-build-*` fields record a real linux-64 build or `not-attem
 **And** the four driver gaps read at mint, and any it finds, are filed as `deferred:` rows naming `refresh_wave.py`,
 without changing the driver. Nothing leaves the local repo. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver
 entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.5: Track B batch 1 refreshes airflow-code-editor through django-countries
 
