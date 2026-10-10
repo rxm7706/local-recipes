@@ -113,9 +113,7 @@ def test_parse_opengrep_json_root_not_object() -> None:
 
 
 def test_parse_opengrep_json_skips_non_mapping_entries() -> None:
-    notes, error = parse_opengrep_json(
-        '{"results": [42, {"check_id": "r1", "path": "a.py", "start": {"line": 2}}]}'
-    )
+    notes, error = parse_opengrep_json('{"results": [42, {"check_id": "r1", "path": "a.py", "start": {"line": 2}}]}')
     assert error is None
     assert len(notes) == 1
     assert notes[0].rule_id == "r1"
