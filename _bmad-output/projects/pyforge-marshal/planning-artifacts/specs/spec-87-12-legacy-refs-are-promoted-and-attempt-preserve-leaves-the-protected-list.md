@@ -2,7 +2,8 @@
 title: "87.12: Legacy refs are promoted and attempt-preserve leaves the protected list"
 type: 'chore'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'ed652e85a16964ee2732e29ad9d65fcda1ab83f0'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
