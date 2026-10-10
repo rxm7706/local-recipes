@@ -2410,7 +2410,7 @@ def test_both_gates_at_once_hand_one_turn_all_failed_commands(
     def _capture_prompt(failed, **kwargs: object) -> str:
         prompt = real_prompt(failed, **kwargs)
         captured.append(prompt)
-        raise supervisor_main.BuildHarnessError("stop after prompt")
+        return prompt
 
     monkeypatch.setattr(supervisor_main, "build_verify_fix_prompt", _capture_prompt)
     monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _NoProfile())
