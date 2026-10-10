@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-django
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-django/opentelemetry_instrumentation_django-${{ version }}.tar.gz
-  sha256: f79914e03ccf7f34a4dfd257ea9fa1236a6568cd1756e5f969dc026252fad6e9
+  sha256: 85b56193b6ce7b8db9c280c3ade4a4991601abc9ada4734c8911971423fd521f
 
 build:
   number: 0
@@ -71,20 +71,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-django-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:36:17Z
+  cfe-last-checked: 2026-10-10T17:28:31Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:36:17Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:36:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:29:18Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # added run deps from import test: ['django']
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
 ####

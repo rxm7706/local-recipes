@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-falcon
-  version: 0.65b0
+  version: 0.66b1
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-falcon/opentelemetry_instrumentation_falcon-${{ version }}.tar.gz
-  sha256: 494e45cff0cd6e64a35200644715de09e970c66ff8709133e17f87112935a2c9
+  sha256: 08a1304c2e7a50888e2161ea31f87df2455a763b1166b651540caff1d722cddc
 
 build:
   number: 0
@@ -75,11 +75,15 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T12:00:00Z
+  cfe-last-checked: 2026-10-10T17:29:18Z
   cfe-generated-by-version: 8.99.14
   cfe-generated-at-datetime: 2026-10-10T12:00:00Z
   cfe-local-build-status: not-attempted
   cfe-local-build-datetime: 2026-10-10T12:00:00Z
 ####
 # CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
 ####
