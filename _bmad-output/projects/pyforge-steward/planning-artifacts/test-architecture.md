@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 266e0d2e507111ca
-story_count: 338
+source_fingerprint: db25f01fc96932b5
+story_count: 339
 test_file_count: 109
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 338
+- **Stories parsed:** 339
 - **Epics parsed:** 86
 - **Test files inventoried:** 109 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `266e0d2e507111ca`
+- **Source fingerprint:** `db25f01fc96932b5`
 
 ## Risk Assessment
 
@@ -530,6 +530,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 67.6 | Index — herald's dossier states the cutover's control plane (herald 26.1) | none observed |
 | 67.7 | Index — scribe's instruction surface names the estate first (scribe 21.1) | none observed |
 | 67.8 | The cutover spine drops the archive | none observed |
+| 67.9 | The conda-recipe-manager click notes state the cap as it stands | none observed |
 | 68.1 | A workspace archive holds the work, not the environments, and one bad record ... | none observed |
 | 68.2 | The pre-push gate skips a push that carries nothing new, and its journal name... | none observed |
 | 69.1 | `workspace clean` keeps a note, not a tarball, for a worktree already on its ... | none observed |
