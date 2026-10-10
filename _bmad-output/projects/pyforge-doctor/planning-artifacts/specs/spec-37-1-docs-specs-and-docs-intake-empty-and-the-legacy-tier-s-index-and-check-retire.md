@@ -2,7 +2,8 @@
 title: "37.1: docs/specs and docs/intake empty, and the legacy tier's index and check retire"
 type: 'chore'
 created: '2026-09-29'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '9c0d3c1f45392d761c7342783ccb5e724cec0bbf'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
