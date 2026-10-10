@@ -1,7 +1,8 @@
 """Concurrent ``pr-preflight`` runner with per-lane journaling (Stories 71.1–71.3, CAP-159).
 
-Reads ``pr-preflight-lanes`` from ``pixi.toml``, flattens nested ``depends-on``
-graphs into leaf lanes, selects the lanes CI would run for the diff (Story 71.2,
+Reads ``pr-preflight-lanes`` from ``pixi.toml``, builds one lane per task with a
+``cmd`` and dependency edges from ``depends-on``, selects the lanes CI would run
+for the diff (Story 71.2,
 ``preflight_ci``: read from ``.github/workflows/*.yml`` at run time), installs
 each needed environment serially, runs selected lanes in a pool bounded by
 ``--jobs``, and appends JSON lines to ``.steward/preflight-runs.jsonl``.
@@ -43,10 +44,14 @@ EXIT_CONFIG = 2
 EXIT_INTERRUPT = 130
 
 
+LaneKey = tuple[str, str]
+
+
 @dataclass(frozen=True)
 class Lane:
     task: str
     environment: str
+    depends_on: tuple[LaneKey, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -67,6 +72,7 @@ class LaneResult:
     start_offset: float = 0.0
     journal_extra: dict[str, Any] | None = None
     cancelled_by: str | None = None
+    blocked_by: str | None = None
 
 
 class PreflightConfigError(Exception):
@@ -93,28 +99,80 @@ def _resolve_dep(dep: str | dict[str, Any], invoking_env: str) -> tuple[str, str
     return task, env
 
 
-def _expand_task(
+def _direct_lane_dependency_keys(
     pixi_data: dict[str, Any],
     task_name: str,
     environment: str,
     stack: list[str],
-) -> list[Lane]:
+) -> list[LaneKey]:
     if task_name in stack:
         raise PreflightConfigError(f"depends-on cycle at task {task_name!r}")
     task = _find_task(pixi_data, task_name)
     if task is None:
         raise PreflightConfigError(f"unknown task {task_name!r}")
     stack.append(task_name)
-    lanes: list[Lane] = []
+    keys: list[LaneKey] = []
     try:
         for dep in task.get("depends-on", []):
             child_task, child_env = _resolve_dep(dep, environment)
-            lanes.extend(_expand_task(pixi_data, child_task, child_env, stack))
-        if "cmd" in task:
-            lanes.append(Lane(task=task_name, environment=environment))
+            child = _find_task(pixi_data, child_task)
+            if child is None:
+                raise PreflightConfigError(f"unknown task {child_task!r}")
+            if "cmd" in child:
+                keys.append((child_task, child_env))
+            else:
+                keys.extend(_direct_lane_dependency_keys(pixi_data, child_task, child_env, stack))
     finally:
         stack.pop()
-    return lanes
+    return keys
+
+
+def _ensure_lane(
+    pixi_data: dict[str, Any],
+    task_name: str,
+    environment: str,
+    stack: list[str],
+    lanes_by_key: dict[LaneKey, Lane],
+    order: list[LaneKey],
+) -> None:
+    key = (task_name, environment)
+    if key in lanes_by_key:
+        return
+    if task_name in stack:
+        raise PreflightConfigError(f"depends-on cycle at task {task_name!r}")
+    task = _find_task(pixi_data, task_name)
+    if task is None:
+        raise PreflightConfigError(f"unknown task {task_name!r}")
+    stack.append(task_name)
+    try:
+        dep_keys = _direct_lane_dependency_keys(pixi_data, task_name, environment, stack)
+        for dep_key in dep_keys:
+            _ensure_lane(pixi_data, dep_key[0], dep_key[1], stack, lanes_by_key, order)
+        if "cmd" not in task:
+            return
+        lane = Lane(task=task_name, environment=environment, depends_on=tuple(dep_keys))
+        lanes_by_key[key] = lane
+        order.append(key)
+    finally:
+        stack.pop()
+
+
+def _visit_preflight_root(
+    pixi_data: dict[str, Any],
+    task_name: str,
+    environment: str,
+    lanes_by_key: dict[LaneKey, Lane],
+    order: list[LaneKey],
+) -> None:
+    task = _find_task(pixi_data, task_name)
+    if task is None:
+        raise PreflightConfigError(f"unknown task {task_name!r}")
+    if "cmd" in task:
+        _ensure_lane(pixi_data, task_name, environment, [], lanes_by_key, order)
+    else:
+        for dep in task.get("depends-on", []):
+            child_task, child_env = _resolve_dep(dep, environment)
+            _visit_preflight_root(pixi_data, child_task, child_env, lanes_by_key, order)
 
 
 def list_preflight_lanes(
@@ -122,7 +180,7 @@ def list_preflight_lanes(
     *,
     invoking_env: str | None = None,
 ) -> list[Lane]:
-    """Return every leaf lane for ``pr-preflight-lanes`` in declaration order."""
+    """Return one lane per ``(task, environment)`` with a ``cmd``, in declaration order."""
     env = invoking_env if invoking_env is not None else _invoking_environment()
     guild_tasks = pixi_data.get("feature", {}).get("guild-tasks", {}).get("tasks", {})
     if ROOT_AGGREGATE not in guild_tasks:
@@ -131,11 +189,12 @@ def list_preflight_lanes(
     deps = aggregate.get("depends-on")
     if not deps:
         raise PreflightConfigError(f"{ROOT_AGGREGATE!r} has no depends-on")
-    lanes: list[Lane] = []
+    lanes_by_key: dict[LaneKey, Lane] = {}
+    order: list[LaneKey] = []
     for dep in deps:
         task_name, lane_env = _resolve_dep(dep, env)
-        lanes.extend(_expand_task(pixi_data, task_name, lane_env, []))
-    return lanes
+        _visit_preflight_root(pixi_data, task_name, lane_env, lanes_by_key, order)
+    return [lanes_by_key[key] for key in order]
 
 
 def _logical_core_count() -> int:
@@ -435,7 +494,15 @@ def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
     if coord.subprocess_argv_for_lane is not None:
         argv = coord.subprocess_argv_for_lane(ctx.lane)
     else:
-        argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task]
+        argv = [
+            "pixi",
+            "run",
+            "--frozen",
+            "--skip-deps",
+            "-e",
+            ctx.lane.environment,
+            ctx.lane.task,
+        ]
     with ctx.log_path.open("wb") as log_handle:
         return _run_pixi_argv(coord, ctx, argv, log_handle)
 
@@ -478,11 +545,67 @@ def _lane_result_dict(result: LaneResult) -> dict[str, Any]:
     payload = asdict(result)
     extra = payload.pop("journal_extra", None)
     cancelled_by = payload.pop("cancelled_by", None)
+    blocked_by = payload.pop("blocked_by", None)
     if cancelled_by is not None:
         payload["cancelled_by"] = cancelled_by
+    if blocked_by is not None:
+        payload["blocked_by"] = blocked_by
     if extra:
         payload.update(extra)
     return payload
+
+
+def _lane_key(lane: Lane) -> LaneKey:
+    return (lane.task, lane.environment)
+
+
+def _dependency_blocker(lane: Lane, completed: dict[LaneKey, LaneResult]) -> str | None:
+    """Return the red lane task that blocks ``lane``, or ``None`` when every dependency is ``ok``."""
+    for dep_key in lane.depends_on:
+        result = completed.get(dep_key)
+        if result is None:
+            return None
+        if result.status == "red":
+            return result.task
+        if result.status == "cancelled" and result.cancelled_by is not None:
+            return result.cancelled_by
+        if result.status == "not-run" and result.blocked_by is not None:
+            return result.blocked_by
+        if result.status != "ok":
+            return result.task
+    return None
+
+
+def _deps_all_ok(lane: Lane, completed: dict[LaneKey, LaneResult]) -> bool:
+    if not lane.depends_on:
+        return True
+    for dep_key in lane.depends_on:
+        result = completed.get(dep_key)
+        if result is None or result.status != "ok":
+            return False
+    return True
+
+
+def _blocked_lane_result(lane: Lane, blocker: str, *, keep_going: bool) -> LaneResult:
+    if keep_going:
+        return LaneResult(
+            lane.task,
+            lane.environment,
+            0.0,
+            0,
+            "not-run",
+            0.0,
+            blocked_by=blocker,
+        )
+    return LaneResult(
+        lane.task,
+        lane.environment,
+        0.0,
+        0,
+        "cancelled",
+        0.0,
+        cancelled_by=blocker,
+    )
 
 
 def _run_lane_in_pool(

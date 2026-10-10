@@ -2,7 +2,8 @@
 title: "88.1: The preflight runs each task once, after its dependencies"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'a8eae09dce3acf73fa2a44eabe64b75a4dfd2db1'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
