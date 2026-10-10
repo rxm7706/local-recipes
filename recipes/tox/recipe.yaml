@@ -19,9 +19,11 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - docutils >=0.21
+    - hatch-vcs >=0.5
+    - hatchling >=1.29
     - pip
-    - setuptools
+    - python ${{ python_min }}.*
   run:
     - python >=${{ python_min }}
     - cachetools >=7.0.3
@@ -33,7 +35,6 @@ requirements:
     - pyproject-api >=1.10
     - python-discovery >=1.4.4
     - tomli-w >=1.2
-    - tomli >=2.4
     - typing_extensions >=4.15
     - virtualenv >=21.1
 

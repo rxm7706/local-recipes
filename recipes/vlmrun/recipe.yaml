@@ -24,20 +24,19 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - setuptools >=40.1.0
-    - wheel
     - pip
   run:
     - python >=${{ python_min }}
-    - cachetools
+    - cachetools ==7.1.7
     - ipython
     - loguru
+    - openai ==1.109.1
     - opencv >=4.8.0
     - pandas
-    - pillow >=10.2.0
+    - pillow ==11.3.0
     - pydantic <3,>=2.5
-    - pydantic-core >=2.23.4
     - requests
-    - rich
+    - rich ==14.3.4
     - tabulate
     - tenacity
     - tqdm

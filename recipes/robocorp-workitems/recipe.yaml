@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_workitems-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/robocorp-workitems/robocorp_workitems-${{ version }}.tar.gz
   sha256: 03ccc58e967aef4d538aa1ba4a196c035dcee1c3a4c10f7720a38fbe255fd889
 
 build:
@@ -54,3 +54,34 @@ extra:
   recipe-maintainers:
     - rxm7706
     - zaigner
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: robocorp-workitems
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: robocorp-workitems
+  cfe-purls:
+    - pkg:conda/robocorp-workitems@${{ version }}?channel=conda-forge
+    - pkg:pypi/robocorp-workitems@${{ version }}
+  cfe-upstream-repo: https://github.com/robocorp/robocorp/
+  cfe-upstream-homepage: https://github.com/robocorp/robocorp/
+  cfe-import-names: [robocorp.workitems]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/robocorp-workitems-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T14:45:00Z
+  cfe-generated-by-version: 8.99.10
+  cfe-generated-at-datetime: 2026-10-10T14:45:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.9: stamped CFE block + canonical source.url (AC 2)
+####
