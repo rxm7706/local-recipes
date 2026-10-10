@@ -228,7 +228,47 @@ Minted 2026-10-09 on the operator's answer to Track B Q2 ("create them").
 
 ## Run results
 
-- Not run yet.
+### Live read (2026-10-10, before any write)
+
+| Feedstock | Published | Format | Maintainers | recipe/ files | main SHA |
+|---|---|---|---|---|---|
+| `conda-forge/dbt-snowflake-feedstock` | 1.12.1 build 1 | v1 noarch | rxm7706, maresb, thewchan | `recipe.yaml` | `6d78e08c6ddec23c54f2649cd4dc6cb399b68177` |
+| `conda-forge/zxing-cpp-python-feedstock` | 3.1.1 build 2 | v1 compiled | rxm7706, carlodri | `recipe.yaml` | `2054c6d6307f303951e102e2b8c3ddbd7ad06bb3` |
+
+No pre-existing local directory declared either package name (grep at run start).
+
+### Mirror diffs from feedstock (allowed / recorded)
+
+- **`recipes/dbt-snowflake/`:** literal `package.name`; canonical `source.url` (`pypi.org/packages/source/d/dbt-snowflake/dbt_snowflake-${{ version }}.tar.gz`, sha256 verified); full CFE block; `cfe-forge-recipe-updates-needed: [source-url-pypi-org-canonical]`; kept `certifi <2025.4.26` and all run deps verbatim.
+- **`recipes/zxing-cpp-python/`:** added `schema_version: 1` + yaml-language-server header; canonical `source.url` (was `files.pythonhosted.org/…`, same sha256); full CFE block; same URL token in `cfe-forge-recipe-updates-needed`.
+
+### Maintainer audit (G53)
+
+Both local lists match deployed feedstock lists at read time; `enrich_from_feedstock` dry-run reported no changes.
+
+### Gates (exit codes)
+
+| Recipe | validate | optimize | check-deps | scan | conda-smithy |
+|---|---|---|---|---|---|
+| dbt-snowflake | 0 | 0 | 0 | 0 | 0 |
+| zxing-cpp-python | 0 | 0 | 1 (`cross-python_PLACEHOLDER` — known false positive) | 0 | 0 |
+
+### linux-64 builds (isolated `--output-dir`, G52)
+
+Command pattern: `rattler-build build -r recipes/<name>/recipe.yaml --output-dir build_artifacts/<name> -m .ci_support/linux64.yaml -m conda_build_config.yaml --target-platform linux-64` (repo root `conda_build_config.yaml` required for `${{ python_min }}`; `build-local` alone failed render).
+
+| Recipe | Outcome | Notes |
+|---|---|---|
+| dbt-snowflake | success | `zxingcpp` N/A; import `dbt.adapters.snowflake` + pip_check in build log |
+| zxing-cpp-python | success | `zxingcpp` import + pip_check green |
+
+### Package-name parse (AC 8)
+
+Script: inline Python scan of `recipes/*/recipe.yaml` literal `package.name` — `dbt-snowflake` → 1 dir (`recipes/dbt-snowflake`); `zxing-cpp-python` → 1 dir (`recipes/zxing-cpp-python`). `recipes/zxing-cpp` still builds legacy `zxingcpp` under name `zxing-cpp` (Story 25.9); not touched.
+
+### Retro
+
+`retro(cfe): v8.99.3` — Wave F mirror guidance (CFE comments jinja trap; dual `-m` for `python_min`).
 
 ## Review Triage Log
 
