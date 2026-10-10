@@ -507,6 +507,9 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "src/platform/config/flags.json",
   "src/platform/config/flag-overlays.json",
+  # Story 85.7 (2026-10-10): the dispatch troubleshooting how-to gains the fix-turn passage naming both gates
+  # (MRS-GATE-001, MRS-GATE-015); governed by spec-pyforge-doctor, whose memlog the glob below covers.
+  "docs/how-to/troubleshoot-bmad-agent-loops.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "84" = [  # an operator-run refresh reads every harness's live model list (spec-pyforge-marshal CAP-285), added 2026-10-02
