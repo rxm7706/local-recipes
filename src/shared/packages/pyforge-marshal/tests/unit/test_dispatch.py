@@ -126,6 +126,7 @@ class FakeVcs:
         # checked out -- the two facts branch resolution reads.
         self.branches: set[str] = set()
         self.worktrees: dict[str, Path] = {}
+        self.blame_lines: dict[int, tuple[str, int]] = {}
 
     def repo_common_root(self, _cwd: Path) -> Path:
         return self.repo_root
@@ -161,6 +162,17 @@ class FakeVcs:
 
     def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
         return a
+
+    def line_blame_facts(
+        self,
+        *,
+        repo_root: Path,
+        path: str,
+        worktree: Path | None = None,
+        ref: str | None = None,
+    ) -> dict[int, tuple[str, int]]:
+        _ = (repo_root, path, worktree, ref)
+        return dict(self.blame_lines)
 
 
 class FakeBuildHarness:
@@ -2096,13 +2108,88 @@ def _seed_held_for_review_dispatch_land_run(
 def test_in_progress_spec_with_refused_landing_journal_is_land_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Story 83.7: a refused dispatch-land on the latest run → CAP-4 only, no session."""
+    """Story 89.1: in-progress after refused dispatch-land → MRS-DISP-063, not CAP-4."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     story = "83-7-redispatch"
     _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    _seed_refused_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261002T120000000Z-deadbeef",
+        story_key=story,
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("CAP-4 must not run")),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data.get("harness_done_land_only") is not True
+    assert any(f.code == "MRS-DISP-063" for f in attempt.findings)
+
+
+def test_in_progress_spec_with_held_landing_journal_is_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 89.1: in-progress after held dispatch-land → MRS-DISP-063."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-18-redispatch"
+    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    _seed_held_for_review_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261003T120000000Z-heldbeef",
+        story_key=story,
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("CAP-4 must not run")),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data.get("harness_done_land_only") is not True
+    assert any(f.code == "MRS-DISP-063" for f in attempt.findings)
+
+
+_IN_REVIEW_SPEC = "---\nstatus: in-review\ndifficulty: medium\n---\n# spec\n"
+
+
+def test_in_review_spec_with_refused_landing_journal_still_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.7 / 89.1: in-review with refused dispatch-land still takes CAP-4."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-7-in-review"
+    _write_worktree_spec(tmp_path, slug, story, _IN_REVIEW_SPEC)
     _seed_refused_dispatch_land_run(
         tmp_path,
         slug,
@@ -2127,43 +2214,6 @@ def test_in_progress_spec_with_refused_landing_journal_is_land_only(
     assert harness.calls == []
     assert attempt.data["harness_done_land_only"] is True
     assert attempt.data["land_verdict"] == "landed"
-
-
-def test_in_progress_spec_with_held_landing_journal_is_land_only(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Story 83.18: held-for-review dispatch-land → CAP-4 only, no MRS-DISP-040."""
-    from pyforge.marshal.cli import dispatch as dispatch_module
-
-    slug = "pyforge-marshal"
-    _init_git_repo(tmp_path, scope_slug=slug)
-    story = "83-18-redispatch"
-    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
-    _seed_held_for_review_dispatch_land_run(
-        tmp_path,
-        slug,
-        run_id="pyforge-marshal-20261003T120000000Z-heldbeef",
-        story_key=story,
-    )
-    monkeypatch.setattr(
-        dispatch_module,
-        "_attempt_harness_done_cap4",
-        lambda **_kwargs: (DispatchLandingVerdict.HELD_FOR_REVIEW, "PR #1796", None),
-    )
-    monkeypatch.chdir(tmp_path)
-    harness = FakeBuildHarness()
-    attempt = dispatch_once(
-        slug=slug,
-        story=story,
-        fs=FakeFs(),
-        vcs=FakeVcs(tmp_path),
-        build_harness=harness,
-        process=FakeProcess(),
-    )
-    assert harness.calls == []
-    assert attempt.data["harness_done_land_only"] is True
-    assert attempt.data["land_verdict"] == "held-for-review"
-    assert not any(f.code == "MRS-DISP-040" for f in attempt.findings)
 
 
 def test_in_progress_spec_without_landing_journal_still_launches(
