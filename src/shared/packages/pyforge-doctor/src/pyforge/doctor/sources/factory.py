@@ -1365,6 +1365,14 @@ def classify(path: Path, target: Path) -> str:
     # archives (no pin gating) like the other one-off record shapes above.
     if re.fullmatch(r"planning-artifacts/benchmarks/[a-z0-9-]+\.json", rel):
         return "archive:benchmark"
+    # The preserve-manifest shape (marshal Story 87.16, 2026-10-09): recovery tooling
+    # (`scripts/orphan_tip_archive.py`) writes a dated, operator-reviewed JSON manifest
+    # under `planning-artifacts/preserve-manifests/`, beside a README that explains the
+    # review step. Both fell through to UNKNOWN when 87.16 landed. A reviewed manifest is a
+    # one-off record of what was preserved, never re-derived, so it archives like the
+    # benchmark and sweep-verdict shapes above.
+    if re.fullmatch(r"planning-artifacts/preserve-manifests/(README\.md|[a-z0-9-]+-\d{4}-\d{2}-\d{2}\.json)", rel):
+        return "archive:preserve-manifest"
     return "UNKNOWN"
 
 
