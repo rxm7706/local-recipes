@@ -2,7 +2,8 @@
 title: "86.1: Deploy perimeter renders the ASGI application it is given"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'f05de4bab8500a64631f84d8a9a0dc6bce064295'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -175,4 +176,23 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff read against all seven acceptance criteria and I/O matrix rows)
+
+## Auto Run Result
+
+- **Summary:** Added optional `steward deploy perimeter --asgi-application MODULE:ATTR` with pre-render validation, default-preserving daphne unit rendering, and closed herald DW-13-6-1.
+- **Files changed:**
+  - `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py` — ASGI path validation (no `re` import; deploy.py invariant), `render_daphne_unit` override, `_run_perimeter` wiring
+  - `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` — `--asgi-application` flag
+  - `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py` — AC (1)–(4) coverage and help listing
+  - `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md` — DW-13-6-1 → resolved
+- **Review:** 0 patches; 0 deferrals; no rejected findings.
+- **followup_review_recommended:** false
+- **Verification:**
+  - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2280 passed, 2 skipped
+  - `pixi run -e pyforge-guild deferred-work-check` — ok
+  - `python scripts/spec_surface_reconcile.py` — exit 0 (after memlog reconcile; no `--write-baseline`)
+  - `pixi run --frozen -e pyforge-guild lint-types` — see session log
+- **Residual risks:** Herald Story 19.2 re-scope and ledger 49.11 flip remain herald's chain (out of scope here).

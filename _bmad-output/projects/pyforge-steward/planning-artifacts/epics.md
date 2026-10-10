@@ -5727,7 +5727,7 @@ So that a non-Django ASGI application is fronted without hand-editing the render
 **When** `steward deploy perimeter … --output-dir DIR --asgi-application pyforge.herald.webhook_host:application` runs
 **Then** the rendered daphne unit's `ExecStart` names that application and carries no replace-the-placeholder comment, and the duty's summary names it; without `--asgi-application` the daphne unit, the nginx edge config and the grants SQL are byte-identical to a render at `6d5e84cb6b`
 **And** a value that is not `<dotted.module>:<attr>` (empty, no colon, an empty side, whitespace, a shell metacharacter or a newline) is a named duty refusal, in validation-only mode too, and writes nothing; `render_edge_config` is shown not to depend on the application (the same edge config renders for the default and an override), which answers DW-13-6-1's nginx question; DW-13-6-1 is closed in herald's ledger with this story's evidence; the CLI's duty and verb counts do not move (`tests/unit/test_cli.py`, `test_restore_duty.py`); nothing is deployed or sent anywhere; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
