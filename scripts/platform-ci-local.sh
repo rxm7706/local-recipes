@@ -110,6 +110,7 @@ _report_lock_contention() {
 }
 
 _proc_cmdline() {
+  [ -r "/proc/$1/cmdline" ] || return 0
   tr '\0' ' ' <"/proc/$1/cmdline" 2>/dev/null || true
 }
 
@@ -188,7 +189,7 @@ _is_our_redis() {
 
 stop_services() {
   local pid pgdir="$WORK/pg"
-  "$ENGINE" rm -f "$APP" >/dev/null 2>&1 || true
+  "$ENGINE" rm -f "$APP" 9>&- >/dev/null 2>&1 || true
   if [ -f "$WORK/redis.pid" ]; then
     pid="$(cat "$WORK/redis.pid" 2>/dev/null || true)"
     if [ -n "$pid" ] && _is_our_redis "$pid"; then
@@ -204,7 +205,7 @@ stop_services() {
     pid="$(_postmaster_pid 2>/dev/null || true)"
     if [ -n "$pid" ] && _is_our_postgres "$pid"; then
       echo "platform-ci-local: stopping postgres (pid ${pid})" >&2
-      "$DEV/pg_ctl" -D "$pgdir" stop -m fast >/dev/null 2>&1 || true
+      "$DEV/pg_ctl" -D "$pgdir" stop -m fast 9>&- >/dev/null 2>&1 || true
       if ! _wait_pid_exit "$pid" 60; then
         echo "platform-ci-local: postgres pid ${pid} did not exit within wait bound" >&2
       fi
@@ -233,7 +234,7 @@ run_platform_ci_local() {
     local stage="$1" name="$2" log; shift 2
     log="$WORK/$(echo "$stage-$name" | tr -c 'A-Za-z0-9._-' '_').log"
     printf '\n== [%s] %s\n' "$stage" "$name"
-    if "$@" >"$log" 2>&1; then
+    if "$@" 9>&- >"$log" 2>&1; then
       printf 'PASS\t%s\t%s\n' "$stage" "$name" >>"$RESULTS"; tail -2 "$log"; return 0
     fi
     printf 'FAIL\t%s\t%s\n' "$stage" "$name" >>"$RESULTS"
@@ -254,16 +255,16 @@ run_platform_ci_local() {
     _refuse_port_in_use "$PG_PORT" "postgresql"
     _refuse_port_in_use "$REDIS_PORT" "redis"
     rm -rf "$pgdata" "$WORK/redis"; mkdir -p "$WORK/redis"
-    "$DEV/initdb" -D "$pgdata" -U postgres --auth=trust >"$WORK/initdb.log" 2>&1
+    "$DEV/initdb" -D "$pgdata" -U postgres --auth=trust 9>&- >"$WORK/initdb.log" 2>&1
     "$DEV/pg_ctl" -D "$pgdata" -l "$WORK/pg.log" -w \
-      -o "-c unix_socket_directories='' -h 127.0.0.1 -p $PG_PORT" start >/dev/null
+      -o "-c unix_socket_directories='' -h 127.0.0.1 -p $PG_PORT" start 9>&- >/dev/null
     for i in $(seq 1 30); do
-      "$DEV/pg_isready" -h 127.0.0.1 -p "$PG_PORT" -U postgres >/dev/null 2>&1 && break; sleep 1
+      "$DEV/pg_isready" -h 127.0.0.1 -p "$PG_PORT" -U postgres 9>&- >/dev/null 2>&1 && break; sleep 1
     done
-    "$DEV/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -qc "CREATE DATABASE platform;" >/dev/null
-    "$DEV/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -d platform -qc "CREATE EXTENSION IF NOT EXISTS vector;" >/dev/null
+    "$DEV/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -qc "CREATE DATABASE platform;" 9>&- >/dev/null
+    "$DEV/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -d platform -qc "CREATE EXTENSION IF NOT EXISTS vector;" 9>&- >/dev/null
     "$DEV/redis-server" --port "$REDIS_PORT" --dir "$WORK/redis" --save "" --appendonly no \
-      --daemonize yes --logfile "$WORK/redis.log" --pidfile "$WORK/redis.pid" >/dev/null
+      --daemonize yes --logfile "$WORK/redis.log" --pidfile "$WORK/redis.pid" 9>&- >/dev/null
     echo "services: postgres 127.0.0.1:$PG_PORT, redis 127.0.0.1:$REDIS_PORT (work dir $WORK)"
   }
 
@@ -283,7 +284,7 @@ run_platform_ci_local() {
       step test "sqlmigrate extraction" "${py[@]}" -m db.sqlmigrate_extraction &&
       step test "Full test suite (platformapp app tests, the ASGI seam, and the import boundary)" \
         "${py[@]}" -m pytest -q -p no:cacheprovider
-    )
+    ) 9>&-
   }
 
   export_context() {
