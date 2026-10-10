@@ -437,7 +437,7 @@ development_status:
   87-13-nothing-in-a-loop-home-prunes-a-preserve-or-rewrites-a-station-branch: done
   87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories: done
   87-15-a-preserve-reaches-origin-only-through-the-content-gate: done
-  87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: backlog
+  87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: done
   87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: done
   87-3-preserved-work-has-one-grammar-and-one-verb: done
   87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: done

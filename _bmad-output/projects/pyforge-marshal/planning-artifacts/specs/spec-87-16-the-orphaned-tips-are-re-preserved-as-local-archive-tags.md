@@ -2,7 +2,8 @@
 title: "87.16: The orphaned tips are re-preserved as local archive tags"
 type: 'chore'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'f4ab1f05a8fa7368378e9b9f7bc3cf4fdc53dd9a'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -78,8 +79,26 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Shipped `scripts/orphan_tip_archive.py` and fixture tests; preserve-manifests README for operator workflow. Story 87.3 parse test deferred until CAP lands.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (implementer self-check) AC covered by `tests/scripts/test_orphan_tip_archive.py`; `spec_surface_reconcile.py` green after memlog on `spec-pyforge-marshal`, co-governor `spec-pyforge-core` (Story 87.7 gap), and allowlist entry.
+
+## Auto Run Result
+
+- **Summary:** Added stdlib-only `scripts/orphan_tip_archive.py` to recover 2026-10-04 orphaned branch tips: merges GitHub `branch_deletion` activity (authenticated `gh api`, rate-limit fail-closed) with Story 87.1's attempt-preserve retirement table, writes `preserve-manifests/orphan-tip-archive-<date>.json` for unreachable tips only, and optionally creates local annotated `refs/tags/archive/heads/<branch>` tags with `Archive-From`, `Archive-Reason`, and `Archive-Evidence` trailers.
+- **Files changed:**
+  - `scripts/orphan_tip_archive.py` — recovery script (dry-run default, `--execute` local tags only)
+  - `tests/scripts/test_orphan_tip_archive.py` — bare-remote fixtures, injected readers, AC tests
+  - `_bmad-output/projects/pyforge-marshal/planning-artifacts/preserve-manifests/README.md` — operator notes
+  - `scripts/spec_surface_allowlist.txt` — govern the new script (same class as `worktree_sweep.py`)
+  - `spec-pyforge-marshal/.memlog.md` — surface reconcile + allowlist (Story 87.16)
+  - `spec-pyforge-core/.memlog.md` — co-governor reconcile for Story 87.7 paths already on main
+- **Review:** No patch/defer findings from automated layers this pass.
+- **Follow-up review recommendation:** false
+- **Verification:** `pytest tests/scripts/test_orphan_tip_archive.py` (6 passed); `pyforge-doctor-scripts-test` (1435 passed); `pyforge-marshal-test` (12174 passed); `pyforge-deps-test` (130 passed); `lint-types` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0).
+- **Residual risks:** Operator must run dry-run against the primary clone and `--execute` locally; push remains gated on Story 87.15 and per-row review. Optional follow-up: pin archive tag names against `pyforge.core.preserve_refs` when Story 87.3 test is added.
