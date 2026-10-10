@@ -336,6 +336,38 @@ def test_flag_off_reaches_in_process_herald(
     assert response.status_code in (HTTPStatus.CREATED, HTTPStatus.UNAUTHORIZED)
 
 
+def test_host_unset_sidecar_url_does_not_forward(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    _FakeSidecarClient.requests = []
+    monkeypatch.delenv("MCP_HOST_SIDECAR_BASE_URL", raising=False)
+    monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
+    monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
+    tree = tmp_path / "on.json"
+    tree.write_bytes(_sidecar_flag_tree(True))
+    configure_file_provider(tree)
+    webhook = _herald_webhook_module()
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "shared-secret")
+    body = json.dumps({"station": "warden"}).encode()
+
+    async def _run():
+        transport = ASGITransport(app=application)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+            with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
+                return await client.post(
+                    webhook.ON_SHIP_PATH,
+                    content=body,
+                    headers=_signed_post_headers(body),
+                )
+
+    response = asyncio.run(_run())
+    api.clear_providers()
+    assert _FakeSidecarClient.requests == []
+    assert response.status_code in (HTTPStatus.CREATED, HTTPStatus.UNAUTHORIZED)
+
+
 def test_flag_on_skips_openapi_and_health(forward_env) -> None:
     async def _run():
         transport = ASGITransport(app=application)

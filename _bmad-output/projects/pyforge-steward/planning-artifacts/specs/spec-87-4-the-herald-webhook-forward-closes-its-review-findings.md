@@ -2,7 +2,7 @@
 title: "87.4: The herald webhook forward closes its review findings"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'a0f47b730119c6d44a6f4551d38c2811ead230de'
 review_loop_iteration: 0
 followup_review_recommended: false
