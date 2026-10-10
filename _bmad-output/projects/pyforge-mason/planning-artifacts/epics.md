@@ -3207,7 +3207,7 @@ directory that declares one of them. At mint those were the five `lfx*` copies, 
 story expects none. It closes the deferred-work row from Story 25.2's Wave F deferral if the ledger carries it, and
 files gap 5 and the mapping rule as `deferred:` rows. Nothing leaves the local repo. The `retro(cfe):` commit lands a CFE `CHANGELOG.md`
 semver entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.15: Six duplicate recipe directories retire into recipes/langflow and recipes/dbt
 

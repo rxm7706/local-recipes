@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.99.8
+version: 8.99.9
 allowed-tools: [conda_forge_server]
 ---
 
@@ -872,6 +872,7 @@ Use the **move-aside + fresh-generate + diff + selective-apply** pattern:
 - a hashed or version-baked `source.url`, a recomputed sha256 that differs from the feedstock's, a feedstock tag that differs from the published version (landmine 1), or a `host`/`run` difference from the feedstock (G96, `dependency-fix`; a maintainer-commented pin is never changed, landmine 12). It never rewrites a `source.url`.
 - A feedstock still on v0 keeps its local `meta.yaml`, rewritten byte-for-byte from the feedstock (C1; never renamed, moved or deleted; `--build` targets `recipe.yaml` explicitly); a v1 feedstock drops the local `meta.yaml` (C2, G94). A missing local directory or `recipe.yaml` is `blocked` (v0-to-v1 authoring and create-missing stay manual steps).
 - Every write is re-checked (parses; one `#### CFE metadata`, one `cfe-conda-name` (G92); no new FMT-001) and restored on failure; the run is local only (no `git`, PR, fork, submit or ship step), so landing the result is still your explicit step.
+- **Multi-output registry outputs (v8.99.9, Wave F):** names listed only under a feedstock's `outputs:` in `feedstock-outputs` are not missing local `recipes/<name>/` directories — they are built by that feedstock's mirror (`recipes/<feedstock-name>/`). Map packages with `packages.feedstock_name` / the registry, not directory name alone (Track B Wave A step A3). `refresh-wave` still moves only `context.version`; G72 suites need a re-mirror or hand sync for `sdk_version` and per-bundle context keys (driver gap 5).
 - **`--repair`** is the undo for the Wave H damage and nothing else: hashed `files.pythonhosted.org` sdist URLs back to `pypi.org/packages/source/...` (sha256 verified unchanged; `<dist>` from `extra.cfe-upstream-name`, never `package.name`), FMT-001 list items re-indented whitespace-only, and a `.meta.yaml*` hold file with no `meta.yaml` restored from the feedstock (or renamed back when the feedstock is unreadable). It changes no version, build number, requirement or maintainer. `--build` is refused with it.
 - **Read the report before you commit a batch (v8.99.1, mason Story 25.2).** `refreshed` and `repaired` mean the edit was written, not that the recipe is clean: `--gates` records each gate's bare exit code and never changes the outcome. Re-run every non-zero gate and read its output.
   - `validate` non-zero after `--repair` is a regression the repair made. A whitespace-only re-indent keeps the YAML value (the driver checks that), but it can still leave a file conda-smithy's v1 lint cannot parse ([G93](#g93-conda-recipe-manager-crashes-on-column-0-comments-inside-indented-blocks--conda-smithy-lint-calls-the-recipe-unparseable-while-rattler-build-builds-it-fine-col-0-comments-are-safe-only-at-the-document-tail) addendum). Fix the recipe before the batch lands.

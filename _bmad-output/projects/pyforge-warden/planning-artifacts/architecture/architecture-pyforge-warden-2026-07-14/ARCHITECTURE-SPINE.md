@@ -41,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD -> arch) for Story 17.1's landing and Stories 14.1-14.2 (FR-41 / CAP-24); lands on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written, no AD amended; one older divergence recorded (tea_advisory.py spawns its own subprocess). See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Stories 15.1 and 16.1's gates clearing (keys blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD -> arch) for Story 17.1's landing and Stories 14.1-14.2 (FR-41 / CAP-24); lands on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written, no AD amended; one older divergence recorded (tea_advisory.py spawns its own subprocess). See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -623,5 +623,19 @@ neither § Currency reconciliation — 2026-09-07 nor — 2026-09-28 recorded it
 and it writes into its own scratch directory. It is not part of this fold.
 
 No port, adapter or package boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-10
+
+*Trigger: the PRD's re-stamp above (`prd→arch`). Stories 15.1 and 16.1 move from `blocked` to `backlog`.*
+
+Checked against the spine's decisions. The change is two ledger keys and two story specs, and no module, engine seam,
+socket or service boundary moves. When they are built, both stories land on the decisions as written:
+- 15.1 on suite:AD-4 (an advisory never gates) and the subprocess rule (`_engine_env()`);
+- 16.1 on the 2026-09-28 Decision 2 (the fleet lives in `django-warden` on the `ComplianceJob` pattern).
+
+One fact is recorded for 16.1. Story 16.2 already shipped the `FleetRepo` model and its migration, so 16.1 adds the GHE
+listing, the inventory task and the export. It adds a migration only if it changes the model.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
