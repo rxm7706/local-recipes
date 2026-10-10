@@ -2583,9 +2583,9 @@ def run_teardown(
             )
 
     from ..core.dispatch_preserve import preserve_refs_flag_on
-    from ..core.teardown_preserve import scan_teardown_unpreserved
+    from ..core.teardown_preserve import TeardownUnpreservedItem, scan_teardown_unpreserved
 
-    unpreserved_items = ()
+    unpreserved_items: tuple[TeardownUnpreservedItem, ...] = ()
     preserve_debt_tags: tuple[str, ...] = ()
     unpreserved_set: frozenset[str] = frozenset()
     if preserve_refs_flag_on():
