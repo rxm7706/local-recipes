@@ -1312,6 +1312,25 @@ Drift — orphaned between stations.
   71), no CAP, no flag; lanes stay concurrent where nothing orders them; nothing that is checked today is skipped
   (operator ruling 2026-10-10: "Mint both (Recommended)"). Owner `spec-pyforge-steward`. → Epic 88 / Story 88.1,
   specced 2026-10-10.
+- **2026-10-10 (platform-ci-local lock outlives its run) — Found: a killed `platform-ci-local` run keeps its lock
+  held, and the next run waits two hours for nobody.** Story 63.7 serialises runs with a machine-wide `flock` on
+  `${TMPDIR:-/tmp}/platform-ci-local.lock`, opened on fd 9 with a 7200 s wait, and writes the holder (pid, checkout,
+  stages, start time) to `.lock.holder`. The script then starts PostgreSQL (`pg_ctl`) and Redis
+  (`redis-server --daemonize yes`), and both inherit fd 9. Each puts itself in its own session, so a signal to the
+  run's process group never reaches them. When the run dies, they live on and keep the lock held. Steward 87.3's
+  dispatch run `pyforge-steward-20261010T154144466Z-88c00f58` hit the 900 s verify-fix cap (MRS-DISP-059;
+  `terminate_process_group` at 16:19:55Z). The script died with that session, and its EXIT trap never stopped the
+  services. `.lock.holder` still named the dead pid 2564298, and `fuser` listed the orphaned postmaster and
+  redis-server as the lock's holders. The re-verification started at about 11:22 (-05:00), waited the full 7200 s, and
+  exited 2 with "lock held longer than 7200s". Only TERMing the orphans released the lock. **What it looks like when
+  fixed:** the lock lives exactly as long as the run's own shell. No service or step the run starts holds it. A
+  killed run (SIGTERM or SIGKILL, the group or the shell alone) never makes the next run wait. The next run stops the
+  services the dead run left, found through the pid files in the work dir every run shares. It never stops a process
+  it cannot prove is one of them; it refuses instead, naming the pid. When the lock really is contended, the wait names
+  the live holder, not a stale record. **Constraints:** a fix under CAP-152 (Epic 63), no CAP, no flag. The fix
+  lives in the script: marshal's kill path is the trigger, not the defect, and marshal's command does not change.
+  Story 63.7's tests, overrides, step names and exit codes stay (operator ruling 2026-10-10: "yes mint the
+  platform-ci-local lock fix story"). Owner `spec-pyforge-steward`. → Epic 89 / Story 89.1, specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 1dfec5b8bd8ef461
-story_count: 343
+source_fingerprint: d79f38730ab10b00
+story_count: 344
 test_file_count: 110
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 343
-- **Epics parsed:** 88
+- **Stories parsed:** 344
+- **Epics parsed:** 89
 - **Test files inventoried:** 110 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1dfec5b8bd8ef461`
+- **Source fingerprint:** `d79f38730ab10b00`
 
 ## Risk Assessment
 
@@ -116,6 +116,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 85: The protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward CAP-165)
 - Epic 86: `deploy perimeter` fronts the ASGI application it is given (fix under CAP-114)
 - Epic 88: The preflight runs each task once, after its dependencies (fix under CAP-159)
+- Epic 89: A killed `platform-ci-local` run never blocks the next one (fix under CAP-152)
 
 ### Low-risk epics
 
@@ -587,6 +588,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.2 | The platform host boots without Langflow, and the full-stack env runs it | none observed |
 | 87.3 | The host forwards Herald's webhooks to the mcp-host sidecar | none observed |
 | 88.1 | The preflight runs each task once, after its dependencies | none observed |
+| 89.1 | A killed `platform-ci-local` run never blocks the next one | none observed |
 
 ## Quality Gates
 

@@ -4289,7 +4289,7 @@ So that two dispatch verifications that touch `src/platform/` each report their 
 **When** the second run starts while the first still holds its services
 **Then** it never shares the first's ports, work dir, container name or image tag: either it waits on an exclusive machine-wide lock and then runs, failing after a bounded wait (`PLATFORM_CI_LOCAL_LOCK_WAIT`) with exit 2 and a message naming the holder (pid, checkout root, stages, start time), or each run takes its own free ports, work dir, container name and tag; the story records its choice in its Spec Change Log; a run's EXIT trap stops only the services that run started
 **And** the test runs two overlapping invocations and each reports its own `RESULT:` line and exit code (a failing stub step in one never changes the other's verdict); a holder that died never blocks a later run; the `PLATFORM_CI_LOCAL_*` overrides, the stage flags, the step names, the exit codes and marshal's command are unchanged; the `container` stage, which binds 8000 by the image's contract, is serialised or refused naming the holder; removing the lock or the per-run allocation fails the new test (mutation)
-**Status:** backlog
+**Status:** done
 
 ## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 
@@ -5851,6 +5851,34 @@ So that a lane never rebuilds what another lane is building, and a red dependenc
 **When** the preflight runs
 **Then** every task with a `cmd` is one lane that carries its dependencies from `pixi.toml`. A lane starts only after its dependencies finish `ok` and runs as `pixi run --frozen --skip-deps -e <env> <task>`, so within one preflight no task runs twice, and the journal holds one row per task. Lanes with no order between them stay concurrent
 **And** a red dependency is the only lane reported red. Its dependents never start: they are journaled `cancelled` (`cancelled_by` the dependency), or `not-run` with `blocked_by` under `--keep-going`. Selection is unchanged: `PAGES_CHECK_LEAVES` stays the same four lanes, selected only when `docsite-check.yml`'s paths fire (Story 71.2), with a new assertion on their dependency edges. Dropping `--skip-deps` or the dependency wait fails the new tests (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
+**Status:** backlog
+
+## Epic 89: A killed `platform-ci-local` run never blocks the next one (fix under CAP-152)
+
+Minted 2026-10-10 from the station Dream's entry of the same date (platform-ci-local lock outlives its run) and the
+operator's ruling "yes mint the platform-ci-local lock fix story". Story 63.7's machine-wide lock is held on a file
+descriptor that every command the script starts inherits, PostgreSQL and Redis included. Both detach into a session of
+their own, so when a run is killed they outlive it and keep the lock. The next run then waits its full 7200 s bound for
+nobody and exits 2. A defect against CAP-152 (Story 63.7, Epic 63), so no CAP is minted; a new epic because Epic 63 is
+`done`. **HARD boundaries:** the fix lives in `scripts/platform-ci-local.sh`, and marshal's verification command, its
+kill path and its gate do not change; the lock stays one machine-wide `flock`, held by the run's own shell; a run never
+signals, stops or reuses a process it cannot prove a dead run started; Story 63.7's overrides, stage flags, step names,
+summary and exit codes stay.
+
+### Story 89.1: A killed `platform-ci-local` run never blocks the next one
+
+As the operator whose steward 87.3 re-verification waited two hours on a lock that a dead run's PostgreSQL and Redis still held,
+I want a killed `platform-ci-local` run to free its lock when it dies, and the next run to clear what it left behind,
+So that one killed verification never costs the next one its verdict.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-152 (Stories 63.6, 63.7); AD-1 • Dream 2026-10-10 (platform-ci-local lock outlives its run) • operator ruling 2026-10-10 "yes mint the platform-ci-local lock fix story"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `scripts/platform-ci-local.sh` (the header's Overlap paragraph about :22-:25, `acquire_run_lock` about :57-:81, `start_services`, `stop_services` and the EXIT trap about :117-:139, the main body about :264-:273), `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` (only free ports in the shared helper and the SIGKILL test, and stubs that write the real tools' pid files; no assertion weakened), `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_lock_recovery.py` (new)
+**Spec:** `planning-artifacts/specs/spec-89-1-a-killed-platform-ci-local-run-never-blocks-the-next-one.md`
+**Given** `8ad2d18d69`, where `acquire_run_lock` holds the `flock` on fd 9 with no close-on-exec, and `pg_ctl` and `redis-server --daemonize yes` inherit it and each lead a session of their own. On 2026-10-10 steward 87.3's verify-fix turn hit its 900 s cap (MRS-DISP-059, run `pyforge-steward-20261010T154144466Z-88c00f58`), and the run inside it died without its EXIT trap stopping the services. `.lock.holder` named the dead pid 2564298, `fuser` listed only the orphaned postmaster and redis-server, and the re-verification waited 7200 s and exited 2 with "lock held longer than 7200s"
+**When** a run is killed (SIGTERM or SIGKILL, to its process group or to its shell alone) and another run starts
+**Then** the lock was held by the dead run's shell alone, so the next run takes it without waiting out the bound. No service, step or helper the script starts holds the lock's descriptor. The `stop_services` call at the top of `start_services` stays the reclaim of what a dead run left in the shared work dir: PostgreSQL through `pg_ctl ... stop`, Redis through the pid file it wrote, each only after `/proc/<pid>/cmdline` proves the pid is that service, each stop logged by pid and waited for. It never signals a pid whose identity does not match. It refuses a port still held by anything it cannot prove: exit 2, no service started, nothing signalled, and the port, pid and command line named
+**And** a wait that times out names the processes that hold the lock now. A `.holder` record whose pid is dead is shown as stale, not as the holder. A normal run and a SIGTERMed run still stop their own services through the EXIT trap. Story 63.7's six tests stay green, changed only to use free ports and stubs that write the real tools' pid files. New Docker-free tests run the real script with stand-ins that detach the way `pg_ctl` and `redis-server` do, and each fix fails them when removed (mutation). `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` are green
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
