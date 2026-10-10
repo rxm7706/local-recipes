@@ -80,7 +80,11 @@ def test_main_exits_nonzero_when_host_returns_401(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
     landing = local_ship.LandingCommit("a" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
     with patch.object(local_ship, "resolve_landing_commit", return_value=landing):
-        with patch.object(local_ship, "deliver_landing", return_value={"on_ship": {"status": 401, "body": {}}, "on_pr_close": {"status": 201, "body": {}}}):
+        with patch.object(
+            local_ship,
+            "deliver_landing",
+            return_value={"on_ship": {"status": 401, "body": {}}, "on_pr_close": {"status": 201, "body": {}}},
+        ):
             assert local_ship.main(["--url", "http://127.0.0.1:9"]) == 1
 
 
