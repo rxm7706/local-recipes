@@ -10,7 +10,6 @@ from typing import Any
 
 import pytest
 from pyforge.core import flags as core_flags
-from pyforge.core.flags import read_boolean
 from pyforge.core.hooks import PluginRegistry
 
 from pyforge.warden.engines import OPENGREP_VERSION_RANGE, build_opengrep_scan_argv, run_opengrep_engine
@@ -232,9 +231,7 @@ def test_opengrep_engine_argv_capture(monkeypatch, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("flag_on", [True, False])
-def test_flag_states_do_not_change_default_scan_exit(
-    monkeypatch, tmp_path: Path, flag_on: bool
-) -> None:
+def test_flag_states_do_not_change_default_scan_exit(monkeypatch, tmp_path: Path, flag_on: bool) -> None:
     """Given the same repo, enabled vs disabled optional opengrep must not move exit/status."""
     from pyforge.warden.cli import main as warden_main
 

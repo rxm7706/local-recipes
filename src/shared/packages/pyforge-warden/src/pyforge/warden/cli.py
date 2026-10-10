@@ -345,7 +345,6 @@ from .native_lockfiles import (
     merge_native_scans_into_vuln_result,
     scan_native_lockfile,
 )
-from .sast import SAST_OPENGREP_FLAG
 from .report import (
     TOOL_NAME,
     _canonical_subject_key,
@@ -355,6 +354,7 @@ from .report import (
     render_text,
 )
 from .routing import DefaultRouter
+from .sast import SAST_OPENGREP_FLAG
 from .sbom import render_cyclonedx
 from .scanner_plugins import (
     default_engine_factories,
@@ -1332,9 +1332,7 @@ def _run_scan(args: argparse.Namespace) -> int:
     try:
         enabled_optional = enabled_optional_from_environ()
         if "opengrep" in enabled_optional and not read_boolean(SAST_OPENGREP_FLAG, default=False):
-            enabled_optional = tuple(
-                scanner_id for scanner_id in enabled_optional if scanner_id != "opengrep"
-            )
+            enabled_optional = tuple(scanner_id for scanner_id in enabled_optional if scanner_id != "opengrep")
         selected_plugins = select_scanner_plugins(enabled_optional=enabled_optional)
     except PluginError as exc:
         _record_error(
