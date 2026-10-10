@@ -144,6 +144,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-TEARDOWN-004",
             "MRS-DEPLOY-004",
             "MRS-TEARDOWN-005",
+            "MRS-TEARDOWN-006",
+            "MRS-TEARDOWN-007",
             "MRS-DEPLOY-005",
             "MRS-DEPLOY-006",
             "MRS-DEPLOY-007",

@@ -876,7 +876,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
     "pyforge.steward.sync_github_only_marker": ("steward", "84-4-", "2026-10-03", "", ""),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
-    # Story 87.15 extends push|retire on the same key (default off in every environment).
+    # Stories 87.3/87.7/87.15 share this key (default off in every environment).
     "pyforge.marshal.preserve_refs": ("marshal", "87-3-", "2026-10-04", "", ""),
     "pyforge.warden.fix_target_resolution": (
         "warden",

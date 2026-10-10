@@ -832,6 +832,25 @@ class GitVcs:
                 return True
         return False
 
+    def commit_contained_in_remote_refs(self, repo_root: Path, commit: str) -> bool:
+        result = _run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "for-each-ref",
+                "--contains",
+                commit,
+                "--format=%(refname)",
+                "refs/remotes/",
+            ]
+        )
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git for-each-ref --contains failed for {commit} under refs/remotes/: {result.stderr.strip()}"
+            )
+        return bool(result.stdout.strip())
+
     def tracked_paths_matching(self, repo_root: Path, pathspec: str) -> tuple[str, ...]:
         """Story 1.11 (FR-178): ``git ls-files -- <pathspec>``, read-only.
 

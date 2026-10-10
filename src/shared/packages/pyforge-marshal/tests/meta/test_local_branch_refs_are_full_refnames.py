@@ -101,6 +101,7 @@ _NOT_A_REF = {
     ("remote_branch_exists", "remote"),
     ("commit_contained_in_tag_prefixes", "commit"),
     ("commit_contained_in_tag_prefixes", "tag_prefixes"),
+    ("commit_contained_in_remote_refs", "commit"),
 }
 #: The ports a method may be declared on: reads and ref operations on `VcsPort`, commit text on `CommitPort`.
 _PORTS = (VcsPort, CommitPort)
