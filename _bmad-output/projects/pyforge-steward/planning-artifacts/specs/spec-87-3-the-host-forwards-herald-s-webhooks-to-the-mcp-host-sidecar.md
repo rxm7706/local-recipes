@@ -284,6 +284,7 @@ by the same ruling (its spec's banner).
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
 
 **Manual checks (not a dispatch gate):**
+- `src/platform/tests/test_herald_webhook_sidecar.py` — expected: pass; `test_herald_webhook_sidecar_flag_two_states` writes two flagd trees for `pyforge.steward.herald_webhook_sidecar` (`"on"` forwards, `"off"` does not) through the FILE provider (added 2026-10-10 with the dark-flag hygiene change; the gate's two-state rule).
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: exit 0, including the new forward and sidecar
   tests and the unedited files of ACs (6) and (8).
 - `pixi lock` and AC (1)'s per-environment comparison — expected: only `mcp-host` differs.
