@@ -872,6 +872,19 @@ verify_commands = [
   "docs/governance/flag-inventory/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
 ]
+"88" = [  # the preflight runs each task once, after its dependencies (fix under spec-pyforge-steward CAP-159; Story 88.1),
+  # added 2026-10-10. The default surface, restated because a declared entry replaces it outright, plus every Spec
+  # memlog (spec-pyforge-core co-governs the preflight modules).
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts
