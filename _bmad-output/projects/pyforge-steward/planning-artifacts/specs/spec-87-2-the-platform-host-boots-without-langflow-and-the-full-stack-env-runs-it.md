@@ -2,7 +2,7 @@
 title: "87.2: The platform host boots without Langflow, and the full-stack env runs it"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'blocked'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -26,6 +26,14 @@ context:
 deferred: []
 declared_low_risk: false
 ---
+
+> **Retired 2026-10-10 — never dispatch.** The operator's ruling of the same day, verbatim label "Via the sidecar
+> (Recommended)", routes herald's webhook through the mcp-host sidecar instead and says "87.2's full-stack composition
+> can be dropped". Steward Story 87.3 (`87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar`) replaces
+> this story. It was never dispatched and changed no file outside planning. The ledger key moved `backlog` →
+> `blocked` so no drain picks it up; an operator flip does not revive it. The pre-authorised flip of herald's 19.2
+> key named in § Binding is void: 19.2 now waits on 87.3. The text below is kept as history (memlogs:
+> `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`, `spec-python-foundry-cutover`, 2026-10-10).
 
 <intent-contract>
 
@@ -278,6 +286,13 @@ Type / Effort / Deps: fix / M / S-87.1.
 - 2026-10-10: minted from the operator's ruling "Host without langflow". The ruling names celery, django-environ and
   wagtail. The mint measured the gap at 30 host packages and meets the ruling's goal by composing Platform CI's host set.
   The three named packages are in that set at Platform CI's pins.
+
+- 2026-10-10 (later): **retired before dispatch.** The operator ruled "Via the sidecar (Recommended)": "Mint a steward
+  story: mcp-host env gains pyforge-herald; the sidecar mounts herald's webhook ASGI; the host forwards
+  /stations/herald/api/v1/webhooks/* to MCP_HOST_SIDECAR_BASE_URL like MCP. 19.2's proof runs host + sidecar locally
+  (loopback). 87.1 stays (host never imports herald); 87.2's full-stack composition can be dropped." Story 87.3
+  replaces this one. Status `ready-for-dev` → `blocked`, ledger `backlog` → `blocked`; nothing else in this file
+  changed.
 
 ## Review Triage Log
 

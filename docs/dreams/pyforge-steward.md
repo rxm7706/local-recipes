@@ -1271,7 +1271,29 @@ Drift — orphaned between stations.
   and `platform-dev` keep Langflow. Owners: `spec-pyforge-unifying-strategy` CAP-10 (the host half) and
   `spec-python-foundry-cutover` fnd:CAP-12 (the layer env). Herald 19.2's live proof waits on this story. The ruling
   pre-authorises flipping herald's 19.2 key when this story is `done` on `main`, and that flip is herald's to write. →
-  Epic 87 / Story 87.2, specced 2026-10-10.
+  Epic 87 / Story 87.2, specced 2026-10-10; retired the same day, before dispatch (next entry).
+- **2026-10-10 (herald via the sidecar) — Ruled: herald's webhook runs in the mcp-host sidecar, and the host forwards
+  to it; Story 87.2 is dropped.** Story 87.2's env half would have composed Platform CI's host set into
+  `pyforge-foundry-full-stack` so one laptop env could run the host beside herald. The estate already has a process
+  for mcp 2.x code: the mcp-host sidecar (`spec-mcp-era-isolation`, steward CAP-68 and CAP-69), which the host reaches
+  for `POST /stations/<name>/mcp` through `MCP_HOST_SIDECAR_BASE_URL`. The operator chose, verbatim label "Via the
+  sidecar (Recommended)": "Mint a steward story: mcp-host env gains pyforge-herald; the sidecar mounts herald's webhook
+  ASGI; the host forwards /stations/herald/api/v1/webhooks/* to MCP_HOST_SIDECAR_BASE_URL like MCP. 19.2's proof runs
+  host + sidecar locally (loopback). 87.1 stays (host never imports herald); 87.2's full-stack composition can be
+  dropped." And, verbatim label "Yes, deferred row (Recommended)": "Steward deferred-work row with the trigger and the
+  follow-ups: retire the ImportError skip, reconsider the sidecar split, and let herald join the web image." **What it
+  looks like when real:** the image host, with herald absent, forwards a signed `on-ship` to the sidecar with its body
+  and its `X-Hub-Signature-256` and `X-Hub-Timestamp` headers intact; herald verifies it there and records it. With the
+  sidecar URL unset, the host answers as Story 87.1 does. Herald 19.2's proof runs the host from `platform-dev` and the
+  sidecar from `mcp-host`, both on loopback. **Constraints:** only the `mcp-host` env's lock moves; the image env and
+  `platform-dev` keep Langflow and `mcp 1.28.1`; `src/platform/` still imports no `pyforge.*`; no PostgreSQL pin moves.
+  A new forwarded route through a second process is new behaviour, so the story ships behind
+  `pyforge.steward.herald_webhook_sidecar` (dev on; staging and production off until the chart hands the sidecar
+  herald's store and secret). No CAP is minted: the story widens CAP-68's env and CAP-69's forward by one route.
+  **The trigger that ends the split** is langflow-base and lfx accepting `mcp >=2`. The bridge's other retirement
+  condition, FastMCP 4 on conda-forge on mcp 2.x, has already fired (`fastmcp 4.0.10`, locked for kedro-mcp). Owner
+  `spec-pyforge-steward` (CAP-68, CAP-69). → Epic 87 / Story 87.3, specced 2026-10-10; Story 87.2 retired (key
+  `blocked`); `DW-steward-87-3-1`; herald 19.2 re-scoped onto the host plus the sidecar and held `blocked` on 87.3.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
