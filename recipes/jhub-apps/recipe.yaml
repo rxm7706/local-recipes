@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: jhub-apps
-  version: "2026.8.1"
+  version: "2026.9.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/j/jhub-apps/jhub_apps-${{ version }}.tar.gz
-  sha256: 0b3da184008e00e864b5d203d6d2e76b8188ecfbab1296af8692b9f1666d9647
+  sha256: 561bf8d10491f4ca22193933e7aec8f6963fad74ff48d717806d21614b5a2785
 
 build:
   number: 0
@@ -95,7 +95,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jhub-apps-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T12:14:52Z
+  cfe-last-checked: 2026-10-10T12:15:33Z
   cfe-generated-by-version: 8.99.3
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
   cfe-local-build-status: not-attempted
@@ -106,4 +106,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.7: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 2026.8.1 -> 2026.9.1
 ####

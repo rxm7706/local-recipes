@@ -33,9 +33,12 @@ requirements:
     - condense-json >=0.1.3
     - openai >=1.55.3
     - click-default-group >=1.2.3
-    - sqlite-utils >=3.37
-    - sqlite-migrate >=0.1a2
+    - sqlite-utils >=4.0
     - pydantic >=2.0.0
+    - pip
+    - setuptools
+    - httpx2
+    - typing_extensions
     - pyyaml
     - pluggy
     - python-ulid

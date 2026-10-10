@@ -36,6 +36,7 @@ requirements:
     - faiss-cpu >=1.7.4
     - grpcio >=1.50
     - tomli >=2.0
+    - pymilvus
 
 tests:
   # pip_check re-enabled: the build rewrites the wheel METADATA dep
