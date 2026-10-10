@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/cb/2b/09f04b44b3583a911ae4f5d0e3360a23d529704c9e9115fce2520b7d4420/django_treenode-0.25.0.tar.gz
+  url: https://pypi.org/packages/source/d/django-treenode/django_treenode-${{ version }}.tar.gz
   sha256: d14d0eb3571c227ce11147210d62a8f87b568bbb30fa76a5be9b9e6d514157c3
 
 build:
@@ -20,16 +20,16 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - setuptools
-  - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
   run:
-  - python >=${{ python_min }},<4
+    - python >=${{ python_min }},<4
 
 tests:
 - python:
     imports:
-    - treenode
+      - treenode
     pip_check: true
     python_version: ${{ python_min }}.*
 
@@ -41,7 +41,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -49,8 +49,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-treenode
   cfe-purls:
-  - pkg:conda/django-treenode@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-treenode@${{ version }}
+    - pkg:conda/django-treenode@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-treenode@${{ version }}
   cfe-upstream-repo: https://github.com/fabiocaccamo/django-treenode
   cfe-upstream-homepage: https://github.com/fabiocaccamo/django-treenode
   cfe-import-names: [treenode]

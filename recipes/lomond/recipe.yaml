@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/76/98/8118ebb05b6f1a3c45e8ebf0b7a745ce818919cc2c47ed9f68d01cd84b9b/lomond-0.3.4.tar.gz
+  url: https://pypi.org/packages/source/l/lomond/lomond-${{ version }}.tar.gz
   sha256: 250202a83ba45e3b265bf5dfef4db54d9c46b981230579dbe3b453dad320ba71
 
 build:
@@ -22,21 +22,21 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - setuptools
-  - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
   run:
-  - python >=${{ python_min }}
-  - six >=1.10.0
+    - python >=${{ python_min }}
+    - six >=1.10.0
 
 tests:
 - python:
     imports:
-    - lomond
+      - lomond
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - "*"
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   summary: Websocket Client Library
@@ -51,7 +51,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -59,8 +59,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: lomond
   cfe-purls:
-  - pkg:conda/lomond@${{ version }}?channel=conda-forge
-  - pkg:pypi/lomond@${{ version }}
+    - pkg:conda/lomond@${{ version }}?channel=conda-forge
+    - pkg:pypi/lomond@${{ version }}
   cfe-upstream-repo: https://github.com/wildfoundry/dataplicity-lomond
   cfe-upstream-homepage: https://pypi.org/project/lomond/
   cfe-import-names: [lomond]

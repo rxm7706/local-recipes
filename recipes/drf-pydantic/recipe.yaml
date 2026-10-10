@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/99/22/baf1107849abdf695af3c3640476a087540b71a886fc5b2f28632ff632e3/drf_pydantic-2.9.2.tar.gz
+  url: https://pypi.org/packages/source/d/drf-pydantic/drf_pydantic-${{ version }}.tar.gz
   sha256: cf909c9120079d212ed71406f775e5c7005768205a247c75e9ae2ffaf10ecc25
 
 build:
@@ -20,18 +20,18 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
   run:
-  - python >=${{ python_min }},<4.0.0
-  - pydantic >=2.0.0
-  - djangorestframework >=3.13.0
+    - python >=${{ python_min }},<4.0.0
+    - pydantic >=2.0.0
+    - djangorestframework >=3.13.0
 
 tests:
 - python:
     imports:
-    - drf_pydantic
+      - drf_pydantic
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -43,7 +43,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -51,8 +51,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: drf-pydantic
   cfe-purls:
-  - pkg:conda/drf-pydantic@${{ version }}?channel=conda-forge
-  - pkg:pypi/drf-pydantic@${{ version }}
+    - pkg:conda/drf-pydantic@${{ version }}?channel=conda-forge
+    - pkg:pypi/drf-pydantic@${{ version }}
   cfe-upstream-repo: https://github.com/georgebv/drf-pydantic
   cfe-upstream-homepage: https://github.com/georgebv/drf-pydantic
   cfe-import-names: [drf_pydantic]
@@ -62,8 +62,8 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-pydantic-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
-  - dependency-fix
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0

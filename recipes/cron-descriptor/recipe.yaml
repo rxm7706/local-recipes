@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.1.0"
+  version: "2.1.1"
 
 package:
   name: cron-descriptor
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/cron-descriptor/cron_descriptor-${{ version }}.tar.gz
-  sha256: ecddb8b2f6c5286398949aaefe185364666af74f33b01877c61378e1fd4e38e6
+  sha256: 0f55b469bb81f8c60602baebc08a78fc3b1eb234805793a08a4862f336760390
 
 build:
   number: 0
@@ -64,19 +64,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cron-descriptor-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-2.1.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T07:19:02Z
+  cfe-last-checked: 2026-10-09T23:35:51Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T07:19:02Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T07:19:02Z
+  cfe-local-build-datetime: 2026-10-09T23:36:42Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-09 refresh_wave B-B2-apply: refreshed 2.1.0 -> 2.1.1
 ####

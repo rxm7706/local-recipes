@@ -23,41 +23,41 @@ build:
     content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-    - specify = specify_cli:main
+      - specify = specify_cli:main
 
 requirements:
   host:
-  - python 3.11.*
-  - hatchling
-  - pip
+    - python 3.11.*
+    - hatchling
+    - pip
   run:
-  - json5 >=0.13.0
-  - pathspec >=0.12.0
-  - click >=8.2.1
-  - python >=${{ python_min }},<4.0
-  - typer >=0.24.0
-  - rich
-  - httpx
-    # https://github.com/encode/httpx/blob/master/pyproject.toml#L51
-  - socksio ==1
-  - platformdirs
-  - readchar
-  - truststore >=0.10.4
-  - pyyaml >=6.0
-  - packaging >=23.0
+    - json5 >=0.13.0
+    - pathspec >=0.12.0
+    - click >=8.2.1
+    - python >=${{ python_min }},<4.0
+    - typer >=0.24.0
+    - rich
+    - httpx
+      # https://github.com/encode/httpx/blob/master/pyproject.toml#L51
+    - socksio ==1
+    - platformdirs
+    - readchar
+    - truststore >=0.10.4
+    - pyyaml >=6.0
+    - packaging >=23.0
 
 tests:
 - python:
     imports:
-    - specify_cli
+      - specify_cli
     pip_check: false
     python_version: ${{ python_min }}
 - requirements:
     run:
-    - pip
-    - python ${{ python_min }}.*
+      - pip
+      - python ${{ python_min }}.*
   script:
-  - specify --help
+    - specify --help
 
 about:
   summary: Specify CLI, part of GitHub Spec Kit. A tool to bootstrap your projects for Spec-Driven Development (SDD).
@@ -67,7 +67,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -75,9 +75,9 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: github/spec-kit
   cfe-purls:
-  - pkg:conda/spec-kit@${{ version }}?channel=conda-forge
-  - pkg:pypi/specify-cli@${{ version }}
-  - pkg:github/github/spec-kit@v${{ version }}
+    - pkg:conda/spec-kit@${{ version }}?channel=conda-forge
+    - pkg:pypi/specify-cli@${{ version }}
+    - pkg:github/github/spec-kit@v${{ version }}
   cfe-upstream-repo: https://github.com/github/spec-kit
   cfe-upstream-homepage: https://github.com/github/spec-kit
   cfe-import-names: [specify_cli]
@@ -87,7 +87,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spec-kit-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-21T00:00:00Z
   cfe-generated-by-version: 8.37.0

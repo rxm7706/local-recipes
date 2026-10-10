@@ -20,17 +20,17 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
-  - hatchling
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - hatchling
   run:
-  - python >=${{ python_min }},<4.0
-  - django >=5.0
+    - python >=${{ python_min }},<4.0
+    - django >=5.0
 tests:
 - python:
     imports:
-    - dbbackup
+      - dbbackup
     python_version: ${{ python_min }}.*
     pip_check: true
 
@@ -42,7 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -50,8 +50,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-dbbackup
   cfe-purls:
-  - pkg:conda/django-dbbackup@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-dbbackup@${{ version }}
+    - pkg:conda/django-dbbackup@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-dbbackup@${{ version }}
   cfe-upstream-repo: https://github.com/Archmonger/django-dbbackup
   cfe-upstream-homepage: https://github.com/Archmonger/django-dbbackup
   cfe-import-names: [dbbackup]

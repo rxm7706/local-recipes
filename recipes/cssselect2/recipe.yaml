@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.9.0"
+  version: "0.10.1"
 
 package:
   name: cssselect2
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/cssselect2/cssselect2-${{ version }}.tar.gz
-  sha256: 759aa22c216326356f65e62e791d66160a0f9c91d1424e8d8adc5e74dddfc6fb
+  sha256: 83b0d820ef589dabaf693289b647c2f5b410f76d285f56deba911ffa75a7b9d1
 
 build:
   number: 0
@@ -67,19 +67,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cssselect2-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.9.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T07:21:52Z
+  cfe-last-checked: 2026-10-09T23:36:42Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T07:21:52Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-17T07:21:52Z
+  cfe-local-build-datetime: 2026-10-09T23:37:27Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-09 refresh_wave B-B2-apply: refreshed 0.9.0 -> 0.10.1
 ####

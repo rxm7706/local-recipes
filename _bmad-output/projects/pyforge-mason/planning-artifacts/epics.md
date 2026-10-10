@@ -2739,7 +2739,7 @@ diff-apply, and pulls and authors a local mirror for each feedstock without one
 **And** a deliberate maintainer choice (an intentional pin, a platform exclusion) is kept and noted in the recipe's CFE
 comments block rather than overridden; the live count and the per-bucket results are recorded in the story spec; the
 `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.3: CFE gains a tracked bulk recipe-refresh driver that the refresh waves run through
 

@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/68/a3/48b438bded1a514289b8b92fa5f29077712702cda8c01f923b930f80cff8/gotenberg_client-1.0.0.tar.gz
+  url: https://pypi.org/packages/source/g/gotenberg-client/gotenberg_client-${{ version }}.tar.gz
   sha256: 871b339ed98911279f94f3aaa6403ca7c59aaa695d8663249be6314ccd46719c
 
 build:
@@ -20,18 +20,18 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling >=1.27.0,<1.28.dev0
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling >=1.27.0,<1.28.dev0
+    - pip
   run:
-  - python >=${{ python_min }},<4
-  - httpx >=0.27
-  - typing_extensions
+    - python >=${{ python_min }},<4
+    - httpx >=0.27
+    - typing_extensions
 
 tests:
 - python:
     imports:
-    - gotenberg_client
+      - gotenberg_client
     pip_check: true
     python_version: ${{ python_min }}.*
 
@@ -43,7 +43,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -51,8 +51,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: gotenberg-client
   cfe-purls:
-  - pkg:conda/gotenberg-client@${{ version }}?channel=conda-forge
-  - pkg:pypi/gotenberg-client@${{ version }}
+    - pkg:conda/gotenberg-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/gotenberg-client@${{ version }}
   cfe-upstream-repo: https://github.com/stumpylog/gotenberg-client/
   cfe-upstream-homepage: https://github.com/stumpylog/gotenberg-client/
   cfe-import-names: [gotenberg_client]
@@ -62,7 +62,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gotenberg-client-feedstock
   cfe-forge-recipe-updates-needed:
-  - recipe-regenerate
+    - recipe-regenerate
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0

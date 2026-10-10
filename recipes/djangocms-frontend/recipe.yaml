@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/dc/5d/5e07964d045c27200ec9813d1fe2269145386608fc68aeae49f0c56130bb/djangocms_frontend-2.5.2.tar.gz
+  url: https://pypi.org/packages/source/d/djangocms-frontend/djangocms_frontend-${{ version }}.tar.gz
   sha256: 7c22e83bc1aa1b2b09ee9308d34e10a7e0de0bd2ac20c5c0a348552bf15854c0
 
 build:
@@ -20,24 +20,24 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - djangocms-link >=5
-  - python >=${{ python_min }}
-  - django >=2.2
-  - django-cms >=3.7
-  - django-filer >=1.7
-  - easy-thumbnails
-  - djangocms-attributes-field >=4
-  - djangocms-text-ckeditor >=3.1.0
-  - django-entangled >=0.6
+    - djangocms-link >=5
+    - python >=${{ python_min }}
+    - django >=2.2
+    - django-cms >=3.7
+    - django-filer >=1.7
+    - easy-thumbnails
+    - djangocms-attributes-field >=4
+    - djangocms-text-ckeditor >=3.1.0
+    - django-entangled >=0.6
 
 tests:
 - python:
     imports:
-    - djangocms_frontend
+      - djangocms_frontend
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -50,7 +50,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -58,8 +58,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: djangocms-frontend
   cfe-purls:
-  - pkg:conda/djangocms-frontend@${{ version }}?channel=conda-forge
-  - pkg:pypi/djangocms-frontend@${{ version }}
+    - pkg:conda/djangocms-frontend@${{ version }}?channel=conda-forge
+    - pkg:pypi/djangocms-frontend@${{ version }}
   cfe-upstream-repo: https://github.com/django-cms/djangocms-frontend
   cfe-upstream-homepage: https://github.com/django-cms/djangocms-frontend
   cfe-import-names: [djangocms_frontend]
@@ -69,7 +69,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djangocms-frontend-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
