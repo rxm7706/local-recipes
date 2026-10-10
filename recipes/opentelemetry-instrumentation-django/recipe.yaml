@@ -26,9 +26,9 @@ requirements:
     - python >=${{ python_min }}
     - django
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-wsgi ==0.65b0
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-instrumentation-wsgi ==0.66b1
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
     - opentelemetry-util-http ==0.66b1
 
 tests:

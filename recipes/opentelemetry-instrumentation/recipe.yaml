@@ -25,7 +25,7 @@ requirements:
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.4
-    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-semantic-conventions ==0.66b1
     - packaging >=18.0
     - setuptools >=16.0
     - wrapt >=1.0.0,<3.0.0
