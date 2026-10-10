@@ -3041,7 +3041,7 @@ each refusal it can clear, then `--apply --gates --build`
 push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
 CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.10: Track B batch 6 refreshes OpenTelemetry's core packages and exporters
 
