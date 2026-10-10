@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-aiopg
-  version: 0.65b0
+  version: 0.66b1
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-aiopg/opentelemetry_instrumentation_aiopg-${{ version }}.tar.gz
-  sha256: 9a0935a673dcd43ed1d0639d439581d334454d3403b496190408e0bc2547c178
+  sha256: 986d4e1d62e366d3da6d6ecf5ba19ddc172bd5467bc7973c1a0f8fba6d626235
 
 build:
   number: 0
@@ -132,11 +132,15 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T12:00:00Z
+  cfe-last-checked: 2026-10-10T17:25:17Z
   cfe-generated-by-version: 8.99.14
   cfe-generated-at-datetime: 2026-10-10T12:00:00Z
   cfe-local-build-status: not-attempted
   cfe-local-build-datetime: 2026-10-10T12:00:00Z
 ####
 # CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
 ####

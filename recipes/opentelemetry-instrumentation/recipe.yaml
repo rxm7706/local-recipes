@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation/opentelemetry_instrumentation-${{ version }}.tar.gz
-  sha256: 071d9d9eced9bd6460444ec3b0c77229870ed05a881c22c84fdede58e4eed09b
+  sha256: e79a510f7d87c72d95e964ddb42193a0d9a75668c027d980eab032ea1322a5ce
 
 build:
   number: 0
@@ -72,19 +72,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:30:24Z
+  cfe-last-checked: 2026-10-10T17:24:39Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:30:24Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:30:24Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:25:17Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
 ####
