@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 198
+# stories: 201
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -52,7 +52,7 @@ development_status:
   18-2-release-comms-go-through-bmad-os-changelog-and-social: done
   18-3-slides-generator-is-herald-wielded: done
   19-1-the-webhook-routes-move-onto-the-station-api-seam: done
-  19-2-one-real-ship-records-itself-against-a-persistent-store: blocked
+  19-2-one-real-ship-records-itself-against-a-persistent-store: backlog
   19-3-the-deck-qa-gate-gets-a-caller: done
   19-4-one-real-station-deck-renders-through-the-pptx-pipeline: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
@@ -121,6 +121,7 @@ development_status:
   34-1-herald-cites-the-deck-how-to-not-the-intake-stub: done
   35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals: done
   35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence: done
+  36-1-the-ci-live-demo-workflow-moves-to-the-archive-and-its-readers-follow: backlog
   4-1-poll-loop-with-quiescence-debounce: done
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
@@ -200,6 +201,8 @@ development_status:
   epic-34-retrospective: optional
   epic-35: done
   epic-35-retrospective: optional
+  epic-36: backlog
+  epic-36-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
   epic-5: done
