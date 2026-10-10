@@ -84,8 +84,9 @@ primitives:
   (``ref="refs/heads/main"``, Story 61.1) -- the caller decides which ``ref`` each route needs;
   this method has no branch-name opinion of its own.
 - ``commit_paths`` -- the one write, now on ``CommitPort`` (Story 82.9): stages
-  EXACTLY ``paths`` (an individual ``git add -- <path>`` per entry, never ``git
-  add -A``) and commits ONLY those paths, the literal AD-29 requirement that a
+  EXACTLY ``paths`` (``git add -u --`` when the index tracks the path, else
+  ``git add --`` per entry; Story 88.1; never ``git add -A``) and commits ONLY
+  those paths, the literal AD-29 requirement that a
   promotion commit contain only promotion paths. ``cli/deploy.py`` calls it
   through ``core.commit_vcs.CommittingVcs``, the one name that is both ports.
 
