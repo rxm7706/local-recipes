@@ -3,10 +3,10 @@ epics_role: canonical
 # The single canonical story source for this station: every `### Story` heading here maps
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
-epicCount: 35  # 2026-10-07: re-measured, 35 epic keys in the ledger (fleet_scan.parse_sprint_status); Epics 33-35 had been minted 2026-09-29..10-03 without a bump. 2026-09-28 (night): Epics 29-32 appended (spec-pyforge-herald CAP-54..CAP-57); 32 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 28 before this mint). 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
-storyCount: 128  # 2026-10-08 (fix chain): +3 for Stories 31.3, 32.2 and 32.3 (fixes, no CAP); 128 story keys in the ledger, 121 done (fleet_scan.parse_sprint_status). 2026-10-08: +1 for Story 27.6 (fix, no CAP); 125 story keys in the ledger, 116 done once Stories 30.2, 33.1 and 34.1 landed (fleet_scan.parse_sprint_status). 2026-10-07: re-measured, 124 story keys in the ledger (fleet_scan.parse_sprint_status), 108 done; Stories 33.1, 34.1, 35.1 and 35.2 had been minted without a bump. 2026-09-28 (night): +7 for Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 (120 story keys in the ledger, measured; 113 before this mint; 29.1 and 29.2 are minted blocked on steward 74.1). 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
-status: in-progress  # 2026-10-10: Epic 19 in-progress with 19.2 still blocked, now on the steward story that closes DW-13-6-1 (local-host re-scope); the foundry-side parking is superseded. 2026-09-28 (night): Epics 29-32 (7 stories) backlog; 29.1 and 29.2 blocked on steward Story 74.1, the rest backlog behind station-local Deps. 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-10-10"   # AMENDED 2026-10-10 (19.2 local-host re-scope): Story 19.2 re-scoped by the operator ruling of 2026-10-10 ("go with option 1, local host"): host = the platform's one ASGI host on pyforge-foundry-full-stack (PostgreSQL 17, loopback only), store = SQLite at the primary checkout's .herald/herald.db, gate = the steward story that closes DW-13-6-1 (86-1-deploy-perimeter-renders-the-asgi-application-it-is-given); heading, ledger key and `blocked` status unchanged; no story added, no CAP, FR or AD moved; Epic 19 gains a dated re-scope line. Prior: AMENDED 2026-10-08 (fix chain): Stories 31.3 (Epic 31: the public Pages build loads no third-party resource from herald's own pages), 32.2 (Epic 32: the native pptx export carries every speaker note and every text block) and 32.3 (Epic 32: the native pptx export takes its fonts, colours and spacing from the design tokens) minted (fixes, no CAP, no flag); epic-32 re-opens to in-progress with them. The Epic List table re-measured from the ledger (E27 6/5, E31 3/0, E32 3/1; 128 stories, 121 done). Prior: AMENDED 2026-10-08 (docs-site helper): Story 27.6 minted (fix, no CAP, no flag) in Epic 27: the docs site builds from a clean checkout. The Epic List table re-measured from the ledger (E27 6/1; E28, E29 and E30 2/2, E33 and E34 1/1 after their landings; 125 stories, 116 done). Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch -> epics) validated against the spine's § Currency reconciliation — 2026-10-07 (no AD amended); no epic or story added or changed; the Epic List table and epicCount/storyCount re-measured from the ledger (35 epics, 124 stories, 108 done). See § Currency reconciliation — 2026-10-07. Prior: RE-STAMPED 2026-10-03 (night): Story 35.2 added to Epic 35 (fix: Story 35.1's post-landing follow-ups). Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 35 / Story 35.1 minted (fix, no CAP): herald's 21 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29 (evening): Epic 34 / Story 34.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 33 / Story 33.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
+epicCount: 36  # 2026-10-10 (later): Epic 36 minted (fix, no CAP); 36 epic keys in the ledger (fleet_scan.parse_sprint_status). 2026-10-07: re-measured, 35 epic keys in the ledger (fleet_scan.parse_sprint_status); Epics 33-35 had been minted 2026-09-29..10-03 without a bump. 2026-09-28 (night): Epics 29-32 appended (spec-pyforge-herald CAP-54..CAP-57); 32 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 28 before this mint). 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
+storyCount: 129  # 2026-10-10 (later): +1 for Story 36.1 (fix, no CAP); 129 story keys in the ledger, 126 done (fleet_scan.parse_sprint_status). 2026-10-08 (fix chain): +3 for Stories 31.3, 32.2 and 32.3 (fixes, no CAP); 128 story keys in the ledger, 121 done (fleet_scan.parse_sprint_status). 2026-10-08: +1 for Story 27.6 (fix, no CAP); 125 story keys in the ledger, 116 done once Stories 30.2, 33.1 and 34.1 landed (fleet_scan.parse_sprint_status). 2026-10-07: re-measured, 124 story keys in the ledger (fleet_scan.parse_sprint_status), 108 done; Stories 33.1, 34.1, 35.1 and 35.2 had been minted without a bump. 2026-09-28 (night): +7 for Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 (120 story keys in the ledger, measured; 113 before this mint; 29.1 and 29.2 are minted blocked on steward 74.1). 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
+status: in-progress  # 2026-10-10 (later): steward 86.1 landed, so 19.2 moved blocked -> backlog (the pre-authorised flip) and Epic 19 stays in-progress; Epic 36 (Story 36.1, Deps S-19.2) backlog. 2026-10-10: Epic 19 in-progress with 19.2 still blocked, now on the steward story that closes DW-13-6-1 (local-host re-scope); the foundry-side parking is superseded. 2026-09-28 (night): Epics 29-32 (7 stories) backlog; 29.1 and 29.2 blocked on steward Story 74.1, the rest backlog behind station-local Deps. 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
+updated: "2026-10-10"   # AMENDED 2026-10-10 (later): Story 19.2's gate cleared (steward 86.1 done on main, PR #2056), its key flipped blocked -> backlog under the ruling's pre-authorisation, its AC7 reads "unchanged by this story", and Epic 19 gains a dated Gate cleared line; Epic 36 / Story 36.1 minted (fix, no CAP, no flag, Deps S-19.2) from the operator ruling "Archive after 19.2"; the Epic List table re-measured (E31 3/3, E32 3/3, E36 1/0; 129 stories, 126 done). See § Currency reconciliation — 2026-10-10 (later). Prior: AMENDED 2026-10-10 (19.2 local-host re-scope): Story 19.2 re-scoped by the operator ruling of 2026-10-10 ("go with option 1, local host"): host = the platform's one ASGI host on pyforge-foundry-full-stack (PostgreSQL 17, loopback only), store = SQLite at the primary checkout's .herald/herald.db, gate = the steward story that closes DW-13-6-1 (86-1-deploy-perimeter-renders-the-asgi-application-it-is-given); heading, ledger key and `blocked` status unchanged; no story added, no CAP, FR or AD moved; Epic 19 gains a dated re-scope line. Prior: AMENDED 2026-10-08 (fix chain): Stories 31.3 (Epic 31: the public Pages build loads no third-party resource from herald's own pages), 32.2 (Epic 32: the native pptx export carries every speaker note and every text block) and 32.3 (Epic 32: the native pptx export takes its fonts, colours and spacing from the design tokens) minted (fixes, no CAP, no flag); epic-32 re-opens to in-progress with them. The Epic List table re-measured from the ledger (E27 6/5, E31 3/0, E32 3/1; 128 stories, 121 done). Prior: AMENDED 2026-10-08 (docs-site helper): Story 27.6 minted (fix, no CAP, no flag) in Epic 27: the docs site builds from a clean checkout. The Epic List table re-measured from the ledger (E27 6/1; E28, E29 and E30 2/2, E33 and E34 1/1 after their landings; 125 stories, 116 done). Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch -> epics) validated against the spine's § Currency reconciliation — 2026-10-07 (no AD amended); no epic or story added or changed; the Epic List table and epicCount/storyCount re-measured from the ledger (35 epics, 124 stories, 108 done). See § Currency reconciliation — 2026-10-07. Prior: RE-STAMPED 2026-10-03 (night): Story 35.2 added to Epic 35 (fix: Story 35.1's post-landing follow-ups). Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 35 / Story 35.1 minted (fix, no CAP): herald's 21 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29 (evening): Epic 34 / Story 34.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 33 / Story 33.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-9.1..FR-9.2 / CAP-53; Epic 28 / Stories 28.1-28.2 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.5 / CAP-52; Epic 27 / Stories 27.1-27.5 minted (27.5 and the 27.2 rewrite follow the operator rulings of 2026-09-27, D7/D8). Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
@@ -61,12 +61,13 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E28** | Each deck keeps one current version of each export (spec-pyforge-herald CAP-53) | 2 | 2 |
 | **E29** | Each current export is also kept in object storage (spec-pyforge-herald CAP-54) | 2 | 2 |
 | **E30** | A deck is readable in the browser from its HTML twin (spec-pyforge-herald CAP-55) | 2 | 2 |
-| **E31** | The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56) | 3 | 0 |
-| **E32** | A deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57) | 3 | 1 |
+| **E31** | The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56) | 3 | 3 |
+| **E32** | A deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57) | 3 | 3 |
 | **E33** | The genesis deck counts archived Dreams where they now live (spec-one-chain-per-station CAP-11) | 1 | 1 |
 | **E34** | Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11) | 1 | 1 |
 | **E35** | Phase 4+5 of the deferral burn-down: herald's open medium and low deferrals | 2 | 2 |
-| **Total** | | **128** | **121** |
+| **E36** | The CI live demo retires to the archive once a ship records itself locally | 1 | 0 |
+| **Total** | | **129** | **126** |
 
 
 ---
@@ -577,6 +578,11 @@ no longer `foundry-side`. It stays `blocked` on the steward story that closes DW
 19.2 lands, this epic closes and steward's index row 49.11 flips to `done` (steward's key, per the
 ruling). The HARD boundaries above hold unchanged.
 
+**Gate cleared 2026-10-10.** Steward Story 86.1 landed (PR #2056, merge `7d8ab99e88`, an ancestor of `origin/main`),
+and steward's ledger reads it `done`, so Story 19.2 moved `blocked -> backlog` under the ruling's pre-authorisation; its
+spec is `ready-for-dev`. The workflow boundary above binds this epic's stories only: once 19.2 lands, Epic 36
+(Story 36.1) archives `herald-live-demo.yml` (operator ruling 2026-10-10, "Archive after 19.2").
+
 ### Story 19.1: The webhook routes move onto the station API seam
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-herald-moments-2-4-live-backend` LB-2 • `spec-pyforge-unifying-strategy` SPEC.md:497 (Always: station routes are `/stations/<name>/api/v<N>/`) • batch row C11
 **Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py` (`ON_SHIP_PATH` / `ON_PR_CLOSE_PATH`, `:183-184`), `src/shared/packages/pyforge-herald/src/pyforge/herald/webhook_host.py`, `src/platform/config/station_api.py` (herald v1 registration beside warden, `:146`), `.github/workflows/herald-live-demo.yml` (caller paths only), herald's CI-caller documentation
@@ -584,14 +590,14 @@ ruling). The HARD boundaries above hold unchanged.
 **And** the change is contract-visible: the Spec's `surface:` block and `docs/` callers move in the same PR, because fixing this later means changing a documented CI-caller contract
 
 ### Story 19.2: One real ship records itself against a persistent store
-**Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** `spec-pyforge-herald` CAP-38 (← `spec-herald-moments-2-4-live-backend` LB-2) / CAP-39 (← LB-3) • Epic 13's success signal • batch rows C6, C11 • AD-14 and AD-13/AD-17 as built, unchanged • cross-project gate: the steward story that closes DW-13-6-1 (`86-1-deploy-perimeter-renders-the-asgi-application-it-is-given`) must be `done` on main. The ledger key stays `blocked` and the operator flips it, per AGENTS.md (marshal's `Deps:` parser is station-local). The 2026-10-10 ruling pre-authorises exactly that flip: "flip 19.2 blocked -> backlog when the steward story that closes DW-13-6-1 is done on main" • flag: none (pre-rule spec, `flag-pre-rule` warn)
+**Type:** feature • **Effort:** M • **Deps:** S-19.1 • **FR/AD:** `spec-pyforge-herald` CAP-38 (← `spec-herald-moments-2-4-live-backend` LB-2) / CAP-39 (← LB-3) • Epic 13's success signal • batch rows C6, C11 • AD-14 and AD-13/AD-17 as built, unchanged • cross-project gate: the steward story that closes DW-13-6-1 (`86-1-deploy-perimeter-renders-the-asgi-application-it-is-given`) must be `done` on main. The ledger key stays `blocked` and the operator flips it, per AGENTS.md (marshal's `Deps:` parser is station-local). The 2026-10-10 ruling pre-authorises exactly that flip: "flip 19.2 blocked -> backlog when the steward story that closes DW-13-6-1 is done on main" (flipped 2026-10-10: 86.1 landed as PR #2056, merge `7d8ab99e88`, and steward's row reads `done`) • flag: none (pre-rule spec, `flag-pre-rule` warn)
 
 **Re-scoped 2026-10-10 (operator ruling, chosen option verbatim: "go with option 1, local host").** The ruling: "Mint a small steward fix that adds `--asgi-application` to `deploy perimeter`. Then re-scope herald 19.2 so its host and store are this machine's local stack: `pyforge-foundry-full-stack` with PostgreSQL 17. No public endpoint, nothing outside the repo. Herald Epic 19 then closes, and 49.11 flips to done." This supersedes the 2026-09-09 `foundry-side` parking (batch row C11) for this story. The story spec records the decisions and their reasons:
 - **The host** is the platform's one ASGI host, `config.asgi:application`. It runs under daphne from `pyforge-foundry-full-stack`, bound to `127.0.0.1`, and its Django database is the env's local PostgreSQL 17. It is started from the `ExecStart` line that `steward deploy perimeter --asgi-application config.asgi:application` renders, and herald's routes reach it through Story 19.1's seam. It is not a standalone herald process: AGENTS.md § Policy says no `:800x` process tree, and AD-14 as built says no bespoke Herald perimeter. The rendered nginx edge config is not installed.
 - **The store** is SQLite at `<primary checkout>/.herald/herald.db` (`HERALD_REPO_ROOT`). `db.py` is `sqlite3` only, and the spine closed the database choice as "SQLite, not PostgreSQL". A PostgreSQL backend for herald would be a new capability.
 - **The secret** is generated locally into the ignored `.herald/webhook.env` (mode `0600`) and is never committed.
 - **One real ship** is a real story landing on `origin/main`. A local caller (pixi task `herald-ship-local`) derives it with `pyforge.core.landing_evidence`, signs it, and delivers it to the loopback host as `on-ship` and `on-pr-close`.
-- **`herald-live-demo.yml`** stays disabled and byte-unchanged. It is governed by doctor's `doctor:CAP-77` catalog and test, the pixi version registry and the workflow inventories, and its `runner.temp` store can never be the proof.
+- **`herald-live-demo.yml`** stays disabled and unchanged by this story *(amended 2026-10-10 from "byte-unchanged": a `bump-pixi-version` run on `main` rewrites its three registered pins, which is not this story's change; Story 36.1 archives the file after this story lands)*. It is governed by doctor's `doctor:CAP-77` catalog and test, the pixi version registry and the workflow inventories, and its `runner.temp` store can never be the proof.
 
 **Surface:**
 - `src/shared/packages/pyforge-herald/src/pyforge/herald/`: a new local-caller module (the pixi task's entry). `webhook.py`, `webhook_host.py`, `station_api.py`, `db.py` and `scheduler.py` are exercised, not changed.
@@ -609,7 +615,7 @@ ruling). The HARD boundaries above hold unchanged.
 - re-delivering the same `on-pr-close` returns the same `claim_id`, and exactly one claim exists for it;
 - `herald scheduler run --json` against the same store aggregates at least one record.
 
-**And** the store resolves under the primary checkout's ignored `.herald/` (never `.worktrees/`, `/tmp` or `runner.temp`). `.herald/webhook.env` is `0600`, and the secret appears in no tracked file. The port is bound to `127.0.0.1` only. The run is transcribed into `spec-pyforge-herald/live-host-proof-<date>.md` and cited by the completion note. `herald-live-demo.yml` reads `disabled_manually` and is unchanged. `pyforge-herald-test`, the platform dispatch test and the docs checks pass.
+**And** the store resolves under the primary checkout's ignored `.herald/` (never `.worktrees/`, `/tmp` or `runner.temp`). `.herald/webhook.env` is `0600`, and the secret appears in no tracked file. The port is bound to `127.0.0.1` only. The run is transcribed into `spec-pyforge-herald/live-host-proof-<date>.md` and cited by the completion note. `herald-live-demo.yml` reads `disabled_manually` and is unchanged by this story (`git diff origin/main...HEAD` is empty). `pyforge-herald-test`, the platform dispatch test and the docs checks pass.
 **And** on landing, `epic-19` closes. Steward's `49-11-index-herald-realization-gate-effect-stories` is steward's to flip, per the ruling; herald never writes it. The PRD records one residual: FR-7.1's "CI notifies Herald" half stays open, because a loopback host has no public endpoint for CI to call, so the one human act is running the caller.
 
 ### Story 19.3: The deck-QA gate gets a caller
@@ -1637,6 +1643,55 @@ So that every closed row rests on a test that can fail or a proof that exists.
 **Then** DW-FU-24-2-1 closes on tests that fail without their check, and DW-FU-23-6-1 is reopened until a live proof exists
 **And** the README, DW-FU-20-2's record and the herald memlog are corrected and stamped; `pixi run --frozen -e pyforge-herald pyforge-herald-test` green
 
+## Epic 36: The CI live demo retires to the archive once a ship records itself locally
+
+Minted 2026-10-10 from the station Dream's Realization log entry of the same date (live demo archive): the operator's
+ruling "Archive after 19.2". One `fix` story, no CAP, no flag. It runs after Story 19.2 lands. Epic 19 closes then, and
+its HARD boundary (`herald-live-demo.yml` stays disabled) binds Epic 19's own stories, so the archive opens this epic.
+**HARD boundaries:**
+- Nothing is deleted: the workflow moves by `git mv` into `archive/.github/workflows/`, byte-identical (CHAIN-STANDARD
+  §11).
+- No workflow is enabled, rewritten or added, and no GitHub setting changes.
+- Herald's webhook, host, caller and scheduler behaviour does not change: inside the package, only docs, docstrings and
+  comments move.
+- Historical planning files, the Dreams' dated entries and `pixi.toml`'s dated 2026-08-21 `requires-pixi` comment keep
+  their mentions.
+
+### Story 36.1: The CI live-demo workflow moves to the archive and its readers follow
+
+As the owner of herald's live backend,
+I want the retired CI demo moved to the archive and every live file that names it repointed at the local proof,
+So that nothing in the estate presents a disabled, throwaway-store workflow as the way a ship is proven.
+
+**Type:** fix • **Effort:** M • **Deps:** S-19.2 • **FR/AD:** `spec-pyforge-herald` CAP-38 (← `spec-herald-moments-2-4-live-backend` LB-2; Story 13.6 shipped the workflow as its CI-contained demo); doctor:CAP-77's catalog row for herald; CHAIN-STANDARD §11 (one archive home); no new CAP, no flag (`spec-feature-flag-governance` Q1: a fix needs none)
+**Surface:**
+- The move: `.github/workflows/herald-live-demo.yml` → `archive/.github/workflows/herald-live-demo.yml`.
+- `scripts/pixi_version_registry.py` (the site at `:82`), and the `bump-pixi-version` description in `pixi.toml`
+  (`:1244`), with `docs/how-to/pixi-tasks.md` regenerated and its `docs/map.yaml` stamp advanced; `environment.yaml`
+  regenerated (expected unchanged).
+- Doctor's catalog row, `spec-pyforge-doctor/live-proof-surfaces.md:28`, and `_HERALD_NAMED_NON_PACKAGE_PATHS` in
+  `src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py:457-460`.
+- `docs/reference/github-workflows.md:20`, `docs/how-to/github-actions-recipe-ci.md:31`, and the comment at
+  `.github/actions-policy.toml:24`.
+- Herald: `docs/operator-guide.md`, `docs/cli-runbooks.md`, `docs/automation-troubleshooting.md`,
+  `src/pyforge/herald/webhook.py:19`, `src/pyforge/herald/webhook_host.py:7,72`, `pyproject.toml:60` and
+  `tests/unit/test_webhook_live_smoke.py:10`, plus 19.2's `docs/how-to/run-herald-live-backend-locally.md` if it names
+  the workflow.
+- The memlogs of every Spec `spec-surface-check` names, and `scripts/.spec-surface-baseline.json`.
+
+**Spec:** `planning-artifacts/specs/spec-36-1-the-ci-live-demo-workflow-moves-to-the-archive-and-its-readers-follow.md`
+**Given** Story 19.2 has landed, and `.github/workflows/herald-live-demo.yml` is `disabled_manually` with live readers in
+the pixi version registry, doctor's catalog and test, the two inventories, the Actions policy comment, herald's docs and
+docstrings, and the `bump-pixi-version` description
+**When** the file is `git mv`'d to `archive/.github/workflows/herald-live-demo.yml` and every live reader follows
+**Then** `pixi-version-check` exits 0 with no site for it. Doctor's *Live webhook host* row proves the host through 19.2's
+how-to, `herald-ship-local` and the opt-in smoke test, and the doctor suite passes with the workflow gone from
+`_HERALD_NAMED_NON_PACKAGE_PATHS`. No live file names `.github/workflows/herald-live-demo.yml`.
+**And** the `bump-pixi-version` description names the registry, not its sites, and `docs/how-to/pixi-tasks.md` is
+regenerated. Every Spec `spec-surface-check` names is reconciled and stamped scoped. `pyforge-herald-test`,
+`pyforge-doctor-test`, the scripts suite and `pyforge-station-tests` pass.
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
@@ -1734,3 +1789,21 @@ records the operator's 2026-10-10 ruling on Story 19.2 against AD-14 and AD-13/A
 
 Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key: 128 headings and 128 story keys, measured with
 `fleet_scan.parse_sprint_status`, which also counts 35 epic keys and 126 stories done. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-10 (later)
+
+Two operator acts on the same day, recorded in `spec-pyforge-herald/.memlog.md`. No CAP, FR or AD moves, so the PRD
+and the spine are not re-stamped.
+- **Story 19.2's gate cleared.** Steward 86.1 is `done` on main (PR #2056, merge `7d8ab99e88`), so the pre-authorised
+  flip ran: `19-2-…` moved `blocked -> backlog`, and its spec moved to `ready-for-dev`. AC7 now reads "unchanged by this
+  story" (`git diff origin/main...HEAD`), because a `bump-pixi-version` run on `main` rewrites the workflow's three
+  registered pins. Epic 19 gains a dated *Gate cleared* line, and its HARD boundaries are unchanged.
+- **Epic 36 / Story 36.1 minted** (fix, no CAP, no flag, `Deps: S-19.2`) from the operator's ruling "Archive after
+  19.2" and the Dream's 2026-10-10 (live demo archive) entry. `epic-36`, `epic-36-retrospective` and the story key went
+  into a worktree-local Tier-3 feed, and `sprint-ledger-sync --project herald --allow-regression` wrote the twin. It
+  named one regression, the approved 19.2 flip, and nothing else.
+
+Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key: 129 headings and 129 story keys, measured
+with `fleet_scan.parse_sprint_status`, which counts 36 epic keys and 126 stories done. Two stale cells in the Epic List
+table are fixed in the same pass: E31 and E32 now read 3/3, matching the ledger. `epicCount` and
+`storyCount` are re-measured. `updated:` bumped.

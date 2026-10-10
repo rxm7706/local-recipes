@@ -116,6 +116,40 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-10 (live demo archive) — Ruled: `herald-live-demo.yml` moves to the archive once Story 19.2 closes.**
+  The workflow reads `disabled_manually` (Actions API, 2026-10-10), and its last run was on 2026-08-24. Two of its
+  three jobs start a standalone `pyforge.herald.webhook_host:application` under daphne
+  (`.github/workflows/herald-live-demo.yml:162`, `:267`), the per-station process 19.2 rejects. All three use a
+  `runner.temp` store (`:157`, `:262`, `:385`), and the webhook jobs need a repository secret (`:41`). Once 19.2 proves a ship on the local host, the workflow proves nothing the estate still needs, yet live files
+  keep it in place:
+  - the pixi version registry (`scripts/pixi_version_registry.py:82`, its three pins), which `bump-pixi-version`
+    rewrites;
+  - doctor's live-proof catalog row (`spec-pyforge-doctor/live-proof-surfaces.md:28`) and its test exception
+    (`test_sources_live_proof_surfaces.py:459`);
+  - the two workflow inventories;
+  - herald's own docs and docstrings;
+  - the `bump-pixi-version` description in `pixi.toml` (`:1244`), which lists sites by name.
+
+  The operator chose on 2026-10-10 ("Archive after 19.2"): "Mint a herald fix story now (Deps: S-19.2): git mv to
+  archive/.github/workflows/, repoint doctor's catalog row and test exceptions, drop the pixi_version_registry entry,
+  update inventories/docs, generalise the bump-pixi-version description; reconcile doctor/herald/core specs." **What it
+  looks like when real:**
+  - **The file** sits at `archive/.github/workflows/herald-live-demo.yml`, moved by `git mv` and byte-identical.
+    CHAIN-STANDARD §11 says "Nothing is deleted; every move is a `git mv`". GitHub reads only `.github/workflows/`, so
+    the workflow is gone from Actions.
+  - **Its readers follow the move.** Doctor's *Live webhook host* row proves the host through 19.2's how-to, the
+    `herald-ship-local` task and the opt-in `HERALD_LIVE_WEBHOOK=1` smoke test, with no workflow in its globs or in
+    the test's exceptions. The registry has no site for it, and `pixi-version-check` passes. The inventories and
+    herald's docs name the archive path or nothing. The `bump-pixi-version` description says "every site in the
+    registry" and stops listing sites, so it cannot go stale again.
+  - **Constraints.** This supersedes the 2026-10-10 (live backend, local host) entry's "stays disabled and unchanged",
+    but only from 19.2's close; until then that constraint, Epic 19's HARD boundary and 19.2's Never list hold. One
+    `fix` story, no CAP, no flag. Epic 19 closes when 19.2 lands, so the story opens a new epic. Historical planning
+    files and `pixi.toml`'s dated 2026-08-21 `requires-pixi` comment keep their mentions. The `pixi.toml` edit brings
+    the reconcile of every Spec that governs it, plus every station suite.
+
+  Owner `spec-pyforge-herald` (CAP-38 ← LB-2: Story 13.6 shipped the workflow). → Epic 36 / Story 36.1, specced
+  2026-10-10, `Deps: S-19.2`.
 - **2026-10-10 (live backend, local host) — Ruled: a ship records itself on this machine's local stack, not
   foundry-side.** Epic 13 is `done` and a ship has never recorded itself. Story 19.2 sat `blocked` on DW-13-6-1:
   `steward deploy perimeter` renders a hardcoded `myproject.asgi:application` (`steward/deploy.py:539`) and has no

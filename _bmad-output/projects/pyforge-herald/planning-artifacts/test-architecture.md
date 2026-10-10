@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: d5846e7c115e47aa
-story_count: 128
-test_file_count: 78
+source_fingerprint: 91be4448670e3be6
+story_count: 129
+test_file_count: 83
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 128
-- **Epics parsed:** 35
-- **Test files inventoried:** 78 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 129
+- **Epics parsed:** 36
+- **Test files inventoried:** 83 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d5846e7c115e47aa`
+- **Source fingerprint:** `91be4448670e3be6`
 
 ## Risk Assessment
 
@@ -63,6 +63,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 32: A deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57)
 - Epic 33: The genesis deck counts archived Dreams where they now live (spec-one-chain-per-station CAP-11)
 - Epic 34: Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11)
+- Epic 36: The CI live demo retires to the archive once a ship records itself locally
 
 ### Low-risk epics
 
@@ -85,8 +86,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_docs_site.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_pages_second_host.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` | meta | none observed |
@@ -134,6 +139,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_locking.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_mcp_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_notices.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_pages_host.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_performance_epic11.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_pptx_native_flag.py` | unit | none observed |
@@ -287,6 +293,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.1 | Herald cites the deck how-to, not the intake stub | none observed |
 | 35.1 | The deck transport, sync-all, deck tooling and docs site close their open def... | none observed |
 | 35.2 | The docs-site checks and the sync-proof row close on real evidence | none observed |
+| 36.1 | The CI live-demo workflow moves to the archive and its readers follow | none observed |
 
 ## Quality Gates
 
