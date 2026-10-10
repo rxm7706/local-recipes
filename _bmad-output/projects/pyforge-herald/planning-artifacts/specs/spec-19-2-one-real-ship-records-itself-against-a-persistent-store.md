@@ -2,10 +2,10 @@
 title: '19.2: One real ship records itself against a persistent store'
 type: 'feature'
 created: '2026-09-18'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '647abbc9b21d09c54e75cc59f1e93c1ea4331f4b'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/epics.md
@@ -29,6 +29,7 @@ context:
 deferred:
   - 'DW-13-6-1: `steward deploy perimeter` renders only a hardcoded `myproject.asgi:application` (`steward/deploy.py:539` on 2026-10-10; the row says `:484`) with no `--asgi-application` flag. Re-scoped 2026-10-10 (operator ruling): the steward story that closes DW-13-6-1 (key: 86-1-deploy-perimeter-renders-the-asgi-application-it-is-given) adds the flag; this story stays `blocked` until that story is `done` on main, then the operator flips it `blocked -> backlog`. This story never closes on a throwaway store. Gate cleared 2026-10-10: steward 86.1 landed (PR #2056, merge `7d8ab99e88`), herald''s DW-13-6-1 row reads `resolved`, and this story moved `blocked -> backlog` under the ruling.'
   - 'DW-13-6-2: `webhook_host.py`''s timeout frees the caller, not the OS thread a hung handler holds. It becomes reachable once this story keeps a host running; it stays open here (loopback only, one local caller, a restart clears it) and the how-to names the restart as the remedy.'
+  - 'AC5 operator proof (2026-10-10 dispatch): live-host-proof transcription not run in bmad-build-auto; operator must complete AC1–AC6 on the primary checkout and write `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/live-host-proof-2026-10-10.md`.'
 declared_low_risk: false
 ---
 
@@ -383,3 +384,28 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
     after this story lands. This story's Never list still holds until it closes.
 
   Recorded in `spec-pyforge-herald/.memlog.md`.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 2 findings — high 0, medium 1, low 0, false 0, maybe-false 1
+- findings:
+  - `[medium]` `[defer]` AC5 live-host proof file not produced in dispatch — operator run on primary checkout still required.
+  - `[maybe-false]` `[reject]` environment.yaml unchanged after pixi.toml task add — export produced no diff.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Implemented `pyforge.herald.local_ship`, `herald-ship-local` pixi task, unit/platform/live-smoke tests, Diátaxis how-to, and doc cross-links for Story 19.2. Spec-surface reconciled on `spec-pyforge-herald`, `spec-pyforge-doctor`, and `spec-pyforge-unifying-strategy` memlogs (no `--write-baseline` in this session).
+
+Verification:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — pass
+- `pixi run -e platform-ci-test pytest src/platform/tests/test_station_api_host_dispatch.py -q` — pass
+- `pixi run -e pyforge-guild lint-types` — pass
+- `pixi run -e pyforge-guild docs-map-hygiene-check` / `docs-currency-check` — pass
+- `python scripts/spec_surface_reconcile.py` — pass after memlog entries
+
+Follow-up review recommended: true — AC5 operator proof on primary checkout before ledger/epic close.
+
+Residual risks: Operator must complete AC1–AC6 and add `live-host-proof-<date>.md` before treating Epic 19 as fully closed.

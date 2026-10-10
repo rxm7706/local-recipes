@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from unittest.mock import patch
 
@@ -60,7 +61,7 @@ def test_signature_round_trips_like_webhook() -> None:
     body = local_ship.build_on_ship_body(
         local_ship.LandingCommit("a" * 40, _landing_subject("warden", "11-1"), "warden", "11-1")
     )
-    ts = "1700000000"
+    ts = str(int(time.time()))
     header = local_ship._sign(secret, ts, body)
     assert webhook.verify_signature(secret, body, header, ts) is True
 
@@ -73,6 +74,14 @@ def test_main_refuses_unset_secret(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_main_refuses_non_loopback_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
     assert local_ship.main(["--url", "http://192.168.1.1:8000"]) == 1
+
+
+def test_main_exits_nonzero_when_host_returns_401(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
+    landing = local_ship.LandingCommit("a" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
+    with patch.object(local_ship, "resolve_landing_commit", return_value=landing):
+        with patch.object(local_ship, "deliver_landing", return_value={"on_ship": {"status": 401, "body": {}}, "on_pr_close": {"status": 201, "body": {}}}):
+            assert local_ship.main(["--url", "http://127.0.0.1:9"]) == 1
 
 
 def test_resolve_landing_commit_rejects_non_landing(tmp_path: Path) -> None:
