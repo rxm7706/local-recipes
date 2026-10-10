@@ -2,8 +2,11 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.99.11** (Oct 10, 2026, current) — **doctor Story 37.1 retro: legacy `docs/specs/` tier retired (PATCH).** Repointed live CFE references from `docs/specs/*` stubs to `archive/docs/specs/` or `docs/how-to/` pointer pages (`SKILL.md`, `guides/feedstock-platform-expansion.md`). Guidance-only; no script change.
-- **Files:** `SKILL.md`, `guides/feedstock-platform-expansion.md`, `CHANGELOG.md`, `MANIFEST.yaml`, `config/skill-config.yaml` (8.99.10 → 8.99.11).
+**v8.99.12** (Oct 10, 2026, current) — **doctor Story 37.1 retro: legacy `docs/specs/` tier retired (PATCH).** Repointed live CFE references from `docs/specs/*` stubs to `archive/docs/specs/` or `docs/how-to/` pointer pages (`SKILL.md`, `guides/feedstock-platform-expansion.md`). Guidance-only; no script change.
+- **Files:** `SKILL.md`, `guides/feedstock-platform-expansion.md`, `CHANGELOG.md`, `MANIFEST.yaml`, `config/skill-config.yaml` (8.99.11 → 8.99.12).
+
+**v8.99.11** (Oct 10, 2026) — **steward Story 67.9 Rule-2 retro: stale conda-recipe-manager #44 click comment cleanup (PATCH).** Updated `recipes/conda-recipe-manager/recipe.yaml` `# CFE comments` only — feedstock PR #44 closed unmerged 2026-09-01; pytest-socket cap rationale unchanged. No skill guidance changes; existing CFE comment rules held.
+- **Files:** `SKILL.md`, `CHANGELOG.md`, `MANIFEST.yaml`, `config/skill-config.yaml` (8.99.10 → 8.99.11).
 
 **v8.99.10** (Oct 10, 2026) — **mason Story 25.8 Rule-2 retro: Track B batch 4 (`refresh-wave` B-25-8, eleven co-maintained recipes) (PATCH).** Manifest `wave-25-8` refreshed **9/11** via driver; **openlineage-airflow** and **openlineage-python** needed hand mirrors to the monorepo GitHub tag source (G54; PyPI sdist/wheel absent at 1.41.0 / mismatched sha256 at 1.53.0). Pre-refresh: canonical PyPI URLs and CFE blocks on five recipes; G96 pre-sync on **openlineage-airflow** (`uv-build`), **openlineage-python** (`uv-build`, `httpx2`), **openllm** (0.6.30 feedstock run/host shape). Post-refresh: fix `refresh-wave` maintainer union inserting `pb01ka` inside the CFE header on **openllm** (same landmine as Story 25.7). **openlineage-airflow** linux-64: package builds; test env **build-clean-test-blocked** (no `openlineage-python==1.41.0` on channel). **pillow-heif** 1.8.0: compile failed locally (`bits/libc-header-start.h` — host `/usr/include` leak; feedstock-faithful recipe). **pyobjc-framework-coretext**: refreshed; build **not-attempted** (osx-only). Guidance-only; no script change.
 - **Files:** `CHANGELOG.md`, `MANIFEST.yaml`, `config/skill-config.yaml` (8.99.9 → 8.99.10).

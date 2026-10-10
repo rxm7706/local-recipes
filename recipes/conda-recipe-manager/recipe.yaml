@@ -93,8 +93,7 @@ extra:
 #       # is promoted to a raised UserWarning before SocketBlockedError
 #       # finishes constructing, so `pytest.raises(SocketBlockedError)` in
 #       # tests/test_smoke_testing.py::test_validate_pysocket_plugin never
-#       # sees it. NOT related to click (verified: reproduced locally with
-#       # click already unpinned, matching
-#       # conda-forge/conda-recipe-manager-feedstock#44's diff, which
-#       # unpins click but does not touch test deps).
+#       # sees it. NOT related to click. Feedstock PR #44 closed unmerged
+#       # 2026-09-01; its final diff capped pytest-socket below 0.8.0 (same
+#       # rationale as here) but did not merge its click changes.
 ####

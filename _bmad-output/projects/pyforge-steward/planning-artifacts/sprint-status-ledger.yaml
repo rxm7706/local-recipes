@@ -284,7 +284,7 @@ development_status:
   67-6-index-herald-s-dossier-states-the-cutover-s-control-plane-herald-26-1: done
   67-7-index-scribe-s-instruction-surface-names-the-estate-first-scribe-21-1: done
   67-8-the-cutover-spine-drops-the-archive: done
-  67-9-the-conda-recipe-manager-click-notes-state-the-cap-as-it-stands: backlog
+  67-9-the-conda-recipe-manager-click-notes-state-the-cap-as-it-stands: done
   68-1-a-workspace-archive-holds-the-work-not-the-environments-and-one-bad-record-never-stops-the-sweep: done
   68-2-the-pre-push-gate-skips-a-push-that-carries-nothing-new-and-its-journal-names-what-was-pushed: done
   69-1-workspace-clean-keeps-a-note-not-a-tarball-for-a-worktree-already-on-its-source: done
@@ -481,7 +481,7 @@ development_status:
   epic-65-retrospective: optional
   epic-66: done
   epic-66-retrospective: optional
-  epic-67: in-progress
+  epic-67: done
   epic-67-retrospective: optional
   epic-68: done
   epic-68-retrospective: optional
