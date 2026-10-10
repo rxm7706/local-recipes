@@ -2,7 +2,7 @@
 title: "89.1: A re-dispatch never lands a story whose review failed"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '1382b713fe6e08eb09b41d81816463fefa9e17f9'
 review_loop_iteration: 0
 followup_review_recommended: false
