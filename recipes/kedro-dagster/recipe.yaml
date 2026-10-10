@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: kedro-dagster
-  version: "0.8.0"
+  version: "0.8.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/k/kedro-dagster/kedro_dagster-${{ version }}.tar.gz
-  sha256: dd8c2b5b11320ad1306f78f5b4f8006d280675d84a3d8698436d508c18c0b125
+  sha256: 552679cc4da54371aa09ea76382b08df279c8db89204660ce9b9e17f9b71261e
 
 build:
   number: 0
@@ -83,15 +83,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kedro-dagster-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T12:14:52Z
+  cfe-last-checked: 2026-10-10T12:16:35Z
   cfe-generated-by-version: 8.99.3
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: 2026-10-10T12:14:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T12:17:19Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.7: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 0.8.0 -> 0.8.1
 ####
