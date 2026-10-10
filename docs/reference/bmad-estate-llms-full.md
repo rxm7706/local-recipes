@@ -10,14 +10,14 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-10-08. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-10-09. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=58220a6d9490 -->
 <!-- bmad-estate-digest: skills=c2259b597d92 -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
-<!-- bmad-estate-digest: suite=99320657c0ef -->
+<!-- bmad-estate-digest: suite=37ccab8802f2 -->
 <!-- bmad-estate-digest: pins=4c42a2caf3a4 -->
 <!-- bmad-estate-digest: harness=c35ae088e6fe -->
 <!-- bmad-estate-digest: cadence=bd38c415273d -->
@@ -301,7 +301,7 @@ never re-decided) and each member's `recipes/<member>/recipe.yaml`. 13 active me
 
 | Member | Register version | Install class | Verdict | Wielder | Provisioning path | Hazards | Local recipe |
 |---|---|---|---|---|---|---|---|
-| `bmad-method` | 6.12.0 | installer-tree | wield (substrate) | all stations | steward Epic 14 (`upgrade bmad-core`) | installed-stage caveat: pipeline-truth reads conda-meta, not `_bmad/_config/manifest.yaml` | 6.12.0 |
+| `bmad-method` | 6.12.0 | installer-tree | wield (substrate) | all stations | steward Epic 14 (`upgrade bmad-core`) | installed-stage caveat: pipeline-truth reads conda-meta, not `_bmad/_config/manifest.yaml` | 6.12.1 |
 | `bmad-loop` | 0.11.1 | runner-home | wield | marshal (wrap, never absorb) | `steward provision --runner bmad-loop --env …` | npm-invisible; uv-from-git native path | 0.12.0 |
 | `bmad-method-test-architecture-enterprise` | 1.24.0 | module | **wield — full adoption** | marshal (workflows, review lens), warden (advisory) | `steward provision --module tea` | replaces `_bmad/scripts/bmad_tea_playwright.py` + 2 meta-tests (equivalence check first) | 1.27.2 |
 | `bmad-builder` | 2.2.2 | module | **wield — beside skf** | steward (module/agent authoring), mason | `steward provision --module bmb` | never `--legacy-dir` / `cleanup-legacy.py` (`rmtree` of `_bmad/core/config.yaml`); npm stale 1.1.0 | 2.2.2 |
@@ -321,6 +321,7 @@ Deprecated catalog rows (kept for drift completeness, never a metapackage run-de
 
 | Member | Source | Source | Source |
 |---|---|---|---|
+| `bmad-method` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 6.12.0 | `pixi.toml` → 6.12.0 | `recipes/bmad-method/recipe.yaml` → 6.12.1 |
 | `bmad-loop` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.11.1 | `pixi.toml` → 0.12.0 | `recipes/bmad-loop/recipe.yaml` → 0.12.0 |
 | `bmad-method-test-architecture-enterprise` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 1.24.0 | `pixi.toml` → 1.27.2 | `recipes/bmad-method-test-architecture-enterprise/recipe.yaml` → 1.27.2 |
 | `bmad-module-skill-forge` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.1.0 | `pixi.toml` → 2.2.0 | `recipes/bmad-module-skill-forge/recipe.yaml` → 2.2.0 |

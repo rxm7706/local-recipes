@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/78/8b/3b8e9dd3c4293c46074f55869b50d7e593e2ba810df18908c7ef7850c042/wagtail_modeladmin-2.5.0.tar.gz
+  url: https://pypi.org/packages/source/w/wagtail-modeladmin/wagtail_modeladmin-${{ version }}.tar.gz
   sha256: 0f86e96d5172437e14f6e5fd986bae9648f499c117dff3bf6b2f9844ea9f440e
 
 build:
@@ -20,12 +20,12 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - flit-core >=3.2,<4
-  - pip
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
   run:
-  - python >=${{ python_min }}
-  - wagtail >=5.0
+    - python >=${{ python_min }}
+    - wagtail >=5.0
     # - sphinxcontrib-spelling <9.0,>=8.0
     # - sphinx_copybutton >=0.5
     # - sphinx-wagtail-theme ==6.3.0
@@ -60,7 +60,7 @@ requirements:
 tests:
 - python:
     imports:
-    - wagtail_modeladmin
+      - wagtail_modeladmin
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -72,7 +72,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -80,8 +80,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-modeladmin
   cfe-purls:
-  - pkg:conda/wagtail-modeladmin@${{ version }}?channel=conda-forge
-  - pkg:pypi/wagtail-modeladmin@${{ version }}
+    - pkg:conda/wagtail-modeladmin@${{ version }}?channel=conda-forge
+    - pkg:pypi/wagtail-modeladmin@${{ version }}
   cfe-upstream-repo: https://github.com/wagtail-nest/wagtail-modeladmin
   cfe-upstream-homepage: https://github.com/wagtail-nest/wagtail-modeladmin
   cfe-import-names: [wagtail_modeladmin]
@@ -91,8 +91,8 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-modeladmin-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
-  - dependency-fix
+    - meta-yaml-to-recipe-yaml
+    - dependency-fix
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0

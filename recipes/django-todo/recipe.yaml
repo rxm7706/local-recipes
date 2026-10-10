@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/8b/93/69cac605678ba6b1fa0e18b8911a409dc648747f8a911ddda3885c251684/django_todo-2.7.0.tar.gz
+  url: https://pypi.org/packages/source/d/django-todo/django_todo-${{ version }}.tar.gz
   sha256: 7390915d2460e7298f1d33c217c64d675ffbd009cb4aea03e4404628bf8dda0c
 
 build:
@@ -20,24 +20,24 @@ build:
 
 requirements:
   host:
-  - python 3.11.*
-  - setuptools >=40.8.0
-  - wheel
-  - pip
+    - python 3.11.*
+    - setuptools >=40.8.0
+    - wheel
+    - pip
   run:
-  - faker
-  - python >=${{ python_min }}
-  - django >=5.2
-  - factory_boy
-  - titlecase
-  - bleach
-  - django-autocomplete-light
-  - html2text
+    - faker
+    - python >=${{ python_min }}
+    - django >=5.2
+    - factory_boy
+    - titlecase
+    - bleach
+    - django-autocomplete-light
+    - html2text
 
 tests:
 - python:
     imports:
-    - todo
+      - todo
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -49,7 +49,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -57,8 +57,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-todo
   cfe-purls:
-  - pkg:conda/django-todo@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-todo@${{ version }}
+    - pkg:conda/django-todo@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-todo@${{ version }}
   cfe-upstream-repo: https://github.com/shacker/django-todo
   cfe-upstream-homepage: http://django-todo.org
   cfe-import-names: [todo]

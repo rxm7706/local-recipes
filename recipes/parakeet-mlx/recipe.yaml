@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/32/59/4fd8c37c064c117e4f6af5bdf041960548121608d0504545aa913b71e8ee/parakeet_mlx-0.5.3.tar.gz
+  url: https://pypi.org/packages/source/p/parakeet-mlx/parakeet_mlx-${{ version }}.tar.gz
   sha256: b06b7345d68127b581ee0ba07691654e60d44004c401c9acfefcefbb4de50ea7
 
 build:
@@ -18,36 +18,36 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-    - parakeet-mlx = parakeet_mlx.cli:app
+      - parakeet-mlx = parakeet_mlx.cli:app
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - setuptools >=42
-  - wheel
-  - pip
+    - python ${{ python_min }}.*
+    - setuptools >=42
+    - wheel
+    - pip
   run:
-  - python >=${{ python_min }}
-  - dacite >=1.9.2
-  - huggingface_hub >=0.30.2
-  - librosa >=0.11.0
-  - mlx >=0.22.1
-  - numpy >=2.2.5
-  - typer >=0.15.3
+    - python >=${{ python_min }}
+    - dacite >=1.9.2
+    - huggingface_hub >=0.30.2
+    - librosa >=0.11.0
+    - mlx >=0.22.1
+    - numpy >=2.2.5
+    - typer >=0.15.3
 
 tests:
 - python:
     imports:
-    - parakeet_mlx
+      - parakeet_mlx
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - '*'
+      - ${{ python_min }}.*
+      - '*'
 - requirements:
     run:
-    - python ${{ python_min }}.*
+      - python ${{ python_min }}.*
   script:
-  - parakeet-mlx --help
+    - parakeet-mlx --help
 
 about:
   homepage: https://github.com/senstella/parakeet-mlx
@@ -68,7 +68,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -76,8 +76,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: parakeet-mlx
   cfe-purls:
-  - pkg:conda/parakeet-mlx@${{ version }}?channel=conda-forge
-  - pkg:pypi/parakeet-mlx@${{ version }}
+    - pkg:conda/parakeet-mlx@${{ version }}?channel=conda-forge
+    - pkg:pypi/parakeet-mlx@${{ version }}
   cfe-upstream-repo: https://github.com/senstella/parakeet-mlx
   cfe-upstream-homepage: https://github.com/senstella/parakeet-mlx
   cfe-import-names: [parakeet_mlx]

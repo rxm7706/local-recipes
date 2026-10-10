@@ -15,18 +15,18 @@ source:
 build:
   number: 0
   script:
-  - if: unix
-    then: build.sh
-  - if: win
-    then: build.bat
+    - if: unix
+      then: build.sh
+    - if: win
+      then: build.bat
 
 requirements:
   build:
-  - ${{ compiler('go-cgo') }}
-  - ${{ compiler('c') }}
-  - ${{ stdlib('c') }}
-  - go-licenses
-  - nodejs >=18
+    - ${{ compiler('go-cgo') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - go-licenses
+    - nodejs >=18
 
 tests:
 - script:
@@ -49,15 +49,15 @@ about:
     - Real-time web UI updates
   license: MIT
   license_file:
-  - LICENSE
-  - library_licenses/
+    - LICENSE
+    - library_licenses/
   homepage: https://github.com/axllent/mailpit
   repository: https://github.com/axllent/mailpit
   documentation: https://mailpit.axllent.org/docs/
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -65,8 +65,8 @@ extra:
   cfe-upstream-registry: golang
   cfe-upstream-name: github.com/axllent/mailpit
   cfe-purls:
-  - pkg:conda/mailpit@${{ version }}?channel=conda-forge
-  - pkg:golang/github.com/axllent/mailpit@${{ version }}
+    - pkg:conda/mailpit@${{ version }}?channel=conda-forge
+    - pkg:golang/github.com/axllent/mailpit@${{ version }}
   cfe-upstream-repo: https://github.com/axllent/mailpit
   cfe-upstream-homepage: https://github.com/axllent/mailpit
   cfe-import-names: []

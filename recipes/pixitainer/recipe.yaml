@@ -27,29 +27,29 @@ outputs:
   build:
     noarch: generic
     script:
-    - mkdir -p $PREFIX/bin
-    - mkdir -p $PREFIX/opt/pixitainer
-    - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
-    - cp lib/sif.sh $PREFIX/opt/pixitainer/sif.sh
-    - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
-        # 0.8.2 added lib/tool.sh; pixi-containerize sources it, so omitting
-        # it makes `pixi-containerize --help` fail at test time.
-    - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
-    - cp pixi-containerize $PREFIX/bin/pixi-containerize
-    - chmod +x $PREFIX/bin/pixi-containerize
+      - mkdir -p $PREFIX/bin
+      - mkdir -p $PREFIX/opt/pixitainer
+      - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
+      - cp lib/sif.sh $PREFIX/opt/pixitainer/sif.sh
+      - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
+          # 0.8.2 added lib/tool.sh; pixi-containerize sources it, so omitting
+          # it makes `pixi-containerize --help` fail at test time.
+      - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
+      - cp pixi-containerize $PREFIX/bin/pixi-containerize
+      - chmod +x $PREFIX/bin/pixi-containerize
   requirements:
     run:
-    - __linux
-    - apptainer >=1.4.5
-    - bash
+      - __linux
+      - apptainer >=1.4.5
+      - bash
   tests:
-  - script:
-    - test -x ${PREFIX}/bin/pixi-containerize
-    - test -f ${PREFIX}/opt/pixitainer/common.sh
-    - test -f ${PREFIX}/opt/pixitainer/sif.sh
-    - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
-    - test -f ${PREFIX}/opt/pixitainer/tool.sh
-    - pixi-containerize --help
+    - script:
+      - test -x ${PREFIX}/bin/pixi-containerize
+      - test -f ${PREFIX}/opt/pixitainer/common.sh
+      - test -f ${PREFIX}/opt/pixitainer/sif.sh
+      - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
+      - test -f ${PREFIX}/opt/pixitainer/tool.sh
+      - pixi-containerize --help
   about:
     summary: Containerize Pixi workspaces into Apptainer/SIF images with a single command
     description: |
@@ -68,26 +68,26 @@ outputs:
   build:
     noarch: generic
     script:
-    - mkdir -p $PREFIX/bin
-    - mkdir -p $PREFIX/opt/pixitainer
-    - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
-    - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
-        # 0.8.2: pixi-containerize-docker sources lib/tool.sh too.
-    - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
-    - cp pixi-containerize-docker $PREFIX/bin/pixi-containerize-docker
-    - chmod +x $PREFIX/bin/pixi-containerize-docker
+      - mkdir -p $PREFIX/bin
+      - mkdir -p $PREFIX/opt/pixitainer
+      - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
+      - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
+          # 0.8.2: pixi-containerize-docker sources lib/tool.sh too.
+      - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
+      - cp pixi-containerize-docker $PREFIX/bin/pixi-containerize-docker
+      - chmod +x $PREFIX/bin/pixi-containerize-docker
   requirements:
     run:
-    - __linux
-    - docker-cli >=29.0.0
-    - bash
+      - __linux
+      - docker-cli >=29.0.0
+      - bash
   tests:
-  - script:
-    - test -x ${PREFIX}/bin/pixi-containerize-docker
-    - test -f ${PREFIX}/opt/pixitainer/common.sh
-    - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
-    - test -f ${PREFIX}/opt/pixitainer/tool.sh
-    - pixi-containerize-docker --help
+    - script:
+      - test -x ${PREFIX}/bin/pixi-containerize-docker
+      - test -f ${PREFIX}/opt/pixitainer/common.sh
+      - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
+      - test -f ${PREFIX}/opt/pixitainer/tool.sh
+      - pixi-containerize-docker --help
   about:
     summary: Containerize Pixi workspaces into Docker images with a single command
     description: |
@@ -112,8 +112,35 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pixitainer
+  cfe-upstream-registry: github
+  cfe-upstream-name: pixitainer
+  cfe-purls:
+    - pkg:conda/pixitainer@${{ version }}?channel=conda-forge
+    - pkg:github/RaphaelRibes/pixitainer@${{ version }}
+  cfe-upstream-repo: https://github.com/RaphaelRibes/pixitainer
+  cfe-upstream-homepage: https://github.com/RaphaelRibes/pixitainer
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: false:cli-multi-output
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pixitainer-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T08:27:50Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:12:18Z'
+  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+####

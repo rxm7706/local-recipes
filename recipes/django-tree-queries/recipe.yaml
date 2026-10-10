@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/ba/6a/5a5985a20405ba8732e70e153da6397b0a6d847f43aab16a5e39aff32035/django_tree_queries-0.26.1.tar.gz
+  url: https://pypi.org/packages/source/d/django-tree-queries/django_tree_queries-${{ version }}.tar.gz
   sha256: 3bedefbd34869571b8698a0f9836e8232a329e59742d4ced24724eb8894e4c18
 
 build:
@@ -20,18 +20,18 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
   run:
-  - django-js-asset
-  - django
-  - python >=${{ python_min }}
+    - django-js-asset
+    - django
+    - python >=${{ python_min }}
 
 tests:
 - python:
     imports:
-    - tree_queries
+      - tree_queries
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -43,7 +43,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -51,8 +51,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-tree-queries
   cfe-purls:
-  - pkg:conda/django-tree-queries@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-tree-queries@${{ version }}
+    - pkg:conda/django-tree-queries@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-tree-queries@${{ version }}
   cfe-upstream-repo: https://github.com/feincms/django-tree-queries
   cfe-upstream-homepage: https://github.com/feincms/django-tree-queries
   cfe-import-names: [tree_queries]

@@ -10,34 +10,34 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/39/97/407e7d06a14d65b20f0055b0a518ae1d775172f06eb02153946228b57593/robocorp_storage-1.1.1.tar.gz
+  url: https://pypi.org/packages/source/r/robocorp-storage/robocorp_storage-${{ version }}.tar.gz
   sha256: 0f86824a65308e7ec56df76326913d15d62bbce0f27dccb22074f97e653f1aaa
 
 build:
   number: 0
   noarch: python
   script:
-  - if: win
-    then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
-  - if: unix
-    then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
-  - ${{ PYTHON }} -m pip install . -vv
+    - if: win
+      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+    - if: unix
+      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+    - ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - poetry-core
-  - pip
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
   run:
-  - python >=${{ python_min }},<4.0.0
-  - requests >=2.28.2
-  - tenacity >=8.0.1
-  - typing-extensions >=4.5.0,<5.0.0
+    - python >=${{ python_min }},<4.0.0
+    - requests >=2.28.2
+    - tenacity >=8.0.1
+    - typing-extensions >=4.5.0,<5.0.0
 
 tests:
 - python:
     imports:
-    - robocorp.storage
+      - robocorp.storage
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -49,8 +49,35 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: robocorp-storage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: robocorp-storage
+  cfe-purls:
+    - pkg:conda/robocorp-storage@${{ version }}?channel=conda-forge
+    - pkg:pypi/robocorp-storage@${{ version }}
+  cfe-upstream-repo: https://github.com/robocorp/robocorp
+  cfe-upstream-homepage: https://github.com/robocorp/robocorp
+  cfe-import-names: ["robocorp.storage"]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/robocorp-storage-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T08:27:50Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:17:43Z'
+  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+####

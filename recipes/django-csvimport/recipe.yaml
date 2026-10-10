@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }},<4.0
-  - django >=2.2.5
-  - chardet
-  - dateparser
+    - python >=${{ python_min }},<4.0
+    - django >=2.2.5
+    - chardet
+    - dateparser
 
 tests:
 - python:
     imports:
-    - csvimport
+      - csvimport
     python_version: ${{ python_min }}.*
     pip_check: true
 
@@ -44,9 +44,35 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-10-09T09:18:42Z
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-csvimport
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-csvimport
+  cfe-purls:
+    - pkg:conda/django-csvimport@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-csvimport@${{ version }}
+  cfe-upstream-repo: https://github.com/edcrewe/django-csvimport
+  cfe-upstream-homepage: https://github.com/edcrewe/django-csvimport
+  cfe-import-names: [csvimport]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-csvimport-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T08:27:50Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+####

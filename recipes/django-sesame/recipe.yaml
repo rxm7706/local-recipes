@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}
-  - poetry-core >=1.0.0
-  - pip
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
   run:
-  - python >=${{ python_min }}
-  - django >=3.2
+    - python >=${{ python_min }}
+    - django >=3.2
   run_constraints:
-  - ua-parser >=0.15
+    - ua-parser >=0.15
 
 tests:
 - python:
     imports:
-    - sesame
+      - sesame
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -44,7 +44,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -52,8 +52,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-sesame
   cfe-purls:
-  - pkg:conda/django-sesame@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-sesame@${{ version }}
+    - pkg:conda/django-sesame@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-sesame@${{ version }}
   cfe-upstream-repo: https://github.com/aaugustin/django-sesame
   cfe-upstream-homepage: https://github.com/aaugustin/django-sesame
   cfe-import-names: [sesame]

@@ -21,14 +21,14 @@ build:
 
 requirements:
   host:
-  - python 3.12.*
-  - hatchling
-  - hatch-requirements-txt >=0.4.1
-  - pip
+    - python 3.12.*
+    - hatchling
+    - hatch-requirements-txt >=0.4.1
+    - pip
   run:
-  - python >=${{ python_min }}
-  - django <6.1,>=6.0
-  - pymongo
+    - python >=${{ python_min }}
+    - django <6.1,>=6.0
+    - pymongo
     # - sphinx-copybutton
     # - sphinx >=7
     # - furo >=2025.7.19
@@ -48,7 +48,7 @@ requirements:
 tests:
 - python:
     imports:
-    - django_mongodb_backend
+      - django_mongodb_backend
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -61,7 +61,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -69,8 +69,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-mongodb-backend
   cfe-purls:
-  - pkg:conda/django-mongodb-backend@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-mongodb-backend@${{ version }}
+    - pkg:conda/django-mongodb-backend@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-mongodb-backend@${{ version }}
   cfe-upstream-repo: https://github.com/mongodb/django-mongodb-backend
   cfe-upstream-homepage: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
   cfe-import-names: [django_mongodb_backend]

@@ -2793,7 +2793,7 @@ diff-apply, and pulls and authors a local mirror for each feedstock without one
 **And** a deliberate maintainer choice (an intentional pin, a platform exclusion) is kept and noted in the recipe's CFE
 comments block rather than overridden; the live count and the per-bucket results are recorded in the story spec; the
 `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.3: CFE gains a tracked bulk recipe-refresh driver that the refresh waves run through
 
@@ -2877,7 +2877,7 @@ Each one's `cfe-local-build-*` fields record a real linux-64 build or `not-attem
 **And** the four driver gaps read at mint, and any it finds, are filed as `deferred:` rows naming `refresh_wave.py`,
 without changing the driver. Nothing leaves the local repo. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver
 entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.5: Track B batch 1 refreshes airflow-code-editor through django-countries
 

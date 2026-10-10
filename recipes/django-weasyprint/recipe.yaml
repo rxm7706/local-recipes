@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/ae/a1/1d002b74459ad85645d2ef162fd6f8894f4b155e53689234c39f62f9b17b/django_weasyprint-2.6.0.tar.gz
+  url: https://pypi.org/packages/source/d/django-weasyprint/django_weasyprint-${{ version }}.tar.gz
   sha256: ec69834de0c1b416bdc9a9a6aaf72070d7a0072ce38df9cc9296d123ffcf5e28
 
 build:
@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - wheel
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - wheel
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - django >=3.2
-  - weasyprint >=68
+    - python >=${{ python_min }}
+    - django >=3.2
+    - weasyprint >=68
 
 tests:
 - python:
     imports:
-    - django_weasyprint
+      - django_weasyprint
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -44,8 +44,35 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-weasyprint
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-weasyprint
+  cfe-purls:
+    - pkg:conda/django-weasyprint@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-weasyprint@${{ version }}
+  cfe-upstream-repo: https://github.com/fdemmer/django-weasyprint
+  cfe-upstream-homepage: https://github.com/fdemmer/django-weasyprint
+  cfe-import-names: [django_weasyprint]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-weasyprint-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T08:27:50Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:50:57Z'
+  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+####

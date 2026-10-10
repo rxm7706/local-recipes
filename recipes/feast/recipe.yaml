@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/c4/f8/a66ed159b3422ece6bdad9d1ab97d24b58f2e50cc20ab21ff648cc340890/feast-0.66.0.tar.gz
+  url: https://pypi.org/packages/source/f/feast/feast-${{ version }}.tar.gz
   sha256: 4d059be34bc2f30e4dff976ce0d2a014fc364fe4d1354c3c44ccf74d78f24567
 
 build:
@@ -19,54 +19,54 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - flit-core
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core
   run:
-  - python >=${{ python_min }}
-  - click <9.0.0,>=7.0.0
-  - colorama <1,>=0.3.9
-  - dill ~=0.3.0
-  - protobuf >=4.24.0
-  - jinja2 <4,>=2
-  - jsonschema
-  - mmh3
-  - numpy <3,>=2.0.0
-  - pandas <3,>=1.4.3
-  - pyarrow >=21.0.0
-  - pydantic >=2.10.6
-  - pygments >=2.12.0,<3
-  - pyyaml >=5.4.0,<7
-  - requests
-  - sqlalchemy >1
-  - tabulate >=0.8.0,<1
-  - tenacity >=7,<9
-  - toml >=0.10.0,<1
-  - tqdm >=4,<5
-  - typeguard >=4.0.0
-  - fastapi >=0.68.0
-  - uvicorn >=0.30.6,<=0.34.0
-  - uvicorn-worker
-  - gunicorn
-  - dask-core >=2024.2.1
-  - prometheus_client >=0.20.0,<0.25.0
-  - psutil
-  - bigtree >=0.19.2
-  - pyjwt
+    - python >=${{ python_min }}
+    - click <9.0.0,>=7.0.0
+    - colorama <1,>=0.3.9
+    - dill ~=0.3.0
+    - protobuf >=4.24.0
+    - jinja2 <4,>=2
+    - jsonschema
+    - mmh3
+    - numpy <3,>=2.0.0
+    - pandas <3,>=1.4.3
+    - pyarrow >=21.0.0
+    - pydantic >=2.10.6
+    - pygments >=2.12.0,<3
+    - pyyaml >=5.4.0,<7
+    - requests
+    - sqlalchemy >1
+    - tabulate >=0.8.0,<1
+    - tenacity >=7,<9
+    - toml >=0.10.0,<1
+    - tqdm >=4,<5
+    - typeguard >=4.0.0
+    - fastapi >=0.68.0
+    - uvicorn >=0.30.6,<=0.34.0
+    - uvicorn-worker
+    - gunicorn
+    - dask-core >=2024.2.1
+    - prometheus_client >=0.20.0,<0.25.0
+    - psutil
+    - bigtree >=0.19.2
+    - pyjwt
 
 tests:
 - python:
     imports:
-    - feast
+      - feast
     pip_check: true
       # multiprocess 0.70.18 has requirement dill>=0.4.0, but you have dill 0.3.9.
     python_version: ${{ python_min }}.*
 - requirements:
     run:
-    - python ${{ python_min }}.*
-    - pip
+      - python ${{ python_min }}.*
+      - pip
   script:
-  - feast --help
+    - feast --help
 
 about:
   homepage: https://github.com/feast-dev/feast
@@ -78,7 +78,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -86,8 +86,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: feast
   cfe-purls:
-  - pkg:conda/feast@${{ version }}?channel=conda-forge
-  - pkg:pypi/feast@${{ version }}
+    - pkg:conda/feast@${{ version }}?channel=conda-forge
+    - pkg:pypi/feast@${{ version }}
   cfe-upstream-repo: https://github.com/feast-dev/feast
   cfe-upstream-homepage: https://github.com/feast-dev/feast
   cfe-import-names: [go]

@@ -20,29 +20,29 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - flit-core >=3.2
-  - flit-scm
-  - wheel
-  - pip
+    - python ${{ python_min }}.*
+    - flit-core >=3.2
+    - flit-scm
+    - wheel
+    - pip
   run:
-  - python >=${{ python_min }},<4.0
-  - django >=5.2
-  - dnspython >=2.0.0
-  - python-confluent-kafka
-  - feedparser
-  - celery
-  - redis-py
-  - httpx
-  - aio-pika
+    - python >=${{ python_min }},<4.0
+    - django >=5.2
+    - dnspython >=2.0.0
+    - python-confluent-kafka
+    - feedparser
+    - celery
+    - redis-py
+    - httpx
+    - aio-pika
 tests:
 - requirements:
     run:
-    - pip
-    - python ${{ python_min }}.*
+      - pip
+      - python ${{ python_min }}.*
   script:
-  - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import health_check"
-  - pip check
+    - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import health_check"
+    - pip check
 
 about:
   summary: Monitor the health of your Django app and its connected services.
@@ -52,7 +52,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -60,8 +60,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-health-check
   cfe-purls:
-  - pkg:conda/django-health-check@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-health-check@${{ version }}
+    - pkg:conda/django-health-check@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-health-check@${{ version }}
   cfe-upstream-repo: https://github.com/codingjoe/django-health-check
   cfe-upstream-homepage: https://github.com/codingjoe/django-health-check
   cfe-import-names: [health_check]

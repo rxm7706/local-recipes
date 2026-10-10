@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/eb/8f/4c66b4e32eaddae42c4939a77076babc4a8b896646dd533c84f8d9b043fc/opentelemetry_exporter_gcp_monitoring-1.15.0a0.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-gcp-monitoring/opentelemetry_exporter_gcp_monitoring-${{ version }}.tar.gz
   sha256: 4891cd35d229e55791268a2e5fe213e392116e73e362371ad96e72ef3f9bf841
 
 build:
@@ -20,22 +20,22 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - google-cloud-monitoring ~=2.0
-  - opentelemetry-api ~=1.30
-  - opentelemetry-sdk ~=1.30
-  - opentelemetry-resourcedetector-gcp <1.15,>=1.5.0dev0
+    - python >=${{ python_min }}
+    - google-cloud-monitoring ~=2.0
+    - opentelemetry-api ~=1.30
+    - opentelemetry-sdk ~=1.30
+    - opentelemetry-resourcedetector-gcp <1.15,>=1.5.0dev0
     # - typing_extensions
     # - typing_extensions
 
 tests:
 - python:
     imports:
-    - opentelemetry
+      - opentelemetry
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -47,7 +47,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -55,8 +55,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opentelemetry-exporter-gcp-monitoring
   cfe-purls:
-  - pkg:conda/opentelemetry-exporter-gcp-monitoring@${{ version }}?channel=conda-forge
-  - pkg:pypi/opentelemetry-exporter-gcp-monitoring@${{ version }}
+    - pkg:conda/opentelemetry-exporter-gcp-monitoring@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-exporter-gcp-monitoring@${{ version }}
   cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
   cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-monitoring
   cfe-import-names: [opentelemetry.exporter.cloud_monitoring]
@@ -66,7 +66,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-gcp-monitoring-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
