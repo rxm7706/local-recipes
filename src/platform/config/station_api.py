@@ -151,14 +151,18 @@ def _build_station_app(station: str, version: int) -> FastAPI | None:
     return app
 
 
-def register_station_api(station: str, version: int) -> FastAPI | None:
+def register_station_api(station: str, version: int) -> FastAPI:
     """Register (or return) the FastAPI sub-app for ``station`` at ``version``."""
     key = (station, version)
-    if key not in _station_apps:
-        built = _build_station_app(station, version)
-        if built is not None:
-            _station_apps[key] = built
-    return _station_apps.get(key)
+    existing = _station_apps.get(key)
+    if existing is not None:
+        return existing
+    built = _build_station_app(station, version)
+    if built is None:
+        msg = f"no station API registered for {station!r} v{version}"
+        raise KeyError(msg)
+    _station_apps[key] = built
+    return built
 
 
 def assert_routes_are_versioned(app: FastAPI) -> list[str]:
@@ -177,6 +181,9 @@ def assert_routes_are_versioned(app: FastAPI) -> list[str]:
     return violations
 
 
-# Seed station APIs at import time (warden v1, herald v1).
+# Seed station APIs at import time (warden v1; herald v1 when installed).
 register_station_api("warden", 1)
-register_station_api("herald", 1)
+try:
+    register_station_api("herald", 1)
+except KeyError:
+    pass

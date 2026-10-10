@@ -39,8 +39,7 @@ def import_optional(
         if not _is_provided_by_absent(exc.name, provided_by):
             raise
         reason = (
-            f"{component} is not installed on this host: "
-            f"No module named '{exc.name}'"
+            f"{component} is not installed on this host: No module named '{exc.name}'"
         )
         _absent_reasons[component] = reason
         if component not in _logged_absent:
