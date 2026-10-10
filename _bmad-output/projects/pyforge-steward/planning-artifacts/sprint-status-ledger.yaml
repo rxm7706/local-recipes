@@ -350,7 +350,7 @@ development_status:
   87-2-the-platform-host-boots-without-langflow-and-the-full-stack-env-runs-it: blocked
   87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar: done
   87-4-the-herald-webhook-forward-closes-its-review-findings: backlog
-  88-1-the-preflight-runs-each-task-once-after-its-dependencies: backlog
+  88-1-the-preflight-runs-each-task-once-after-its-dependencies: done
   89-1-a-killed-platform-ci-local-run-never-blocks-the-next-one: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
@@ -531,7 +531,7 @@ development_status:
   epic-86-retrospective: optional
   epic-87: in-progress
   epic-87-retrospective: optional
-  epic-88: backlog
+  epic-88: done
   epic-88-retrospective: optional
   epic-89: backlog
   epic-89-retrospective: optional
