@@ -15,6 +15,7 @@ context:
   - docs/foundry/sbom-gaps.md
   - scripts/sbom_gap_derive.py
   - tests/scripts/test_sbom_gap_derive.py
+  - .github/workflows/detectors.yml
   - scripts/detectors.py
   - docs/dreams/pyforge-steward.md
 deferred: []
@@ -105,7 +106,7 @@ a CFE gotcha, or a story's deferred row. Nothing says who files it, whether anyo
   | id | source | evidence (read on `6d5e84cb6b`) | proposed target |
   |---|---|---|---|
   | `sbom-conda-smithy-co-solve` | `sbom-gaps:feature:conda-smithy` | `sbom-gaps.md:11`; `pixi.toml` `[feature.conda-smithy.dependencies]` (`:121`, the CalVer 2026.x line needs the `conda` package); the SBOM comment at `:1114`-`:1119` (conda-smithy caps py-rattler `<0.26` and conda `<26.3`); warden's py-rattler note at `:2642` | `conda-forge/conda-smithy-feedstock` (or `conda-forge/conda-smithy`, whichever owns the cap) |
-  | `sbom-crm-click-cap` | `sbom-gaps:feature:crm` | `sbom-gaps.md:12`; `pixi.toml:99`-`:106` (the exact `click==8.2.1` pin, `conda-forge/conda-recipe-manager-feedstock#44`); `:1114`-`:1119` (crm 0.8+ caps click `<=8.4.1` while mcp's httpx2 needs click `>=8.4.2`; feedrattler needs a conda-smithy capping py-rattler/conda) | `conda-forge/conda-recipe-manager-feedstock` (#44 may already cover it; if so the draft says so and the operator may take it straight to `tracking`) |
+  | `sbom-crm-click-cap` | `sbom-gaps:feature:crm` | `sbom-gaps.md:12`; `pixi.toml:1114`-`:1119` (crm 0.8+ caps click `<=8.4.1` while mcp's httpx2 needs click `>=8.4.2`; feedrattler needs a conda-smithy capping py-rattler/conda). Read 2026-10-10 by GET: `conda-forge/conda-recipe-manager-feedstock` PR #44 ("Modify click dependency to match source") was closed **unmerged** on 2026-09-01; PR #46 (merged 2026-09-03, "Widens range of click versions…") superseded it, and the feedstock now pins `click >=8.2.1,<=8.4.1` in its v0 recipe `recipe/meta.yaml:29` (version 0.10.6, feedstock `3c6421e854`; it has no `recipe/recipe.yaml`), and it has no open issue or PR. The latest click is 8.5.0 (`conda-forge/click-feedstock` `recipe/recipe.yaml`, `b31cd6c16d`). `pixi.lock` on `8046e1b83d` resolves click 8.4.1 only in `grayskull` and `local-recipes`, the two environments that carry conda-recipe-manager 0.10.6, and click 8.5.0 in every other environment that carries click except `dbgpt-sidecar` (8.1.8), so every environment that composes crm is held below the estate's click. Upstream `conda/conda-recipe-manager` caps click in its own `pyproject.toml` since #555 (2026-08-31): `click==8.4.1` at tag v0.10.6, `>=8.2.1,<=8.4.1` on `main` after #559. Stale in-repo wording, recorded as evidence: `pixi.toml:102` and `:2220`-`:2223` still call the pin `click==8.2.1` and #44 "the unpin PR" (the same wording at `:2120`, `:2152`, `:2203` and `:2446`) | `conda-forge/conda-recipe-manager-feedstock`, or `conda/conda-recipe-manager` if the dispatch finds the cap starts there (it has since #555). No open issue covers it, so the seed is `drafted` and never `tracking`. The draft names #44 (closed unmerged) and #46 (merged, cap `<=8.4.1`), and asks to lift the upper bound so click 8.5.x resolves: an unpinned `click`, or at least `<9` |
   | `sbom-python-agent-platform-co-solve` | `sbom-gaps:feature:python-agent-platform` | `sbom-gaps.md:23`; `docs/dreams/pyforge-unifying-strategy.md:806`-`:808` (langflow vs pandas / onnxruntime keeps the platform in its own environment); mason Story 13.1 (`langflow-base`'s onnxruntime pin, `done`) | `conda-forge/langflow-feedstock` (the dispatch re-solves to name the pin that still blocks) |
   | `staged-recipes-lfx-bundles-superseded` | `finding:mason-25.15` | mason Story 25.15's deferred row (`spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md`, AC 9; minted on branch `chain-mason-retire-dups-2026-10-09`); `archive/docs/specs/langflow-conda-forge.md:155`-`:156` (#33977 `lfx-arxiv`, #33978 `lfx-docling`) | `conda-forge/staged-recipes`, kind `pr-close`: the operator closes their own PRs #33977 and #33978, since `langflow-feedstock` publishes both bundles |
   | `crm-sentinel-type-key-leak` | `finding:cfe-G121` | `.claude/skills/conda-forge-expert/SKILL.md` G121 (`:4384`); `CHANGELOG.md` v8.98.0; mason Stories 22.1 and 22.3 (12 `recipe.yaml` files carried `<conda_recipe_manager.types.SentinelType object at 0x…>` keys; crm 0.10.6 exits 100) | `conda/conda-recipe-manager` |
@@ -114,7 +115,8 @@ a CFE gotcha, or a story's deferred row. Nothing says who files it, whether anyo
 - **The how-to.** `docs/how-to/track-upstream-todos.md`, a steward-owned how-to page. It tells the operator how to
   read the registry and file an item (paste the draft, then tell an agent "mark <id> filed at <url>"). It also covers
   tracking (and what an agent may refresh), resolving (naming the local follow-up), retiring (giving a reason), and
-  what to do when the check names an uncovered `upstream` row. Add a row to `docs/map.yaml` (quadrant how-to, owner
+  what to do when the check names an uncovered `upstream` row. It also says, in one line, which gate keeps
+  `docs/foundry/sbom-gaps.md` current with `pixi.toml` (AC 8). Add a row to `docs/map.yaml` (quadrant how-to, owner
   steward, kind authored) and regenerate `docs/MAP.md` with `docs-map-render`.
 
 Ledger key: `67-4-upstream-tickets-for-the-gaps-that-need-one` (the mint slug; the title changed on 2026-10-10).
@@ -162,8 +164,11 @@ Type / Effort / Deps: feature / M / S-67.3 (done).
 - **(5) The seeds.** Given the landed registry Then it holds the six entries in the table above, each `drafted`,
   `decided_by: agent`, with at least one evidence path that exists in the tree (or a URL), a `target.repo`, and a draft
   passing (4). The two conda-recipe-manager entries name the crm version they were seen on (0.10.6). The `pr-close`
-  draft names #33977 and #33978 and why they are superseded. Each target's `verified` date records the read-only check
-  made at dispatch.
+  draft names #33977 and #33978 and why they are superseded. `sbom-crm-click-cap` is `drafted`, never `tracking`: its
+  `evidence` names feedstock PR #44 (closed unmerged), PR #46 (merged, `click >=8.2.1,<=8.4.1`), the feedstock's
+  `recipe/meta.yaml`, click 8.5.0 as the latest, and the lock's 8.4.1 / 8.5.0 split; its draft asks to lift the
+  `<=8.4.1` upper bound so click 8.5.x resolves. Each target's `verified` date records the read-only check made at
+  dispatch.
 - **(6) Could not run.** Given an unreadable or non-YAML registry, a missing `sbom-gaps.md`, or `yaml` not importable,
   When the check runs Then it exits 2 naming the cause: unknown, never green.
 - **(7) Nothing leaves the repository.**
@@ -178,6 +183,12 @@ Type / Effort / Deps: feature / M / S-67.3 (done).
   - `docs/reference/detectors.md` and `docs/how-to/pixi-tasks.md` are regenerated (`docs-detectors`,
     `docs-pixi-tasks`).
   - `docs/how-to/track-upstream-todos.md` exists with its `docs/map.yaml` row, and `docs/MAP.md` is regenerated.
+  - The how-to states, in one line, that the gate keeping `docs/foundry/sbom-gaps.md` current with `pixi.toml` is
+    `tests/scripts/test_sbom_gap_derive.py::test_live_document_matches_derivation`, run on every PR by the
+    `scripts-suite` job of `.github/workflows/detectors.yml` and locally by `pr-preflight`'s
+    `pyforge-doctor-scripts-test` leg, and that `sbom-gaps-check` is the pixi task that runs the same derivation by
+    hand. The line names all four: the test node id, `scripts-suite`, `pyforge-doctor-scripts-test` and
+    `sbom-gaps-check`.
   - `docs-map-hygiene-check`, `governance-currency` and `flag-gate-check --spec <this spec>` exit 0.
 - **(9) Mutations fail the tests.** The tests for (2), (3) and (4) fail when the check stops enforcing the rule they
   test: return no finding for an operator-only state, skip the coverage loop, or skip the section check.
@@ -250,6 +261,8 @@ Type / Effort / Deps: feature / M / S-67.3 (done).
 - `pixi run -e pyforge-guild python scripts/flag_gate_check.py --spec
   _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-67-4-upstream-tickets-for-the-gaps-that-need-one.md`
   — expected: `pass`.
+- `grep -n 'test_sbom_gap_derive.py::test_live_document_matches_derivation' docs/how-to/track-upstream-todos.md` —
+  expected: one line, which also names `scripts-suite`, `pyforge-doctor-scripts-test` and `sbom-gaps-check` (AC 8).
 
 ## Named, not fixed here
 
@@ -259,7 +272,10 @@ Type / Effort / Deps: feature / M / S-67.3 (done).
   `scripts-suite` job (every `pull_request`, no path filter) and in `pr-preflight`'s `pyforge-doctor-scripts-test`
   leg. PR #2008 went red that way on 2026-10-09 (`ca1c50d447` added the missing row). This story's check covers only
   the rows the file already has. A fix story was approved on 2026-10-10 on the premise that the list was ungated; the
-  premise was disproved the same day and the story is not minted (spec-python-foundry-cutover memlog).
+  premise was disproved the same day and the story is not minted (spec-python-foundry-cutover memlog). The operator
+  then ruled "Drop + note in 67.4": no registration story, and this story's how-to names the gate in one line (AC 8).
+  The `detectors-ci` sweep only annotates (the Detectors workflow's repo-scope step exits 0 on findings), so the
+  `scripts-suite` job is the stronger gate (both Specs' memlogs, 2026-10-10).
 
 ## Spec Change Log
 
@@ -268,6 +284,15 @@ Type / Effort / Deps: feature / M / S-67.3 (done).
   detector-or-gate`), effort S → M, title changed, Outward line removed; the ledger key moved `blocked` → `backlog`.
 - 2026-10-10 (later): corrected the claim that `sbom-gaps-check` gates nothing. Its check runs on every PR through
   `test_live_document_matches_derivation`; no AC, status or ledger key changed.
+- 2026-10-10 (latest): the operator ruled "Drop + note in 67.4". AC (8) gains one requirement: the how-to names, in
+  one line, the test that gates `sbom-gaps.md`, the CI job and `pr-preflight` leg that run it, and `sbom-gaps-check`.
+  No registration story is minted. Status, type, effort, Surface and ledger key are unchanged.
+- 2026-10-10 (latest, operator correction): the `sbom-crm-click-cap` seed no longer suggests #44 could go straight to
+  `tracking`. #44 is a feedstock PR closed unmerged on 2026-09-01; #46 replaced it and caps click `<=8.4.1`, which
+  still excludes mcp's `>=8.4.2`. A refinement the same day: the latest click is 8.5.0, the feedstock's recipe is the
+  v0 `recipe/meta.yaml`, and the lock holds the two crm environments at 8.4.1 while the rest are on 8.5.0, so the
+  draft asks for a bound that lets click 8.5.x resolve. The seed's evidence and target cell and AC (5) say so. The
+  stale `pixi.toml` wording is recorded as evidence, not edited.
 
 ## Review Triage Log
 
