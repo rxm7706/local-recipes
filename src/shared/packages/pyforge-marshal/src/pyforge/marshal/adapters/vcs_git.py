@@ -426,9 +426,7 @@ def _index_tracked_paths(repo_root: Path, repo_relative_paths: Iterable[str]) ->
     return frozenset(entry for entry in result.stdout.split("\0") if entry)
 
 
-def _git_add_named_path(
-    repo_root: Path, path: Path | str, *, tracked_in_index: frozenset[str]
-) -> subprocess.CompletedProcess[str]:
+def _git_add_named_path(repo_root: Path, path: Path | str, *, tracked_in_index: frozenset[str]) -> ProcessResult:
     """Stage one named path: ``git add -u --`` when the index tracks it, else ``git add --`` (Story 88.1)."""
     path_for_git = str(path)
     rel = _repo_relative(repo_root, Path(path)) if isinstance(path, Path) else path
