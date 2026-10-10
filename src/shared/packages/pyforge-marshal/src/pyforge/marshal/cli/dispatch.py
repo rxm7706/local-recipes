@@ -436,7 +436,7 @@ def _spec_path_for_blame(*, repo_root: Path, worktree: Path, spec_path: Path) ->
 
 
 def _spec_line_blame_for_worktree(
-    vcs: CommittingVcs,
+    vcs: VcsPort,
     *,
     repo_root: Path,
     worktree: Path,
