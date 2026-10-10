@@ -45,7 +45,34 @@ about:
 extra:
   recipe-maintainers:
   - rxm7706
-  cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T10:50:57Z'
-  cfe-local-build-platform: linux-64
-  cfe-local-build-tool: rattler-build
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-weasyprint
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-weasyprint
+  cfe-purls:
+    - pkg:conda/django-weasyprint@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-weasyprint@${{ version }}
+  cfe-upstream-repo: https://github.com/fdemmer/django-weasyprint
+  cfe-upstream-homepage: https://github.com/fdemmer/django-weasyprint
+  cfe-import-names: [django_weasyprint]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-weasyprint-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T08:27:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+####
