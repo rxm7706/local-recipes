@@ -15,7 +15,7 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 surface-reconcile entries (Story 17.1 landing, Story 14.1 landing, Story 14.2); no FR registered. See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Story 11.3; no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 surface-reconcile entries (Story 17.1 landing, Story 14.1 landing, Story 14.2); no FR registered. See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
@@ -1035,6 +1035,25 @@ since 2026-09-28. No CAP is added.*
   code removes it in `finally`, but `test_manifest_fixup.py` checked only that the scanned tree's digest is unchanged.
   The operator re-verify of 2026-10-07 added tests that the copy is gone after a successful re-solve, a failed one, and
   one that raises.
+
+**ONE FR space still FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-10
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-warden`'s memlog gained a contract entry on 2026-10-10, three
+days after this PRD's 2026-10-07 re-stamp. `SPEC.md` is unchanged. No CAP is added or amended, and no FR moves.*
+
+- **Stories 15.1 and 16.1's gates cleared (2026-10-10).** Mason Story 21.4 (the opengrep recipe) and steward Story 75.1
+  (the GHE read identity) are done on main, and the operator ruled "yes flip the six cleared stories and dispatch them". Both keys move from `blocked` to `backlog`,
+  and both story specs read `ready-for-dev` with dated notes. FR-42 (CAP-25) and FR-43 (CAP-26) already describe them
+  and do not change. The specs record two open points:
+  - opengrep does not yet resolve from any channel the workspace solves from;
+  - atlas Story 25.2's reader expects a `head_sha` per repo, which 16.1's export does not list.
+- **Story 11.3 minted (2026-10-07), a fix with no CAP.**
+- **Everything else is bookkeeping.** The other entries since the 2026-10-07 re-stamp are surface reconciles and
+  landing records (Stories 14.3, 16.2, 16.3, 16.4 and 11.3, and steward 71.6's co-governor edit). They register no FR.
 
 **ONE FR space still FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
 

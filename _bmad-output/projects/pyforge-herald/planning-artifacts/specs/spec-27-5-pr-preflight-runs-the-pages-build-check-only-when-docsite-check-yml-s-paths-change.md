@@ -2,8 +2,7 @@
 title: "27.5: pr-preflight runs the Pages build check only when docsite-check.yml's paths change"
 type: 'feature'
 created: '2026-09-27'
-status: 'blocked'
-blocking_condition: 'blocked until steward Story 71.2 (spec-pyforge-steward:CAP-159, "run the lanes CI would run, read from the workflow files") has landed on main; the operator flips the ledger key, never a session'
+status: 'ready-for-dev'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -23,6 +22,36 @@ declared_low_risk: false
 **Problem:** After Story 27.2, CI's `docsite-check.yml` runs `pages-check` (`npm ci`, the Astro build, the dossier mount under `/herald/`, the redirects) on PRs that touch the docs paths. The local twin, `pr-preflight`, still runs only the old `site-check` leg, so it no longer predicts that lane. If `pages-check` were added unconditionally, every push would pay for a site build, even from a diff that never touches the docs. The operator ruled on 2026-09-27 (D8) that `pr-preflight` runs the Pages build check only when the diff touches the docs paths, with no second hand-kept path list: steward's `spec-pyforge-steward:CAP-159` / Story 71.2 selects each `pr-preflight` lane by its CI workflow's own `paths`.
 
 **Approach:** Replace `pr-preflight`'s `{ task = "site-check", environment = "site" }` leg with `{ task = "pages-check", environment = "site" }`, bound to `docsite-check.yml` so that 71.2's workflow-derived filter selects it from that workflow's `paths`. It is a replacement, not an addition, because `pages-check` depends on `pages-build`, which already runs `docsite/build.py --check` (the whole of `site-check`). Keeping both would build the dossier twice per preflight. `site-check` stays a pixi task for the local docsite loop.
+
+**Gate cleared 2026-10-10.** Steward Story 71.2 is `done` on main: its landing, PR #1968 (merge `cdb88c63fa`, "Merge
+pyforge-steward/71-2 into main"), is an ancestor of `origin/main` (`git merge-base --is-ancestor cdb88c63fa origin/main`
+exits 0 at `2d90c634f3`), and steward's ledger row
+`71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files` reads `done`. The operator ruled
+the same day (verbatim): "yes flip the six cleared stories and dispatch them". The ledger key moved `blocked -> backlog`
+through a worktree-local Tier-3 feed and `sprint-ledger-sync --project herald --allow-regression`; this spec is
+`ready-for-dev`.
+
+**Read 71.2's landed form (re-read 2026-10-10).** The intent is unchanged. The places below now read differently:
+- **Where the leg lives.** `pr-preflight` is now `python -m pyforge.steward.preflight` (steward Story 71.1,
+  `pixi.toml:1614-1616`). It runs the leaf lanes of `pr-preflight-lanes` (`pixi.toml:1600`; the `depends-on` list is at
+  `:1612`). "`pr-preflight`'s lane list" and the I/O row "`pixi.toml` `pr-preflight` depends-on" therefore mean
+  `pr-preflight-lanes`'s `depends-on`. The `{ task = "site-check", environment = "site" }` leg to replace is there, and
+  the description to update is `pr-preflight-lanes`'s.
+- **There is no binding to write.** 71.2 keeps no lane-to-workflow table (`preflight_ci.py:7-12`). A lane's CI
+  counterpart is a `pull_request` workflow step whose `run:` invokes the lane's task, or a task whose `depends-on`
+  closure holds it. `docsite-check.yml:57` already runs `pixi run --frozen -e site pages-check`. So "bind the lane to
+  that workflow in whatever form 71.2 defines" needs no new code or config: the leg is selected by that step and the
+  workflow's own `paths`. `test_preflight_pages_lane.py` asserts the step by reading the workflow. Today `site-check`
+  has no CI counterpart, so 71.2 selects it on every diff and journals that it did.
+- **71.2's selection report** is the `selection` block of the run's line in `.steward/preflight-runs.jsonl`. It lists
+  the selected lanes and, for each skipped lane, the workflow and rule that skipped it. The entry point is
+  `pyforge.steward.preflight_ci.select_lanes` (`preflight_ci.py:785`).
+- **The paths are unchanged.** `docsite-check.yml`'s `pull_request.paths` still read exactly as the Given lists them.
+  `pages-check` still depends on `pages-build`, whose `docsite/tools/assemble_pages.py` runs `docsite/build.py --check`
+  (`:189-194`).
+- **The docs-site-validate leg.** It joined the same list after the mint (herald 27.4, 2026-10-08). Its sentence in
+  `pr-preflight-lanes`'s description ("runs unconditionally until steward Story 71.2 selects legs by each lane's paths")
+  is now stale. 71.2 selects that leg by `docsite-check.yml:60`. This story rewrites that description anyway.
 
 ## Boundaries & Constraints
 
@@ -56,7 +85,7 @@ declared_low_risk: false
 Parent Spec capability: `spec-pyforge-herald CAP-52` (FR-8.5; decision D8 in the Spec's `.memlog.md`, the operator ruling of 2026-09-27).
 Architecture: AD-21.
 Ledger key: `27-5-pr-preflight-runs-the-pages-build-check-only-when-docsite-check-yml-s-paths-change`.
-Ledger status at mint: `blocked`, until steward Story 71.2 has landed; the operator flips it.
+Ledger status at mint: `blocked`, until steward Story 71.2 has landed; the operator flips it. Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (71.2 `done`), through the Tier-3 feed and `sprint-ledger-sync --project herald --allow-regression`.
 Deps: S-27.2 (`pages-check` and `docsite-check.yml`'s docs path filters). Cross-station gate: steward Story 71.2 (`spec-pyforge-steward:CAP-159`).
 Kinship: `spec-pyforge-steward:CAP-159` / Story 71.2 owns the workflow-derived lane filter.
 Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this spec once the operator unblocks it.

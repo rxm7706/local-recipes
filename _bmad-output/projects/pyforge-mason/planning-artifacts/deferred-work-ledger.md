@@ -1837,7 +1837,8 @@ status: open
   origin: spec-deferred 9f72bcd76dd7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-10 — Story 25.14 (Wave F outputs inside recipes/db-gpt and recipes/langflow) with Story 25.13 (dbt-snowflake, zxing-cpp-python mirrors). No standalone recipes/<output>/ directories created.
 
 ### DW-mason-25-2-2: Wave 0 repair left 14 recipes in needs-review or failed; manual CFE fixes before re-run refresh-wave --repair --apply --gates.
 
@@ -1956,5 +1957,26 @@ status: open
   evidence: refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge
   location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
   origin: spec-deferred 312d5812d3dd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-14: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+
+- source_spec: `planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md`
+  summary: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+  evidence: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+  location: docs/specs/feedstock-refresh.md
+  origin: spec-deferred d8fdac672a17 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-14-2: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+
+- source_spec: `planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md`
+  summary: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+  evidence: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:701
+  origin: spec-deferred 1192a393755d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

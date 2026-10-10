@@ -841,6 +841,27 @@ verify_commands = [
   "docs/reference/station-cheat-sheet.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"87" = [  # the platform host boots without the optional engines it mounts (fixes under spec-pyforge-unifying-strategy CAP-10;
+  # Story 87.2 also under fnd:CAP-12), added 2026-10-10. The default surface, restated because a declared entry replaces it
+  # outright, plus: the host's config, langflow_integration and tests (87.1, 87.2), the docs the env change regenerates
+  # (87.2), herald's deferred-work ledger (87.1 closes its DW-herald-19-1 row, nothing else there), and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/config/**",
+  "src/platform/langflow_integration/**",
+  "src/platform/tests/**",
+  "docs/reference/environments.md",
+  "docs/foundry/sbom-gaps.md",
+  "docs/reference/library-llms-full.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts

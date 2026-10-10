@@ -7,7 +7,7 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'. Reviewed again 2026-09-18 (fleet chain-currency sweep) — the 2026-09-17 PRD fold/rekey and 2026-09-10 code motion (Story 24.4 live Artifactory transport) reconciled in the appended section 'Currency reconciliation — 2026-09-18'; AD-3's Epic 13/15 citations corrected to post-rekey Epic 12/14."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
@@ -1472,5 +1472,17 @@ Warden reads it as data.
 
 *Trigger: the PRD's re-stamp above (`prd→arch`). marshal Story 66.2 (`pyforge-marshal:CAP-275`) backfilled a `DW-FRR-<story>` row into every station's tracked deferred-work ledger for each landed story spec that still recommends a follow-up review, atlas's included, and recorded the co-governor surface reconcile on `spec-pyforge-atlas`'s memlog on 2026-10-03.* Checked against every AD: the change is ledger rows only.
 No module, port, adapter, import boundary or dataset moves, so no AD applies.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-10
+
+*Trigger: the PRD's re-stamp above (`prd→arch`). Story 25.1's gate cleared, and its ledger key moved `blocked →
+backlog`; the Epic 27 fix mints are folded in too.* Checked against every AD: a status change moves no module, port,
+adapter, import boundary or dataset.
+
+One fact is recorded for Story 25.1's dispatch, from Story 25.2's landing (PR #1882): the `vcs_health` node
+`build_repo_dependency_history` and the catalog entry `repo_dependency_history` already exist as placeholders, and 25.1
+fills them. AD-2, AD-4 and AD-5 apply to it as written.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: db25f01fc96932b5
-story_count: 339
-test_file_count: 109
+source_fingerprint: e282cd00b0e6c24f
+story_count: 341
+test_file_count: 110
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 339
-- **Epics parsed:** 86
-- **Test files inventoried:** 109 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 341
+- **Epics parsed:** 87
+- **Test files inventoried:** 110 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `db25f01fc96932b5`
+- **Source fingerprint:** `e282cd00b0e6c24f`
 
 ## Risk Assessment
 
@@ -114,6 +114,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 84: Phase 3 of the deferral burn-down: steward's ruled fixes
 - Epic 85: The protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward CAP-165)
 - Epic 86: `deploy perimeter` fronts the ASGI application it is given (fix under CAP-114)
+- Epic 87: The platform host boots without the optional engines it mounts (fix under unifying CAP-10)
 
 ### Low-risk epics
 
@@ -234,6 +235,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_clean_delete.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_preserve_tag.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py` | unit | none observed |
 
@@ -580,6 +582,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.8 | An agent session never writes outside this repository | none observed |
 | 85.9 | The session hook reads its denial roster from its own tree | none observed |
 | 86.1 | Deploy perimeter renders the ASGI application it is given | none observed |
+| 87.1 | The platform host boots without Herald and says why | none observed |
+| 87.2 | The platform host boots without Langflow, and the full-stack env runs it | none observed |
 
 ## Quality Gates
 

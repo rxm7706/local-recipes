@@ -2,7 +2,7 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -31,6 +31,35 @@ declared_low_risk: false
 arrive as conda packages with tested version ranges). The Deps parser is station-local, so the ledger row is minted
 `blocked`; the operator flips it once mason 21.1 is `done` and the package resolves in the `pyforge-atlas` environment.
 
+**Gate cleared 2026-10-10.** Mason Story 21.1 is `done` on main: its landing, PR #1990 (merge `b845b8d10f`, "Merge
+pyforge-mason/21-1 into main"), is an ancestor of `origin/main` (`git merge-base --is-ancestor b845b8d10f origin/main`
+exits 0 at `2d90c634f3`), and mason's ledger row `21-1-git-pkgs-builds-green-from-source-as-a-local-recipe` reads `done`.
+`recipes/git-pkgs/recipe.yaml` is on main at version `0.21.0`. The operator ruled the same day (verbatim): "yes flip the
+six cleared stories and dispatch them". The ledger key moved `blocked -> backlog` through a worktree-local Tier-3 feed
+and `sprint-ledger-sync --project atlas --allow-regression`; this spec is `ready-for-dev`.
+
+**Not yet true on 2026-10-10: the package does not resolve.** The second half of the condition above does not hold.
+`git-pkgs` is in no channel the workspace solves from: `api.anaconda.org/package/SelfExplainML/git-pkgs` and
+`.../conda-forge/git-pkgs` both returned 404 on 2026-10-10, and the workspace channels are `["conda-forge",
+"SelfExplainML"]` (`pixi.toml:19`). Mason 21.1 ends at a green local build in `build_artifacts/`, and `pixi.toml:2471`
+bans a local `file://` channel. If the run-dependency range cannot be declared because the package does not resolve,
+the dispatch stops and reports it. It does not add a channel, vendor a binary or download a release, and it does not
+publish the package (an outward act the operator owns).
+
+**Since minting (dated 2026-10-10; Story 25.2 landed first, PR #1882, merge `3f2744da9e`):**
+- The placeholder node `build_repo_dependency_history` already exists (`pipelines/vcs_health/nodes.py:681`, a no-op
+  returning an empty frame; wired at `pipeline.py:139-144` with output `repo_dependency_history`). The catalog entry
+  `repo_dependency_history` also already exists, as a plain `pandas.ParquetDataset` placeholder (`conf/base/catalog.yml:807`).
+  Story 25.2's sensor and its job `vcs_repo_dependency_history` target the node by name
+  (`orchestration/definitions.py:289`, `:349`, `:816`). This story fills that node and replaces that catalog entry. It
+  does not add a second one. It keeps the node name and the dataset name, so 25.2's wiring holds.
+- The flag reader exists: `pyforge.core.flags.read_boolean` (`pyforge-core/src/pyforge/core/flags.py:496`, steward 75.1).
+  So the "if 75.1 has not landed" clause in the Boundaries does not apply.
+- The `spec-feature-flag-governance:CAP-4` fixture has landed (marshal Story 74.1, `pyforge.testing_kit.flags`:
+  `flag_states`, `flagd_tree`). The two-state test in the Verification uses it, not the interim
+  `test_openfeature_file_flags.py` shape.
+- The ACs are unchanged.
+
 **Problem:** Atlas's datasets cover all of conda-forge, but nothing holds one repo's manifests across its commits.
 Warden's actuator and fleet scan (`spec-pyforge-warden:CAP-24`, `spec-pyforge-warden:CAP-26`) need to know when a vulnerable dependency
 arrived in a repo and which other repos carry it; the operator ruled on 2026-09-28 that the data belongs in Atlas and
@@ -51,7 +80,7 @@ lives in the dataset metadata, so an unmoved head is not re-walked (AD-5); an un
 partition with a `stale` marker (AD-13). No verdict, score or threshold. The flag is read through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); with it OFF the node skips as `not-applicable`.
 
 Ledger key: `25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser`.
-Ledger status (do not edit the ledger): `blocked`.
+Ledger status (do not edit the ledger): `backlog` (flipped from `blocked` on 2026-10-10 by the operator's ruling).
 Type / Effort / Deps: feature / L / — (cross-station: mason Story 21.1).
 
 ### Living CAP citations
@@ -101,7 +130,7 @@ Type / Effort / Deps: feature / L / — (cross-station: mason Story 21.1).
 Parent Spec capability: `spec-pyforge-atlas` CAP-61 (FR-69).
 Dream: `docs/dreams/pyforge-atlas.md` § Realization log → *2026-09-28 (night) — Proposed: Atlas keeps each scanned repo's dependency history, so a fix knows when a dependency arrived and which other repos carry it*.
 Ledger key: `25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser`.
-Ledger status at mint: `blocked` — until mason Story 21.1 (the git-pkgs conda package) is `done`; the operator flips the row.
+Ledger status at mint: `blocked` — until mason Story 21.1 (the git-pkgs conda package) is `done`; the operator flips the row. Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (21.1 `done`), through the Tier-3 feed and `sprint-ledger-sync --project atlas --allow-regression`.
 Deps: — (cross-station: mason Story 21.1).
 
 ## Verification
@@ -111,11 +140,11 @@ Deps: — (cross-station: mason Story 21.1).
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (the station's `verify_commands`; the AD-1 and no-inline-IO meta-tests).
 
 **Manual checks:**
-- Flag ON/OFF: a test writes two flagd trees (`pyforge.atlas.dependency_history` on, then off; the `src/platform/tests/test_openfeature_file_flags.py` shape until the `spec-feature-flag-governance:CAP-4` fixture lands): ON builds the dataset for the fixture repo, OFF skips the node as `not-applicable`.
+- Flag ON/OFF: a test writes two flagd trees (`pyforge.atlas.dependency_history` on, then off; the `src/platform/tests/test_openfeature_file_flags.py` shape until the `spec-feature-flag-governance:CAP-4` fixture lands): ON builds the dataset for the fixture repo, OFF skips the node as `not-applicable`. *(2026-10-10: that fixture has landed, marshal Story 74.1: write the trees with `pyforge.testing_kit.flags.flagd_tree` and parametrize with `flag_states`.)*
 - `pixi run -e pyforge-atlas pyforge-atlas-test -k dependency_history` — expected: pass.
 - `pixi run -e pyforge-guild pyforge-station-tests` — expected: pass (`pixi.lock` moved for the run-dependency).
 - `pixi run -e pyforge-guild spec-surface-check` exits 0 after the scoped stamps.
 
 ## Review Triage Log
 
-- No review yet (minted 2026-09-28, `blocked`). Implementation and review stay separate.
+- No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10). Implementation and review stay separate.
