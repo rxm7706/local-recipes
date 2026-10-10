@@ -2,7 +2,8 @@
 title: "27.5: pr-preflight runs the Pages build check only when docsite-check.yml's paths change"
 type: 'feature'
 created: '2026-09-27'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '381c90f99cb7e47f09f3e8decb0cd2d92086e9af'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
