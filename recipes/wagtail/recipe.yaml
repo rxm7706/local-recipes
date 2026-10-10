@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "7.4.2"
+  version: "8.0"
 
 package:
   name: wagtail
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/w/wagtail/wagtail-${{ version }}.tar.gz
-  sha256: 6e261b50693abfbe2b738717bedc5bd0915e2e08efb9400102f4098c0c03aaab
+  sha256: 8fb2aa39bb8ff9e7709ba848a1bba2fea332ce32368c7ba4820008c0cfcc0019
 
 build:
   number: 0
@@ -88,7 +88,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T12:36:26Z
+  cfe-last-checked: 2026-10-10T14:53:49Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T12:36:26Z
   cfe-local-build-status: build-clean-test-blocked
@@ -98,4 +98,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-9: refreshed 7.4.2 -> 8.0
 ####
