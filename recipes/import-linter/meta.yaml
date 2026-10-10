@@ -1,20 +1,20 @@
 {% set name = "import-linter" %}
-{% set version = "2.13" %}
+{% set version = "2.15" %}
 
 package:
   name: {{ name|lower }}
   version: "{{ version }}"
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/import_linter-{{ version }}.tar.gz
-  sha256: 13af4a1d6b06044c58ea784e8732fd7fe48eec821a75feb4d6a1a2de36dd5c27
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/import_linter-{{ version }}.tar.gz
+  sha256: 1da912bea5e172a82a3ce617b5543f75cf64dc0d8f4d9b46c5578b68ccb81590
 
 build:
   entry_points:
     - lint-imports = importlinter.cli:lint_imports_command
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
@@ -22,13 +22,12 @@ requirements:
     - hatchling
     - pip
   run:
-    - nox
     - fastapi
     - uvicorn
     - rich >=14.2.0
     - python >={{ python_min }}
     - click >=6
-    - grimp >=3.14
+    - grimp >=3.17
     - tomli >=1.2.1
     - typing-extensions >=3.10.0.0
     - typing_extensions >=3.10.0.0

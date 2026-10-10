@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.9.44"
+  version: "0.9.84"
 
 package:
   name: graphifyy
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/g/graphifyy/graphifyy-${{ version }}.tar.gz
-  sha256: 09b93aa74efd2310e11e69414d3eca89aa1a87de20b6d4de4147a05761d28986
+  sha256: 1c8ef71d751f11a08a9b6a45c61e5d8ec75614d8c179ce1bd7482b2d9bc5fc4d
 
 build:
   noarch: python
@@ -105,3 +105,36 @@ extra:
     - killua156
     - mgorny
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: graphifyy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: graphifyy
+  cfe-purls:
+    - pkg:conda/graphifyy@${{ version }}?channel=conda-forge
+    - pkg:pypi/graphifyy@${{ version }}
+  cfe-upstream-repo: https://github.com/safishamsi/graphify
+  cfe-upstream-homepage: https://github.com/safishamsi/graphify
+  cfe-import-names: [graphify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/graphifyy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T11:38:11Z
+  cfe-generated-by-version: 8.99.6
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T11:38:58Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 0.9.44 -> 0.9.84
+####
