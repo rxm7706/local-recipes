@@ -487,6 +487,17 @@ class FakeVcs:
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
         self.fetched.append((remote, ref))
 
+    def line_blame_facts(
+        self,
+        *,
+        repo_root: Path,
+        path: str,
+        worktree: Path | None = None,
+        ref: str | None = None,
+    ) -> dict[int, tuple[str, int]]:
+        _ = (repo_root, path, worktree, ref)
+        return {}
+
 
 class FakeBuildHarness:
     def __init__(self, *, present: bool = True) -> None:
