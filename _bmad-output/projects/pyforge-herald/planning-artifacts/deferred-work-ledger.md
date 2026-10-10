@@ -602,7 +602,7 @@ deployment.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
-  verified: 2026-10-10 — resolved — steward Story 86.1 added `steward deploy perimeter --asgi-application MODULE:ATTR`, threaded through `render_daphne_unit`, validated before any render, and confirmed `render_edge_config` is unchanged for default vs override (`test_perimeter_asgi_override_renders_execstart_and_summary`, `test_perimeter_edge_config_unchanged_by_asgi_override` in `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py`). Ledger status mapped to resolved.
+  verified: 2026-10-10 — resolved — `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py:935` adds `--asgi-application`; `src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py:545` validates MODULE:ATTR before render and `deploy.py:598` threads it through `render_daphne_unit`; `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py:732` and `:776` pin override ExecStart and byte-identical edge config. `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py -q` exit 0. Ledger status mapped to resolved.
 
 ### DW-13-6-2: `webhook_host.py`'s bounded timeout stops the client from waiting, but does not free the OS thread a genuinely-hung handler still occupies
 

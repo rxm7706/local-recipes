@@ -69,7 +69,6 @@ from __future__ import annotations
 
 import argparse
 import html
-import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -536,21 +535,39 @@ _DEFAULT_BIND_HOST = "127.0.0.1"
 # target; without it the rendered unit keeps the Story 9.5 placeholder the
 # adopter replaces by hand.
 _ASGI_APPLICATION_PLACEHOLDER = "myproject.asgi:application"  # adopter fills in
-_ASGI_APPLICATION_PATTERN = re.compile(
-    r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*:"
-    r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"
-)
+
+
+def _is_asgi_dotted_path(path: str) -> bool:
+    """True when *path* is a non-empty dotted identifier (Story 86.1 MODULE/ATTR grammar)."""
+    if not path:
+        return False
+    for segment in path.split("."):
+        if not segment:
+            return False
+        first, rest = segment[0], segment[1:]
+        if not (first.isalpha() or first == "_"):
+            return False
+        if rest and not all(ch.isalnum() or ch == "_" for ch in rest):
+            return False
+    return True
 
 
 def _validate_asgi_application(value: str) -> str | None:
     """Return a refusal message when *value* is not a safe MODULE:ATTR path."""
-    if not _ASGI_APPLICATION_PATTERN.fullmatch(value):
-        return (
-            f"--asgi-application {value!r} is not a valid MODULE:ATTR import path "
-            "(expected dotted module, colon, dotted attribute — e.g. "
-            "myproject.asgi:application)"
-        )
+    if value.count(":") != 1:
+        return _asgi_application_refusal(value)
+    module, attr = value.split(":", 1)
+    if not _is_asgi_dotted_path(module) or not _is_asgi_dotted_path(attr):
+        return _asgi_application_refusal(value)
     return None
+
+
+def _asgi_application_refusal(value: str) -> str:
+    return (
+        f"--asgi-application {value!r} is not a valid MODULE:ATTR import path "
+        "(expected dotted module, colon, dotted attribute — e.g. "
+        "myproject.asgi:application)"
+    )
 
 
 def _worker_ports(topology: DeploymentTopology, *, base_port: int) -> tuple[int, ...]:
