@@ -211,7 +211,11 @@ def main(argv: list[str] | None = None) -> int:
     result = deliver_landing(args.url, secret, landing)
     print(json.dumps(result, indent=2, sort_keys=True))
 
-    if result["on_ship"]["status"] != 201 or result["on_pr_close"]["status"] != 201:
+    on_ship = result["on_ship"]
+    on_pr_close = result["on_pr_close"]
+    if not isinstance(on_ship, dict) or not isinstance(on_pr_close, dict):
+        return 1
+    if on_ship.get("status") != 201 or on_pr_close.get("status") != 201:
         return 1
     return 0
 

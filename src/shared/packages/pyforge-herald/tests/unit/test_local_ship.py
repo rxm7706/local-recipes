@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import time
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
+from urllib.error import HTTPError, URLError
 
 import pytest
 from pyforge.core import roster
@@ -76,6 +78,11 @@ def test_main_refuses_non_loopback_url(monkeypatch: pytest.MonkeyPatch) -> None:
     assert local_ship.main(["--url", "http://192.168.1.1:8000"]) == 1
 
 
+def test_main_refuses_non_http_scheme(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
+    assert local_ship.main(["--url", "file:///tmp/x"]) == 1
+
+
 def test_main_exits_nonzero_when_host_returns_401(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
     landing = local_ship.LandingCommit("a" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
@@ -105,3 +112,105 @@ def test_main_does_not_post_when_resolve_fails(monkeypatch: pytest.MonkeyPatch) 
             with pytest.raises(SystemExit):
                 local_ship.main(["--url", "http://127.0.0.1:9"])
         post.assert_not_called()
+
+
+def test_resolve_landing_commit_from_explicit_sha(tmp_path: Path) -> None:
+    subject = _landing_subject("herald", "19-2")
+    sha = "a" * 40
+    with patch.object(
+        local_ship.subprocess,
+        "run",
+        return_value=type("R", (), {"returncode": 0, "stdout": f"{sha}\t{subject}", "stderr": ""})(),
+    ):
+        landing = local_ship.resolve_landing_commit(tmp_path, sha)
+    assert landing.sha == sha
+    assert landing.station == "herald"
+    assert landing.story_key == "19-2"
+
+
+def test_resolve_landing_commit_scans_origin_main(tmp_path: Path) -> None:
+    subject = _landing_subject("scribe", "3-1")
+    with patch.object(
+        local_ship.subprocess,
+        "run",
+        return_value=type(
+            "R",
+            (),
+            {
+                "returncode": 0,
+                "stdout": f"{'b' * 40}\tchore: noop\n{'c' * 40}\t{subject}",
+                "stderr": "",
+            },
+        )(),
+    ):
+        landing = local_ship.resolve_landing_commit(tmp_path, None)
+    assert landing.subject == subject
+    assert landing.station == "scribe"
+
+
+def test_resolve_landing_commit_commit_not_found(tmp_path: Path) -> None:
+    with patch.object(
+        local_ship.subprocess,
+        "run",
+        return_value=type("R", (), {"returncode": 1, "stdout": "", "stderr": "nope"})(),
+    ):
+        with pytest.raises(SystemExit, match="commit not found"):
+            local_ship.resolve_landing_commit(tmp_path, "missing")
+
+
+def test_post_signed_success_and_http_error() -> None:
+    class OkResp:
+        status = 201
+
+        def read(self) -> bytes:
+            return b'{"ok": true}'
+
+        def __enter__(self) -> OkResp:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    with patch.object(local_ship, "urlopen", return_value=OkResp()):
+        status, body = local_ship.post_signed("http://127.0.0.1/x", b"s", b"{}")
+    assert status == 201
+    assert body == {"ok": True}
+
+    err = HTTPError("http://127.0.0.1/x", 502, "bad", {}, BytesIO(b"not-json"))
+    with patch.object(local_ship, "urlopen", side_effect=err):
+        status, body = local_ship.post_signed("http://127.0.0.1/x", b"s", b"{}")
+    assert status == 502
+    assert "raw" in body
+
+
+def test_post_signed_url_error_exits() -> None:
+    with patch.object(local_ship, "urlopen", side_effect=URLError("down")):
+        with pytest.raises(SystemExit, match="POST .* failed"):
+            local_ship.post_signed("http://127.0.0.1/x", b"s", b"{}")
+
+
+def test_deliver_landing_posts_both_webhooks() -> None:
+    landing = local_ship.LandingCommit("d" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
+    with patch.object(
+        local_ship,
+        "post_signed",
+        side_effect=[(201, {"a": 1}), (201, {"b": 2})],
+    ) as post:
+        out = local_ship.deliver_landing("http://127.0.0.1:8000/", b"s", landing)
+    assert post.call_count == 2
+    assert out["on_ship"]["status"] == 201
+    assert out["on_pr_close"]["status"] == 201
+
+
+def test_main_returns_zero_on_success(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
+    landing = local_ship.LandingCommit("a" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
+    ok = {
+        "landing": {},
+        "on_ship": {"status": 201, "body": {}},
+        "on_pr_close": {"status": 201, "body": {}},
+    }
+    with patch.object(local_ship, "resolve_landing_commit", return_value=landing):
+        with patch.object(local_ship, "deliver_landing", return_value=ok):
+            assert local_ship.main(["--url", "http://127.0.0.1:9"]) == 0
+    assert "on_ship" in capsys.readouterr().out
