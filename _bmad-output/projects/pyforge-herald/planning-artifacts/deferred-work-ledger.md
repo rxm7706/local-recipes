@@ -1501,3 +1501,15 @@ deployment.
   severity: medium (unverified)
   promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-herald-19-1: Story 19.1 made the platform host import `pyforge.herald` unconditionally, so every env without herald cannot start the host.
+
+- source_spec: `planning-artifacts/specs/spec-19-1-the-webhook-routes-move-onto-the-station-api-seam.md`
+  summary: Story 19.1 seeds herald v1 on the platform's station API seam at import time, and `_register_herald_v1` loads `pyforge.herald.station_api` by name with no guard. Only `platform-ci-test` carries `pyforge-herald`; the image env (`python-agent-platform`) and `platform-dev` do not, so `import config.asgi` stops with `ModuleNotFoundError: No module named 'pyforge.herald'` there.
+  evidence: `src/platform/config/station_api.py:168` (`register_station_api("herald", 1)`) and `:122` (`importlib.import_module("pyforge.herald.station_api")`) at `2d90c634f3`; `pixi.toml:410` (herald in `[feature.platform-ci-test.dependencies]` only); `src/platform/Containerfile:90` (`pixi install --frozen -e python-agent-platform`). Reproduced 2026-10-10 in `platform-dev`: `config/asgi.py:55` → `station_api.py:168` → `:146` → `:138` → `:122`. 19.1's review rejected this finding as `[false]` because `platform-ci-test` carries herald (`spec-19-1-the-webhook-routes-move-onto-the-station-api-seam.md:93`), so no row was written at the time.
+  location: src/platform/config/station_api.py
+  origin: recorded 2026-10-10 by the steward chain that mints the fix (operator ruling "Yes, lazy import story")
+  severity: high
+  promoted: 2026-10-10 — steward Epic 87 mint, recorded where herald 19.1's review should have left it
+  note: healed by steward Story 87.1 (`87-1-the-platform-host-boots-without-herald-and-says-why`), which skips herald's mount with one logged reason when the package is absent; it closes this row with its evidence when it lands. Herald's code does not change.
+  status: open
