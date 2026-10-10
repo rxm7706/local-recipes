@@ -2,7 +2,8 @@
 title: "87.1: The platform host boots without Herald and says why"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '38370fdf419fb11a2ae7226b226199f5453cb96b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -1512,4 +1512,5 @@ deployment.
   severity: high
   promoted: 2026-10-10 — steward Epic 87 mint, recorded where herald 19.1's review should have left it
   note: healed by steward Story 87.1 (`87-1-the-platform-host-boots-without-herald-and-says-why`), which skips herald's mount with one logged reason when the package is absent; it closes this row with its evidence when it lands. Herald's code does not change.
-  status: open
+  verified: 2026-10-10 — `src/platform/config/optional_components.py` (`import_optional`, `absent_reason`); `src/platform/tests/test_host_boots_without_herald.py` (`test_host_imports_without_herald_and_herald_paths_return_reason` covers AC (1)-(3)).
+  status: done
