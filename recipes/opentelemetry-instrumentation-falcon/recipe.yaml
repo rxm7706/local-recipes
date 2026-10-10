@@ -78,8 +78,8 @@ extra:
   cfe-last-checked: 2026-10-10T17:29:18Z
   cfe-generated-by-version: 8.99.14
   cfe-generated-at-datetime: 2026-10-10T12:00:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: 2026-10-10T12:00:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:30:04Z
 ####
 # CFE comments
 ####
