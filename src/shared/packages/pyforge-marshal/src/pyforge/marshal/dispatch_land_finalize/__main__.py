@@ -790,7 +790,27 @@ def _promote_tracked_spec(
         return _warn(f"cannot read story {key}'s tracked spec {rel!r} at {ORIGIN_MAIN_SHORT} to mark it done: {exc}")
     if text is None:
         return _warn(f"story {key}'s tracked spec {rel!r} does not exist at {ORIGIN_MAIN_SHORT}; it was not promoted")
+    from ..core.dispatch_harness_done import (
+        LineBlameFact,
+        evaluate_land_only_spec_gate,
+    )
+
+    blame: dict[int, LineBlameFact] | None
+    try:
+        raw_blame = vcs.line_blame_facts(repo_root=root, path=rel, ref=ORIGIN_MAIN)
+        blame = {
+            line: LineBlameFact(commit=sha, committer_time=committer_time)
+            for line, (sha, committer_time) in raw_blame.items()
+        }
+    except VcsCommandError:
+        blame = None
     status = promotion.read_spec_status(text)
+    gate = evaluate_land_only_spec_gate(spec_text=text, spec_status=status, blame=blame)
+    if not gate.permitted and gate.failed_heading is not None:
+        return _warn(
+            f"story {key}'s tracked spec {rel!r} at {ORIGIN_MAIN_SHORT} was not promoted to done: "
+            f"latest review entry {gate.failed_heading!r} records a failed review"
+        )
     if status == promotion.SPEC_STATUS_DONE:
         return _promote_landed_story_epics_status(vcs, root, project_slug, key, worktree)
     if status in ("blocked", "superseded"):

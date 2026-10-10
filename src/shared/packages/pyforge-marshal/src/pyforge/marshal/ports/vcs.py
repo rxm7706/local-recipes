@@ -559,3 +559,17 @@ class VcsPort(Protocol):
     def commit_contained_in_remote_refs(self, repo_root: Path, commit: str) -> bool:
         """Story 87.7: ``git for-each-ref --contains <commit> refs/remotes/``."""
         ...
+
+    def line_blame_facts(
+        self,
+        *,
+        repo_root: Path,
+        path: str,
+        worktree: Path | None = None,
+        ref: str | None = None,
+    ) -> dict[int, tuple[str, int]]:
+        """Story 89.1: ``git blame --porcelain`` for ``path`` — maps 1-based line numbers to
+        ``(commit_sha, committer_time)``. Uncommitted lines use the all-zero sha. Exactly one of
+        ``worktree`` (blame the checked-out file) or ``ref`` (blame ``ref:path`` at ``repo_root``)
+        must be set. Raises ``VcsCommandError`` when blame cannot run."""
+        ...

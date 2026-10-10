@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import ast
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from .dispatch_landing import DispatchLandingVerdict
@@ -356,4 +356,141 @@ def land_fail_operator_message(
         f"harness-done story {story_key!r} is CAP-4 only — not relaunching "
         f"(land verdict {land_verdict!r}). awaiting-operator / CHAIN: "
         f"{named_target}"
+    )
+
+
+# Story 89.1: land-only re-dispatch must not merge work the tracked spec says is unfinished
+# or whose latest Review Triage Log entry records a failed review.
+_LAND_ONLY_SPEC_STATUSES = frozenset({"in-review", "done"})
+_REVIEW_TRIAGE_LOG_HEADING_RE = re.compile(r"^##\s+Review Triage Log\s*$")
+_UNCOMMITTED_BLAME_SHA = "0" * 40
+
+
+@dataclass(frozen=True)
+class LineBlameFact:
+    """One line's blame metadata (Story 89.1): git commit sha and committer time."""
+
+    commit: str
+    committer_time: int
+
+
+@dataclass(frozen=True)
+class LandOnlySpecGateVerdict:
+    """Whether CAP-4 land-only may proceed for this worktree spec (Story 89.1)."""
+
+    permitted: bool
+    spec_status: str | None
+    failed_heading: str | None
+    unevaluable: bool
+
+
+def review_triage_heading_records_failure(heading: str) -> bool:
+    """True when a Review Triage Log ``###`` heading records a failed review."""
+    if "FAIL" in heading:
+        return True
+    return "sent back" in heading.casefold()
+
+
+def iter_review_triage_heading_lines(spec_text: str) -> tuple[tuple[int, str], ...]:
+    """``###`` headings under ``## Review Triage Log``, as ``(1-based line, heading text)``."""
+    lines = _skip_leading_banner(spec_text).splitlines()
+    in_triage = False
+    found: list[tuple[int, str]] = []
+    for index, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            if _REVIEW_TRIAGE_LOG_HEADING_RE.match(stripped):
+                in_triage = True
+                continue
+            if in_triage:
+                break
+            continue
+        if in_triage and stripped.startswith("### "):
+            found.append((index, stripped[4:].strip()))
+    return tuple(found)
+
+
+def _blame_recency_key(fact: LineBlameFact) -> tuple[int, int]:
+    if fact.commit == _UNCOMMITTED_BLAME_SHA:
+        return (2, fact.committer_time)
+    return (1, fact.committer_time)
+
+
+def latest_review_triage_headings(
+    headings: Sequence[tuple[int, str]],
+    blame: Mapping[int, LineBlameFact],
+) -> tuple[str, ...] | None:
+    """Headings tied for newest by git blame order, or ``None`` when blame is incomplete."""
+    if not headings:
+        return ()
+    scored: list[tuple[tuple[int, int], str]] = []
+    for line_no, heading in headings:
+        fact = blame.get(line_no)
+        if fact is None:
+            return None
+        scored.append((_blame_recency_key(fact), heading))
+    max_key = max(item[0] for item in scored)
+    return tuple(item[1] for item in scored if item[0] == max_key)
+
+
+def evaluate_land_only_spec_gate(
+    *,
+    spec_text: str,
+    spec_status: str | None,
+    blame: Mapping[int, LineBlameFact] | None,
+) -> LandOnlySpecGateVerdict:
+    """Pure gate: refuse land-only unless status is ``in-review``/``done`` and no failed latest review."""
+    if blame is None:
+        return LandOnlySpecGateVerdict(
+            permitted=False,
+            spec_status=spec_status,
+            failed_heading=None,
+            unevaluable=True,
+        )
+    headings = iter_review_triage_heading_lines(spec_text)
+    latest = latest_review_triage_headings(headings, blame)
+    if latest is None:
+        return LandOnlySpecGateVerdict(
+            permitted=False,
+            spec_status=spec_status,
+            failed_heading=None,
+            unevaluable=True,
+        )
+    status_ok = spec_status in _LAND_ONLY_SPEC_STATUSES
+    failed_heading: str | None = None
+    for heading in latest:
+        if review_triage_heading_records_failure(heading):
+            failed_heading = heading
+            break
+    if not status_ok or failed_heading is not None:
+        return LandOnlySpecGateVerdict(
+            permitted=False,
+            spec_status=spec_status,
+            failed_heading=failed_heading,
+            unevaluable=False,
+        )
+    return LandOnlySpecGateVerdict(
+        permitted=True,
+        spec_status=spec_status,
+        failed_heading=None,
+        unevaluable=False,
+    )
+
+
+def land_only_spec_refusal_message(*, story_key: str, verdict: LandOnlySpecGateVerdict) -> str:
+    """Operator-facing ``MRS-DISP-063`` text (Story 89.1)."""
+    status = verdict.spec_status or "unreadable"
+    heading_part = (
+        f", latest review entry {verdict.failed_heading!r}"
+        if verdict.failed_heading is not None
+        else ""
+    )
+    if verdict.unevaluable:
+        detail = "the Review Triage Log could not be read from git"
+    else:
+        detail = f"worktree spec status is {status!r}{heading_part}"
+    return (
+        f"story {story_key!r} land-only re-dispatch refused ({detail}) — "
+        "set status to ready-for-dev and re-dispatch to resume implementation, "
+        "or set in-review (or done) once review passes to land finished work"
     )

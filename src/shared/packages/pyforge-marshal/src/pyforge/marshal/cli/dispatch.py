@@ -75,9 +75,13 @@ from ..core.dispatch_completion import (
 from ..core.dispatch_harness_done import (
     HOLD_LANDING_PAYLOAD_KEY,
     FollowupReview,
+    LandOnlySpecGateVerdict,
+    LineBlameFact,
+    evaluate_land_only_spec_gate,
     followup_review_recommended,
     is_followup_review_spec,
     land_fail_operator_message,
+    land_only_spec_refusal_message,
     parse_blocking_condition,
     parse_spec_status,
     should_take_harness_done_land_only,
@@ -302,6 +306,7 @@ def _land_only_verification_writer_id() -> str:
 
 
 _CAP4_VERIFICATION_EVAL_FAILED = "MRS-DISP-062"
+_LAND_ONLY_SPEC_GATE_REFUSED = "MRS-DISP-063"
 
 
 @dataclass(frozen=True)
@@ -419,6 +424,111 @@ def _append_entry(
     if prepared.sidecar_relative_path is not None:
         fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
+
+
+def _spec_path_for_blame(*, repo_root: Path, worktree: Path, spec_path: Path) -> str | None:
+    for base in (worktree, repo_root):
+        try:
+            return str(spec_path.relative_to(base))
+        except ValueError:
+            continue
+    return None
+
+
+def _spec_line_blame_for_worktree(
+    vcs: CommittingVcs,
+    *,
+    repo_root: Path,
+    worktree: Path,
+    spec_path: Path,
+) -> dict[int, LineBlameFact] | None:
+    rel = _spec_path_for_blame(repo_root=repo_root, worktree=worktree, spec_path=spec_path)
+    if rel is None:
+        return None
+    try:
+        raw = vcs.line_blame_facts(repo_root=repo_root, path=rel, worktree=worktree)
+    except VcsCommandError:
+        return None
+    return {
+        line: LineBlameFact(commit=sha, committer_time=committer_time) for line, (sha, committer_time) in raw.items()
+    }
+
+
+def _journal_next_counter_for_writer(journal_text: str, writer_id: str) -> int:
+    max_counter = -1
+    for line in journal_text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        entry_id = entry.get("id")
+        if not isinstance(entry_id, dict):
+            continue
+        if entry_id.get("writer_id") != writer_id:
+            continue
+        counter = entry_id.get("counter")
+        if isinstance(counter, int) and counter > max_counter:
+            max_counter = counter
+    return max_counter + 1
+
+
+def _journal_land_only_spec_refused(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    story_key: str,
+    worktree: Path,
+    head_sha: str | None,
+    gate: LandOnlySpecGateVerdict,
+) -> None:
+    """Story 89.1 / 51.4: record a land-only refusal in the story's latest run dir."""
+    journal_path = run_dir / _JOURNAL_FILENAME
+    journal_text = fs.read_text(journal_path)
+    if journal_text is None:
+        return
+    writer_id = _writer_id()
+    counter = _journal_next_counter_for_writer(journal_text, writer_id)
+    run_id = run_dir.name
+    ts = _format_entry_ts(_now_utc())
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=ts,
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.INTENT,
+        payload={
+            "story_key": story_key,
+            "worktree_path": str(worktree),
+            "code": _LAND_ONLY_SPEC_GATE_REFUSED,
+            "status": gate.spec_status,
+            "failed_heading": gate.failed_heading,
+            "worktree_head_sha": head_sha,
+        },
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=ts,
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "story_key": story_key,
+            "code": _LAND_ONLY_SPEC_GATE_REFUSED,
+            "status": gate.spec_status,
+            "failed_heading": gate.failed_heading,
+            "worktree_head_sha": head_sha,
+            "ok": True,
+        },
+    )
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError:
+        return
 
 
 def _emit(
@@ -3199,6 +3309,41 @@ def dispatch_once(
             current_head_sha=current_head,
         )
     if take_land_only:
+        blame = _spec_line_blame_for_worktree(
+            vcs,
+            repo_root=repo_root,
+            worktree=worktree,
+            spec_path=spec_path,
+        )
+        land_only_gate = evaluate_land_only_spec_gate(
+            spec_text=live_spec_text,
+            spec_status=spec_status,
+            blame=blame,
+        )
+        if not land_only_gate.permitted:
+            data["land_only_spec_gate_refused"] = True
+            feed_key = render_feed_key(story_key)
+            try:
+                head_sha = vcs.worktree_head_sha(worktree)
+            except VcsCommandError:
+                head_sha = None
+            if latest_run_dir is not None:
+                _journal_land_only_spec_refused(
+                    fs=fs,
+                    run_dir=latest_run_dir,
+                    story_key=feed_key,
+                    worktree=worktree,
+                    head_sha=head_sha,
+                    gate=land_only_gate,
+                )
+            findings.append(
+                Finding(
+                    code=_LAND_ONLY_SPEC_GATE_REFUSED,
+                    severity=Severity.ERROR,
+                    message=land_only_spec_refusal_message(story_key=feed_key, verdict=land_only_gate),
+                )
+            )
+            return _done()
         data["harness_done_land_only"] = True
         land_verdict, named_target, land_envelope = _attempt_harness_done_cap4(
             slug=slug,

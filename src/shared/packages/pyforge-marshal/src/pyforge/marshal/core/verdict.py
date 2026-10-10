@@ -1276,6 +1276,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # Story 83.25: unreadable operator Cursor config at launch prep.
     "MRS-DISP-061": Verdict.ERROR,
     "MRS-DISP-062": Verdict.ERROR,
+    "MRS-DISP-063": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

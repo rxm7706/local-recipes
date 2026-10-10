@@ -408,6 +408,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DISP-060",
             "MRS-DISP-061",
             "MRS-DISP-062",
+            "MRS-DISP-063",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             # Story 73.2 (spec-pyforge-marshal CAP-281): follow-up review scheduling -- 018

@@ -45,6 +45,8 @@ from ..core.dispatch_harness_done import (
     followup_review_recommended,
     parse_blocking_condition,
     parse_spec_status,
+    evaluate_land_only_spec_gate,
+    land_only_spec_refusal_message,
     should_take_harness_done_land_only,
     should_take_verification_refusal_land_only,
 )
@@ -337,6 +339,24 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
                         current_head_sha=current_head,
                     ):
                         land_only = True
+                if land_only and spec_path is not None:
+                    blame = dispatch_cli._spec_line_blame_for_worktree(
+                        vcs,
+                        repo_root=repo_root,
+                        worktree=worktree,
+                        spec_path=spec_path,
+                    )
+                    gate = evaluate_land_only_spec_gate(
+                        spec_text=live,
+                        spec_status=status,
+                        blame=blame,
+                    )
+                    if not gate.permitted:
+                        land_only = False
+                        refuse(
+                            "MRS-DISP-063",
+                            land_only_spec_refusal_message(story_key=feed, verdict=gate),
+                        )
                 if not land_only and status == "blocked":
                     refuse(
                         "MRS-DISP-045",

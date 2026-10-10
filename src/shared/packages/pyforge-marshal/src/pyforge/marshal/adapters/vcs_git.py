@@ -1986,6 +1986,60 @@ class GitVcs:
                 except VcsCommandError:
                     pass
 
+    def line_blame_facts(
+        self,
+        *,
+        repo_root: Path,
+        path: str,
+        worktree: Path | None = None,
+        ref: str | None = None,
+    ) -> dict[int, tuple[str, int]]:
+        """Story 89.1: porcelain blame for Review Triage Log ordering."""
+        if (worktree is None) == (ref is None):
+            raise VcsCommandError("line_blame_facts requires exactly one of worktree or ref")
+        if worktree is not None:
+            cmd = ["git", "-C", str(worktree), "blame", "--porcelain", "--", path]
+        else:
+            assert ref is not None
+            cmd = ["git", "-C", str(repo_root), "blame", "--porcelain", ref, "--", path]
+        result = _run(cmd)
+        if result.returncode != 0:
+            raise VcsCommandError(f"git blame failed for {path!r}: {result.stderr.strip()}")
+        return _parse_blame_porcelain(result.stdout)
+
+
+def _parse_blame_porcelain(text: str) -> dict[int, tuple[str, int]]:
+    facts: dict[int, tuple[str, int]] = {}
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines):
+        header = lines[index]
+        index += 1
+        if not header or header.startswith("\t"):
+            continue
+        parts = header.split()
+        if len(parts) < 3:
+            continue
+        sha, _orig, final_line_s = parts[0], parts[1], parts[2]
+        try:
+            final_line = int(final_line_s)
+        except ValueError:
+            continue
+        committer_time = 0
+        while index < len(lines):
+            line = lines[index]
+            if line.startswith("\t"):
+                index += 1
+                break
+            if line.startswith("committer-time "):
+                try:
+                    committer_time = int(line.split()[1])
+                except (IndexError, ValueError):
+                    committer_time = 0
+            index += 1
+        facts[final_line] = (sha, committer_time)
+    return facts
+
 
 def stage_index_paths(
     repo_root: Path,
