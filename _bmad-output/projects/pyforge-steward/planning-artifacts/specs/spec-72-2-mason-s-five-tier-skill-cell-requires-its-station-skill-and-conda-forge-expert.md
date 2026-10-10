@@ -2,7 +2,8 @@
 title: "72.2: Mason's five-tier skill cell requires its station skill and conda-forge-expert"
 type: 'fix'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: bbcc97ebee183d1d1cd30da2ab3765f6c900c350
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
