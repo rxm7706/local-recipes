@@ -253,7 +253,10 @@ def test_red_dependency_cancels_dependents(tmp_path: Path) -> None:
         run_lane_ctx=run_ctx,
     )
     assert code == preflight.EXIT_LANE_RED
-    assert started == {"d", "c"}
+    # d's dependents never start. c and e have no dependencies, so with jobs=4 they may
+    # start before d's failure registers, or be cancelled by the stop; either is correct.
+    assert "d" in started
+    assert started.isdisjoint({"a", "b"})
     record = _run_journal_record(tmp_path)
     by_task = {entry["task"]: entry for entry in record["lanes"]}
     assert by_task["d"]["status"] == "red"
@@ -261,8 +264,9 @@ def test_red_dependency_cancels_dependents(tmp_path: Path) -> None:
     assert by_task["b"]["cancelled_by"] == "d"
     assert by_task["a"]["status"] == "cancelled"
     assert by_task["a"]["cancelled_by"] == "d"
-    assert by_task["c"]["status"] == "ok"
-    assert by_task["e"]["status"] == "cancelled"
+    for independent in ("c", "e"):
+        expected = "ok" if independent in started else "cancelled"
+        assert by_task[independent]["status"] == expected
 
 
 def test_red_dependency_keep_going_blocks_dependents_only(tmp_path: Path) -> None:
