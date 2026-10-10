@@ -2,7 +2,7 @@
 title: "87.3: The host forwards Herald's webhooks to the mcp-host sidecar"
 type: 'feature'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '5f141b983ec9ed60127f0706c5d5e3a82e5198a3'
 review_loop_iteration: 1
 followup_review_recommended: false
