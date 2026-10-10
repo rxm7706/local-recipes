@@ -3795,6 +3795,20 @@ _FRONTMATTER_SOURCE_SPEC_RE = re.compile(
     re.MULTILINE | re.IGNORECASE,
 )
 
+# Story 33.1 / CAP-86: marshal Story 66.2's follow-up carry predicate, reimplemented
+# here (Doctor imports no station internals).
+_FOLLOWUP_REVIEW_TRUTHY = frozenset({"true", "yes", "1"})
+_FOLLOWUP_REVIEW_CARRY_ORIGINS = frozenset({"dispatch-followup-review", "review-budget-followup"})
+_LEDGER_DW_HEADING_RE = re.compile(r"^### (?P<dw_id>DW-[A-Za-z0-9-]+): ", re.MULTILINE)
+_LEDGER_SOURCE_SPEC_FIELD_RE = re.compile(
+    r"^[ \t]*(?:-[ \t]+)?source_spec:[ \t]*(?P<value>[^\n]*)$",
+    re.MULTILINE,
+)
+_LEDGER_ORIGIN_FIELD_RE = re.compile(
+    r"^[ \t]*(?:-[ \t]+)?origin:[ \t]*(?P<value>[^\n]*)$",
+    re.MULTILINE,
+)
+
 
 @dataclass(frozen=True)
 class SpecDeferredFinding:
@@ -3930,6 +3944,67 @@ def parse_spec_frontmatter_deferrals(
             )
         )
     return tuple(findings), tuple(malformed)
+
+
+def _ledger_field_token(raw_value: str) -> str:
+    """Text before any ``#`` comment on a ledger field line, stripped."""
+    return raw_value.partition("#")[0].strip()
+
+
+def _normalize_ledger_source_spec_basename(raw: str) -> str:
+    name = raw.strip("`").strip()
+    if "/" in name:
+        name = name.rsplit("/", 1)[-1]
+    return name
+
+
+def _ledger_block_span(text: str, heading_start: int) -> tuple[int, int]:
+    next_heading = _LEDGER_DW_HEADING_RE.search(text, heading_start + 1)
+    end = next_heading.start() if next_heading is not None else len(text)
+    return heading_start, end
+
+
+def parse_followup_review_carried_source_specs(ledger_text: str) -> frozenset[str]:
+    """Every spec basename carried as a follow-up recommendation (marshal 66.2)."""
+    carried: set[str] = set()
+    for heading in _LEDGER_DW_HEADING_RE.finditer(ledger_text):
+        start, end = _ledger_block_span(ledger_text, heading.start())
+        block = ledger_text[start:end]
+        source_line = _LEDGER_SOURCE_SPEC_FIELD_RE.search(block)
+        origin_line = _LEDGER_ORIGIN_FIELD_RE.search(block)
+        if source_line is None or origin_line is None:
+            continue
+        origin = _ledger_field_token(origin_line.group("value"))
+        if origin not in _FOLLOWUP_REVIEW_CARRY_ORIGINS:
+            continue
+        carried.add(_normalize_ledger_source_spec_basename(source_line.group("value")))
+    return frozenset(carried)
+
+
+def _followup_review_recommended_from_fields(fm: dict) -> bool:
+    raw = fm.get("followup_review_recommended")
+    if raw is None:
+        return False
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        return str(raw) in _FOLLOWUP_REVIEW_TRUTHY
+    if isinstance(raw, str):
+        return raw.strip().lower() in _FOLLOWUP_REVIEW_TRUTHY
+    return False
+
+
+def _spec_reads_done(fm: dict) -> bool:
+    raw = fm.get("status")
+    if not isinstance(raw, str):
+        return False
+    return raw.split("#", 1)[0].strip().lower() == "done"
+
+
+def _is_followup_review_scope(fm: dict, unparseable: bool) -> bool:
+    if unparseable:
+        return False
+    return _spec_reads_done(fm) and _followup_review_recommended_from_fields(fm)
 
 
 def discover_spec_frontmatter_deferrals(project_dir: Path) -> tuple[SpecDeferredFinding, ...]:
@@ -4443,6 +4518,33 @@ def _check_project_deferred_work(
             }
         )
 
+    # Story 33.1 / CAP-86: done specs with an explicit follow-up flag must be
+    # carried on this project's tracked ledger (marshal 66.2's predicate).
+    specs_dir = proj / SPECS_REL
+    if _is_dir(specs_dir):
+        carried_specs = parse_followup_review_carried_source_specs(tracked_text)
+        tracked_rel = (
+            str(tracked_path.relative_to(target)) if _is_file(tracked_path) else "(none)"
+        )
+        for spec_path in sorted(specs_dir.rglob("spec-*.md")):
+            if not _is_file(spec_path):
+                continue
+            fm, unparseable = _frontmatter_parse(spec_path)
+            if not _is_followup_review_scope(fm, unparseable):
+                continue
+            if spec_path.name in carried_specs:
+                continue
+            findings.append(
+                {
+                    "kind": "followup-review-uncarried",
+                    "project": proj.name,
+                    "id": spec_path.name,
+                    "tier3": str(spec_path.relative_to(target)),
+                    "tracked": tracked_rel,
+                    "generic_id": False,
+                }
+            )
+
 
 def _deferred_work_findings(target: Path) -> tuple[list[dict], int]:
     """``(findings, grandfathered)``: every project's deferred-work findings,
@@ -4534,6 +4636,15 @@ def _deferred_work_message(item: dict) -> str:
             f"{item['tier3']} has no tracked twin in {item['tracked']}"
             f"{hint} — run `python scripts/deferred_work_intake.py --fix` "
             f"(Story 21.8 refuses deferrals with no resolvable repo path)"
+        )
+    if kind == "followup-review-uncarried":
+        return (
+            f"{item['project']}: tracked spec {item['id']} reads `status: done` with "
+            f"`followup_review_recommended: true` but {item['tracked']} carries no "
+            f"`DW-` row whose `source_spec:` names it and whose `origin:` is "
+            f"`dispatch-followup-review` or `review-budget-followup` — carry it "
+            f"(a `DW-FRR-<story>` row via marshal's renderer) or run the follow-up "
+            f"review, which leaves the flag `false`."
         )
     if kind == "verified-line-uncited":
         return (

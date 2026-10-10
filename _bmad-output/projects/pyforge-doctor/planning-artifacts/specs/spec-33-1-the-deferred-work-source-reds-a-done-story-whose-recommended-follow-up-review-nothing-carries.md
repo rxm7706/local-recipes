@@ -2,7 +2,8 @@
 title: '33.1: The deferred-work source reds a done story whose recommended follow-up review nothing carries'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '381c90f99cb7e47f09f3e8decb0cd2d92086e9af'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
