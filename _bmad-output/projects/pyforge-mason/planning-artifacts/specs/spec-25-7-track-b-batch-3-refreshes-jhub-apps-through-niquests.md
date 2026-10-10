@@ -2,7 +2,8 @@
 title: "25.7: Track B batch 3 refreshes jhub-apps through niquests"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '2d90c634f324c68d67a41a3e0e9477061113a8f8'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
