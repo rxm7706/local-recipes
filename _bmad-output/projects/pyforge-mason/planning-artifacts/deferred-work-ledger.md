@@ -1959,3 +1959,24 @@ status: open
   origin: spec-deferred 312d5812d3dd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-25-14: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+
+- source_spec: `planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md`
+  summary: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+  evidence: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+  location: docs/specs/feedstock-refresh.md
+  origin: spec-deferred d8fdac672a17 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-14-2: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+
+- source_spec: `planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md`
+  summary: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+  evidence: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:701
+  origin: spec-deferred 1192a393755d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
