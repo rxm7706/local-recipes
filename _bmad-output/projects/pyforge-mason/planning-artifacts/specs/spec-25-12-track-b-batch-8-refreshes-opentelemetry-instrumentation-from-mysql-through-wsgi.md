@@ -2,7 +2,8 @@
 title: "25.12: Track B batch 8 refreshes OpenTelemetry instrumentation from mysql through wsgi"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '83b38f2a614ac3596d01a731355703f61a985af1'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -16,7 +17,9 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
-deferred: []
+deferred:
+  - reason: "Driver gap 3 (_dependency_diff): literal sibling pins not reported; hand-synced in G96 pre-sync (AC 6)."
+    location: ".claude/skills/conda-forge-expert/scripts/refresh_wave.py"
 declared_low_risk: false
 ---
 
@@ -237,8 +240,57 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-12`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| opentelemetry-instrumentation-mysql | needs-review | no-cfe-block |
+| opentelemetry-instrumentation-psycopg2 | needs-review | dependency-fix (run -psycopg2; instrumentation pin) |
+| opentelemetry-instrumentation-pymongo | needs-review | dependency-fix (run -pymongo; semconv pin) |
+| opentelemetry-instrumentation-pyramid | needs-review | no-cfe-block |
+| opentelemetry-instrumentation-requests | needs-review | dependency-fix (run -requests; util-http pin) |
+| opentelemetry-instrumentation-sqlalchemy | needs-review | dependency-fix (run -sqlalchemy) |
+| opentelemetry-instrumentation-sqlite3 | needs-review | dependency-fix (instrumentation pin) |
+| opentelemetry-instrumentation-system-metrics | needs-review | dependency-fix (+sdk; psutil pin order) |
+| opentelemetry-instrumentation-tornado | needs-review | dependency-fix (run -tornado; util-http pin) |
+| opentelemetry-instrumentation-urllib3 | needs-review | dependency-fix (run -urllib3) |
+| opentelemetry-instrumentation-wsgi | needs-review | dependency-fix (util-http pin) |
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-12/report.json`.
+
+### After refusal clears + G96 pre-sync (dry-run 2)
+
+Eleven `would-refresh`.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+| Recipe | Outcome | Version | Build (linux-64, final) | Maintainers (G53) |
+|---|---|---|---|---|
+| opentelemetry-instrumentation-mysql | refreshed | 0.65b0 → 0.66b1 | success | mariusvniekerk, rxm7706 (superset) |
+| opentelemetry-instrumentation-psycopg2 | refreshed | 0.65b0 → 0.66b1 | success (after shallow test imports) | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-pymongo | refreshed | 0.65b0 → 0.66b1 | success (after shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-pyramid | refreshed | 0.65b0 → 0.66b1 | success | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-requests | refreshed | 0.65b0 → 0.66b1 | success (after shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-sqlalchemy | refreshed | 0.65b0 → 0.66b1 | success (after shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-sqlite3 | refreshed | 0.65b0 → 0.66b1 | success | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-system-metrics | refreshed | 0.65b0 → 0.66b1 | success | org maintainers + rxm7706 (superset) |
+| opentelemetry-instrumentation-tornado | refreshed | 0.65b0 → 0.66b1 | success (after shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-urllib3 | refreshed | 0.65b0 → 0.66b1 | success (after shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-wsgi | refreshed | 0.65b0 → 0.66b1 | success | org maintainers + mariusvniekerk, rxm7706 (superset) |
+
+**Gates:** Expected `optimize=1` on C1 v0 mirrors (STD-002). All `validate`, `check-deps`, and `scan` gates exited 0 on apply.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto pass
+
+- Self-review against AC: eleven recipes at 0.66b1; mysql/pyramid CFE+URL pre-clear; G96 pre-sync; AC 6 sibling pins in pre-sync; six recipes needed feedstock-shallow test imports after apply (batch 7 pattern).
+- `[maybe-false]` `[defer]` Manifest `wave-25-12.yaml` gitignored — report under `.claude/data/conda-forge-expert/refresh-waves/B-25-12/` documents apply.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 8 (B-25-12) refreshed eleven co-maintained OpenTelemetry instrumentation recipes via `refresh-wave`; CFE retro v8.99.16.
+
+Verification: `refresh-wave` dry-run/apply; linux-64 rebuild 11/11; `pixi run --frozen -e pyforge-mason pyforge-mason-test`; `python scripts/spec_surface_reconcile.py`.
