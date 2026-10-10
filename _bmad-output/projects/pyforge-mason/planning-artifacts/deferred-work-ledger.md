@@ -1938,3 +1938,13 @@ status: open
   severity: low
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-25-16: Repo-scope detector when extra.feedstock-name names a different feedstock than cfe-on-conda-forge-feedstock (identity-snapshot wrong-mirror class). At run time 2 recipes remain after this story fixed dbt-bigquery and dbt-postgres.
+
+- source_spec: `planning-artifacts/specs/spec-25-16-three-dbt-adapter-recipes-are-re-mirrored-from-their-own-feedstocks.md`
+  summary: Repo-scope detector when extra.feedstock-name names a different feedstock than cfe-on-conda-forge-feedstock (identity-snapshot wrong-mirror class). At run time 2 recipes remain after this story fixed dbt-bigquery and dbt-postgres.
+  evidence: Repo-scope detector when extra.feedstock-name names a different feedstock than cfe-on-conda-forge-feedstock (identity-snapshot wrong-mirror class). At run time 2 recipes remain after this story fixed dbt-bigquery and dbt-postgres.
+  location: recipes/dspy/recipe.yaml
+  origin: spec-deferred 36e8ee4d28d8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
