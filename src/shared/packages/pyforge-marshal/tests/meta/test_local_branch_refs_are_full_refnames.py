@@ -55,6 +55,7 @@ _REVISION_ARGS: dict[str, tuple[tuple[int | None, str], ...]] = {
     "merge_tree_conflict_paths": ((1, "base"), (2, "branch")),
     "merge_tree_write": ((1, "base"), (2, "branch")),
     "file_text_at_ref": ((1, "ref"),),
+    "line_blame_facts": ((None, "ref"),),
     "fast_forward": ((1, "ref"),),
     "commits_behind": ((1, "tip_ref"),),
     "merge_branch": ((1, "branch"),),
@@ -88,6 +89,9 @@ _NOT_A_REF = {
     ("merge_branch", "subject"),
     ("fetch", "remote"),
     ("file_text_at_ref", "path"),
+    ("line_blame_facts", "path"),
+    ("line_blame_facts", "repo_root"),
+    ("line_blame_facts", "worktree"),
     ("commit_paths_onto_remote_tip", "remote"),  # a remote's NAME, wrapped in a VcsRef
     ("push", "proven_on_main_sha"),  # a sha the adapter re-proves against the full origin/main ref
     ("spec_text_at_ref", "slug"),

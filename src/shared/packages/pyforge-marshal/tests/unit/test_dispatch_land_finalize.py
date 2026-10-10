@@ -77,6 +77,17 @@ class _StubVcs:
         landing gate; this fake has none (the tests that need one use ``_PublishVcs``)."""
         return ()
 
+    def line_blame_facts(
+        self,
+        *,
+        repo_root: Path,
+        path: str,
+        worktree: Path | None = None,
+        ref: str | None = None,
+    ) -> dict[int, tuple[str, int]]:
+        _ = (repo_root, path, worktree, ref)
+        return {}
+
 
 def _read_finalize_resync_entry(tmp_path: Path, slug: str) -> dict:
     """Read back the single ``_FINALIZE_RESYNC_KIND`` journal entry written

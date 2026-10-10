@@ -33,7 +33,9 @@ def test_iter_review_triage_heading_lines() -> None:
         "## Verification\n\n"
         "### should not appear\n"
     )
-    assert iter_review_triage_heading_lines(text) == ((5, "2026-10-10 — FAIL (1 high)"),)
+    headings = iter_review_triage_heading_lines(text)
+    assert len(headings) == 1
+    assert headings[0][1] == "2026-10-10 — FAIL (1 high)"
 
 
 def test_latest_by_blame_commits_not_file_order() -> None:

@@ -2273,7 +2273,7 @@ def test_ready_for_dev_with_refused_landing_journal_still_launches(
 def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Story 83.7: a land-only path that still cannot merge leaves the PR open."""
+    """Story 89.1: in-progress after refused land cannot reach CAP-4 (MRS-DISP-063)."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
     slug = "pyforge-marshal"
@@ -2286,11 +2286,10 @@ def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
         run_id="pyforge-marshal-20261002T130000000Z-cafebabe",
         story_key=story,
     )
-    pr_url = "https://github.com/rxm7706/local-recipes/pull/8307"
     monkeypatch.setattr(
         dispatch_module,
         "_attempt_harness_done_cap4",
-        lambda **_kwargs: (DispatchLandingVerdict.REFUSED, pr_url, None),
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("CAP-4 must not run")),
     )
     monkeypatch.chdir(tmp_path)
     harness = FakeBuildHarness()
@@ -2303,8 +2302,7 @@ def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
         process=FakeProcess(),
     )
     assert harness.calls == []
-    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-040"]
-    assert "8307" in finding.message
+    assert any(f.code == "MRS-DISP-063" for f in attempt.findings)
 
 
 def test_harness_done_lands_via_cap4_without_second_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
