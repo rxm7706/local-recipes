@@ -2,7 +2,8 @@
 title: "25.16: Three dbt adapter recipes are re-mirrored from their own feedstocks"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '647abbc9b21d09c54e75cc59f1e93c1ea4331f4b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -14,7 +15,13 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
-deferred: []
+deferred:
+  - id: feedstock-name-cfe-feedstock-identity-check
+    summary: >-
+      Repo-scope detector when extra.feedstock-name names a different feedstock than
+      cfe-on-conda-forge-feedstock (identity-snapshot wrong-mirror class). At run time
+      2 recipes remain after this story fixed dbt-bigquery and dbt-postgres.
+    location: recipes/dspy/recipe.yaml
 declared_low_risk: false
 ---
 
@@ -307,8 +314,71 @@ Minted 2026-10-10 on the operator's ruling of 2026-10-09 ("Fix in a story") on S
 
 ## Run results
 
-- Not run yet.
+### Live read (2026-10-10, before any write)
+
+| Directory | Feedstock `main` | Published | Format | Maintainers | `recipe/` files |
+|---|---|---|---|---|---|
+| `recipes/dbt-bigquery` | `3709f35d56` | 1.12.1 build 1 | v1 | rxm7706, maresb, thewchan | `recipe.yaml` |
+| `recipes/dbt-postgres` | `c18adc1194` | 1.11.0 build 0 | v0 | maresb, rxm7706 | `meta.yaml` |
+| `recipes/dbt-redshift` | `d9d9bdba74` | 1.11.1 build 0 | v0 | rxm7706, maresb, thewchan | `meta.yaml`, `LICENSE.md` |
+
+conda-forge latest matches the table. No feedstock moved past these versions at read time.
+
+### Mirror diffs from feedstock (allowed / recorded)
+
+- **`recipes/dbt-bigquery` (C2):** Replaced `dbt-core` mirror with feedstock `recipe.yaml` body; removed local `meta.yaml` (G94); literal `package.name`; canonical `source.url` (sha256 verified); full CFE block; feedstock URL token in `cfe-forge-recipe-updates-needed`.
+- **`recipes/dbt-postgres` (C1):** `meta.yaml` byte-identical to feedstock; v1 `recipe.yaml` via `conda-recipe-manager convert` + host `python ${{ python_min }}.*` and TEST-002 python_version triad; canonical URL; CFE block with `meta-yaml-to-recipe-yaml`.
+- **`recipes/dbt-redshift` (C1):** `meta.yaml` and `LICENSE.md` byte-identical; v1 `recipe.yaml` via convert + same host/test fixes; dropped `dbt-feedstock`-only maintainers with the old `dbt-core` copy; canonical URL; new CFE block.
+
+### Maintainer audit (G53)
+
+All three local `extra.recipe-maintainers` lists match their adapter feedstocks at read time (superset includes `rxm7706`).
+
+### Gates (exit codes)
+
+| Recipe | validate | optimize | check-deps | scan | conda-smithy |
+|---|---|---|---|---|---|
+| dbt-bigquery | 0 | 0 | 0 | 0 | 0 |
+| dbt-postgres | 0 | 1 (STD-002 expected C1) | 0 | 0 | 1 (dual meta+recipe expected C1) |
+| dbt-redshift | 0 | 1 (STD-002 expected C1) | 0 | 0 | 1 (dual meta+recipe expected C1) |
+
+### linux-64 builds (isolated `--output-dir`, G52)
+
+Pattern: `rattler-build build -r recipes/<dir>/recipe.yaml --output-dir build_artifacts/<dir> -m .ci_support/linux64.yaml -m conda_build_config.yaml --target-platform linux-64`.
+
+| Recipe | Outcome |
+|---|---|
+| dbt-bigquery | success |
+| dbt-postgres | success |
+| dbt-redshift | success |
+
+All three: **re-mirrored**.
+
+### Package-name parse (AC 9)
+
+Exit 0. Output: `dbt-core declared by: ['dbt']`; ok line for adapters. Pre-run would have exited 1 on the three `dbt-core` recipe bodies.
+
+### Identity mismatch count (AC 11)
+
+`extra.feedstock-name` vs `cfe-on-conda-forge-feedstock` parse at close: **2** (`recipes/dspy`, `recipes/lance-namespace-urllib3-client`).
+
+### Retro
+
+`retro(cfe): v8.99.6` — verify adapter directory name matches `package.name` / CFE block before refresh (Story 25.16 identity snapshot).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[defer]` Intermediate `wip: 25.16 (auto-checkpoint)` commits carry recipe diffs instead of per-recipe `recipes:` subjects — dispatch checkpoint artifact; content matches AC 2–7.
+  - `[false]` `[reject]` Missing linux-64 builds — build logs under `build_artifacts/` and Run results table record three green builds.
+
+## Auto Run Result
+
+- **Summary:** Re-mirrored `recipes/dbt-bigquery`, `recipes/dbt-postgres`, and `recipes/dbt-redshift` from their adapter feedstocks; CFE retro v8.99.6; AC 9 parse exit 0; `pyforge-mason-test` and `spec_surface_reconcile.py` green.
+- **Files changed:** Three recipe trees; CFE skill carriers; story spec run results and deferred row; spec-surface memlogs on `spec-pyforge-mason`, `spec-fleet-stewardship`, `spec-conda-forge-expert-rebuild`.
+- **Review:** 0 patches; 1 deferred (checkpoint commit subjects); 1 rejected false finding.
+- **Follow-up review recommended:** false
+- **Verification:** Gates/builds documented in Run results; `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0; AC 9 parse exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog.
+- **Residual risks:** Two recipes still fail feedstock-name vs CFE identity parse (`recipes/dspy`, `recipes/lance-namespace-urllib3-client`) — deferred, not built here.

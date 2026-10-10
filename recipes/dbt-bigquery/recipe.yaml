@@ -2,26 +2,20 @@
 schema_version: 1
 
 context:
-  name: dbt-core
-  version: "1.12.0"
+  version: "1.12.1"
 
 package:
-  name: ${{ name|lower }}
+  name: dbt-bigquery
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dbt_core-${{ version }}.tar.gz
-  sha256: 088373ddd10af352457b484aa979ab2eecbecb13a7c1e3f5df41fd7d4e387800
-  patches:
-    - 0001-drop-experimental-parser-hard-dep.patch
+  url: https://pypi.org/packages/source/d/dbt-bigquery/dbt_bigquery-${{ version }}.tar.gz
+  sha256: 71787ff4495999a26058dffe4da46558acf57bdc409cdb46565d9afb0391c75e
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - dbt = dbt.cli.main:cli
 
 requirements:
   host:
@@ -30,71 +24,33 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - agate >=1.7.0,<1.15
-    - jinja2 >=3.1.3,<4
-    - mashumaro >=3.9,<3.18
-    - click >=8.3.0,<9.0
-    - jsonschema >=4.19.1,<5.0
-    - networkx >=2.3,<4.0
-    - protobuf >=6.0,<8.0
-    - requests <3.0.0
-    - snowplow-tracker >=1.0.2,<2.0
-    - pathspec >=0.9,<1.1
-    - sqlparse >=0.5.5,<0.6.0
-    - dbt-extractor >=0.5.0,<=0.6
-    - dbt-common >=1.37.5,<2.0
-    - dbt-adapters >=1.24.5,<2.0
-    - dbt-protos >=1.0.514,<2.0
-    - pydantic <3
-    - packaging >20.9
-    - pytz >=2015.7
-    - pyyaml >=6.0
-    - daff >=1.3.46
-    - typing_extensions >=4.4
-    - python-dotenv >=1.2
-    - metricflow >=0.211.0,<1.0
-    - opentelemetry-api >=1.26,<2.0
-  run_constraints:
-    # dbt-core's pyproject.toml lists dbt-core-experimental-parser as an
-    # unconditional dependency, but it is never imported as a Python module --
-    # dbt-core only shells out to it (dbt/parser/fusion.py) as an external CLI
-    # binary, and only when the user explicitly opts in with --use-v2-parser /
-    # DBT_ENGINE_USE_V2_PARSER (default off). If it's missing, dbt-core raises
-    # a clear, actionable error only on that opt-in path; everything else
-    # (import dbt, parse, run, etc.) works normally without it.
-    #
-    # It's also not yet packaged for conda-forge: it's a Rust binary whose
-    # upstream sdist doesn't build from source (see
-    # https://github.com/conda-forge/staged-recipes/pull/34267 for the
-    # in-progress, contested wheel-repackaging attempt). Rather than block
-    # dbt-core 1.12.x entirely on that being resolved, constrain the version
-    # here (for anyone who does install it) without requiring it. Promote
-    # this back to a hard `run` dependency once that package exists on
-    # conda-forge and the packaging story there has matured.
-    - dbt-core-experimental-parser >=2.0.0b1,<3
+    - dbt-common >=1.10,<2.0
+    - dbt-adapters >=1.24.4,<2.0
+    - google-cloud-bigquery-core >=3.0,<4.0
+    - google-cloud-storage >=2.4,<3.2
+    - google-cloud-dataproc >=5.0,<6.dev0
+    - google-api-core >=2.11.0
+    - google-auth >=2.29.0
+    - dbt-core >=1.10.0rc0,<2.0
+    - nbformat >=5.10.4
+    - google-cloud-aiplatform >=1.148.0
+
 tests:
   - python:
       imports:
-        - dbt
-        - dbt.adapters
+        - dbt.adapters.bigquery
       pip_check: true
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - dbt --help
 
 about:
-  summary: With dbt, data analysts and engineers can build analytics the way engineers build applications.
+  summary: The BigQuery adapter plugin for dbt
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/dbt-labs/dbt-core
+  homepage: https://github.com/dbt-labs/dbt-bigquery
 
 extra:
-  feedstock-name: dbt
   recipe-maintainers:
     - rxm7706
     - maresb
@@ -108,27 +64,28 @@ extra:
   cfe-purls:
     - pkg:conda/dbt-bigquery@${{ version }}?channel=conda-forge
     - pkg:pypi/dbt-bigquery@${{ version }}
-  cfe-upstream-repo: none
-  cfe-upstream-homepage: https://github.com/dbt-labs/dbt-core
-  cfe-import-names: [dbt, dbt.adapters]
+  cfe-upstream-repo: https://github.com/dbt-labs/dbt-bigquery
+  cfe-upstream-homepage: https://github.com/dbt-labs/dbt-bigquery
+  cfe-import-names: [dbt.adapters.bigquery]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-bigquery-feedstock
-  cfe-forge-recipe-updates-needed: 
-    - meta-yaml-to-recipe-yaml
-    - version-update-to-1.12.0
-
+  cfe-forge-recipe-updates-needed:
+    - source-url-pypi-org-canonical
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T07:39:27Z
-  cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-17T07:39:27Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-17T07:39:27Z
+  cfe-last-checked: 2026-10-10T10:55:00Z
+  cfe-generated-by-version: 8.99.6
+  cfe-generated-at-datetime: 2026-10-10T10:55:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T11:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # Mirror source: conda-forge/dbt-bigquery-feedstock @ 3709f35d56dfe37ed547de6aa9e9f37e4c49ab56 (2026-10-10).
+#    # source.url: feedstock uses files.pythonhosted.org templated path; local mirror uses canonical
+#    # https://pypi.org/packages/source/d/dbt-bigquery/dbt_bigquery-<version>.tar.gz (sha256 verified identical).
 ####

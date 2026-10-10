@@ -738,6 +738,12 @@ verify_commands = [
   "docs/how-to/track-upstream-todos.md",
   "docs/map.yaml",
   "docs/MAP.md",
+  # Widened 2026-10-10 for Story 67.9 (the stale crm-click text): the archived Dream's one line, the crm recipe's CFE
+  # comment (Rule 1; its Rule-2 retro is under .claude/skills/conda-forge-expert/** above), and every Spec memlog,
+  # because pixi.toml, the catalog and the CFE carriers have co-governors in other stations.
+  "docs/dreams/pixi-candidate-currency.md",
+  "recipes/conda-recipe-manager/recipe.yaml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "72" = [  # Mason's skill cell is two skills, and the Guild answers pyforge mason (spec-pyforge-steward CAP-160..161), added 2026-09-28
   "src/shared/packages/pyforge-steward/**",

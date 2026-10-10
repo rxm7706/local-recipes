@@ -3293,7 +3293,7 @@ block) is filed as a `deferred:` row, not built. Nothing leaves the local repo: 
 outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no CFE `submit_pr` or
 `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 
