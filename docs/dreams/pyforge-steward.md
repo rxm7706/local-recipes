@@ -1204,6 +1204,31 @@ Drift — orphaned between stations.
   **Constraints:** a fix story, no CAP, no flag; local only, since the duty renders files and deploys nothing; herald's
   re-scope of 19.2 is herald's chain. Owner `spec-pyforge-steward` CAP-114 (the perimeter, Story 9.5). → Epic 86 /
   Story 86.1, specced 2026-10-10; 49.11 flips to `done` when herald Epic 19 closes.
+- **2026-10-10 (stale crm-click text) — Ruled: the text that still calls feedstock PR #44 the fix is corrected.** The
+  operator ruled, verbatim: "mint the stale #44 cleanup story now". Earlier the same day the operator corrected Story
+  67.4's `sbom-crm-click-cap` seed. conda-forge/conda-recipe-manager-feedstock #44 is a pull request, and it closed
+  unmerged on 2026-09-01: the maintainer kept a click cap rather than unpin it. #46, merged 2026-09-03, widened the cap
+  to `click >=8.2.1,<=8.4.1` (`recipe/meta.yaml:29`, version 0.10.6). Upstream conda/conda-recipe-manager caps click
+  too, since its PR #555 (2026-08-31), and its main branch reads `>=8.2.1,<=8.4.1` after #559. The latest click is
+  8.5.0. Ten places in the tree still describe the 2026-08-30 picture as current:
+  - six `pixi.toml` comments: the `crm` feature header (`:100`-`:105`), the retired crm line (`:2120`), the retired
+    feedrattler line (`:2152`), both headroom-ai lines (`:2203`, `:2446`) and the dbt block (`:2219`-`:2225`). They
+    call crm's pin `click==8.2.1` and a feedstock bug, call #44 the unpin PR, or wait for #44 to merge;
+  - the library catalog's crm and dbt entries (`docs/reference/library-llms-full.md:215`-`:220`, `:352`-`:355`);
+  - `docs/dreams/pixi-candidate-currency.md:104`, which names #44 as the long-term path back;
+  - the CFE comment in `recipes/conda-recipe-manager/recipe.yaml` (`:96`-`:99`), which says #44's diff leaves the test
+    dependencies alone. Its third commit capped pytest-socket.
+
+  The lock adds a fact the comments miss. grayskull 3.1.1 depends on an unversioned conda-recipe-manager, so
+  `local-recipes` resolves crm 0.10.6 and click 8.4.1 through grayskull, as the `grayskull` env does; the SBOM envs
+  hold crm 0.5.0. **What it looks like when fixed:** each place says what #44 became, what caps click today, and where
+  the open ask lives: Story 67.4's `sbom-crm-click-cap` seed, which only the operator files. A grep finds no live line
+  that calls #44 the fix or crm's pin `click==8.2.1`. Dated history in memlogs, in the archived Dreams' 2026-08-30
+  snapshots and in done story specs stays as written. **Constraints:** a fix story, no CAP, no flag. Text only: no
+  dependency, pin or lock moves. The recipe comment is a recipe edit, so the story invokes conda-forge-expert (Rule 1)
+  and closes with a Rule-2 CFE retro, with mason's Specs reconciled as co-governors, as Story 67.5 did. Nothing leaves
+  the repository. Owner `spec-python-foundry-cutover` fnd:CAP-13 (the gap list and its `upstream` disposition). →
+  Story 67.9, specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
