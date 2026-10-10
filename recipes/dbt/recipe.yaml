@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: dbt-core
-  version: "1.12.2"
+  version: "1.12.5"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/dbt-core/dbt_core-${{ version }}.tar.gz
-  sha256: 9c4d60c58ed759ceff3cc20c065420abc4d26cb092b0e142b39b8747ee43c79b
+  sha256: f17f662aed7b6a8b0d267ecf07448ad1ec03edf147a52abbdf5ee48d25999bb6
   patches:
     - 0001-drop-experimental-parser-hard-dep.patch
 
@@ -121,7 +121,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T07:38:09Z
+  cfe-last-checked: 2026-10-10T09:23:25Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T07:38:09Z
   cfe-local-build-status: failed
@@ -131,4 +131,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 1.12.2 -> 1.12.5
 ####
