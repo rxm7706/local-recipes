@@ -692,7 +692,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_checks_env_hygiene.py": "d8af289255621e5877b49abe9023f2b52021939d",
    "src/shared/packages/pyforge-doctor/tests/unit/test_checks_registry.py": "a46ce8612ccefec786786860eab15a34520e6d39",
    "src/shared/packages/pyforge-doctor/tests/unit/test_cli_backlog_intake.py": "201479a60aed744de1eb382078bee4f543b0c9f5",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_cli_bridge.py": "386a5732a189e1bf8d66b55c6b839bdba97c8491",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_cli_bridge.py": "c6e3a5bac8d1c220906dd03c915aea655281aa84",
    "src/shared/packages/pyforge-doctor/tests/unit/test_cli_check.py": "f740503690e87af397ed40d5a216b9a1788d408c",
    "src/shared/packages/pyforge-doctor/tests/unit/test_cli_diagnose.py": "90552bec5470d2bb3cf85432b9cb04ed62381de2",
    "src/shared/packages/pyforge-doctor/tests/unit/test_cli_monitor.py": "ffec9b75b215c2e6001d131db6099df3e4a0242f",
@@ -761,7 +761,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "9792c01ff323dc70700c36295422b8c7b13b243e"
+  "memlog": "3739ddd1932911be81e12ac743a16e043385b393"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3501,7 +3501,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "548e3a7097eaf82663660bdf968a2617cecf84fd"
+  "memlog": "d01f1c14e4f84840556af3a6576b43f990f6fd26"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
