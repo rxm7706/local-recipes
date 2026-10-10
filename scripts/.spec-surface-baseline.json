@@ -6428,7 +6428,7 @@
    "src/platform/tests/test_herald_deck_exports.py": "bf2ad3345b4b41ec3d7582a07306e586207c12b6",
    "src/platform/tests/test_herald_portal_deck_status.py": "63b9bccd6ac5054540f561eddb9c85a9ffc70097",
    "src/platform/tests/test_herald_portal_deck_viewer.py": "0dbe8d5c7cc00a3dc27c0d2b40b66085a28f8bec",
-   "src/platform/tests/test_herald_webhook_sidecar.py": "b7ed7288a8fcc384fbc36874bc09e5a47dfab543",
+   "src/platform/tests/test_herald_webhook_sidecar.py": "917f5181e5b1f3d9891533e77bfbd2bd95845800",
    "src/platform/tests/test_host_board_row_isolation.py": "9dc22419b983f8cbb5de0cbee6e1cfe7d5ab69ff",
    "src/platform/tests/test_host_boots_without_herald.py": "c18067a6cd46fc4582577ac2f85868d054ee415f",
    "src/platform/tests/test_idp_revoke_next_request.py": "ec194ada87405925c736a5c0a2e039184f6cd4d5",
@@ -7150,7 +7150,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "107279b3039c3499588ba08a05190822c9d1d885"
+  "memlog": "1562368fac8edc61fed82cff6ba3364feb960ec8"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
