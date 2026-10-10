@@ -1,10 +1,13 @@
-"""Optional station packages — import by name without taking the host down (Story 87.1)."""
+"""Optional station packages — skip absent installs at host boot (Story 87.1)."""
 
 from __future__ import annotations
 
 import importlib
 import logging
-from types import ModuleType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 _logger = logging.getLogger(__name__)
 
@@ -29,7 +32,7 @@ def import_optional(
     provided_by: str,
     remedy: str,
 ) -> ModuleType | None:
-    """Import ``module`` when ``provided_by`` is installed; otherwise record and skip."""
+    """Import ``module`` when ``provided_by`` is installed; else record and skip."""
     try:
         return importlib.import_module(module)
     except ModuleNotFoundError as exc:

@@ -6,16 +6,17 @@ import os
 import subprocess
 import sys
 import textwrap
-from http import HTTPStatus
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
+
+from config.optional_components import absent_reason
+from config.optional_components import import_optional
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 
 _CHILD_SCRIPT = textwrap.dedent(
-    '''
+    """
     import asyncio
     import sys
     from http import HTTPStatus
@@ -86,7 +87,7 @@ _CHILD_SCRIPT = textwrap.dedent(
 
     asyncio.run(_run())
     print("OK")
-    '''
+    """
 )
 
 
@@ -100,7 +101,7 @@ def _child_env() -> dict[str, str]:
     return child_env
 
 
-def _run_fresh_interpreter(*, capture_log: bool = False) -> subprocess.CompletedProcess[str]:
+def _run_fresh_interpreter() -> subprocess.CompletedProcess[str]:
     argv = [sys.executable, "-c", _CHILD_SCRIPT]
     return subprocess.run(  # noqa: S603
         argv,
@@ -129,8 +130,6 @@ def test_import_optional_propagates_unrelated_module_not_found(tmp_path: Path) -
     (pkg / "__init__.py").write_text("import missing_dep_xyz\n", encoding="utf-8")
     sys.path.insert(0, str(tmp_path))
     try:
-        from config.optional_components import import_optional
-
         with pytest.raises(ModuleNotFoundError, match="missing_dep_xyz"):
             import_optional(
                 "throwaway_pkg",
@@ -144,9 +143,6 @@ def test_import_optional_propagates_unrelated_module_not_found(tmp_path: Path) -
 
 
 def test_import_optional_records_reason_for_missing_parent() -> None:
-    from config.optional_components import absent_reason
-    from config.optional_components import import_optional
-
     mod = import_optional(
         "no_such_pkg_87_1.submod",
         component="probe_missing_parent_87_1",
@@ -159,9 +155,9 @@ def test_import_optional_records_reason_for_missing_parent() -> None:
     assert "no_such_pkg_87_1" in reason
 
 
-def test_import_optional_logs_once_per_process(caplog: pytest.LogCaptureFixture) -> None:
-    from config.optional_components import import_optional
-
+def test_import_optional_logs_once_per_process(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level("WARNING", logger="config.optional_components")
     component = "log_once_87_1"
     for _ in range(2):
