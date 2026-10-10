@@ -2,7 +2,7 @@
 title: '19.2: One real ship records itself against a persistent store'
 type: 'feature'
 created: '2026-09-18'
-status: 'blocked'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -26,7 +26,7 @@ context:
   - docs/tutorials/local-platform-development.md
   - .github/workflows/herald-live-demo.yml
 deferred:
-  - 'DW-13-6-1: `steward deploy perimeter` renders only a hardcoded `myproject.asgi:application` (`steward/deploy.py:539` on 2026-10-10; the row says `:484`) with no `--asgi-application` flag. Re-scoped 2026-10-10 (operator ruling): the steward story that closes DW-13-6-1 (key: 86-1-deploy-perimeter-renders-the-asgi-application-it-is-given) adds the flag; this story stays `blocked` until that story is `done` on main, then the operator flips it `blocked -> backlog`. This story never closes on a throwaway store.'
+  - 'DW-13-6-1: `steward deploy perimeter` renders only a hardcoded `myproject.asgi:application` (`steward/deploy.py:539` on 2026-10-10; the row says `:484`) with no `--asgi-application` flag. Re-scoped 2026-10-10 (operator ruling): the steward story that closes DW-13-6-1 (key: 86-1-deploy-perimeter-renders-the-asgi-application-it-is-given) adds the flag; this story stays `blocked` until that story is `done` on main, then the operator flips it `blocked -> backlog`. This story never closes on a throwaway store. Gate cleared 2026-10-10: steward 86.1 landed (PR #2056, merge `7d8ab99e88`), herald''s DW-13-6-1 row reads `resolved`, and this story moved `blocked -> backlog` under the ruling.'
   - 'DW-13-6-2: `webhook_host.py`''s timeout frees the caller, not the OS thread a hung handler holds. It becomes reachable once this story keeps a host running; it stays open here (loopback only, one local caller, a restart clears it) and the how-to names the restart as the remedy.'
 declared_low_risk: false
 ---
@@ -53,6 +53,16 @@ verbatim: "go with option 1, local host"):
 
 The steward fix is its own story, minted in steward's chain: the steward story that closes DW-13-6-1
 (steward Story 86.1, `86-1-deploy-perimeter-renders-the-asgi-application-it-is-given`). This story is gated on it.
+
+**Gate cleared 2026-10-10.** Steward Story 86.1 is `done` on main, by both tests the Never list below names:
+- its landing, PR #2056 (merge `7d8ab99e88`, "Merge pyforge-steward/86-1 into main"), is an ancestor of `origin/main`
+  (`git merge-base --is-ancestor 7d8ab99e88 origin/main` exits 0 at `8046e1b83d`);
+- steward's ledger row `86-1-deploy-perimeter-renders-the-asgi-application-it-is-given` reads `done`.
+
+`steward deploy perimeter --asgi-application MODULE:ATTR` exists on main: the flag is registered at
+`steward/cli.py:936`, and `render_daphne_unit` (`steward/deploy.py:595`) writes it into `ExecStart` (`:650`). Under
+the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the same day, through a Tier-3 feed and
+`sprint-ledger-sync --allow-regression` (which named that one key and no other). This spec is `ready-for-dev`.
 
 ### What the ruling means here (decided 2026-10-10)
 
@@ -123,7 +133,8 @@ The steward fix is its own story, minted in steward's chain: the steward story t
   3. While disabled it triggers nothing.
 
   Deleting it, and repointing doctor's catalog row at this story's how-to, is a separate cleanup the operator can
-  order. This story names it and does not do it.
+  order. This story names it and does not do it. *(2026-10-10: the operator ordered it, "Archive after 19.2". Herald
+  Story 36.1, `Deps: S-19.2`, archives the file once this story lands; until then this story leaves it alone.)*
 - **No flag.** This spec is pre-rule: it is listed in `docs/governance/flag-rule-baseline.json`, so `flag-gate-check
   --spec` warns `flag-pre-rule` and never refuses. None of the five `flag-exempt` values fits honestly, and the story
   ships no new runtime behaviour to flag. The webhook routes it exercises shipped unflagged in 13.4 and 19.1, and the
@@ -192,7 +203,9 @@ The steward fix is its own story, minted in steward's chain: the steward story t
 - **AC7 — the workflow's fate is recorded and holds.** At close, both hold:
   - `gh api repos/rxm7706/local-recipes/actions/workflows/herald-live-demo.yml --jq .state` prints
     `disabled_manually`;
-  - `git diff <baseline> -- .github/workflows/herald-live-demo.yml` is empty.
+  - the file is unchanged by this story: `git diff origin/main...HEAD -- .github/workflows/herald-live-demo.yml` (this
+    branch's own diff since its merge base) is empty. *(Amended 2026-10-10: it read `git diff <baseline> -- …`, which a
+    `bump-pixi-version` run on `main` breaks without this story touching the file; see Known traps.)*
 
   The reason is the one recorded above.
 - **AC8 — tests.**
@@ -264,6 +277,14 @@ The steward fix is its own story, minted in steward's chain: the steward story t
 - Never edit `SPEC.md`, the PRD or the spine. Never write steward's ledger.
 - Never write the secret, the store or a log under a `.worktrees/` path.
 
+**Known traps:**
+- **2026-10-10 — a pixi bump rewrites the workflow while this story is open.** `scripts/pixi_version_registry.py:82`
+  registers the workflow's three `pixi-version: v…` pins (`herald-live-demo.yml:75`, `:255` and `:372`) as one
+  `exact` site, so a `bump-pixi-version` run on `main` before this story closes rewrites all three. That is not this
+  story's change. AC7 therefore reads "unchanged by this story" (`git diff origin/main...HEAD`), not "byte-identical to
+  the baseline". Never revert or hand-edit a bumped pin to make AC7 pass. The trap ends when Story 36.1 drops the
+  registry site and archives the file.
+
 ## I/O & Edge-Case Matrix
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
@@ -294,11 +315,14 @@ The steward fix is its own story, minted in steward's chain: the steward story t
 - Epic: Epic 19 (Herald in effect). Its HARD boundaries hold: no new capability, `herald-live-demo.yml` stays disabled,
   no second console, no extra public port.
 - Ledger key: `19-2-one-real-ship-records-itself-against-a-persistent-store`. Ledger status: `blocked` (unchanged by
-  this re-scope).
+  this re-scope); `backlog` from 2026-10-10, the one pre-authorised flip, made once steward 86.1 was `done` on main.
 - Deps: S-19.1 (`done`).
 - Cross-project gate: the steward story that closes DW-13-6-1 (`86-1-deploy-perimeter-renders-the-asgi-application-it-is-given`). Marshal's `Deps:` parser is
   station-local, so the gate is this row's ledger `blocked`, which the operator flips (AGENTS.md § Known pitfalls). The
-  ruling pre-authorises the one flip named in § Boundaries.
+  ruling pre-authorises the one flip named in § Boundaries. Cleared 2026-10-10 (§ Intent, *Gate cleared*).
+- Follow-on: herald Story 36.1 (`36-1-the-ci-live-demo-workflow-moves-to-the-archive-and-its-readers-follow`, Epic 36,
+  `Deps: S-19.2`) archives `herald-live-demo.yml` after this story lands (operator ruling 2026-10-10, "Archive after
+  19.2"). Nothing in this story waits on it.
 - Dispatch note: `marshal-policy.toml` `[epic_surfaces]."19"` (added 2026-10-10 with this re-scope) admits:
   - the herald package and its tests;
   - `src/platform/tests/test_station_api_host_dispatch.py`;
@@ -346,3 +370,15 @@ The steward fix is its own story, minted in steward's chain: the steward story t
 
   The ledger key and the heading are unchanged, and status stays `blocked`. Recorded in `spec-pyforge-herald/.memlog.md`
   and on the Dream.
+- **2026-10-10 (later) — the gate cleared; AC7 reads this story's own change.**
+  - **Gate:** steward 86.1 landed (PR #2056, merge `7d8ab99e88`, an ancestor of `origin/main`; steward's row reads
+    `done`). The ledger key moved `blocked -> backlog` under the ruling's pre-authorisation, and this spec moved
+    `blocked -> ready-for-dev`. ACs 1–6 and 8–10 are unchanged.
+  - **AC7:** the second bullet read `git diff <baseline> -- .github/workflows/herald-live-demo.yml` is empty. It now reads
+    `git diff origin/main...HEAD -- …` is empty: the file is unchanged *by this story*. A `bump-pixi-version` run on
+    `main` rewrites the file's three registered pins and would fail the old wording with no change of this story's
+    (Known traps). The first bullet (`disabled_manually`) is unchanged.
+  - **Cleanup ordered:** the operator ruled "Archive after 19.2" the same day. Herald Story 36.1 archives the workflow
+    after this story lands. This story's Never list still holds until it closes.
+
+  Recorded in `spec-pyforge-herald/.memlog.md`.
