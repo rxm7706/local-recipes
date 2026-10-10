@@ -218,9 +218,9 @@ Type / Effort / Deps: fix / S / —.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
-- `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlogs and scoped stamps.
 
 **Manual checks (not a dispatch gate):**
+- `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlogs and scoped stamps. (Moved here 2026-10-10 for the same reason as `llms-full-check`: steward's `verify_commands` is only `pyforge-steward-test`; the dispatch's own surface guard still runs spec-surface.)
 - `pixi run -e pyforge-guild llms-full-check` — expected: exit 0. (Moved here 2026-10-10: dispatch binds `**Commands:**` only to the station's `verify_commands` plus the surface guard, and refused launch with MRS-DISP-050 / MRS-GATE-011 while this was listed above.)
 - AC (1) and AC (2) greps — expected: no output, exit 1 each.
 - AC (4) comparison and `git diff --exit-code "$BASE" -- pixi.lock environment.yaml` — expected: exit 0.
