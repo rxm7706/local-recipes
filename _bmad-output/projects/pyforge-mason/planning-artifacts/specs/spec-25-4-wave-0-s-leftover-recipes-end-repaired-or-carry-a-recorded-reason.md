@@ -2,7 +2,8 @@
 title: "25.4: Wave 0's leftover recipes end repaired or carry a recorded reason"
 type: 'fix'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '6d5e84cb6b0ebbd61875196dccd7d6015f197457'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
