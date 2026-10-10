@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-pyramid
-  version: 0.65b0
+  version: 0.66b1
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-pyramid/opentelemetry_instrumentation_pyramid-${{ version }}.tar.gz
-  sha256: cb9f86cf25814700ad3246b81cf2f79a05fc011921896970f650ec5dbabd4a84
+  sha256: 769092e65dfc9254272ce62e0c2e1f45289bb976c386ae2b7ed9c3d029404e82
 
 build:
   number: 0
@@ -132,15 +132,16 @@ extra:
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T18:00:00Z
+  cfe-last-checked: 2026-10-10T17:57:41Z
   cfe-generated-by-version: 8.99.15
   cfe-generated-at-datetime: 2026-10-10T18:00:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: 2026-10-10T18:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T17:58:24Z
 ####
 # CFE comments
 ####
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.12: CFE block + URL pre-clear before refresh-wave B-25-12
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####

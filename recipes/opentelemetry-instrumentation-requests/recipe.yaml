@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-requests
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-requests/opentelemetry_instrumentation_requests-${{ version }}.tar.gz
-  sha256: 1d601548f89236d5ab373c7208a2e1e162a8d6462b5b972f9ad8fb0ed82d7438
+  sha256: 28578f72e68e3a5be3226c618ac9570ed360ef1dd22d5d6e0721c6905a4ccc67
 
 build:
   number: 0
@@ -68,12 +68,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-requests-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:46:04Z
+  cfe-last-checked: 2026-10-10T17:58:25Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:46:04Z
   cfe-local-build-status: success
@@ -84,4 +84,5 @@ extra:
 # CFE comments
 # Header:
 #    # added run deps from import test: ['requests']
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####
