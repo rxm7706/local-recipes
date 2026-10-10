@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.99.2
+version: 8.99.3
 allowed-tools: [conda_forge_server]
 ---
 
@@ -493,7 +493,7 @@ Two distinct comment classes — handle them differently:
 
 1. **Existing human / upstream-feedstock comments** (already in the source recipe or on the conda-forge feedstock — e.g. `# Node.js build environment`, `# pnpm package manager`) → **LEAVE in the body verbatim.** Never remove or relocate them; the local recipe must stay a faithful mirror of the feedstock. Removing them is a defect.
 
-2. **New comments the agent wants to add** (any rationale the agent generates) → **never inline.** Write them ONLY in the bottom `# CFE comments` block, organized by the recipe location they refer to. A **human** later curates — copying *up* into the body only the notes worth keeping in the submitted recipe.
+2. **New comments the agent wants to add** (any rationale the agent generates) → **never inline.** Write them ONLY in the bottom `# CFE comments` block, organized by the recipe location they refer to. A **human** later curates — copying *up* into the body only the notes worth keeping in the submitted recipe. **Do not use `${{ … }}` jinja tokens inside `# CFE comments` lines** — conda-smithy's v1 lint renders the full recipe text and will treat those tokens as live template (Story 25.13: `${{ name[0] }}` in a comment broke `recipe-lint` with `'name' is undefined`). Write plain text or angle-bracket placeholders like `<version>` instead.
 
 The only comment that stays at the top of the body is the functional schema-header line (`# yaml-language-server: $schema=…`) — it's a directive, not an annotation.
 
