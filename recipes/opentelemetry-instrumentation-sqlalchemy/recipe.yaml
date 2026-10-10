@@ -33,7 +33,8 @@ requirements:
 tests:
   - python:
       imports:
-        - opentelemetry.instrumentation.sqlalchemy
+        - opentelemetry
+        - opentelemetry.instrumentation
       pip_check: true
       python_version:
         - ${{ python_min }}.*
