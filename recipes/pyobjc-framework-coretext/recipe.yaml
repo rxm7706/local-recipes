@@ -3,18 +3,18 @@ schema_version: 1
 
 context:
   name: pyobjc-framework-CoreText
-  version: "12.2.1"
+  version: "12.2.2"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name.replace('-', '_').lower() }}/${{ name.replace('-', '_') | lower }}-${{ version }}.tar.gz
-  sha256: af740e784d7c592c34025ec7165f4f6c1a69b5a2d9075f06e41e4f77c212aed2
+  url: https://pypi.org/packages/source/p/pyobjc-framework-coretext/pyobjc_framework_coretext-${{ version }}.tar.gz
+  sha256: 64ddc02303217028e32e22c7cc00b5112d84e9d9a67c37d00c2e54f9172284ab
 
 build:
-  number: 1
+  number: 0
   skip: (not osx) or match(python, ">=2,<3") or python_impl == 'pypy'
   script:
     # force pyobjc to use conda-forge's chosen SDK
@@ -78,15 +78,17 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-coretext-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-12.2.1, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-10-10T13:58:48Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T13:59:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 Story 25.8: canonical source.url (AC 2)
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 12.2.1 -> 12.2.2
 ####

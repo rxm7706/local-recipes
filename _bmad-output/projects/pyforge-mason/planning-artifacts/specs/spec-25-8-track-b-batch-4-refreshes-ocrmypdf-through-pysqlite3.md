@@ -2,7 +2,8 @@
 title: "25.8: Track B batch 4 refreshes ocrmypdf through pysqlite3"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'a848e67f384b1a8092c07c22752c06798802b5b6'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -16,7 +17,9 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
-deferred: []
+deferred:
+  - location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
+    reason: maintainer union can insert `- <name>` inside the `#### CFE metadata` header (openllm B-25-8; same as Story 25.7) — CRM parse failure until moved under `recipe-maintainers`
 declared_low_risk: false
 ---
 
@@ -233,8 +236,64 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-8`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| ocrmypdf | needs-review | `no-cfe-block` |
+| office2pdf | would-refresh | |
+| openlineage-airflow | needs-review | `url-unrenderable` |
+| openlineage-dbt | would-refresh | meta.yaml would-remove |
+| openlineage-integration-common | would-refresh | |
+| openlineage-python | needs-review | `url-version-baked` (wheel) |
+| openlineage-sql | needs-review | `no-cfe-block` |
+| openllm | needs-review | `no-cfe-block` |
+| pillow-heif | needs-review | `no-cfe-block` |
+| pyobjc-framework-coretext | needs-review | `url-unrenderable` |
+| pysqlite3 | needs-review | `no-cfe-block` |
+
+### After refusal clears + G96 pre-sync (dry-run 3)
+
+Eleven `would-refresh`.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-8/report.json`.
+
+| Recipe | Outcome | Version | Build (linux-64) | Maintainers (G53) |
+|---|---|---|---|---|
+| ocrmypdf | refreshed | 17.10.0 → 17.13.0 | success | carlodri, izahn, rxm7706 (superset) |
+| office2pdf | refreshed | 0.6.7 → 0.8.1 | success | killua156, mgorny, rxm7706 |
+| openlineage-airflow | refreshed (hand-finish) | 1.14.0 → 1.41.0 | build-clean-test-blocked | millsks, pb01ka, rxm7706 + org maintainers (superset) |
+| openlineage-dbt | refreshed | 1.50.0 → 1.53.0 | success | millsks, rxm7706 + org maintainers |
+| openlineage-integration-common | refreshed | 1.52.0 → 1.53.0 | success | millsks, rxm7706 + org maintainers |
+| openlineage-python | refreshed (hand-finish) | 1.52.0 → 1.53.0 | success | millsks, rxm7706, xylar |
+| openlineage-sql | refreshed | 1.52.0 → 1.53.0 | success | millsks, rxm7706 |
+| openllm | refreshed | 0.4.44 → 0.6.30 | success | rxm7706, openllm-client/core orgs, pb01ka |
+| pillow-heif | refreshed | 1.5.0 → 1.8.0 | failed (compile) | jeongseok-meta, rxm7706 |
+| pyobjc-framework-coretext | refreshed | 12.2.1 → 12.2.2 | not-attempted (osx-only) | Tobias-Fischer, rxm7706 |
+| pysqlite3 | refreshed | 0.6.0 → 0.6.1 | success | mxr-conda, psortos, rxm7706 |
+
+**openlineage-airflow:** After driver `failed` on PyPI hash, mirrored v0 feedstock GitHub tag + `patches/fix-dependency-pins.patch`; `recipe.yaml` host uses `python ${{ python_min }}.*`. Package builds; rattler test env cannot install `openlineage-python==1.41.0` from conda-forge (known sunset package).
+
+**openlineage-python:** Driver `needs-review` (sha256 mismatch on wheel); hand-mirrored feedstock monorepo `client/python` github source (G54).
+
+**openllm:** G96 run/host synced to 0.6.30 feedstock before apply; post-apply fix for driver maintainer YAML corruption (`pb01ka`).
+
+**pillow-heif:** Feedstock-faithful recipe; local compile failed (`/usr/include` vs sysroot — `bits/libc-header-start.h`).
+
+**Gates:** Expected `optimize=1` on several noarch/C1 mirrors (STD-002). `openlineage-sql` `check-deps=1` (virtual/cross-python placeholder pattern).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto pass
+- Adversarial self-review against AC: openlineage monorepo mirrors and openllm G96 sync land; pillow-heif compile remains a local env defect on feedstock-faithful recipe.
+- Driver maintainer-merge corruption on openllm — fixed manually; deferred row cites `refresh_wave.py`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 4 (B-25-8) refreshed eleven co-maintained recipes; nine driver-refreshed plus hand-finish on openlineage-airflow and openlineage-python; CFE retro v8.99.10.
+
+Verification: `refresh-wave` dry-run/apply; `pixi run --frozen -e pyforge-mason pyforge-mason-test` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0 after memlog on spec-pyforge-mason and spec-packaging-factory).
