@@ -7,8 +7,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from pyforge.core import roster
+
 from pyforge.herald import local_ship, webhook
 
 
