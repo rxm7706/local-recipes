@@ -2,7 +2,7 @@
 title: "85.5: Workspace clean parks unlanded commits as a preserve tag before removing the worktree"
 type: 'feature'
 created: '2026-10-04'
-status: 'blocked'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -32,6 +32,8 @@ declared_low_risk: false
 **Problem:** `steward workspace clean` removes an unlanded scratch worktree after it archives the files into a host-local tarball (`workspace.py:866-945`). Since CAP-157, the recorded branch is kept when it is not on its source, so its commits survive only on that local branch. The tarball holds files, never history, and marshal:AD-81 asks for a `preserve/` tag. Low urgency: on 2026-10-04 `.steward/workspace-archive/` held 26 `.landed.txt` notes and no tarballs (review minor 8).
 
 **Blocked:** this story needs `pyforge.core.preserve_refs`, which marshal Story 87.3 ships. Marshal's `Deps:` parser is station-local, so the gate is this ledger row, minted `blocked`. The operator flips it once marshal 87.3 is `done`.
+
+**Unblocked 2026-10-10.** The operator ruled "lets look at each one of these and see if we can get them moving and complete them" (spec memlog). On `main` (`6d5e84cb6b`) marshal Story 87.3 is `done` (`pyforge.core.preserve_refs`, `marshal preserve tag|list`), and so is Story 87.15, the content gate the push goes through. `src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py` exposes `snapshot_worktree_commit` (:337), `tag_preserve` (:445), `run_content_gate` (:578), `push_preserve_ref` (:655) and `observe_preserve_debt` (:1011). The ledger key moved `blocked` → `backlog`. The flag `pyforge.steward.workspace_preserve_tag` is not yet in `src/platform/config/flags.json`; adding it is this story's work (Surface).
 
 **Approach:**
 - **Tag first.** Behind `pyforge.steward.workspace_preserve_tag`, before removing a worktree whose commits are not on its source, `clean` writes an annotated `preserve/<slug>/<N.M>/workspace-<sha8>` tag through `pyforge.core.preserve_refs` (or `preserve/unbound/workspace-<sha8>` when the record names no story). It snapshots uncommitted and untracked files with no branch moved.
@@ -73,7 +75,7 @@ Parent: `spec-pyforge-steward` CAP-165 (FR-38), CAP-157 (amended 2026-10-04), CA
 Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-04 (later) entry.
 Research: drafts' Story 85.3, corrected by review B2 (a local tag suffices; push failure is debt) and minor 8.
 Ledger key: `85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree`.
-Ledger status at mint: `blocked` (cross-project gate: marshal Story 87.3 ships `pyforge.core.preserve_refs`; the operator flips it).
+Ledger status at mint: `blocked` (cross-project gate: marshal Story 87.3 ships `pyforge.core.preserve_refs`; the operator flips it). Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling, through the Tier-3 feed and `sprint-ledger-sync --project steward --allow-regression`.
 Deps: — (cross-project, see above).
 Minted 2026-10-04 under the operator's ruling of the same day.
 
@@ -89,7 +91,7 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-10: unblocked (marshal 87.3 and 87.15 `done`); status `blocked` → `ready-for-dev`. No acceptance criterion changed.
 
 ## Review Triage Log
 

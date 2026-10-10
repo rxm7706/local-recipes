@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 507
+# stories: 510
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -201,7 +201,7 @@ development_status:
   49-10-index-atlas-realization-gate-effect-stories: done
   49-11-index-herald-realization-gate-effect-stories: blocked
   49-12-index-mason-realization-gate-effect-stories: done
-  49-13-index-scribe-realization-gate-effect-stories: blocked
+  49-13-index-scribe-realization-gate-effect-stories: done
   49-14-cap-10-in-effect-the-resilience-primitives-get-a-real-caller-or-the-criterion-says-test-only: done
   49-2-the-capability-effect-check: done
   49-3-cap-4-in-effect-start-and-get-on-all-eight-with-a-real-disconnect: done
@@ -279,7 +279,7 @@ development_status:
   67-1-the-sbom-composes-the-laptop-bill-of-materials-on-three-platforms-with-postgresql-17-held: done
   67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: done
   67-3-every-gap-and-every-fat-only-pin-has-a-disposition-and-an-owner: done
-  67-4-upstream-tickets-for-the-gaps-that-need-one: blocked
+  67-4-upstream-tickets-for-the-gaps-that-need-one: backlog
   67-5-the-estate-points-at-the-sbom: done
   67-6-index-herald-s-dossier-states-the-cutover-s-control-plane-herald-26-1: done
   67-7-index-scribe-s-instruction-surface-names-the-estate-first-scribe-21-1: done
@@ -305,7 +305,7 @@ development_status:
   71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: done
   71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: done
   72-1-the-guild-environment-answers-pyforge-mason: done
-  72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: blocked
+  72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: backlog
   73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: done
   74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it: done
   74-2-the-chart-names-the-bucket-and-prefix-per-environment-and-reaches-only-the-consumed-store: done
@@ -339,11 +339,12 @@ development_status:
   85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it: done
   85-3-the-pre-push-gate-skips-a-push-it-can-prove-carries-only-preserve-or-archive-tags: done
   85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits: done
-  85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: blocked
+  85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: backlog
   85-6-every-command-a-session-denial-names-as-the-sanctioned-form-exists: done
   85-7-the-session-denial-form-check-never-stamps-the-real-spec-surface-baseline: done
   85-8-an-agent-session-never-writes-outside-this-repository: done
   85-9-the-session-hook-reads-its-denial-roster-from-its-own-tree: done
+  86-1-deploy-perimeter-renders-the-asgi-application-it-is-given: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -519,5 +520,7 @@ development_status:
   epic-84-retrospective: optional
   epic-85: in-progress
   epic-85-retrospective: optional
+  epic-86: backlog
+  epic-86-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

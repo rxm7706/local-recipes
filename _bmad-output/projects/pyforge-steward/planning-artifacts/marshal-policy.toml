@@ -705,6 +705,9 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "67" = [  # the estate consolidates — laptop SBOM, gap list, spine no-archive (spec-python-foundry-cutover fnd:CAP-12..15), added 2026-09-25
+  # Widened 2026-10-10 for Story 67.4's repo-only re-scope: the upstream-to-do check and its test, the regenerated detector
+  # and pixi-task pages, and the new how-to with docs/map.yaml and docs/MAP.md (docs/foundry/** and both Specs' memlogs
+  # were already in).
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
@@ -728,6 +731,13 @@ verify_commands = [
   "tests/scripts/test_sbom_gap_derive.py",
   ".claude/skills/conda-forge-expert/**",
   ".claude/skills/pyforge-steward/**",
+  "scripts/upstream_todos_check.py",
+  "tests/scripts/test_upstream_todos_check.py",
+  "docs/reference/detectors.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/how-to/track-upstream-todos.md",
+  "docs/map.yaml",
+  "docs/MAP.md",
 ]
 "72" = [  # Mason's skill cell is two skills, and the Guild answers pyforge mason (spec-pyforge-steward CAP-160..161), added 2026-09-28
   "src/shared/packages/pyforge-steward/**",
@@ -807,6 +817,22 @@ verify_commands = [
   "src/platform/deploy/**",
   "src/platform/compose/**",
   "docs/reference/environments.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"86" = [  # deploy perimeter fronts the ASGI application it is given (fix under spec-pyforge-steward CAP-114; Story 86.1), added
+  # 2026-10-10. The default surface, restated because a declared entry replaces it outright, plus herald's deferred-work
+  # ledger (the story closes its DW-13-6-1 row, nothing else there), the generated station cheat sheet, and every Spec
+  # memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
+  "docs/reference/station-cheat-sheet.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward

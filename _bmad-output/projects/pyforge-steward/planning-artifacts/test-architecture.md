@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 48db5748aceaef35
-story_count: 337
+source_fingerprint: 266e0d2e507111ca
+story_count: 338
 test_file_count: 109
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 337
-- **Epics parsed:** 85
+- **Stories parsed:** 338
+- **Epics parsed:** 86
 - **Test files inventoried:** 109 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `48db5748aceaef35`
+- **Source fingerprint:** `266e0d2e507111ca`
 
 ## Risk Assessment
 
@@ -113,6 +113,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 83: Phase 2 of the deferral burn-down: steward's high deferrals
 - Epic 84: Phase 3 of the deferral burn-down: steward's ruled fixes
 - Epic 85: The protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward CAP-165)
+- Epic 86: `deploy perimeter` fronts the ASGI application it is given (fix under CAP-114)
 
 ### Low-risk epics
 
@@ -524,7 +525,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 67.1 | The SBOM composes the laptop bill of materials on three platforms, with Postg... | none observed |
 | 67.2 | One laptop gate proves the laptop needs nothing beyond the SBOM | none observed |
 | 67.3 | Every gap and every fat-only pin has a disposition and an owner | none observed |
-| 67.4 | Upstream tickets for the gaps that need one | none observed |
+| 67.4 | Upstream to-dos are tracked in the repo, and only the operator files, tracks ... | none observed |
 | 67.5 | The estate points at the SBOM | none observed |
 | 67.6 | Index — herald's dossier states the cutover's control plane (herald 26.1) | none observed |
 | 67.7 | Index — scribe's instruction surface names the estate first (scribe 21.1) | none observed |
@@ -577,6 +578,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.7 | The session-denial form check never stamps the real spec-surface baseline | none observed |
 | 85.8 | An agent session never writes outside this repository | none observed |
 | 85.9 | The session hook reads its denial roster from its own tree | none observed |
+| 86.1 | Deploy perimeter renders the ASGI application it is given | none observed |
 
 ## Quality Gates
 
