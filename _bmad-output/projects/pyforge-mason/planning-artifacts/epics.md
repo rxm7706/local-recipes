@@ -3253,7 +3253,7 @@ directories (or record a G95 block). `recipes/dbt` keeps its version, build numb
 **And** the missing duplicate-output guard and the two still-open staged-recipes PRs for the bundles (#33977, #33978)
 are filed as `deferred:` rows, not built or closed. Nothing leaves the local repo. The `retro(cfe):` commit lands a
 CFE `CHANGELOG.md` semver entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.16: Three dbt adapter recipes are re-mirrored from their own feedstocks
 

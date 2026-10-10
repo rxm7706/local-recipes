@@ -435,6 +435,32 @@ verify_commands = [
   ".claude/skills/bmad-agent-herald/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"36" = [  # the CI live demo retires to the archive (fix, no CAP), added 2026-10-10 with Story 36.1 (operator ruling "Archive after 19.2"; Deps S-19.2).
+  # The default surface, restated because a declared entry replaces it outright, plus every live reader of the moved
+  # workflow outside the package: the workflow and its archive path, the Actions policy comment, the pixi version
+  # registry, the bump-pixi-version description and its generated page (whose docs/map.yaml stamp advances), the two
+  # workflow inventories, 19.2's how-to, doctor's catalog row and its test exception, and every Spec memlog (pixi.toml
+  # has eight governing Specs). docs/MAP.md renders no stamp, so it is not admitted.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  ".github/workflows/herald-live-demo.yml",
+  "archive/.github/workflows/herald-live-demo.yml",
+  ".github/actions-policy.toml",
+  "scripts/pixi_version_registry.py",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docs/reference/github-workflows.md",
+  "docs/how-to/github-actions-recipe-ci.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/how-to/run-herald-live-backend-locally.md",
+  "docs/map.yaml",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/live-proof-surfaces.md",
+  "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
