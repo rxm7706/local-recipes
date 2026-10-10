@@ -221,9 +221,7 @@ def extract_failed_verify_commands(
         if command in by_command:
             ordered.append(by_command[command])
         else:
-            ordered.append(
-                FailedVerifyCommand(command=command, stdout="", stderr="", exit_code=None, gate=gate)
-            )
+            ordered.append(FailedVerifyCommand(command=command, stdout="", stderr="", exit_code=None, gate=gate))
     return tuple(sorted(ordered, key=lambda item: item.command))
 
 

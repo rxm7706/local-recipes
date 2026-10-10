@@ -2348,9 +2348,7 @@ def test_gate_001_then_gate_015_spends_the_one_turn_and_parks_naming_platform_ci
     assert intents[0]["payload"]["failed_gates"] == ["MRS-GATE-001"]
 
 
-def test_both_gates_at_once_hand_one_turn_all_failed_commands(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_both_gates_at_once_hand_one_turn_all_failed_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     cmd_b = "pixi run --frozen -e pyforge-guild lint-types"
     cmd_c = "pixi run --frozen -e pyforge-ci pyforge-deps-test"
 
