@@ -21,7 +21,6 @@ from pyforge.core.preserve_refs import (
     short_ref_name,
 )
 
-from ..adapters.vcs_git import VcsCommandError
 from ..ports.vcs import VcsPort, WorktreeEntry
 
 _ORIGIN_MAIN = "refs/remotes/origin/main"
@@ -46,15 +45,12 @@ class TeardownPreserveScan:
 
 def _commit_needs_preserve(vcs: VcsPort, repo_root: Path, tip: str) -> bool:
     """True when ``tip`` would be orphaned if its only ref were removed."""
-    try:
-        if vcs.is_commit_ancestor(repo_root, tip, _ORIGIN_MAIN):
-            return False
-        if vcs.commit_contained_in_tag_prefixes(repo_root, tip, _PRESERVE_ARCHIVE_PREFIXES):
-            return False
-        if vcs.commit_contained_in_remote_refs(repo_root, tip):
-            return False
-    except VcsCommandError:
-        raise
+    if vcs.is_commit_ancestor(repo_root, tip, _ORIGIN_MAIN):
+        return False
+    if vcs.commit_contained_in_tag_prefixes(repo_root, tip, _PRESERVE_ARCHIVE_PREFIXES):
+        return False
+    if vcs.commit_contained_in_remote_refs(repo_root, tip):
+        return False
     return True
 
 
@@ -182,7 +178,7 @@ def scan_teardown_unpreserved(
         branches_to_check.add(branch)
     try:
         all_worktrees = vcs.list_worktrees(repo_root)
-    except VcsCommandError:
+    except Exception:
         all_worktrees = nested_worktrees
     for wt in (*all_worktrees, *nested_worktrees):
         if wt.branch and home in wt.path.parents:
@@ -197,7 +193,7 @@ def scan_teardown_unpreserved(
             continue
         try:
             tip = vcs.resolve_ref(repo_root, br)
-        except VcsCommandError:
+        except Exception:
             continue
         if not _commit_needs_preserve(vcs, repo_root, tip):
             continue
