@@ -2,8 +2,10 @@
 title: "87.7: Teardown refuses to remove a loop home that holds unpreserved work"
 type: 'feature'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '634fe8d660497572264a33c020e811ca80a8965b'
+followup_review_recommended: false
+review_loop_iteration: 0
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -90,8 +92,29 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Implemented Story 87.7 — `teardown_preserve` scan, `MRS-TEARDOWN-006`/`007`, unified `--abandon` with AD-29.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Engine scratch attribution uses run-id heuristics only — acceptable for v1; sweeper/engine paths already reconcile refs.
+  - `[false]` `[reject]` Claimed missing kept-failed branch scan — worktrees under home with `bmad-loop/` branches are enumerated via `list_worktrees`.
+
+## Auto Run Result
+
+Summary: With `pyforge.marshal.preserve_refs` on, `marshal teardown` scans the loop home for unpreserved patches, engine scratch refs, and branches whose tips are not durably reachable; refuses with per-item `MRS-TEARDOWN-006` findings; requires `--force --abandon` naming exactly the combined set (with AD-29 keys or `UNDETERMINED`); reports local-only preserve tags as `preserve_debt`. Flag off preserves legacy behavior.
+
+Files changed:
+- `core/teardown_preserve.py` — scan and reachability helpers
+- `cli/init.py` — integrate scan, abandon union, debt in envelope
+- `adapters/vcs_git.py`, `ports/vcs.py` — `commit_contained_in_remote_refs`
+- `core/findings.py`, `core/verdict.py` — register 006/007
+- `tests/unit/test_init_teardown_preserve.py` — flag on/off and abandon tests
+
+Review: 0 patches applied; 2 findings rejected as above. `followup_review_recommended: false`.
+
+Verification: `pyforge-marshal-test` pass; `pyforge-deps-test` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0.
+
+Residual risk: broader kept-failed branch discovery outside registered worktrees may need follow-up if bmad-loop leaves orphan local branches with no worktree.
