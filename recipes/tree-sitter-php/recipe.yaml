@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.24.2"
+  version: "0.25.1"
 
 package:
   name: tree-sitter-php
@@ -12,12 +12,12 @@ package:
 # (rejected as a non-SPDX identifier by setuptools >=70). Reported upstream.
 source:
   url: https://github.com/tree-sitter/tree-sitter-php/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 0e73ad63dda67ac12c0e012726a4e1a9811c26b020a0a2dea3e889f8246d9cf4
+  sha256: 1377ac7d40474e002af12fe098287e065fac6d818d43376dc6617dbc94836ad8
   patches:
     - patches/0001-fix-invalid-pep621-license-field.patch
 
 build:
-  number: 1
+  number: 0
   # abi3 packages build once at python_min and ship one artifact per platform.
   skip: is_abi3 and not is_python_min
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
@@ -86,7 +86,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tree-sitter-php-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T14:45:00Z
+  cfe-last-checked: 2026-10-10T14:51:21Z
   cfe-generated-by-version: 8.99.10
   cfe-generated-at-datetime: 2026-10-10T14:45:00Z
   cfe-local-build-status: not-attempted
@@ -97,4 +97,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.9: stamped CFE block (AC 2)
+#    # 2026-10-10 refresh_wave B-25-9: refreshed 0.24.2 -> 0.25.1
 ####
