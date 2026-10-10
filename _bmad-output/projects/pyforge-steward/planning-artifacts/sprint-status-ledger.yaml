@@ -340,7 +340,7 @@ development_status:
   85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it: done
   85-3-the-pre-push-gate-skips-a-push-it-can-prove-carries-only-preserve-or-archive-tags: done
   85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits: done
-  85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: backlog
+  85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: done
   85-6-every-command-a-session-denial-names-as-the-sanctioned-form-exists: done
   85-7-the-session-denial-form-check-never-stamps-the-real-spec-surface-baseline: done
   85-8-an-agent-session-never-writes-outside-this-repository: done
@@ -519,7 +519,7 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: in-progress
+  epic-85: done
   epic-85-retrospective: optional
   epic-86: done
   epic-86-retrospective: optional
