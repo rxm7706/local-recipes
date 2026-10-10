@@ -252,6 +252,7 @@ DERIVED_STORE_PATHS = {
     "osv_offline_store": "stores/osv",
     "pypi_conda_map": "stores/pypi_conda_map.json",
     "warden_fleet_inventory": "stores/warden_fleet_inventory.json",
+    "repo_dependency_cache": "cache/repo_dependency_clones",
 }
 
 # Story 21.6 (review finding, patch): `data_root`/`seed_root` are repo-root-
@@ -281,7 +282,7 @@ MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
 # endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
 # extra_overrides 4 + fetcher_urls 3 + paths 7 = 41. Mirrored by a comment in globals.yml.
-EXPECTED_ENV_OVERRIDE_SURFACE = 41
+EXPECTED_ENV_OVERRIDE_SURFACE = 42
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the

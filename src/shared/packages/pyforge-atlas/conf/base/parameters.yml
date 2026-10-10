@@ -136,3 +136,10 @@ org_audit_candidates:
 # attended bring-up — out of scope here (Story 15.1 Design Notes).
 artifactory:
   virtual_repos: []
+
+# Story 25.1 (CAP-61) — repo sources for dependency-history scans. Each entry is
+# {full_name, path} for a local clone or {full_name, clone_url} for a credentialed
+# remote declared in the catalog (AD-2). Warden's fleet inventory supplies head SHAs
+# for incremental refresh; an empty list is the offline default.
+dependency_history:
+  repos: []

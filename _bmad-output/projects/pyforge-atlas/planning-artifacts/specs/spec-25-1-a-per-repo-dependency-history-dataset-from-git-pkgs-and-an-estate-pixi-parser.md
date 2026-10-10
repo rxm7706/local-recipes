@@ -2,7 +2,8 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -148,3 +149,26 @@ Deps: — (cross-station: mason Story 21.1).
 ## Review Triage Log
 
 - No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10). Implementation and review stay separate.
+
+### 2026-10-10 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 0, false 0, maybe-false 1
+- findings:
+  - `[maybe-false]` `[defer]` Flag ON/OFF test patches `read_boolean` instead of exercising OpenFeature `InMemoryProvider` alone — would need a harness where `read_boolean` reads the installed provider without monkeypatch.
+
+## Auto Run Result
+
+Status: in-review (implementation complete; full multi-layer review subagents not rerun in this session)
+
+Summary: Landed `RepoDependencyHistoryDataset` (git-pkgs via `pyforge.core.process`, DuckDB sqlite scan, estate pixi parser), wired `build_repo_dependency_history` to fleet inventory + params, added `pyforge.atlas.dependency_history` flag, and declared git-pkgs `>=0.21.0,<0.22` on linux-64 (SelfExplainML).
+
+Verification:
+- `pixi run -e pyforge-atlas pyforge-atlas-test -k dependency_history` — 7 passed
+- `pixi run -e pyforge-atlas kedro-catalog-check` — 69 passed
+- `pixi run -e pyforge-atlas kedro-test` — 103 passed
+- `python scripts/spec_surface_reconcile.py` — OK after memlog reconciles
+
+Memlog reconciles (no `--write-baseline`):
+- `spec-pyforge-atlas/.memlog.md` — atlas src/conf/tests + root `pixi.toml` / `pixi.lock` / `environment.yaml`
+- `spec-pyforge-unifying-strategy/.memlog.md` — `src/platform/config/flags.json`, member `pixi.toml`
+
+followup_review_recommended: false

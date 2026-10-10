@@ -102,3 +102,6 @@ bokeh = ">=3.9.2"
 # entries.
 tornado = ">=6.5.8"
 starlette = ">=1.6.0"
+# Story 25.1 (CAP-61): git-pkgs tested range >=0.21.0,<0.22 (recipes/git-pkgs;
+# SelfExplainML linux-64). Supplied by the root [feature.pyforge-atlas.target.linux-64]
+# env table — not a cross-platform package run-dep (no osx-arm64 build).

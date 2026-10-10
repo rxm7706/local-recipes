@@ -678,10 +678,21 @@ def classify_migration_readiness(
     return out[_MIGRATION_READINESS_COLS].reset_index(drop=True)
 
 
-def build_repo_dependency_history() -> pd.DataFrame:
-    """Story 25.1 lands the real dependency-history builder (CAP-61).
+def build_repo_dependency_history(
+    warden_fleet_inventory: dict | None,
+    dependency_history_repos: list | None,
+) -> Any:
+    """Pure trigger for :class:`~pyforge.atlas.datasets.RepoDependencyHistoryDataset` (CAP-61).
 
-    Story 25.2's fleet sensor targets this op by name; until 25.1 ships the body
-    is a no-op placeholder so Dagster job wiring can load offline.
+    Story 25.2's fleet sensor targets this op by name; IO stays in the dataset (AD-2).
     """
-    return pd.DataFrame()
+    from pyforge.core.flags import read_boolean
+
+    from pyforge.atlas.datasets.dependency_history import FLAG_KEY, build_dependency_history_request
+
+    request = build_dependency_history_request(
+        flag_on=read_boolean(FLAG_KEY),
+        repo_sources=dependency_history_repos or [],
+        fleet_inventory=warden_fleet_inventory,
+    )
+    return request

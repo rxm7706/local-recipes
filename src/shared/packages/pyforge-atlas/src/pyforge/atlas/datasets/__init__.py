@@ -41,6 +41,14 @@ from .core_sources import (
 )
 from .degraded_json import DegradedJsonSeedDataset
 from .degrading_parquet import DegradingParquetDataset
+from .dependency_history import (
+    FLAG_KEY as DEPENDENCY_HISTORY_FLAG_KEY,
+    DependencyHistoryBuildRequest,
+    HISTORY_COLUMNS as REPO_DEPENDENCY_HISTORY_COLUMNS,
+    RepoDependencyHistoryDataset,
+    RepoSource,
+    build_dependency_history_request,
+)
 from .identity_sources import (
     LocalRecipesOverlayDataset,
     OpenTeamsBoardDataset,
@@ -145,6 +153,12 @@ from .vulnerability_feeds import (
 __all__ = [
     "DegradedJsonSeedDataset",
     "DegradingParquetDataset",
+    "RepoDependencyHistoryDataset",
+    "DependencyHistoryBuildRequest",
+    "RepoSource",
+    "build_dependency_history_request",
+    "DEPENDENCY_HISTORY_FLAG_KEY",
+    "REPO_DEPENDENCY_HISTORY_COLUMNS",
     "IncrementalParquetDataset",
     "AnacondaDownloadsDataset",
     "GitHubRequestDataset",
