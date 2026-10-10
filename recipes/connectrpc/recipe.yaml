@@ -68,7 +68,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - "flyte-2 local-only closure (docs/specs/flyte-conda-forge.md); pinned <0.11 (flyte requires <0.11,>=0.9.0) to avoid the net-new protobuf-py that 0.11 pulls"
+    - "flyte-2 local-only closure (archive/docs/specs/flyte-conda-forge.md); pinned <0.11 (flyte requires <0.11,>=0.9.0) to avoid the net-new protobuf-py that 0.11 pulls"
   cfe-last-checked: "2026-07-01T00:00:00Z"
   cfe-generated-by-version: "8.62.0"
   cfe-generated-at-datetime: "2026-07-01T00:00:00Z"

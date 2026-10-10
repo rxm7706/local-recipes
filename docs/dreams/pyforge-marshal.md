@@ -1193,6 +1193,23 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   a fix story under CAP-286, no CAP, no flag (it rides `pyforge.marshal.verify_fix_loop`); never a second turn, never
   an unbounded loop (operator ruling 2026-10-10: "mint the MRS-GATE-015 fix-turn marshal story"). Owner
   `spec-pyforge-marshal`. → Story 85.7, specced 2026-10-10.
+- **2026-10-10 (ignored-directory commit)** — **Found: a session's work is left uncommitted when it edits a tracked
+  file under an ignored directory.** Every commit marshal makes in a story worktree goes through one port,
+  `commit_paths`: the supervisor's finalize, the pre-verify WIP commit, the fix-turn commit, the idle auto-checkpoint
+  and the landing's bookkeeping commits. It stages each named path with `git add -- <path>`. Git refuses that for a
+  file that is tracked but sits inside a directory `.gitignore` excludes: it prints "The following paths are ignored
+  by one of your .gitignore files" and exits 1, whether the change is staged or not. `git add -u -- <path>` stages the
+  same file and exits 0. This repo tracks 24 such files: 12 under `.cursor/` (`.gitignore:693` is `.cursor/`), 10
+  under `recipes/.idea/`, one under `.junie/` and one under `.pixi/`. Doctor Story 37.1 (run
+  `pyforge-doctor-20261010T145603286Z-16048b81`) edited `.cursor/rules/specs.mdc`. Its finalize journaled
+  `failed_step: commit` naming that path, the run ended `stopped_externally`, and the whole story sat uncommitted
+  until the operator committed it by hand (PR #2081). The idle checkpoint goes through the same port and swallows its
+  failure, so it saved nothing either. **What it looks like when fixed:** a tracked path the session changed is
+  committed wherever it lives, modified or deleted. A path git does not track is still refused under an ignored
+  directory, and marshal never forces it in. The rename and staged-deletion handling of Story 83.16 is unchanged, and
+  the landing heal's conflict staging gets the same treatment. **Constraints:** a fix story, no CAP, no flag; never
+  `git add -f`, never `git add -A` (operator ruling 2026-10-10: "Mint both (Recommended)"). Owner
+  `spec-pyforge-marshal`. → Story 88.1, specced 2026-10-10.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
@@ -1584,7 +1601,7 @@ synthesizes all four:
 ## The frontier
 
 - Fold the four-views white paper into the deck as a new act — all source
-  material is staged in `docs/intake/agentic-sdlc/` (white paper, infographic +
+  material is staged in `archive/docs/intake/agentic-sdlc/` (white paper, infographic +
   masterclass HTMLs, updated Marp draft) awaiting the refresh.
 - **Formal L-level adoption**: label story modes L1–L5; publish the mapping.
 - Fleet-level resource budgets; privilege-drift management ([[pyforge-doctor]]).

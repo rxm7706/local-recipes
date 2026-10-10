@@ -2,7 +2,7 @@
 title: "67.9: The conda-recipe-manager click notes state the cap as it stands"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -218,9 +218,9 @@ Type / Effort / Deps: fix / S / —.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
-- `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlogs and scoped stamps.
 
 **Manual checks (not a dispatch gate):**
+- `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlogs and scoped stamps. (Moved here 2026-10-10 for the same reason as `llms-full-check`: steward's `verify_commands` is only `pyforge-steward-test`; the dispatch's own surface guard still runs spec-surface.)
 - `pixi run -e pyforge-guild llms-full-check` — expected: exit 0. (Moved here 2026-10-10: dispatch binds `**Commands:**` only to the station's `verify_commands` plus the surface guard, and refused launch with MRS-DISP-050 / MRS-GATE-011 while this was listed above.)
 - AC (1) and AC (2) greps — expected: no output, exit 1 each.
 - AC (4) comparison and `git diff --exit-code "$BASE" -- pixi.lock environment.yaml` — expected: exit 0.
@@ -241,4 +241,10 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-10: bmad-build-auto pass — AC (1)–(6) verified locally; `spec_surface_reconcile.py` OK after memlogs; `pyforge-steward-test` green post `retro(cfe):` commit.
+
+## Auto Run Result
+
+Status: done
+
+Implemented comment-only updates at all ten stale sites; CFE retro v8.99.11 in commit `96e7267592`. Branch: `dispatch/pyforge-steward/67.9` (merge `origin/main` before PR — branch tip predates main’s doctor chain.py additions).

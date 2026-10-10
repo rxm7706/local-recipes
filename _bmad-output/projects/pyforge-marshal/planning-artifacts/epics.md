@@ -8075,7 +8075,7 @@ follow the move)
 **Surface:**
 - `scripts/bmad_drift_check.py`: `DOCS_SPECS`, `cmd_specs`, the `--specs` flag, and its help and docstring lines.
 - A test for the retired flag.
-- `scripts/fleet_scan.py`: the one comment citing `docs/specs/presentation-deck.md` names `docs/how-to/presentation-deck.md`.
+- `scripts/fleet_scan.py`: the one comment citing `docs/how-to/presentation-deck.md` names `docs/how-to/presentation-deck.md`.
 - `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`:
   - `docs/specs/` leaves the source-of-truth surface list and the out-of-band `git diff` command;
   - the `docs-specs-nonmd` row leaves the finding table.
@@ -9540,6 +9540,29 @@ So that `git gc` cannot collect them while the review runs.
 **When** the script runs dry
 **Then** the tracked manifest lists every tip reachable from no ref, with the `refs/tags/archive/heads/<branch>` tag it would write, and nothing changes
 **And** `--execute`, run by the operator, writes local annotated tags only; no row is pushed until the operator marks it reviewed and Story 87.15's gate passes it; a tip already reachable is skipped
+
+## Epic 88: Marshal's commits stage every tracked path they name
+
+Minted 2026-10-10 from the station Dream's entry of the same date (ignored-directory commit), on the operator's ruling
+"Mint both (Recommended)". Each story fixes one defect of shipped behaviour under the capability that shipped it, so no
+CAP is minted and no flag is added. It is a new epic because the behaviour it fixes spans Epics 4, 28, 59 and 83, which
+are all `done`. **HARD boundaries:** marshal never forces a path git was told to ignore (`git add -f`), never stages
+more than the named paths (`git add -A`), and never edits `.gitignore` to get a commit through.
+
+### Story 88.1: Marshal commits a tracked file under an ignored directory
+
+As the operator who committed doctor 37.1 by hand after its finalize refused `.cursor/rules/specs.mdc`,
+I want every commit marshal makes to stage a tracked file wherever it lives,
+So that a session's work is never left uncommitted because git ignores the directory a tracked file sits in.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-4 (FR-30; Story 4.1's commit port, AD-29), with Story 28.24's finalize (← spec-marshal-drain-self-resolution CAP-7), Story 34.2's checkpoint, Story 59.1's heal (CAP-269) and Story 83.16's rename handling • Dream 2026-10-10 (ignored-directory commit) • operator ruling 2026-10-10 "Mint both (Recommended)"
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` (`commit_paths` about :1130-:1204, its `git add -- <path>` at :1181; `merge_ref_resolving`'s `git add -- <rel>` at :1583; `stage_index_paths` at :1964-:1987), the docstrings of `ports/commit.py` and `ports/vcs.py`; `tests/unit/test_vcs_git.py`
+**Spec:** `planning-artifacts/specs/spec-88-1-marshal-commits-a-tracked-file-under-an-ignored-directory.md`
+**Given** a tracked file under a directory `.gitignore` excludes. On git 2.43.0, `git add -- <path>` exits 1 for it ("The following paths are ignored by one of your .gitignore files"), modified or deleted, staged or not, and `git add -u -- <path>` exits 0. Doctor 37.1 (run `pyforge-doctor-20261010T145603286Z-16048b81`) edited `.cursor/rules/specs.mdc` (`.gitignore:693` is `.cursor/`); its finalize journaled `failed_step: commit` naming that path, the run ended `stopped_externally`, and the story was committed by hand (PR #2081)
+**When** `commit_paths`, `merge_ref_resolving` or `stage_index_paths` stages a named path
+**Then** a path the index tracks is staged with `git add -u -- <path>` and an untracked path with `git add -- <path>`, through one helper and one index read. A modified, staged or deleted tracked file under an ignored directory commits; finalize and the idle checkpoint commit the doctor 37.1 shape; the heal commits a conflicted file under an ignored directory
+**And** an untracked path under an ignored directory is still refused with a `VcsCommandError` naming it, and it never enters the index (no `-f`, no `-A`). Story 83.16's rename and staged-deletion tests pass unchanged, and `stage_index_paths` still returns 0 rather than raising. Restoring the plain `git add --` for tracked paths fails the new tests (mutation)
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

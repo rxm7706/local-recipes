@@ -93,7 +93,7 @@ extra:
     - flyteidl2-buf-validate-closure-blocker
   cfe-forge-blocker-list:
     - "flyte-2 SDK (v2), distinct from cf's v1 flytekit. Wheel-only upstream (no sdist, G54 last-resort)"
-    - "local-only: transitively blocked by the flyteidl2/protovalidate buf.validate collision (docs/specs/flyte-conda-forge.md § BLOCKER). Not cf-submittable until that upstream issue is fixed"
+    - "local-only: transitively blocked by the flyteidl2/protovalidate buf.validate collision (archive/docs/specs/flyte-conda-forge.md § BLOCKER). Not cf-submittable until that upstream issue is fixed"
   cfe-last-checked: "2026-07-01T00:00:00Z"
   cfe-generated-by-version: "8.62.0"
   cfe-generated-at-datetime: "2026-07-01T00:00:00Z"
@@ -104,7 +104,7 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # Flyte 2 SDK — LOCAL-ONLY. The actual target of docs/specs/flyte-conda-forge.md.
+#    # Flyte 2 SDK — LOCAL-ONLY. The actual target of archive/docs/specs/flyte-conda-forge.md.
 #    # DISTINCT from cf's v1 `flytekit`/`flyteidl` (coexist; do not conflate).
 # source:
 #    # pypi-wheel: flyte publishes only a py3-none-any wheel (no sdist, like flyteidl2).

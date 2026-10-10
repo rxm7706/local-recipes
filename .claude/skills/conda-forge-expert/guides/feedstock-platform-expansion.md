@@ -20,7 +20,7 @@ This guide applies to both compiled recipes (Rust+PyO3, C/C++, Go, …)
 and noarch:python recipes that need new `noarch_platforms` coverage.
 
 This guide is the timeless workflow. Per-feedstock cases (cocoindex
-2026-06, future audits, …) live in `docs/specs/feedstock-platform-expansion.md`
+2026-06, future audits, …) live in `docs/how-to/feedstock-platform-expansion.md`
 with a Parameters block and Worked Example appendix that point back here.
 
 ## When to apply
@@ -557,7 +557,7 @@ of these surface during the workflow:
   (crossenv, cross-python, maturin)
 - CFE `guides/feedstock-maintenance.md` — general feedstock-rerender
   / branch / PR mechanics
-- `docs/specs/feedstock-platform-expansion.md` — BMAD-consumable spec
+- `docs/how-to/feedstock-platform-expansion.md` — BMAD-consumable spec
   parameterized for any feedstock; carries per-case empirical state
 - CLAUDE.md § "BMAD ↔ conda-forge-expert integration" — Rule 1 (BMAD
   must invoke CFE) + Rule 2 (closeout retro mandatory)

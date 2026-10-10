@@ -10,7 +10,7 @@ followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
   - docs/dreams/pyforge-mason.md
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - docs/how-to/feedstock-platform-expansion.md
 deferred: []
@@ -21,7 +21,7 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** Track A of the feedstock refresh campaign (`docs/specs/feedstock-refresh.md`, § *Track A*) brings every
+**Problem:** Track A of the feedstock refresh campaign (`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, § *Track A*) brings every
 local recipe behind a **sole-maintainer** conda-forge feedstock (`rxm7706` the only maintainer) to the feedstock's
 published version. Waves B to F shipped on 2026-06-21 for the 252 recipes then behind (`1fe1848b43`, `363537dd43`).
 Those waves were scoped to *behind* recipes only. A recipe at the right version but still in `meta.yaml` is not
@@ -76,7 +76,7 @@ Type / Effort / Deps: feature / L / —.
 
 ## Tasks
 
-1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1). Read `docs/specs/feedstock-refresh.md` § *Track A* for
+1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1). Read `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track A* for
    its waves, parameters and landmines 1 to 9. Where the file and the skill differ (the `cfe-*` block version, the
    Python floor), the skill wins, and the story records the difference.
 2. Wave A, re-baseline:

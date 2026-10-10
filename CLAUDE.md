@@ -26,20 +26,6 @@ PRD loads — see AGENTS.md § *Scribe recall (session path)* and `marshal conte
 
 **Behavioural guidelines** — the eight principles every harness follows (Think before coding · Simplicity first · Surgical changes, healed tissue · Goal-driven execution · Dream to code, always · State over action · Harness-owned ledgers are read-only · Implementation and review stay separate) live in `AGENTS.md` § *Behavioural guidelines (every harness)*, imported above; the `conda-forge-expert` skill specialises them for recipe work and the BMAD skills for planning/dev. Not restated here (scribe CAP-27, point-don't-copy; CAP-29 collapsed the duplicate).
 
-## Legacy intake-spec index (read by `bmad-drift-check`)
-
-Doctor's `bmad-drift-check` detector (`check_spec_indexed`) requires every `docs/specs/*.md` filename
-to appear in this file. Author no new file there (`AGENTS.md` § *The tiers*); descriptions and
-the shipped rows: `docs/reference/agent-instruction-notes.md` § *Intake specs*.
-
-| Spec | Status |
-|---|---|
-| `docs/specs/flyte-conda-forge.md` | in-progress |
-| `docs/specs/feedstock-refresh.md` | in-progress |
-| `docs/specs/feedstock-platform-expansion.md` | workflow stub; body in `.claude/skills/mason-feedstock-platform-expansion/` |
-| `docs/specs/feedstock-failure-remediation.md` | workflow stub; body in `.claude/skills/mason-feedstock-failure-remediation/` |
-| `docs/specs/presentation-deck.md` | workflow stub; body in `docs/how-to/presentation-deck.md` |
-
 ## Where moved sections went
 
 This file carried more sections until 2026-09-26 (scribe Story 21.1). A link that names one

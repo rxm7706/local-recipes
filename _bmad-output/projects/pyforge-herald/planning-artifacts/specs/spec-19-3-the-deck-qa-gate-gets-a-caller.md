@@ -20,7 +20,7 @@ verdict_mode: advisory
 **Problem:** `herald deck qa <slug>` works — it is fully wired (`cli.py:331-341` / `:764-765` /
 `:982-995`, `deck_qa.py`, 665 lines, all of Epic 14's stories 14.1/14.2/14.3 `done`) — but nothing
 calls it. `pixi.toml` names `deck_qa` only inside a playwright dependency comment, no CI job
-invokes it, and `docs/specs/presentation-deck.md`'s verify checklist is still entirely
+invokes it, and `docs/how-to/presentation-deck.md`'s verify checklist is still entirely
 run-shaped (manual steps, not an automated one). This is exactly the "capability shipped but
 never exercised" gap Epic 19 exists to close.
 
@@ -51,7 +51,7 @@ a deliberate choice, never accidental, and never a second PR gate.
 |----------|--------------|---------------------------|----------------|
 | Baseline (today) | `pixi.toml` names `deck_qa` only in a playwright dependency comment; no CI job | the gap this story closes | — |
 | pixi task invoked | new pixi task run against `presentations/agentic-sdlc/` | one report produced under `.herald/deck-qa/agentic-sdlc/`; the gate has at least one caller outside its own test file | — |
-| Verify checklist consulted | operator reads `docs/specs/presentation-deck.md` § verify checklist | the deck-qa task is named as an explicit step | — |
+| Verify checklist consulted | operator reads `docs/how-to/presentation-deck.md` § verify checklist | the deck-qa task is named as an explicit step | — |
 | Verdict mode recorded | story records advisory vs blocking | explicit choice stated in the story, never accidental | never registers as a second PR gate |
 
 </intent-contract>
@@ -59,7 +59,7 @@ a deliberate choice, never accidental, and never a second PR gate.
 ## Code Map
 
 - `pixi.toml` — add a `deck-qa` task (`local-recipes` or `pyforge-herald` feature)
-- `docs/specs/presentation-deck.md` § verify checklist — name the new task as a step
+- `docs/how-to/presentation-deck.md` § verify checklist — name the new task as a step
 - `.github/workflows/` — optionally, a deck lane
 - `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py` — unchanged (read-only
   reference)
@@ -80,7 +80,7 @@ a deliberate choice, never accidental, and never a second PR gate.
 **Acceptance Criteria:**
 - Given `herald deck qa <slug>` works (`cli.py:331-341` / `:764-765` / `:982-995`; `deck_qa.py`,
   665 lines) and nothing calls it — no pixi task (`pixi.toml` names `deck_qa` only in a
-  playwright dependency comment), no CI job, and `docs/specs/presentation-deck.md`'s verify
+  playwright dependency comment), no CI job, and `docs/how-to/presentation-deck.md`'s verify
   checklist is still entirely run-shaped, which is the exact gap the Spec was written to close —
   when a pixi task invokes the gate and `presentation-deck.md`'s verify checklist names it as a
   step, then one existing deck (`presentations/agentic-sdlc/`) is run through the gate, its
@@ -92,7 +92,7 @@ a deliberate choice, never accidental, and never a second PR gate.
 ## Spec Change Log
 
 - 2026-09-10 — Story 19.3 implementation: added `[feature.pyforge-herald.tasks.deck-qa]`
-  (`herald deck qa`), deck-QA step 5 in `docs/specs/presentation-deck.md`, and recorded
+  (`herald deck qa`), deck-QA step 5 in `docs/how-to/presentation-deck.md`, and recorded
   `verdict_mode: advisory` (explicit non-blocking choice; never a second PR gate).
 
 ## Review Triage Log
@@ -130,7 +130,7 @@ Status: done
 
 **Files changed:**
 - `pixi.toml` — `[feature.pyforge-herald.tasks.deck-qa]` invokes `herald deck qa`
-- `docs/specs/presentation-deck.md` — new advisory verify step 5 (repo root + built `dist/` prerequisite)
+- `docs/how-to/presentation-deck.md` — new advisory verify step 5 (repo root + built `dist/` prerequisite)
 - `src/shared/packages/pyforge-herald/tests/meta/test_deck_qa_pixi_task.py` — meta test guards task registration
 - `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-19-3-the-deck-qa-gate-gets-a-caller.md` — status, verdict, review log
 

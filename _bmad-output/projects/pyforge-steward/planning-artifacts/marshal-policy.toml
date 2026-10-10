@@ -845,6 +845,9 @@ verify_commands = [
   # Story 87.2 also under fnd:CAP-12), added 2026-10-10. The default surface, restated because a declared entry replaces it
   # outright, plus: the host's config, langflow_integration and tests (87.1, 87.2), the docs the env change regenerates
   # (87.2), herald's deferred-work ledger (87.1 closes its DW-herald-19-1 row, nothing else there), and every Spec memlog.
+  # Widened 2026-10-10 for Story 87.3 (87.2 retired the same day): the mcp-host sidecar, the django_pyforge forwarder
+  # beside the MCP proxy, the flag's core test, the bridge's explanation page, the generated flag inventory and
+  # steward's deferred-work ledger (one follow-up row).
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
@@ -861,6 +864,13 @@ verify_commands = [
   "docs/reference/library-llms-full.md",
   "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  "src/platform/mcp_host/**",
+  "src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py",
+  "src/shared/packages/django-pyforge/src/django_pyforge/sidecar_forward.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "docs/explanation/platform-deployment-architecture.md",
+  "docs/governance/flag-inventory/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
 ]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
