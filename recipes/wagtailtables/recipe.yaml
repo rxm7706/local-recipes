@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/ce/8a/4245e13b1b94d13f3c7ebe3b3028dc2142679cbead8a11650bc36e970c14/wagtailtables-0.3.0.tar.gz
+  url: https://pypi.org/packages/source/w/wagtailtables/wagtailtables-${{ version }}.tar.gz
   sha256: fc05a63a659597706cfd4eb82c9a18fa6678addb50c500ab28ea3534f19d4c43
 
 build:
@@ -20,17 +20,17 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - wagtail >=3.0
+    - python >=${{ python_min }}
+    - wagtail >=3.0
 
 tests:
 - python:
     imports:
-    - wagtailtables
+      - wagtailtables
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -42,7 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
