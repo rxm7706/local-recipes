@@ -5897,6 +5897,35 @@ So that one killed verification never costs the next one its verdict.
 **And** a wait that times out names the processes that hold the lock now. A `.holder` record whose pid is dead is shown as stale, not as the holder. A normal run and a SIGTERMed run still stop their own services through the EXIT trap. Story 63.7's six tests stay green, changed only to use free ports and stubs that write the real tools' pid files. New Docker-free tests run the real script with stand-ins that detach the way `pg_ctl` and `redis-server` do, and each fix fails them when removed (mutation). `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` are green
 **Status:** backlog
 
+## Epic 90: A pytest the preflight starts never inherits another run's basetemp (fix under CAP-159)
+
+Minted 2026-10-10 from the station Dream's entry of the same date (preflight basetemp inherited) and the operator's
+ruling "yes mint the steward preflight fix story". `pr-preflight` gives each lane its own pytest basetemp and cache dir
+by appending them to whatever `PYTEST_ADDOPTS` it inherited. The pytest runs that steward's own preflight tests start,
+in scratch repos under `tmp_path`, inherit the lane's `--basetemp`, which is a parent of their working directory, so
+pytest refuses it and exits 4. Under `pr-preflight` steward's suite fails nine tests that pass in CI. A defect against
+CAP-159 (Stories 71.3, 71.8, 71.9), so no CAP is minted; a new epic because Epics 71 and 88 are `done`. **HARD
+boundaries:** the fix lives in steward's preflight modules and steward's tests; which lanes run, what each runs, the
+journal, the exit codes, `pr-preflight`'s command line, the `pre-push` hook and `PYFORGE_PREFLIGHT_SKIP` do not change;
+every pytest option the invoker set, other than a basetemp or a cache dir, still reaches each lane; no other station's
+code changes.
+
+### Story 90.1: A pytest the preflight starts never inherits another run's basetemp
+
+As the operator whose hygiene PR #2092 could not get a green preflight because steward's own suite failed under it,
+I want every pytest the preflight starts to carry only its own basetemp and cache dir,
+So that steward's suite gives the same verdict under `pr-preflight` as in CI, and no test passes on a usage error.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Stories 71.3, 71.8, 71.9); AD-1; AD-8 • Dream 2026-10-10 (preflight basetemp inherited) • operator ruling 2026-10-10 "yes mint the steward preflight fix story"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`_lane_scratch_env` about :248-:259), `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py` (`collect_pytest_node_ids` about :416-:441), `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` (`_run_reduced_lane_via_preflight` about :115-:169 and `test_collect_pytest_node_ids_raises_on_failure` about :639), `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` (`test_pytest_fails_when_scratch_lives_inside_checkout_mutation` about :132), `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` (new)
+**Spec:** `planning-artifacts/specs/spec-90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp.md`
+**Given** `a0f47b7301`, where `_lane_scratch_env` appends the lane's `--basetemp` and `-o cache_dir` to the inherited `PYTEST_ADDOPTS` unchanged, `collect_pytest_node_ids` runs `pytest --collect-only` with the inherited environment, and the reduced-lane test helper hands its child pytest a raw copy of the environment. On hygiene PR #2092's `--keep-going` preflight (run `089d593c`, 28 lanes) `pyforge-steward-test` failed 9 of 2294 tests with "basetemp must not be empty, the current working directory or any parent directory of it", "config source: via PYTEST_ADDOPTS"; the same 32 tests pass with `PYTEST_ADDOPTS` unset and fail the same 9 with `PYTEST_ADDOPTS=--basetemp=<dir>`
+**When** a lane, the node-id collection or a steward test starts a pytest while `PYTEST_ADDOPTS` carries another run's `--basetemp` or cache dir
+**Then** the child pytest carries only its own: the lane's env keeps the inherited options except any `--basetemp` and any `cache_dir` override, in every spelling pytest accepts, then adds the lane's own once; the collection run drops the same two and adds none; the reduced-lane test helper builds its env with `_lane_scratch_env`, as the pool does; the other inherited options pass through in order
+**And** with an outer `--basetemp` set to a parent of the tests' scratch repos, the nine tests pass, changed only through the reduced-lane helper's env, and a new test proves the lane env, the collection and a real child pytest under it; `test_collect_pytest_node_ids_raises_on_failure` and the scratch mutation test assert the failure they exist for, never a usage error (exit 4); the spec records every test in the ten `pyforge-*` packages and `src/platform` that starts a child pytest, and whether it inherits `PYTEST_ADDOPTS`; Stories 71.x and 88.1's lane selection, suite reduction, dependency order and journal are unchanged; restoring the inherited basetemp fails the new test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
