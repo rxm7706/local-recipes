@@ -92,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-09T15:22:26-05:00'
-      tree: b5736a4b3e7f01c548cdbd40759ed0eb3efb945d-dirty
+      derived_at: '2026-10-10T05:52:00-05:00'
+      tree: c9b4f03b8f2b705798203b710f6f0bb4273afab9-dirty
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -121,6 +121,10 @@ pages:
   - path: how-to/station-cli-operations.md
     quadrant: how-to
     owner: fleet
+    kind: authored
+  - path: how-to/track-upstream-todos.md
+    quadrant: how-to
+    owner: steward
     kind: authored
   - path: how-to/troubleshoot-bmad-agent-loops.md
     quadrant: how-to
@@ -167,8 +171,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-10-04T12:24:49-05:00'
-      tree: fc65db70ab3872f0108a95274e1cead212511ed8-dirty
+      derived_at: '2026-10-10T05:52:00-05:00'
+      tree: c9b4f03b8f2b705798203b710f6f0bb4273afab9-dirty
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet

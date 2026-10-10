@@ -2,7 +2,8 @@
 title: "67.4: Upstream to-dos are tracked in the repo, and only the operator files, tracks or retires them"
 type: 'feature'
 created: '2026-09-25'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '6f25ecd03ed5e0b244a0203770d741b2301e2d0a'
 flag-exempt: detector-or-gate   # the only behaviour is a repo-scope check; a gated check would read a silent green
 review_loop_iteration: 0
 followup_review_recommended: false
