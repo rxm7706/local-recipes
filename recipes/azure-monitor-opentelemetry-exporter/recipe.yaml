@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: azure-monitor-opentelemetry-exporter
-  version: 1.0.0b56
+  version: 1.0.0b58
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/azure-monitor-opentelemetry-exporter/azure_monitor_opentelemetry_exporter-${{ version }}.tar.gz
-  sha256: d645e2dbde68123a1c0ab6a5705424bae5bbda53495f2cd8be1bb2a78e9f31d3
+  sha256: 5152d75bd9780fef02fcc9550e0323ba3f661a8fcba017ea04b027151ae0932e
 
 build:
   number: 0
@@ -79,7 +79,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/azure-monitor-opentelemetry-exporter-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-last-checked: 2026-10-10T09:20:32Z
   cfe-generated-by-version: 8.99.1
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
   cfe-local-build-status: not-attempted
@@ -89,4 +89,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 1.0.0b56 -> 1.0.0b58
 ####
