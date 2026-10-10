@@ -932,6 +932,15 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
             "rendered audit grants grant it DELETE on the audit table only"
         ),
     )
+    perimeter.add_argument(
+        "--asgi-application",
+        metavar="MODULE:ATTR",
+        default=None,
+        help=(
+            "dotted ASGI import path for daphne's --proxy-headers target "
+            "(default: myproject.asgi:application placeholder — replace by hand in the unit)"
+        ),
+    )
 
     static = deploy_subs.add_parser(
         "static",
