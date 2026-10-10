@@ -2,7 +2,7 @@
 title: "25.10: Track B batch 6 refreshes OpenTelemetry's core packages and exporters"
 type: 'feature'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2b428b5493aae83dd53be6dd3aba4ce50e5c1e50'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -238,8 +238,59 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-10`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| opentelemetry-api | needs-review | `dependency-fix` |
+| opentelemetry-proto | would-refresh | |
+| opentelemetry-semantic-conventions | needs-review | `dependency-fix` |
+| opentelemetry-util-http | needs-review | `dependency-fix` |
+| opentelemetry-sdk | needs-review | `dependency-fix` |
+| opentelemetry-exporter-otlp-proto-common | needs-review | `dependency-fix` |
+| opentelemetry-exporter-otlp-proto-http | needs-review | `dependency-fix` |
+| opentelemetry-exporter-prometheus | needs-review | `dependency-fix` |
+| opentelemetry-exporter-zipkin-json | needs-review | `no-cfe-block` |
+| opentelemetry-exporter-zipkin-proto-http | needs-review | `no-cfe-block` |
+| opentelemetry-exporter-zipkin | needs-review | `no-cfe-block` |
+| opentelemetry-propagator-jaeger | needs-review | `no-cfe-block` |
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-10/report.json`.
+
+### After refusal clears + G96 pre-sync (dry-run 4)
+
+Twelve `would-refresh`.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+| Recipe | Outcome | Version | Build (linux-64) | Maintainers (G53) |
+|---|---|---|---|---|
+| opentelemetry-api | refreshed | 1.44.0 → 1.45.1 | success | marcelotrevisani, mariusvniekerk, rxm7706 (superset) |
+| opentelemetry-proto | refreshed | 1.44.0 → 1.45.1 | success | mariusvniekerk, mparry, pb01ka, rxm7706 |
+| opentelemetry-semantic-conventions | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706, timkpaine |
+| opentelemetry-util-http | refreshed | 0.65b0 → 0.66b1 | success (post test-import sync) | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-sdk | refreshed | 1.44.0 → 1.45.1 | success | conda-forge/opentelemetry-api, conda-forge/opentelemetry-semantic-conventions, mariusvniekerk, pb01ka, rxm7706 |
+| opentelemetry-exporter-otlp-proto-common | refreshed | 1.44.0 → 1.45.1 | success | conda-forge/opentelemetry-proto, mariusvniekerk, pb01ka, rxm7706 |
+| opentelemetry-exporter-otlp-proto-http | refreshed | 1.44.0 → 1.45.1 | success | org maintainers + mariusvniekerk, rxm7706 (superset) |
+| opentelemetry-exporter-prometheus | refreshed | 0.65b0 → 0.66b1 | success (post run-pin sync) | conda-forge/opentelemetry-api, conda-forge/opentelemetry-sdk, rxm7706, thewchan, zbowling |
+| opentelemetry-exporter-zipkin-json | refreshed | 1.44.0 → 1.45.1 | success (post host python pin) | mariusvniekerk, rxm7706 |
+| opentelemetry-exporter-zipkin-proto-http | refreshed | 1.44.0 → 1.45.1 | success (post host python pin) | mariusvniekerk, rxm7706 |
+| opentelemetry-exporter-zipkin | refreshed | 1.44.0 → 1.45.1 | success (post host python pin) | mariusvniekerk, rxm7706 |
+| opentelemetry-propagator-jaeger | refreshed | 1.44.0 → 1.45.1 | success (post host python pin) | mariusvniekerk, rxm7706 |
+
+**Gates:** Expected `optimize=1` on C1 v0 mirrors (STD-002). Driver apply initially reported six build failures; post-apply fixes above yielded **12/12** green linux-64 rebuilds.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto pass
+
+- Self-review against AC: twelve recipes at feedstock versions; zipkin/propagator CFE+URL pre-clear; G96 pre-sync for OTLP split deps; AC 6 sibling pins hand-synced where driver omits literal pins (gap 3, Story 25.4).
+- `[maybe-false]` `[defer]` Manifest `wave-25-10.yaml` gitignored — report under `.claude/data/conda-forge-expert/refresh-waves/B-25-10/` documents apply.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 6 (B-25-10) refreshed twelve co-maintained OpenTelemetry recipes via `refresh-wave`; CFE retro v8.99.14.
+
+Verification: `refresh-wave` dry-run/apply; linux-64 rebuild 12/12; `pixi run --frozen -e pyforge-mason pyforge-mason-test`; `python scripts/spec_surface_reconcile.py`.
