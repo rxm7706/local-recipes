@@ -19,7 +19,13 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
-deferred: []
+deferred:
+  - summary: "Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone."
+    location: docs/specs/feedstock-refresh.md
+  - id: refresh-wave-suite-context-version-only
+    summary: "refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored."
+    location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:701
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -294,7 +300,55 @@ Minted 2026-10-09 on the operator's answer to Track B Q2 ("create them").
 
 ## Run results
 
-- Not run yet.
+### Live read (2026-10-10, before edits)
+
+| Feedstock | Published | Build | Context versions | `recipe/` files | Deployed maintainers |
+|---|---|---|---|---|
+| `db-gpt-feedstock` @ `76343d18` | 0.8.2 | 2 | `version` 0.8.2 | `recipe.yaml`, `patches/` (3) | rxm7706, pb01ka |
+| `langflow-feedstock` | 1.12.4 | 0 | `version` 1.12.4; `sdk_version` 0.4.0; bundles 0.1.5 / 0.1.5 / 0.2.5 / 0.1.7 | `recipe.yaml`, `patch_deps.py`, `license-checker-format.json` | rxm7706, pb01ka |
+
+Registry (`conda-forge/feedstock-outputs`, sharded `outputs/` tree): all 16 `dbgpt-*` names → `db-gpt`; `langflow-base`, `langflow-sdk`, `lfx`, and the four `lfx-*` bundles → `langflow`. No name mapped to a different feedstock alone (`needs-review` none).
+
+### `recipes/db-gpt`
+
+- Fidelity: recipe body outside `extra:` matches feedstock except patch-list comment order (aligned to feedstock); three patch files byte-identical to feedstock `recipe/patches/`.
+- `refresh-wave` dry-run manifest `B/25-14`: **already-current** at 0.8.2.
+- CFE block updated to `confirmed-on-conda-forge` + feedstock URL; stale forge-update row dropped; header comment now states 16 outputs and both maintainers.
+- Maintainers: local list equals deployed (superset trivial).
+
+### `recipes/langflow` (post Story 25.7)
+
+- Context and per-output version pins match feedstock; Story 25.7 re-mirror + build record stands.
+- **No recipe edit in this story** — existing `cfe-local-build-*` on `recipes/langflow` unchanged (AC 7).
+
+### Package-name parse (22 names + `langflow` suite output)
+
+- **Duplicate declarers:** none (Story 25.15 retired the five `lfx*` copies).
+- Each of the 22 names is declared only by `recipes/db-gpt` or `recipes/langflow`.
+
+### Wave F mapping (24 rows: 18 Wave A “missing” + 4 bundles mis-bucketed + 2 from Story 25.13)
+
+| Package | Owning feedstock | Mirror | Local version | Published |
+|---|---|---|---|---|
+| dbgpt … dbgpt-serve (16 rows) | db-gpt | recipes/db-gpt | 0.8.2 | 0.8.2 |
+| langflow-base | langflow | recipes/langflow | 1.12.4 | 1.12.4 |
+| langflow-sdk | langflow | recipes/langflow | 0.4.0 | 0.4.0 |
+| lfx-duckduckgo, lfx-arxiv, lfx-ibm, lfx-docling | langflow | recipes/langflow | 0.1.5 / 0.1.5 / 0.2.5 / 0.1.7 | same |
+| dbt-snowflake, zxing-cpp-python | own feedstocks | recipes/dbt-snowflake, recipes/zxing-cpp-python | per Story 25.13 run results | per 25.13 |
+
+### Deferred-work ledger
+
+- Closed **DW-mason-25-2** (“Twenty genuinely-missing local mirrors…”) — Wave F completed by Stories **25.13** and **25.14**.
+
+## Review Triage Log
+
+### 2026-10-10 — build-auto pass
+
+- Pending adversarial review (step-04).
+
+## Auto Run Result
+
+Status: in-review
 
 ## Review Triage Log
 
