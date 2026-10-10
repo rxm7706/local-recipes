@@ -821,31 +821,62 @@ def run_preflight(
     signal.signal(signal.SIGINT, _on_sigint)
 
     results_by_task: dict[str, LaneResult] = {}
+    pending: dict[LaneKey, Lane] = {_lane_key(lane): lane for lane in lanes}
+    completed: dict[LaneKey, LaneResult] = {}
     try:
         with ThreadPoolExecutor(max_workers=worker_count) as pool:
             futures: dict[Future[LaneResult], Lane] = {}
-            lane_iter = iter(lanes)
 
-            while True:
+            def _record_done(lane: Lane, result: LaneResult) -> None:
+                completed[_lane_key(lane)] = result
+                results_by_task[lane.task] = result
+
+            def _mark_dependency_blocked() -> None:
+                for key in list(pending.keys()):
+                    lane = pending[key]
+                    if any(completed.get(dep_key) is None for dep_key in lane.depends_on):
+                        continue
+                    blocker = _dependency_blocker(lane, completed)
+                    if blocker is None:
+                        continue
+                    _record_done(lane, _blocked_lane_result(lane, blocker, keep_going=keep_going))
+                    del pending[key]
+
+            while pending or futures:
                 if coord.cancel.is_set() and not futures:
                     break
-                while len(futures) < worker_count and not (coord.stop_on_red.is_set() and not coord.keep_going):
-                    try:
-                        lane = next(lane_iter)
-                    except StopIteration:
+
+                _mark_dependency_blocked()
+
+                stopped = coord.stop_on_red.is_set() and not coord.keep_going
+                while len(futures) < worker_count and not stopped:
+                    ready: Lane | None = None
+                    for candidate in lanes:
+                        key = _lane_key(candidate)
+                        if key not in pending or not _deps_all_ok(candidate, completed):
+                            continue
+                        ready = candidate
                         break
+                    if ready is None:
+                        break
+                    key = _lane_key(ready)
+                    del pending[key]
                     fut = pool.submit(
                         _run_lane_in_pool,
                         coord,
-                        lane,
+                        ready,
                         scratch_root,
-                        mutex_keys.get((lane.task, lane.environment)),
+                        mutex_keys.get((ready.task, ready.environment)),
                         runner,
                         use_subprocess,
                     )
-                    futures[fut] = lane
+                    futures[fut] = ready
+
                 if not futures:
-                    break
+                    if not pending or stopped:
+                        break
+                    continue
+
                 done, _ = wait(futures.keys(), return_when=FIRST_COMPLETED)
                 for fut in done:
                     lane = futures.pop(fut)
@@ -853,8 +884,9 @@ def run_preflight(
                         result = fut.result()
                     except Exception:  # noqa: BLE001
                         result = LaneResult(lane.task, lane.environment, 0.0, 1, "red", 0.0)
-                    results_by_task[lane.task] = result
-                if (coord.stop_on_red.is_set() or coord.cancel.is_set()) and not coord.keep_going:
+                    _record_done(lane, result)
+
+                if stopped:
                     while futures:
                         done_wait, _ = wait(futures.keys(), return_when=FIRST_COMPLETED)
                         for fut in done_wait:
@@ -863,7 +895,8 @@ def run_preflight(
                                 result = fut.result()
                             except Exception:  # noqa: BLE001
                                 result = LaneResult(lane.task, lane.environment, 0.0, 1, "red", 0.0)
-                            results_by_task[lane.task] = result
+                            _record_done(lane, result)
+                    _mark_dependency_blocked()
                     break
     finally:
         signal.signal(signal.SIGINT, prior_sigint)
