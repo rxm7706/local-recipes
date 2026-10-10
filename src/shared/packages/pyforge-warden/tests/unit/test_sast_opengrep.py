@@ -94,6 +94,33 @@ def test_parse_opengrep_json_unparseable_returns_error_message() -> None:
     assert error is not None
 
 
+def test_parse_opengrep_json_missing_results_is_empty() -> None:
+    notes, error = parse_opengrep_json("{}")
+    assert notes == ()
+    assert error is None
+
+
+def test_parse_opengrep_json_results_not_array() -> None:
+    notes, error = parse_opengrep_json('{"results": "bad"}')
+    assert notes == ()
+    assert error is not None
+
+
+def test_parse_opengrep_json_root_not_object() -> None:
+    notes, error = parse_opengrep_json("[]")
+    assert notes == ()
+    assert error is not None
+
+
+def test_parse_opengrep_json_skips_non_mapping_entries() -> None:
+    notes, error = parse_opengrep_json(
+        '{"results": [42, {"check_id": "r1", "path": "a.py", "start": {"line": 2}}]}'
+    )
+    assert error is None
+    assert len(notes) == 1
+    assert notes[0].rule_id == "r1"
+
+
 def test_build_opengrep_scan_argv_uses_local_rules_only(tmp_path: Path) -> None:
     rules = bundled_sast_rules_dir()
     argv = build_opengrep_scan_argv(
@@ -113,6 +140,23 @@ def test_build_opengrep_scan_argv_uses_local_rules_only(tmp_path: Path) -> None:
 def test_run_opengrep_advisory_absent_binary_is_silent(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("pyforge.warden.sast.shutil.which", lambda _name: None)
     assert run_opengrep_advisory(tmp_path) == ()
+
+
+def test_run_opengrep_advisory_whitespace_only_engine_output(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr("pyforge.warden.sast.shutil.which", lambda _name: "/bin/opengrep")
+    monkeypatch.setattr(
+        "pyforge.warden.sast.run_opengrep_engine",
+        lambda **_kwargs: ("   ", None, 0),
+    )
+    assert run_opengrep_advisory(tmp_path) == ()
+
+
+def test_run_opengrep_advisory_runner_bad_exit_is_silent(tmp_path: Path) -> None:
+    def runner(_target: Path, _rules: Path, json_path: Path) -> types.SimpleNamespace:
+        json_path.write_text('{"results": []}', encoding="utf-8")
+        return types.SimpleNamespace(returncode=2)
+
+    assert run_opengrep_advisory(tmp_path, runner=runner) == ()
 
 
 def test_run_opengrep_advisory_version_failure_becomes_advisory_note(monkeypatch, tmp_path: Path) -> None:
@@ -174,6 +218,60 @@ def test_plugin_appends_advisory_note_when_enabled(monkeypatch, tmp_path: Path) 
     assert len(notes) == 1
     assert notes[0]["tool"] == "opengrep"
     assert notes[0]["rule_id"] == "planted-opengrep-match"
+
+
+def test_plugin_enabled_optional_as_string(monkeypatch, tmp_path: Path) -> None:
+    tree = _flag_tree(tmp_path / "flags", enabled=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+
+    def fake_runner(_target: Path, _rules: Path, json_path: Path) -> types.SimpleNamespace:
+        json_path.write_text('{"results": [{"check_id": "r", "path": "x.py"}]}', encoding="utf-8")
+        return types.SimpleNamespace(returncode=0)
+
+    plugin = OpengrepScanPlugin(runner=fake_runner)
+    context: dict[str, object] = {
+        "enabled_optional": "opengrep",
+        "target": tmp_path,
+        "advisory_notes": [],
+    }
+    plugin.call("around", context)
+    assert len(context["advisory_notes"]) == 1
+
+
+def test_plugin_invokes_next_when_present(monkeypatch, tmp_path: Path) -> None:
+    tree = _flag_tree(tmp_path / "flags", enabled=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    seen: list[str] = []
+
+    def nxt(ctx: dict[str, object]) -> dict[str, object]:
+        seen.append("next")
+        return ctx
+
+    plugin = OpengrepScanPlugin(runner=lambda *_: types.SimpleNamespace(returncode=0))
+    context: dict[str, object] = {
+        "enabled_optional": ("opengrep",),
+        "target": tmp_path,
+        "advisory_notes": [],
+        "next": nxt,
+    }
+    plugin.call("around", context)
+    assert seen == ["next"]
+
+
+def test_plugin_skips_when_target_is_not_a_path(monkeypatch, tmp_path: Path) -> None:
+    tree = _flag_tree(tmp_path / "flags", enabled=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    plugin = OpengrepScanPlugin(runner=lambda *_: types.SimpleNamespace(returncode=0))
+    context: dict[str, object] = {
+        "enabled_optional": ("opengrep",),
+        "target": "not-a-path",
+        "advisory_notes": [],
+    }
+    plugin.call("around", context)
+    assert context["advisory_notes"] == []
 
 
 def test_plugin_flag_off_writes_no_note_even_when_enabled_in_env(monkeypatch, tmp_path: Path) -> None:
