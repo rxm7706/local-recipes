@@ -2,7 +2,8 @@
 title: "87.16: The orphaned tips are re-preserved as local archive tags"
 type: 'chore'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f4ab1f05a8fa7368378e9b9f7bc3cf4fdc53dd9a'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
