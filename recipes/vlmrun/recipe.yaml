@@ -68,11 +68,11 @@ about:
 
 extra:
   recipe-maintainers:
+    - pb01ka
     - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
-    - pb01ka
   cfe-conda-name: vlmrun
   cfe-upstream-registry: pypi
   cfe-upstream-name: vlmrun

@@ -60,11 +60,11 @@ about:
 extra:
   recipe-maintainers:
     - mukhery
+    - pb01ka
     - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
-    - pb01ka
   cfe-conda-name: stringzilla
   cfe-upstream-registry: github
   cfe-upstream-name: ashvardanian/StringZilla
