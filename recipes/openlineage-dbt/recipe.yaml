@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: openlineage-dbt
-  version: "1.50.0"
+  version: "1.53.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 393af02649095ff829dfc1f4193b61a6955cff1243facb8131429d6ec986096b
+  sha256: f78ef097dd2f9e67b359d5624b9b3eabed2b44f5058fe4d2f2afad08c5781eaa
 
 build:
   number: 0
@@ -85,7 +85,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openlineage-dbt-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-1.50.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-last-checked: 2026-10-10T13:50:49Z
   cfe-generated-by-version: 8.67.0
   cfe-generated-at-datetime: 2026-07-03T22:07:06Z
   cfe-local-build-status: success
@@ -96,4 +96,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-07-03 Set F wave (tracker residuals) — LOCAL BUILDS ONLY.
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 1.50.0 -> 1.53.0
 ####
