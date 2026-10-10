@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-10-07'   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -1039,5 +1039,25 @@ Each was checked against its FR and the code under `src/shared/packages/pyforge-
 
 **The FR space: no FR registered.** Every story above repairs or realizes an existing FR or CAP. None adds, changes or
 removes a requirement. The FR space stays FR-1..FR-21 (FR-22 is the next free id).
+
+**Content changed:** this section only. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-10
+
+*Chain-currency cascade (spec → PRD). `spec-pyforge-doctor`'s memlog gained a contract entry on 2026-10-10, three days
+after this PRD's 2026-10-07 re-stamp. `SPEC.md` is unchanged, and no CAP is added.*
+
+- **Stories 33.1 and 37.1's gates cleared (2026-10-10).** The operator ruled "yes flip the six cleared stories and dispatch them". Both keys move from `blocked` to
+  `backlog`, and both story specs read `ready-for-dev` with dated notes.
+  - 33.1's gate is marshal Story 66.2, now done on main. 33.1 realizes FR-19 (CAP-86) as written.
+  - 37.1's gate is the four readers (atlas 26.1, steward 77.1, herald 34.1 and marshal 76.1), all done on main. 37.1
+    relays the Guild's `spec-one-chain-per-station` CAP-11 and registers no doctor FR.
+- **Stories 6.13 and 34.6 minted (2026-10-07), fixes with no CAP.**
+- **Everything else is bookkeeping.** The other entries since the 2026-10-07 re-stamp are surface reconciles and
+  landing records: co-governor regenerations of `docs/map.yaml`, `docs/how-to/pixi-tasks.md` and the reference pages;
+  Story 38.1's follow-up review; `factory.py`'s preserve-manifest classification; and `test_cli_bridge.py`. They
+  register no FR.
+
+**The FR space: no FR registered.** The FR space stays FR-1..FR-21 (FR-22 is the next free id).
 
 **Content changed:** this section only. `updated:` bumped.

@@ -2,8 +2,7 @@
 title: '33.1: The deferred-work source reds a done story whose recommended follow-up review nothing carries'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
-blocking_condition: 'blocked until marshal Story 66.2 (spec-pyforge-marshal:CAP-275, "Every landed follow-up recommendation is backfilled and held by a meta test") has landed on main -- before its backfill, 192 of the 210 done-and-flagged tracked specs have no carrying row and this check would red main; the operator flips the ledger key, never a session'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -48,8 +47,23 @@ The ledger key is minted `blocked` because marshal's `Deps:` parser is station-l
 ledger gate (AGENTS.md § Known pitfalls; the herald 27.5 / steward 72.2 precedent). Do not start this story while 66.2 is
 unlanded.
 
+**Gate cleared 2026-10-10.** Marshal Story 66.2 is `done` on main: its landing, PR #1760 (merge `d8b2fb7cee`,
+"Merge pyforge-marshal/66-2 into main"), is an ancestor of `origin/main` (`git merge-base --is-ancestor d8b2fb7cee
+origin/main` exits 0 at `2d90c634f3`), and marshal's ledger row
+`66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test` reads `done`. Its meta test is on main
+(`src/shared/packages/pyforge-marshal/tests/meta/test_followup_review_carried.py`), with the two carrying origins and the
+`spec-deferred` negative this story's fixtures mirror. On the same tree `pixi run -e pyforge-guild deferred-work-check`
+exits 0. The operator ruled the same day (verbatim): "yes flip the six cleared stories and dispatch them". The ledger key
+moved `blocked -> backlog` through a worktree-local Tier-3 feed and `sprint-ledger-sync --project doctor
+--allow-regression`; this spec is `ready-for-dev`. Re-read for staleness the same day: every path and symbol the story
+names is still on main (`_check_project_deferred_work`, `discover_spec_frontmatter_deferrals`, `_frontmatter_parse`,
+`_deferred_work_message`, `_gather_deferred_work` in `sources/chain.py`; marshal's
+`core/dispatch_harness_done.followup_review_recommended`; `tests/unit/test_check_speed_budget.py`,
+`tests/unit/test_sources_chain_deferred_work.py`). The 2026-09-28 counts in the Problem paragraph are the mint's
+measurement and are left as written. No AC changes.
+
 Ledger key: `33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries`.
-Ledger status (do not edit the ledger): `blocked`.
+Ledger status (do not edit the ledger): `backlog` (flipped from `blocked` on 2026-10-10 by the operator's ruling).
 Type / Effort / Deps: feature / S / — (cross-project gate: marshal Story 66.2).
 
 ### Living CAP citations
@@ -112,7 +126,7 @@ follow-up review is carried, and Doctor checks it on every PR* and `spec-pyforge
 Parent Spec capability: `spec-pyforge-doctor` CAP-86 (FR-19).
 Dream: `docs/dreams/pyforge-doctor.md` § Realization log → *2026-09-28 — Proposed: a recommended follow-up review is carried, and Doctor checks it on every PR*.
 Ledger key: `33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries`.
-Ledger status at mint: `blocked` (cross-project gate: marshal Story 66.2).
+Ledger status at mint: `blocked` (cross-project gate: marshal Story 66.2). Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (66.2 `done`), through the Tier-3 feed and `sprint-ledger-sync --project doctor --allow-regression`.
 
 ## Verification
 

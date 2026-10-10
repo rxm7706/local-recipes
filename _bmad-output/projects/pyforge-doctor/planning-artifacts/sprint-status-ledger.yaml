@@ -103,7 +103,7 @@ development_status:
   30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: done
   31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname: done
   32-1-the-gates-base-normalizer-names-the-remote-tracking-ref: done
-  33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: blocked
+  33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: backlog
   34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline-and-one-block-shape: done
   34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci: done
   34-3-the-flag-gate-reads-the-tree-metadata-per-environment-defaults-and-the-90-day-clock: done
@@ -113,7 +113,7 @@ development_status:
   35-1-capability-ledger-s-post-pin-check-reads-only-live-specs: done
   36-1-a-fold-complete-check-proves-each-archived-dream-s-body-is-in-its-station-dream: done
   36-2-the-sibling-drift-check-reads-acknowledged-dreams-under-the-archive: done
-  37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire: blocked
+  37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire: backlog
   38-1-a-verified-line-written-from-now-on-cites-what-it-read: done
   38-2-spec-surface-names-a-spec-surface-glob-that-matches-nothing: done
   38-3-the-fleet-hygiene-sweep-runs-with-the-other-detectors-warn-only: done

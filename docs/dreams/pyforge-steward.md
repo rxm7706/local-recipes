@@ -1229,6 +1229,49 @@ Drift — orphaned between stations.
   and closes with a Rule-2 CFE retro, with mason's Specs reconciled as co-governors, as Story 67.5 did. Nothing leaves
   the repository. Owner `spec-python-foundry-cutover` fnd:CAP-13 (the gap list and its `upstream` disposition). →
   Story 67.9, specced 2026-10-10.
+- **2026-10-10 (herald absent) — Found and ruled: the platform host stops at import when `pyforge-herald` is not
+  installed.** Herald Story 19.1 (checkpoint `73f887353b`, completed in `55e539ce7c`) seeds herald v1 on the station API
+  seam at import time (`src/platform/config/station_api.py:168`), and `_register_herald_v1` loads
+  `pyforge.herald.station_api` by name with no guard (`:122`). Only `platform-ci-test` carries `pyforge-herald`
+  (`pixi.toml:410`). The image env (`src/platform/Containerfile:90`, `pixi install --frozen -e python-agent-platform`) and
+  `platform-dev` do not, so `import config.asgi` stops with `ModuleNotFoundError: No module named 'pyforge.herald'`
+  (`config/asgi.py:55` → `station_api.py:168` → `:122`; reproduced 2026-10-10 in `platform-dev`; the image was not built,
+  because `PAUSE_PLATFORM_CONTAINER_BUILDS` pauses container builds). Nothing caught it. 19.1's review rejected "importlib
+  crash when pyforge-herald absent" as false because `platform-ci-test` now carries herald
+  (`spec-19-1-the-webhook-routes-move-onto-the-station-api-seam.md:93`), and no herald deferred-work row records it.
+  Adding herald to the image feature does not solve: herald needs `mcp >=2.2.0`, and every langflow-base 1.12.x pins
+  `mcp >=1.28.0,<2.0.0`. So the image stays without herald. The operator chose, verbatim "Yes, lazy import story":
+  "Mint a fix story: _register_herald_v1 imports herald lazily (or the herald mount is skipped with a logged reason when
+  the package is absent), plus a test that config.asgi imports without pyforge-herald installed." **What it looks like
+  when fixed:** with herald absent, the host imports, logs one line naming herald and the missing module, and answers
+  `/stations/herald/api/v1/…` with a 404 that says herald is not installed. With herald present, nothing changes.
+  **Constraints:** a fix story, no CAP, no flag. `src/platform/` still never imports `pyforge.*`; the module name stays
+  a string. Only a missing herald is skipped; any other import error still stops the host. Owner
+  `spec-pyforge-unifying-strategy` CAP-10 (failure is contained), over Story 43.2's seam (CAP-6). → Epic 87 / Story 87.1,
+  specced 2026-10-10.
+- **2026-10-10 (host without Langflow) — Ruled: the platform host boots without Langflow, and the full-stack laptop env
+  runs it.** Herald Story 19.2's live proof needs one locked env that imports `config.asgi:application` with
+  `pyforge-herald`. The image feature cannot take herald (the `mcp` conflict above). `pyforge-foundry-full-stack` has
+  daphne, PostgreSQL 17 and herald, but `import config` stops at `config/__init__.py:3` → `config/celery_app.py:4`
+  (`No module named 'celery'`, reproduced 2026-10-10). Past that, `config/asgi.py:65`-`:66` builds Langflow's app at
+  import (`langflow_integration/asgi.py:42`-`:44`), and the platform tests stub `langflow.main` to get past it. The gap
+  is wider than the first error. Measured on the lock at `2d90c634f3`, the full-stack env lacks 42 of the 56 packages
+  `[feature.python-agent-platform.dependencies]` declares (path packages aside). Setting aside the engines, `dlt`,
+  `psycopg2`, the Liquibase CLI and `uvicorn-worker` leaves 30 Django-host packages, among them django-environ, wagtail,
+  django-allauth, django-crispy-forms, django-celery-beat (celery comes through it), django-structlog, django-compressor,
+  whitenoise and the OpenTelemetry Django and Celery instrumentation. `[feature.platform-ci-test]`, the env Platform CI
+  already imports the host in without Langflow, declares 26 of the 30 directly; the other four come in transitively. The
+  operator chose, verbatim "Host without langflow": "Make config.asgi boot without langflow and give
+  pyforge-foundry-full-stack celery, django-environ and wagtail (cross-station: steward's SBOM env). Matches 19.2's
+  original 'full-stack' wording." **What it looks like when fixed:** with Langflow absent, the host imports, logs one line
+  naming Langflow, and answers Langflow's paths with a 404 that says Langflow is not installed. The full-stack env
+  composes the platform's own host set, so `import config.asgi` exits 0 there and herald's station routes answer.
+  **Constraints:** a fix story, no CAP, no flag. The lock moves through `pixi lock`, never a live `pixi add`, and only
+  the full-stack env's lock changes. No `postgresql` or `libpq` pin goes past 17 and no psycopg cap is lifted. The image
+  and `platform-dev` keep Langflow. Owners: `spec-pyforge-unifying-strategy` CAP-10 (the host half) and
+  `spec-python-foundry-cutover` fnd:CAP-12 (the layer env). Herald 19.2's live proof waits on this story. The ruling
+  pre-authorises flipping herald's 19.2 key when this story is `done` on `main`, and that flip is herald's to write. →
+  Epic 87 / Story 87.2, specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
