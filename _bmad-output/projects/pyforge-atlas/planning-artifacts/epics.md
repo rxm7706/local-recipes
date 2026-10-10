@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-10-04"   # RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2294,3 +2294,15 @@ key (`25-1`, `25-2` and `epic-25` added, `epic-25-retrospective` at `optional`, 
 review work recorded in the deferred-work ledger, and any follow-up review they lead to is dispatched against its own
 story's key. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key; no ledger key moved. `updated:`
 bumped.
+
+## Currency reconciliation — 2026-10-10
+
+The `arch→epics` edge, after the spine's 2026-10-10 re-stamp.
+
+Story 25.1's gate cleared: mason Story 21.1 is done on main (PR #1990), and the operator ruled "yes flip the six cleared stories and dispatch them". Its ledger key moves
+`blocked → backlog`, and its story spec reads `ready-for-dev` with dated notes:
+- the package does not yet resolve from any workspace channel;
+- Story 25.2 already ships the placeholder node and catalog entry that 25.1 fills.
+
+Story 25.1's block above is left as minted (it carries no Status line). Every Story heading still maps 1:1 to a
+`sprint-status-ledger.yaml` key, and no key was added or removed. `updated:` bumped.
