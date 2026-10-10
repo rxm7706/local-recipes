@@ -2564,7 +2564,7 @@ the PRD, citing CAP-86).
 and the spec; a `dispatch-followup-review` or `review-budget-followup` row naming it clears it; a row under another
 `origin:`, or in another project's ledger, does not; flag `false` / absent / `no` and status `in-review` report nothing;
 `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 34: Every capability ships behind a flag — the rule, the gate outside every station, and the retrofit inventory (spec-feature-flag-governance CAP-1, CAP-2, CAP-7; CAP-4's gate clause)
 
