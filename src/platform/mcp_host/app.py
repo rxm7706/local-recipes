@@ -18,6 +18,7 @@ import importlib
 import json
 import os
 from http import HTTPStatus
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
 
@@ -25,6 +26,11 @@ from django_pyforge.mcp_dual_era import asgi_for_station
 from django_pyforge.mcp_dual_era import match_station_mcp
 from django_pyforge.mcp_dual_era import mcp_child_scope
 from django_pyforge.mcp_dual_era import send_http
+
+if TYPE_CHECKING:
+    from starlette.types import Receive
+    from starlette.types import Scope
+    from starlette.types import Send
 
 HERALD_WEBHOOK_PATH_PREFIX = "/stations/herald/api/v1/webhooks/"
 
@@ -34,7 +40,7 @@ async def _json_detail(send, status: HTTPStatus, detail: str) -> None:
     await send_http(send, status, body)
 
 
-async def _dispatch_herald_webhook(scope: dict, receive, send) -> bool:
+async def _dispatch_herald_webhook(scope: Scope, receive: Receive, send: Send) -> bool:
     path = scope.get("path", "")
     if not path.startswith(HERALD_WEBHOOK_PATH_PREFIX):
         return False
@@ -169,7 +175,7 @@ async def _dispatch_lifespan(receive, send) -> None:
     await send({"type": "lifespan.shutdown.complete"})
 
 
-async def app(scope: dict, receive, send) -> None:
+async def app(scope: Scope, receive: Receive, send: Send) -> None:
     if scope["type"] == "lifespan":
         await _dispatch_lifespan(receive, send)
         return
