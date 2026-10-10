@@ -1210,6 +1210,25 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   the landing heal's conflict staging gets the same treatment. **Constraints:** a fix story, no CAP, no flag; never
   `git add -f`, never `git add -A` (operator ruling 2026-10-10: "Mint both (Recommended)"). Owner
   `spec-pyforge-marshal`. → Story 88.1, specced 2026-10-10.
+- **2026-10-10 (a failed review landed)** — **Found: a re-dispatch merged a story whose independent review had just
+  failed it.** Steward 87.3's first run (`pyforge-steward-20261010T154144466Z-88c00f58`) ended `failed`: verification
+  refused at `MRS-GATE-015`, and its one fix turn ran out its budget (`MRS-DISP-059`). The operator fixed two problems
+  by hand, then recorded an independent review in the tracked spec on the branch: status back to `in-progress`,
+  `review_loop_iteration: 1`, and a Review Triage Log entry headed "Independent review, iteration 1: FAIL (3 high, 3
+  medium)". Re-running `marshal factory dispatch` was meant to send the story back to work. Instead Story 83.10's
+  land-only rule read the moved head as "the operator fixed the branch" and `in-progress` as "where a session
+  stopped". It re-verified green, merged the branch (`85e70dedf5`), and finalize marked the spec `done`
+  (`a8eae09dce`). A forward that lets a client reach the sidecar's unauthenticated MCP faces reached `main`. The
+  same two facts were right on 2026-10-02, when marshal 82.5's operator fixed a branch and left its spec at
+  `in-progress`. So the status alone cannot tell a fixed branch from a sent-back one; the review entry can.
+  **What it looks like when fixed:** a re-dispatch lands only a story whose spec reads `in-review` or `done` and
+  whose latest review entry did not fail, latest by the order git added the entries. Otherwise it refuses by name,
+  journals the refusal, and says how to go on: set `ready-for-dev` to resume, or `in-review` to land finished work.
+  It never lands, and it never launches a session on a guess. A finalize never marks a spec `done` past a failed
+  review. A send-back, a first run and a held landing behave as before. **Constraints:** a fix story under CAP-169
+  (Story 29.2's land-only path, extended by 83.7, 83.10 and 83.18) and CAP-229 (Story 79.1's promotion), no CAP, no
+  flag; marshal never edits the spec, the log or the ledger to get past its own gate (operator ruling 2026-10-10:
+  "Yes, mint it (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 89 / Story 89.1, specced 2026-10-10.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
