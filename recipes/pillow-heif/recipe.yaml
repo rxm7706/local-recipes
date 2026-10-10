@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pillow_heif-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pillow-heif/pillow_heif-${{ version }}.tar.gz
   sha256: 16b11a37b762ff42da2d36527bb5cb14bd9194c24c389ee911155d6e23c53065
 
 build:
@@ -72,3 +72,34 @@ extra:
   recipe-maintainers:
     - jeongseok-meta
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pillow-heif
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pillow-heif
+  cfe-purls:
+    - pkg:conda/pillow-heif@${{ version }}?channel=conda-forge
+    - pkg:pypi/pillow-heif@${{ version }}
+  cfe-upstream-repo: https://github.com/bigcat88/pillow_heif
+  cfe-upstream-homepage: https://github.com/bigcat88/pillow_heif
+  cfe-import-names: [pillow_heif]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pillow-heif-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T13:40:00Z
+  cfe-generated-by-version: 8.99.9
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+####

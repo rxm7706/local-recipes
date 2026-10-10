@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py3/o/openlineage-python/openlineage_python-1.52.0-py3-none-any.whl
+  url: https://pypi.org/packages/py3/o/openlineage-python/openlineage_python-${{ version }}-py3-none-any.whl
   sha256: e1bd73b3066021eecf69cc5c3571f6fd7e253768ea941f2c76f18969ea0ecb20
 
 build:
@@ -21,14 +21,14 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - uv-build >=0.9.4,<0.13.0
   run:
     - python >=${{ python_min }}
     - attrs >=20.0
     - python-dateutil >=2.8.2
     - pyyaml >=5.4
     - requests >=2.32.4
-    - httpx >=0.27.0
+    - httpx2 >=2.12.0
     - packaging >=21.0
 
 tests:
@@ -82,4 +82,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 Story 25.8: templated wheel source.url on ${{ version }} (AC 2)
 ####

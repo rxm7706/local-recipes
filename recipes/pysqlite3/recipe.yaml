@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pysqlite3-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pysqlite3/pysqlite3-${{ version }}.tar.gz
   sha256: ecf5112b62a4e6c04438957e343fe9672707bd3191f789ecae6c95b226aa6bb6
 
 build:
@@ -49,3 +49,34 @@ extra:
     - psortos
     - rxm7706
     - mxr-conda
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysqlite3
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysqlite3
+  cfe-purls:
+    - pkg:conda/pysqlite3@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysqlite3@${{ version }}
+  cfe-upstream-repo: https://github.com/coleifer/pysqlite3
+  cfe-upstream-homepage: https://github.com/coleifer/pysqlite3
+  cfe-import-names: [pysqlite3]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: generic
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pysqlite3-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T13:40:00Z
+  cfe-generated-by-version: 8.99.9
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+####
