@@ -56,13 +56,17 @@ _MODULE_TAIL = Path("pyforge") / "marshal" / "dispatch_supervisor" / "__main__.p
 
 
 def _child_env() -> dict[str, str]:
-    """The parent's environment minus pytest-cov's subprocess hooks.
+    """The parent's environment minus pytest-cov's subprocess hooks and pytest options.
 
     ``COV_CORE_*`` makes a child process join the *parent's* coverage run and
-    write into its data file; this measurement must stand alone.
+    write into its data file; this measurement must stand alone. ``PYTEST_ADDOPTS``
+    goes too: pr-preflight sets ``--basetemp`` there, and a child pytest given the
+    parent's basetemp clears it at start-up, deleting the parent's xdist workers'
+    temp dirs mid-run.
     """
     env = {key: value for key, value in os.environ.items() if not key.startswith("COV_CORE")}
     env.pop("COVERAGE_PROCESS_START", None)
+    env.pop("PYTEST_ADDOPTS", None)
     return env
 
 

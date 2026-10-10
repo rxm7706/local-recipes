@@ -9,7 +9,7 @@ followup_review_recommended: false
 flag:
   key: pyforge.steward.herald_webhook_sidecar
   provider: openfeature-file
-  default: {production: off, staging: off, dev: on}
+  default: {production: off, staging: off, dev: off}
   scope: global
   fallback: "Story 87.1's behaviour: the host serves herald's webhook in-process when pyforge-herald is installed and answers 404 with the absent reason when it is not; nothing is forwarded"
   cleanup: 90 days after ON in every environment (Q4)
@@ -109,7 +109,7 @@ by the same ruling (its spec's banner).
   `django_marshal_portal`), pointed at their sources. It binds loopback only. Herald Story 19.2's proof starts the
   sidecar with it.
 - **Flag.** `pyforge.steward.herald_webhook_sidecar`, registered in the four places `docs/reference/story-spec-flag-block.md`
-  § *Registering a flag* names. Dev is ON (the local runtime's default environment). Staging and production stay OFF:
+  § *Registering a flag* names. Dev was ON (the local runtime's default environment) until 2026-10-10, when the operator turned it OFF in dev too: the story landed with its independent review's findings unfixed (see the Review Triage Log), and the forward stays dark everywhere until steward Story 87.4 closes them. Staging and production stay OFF:
   the chart and compose do not yet hand herald's store and secret to the sidecar (next bullet), so a cluster that set
   the flag would forward to a sidecar that answers 503.
 - **Recorded, not wired.** The chart's `platform.mcpHostEnv` (`_helpers.tpl:526`) and compose's `mcp-host` service
@@ -280,12 +280,11 @@ by the same ruling (its spec's banner).
 
 ## Verification
 
-**Tests:** `src/platform/tests/test_herald_webhook_sidecar.py` (two flagd trees for `pyforge.steward.herald_webhook_sidecar`, forward and sidecar behaviour).
-
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
 
 **Manual checks (not a dispatch gate):**
+- `src/platform/tests/test_herald_webhook_sidecar.py` — expected: pass; `test_herald_webhook_sidecar_flag_two_states` writes two flagd trees for `pyforge.steward.herald_webhook_sidecar` (`"on"` forwards, `"off"` does not) through the FILE provider (added 2026-10-10 with the dark-flag hygiene change; the gate's two-state rule).
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: exit 0, including the new forward and sidecar
   tests and the unedited files of ACs (6) and (8).
 - `pixi lock` and AC (1)'s per-environment comparison — expected: only `mcp-host` differs.

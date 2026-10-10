@@ -499,7 +499,7 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
 
     class LiveVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
-            if "marshal" in str(worktree_path):
+            if "marshal" in Path(worktree_path).name:
                 return ("src/changed.py",)
             return ()
 
@@ -510,7 +510,7 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
             return ()
 
         def worktree_head_sha(self, worktree_path: Path) -> str:
-            if "marshal" in str(worktree_path):
+            if "marshal" in Path(worktree_path).name:
                 return "bbb222"
             return self.head_sha
 
