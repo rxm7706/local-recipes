@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-sqlalchemy
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-sqlalchemy/opentelemetry_instrumentation_sqlalchemy-${{ version }}.tar.gz
-  sha256: 8ec2e79f1e00808c5dc639ab5b2cfcdf9dcdef55efd6442c6019707fe2894028
+  sha256: a10043953fcba71911bf29a024f8cc337260c1ef0b4fc844b96cae0de0947baa
 
 build:
   number: 0
@@ -24,17 +24,17 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - sqlalchemy
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
     - packaging >=21.0
     - wrapt >=1.11.2
 
 tests:
   - python:
       imports:
-        - opentelemetry.instrumentation.sqlalchemy
+        - opentelemetry
+        - opentelemetry.instrumentation
       pip_check: true
       python_version:
         - ${{ python_min }}.*
@@ -70,20 +70,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-sqlalchemy-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:46:53Z
+  cfe-last-checked: 2026-10-10T17:59:06Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:46:53Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:46:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:59:46Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # added run deps from import test: ['sqlalchemy']
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####

@@ -23,7 +23,7 @@ catalog↔spec drift failing CI.
 ## Grounding
 
 Proven in the wild by OpenTeams auto-recipe (2026-08-22 seven-repo analysis,
-`docs/intake/external-repos-analysis-2026-08-22/`): 45-row
+`archive/docs/intake/external-repos-analysis-2026-08-22/`): 45-row
 `failure-catalog.yaml` generated from its 980-line spec, lint-resolved
 against `verify --list-checks`, "when the two disagree, the spec wins and
 the code is wrong." That repo is unlicensed/private — the PATTERN is

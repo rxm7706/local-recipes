@@ -16,7 +16,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - A capability crosses to B only by its mode — `rebuild` (B re-derives it; A is its oracle until it is `verified-in-foundry`), `retire` (never appears on B), `A-only` (with an expiry story or date) or `B-only` (named on a Spec before `done`); never `move`, never a package fold or copy of A into B. The table is B's `docs/foundry/modes.md`.
 <!-- governance-currency:ignore-end -->
 - Never mix `meta.yaml` and `recipe.yaml` recipes in one build run; the tooling rejects it.
-- Never code from a bare prompt: a Dream in `docs/dreams/` and a Spec under `planning-artifacts/specs/spec-<slug>/` come first. Never author a new file under `docs/specs/` (legacy).
+- Never code from a bare prompt: a Dream in `docs/dreams/` and a Spec under `planning-artifacts/specs/spec-<slug>/` come first.
 - Never hand-edit a `SPEC.md`; append to its `.memlog.md` with `uv run _bmad/scripts/memlog.py` and re-derive with `bmad-spec`.
 - Never hand-edit `sprint-status-ledger.yaml` (generated); write the Tier-3 feed, then `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>` (the short key, `doctor`, not `pyforge-doctor`).
 - Never track anything under `implementation-artifacts/`; it is Tier 3 and gitignored.
@@ -225,9 +225,7 @@ compiled graph as a substitute for this file or a station `SKILL.md`.
    the planning chain (`bmad-product-brief` → `bmad-prd` → `bmad-architecture` →
    `bmad-create-epics-and-stories`) then decomposes that Spec; it is not a substitute for it
    (Charter § The Lexicon §2). Spec and planning artifacts live in
-   `_bmad-output/projects/<slug>/planning-artifacts/`; legacy `docs/specs/*.md` stay only for
-   existing efforts and still carry the `status:` frontmatter that
-   `python scripts/bmad_drift_check.py --specs` reads.
+   `_bmad-output/projects/<slug>/planning-artifacts/`.
 2. **Keep status current, whoever does the work** (Claude, Cursor, Gemini, Devin, Copilot, a human,
    any framework). A Spec moves `draft → ready → in-progress → shipped`; a story spec moves as
    § *Behavioural guidelines* item 6 says.
@@ -288,16 +286,14 @@ Keeping the Dream → spec handoff portable across agents is **Marshal's** job.
 | Tier | Location | Purpose | Git |
 |---|---|---|---|
 | **0 — Dream** | `docs/dreams/*.md` | The raw human aspiration / starting point (BMAD — *Build More Architect Dreams*); Herald renders it into a deck, and BMAD turns it into the spec | tracked, permanent |
-| **1 — Intake spec (LEGACY)** | `docs/specs/*.md` | Former hand-authored spec tier — kept for existing efforts, **superseded by Tier 2**; author no new files here | tracked, phasing out |
 | **2 — Spec & planning (BMAD)** | `_bmad-output/projects/<slug>/planning-artifacts/` | The `bmad-spec` output + PRD, architecture, API/interface specs, epics+stories, gate reports — produced from the Dream. **The active spec lives here.** | tracked, permanent |
 | **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` (BMAD); your own tool dir for others | story files, sprint YAMLs, test outputs, retros | **local-only / gitignored** |
 
 **Rules:**
-- The **active spec is a BMAD artifact in Tier 2** — produced from a Tier-0 Dream. Don't hand-author
-  a new spec in the legacy `docs/specs/` (Tier 1), and never drop one into a Tier-3 output dir.
+- The **active spec is a BMAD artifact in Tier 2** — produced from a Tier-0 Dream. Never drop one
+  into a Tier-3 output dir.
 - Each tool writes its working output into **its own** area (BMAD → `implementation-artifacts/`;
-  Cursor → `.cursor/`; etc.) and **reads the spec from the BMAD planning folder** (Tier 2) — or a
-  legacy `docs/specs/` file for an existing effort.
+  Cursor → `.cursor/`; etc.) and **reads the spec from the BMAD planning folder** (Tier 2).
 - `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**
 - **Story specs are durable, not Tier 3.** A run drafts a story spec into its Tier-3
   `implementation-artifacts/`; once the story merges, promote that spec into the tracked
@@ -441,7 +437,7 @@ Each target below holds detail this file no longer carries; read it when its tri
 | Running `detectors` or `fleet-picture` (their exit codes; paste `fleet-picture` stdout verbatim, never reformatted) | `docs/reference/agent-instruction-notes.md` § *Common Commands* |
 | Scoping or planning a conda-forge story (`bmad-prd`, `bmad-create-epics-and-stories`, persona planning) | `docs/reference/agent-instruction-notes.md` § *BMAD ↔ conda-forge-expert integration* (Rule 3, planner constraints) |
 | Choosing a skill for a request | `docs/reference/agent-instruction-notes.md` § *Skill Reference* |
-| Working a legacy `docs/specs/*.md` effort | `docs/reference/agent-instruction-notes.md` § *Intake specs* |
+| Archived legacy intake specs (pre–Tier 2) | `docs/reference/agent-instruction-notes.md` § *Intake specs* |
 | Decks and prototypes, or a session with the `claude-design` MCP server connected — round-trip by its tools, never ask for a manual export | `docs/how-to/presentation-deck.md` § *The MCP bridge* |
 | BMAD method background before 6.12, or the full multi-project mechanics | `docs/reference/agent-instruction-notes.md` § *BMAD Method Documentation* |
 | Before invoking a BMAD skill, provisioning or upgrading a bmad-suite member, or driving bmad-loop — which core, modules, skills and suite members are installed here, who wields each, the harness range, the cadence | `docs/reference/bmad-estate-llms-full.md` (generated; `bmad-estate-check` keeps it current — never restate a version or a verdict from it here) |

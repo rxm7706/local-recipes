@@ -1,12 +1,12 @@
-{% set version = "1.44.0" %}
+{% set version = "1.45.1" %}
 
 package:
   name: opentelemetry-sdk
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/opentelemetry-sdk/opentelemetry_sdk-{{ version }}.tar.gz
-  sha256: cebe7f65dc12f26ead75c6064de12fd2a9052e5060c0272d402cfa203aae123b
+  url: https://files.pythonhosted.org/packages/source/o/opentelemetry-sdk/opentelemetry_sdk-{{ version }}.tar.gz
+  sha256: 63d24a6ca645019a631e6a51999c73e93adcac1196ca640b8ae78a7cc4762bf3
 
 build:
   noarch: python
@@ -21,8 +21,8 @@ requirements:
   run:
     - typing_extensions >=4.5.0
     - python >={{ python_min }}
-    - opentelemetry-api ==1.44.0
-    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-api ==1.45.1
+    - opentelemetry-semantic-conventions ==0.66b1
     - typing-extensions >=4.5.0
     # - typing_extensions >=4.5.0
     # - pyyaml >=6.0
@@ -30,6 +30,8 @@ requirements:
     # - pyyaml >=6.0
     # - jsonschema >=4.0
     # - opentelemetry-configuration ==0.65b0
+    # - opentelemetry-configuration ==0.66b0
+    # - opentelemetry-configuration ==0.66b1
 
 test:
   imports:

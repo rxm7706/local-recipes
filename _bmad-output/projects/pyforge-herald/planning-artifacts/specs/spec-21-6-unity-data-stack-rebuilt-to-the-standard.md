@@ -7,7 +7,7 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - 'presentations/unity-data-stack/README.md'
-  - 'docs/specs/presentation-deck.md'
+  - 'docs/how-to/presentation-deck.md'
   - '_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md'
   - 'presentations/pyforge-warden/README.md'
   - 'src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py'

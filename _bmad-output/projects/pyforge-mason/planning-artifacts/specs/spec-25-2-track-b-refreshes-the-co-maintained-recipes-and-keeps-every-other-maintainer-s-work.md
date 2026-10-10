@@ -10,7 +10,7 @@ followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
   - docs/dreams/pyforge-mason.md
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - docs/how-to/feedstock-platform-expansion.md
 deferred:
@@ -20,7 +20,7 @@ deferred:
     evidence: |-
       Wave A co_maint discovery: genuinely_missing_names in .cursor/track_b_baseline.json (20 packages).
     location: >-
-      docs/specs/feedstock-refresh.md
+      _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
     severity: medium
   - summary: >-
       Wave 0 repair left 14 recipes in needs-review or failed; manual CFE fixes before re-run
@@ -55,7 +55,7 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** Track B of the feedstock refresh campaign (`docs/specs/feedstock-refresh.md`, § *Track B*) covers every
+**Problem:** Track B of the feedstock refresh campaign (`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, § *Track B*) covers every
 conda-forge feedstock that `rxm7706` **co-maintains**: `rxm7706` is on the maintainer list, and so is someone else. It
 was scoped on 2026-06-19 from the atlas: 232 co-maintained feedstocks, 190 with a local recipe (62 v1, 128 v0) and 42
 without, and among the 190 roughly 143 behind. It never started. Its extra rule is the one the sole-maintainer track did
@@ -112,7 +112,7 @@ Type / Effort / Deps: feature / L / —.
 
 ## Tasks
 
-1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1). Read `docs/specs/feedstock-refresh.md` § *Track B* for
+1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1). Read `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B* for
    its waves, coordination rules 1 to 5 and landmines 1 to 13. Where the file and the skill differ, the skill wins, and
    the story records the difference.
 2. Wave A, discovery:

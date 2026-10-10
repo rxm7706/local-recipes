@@ -2,7 +2,8 @@
 title: "25.11: Track B batch 7 refreshes OpenTelemetry instrumentation from distro through httpx"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '65182f78f018207075ce3b9b2195e81de4c0561a'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -12,7 +13,7 @@ context:
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - .claude/skills/conda-forge-expert/scripts/refresh_wave.py
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
@@ -30,7 +31,7 @@ pilots, and split the other 92 into eight batch stories, each small enough for o
 rest", 2026-10-09). This is batch 7 of 8: 12 recipes, the OpenTelemetry family's distro, its instrumentation base, and
 ten instrumentations, `aiopg` through `httpx`. Every one is co-maintained: the deployed feedstock lists `rxm7706` and
 at least one other maintainer. So the refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5
-of `docs/specs/feedstock-refresh.md` § *Track B*).
+of `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*).
 
 **The batch.** Versions and maintainer lists are Wave A's snapshot of 2026-10-09; the dry-run reads each feedstock
 live. The last column is a read of `main` at mint (`02167e79f4`), a static read of each recipe that the dry-run
@@ -89,7 +90,7 @@ Type / Effort / Deps: feature / M / S-25.3.
   manifest is that parameter); CAP-23, the CFE machinery the driver lives in. No new CAP, so no FR moves.
 - AD-1 (no recipe knowledge in Mason's code); AD-15 (the CFE surface moves only in the `retro(cfe):` commit).
 - CFE G52, G53, G62, G92, G95 and G96; SKILL.md § *PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern* and
-  the *Bulk refresh waves* paragraph; `docs/specs/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
+  the *Bulk refresh waves* paragraph; `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
   landmines 1 to 13.
 - `spec-fleet-stewardship` governs `recipes/**`; `spec-packaging-factory` governs the CFE surface.
 - `spec-feature-flag-governance` CAP-1, Q2: `flag-exempt: recipe-build`.
@@ -158,7 +159,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 ## Tasks
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1), its *Bulk refresh waves* paragraph, and
-   `docs/specs/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
+   `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
    spec and the skill differ, the skill wins, and the story records the difference.
 2. Write the manifest and run the dry-run (AC 1). Record the plan.
 3. Clear the refusals a CFE step can clear (AC 2), one commit per fix kind or per recipe, then dry-run again.
@@ -238,8 +239,59 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-11`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| opentelemetry-distro | would-refresh | |
+| opentelemetry-instrumentation | needs-review | dependency-fix (setuptools, wrapt pin order) |
+| opentelemetry-instrumentation-aiopg | needs-review | no-cfe-block |
+| opentelemetry-instrumentation-asgi | needs-review | util-http pin |
+| opentelemetry-instrumentation-botocore | needs-review | run -botocore -wrapt |
+| opentelemetry-instrumentation-celery | needs-review | run -billiard -celery; semconv pin |
+| opentelemetry-instrumentation-dbapi | would-refresh | |
+| opentelemetry-instrumentation-django | needs-review | util-http pin |
+| opentelemetry-instrumentation-falcon | needs-review | no-cfe-block |
+| opentelemetry-instrumentation-flask | would-refresh | |
+| opentelemetry-instrumentation-grpc | needs-review | +sdk -grpc |
+| opentelemetry-instrumentation-httpx | needs-review | -wrapt |
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-11/report.json`.
+
+### After refusal clears + G96 pre-sync (dry-run 3)
+
+Twelve `would-refresh`.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+| Recipe | Outcome | Version | Build (linux-64, post-fix) | Maintainers (G53) |
+|---|---|---|---|---|
+| opentelemetry-distro | refreshed | 0.65b0 → 0.66b1 | success (no LICENSE in sdist; v1 recipe omits license_file) | goatmale, rxm7706 (superset) |
+| opentelemetry-instrumentation | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706, timkpaine, twoodwark (superset) |
+| opentelemetry-instrumentation-aiopg | refreshed | 0.65b0 → 0.66b1 | success | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-asgi | refreshed | 0.65b0 → 0.66b1 | success | org maintainers + mariusvniekerk, rxm7706 (superset) |
+| opentelemetry-instrumentation-botocore | refreshed | 0.65b0 → 0.66b1 | success (shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-celery | refreshed | 0.65b0 → 0.66b1 | success (shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-dbapi | refreshed | 0.65b0 → 0.66b1 | success | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-django | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-falcon | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-flask | refreshed | 0.65b0 → 0.66b1 | success | conda-forge/opentelemetry-api, mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-grpc | refreshed | 0.65b0 → 0.66b1 | success (shallow test imports) | mariusvniekerk, rxm7706 |
+| opentelemetry-instrumentation-httpx | refreshed | 0.65b0 → 0.66b1 | success | org maintainers + mariusvniekerk, rxm7706 (superset) |
+
+**Gates:** Expected `optimize=1` on C1 v0 mirrors (STD-002). `validate=1` on asgi for feedstock-faithful maintainer team `conda-forge/opentelemetry-semantic-convention` (conda-smithy lint; unchanged on deployed feedstock).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto pass
+
+- Self-review against AC: twelve recipes at 0.66b1; aiopg/falcon CFE+URL pre-clear; G96 pre-sync; AC 6 sibling pins hand-synced (gap 3); botocore/celery/grpc tests aligned to feedstock shallow imports; distro v1 recipe drops license_file (sdist has no LICENSE).
+- `[maybe-false]` `[defer]` Manifest `wave-25-11.yaml` gitignored — report under `.claude/data/conda-forge-expert/refresh-waves/B-25-11/` documents apply.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 7 (B-25-11) refreshed twelve co-maintained OpenTelemetry instrumentation recipes via `refresh-wave`; CFE retro v8.99.15.
+
+Verification: `refresh-wave` dry-run/apply; linux-64 rebuild 12/12; `pixi run --frozen -e pyforge-mason pyforge-mason-test`; `python scripts/spec_surface_reconcile.py`.

@@ -78,9 +78,9 @@ development_status:
   23-3-a-negative-corpus-proves-each-cfe-check-keeps-rejecting-its-defect: done
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
   25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: done
-  25-10-track-b-batch-6-refreshes-opentelemetry-s-core-packages-and-exporters: backlog
-  25-11-track-b-batch-7-refreshes-opentelemetry-instrumentation-from-distro-through-httpx: backlog
-  25-12-track-b-batch-8-refreshes-opentelemetry-instrumentation-from-mysql-through-wsgi: backlog
+  25-10-track-b-batch-6-refreshes-opentelemetry-s-core-packages-and-exporters: done
+  25-11-track-b-batch-7-refreshes-opentelemetry-instrumentation-from-distro-through-httpx: done
+  25-12-track-b-batch-8-refreshes-opentelemetry-instrumentation-from-mysql-through-wsgi: done
   25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe: done
   25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror: done
   25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow: done
@@ -92,7 +92,7 @@ development_status:
   25-6-track-b-batch-2-refreshes-django-fsm-log-through-import-linter: done
   25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests: done
   25-8-track-b-batch-4-refreshes-ocrmypdf-through-pysqlite3: done
-  25-9-track-b-batch-5-refreshes-redshift-connector-through-zxing-cpp: backlog
+  25-9-track-b-batch-5-refreshes-redshift-connector-through-zxing-cpp: done
   26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: done
   27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals: done
   27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals: done
@@ -158,7 +158,7 @@ development_status:
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
-  epic-25: in-progress
+  epic-25: done
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional

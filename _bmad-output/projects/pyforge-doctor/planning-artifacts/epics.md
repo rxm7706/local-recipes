@@ -2839,12 +2839,9 @@ steward Story 77.1, herald Story 34.1 and marshal Story 76.1 land first; ledger 
 **difficulty:** medium
 **Surface:**
 - Moves, each a `git mv`:
-  - `docs/specs/flyte-conda-forge.md`, `feedstock-failure-remediation.md`, `feedstock-platform-expansion.md` and
-    `presentation-deck.md` go to `archive/docs/specs/`.
-  - `docs/specs/feedstock-refresh.md` goes to
-    `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, and joins that
-    Spec's `companions:` (memlog first, then a render by script).
-  - `docs/intake/agentic-sdlc/` and `docs/intake/external-repos-analysis-2026-08-22/` go to `archive/docs/intake/`.
+  - the four done or stub specs under the retired `docs/specs/` tree go to `archive/docs/specs/`;
+  - `feedstock-refresh.md` joins `spec-pyforge-mason` as a companion beside that Spec;
+  - the two intake items go to `archive/docs/intake/`.
 - `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`:
   - drops `check_spec_indexed`, `_docs_specs` and the `docs-specs-nonmd` branch of `check_tier_alignment`;
   - its misfiled-intake remedy stops naming `docs/specs/`.
@@ -2854,7 +2851,7 @@ steward Story 77.1, herald Story 34.1 and marshal Story 76.1 land first; ledger 
   - `AGENTS.md`'s Tier 1 row and its other `docs/specs/` lines, including the one naming `bmad_drift_check.py --specs`;
   - `.cursor/rules/specs.mdc`, kept as a pointer file, because scribe's parity test pins it.
 - `scripts/spec_surface_allowlist.txt` drops `docs/specs/**`.
-- `spec-pyforge-herald`'s surface drops `docs/specs/presentation-deck.md` (memlog first, then a render by script).
+- `spec-pyforge-herald`'s surface drops the retired intake stub path (memlog first, then a render by script).
 - Live references to the moved paths are repointed:
   - `.claude/skills/conda-forge-expert/` (`SKILL.md`, `guides/`), in one `retro(cfe):` commit;
   - `docs/reference/agent-instruction-notes.md` § *Intake specs*, `docs/MAP.md`,
@@ -2873,7 +2870,7 @@ its history (`git log --follow`)
 entry and a scoped stamp for each co-governor it names (scribe for the instruction files, doctor for the docs shelf,
 mason, and any other)
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 38: Doctor stops letting deferrals and dead checks pile up (spec-pyforge-doctor CAP-29, CAP-88, CAP-42, CAP-1)
 

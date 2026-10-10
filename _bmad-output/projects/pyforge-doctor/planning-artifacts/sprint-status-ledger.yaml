@@ -113,7 +113,7 @@ development_status:
   35-1-capability-ledger-s-post-pin-check-reads-only-live-specs: done
   36-1-a-fold-complete-check-proves-each-archived-dream-s-body-is-in-its-station-dream: done
   36-2-the-sibling-drift-check-reads-acknowledged-dreams-under-the-archive: done
-  37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire: backlog
+  37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire: done
   38-1-a-verified-line-written-from-now-on-cites-what-it-read: done
   38-2-spec-surface-names-a-spec-surface-glob-that-matches-nothing: done
   38-3-the-fleet-hygiene-sweep-runs-with-the-other-detectors-warn-only: done
@@ -222,7 +222,7 @@ development_status:
   epic-35-retrospective: optional
   epic-36: done
   epic-36-retrospective: optional
-  epic-37: backlog
+  epic-37: done
   epic-37-retrospective: optional
   epic-38: done
   epic-38-retrospective: optional

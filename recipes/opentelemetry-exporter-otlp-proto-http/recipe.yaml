@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.44.0"
+  version: "1.45.1"
 
 package:
   name: opentelemetry-exporter-otlp-proto-http
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-exporter-otlp-proto-http/opentelemetry_exporter_otlp_proto_http-${{ version }}.tar.gz
-  sha256: c633d7270ad6b57cd4cfbe8b0007a9e2e7c0cb50bd6c50fe2a7b245f721a09d8
+  sha256: 45c218405ce3fd879596924b1874bf9a8f6880206d61065c5a912c8e5c297fb7
 
 build:
   number: 0
@@ -24,12 +24,15 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - googleapis-common-protos ~=1.52
-    - opentelemetry-api ~=1.15
-    - opentelemetry-exporter-otlp-proto-common ==1.44.0
-    - opentelemetry-proto ==1.44.0
-    - opentelemetry-sdk ~=1.44.0
-    - requests ~=2.7
+    - opentelemetry-exporter-http-transport ==0.66b1
+    - opentelemetry-exporter-otlp-common ==0.66b1
+    - deprecated >=1.2.6
+    - googleapis-common-protos >=1.52,<2.dev0
+    - opentelemetry-api >=1.15,<2.dev0
+    - opentelemetry-proto ==1.45.1
+    - opentelemetry-sdk >=1.45.1,<1.46.dev0
+    - opentelemetry-exporter-otlp-proto-common ==1.45.1
+    - requests >=2.7,<3.dev0
     - typing_extensions >=4.5.0
 
 tests:
@@ -75,19 +78,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-otlp-proto-http-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-1.44.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:22:26Z
+  cfe-last-checked: 2026-10-10T16:58:45Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T02:22:26Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T02:22:26Z
+  cfe-local-build-datetime: 2026-10-10T16:59:23Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 1.44.0 -> 1.45.1
 ####

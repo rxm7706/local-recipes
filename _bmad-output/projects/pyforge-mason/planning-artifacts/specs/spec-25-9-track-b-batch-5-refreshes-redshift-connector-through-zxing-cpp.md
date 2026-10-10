@@ -2,7 +2,8 @@
 title: "25.9: Track B batch 5 refreshes redshift_connector through zxing-cpp"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '378590c8772520d3d414250c75fd8c0c9fbcf177'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -12,11 +13,15 @@ context:
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - .claude/skills/conda-forge-expert/scripts/refresh_wave.py
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
-deferred: []
+deferred:
+  - location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
+    reason: maintainer union can insert `- <name>` inside the `#### CFE metadata` header (StringZilla, vlmrun B-25-9; same as Stories 25.7–25.8) — CRM parse failure until moved under `recipe-maintainers`
+  - location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
+    reason: tree-sitter-swift deliberate `${{ tag }}` URL reports `url-version-baked` (gap 4); refresh through hand `update_recipe`, not driver bump
 declared_low_risk: false
 ---
 
@@ -29,7 +34,7 @@ version (the v1-refresh bucket). Its pilots refreshed four. The operator then re
 pilots, and split the other 92 into eight batch stories, each small enough for one dispatch ("Land 25.2 now, split
 rest", 2026-10-09). This is batch 5 of 8: 11 recipes, the last eleven, alphabetically, outside the OpenTelemetry
 family. Every one is co-maintained: the deployed feedstock lists `rxm7706` and at least one other maintainer. So the
-refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `docs/specs/feedstock-refresh.md` §
+refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` §
 *Track B*).
 
 **The batch.** Versions and maintainer lists are Wave A's snapshot of 2026-10-09; the dry-run reads each feedstock
@@ -93,7 +98,7 @@ Type / Effort / Deps: feature / M / S-25.3.
   manifest is that parameter); CAP-23, the CFE machinery the driver lives in. No new CAP, so no FR moves.
 - AD-1 (no recipe knowledge in Mason's code); AD-15 (the CFE surface moves only in the `retro(cfe):` commit).
 - CFE G52, G53, G62, G92, G95 and G96; SKILL.md § *PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern* and
-  the *Bulk refresh waves* paragraph; `docs/specs/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
+  the *Bulk refresh waves* paragraph; `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
   landmines 1 to 13.
 - `spec-fleet-stewardship` governs `recipes/**`; `spec-packaging-factory` governs the CFE surface.
 - `spec-feature-flag-governance` CAP-1, Q2: `flag-exempt: recipe-build`.
@@ -170,7 +175,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 ## Tasks
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1), its *Bulk refresh waves* paragraph, and
-   `docs/specs/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
+   `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
    spec and the skill differ, the skill wins, and the story records the difference.
 2. Write the manifest and run the dry-run (AC 1). Record the plan.
 3. Clear the refusals a CFE step can clear (AC 2), one commit per fix kind or per recipe, then dry-run again.
@@ -251,8 +256,57 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-9`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| redshift_connector | would-refresh | v1 meta would-remove |
+| robocorp-workitems | needs-review | `no-cfe-block` |
+| selectolax | would-refresh | |
+| sentry-sdk | would-refresh | |
+| StringZilla | would-refresh | maintainer add pb01ka |
+| tox | needs-review | `dependency-fix` |
+| tree-sitter-php | needs-review | `no-cfe-block` |
+| tree-sitter-swift | needs-review | `no-cfe-block` (then `url-version-baked` after CFE stamp) |
+| vlmrun | needs-review | `dependency-fix` |
+| wagtail | needs-review | `dependency-fix` |
+| zxing-cpp | needs-review | `url-unrenderable` (old PyPI bindings recipe) |
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-9/report.json`.
+
+### After refusal clears + G96 pre-sync (dry-run 2)
+
+Ten `would-refresh`; **tree-sitter-swift** still `url-version-baked`; **zxing-cpp** `already-current` after AC-13 re-mirror.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+| Recipe | Outcome | Version | Build (linux-64) | Maintainers (G53) |
+|---|---|---|---|---|
+| redshift_connector | refreshed | 2.1.15 → 2.1.17 | success | Brooke-white, bsharifi, personal-naveenkumar, rxm7706, vahid110 (superset) |
+| robocorp-workitems | refreshed | 1.5.0 → 1.5.1 | success (post host python pin) | rxm7706, zaigner |
+| selectolax | refreshed | 0.4.11 → 0.4.13 | success | rxm7706, soapy1 |
+| sentry-sdk | refreshed | 2.68.0 → 2.71.0 | success | alippai, dgasmith, djsutherland, rxm7706 |
+| StringZilla | refreshed | 4.6.3 → 5.2.0 | build-clean-test-blocked (script `import cli`) | mukhery, pb01ka, rxm7706 |
+| tox | refreshed | 4.60.0 → 4.64.10 | success | bollwyvl, cshaley, kalefranz, rxm7706, sannykr |
+| tree-sitter-php | refreshed | 0.24.2 → 0.25.1 | success | killua156, mgorny, rxm7706 |
+| tree-sitter-swift | refreshed (hand) | 0.7.3 → 0.7.4 | success | killua156, mgorny, rxm7706 |
+| vlmrun | refreshed | 0.6.3 → 0.9.0 | success (upstream-exact pip_check pins) | pb01ka, rxm7706 |
+| wagtail | refreshed | 7.4.2 → 8.0 | success (post G96 run sync) | darynwhite, rxm7706 |
+| zxing-cpp | re-mirrored (hand) | 2.3.0 bindings → 3.1.1 C++ lib | success | carlodri, rxm7706, TomNysWF |
+
+**Gates:** Expected `optimize=1` on several C1 v0 mirrors (STD-002). **selectolax** `check-deps=1` (virtual/cross-python placeholder pattern).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto pass
+
+- Self-review against AC: all eleven recipes at feedstock versions or documented block; zxing-cpp C++ re-mirror; tree-sitter-swift tag URL preserved (AC 12).
+- Driver maintainer-merge corruption on StringZilla and vlmrun — fixed manually; deferred rows cite `refresh_wave.py`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 5 (B-25-9) refreshed eleven co-maintained recipes; driver-refreshed nine plus hand-finish on tree-sitter-swift and zxing-cpp re-mirror; CFE retro v8.99.11.
+
+Verification: `refresh-wave` dry-run/apply; `pixi run --frozen -e pyforge-mason pyforge-mason-test` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0 after memlogs on spec-fleet-stewardship, spec-pyforge-mason, spec-packaging-factory).
