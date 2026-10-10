@@ -7,13 +7,17 @@ turn may hand the failure back to the writing harness. AD-4: no I/O here.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
 from .dispatch import KIND_DISPATCH_VERIFY_FIX
 from .dispatch_cfe_commit import is_terminal_cfe_verify_refusal
-from .dispatch_verification import DispatchVerificationVerdict, _command_from_gate_001_message
+from .dispatch_verification import (
+    DispatchVerificationVerdict,
+    _command_from_verify_refusal_message,
+)
 from .gate import CROSS_SURFACE_GATE_CODE
 from .journal import FoldResult, JournalEntry, JournalEntryId, Phase
 from .model import Finding, Severity, Status, status_for
@@ -126,6 +130,7 @@ class FailedVerifyCommand:
     stdout: str
     stderr: str
     exit_code: int | None
+    gate: str | None = None
 
 
 @dataclass(frozen=True)
@@ -150,12 +155,36 @@ def tail_bytes(text: str, *, max_bytes: int) -> str:
     return encoded[-max_bytes:].decode("utf-8", errors="replace")
 
 
+def command_reports_for_verify_fix(verify_data: Mapping[str, object]) -> tuple[dict[str, object], ...]:
+    """Story verify reports plus cross-surface check reports (Story 85.7)."""
+    reports: list[dict[str, object]] = []
+    commands = verify_data.get("commands")
+    if isinstance(commands, list):
+        for item in commands:
+            if isinstance(item, dict):
+                reports.append(dict(item))
+    cross_checks = verify_data.get("cross_surface_checks")
+    if isinstance(cross_checks, list):
+        for entry in cross_checks:
+            if not isinstance(entry, Mapping):
+                continue
+            report = entry.get("report")
+            if not isinstance(report, dict):
+                continue
+            merged = dict(report)
+            cmd = entry.get("command")
+            if isinstance(cmd, str) and "command" not in merged:
+                merged["command"] = cmd
+            reports.append(merged)
+    return tuple(reports)
+
+
 def extract_failed_verify_commands(
     command_reports: tuple[dict[str, object], ...],
     findings: tuple[Finding, ...],
 ) -> tuple[FailedVerifyCommand, ...]:
-    """Failed gate verify commands from verification reports (MRS-GATE-001 family)."""
-    failed_commands: set[str] = set()
+    """Failed gate verify commands from verification reports (MRS-GATE-001 and MRS-GATE-015)."""
+    failed_by_command: dict[str, str] = {}
     for finding in findings:
         if finding.severity is not Severity.ERROR:
             continue
@@ -167,13 +196,13 @@ def extract_failed_verify_commands(
         if code == "MRS-GATE-014":
             continue
         if code == "MRS-GATE-001" or code == CROSS_SURFACE_GATE_CODE:
-            cmd = _command_from_gate_001_message(finding.message)
+            cmd = _command_from_verify_refusal_message(finding.message)
             if cmd is not None:
-                failed_commands.add(cmd)
+                failed_by_command[cmd] = code
     by_command: dict[str, FailedVerifyCommand] = {}
     for report in command_reports:
         command = report.get("command")
-        if not isinstance(command, str) or command not in failed_commands:
+        if not isinstance(command, str) or command not in failed_by_command:
             continue
         exit_raw = report.get("returncode")
         exit_code = exit_raw if isinstance(exit_raw, int) else None
@@ -184,13 +213,17 @@ def extract_failed_verify_commands(
             stdout=stdout,
             stderr=stderr,
             exit_code=exit_code,
+            gate=failed_by_command[command],
         )
     ordered: list[FailedVerifyCommand] = []
-    for command in failed_commands:
+    for command in failed_by_command:
+        gate = failed_by_command[command]
         if command in by_command:
             ordered.append(by_command[command])
         else:
-            ordered.append(FailedVerifyCommand(command=command, stdout="", stderr="", exit_code=None))
+            ordered.append(
+                FailedVerifyCommand(command=command, stdout="", stderr="", exit_code=None, gate=gate)
+            )
     return tuple(sorted(ordered, key=lambda item: item.command))
 
 
