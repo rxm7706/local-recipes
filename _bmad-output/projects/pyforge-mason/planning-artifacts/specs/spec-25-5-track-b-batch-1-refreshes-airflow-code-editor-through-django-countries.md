@@ -2,7 +2,9 @@
 title: "25.5: Track B batch 1 refreshes airflow-code-editor through django-countries"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: 'f05de4bab8500a64631f84d8a9a0dc6bce064295'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -262,8 +264,71 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-5`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| airflow-code-editor | needs-review | `url-unrenderable` |
+| avro | needs-review | `url-unrenderable` |
+| azure-monitor-opentelemetry-exporter | needs-review | `no-cfe-block` |
+| azure-storage-file-share | needs-review | `no-cfe-block` |
+| billiard | needs-review | `no-cfe-block` |
+| cachetools | needs-review | `dependency-fix: host -setuptools-scm` |
+| dbt | needs-review | `no-feedstock` (manifest used `dbt-feedstock`; lookup name is `dbt`) |
+| django-allauth | needs-review | `dependency-fix: host -setuptools-scm` |
+| django-anymail | needs-review | `url-unrenderable` |
+| django-bootstrap5 | needs-review | `dependency-fix: run pin django` |
+| django-countries | needs-review | `no-cfe-block` |
+
+### After refusal clears (second dry-run)
+
+All eleven: `would-refresh`.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-5/report.json` (gitignored).
+
+| Recipe | Outcome | Version | Build (linux-64) | Maintainers (G53) |
+|---|---|---|---|---|
+| airflow-code-editor | refreshed | 8.3.0 → 8.3.1 | success | rxm7706, xylar (superset) |
+| avro | refreshed | 1.12.1 → 1.12.2 | success after `python_min.*` host fix | mariusvniekerk, rxm7706 |
+| azure-monitor-opentelemetry-exporter | refreshed | 1.0.0b56 → 1.0.0b58 | success after run-pin sync | rxm7706, conda-forge/opentelemetry-api |
+| azure-storage-file-share | refreshed | 12.26.0 → 12.27.0 | success after `python_min.*` host fix | davidbrochart, rxm7706 |
+| billiard | refreshed | 4.2.4 → 4.3.1 | success | kwilcox, rxm7706 |
+| cachetools | refreshed | 7.1.7 → 7.2.1 | success | maartenbreddels, marcelotrevisani, rxm7706 |
+| dbt | refreshed | 1.12.2 → 1.12.5 | success; patch restored; `License.md` pruned | drewbanin, jthandy, maresb, rxm7706, thewchan, zaneselvans |
+| django-allauth | refreshed | 65.19.1 → 65.19.7 | success | cshaley, jacksund, rxm7706, sannykr |
+| django-anymail | refreshed | 15.1 → 15.2 | success after `python_min.*` host fix | cshaley, elanqo, millsks, rxm7706, zaigner |
+| django-bootstrap5 | refreshed | 26.2 → 26.3 | success | rxm7706, swainn |
+| django-countries | refreshed | 9.0.0 → 9.1.0 | success after `python_min.*` host fix | mxr-conda, rxm7706 |
+
+Gates: `validate=0` on all; `optimize=1` on C1 mirrors (STD-002 expected); `billiard` `check-deps=1` (`cross-python_${{ target_platform }}` placeholder — recorded, not a recipe defect).
+
+### Deferred from B2 (AC 12)
+
+- `billiard`: refreshed (was `no-cfe-block` in 25.2 B2 dry-run).
+- `cachetools`: refreshed after host `setuptools-scm` removed per feedstock (was `dependency-fix` in B2).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Review pass
+- verdicts: 8 findings — high 1, medium 2, low 0, false 3, maybe-false 2
+- findings:
+  - `[high]` `[patch]` Five recipes kept `cfe-local-build-status: failed` after post-refresh manual fixes and green rebuilds — updated stamps to `success` on avro, azure-monitor-opentelemetry-exporter, azure-storage-file-share, django-anymail, django-countries.
+  - `[medium]` `[patch]` Stale `version-update-to-*` tokens on cachetools and django-allauth after refresh — removed obsolete version tokens, kept `meta-yaml-to-recipe-yaml`.
+  - `[medium]` `[reject]` WIP checkpoint commits use `wip: 25.5` subjects instead of `recipes:` per Tasks — acceptable for auto-checkpoints; squash/reword optional at PR time.
+  - `[false]` `[reject]` avro `meta.yaml` duplicate commented deps — byte-identical to deployed feedstock (verified via `conda-forge/avro-feedstock`).
+  - `[false]` `[reject]` C1 meta `files.pythonhosted.org` vs v1 `pypi.org` URL — feedstock-faithful C1 mirror; v1 `recipe.yaml` uses canonical PyPI path by policy.
+  - `[false]` `[reject]` Driver gaps not in `deferred:` frontmatter — already tracked on Story 25.4 spec; AC 10 defers duplicate rows.
+  - `[maybe-false]` `[defer]` SKILL.md bulk-refresh paragraph not expanded with 25.5 lessons — CHANGELOG carries retro; PATCH without new gotcha id is intentional.
+  - `[maybe-false]` `[defer]` Manifest `wave-25-5.yaml` gitignored — report under `.claude/data/conda-forge-expert/refresh-waves/B-25-5/` documents apply.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 1 refreshed eleven co-maintained recipes through `refresh-wave` B-25-5 with pre-refresh refusal clears, post-refresh host/pin fixes, eleven green linux-64 builds, and CFE retro v8.99.3.
+
+Verification: `refresh-wave` dry-run/apply; per-recipe `recipe-build`; `pixi run --frozen -e pyforge-mason pyforge-mason-test` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0); `pixi run -e pyforge-guild spec-surface-check` (exit 0).
+
+Follow-up review recommended: false

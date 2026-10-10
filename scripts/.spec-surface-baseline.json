@@ -4439,16 +4439,16 @@
    ".claude/scripts/conda-forge-expert/version_downloads.py": "9f43097f135c2e1d5e3de22c25caa7f9e71b2db0",
    ".claude/scripts/conda-forge-expert/vulnerability_scanner.py": "07fe4cbc13a3546b873e3a7358d8651728ff62fd",
    ".claude/scripts/conda-forge-expert/whodepends.py": "7a9bc588b5cb5f69bd3660f303721583f99a5e6d",
-   ".claude/skills/conda-forge-expert/CHANGELOG.md": "5bb154ff129df60d096deac49b2b191fdbb5da35",
+   ".claude/skills/conda-forge-expert/CHANGELOG.md": "38cae238853dec29631c6bf08dc160ba4d28da5f",
    ".claude/skills/conda-forge-expert/INDEX.md": "a1333e8de9215c7bc92557f4c1ea55a698d744f8",
-   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "8e03021e9066679860b1d132471a2398d5d5d23d",
-   ".claude/skills/conda-forge-expert/SKILL.md": "ffa9ff79f4b1becc4e4cca0cb2a886ec5909d035",
+   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "01c9a0f874760747a9945905d3f8eb5f4fb7e415",
+   ".claude/skills/conda-forge-expert/SKILL.md": "af95c57ef7254625371b17e0f85d5798716b4d50",
    ".claude/skills/conda-forge-expert/automation/README.md": "f7e16917a03d32b6c675f0ea263caaeb756bd336",
    ".claude/skills/conda-forge-expert/automation/quarterly-audit.prompt.md": "04895c94e0cf55c8478e00a83bcc7ccfba0d25fc",
    ".claude/skills/conda-forge-expert/automation/run-audit-local.sh": "36f61c4161b975c02c1887bcfa195428661305f1",
    ".claude/skills/conda-forge-expert/config/enterprise-config.yaml.template": "225c86735a71fe113215e48e95fe567471d232a8",
    ".claude/skills/conda-forge-expert/config/failure-catalog.yaml": "16ec458d95c1edfea16b57c8835d1599dc00e9de",
-   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "50b20091875417275a59f1a004604e1fc989cec3",
+   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "12cbb7538a474be6c83fee3a721e26ae89463ad9",
    ".claude/skills/conda-forge-expert/data/cwe_categories_seed.json": "06fe1a29ebfffeb2b73c0a310984d2485bdda931",
    ".claude/skills/conda-forge-expert/data/lts-registry.yaml": "34596b425dc6b860f3b8ec80d7ba832137f1780b",
    ".claude/skills/conda-forge-expert/data/spdx.schema.json": "c6d952e956a9f81678ff4bf8001780560e6c5c00",
@@ -4815,7 +4815,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "346074895a81868f9b63aef055cc6fc6b2274889"
   },
-  "memlog": "a202fcb9dd944d1c181b1e8925063e1b5214d03a"
+  "memlog": "ee0019956f4ba3f5b991f8e1638e88e5a06c7403"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},
@@ -4911,16 +4911,16 @@
    ".claude/scripts/conda-forge-expert/version_downloads.py": "9f43097f135c2e1d5e3de22c25caa7f9e71b2db0",
    ".claude/scripts/conda-forge-expert/vulnerability_scanner.py": "07fe4cbc13a3546b873e3a7358d8651728ff62fd",
    ".claude/scripts/conda-forge-expert/whodepends.py": "7a9bc588b5cb5f69bd3660f303721583f99a5e6d",
-   ".claude/skills/conda-forge-expert/CHANGELOG.md": "36c109b7058c2e18d7182d325d8e96fdaacc7ee8",
+   ".claude/skills/conda-forge-expert/CHANGELOG.md": "38cae238853dec29631c6bf08dc160ba4d28da5f",
    ".claude/skills/conda-forge-expert/INDEX.md": "a1333e8de9215c7bc92557f4c1ea55a698d744f8",
-   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "e4a70637ad4cf192feb55fc123ab22459d30e42c",
-   ".claude/skills/conda-forge-expert/SKILL.md": "32b83b44431940ffaa3b8c9e2333a41e12210ad0",
+   ".claude/skills/conda-forge-expert/MANIFEST.yaml": "01c9a0f874760747a9945905d3f8eb5f4fb7e415",
+   ".claude/skills/conda-forge-expert/SKILL.md": "af95c57ef7254625371b17e0f85d5798716b4d50",
    ".claude/skills/conda-forge-expert/automation/README.md": "f7e16917a03d32b6c675f0ea263caaeb756bd336",
    ".claude/skills/conda-forge-expert/automation/quarterly-audit.prompt.md": "04895c94e0cf55c8478e00a83bcc7ccfba0d25fc",
    ".claude/skills/conda-forge-expert/automation/run-audit-local.sh": "36f61c4161b975c02c1887bcfa195428661305f1",
    ".claude/skills/conda-forge-expert/config/enterprise-config.yaml.template": "225c86735a71fe113215e48e95fe567471d232a8",
    ".claude/skills/conda-forge-expert/config/failure-catalog.yaml": "16ec458d95c1edfea16b57c8835d1599dc00e9de",
-   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "f2dde42757318258e9ce739422bd00a4d05d900e",
+   ".claude/skills/conda-forge-expert/config/skill-config.yaml": "12cbb7538a474be6c83fee3a721e26ae89463ad9",
    ".claude/skills/conda-forge-expert/data/cwe_categories_seed.json": "06fe1a29ebfffeb2b73c0a310984d2485bdda931",
    ".claude/skills/conda-forge-expert/data/lts-registry.yaml": "34596b425dc6b860f3b8ec80d7ba832137f1780b",
    ".claude/skills/conda-forge-expert/data/spdx.schema.json": "c6d952e956a9f81678ff4bf8001780560e6c5c00",
@@ -5291,7 +5291,7 @@
    ".claude/skills/conda-forge-expert/tests/unit/test_vulnerability_scanner.py": "21a28190ed9c76464c5e9a12975bdcac81a1c0ed",
    ".claude/tools/conda_forge_server.py": "346074895a81868f9b63aef055cc6fc6b2274889"
   },
-  "memlog": "1bb4e1f24afb91c9ba6f8cc3175d70cd53bf69e5+36c109b7058c2e18d7182d325d8e96fdaacc7ee8"
+  "memlog": "46c58d0e2bdb0700d07b5cf76964c61566bbf66c+38cae238853dec29631c6bf08dc160ba4d28da5f"
  },
  "pyforge-mason/spec-pixi-container-image": {
   "files": {},

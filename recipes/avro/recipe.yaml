@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: avro
-  version: "1.12.1"
+  version: "1.12.2"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/avro-${{ version }}.tar.gz
-  sha256: c5b8dd2dd4c10816f0dc127cc29cfd43b5e405cf7e6840e89460a024bf3d098d
+  url: https://pypi.org/packages/source/a/avro/avro-${{ version }}.tar.gz
+  sha256: e900e7b59a4781f63d9e935e88f6ec50c4d60be3f4adf9c63b51ed39d578fe08
 
 build:
   number: 0
@@ -23,7 +23,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - setuptools >=40.8.0
     - wheel
     - pip
@@ -41,7 +41,7 @@ tests:
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - avro --help
 
@@ -77,11 +77,11 @@ extra:
   cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-10-10T09:20:22Z
   cfe-generated-by-version: 8.40.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-10-10T09:35:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -92,6 +92,7 @@ extra:
 #    # faithful deployed-state mirror; this recipe.yaml is the proposed v1.
 #    # This is the Apache Avro PYTHON package (PyPI dist "avro", import "avro"),
 #    # NOT the C++/Java avro libraries.
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 1.12.1 -> 1.12.2
 # build:
 #  python:
 #    # entry_points preserved from setup.cfg [options.entry_points] console_scripts;
