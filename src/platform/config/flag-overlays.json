@@ -5,7 +5,7 @@
     "pyforge.steward.object_store_consumer": "on",
     "pyforge.steward.sync_github_only_marker": "on",
     "pyforge.steward.workspace_preserve_tag": "off",
-    "pyforge.steward.herald_webhook_sidecar": "on",
+    "pyforge.steward.herald_webhook_sidecar": "off",
     "pyforge.marshal.verify_fix_loop": "on",
     "pyforge.marshal.preserve_refs": "off",
     "pyforge.atlas.dependency_history_sensor": "on",

@@ -670,7 +670,7 @@ _SHIPPED_BOOLEANS = {
         "production": False,
     },
     "pyforge.steward.herald_webhook_sidecar": {
-        "dev": True,
+        "dev": False,
         "staging": False,
         "production": False,
     },

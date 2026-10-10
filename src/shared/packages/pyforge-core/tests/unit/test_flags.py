@@ -1024,7 +1024,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.object_store_consumer": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.workspace_preserve_tag": {"dev": False, "staging": False, "production": False},
-        "pyforge.steward.herald_webhook_sidecar": {"dev": True, "staging": False, "production": False},
+        "pyforge.steward.herald_webhook_sidecar": {"dev": False, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
