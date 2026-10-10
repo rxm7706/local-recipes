@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 import tomllib
 from pathlib import Path
 
@@ -63,6 +65,11 @@ def test_fixture_lists_leaves_in_declaration_order() -> None:
     ]
 
 
+def _lane_map(pixi: dict) -> dict[str, preflight.Lane]:
+    lanes = preflight.list_preflight_lanes(pixi, invoking_env="pyforge-guild")
+    return {lane.task: lane for lane in lanes}
+
+
 def test_real_pixi_lists_every_leaf_once() -> None:
     pixi = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
     lanes = preflight.list_preflight_lanes(pixi, invoking_env="pyforge-guild")
@@ -72,6 +79,13 @@ def test_real_pixi_lists_every_leaf_once() -> None:
     assert ("pyforge-core-test", "pyforge-core") in keys
     assert ("detectors-ci", "pyforge-guild") in keys
     assert ("ruff", "pyforge-guild") in keys
+    by_task = _lane_map(pixi)
+    assert by_task["pages-check"].depends_on == (("pages-build", "site"),)
+    assert set(by_task["pages-build"].depends_on) == {
+        ("docs-site-install", "site"),
+        ("docs-site-sidebar", "site"),
+    }
+    assert by_task["docs-site-validate-sidebar"].depends_on == (("docs-site-validate-sidebar-order", "site"),)
 
 
 def test_missing_aggregate_exits_2(tmp_path: Path) -> None:
@@ -153,3 +167,218 @@ cmd = "true"
 """
     with pytest.raises(preflight.PreflightConfigError, match="cycle"):
         preflight.list_preflight_lanes(_pixi(text))
+
+
+def test_dependency_graph_runs_each_task_once_in_order(tmp_path: Path) -> None:
+    pixi_path = tmp_path / "pixi.toml"
+    pixi_path.write_text(
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = ["a", "e"]\n'
+        "[feature.guild-tasks.tasks.a]\n"
+        'depends-on = ["b", "c"]\n'
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.b]\n"
+        'depends-on = ["d"]\n'
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.c]\n"
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.d]\n"
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.e]\n"
+        'cmd = "true"\n',
+        encoding="utf-8",
+    )
+    order: list[str] = []
+    finish_times: dict[str, float] = {}
+    start_times: dict[str, float] = {}
+    lock = threading.Lock()
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        with lock:
+            start_times[ctx.lane.task] = time.monotonic()
+        time.sleep(0.05)
+        with lock:
+            finish_times[ctx.lane.task] = time.monotonic()
+            order.append(ctx.lane.task)
+        return 0
+
+    code = preflight.run_preflight(
+        tmp_path,
+        pixi_path=pixi_path,
+        jobs=4,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+    )
+    assert code == preflight.EXIT_OK
+    assert set(order) == {"a", "b", "c", "d", "e"}
+    assert len(order) == len(set(order))
+    assert finish_times["d"] <= start_times["b"]
+    assert finish_times["b"] <= start_times["a"]
+    assert finish_times["c"] <= start_times["a"]
+    record = _run_journal_record(tmp_path)
+    assert {entry["task"] for entry in record["lanes"]} == set(order)
+    assert len(record["lanes"]) == 5
+
+
+def test_red_dependency_cancels_dependents(tmp_path: Path) -> None:
+    pixi_path = tmp_path / "pixi.toml"
+    pixi_path.write_text(
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = ["a", "e"]\n'
+        "[feature.guild-tasks.tasks.a]\n"
+        'depends-on = ["b", "c"]\n'
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.b]\n"
+        'depends-on = ["d"]\n'
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.c]\n"
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.d]\n"
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.e]\n"
+        'cmd = "true"\n',
+        encoding="utf-8",
+    )
+    started: set[str] = set()
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        started.add(ctx.lane.task)
+        return 1 if ctx.lane.task == "d" else 0
+
+    code = preflight.run_preflight(
+        tmp_path,
+        pixi_path=pixi_path,
+        jobs=4,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+    )
+    assert code == preflight.EXIT_LANE_RED
+    # d's dependents never start. c and e have no dependencies, so with jobs=4 they may
+    # start before d's failure registers, or be cancelled by the stop; either is correct.
+    assert "d" in started
+    assert started.isdisjoint({"a", "b"})
+    record = _run_journal_record(tmp_path)
+    by_task = {entry["task"]: entry for entry in record["lanes"]}
+    assert by_task["d"]["status"] == "red"
+    assert by_task["b"]["status"] == "cancelled"
+    assert by_task["b"]["cancelled_by"] == "d"
+    assert by_task["a"]["status"] == "cancelled"
+    assert by_task["a"]["cancelled_by"] == "d"
+    for independent in ("c", "e"):
+        expected = "ok" if independent in started else "cancelled"
+        assert by_task[independent]["status"] == expected
+
+
+def test_red_dependency_keep_going_blocks_dependents_only(tmp_path: Path) -> None:
+    pixi_path = tmp_path / "pixi.toml"
+    pixi_path.write_text(
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = ["a", "e"]\n'
+        "[feature.guild-tasks.tasks.a]\n"
+        'depends-on = ["b", "c"]\n'
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.b]\n"
+        'depends-on = ["d"]\n'
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.c]\n"
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.d]\n"
+        'cmd = "true"\n'
+        "[feature.guild-tasks.tasks.e]\n"
+        'cmd = "true"\n',
+        encoding="utf-8",
+    )
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        return 1 if ctx.lane.task == "d" else 0
+
+    code = preflight.run_preflight(
+        tmp_path,
+        pixi_path=pixi_path,
+        jobs=4,
+        keep_going=True,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+    )
+    assert code == preflight.EXIT_LANE_RED
+    record = _run_journal_record(tmp_path)
+    by_task = {entry["task"]: entry for entry in record["lanes"]}
+    assert by_task["d"]["status"] == "red"
+    assert by_task["b"]["status"] == "not-run"
+    assert by_task["b"]["blocked_by"] == "d"
+    assert by_task["a"]["status"] == "not-run"
+    assert by_task["a"]["blocked_by"] == "d"
+    assert by_task["c"]["status"] == "ok"
+    assert by_task["e"]["status"] == "ok"
+
+
+def test_default_subprocess_argv_includes_skip_deps(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pixi_path = tmp_path / "pixi.toml"
+    pixi_path.write_text(
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = ["a"]\n'
+        "[feature.guild-tasks.tasks.a]\n"
+        'cmd = "true"\n',
+        encoding="utf-8",
+    )
+    captured: list[list[str]] = []
+    real_run = preflight._run_pixi_argv  # noqa: SLF001
+
+    def capture_argv(coord: object, ctx: preflight.LaneRunContext, argv: list[str], log_handle: object) -> int:
+        captured.append(list(argv))
+        return real_run(coord, ctx, ["true"], log_handle)
+
+    monkeypatch.setattr(preflight, "_run_pixi_argv", capture_argv)
+    assert (
+        preflight.run_preflight(tmp_path, pixi_path=pixi_path, jobs=1, install_environment=_NOOP_INSTALL)
+        == preflight.EXIT_OK
+    )
+    assert captured
+    assert captured[0][:4] == ["pixi", "run", "--frozen", "--skip-deps"]
+    assert captured[0][4] == "-e"
+    assert captured[0][6] == "a"
+
+
+def test_pages_lanes_with_dependency_scheduler_avoid_write_overlap(tmp_path: Path) -> None:
+    pixi_path = tmp_path / "pixi.toml"
+    pixi_path.write_text(
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = [{ task = "pages-check", environment = "site" }]\n'
+        "[feature.site.tasks.docs-site-install]\n"
+        'cmd = "true"\n'
+        "[feature.site.tasks.docs-site-sidebar]\n"
+        'cmd = "true"\n'
+        "[feature.site.tasks.pages-build]\n"
+        'depends-on = ["docs-site-install", "docs-site-sidebar"]\n'
+        'cmd = "true"\n'
+        "[feature.site.tasks.pages-check]\n"
+        'depends-on = ["pages-build"]\n'
+        'cmd = "true"\n',
+        encoding="utf-8",
+    )
+    active: set[str] = set()
+    peak = 0
+    lock = threading.Lock()
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        nonlocal peak
+        with lock:
+            active.add(ctx.lane.task)
+            peak = max(peak, len(active))
+            if len(active) >= 3:
+                return 1
+        time.sleep(0.03)
+        with lock:
+            active.discard(ctx.lane.task)
+        return 0
+
+    code = preflight.run_preflight(
+        tmp_path,
+        pixi_path=pixi_path,
+        invoking_env="pyforge-guild",
+        jobs=4,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+    )
+    assert code == preflight.EXIT_OK
+    assert peak <= 2

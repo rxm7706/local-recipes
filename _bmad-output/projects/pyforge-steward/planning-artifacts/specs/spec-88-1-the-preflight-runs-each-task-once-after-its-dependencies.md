@@ -2,7 +2,8 @@
 title: "88.1: The preflight runs each task once, after its dependencies"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'a8eae09dce3acf73fa2a44eabe64b75a4dfd2db1'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -173,3 +174,31 @@ Type / Effort / Deps: fix / M / none.
 - `pixi run --frozen -e pyforge-guild pr-preflight` on a branch whose diff touches `docs/` or `docsite/`: the journal row for `pages-check` starts after `pages-build` ends, `pages-build` after `docs-site-install` and `docs-site-sidebar`, and `pages-check`'s lane log shows no `docs-site-install` or `pages-build` task header.
 - Mutation: drop `--skip-deps` from the default argv and re-run the station suite; AC3 fails. Restore it.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (no subagent findings; implementation reviewed against acceptance criteria in-process)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `pr-preflight` now builds one lane per pixi task (with `depends_on` edges read from `pixi.toml`), runs lanes only after dependencies succeed, and invokes `pixi run --frozen --skip-deps` so pixi does not re-run dependencies inside a lane.
+
+**Files changed:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — lane graph, dependency-aware scheduler, `--skip-deps`, `blocked_by` journaling
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` — AC1–AC4, AC3 argv, AC6 concurrency cap tests
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` — pages-check leaf dependency edges (AC5)
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` — surface reconcile
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor reconcile
+
+**Verification:** `pyforge-steward-test` pass; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 (no `--write-baseline`).
+
+**Governed paths reconciled (memlog):**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py`
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py`
+
+**Residual risks:** Manual `pr-preflight` on docs/docsite diffs not run in this session; ledger key still `backlog` until Tier-3 feed + `sprint-ledger-sync` at land time.
