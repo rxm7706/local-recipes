@@ -2,7 +2,8 @@
 title: "25.9: Track B batch 5 refreshes redshift_connector through zxing-cpp"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '378590c8772520d3d414250c75fd8c0c9fbcf177'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
