@@ -1010,6 +1010,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # MRS-TEARDOWN-005 (the AD-29 reachability check itself could not run --
 # local main's commit history was unreadable -- an UNDETERMINED state,
 # never treated the same as a confirmed-empty one).
+# Story 87.7 (CAP-287 / AD-81) adds MRS-TEARDOWN-006 (one unpreserved
+# runtime item the home still holds) and MRS-TEARDOWN-007 (--force with a
+# mismatched --abandon set for those items).
 # Code review (2026-08-06, P5) adds a fifth MRS-DEPLOY-* code,
 # MRS-DEPLOY-005 (recover-spec's epics-derived fallback wrote a recovered
 # spec whose Intent and/or Acceptance Criteria came back empty).
@@ -1547,6 +1550,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-TEARDOWN-004",
         "MRS-DEPLOY-004",
         "MRS-TEARDOWN-005",
+        "MRS-TEARDOWN-006",
+        "MRS-TEARDOWN-007",
         "MRS-DEPLOY-005",
         "MRS-DEPLOY-006",
         "MRS-DEPLOY-007",

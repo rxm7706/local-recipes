@@ -2526,9 +2526,12 @@ def run_teardown(
     # branch X specifically).
     unreachable = _unreachable_promotions(repo_root, branch, slug, vcs=vcs, fs=fs)
     undetermined_reachability = unreachable is None
-    unreachable_authorized = False
     abandoned_keys: tuple[str, ...] = ()
     raw_abandon = getattr(args, "abandon", None) or ()
+    try:
+        abandon_set = frozenset(str(identity.normalize(key)) for key in raw_abandon)
+    except MalformedStoryKeyError:
+        abandon_set = frozenset(str(key) for key in raw_abandon)
 
     if undetermined_reachability:
         # P1 (CRITICAL, code review 2026-08-06, both reviewers' independent
@@ -2552,31 +2555,6 @@ def run_teardown(
             "failed to run (e.g. local main's commit history could not be "
             "read)"
         )
-        if force and frozenset(raw_abandon) == frozenset({_UNDETERMINED_ABANDON_TOKEN}):
-            unreachable_authorized = True
-            abandoned_keys = (_UNDETERMINED_ABANDON_TOKEN,)
-        else:
-            # Registered whenever this refusal is NOT successfully
-            # authorized (mirrors MRS-TEARDOWN-004's own "only when the
-            # refusal actually stands" shape below) -- covers both the
-            # unforced ordinary refusal AND a --force attempt that named
-            # the wrong (or no) --abandon value, so the finding is visible
-            # in the envelope for every case that actually refuses, never
-            # left dangling on a run that genuinely proceeded.
-            findings.append(
-                Finding(
-                    code="MRS-TEARDOWN-005",
-                    severity=Severity.ERROR,
-                    message=(
-                        f"promotion reachability for project {slug!r} could "
-                        "not be determined -- an undetermined safety-check "
-                        "result is never treated as confirmed-clean; pass "
-                        "--force together with --abandon "
-                        f"{_UNDETERMINED_ABANDON_TOKEN} to explicitly "
-                        "acknowledge proceeding without that check"
-                    ),
-                )
-            )
     elif unreachable:
         unreachable_set = frozenset(unreachable)
         reasons.append(
@@ -2584,18 +2562,7 @@ def run_teardown(
             "promotion(s) (not necessarily originating from this "
             f"branch/worktree): {', '.join(sorted(unreachable_set))}"
         )
-        try:
-            abandon_set = frozenset(str(identity.normalize(key)) for key in raw_abandon)
-        except MalformedStoryKeyError:
-            # A malformed --abandon value can never equal a real (already
-            # normalized) unreachable key -- falls through to the mismatch
-            # branch below exactly like any other non-matching set, never a
-            # separate crash.
-            abandon_set = frozenset(raw_abandon)
-        if force and abandon_set == unreachable_set:
-            unreachable_authorized = True
-            abandoned_keys = tuple(sorted(unreachable_set))
-        elif force:
+        if force and not unreachable_set.issubset(abandon_set):
             # Only when the operator actually attempted --force does the
             # mismatch itself earn its own finding (the story's own I/O
             # matrix: a bare, unforced refusal is "No error, refusal is the
@@ -2615,7 +2582,98 @@ def run_teardown(
                 )
             )
 
-    if reasons and (not force or ((unreachable or undetermined_reachability) and not unreachable_authorized)):
+    from ..core.dispatch_preserve import preserve_refs_flag_on
+    from ..core.teardown_preserve import scan_teardown_unpreserved
+
+    unpreserved_items = ()
+    preserve_debt_tags: tuple[str, ...] = ()
+    unpreserved_set: frozenset[str] = frozenset()
+    if preserve_refs_flag_on():
+        try:
+            preserve_scan = scan_teardown_unpreserved(
+                repo_root=repo_root,
+                home=home,
+                slug=slug,
+                branch=branch,
+                vcs=vcs,
+                nested_worktrees=nested_worktrees,
+            )
+        except VcsCommandError as exc:
+            findings.append(_teardown_op_failed_finding(str(exc)))
+            return _emit_teardown(args, data, findings)
+        unpreserved_items = preserve_scan.items
+        preserve_debt_tags = preserve_scan.preserve_debt_tags
+        unpreserved_set = frozenset(item.abandon_token for item in unpreserved_items)
+        if unpreserved_set:
+            reasons.append(
+                f"home holds {len(unpreserved_set)} unpreserved item(s): "
+                f"{', '.join(sorted(unpreserved_set))}"
+            )
+        if preserve_debt_tags:
+            data["preserve_debt"] = sorted(preserve_debt_tags)
+
+    abandon_required: set[str] = set(unpreserved_set)
+    if undetermined_reachability:
+        abandon_required.add(_UNDETERMINED_ABANDON_TOKEN)
+    elif unreachable:
+        abandon_required.update(unreachable)
+    abandon_required_frozen = frozenset(abandon_required)
+    abandon_authorized = force and (not abandon_required_frozen or abandon_set == abandon_required_frozen)
+
+    if undetermined_reachability and not abandon_authorized:
+        findings.append(
+            Finding(
+                code="MRS-TEARDOWN-005",
+                severity=Severity.ERROR,
+                message=(
+                    f"promotion reachability for project {slug!r} could "
+                    "not be determined -- an undetermined safety-check "
+                    "result is never treated as confirmed-clean; pass "
+                    "--force together with --abandon "
+                    f"{_UNDETERMINED_ABANDON_TOKEN} to explicitly "
+                    "acknowledge proceeding without that check"
+                ),
+            )
+        )
+
+    if force and abandon_required_frozen and not abandon_authorized:
+        if unpreserved_set and not undetermined_reachability and not unreachable:
+            findings.append(
+                Finding(
+                    code="MRS-TEARDOWN-007",
+                    severity=Severity.ERROR,
+                    message=(
+                        "an unpreserved-work refusal requires --force together with "
+                        f"--abandon naming EXACTLY {sorted(abandon_required_frozen)} -- got "
+                        f"--abandon {sorted(abandon_set) if raw_abandon else '(not given)'}"
+                    ),
+                )
+            )
+        elif unpreserved_set and (undetermined_reachability or unreachable):
+            findings.append(
+                Finding(
+                    code="MRS-TEARDOWN-007",
+                    severity=Severity.ERROR,
+                    message=(
+                        "teardown abandonment must name EXACTLY the combined set "
+                        f"{sorted(abandon_required_frozen)} -- got "
+                        f"--abandon {sorted(abandon_set) if raw_abandon else '(not given)'}"
+                    ),
+                )
+            )
+
+    if reasons and (
+        not force
+        or ((unreachable or undetermined_reachability or unpreserved_set) and not abandon_authorized)
+    ):
+        for item in unpreserved_items:
+            findings.append(
+                Finding(
+                    code="MRS-TEARDOWN-006",
+                    severity=Severity.ERROR,
+                    message=item.message,
+                )
+            )
         # Name the path the checks and the removal actually operate on --
         # git's registered location when one exists (follow-up review
         # finding: the headline previously named the merely COMPUTED
@@ -2634,11 +2692,9 @@ def run_teardown(
         )
         return _emit_teardown(args, data, findings)
 
-    if unreachable_authorized:
-        # AD-27: every widening (forcing past an unreachable promotion) is a
-        # recorded event -- write BEFORE removal proceeds. A failure here
-        # blocks teardown (fail closed): an unrecorded abandonment must
-        # never be allowed to proceed.
+    if abandon_authorized and abandon_required_frozen:
+        # AD-27 / Story 87.7: every widening is a recorded event -- write BEFORE removal.
+        abandoned_keys = tuple(sorted(abandon_required_frozen))
         journal_failure = _journal_abandonments(fs, repo_root, slug, abandoned_keys)
         if journal_failure is not None:
             findings.append(journal_failure)
