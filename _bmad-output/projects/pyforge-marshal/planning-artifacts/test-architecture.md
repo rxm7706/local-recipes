@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 08c8f0ee41abf394
-story_count: 440
+source_fingerprint: c80c3e4f91c585ad
+story_count: 441
 test_file_count: 251
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 440
-- **Epics parsed:** 86
+- **Stories parsed:** 441
+- **Epics parsed:** 87
 - **Test files inventoried:** 251 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `08c8f0ee41abf394`
+- **Source fingerprint:** `c80c3e4f91c585ad`
 
 ## Risk Assessment
 
@@ -108,6 +108,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 85: A verification refusal goes back to the session that wrote the change (spec-pyforge-marshal CAP-286)
 - Epic 87: Preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287)
 - Epic 88: Marshal's commits stage every tracked path they name
+- Epic 89: A story lands only when its spec says the work is finished and its review did not fail
 
 ### Low-risk epics
 
@@ -823,6 +824,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.15 | A preserve reaches origin only through the content gate | none observed |
 | 87.16 | The orphaned tips are re-preserved as local archive tags | none observed |
 | 88.1 | Marshal commits a tracked file under an ignored directory | none observed |
+| 89.1 | A re-dispatch never lands a story whose review failed | none observed |
 
 ## Quality Gates
 
