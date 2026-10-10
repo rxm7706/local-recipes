@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 516
+# stories: 519
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -349,6 +349,7 @@ development_status:
   87-1-the-platform-host-boots-without-herald-and-says-why: done
   87-2-the-platform-host-boots-without-langflow-and-the-full-stack-env-runs-it: blocked
   87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar: backlog
+  88-1-the-preflight-runs-each-task-once-after-its-dependencies: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -528,5 +529,7 @@ development_status:
   epic-86-retrospective: optional
   epic-87: in-progress
   epic-87-retrospective: optional
+  epic-88: backlog
+  epic-88-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

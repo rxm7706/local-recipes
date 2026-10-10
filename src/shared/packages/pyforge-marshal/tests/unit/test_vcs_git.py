@@ -1519,6 +1519,180 @@ def test_worktree_checkpoint_commits_a_spaced_renames_source_deletion(vcs, repo)
     assert _head_paths(repo) == ["README.md", "new name.md"]
 
 
+# --- tracked paths under ignored directories (Story 88.1) --------------------
+
+
+def _commit_tracked_under_then_ignore(repo: Path, *, dir_name: str = ".c") -> None:
+    (repo / dir_name / "r").mkdir(parents=True)
+    (repo / dir_name / "r" / "f").write_text("v1\n", encoding="utf-8")
+    (repo / dir_name / "r" / "g").write_text("g1\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "track under ignored dir")
+    (repo / ".gitignore").write_text(f"{dir_name}/\n", encoding="utf-8")
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "ignore directory")
+
+
+def _assert_plain_git_add_refuses(repo: Path, path: str) -> None:
+    result = subprocess.run(["git", "-C", str(repo), "add", "--", path], capture_output=True, text=True)
+    assert result.returncode != 0, f"expected plain git add to refuse {path}"
+
+
+def test_commit_paths_commits_a_modified_tracked_file_under_an_ignored_directory(vcs, repo):
+    _commit_tracked_under_then_ignore(repo)
+    tracked = ".c/r/f"
+    _assert_plain_git_add_refuses(repo, tracked)
+    (repo / tracked).write_text("v2\n", encoding="utf-8")
+
+    sha = vcs.commit_paths(repo, (Path(tracked),), to_redacted_text("marshal: finalize"))
+
+    assert _git(repo, "show", f"{sha}:{tracked}").stdout == "v2\n"
+    assert _git(repo, "status", "--porcelain").stdout == ""
+
+
+def test_commit_paths_commits_when_the_change_is_already_staged(vcs, repo):
+    _commit_tracked_under_then_ignore(repo)
+    tracked = ".c/r/f"
+    _assert_plain_git_add_refuses(repo, tracked)
+    (repo / tracked).write_text("v2\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "--", tracked], capture_output=True)
+
+    sha = vcs.commit_paths(repo, (Path(tracked),), to_redacted_text("marshal: finalize"))
+
+    assert _git(repo, "show", f"{sha}:{tracked}").stdout == "v2\n"
+
+
+def test_commit_paths_commits_a_deleted_tracked_file_under_an_ignored_directory(vcs, repo):
+    _commit_tracked_under_then_ignore(repo)
+    tracked = ".c/r/g"
+    _assert_plain_git_add_refuses(repo, tracked)
+    (repo / tracked).unlink()
+
+    vcs.commit_paths(repo, (Path(tracked),), to_redacted_text("marshal: finalize"))
+
+    assert _git(repo, "ls-files", tracked).stdout.strip() == ""
+    assert _git(repo, "status", "--porcelain").stdout == ""
+
+
+def test_commit_paths_refuses_an_untracked_file_under_an_ignored_directory(vcs, repo):
+    _commit_tracked_under_then_ignore(repo)
+    new_path = ".c/r/new"
+    head_before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    (repo / new_path).write_text("new\n", encoding="utf-8")
+
+    with pytest.raises(VcsCommandError, match=r"\.c/r/new"):
+        vcs.commit_paths(repo, (Path(new_path),), to_redacted_text("marshal: finalize"))
+
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == head_before
+    assert _git(repo, "ls-files", new_path).stdout.strip() == ""
+
+
+def test_commit_paths_mixed_tracked_under_ignored_and_outside(vcs, repo):
+    _commit_tracked_under_then_ignore(repo)
+    tracked = ".c/r/f"
+    (repo / tracked).write_text("v2\n", encoding="utf-8")
+    (repo / "outside-new.txt").write_text("outside\n", encoding="utf-8")
+    (repo / "README.md").write_text("changed readme\n", encoding="utf-8")
+
+    vcs.commit_paths(
+        repo,
+        (Path(tracked), Path("outside-new.txt"), Path("README.md")),
+        to_redacted_text("marshal: finalize"),
+    )
+
+    committed = _git(repo, "show", "-z", "--name-only", "--format=", "HEAD").stdout.split("\0")
+    assert sorted(p for p in committed if p) == sorted(("README.md", "outside-new.txt", tracked))
+    assert _git(repo, "status", "--porcelain").stdout == ""
+
+
+def test_worktree_checkpoint_commits_a_tracked_cursor_rule_under_ignored_cursor(vcs, repo):
+    from pyforge.marshal.core.worktree_checkpoint import commit_worktree_checkpoint
+
+    (repo / ".cursor" / "rules").mkdir(parents=True)
+    (repo / ".cursor" / "rules" / "x.mdc").write_text("rule\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "track cursor rule")
+    (repo / ".gitignore").write_text(".cursor/\n", encoding="utf-8")
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "ignore cursor")
+    _assert_plain_git_add_refuses(repo, ".cursor/rules/x.mdc")
+    (repo / ".cursor" / "rules" / "x.mdc").write_text("rule v2\n", encoding="utf-8")
+
+    result = commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="88.1")
+
+    assert result.committed is True
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _git(repo, "show", "HEAD:.cursor/rules/x.mdc").stdout == "rule v2\n"
+
+
+def test_finalize_path_commits_a_tracked_cursor_rule_under_ignored_cursor(vcs, repo):
+    (repo / ".cursor" / "rules").mkdir(parents=True)
+    (repo / ".cursor" / "rules" / "x.mdc").write_text("rule\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "track cursor rule")
+    (repo / ".gitignore").write_text(".cursor/\n", encoding="utf-8")
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "ignore cursor")
+    _assert_plain_git_add_refuses(repo, ".cursor/rules/x.mdc")
+    (repo / ".cursor" / "rules" / "x.mdc").write_text("rule v2\n", encoding="utf-8")
+
+    changed = vcs.changed_files(repo, repo, base="HEAD")
+    vcs.commit_paths(repo, tuple(Path(p) for p in changed), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _git(repo, "show", "HEAD:.cursor/rules/x.mdc").stdout == "rule v2\n"
+
+
+def test_merge_ref_resolving_stages_a_conflicted_tracked_file_under_an_ignored_directory(vcs, repo):
+    _commit_tracked_under_then_ignore(repo)
+    tracked = ".c/r/f"
+    _git(repo, "checkout", "-q", "-b", "side")
+    (repo / tracked).write_text("side\n", encoding="utf-8")
+    _git(repo, "add", "-u", "--", tracked)
+    _git(repo, "commit", "-m", "side edit")
+    _git(repo, "checkout", "-q", "main")
+    (repo / tracked).write_text("main\n", encoding="utf-8")
+    _git(repo, "add", "-u", "--", tracked)
+    _git(repo, "commit", "-m", "main edit")
+    _git(repo, "checkout", "-q", "side")
+
+    sha = vcs.merge_ref_resolving(
+        repo,
+        VcsRef("main"),
+        resolutions={tracked: "resolved\n"},
+        message=to_redacted_text("union heal"),
+    )
+
+    assert _git(repo, "show", f"{sha}:{tracked}").stdout == "resolved\n"
+    assert _git(repo, "status", "--porcelain").stdout == ""
+
+
+def test_stage_index_paths_stages_a_tracked_modification_under_an_ignored_directory(vcs, repo):
+    from pyforge.marshal.adapters.vcs_git import stage_index_paths
+
+    _commit_tracked_under_then_ignore(repo)
+    tracked = ".c/r/f"
+    (repo / tracked).write_text("v2\n", encoding="utf-8")
+
+    accepted = stage_index_paths(repo, [tracked])
+
+    assert accepted == 1
+    assert "M" in _git(repo, "status", "--porcelain", tracked).stdout
+
+
+def test_stage_index_paths_returns_zero_for_an_untracked_file_under_an_ignored_directory(vcs, repo):
+    from pyforge.marshal.adapters.vcs_git import stage_index_paths
+
+    _commit_tracked_under_then_ignore(repo)
+    new_path = ".c/r/new"
+    (repo / new_path).write_text("new\n", encoding="utf-8")
+
+    accepted = stage_index_paths(repo, [new_path])
+
+    assert accepted == 0
+    assert _git(repo, "ls-files", new_path).stdout.strip() == ""
+
+
 # --- commit_subjects/commit_paths (Story 4.1, AD-29/AD-33) -----------------
 
 

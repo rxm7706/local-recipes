@@ -1294,6 +1294,24 @@ Drift — orphaned between stations.
   condition, FastMCP 4 on conda-forge on mcp 2.x, has already fired (`fastmcp 4.0.10`, locked for kedro-mcp). Owner
   `spec-pyforge-steward` (CAP-68, CAP-69). → Epic 87 / Story 87.3, specced 2026-10-10; Story 87.2 retired (key
   `blocked`); `DW-steward-87-3-1`; herald 19.2 re-scoped onto the host plus the sidecar and held `blocked` on 87.3.
+- **2026-10-10 (preflight deps run twice) — Found: the preflight runs a task's dependencies twice, at the same time,
+  into the same directories.** `pr-preflight` flattens each lane's `depends-on` into separate leaf lanes, and it also
+  keeps the task itself as a lane when the task has a `cmd`. Every lane starts in the pool with no order between
+  them, and each runs `pixi run --frozen -e <env> <task>`, which runs the task's dependencies again. So the
+  `pages-check` lane re-runs `pages-build`, `docs-site-install` and `docs-site-sidebar`, while the `pages-build`,
+  `docs-site-install` and `docs-site-sidebar` lanes run the same tasks, all writing into one `docs-site/` and one
+  `dist/`. `docs-site-validate-sidebar` and its `docs-site-validate-sidebar-order` have the same shape. On the herald
+  sidecar chain's two pushes (runs `ced93a76` and `fdba8d13`, `.steward/preflight-runs.jsonl`), all four pages lanes
+  started at the same offset and `pages-check` went red: first "download size mismatch" on a herald deck, then
+  "assemble_pages: collision at herald/". The red lane stopped the run and cancelled `detectors-ci` and two doctor
+  lanes, so the whole preflight was lost, and both pushes went out under `PYFORGE_PREFLIGHT_SKIP`.
+  `pixi run --frozen -e site pages-check` alone exits 0. **What it looks like when fixed:** within one preflight
+  each task runs once. A lane whose task has dependencies starts only after they are green and does not run them
+  again. A failed dependency is reported once, by name, and the lanes that need it do not start. The journal holds
+  each task once, and the lanes CI's rules select for a diff do not change. **Constraints:** a fix under CAP-159 (Epic
+  71), no CAP, no flag; lanes stay concurrent where nothing orders them; nothing that is checked today is skipped
+  (operator ruling 2026-10-10: "Mint both (Recommended)"). Owner `spec-pyforge-steward`. → Epic 88 / Story 88.1,
+  specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
