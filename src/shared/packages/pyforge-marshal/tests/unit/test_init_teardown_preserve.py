@@ -23,6 +23,16 @@ _teardown_namespace = init_fixtures._teardown_namespace
 _FLAG = "pyforge.marshal.preserve_refs"
 
 
+def _patch_preserve_flag(monkeypatch: pytest.MonkeyPatch, flag_provider: dict[str, bool]) -> None:
+    from pyforge.marshal.core import dispatch_preserve
+
+    monkeypatch.setattr(
+        dispatch_preserve,
+        "preserve_refs_flag_on",
+        lambda **kwargs: flag_provider[_FLAG],
+    )
+
+
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, check=True)
 
@@ -47,6 +57,7 @@ def git_pair(repo_root: Path) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     (repo_root / "README.md").write_text("base\n", encoding="utf-8")
+    (repo_root / ".gitignore").write_text(".bmad-loop/\n", encoding="utf-8")
     _git(repo_root, "add", ".")
     _git(repo_root, "commit", "-m", "init")
     _git(repo_root, "branch", "-M", "main")
@@ -82,6 +93,7 @@ def test_teardown_refuses_unpreserved_patch_flag_on(
 ):
     if not flag_provider[_FLAG]:
         pytest.skip("preserve_refs flag off in this parametrization")
+    _patch_preserve_flag(monkeypatch, flag_provider)
     repo, home = git_pair
     monkeypatch.chdir(repo)
     patch_dir = home / ".bmad-loop" / "runs" / "run1" / "failed" / "1-1"
@@ -102,6 +114,7 @@ def test_teardown_abandon_exact_set_proceeds(
 ):
     if not flag_provider[_FLAG]:
         pytest.skip("preserve_refs flag off in this parametrization")
+    _patch_preserve_flag(monkeypatch, flag_provider)
     repo, home = git_pair
     monkeypatch.chdir(repo)
     patch_dir = home / ".bmad-loop" / "runs" / "run1" / "failed" / "1-1"
@@ -123,12 +136,17 @@ def test_teardown_loop_on_origin_not_unpreserved(
 ):
     if not flag_provider[_FLAG]:
         pytest.skip("preserve_refs flag off in this parametrization")
+    _patch_preserve_flag(monkeypatch, flag_provider)
     repo, home = git_pair
     monkeypatch.chdir(home)
     (home / "extra.txt").write_text("x\n", encoding="utf-8")
     _git(home, "add", "extra.txt")
     _git(home, "commit", "-m", "loop tip")
     _git(repo, "push", "origin", "loop/acme:loop/acme")
+    _git(repo, "fetch", "origin")
+    _git(repo, "checkout", "main")
+    _git(repo, "merge", "loop/acme", "--no-edit")
+    _git(repo, "push", "origin", "main")
     _git(repo, "fetch", "origin")
     monkeypatch.chdir(repo)
     exit_code = run_teardown(_teardown_namespace("acme"), vcs=GitVcs(), fs=LocalFs())
