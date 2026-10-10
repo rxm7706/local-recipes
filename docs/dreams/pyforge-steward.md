@@ -1350,6 +1350,25 @@ Drift — orphaned between stations.
   OFF; `src/platform/` still imports no `pyforge.*`; MCP forwarding does not change. Herald 19.2's proof waits on this
   story, not on 87.3 (operator ruling 2026-10-10: "Forward-fix (Recommended)"). Owner `spec-pyforge-steward`. →
   Epic 87 / Story 87.4, specced 2026-10-10.
+- **2026-10-10 (preflight basetemp inherited) — Found: under `pr-preflight`, steward's own suite fails nine tests,
+  because each pytest it starts inherits the lane's `--basetemp`.** `pr-preflight` gives each lane its own pytest
+  basetemp and cache dir by appending them to `PYTEST_ADDOPTS`, after whatever value the preflight itself inherited.
+  Steward's preflight tests start child pytest runs in scratch repos under `tmp_path`, and `tmp_path` lives under the
+  lane's basetemp. Every child inherits that `--basetemp`, which is now a parent of its working directory, so pytest
+  refuses it ("basetemp must not be empty, the current working directory or any parent directory of it", "config
+  source: via PYTEST_ADDOPTS") and exits 4. On hygiene PR #2092's `--keep-going` run (`089d593c`, 2026-10-10,
+  28 lanes) `pyforge-steward-test` failed 9 of 2294 tests that way. With `PYTEST_ADDOPTS` unset, as CI runs them,
+  the same tests pass. So any change that makes the preflight run steward's whole suite, every `pyforge-core` edit
+  among them, can never go green locally, and #2092 went out under `PYFORGE_PREFLIGHT_SKIP` after each red lane was
+  proved green outside the preflight. Two more tests pass only because of the same usage error, and marshal hit the
+  same class the same day: a child pytest that inherited a valid basetemp wiped the parent's at start-up. **What it
+  looks like when fixed:** a pytest the preflight starts, in a lane or to collect node ids, carries only its own
+  basetemp and cache dir, never one it inherited, and the invoker's other pytest options still pass through.
+  Steward's suite is green with an outer `--basetemp` set, as it is without one. No test passes because of a usage
+  error. Every test in the estate that starts a child pytest is listed, with the ones outside steward left as
+  follow-up rows. **Constraints:** a fix under CAP-159 (Epic 71), no CAP, no flag; which lanes run, what each runs,
+  the journal and the exit codes do not change (operator ruling 2026-10-10: "yes mint the steward preflight fix
+  story"). Owner `spec-pyforge-steward`. → Epic 90 / Story 90.1, specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
