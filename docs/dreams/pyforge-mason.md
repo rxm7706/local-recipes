@@ -541,6 +541,38 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   the CFE surface, so the story has no `retro(cfe):` commit. A new Epic 28 carries it, because Epics 6 and 12, the
   guard's own epics, are done. Owner: mason. → `spec-pyforge-mason` CAP-16 / Epic 28 / Story 28.1, specced
   2026-10-09.
+- **2026-10-09 (night) — Ruled: Story 25.2 lands with Wave 0 and its pilots, and Track B continues in batch
+  stories.** Operator ruling, 2026-10-09, the option "Land 25.2 now, split rest": "Re-scope 25.2 to Wave 0 + the
+  pilots (14 leftovers recorded needs-review with reasons) and land it, so the repairs reach main. Mint 25.4+ for
+  Track B in batch stories, each small enough for one dispatch." Story 25.2's three passes on
+  `dispatch/pyforge-mason/25.2` stopped `blocked` with this record:
+  - Wave A counted 288 co-maintained feedstocks live: 268 with a local recipe and 20 without. 96 are behind their
+    feedstock's published version (the v1-refresh bucket).
+  - Wave 0 ran `refresh-wave --repair --apply --gates` over a 78-recipe manifest: 62 repaired, 2 already clean, 10
+    needs-review and 4 failed. None of the 14 leftovers carries a CFE metadata block, and the driver's checks require
+    exactly one.
+  - Four Track B pilots were refreshed and built green on linux-64: assemblyai 1.0.0 → 1.3.0, bmad-method 6.12.0 →
+    6.12.1, cron-descriptor 2.1.0 → 2.1.1 and cssselect2 0.9.0 → 0.10.1. Two dry-runs left six more needs-review:
+    airflow-code-editor, avro, azure-monitor-opentelemetry-exporter, azure-storage-file-share, billiard and
+    cachetools.
+
+  That leaves 92 v1-refresh recipes. Reading the driver at mint found four gaps behind its refusals:
+  - It renders only a bare `${{ var }}`, so a `${{ name[0] }}` URL is refused.
+  - It calls a URL templated through a `context` variable derived from the version "version-baked".
+  - Its repair check reports "count changed" for a recipe that has no CFE block at all.
+  - It compares dependency names, never an uncommented version pin. That matters for the OpenTelemetry family's exact
+    pins on one another.
+  **What it looks like when real:** Story 25.2 lands with Wave A, Wave 0, the four pilots and its 14 leftovers
+  recorded with reasons, so Wave 0's 62 repairs reach `main`. Story 25.4 takes the 14 leftovers: it stamps each missing
+  CFE block, re-runs the repair, and records the four driver gaps. Stories 25.5 to 25.12 split the 92 into eight
+  batches of 11 or 12 named recipes. Each batch is one wave through the driver and one dispatch, and clears in the
+  recipe, through `conda-forge-expert`, any refusal it can. The 20 missing mirrors (Wave F) stay a recorded deferral,
+  because Track B's Q2 (`<create_missing>`) has no ruling. A mint-time read finds 18 of them are outputs of
+  `recipes/db-gpt` and `recipes/langflow`, so Wave F may be two recipes, not 20.
+  **Constraints:** every Epic 25 line stands. The work stays local, goes through `conda-forge-expert`, keeps each
+  maintainer list a superset of the deployed one (G53), ends each recipe with a linux-64 build or a recorded reason,
+  and closes each story with its own `retro(cfe):` commit. No new CAP. Owner: mason. → Epic 25 / Story 25.2
+  re-scoped and Stories 25.4 to 25.12, specced 2026-10-09.
 
 ## One-chain fold — 2026-09-17
 
