@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.99.4
+version: 8.99.5
 allowed-tools: [conda_forge_server]
 ---
 
@@ -1166,6 +1166,8 @@ Migrate when:
 Do **not** migrate if:
 - The recipe is in a stable feedstock not being actively maintained
 - The migration would be a pure churn commit unrelated to any other change
+
+**Duplicate output directories are not mirrors.** Before refreshing or minting `recipes/<dir>/`, read `conda-forge/feedstock-outputs` and confirm `<dir>-feedstock` exists (or that the directory name is the feedstock that owns every output it declares). A second directory that re-declares another feedstock's suite outputs (Story 25.15: five `lfx*` copies of `langflow-suite`, `recipes/dbt-core` beside `recipes/dbt`) is a duplicate to retire into the canonical `recipes/<feedstock>/` mirror — not a separate recipe to maintain.
 
 **Local-mirror fidelity — keep the feedstock's `meta.yaml` until the feedstock itself migrates.** For a `recipes/<name>/` that mirrors an existing conda-forge feedstock still on v0: **pull the latest `meta.yaml` from the feedstock and KEEP it**, AND **author the v1 `recipe.yaml`** alongside it (our local v1 — built/tested locally, and the proposed migration). **Both files coexist** in `recipes/<name>/`: `meta.yaml` faithfully mirrors what's actually deployed; `recipe.yaml` is the v1 we maintain. **Delete `meta.yaml` only after the feedstock itself completes the v0→v1 switch** (its migration PR merges) — NOT when the local build succeeds. (Leave `meta.yaml` in place — build / test / lint / optimize by pointing explicitly at `recipe.yaml` (`rattler-build --recipe recipes/<name>/recipe.yaml`), which reads only that file and ignores `meta.yaml`. No stashing. `optimize_recipe`'s STD-002 "both meta.yaml and recipe.yaml present" is an expected, harmless warning for a v0-mirror — not a defect; don't delete `meta.yaml` to silence it.) The CFE metadata lives in the `recipe.yaml` (the `meta.yaml` stays a faithful, un-annotated upstream copy): for a still-v0 feedstock mirror the `recipe.yaml` carries `cfe-on-conda-forge-status: confirmed-on-conda-forge` (it IS published, just on v0), `cfe-forge-recipe-updates-needed:` including **`meta-yaml-to-recipe-yaml`** (the feedstock owes the migration), and a correct `cfe-forge-blocker-list:`. New recipes with no feedstock yet are v1 `recipe.yaml` only — nothing to mirror.
 

@@ -1916,3 +1916,25 @@ status: open
   severity: medium
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-25-15: No repo-scope check refuses two recipes/* directories declaring the same package name; add a detector with today's remaining duplicates as its starting allowlist.
+
+- source_spec: `planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md`
+  summary: No repo-scope check refuses two recipes/* directories declaring the same package name; add a detector with today's remaining duplicates as its starting allowlist.
+  evidence: AC 4 parse at mint listed six langflow-suite declarers plus recipes/dbt-core for dbt-core; after this story the parse exits 0 with adapters pending Story 25.16.
+  location: scripts/spec_surface_check.py
+  origin: spec-deferred 3be8bef01527 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-15-2: Staged-recipes PRs #33977 (lfx-arxiv) and #33978 (lfx-docling) are superseded by langflow-feedstock publishing both bundles; operator closes them.
+
+- source_spec: `planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md`
+  summary: Staged-recipes PRs #33977 (lfx-arxiv) and #33978 (lfx-docling) are superseded by langflow-feedstock publishing both bundles; operator closes them.
+  evidence: langflow-feedstock now publishes lfx-arxiv and lfx-docling; PRs still open at AC 1 re-read.
+  location: https://github.com/conda-forge/staged-recipes/pull/33977
+  origin: spec-deferred ee27817e3b32 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
