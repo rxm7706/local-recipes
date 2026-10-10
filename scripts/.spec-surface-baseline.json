@@ -4208,7 +4208,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_re_preflight.py": "d60e49b6dd9e5a06c02b383de4b44c049b9727c2",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry_83_10.py": "6030c4dfc2a7cce9b259231b3b546a8aa6fc006c",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py": "a6460a76a0e05496d373c66cf78f50dcfa24e000",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py": "145df7f4a36fd4591e4a615d6b92970341b2c549",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py": "dd4de55b9f1ad9da1592002da1fe277dd81cbcd0",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_stop_retry.py": "70fd484996e89e2179650051b4dd2d7ee7cd11ea",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_structure_graph.py": "7a60a17096a821f0a9212440d2a4df92f60320ae",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_blocked_halt.py": "dc1cc3988787bc2b14d026cbf4b38061c2ceca0d",
@@ -4354,7 +4354,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "c3b48637dc188aa4d97e97f28faa32b2ec533748"
+  "memlog": "a548ff843d014fe2fbd16d6062df2a29cdc011df"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
