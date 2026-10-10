@@ -1948,3 +1948,13 @@ status: open
   origin: spec-deferred 36e8ee4d28d8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-25-7: refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge
+
+- source_spec: `planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md`
+  summary: refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge
+  evidence: refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
+  origin: spec-deferred 312d5812d3dd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

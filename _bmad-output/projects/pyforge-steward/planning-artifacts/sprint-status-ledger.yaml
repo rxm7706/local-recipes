@@ -306,7 +306,7 @@ development_status:
   71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: done
   71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: done
   72-1-the-guild-environment-answers-pyforge-mason: done
-  72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: backlog
+  72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: done
   73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: done
   74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it: done
   74-2-the-chart-names-the-bucket-and-prefix-per-environment-and-reaches-only-the-consumed-store: done
@@ -491,7 +491,7 @@ development_status:
   epic-70-retrospective: optional
   epic-71: done
   epic-71-retrospective: optional
-  epic-72: in-progress
+  epic-72: done
   epic-72-retrospective: optional
   epic-73: done
   epic-73-retrospective: optional

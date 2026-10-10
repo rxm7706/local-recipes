@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.15.0"
+  version: "0.17.3"
 
 package:
   name: json5
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/j/json5/json5-${{ version }}.tar.gz
-  sha256: 7424d1f1eb1d56da6e3d70643f53619862b4ce81440bdb8ecfd6f875e5ba4a71
+  sha256: 8d0278ad34ebaa9c3af76d9519274811830224a2d1cd5af156dbd067f461b8a4
 
 build:
   number: 0
@@ -64,19 +64,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/json5-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.15.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T00:20:07Z
+  cfe-last-checked: 2026-10-10T12:16:22Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T00:20:07Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T00:20:07Z
+  cfe-local-build-datetime: 2026-10-10T12:16:33Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 0.15.0 -> 0.17.3
 ####
