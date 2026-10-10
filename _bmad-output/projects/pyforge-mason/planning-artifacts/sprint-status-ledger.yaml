@@ -85,7 +85,7 @@ development_status:
   25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror: backlog
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: done
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
-  25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason: backlog
+  25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason: done
   25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries: backlog
   25-6-track-b-batch-2-refreshes-django-fsm-log-through-import-linter: backlog
   25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests: backlog

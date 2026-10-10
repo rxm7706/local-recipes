@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/30/9d/d3cd204ed45f4b73e29d6dbe50d8d1fa56099914f36798ae93ad184c7824/py_yaml12-0.2.0.tar.gz
+  url: https://pypi.org/packages/source/p/py-yaml12/py_yaml12-${{ version }}.tar.gz
   sha256: b8326c144e26a4ae7e03d13175667d85c580a9f0512fd7b809e5c92b5569f74e
 
 build:
@@ -19,38 +19,38 @@ build:
       CARGO_PROFILE_RELEASE_STRIP: symbols
       CARGO_PROFILE_RELEASE_LTO: fat
     content:
-    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     version_independent: true
 
 requirements:
   build:
-  - if: build_platform != target_platform
-    then:
-    - python
-    - cross-python_${{ target_platform }}
-    - crossenv
-    - maturin >=1,<2
-  - ${{ compiler("c") }}
-  - ${{ stdlib("c") }}
-  - ${{ compiler("rust") }}
-  - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
   host:
-  - python
-  - pip
-  - maturin >=1.7,<2.0
+    - python
+    - pip
+    - maturin >=1.7,<2.0
   run:
-  - python
+    - python
 
 tests:
 - python:
     imports:
-    - yaml12
+      - yaml12
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - "*"
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   homepage: https://github.com/posit-dev/py-yaml12
@@ -58,8 +58,8 @@ about:
   documentation: https://posit-dev.github.io/py-yaml12/
   license: MIT
   license_file:
-  - LICENSE
-  - THIRDPARTY.yml
+    - LICENSE
+    - THIRDPARTY.yml
   summary: A modern YAML 1.2 parser and emitter for Python, written in Rust.
   description: |
     yaml12 is a YAML 1.2 parser/formatter for Python, implemented in Rust
@@ -72,8 +72,35 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-09T11:14:24Z'
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py-yaml12
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py-yaml12
+  cfe-purls:
+    - pkg:conda/py-yaml12@${{ version }}?channel=conda-forge
+    - pkg:pypi/py-yaml12@${{ version }}
+  cfe-upstream-repo: https://github.com/posit-dev/py-yaml12
+  cfe-upstream-homepage: https://posit-dev.github.io/py-yaml12/
+  cfe-import-names: [yaml12]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/py-yaml12-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T08:27:50Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+####
