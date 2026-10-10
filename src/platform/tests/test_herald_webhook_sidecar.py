@@ -25,6 +25,7 @@ _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 if str(_PLATFORM_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLATFORM_ROOT))
 
+import mcp_host.app as mcp_host_module  # noqa: E402
 from mcp_host.app import app as mcp_host_app  # noqa: E402
 
 _ON_SHIP_PATH = "/stations/herald/api/v1/webhooks/on-ship"
@@ -70,8 +71,10 @@ def _reset_herald_application_cache():
 
 @pytest.fixture(scope="module")
 def mcp_client():
-    with TestClient(mcp_host_app) as client:
-        yield client
+    # No lifespan: the webhook routes never touch the MCP apps, and entering the
+    # lifespan here would start mcp_host's module-global station apps a second
+    # time in test_mcp_host_sidecar.py (each session manager runs once per process).
+    return TestClient(mcp_host_app)
 
 
 def test_mcp_host_sidecar_webhook_signed_on_ship(
@@ -140,21 +143,23 @@ def test_mcp_host_sidecar_herald_absent_returns_404_json(
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "pyforge.herald" in response.json()["detail"]
     assert mcp_client.get("/health").status_code == HTTPStatus.OK
+    # The MCP routes still dispatch with herald absent. A stub stands in for the atlas
+    # app: the live one needs the lifespan this module never enters (see mcp_client).
+    reached: list[str] = []
+
+    async def _atlas_stub(scope, receive, send) -> None:
+        reached.append(scope["path"])
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"{}"})
+
+    monkeypatch.setitem(mcp_host_module._apps, "atlas", _atlas_stub)  # noqa: SLF001
     init = mcp_client.post(
         "/stations/atlas/mcp",
-        json={
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": "2025-06-18",
-                "capabilities": {},
-                "clientInfo": {"name": "t", "version": "0"},
-            },
-        },
+        json={"jsonrpc": "2.0", "id": 1, "method": "initialize"},
         headers={"content-type": "application/json"},
     )
-    assert init.status_code < HTTPStatus.INTERNAL_SERVER_ERROR
+    assert init.status_code == HTTPStatus.OK
+    assert reached
 
 
 def test_mcp_host_sidecar_missing_secret_503(
