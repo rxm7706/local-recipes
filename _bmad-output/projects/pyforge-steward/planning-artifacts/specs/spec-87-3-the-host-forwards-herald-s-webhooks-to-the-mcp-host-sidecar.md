@@ -2,9 +2,9 @@
 title: "87.3: The host forwards Herald's webhooks to the mcp-host sidecar"
 type: 'feature'
 created: '2026-10-10'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: '5f141b983ec9ed60127f0706c5d5e3a82e5198a3'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 flag:
   key: pyforge.steward.herald_webhook_sidecar
@@ -316,7 +316,18 @@ by the same ruling (its spec's banner).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Independent review, iteration 1: FAIL (3 high, 3 medium)
+
+Reviewed by a separate agent against this spec's intent-contract and ACs (not the implementer's summary). Every item below is open and must be fixed before the story returns to `in-review`; the operator's hand fixes already on this branch are noted under "resolved".
+
+- `[high]` `[patch]` **Dot-segment traversal into the sidecar's MCP faces.** `src/shared/packages/django-pyforge/src/django_pyforge/sidecar_forward.py` `is_herald_webhook_path` checks only the prefix of the decoded path, and `_sidecar_url` forwards it verbatim; httpx removes dot segments, so `/stations/herald/api/v1/webhooks/../../../../marshal/mcp` (or `%2e%2e`) reached the sidecar's unauthenticated `POST /stations/marshal/mcp`, bypassing the host's MCP assertion and rate limit. `%3F`/`%23` inject a query or fragment; `%0d%0a` gives a 502 plus a forged log line. Fix: forward only an exact allowlist of herald's webhook paths (or a suffix matching `^[A-Za-z0-9_-]+$`), refuse anything else under the prefix with 404, never forward a client query string the webhook does not use; regression tests for `..`, `%2e%2e`, `%3F`, `%0d%0a`.
+- `[high]` `[patch]` **`mcp-host-serve` cannot start (AC 10).** `pixi.toml` task sets `cwd = "src/platform"` but its `PYTHONPATH` entries are repo-root-relative, so `pixi run -e mcp-host mcp-host-serve` exits 1 (`ModuleNotFoundError: django_pyforge`) and nothing binds 127.0.0.1:8090. Fix: `$PIXI_PROJECT_ROOT/`-anchored entries (or paths relative to `src/platform`), and prove the bind + `/health` 200.
+- `[high]` `[patch]` **`environment.yaml` is corrupt.** Its first line is pixi's ANSI-coloured `WARN Using local manifest /home/...` (stderr captured), so `yaml.safe_load` fails and the environment-sync lint goes red; it also leaks a home path. Fix: regenerate with `pixi project export conda-environment -e build 2>/dev/null > environment.yaml` and check it equals the stdout-only export.
+- `[medium]` `[patch]` **Unbounded body read before any authentication.** `proxy_herald_webhook` calls `read_body(receive)` with no cap; herald in-process enforces 1,000,000 bytes. Fix: stop reading past herald's cap (and its message-count cap) and answer 413 without contacting the sidecar; test it.
+- `[medium]` `[patch]` **Tests do not prove ACs 4, 6, 7 and 14.** Forward tests call `dispatch_herald_webhook_forward` directly with httpx patched; nothing drives `config.asgi.application`, so deleting the `asgi.py` branch survives. Add tests through `config.asgi.application` (httpx `ASGITransport`) for: flag ON forwards (AC 4); flag OFF / URL unset reaches 87.1's behaviour (AC 6); `openapi.json` and a non-webhook herald route are never forwarded (AC 7). AC 3's herald-absent test should use a meta-path finder (so the exception carries the module name) instead of patching `importlib.import_module`.
+- `[low]` `[patch]` **Sidecar 404 can misreport.** `mcp_host/app.py` `except ModuleNotFoundError` also catches a missing transitive dependency of herald and reports herald as not installed; only treat `exc.name` under `pyforge.herald` as absent, re-raise otherwise.
+- resolved (operator hand fixes, commits `07a668d7ab`, `cc506e7a33`): the AC 15 mypy leg (typed `mcp_host.app` with starlette's ASGI types), and the full-suite hang (the webhook tests no longer enter the mcp-host lifespan, which runs once per process). `platform-ci-local -- --test` then exited 0.
+- accepted deviation: `src/platform/pyproject.toml` drops the `tests.test_mcp_host_sidecar` `arg-type` override; it existed only because `mcp_host.app` was untyped, and AGENTS.md asks to tighten an override when its module is touched.
 
 ## Auto Run Result
 
