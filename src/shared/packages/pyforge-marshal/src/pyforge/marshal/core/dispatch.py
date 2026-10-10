@@ -127,6 +127,8 @@ class DispatchJournalFacts:
     baseline_revision: str | None = None
     final_revision: str | None = None
     preserve_ref: str | None = None
+    # Story 87.5 (FR-234): annotated ``preserve/…/dispatch-<sha8>`` tag (short name), when the flag is on.
+    preserve_tag: str | None = None
     # Story 73.1 (CAP-281): the follow-up review marker this run's own launch INTENT carries, else ``None``
     # (a normal run). Every reader that re-gathers the run's merge facts takes the marker from here --
     # read off the INTENT, never re-derived from a spec the review itself rewrites.

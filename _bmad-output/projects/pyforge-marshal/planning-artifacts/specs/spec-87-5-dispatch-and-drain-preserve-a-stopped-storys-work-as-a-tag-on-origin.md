@@ -2,7 +2,8 @@
 title: "87.5: Dispatch and drain preserve a stopped story's work as a tag on origin"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '0b5a037749155ee12fcda4f4567a8faef6737115'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -89,8 +90,14 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Story 87.5 implemented (CAP-287 FR-234) — dispatch supervisor preserve tags behind `pyforge.marshal.preserve_refs`; drain fleet-cycle enrichment (MRS-DRAIN-020); `test_dispatch_preserve_tag.py`.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-09 bmad-build-auto: ACs covered by unit tests; harness-profile AC is structural (single supervisor path, no profile branch). Follow-up: none.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-marshal-test` 12112 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `spec_surface_reconcile.py` OK; memlog surface reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.

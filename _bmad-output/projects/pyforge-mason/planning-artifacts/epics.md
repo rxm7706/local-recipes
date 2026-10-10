@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-10-09"   # RE-STAMPED 2026-10-09 (night): Story 25.2 re-scoped to Wave A, Wave 0 and its four Track B pilots (operator ruling "Land 25.2 now, split rest"); Stories 25.4-25.12 minted under Epic 25 (25.4 a fix for the 14 Wave 0 leftovers; 25.5-25.12 eight Track B batches of 11-12 named recipes; spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves). Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Epic 28 / Story 28.1 minted (fix under spec-pyforge-mason CAP-16, no new CAP, no FR moves, no flag): the CFE-rebuild guard reads a SHA field whatever type YAML gives it. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2602,6 +2602,21 @@ A second operator ruling the same day: Story 25.2's first wave runs the new driv
 landing damaged, to repair them. So Story 25.3 also gains a `--repair` mode, and Story 25.2 gains a Wave 0 that runs it
 before any Track B wave. Wave 0 is the one place Story 25.2 touches Track A's sole-maintainer recipes.
 
+A third operator ruling, 2026-10-09 (night), the option "Land 25.2 now, split rest": "Re-scope 25.2 to Wave 0 + the
+pilots (14 leftovers recorded needs-review with reasons) and land it, so the repairs reach main. Mint 25.4+ for
+Track B in batch stories, each small enough for one dispatch." Story 25.2 is re-scoped (the note under it), and nine
+stories are added:
+- Story 25.4 takes Wave 0's 14 leftovers. It is a fix and carries no flag.
+- Stories 25.5 to 25.12 split the 92 v1-refresh recipes 25.2 did not refresh into eight batches of 11 or 12, each
+  recipe named. Each batch is one Track B wave through Story 25.3's driver and one dispatch. They are
+  `flag-exempt: recipe-build`.
+
+All nine depend on S-25.3 only and touch disjoint recipe directories, so they can run in any order. The HARD
+boundaries above hold for each. Each closes with its own `retro(cfe):` commit. Those commits all move the CFE version
+carriers, so a story that lands after another one's retro takes the next version when it merges `main`, as Stories
+21.1 to 21.5 did (v8.93.1 to v8.93.5). The 20 co-maintained feedstocks with no local mirror (Wave F) stay a recorded
+deferral, not a story, until the operator answers `docs/specs/feedstock-refresh.md` Track B Q2 (`<create_missing>`).
+
 ### Story 25.1: Track A's Wave H refreshes the sole-maintainer recipes the first waves missed
 
 As the maintainer of the sole-maintainer feedstocks,
@@ -2654,6 +2669,40 @@ Procedure and outcome:
   version nor build number, and no rebuild is needed: the source bytes and the parsed recipe are unchanged.
 - The other 46 hashed URLs elsewhere in `recipes/` are outside Wave 0.
 - Wave 0 is local only, like every wave: no push, PR, fork, issue or comment outside `rxm7706/local-recipes`.
+
+**Re-scope (2026-10-09, night; operator ruling "Land 25.2 now, split rest").** Story 25.2 lands with what its three
+passes on `dispatch/pyforge-mason/25.2` did, and the rest of Track B moves to Stories 25.4 to 25.12. This note narrows
+the Surface, Given, When, Then and And lines below; where they differ, this note holds. Story 25.2 now covers:
+- **Wave A, discovery.** The story spec records the live counts: 288 co-maintained feedstocks, 268 with a local recipe
+  and 20 without. Buckets: 96 v1-refresh, 162 v1-current, 8 v1-ahead, 2 other-non-pep440 and 20 no-local-recipe.
+- **Wave 0.** The run's manifest, written from the selection rule above, holds 78 recipes (79 was this note's
+  estimate). Each ends `repaired` (62), `already-clean` (2), `needs-review` (10) or `failed` (4), with the driver's
+  reason recorded in the story spec. The 14 leftovers are an accepted outcome of this story; Story 25.4 takes them.
+- **The four Track B pilots it refreshed**, each built green on linux-64 with its gate results recorded:
+  `assemblyai` 1.0.0 → 1.3.0, `bmad-method` 6.12.0 → 6.12.1, `cron-descriptor` 2.1.0 → 2.1.1 and `cssselect2` 0.9.0 →
+  0.10.1. The last two keep their v0 feedstock's `meta.yaml` (C1). The story spec records the G53 audit for all four.
+- **Its closing `retro(cfe):` commit**, with a CFE `CHANGELOG.md` semver entry (Rule 2).
+
+What moves out of Story 25.2:
+- The other 92 v1-refresh recipes go to Stories 25.5 to 25.12. Story 25.5 takes the six its dry-runs left
+  `needs-review`: `airflow-code-editor`, `avro`, `azure-monitor-opentelemetry-exporter`, `azure-storage-file-share`,
+  `billiard` and `cachetools`.
+- The 20 no-local-recipe feedstocks (Wave F) stay a recorded deferral until the operator answers Track B's Q2. A
+  mint-time read finds 18 of them declared as outputs of existing recipes, which Wave A's mapping did not resolve: the
+  16 `dbgpt-*` of `recipes/db-gpt`, and `langflow-base` and `langflow-sdk` of `recipes/langflow`. That leaves
+  `dbt-snowflake` and `zxing-cpp-python`.
+- v1-current (162), v1-ahead (8) and other-non-pep440 (2) need no refresh.
+
+This note does not edit the branch's story spec, which picks the re-scope up when it next merges `main`, as with the
+Deps note. That spec's four `deferred:` rows map onto the split:
+- the 14 Wave 0 leftovers → Story 25.4;
+- `billiard` and `cachetools` → Story 25.5;
+- the v1-refresh queue → Stories 25.5 to 25.12;
+- the 20 missing mirrors → the Wave F deferral.
+
+25.2's acceptance now comes to five things: the Wave A counts; Wave 0's per-recipe outcomes; the four pilots at their
+published version, with gates, a linux-64 build and the G53 audit; the `retro(cfe):` commit; and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` green. Its ledger key stays, under Epic 25.
 
 **Surface:** `recipes/<name>/` for each co-maintained feedstock in the live scope, including new mirrors, and Wave 0's
 79 recipes; the CFE retro surface, committed alone as `retro(cfe): …`.
@@ -2724,6 +2773,262 @@ defects:
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
 
 **Status:** done
+
+### Story 25.4: Wave 0's leftover recipes end repaired or carry a recorded reason
+
+As the maintainer of the sole-maintainer recipes Story 25.1's landing damaged,
+I want the 14 recipes Wave 0 could not repair either repaired or recorded with a reason deeper than the driver's,
+So that Wave 0 finishes, and each refusal that comes from the driver becomes a recorded gap rather than a mystery.
+
+**Type:** fix • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no new CAP,
+so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2; CFE G52, G62, G92, G95 • no flag (a fix)
+**Recipes (14):** failed: `microsoft-agents-m365copilot`, `py-yaml12`, `py3langid`, `solvor`; needs-review:
+`django-csvimport`, `django-grpc`, `django-lasuite`, `pixitainer`, `django-weasyprint`, `robocorp-storage`,
+`robocorp-vault`, `wagtail-autocomplete`, `wagtail-json-widget`, `wagtailtables`. None carries a CFE metadata block,
+and the driver's checks require exactly one. Six also lack `extra.cfe-upstream-name`, so the URL repair cannot name
+their PyPI project.
+**Surface:** `recipes/<name>/` for these 14 only; the CFE retro surface, committed alone as `retro(cfe): …`; and the
+station deferred-work ledger row from 25.2's Wave 0 deferral, if it is there.
+**Spec:** `planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md`
+**Given** Story 25.2's Wave 0 left these 14 `needs-review` or `failed` on 2026-10-09, and the operator re-scoped 25.2 to
+land with them recorded
+**When** the story stamps each missing CFE metadata block through conda-forge-expert (G92), with no version,
+requirement or maintainer change, and re-runs `refresh-wave --repair` for the 14, as a dry-run and then
+`--apply --gates`
+**Then** each recipe ends `repaired` or `already-clean`, or stays `needs-review` with a reason deeper than Wave 0's.
+Each one's `cfe-local-build-*` fields record a real linux-64 build or `not-attempted` with the reason
+**And** the four driver gaps read at mint, and any it finds, are filed as `deferred:` rows naming `refresh_wave.py`,
+without changing the driver. Nothing leaves the local repo. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver
+entry, and `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.5: Track B batch 1 refreshes airflow-code-editor through django-countries
+
+As a co-maintainer of these 12 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (12):** `airflow-code-editor`, `avro`, `azure-monitor-opentelemetry-exporter`, `azure-storage-file-share`,
+`billiard`, `cachetools`, `dbt-bigquery`, `dbt-core`, `django-allauth`, `django-anymail`, `django-bootstrap5`,
+`django-countries`.
+Six arrive with Story 25.2's dry-run reasons: `airflow-code-editor` and `avro` (`url-unrenderable`),
+`azure-monitor-opentelemetry-exporter`, `azure-storage-file-share` and `billiard` (`no-cfe-block`), and `cachetools`
+(`dependency-fix`). `billiard` and `cachetools` are deferred from 25.2's wave B2.
+**Surface:** `recipes/<dir>/` for these 12 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries.md`
+**Given** Story 25.2's Wave A put these 12 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.6: Track B batch 2 refreshes django-fsm-log through import-linter
+
+As a co-maintainer of these 12 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (12):** `django-fsm-log`, `django-mptt-admin`, `django-silk`, `drf-spectacular-sidecar`, `fastmcp`,
+`fastmcp-slim`, `google-cloud-iam`, `grafana-client`, `graphifyy`, `grimp`, `headroom-ai`, `import-linter`.
+Four move a major version: `fastmcp` and `fastmcp-slim` (kept at one version), `django-fsm-log` and `django-mptt-admin`.
+**Surface:** `recipes/<dir>/` for these 12 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-6-track-b-batch-2-refreshes-django-fsm-log-through-import-linter.md`
+**Given** Story 25.2's Wave A put these 12 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.7: Track B batch 3 refreshes jhub-apps through niquests
+
+As a co-maintainer of these 11 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (11):** `jhub-apps`, `json5`, `kedro-dagster`, `kedro-viz`, `langchain-litellm`, `langflow`, `lfx`, `llm`,
+`milvus-lite`, `modelsearch`, `niquests`.
+`recipes/langflow` is the multi-output `langflow-suite`; it also builds `lfx`, and its three patches stay.
+**Surface:** `recipes/<dir>/` for these 11 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md`
+**Given** Story 25.2's Wave A put these 11 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.8: Track B batch 4 refreshes ocrmypdf through pysqlite3
+
+As a co-maintainer of these 11 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (11):** `ocrmypdf`, `office2pdf`, `openlineage-airflow`, `openlineage-dbt`, `openlineage-integration-common`,
+`openlineage-python`, `openlineage-sql`, `openllm`, `pillow-heif`, `pyobjc-framework-coretext`, `pysqlite3`.
+The five `openlineage-*` recipes move together. `pyobjc-framework-coretext` builds only on osx, so its linux-64 build is
+`not-attempted` with that reason.
+**Surface:** `recipes/<dir>/` for these 11 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-8-track-b-batch-4-refreshes-ocrmypdf-through-pysqlite3.md`
+**Given** Story 25.2's Wave A put these 11 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.9: Track B batch 5 refreshes redshift_connector through zxing-cpp
+
+As a co-maintainer of these 11 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (11):** `redshift_connector`, `robocorp-workitems`, `selectolax`, `sentry-sdk`, `stringzilla`, `tox`,
+`tree-sitter-php`, `tree-sitter-swift`, `vlmrun`, `wagtail`, `zxing-cpp`.
+`stringzilla` lives in `recipes/StringZilla/`. `tree-sitter-swift`'s `${{ tag }}` URL is deliberate and stays.
+**Surface:** `recipes/<dir>/` for these 11 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-9-track-b-batch-5-refreshes-redshift-connector-through-zxing-cpp.md`
+**Given** Story 25.2's Wave A put these 11 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.10: Track B batch 6 refreshes OpenTelemetry's core packages and exporters
+
+As a co-maintainer of these 12 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (12):** `opentelemetry-api`, `opentelemetry-exporter-otlp-proto-common`,
+`opentelemetry-exporter-otlp-proto-http`, `opentelemetry-exporter-prometheus`, `opentelemetry-exporter-zipkin`,
+`opentelemetry-exporter-zipkin-json`, `opentelemetry-exporter-zipkin-proto-http`, `opentelemetry-propagator-jaeger`,
+`opentelemetry-proto`, `opentelemetry-sdk`, `opentelemetry-semantic-conventions`, `opentelemetry-util-http`.
+29 of the family's 35 recipes pin a sibling at a literal old version, which the driver does not report; the story moves
+every such pin to the feedstock's.
+**Surface:** `recipes/<dir>/` for these 12 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-10-track-b-batch-6-refreshes-opentelemetry-s-core-packages-and-exporters.md`
+**Given** Story 25.2's Wave A put these 12 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.11: Track B batch 7 refreshes OpenTelemetry instrumentation from distro through httpx
+
+As a co-maintainer of these 12 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (12):** `opentelemetry-distro`, `opentelemetry-instrumentation`, `opentelemetry-instrumentation-aiopg`,
+`opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-botocore`, `opentelemetry-instrumentation-celery`,
+`opentelemetry-instrumentation-dbapi`, `opentelemetry-instrumentation-django`, `opentelemetry-instrumentation-falcon`,
+`opentelemetry-instrumentation-flask`, `opentelemetry-instrumentation-grpc`, `opentelemetry-instrumentation-httpx`.
+Every recipe here pins a sibling at a literal `0.65b0`; the story moves each pin to the feedstock's.
+**Surface:** `recipes/<dir>/` for these 12 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-11-track-b-batch-7-refreshes-opentelemetry-instrumentation-from-distro-through-httpx.md`
+**Given** Story 25.2's Wave A put these 12 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
+
+### Story 25.12: Track B batch 8 refreshes OpenTelemetry instrumentation from mysql through wsgi
+
+As a co-maintainer of these 11 feedstocks,
+I want each local recipe at its feedstock's published version, with every other maintainer's work kept,
+So that one dispatch finishes the batch and Track B moves forward in steps that land.
+
+**Type:** feature • **Effort:** M • **Deps:** S-25.3 • **FR/AD:** spec-pyforge-mason CAP-35 (FR-57), CAP-20, CAP-23 (no
+new
+CAP, so no FR moves); AD-1; AD-15; CFE Rule 1 + Rule 2 + Rule 3; CFE G52, G53, G92, G95, G96 • `flag-exempt:
+recipe-build`
+**Recipes (11):** `opentelemetry-instrumentation-mysql`, `opentelemetry-instrumentation-psycopg2`,
+`opentelemetry-instrumentation-pymongo`, `opentelemetry-instrumentation-pyramid`,
+`opentelemetry-instrumentation-requests`, `opentelemetry-instrumentation-sqlalchemy`,
+`opentelemetry-instrumentation-sqlite3`, `opentelemetry-instrumentation-system-metrics`,
+`opentelemetry-instrumentation-tornado`, `opentelemetry-instrumentation-urllib3`, `opentelemetry-instrumentation-wsgi`.
+Every recipe here pins a sibling at a literal `0.65b0`; the story moves each pin to the feedstock's.
+**Surface:** `recipes/<dir>/` for these 11 only; the CFE retro surface, committed alone as `retro(cfe): …`.
+**Spec:** `planning-artifacts/specs/spec-25-12-track-b-batch-8-refreshes-opentelemetry-instrumentation-from-mysql-through-wsgi.md`
+**Given** Story 25.2's Wave A put these 11 in the v1-refresh bucket on 2026-10-09, and Story 25.3's driver is on `main`
+**When** the story runs them as one Track B wave through `refresh-wave`: a dry-run first, a CFE fix in the recipe for
+each refusal it can clear, then `--apply --gates --build`
+**Then** each recipe ends `refreshed` (its published version, with a green linux-64 build or a recorded G95 block or
+`not-attempted` reason), `already-current`, or `needs-review` with its reason recorded. Every refreshed recipe's
+`recipe-maintainers` is a superset of the deployed feedstock's (G53), and its pins match the feedstock's (G96)
+**And** a deliberate maintainer choice is kept and parked in the CFE comments block. Nothing leaves the local repo: no
+push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
+CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
+`pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
+**Status:** backlog
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 
@@ -2801,6 +3106,53 @@ So that each row closes on the line that fixed it and the ledger keeps only what
 **When** each CFE row is fixed with a test and the campaign records are corrected with dated notes
 **Then** the failure catalog's signatures diagnose, it carries `schema_version: 1`, its check resolves every spelling of a check code and tells drift from a broken generator by exit code, the cheatsheet names `test-ci`, and the campaign's resume header says the campaign is closed
 **And** every CFE-surface edit lands in one commit whose subject starts `retro(cfe):` with a CFE `CHANGELOG.md` semver entry; each row closes with a `resolution:` naming this story and a `verified:` line citing the line that fixed it (or, for a surface Story 15.1 retired, the line that records it); `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+
+## Epic 28: The CFE-rebuild guard reads a SHA field whatever type YAML gives it (spec-pyforge-mason CAP-16)
+
+Minted 2026-10-09 from the station Dream's entry of the same name, on the operator's ruling of that day ("yes mint both
+stories and keep going"). `scripts/cfe_rebuild_guard_check.py` is CAP-16's detector. Its own epics are done: Epic 6
+(Story 6.2, clauses (a) to (c)) and Epic 12 (Story 12.4, clause (d)). Story 27.1 added clause (b') under CAP-16. A fix
+story on a done epic breaks the ledger detectors, so this new epic carries the fix.
+**HARD boundaries:**
+- 28.1 touches only `scripts/cfe_rebuild_guard_check.py` and `tests/scripts/test_cfe_rebuild_guard_check.py`.
+- The guard is repo tooling, not the CFE surface: no `retro(cfe):` commit and no CFE `CHANGELOG.md` entry.
+- No `src/shared/packages/pyforge-mason/`, `campaign-state.yaml`, `pixi.toml`, `pixi.lock` or `recipes/**` file
+  changes.
+- 28.1 is a fix and carries no flag (`spec-feature-flag-governance` CAP-1, Q1).
+
+### Story 28.1: The rebuild guard reads a SHA field whatever type YAML gives it
+
+As the maintainer whose PR runs the `scripts-suite` job,
+I want the CFE-rebuild guard to read a SHA the same way whether YAML loaded it as a string or a number,
+So that a brief that names its retro never gets a false `brief-defect`, and the guard's own test never flakes.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-16 (no new CAP; a fix carries no
+flag, `spec-feature-flag-governance` Q1); AD-1; AD-15
+**Surface:** `scripts/cfe_rebuild_guard_check.py` and `tests/scripts/test_cfe_rebuild_guard_check.py`. No CFE-surface
+path, and no Mason package path.
+**Spec:** `planning-artifacts/specs/spec-28-1-the-rebuild-guard-reads-a-sha-field-whatever-type-yaml-gives-it.md`
+**Given** PyYAML's `safe_load` reads an unquoted all-digit SHA prefix (`commit: 4139357790`) as an `int`, and
+`_amendment_sha_tokens` keeps only `str` values. PR #2031's `scripts-suite` job failed
+`test_brief_must_name_every_retro_at_or_older_than_the_pointer` that way (Detectors run 37990293221), and it fails
+whenever the older retro's 10-character prefix is all digits and loads as an int (all-digit prefixes come up in about
+0.9% of runs).
+**When** the guard reads every SHA from YAML through one reader, and compares every pair of SHAs with one rule.
+**Then:**
+- An int-loaded SHA field or list item (never a `bool`) matches exactly like a string one. A decimal int reads as its
+  decimal string. An octal- or binary-shaped token (`0123456701`, `0b10110101`), which PyYAML loads as `21913025` and
+  `181`, reads as written.
+- A bool, float or null is never a SHA.
+- `brief_mirrored_through` is read the same way in clauses (b) and (b').
+- Two hex tokens of at least ten characters name the same commit when one is a prefix of the other, so clause (b)'s
+  own remedy, a 10-character prefix, clears its finding.
+
+**And:**
+- Deterministic tests pin each form with fixed SHAs and no commits.
+- The existing test passes unchanged for any SHA, and each new test fails against `origin/main`'s script first.
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` and `pixi run --frozen -e pyforge-mason
+  pyforge-mason-test` are green.
+
+**Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 

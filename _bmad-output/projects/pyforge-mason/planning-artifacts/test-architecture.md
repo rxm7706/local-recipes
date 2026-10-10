@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 957a7a00abd371f5
-story_count: 96
+source_fingerprint: 903737d117b5a29a
+story_count: 106
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 96
-- **Epics parsed:** 27
+- **Stories parsed:** 106
+- **Epics parsed:** 28
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `957a7a00abd371f5`
+- **Source fingerprint:** `903737d117b5a29a`
 
 ## Risk Assessment
 
@@ -60,6 +60,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 25: The feedstock refresh campaign is Mason's: every feedstock rxm7706 can modify has a local recipe at its published version (spec-pyforge-mason CAP-35)
 - Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 - Epic 27: Phase 4+5 of the deferral burn-down: mason's open medium and low deferrals
+- Epic 28: The CFE-rebuild guard reads a SHA field whatever type YAML gives it (spec-pyforge-mason CAP-16)
 
 ### Low-risk epics
 
@@ -210,9 +211,19 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.1 | Track A's Wave H refreshes the sole-maintainer recipes the first waves missed | none observed |
 | 25.2 | Track B refreshes the co-maintained recipes and keeps every other maintainer'... | none observed |
 | 25.3 | CFE gains a tracked bulk recipe-refresh driver that the refresh waves run thr... | none observed |
+| 25.4 | Wave 0's leftover recipes end repaired or carry a recorded reason | none observed |
+| 25.5 | Track B batch 1 refreshes airflow-code-editor through django-countries | none observed |
+| 25.6 | Track B batch 2 refreshes django-fsm-log through import-linter | none observed |
+| 25.7 | Track B batch 3 refreshes jhub-apps through niquests | none observed |
+| 25.8 | Track B batch 4 refreshes ocrmypdf through pysqlite3 | none observed |
+| 25.9 | Track B batch 5 refreshes redshift_connector through zxing-cpp | none observed |
+| 25.10 | Track B batch 6 refreshes OpenTelemetry's core packages and exporters | none observed |
+| 25.11 | Track B batch 7 refreshes OpenTelemetry instrumentation from distro through h... | none observed |
+| 25.12 | Track B batch 8 refreshes OpenTelemetry instrumentation from mysql through wsgi | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |
+| 28.1 | The rebuild guard reads a SHA field whatever type YAML gives it | none observed |
 
 ## Quality Gates
 

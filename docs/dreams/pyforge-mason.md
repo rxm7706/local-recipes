@@ -515,6 +515,64 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   **Constraints:** local only, like every wave: no push, PR, fork, issue or comment outside `rxm7706/local-recipes`.
   Wave 0 is the one place Story 25.2 touches Track A's recipes. Owner: mason (no new CAP). → Story 25.3's repair mode
   and Story 25.2's Wave 0, specced 2026-10-09.
+- **2026-10-09 — Ruled: the CFE-rebuild guard reads a SHA field whatever type YAML gives it.** Operator ruling,
+  2026-10-09 ("yes mint both stories and keep going"). On PR #2031 the `scripts-suite` job failed
+  `test_brief_must_name_every_retro_at_or_older_than_the_pointer` (Detectors run 37990293221). The guard reported a
+  `brief-defect` for a brief that does name its retro: `has no retro-mirror amendment naming 4139357790`. PyYAML's
+  `safe_load` reads an unquoted all-digit token such as `commit: 4139357790` as an `int`, and
+  `scripts/cfe_rebuild_guard_check.py` keeps only `str` values as SHA candidates. The test makes real commits, so it
+  fails whenever the older retro's 10-character prefix is all digits and loads as an int. All-digit prefixes come up in
+  (10/16)^10 of runs, about 0.9%, and most of them load as an int. A brief written by hand hits the same false finding.
+  Checked the same day against PyYAML 6.0.3:
+  - `0123456789` stays a string. A leading `0` followed only by the digits 0 to 7 (`0123456701`) loads as an octal
+    `int`, and `0b` followed by 0s and 1s (`0b10110101`) loads as a binary one. The value's decimal string matches
+    neither.
+  - An `int` `brief_mirrored_through` is skipped by the brief check, and the history check reports it
+    `unmirrored-retro` even when it names the newest retro.
+  - The history check compares the pointer to the newest retro by full-SHA equality, but its own remedy says to set a
+    10-character prefix, so following the remedy keeps the finding.
+
+  **What it looks like when real:** every SHA the guard reads from YAML is read as the scalar was written, whether
+  YAML loaded it as a string or an int. That covers a `retro-mirror` amendment's fields and list items, and a slice's
+  `brief_mirrored_through`. A bool, float or null is never a SHA. Every SHA comparison uses one rule: two hex tokens
+  of at least ten characters name the same commit when one is a prefix of the other. Deterministic tests pin each form
+  without making commits. **Constraints:** a `fix` story under CAP-16, with no new CAP and no flag
+  (`spec-feature-flag-governance` Q1). It touches only the guard script and its test. That script is repo tooling, not
+  the CFE surface, so the story has no `retro(cfe):` commit. A new Epic 28 carries it, because Epics 6 and 12, the
+  guard's own epics, are done. Owner: mason. → `spec-pyforge-mason` CAP-16 / Epic 28 / Story 28.1, specced
+  2026-10-09.
+- **2026-10-09 (night) — Ruled: Story 25.2 lands with Wave 0 and its pilots, and Track B continues in batch
+  stories.** Operator ruling, 2026-10-09, the option "Land 25.2 now, split rest": "Re-scope 25.2 to Wave 0 + the
+  pilots (14 leftovers recorded needs-review with reasons) and land it, so the repairs reach main. Mint 25.4+ for
+  Track B in batch stories, each small enough for one dispatch." Story 25.2's three passes on
+  `dispatch/pyforge-mason/25.2` stopped `blocked` with this record:
+  - Wave A counted 288 co-maintained feedstocks live: 268 with a local recipe and 20 without. 96 are behind their
+    feedstock's published version (the v1-refresh bucket).
+  - Wave 0 ran `refresh-wave --repair --apply --gates` over a 78-recipe manifest: 62 repaired, 2 already clean, 10
+    needs-review and 4 failed. None of the 14 leftovers carries a CFE metadata block, and the driver's checks require
+    exactly one.
+  - Four Track B pilots were refreshed and built green on linux-64: assemblyai 1.0.0 → 1.3.0, bmad-method 6.12.0 →
+    6.12.1, cron-descriptor 2.1.0 → 2.1.1 and cssselect2 0.9.0 → 0.10.1. Two dry-runs left six more needs-review:
+    airflow-code-editor, avro, azure-monitor-opentelemetry-exporter, azure-storage-file-share, billiard and
+    cachetools.
+
+  That leaves 92 v1-refresh recipes. Reading the driver at mint found four gaps behind its refusals:
+  - It renders only a bare `${{ var }}`, so a `${{ name[0] }}` URL is refused.
+  - It calls a URL templated through a `context` variable derived from the version "version-baked".
+  - Its repair check reports "count changed" for a recipe that has no CFE block at all.
+  - It compares dependency names, never an uncommented version pin. That matters for the OpenTelemetry family's exact
+    pins on one another.
+  **What it looks like when real:** Story 25.2 lands with Wave A, Wave 0, the four pilots and its 14 leftovers
+  recorded with reasons, so Wave 0's 62 repairs reach `main`. Story 25.4 takes the 14 leftovers: it stamps each missing
+  CFE block, re-runs the repair, and records the four driver gaps. Stories 25.5 to 25.12 split the 92 into eight
+  batches of 11 or 12 named recipes. Each batch is one wave through the driver and one dispatch, and clears in the
+  recipe, through `conda-forge-expert`, any refusal it can. The 20 missing mirrors (Wave F) stay a recorded deferral,
+  because Track B's Q2 (`<create_missing>`) has no ruling. A mint-time read finds 18 of them are outputs of
+  `recipes/db-gpt` and `recipes/langflow`, so Wave F may be two recipes, not 20.
+  **Constraints:** every Epic 25 line stands. The work stays local, goes through `conda-forge-expert`, keeps each
+  maintainer list a superset of the deployed one (G53), ends each recipe with a linux-64 build or a recorded reason,
+  and closes each story with its own `retro(cfe):` commit. No new CAP. Owner: mason. → Epic 25 / Story 25.2
+  re-scoped and Stories 25.4 to 25.12, specced 2026-10-09.
 
 ## One-chain fold — 2026-09-17
 

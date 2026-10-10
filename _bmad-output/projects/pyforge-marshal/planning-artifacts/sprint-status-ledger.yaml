@@ -430,7 +430,7 @@ development_status:
   86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: done
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: done
   86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: done
-  87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
+  87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: done
   87-10-merged-check-objects-never-enter-the-object-store: done
   87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild: done
   87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list: backlog
@@ -440,11 +440,11 @@ development_status:
   87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: backlog
   87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: done
   87-3-preserved-work-has-one-grammar-and-one-verb: done
-  87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: backlog
-  87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin: backlog
+  87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: done
+  87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin: done
   87-6-land-retire-and-the-station-branch-never-fight-the-protected-list: done
   87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: backlog
-  87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: backlog
+  87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: done
   87-9-every-preserve-reader-sees-preserve-tags-and-origin: done
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done

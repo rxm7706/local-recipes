@@ -1234,6 +1234,86 @@ def _latest_story_run_dir(fs: FsPort, repo_root: Path, slug: str, story_key: str
     return None
 
 
+def story_dispatch_preserve_tag(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> str | None:
+    """Story 87.5: the ``preserve_tag`` from this story's latest dispatch run, if any."""
+    run_dir = _latest_story_run_dir(fs, repo_root, slug, story_key)
+    if run_dir is None:
+        return None
+    return gather_dispatch_journal_facts(fs, run_dir, run_dir.name).preserve_tag
+
+
+def _fleet_cycle_preserve_tag_for_story(
+    *,
+    fs: FsPort,
+    repo_root: Path,
+    slug: str,
+    story: str,
+    findings: list[Finding],
+) -> str | None:
+    from ..core.dispatch_preserve import preserve_refs_flag_on
+
+    if not preserve_refs_flag_on():
+        return None
+    tag = story_dispatch_preserve_tag(fs, repo_root, slug, story)
+    if tag is None:
+        findings.append(
+            Finding(
+                code="MRS-DRAIN-020",
+                severity=Severity.WARN,
+                message=(f"station {slug!r}: story {story!r} has no dispatch preserve tag in its latest run journal"),
+            )
+        )
+    return tag
+
+
+def _enrich_fleet_cycle_preserve_tags(
+    *,
+    fs: FsPort,
+    repo_root: Path,
+    results: list[dispatch_fleet.StationCycleResult],
+    findings: list[Finding],
+) -> list[dispatch_fleet.StationCycleResult]:
+    from ..core.dispatch_preserve import preserve_refs_flag_on
+
+    if not preserve_refs_flag_on():
+        return results
+    enriched: list[dispatch_fleet.StationCycleResult] = []
+    for result in results:
+        if result.status not in dispatch_fleet.FLEET_CYCLE_PRESERVE_STATUSES:
+            enriched.append(result)
+            continue
+        preserve_tag: str | None = None
+        if result.story is not None:
+            preserve_tag = _fleet_cycle_preserve_tag_for_story(
+                fs=fs,
+                repo_root=repo_root,
+                slug=result.slug,
+                story=result.story,
+                findings=findings,
+            )
+        new_members: list[dispatch_fleet.MemberOutcome] = []
+        for member in result.members:
+            if member.status not in dispatch_fleet.FLEET_CYCLE_PRESERVE_STATUSES:
+                new_members.append(member)
+                continue
+            member_tag = _fleet_cycle_preserve_tag_for_story(
+                fs=fs,
+                repo_root=repo_root,
+                slug=result.slug,
+                story=member.story,
+                findings=findings,
+            )
+            new_members.append(replace(member, preserve_tag=member_tag))
+        enriched.append(
+            replace(
+                result,
+                preserve_tag=preserve_tag,
+                members=tuple(new_members) if new_members else result.members,
+            )
+        )
+    return enriched
+
+
 def _latest_story_followup_review(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> FollowupReview | None:
     """Story 73.1 (CAP-281): the follow-up review marker of the story's latest dispatch run, or ``None``.
 
@@ -1545,6 +1625,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     baseline_revision: str | None = None
     final_revision: str | None = None
     preserve_ref: str | None = None
+    preserve_tag: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_TIMING):
         if entry.phase == Phase.OUTCOME:
             raw_started = entry.payload.get("story_started_at")
@@ -1564,6 +1645,9 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             raw_ref = entry.payload.get("preserve_ref")
             if isinstance(raw_ref, str):
                 preserve_ref = raw_ref
+            raw_tag = entry.payload.get("preserve_tag")
+            if isinstance(raw_tag, str):
+                preserve_tag = raw_tag
     if baseline_revision is None and baseline_head_sha is not None:
         baseline_revision = baseline_head_sha
     if story_started_at is None and launched_at is not None:
@@ -1593,6 +1677,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         baseline_revision=baseline_revision,
         final_revision=final_revision,
         preserve_ref=preserve_ref,
+        preserve_tag=preserve_tag,
         verify_fix_session_pid=in_flight_fix.session_pid if in_flight_fix is not None else None,
         verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
     )
@@ -5495,6 +5580,7 @@ def execute_fleet_cycle(
             )
         )
 
+    results = _enrich_fleet_cycle_preserve_tags(fs=fs, repo_root=repo_root, results=results, findings=findings)
     unresolved = dispatch_fleet.unresolved_stations(results)
     data: dict[str, object] = {
         "mode": mode.value,

@@ -58,6 +58,9 @@ Usage:
       # the dated Tier-3 record of a sweep (bmad-drift classifies it `local:sweep-verdicts`)
   python scripts/worktree_sweep.py --execute       # apply DELETE / PRESERVE-THEN-DELETE / D-W-K-B
   python scripts/worktree_sweep.py --execute --delete-merged-local-branches --prune-home-remotes
+  python scripts/worktree_sweep.py --remote              # dry run: verdict per origin branch
+  python scripts/worktree_sweep.py --remote --execute    # delete DELETE verdicts on origin (manifest first)
+  python scripts/worktree_sweep.py --retire branch/name  # explicit-name retirement (never patterns)
 """
 from __future__ import annotations
 
@@ -69,14 +72,35 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass, field
+from collections.abc import Callable
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Protocol
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+_CORE_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-core" / "src"
+if str(_CORE_SRC) not in sys.path:
+    sys.path.insert(0, str(_CORE_SRC))
+if str(REPO_ROOT / "scripts") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+
+import _protected_refs_ruleset_lib as pr_rules
+from pyforge.core import preserve_refs
+from pyforge.core.flags import read_boolean
+
+PRESERVE_REFS_FLAG = "pyforge.marshal.preserve_refs"
 # Marshal Story 61.1 (review 3): `main` by its full refname -- a stray tag `main` on a feature
 # commit made that feature read as merged, its worktree swept and its branch deleted.
 MAIN_REF = "refs/heads/main"
+ORIGIN_MAIN_REF = preserve_refs.ORIGIN_MAIN
+ROSTER_PATH = REPO_ROOT / "docs" / "governance" / "guild-roster.json"
+PROTECTED_CODE_FLOOR = frozenset({"refs/heads/main", "refs/heads/loop/", "refs/tags/"})
+RULESET_OPERATOR_ACT = (
+    "Protected refs are not deleted from an agent session — hand the operator the branch "
+    "to retire, and remove a loop home only after an explicit operator decision."
+)
 HOME = Path.home()
 LOOP_HOMES_ROOT = HOME / ".bmad-loops"
 DEFAULT_PRESERVE_DIR = HOME / ".local" / "state" / "pyforge-marshal" / "worktree-preserve"
@@ -140,6 +164,43 @@ class OrphanDir:
     empty: bool
     verdict: str = ""
     reason: str = ""
+
+
+@dataclass
+class EngineScratchRow:
+    refname: str
+    commit: str
+    verdict: str
+    reason: str = ""
+
+
+@dataclass
+class PreserveToTagOutcome:
+    refname: str
+    pushed: bool
+    debt: str = ""
+
+
+def _flags_path() -> Path:
+    return REPO_ROOT / "src/platform/config/flags.json"
+
+
+def preserve_refs_flag_on() -> bool:
+    return read_boolean(PRESERVE_REFS_FLAG, default=False, flags_path=_flags_path())
+
+
+def _feed_story_key(story_key: str | None) -> str | None:
+    if not story_key:
+        return None
+    m = re.match(r"^(\d+)-(\d+)([a-z])?$", story_key)
+    if m:
+        suffix = m.group(3) or ""
+        return f"{m.group(1)}.{m.group(2)}{suffix}"
+    return story_key
+
+
+def _project_slug(station: str | None) -> str | None:
+    return f"pyforge-{station}" if station else None
 
 
 # ---------------------------------------------------------------- discovery
@@ -462,6 +523,125 @@ def preserve(wt: Worktree, preserve_dir: Path) -> Path:
     return dest
 
 
+def preserve_worktree_as_tag(wt: Worktree) -> PreserveToTagOutcome:
+    """Write a local ``sweep`` preserve tag (and try push) before worktree removal."""
+    p = Path(wt.path)
+    commit: str | None = None
+    try:
+        commit = preserve_refs.snapshot_worktree_commit(p)
+    except preserve_refs.PreserveGitError:
+        commit = None
+    if commit is None:
+        head, rc = _git("rev-parse", "HEAD", cwd=p)
+        if rc != 0:
+            raise preserve_refs.PreserveGitError(f"cannot read HEAD in {wt.path}")
+        commit = head
+    project = _project_slug(wt.station)
+    story = _feed_story_key(wt.story_key)
+    refname = preserve_refs.render_preserve_ref(
+        commit_sha=commit,
+        producer="sweep",
+        project_slug=project,
+        story_key=story,
+    )
+    source = preserve_refs.normalize_ref(wt.branch)
+    trailers = preserve_refs.PreserveTrailers(
+        producer="sweep",
+        provenance="machine",
+        reason=wt.reason or "worktree-sweep PRESERVE-THEN-DELETE",
+        source=source,
+        run="",
+        journal="",
+        commit=commit,
+    )
+    tagged = preserve_refs.tag_preserve(REPO_ROOT, refname=refname, commit=commit, trailers=trailers)
+    pushed = False
+    debt = ""
+    purge_path = preserve_refs.default_purge_list_path(REPO_ROOT)
+    try:
+        push_result = preserve_refs.push_preserve_ref(REPO_ROOT, tagged.refname, purge_list_path=purge_path)
+        pushed = push_result.pushed
+        if not pushed:
+            debt = "; ".join(f.message for f in push_result.findings) or "content gate refused push"
+    except preserve_refs.PreserveGitError as exc:
+        debt = str(exc)
+    return PreserveToTagOutcome(refname=tagged.refname, pushed=pushed, debt=debt)
+
+
+def _iter_engine_scratch_refs() -> list[tuple[str, str]]:
+    fmt = "%(refname)\x1f%(objectname)"
+    out, rc = _git(
+        "for-each-ref",
+        f"--format={fmt}",
+        f"refs/heads/{preserve_refs.ATTEMPT_PRESERVE_BRANCH_PREFIX}",
+        preserve_refs.ATTEMPT_PRESERVE_DIRTY_PREFIX,
+    )
+    if rc != 0:
+        return []
+    refs: list[tuple[str, str]] = []
+    for line in out.splitlines():
+        if "\x1f" not in line:
+            continue
+        refname, commit = line.split("\x1f", 1)
+        refname, commit = refname.strip(), commit.strip()
+        if refname and commit:
+            refs.append((refname, commit))
+    return sorted(refs)
+
+
+def _engine_scratch_promoted(refname: str, commit: str) -> bool:
+    want = preserve_refs.normalize_ref(refname)
+    short = preserve_refs.short_ref_name(want)
+    for rec in preserve_refs.list_preserves(REPO_ROOT):
+        src = rec.trailers.source
+        if src not in (want, short, refname, preserve_refs.short_ref_name(refname)):
+            continue
+        _, rc = _git("merge-base", "--is-ancestor", commit, rec.object_sha)
+        if rc == 0:
+            return True
+    return False
+
+
+def verdict_for_engine_scratch(refname: str, commit: str) -> tuple[str, str]:
+    if not preserve_refs_flag_on():
+        return "KEEP", "engine scratch (flag off)"
+    if _engine_scratch_promoted(refname, commit):
+        return "DELETE", "promoted engine scratch"
+    return "KEEP", "unpromoted scratch"
+
+
+def classify_engine_scratch_refs() -> list[EngineScratchRow]:
+    rows: list[EngineScratchRow] = []
+    for refname, commit in _iter_engine_scratch_refs():
+        verdict, reason = verdict_for_engine_scratch(refname, commit)
+        rows.append(EngineScratchRow(refname=refname, commit=commit, verdict=verdict, reason=reason))
+    return rows
+
+
+def _delete_local_ref(refname: str) -> bool:
+    if refname.startswith("refs/heads/"):
+        _, rc = _git("branch", "-D", refname.removeprefix("refs/heads/"))
+        return rc == 0
+    _, rc = _git("update-ref", "-d", refname)
+    return rc == 0
+
+
+def retire_promoted_engine_scratch(*, apply: bool) -> tuple[list[EngineScratchRow], list[str]]:
+    rows = classify_engine_scratch_refs()
+    retired: list[str] = []
+    for row in rows:
+        if row.verdict != "DELETE" or not apply:
+            continue
+        if _delete_local_ref(row.refname):
+            retired.append(row.refname)
+    return rows, retired
+
+
+def _local_ref_is_tag(name: str) -> bool:
+    _, rc = _git("rev-parse", "--verify", "--quiet", f"refs/tags/{name}^{{}}")
+    return rc == 0
+
+
 def remove_worktree(wt: Worktree, *, unlock_first: bool = False) -> bool:
     """Re-check the verdict-relevant facts immediately before removal."""
     p = Path(wt.path)
@@ -499,9 +679,12 @@ def remove_orphan_dir(od: OrphanDir) -> bool:
 def delete_merged_local_branches(*, apply: bool = True) -> tuple[int, list[str], list[str]]:
     out, _ = _git("branch", "--merged", MAIN_REF, "--format=%(refname:lstrip=2) %(worktreepath)")
     deleted, kept, patch_equivalent = 0, [], []
+    flag_on = preserve_refs_flag_on()
     for line in out.splitlines():
         name, _, wtpath = line.partition(" ")
         if name == "main" or wtpath.strip() or name.startswith(PROTECTED_BRANCH_PREFIXES):
+            continue
+        if _local_ref_is_tag(name):
             continue
         _, rc = _git("merge-base", "--is-ancestor", f"refs/heads/{name}", MAIN_REF)
         if rc != 0:
@@ -511,9 +694,542 @@ def delete_merged_local_branches(*, apply: bool = True) -> tuple[int, list[str],
                 kept.append(name)
             continue
         if apply:
+            if flag_on:
+                tip, tip_rc = _git("rev-parse", f"refs/heads/{name}")
+                if tip_rc == 0 and deletion_would_orphan_commits(tip):
+                    archive_ref, err = ensure_local_archive_twin(name, tip)
+                    if not archive_ref and err:
+                        kept.append(name)
+                        continue
             _, rc = _git("branch", "-D", name)
             deleted += 1 if rc == 0 else 0
     return deleted, kept, patch_equivalent
+
+
+# ---------------------------------------------------------------- remote + retire (Story 87.1)
+class PrStateReader(Protocol):
+    def __call__(self, branch: str) -> dict[str, str] | None:
+        """Return PR facts for ``branch`` (keys: state, head) or None if no PR."""
+
+
+@dataclass
+class RemoteBranchRow:
+    branch: str
+    sha: str
+    verdict: str
+    reason: str
+    archive_tag: str = ""
+
+
+@dataclass
+class SweepFinding:
+    branch: str
+    code: str
+    message: str
+
+
+def ref_matches_prefix(refname: str, prefix: str) -> bool:
+    if refname == prefix:
+        return True
+    if prefix.endswith("/") and refname.startswith(prefix):
+        return True
+    if not prefix.endswith("/") and refname.startswith(prefix + "/"):
+        return True
+    return False
+
+
+def ref_matches_any_prefix(refname: str, prefixes: frozenset[str] | set[str]) -> bool:
+    return any(ref_matches_prefix(refname, p) for p in prefixes)
+
+
+def branch_head_refname(branch: str) -> str:
+    branch = branch.strip()
+    if branch.startswith("refs/heads/"):
+        return branch
+    return f"refs/heads/{branch}"
+
+
+def load_roster() -> dict:
+    try:
+        return json.loads(ROSTER_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def roster_deletion_protected_prefixes(roster: dict | None = None) -> frozenset[str]:
+    roster = roster if roster is not None else load_roster()
+    entries = roster.get("protected_refs")
+    if not isinstance(entries, list):
+        return frozenset()
+    out: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        refname = entry.get("refname")
+        rules = entry.get("rules")
+        if not isinstance(refname, str) or not isinstance(rules, list):
+            continue
+        if "deletion" in rules and refname.startswith("refs/heads/"):
+            out.add(refname)
+    return frozenset(out)
+
+
+def effective_protected_prefixes(roster: dict | None = None) -> frozenset[str]:
+    return PROTECTED_CODE_FLOOR | roster_deletion_protected_prefixes(roster)
+
+
+def is_protected_branch_name(branch: str, *, protected_prefixes: frozenset[str] | None = None) -> bool:
+    prefixes = protected_prefixes if protected_prefixes is not None else effective_protected_prefixes()
+    head = branch_head_refname(branch)
+    if ref_matches_any_prefix(head, prefixes):
+        return True
+    if branch == "main" or branch.startswith("loop/"):
+        return True
+    if branch.startswith(PROTECTED_BRANCH_PREFIXES):
+        return True
+    return False
+
+
+def ruleset_deletion_refusal(branch: str, roster: dict | None = None) -> tuple[str, str] | None:
+    """If GitHub ruleset forbids deleting this branch, return (ruleset_name, operator_act)."""
+    roster = roster if roster is not None else load_roster()
+    head = branch_head_refname(branch)
+    for entry in roster.get("protected_refs", []):
+        if not isinstance(entry, dict):
+            continue
+        refname = entry.get("refname")
+        if not isinstance(refname, str) or not refname.startswith("refs/heads/"):
+            continue
+        if not ref_matches_prefix(head, refname):
+            continue
+        rules = pr_rules.expected_rules_for_entry(entry)
+        if "deletion" not in rules:
+            continue
+        name = pr_rules._ruleset_name_for_branch_rules(rules)
+        return name, RULESET_OPERATOR_ACT
+    return None
+
+
+def branches_in_worktrees() -> set[str]:
+    branches: set[str] = set()
+    for wt in list_worktrees():
+        b = wt.branch
+        if b and b != "(detached)":
+            branches.add(b)
+    return branches
+
+
+def _dispatch_run_terminal_kinds() -> frozenset[str]:
+    return frozenset(
+        {
+            "dispatch-finalize",
+            "dispatch-land",
+            "dispatch-blocked",
+        }
+    )
+
+
+def live_dispatch_branches() -> set[str]:
+    """Branches belonging to a dispatch run whose journal has no terminal finalize/land."""
+    live: set[str] = set()
+    pattern = str(REPO_ROOT / "_bmad-output/projects/pyforge-*/implementation-artifacts/dispatch-runs/*/journal.jsonl")
+    terminal = _dispatch_run_terminal_kinds()
+    for journal_path in glob.glob(pattern):
+        path = Path(journal_path)
+        try:
+            lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        except OSError:
+            continue
+        if not lines:
+            continue
+        run_live = True
+        branch: str | None = None
+        for line in lines:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            kind = entry.get("kind", "")
+            if kind in terminal:
+                payload = entry.get("payload") or {}
+                if kind == "dispatch-finalize" and payload.get("ok") is True:
+                    run_live = False
+                if kind == "dispatch-land" and payload.get("verdict") in ("landed", "already_landed"):
+                    run_live = False
+                if kind == "dispatch-blocked":
+                    run_live = False
+            if kind == "dispatch-launch":
+                payload = entry.get("payload") or {}
+                branch = payload.get("worktree_branch") or payload.get("branch")
+        if run_live and branch:
+            live.add(str(branch).removeprefix("refs/heads/"))
+    return live
+
+
+def flat_ledger() -> dict[str, str]:
+    merged: dict[str, str] = {}
+    for keys in load_ledgers().values():
+        merged.update(keys)
+    return merged
+
+
+def ledger_status_for_branch(branch: str, ledgers: dict[str, dict[str, str]]) -> str:
+    story = story_key_of(branch)
+    if not story:
+        return "not-in-ledger"
+    station = station_of("", branch)
+    if station:
+        return ledgers.get(station, {}).get(story, "not-in-ledger")
+    for keys in ledgers.values():
+        if story in keys:
+            return keys[story]
+    return "not-in-ledger"
+
+
+GITHUB_REPO = "rxm7706/local-recipes"
+
+
+def load_pr_states_from_github(*, timeout: int = 120) -> dict[str, dict[str, str]]:
+    """Head branch name -> ``{state, head}`` for open/merged/closed PRs (operator tool; tests inject instead)."""
+    try:
+        result = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                GITHUB_REPO,
+                "--state",
+                "all",
+                "--limit",
+                "500",
+                "--json",
+                "headRefName,state",
+            ],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=True,
+        )
+        payload = json.loads(result.stdout or "[]")
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(payload, list):
+        return {}
+    by_head: dict[str, dict[str, str]] = {}
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        head = entry.get("headRefName")
+        state_raw = entry.get("state")
+        if not isinstance(head, str) or not head or not isinstance(state_raw, str):
+            continue
+        normalized = state_raw.lower()
+        if normalized not in ("open", "merged", "closed"):
+            normalized = "closed"
+        by_head[head] = {"state": normalized, "head": head}
+    return by_head
+
+
+def default_pr_reader() -> PrStateReader:
+    def _read(branch: str) -> dict[str, str] | None:
+        return None
+
+    return _read
+
+
+def github_pr_reader(states: dict[str, dict[str, str]] | None = None) -> PrStateReader:
+    cached = states if states is not None else load_pr_states_from_github()
+
+    def _read(branch: str) -> dict[str, str] | None:
+        return cached.get(branch)
+
+    return _read
+
+
+def tip_is_ancestor_of_origin_main(tip_sha: str) -> bool:
+    _, rc = _git("merge-base", "--is-ancestor", tip_sha, ORIGIN_MAIN_REF)
+    return rc == 0
+
+
+def commit_reachable_from_preserve_or_archive_tag(tip_sha: str) -> bool:
+    out, rc = _git(
+        "for-each-ref",
+        "--contains",
+        tip_sha,
+        "--format=%(refname)",
+        preserve_refs.PRESERVE_REF_PREFIX,
+        preserve_refs.ARCHIVE_REF_PREFIX,
+    )
+    return rc == 0 and bool(out.strip())
+
+
+def deletion_would_orphan_commits(tip_sha: str) -> bool:
+    if tip_is_ancestor_of_origin_main(tip_sha):
+        return False
+    if commit_reachable_from_preserve_or_archive_tag(tip_sha):
+        return False
+    return True
+
+
+def remote_branch_map() -> dict[str, str]:
+    out, rc = _git("ls-remote", "--heads", "origin")
+    if rc != 0:
+        return {}
+    mapping: dict[str, str] = {}
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        try:
+            sha, ref = line.split(maxsplit=1)
+        except ValueError:
+            continue
+        mapping[ref.removeprefix("refs/heads/")] = sha
+    return mapping
+
+
+def verdict_for_remote_branch(
+    branch: str,
+    sha: str,
+    *,
+    pr_reader: PrStateReader,
+    checked_out: set[str],
+    dispatch_live: set[str],
+    ledgers: dict[str, dict[str, str]],
+    protected_prefixes: frozenset[str],
+) -> tuple[str, str]:
+    if branch == "main":
+        return "KEEP", "main is never deleted"
+    if is_protected_branch_name(branch, protected_prefixes=protected_prefixes):
+        return "KEEP", "protected prefix or code floor"
+    if branch in checked_out:
+        return "KEEP", "branch checked out in a worktree"
+    if branch in dispatch_live:
+        return "KEEP", "live dispatch run branch"
+    pr = pr_reader(branch)
+    if pr and pr.get("state") == "open":
+        return "KEEP", "open pull request head"
+    if tip_is_ancestor_of_origin_main(sha):
+        return "DELETE", "tip is an ancestor of origin/main"
+    if pr and pr.get("state") == "merged":
+        return "DELETE", "pull request merged"
+    if pr and pr.get("state") == "closed":
+        status = ledger_status_for_branch(branch, ledgers)
+        if status == "done":
+            return "DELETE", "pull request closed and ledger story is done"
+        return "INSPECT", f"pull request closed but story is {status}"
+    return "INSPECT", "unmerged with no open PR and no ledger decision"
+
+
+def classify_remote_branches(
+    *,
+    pr_reader: PrStateReader | None = None,
+    roster: dict | None = None,
+) -> list[RemoteBranchRow]:
+    reader = pr_reader if pr_reader is not None else github_pr_reader()
+    protected = effective_protected_prefixes(roster)
+    checked_out = branches_in_worktrees()
+    dispatch_live = live_dispatch_branches()
+    ledgers = load_ledgers()
+    rows: list[RemoteBranchRow] = []
+    for branch, sha in sorted(remote_branch_map().items()):
+        verdict, reason = verdict_for_remote_branch(
+            branch,
+            sha,
+            pr_reader=reader,
+            checked_out=checked_out,
+            dispatch_live=dispatch_live,
+            ledgers=ledgers,
+            protected_prefixes=protected,
+        )
+        rows.append(RemoteBranchRow(branch=branch, sha=sha, verdict=verdict, reason=reason))
+    return rows
+
+
+def write_sweep_manifest(rows: list[RemoteBranchRow], preserve_dir: Path) -> Path:
+    preserve_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    dest = preserve_dir / f"remote-sweep-manifest-{stamp}.json"
+    payload = {
+        "written_at": stamp,
+        "rows": [asdict(r) for r in rows],
+    }
+    dest.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8")
+    return dest
+
+
+def _archive_tag_message(branch: str, commit: str) -> str:
+    trailers = preserve_refs.PreserveTrailers(
+        producer="sweep",
+        provenance="machine",
+        reason="worktree-sweep archive twin before branch delete",
+        source=branch,
+        run="",
+        journal="",
+        commit=commit,
+    )
+    return trailers.format_message()
+
+
+def ensure_local_archive_twin(branch: str, tip_sha: str) -> tuple[str | None, str]:
+    """Create a local ``archive/heads`` twin when deletion would orphan commits."""
+    if not deletion_would_orphan_commits(tip_sha):
+        return "", ""
+    refname = preserve_refs.render_archive_heads_ref(branch)
+    short_ref = refname.removeprefix("refs/tags/")
+    _, rc = _git("rev-parse", "--verify", f"{refname}^{{commit}}")
+    if rc != 0:
+        msg = _archive_tag_message(branch, tip_sha)
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as tf:
+            tf.write(msg)
+            msg_path = tf.name
+        try:
+            _, tag_rc = _git("tag", "-a", "-F", msg_path, short_ref, tip_sha)
+        finally:
+            try:
+                os.unlink(msg_path)
+            except OSError:
+                pass
+        if tag_rc != 0:
+            return None, "failed to create local archive tag"
+    return refname, ""
+
+
+def write_and_push_archive_twin(branch: str, tip_sha: str) -> tuple[str | None, str]:
+    """Create and push archive/heads twin; return (refname, error_reason)."""
+    refname, err = ensure_local_archive_twin(branch, tip_sha)
+    if err or not refname:
+        return refname, err
+    if refname == "":
+        return "", ""
+    purge_path = preserve_refs.default_purge_list_path(REPO_ROOT)
+    try:
+        push_result = preserve_refs.push_preserve_ref(REPO_ROOT, refname, purge_list_path=purge_path)
+    except preserve_refs.PreserveGitError as exc:
+        return None, str(exc)
+    if not push_result.pushed:
+        detail = "; ".join(f.message for f in push_result.findings) or "content gate refused push"
+        return None, detail
+    return refname, ""
+
+
+def delete_remote_branch(branch: str) -> tuple[bool, str]:
+    ref = branch_head_refname(branch)
+    _, rc = _git("push", "origin", f":{ref}")
+    if rc == 0:
+        return True, ""
+    _, verify_rc = _git("ls-remote", "--heads", "origin", ref)
+    if verify_rc == 0:
+        out, _ = _git("ls-remote", "--heads", "origin", ref)
+        if out.strip():
+            return False, "git push delete refused (branch still on origin)"
+    return False, "git push delete failed"
+
+
+def execute_remote_deletes(
+    rows: list[RemoteBranchRow],
+    *,
+    apply: bool,
+    preserve_dir: Path,
+) -> tuple[list[SweepFinding], list[RemoteBranchRow]]:
+    """Apply DELETE rows; mutates row archive_tag fields. Returns findings and updated rows."""
+    findings: list[SweepFinding] = []
+    delete_rows = [r for r in rows if r.verdict == "DELETE"]
+    manifest_path: Path | None = None
+    if apply and delete_rows:
+        manifest_path = write_sweep_manifest(rows, preserve_dir)  # full table before the first delete
+    for row in delete_rows:
+        if not apply:
+            continue
+        archive_ref, err = write_and_push_archive_twin(row.branch, row.sha)
+        if err:
+            row.reason = f"{row.reason}; archive twin refused: {err}"
+            findings.append(
+                SweepFinding(row.branch, "archive-twin-refused", err),
+            )
+            continue
+        if archive_ref:
+            row.archive_tag = archive_ref
+        ok, del_err = delete_remote_branch(row.branch)
+        if not ok:
+            findings.append(SweepFinding(row.branch, "github-delete-refused", del_err or "delete refused"))
+    if manifest_path is not None:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload["rows"] = [asdict(r) for r in rows]
+        manifest_path.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8")
+    return findings, rows
+
+
+def run_retire_branches(
+    names: list[str],
+    *,
+    apply: bool,
+    preserve_dir: Path,
+    roster: dict | None = None,
+) -> tuple[list[RemoteBranchRow], list[SweepFinding]]:
+    roster = roster if roster is not None else load_roster()
+    remote = remote_branch_map()
+    rows: list[RemoteBranchRow] = []
+    findings: list[SweepFinding] = []
+    for raw in names:
+        branch = raw.strip()
+        if (
+            not branch
+            or branch != raw
+            or any(c in branch for c in "*?[]\\")
+        ):
+            findings.append(SweepFinding(branch or raw, "invalid-name", "retire requires an explicit branch name, never a pattern"))
+            continue
+        if branch not in remote:
+            findings.append(SweepFinding(branch, "missing-branch", "branch not found on origin"))
+            rows.append(RemoteBranchRow(branch, "", "REFUSE", "branch not found on origin"))
+            continue
+        sha = remote[branch]
+        refusal = ruleset_deletion_refusal(branch, roster)
+        if refusal:
+            ruleset_name, operator_act = refusal
+            msg = f"ruleset {ruleset_name}: {operator_act}"
+            findings.append(SweepFinding(branch, ruleset_name, msg))
+            rows.append(RemoteBranchRow(branch, sha, "REFUSE", msg))
+            continue
+        protected = is_protected_branch_name(branch, protected_prefixes=effective_protected_prefixes(roster))
+        legacy_protected = branch.startswith(PROTECTED_BRANCH_PREFIXES)
+        if not protected and not legacy_protected:
+            findings.append(
+                SweepFinding(
+                    branch,
+                    "not-protected",
+                    "only protected branches are retired via --retire; use --remote for ordinary branches",
+                )
+            )
+            rows.append(RemoteBranchRow(branch, sha, "REFUSE", "not a protected branch name"))
+            continue
+        rows.append(RemoteBranchRow(branch, sha, "RETIRE", "explicit --retire"))
+    manifest_path: Path | None = None
+    if apply and rows:
+        manifest_path = write_sweep_manifest(rows, preserve_dir)
+    for row in rows:
+        if row.verdict != "RETIRE" or not apply:
+            continue
+        archive_ref, err = write_and_push_archive_twin(row.branch, row.sha)
+        if err:
+            row.verdict = "REFUSE"
+            row.reason = f"archive twin refused: {err}"
+            findings.append(SweepFinding(row.branch, "archive-twin-refused", err))
+            continue
+        if archive_ref:
+            row.archive_tag = archive_ref
+        ok, del_err = delete_remote_branch(row.branch)
+        if not ok:
+            row.verdict = "REFUSE"
+            row.reason = del_err or "delete refused"
+            findings.append(SweepFinding(row.branch, "github-delete-refused", row.reason))
+    if manifest_path is not None:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload["rows"] = [asdict(r) for r in rows]
+        manifest_path.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8")
+    return rows, findings
 
 
 # ---------------------------------------------------------------- main
@@ -524,7 +1240,66 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--prune-home-remotes", action="store_true", help="git remote prune every non-origin remote (loop homes)")
     ap.add_argument("--preserve-dir", type=Path, default=DEFAULT_PRESERVE_DIR)
     ap.add_argument("--format", choices=("text", "json"), default="text")
+    ap.add_argument("--remote", action="store_true", help="classify (and optionally delete) origin branches")
+    ap.add_argument(
+        "--retire",
+        nargs="+",
+        default=[],
+        metavar="BRANCH",
+        help="retire explicit protected branch names on origin (never patterns)",
+    )
     args = ap.parse_args(argv)
+
+    remote_results: dict[str, object] | None = None
+    retire_results: dict[str, object] | None = None
+    if args.remote:
+        remote_rows = classify_remote_branches()
+        remote_findings, remote_rows = execute_remote_deletes(
+            remote_rows, apply=args.execute, preserve_dir=args.preserve_dir
+        )
+        remote_results = {
+            "remote_branches": [asdict(r) for r in remote_rows],
+            "findings": [asdict(f) for f in remote_findings],
+        }
+    if args.retire:
+        retire_rows, retire_findings = run_retire_branches(
+            args.retire, apply=args.execute, preserve_dir=args.preserve_dir
+        )
+        retire_results = {
+            "retire_branches": [asdict(r) for r in retire_rows],
+            "findings": [asdict(f) for f in retire_findings],
+        }
+    if args.remote or args.retire:
+        if args.format == "json":
+            print(json.dumps({"remote": remote_results, "retire": retire_results}, indent=1))
+        else:
+            if remote_results:
+                counts: dict[str, int] = {}
+                for row in remote_results["remote_branches"]:  # type: ignore[index]
+                    v = row["verdict"]
+                    counts[v] = counts.get(v, 0) + 1
+                print(
+                    f"remote-sweep: {len(remote_results['remote_branches'])} origin branch(es); "  # type: ignore[index]
+                    + ", ".join(f"{k} {v}" for k, v in sorted(counts.items()))
+                )
+                for row in remote_results["remote_branches"]:  # type: ignore[index]
+                    if row["verdict"] == "KEEP" and row["branch"] == "main":
+                        continue
+                    print(f"  {row['verdict']:8s} {row['branch'][:56]:56s} {row['sha'][:8]}  {row['reason']}")
+                for f in remote_results.get("findings") or []:  # type: ignore[union-attr]
+                    print(f"  FINDING {f['code']}: {f['branch']} — {f['message']}")
+            if retire_results:
+                for row in retire_results["retire_branches"]:  # type: ignore[index]
+                    print(f"  retire {row['verdict']:8s} {row['branch']} — {row['reason']}")
+                for f in retire_results.get("findings") or []:  # type: ignore[union-attr]
+                    print(f"  FINDING {f['code']}: {f['branch']} — {f['message']}")
+            if not args.execute:
+                print("dry run: re-run with --execute to apply remote deletes / retirements")
+        remote_findings = (remote_results or {}).get("findings") or []  # type: ignore[union-attr]
+        retire_findings = (retire_results or {}).get("findings") or []  # type: ignore[union-attr]
+        if args.execute and (remote_findings or retire_findings):
+            return 1
+        return 0
 
     cwds, ledgers, heads = live_cwds(), load_ledgers(), origin_heads()
     items = [gather(wt, cwds, ledgers, heads) for wt in list_worktrees()]
@@ -542,15 +1317,20 @@ def main(argv: list[str] | None = None) -> int:
     ]
     orphan_actionable = [od for od in orphans if od.verdict == "ORPHAN-DIR"]
 
+    scratch_rows = classify_engine_scratch_refs() if preserve_refs_flag_on() else []
     results: dict[str, object] = {
         "executed": args.execute,
         "removed": [],
         "preserved": [],
+        "preserve_tags": [],
+        "preserve_debt": [],
         "failed": [],
         "orphans_removed": [],
         "orphans_failed": [],
         "branches_deleted": 0,
         "patch_equivalent_branches": [],
+        "engine_scratch": [asdict(r) for r in scratch_rows],
+        "engine_scratch_retired": [],
     }
     if args.execute:
         for wt in actionable:
@@ -559,9 +1339,25 @@ def main(argv: list[str] | None = None) -> int:
             exec_v = effective_execute_verdict(wt)
             unlock = wt.verdict == "STALE-LOCK" and wt.merged
             if exec_v == "PRESERVE-THEN-DELETE":
-                results["preserved"].append(str(preserve(wt, args.preserve_dir)))  # type: ignore[union-attr]
+                if preserve_refs_flag_on():
+                    try:
+                        outcome = preserve_worktree_as_tag(wt)
+                        results["preserve_tags"].append(outcome.refname)  # type: ignore[union-attr]
+                        if outcome.debt:
+                            results["preserve_debt"].append(  # type: ignore[union-attr]
+                                {"ref": outcome.refname, "reason": outcome.debt}
+                            )
+                    except (preserve_refs.PreserveRefError, preserve_refs.PreserveGitError) as exc:
+                        results["failed"].append(wt.path)  # type: ignore[union-attr]
+                        results["preserve_debt"].append({"ref": wt.branch, "reason": str(exc)})  # type: ignore[union-attr]
+                        continue
+                else:
+                    results["preserved"].append(str(preserve(wt, args.preserve_dir)))  # type: ignore[union-attr]
             removed = remove_worktree(wt, unlock_first=unlock)
             (results["removed"] if removed else results["failed"]).append(wt.path)  # type: ignore[union-attr]
+        if preserve_refs_flag_on():
+            _, retired = retire_promoted_engine_scratch(apply=True)
+            results["engine_scratch_retired"] = retired  # type: ignore[assignment]
         for od in orphan_actionable:
             (results["orphans_removed"] if remove_orphan_dir(od) else results["orphans_failed"]).append(od.path)  # type: ignore[union-attr]
         _git("worktree", "prune")
@@ -614,12 +1410,23 @@ def main(argv: list[str] | None = None) -> int:
         patch_eq = results.get("patch_equivalent_branches") or []
         if patch_eq:
             print(f"patch-equivalent (reported, not deleted): {', '.join(patch_eq)}")
+        if scratch_rows:
+            for row in scratch_rows:
+                print(
+                    f"  scratch {row.verdict:8s} {row.refname} "
+                    f"{row.commit[:8]}  {row.reason}"
+                )
         if args.execute:
+            tag_n = len(results.get("preserve_tags") or [])
+            patch_n = len(results.get("preserved") or [])
+            debt_n = len(results.get("preserve_debt") or [])
             print(
-                f"executed: removed {len(results['removed'])}, preserved {len(results['preserved'])} "
-                f"(under {args.preserve_dir}), failed {len(results['failed'])}, "
+                f"executed: removed {len(results['removed'])}, "
+                f"preserve tags {tag_n}, format-patch dirs {patch_n}, preserve debt {debt_n}, "
+                f"failed {len(results['failed'])}, "
                 f"orphans removed {len(results['orphans_removed'])}, "
-                f"local branches deleted {results['branches_deleted']}"
+                f"local branches deleted {results['branches_deleted']}, "
+                f"engine scratch retired {len(results.get('engine_scratch_retired') or [])}"
             )
             for f in results["failed"]:  # type: ignore[union-attr]
                 print(f"  FAILED: {f}")

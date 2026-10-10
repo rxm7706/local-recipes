@@ -125,30 +125,45 @@ def park_preserve_artifact(
     *,
     harness_run_id: str,
     bmad_run_dir: Path,
+    preserve_refs_flag_on: bool = False,
+    repo_root: Path | None = None,
+    project_slug: str | None = None,
+    marshal_journal_path: str = "",
 ) -> str | None:
     """Park ``snapshot`` under bmad-loop's deferred naming convention.
 
-    Returns the recovery ref (branch name or patch path), or ``None`` when
+    Returns the recovery ref (branch name, preserve tag short name, or patch path), or ``None`` when
     there is nothing to park or git/write fails.
+
+    When ``preserve_refs_flag_on`` and ``repo_root``/``project_slug`` are set, committed work is
+    tagged as ``preserve/…/intent-gap-<sha8>`` with no ``attempt-preserve/*`` ref (Story 87.4).
     """
     repo = Path(snapshot.worktree_path)
     if snapshot.commits_above_baseline:
-        slug = _safe_ref_segment(harness_run_id)
-        # Concatenation (not f"{a}-{b}") — AD-23 forbids the two-placeholder
-        # story-key shape outside core/identity.py.
-        ref_name = "attempt-preserve/" + slug + "-" + snapshot.head_sha[:8]
-        try:
-            # Park the *captured* tip — after an intent-gap revert HEAD is
-            # already at baseline, so ``branch … HEAD`` would be a no-op.
-            parked = _preserve_commits(repo, ref_name, snapshot.head_sha)
-        except GitPreserveError:
-            parked = None
-        # When a dirty overlay was also captured, park it too so uncommitted
-        # work on top of attempt commits is not silently dropped (deferred
-        # path parks both halves).
         patch_ref: str | None = None
         if snapshot.dirty_patch:
             patch_ref = _write_failed_patch(bmad_run_dir, snapshot.story_key, snapshot.dirty_patch)
+        if preserve_refs_flag_on and repo_root is not None and project_slug:
+            from .engine_preserve import tag_intent_gap_attempt
+
+            tagged = tag_intent_gap_attempt(
+                repo_root,
+                tip_sha=snapshot.head_sha,
+                project_slug=project_slug,
+                story_key=snapshot.story_key,
+                run_id=harness_run_id,
+                journal_path=marshal_journal_path or str(bmad_run_dir / "journal.jsonl"),
+                push=False,
+            )
+            if tagged is not None:
+                return tagged.preserve_tag
+            return patch_ref
+        slug = _safe_ref_segment(harness_run_id)
+        ref_name = "attempt-preserve/" + slug + "-" + snapshot.head_sha[:8]
+        try:
+            parked = _preserve_commits(repo, ref_name, snapshot.head_sha)
+        except GitPreserveError:
+            parked = None
         if parked is not None:
             return parked
         return patch_ref

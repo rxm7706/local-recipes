@@ -1126,6 +1126,222 @@ def test_main_exit_2_json_still_emits_json(tmp_path: Path, monkeypatch: pytest.M
     assert payload["retros_scanned"] is None
 
 
+def _write_brief_with_amendment_yaml(repo: Path, rel: str, amendment_body: str) -> None:
+    """Skill brief with a single retro-mirror amendment block (raw YAML lines)."""
+    lines = [
+        "name: test-skill",
+        "version: 1.0.0",
+        "source_repo: https://example.com",
+        "language: python",
+        "description: test",
+        "forge_tier: Quick",
+        "created: 2026-01-01",
+        "created_by: test",
+        "scope:",
+        "  type: full-library",
+        "  include: []",
+        "  exclude: []",
+        "  notes: test",
+        "  amendments:",
+        "    - action: retro-mirror",
+        amendment_body,
+        "      reason: mirrored a landed CFE retro",
+    ]
+    _write(repo, rel, "\n".join(lines) + "\n")
+
+
+def _full_retro(prefix: str) -> str:
+    return (prefix + "a" * 40)[:40]
+
+
+def test_int_loaded_commit_field_covers_retro(tmp_path: Path) -> None:
+    prefix = "4139357790"
+    retro = _full_retro(prefix)
+    brief_rel = "briefs/int-field.yaml"
+    _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
+    brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
+
+
+def test_int_loaded_commit_list_item_covers_retro(tmp_path: Path) -> None:
+    prefix = "4139357790"
+    retro = _full_retro(prefix)
+    brief_rel = "briefs/int-list.yaml"
+    _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commits: [{prefix}]")
+    brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
+
+
+def test_octal_shaped_commit_reads_scalar_text(tmp_path: Path) -> None:
+    prefix = "0123456701"
+    retro = _full_retro(prefix)
+    brief_rel = "briefs/octal-field.yaml"
+    _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
+    brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
+
+
+def test_binary_shaped_commit_reads_scalar_text(tmp_path: Path) -> None:
+    prefix = "0b10110101"
+    retro = _full_retro(prefix)
+    brief_rel = "briefs/binary-field.yaml"
+    _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
+    brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
+
+
+def test_leading_zero_string_commit_still_covers_retro(tmp_path: Path) -> None:
+    prefix = "0123456789"
+    retro = _full_retro(prefix)
+    brief_rel = "briefs/lead-zero-str.yaml"
+    _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
+    brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
+
+
+@pytest.mark.parametrize(
+    "commit_line",
+    [
+        "      commit: true",
+        "      commit: false",
+        "      commit: 1.5",
+        "      commit: null",
+        "      commit: 413935779",
+    ],
+)
+def test_non_sha_amendment_values_name_no_retro(tmp_path: Path, commit_line: str) -> None:
+    retro = _full_retro("4139357790")
+    brief_rel = "briefs/non-sha.yaml"
+    _write_brief_with_amendment_yaml(tmp_path, brief_rel, commit_line)
+    brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert not m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
+
+
+def test_free_text_reason_still_names_no_retro(tmp_path: Path) -> None:
+    retro = _full_retro("4139357790")
+    brief_rel = "briefs/free-text.yaml"
+    _write_brief_with_amendment_yaml(tmp_path, brief_rel, "      commit: deadbeef01")
+    with (tmp_path / brief_rel).open("a", encoding="utf-8") as handle:
+        handle.write(f"      reason: mirrored {retro} into the brief\n")
+    brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert not m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
+
+
+def test_int_brief_mirrored_through_newest_retro_is_clean(tmp_path: Path) -> None:
+    prefix = "4139357790"
+    newer = _full_retro(prefix)
+    older = _full_retro("bbbbbbbbbb")
+    brief_rel = "briefs/mirror.yaml"
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(newer, older))
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=int(prefix))])
+    findings = m.scan(state, [newer, older], root=tmp_path)
+    assert not any(f["kind"] == "unmirrored-retro" for f in findings)
+
+
+def test_int_brief_mirrored_through_empty_brief_is_b_prime_defect(tmp_path: Path) -> None:
+    prefix = "4139357790"
+    newer = _full_retro(prefix)
+    brief_rel = "briefs/empty.yaml"
+    _write_brief(tmp_path, brief_rel)
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=int(prefix))])
+    findings = m.scan(state, [newer], root=tmp_path)
+    assert any(f["kind"] == "brief-defect" for f in findings)
+
+
+def test_string_prefix_pointer_matches_newest_retro(tmp_path: Path) -> None:
+    prefix = "4139357790"
+    newer = _full_retro(prefix)
+    brief_rel = "briefs/prefix-pointer.yaml"
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(newer,))
+    state = _state(
+        [_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=prefix)],
+    )
+    findings = m.scan(state, [newer], root=tmp_path)
+    assert not any(f["kind"] == "unmirrored-retro" for f in findings)
+
+
+def test_unmirrored_remedy_names_accepted_prefix_value(tmp_path: Path) -> None:
+    newer = "c" * 40
+    brief_rel = "briefs/stale.yaml"
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(newer,))
+    state = _state(
+        [_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through="deadbeef01")],
+    )
+    findings = m.scan(state, [newer], root=tmp_path)
+    unmirrored = [f for f in findings if f["kind"] == "unmirrored-retro"]
+    assert len(unmirrored) == 1
+    assert newer[: m.MIN_SHA_PREFIX] in unmirrored[0]["remedy"]
+
+
+def test_out_of_range_pointer_covered_by_full_sha_amendment(tmp_path: Path) -> None:
+    pointer = "dddddddddd"
+    full = pointer + "e" * 30
+    brief_rel = "briefs/out-of-range.yaml"
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(full,))
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=pointer)])
+    findings = m.scan(state, [], root=tmp_path)
+    assert not any(f["kind"] == "brief-defect" for f in findings)
+
+
+@pytest.mark.parametrize(
+    ("older_prefix", "newer"),
+    [
+        ("4139357790", "f" * 40),
+        ("0123456701", "e" * 40),
+        ("0b10110101", "d" * 40),
+        ("0123456789", "c" * 40),
+        ("ababababab", "b" * 40),
+    ],
+)
+def test_pointer_shape_pairs_b_prime_deterministic(
+    tmp_path: Path, older_prefix: str, newer: str,
+) -> None:
+    older = _full_retro(older_prefix)
+    brief_rel = "briefs/shape.yaml"
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=newer)])
+
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(newer,))
+    findings = m.scan(state, [newer, older], root=tmp_path)
+    assert [f["kind"] for f in findings] == ["brief-defect"]
+    assert older_prefix[:10] in findings[0]["refs"]
+
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(newer, older_prefix))
+    assert m.scan(state, [newer, older], root=tmp_path) == []
+
+
+def test_campaign_state_loads_int_brief_mirrored_through(tmp_path: Path) -> None:
+    prefix = "4139357790"
+    yaml_text = (
+        "campaign:\n  endgame_declared: false\n  callers: []\n"
+        "slices:\n  - id: slice-1\n    status: mapped\n    brief_path: briefs/x.yaml\n"
+        f"    brief_mirrored_through: {prefix}\n"
+    )
+    path = tmp_path / "campaign-state.yaml"
+    path.write_text(yaml_text, encoding="utf-8")
+    state = m.campaign_state(path)
+    assert state is not None
+    scalars = m._yaml_int_scalars(state)
+    mirrored = m._sha_candidate_from_yaml_value(
+        state["slices"][0]["brief_mirrored_through"],
+        int_scalars=scalars,
+    )
+    assert mirrored == prefix
+
+
 def test_cli_against_live_repo_exits_zero() -> None:
     """`pixi run -e local-recipes cfe-rebuild-guard-check` -- exact command
     from the spec's Verification section, invoked directly here."""

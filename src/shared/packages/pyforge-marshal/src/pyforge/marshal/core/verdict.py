@@ -1163,6 +1163,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # and exit 0 is the same one WARN projects to). Never a refusal.
     "MRS-DRAIN-018": Verdict.WARN,
     "MRS-DRAIN-019": Verdict.WARN,
+    "MRS-DRAIN-020": Verdict.WARN,
     # Story 28.2 (wire compression at the harness seam,
     # SPEC-marshal-token-economy CAP-2): both codes report a token-economy
     # LAYER that did not engage over a launch that is otherwise entirely
