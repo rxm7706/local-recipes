@@ -268,3 +268,21 @@ record every call.
 - **The land-only path journals no `dispatch-land` outcome.** On 87.3's re-dispatch the run dir gained the land-only
   verification (Story 22.17) but no record of the merge. Only the supervisor journals `dispatch-land`. This story
   journals its refusal, and leaves the landing's own journal as it is.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+Implemented Story 89.1: `evaluate_land_only_spec_gate` in `core/dispatch_harness_done.py` (status must be `in-review` or
+`done`; latest Review Triage Log heading by git blame must not record FAIL/`sent back`), wired in `cli/dispatch.py` and
+`cli/drain_plan.py` with `MRS-DISP-063` and `dispatch-blocked` journaling; finalize `_promote_tracked_spec` skips
+promotion when the latest entry is a failed review; `VcsPort.line_blame_facts` + `GitVcs` porcelain parser.
+
+Verification: `pyforge-marshal-test` (12204 passed), `pyforge-deps-test` (130 passed), `lint-types` green,
+`python scripts/spec_surface_reconcile.py` OK.
+
+Review: no patch/defer/intent findings. `followup_review_recommended: false`.
