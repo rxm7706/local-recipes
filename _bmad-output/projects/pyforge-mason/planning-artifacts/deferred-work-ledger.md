@@ -1847,7 +1847,8 @@ status: open
   origin: spec-deferred bbb96e18dced — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 25.4 (2026-10-10): canonical CFE blocks stamped for all 14; `refresh-wave --repair --apply --gates` repaired 14/14; linux-64 builds 12 success, django-csvimport failed (PyPI 404 on unrendered URL), django-grpc failed (pre-existing host python pin shape).
 
 ### DW-mason-25-2-3: Track B v1-refresh queue (92 remaining after B2) plus G53 audit and retro(cfe).
 

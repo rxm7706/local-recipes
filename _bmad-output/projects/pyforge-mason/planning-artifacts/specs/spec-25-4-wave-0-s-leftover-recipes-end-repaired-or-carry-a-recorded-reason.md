@@ -15,7 +15,23 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
-deferred: []
+deferred:
+  - id: refresh-wave-render-url-expressions
+    summary: "_render_url only substitutes bare ${{ var }}; feedstock URLs with ${{ name[0] }}/{{ name }} stay unrenderable for dist lookup and block canonical URL repair planning."
+    location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:372
+    severity: medium
+  - id: refresh-wave-whitespace-count-message
+    summary: "_whitespace_only_change reports '#### CFE metadata count changed' when the block count is 0 before and after, hiding a missing block."
+    location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:947
+    severity: medium
+  - id: refresh-wave-dependency-diff-uncommented-pins
+    summary: "_dependency_diff compares maintainer-commented pins only; uncommented exact pins moved on the feedstock are not reported."
+    location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:398
+    severity: medium
+  - id: refresh-wave-url-version-baked-false-positive
+    summary: "_url_problem flags url-version-baked when ${{ version }} is absent from the literal URL even if context templates the tag."
+    location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:380
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -213,7 +229,61 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### State on `main` before changes (baseline `6d5e84cb6b`, 2026-10-10)
+
+All 14 lacked `#### CFE metadata` / `cfe-conda-name`; six carried inline `cfe-local-build-*` stubs only.
+Hashed `files.pythonhosted.org` URLs: `microsoft-agents-m365copilot`, `py-yaml12`, `py3langid`, `solvor`,
+`django-weasyprint`, `robocorp-*`, `wagtail-*`. Parameterized PyPI URLs: `django-csvimport`, `django-grpc`
+(`${{ name[0] }}/{{ name }}`). Canonical PyPI: `django-lasuite`. GitHub tag: `pixitainer`. Hidden `meta.yaml`:
+`django-csvimport`, `django-grpc`, `django-weasyprint`, `robocorp-*`, `wagtail-*`.
+
+### CFE stamp (G92 strip + canonical block)
+
+Stamped all 14 through conda-forge-expert layout; `cfe-upstream-name` set for PyPI (and `github` for
+`pixitainer`). No version, build number, requirement or maintainer edits in the stamp commit.
+
+### refresh-wave repair
+
+Manifest: `.claude/data/conda-forge-expert/feedstock-update/wave0_leftovers_25_4_manifest.yaml`
+(`track: A`, `wave: W0-leftovers-25-4`).
+
+| Phase | Outcome |
+|-------|---------|
+| Dry-run `--repair` | 14 `would-repair` |
+| `--repair --apply --gates` | 14 `repaired` (exit 0) |
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/A-W0-leftovers-25-4/report.md`.
+Gate non-zero (recorded, not blocking repair): `py-yaml12`/`solvor` check-deps 1; several `optimize` 1;
+`pixitainer` validate+optimize 1.
+
+### linux-64 builds (`build_artifacts/<name>/`, rattler-build + pinning overlay)
+
+| Recipe | Build | Notes |
+|--------|-------|-------|
+| microsoft-agents-m365copilot | success | |
+| py-yaml12 | success | |
+| py3langid | success | |
+| solvor | success | |
+| django-csvimport | failed | PyPI sdist 404 for templated URL (driver gap: unrendered `${{ name }}`) |
+| django-grpc | failed | `python ${{ python_min }}` host pin invalid for rattler (pre-existing text; indent-only repair) |
+| django-lasuite | success | |
+| pixitainer | success | |
+| django-weasyprint | success | sha256 updated to match canonical PyPI URL |
+| robocorp-storage | success | |
+| robocorp-vault | success | |
+| wagtail-autocomplete | success | |
+| wagtail-json-widget | success | |
+| wagtailtables | success | |
+
+### Deferred-work ledger
+
+Closed `DW-mason-25-2-2` — resolution: Story 25.4; 14/14 `repaired`; builds 12 success, 2 failed (reasons above).
+
+### Verification (this run)
+
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0.
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile (no `--write-baseline`).
+- `git diff origin/main...HEAD -- recipes/` — 14 directories only; no version/number/requirement/maintainer line changes.
 
 ## Review Triage Log
 
