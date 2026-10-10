@@ -28,6 +28,7 @@ from pyforge.core.preserve_refs import (
     ATTEMPT_PRESERVE_DIRTY_PREFIX,
     PRESERVE_REF_PREFIX,
     PreserveTrailers,
+    parse_preserve_ref,
     push_preserve_ref,
     render_archive_heads_ref,
     render_archive_tags_ref,
@@ -440,10 +441,11 @@ def execute_twins(repo: Path, rows: Iterable[ManifestRow]) -> list[str]:
         if row.action != "write_twin" or not row.twin_ref:
             continue
         if row.twin_ref.startswith(PRESERVE_REF_PREFIX):
+            parsed = parse_preserve_ref(row.twin_ref)
             trailers = _trailers_for_legacy(
                 commit=row.commit_sha,
                 source=row.source_ref,
-                producer="hand" if "hand-" in row.twin_ref else "bmad-loop",
+                producer=parsed.producer,
             )
             result = tag_preserve(
                 repo,
