@@ -2,76 +2,38 @@
 schema_version: 1
 
 context:
-  name: dbt-core
-  version: 1.12.2
+  version: "1.11.1"
 
 package:
-  name: ${{ name|lower }}
+  name: dbt-redshift
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dbt_core-${{ version }}.tar.gz
-  sha256: 9c4d60c58ed759ceff3cc20c065420abc4d26cb092b0e142b39b8747ee43c79b
-  patches:
-    - 0001-drop-experimental-parser-hard-dep.patch
+  url: https://pypi.org/packages/source/d/dbt-redshift/dbt_redshift-${{ version }}.tar.gz
+  sha256: 9921457b139efa694e74c6c6c316daa56bb2034e65c1699faada8ae8297ab800
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - dbt = dbt.cli.main:cli
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
     - pip
+    - python ${{ python_min }}.*
     - hatchling
   run:
+    - requests
     - python >=${{ python_min }}
-    - agate >=1.7.0,<1.15
-    - jinja2 >=3.1.3,<4
-    - mashumaro >=3.9,<3.18
-    - click >=8.3.0,<9.0
-    - jsonschema >=4.19.1,<5.0
-    - networkx >=2.3,<4.0
-    - protobuf >=6.0,<8.0
-    - requests <3.0.0
-    - snowplow-tracker >=1.0.2,<2.0
-    - pathspec >=0.9,<1.1
-    - sqlparse >=0.5.5,<0.6.0
-    - dbt-extractor >=0.5.0,<=0.6
-    - dbt-common >=1.37.5,<2.0
-    - dbt-adapters >=1.24.5,<2.0
-    - dbt-protos >=1.0.514,<2.0
-    - pydantic <3
-    - packaging >20.9
-    - pytz >=2015.7
-    - pyyaml >=6.0
-    - daff >=1.3.46
-    - typing_extensions >=4.4
-    - python-dotenv >=1.2
-    - metricflow >=0.211.0,<1.0
-    - opentelemetry-api >=1.26,<2.0
-  run_constraints:
-    # dbt-core's pyproject.toml lists dbt-core-experimental-parser as an
-    # unconditional dependency, but it is never imported as a Python module --
-    # dbt-core only shells out to it (dbt/parser/fusion.py) as an external CLI
-    # binary, and only when the user explicitly opts in with --use-v2-parser /
-    # DBT_ENGINE_USE_V2_PARSER (default off). If it's missing, dbt-core raises
-    # a clear, actionable error only on that opt-in path; everything else
-    # (import dbt, parse, run, etc.) works normally without it.
-    #
-    # It's also not yet packaged for conda-forge: it's a Rust binary whose
-    # upstream sdist doesn't build from source (see
-    # https://github.com/conda-forge/staged-recipes/pull/34267 for the
-    # in-progress, contested wheel-repackaging attempt). Rather than block
-    # dbt-core 1.12.x entirely on that being resolved, constrain the version
-    # here (for anyone who does install it) without requiring it. Promote
-    # this back to a hard `run` dependency once that package exists on
-    # conda-forge and the packaging story there has matured.
-    - dbt-core-experimental-parser >=2.0.0b1,<3
+    # via Grayskull
+    - dbt-common >=1.10,<2.0
+    - dbt-adapters >=1.24.1,<2.0
+    - dbt-postgres >=1.10.0rc1,<2.0
+    - redshift_connector >=2.1.8,<2.2
+    - dbt-core >=1.8.0b3,<2.0
+    - sqlparse >=0.5.0,<0.7.0
+    - agate
+
 tests:
   - python:
       imports:
@@ -81,24 +43,50 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - dbt --help
 
 about:
-  summary: With dbt, data analysts and engineers can build analytics the way engineers build applications.
+  summary: The Redshift adapter plugin for dbt
   license: Apache-2.0
-  license_file: LICENSE
-  homepage: https://github.com/dbt-labs/dbt-core
+  license_file: LICENSE.md
+  homepage: https://github.com/dbt-labs/dbt-redshift
 
 extra:
-  feedstock-name: dbt
   recipe-maintainers:
     - rxm7706
-    - drewbanin
-    - jthandy
     - maresb
     - thewchan
-    - zaneselvans
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-redshift
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-redshift
+  cfe-purls:
+    - pkg:conda/dbt-redshift@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-redshift@${{ version }}
+  cfe-upstream-repo: https://github.com/dbt-labs/dbt-redshift
+  cfe-upstream-homepage: https://github.com/dbt-labs/dbt-redshift
+  cfe-import-names: [dbt, dbt.adapters]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-redshift-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - source-url-pypi-org-canonical
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T10:55:00Z
+  cfe-generated-by-version: 8.99.5
+  cfe-generated-at-datetime: 2026-10-10T10:55:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: ""
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Mirror source: conda-forge/dbt-redshift-feedstock @ d9d9bdba7420721b36a13b88c4b0826342f80d62 (2026-10-10).
+#    # v0 feedstock meta.yaml and LICENSE.md kept byte-identical (C1); recipe.yaml is local v1 via convert.
+#    # Removed dbt-feedstock-only maintainers drewbanin, jthandy, zaneselvans with the old dbt-core mirror.
+####
