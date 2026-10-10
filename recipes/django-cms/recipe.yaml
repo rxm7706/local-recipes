@@ -19,25 +19,25 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - django >=5.2
-  - django-classy-tags >=0.7.2
-  - django-formtools >=2.1
-  - django-treebeard >=4.3,<6
-  - django-sekizai >=0.7
-  - packaging
+    - python >=${{ python_min }}
+    - django >=5.2
+    - django-classy-tags >=0.7.2
+    - django-formtools >=2.1
+    - django-treebeard >=4.3,<6
+    - django-sekizai >=0.7
+    - packaging
 tests:
 - python:
     imports:
-    - cms
+      - cms
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - '*'
+      - ${{ python_min }}.*
+      - '*'
 
 about:
   homepage: https://www.django-cms.org/
@@ -51,7 +51,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -59,8 +59,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-cms
   cfe-purls:
-  - pkg:conda/django-cms@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-cms@${{ version }}
+    - pkg:conda/django-cms@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-cms@${{ version }}
   cfe-upstream-repo: https://github.com/django-cms/django-cms
   cfe-upstream-homepage: https://github.com/django-cms/django-cms
   cfe-import-names: [cms]

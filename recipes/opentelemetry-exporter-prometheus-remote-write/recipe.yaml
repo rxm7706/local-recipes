@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/12/ae/5c67c7187ff347a718eca24e2b5b10d0fa444a876679b8aeb41cd5db9d45/opentelemetry_exporter_prometheus_remote_write-0.66b1.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-prometheus-remote-write/opentelemetry_exporter_prometheus_remote_write-${{ version }}.tar.gz
   sha256: 34d3bdcc2d7be0fd3680ae47f33a2c30a8981705e4b51028f40fa9dfcbdb0b04
 
 build:
@@ -20,21 +20,21 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
   run:
-  - python >=${{ python_min }}
-  - protobuf >=5.26,<7.0
-  - requests >=2.28,<3.dev0
-  - opentelemetry-api >=1.12,<2.dev0
-  - opentelemetry-sdk >=1.12,<2.dev0
-  - python-snappy ~=0.6
+    - python >=${{ python_min }}
+    - protobuf >=5.26,<7.0
+    - requests >=2.28,<3.dev0
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-sdk >=1.12,<2.dev0
+    - python-snappy ~=0.6
 
 tests:
 - python:
     imports:
-    - opentelemetry.exporter.prometheus_remote_write
+      - opentelemetry.exporter.prometheus_remote_write
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -46,7 +46,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -54,8 +54,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opentelemetry-exporter-prometheus-remote-write
   cfe-purls:
-  - pkg:conda/opentelemetry-exporter-prometheus-remote-write@${{ version }}?channel=conda-forge
-  - pkg:pypi/opentelemetry-exporter-prometheus-remote-write@${{ version }}
+    - pkg:conda/opentelemetry-exporter-prometheus-remote-write@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-exporter-prometheus-remote-write@${{ version }}
   cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
   cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/exporter/opentelemetry-exporter-prometheus-remote-write
   cfe-import-names: [opentelemetry.exporter.prometheus_remote_write]
@@ -65,7 +65,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-prometheus-remote-write-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0

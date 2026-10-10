@@ -19,26 +19,26 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - setuptools
-  - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
   run:
-  - python >=${{ python_min }}
-  - django >=4.0,<7
-  - django-contrib-comments >=2.2,<2.3
-  - djangorestframework >=3.12,<3.18
-  - docutils
-  - pytz
-  - six
+    - python >=${{ python_min }}
+    - django >=4.0,<7
+    - django-contrib-comments >=2.2,<2.3
+    - djangorestframework >=3.12,<3.18
+    - docutils
+    - pytz
+    - six
 
 tests:
 - python:
     imports:
-    - django_comments_xtd
+      - django_comments_xtd
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - "*"
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   summary: Django Comments Framework extension app with thread support, follow up notifications and email confirmations.
@@ -54,7 +54,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -62,8 +62,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-comments-xtd
   cfe-purls:
-  - pkg:conda/django-comments-xtd@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-comments-xtd@${{ version }}
+    - pkg:conda/django-comments-xtd@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-comments-xtd@${{ version }}
   cfe-upstream-repo: https://github.com/danirus/django-comments-xtd
   cfe-upstream-homepage: https://github.com/danirus/django-comments-xtd
   cfe-import-names: [django_comments_xtd]

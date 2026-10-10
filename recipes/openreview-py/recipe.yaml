@@ -22,31 +22,31 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - setuptools >=65.5.1,<81
-  - wheel >=0.40,<1
-  - pip
+    - python ${{ python_min }}.*
+    - setuptools >=65.5.1,<81
+    - wheel >=0.40,<1
+    - pip
   run:
-  - python >=${{ python_min }}
-  - pycryptodome >=3.20,<4
-  - requests >=2.32,<3
-  - urllib3 >=2,<3
-  - future >=1.0.0,<2
-  - tqdm >=4.60,<5
-  - deprecated >=1.2.0,<2
-  - pylatexenc >=2.10,<3
-  - tld >=0.12,<1
-  - pyjwt >=2.0,<3
-  - editdistance >=0.8.1,<1
+    - python >=${{ python_min }}
+    - pycryptodome >=3.20,<4
+    - requests >=2.32,<3
+    - urllib3 >=2,<3
+    - future >=1.0.0,<2
+    - tqdm >=4.60,<5
+    - deprecated >=1.2.0,<2
+    - pylatexenc >=2.10,<3
+    - tld >=0.12,<1
+    - pyjwt >=2.0,<3
+    - editdistance >=0.8.1,<1
 
 tests:
 - python:
     imports:
-    - openreview
+      - openreview
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - "*"
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   homepage: https://github.com/openreview/openreview-py
@@ -62,7 +62,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -70,8 +70,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openreview-py
   cfe-purls:
-  - pkg:conda/openreview-py@${{ version }}?channel=conda-forge
-  - pkg:pypi/openreview-py@${{ version }}
+    - pkg:conda/openreview-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/openreview-py@${{ version }}
   cfe-upstream-repo: https://github.com/openreview/openreview-py
   cfe-upstream-homepage: https://github.com/openreview/openreview-py
   cfe-import-names: [openreview]

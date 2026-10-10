@@ -20,17 +20,17 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - django
-  - python >=${{ python_min }},<4.0
+    - django
+    - python >=${{ python_min }},<4.0
 
 tests:
 - python:
     imports:
-    - mptt2
+      - mptt2
     python_version: ${{ python_min }}.*
     pip_check: true
 
@@ -42,7 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -50,8 +50,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-mptt2
   cfe-purls:
-  - pkg:conda/django-mptt2@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-mptt2@${{ version }}
+    - pkg:conda/django-mptt2@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-mptt2@${{ version }}
   cfe-upstream-repo: https://github.com/jokiefer/django-mptt2
   cfe-upstream-homepage: https://github.com/jokiefer/django-mptt2
   cfe-import-names: [mptt2]

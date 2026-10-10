@@ -19,25 +19,25 @@ build:
   script: ${{ PYTHON }} -m pip install ./py/h2o_wave -vv --no-deps --no-build-isolation
   python:
     entry_points:
-    - wave = h2o_wave.cli:main
+      - wave = h2o_wave.cli:main
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
   run:
-  - python >=${{ python_min }}
-  - click
-  - httpx >=0.16.1
-  - inquirer
-  - starlette >=0.13.8
-  - uvicorn >=0.17.6
+    - python >=${{ python_min }}
+    - click
+    - httpx >=0.16.1
+    - inquirer
+    - starlette >=0.13.8
+    - uvicorn >=0.17.6
 
 tests:
 - python:
     imports:
-    - h2o_wave
+      - h2o_wave
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -46,16 +46,16 @@ about:
   summary: Python driver for H2O Wave Realtime Apps
   license: Apache-2.0
   license_file:
-  - LICENSE
-  - NOTICE
-  - py/h2o_wave/LICENSE
+    - LICENSE
+    - NOTICE
+    - py/h2o_wave/LICENSE
   homepage: https://wave.h2o.ai/
   repository: https://github.com/h2oai/wave
   documentation: https://wave.h2o.ai/
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -63,8 +63,8 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: h2oai/wave
   cfe-purls:
-  - pkg:conda/h2o-wave@${{ version }}?channel=conda-forge
-  - pkg:pypi/h2o-wave@${{ version }}
+    - pkg:conda/h2o-wave@${{ version }}?channel=conda-forge
+    - pkg:pypi/h2o-wave@${{ version }}
   cfe-upstream-repo: https://github.com/h2oai/wave
   cfe-upstream-homepage: https://wave.h2o.ai/
   cfe-import-names: [h2o_wave]
@@ -74,7 +74,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/h2o-wave-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-21T00:00:00Z
   cfe-generated-by-version: 8.37.0

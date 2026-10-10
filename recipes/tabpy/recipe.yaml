@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/9b/88/da0425df0938df2966eee14ee38510c55693ea2c0b605396708e3179daab/tabpy-2.16.0.tar.gz
+  url: https://pypi.org/packages/source/t/tabpy/tabpy-${{ version }}.tar.gz
   sha256: b7f05d942188d681c165efe04d29be53e032c1ab1fc920cf1191a59f4122a682
 
 build:
@@ -19,58 +19,58 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-    - tabpy=tabpy.tabpy:main
-    - tabpy-user=tabpy.utils.tabpy_user:main
-    - tabpy-deploy-models=tabpy.models.deploy_models:main
+      - tabpy=tabpy.tabpy:main
+      - tabpy-user=tabpy.utils.tabpy_user:main
+      - tabpy-deploy-models=tabpy.models.deploy_models:main
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pytest-runner
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pytest-runner
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - cloudpickle
-  - configparser
-  - coverage
-  - coveralls
-  - docopt
-  - future
-  - genson
-  - hypothesis
-  - jsonschema
-  - mock
-  - nltk
-  - numpy
-  - pandas
-  - pyopenssl
-  - pytest
-  - pytest-cov
-  - requests
-  - scipy
-  - simplejson
-  - scikit-learn
-  - textblob
-  - tornado
-  - twisted
-  - urllib3
-  - pyarrow
-  - libarrow-flight
+    - python >=${{ python_min }}
+    - cloudpickle
+    - configparser
+    - coverage
+    - coveralls
+    - docopt
+    - future
+    - genson
+    - hypothesis
+    - jsonschema
+    - mock
+    - nltk
+    - numpy
+    - pandas
+    - pyopenssl
+    - pytest
+    - pytest-cov
+    - requests
+    - scipy
+    - simplejson
+    - scikit-learn
+    - textblob
+    - tornado
+    - twisted
+    - urllib3
+    - pyarrow
+    - libarrow-flight
 
 tests:
 - python:
     imports:
-    - tabpy
+      - tabpy
     pip_check: true
     python_version: ${{ python_min }}
 - requirements:
     run:
-    - pip
-    - python ${{ python_min }}.*
+      - pip
+      - python ${{ python_min }}.*
   script:
-  - tabpy --help
-  - tabpy-user --help
+    - tabpy --help
+    - tabpy-user --help
 
 about:
   summary: Web server Tableau uses to run Python scripts.
@@ -80,7 +80,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -88,8 +88,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tabpy
   cfe-purls:
-  - pkg:conda/tabpy@${{ version }}?channel=conda-forge
-  - pkg:pypi/tabpy@${{ version }}
+    - pkg:conda/tabpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/tabpy@${{ version }}
   cfe-upstream-repo: https://github.com/tableau/TabPy
   cfe-upstream-homepage: https://github.com/tableau/TabPy
   cfe-import-names: [tabpy]
@@ -99,7 +99,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tabpy-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0

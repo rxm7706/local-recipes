@@ -20,16 +20,16 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
   run:
-  - python >=${{ python_min }}
+    - python >=${{ python_min }}
 
 tests:
 - python:
     imports:
-    - h2o_lightwave_web
+      - h2o_lightwave_web
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -38,16 +38,16 @@ about:
   summary: Web assets package for H2O Lightwave apps.
   license: Apache-2.0
   license_file:
-  - LICENSE
-  - NOTICE
-  - py/h2o_lightwave_web/LICENSE
+    - LICENSE
+    - NOTICE
+    - py/h2o_lightwave_web/LICENSE
   homepage: https://wave.h2o.ai/
   repository: https://github.com/h2oai/wave/tree/main/py/h2o_lightwave_web
   documentation: https://wave.h2o.ai/
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -55,8 +55,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: h2o-lightwave-web
   cfe-purls:
-  - pkg:conda/h2o-lightwave-web@${{ version }}?channel=conda-forge
-  - pkg:pypi/h2o-lightwave-web@${{ version }}
+    - pkg:conda/h2o-lightwave-web@${{ version }}?channel=conda-forge
+    - pkg:pypi/h2o-lightwave-web@${{ version }}
   cfe-upstream-repo: https://github.com/h2oai/wave
   cfe-upstream-homepage: https://wave.h2o.ai/
   cfe-import-names: [h2o_lightwave_web]
@@ -66,8 +66,8 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/h2o-lightwave-web-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
-  - recipe-regenerate
+    - meta-yaml-to-recipe-yaml
+    - recipe-regenerate
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-21T00:00:00Z
   cfe-generated-by-version: 8.37.0

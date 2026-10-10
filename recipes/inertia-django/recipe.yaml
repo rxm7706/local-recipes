@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/51/ae/abfa389f0944526a813e9c3ab644de091b22c7cf8b5284f4381e066509db/inertia_django-2.0.0.tar.gz
+  url: https://pypi.org/packages/source/i/inertia-django/inertia_django-${{ version }}.tar.gz
   sha256: 89ab1ea1a1f45c3441010ecb3d0bca0b0256404d1b1f84e1f1abd734e21006f5
 
 build:
@@ -20,18 +20,18 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - poetry-core >=1.0.0
-  - pip
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0
+    - pip
   run:
-  - python >=${{ python_min }},<4.0.0
-  - django >=4
-  - requests >=2.0.0,<3.0.0
+    - python >=${{ python_min }},<4.0.0
+    - django >=4
+    - requests >=2.0.0,<3.0.0
 
 tests:
 - python:
     imports:
-    - inertia
+      - inertia
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -43,7 +43,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -51,8 +51,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: inertia-django
   cfe-purls:
-  - pkg:conda/inertia-django@${{ version }}?channel=conda-forge
-  - pkg:pypi/inertia-django@${{ version }}
+    - pkg:conda/inertia-django@${{ version }}?channel=conda-forge
+    - pkg:pypi/inertia-django@${{ version }}
   cfe-upstream-repo: https://github.com/inertiajs/inertia-django
   cfe-upstream-homepage: https://github.com/inertiajs/inertia-django
   cfe-import-names: [inertia]
@@ -62,7 +62,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/inertia-django-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0

@@ -20,20 +20,20 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}
-  - setuptools >=67.5.1
-  - wheel
-  - pip
+    - python ${{ python_min }}
+    - setuptools >=67.5.1
+    - wheel
+    - pip
   run:
-  - survey
-  - python >=${{ python_min }}
-  - django >=2.2,<7
-  - django-bootstrap-form >=3.4
-  - django-registration >=3.0
-  - django-tastypie >=0.14.2
-    #- ordereddict >=1.1 requires python 2.6
-  - pytz >=2018.9
-  - pyyaml >=4.2b1
+    - survey
+    - python >=${{ python_min }}
+    - django >=2.2,<7
+    - django-bootstrap-form >=3.4
+    - django-registration >=3.0
+    - django-tastypie >=0.14.2
+      #- ordereddict >=1.1 requires python 2.6
+    - pytz >=2018.9
+    - pyyaml >=4.2b1
     # - setuptools
     # - python-coveralls
     # - pytest-django
@@ -62,10 +62,10 @@ requirements:
 tests:
 - requirements:
     run:
-    - pip
-    - python ${{ python_min }}
+      - pip
+      - python ${{ python_min }}
   script:
-  - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,ROSETTA_MESSAGES_PER_PAGE=5); django.setup(); import survey"
+    - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,ROSETTA_MESSAGES_PER_PAGE=5); django.setup(); import survey"
 
 about:
   summary: A django survey app that can export results as CSV or PDF using your native language.
@@ -75,7 +75,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -83,8 +83,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-survey-and-report
   cfe-purls:
-  - pkg:conda/django-survey-and-report@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-survey-and-report@${{ version }}
+    - pkg:conda/django-survey-and-report@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-survey-and-report@${{ version }}
   cfe-upstream-repo: https://github.com/Pierre-Sassoulas/django-survey
   cfe-upstream-homepage: https://github.com/Pierre-Sassoulas/django-survey
   cfe-import-names: [survey]
