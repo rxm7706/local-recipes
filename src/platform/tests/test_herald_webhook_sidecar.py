@@ -27,6 +27,8 @@ if str(_PLATFORM_ROOT) not in sys.path:
 
 from mcp_host.app import app as mcp_host_app  # noqa: E402
 
+_ON_SHIP_PATH = "/stations/herald/api/v1/webhooks/on-ship"
+
 
 def _herald_modules():
     webhook = importlib.import_module("pyforge.herald.webhook")
@@ -134,8 +136,7 @@ def test_mcp_host_sidecar_herald_absent_returns_404_json(
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(importlib, "import_module", _import)
-    webhook, _ = _herald_modules()
-    response = mcp_client.post(webhook.ON_SHIP_PATH, content=b"{}")
+    response = mcp_client.post(_ON_SHIP_PATH, content=b"{}")
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "pyforge.herald" in response.json()["detail"]
     assert mcp_client.get("/health").status_code == HTTPStatus.OK
