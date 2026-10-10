@@ -6,7 +6,7 @@ status: done
 updated: '2026-08-28'
 baseline_revision: 7e84b9174d740a7a488ba3f5d50d9fea6d0784a4
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md
@@ -249,6 +249,14 @@ precedent, rather than picking a verdict to avoid halting.
     comment refers to the block's 4-field structure (`reached`/`decision`/
     `pre_conditions`/`note`), not the sub-keys' naming, so no contradiction exists.
 
+### 2026-10-10 — Follow-up review pass (bmad-build-auto re-dispatch)
+- verdicts: 18 findings — high 0, medium 0, low 0, false 2, maybe-false 0; reject 15; defer 1 (carried)
+- patch: 0
+- findings:
+  - `false` `reject` Verification-gap clause (d) vs `re_scope_gate_2` — carried: same claim and route as 2026-08-28 `low` `defer`; frontmatter `deferred` and `scripts/cfe_rebuild_guard_check.py:304-341` unchanged.
+  - `false` `reject` Edge-case brief_path bypass while pre_conditions open — carried defer; Never-boundary forbids guard edits this story.
+  - `reject` 15 findings (Blind Hunter / Edge Case / Intent Alignment): ledger flip absent from diff, intent-contract not mirroring verdict, oversized spec growth, cwd-relative yaml one-liner, missing automated test for gate_2 fields, test-harness coupling not in pre_conditions, failure_catalog tracker, scoring rubric citation, diff-vs-main scope gate, per-slice decisions, HALT vs adjust — pre-existing conventions, dispatcher-owned landing, or first-pass addressed; no new patch surface.
+
 ## Verification
 
 **Commands:**
@@ -336,9 +344,13 @@ since `baseline_revision`. 3 `patch` (1 medium, 2 low) -- all applied and re-ver
 conventions this story correctly continued, or explicitly out of this story's writable
 Code Map. Full breakdown: `## Review Triage Log` above.
 
-**Follow-up review recommendation:** `true`. Score from this pass's `patch` findings
-only (never defer/reject): 1 medium + 2 low -> `3*1 + 1*2 = 5` >= 5, so `true` on the
-score threshold alone (no `high` finding this pass).
+**Follow-up review recommendation:** `false` (2026-10-10 follow-up pass consumed the
+single allowed re-dispatch; 0 patch findings). First pass had scored `true` (1 medium +
+2 low patches).
+
+**Follow-up pass (2026-10-10):** Re-reviewed `git diff 7e84b9174d..9a43c9d395` scoped to
+`campaign-state.yaml` and this spec. Verified `pixi run --frozen -e pyforge-mason
+pyforge-mason-test` exit 0; `python scripts/spec_surface_reconcile.py` exit 0.
 
 **Residual risks / left incomplete:**
 1. This story recorded the checkpoint but did **not** close either pre-condition -- both
