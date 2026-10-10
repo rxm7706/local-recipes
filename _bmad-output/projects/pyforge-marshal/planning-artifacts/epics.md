@@ -9564,6 +9564,30 @@ So that a session's work is never left uncommitted because git ignores the direc
 **Then** a path the index tracks is staged with `git add -u -- <path>` and an untracked path with `git add -- <path>`, through one helper and one index read. A modified, staged or deleted tracked file under an ignored directory commits; finalize and the idle checkpoint commit the doctor 37.1 shape; the heal commits a conflicted file under an ignored directory
 **And** an untracked path under an ignored directory is still refused with a `VcsCommandError` naming it, and it never enters the index (no `-f`, no `-A`). Story 83.16's rename and staged-deletion tests pass unchanged, and `stage_index_paths` still returns 0 rather than raising. Restoring the plain `git add --` for tracked paths fails the new tests (mutation)
 
+## Epic 89: A story lands only when its spec says the work is finished and its review did not fail
+
+Minted 2026-10-10 from the station Dream's entry of the same date (a failed review landed), on the operator's ruling
+"Yes, mint it (Recommended)". Each story fixes one defect of shipped behaviour under the capability that shipped it, so
+no CAP is minted and no flag is added. It is a new epic because the behaviour it fixes spans Epics 29, 79 and 83, which
+are all `done`. **HARD boundaries:** marshal never lands, finalizes or launches a session for a story it refuses; it
+never edits a story spec's status, Review Triage Log or ledger key to get past its own gate; a refusal is never
+journaled as a `dispatch-land` entry; the supervisor's first-run landing and Story 83.18's hold do not change.
+
+### Story 89.1: A re-dispatch never lands a story whose review failed
+
+As the operator whose re-dispatch of steward 87.3 merged a branch an independent review had just failed,
+I want the land-only path to land only a story whose spec says it is finished and whose latest review did not fail,
+So that sending a story back can never turn into landing it.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-169 (← spec-marshal-single-story-dispatch CAP-11; Story 29.2's land-only path, extended by Stories 83.7, 83.10 and 83.18), with CAP-229 (Story 79.1's tracked-spec promotion); AD-8, AD-32, AD-33, AD-75 • Dream 2026-10-10 (a failed review landed) • operator ruling 2026-10-10 "Yes, mint it (Recommended)"
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py` (a new pure gate beside `should_take_harness_done_land_only` :192-:213 and `should_take_verification_refusal_land_only` :216-:251), `cli/dispatch.py` (the land-only block :3153-:3244), `cli/drain_plan.py` (its land-only decision :306-:339), `dispatch_land_finalize/__main__.py` (`_promote_tracked_spec` :750-:846), `ports/vcs.py` and `adapters/vcs_git.py` (a read of the order git added a file's lines), `core/findings.py` and `core/verdict.py` (`MRS-DISP-063`); their unit tests
+**Spec:** `planning-artifacts/specs/spec-89-1-a-re-dispatch-never-lands-a-story-whose-review-failed.md`
+**Given** `a8eae09dce`, after steward 87.3's run `pyforge-steward-20261010T154144466Z-88c00f58` ended `failed` (a verification refusal at `MRS-GATE-015`, then `MRS-DISP-059` on the fix turn) and the operator recorded on the branch an independent review headed "2026-10-10 — Independent review, iteration 1: FAIL (3 high, 3 medium)" with the spec back at `in-progress`. The re-dispatch took Story 83.10's land-only path because the head had moved and `in-progress` is a land-only status. It re-verified green, merged `85e70dedf5`, and finalize promoted the spec to `done` (`a8eae09dce`)
+**When** a single-story dispatch, or `marshal factory drain --plan`, would take the land-only path
+**Then** it refuses with `MRS-DISP-063` (ERROR, exit non-zero) unless the worktree's tracked spec reads `in-review` or `done` and the latest `## Review Triage Log` entry records no failed review (a heading with `FAIL` or `sent back`; latest by the order git added the headings, an uncommitted heading newest, a tie failed if any member is). The message names the status, the failed heading and both ways on: `ready-for-dev` to resume, `in-review` to land finished work. Nothing is verified, pushed, merged or finalized, no session launches, and the refusal is journaled in the latest run dir as a `dispatch-blocked` pair, never as `dispatch-land`
+**And** the landing finalize never promotes a tracked spec whose latest entry at `origin/main` records a failed review; it leaves the spec and its epics **Status:** line alone with an `MRS-DISP-047` WARN naming the heading, and the ledger promotion is unchanged. A send-back to `ready-for-dev` or `draft` still launches a session, a later harness `Review pass` entry lets the story land as before, and a first run is unchanged. Only the two `in-progress` land-only tests of Stories 83.7 and 83.18 change expectation, with `in-review` twins added. Tests replay the 87.3 sequence with a fixture journal and a real git worktree. Dropping the status check, the review check, the git ordering, either caller or the finalize check fails a new test (mutation)
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
