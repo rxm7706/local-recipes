@@ -48,3 +48,33 @@ extra:
   recipe-maintainers:
     - davidbrochart
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-storage-file-share
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-storage-file-share
+  cfe-purls:
+    - pkg:conda/azure-storage-file-share@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-storage-file-share@${{ version }}
+  cfe-upstream-repo: https://github.com/Azure/azure-sdk-for-python
+  cfe-upstream-homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-storage-file-share
+  cfe-import-names: [azure.storage.fileshare]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/azure-storage-file-share-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

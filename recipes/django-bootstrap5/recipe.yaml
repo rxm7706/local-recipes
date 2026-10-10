@@ -24,7 +24,7 @@ requirements:
     - uv-build >=0.9.6,<0.11.0
   run:
     - python >=${{ python_min }}
-    - django >=4.2
+    - django >=5.2
 
 tests:
   - python:
