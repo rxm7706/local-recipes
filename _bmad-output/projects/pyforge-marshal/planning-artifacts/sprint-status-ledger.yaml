@@ -444,7 +444,7 @@ development_status:
   87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin: done
   87-6-land-retire-and-the-station-branch-never-fight-the-protected-list: done
   87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: backlog
-  87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: backlog
+  87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: done
   87-9-every-preserve-reader-sees-preserve-tags-and-origin: done
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
