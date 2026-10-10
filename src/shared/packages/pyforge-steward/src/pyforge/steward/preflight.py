@@ -99,31 +99,25 @@ def _resolve_dep(dep: str | dict[str, Any], invoking_env: str) -> tuple[str, str
     return task, env
 
 
-def _direct_lane_dependency_keys(
+def _immediate_lane_dep_keys(
     pixi_data: dict[str, Any],
     task_name: str,
     environment: str,
-    stack: list[str],
 ) -> list[LaneKey]:
-    if task_name in stack:
-        raise PreflightConfigError(f"depends-on cycle at task {task_name!r}")
+    """Lane keys this task depends on, expanding aggregates without a ``cmd``."""
     task = _find_task(pixi_data, task_name)
     if task is None:
         raise PreflightConfigError(f"unknown task {task_name!r}")
-    stack.append(task_name)
     keys: list[LaneKey] = []
-    try:
-        for dep in task.get("depends-on", []):
-            child_task, child_env = _resolve_dep(dep, environment)
-            child = _find_task(pixi_data, child_task)
-            if child is None:
-                raise PreflightConfigError(f"unknown task {child_task!r}")
-            if "cmd" in child:
-                keys.append((child_task, child_env))
-            else:
-                keys.extend(_direct_lane_dependency_keys(pixi_data, child_task, child_env, stack))
-    finally:
-        stack.pop()
+    for dep in task.get("depends-on", []):
+        child_task, child_env = _resolve_dep(dep, environment)
+        child = _find_task(pixi_data, child_task)
+        if child is None:
+            raise PreflightConfigError(f"unknown task {child_task!r}")
+        if "cmd" in child:
+            keys.append((child_task, child_env))
+        else:
+            keys.extend(_immediate_lane_dep_keys(pixi_data, child_task, child_env))
     return keys
 
 
@@ -145,7 +139,7 @@ def _ensure_lane(
         raise PreflightConfigError(f"unknown task {task_name!r}")
     stack.append(task_name)
     try:
-        dep_keys = _direct_lane_dependency_keys(pixi_data, task_name, environment, stack)
+        dep_keys = _immediate_lane_dep_keys(pixi_data, task_name, environment)
         for dep_key in dep_keys:
             _ensure_lane(pixi_data, dep_key[0], dep_key[1], stack, lanes_by_key, order)
         if "cmd" not in task:
