@@ -1170,6 +1170,29 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   finalize's post-merge carry finds the row and adds nothing. **Constraints:** fix stories, no CAP, no flag; the
   meta-test keeps no exemption; the relaunch rule for a `done`, flagged spec is not changed here. Owner
   `spec-pyforge-marshal`. → Stories 22.20, 22.21, specced 2026-10-08.
+- **2026-10-10 (cross-surface fix turn)** — **Found: a refusal at the cross-surface gate never gets its fix turn.**
+  Dispatch verification refuses at two gates: `MRS-GATE-001`, when a story verify command fails, and `MRS-GATE-015`,
+  when a cross-surface command fails (`flag-gate-check`, `platform-ci-local -- --test`, `bmad-estate-check`). Story
+  85.1's fix turn reads its failed commands from the verification's `failed_commands`. That list is built by a parser
+  that only accepts a message starting `verify command '…'`, from reports read only out of the envelope's `commands`.
+  A `MRS-GATE-015` message starts `cross-surface verify command '…'`, and its report sits under
+  `cross_surface_checks`. So a refusal whose only failure is cross-surface journals `failed_commands: []`, the
+  decision reads `no failed verify command to fix`, and the run goes straight to `failed` with nothing journaled about
+  the skipped turn. That happened twice: marshal 87.5 (run `pyforge-marshal-20261009T221327283Z-283f3080`) and
+  steward 85.5 (run `pyforge-steward-20261010T100406402Z-aee344c6`), both on `flag-gate-check` exit 1. Both were fixed
+  by hand. Herald 19.2 (run `pyforge-herald-20261010T105313078Z-a4b44f7d`) got its one turn on `MRS-GATE-001`, then
+  re-verification refused at `MRS-GATE-015` on `platform-ci-local -- --test`. It parked with `MRS-DISP-060` naming no
+  command (`failed_command: null`), against CAP-286's own success criterion. Its first verification counted four
+  findings but handed the turn only the three `MRS-GATE-001` commands. Marshal 87.4's turn on `MRS-GATE-001` stopped
+  at its reconcile, and its `flag-gate-check` failure surfaced only at hand landing. **What it looks like when
+  fixed:** a cross-surface failure reaches the fix turn the way a story command does. The prompt quotes the failed
+  command and its output tail and mandates the exact re-run. The budget stays one turn per run across both gates, and
+  that one turn sees every failed command of both gates at once. A still-red re-verification parks with
+  `MRS-DISP-060` naming the command, and the turn's journal names the gate that triggered it. Teaching the prompt the
+  flag gate's two-state test shape, the trap behind two of the four refusals, is recorded as a follow-up. **Constraints:**
+  a fix story under CAP-286, no CAP, no flag (it rides `pyforge.marshal.verify_fix_loop`); never a second turn, never
+  an unbounded loop (operator ruling 2026-10-10: "mint the MRS-GATE-015 fix-turn marshal story"). Owner
+  `spec-pyforge-marshal`. → Story 85.7, specced 2026-10-10.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

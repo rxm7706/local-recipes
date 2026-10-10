@@ -139,7 +139,10 @@ async def _dispatch_http(scope, receive, send) -> None:
         except KeyError:
             from starlette.responses import JSONResponse
 
-            response = JSONResponse({"detail": "Not Found"}, status_code=404)
+            from config.optional_components import absent_reason
+
+            detail = absent_reason(station) or "Not Found"
+            response = JSONResponse({"detail": detail}, status_code=404)
             await response(scope, receive, send)
             return
         await app(scope, receive, send)

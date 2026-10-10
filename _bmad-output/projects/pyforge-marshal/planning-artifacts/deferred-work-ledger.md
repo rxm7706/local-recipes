@@ -9072,3 +9072,14 @@ status: open
   severity: low (unverified)
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-85-7: Teach the fix-turn prompt the flag gate's two-state test shape when flag-gate-check fails with flag-test-not-two-state.
+
+- source_spec: `planning-artifacts/specs/spec-85-7-a-cross-surface-refusal-gets-the-same-one-fix-turn.md`
+  summary: Teach the fix-turn prompt the flag gate's two-state test shape when flag-gate-check fails with flag-test-not-two-state.
+  evidence: Two of the four 2026-10-09/10 cross-surface refusals were flag-gate-check exit 1 on flag-test-not-two-state: marshal 87.5 (run pyforge-marshal-20261009T221327283Z-283f3080; its tests named the flag key through an imported constant, which the static check cannot see, and hand fix 0af3a4267e names it literally) and steward 85.5 (run pyforge-steward-20261010T100406402Z-aee344c6; hand fix 7cda758bab writes the two flagd trees through a *flagd_tree* writer with the literal key). scripts/flag_gate_check.py judge_two_state (:571) reads the files a done spec's ## Verification names and wants the spec's flag.key written literally together with pyforge.testing_kit.flags.flag_states, or two *flagd_tree* calls, one with "on" and one with "off" (:35-:42, :478-:483). Story 85.6's checklist (core/dispatch_verify_fix.py build_verify_fix_prompt) names the four registration points only. Out of Story 85.7's scope: it changes the prompt's content, needs its own mutation test, and needs a line in docs/reference/story-spec-flag-block.md.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py
+  origin: spec-deferred d2f9695ffbee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

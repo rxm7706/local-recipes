@@ -1512,4 +1512,5 @@ deployment.
   severity: high
   promoted: 2026-10-10 — steward Epic 87 mint, recorded where herald 19.1's review should have left it
   note: healed by steward Story 87.1 (`87-1-the-platform-host-boots-without-herald-and-says-why`), which skips herald's mount with one logged reason when the package is absent; it closes this row with its evidence when it lands. Herald's code does not change.
-  status: open
+  verified: 2026-10-10 — src/platform/config/optional_components.py:28 (`import_optional`); src/platform/config/station_api.py:129 (herald skip); src/platform/config/asgi.py:142 (`absent_reason` 404); src/platform/tests/test_host_boots_without_herald.py:118 (`test_host_imports_without_herald_and_herald_paths_return_reason`); `pixi run -e platform-ci-test pytest tests/test_host_boots_without_herald.py` exit 0.
+  status: done

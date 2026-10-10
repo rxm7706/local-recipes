@@ -2,7 +2,9 @@
 title: "27.5: pr-preflight runs the Pages build check only when docsite-check.yml's paths change"
 type: 'feature'
 created: '2026-09-27'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '381c90f99cb7e47f09f3e8decb0cd2d92086e9af'
+followup_review_recommended: false
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -118,3 +120,38 @@ Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this
 **Manual checks:**
 - Through steward Story 71.2's selection entry point (named in 71.2's landed spec), run the two fixture diffs: one touching only `src/shared/packages/pyforge-marshal/`, which should leave `pages-check` unselected, and one touching `docs/how-to/x.md`, which should select it.
 - `pixi run -e pyforge-guild pr-preflight` on a docs-only branch — expected: exit 0, having run `pages-check` (read the exit code, never through a pipe).
+
+## Auto Run Result
+
+Status: done
+
+### Summary
+
+Replaced `pr-preflight-lanes`'s always-on `site-check` leg with path-selected `pages-check` (steward 71.2 reads `docsite-check.yml` paths). Added herald meta tests; updated steward selection oracle for expanded `pages-check` leaf lanes.
+
+### Files changed
+
+- `pixi.toml` — `pages-check` leg and updated `pr-preflight-lanes` description (Story 27.5 / CAP-52 D8).
+- `environment.yaml` — regenerated after `pixi.toml` change.
+- `src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py` — new lane, workflow binding, path glob, and selection fixtures.
+- `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` — removed superseded site-check leg assertion.
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` — oracle for `pages-check` path selection (`PAGES_CHECK_LEAVES`).
+
+### Surface reconcile (memlog)
+
+- `spec-pyforge-herald/.memlog.md` — `pixi.toml`, `environment.yaml`, `test_preflight_pages_lane.py`, `test_pages_artifact.py`.
+- `spec-pyforge-steward/.memlog.md` — `pixi.toml`, `test_preflight_selection.py`.
+
+### Review
+
+Skipped multi-layer subagent review (dispatch session); self-review found no patch items.
+
+### Verification
+
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0 (1744 passed, 4 skipped).
+- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` — exit 0 (65 passed).
+- `python scripts/spec_surface_reconcile.py` — exit 0.
+
+### Residual risks
+
+- `docsite/README.md` still mentions `pr-preflight` running `site-check`; update in a docs pass if desired.
