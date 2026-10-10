@@ -18,6 +18,8 @@ from pyforge.steward.workspace import (
     workspace_preserve_tag_enabled,
 )
 
+_FLAG = "pyforge.steward.workspace_preserve_tag"
+
 _FLAG_METADATA = {
     "owner": "steward",
     "story": "85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree",
@@ -57,13 +59,13 @@ def _make_repo(tmp_path: Path) -> Path:
     return work
 
 
-def _write_flags(tmp_path: Path, variant: str) -> Path:
+def _write_flagd_tree(tmp_path: Path, variant: str) -> Path:
     path = tmp_path / "flags.json"
     path.write_text(
         json.dumps(
             {
                 "flags": {
-                    WORKSPACE_PRESERVE_TAG_FLAG: {
+                    _FLAG: {
                         "state": "ENABLED",
                         "variants": {"on": True, "off": False},
                         "defaultVariant": variant,
@@ -115,7 +117,7 @@ def _clean(
 
 
 def test_flag_off_keeps_legacy_tarball_for_unlanded_commit(repo: Path, tmp_path: Path) -> None:
-    flags = _write_flags(tmp_path, "off")
+    flags = _write_flagd_tree(tmp_path, "off")
     wt = tmp_path / "ahead"
     start_workspace(
         "ahead",
@@ -294,10 +296,14 @@ def test_mutation_removing_park_call_must_fail(repo: Path, tmp_path: Path) -> No
 def test_read_boolean_flag_fixture(tmp_path: Path) -> None:
     from pyforge.core.flags import read_boolean
 
-    on_path = _write_flags(tmp_path, "on")
-    assert read_boolean(WORKSPACE_PRESERVE_TAG_FLAG, default=False, flags_path=on_path) is True
+    on_path = _write_flagd_tree(tmp_path, "on")
+    assert read_boolean(_FLAG, default=False, flags_path=on_path) is True
     off_dir = tmp_path / "offdir"
     off_dir.mkdir()
-    off_path = _write_flags(off_dir, "off")
-    assert read_boolean(WORKSPACE_PRESERVE_TAG_FLAG, default=False, flags_path=off_path) is False
+    off_path = _write_flagd_tree(off_dir, "off")
+    assert read_boolean(_FLAG, default=False, flags_path=off_path) is False
     assert workspace_preserve_tag_enabled(flags_path=off_path) is False
+
+
+def test_flag_key_is_the_module_constant() -> None:
+    assert _FLAG == WORKSPACE_PRESERVE_TAG_FLAG
