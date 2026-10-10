@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-grpc
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-grpc/opentelemetry_instrumentation_grpc-${{ version }}.tar.gz
-  sha256: b05b3a1f476f350fdb12514ca1ebaed0d596095f91188c2efd26b3e6e2a4cc82
+  sha256: 2055c8584ea67cebe9e39a13dca000cbba17c52366aa2aa7c6655fe454ec13b4
 
 build:
   number: 0
@@ -69,12 +69,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-grpc-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:39:27Z
+  cfe-last-checked: 2026-10-10T17:30:53Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:39:27Z
   cfe-local-build-status: build-clean-test-blocked
@@ -85,4 +85,5 @@ extra:
 # CFE comments
 # Header:
 #    # added run deps from import test: ['grpc']
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
 ####
