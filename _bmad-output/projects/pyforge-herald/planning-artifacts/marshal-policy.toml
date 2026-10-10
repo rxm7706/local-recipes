@@ -255,6 +255,26 @@ verify_commands = [
   "presentations/**",
   "AGENTS.md",
 ]
+"19" = [  # herald in effect; added 2026-10-10 with Story 19.2's local-host re-scope (operator ruling, option 1)
+  # The default surface, restated because a declared entry replaces it outright, plus what 19.2 reaches outside the
+  # package: the platform host-dispatch test (a signed 201 through config.asgi), the local-backend how-to and its
+  # map rows, and every Spec memlog. Never herald-live-demo.yml, doctor's catalog, steward's deploy.py or the pixi
+  # version registry (the story spec's Never list).
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/tests/test_station_api_host_dispatch.py",
+  "docs/how-to/run-herald-live-backend-locally.md",
+  "docs/how-to/README.md",
+  "docs/map.yaml",
+  "docs/MAP.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "26" = [  # the dossier states the cutover's control plane (spec-python-foundry-cutover fnd:CAP-14), added 2026-09-25
   "src/shared/packages/pyforge-herald/**",
   "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
