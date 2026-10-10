@@ -1331,6 +1331,25 @@ Drift — orphaned between stations.
   lives in the script: marshal's kill path is the trigger, not the defect, and marshal's command does not change.
   Story 63.7's tests, overrides, step names and exit codes stay (operator ruling 2026-10-10: "yes mint the
   platform-ci-local lock fix story"). Owner `spec-pyforge-steward`. → Epic 89 / Story 89.1, specced 2026-10-10.
+- **2026-10-10 (herald forward review findings) — Found: Story 87.3 landed with its independent review's findings
+  unfixed, and its forward is not safe to turn on.** The review, recorded in 87.3's spec as "Independent review,
+  iteration 1: FAIL (3 high, 3 medium)", found that the host forwards any path under
+  `/stations/herald/api/v1/webhooks/` and builds the sidecar URL from the client's path and query. httpx resolves
+  `..`, so a request reached the sidecar's unauthenticated `POST /stations/marshal/mcp`, past the host's MCP assertion
+  and rate limit; `%3F`, `%23` and `%0d%0a` inject a query, a fragment or a log line. The host also buffers a webhook
+  body with no cap, `mcp-host-serve` cannot start (its `PYTHONPATH` is written from the repo root while the task runs
+  in `src/platform`), the tests never drive the host's real entry point, and the sidecar blames herald for any
+  missing module. A re-dispatch merged the branch anyway (merge `85e70dedf5`), and finalize marked the spec `done`.
+  The same day a hygiene change turned `pyforge.steward.herald_webhook_sidecar` OFF in every environment and fixed
+  the corrupted `environment.yaml`. **What it looks like when fixed:** the host forwards only herald's two webhook
+  paths, `on-ship` and `on-pr-close`, to the literal path with no query, and answers 404 itself for anything else
+  under the prefix. It reads no more than herald's own caps before it answers 413. `mcp-host-serve` binds
+  `127.0.0.1:8090` and answers `/health`. Tests through `config.asgi.application` prove the forward, the flag-OFF
+  fallback and the routes that are never forwarded. Only then does dev turn the flag back ON. **Constraints:** a fix
+  under CAP-68 and CAP-69 (Story 87.3's CAPs), in Epic 87, no CAP, no flag of its own; staging and production stay
+  OFF; `src/platform/` still imports no `pyforge.*`; MCP forwarding does not change. Herald 19.2's proof waits on this
+  story, not on 87.3 (operator ruling 2026-10-10: "Forward-fix (Recommended)"). Owner `spec-pyforge-steward`. →
+  Epic 87 / Story 87.4, specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
