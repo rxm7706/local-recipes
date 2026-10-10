@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 515
+# stories: 516
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -347,7 +347,8 @@ development_status:
   85-9-the-session-hook-reads-its-denial-roster-from-its-own-tree: done
   86-1-deploy-perimeter-renders-the-asgi-application-it-is-given: done
   87-1-the-platform-host-boots-without-herald-and-says-why: done
-  87-2-the-platform-host-boots-without-langflow-and-the-full-stack-env-runs-it: backlog
+  87-2-the-platform-host-boots-without-langflow-and-the-full-stack-env-runs-it: blocked
+  87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done

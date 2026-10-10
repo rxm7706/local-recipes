@@ -2,7 +2,7 @@
 title: '19.2: One real ship records itself against a persistent store'
 type: 'feature'
 created: '2026-09-18'
-status: 'ready-for-dev'
+status: 'blocked'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -20,6 +20,8 @@ context:
   - src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py
   - src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/deploy.py
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar.md
+  - src/platform/mcp_host/app.py
   - src/platform/config/asgi.py
   - src/platform/config/station_api.py
   - src/platform/tests/test_station_api_host_dispatch.py
@@ -64,22 +66,46 @@ The steward fix is its own story, minted in steward's chain: the steward story t
 the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the same day, through a Tier-3 feed and
 `sprint-ledger-sync --allow-regression` (which named that one key and no other). This spec is `ready-for-dev`.
 
+**Re-scoped again 2026-10-10 (later): the host plus the mcp-host sidecar.** The full-stack env cannot run the host: it
+lacks the host's Django packages (`import config` stops at `config/celery_app.py:4`), and steward Story 87.2, which
+would have added them, is retired. The image env cannot hold herald: herald needs `mcp >=2.2.0`, and langflow-base and
+lfx 1.12.x pin `mcp <2.0.0`. The operator chose, verbatim label "Via the sidecar (Recommended)":
+
+> "Mint a steward story: mcp-host env gains pyforge-herald; the sidecar mounts herald's webhook ASGI; the host
+> forwards /stations/herald/api/v1/webhooks/* to MCP_HOST_SIDECAR_BASE_URL like MCP. 19.2's proof runs host + sidecar
+> locally (loopback). 87.1 stays (host never imports herald); 87.2's full-stack composition can be dropped."
+
+So the host is the platform host from `platform-dev` (Langflow, PostgreSQL 17, no herald), and herald's webhook runs in
+the mcp-host sidecar from the `mcp-host` env, both on loopback. The host forwards `/stations/herald/api/v1/webhooks/*`
+to the sidecar. That forward is steward Story 87.3 (`87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar`),
+and this story waits on it: the ledger key moved `backlog -> blocked` and this spec `ready-for-dev -> blocked`. The
+webhook handlers, the HMAC check and the store are unchanged, and herald's code still changes only by the local caller.
+
 ### What the ruling means here (decided 2026-10-10)
 
-- **The host is the platform's one ASGI host, `config.asgi:application`.** It runs under `daphne` from
-  `pyforge-foundry-full-stack` on this machine, bound to `127.0.0.1` only. Its Django database is that environment's
-  local PostgreSQL 17 (`DATABASE_URL`, default `postgres:///platform`, initialised and migrated as
-  `docs/tutorials/local-platform-development.md` Step 2 says). Herald's routes reach the webhook through Story 19.1's
-  station API seam (`/stations/herald/api/v1/webhooks/{on-ship,on-pr-close}` →
-  `pyforge.herald.station_api.attach_webhook_asgi` → `webhook_host.build_application`). The daphne command is the
-  `ExecStart` line that `steward deploy perimeter --asgi-application config.asgi:application` renders once the steward
-  story lands. The rendered unit carries no working directory and no environment, so the how-to supplies both: the
-  host starts from `src/platform/`, where `config` imports, as the tutorial runs `manage.py`, with the env file below
-  loaded.
+- **The host is the platform's one ASGI host, `config.asgi:application`** *(re-scoped 2026-10-10, later: the env is
+  `platform-dev`, and herald runs in the mcp-host sidecar; see the paragraph above)*. It runs under `daphne` from
+  `platform-dev` on this machine, bound to `127.0.0.1` only. Its Django database is that environment's local
+  PostgreSQL 17 (`DATABASE_URL`, default `postgres:///platform`, initialised and migrated as
+  `docs/tutorials/local-platform-development.md` Step 2 says). `platform-dev` carries no herald, so Story 87.1's skip
+  applies there. With `MCP_HOST_SIDECAR_BASE_URL=http://127.0.0.1:8090` set and `pyforge.steward.herald_webhook_sidecar`
+  ON (its `dev` default), the host forwards `/stations/herald/api/v1/webhooks/{on-ship,on-pr-close}` to the sidecar
+  (steward Story 87.3).
+  - **The sidecar** is the mcp-host process, started with steward's `pixi run --frozen -e mcp-host mcp-host-serve`
+    (`uvicorn mcp_host.app:app` on `127.0.0.1:8090`). It serves those paths with `webhook_host`'s application, so
+    `HERALD_REPO_ROOT` and the secret are the sidecar's environment, not the host's. It is the estate's existing
+    Pattern B process for mcp 2.x code, owned by steward and reached only through the host, not a per-station herald
+    process.
+  - The daphne command is the `ExecStart` line that `steward deploy perimeter --asgi-application
+    config.asgi:application` renders once the steward story lands. The rendered unit carries no working directory and
+    no environment, so the how-to supplies both: the host starts from `src/platform/` under `platform-dev`, where
+    `config` imports, as the tutorial runs `manage.py`, with `DATABASE_URL` and `MCP_HOST_SIDECAR_BASE_URL` set.
   - *Why not a standalone `pyforge.herald.webhook_host:application` process:* that is a per-station process. AGENTS.md
     § Policy says "No `services/` or `:800x` process tree". The spine's AD-14 as built mounts the webhook "onto the
     host ASGI … no bespoke Herald perimeter". Epic 19 says no extra port. It would also leave PostgreSQL 17 with no
-    part in the ruling.
+    part in the ruling. *(2026-10-10, later: the sidecar is not that process. It is steward's existing mcp-host
+    process, which also serves the station MCP faces; callers reach herald only through the host; its `:8090` is
+    loopback here and internal-only in a cluster, so no public port is added.)*
   - The nginx edge config the perimeter also renders (`listen 443 ssl`) is **not installed**: no public endpoint.
 - **Herald's record store stays SQLite, on persistent disk under this repo.** `db.py` is `sqlite3` only
   (`DEFAULT_DB_PATH = .herald/herald.db`), and the spine closed the database choice as "SQLite, not PostgreSQL"
@@ -90,7 +116,8 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
   root-anchored in `.gitignore`, and WAL needs a local disk, which the checkout is on. Never `runner.temp`, a temp
   directory, or a `.worktrees/` path, because a worktree is swept.
 - **The secret stays on this machine.** `HERALD_WEBHOOK_SECRET` is generated locally into `.herald/webhook.env`
-  (ignored through `/.herald/`, mode `0600`). The host and the caller load it. It is never committed and never a
+  (ignored through `/.herald/`, mode `0600`). The sidecar and the caller load it *(2026-10-10, later: was "the host";
+  herald now runs in the sidecar)*. It is never committed and never a
   GitHub secret.
 - **One real ship** follows Epic 13's success signal (Story 13.6: "a real merge on a station → progress and a
   success-claim draft exist with no human action"). It is one real story landing on `origin/main`: a merge whose subject
@@ -143,26 +170,32 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
 
 ## Acceptance Criteria
 
-- **AC1 — the host is rendered, not hand-edited.** Given the steward story that closes DW-13-6-1 is `done` on main,
-  When `steward deploy perimeter` runs with `--workers 1`, `--asgi-application config.asgi:application` and
-  `--output-dir .herald/perimeter/`, Then:
+- **AC1 — the host is rendered, not hand-edited; the sidecar runs from steward's task.** Given the steward story
+  that closes DW-13-6-1 and steward Story 87.3 are both `done` on main, When `steward deploy perimeter` runs with
+  `--workers 1`, `--asgi-application config.asgi:application` and `--output-dir .herald/perimeter/`, Then:
   - the rendered daphne unit's `ExecStart` names `config.asgi:application` and `--bind 127.0.0.1`;
-  - the host process is started from that line, and the proof record quotes both the rendered line and the running
-    process's `ps -o args=`;
-  - `ss -ltnH` shows the host's port bound to `127.0.0.1` only;
+  - the host process is started from that line under `platform-dev`, and the proof record quotes both the rendered
+    line and the running process's `ps -o args=`;
+  - `pixi run --frozen -e platform-dev python -c "import pyforge.herald"` fails: the host env carries no herald;
+  - the sidecar is started from the repo root with `pixi run --frozen -e mcp-host mcp-host-serve`, with
+    `HERALD_REPO_ROOT` set and `.herald/webhook.env` loaded, and the proof record quotes its `ps -o args=`;
+  - `ss -ltnH` shows the host's port and `8090` bound to `127.0.0.1` only;
   - no rendered nginx edge config is installed anywhere.
-- **AC2 — one real ship is recorded.** Given the host is running with these settings:
-  - `DATABASE_URL` pointing at the full-stack env's local PostgreSQL 17, migrated;
-  - `HERALD_REPO_ROOT` set to the primary checkout root;
-  - `.herald/webhook.env` loaded;
+- **AC2 — one real ship is recorded.** Given the host and the sidecar are running with these settings:
+  - the host: `DATABASE_URL` pointing at `platform-dev`'s local PostgreSQL 17, migrated;
+    `MCP_HOST_SIDECAR_BASE_URL=http://127.0.0.1:8090`; `pyforge.steward.herald_webhook_sidecar` ON (`PYFORGE_ENVIRONMENT`
+    unset or `dev`);
+  - the sidecar: `HERALD_REPO_ROOT` set to the primary checkout root and `.herald/webhook.env` loaded;
 
-  When `pixi run -e pyforge-foundry-full-stack herald-ship-local` delivers one real landing from `origin/main`,
-  Then:
+  When `pixi run -e pyforge-herald herald-ship-local` (any env composing `[feature.pyforge-herald]`) delivers one real
+  landing from `origin/main` to the **host's** loopback URL, Then:
   - `on-ship` returns `201` with the Progress record for the landed station;
   - `on-pr-close` returns `201` with a `claim_id`;
-  - the response bodies name the landing's station and story.
-- **AC3 — the record survives a restart of the host.** When the host process is stopped (process gone, port free) and
-  started again from the same rendered line, Then:
+  - the response bodies name the landing's station and story;
+  - the sidecar's output shows both POSTs. With no herald in the host env, the `201`s can only have come through the
+    forward.
+- **AC3 — the record survives a restart.** When the host and the sidecar are both stopped (processes gone, ports free)
+  and started again from the same lines (the rendered `ExecStart` and `mcp-host-serve`), Then:
   - run from the primary checkout's root, `herald progress <station> --json` shows the AC2 record: its station, its
     date, and the landing subject as the unblock narrative (`herald progress` resolves its store against the working
     directory and takes no `--repo-root`);
@@ -172,7 +205,7 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
     `claim_id`;
   - `herald success --repo-root <primary checkout> --json list` holds exactly one claim for that event.
 
-  That last pair proves the restarted host reads the persistent store, not memory.
+  That last pair proves the restarted sidecar, where herald runs, reads the persistent store, not memory.
 - **AC4 — the scheduler runs against the same store (LB-3).** When `herald scheduler run --repo-root <primary
   checkout> --json` runs, Then:
   - it exits 0;
@@ -181,14 +214,14 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
 
   The how-to gives the local crontab line for the weekly run. Installing it is the operator's choice, not an AC.
 - **AC5 — a run record the estate can see.** Two copies, and neither holds the secret value:
-  - **Raw logs** go under the ignored `.herald/live-host/<UTC timestamp>/`: the host's output before and after the
-    restart, the caller's two responses and the re-delivery's, the CLI reads, and the scheduler JSON.
+  - **Raw logs** go under the ignored `.herald/live-host/<UTC timestamp>/`: the host's and the sidecar's output before
+    and after the restart, the caller's two responses and the re-delivery's, the CLI reads, and the scheduler JSON.
   - **A tracked transcription** goes in `spec-pyforge-herald/live-host-proof-<date>.md`, following the
     `sync-proof-2026-09-19.md` precedent. It names:
     - the landing commit's sha and subject;
     - the store path;
     - the rendered `ExecStart` line;
-    - the host command line, with its pids before and after the restart;
+    - the host's and the sidecar's command lines, with their pids before and after the restart;
     - every HTTP status and body;
     - the `claim_id`;
     - the CLI read output.
@@ -229,10 +262,13 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
   - `pixi run --frozen -e pyforge-herald pyforge-herald-test` passes. So does
     `pixi run -e platform-ci-test pytest src/platform/tests/test_station_api_host_dispatch.py -q`.
 - **AC9 — docs.** A new Diátaxis how-to, `docs/how-to/run-herald-live-backend-locally.md`, covers:
-  - the full-stack env, and PostgreSQL 17 `initdb`/`pg_ctl`/`migrate` (pointing at the tutorial, not copying it);
+  - `platform-dev` for the host, and PostgreSQL 17 `initdb`/`pg_ctl`/`migrate` (pointing at the tutorial, not copying
+    it);
+  - the sidecar: steward's `mcp-host-serve` from the `mcp-host` env, `HERALD_REPO_ROOT`, `MCP_HOST_SIDECAR_BASE_URL`
+    and the flag `pyforge.steward.herald_webhook_sidecar` (pointing at steward's docs, not copying them);
   - generating the secret into `.herald/webhook.env`;
   - rendering through `steward deploy perimeter` (the daphne unit only, never the edge config);
-  - starting, stopping and restarting the host;
+  - starting, stopping and restarting the host and the sidecar;
   - delivering a landing with `herald-ship-local`, and reading the records back;
   - the scheduler's crontab line;
   - why the store is SQLite, and why `herald-live-demo.yml` is not the proof;
@@ -250,7 +286,9 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
 
 **Always:**
 - The host is the platform's one ASGI host, bound to loopback, rendered by `steward deploy perimeter`, and started from
-  the rendered line.
+  the rendered line under `platform-dev`.
+- Herald's webhook runs in steward's mcp-host sidecar, started with `mcp-host-serve` on `127.0.0.1:8090` and reached
+  only through the host's forward.
 - Herald's records are in `<primary checkout>/.herald/herald.db` and in no other store.
 - HMAC verification and the handlers stay exactly Story 13.4's and 19.1's. The caller signs what `verify_signature`
   already accepts.
@@ -262,18 +300,20 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
   before the push. The PR carries the `maintenance` label.
 
 **Never:**
-- Never flip this ledger key off `blocked` before the steward story that closes DW-13-6-1 (`86-1-deploy-perimeter-renders-the-asgi-application-it-is-given`) is
-  `done` on main. The operator's 2026-10-10 ruling pre-authorises exactly one flip: "flip 19.2 blocked -> backlog when
-  the steward story that closes DW-13-6-1 is done on main". "Done on main" means two things hold: its landing is an
-  ancestor of `origin/main` (`git merge-base --is-ancestor`), and steward's ledger row reads `done`. No other flip is
-  authorised, and no agent flips it early.
-- Never open a port on anything but `127.0.0.1`, install the rendered nginx edge config, or create a tunnel, a public
+- Never flip this ledger key off `blocked` before steward Story 87.3
+  (`87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar`) is `done` on main. "Done on main" means two
+  things hold: its landing is an ancestor of `origin/main` (`git merge-base --is-ancestor`), and steward's ledger row
+  reads `done`. Then exactly one flip runs, `blocked -> backlog`, the same one-flip rule the earlier ruling set for
+  86.1 (that gate cleared on 2026-10-10). No agent flips it early, and no dispatch starts while it is `blocked`.
+  *(2026-10-10, later: this replaces the 86.1 gate, which has cleared.)*
+- Never open a port, the host's or the sidecar's, on anything but `127.0.0.1`, install the rendered nginx edge config, or create a tunnel, a public
   DNS name or any other route in from outside this machine.
 - Never put herald's records in PostgreSQL, add a storage backend, or change `db.py`'s schema.
 - Never commit, print or log the secret value, and never add it as a GitHub secret.
 - Never enable, edit or delete `herald-live-demo.yml`. Never edit doctor's live-proof catalog, doctor's tests, the
   pixi version registry, or the workflow inventories.
-- Never edit `steward/deploy.py` or any steward file: the flag is the steward story's.
+- Never edit `steward/deploy.py`, `src/platform/mcp_host/`, `config/asgi.py`'s forward or any steward file: the
+  perimeter flag is steward 86.1's, and the sidecar, the forward and its flag are steward 87.3's.
 - Never edit `SPEC.md`, the PRD or the spine. Never write steward's ledger.
 - Never write the secret, the store or a log under a `.worktrees/` path.
 
@@ -284,6 +324,11 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
   story's change. AC7 therefore reads "unchanged by this story" (`git diff origin/main...HEAD`), not "byte-identical to
   the baseline". Never revert or hand-edit a bumped pin to make AC7 pass. The trap ends when Story 36.1 drops the
   registry site and archives the file.
+- **2026-10-10 — the earlier dispatch predates the sidecar re-scope.** `dispatch/pyforge-herald/19.2` (tip
+  `2930259bf8`, unmerged) holds the caller, the tests and the how-to built for the full-stack host. Its how-to names
+  `pyforge-foundry-full-stack` as the host env, and its copy of this spec reads `status: 'done'` although AC1–AC7 never
+  ran. Neither is the record. Whatever of it lands must follow this re-scope: `platform-dev` for the host, the sidecar
+  for herald.
 
 ## I/O & Edge-Case Matrix
 
@@ -297,6 +342,9 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
 | non-loopback URL | `--url http://<lan address>:…` | nothing sent | caller refuses before connecting |
 | throwaway store | `HERALD_REPO_ROOT` under `/tmp`, `.worktrees/` or `runner.temp` | not a proof | AC6 fails; the story stays open |
 | steward story not landed | the perimeter has no `--asgi-application` | the story stays `blocked` | no hand-edited unit counts as AC1 |
+| steward 87.3 not landed | the host does not forward herald's webhooks | the story stays `blocked` | no in-process or standalone herald host counts as the proof |
+| sidecar down | `MCP_HOST_SIDECAR_BASE_URL` set, nothing on `:8090` | the host answers `502` | caller exits non-zero, printing the status |
+| flag OFF or URL unset | the host does not forward | the host answers 87.1's `404` (herald not installed) | caller exits non-zero, printing the status |
 | a same-day second `on-ship` | a second landing for the same station on one UTC day | replaces that day's record (`progress.upsert`, `(station, date)`) | documented in the how-to; not a defect |
 | a hung handler | DW-13-6-2 | the caller's request times out (500 after 120 s) | restart the host; DW-13-6-2 stays open |
 
@@ -315,11 +363,15 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
 - Epic: Epic 19 (Herald in effect). Its HARD boundaries hold: no new capability, `herald-live-demo.yml` stays disabled,
   no second console, no extra public port.
 - Ledger key: `19-2-one-real-ship-records-itself-against-a-persistent-store`. Ledger status: `blocked` (unchanged by
-  this re-scope); `backlog` from 2026-10-10, the one pre-authorised flip, made once steward 86.1 was `done` on main.
+  this re-scope); `backlog` from 2026-10-10, the one pre-authorised flip, made once steward 86.1 was `done` on main;
+  `blocked` again from 2026-10-10 (later), gated on steward 87.3.
 - Deps: S-19.1 (`done`).
 - Cross-project gate: the steward story that closes DW-13-6-1 (`86-1-deploy-perimeter-renders-the-asgi-application-it-is-given`). Marshal's `Deps:` parser is
   station-local, so the gate is this row's ledger `blocked`, which the operator flips (AGENTS.md § Known pitfalls). The
   ruling pre-authorises the one flip named in § Boundaries. Cleared 2026-10-10 (§ Intent, *Gate cleared*).
+- Cross-project gate (2026-10-10, later): steward Story 87.3 (`87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar`),
+  the host's forward to the mcp-host sidecar, from the operator's ruling "Via the sidecar (Recommended)". The gate is
+  this row's ledger `blocked`, and § Boundaries names its one flip.
 - Follow-on: herald Story 36.1 (`36-1-the-ci-live-demo-workflow-moves-to-the-archive-and-its-readers-follow`, Epic 36,
   `Deps: S-19.2`) archives `herald-live-demo.yml` after this story lands (operator ruling 2026-10-10, "Archive after
   19.2"). Nothing in this story waits on it.
@@ -349,7 +401,8 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
 **Operator-run proof (this machine, primary checkout; not a dispatch gate):**
 - `HERALD_LIVE_WEBHOOK=1 pixi run --frozen -e pyforge-herald pytest -rs src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py`,
   expected to pass with no skip, including the restart case.
-- The how-to's run, end to end (AC1–AC6), transcribed into `spec-pyforge-herald/live-host-proof-<date>.md`.
+- The how-to's run, end to end (AC1–AC6), host plus sidecar, transcribed into
+  `spec-pyforge-herald/live-host-proof-<date>.md`.
 - `gh api repos/rxm7706/local-recipes/actions/workflows/herald-live-demo.yml --jq .state`, expected to print
   `disabled_manually` (AC7).
 
@@ -382,3 +435,19 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
     after this story lands. This story's Never list still holds until it closes.
 
   Recorded in `spec-pyforge-herald/.memlog.md`.
+- **2026-10-10 (later still) — the host plus the mcp-host sidecar (operator ruling "Via the sidecar
+  (Recommended)").**
+  - **The ruling, verbatim:** "Mint a steward story: mcp-host env gains pyforge-herald; the sidecar mounts herald's
+    webhook ASGI; the host forwards /stations/herald/api/v1/webhooks/* to MCP_HOST_SIDECAR_BASE_URL like MCP. 19.2's
+    proof runs host + sidecar locally (loopback). 87.1 stays (host never imports herald); 87.2's full-stack composition
+    can be dropped."
+  - **Before:** the host ran from `pyforge-foundry-full-stack`, which steward 87.2 would have given the host's
+    packages.
+  - **After:** the host runs from `platform-dev` (the rendered daphne unit stays AC1's host line), herald's webhook
+    runs in the mcp-host sidecar (`mcp-host-serve`), and the caller posts to the host, which forwards. AC1, AC2, AC3,
+    AC5 and AC9 add the sidecar. The gate is steward 87.3. ACs 4, 6, 7, 8 and 10 are unchanged.
+  - **Status:** the ledger key moved `backlog -> blocked` (worktree-local Tier-3 feed and `sprint-ledger-sync
+    --project herald`; no `--allow-regression` needed), and this spec `ready-for-dev -> blocked`. On main the spec
+    read `ready-for-dev`; the `done` on `dispatch/pyforge-herald/19.2` is not the record (§ Known traps).
+  - AD-14 as built holds: the host is still the one entry, and the sidecar is steward's process inside steward's trust
+    boundary. No CAP, FR or AD moves. Recorded in `spec-pyforge-herald/.memlog.md` and on the Dream.
