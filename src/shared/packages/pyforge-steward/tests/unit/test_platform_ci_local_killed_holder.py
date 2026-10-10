@@ -8,12 +8,10 @@ import socket
 import subprocess
 import sys
 import textwrap
-import threading
 import time
 from pathlib import Path
 
 import pytest
-
 from test_platform_ci_local_concurrency import (
     _prepare_stub_root,
     _run_platform_ci_local,
