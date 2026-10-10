@@ -1,8 +1,8 @@
 ---
 status: in-progress
 implemented_by: bmad-quick-dev
-shipped_ref: "Track A (sole): Waves B–F shipped for the 252-recipe behind set (363537dd43 + 1fe1848b43, pushed origin/main, not submitted to cf); reopened 2026-06-21 for Wave H total-coverage (179 remaining). Track B (co): intake complete, unstarted."
-spec_updated: 2026-07-02
+shipped_ref: "Track A (sole): Waves B–F shipped for the 252-recipe behind set (363537dd43 + 1fe1848b43, pushed origin/main, not submitted to cf); reopened 2026-06-21 for Wave H total-coverage (179 remaining), done as pyforge-mason Story 25.1. Track B (co): in progress since 2026-09-29 as pyforge-mason Epic 25 (Stories 25.2 and 25.4-25.14); per-story status lives in that station's sprint-status ledger."
+spec_updated: 2026-10-09
 ---
 # Tech Spec: Feedstock Refresh — every feedstock rxm7706 can modify (two tracks)
 
@@ -498,7 +498,7 @@ These surfaced during Waves C/D/E and are recorded here so they aren't lost. Non
 
 | Field | Value |
 | ----- | ----- |
-| Status | **READY — intake complete, unimplemented.** Headline counts computed live from cf_atlas (build 2026-06-19 21:55): **232 co-maintained feedstocks**, of which **190 have a local recipe** (62 v1 + 128 v0) and **42 have no `dir==conda` local recipe** (mapping-resolve or net-new); rough version delta among the 190 = **~143 BEHIND, 8 AHEAD, 39 MATCH**. Wave A re-verifies exactly (atlas refresh + GH-numbering guard + dir↔conda mapping). No recipes processed yet. |
+| Status | **IN PROGRESS (2026-10-09) as `pyforge-mason` Epic 25:** Story 25.2 (Wave A and Wave 0), Stories 25.4-25.12 (the v1-refresh batches) and Stories 25.13-25.14 (Wave F); per-story status lives in that station's sprint-status ledger. Original intake status: **READY — intake complete, unimplemented.** Headline counts computed live from cf_atlas (build 2026-06-19 21:55): **232 co-maintained feedstocks**, of which **190 have a local recipe** (62 v1 + 128 v0) and **42 have no `dir==conda` local recipe** (mapping-resolve or net-new); rough version delta among the 190 = **~143 BEHIND, 8 AHEAD, 39 MATCH**. Wave A re-verifies exactly (atlas refresh + GH-numbering guard + dir↔conda mapping). No recipes processed yet. |
 | Owner | rxm7706 |
 | Planning track | BMAD Quick Flow (tech-spec only) |
 | Scope | Every `recipes/<name>/` (and net-new where missing) that backs a **co-maintainer** conda-forge feedstock — i.e. rxm7706 is in the maintainer list but is **not** the sole maintainer. Disjoint from the sole-maintainer spec's set by construction. |
@@ -724,9 +724,16 @@ A co-maintained recipe is DONE when its local `recipe.yaml`:
 
 - **Q1 — commit cadence.** Default (mirror sole, RESOLVED there): uncommitted between
   authorized per-bucket commits; never push without a separate explicit instruction.
-- **Q2 — no-local-recipe depth (`<create_missing>`).** Create local mirrors for ALL 42
-  net-new, only the behind ones, or none this effort? Spec default: `yes` (all), after
-  A3 prunes the mapping-artifacts. Confirm at Wave A gate.
+- **Q2 — no-local-recipe depth (`<create_missing>`). RESOLVED (2026-10-09): `yes`.** Operator
+  ruling: "create them". Asked: create local mirrors for ALL 42 net-new, only the behind ones,
+  or none this effort? Spec default: `yes` (all), after A3 prunes the mapping-artifacts.
+  Answer, after A3: the live Wave A (Story 25.2, 2026-10-09) left 20 no-local-recipe names.
+  Resolved by the atlas's `packages.feedstock_name` and conda-forge's `feedstock-outputs`
+  registry, two are net-new mirrors (`dbt-snowflake`, `zxing-cpp-python`: Story 25.13). The
+  other 18 are mapping artifacts, outputs of `recipes/db-gpt` and `recipes/langflow`, so Story
+  25.14 keeps them in those mirrors and creates no directory. The stories are in
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md` Epic 25
+  (`spec-pyforge-mason` CAP-35).
 - **Q3 — deliberate-vs-regression threshold.** Where exactly is the line between a
   grayskull regression (fix) and a deliberate co-maintainer choice (preserve + flag)?
   Spec default: bias conservative (landmine 12); refine with worked examples.

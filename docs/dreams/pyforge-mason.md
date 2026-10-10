@@ -573,6 +573,40 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   maintainer list a superset of the deployed one (G53), ends each recipe with a linux-64 build or a recorded reason,
   and closes each story with its own `retro(cfe):` commit. No new CAP. Owner: mason. → Epic 25 / Story 25.2
   re-scoped and Stories 25.4 to 25.12, specced 2026-10-09.
+- **2026-10-09 (night, later) — Ruled: Wave F creates the missing mirrors, and the 18 outputs stay in their
+  feedstock's mirror.** Operator ruling, 2026-10-09, answering Track B's Q2 (`<create_missing>`): "create them". A
+  read of the 20 against the atlas's `packages.feedstock_name` and conda-forge's `feedstock-outputs` registry finds
+  four feedstocks, not 20:
+  - `dbt-snowflake` and `zxing-cpp-python` are feedstocks with no local recipe in any directory.
+  - The 16 `dbgpt-*` are outputs of `db-gpt-feedstock`, and `langflow-base` and `langflow-sdk` of
+    `langflow-feedstock`. Both already have their local mirror, `recipes/db-gpt` and `recipes/langflow`.
+    `conda-forge/<name>-feedstock` is a 404 for each of the 18.
+
+  The investigation behind the choice:
+  - No repo check refuses two recipes that declare one package name. `main` carries six directories that declare
+    `langflow-suite`'s eight outputs, at two versions, and `recipes/dbt` and `recipes/dbt-core` both build `dbt-core`.
+  - What a duplicate breaks is the mirror. A standalone `recipes/dbgpt-app` would mirror no feedstock, could never be
+    submitted (the registry lets one feedstock claim each name), and would shadow the multi-output build in the shared
+    local channel.
+  - Dropping the outputs from the multi-output mirrors instead would break both mirrors' fidelity, and reverse G72.
+
+  The same read found more:
+  - Wave A's name-matching also misread four `langflow-suite` bundles (`lfx-*`) as ahead, from those duplicate
+    directories; they are behind.
+  - The driver moves `context.version` only, so a suite's per-output versions stay behind (gap 5).
+  - conda-forge repurposed `zxing-cpp-feedstock` from the Python bindings to the C++ library on 2026-09-08, which makes
+    Story 25.9's version bump of `recipes/zxing-cpp` wrong.
+
+  **What it looks like when real:** Story 25.13 mirrors `dbt-snowflake` and `zxing-cpp-python` from their feedstocks,
+  with every maintainer kept, and builds both on linux-64. Story 25.14 creates no directory. After Story 25.7, it
+  brings each of the 18 and the four bundles to its published version in `recipes/db-gpt` or `recipes/langflow`,
+  corrects `recipes/db-gpt`'s stale CFE block, and records the corrected mapping and every duplicate directory. It also
+  closes Wave F's deferral. Story 25.9 re-mirrors `recipes/zxing-cpp` from the repurposed feedstock (its AC 13). Two
+  questions go back to the operator: whether "create them" meant 20 directories (recommended: no), and whether to
+  retire the duplicate directories (recommended: yes, in a fix story of their own).
+  **Constraints:** every Epic 25 line stands: local only, through `conda-forge-expert`, maintainers a superset of the
+  deployed list (G53), a linux-64 build or a recorded reason, and a `retro(cfe):` commit per story. No new CAP. Owner:
+  mason. → Epic 25 / Stories 25.13 and 25.14, and a note on Story 25.9, specced 2026-10-09.
 
 ## One-chain fold — 2026-09-17
 
