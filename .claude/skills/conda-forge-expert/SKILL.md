@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.99.1
+version: 8.99.2
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4456,6 +4456,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.99.2** (Oct 10, 2026) — **mason Story 25.4 retro: hand-stamp CFE block then rerun `--repair`; 14/14 repaired; build record for leftovers (PATCH).** See `CHANGELOG.md`.
 - **v8.99.1** (Oct 9, 2026) — **mason Story 25.2 closing retro: reading a `refresh-wave` report, the no-CFE-block cause behind every Wave 0 leftover, and a G93 addendum (PATCH).** See `CHANGELOG.md`.
 - **v8.99.0** (Oct 9, 2026) — **mason Story 25.3: `refresh_wave.py`, a tracked bulk recipe-refresh driver with `--repair` for the Wave H damage (MINOR).** Dry-run by default, resumable, idempotent, local only; `recipe_updater` reads a recipe with no `context.name`. See `CHANGELOG.md`.
 - **v8.98.0** (Oct 9, 2026) — **mason Story 22.1 Rule-2 retro: G121, conda-recipe-manager's leaked `SentinelType` key, and the corpus check that refuses the next one (MINOR).** Revised the same day after the independent review (still unreleased): the corpus scan is recursive with a per-location allowlist that admits one leak per entry (Stories 22.3 and 22.4), and G121 corrects the `track_features` claim and adds the staging build-env, staging build-string and minijinja string-vs-int traps; G1 is retitled for its 0.76.1 re-verification. See `CHANGELOG.md`.
