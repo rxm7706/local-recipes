@@ -2,7 +2,8 @@
 title: "25.5: Track B batch 1 refreshes airflow-code-editor through django-countries"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f05de4bab8500a64631f84d8a9a0dc6bce064295'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
