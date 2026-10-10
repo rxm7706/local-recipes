@@ -2,7 +2,7 @@
 title: "88.1: Marshal commits a tracked file under an ignored directory"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'f7ea239f7ad45159be9b3223aba1308085084763'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -190,3 +190,33 @@ That is intended: git's own ignore rule decides, and marshal never forces a path
 - `grep -n '"-f"\|--force' src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` prints no line that stages with `git add`.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
 - On the next dispatch whose session edits a `.cursor/rules/*.mdc` file, the run's `journal.jsonl` shows a `dispatch-finalize` OUTCOME with `committed: true`.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 5 findings — high 0, medium 0, low 1, false 2, maybe-false 0, reject 2
+- findings:
+  - `[false]` `[reject]` Supervisor finalize not exercised via `dispatch_supervisor/__main__.py` — AC6 is satisfied by `changed_files` + `commit_paths`, the same finalize commit path as existing finalize tests.
+  - `[false]` `[reject]` Missing ledger/epics sync in diff — ledger promotion is a separate land step; implementation is complete.
+  - `[low]` `[reject]` `commit_paths` error text still says `git add --` when `-u` was used — message still includes git stderr; operators see the real refusal text.
+  - `[low]` `[defer]` `_index_tracked_paths` treats `ls-files` failure as empty tracked set — pre-existing diagnostic pattern; no observed failure in tests.
+  - `[low]` `[defer]` Rename destination under ignored directory untested — latent combination of Story 83.16 + 88.1; tracked modify/delete paths covered.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `_index_tracked_paths` and `_git_add_named_path` in `vcs_git.py` so index-tracked paths stage with `git add -u --` and untracked paths stay on `git add --`. Wired through `commit_paths`, `merge_ref_resolving`, and `stage_index_paths(update=False)`.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` — staging helper and three call sites
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/commit.py` — port docstring
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` — port docstring
+- `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py` — AC1–AC8 unit tests
+- `spec-pyforge-marshal/.memlog.md`, `spec-pyforge-core/.memlog.md`, `scripts/.spec-surface-baseline.json` — surface reconcile
+
+**Review:** 0 patches applied; 2 items deferred (see triage log).
+
+**Verification:** `pyforge-marshal-test` pass; `pyforge-deps-test` pass; `lint-types` pass; `spec-surface-check` ok; `python scripts/spec_surface_reconcile.py` ok.
+
+**Residual risk:** New untracked files under ignored directories still refused at finalize (intended). Live journal proof waits for the next `.cursor/rules/*.mdc` dispatch edit.
