@@ -2,7 +2,8 @@
 title: "15.1: Opengrep is an optional SAST scanner that informs, never publishes, the verdict"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f9c6a87dbe45d0e03d9a422dd708e466ce19bada'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

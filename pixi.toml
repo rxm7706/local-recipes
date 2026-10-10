@@ -2658,6 +2658,7 @@ packaging = ">=26.3"              # hygiene.py, engines.py, extract/_identity.py
 jsonschema = ">=4.26.0"           # report.py
 packageurl-python = ">=0.17.6"    # sbom.py, sources.py, eligibility_sbom.py; imports as `packageurl`
 license-expression = ">=30.4.4"   # license.py; imports as `license_expression`
+opengrep = { version = ">=1.30.2,<1.31", channel = "SelfExplainML" }  # Story 15.1 (CAP-25): optional SAST engine; local-only recipe published to SelfExplainML (mason 21.4)
 
 [feature.pyforge-warden.tasks.warden-scan]
 description = "Run the Warden multi-axis dependency gate (hygiene + security [+ license/currency v1.x])"
