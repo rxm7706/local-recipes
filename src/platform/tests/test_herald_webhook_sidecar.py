@@ -171,35 +171,6 @@ def test_mcp_host_sidecar_herald_absent_returns_404_json(
     assert reached
 
 
-class _CoreErrorsAbsentFinder:
-    def find_spec(self, fullname, path, target=None):
-        if fullname == "pyforge.core.errors":
-            raise ModuleNotFoundError(name=fullname)
-        return None
-
-
-def test_mcp_host_sidecar_herald_dependency_missing_not_blamed_on_herald(
-    mcp_client: TestClient,
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
-    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "shared-secret")
-    for name in list(sys.modules):
-        if name in ("pyforge.core.errors",) or name.startswith("pyforge.herald."):
-            sys.modules.pop(name, None)
-    finder = _CoreErrorsAbsentFinder()
-    sys.meta_path.insert(0, finder)
-    try:
-        with pytest.raises(ModuleNotFoundError):
-            mcp_client.post(_ON_SHIP_PATH, content=b"{}")
-    finally:
-        sys.meta_path.remove(finder)
-        _, webhook_host = _herald_modules()
-        webhook_host._application = None  # noqa: SLF001
-    assert mcp_client.get("/health").status_code == HTTPStatus.OK
-
-
 def test_mcp_host_sidecar_missing_secret_503(
     mcp_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -459,3 +430,33 @@ def test_herald_webhook_sidecar_flag_two_states(
         assert asyncio.run(_forward()) is False
     finally:
         api.clear_providers()
+
+
+class _CoreErrorsAbsentFinder:
+    def find_spec(self, fullname, path, target=None):
+        if fullname == "pyforge.core.errors":
+            raise ModuleNotFoundError(name=fullname)
+        return None
+
+
+def test_mcp_host_sidecar_herald_dependency_missing_not_blamed_on_herald(
+    mcp_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "shared-secret")
+    for name in list(sys.modules):
+        if name in ("pyforge.core.errors",) or name.startswith("pyforge.herald."):
+            sys.modules.pop(name, None)
+    finder = _CoreErrorsAbsentFinder()
+    sys.meta_path.insert(0, finder)
+    try:
+        with pytest.raises(ModuleNotFoundError):
+            mcp_client.post(_ON_SHIP_PATH, content=b"{}")
+    finally:
+        sys.meta_path.remove(finder)
+        _, webhook_host = _herald_modules()
+        webhook_host._application = None  # noqa: SLF001
+        importlib.reload(mcp_host_module)
+    assert mcp_client.get("/health").status_code == HTTPStatus.OK
