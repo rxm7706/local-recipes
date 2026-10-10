@@ -34,8 +34,8 @@ requirements:
 
 tests:
 - python:
-      # Distribution name `mem0ai`, import name `mem0`
-      # (verified: sdist contains mem0/__init__.py).
+    # Distribution name `mem0ai`, import name `mem0`
+    # (verified: sdist contains mem0/__init__.py).
     imports:
       - mem0
       - mem0.client
