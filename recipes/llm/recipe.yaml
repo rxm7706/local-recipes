@@ -8,7 +8,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llm-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/llm/llm-${{ version }}.tar.gz
   sha256: c7701408fdc53cbdf1db6a43f35c7dd410c291dda36cc38a14db4b482b274fa4
   patches:
     # https://github.com/simonw/llm/pull/1180
@@ -74,3 +74,34 @@ extra:
   recipe-maintainers:
     - rxm7706
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llm
+  cfe-purls:
+    - pkg:conda/llm@${{ version }}?channel=conda-forge
+    - pkg:pypi/llm@${{ version }}
+  cfe-upstream-repo: https://github.com/simonw/llm
+  cfe-upstream-homepage: https://github.com/simonw/llm
+  cfe-import-names: [llm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llm-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T12:14:52Z
+  cfe-generated-by-version: 8.99.3
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T12:14:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.7: stamped CFE block + canonical source.url (AC 2)
+####

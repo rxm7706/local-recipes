@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/modelsearch-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/m/modelsearch/modelsearch-${{ version }}.tar.gz
   sha256: f3b2e304dbef9f7c838423f591cfe0c60f4cef584bae8793d2aa8ac35a3c46e0
 
 build:
@@ -46,3 +46,34 @@ extra:
   recipe-maintainers:
     - darynwhite
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: modelsearch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: modelsearch
+  cfe-purls:
+    - pkg:conda/modelsearch@${{ version }}?channel=conda-forge
+    - pkg:pypi/modelsearch@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail/django-modelsearch
+  cfe-upstream-homepage: https://github.com/wagtail/django-modelsearch
+  cfe-import-names: [modelsearch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/modelsearch-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T12:14:52Z
+  cfe-generated-by-version: 8.99.3
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T12:14:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.7: stamped CFE block + canonical source.url (AC 2)
+####

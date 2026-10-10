@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jhub_apps-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/jhub-apps/jhub_apps-${{ version }}.tar.gz
   sha256: 0b3da184008e00e864b5d203d6d2e76b8188ecfbab1296af8692b9f1666d9647
 
 build:
@@ -76,3 +76,34 @@ extra:
     - dcmcand
     - costrouc
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jhub-apps
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jhub-apps
+  cfe-purls:
+    - pkg:conda/jhub-apps@${{ version }}?channel=conda-forge
+    - pkg:pypi/jhub-apps@${{ version }}
+  cfe-upstream-repo: https://github.com/nebari-dev/jhub-apps
+  cfe-upstream-homepage: https://jhub-apps.nebari.dev/
+  cfe-import-names: [jhub_apps]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/jhub-apps-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T12:14:52Z
+  cfe-generated-by-version: 8.99.3
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T12:14:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.7: stamped CFE block + canonical source.url (AC 2)
+####
