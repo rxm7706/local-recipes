@@ -81,7 +81,7 @@ development_status:
   25-10-track-b-batch-6-refreshes-opentelemetry-s-core-packages-and-exporters: backlog
   25-11-track-b-batch-7-refreshes-opentelemetry-instrumentation-from-distro-through-httpx: backlog
   25-12-track-b-batch-8-refreshes-opentelemetry-instrumentation-from-mysql-through-wsgi: backlog
-  25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
+  25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: done
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
   25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason: backlog
   25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries: backlog
