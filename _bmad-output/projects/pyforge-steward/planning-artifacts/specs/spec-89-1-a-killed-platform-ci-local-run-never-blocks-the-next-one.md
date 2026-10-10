@@ -2,7 +2,7 @@
 title: "89.1: A killed `platform-ci-local` run never blocks the next one"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '4733295ea59e2bffe5407fea9bb47513d108b8ea'
@@ -274,3 +274,40 @@ the stub log whether any link in `/proc/self/fd` points at the lock file.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog reconciles and scoped
   stamps.
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Container/image stage commands may not all pass `9>&-` — AC1 tests only exercise `--test`; services and steps in that path close fd 9; remaining stages unchanged from pre-story behavior and were not in scope for AC1.
+  - `[low]` `[reject]` `_listener_on_port` depends on `ss -ltnp` pid= parsing — unlikely to matter on supported CI hosts; port-refusal tests pass with Python socket listeners.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `platform-ci-local` now runs its body with fd 9 closed for every child, reclaims dead-run services only after `/proc` identity checks, refuses occupied PG/Redis ports without signalling foreign listeners, and reports live lock holders (marking stale `.holder` records).
+
+**Files changed:**
+- `scripts/platform-ci-local.sh` — lock isolation, safe reclaim, port check, contention reporting
+- `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` — detached stand-in stubs, default free ports
+- `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py` — Story 89.1 acceptance tests (new)
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` — surface reconcile entry
+
+**Review:** 0 patches applied; 2 findings rejected as out of scope or negligible.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2307 passed, 2 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 (memlog names all governed paths below)
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0, no drift
+
+**Surface reconcile (spec-pyforge-steward memlog):**
+- `scripts/platform-ci-local.sh`
+- `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py`
+- `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py`
+
+**Residual risks:** Orphaned slow step after shell-only SIGKILL (documented in spec); port check cannot reclaim services outside the work dir.

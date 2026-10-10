@@ -244,7 +244,7 @@ run_platform_ci_local() {
   ensure_envs() {
     local e
     for e in platform-ci-test platform-dev pyforge-warden; do
-      [ -x "$ROOT/.pixi/envs/$e/bin/python" ] || pixi install --frozen -e "$e" >/dev/null
+      [ -x "$ROOT/.pixi/envs/$e/bin/python" ] || pixi install --frozen -e "$e" 9>&- >/dev/null
     done
     command -v "$ENGINE" >/dev/null 2>&1 || { echo "$ENGINE is not on PATH" >&2; exit 2; }
   }
