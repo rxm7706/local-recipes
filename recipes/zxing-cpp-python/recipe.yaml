@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.1.1"
+
+package:
+  name: zxing-cpp-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zxing-cpp/zxing_cpp-${{ version }}.tar.gz
+  sha256: 1051a521b21a9fe206702ad4186aeb195154e3e1badcd99576d030723f36382b
+
+build:
+  number: 2
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - if: not win
+      then:
+        - make
+    - if: build_platform != host_platform
+      then:
+        - cross-python_${{ host_platform }}
+        - python
+        - scikit-build-core
+        - nanobind
+  host:
+    - python
+    - scikit-build-core >=0.12
+    - nanobind >=2.11.0
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - zxingcpp
+      pip_check: true
+
+about:
+  homepage: https://github.com/zxing-cpp/zxing-cpp/
+  summary: Python bindings for the zxing-cpp barcode library
+  documentation: https://github.com/zxing-cpp/zxing-cpp/blob/master/wrappers/python/README.md
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zxing-cpp-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zxing-cpp-python
+  cfe-purls:
+    - pkg:conda/zxing-cpp-python@${{ version }}?channel=conda-forge
+    - pkg:pypi/zxing-cpp-python@${{ version }}
+  cfe-upstream-repo: https://github.com/zxing-cpp/zxing-cpp/
+  cfe-upstream-homepage: https://github.com/zxing-cpp/zxing-cpp/
+  cfe-import-names: [zxingcpp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: none
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/zxing-cpp-python-feedstock
+  cfe-forge-recipe-updates-needed:
+    - source-url-pypi-org-canonical
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T09:20:00Z
+  cfe-generated-by-version: 8.99.2
+  cfe-generated-at-datetime: 2026-10-10T09:20:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T10:45:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Mirror source: conda-forge/zxing-cpp-python-feedstock @ 2054c6d6307f303951e102e2b8c3ddbd7ad06bb3 (2026-10-10).
+#    # source.url: feedstock uses files.pythonhosted.org/packages/source/z/zxing-cpp/…; local mirror uses the
+#    # canonical literal https://pypi.org/packages/source/z/zxing-cpp/zxing_cpp-<version>.tar.gz
+#    # (sha256 verified identical). Added schema_version: 1 header (feedstock recipe omits it). Park upstream URL
+#    # alignment under cfe-forge-recipe-updates-needed above.
+####

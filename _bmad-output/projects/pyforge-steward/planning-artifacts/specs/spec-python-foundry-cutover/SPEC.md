@@ -4,7 +4,7 @@ spec: python-foundry-cutover
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-09-04"
-updated: "2026-09-28"
+updated: "2026-10-10"
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-N outside it; Unifying CAP-1..19 and pap:CAP-1..6 are different sets — never collapse
 surface: []
@@ -212,9 +212,11 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 - No symlink is tracked in git; runtime links are generated per machine (symlink on POSIX,
   junction on Windows) and gitignored. Runtime state lives in gitignored `var/`.
 - Contract before repo: CAP-1 is not dispatched until this Spec is `ready` and Epic 44
-  exists. CAP-1, CAP-6 and CAP-13's upstream filing (Story 67.4) are outward; the
-  ledger holds them `blocked` until the operator flips each one. Never auto-drained.
-  CAP-7 is retired; Story 44.10 is never dispatched.
+  exists. CAP-1 and CAP-6 are outward; the ledger holds them `blocked` until the
+  operator flips each one. Never auto-drained. CAP-13's upstream filing, tracking and
+  retiring are the operator's acts alone, recorded in the repo's upstream to-do list
+  with `decided_by: operator`; no story performs them (Story 67.4 keeps the list and
+  files nothing). CAP-7 is retired; Story 44.10 is never dispatched.
 - The SBOM never composes the fat `local-recipes` feature or a `desktop-lab`
   feature; inclusion is "used by PyForge code or needed by a PyForge developer or
   operator workflow". PostgreSQL stays major 17, and libpq 17 in every environment

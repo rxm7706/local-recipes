@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-08"   # RE-STAMPED 2026-10-08: chain-currency behind-code (code -> spine) and prd->arch cascade for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; lands on AD-3, AD-4, AD-22 and canopy:AD-21 as written; the AD-3 amendment line corrected in place (the formats are plugins on the hook, each producer runs from its own verb); no AD added or amended; one PPTX-invariant divergence recorded (the native driver is not token-driven). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: prd->arch cascade for the PRD's 2026-10-10 reconciliation (Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10); lands on AD-14 and AD-13/AD-17 as built; the 2026-09-14 "must not quietly resolve" paragraph answered by the ruling, not by this spine. No AD added, amended or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> spine) and prd->arch cascade for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; lands on AD-3, AD-4, AD-22 and canopy:AD-21 as written; the AD-3 amendment line corrected in place (the formats are plugins on the hook, each producer runs from its own verb); no AD added or amended; one PPTX-invariant divergence recorded (the native driver is not token-driven). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
@@ -957,3 +957,30 @@ only `config/flags.json`, `config/flag-overlays.json` and its flag test, and sti
 
 **Content changed:** this section, and the AD-3 amendment line corrected in place. `updated:` bumped. No AD added,
 amended or removed.
+
+## Currency reconciliation — 2026-10-10
+
+*`prd→arch` cascade for the PRD's § Currency reconciliation — 2026-10-10. The trigger is the operator's ruling of
+2026-10-10 on Story 19.2 ("go with option 1, local host"; verbatim on the Spec memlog). It is not a code change.*
+
+**The 2026-09-14 paragraph "The one thing this spine must not quietly resolve" is answered, by the operator, not by this
+spine.** That paragraph called Story 19.2's blocker a cross-station dependency on Steward's deployment surface. It is
+still that: Story 19.2 stays `blocked` on the steward story that closes DW-13-6-1, which adds `--asgi-application` to
+`steward deploy perimeter`. The hosting question it left open is now ruled: this machine's local stack, not the
+cutover. The re-scope lands on these ADs as written:
+
+- **AD-14 as built (webhook mounted on the host ASGI, inside Steward's trust boundary).** The host is the platform's
+  one ASGI host, `config.asgi:application`. It runs under daphne from `pyforge-foundry-full-stack` on its local
+  PostgreSQL 17, bound to `127.0.0.1`, and is started from the line the steward perimeter renders. The webhook is
+  reached through Story 19.1's station API seam. A standalone `pyforge.herald.webhook_host:application` process was
+  considered and rejected: it is a bespoke Herald perimeter (AD-14 as built) and a per-station process (AGENTS.md
+  § Policy: no `:800x` process tree). The rendered nginx edge config is not installed: no public endpoint.
+- **AD-13/AD-17 as built (storage: SQLite, not PostgreSQL).** Herald's records stay in `.herald/herald.db` under the
+  primary checkout. The ruling's PostgreSQL 17 is the host's Django database. Satellite Deferred Decision 1 stays closed.
+- **AD-19 (resilience).** Unchanged. One residual becomes reachable, `DW-13-6-2`: a hung handler keeps its worker
+  thread. It can matter only once a host persists. It stays open; the how-to names the restart as the remedy.
+
+No port, adapter or package boundary moves. `src/platform/` still imports no `pyforge.*`, and gains only a test that
+sends a signed `on-ship` through the host.
+
+**Content changed:** this section. `updated:` bumped. No AD added, amended or removed.

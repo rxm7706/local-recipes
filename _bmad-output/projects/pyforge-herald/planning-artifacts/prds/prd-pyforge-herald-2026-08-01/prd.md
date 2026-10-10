@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-08"   # RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -745,23 +745,23 @@ Herald is the factory's unified voice. The Four Moments ensure every idea is arg
 
 ### Feature Group 7: Automation Orchestration
 
-**FR-7.1: Webhook Integration** ← CAP-37
+**FR-7.1: Webhook Integration** ← CAP-38
 - **Moment 2**: on-ship webhook (CI notifies Herald when PR merges to main)
   - Payload: PR URL, commit SHA, test job URL, merged-at timestamp, station tag (if available)
 - **Moment 3**: on-PR-close webhook (CI notifies Herald when PR closes + gates pass)
   - Payload: PR URL, commit SHA, test job URL, close-at timestamp
 
-**FR-7.2: Scheduler (Cron)** ← CAP-38
+**FR-7.2: Scheduler (Cron)** ← CAP-39
 - **Moment 2**: Thursday 2300 UTC weekly (fallback if no on-ship events)
   - Collects all shipping events from past week, generates aggregated record
 - **Extensible**: Automation rules stored in Herald config (can be modified per Moment without code changes)
 
-**FR-7.3: Gate-Based Triggers** ← CAP-39
+**FR-7.3: Gate-Based Triggers** ← CAP-38
 - **Moment 3**: auto-extract only if PR-close event INCLUDES "all gates passed" signal
   - No orphaned claims from incomplete shipping
 - **Moment 4**: manual author only (no auto-trigger)
 
-**FR-7.4: Operator Confirmation Gates** ← CAP-37
+**FR-7.4: Operator Confirmation Gates** ← CAP-11, CAP-12, CAP-13
 - Moment 2 progress: operator authors unblock narrative (prompted after auto-extract)
 - Moment 3 success: operator approves + authors thesis (required before publish)
 - Moment 4 notice: operator authors full notice (required; no auto-generation)
@@ -1400,3 +1400,50 @@ Story 32.1 realizes FR-10.6. **ONE FR space still Feature Groups 1–10** (FR-11
 
 **Content changed:** this section added; FR-10.6 corrected in place (two lines) and one line added. No FR added,
 renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-10
+
+*Trigger: an operator ruling, not a code change. On 2026-10-10 the operator chose option 1 for Story 19.2 ("go with
+option 1, local host"): "Mint a small steward fix that adds `--asgi-application` to `deploy perimeter`. Then re-scope
+herald 19.2 so its host and store are this machine's local stack: `pyforge-foundry-full-stack` with PostgreSQL 17. No
+public endpoint, nothing outside the repo. Herald Epic 19 then closes, and 49.11 flips to done." The Spec memlog records
+the ruling and the decisions; the story spec carries the ACs.*
+
+### What changes in this PRD's reading
+
+- **The 2026-09-14 "still genuinely open" bullet is superseded in its premise.** It said Story 19.2 is `blocked` on
+  `DW-13-6-1` "so Herald has no perimeter to host a persistent listener on". The listener now has a host. It is the
+  platform's one ASGI host (`config.asgi:application`), run on this machine from `pyforge-foundry-full-stack` with its
+  local PostgreSQL 17, bound to loopback. It is rendered by `steward deploy perimeter --asgi-application` once the
+  steward story that closes DW-13-6-1 lands. Story 19.2 stays `blocked` on that steward story, not on the cutover. The
+  2026-09-09 `foundry-side` parking (batch row C11) no longer applies to it.
+- **Storage holds as written.** The 2026-09-14 note's as-built line, "resolved as stdlib SQLite … The satellite's
+  PostgreSQL/SQLAlchemy/Celery assumptions were never built", stands. The ruling's PostgreSQL 17 is the host's database,
+  not herald's store. Herald's records stay in SQLite at the primary checkout's `.herald/herald.db`, because `db.py` has
+  no other backend, and adding one is a new capability Epic 19 does not build.
+
+### FR-7.1..FR-7.4: four source-capability arrows corrected in place
+
+The arrows were shifted against the 2026-09-17 remint. In `SPEC.md`, CAP-37 is the DB-backed storage layer, CAP-38 the
+webhook endpoint and CAP-39 the cron scheduler. FR-7.1 (webhook) now cites CAP-38. FR-7.2 (scheduler) now cites CAP-39.
+FR-7.3 (gate-based triggers: the `merged`/`gates_passed` gate `handle_on_pr_close` applies) now cites CAP-38. FR-7.4
+(operator confirmation gates on progress, success and notices) now cites CAP-11, CAP-12 and CAP-13, the three Moment
+surfaces whose gates it describes. All four FRs predate the FR rule (`fr-without-cap` baseline), so no detector moves;
+the arrows were simply wrong.
+
+### One residual, recorded and not repaired (FR-7.1, "CI notifies Herald")
+
+FR-7.1 says CI notifies Herald when a PR merges. With no public endpoint, GitHub Actions cannot reach a loopback host.
+Story 19.2 therefore proves the webhook with a local caller, which derives the payload from a real landing commit
+(`pyforge.core.landing_evidence`), and the one human act is running that caller. CAP-38's success sentence, "a merged
+PR produces a progress record with zero operator action", is met for record creation (no one authors the record) but not
+for triggering. Unattended per-landing delivery, whether a CI call to a reachable host or a local trigger, is not 19.2's
+AC and is not amended away here. It returns with a reachable host or a later story. `herald-live-demo.yml` stays
+disabled and is not the proof.
+
+### The FR space: no FR registered
+
+**ONE FR space still Feature Groups 1–10** (FR-11.1 is the next free id).
+
+**Content changed:** this section added; FR-7.1..FR-7.4's arrows corrected in place. No FR added, renumbered or
+removed. `updated:` bumped.

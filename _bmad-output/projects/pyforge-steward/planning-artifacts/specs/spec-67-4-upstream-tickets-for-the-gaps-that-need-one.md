@@ -43,7 +43,10 @@ a CFE gotcha, or a story's deferred row. Nothing says who files it, whether anyo
     `feature:crm` (`:12`) and `feature:python-agent-platform` (`:23`).
   - `scripts/sbom_gap_derive.py` parses the file (`parse_gaps_document`, `ROW_RE` at `:35`) and backs the
     `sbom-gaps-check` task (`pixi.toml`, `[feature.guild-tasks.tasks.sbom-gaps-check]`). That task is not a detector,
-    since its name does not match `scripts/*_check.py`. No CI lane runs it, so it gates nothing.
+    since its name does not match `scripts/*_check.py`, and no lane runs the task by name. Its check still gates every
+    PR: `tests/scripts/test_sbom_gap_derive.py::test_live_document_matches_derivation` calls the same
+    `check_gaps_document()` in the Detectors workflow's `scripts-suite` job and in `pr-preflight`'s
+    `pyforge-doctor-scripts-test` leg.
   - `scripts/detectors.py` discovers a `scripts/*_check.py` that declares `DETECTOR = {"scope": "repo"}` and has a pixi
     task naming it, and `detectors-ci` runs it.
   - No registry of upstream to-dos exists.
@@ -250,16 +253,21 @@ Type / Effort / Deps: feature / M / S-67.3 (done).
 
 ## Named, not fixed here
 
-- `sbom-gaps-check` gates nothing. No CI lane runs it, and `scripts/detectors.py` does not discover it because its
-  script is not named `*_check.py`. A `pixi.toml` change that adds a feature outside the SBOM, or a fat-only pin, lands
-  without a row until someone runs the task by hand. This story's check covers only the rows the file already has. Put
-  the gap to the operator as a fix story under fnd:CAP-13 (make it a repo-scope detector).
+- `sbom-gaps-check` is not a registered detector: `scripts/detectors.py` does not discover it because its script is
+  not named `*_check.py`, and no lane runs the task by name. The list is still gated. A `pixi.toml` change that adds a
+  feature outside the SBOM, or a fat-only pin, reds `test_live_document_matches_derivation` in the Detectors
+  `scripts-suite` job (every `pull_request`, no path filter) and in `pr-preflight`'s `pyforge-doctor-scripts-test`
+  leg. PR #2008 went red that way on 2026-10-09 (`ca1c50d447` added the missing row). This story's check covers only
+  the rows the file already has. A fix story was approved on 2026-10-10 on the premise that the list was ungated; the
+  premise was disproved the same day and the story is not minted (spec-python-foundry-cutover memlog).
 
 ## Spec Change Log
 
 - 2026-09-25: minted `blocked` as outward work (open one upstream issue per `upstream` row).
 - 2026-10-10: re-scoped repo-only by the operator's ruling: type `chore` → `feature` (`flag-exempt:
   detector-or-gate`), effort S → M, title changed, Outward line removed; the ledger key moved `blocked` → `backlog`.
+- 2026-10-10 (later): corrected the claim that `sbom-gaps-check` gates nothing. Its check runs on every PR through
+  `test_live_document_matches_derivation`; no AC, status or ledger key changed.
 
 ## Review Triage Log
 
