@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.44.0"
+  version: "1.45.1"
 
 package:
   name: opentelemetry-api
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-api/opentelemetry_api-${{ version }}.tar.gz
-  sha256: 67647e5e9566edcf421166fdf022b3537f818635daa852b289e34604dc6fb33a
+  sha256: aa38ed19bcc084ba42782a73255b3582283eced7ad6dddbd6695189e69adfb75
 
 build:
   number: 0
@@ -24,7 +24,8 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - typing_extensions >=4.5.0
+    - typing-extensions >=4.5.0
+    - importlib-metadata >=6.0,<8.8.0
 
 tests:
   - python:
@@ -66,19 +67,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-api-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-1.44.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:18:31Z
+  cfe-last-checked: 2026-10-10T16:55:02Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T02:18:31Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T02:18:31Z
+  cfe-local-build-datetime: 2026-10-10T16:55:39Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 1.44.0 -> 1.45.1
 ####
