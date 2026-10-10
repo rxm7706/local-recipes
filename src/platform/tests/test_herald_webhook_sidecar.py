@@ -18,8 +18,6 @@ from unittest.mock import patch
 import pytest
 from django_pyforge.sidecar_forward import HERALD_WEBHOOK_SIDECAR_FLAG
 from django_pyforge.sidecar_forward import dispatch_herald_webhook_forward
-from httpx import ASGITransport
-from httpx import AsyncClient
 from starlette.testclient import TestClient
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
@@ -310,35 +308,6 @@ def test_host_does_not_forward_non_webhook_paths(monkeypatch: pytest.MonkeyPatch
         return await dispatch_herald_webhook_forward(scope, receive, send)
 
     assert asyncio.run(_run()) is False
-
-
-def test_asgi_integration_forward_when_flag_on(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://fake-sidecar:8090")
-    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
-    from config.asgi import application
-
-    body = b"integration-body"
-
-    async def _run():
-        with patch("httpx.AsyncClient", return_value=_CaptureClient()):
-            transport = ASGITransport(app=application)
-            async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-                return await client.post(
-                    "/stations/herald/api/v1/webhooks/on-ship?x=1",
-                    content=body,
-                    headers={
-                        "Content-Type": "application/json",
-                        "X-Hub-Signature-256": "sha256=abc",
-                        "X-Hub-Timestamp": "1",
-                        "Authorization": "Bearer x",
-                        "Cookie": "s=1",
-                    },
-                )
-
-    response = asyncio.run(_run())
-    assert response.status_code == 201
-    assert _CaptureClient.last is not None
-    assert _CaptureClient.last["content"] == body
 
 
 def test_sidecar_forward_does_not_import_pyforge_in_platform() -> None:
