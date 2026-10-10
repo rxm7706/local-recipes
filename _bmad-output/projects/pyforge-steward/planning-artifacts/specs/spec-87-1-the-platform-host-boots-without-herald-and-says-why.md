@@ -2,7 +2,8 @@
 title: "87.1: The platform host boots without Herald and says why"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '38370fdf419fb11a2ae7226b226199f5453cb96b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -225,3 +226,32 @@ Type / Effort / Deps: fix / S / —.
 ## Review Triage Log
 
 - No review has run yet.
+
+### 2026-10-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `config.optional_components` so herald loads through `import_optional`; herald v1 is omitted from `_station_apps` when `pyforge.herald` is absent; station API 404s use `absent_reason(station)` for skipped stations. Closed herald `DW-herald-19-1`.
+
+Files changed:
+- `src/platform/config/optional_components.py` — new helper (`import_optional`, `absent_reason`)
+- `src/platform/config/station_api.py` — herald registration via helper; optional seed
+- `src/platform/config/asgi.py` — 404 detail from absent reason
+- `src/platform/tests/test_host_boots_without_herald.py` — subprocess + in-process AC tests
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md` — `DW-herald-19-1` done
+
+Review: no patch/defer/intent_gap items.
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — pass
+- `pixi run -e pyforge-guild deferred-work-check` — pass
+- `python scripts/spec_surface_reconcile.py` — pass (memlogs on co-governors; no `--write-baseline`)
+
+Surface memlogs (paths named):
+- `spec-pyforge-unifying-strategy`: `src/platform/config/optional_components.py`, `src/platform/config/station_api.py`, `src/platform/config/asgi.py`, `src/platform/tests/test_host_boots_without_herald.py`
+- `spec-pyforge-steward`: `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`
