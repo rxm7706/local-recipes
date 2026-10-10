@@ -1530,6 +1530,23 @@ def test_path_in_story_blast_radius_matches_changed_or_surface() -> None:
     )
 
 
+def test_reclassify_leaves_cross_surface_gate_015_unchanged() -> None:
+    """Story 85.7 AC7: MRS-GATE-015 is never downgraded to MRS-GATE-014."""
+    gate_015 = Finding(
+        code="MRS-GATE-015",
+        severity=Severity.ERROR,
+        message="cross-surface verify command 'pixi run -e pyforge-guild flag-gate-check' exited 1",
+    )
+    findings = reclassify_pre_existing_gate_findings(
+        (gate_015,),
+        command_reports=(),
+        changed_files=("docs/dreams/pyforge-marshal.md",),
+        effective_surface=("docs/dreams/**",),
+        project_slug="pyforge-marshal",
+    )
+    assert findings == (gate_015,)
+
+
 def test_reclassify_pre_existing_gate_downgrades_unrelated_verify_failure() -> None:
     gate_001 = Finding(
         code="MRS-GATE-001",

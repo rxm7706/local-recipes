@@ -2,8 +2,8 @@
 title: "85.7: A cross-surface refusal gets the same one fix turn"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
-baseline_revision: '2d90c634f324c68d67a41a3e0e9477061113a8f8'
+status: 'in-progress'
+baseline_revision: '21aae5aa16e9537aa983afed72125d240a8b8a1d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
