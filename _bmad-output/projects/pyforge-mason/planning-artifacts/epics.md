@@ -2912,7 +2912,7 @@ each refusal it can clear, then `--apply --gates --build`
 push, PR, fork, issue or comment outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no
 CFE `submit_pr` or `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.6: Track B batch 2 refreshes django-fsm-log through import-linter
 
