@@ -55,10 +55,10 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
-    - pb01ka
   cfe-conda-name: langchain-litellm
   cfe-upstream-registry: pypi
   cfe-upstream-name: langchain-litellm
