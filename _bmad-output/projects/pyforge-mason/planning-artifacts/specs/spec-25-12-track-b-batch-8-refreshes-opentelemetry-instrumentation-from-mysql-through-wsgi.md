@@ -2,7 +2,8 @@
 title: "25.12: Track B batch 8 refreshes OpenTelemetry instrumentation from mysql through wsgi"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '83b38f2a614ac3596d01a731355703f61a985af1'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
