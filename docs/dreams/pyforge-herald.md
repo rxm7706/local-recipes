@@ -116,6 +116,34 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-10 (live backend, local host) — Ruled: a ship records itself on this machine's local stack, not
+  foundry-side.** Epic 13 is `done` and a ship has never recorded itself. Story 19.2 sat `blocked` on DW-13-6-1:
+  `steward deploy perimeter` renders a hardcoded `myproject.asgi:application` (`steward/deploy.py:539`) and has no
+  `--asgi-application` flag. The 2026-09-09 readiness pass (batch row C11) parked the hosting half `foundry-side`,
+  waiting for the cutover to give Herald a perimeter. The operator chose option 1 on 2026-10-10 ("go with option 1,
+  local host"): "Mint a small steward fix that adds `--asgi-application` to `deploy perimeter`. Then re-scope herald
+  19.2 so its host and store are this machine's local stack: `pyforge-foundry-full-stack` with PostgreSQL 17. No
+  public endpoint, nothing outside the repo. Herald Epic 19 then closes, and 49.11 flips to done." **What it looks like
+  when real:**
+  - **Host.** The platform's one ASGI host (`config.asgi:application`) runs under daphne from
+    `pyforge-foundry-full-stack`, bound to `127.0.0.1`, on its local PostgreSQL 17. It is started from the line
+    `steward deploy perimeter --asgi-application` renders, and herald's routes reach it through Story 19.1's seam.
+    There is no standalone herald process: AGENTS.md says no `:800x` process tree, and AD-14 as built says no bespoke
+    Herald perimeter.
+  - **Store.** Herald's records stay in SQLite at the primary checkout's ignored `.herald/herald.db`. `db.py` has no
+    PostgreSQL backend, and the spine closed that choice. PostgreSQL 17 is the host's database, not herald's store.
+  - **Proof.** One real landing on `origin/main` is delivered by a local caller as signed `on-ship` and `on-pr-close`.
+    Its Progress record and draft claim survive a restart of the host, and the run is transcribed into a tracked proof
+    file.
+  - **Constraints.** The secret stays local. `herald-live-demo.yml` stays disabled and unchanged: three other
+    surfaces govern it, and its `runner.temp` store can never be the proof. No CAP, no flag (the spec is pre-rule). One
+    residual is recorded: FR-7.1's "CI notifies Herald" stays open, because a loopback host has no public endpoint for
+    CI to call.
+
+  Owner `spec-pyforge-herald` (CAP-38, CAP-39; AD-14, AD-13/AD-17 as built). → Story 19.2, re-scoped 2026-10-10; it
+  stays `blocked` on the steward story that closes DW-13-6-1 (key `86-1-deploy-perimeter-renders-the-asgi-application-it-is-given`), and the ruling
+  pre-authorises the one flip, "flip 19.2 blocked -> backlog when the steward story that closes DW-13-6-1 is done on
+  main".
 - **2026-10-08 (native pptx tokens) — Found: the native `.pptx` export reads no design token.** The spine's AD-5 and
   its PPTX Generation invariant say every PPTX takes its fonts, colours and spacing from the design tokens, never
   hardcoded. Story 32.1's driver, `node/pptx_native.mjs`, sets `LAYOUT_16x9` (`:22`), hardcodes every offset and box,

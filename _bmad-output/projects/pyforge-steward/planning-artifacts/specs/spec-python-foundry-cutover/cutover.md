@@ -1,6 +1,6 @@
 ---
 companion-of: spec-python-foundry-cutover
-updated: "2026-09-28"
+updated: "2026-10-10"
 ---
 
 # Cutover — phases, target tree, faces, order
@@ -76,10 +76,10 @@ out of campaign 44.9 / 44.11 (D3). **No archive of A (operator 2026-09-25):** CA
 
 | CAP | Story | Do | Done when | Gate |
 |---|---|---|---|---|
-| CAP-12 | steward 67.1 | `pyforge-foundry-full` composes the `build` / `grayskull` / `crm` features (and `pnpm` in `python`) on three platforms; a layer env carries `platform-dev` + `platform-object-storage`; psycopg / pgvector caps and PG17 estate-wide; the `AGENTS.md` line | solves on linux-64, osx-arm64, win-64; the layer solves; scribe's Postgres suite green on PG17 | `pr-preflight`; `pyforge-station-tests` |
+| CAP-12 | steward 67.1 | `pyforge-foundry-full` composes the `build` / `grayskull` features (and `pnpm` in `python`) on three platforms; current `crm` (≥0.8, feedrattler) stays a named CAP-13 gap; a layer env carries `platform-dev` + `platform-object-storage`; psycopg / pgvector caps and PG17 estate-wide; the `AGENTS.md` line | solves on linux-64, osx-arm64, win-64; the layer solves; scribe's Postgres suite green on PG17 | `pr-preflight`; `pyforge-station-tests` |
 | CAP-13 | steward 67.2 | one laptop-gate task from the SBOM + layer alone | `pixi run -e pyforge-foundry-full sbom-laptop-gate` exit 0 on `main`; a planted missing dependency reds it | deps 67.1 |
 | CAP-13 | steward 67.3 | tracked `docs/foundry/` gap list derived from `pixi.toml` (every feature outside the SBOM and its layer; every fat-only pin) | `pixi run -e pyforge-guild sbom-gaps-check` exit 0; every row has a disposition and an owner | deps 67.1 |
-| CAP-13 | steward 67.4 | upstream tickets for the `upstream` rows | each ticket linked from its row | **outward** — `blocked` until the operator flips; deps 67.3 |
+| CAP-13 | steward 67.4 | the upstream to-do list in the repo: a registry and paste-ready drafts for every `upstream` row and each session find; files nothing | `pixi run -e pyforge-guild upstream-todos-check` exit 0; every `upstream` row has an entry; an operator-only state carries `decided_by: operator` and a date | filing, tracking and retiring are the operator's acts alone; deps 67.3 |
 | CAP-12 | steward 67.5 | developer guide, `AGENTS.md`, Mason / CFE docs name the SBOM | no doc names `-e local-recipes` as the laptop install | deps 67.2 |
 | CAP-14 | herald 26.1 (steward index 67.6) | dossier Estate / Foundation / Synthesis / Verified + a structural test | `pixi run -e site site-check` exit 0; the structural test asserts every Verified item cites a source | — |
 | CAP-15 | scribe 21.1 (steward index 67.7) | `AGENTS.md` estate-first through `bmad-project-context` | parity meta-test and `governance-currency` green | — |
