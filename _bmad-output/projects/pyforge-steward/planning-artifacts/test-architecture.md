@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 9ebb248dbddfec9c
-story_count: 345
+source_fingerprint: 14de1aa7c4d60e9a
+story_count: 346
 test_file_count: 110
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 345
-- **Epics parsed:** 89
+- **Stories parsed:** 346
+- **Epics parsed:** 90
 - **Test files inventoried:** 110 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9ebb248dbddfec9c`
+- **Source fingerprint:** `14de1aa7c4d60e9a`
 
 ## Risk Assessment
 
@@ -117,6 +117,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 86: `deploy perimeter` fronts the ASGI application it is given (fix under CAP-114)
 - Epic 88: The preflight runs each task once, after its dependencies (fix under CAP-159)
 - Epic 89: A killed `platform-ci-local` run never blocks the next one (fix under CAP-152)
+- Epic 90: A pytest the preflight starts never inherits another run's basetemp (fix under CAP-159)
 
 ### Low-risk epics
 
@@ -590,6 +591,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.4 | The herald webhook forward closes its review findings | none observed |
 | 88.1 | The preflight runs each task once, after its dependencies | none observed |
 | 89.1 | A killed `platform-ci-local` run never blocks the next one | none observed |
+| 90.1 | A pytest the preflight starts never inherits another run's basetemp | none observed |
 
 ## Quality Gates
 
