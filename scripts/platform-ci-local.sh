@@ -275,16 +275,16 @@ run_platform_ci_local() {
     export REDIS_URL="redis://localhost:$REDIS_PORT/0"
     export PATH="$CIT:$DEV:$PATH"
     local py=(env -u PYTHONSAFEPATH python)
-    ( cd src/platform || exit 2
-      step test "Django system checks (PostgreSQL + Redis, no other backing service)" "${py[@]}" manage.py check &&
-      step test "Ruff" "$CIT/ruff" check . &&
-      step test "Ruff format" "$CIT/ruff" format --check . &&
-      step test "Mypy" env -u PYTHONSAFEPATH "$CIT/mypy" platformapp config tests &&
-      step test "Policy suite" "${py[@]}" -m pytest tests/policy -q -p no:cacheprovider &&
-      step test "sqlmigrate extraction" "${py[@]}" -m db.sqlmigrate_extraction &&
-      step test "Full test suite (platformapp app tests, the ASGI seam, and the import boundary)" \
-        "${py[@]}" -m pytest -q -p no:cacheprovider
-    ) 9>&-
+    pushd src/platform >/dev/null || exit 2
+    step test "Django system checks (PostgreSQL + Redis, no other backing service)" "${py[@]}" manage.py check &&
+    step test "Ruff" "$CIT/ruff" check . &&
+    step test "Ruff format" "$CIT/ruff" format --check . &&
+    step test "Mypy" env -u PYTHONSAFEPATH "$CIT/mypy" platformapp config tests &&
+    step test "Policy suite" "${py[@]}" -m pytest tests/policy -q -p no:cacheprovider &&
+    step test "sqlmigrate extraction" "${py[@]}" -m db.sqlmigrate_extraction &&
+    step test "Full test suite (platformapp app tests, the ASGI seam, and the import boundary)" \
+      "${py[@]}" -m pytest -q -p no:cacheprovider
+    popd >/dev/null || exit 2
   }
 
   export_context() {
