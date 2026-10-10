@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.6.3"
+  version: "0.9.0"
 
 package:
   name: vlmrun
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/v/vlmrun/vlmrun-${{ version }}.tar.gz
-  sha256: a1d611125b1d2f00ba4e0066b2389f29714629f643c397fea67756c8887edb0c
+  sha256: 5582b979defa226ed2b1ea106c6be5088a347f02b3b01a9fc389aea7aa535644
 
 build:
   number: 0
@@ -24,24 +24,23 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - setuptools >=40.1.0
-    - wheel
     - pip
   run:
     - python >=${{ python_min }}
-    - cachetools
+    - cachetools ==7.1.7
     - ipython
     - loguru
+    - openai ==1.109.1
     - opencv >=4.8.0
     - pandas
-    - pillow >=10.2.0
-    - pydantic <3,>=2.5
-    - pydantic-core >=2.23.4
+    - pillow ==11.3.0
+    - pydantic ==2.13.5
     - requests
-    - rich
+    - rich ==14.3.4
     - tabulate
-    - tenacity
+    - tenacity ==9.1.4
     - tqdm
-    - typer >=0.9.0
+    - typer ==0.27.2
     - vlmrun-hub >=0.1.28
 
 tests:
@@ -69,6 +68,7 @@ about:
 
 extra:
   recipe-maintainers:
+    - pb01ka
     - rxm7706
 
 #### CFE metadata AND comments
@@ -90,11 +90,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-04T22:21:00Z
+  cfe-last-checked: 2026-10-10T14:52:32Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:29:22Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T14:53:48Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -104,4 +104,8 @@ extra:
 #    # declares only under the `cli`/`openai` extras (not the base deps), so a
 #    # base-only install cannot run `vlmrun --help`. The CFEP-25 import + pip
 #    # check triad below is the canonical base-install test.
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-9: refreshed 0.6.3 -> 0.9.0; maintainers added: pb01ka
 ####

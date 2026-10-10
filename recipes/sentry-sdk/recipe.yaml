@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.68.0"
+  version: "2.71.0"
 
 package:
   name: sentry-sdk
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/s/sentry-sdk/sentry_sdk-${{ version }}.tar.gz
-  sha256: 648c58e9887311a03470a41539e24bdbbf64a30ca4f5336f7e3dcc87276400b3
+  sha256: 7beb27a22f06396f3a05510c3da6ea10e1c79e02e859993c27ce4ff074e296d6
 
 build:
   number: 0
@@ -68,19 +68,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sentry-sdk-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-2.68.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T05:25:17Z
+  cfe-last-checked: 2026-10-10T14:46:22Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T05:25:17Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T05:25:17Z
+  cfe-local-build-datetime: 2026-10-10T14:47:47Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-9: refreshed 2.68.0 -> 2.71.0
 ####
