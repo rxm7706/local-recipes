@@ -433,7 +433,7 @@ development_status:
   87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: done
   87-10-merged-check-objects-never-enter-the-object-store: done
   87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild: done
-  87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list: backlog
+  87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list: done
   87-13-nothing-in-a-loop-home-prunes-a-preserve-or-rewrites-a-station-branch: done
   87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories: done
   87-15-a-preserve-reaches-origin-only-through-the-content-gate: done
@@ -618,7 +618,7 @@ development_status:
   epic-85-retrospective: done
   epic-86: in-progress
   epic-86-retrospective: optional
-  epic-87: in-progress
+  epic-87: done
   epic-87-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
