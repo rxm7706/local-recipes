@@ -24,7 +24,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - uv-build >=0.9.4,<0.10.0
   run:
@@ -59,6 +59,7 @@ extra:
   recipe-maintainers:
     - rxm7706
     - millsks
+    - pb01ka
     - conda-forge/openlineage-integration-common
     - conda-forge/openlineage-sql
     - conda-forge/openlineage-python
