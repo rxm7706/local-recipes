@@ -6298,3 +6298,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-10-10 — recorded by the steward chain that mints Story 87.3
   verified: 2026-10-10 — still-open — `pixi.lock` read at `99bc8f3cab` (langflow-base 1.12.3 and lfx 1.12.3 cap `mcp <2.0.0`; fastmcp 4.0.10 declares `mcp >=2.0.0,<3.0.0`); `src/shared/packages/pyforge-herald/pixi.toml:34` (`mcp = ">=2.2.0"`).
   status: open
+
+### DW-steward-87-3-2: Wire Herald webhook env and persistent store into chart `platform.mcpHostEnv` and compose `mcp-host` once a non-dev environment turns `pyforge.steward.herald_webhook_sidecar` ON
+
+- source_spec: `planning-artifacts/specs/spec-87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar.md`
+  summary: Story 87.3 forwards webhooks to the mcp-host sidecar when the flag is ON. The sidecar needs `HERALD_REPO_ROOT` (persistent volume for herald's store) and `HERALD_WEBHOOK_SECRET`. Chart `src/platform/deploy/charts/platform/templates/_helpers.tpl` (`platform.mcpHostEnv`) and compose `src/platform/compose/compose.yml` (`mcp-host` service) do not pass those variables today. Rebuild the mcp-host image once `PAUSE_PLATFORM_CONTAINER_BUILDS` lifts so the env that includes `pyforge-herald` is in the runtime image.
+  evidence: Story 87.3 intent-contract AC (13); `_helpers.tpl` mcpHostEnv block; compose.yml mcp-host service env list (no herald variables at mint).
+  location: src/platform/deploy/charts/platform/templates/_helpers.tpl
+  origin: Story 87.3 mint — operator ruling "Via the sidecar (Recommended)" 2026-10-10
+  trigger: first non-dev environment (staging or production) that turns `pyforge.steward.herald_webhook_sidecar` ON
+  severity: medium
+  promoted: 2026-10-10 — Story 87.3 AC (13)
+  status: open

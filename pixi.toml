@@ -395,6 +395,10 @@ libpq = ">=17.11,<18"             # Story 67.1: PostgreSQL 17 client library eve
 pyjwt = ">=2.15.0,<3"             # django-pyforge's own dependency (assertion verify)
 cryptography = ">=50.0.1"         # django-pyforge's own dependency; python 3.14-compatible build (matches other python-3.14 envs in this file -- the <45 pin django-pyforge itself carries targets an older python)
 django-environ = ">=0.14.0"       # DATABASE_URL -> DATABASES via env.db(), matches the web image's own parsing
+pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 87.3: herald webhook ASGI in the sidecar (mcp 2.x)
+
+[feature.mcp-host.tasks]
+mcp-host-serve = { cmd = "uvicorn mcp_host.app:app --host 127.0.0.1 --port 8090", cwd = "src/platform", env = { PYTHONPATH = "src/platform:src/shared/packages/django-pyforge/src:src/shared/packages/django-marshal/src" } }
 
 [feature.platform-ci-test]
 # --- platform-ci-test (Platform CI `test` job, conda-only) ---

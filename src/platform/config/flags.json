@@ -75,6 +75,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.steward.herald_webhook_sidecar": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar",
+        "created": "2026-10-10",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.marshal.verify_fix_loop": {
       "state": "ENABLED",
       "variants": {

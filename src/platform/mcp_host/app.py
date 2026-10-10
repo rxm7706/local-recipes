@@ -14,8 +14,11 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import importlib
+import json
 import os
 from http import HTTPStatus
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Self
 
@@ -23,6 +26,42 @@ from django_pyforge.mcp_dual_era import asgi_for_station
 from django_pyforge.mcp_dual_era import match_station_mcp
 from django_pyforge.mcp_dual_era import mcp_child_scope
 from django_pyforge.mcp_dual_era import send_http
+
+if TYPE_CHECKING:
+    from starlette.types import Receive
+    from starlette.types import Scope
+    from starlette.types import Send
+
+HERALD_WEBHOOK_PATH_PREFIX = "/stations/herald/api/v1/webhooks/"
+
+
+async def _json_detail(send, status: HTTPStatus, detail: str) -> None:
+    body = json.dumps({"detail": detail}).encode("utf-8")
+    await send_http(send, status, body)
+
+
+async def _dispatch_herald_webhook(scope: Scope, receive: Receive, send: Send) -> bool:
+    path = scope.get("path", "")
+    if not path.startswith(HERALD_WEBHOOK_PATH_PREFIX):
+        return False
+    try:
+        webhook_host = importlib.import_module("pyforge.herald.webhook_host")
+    except ModuleNotFoundError as exc:
+        await _json_detail(
+            send,
+            HTTPStatus.NOT_FOUND,
+            f"pyforge.herald is not installed ({exc.name})",
+        )
+        return True
+    herald_errors = importlib.import_module("pyforge.herald.errors")
+    try:
+        herald_app = webhook_host.application
+    except herald_errors.HeraldError as exc:
+        await _json_detail(send, HTTPStatus.SERVICE_UNAVAILABLE, str(exc))
+        return True
+    await herald_app(scope, receive, send)
+    return True
+
 
 DEFAULT_STATIONS = (
     "atlas",
@@ -136,7 +175,7 @@ async def _dispatch_lifespan(receive, send) -> None:
     await send({"type": "lifespan.shutdown.complete"})
 
 
-async def app(scope: dict, receive, send) -> None:
+async def app(scope: Scope, receive: Receive, send: Send) -> None:
     if scope["type"] == "lifespan":
         await _dispatch_lifespan(receive, send)
         return
@@ -146,6 +185,8 @@ async def app(scope: dict, receive, send) -> None:
     path = scope.get("path", "")
     if path in {"/health", "/api/health"}:
         await send_http(send, HTTPStatus.OK, b'{"status":"ok"}')
+        return
+    if await _dispatch_herald_webhook(scope, receive, send):
         return
     station = match_station_mcp(path)
     if station is None or station not in _apps:
