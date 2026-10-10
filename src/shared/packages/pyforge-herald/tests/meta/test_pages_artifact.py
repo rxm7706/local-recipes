@@ -5,7 +5,6 @@ from __future__ import annotations
 import importlib.util
 import re
 import sys
-import tomllib
 from pathlib import Path
 
 import pytest
