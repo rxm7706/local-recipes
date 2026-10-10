@@ -576,7 +576,7 @@
    "docs/how-to/run-and-understand-detectors.md": "360ba71515c1199d7100819b2c266ce16537ec65",
    "docs/how-to/station-cli-operations.md": "9e2551ec419f3541373843fc98f5d229fe9774bc",
    "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
-   "docs/how-to/troubleshoot-bmad-agent-loops.md": "eaa8847213d7d598588a9186bdc42df3b6248051",
+   "docs/how-to/troubleshoot-bmad-agent-loops.md": "5cafb00243b95e5616910c5b404095b9305b8691",
    "docs/how-to/troubleshooting-recipe-builds.md": "74ae1f42e23b84bbdbfbd9e2b5eec92898e6bd96",
    "docs/map.yaml": "580447e2428e467dbf0018e117d4e7bec9a0a538",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
@@ -762,7 +762,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "57238a5b6d20dc67b30ebcdc8dceed6d8b575781"
+  "memlog": "6898509ce7ff79f5f2836ba0ace9ec05a93f419c"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3912,8 +3912,8 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_finalize.py": "4fd1f54c194a30038959c11249ca549ee43fb2c0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_state.py": "fb762326ea4f672020551f017f051cb3240b20a3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_survival.py": "5d71c5dc368fa15265af1ba182f2e665dce76341",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py": "f1245e675b4776f041f8396a31fd22c7e9944bfd",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py": "b82b191965ee8b5f103c3efb6f32498096c029e3",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py": "0843c5a03df913f6e14fa800df3110085cedb0b5",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py": "fd3745c9286acfc3a145cc0e2324c17b45fdcb0a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/egress.py": "7871706b2df0c3a2f5f8cce598abd953186ab0e0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py": "fee2e37d53bed3400387e19068bac37ff2cf764c",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py": "01557d7d919d3046581f9001e4cdbceecdc6c7d8",
@@ -3952,8 +3952,8 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py": "b2a7134a99ed38508ab500a602f252a2bba67b79",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py": "2644e075c7f16ad605801edce60af1e643ed265c",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__init__.py": "01f5122af0f350ff15543c0bb5da899b12b7235c",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "f4cd17d93b675bbf5c0448a060858b493dc48eb2",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verification_journal.py": "d166e4da0cacaed70c4b70e05fef23d7c184847d",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py": "aca99d4e0fe1fc9f5fb37c9db6bfe9a32fbeda8f",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verification_journal.py": "e93984d7720e2c3c743ad74642d50854a9827375",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py": "a82c25e4b7134711f753f1c4a405e97eb092e546",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/__init__.py": "322546031c24625f32628f7bf47131c05eaadcbd",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/mcp/__main__.py": "f6893aa63907c5753ab9270fd939c6eede50014e",
@@ -4160,11 +4160,11 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py": "bbf8df47eef58a03753af0582c9bec8bcd63fc6b",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_spec_block.py": "139a2d880bb193c655c30744460ebf56b260bd35",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_state.py": "d6d9cc1eb03cf92f07890e5009538e1c05afac60",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py": "d545c542ba075c1d9ce69ae5ef1a7aa1ff59d80d",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py": "e0e124e955f6573afecf359402e9b1c60d7c481b",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_survival.py": "2082d7c8b896d492f122ffedb38af2eae46507dc",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py": "80d862aa49b98c216098e806dc5ff966e6334e15",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py": "0ad2a89e8574d5e666049d1342a856661923fa23",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_commands.py": "301dc0a337881a360e784ab9001f6b88e4c41bb6",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py": "ca1e1c570f83eedcaceeb0312808ea905e5f39c2",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py": "fdae4e6814a305093aaed197ca4d7d1d3f969b8f",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py": "5b53fc678cb965b17b52a0b224c633f2c3037ec8",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_wave_status.py": "738121e789b27132c2f7a39c7f80449b597bc931",
    "src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py": "7e64fd1a51885a4617356741a3afc8e7ced7ae82",
@@ -4298,7 +4298,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "e7089a391c94e16f22d9196a203dbb0c1af9c86a"
+  "memlog": "10b0c2d575b5626bd005978e600cd1ad2c25720d"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
