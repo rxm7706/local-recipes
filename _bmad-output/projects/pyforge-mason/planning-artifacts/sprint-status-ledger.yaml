@@ -89,7 +89,7 @@ development_status:
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
   25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason: done
   25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries: done
-  25-6-track-b-batch-2-refreshes-django-fsm-log-through-import-linter: backlog
+  25-6-track-b-batch-2-refreshes-django-fsm-log-through-import-linter: done
   25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests: backlog
   25-8-track-b-batch-4-refreshes-ocrmypdf-through-pysqlite3: backlog
   25-9-track-b-batch-5-refreshes-redshift-connector-through-zxing-cpp: backlog
