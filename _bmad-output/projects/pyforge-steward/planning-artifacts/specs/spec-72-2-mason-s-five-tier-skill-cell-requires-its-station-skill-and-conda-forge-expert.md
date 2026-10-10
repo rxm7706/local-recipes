@@ -121,7 +121,7 @@ Minted 2026-09-28 so `marshal factory dispatch` can resolve this spec once the o
   - `[false]` `[reject]` Missing scoped baseline stamp — producer must not `--write-baseline`; memlog reconcile only.
   - `[false]` `[defer]` No sprint-ledger sync — story forbids hand-editing ledger; operator/harness path.
   - `[false]` `[defer]` No chain-currency sweep evidence — memlog event entries only; no planning doc drift from this fix.
-  - `[low]` `[reject]` Module docstring omits Mason dual rule — DECLARED_COMPLETE comment documents contract; docstring describes generic AD-14 check.
+  - `[low]` `[reject]` Module docstring omits Mason dual rule — DECLARED_COMPLETE comment documents contract; docstring describes generic canopy:AD-14 check.
   - `[low]` `[reject]` No test for CFE dir without SKILL.md — `is_file()` behavior is standard; out of matrix scope.
   - `[medium]` `[patch]` I/O matrix row "station skill only" expects `check` failure like CFE-only — added `pytest.raises(FiveTierCompleteError, match="skill")` to `test_mason_skill_missing_when_only_pyforge_mason_station_skill`.
   - `[false]` `[reject]` Spec metadata incomplete mid-review — filled in Auto Run Result at finalize.
