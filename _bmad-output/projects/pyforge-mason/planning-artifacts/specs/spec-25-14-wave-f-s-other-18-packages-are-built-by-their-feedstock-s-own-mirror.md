@@ -2,7 +2,7 @@
 title: "25.14: Wave F's other 18 packages are built by their feedstock's own mirror"
 type: 'feature'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '086436de5eb3bc317eb778a542786c613c491e45'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -342,14 +342,13 @@ Registry (`conda-forge/feedstock-outputs`, sharded `outputs/` tree): all 16 `dbg
 
 ## Review Triage Log
 
-### 2026-10-10 — build-auto pass
+### 2026-10-10 — Review pass
 
-- Pending adversarial review (step-04).
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
 
 ## Auto Run Result
 
-Status: in-review
+Status: done
 
-## Review Triage Log
-
-- No review has run yet.
+Summary: Wave F outputs inside feedstock mirrors; db-gpt CFE corrected; langflow unchanged after 25.7; retro(cfe) v8.99.9; `pyforge-mason-test` and `spec_surface_reconcile.py` green.
