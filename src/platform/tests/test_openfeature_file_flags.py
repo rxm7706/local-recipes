@@ -664,6 +664,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.steward.workspace_preserve_tag": {
+        "dev": False,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,
