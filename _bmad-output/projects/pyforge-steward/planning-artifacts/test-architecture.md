@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: d79f38730ab10b00
-story_count: 344
+source_fingerprint: 9ebb248dbddfec9c
+story_count: 345
 test_file_count: 110
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 344
+- **Stories parsed:** 345
 - **Epics parsed:** 89
 - **Test files inventoried:** 110 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d79f38730ab10b00`
+- **Source fingerprint:** `9ebb248dbddfec9c`
 
 ## Risk Assessment
 
@@ -587,6 +587,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.1 | The platform host boots without Herald and says why | none observed |
 | 87.2 | The platform host boots without Langflow, and the full-stack env runs it | none observed |
 | 87.3 | The host forwards Herald's webhooks to the mcp-host sidecar | none observed |
+| 87.4 | The herald webhook forward closes its review findings | none observed |
 | 88.1 | The preflight runs each task once, after its dependencies | none observed |
 | 89.1 | A killed `platform-ci-local` run never blocks the next one | none observed |
 
