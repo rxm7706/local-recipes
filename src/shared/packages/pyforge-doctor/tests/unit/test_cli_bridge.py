@@ -211,6 +211,15 @@ def test_run_git_raises_cli_bridge_error_when_stdout_is_not_utf8(tmp_path: Path)
 # --- run_pytest (retro action item 3, 2026-09-05) --------------------------
 
 
+@pytest.fixture
+def _no_inherited_pytest_addopts(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The nested pytest runs with cwd=tmp_path. An outer runner's PYTEST_ADDOPTS
+    # `--basetemp` (pr-preflight sets one per lane) is then a parent of that cwd,
+    # and the nested pytest refuses it with a usage error (exit 4).
+    monkeypatch.delenv("PYTEST_ADDOPTS", raising=False)
+
+
+@pytest.mark.usefixtures("_no_inherited_pytest_addopts")
 def test_run_pytest_all_passed_returns_zero(tmp_path: Path) -> None:
     (tmp_path / "test_ok.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
 
@@ -220,6 +229,7 @@ def test_run_pytest_all_passed_returns_zero(tmp_path: Path) -> None:
     assert "1 passed" in output
 
 
+@pytest.mark.usefixtures("_no_inherited_pytest_addopts")
 def test_run_pytest_some_failed_returns_one_not_raise(tmp_path: Path) -> None:
     (tmp_path / "test_fail.py").write_text("def test_fail():\n    assert False\n", encoding="utf-8")
 
@@ -229,6 +239,7 @@ def test_run_pytest_some_failed_returns_one_not_raise(tmp_path: Path) -> None:
     assert "1 failed" in output
 
 
+@pytest.mark.usefixtures("_no_inherited_pytest_addopts")
 def test_run_pytest_usage_error_exit_code_raises_cli_bridge_error(tmp_path: Path) -> None:
     # No tests collected at all -> pytest's own exit code 5 -- outside {0, 1}.
     with pytest.raises(CliBridgeError, match="exited 5"):

@@ -815,6 +815,26 @@ def test_benchmark_artifact_is_classified_and_not_flagged_uncovered(
     assert findings[0].status is DoctorStatus.OK
 
 
+def test_preserve_manifest_is_classified_and_not_flagged_uncovered(
+    tmp_path: Path,
+) -> None:
+    """The 2026-10-09 shape (marshal Story 87.16): recovery tooling writes a dated,
+    operator-reviewed manifest under `planning-artifacts/preserve-manifests/` beside
+    a README -- both must be classified rather than falling through to `UNKNOWN`."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    manifests = factory._plan(repo) / "preserve-manifests"
+    manifests.mkdir(parents=True, exist_ok=True)
+    (manifests / "README.md").write_text("# Preserve manifests\n", encoding="utf-8")
+    (manifests / "orphan-tip-archive-2026-10-09.json").write_text('{"rows": []}\n', encoding="utf-8")
+
+    findings = factory.gather(repo)
+
+    assert len(findings) == 1
+    assert findings[0].check == "bmad-drift"
+    assert findings[0].status is DoctorStatus.OK
+
+
 def test_uncovered_file_reports_fail(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
