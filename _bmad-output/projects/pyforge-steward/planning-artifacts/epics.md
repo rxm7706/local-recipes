@@ -4538,7 +4538,7 @@ So that nobody waits on a PR that closed unmerged, or asks again for an unpin th
 **When** this story lands
 **Then** each place states those facts and points the open ask at Story 67.4's `sbom-crm-click-cap` seed; `git grep -n -i -E 'unpin PR|feedstock#44|#44 merges|feedstock bug|declares (plain|click unpinned)|click ?== ?8\.2\.1' -- pixi.toml docs/reference/library-llms-full.md recipes/conda-recipe-manager/recipe.yaml` prints nothing, and every `#44` left in those files and in the Dream says it closed unmerged; `llms-full-check` exits 0
 **And** text only: `pixi.toml` parses to the same TOML value and the recipe to the same YAML value as before, and `pixi.lock` and `environment.yaml` are byte-identical; conda-forge-expert is invoked before the recipe edit, and a Rule-2 retro lands in its own `retro(cfe):` commit with a PATCH `CHANGELOG.md` entry; every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp; `pixi run -e pyforge-guild pyforge-station-tests` and `pr-preflight` are green; dated history in memlogs and in the archived Dreams' snapshots stays as written; nothing leaves the repository
-**Status:** backlog
+**Status:** done
 
 ## Epic 68: Housekeeping that does not leak, and a gate journal that names what was pushed (spec-pyforge-steward CAP-155..156)
 
