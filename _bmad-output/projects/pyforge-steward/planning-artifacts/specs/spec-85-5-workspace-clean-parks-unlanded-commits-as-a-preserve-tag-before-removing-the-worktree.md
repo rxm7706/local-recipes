@@ -2,7 +2,8 @@
 title: "85.5: Workspace clean parks unlanded commits as a preserve tag before removing the worktree"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '8046e1b83d3ef966fc9beff8819ae064a5d0f342'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -95,4 +96,24 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (implementer self-review after verification green; full multi-layer review deferred to PR)
+
+## Auto Run Result
+
+Status: done
+
+Summary: With `pyforge.steward.workspace_preserve_tag` on, `steward workspace clean` snapshots and tags unlanded worktrees via `pyforge.core.preserve_refs` before removal, pushes through the content gate or reports `preserve_debt`, keeps the worktree when tagging fails, leaves landed `.landed.txt` behaviour unchanged, and archives only git-ignored bytes as host-local tarballs when the flag is on.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` — preserve park helpers and `_archive_worktree` integration
+- `src/shared/packages/pyforge-steward/tests/unit/test_workspace_preserve_tag.py` — two-state flag tests and mutation guard
+- `src/platform/config/flags.json` and `flag-overlays.json` — register `pyforge.steward.workspace_preserve_tag`
+- `src/platform/tests/test_openfeature_file_flags.py` and `src/shared/packages/pyforge-core/tests/unit/test_flags.py` — flag contract tests
+
+Review: no patch/defer/intent_gap entries this pass.
+
+Verification: `pixi run --frozen -e pyforge-steward pyforge-steward-test` passed (2289 tests); `pixi run --frozen -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`, and `spec-pyforge-core`.
+
+Residual risk: push debt reporting depends on origin reachability; repo-set cleans on secondary roots without a full platform flag tree still skip preserve (flag read deferred until a non-landed archive path).
