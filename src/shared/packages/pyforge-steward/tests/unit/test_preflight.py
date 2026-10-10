@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
+import threading
+import time
 import tomllib
 from pathlib import Path
 
@@ -63,6 +67,11 @@ def test_fixture_lists_leaves_in_declaration_order() -> None:
     ]
 
 
+def _lane_map(pixi: dict) -> dict[str, preflight.Lane]:
+    lanes = preflight.list_preflight_lanes(pixi, invoking_env="pyforge-guild")
+    return {lane.task: lane for lane in lanes}
+
+
 def test_real_pixi_lists_every_leaf_once() -> None:
     pixi = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
     lanes = preflight.list_preflight_lanes(pixi, invoking_env="pyforge-guild")
@@ -72,6 +81,13 @@ def test_real_pixi_lists_every_leaf_once() -> None:
     assert ("pyforge-core-test", "pyforge-core") in keys
     assert ("detectors-ci", "pyforge-guild") in keys
     assert ("ruff", "pyforge-guild") in keys
+    by_task = _lane_map(pixi)
+    assert by_task["pages-check"].depends_on == (("pages-build", "site"),)
+    assert set(by_task["pages-build"].depends_on) == {
+        ("docs-site-install", "site"),
+        ("docs-site-sidebar", "site"),
+    }
+    assert by_task["docs-site-validate-sidebar"].depends_on == (("docs-site-validate-sidebar-order", "site"),)
 
 
 def test_missing_aggregate_exits_2(tmp_path: Path) -> None:
