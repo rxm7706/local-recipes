@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 903737d117b5a29a
-story_count: 106
+source_fingerprint: 8ffeba922012223e
+story_count: 108
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 106
+- **Stories parsed:** 108
 - **Epics parsed:** 28
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `903737d117b5a29a`
+- **Source fingerprint:** `8ffeba922012223e`
 
 ## Risk Assessment
 
@@ -220,6 +220,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 25.10 | Track B batch 6 refreshes OpenTelemetry's core packages and exporters | none observed |
 | 25.11 | Track B batch 7 refreshes OpenTelemetry instrumentation from distro through h... | none observed |
 | 25.12 | Track B batch 8 refreshes OpenTelemetry instrumentation from mysql through wsgi | none observed |
+| 25.13 | Wave F mirrors the two co-maintained feedstocks that have no local recipe | none observed |
+| 25.14 | Wave F's other 18 packages are built by their feedstock's own mirror | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |
