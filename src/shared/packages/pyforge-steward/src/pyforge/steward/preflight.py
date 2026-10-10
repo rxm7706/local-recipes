@@ -580,6 +580,19 @@ def _deps_all_ok(lane: Lane, completed: dict[LaneKey, LaneResult]) -> bool:
     return True
 
 
+def _needed_by_pending_dependent(lane: Lane, pending: dict[LaneKey, Lane]) -> bool:
+    """True when some not-yet-finished lane still depends on ``lane``."""
+    key = _lane_key(lane)
+    return any(key in other.depends_on for other in pending.values())
+
+
+def _skip_lane_on_red_stop(coord: _RunCoordinator, lane: Lane, pending: dict[LaneKey, Lane]) -> bool:
+    """Whether a red stop should prevent ``lane`` from running (Story 88.1 AC4)."""
+    if not coord.stop_on_red.is_set() or coord.keep_going:
+        return False
+    return not _needed_by_pending_dependent(lane, pending)
+
+
 def _blocked_lane_result(lane: Lane, blocker: str, *, keep_going: bool) -> LaneResult:
     if keep_going:
         return LaneResult(
@@ -609,18 +622,39 @@ def _run_lane_in_pool(
     service_key: str | None,
     runner: Callable[[LaneRunContext], int],
     use_subprocess: bool,
+    pending: dict[LaneKey, Lane],
 ) -> LaneResult:
     if coord.cancel.is_set():
         return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
-    if coord.stop_on_red.is_set() and not coord.keep_going:
-        return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+    if _skip_lane_on_red_stop(coord, lane, pending):
+        trigger = coord.stop_trigger or "red"
+        return LaneResult(
+            lane.task,
+            lane.environment,
+            0.0,
+            0,
+            "cancelled",
+            0.0,
+            cancelled_by=trigger,
+        )
 
     service_lock = coord.service_lock(service_key)
     if service_lock is not None:
         service_lock.acquire()
     try:
-        if coord.cancel.is_set() or (coord.stop_on_red.is_set() and not coord.keep_going):
+        if coord.cancel.is_set():
             return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+        if _skip_lane_on_red_stop(coord, lane, pending):
+            trigger = coord.stop_trigger or "red"
+            return LaneResult(
+                lane.task,
+                lane.environment,
+                0.0,
+                0,
+                "cancelled",
+                0.0,
+                cancelled_by=trigger,
+            )
 
         lane_dir = scratch_root / lane.task
         log_path = scratch_root / f"{lane.task}.log"
@@ -842,17 +876,27 @@ def run_preflight(
 
                 _mark_dependency_blocked()
 
-                stopped = coord.stop_on_red.is_set() and not coord.keep_going
-                while len(futures) < worker_count and not stopped:
-                    ready: Lane | None = None
+                while len(futures) < worker_count:
+                    ready_candidates: list[Lane] = []
                     for candidate in lanes:
                         key = _lane_key(candidate)
                         if key not in pending or not _deps_all_ok(candidate, completed):
                             continue
-                        ready = candidate
+                        if _skip_lane_on_red_stop(coord, candidate, pending):
+                            continue
+                        ready_candidates.append(candidate)
+                    if not ready_candidates:
                         break
-                    if ready is None:
-                        break
+                    if coord.stop_on_red.is_set() and not coord.keep_going:
+                        ready_candidates.sort(
+                            key=lambda lane: (
+                                not _needed_by_pending_dependent(lane, pending),
+                                lanes.index(lane),
+                            )
+                        )
+                    else:
+                        ready_candidates.sort(key=lambda lane: lanes.index(lane))
+                    ready = ready_candidates[0]
                     key = _lane_key(ready)
                     del pending[key]
                     fut = pool.submit(
@@ -863,8 +907,11 @@ def run_preflight(
                         mutex_keys.get((ready.task, ready.environment)),
                         runner,
                         use_subprocess,
+                        pending,
                     )
                     futures[fut] = ready
+
+                stopped = coord.stop_on_red.is_set() and not coord.keep_going
 
                 if not futures:
                     if not pending or stopped:

@@ -353,9 +353,39 @@ def test_sidecar_forward_does_not_import_pyforge_in_platform() -> None:
     assert "from pyforge" not in mcp_source
 
 
+def _herald_webhook_flagd_tree(default_variant: str) -> bytes:
+    return json.dumps(
+        {
+            "flags": {
+                HERALD_WEBHOOK_SIDECAR_FLAG: {
+                    "state": "ENABLED",
+                    "variants": {"on": True, "off": False},
+                    "defaultVariant": default_variant,
+                },
+            },
+        },
+        indent=2,
+    ).encode()
+
+
 def test_herald_webhook_sidecar_flag_registered() -> None:
     assert HERALD_WEBHOOK_SIDECAR_FLAG == "pyforge.steward.herald_webhook_sidecar"
     assert isinstance(
         evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False),
         bool,
     )
+
+
+def test_herald_webhook_sidecar_flag_on_and_off(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    off_tree = tmp_path / "off.json"
+    on_tree = tmp_path / "on.json"
+    off_tree.write_bytes(_herald_webhook_flagd_tree("off"))
+    on_tree.write_bytes(_herald_webhook_flagd_tree("on"))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(off_tree))
+    assert evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=True) is False
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on_tree))
+    assert evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False) is True

@@ -280,6 +280,8 @@ by the same ruling (its spec's banner).
 
 ## Verification
 
+**Tests:** `src/platform/tests/test_herald_webhook_sidecar.py` (two flagd trees for `pyforge.steward.herald_webhook_sidecar`, forward and sidecar behaviour).
+
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
 
