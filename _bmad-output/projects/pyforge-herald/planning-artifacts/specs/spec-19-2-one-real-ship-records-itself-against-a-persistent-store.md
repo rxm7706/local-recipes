@@ -2,7 +2,8 @@
 title: '19.2: One real ship records itself against a persistent store'
 type: 'feature'
 created: '2026-09-18'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '647abbc9b21d09c54e75cc59f1e93c1ea4331f4b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

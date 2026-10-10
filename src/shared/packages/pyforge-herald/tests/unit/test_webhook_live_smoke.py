@@ -145,6 +145,78 @@ def test_daphne_answers_a_real_signed_on_ship_post(live_daphne):
     assert records[0].compute_hours == 1.5
 
 
+def test_daphne_survives_restart_and_keeps_claim_id(live_daphne):
+    """Story 19.2: terminate and restart daphne on the same store; re-deliver on-pr-close."""
+    base_url, repo_root = live_daphne
+    port = int(base_url.rsplit(":", 1)[-1])
+    on_close_body = json.dumps(
+        {
+            "merged": True,
+            "gates_passed": True,
+            "project_name": "warden 11-1",
+            "event_id": "rxm7706/local-recipes@deadbeef",
+            "evidence": [{"type": "other", "url": "https://example.test/commit", "label": "landing"}],
+        }
+    ).encode("utf-8")
+    ts = str(int(time.time()))
+    headers = {
+        "X-Hub-Signature-256": _sign(_SECRET, ts, on_close_body),
+        "X-Hub-Timestamp": ts,
+        "Content-Type": "application/json",
+    }
+    first = httpx2.post(
+        f"{base_url}/stations/herald/api/v1/webhooks/on-pr-close",
+        content=on_close_body,
+        headers=headers,
+        timeout=10.0,
+    )
+    assert first.status_code == 201
+    claim_id = first.json()["claim_id"]
+
+    # live_daphne fixture tears down after the test; simulate restart with a fresh process.
+    env = dict(os.environ)
+    env["HERALD_REPO_ROOT"] = str(repo_root)
+    env["HERALD_WEBHOOK_SECRET"] = _SECRET.decode("utf-8")
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "daphne",
+            "-b",
+            "127.0.0.1",
+            "-p",
+            str(port),
+            "pyforge.herald.webhook_host:application",
+        ],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        _wait_for_port("127.0.0.1", port, timeout=_STARTUP_TIMEOUT_SECONDS)
+        ts2 = str(int(time.time()))
+        second = httpx2.post(
+            f"{base_url}/stations/herald/api/v1/webhooks/on-pr-close",
+            content=on_close_body,
+            headers={
+                "X-Hub-Signature-256": _sign(_SECRET, ts2, on_close_body),
+                "X-Hub-Timestamp": ts2,
+                "Content-Type": "application/json",
+            },
+            timeout=10.0,
+        )
+        assert second.status_code == 201
+        assert second.json()["claim_id"] == claim_id
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+    from pyforge.herald import claims, progress
+
+    assert len(claims.list_claims(repo_root)) == 1
+    assert progress.read_all(repo_root / progress.DEFAULT_PROGRESS_PATH) == []
+
+
 def test_daphne_rejects_an_unsigned_request(live_daphne):
     base_url, repo_root = live_daphne
     body = json.dumps({"station": "warden"}).encode("utf-8")

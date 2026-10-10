@@ -103,6 +103,54 @@ def test_legacy_bare_api_herald_webhook_does_not_reach_station_handler():
     assert response.json() == {"detail": "Not Found"}
 
 
+def test_host_dispatches_herald_webhook_signed_on_ship_returns_201(
+    monkeypatch,
+    tmp_path,
+):
+    import hashlib
+    import hmac
+    import json
+    import sqlite3
+    import time
+
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    secret = b"platform-test-secret"
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", secret.decode("utf-8"))
+
+    body = json.dumps({"station": "warden", "unblock_narrative": "Merge pyforge-warden/1-1 into main"}).encode(
+        "utf-8"
+    )
+    ts = str(int(time.time()))
+    signature = (
+        "sha256="
+        + hmac.new(secret, ts.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
+    )
+
+    async def _call():
+        transport = ASGITransport(app=application)
+        base_url = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base_url) as client:
+            return await client.post(
+                "/stations/herald/api/v1/webhooks/on-ship",
+                content=body,
+                headers={
+                    "X-Hub-Signature-256": signature,
+                    "X-Hub-Timestamp": ts,
+                    "Content-Type": "application/json",
+                },
+            )
+
+    response = asyncio.run(_call())
+
+    assert response.status_code == HTTPStatus.CREATED
+    db_path = tmp_path / ".herald" / "herald.db"
+    assert db_path.is_file()
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT station FROM progress LIMIT 1").fetchone()
+    assert row is not None
+    assert row[0] == "warden"
+
+
 def test_host_dispatches_herald_webhook_unsigned_returns_401(
     monkeypatch,
     tmp_path,
