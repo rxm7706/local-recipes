@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-exporter-zipkin-json
   version: "1.44.0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-exporter-zipkin-json
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_zipkin_json-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-exporter-zipkin-json/opentelemetry_exporter_zipkin_json-${{ version }}.tar.gz
   sha256: 65492664f53e7e36fbd1d511d05651cce238e2fc1b6e746a5166f8dbd65b16bb
 
 build:
@@ -47,3 +46,29 @@ extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-exporter-zipkin-json
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-exporter-zipkin-json
+  cfe-purls:
+    - pkg:conda/opentelemetry-exporter-zipkin-json@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-exporter-zipkin-json@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-zipkin-json
+  cfe-import-names: [opentelemetry.exporter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-zipkin-json-feedstock
+  cfe-forge-recipe-updates-needed: []
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-generated-by-version: 8.99.13
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+####
+# CFE comments
+# Header:
+####

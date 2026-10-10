@@ -24,7 +24,6 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry
 
 tests:
   - python:

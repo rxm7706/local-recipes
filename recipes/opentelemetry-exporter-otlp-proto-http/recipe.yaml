@@ -24,12 +24,15 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - googleapis-common-protos ~=1.52
-    - opentelemetry-api ~=1.15
-    - opentelemetry-exporter-otlp-proto-common ==1.44.0
-    - opentelemetry-proto ==1.44.0
-    - opentelemetry-sdk ~=1.44.0
-    - requests ~=2.7
+    - opentelemetry-exporter-http-transport ==0.66b1
+    - opentelemetry-exporter-otlp-common ==0.66b1
+    - deprecated >=1.2.6
+    - googleapis-common-protos >=1.52,<2.dev0
+    - opentelemetry-api >=1.15,<2.dev0
+    - opentelemetry-proto ==1.45.1
+    - opentelemetry-sdk >=1.45.1,<1.46.dev0
+    - opentelemetry-exporter-otlp-proto-common ==1.45.1
+    - requests >=2.7,<3.dev0
     - typing_extensions >=4.5.0
 
 tests:

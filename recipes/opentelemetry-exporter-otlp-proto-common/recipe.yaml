@@ -24,7 +24,8 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-proto ==1.44.0
+    - opentelemetry-proto ==${{ version }}
+    - backoff >=1.10.0,<3.0.0
 
 tests:
   - python:

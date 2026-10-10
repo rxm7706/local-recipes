@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: opentelemetry-propagator-jaeger
   version: "1.44.0"
 
 package:
-  name: ${{ name|lower }}
+  name: opentelemetry-propagator-jaeger
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_propagator_jaeger-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-propagator-jaeger/opentelemetry_propagator_jaeger-${{ version }}.tar.gz
   sha256: 0fba4127600f5eca1d5ce31f208f4e13bdd80050a236f3953f6f244c197178b7
 
 build:
@@ -45,3 +44,29 @@ extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-propagator-jaeger
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-propagator-jaeger
+  cfe-purls:
+    - pkg:conda/opentelemetry-propagator-jaeger@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-propagator-jaeger@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/propagator/opentelemetry-propagator-jaeger
+  cfe-import-names: [opentelemetry.propagators]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-propagator-jaeger-feedstock
+  cfe-forge-recipe-updates-needed: []
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-generated-by-version: 8.99.13
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+####
+# CFE comments
+# Header:
+####
