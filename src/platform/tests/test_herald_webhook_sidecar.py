@@ -16,6 +16,9 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from django_pyforge.flags import ENV_FLAGD_PATH
+from django_pyforge.flags import ENV_FLAGS_PATH
+from django_pyforge.flags import configure_file_provider
 from django_pyforge.flags import evaluate_boolean
 from django_pyforge.sidecar_forward import HERALD_WEBHOOK_SIDECAR_FLAG
 from django_pyforge.sidecar_forward import dispatch_herald_webhook_forward
@@ -234,6 +237,11 @@ def _webhook_scope(body: bytes, extra_headers: list[tuple[bytes, bytes]] | None 
 def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    # The flag is OFF in every environment until Story 87.4 lands; force it ON here.
+    monkeypatch.setattr(
+        "django_pyforge.sidecar_forward.evaluate_boolean",
+        lambda key, default=False: True,
+    )
     body = b"payload-bytes"
     sent: list[dict] = []
 
@@ -274,6 +282,11 @@ def test_host_forward_sidecar_down_one_error_log(
 ) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:1")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    # The flag is OFF in every environment until Story 87.4 lands; force it ON here.
+    monkeypatch.setattr(
+        "django_pyforge.sidecar_forward.evaluate_boolean",
+        lambda key, default=False: True,
+    )
     sent: list[dict] = []
 
     async def receive():
@@ -359,3 +372,55 @@ def test_herald_webhook_sidecar_flag_registered() -> None:
         evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False),
         bool,
     )
+
+
+def _sidecar_flagd_tree(default_variant: str) -> bytes:
+    return json.dumps(
+        {
+            "flags": {
+                "pyforge.steward.herald_webhook_sidecar": {
+                    "state": "ENABLED",
+                    "variants": {"on": True, "off": False},
+                    "defaultVariant": default_variant,
+                },
+            },
+        },
+    ).encode()
+
+
+def test_herald_webhook_sidecar_flag_two_states(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The FILE provider's herald_webhook_sidecar flag: ON forwards, OFF does not."""
+    from openfeature import api  # noqa: PLC0415
+
+    monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
+    monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
+    monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
+    body = b"payload-bytes"
+
+    async def receive():
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    async def send(message):
+        return None
+
+    async def _forward() -> bool:
+        with patch("httpx.AsyncClient", return_value=_CaptureClient()):
+            scope = _webhook_scope(body)
+            return await dispatch_herald_webhook_forward(scope, receive, send)
+
+    on_tree = tmp_path / "on.json"
+    on_tree.write_bytes(_sidecar_flagd_tree("on"))
+    off_tree = tmp_path / "off.json"
+    off_tree.write_bytes(_sidecar_flagd_tree("off"))
+    try:
+        configure_file_provider(on_tree)
+        assert evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False) is True
+        assert asyncio.run(_forward()) is True
+        configure_file_provider(off_tree)
+        assert evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False) is False
+        assert asyncio.run(_forward()) is False
+    finally:
+        api.clear_providers()
