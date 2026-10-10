@@ -607,6 +607,64 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   **Constraints:** every Epic 25 line stands: local only, through `conda-forge-expert`, maintainers a superset of the
   deployed list (G53), a linux-64 build or a recorded reason, and a `retro(cfe):` commit per story. No new CAP. Owner:
   mason. → Epic 25 / Stories 25.13 and 25.14, and a note on Story 25.9, specced 2026-10-09.
+- **2026-10-09 (night, latest) — Ruled: Wave F stays inside the mirrors, and five duplicate directories retire.** Two
+  operator rulings answer the questions the Wave F mint left on Story 25.14's spec:
+  - On Wave F's 18 output packages, "Yes, inside the mirrors". Stories 25.13 and 25.14 stand. The 18 reach their
+    published versions inside `recipes/db-gpt` and `recipes/langflow`, and no standalone directory is created.
+  - On the duplicate directories, "Retire in a fix story": "Mint a mason fix story that removes the six duplicate dirs
+    (folded into recipes/langflow and recipes/dbt-core) and drops recipes/lfx from 25.7's batch."
+
+  The mint verified ownership before scoping, against conda-forge's `feedstock-outputs` registry, the atlas and the
+  feedstock repos (read-only GETs):
+  - The five `lfx*` copies mirror no feedstock. `conda-forge/<dir>-feedstock` is a 404 for each, and the registry gives
+    every name they declare to `langflow`. Each copy is `langflow-suite` at 1.11.3 with no `patches/` directory, so
+    none builds. `recipes/langflow` already has everything they carry, except older pins it loosened on purpose.
+  - `recipes/dbt` is not a duplicate in that sense. `conda-forge/dbt-feedstock` exists and publishes `dbt-core`, and
+    `recipes/dbt` is its `recipes/<feedstock>/` mirror; its CFE block names that feedstock. `recipes/dbt-core` has no
+    feedstock of its own name and no CFE block, and still carries a 1.8.9 `meta.yaml`. Retiring `recipes/dbt` would
+    delete the mirror and keep the misnamed copy.
+
+  The same read found more. Three dbt adapter recipes (`dbt-bigquery`, `dbt-postgres`, `dbt-redshift`) carry
+  `dbt-core`'s recipe, written by the 2026-08-16 identity snapshot. Two staged-recipes PRs for the bundles, #33977 and
+  #33978, are still open, though `langflow-feedstock` now publishes both. No repo check refuses two directories that
+  declare one package name, and 110 names have two or more declarers today.
+  **What it looks like when real:** Story 25.15 retires the five `lfx*` copies in one commit, after checking each
+  against the registry again and recording what `recipes/langflow` already has. A parse then finds every
+  `langflow-suite` output declared by `recipes/langflow` alone, and the suite builds all eight outputs on linux-64.
+  `recipes/dbt` and `recipes/dbt-core` stay until the operator says which one mirrors `dbt-feedstock`. The adapters,
+  the open PRs and the missing duplicate guard are recorded, not acted on. Story 25.7's batch drops `recipes/lfx`, and
+  Story 25.14 runs after Story 25.15.
+  **Constraints:** every Epic 25 line stands: local only, through `conda-forge-expert`, and a `retro(cfe):` commit.
+  The story is a fix and carries no flag. No new CAP. Owner: mason. → Epic 25 / Story 25.15, with amendments to Stories
+  25.7 and 25.14, specced 2026-10-09.
+- **2026-10-10 — Ruled: recipes/dbt-core retires into recipes/dbt, and the three dbt adapters are re-mirrored.** Two
+  operator rulings of 2026-10-09 answer the questions Story 25.15's mint left:
+  - On which directory mirrors `dbt-feedstock`, "Retire recipes/dbt-core": "Keep recipes/dbt as the dbt-feedstock
+    mirror, retire recipes/dbt-core, and re-point batch 25.5's dbt-core row to recipes/dbt. Added to Story 25.15."
+  - On the three dbt adapter recipes, "Fix in a story": "Mint a mason fix story that re-mirrors the three adapter
+    recipes from dbt-bigquery/postgres/redshift-feedstock (dbt-bigquery-feedstock is now v1 at 1.12.1), and correct
+    batch 25.5's table."
+
+  A live read (read-only GETs) shaped both:
+  - `recipes/dbt-core` carries nothing `recipes/dbt` lacks. Both list the feedstock's patch file, and neither has it,
+    so neither builds. The patch has not changed in `dbt-feedstock` since the commit `recipes/dbt` mirrors.
+  - Each adapter has its own feedstock: `dbt-bigquery` v1 at 1.12.1 since 2026-09-19, `dbt-postgres` v0 at 1.11.0,
+    `dbt-redshift` v0 at 1.11.1. Each local `recipe.yaml` is `dbt-core`'s instead, so a version refresh would move the
+    wrong package. Each adapter's build resolves `dbt-core` from conda-forge, so the fix waits for nothing.
+  - `langflow-feedstock` replaced its five patches with a `patch_deps.py` script on 2026-09-25, so Story 25.7's plan to
+    re-base three patches no longer mirrors the feedstock.
+
+  **What it looks like when real:** Story 25.15 restores `recipes/dbt`'s patch file from its feedstock and retires six
+  directories: the five `lfx*` copies, and `recipes/dbt-core`. `recipes/langflow` alone then builds the suite's eight
+  outputs, and `recipes/dbt` builds `dbt-core`. Story 25.16 re-mirrors `recipes/dbt-bigquery`, `recipes/dbt-postgres`
+  and `recipes/dbt-redshift` from their own feedstocks, each built on linux-64 or recorded `needs-review` with its
+  reason. After both, `dbt-core` has one local recipe. Story 25.5 refreshes `recipes/dbt` after Story 25.15, and holds
+  11 recipes. Story 25.7 takes `langflow-feedstock`'s `patch_deps.py`. The two staged-recipes PRs for the bundles,
+  #33977 and #33978, stay the operator's to close.
+  **Constraints:** every Epic 25 line stands: local only, through `conda-forge-expert`, maintainers a superset of each
+  feedstock's own list (G53), and a `retro(cfe):` commit per story. Both stories are fixes and carry no flag. No new
+  CAP. Owner: mason. → Epic 25 / Story 25.16, with Story 25.15 re-scoped and amendments to Stories 25.5, 25.7 and
+  25.13, specced 2026-10-10.
 
 ## One-chain fold — 2026-09-17
 

@@ -16,6 +16,8 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-16-three-dbt-adapter-recipes-are-re-mirrored-from-their-own-feedstocks.md
 deferred: []
 declared_low_risk: false
 ---
@@ -27,8 +29,9 @@ declared_low_risk: false
 **Problem:** Story 25.2's Wave A, on 2026-10-09, found 96 co-maintained recipes behind their feedstock's published
 version (the v1-refresh bucket). Its pilots refreshed four. The operator then re-scoped 25.2 to Wave 0 and those
 pilots, and split the other 92 into eight batch stories, each small enough for one dispatch ("Land 25.2 now, split
-rest", 2026-10-09). This is batch 1 of 8: 12 recipes, the first twelve, alphabetically, outside the OpenTelemetry
-family. Every one is co-maintained: the deployed feedstock lists `rxm7706` and at least one other maintainer. So the
+rest", 2026-10-09). This is batch 1 of 8: the first twelve recipes, alphabetically, outside the OpenTelemetry family.
+The ruling note below the table moves `dbt-bigquery` out and re-points `dbt-core` to `recipes/dbt`, so the batch holds
+11. Every one is co-maintained: the deployed feedstock lists `rxm7706` and at least one other maintainer. So the
 refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `docs/specs/feedstock-refresh.md` §
 *Track B*).
 
@@ -44,16 +47,31 @@ supersedes.
 | `azure-storage-file-share` | 12.26.0 → 12.27.0 | v0: keep `meta.yaml` (C1) | davidbrochart, rxm7706 | no CFE block; `${{ name… }}` in `source.url`; 25.2's B1 dry-run: `no-cfe-block` |
 | `billiard` | 4.2.4 → 4.3.1 | v0: keep `meta.yaml` (C1) | kwilcox, rxm7706 | no CFE block; 25.2's B2 dry-run: `no-cfe-block` (deferred from B2) |
 | `cachetools` | 7.1.7 → 7.2.1 | v0: keep `meta.yaml` (C1) | maartenbreddels, marcelotrevisani, rxm7706 | 25.2's B2 dry-run: `dependency-fix: host -setuptools-scm` (deferred from B2) |
-| `dbt-bigquery` | 1.12.0 → 1.12.1 | v0: keep `meta.yaml` (C1) | maresb, rxm7706, thewchan | `${{ name… }}` in `source.url` |
-| `dbt-core` | 1.12.2 → 1.12.5 | v1: drop the local `meta.yaml` (C2) | drewbanin, jthandy, maresb, rxm7706, thewchan, zaneselvans | no CFE block; `${{ name… }}` in `source.url` |
+| `dbt` (builds `dbt-core`) | 1.12.2 → 1.12.5 | v1 (`dbt-feedstock`); no local `meta.yaml` since 2026-08-20 | drewbanin, jthandy, maresb, rxm7706, thewchan, zaneselvans | `${{ name… }}` in `source.url`; CFE block names `dbt-feedstock`; its patch file restored by Story 25.15; a `License.md` the feedstock's `recipe/` lacks |
 | `django-allauth` | 65.19.1 → 65.19.7 | v0: keep `meta.yaml` (C1) | cshaley, jacksund, rxm7706, sannykr | — |
 | `django-anymail` | 15.1 → 15.2 | v0: keep `meta.yaml` (C1) | cshaley, elanqo, millsks, rxm7706, zaigner | `${{ name… }}` in `source.url` |
 | `django-bootstrap5` | 26.2 → 26.3 | v1 | rxm7706, swainn | — |
 | `django-countries` | 9.0.0 → 9.1.0 | v0: keep `meta.yaml` (C1) | mxr-conda, rxm7706 | no CFE block; `${{ name… }}` in `source.url` |
 
+**Ruling note (2026-10-10).** Two operator rulings of 2026-10-09, on Story 25.15's open questions, change two rows:
+- "Retire recipes/dbt-core": "Keep recipes/dbt as the dbt-feedstock mirror, retire recipes/dbt-core, and re-point batch
+  25.5's dbt-core row to recipes/dbt. Added to Story 25.15." The `dbt-core` row now names `recipes/dbt`, the
+  `recipes/<feedstock>/` mirror of `conda-forge/dbt-feedstock`, and the manifest entry is `name: dbt`. The old entry
+  could not have run: an entry's `feedstock` defaults to its `name` (`refresh_wave.py:231`), and
+  `conda-forge/dbt-core-feedstock` is a 404. Story 25.15 retires `recipes/dbt-core` and restores `recipes/dbt`'s
+  missing patch file, so this story now depends on it, and its refresh starts from a recipe that builds.
+- "Fix in a story": "Mint a mason fix story that re-mirrors the three adapter recipes from
+  dbt-bigquery/postgres/redshift-feedstock (dbt-bigquery-feedstock is now v1 at 1.12.1), and correct batch 25.5's
+  table." The `dbt-bigquery` row was wrong twice. Its feedstock moved to v1 on 2026-09-19 (PR #58, `aa7005a714`;
+  1.12.1, build 1), so "v0: keep `meta.yaml` (C1)" no longer held. And `recipes/dbt-bigquery/recipe.yaml` is a copy of
+  `dbt-core`'s recipe, so a version refresh would have moved the wrong package. Story 25.16 re-mirrors it, with
+  `dbt-postgres` and `dbt-redshift`, so it leaves this batch.
+
+The batch holds 11 recipes; the title and the ledger key stand.
+
 **Known before the dry-run:**
 
-Six of these twelve already went through the driver in Story 25.2's dry-runs (waves `B1` and `B2`; their
+Six of these 11 already went through the driver in Story 25.2's dry-runs (waves `B1` and `B2`; their
 reports are gitignored in the 25.2 worktree) and ended `needs-review`:
 - `airflow-code-editor` and `avro`: `url-unrenderable`. Both URLs read
   `https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/…` with `name` in `context`. The driver renders only a
@@ -63,10 +81,12 @@ reports are gitignored in the 25.2 worktree) and ended `needs-review`:
   (G96, AC 5).
 
 `billiard` and `cachetools` are the two recipes deferred from 25.2's wave B2 (AC 12). `billiard` is not
-`noarch: python`. `dbt-core`'s feedstock is v1, so the refresh drops its local `meta.yaml` (C2).
+`noarch: python`. `dbt-feedstock` is v1, and `recipes/dbt` dropped its local `meta.yaml` on 2026-08-20 (C2). Its
+`License.md` is not in the feedstock's `recipe/`, so the refresh prunes it (G94). (Amended 2026-10-10: this line named
+`recipes/dbt-core`, whose `meta.yaml` the refresh would have dropped.)
 
 **Approach:** run the batch as one Track B wave through Story 25.3's driver, `refresh-wave`.
-1. Write the manifest: `track: B`, `wave: 25-5`, these 12 recipes, with no version pins. Put it under
+1. Write the manifest: `track: B`, `wave: 25-5`, these 11 recipes, with no version pins. Put it under
    `.claude/data/conda-forge-expert/feedstock-update/`, which is gitignored. The report lands in
    `refresh-waves/B-25-5/`.
 2. Dry-run, and record each recipe's plan.
@@ -80,7 +100,7 @@ reports are gitignored in the 25.2 worktree) and ended `needs-review`:
 
 Ledger key: `25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries`.
 Ledger status at mint: `backlog`.
-Type / Effort / Deps: feature / M / S-25.3.
+Type / Effort / Deps: feature / M / S-25.3, S-25.15.
 
 ### Living CAP citations
 
@@ -93,11 +113,12 @@ Type / Effort / Deps: feature / M / S-25.3.
 - `spec-fleet-stewardship` governs `recipes/**`; `spec-packaging-factory` governs the CFE surface.
 - `spec-feature-flag-governance` CAP-1, Q2: `flag-exempt: recipe-build`.
 - Siblings: Stories 25.5 to 25.12 touch disjoint recipe directories and are independent of one another, of Story 25.4
-  and of Story 25.2. Only their `retro(cfe):` commits meet, at the CFE version carriers.
+  and of Story 25.2. Only their `retro(cfe):` commits meet, at the CFE version carriers. This story also runs after
+  Story 25.15, which writes `recipes/dbt` first (ruling note). Story 25.16 owns `recipes/dbt-bigquery`.
 
 ## Acceptance Criteria
 
-1. **Dry-run first.** Given this spec's 12 recipes When the story starts Then it writes the batch manifest naming
+1. **Dry-run first.** Given this spec's 11 recipes When the story starts Then it writes the batch manifest naming
    exactly them, runs `pixi run -e local-recipes refresh-wave <manifest>` as a dry-run, and records each recipe's
    planned outcome in § *Run results* before any recipe changes. A recipe `main` already carries at its published
    version is recorded `already-current` and left alone. A feedstock that has published past this spec's version is
@@ -185,7 +206,9 @@ Type / Effort / Deps: feature / M / S-25.3.
   `gh api` write outside `rxm7706/local-recipes`; no issue or comment; no `mason recipe submit` or
   `mason package ship`; no CFE `submit_pr` or `prepare_submission_branch`.
 - Do not drop a co-maintainer from any `recipe-maintainers` list, and never self-merge on a co-maintained feedstock.
-- Do not touch a recipe outside this spec's list: another batch, Story 25.4 or Story 25.2 owns it.
+- Do not touch a recipe outside this spec's list: another batch, Story 25.4 or Story 25.2 owns it. That includes
+  `recipes/dbt-core`, which Story 25.15 retires, and `recipes/dbt-bigquery`, `recipes/dbt-postgres` and
+  `recipes/dbt-redshift`, which Story 25.16 re-mirrors (rulings of 2026-10-09).
 - Do not edit `refresh_wave.py`, or any CFE file outside the `retro(cfe):` commit. Do not touch
   `src/shared/packages/pyforge-mason/`, `pixi.toml`, `pixi.lock` or `environment.yaml`.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
@@ -214,7 +237,9 @@ Dream: `docs/dreams/pyforge-mason.md` § Realization log → *2026-10-09 (night)
 its pilots, and Track B continues in batch stories*.
 Ledger key: `25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries`.
 Ledger status at mint: `backlog`.
-Deps: S-25.3 (done).
+Deps: S-25.3 (done), S-25.15.
+Amended 2026-10-10 on the operator's rulings of 2026-10-09, "Retire recipes/dbt-core" and "Fix in a story": the
+`dbt-core` row re-pointed to `recipes/dbt`, `dbt-bigquery` moved to Story 25.16 (12 → 11 recipes), and S-25.15 added.
 Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability behind a flag).
 Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split rest").
 

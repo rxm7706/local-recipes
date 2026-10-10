@@ -170,8 +170,10 @@ Type / Effort / Deps: feature / M / —.
   `mason package ship`; no CFE `submit_pr` or `prepare_submission_branch`.
 - Do not drop a co-maintainer from any `recipe-maintainers` list, and never self-merge on a co-maintained feedstock.
 - Do not touch a recipe directory other than `recipes/dbt-snowflake/` and `recipes/zxing-cpp-python/`. In particular,
-  `recipes/zxing-cpp` is Story 25.9's, `recipes/dbt-core` is Story 25.5's, and `recipes/db-gpt` and
-  `recipes/langflow` are Story 25.14's.
+  `recipes/zxing-cpp` is Story 25.9's, `recipes/dbt` (which builds `dbt-core`) is Story 25.5's, `recipes/dbt-core`
+  is Story 25.15's to retire, `recipes/dbt-bigquery`, `recipes/dbt-postgres` and `recipes/dbt-redshift` are Story
+  25.16's, and `recipes/db-gpt` and `recipes/langflow` are Story 25.14's. (Amended 2026-10-10 on the operator's
+  rulings of 2026-10-09; this line named `recipes/dbt-core` as Story 25.5's.)
 - Do not create a directory for any of Wave F's other 18 packages (Story 25.14).
 - Do not edit `refresh_wave.py`, or any CFE file outside the `retro(cfe):` commit. Do not touch
   `src/shared/packages/pyforge-mason/`, `pixi.toml`, `pixi.lock` or `environment.yaml`.
