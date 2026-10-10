@@ -1,28 +1,29 @@
 {% set name = "django-fsm-log" %}
-{% set version = "3.1.0" %}
+{% set version = "5.0.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-fsm-log-{{ version }}.tar.gz
-  sha256: 9ef766f5e6d7c573d1953cf91df73538a611373cc1ef97488eff19a3f71d6ed6
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 5276a587bff3112c123c73456f37decf9c1bdc631e005c760e248adc25c8ec97
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
+  number: 0
 
 requirements:
   host:
     - python {{ python_min }}
     - pip
-    - setuptools
+    - hatchling
+    - hatch-vcs
   run:
-    - python >={{ python_min }},<3.11
-    - django >=1.8
-    - django-fsm >=2
+    - django-fsm-2
+    - python >={{ python_min }}
+    - django >=4.2
     - django-appconf
 
 test:
@@ -44,3 +45,4 @@ extra:
   recipe-maintainers:
     - rxm7706
     - cshaley
+    - pb01ka
