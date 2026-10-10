@@ -2,7 +2,7 @@
 title: "67.9: The conda-recipe-manager click notes state the cap as it stands"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
