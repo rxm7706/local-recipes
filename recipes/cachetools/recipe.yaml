@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "7.1.7"
+  version: "7.2.1"
 
 package:
   name: cachetools
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/cachetools/cachetools-${{ version }}.tar.gz
-  sha256: a3e2a00b14d8f8a6b70c1dae7b4685e7ad3bc965c5b42124a2d6ce895da6cf50
+  sha256: b1a7537025c06abf96fcc1443e496af9a3fb95e774e70e1f0af226f73f7f2dcc
 
 build:
   number: 0
@@ -66,12 +66,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cachetools-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-7.1.7
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T06:52:08Z
+  cfe-last-checked: 2026-10-10T09:23:10Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T06:52:08Z
   cfe-local-build-status: success
@@ -81,4 +81,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 7.1.7 -> 7.2.1
 ####
