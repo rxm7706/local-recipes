@@ -5867,7 +5867,7 @@ So that a lane never rebuilds what another lane is building, and a red dependenc
 **When** the preflight runs
 **Then** every task with a `cmd` is one lane that carries its dependencies from `pixi.toml`. A lane starts only after its dependencies finish `ok` and runs as `pixi run --frozen --skip-deps -e <env> <task>`, so within one preflight no task runs twice, and the journal holds one row per task. Lanes with no order between them stay concurrent
 **And** a red dependency is the only lane reported red. Its dependents never start: they are journaled `cancelled` (`cancelled_by` the dependency), or `not-run` with `blocked_by` under `--keep-going`. Selection is unchanged: `PAGES_CHECK_LEAVES` stays the same four lanes, selected only when `docsite-check.yml`'s paths fire (Story 71.2), with a new assertion on their dependency edges. Dropping `--skip-deps` or the dependency wait fails the new tests (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 89: A killed `platform-ci-local` run never blocks the next one (fix under CAP-152)
 
