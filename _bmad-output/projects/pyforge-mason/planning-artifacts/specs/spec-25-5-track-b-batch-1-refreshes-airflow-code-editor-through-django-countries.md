@@ -2,7 +2,8 @@
 title: "25.5: Track B batch 1 refreshes airflow-code-editor through django-countries"
 type: 'feature'
 created: '2026-10-09'
-status: 'in-review'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'f05de4bab8500a64631f84d8a9a0dc6bce064295'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -310,4 +311,24 @@ Gates: `validate=0` on all; `optimize=1` on C1 mirrors (STD-002 expected); `bill
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Review pass
+- verdicts: 8 findings — high 1, medium 2, low 0, false 3, maybe-false 2
+- findings:
+  - `[high]` `[patch]` Five recipes kept `cfe-local-build-status: failed` after post-refresh manual fixes and green rebuilds — updated stamps to `success` on avro, azure-monitor-opentelemetry-exporter, azure-storage-file-share, django-anymail, django-countries.
+  - `[medium]` `[patch]` Stale `version-update-to-*` tokens on cachetools and django-allauth after refresh — removed obsolete version tokens, kept `meta-yaml-to-recipe-yaml`.
+  - `[medium]` `[reject]` WIP checkpoint commits use `wip: 25.5` subjects instead of `recipes:` per Tasks — acceptable for auto-checkpoints; squash/reword optional at PR time.
+  - `[false]` `[reject]` avro `meta.yaml` duplicate commented deps — byte-identical to deployed feedstock (verified via `conda-forge/avro-feedstock`).
+  - `[false]` `[reject]` C1 meta `files.pythonhosted.org` vs v1 `pypi.org` URL — feedstock-faithful C1 mirror; v1 `recipe.yaml` uses canonical PyPI path by policy.
+  - `[false]` `[reject]` Driver gaps not in `deferred:` frontmatter — already tracked on Story 25.4 spec; AC 10 defers duplicate rows.
+  - `[maybe-false]` `[defer]` SKILL.md bulk-refresh paragraph not expanded with 25.5 lessons — CHANGELOG carries retro; PATCH without new gotcha id is intentional.
+  - `[maybe-false]` `[defer]` Manifest `wave-25-5.yaml` gitignored — report under `.claude/data/conda-forge-expert/refresh-waves/B-25-5/` documents apply.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 1 refreshed eleven co-maintained recipes through `refresh-wave` B-25-5 with pre-refresh refusal clears, post-refresh host/pin fixes, eleven green linux-64 builds, and CFE retro v8.99.3.
+
+Verification: `refresh-wave` dry-run/apply; per-recipe `recipe-build`; `pixi run --frozen -e pyforge-mason pyforge-mason-test` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0); `pixi run -e pyforge-guild spec-surface-check` (exit 0).
+
+Follow-up review recommended: false
