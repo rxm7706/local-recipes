@@ -732,6 +732,14 @@ def _branch_merged_into(root: Path, branch: str, into: str) -> bool:
     raise WorkspaceError(f"git merge-base --is-ancestor {branch} {into} failed (exit {result.returncode}): {detail}")
 
 
+def _branch_merged_into_or_unlanded(root: Path, branch: str, into: str) -> bool:
+    """Like ``_branch_merged_into``, but an unprovable source counts as not merged (Story 85.5)."""
+    try:
+        return _branch_merged_into(root, branch, into)
+    except WorkspaceError:
+        return False
+
+
 #: Reinstallable pixi dirs, relative to a worktree root: the environments
 #: (rebuilt from `pixi.lock`) and the path-dependency build cache (rebuilt on
 #: demand). They run to ~13 GB and 1-2 GB in a worktree that has run
@@ -1046,23 +1054,26 @@ def _archive_worktree(
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         safe = record.slug.replace("/", "-")
         wt = Path(record.path)
-        preserve_on = (
-            workspace_preserve_tag_enabled() if preserve_tag_enabled is None else preserve_tag_enabled
-        )
-        unlanded_branch = wt.is_dir() and not _branch_merged_into(root, record.branch, record.source)
-        preserve_meta: _PreserveParkOutcome | None = None
-        if preserve_on and unlanded_branch:
-            try:
-                preserve_meta = _park_unlanded_preserve(record, wt=wt, root=root)
-            except WorkspaceError as exc:
-                return ArchiveWorktreeResult(
-                    archive_path=archive_dir / f"{safe}-{stamp}.preserve-failed.txt",
-                    branch_kept=True,
-                    failed=True,
-                    failure_reason=str(exc),
-                )
-
         note = _landed_note_text(record, root=root, stamp=stamp) if wt.is_dir() else None
+        preserve_on = False
+        unlanded_branch = False
+        preserve_meta: _PreserveParkOutcome | None = None
+        if note is None and wt.is_dir():
+            preserve_on = (
+                workspace_preserve_tag_enabled() if preserve_tag_enabled is None else preserve_tag_enabled
+            )
+            unlanded_branch = not _branch_merged_into_or_unlanded(root, record.branch, record.source)
+            if preserve_on and unlanded_branch:
+                try:
+                    preserve_meta = _park_unlanded_preserve(record, wt=wt, root=root)
+                except WorkspaceError as exc:
+                    return ArchiveWorktreeResult(
+                        archive_path=archive_dir / f"{safe}-{stamp}.preserve-failed.txt",
+                        branch_kept=True,
+                        failed=True,
+                        failure_reason=str(exc),
+                    )
+
         host_local = False
         if note is not None:
             archive_path = archive_dir / f"{safe}-{stamp}.landed.txt"
