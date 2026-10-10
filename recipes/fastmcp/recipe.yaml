@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: fastmcp
-  version: "3.4.7"
+  version: "4.1.0"
 
 recipe:
   name: ${{ name|lower }}
@@ -11,10 +11,10 @@ recipe:
 
 source:
   - url: https://pypi.org/packages/source/f/fastmcp/fastmcp-${{ version }}.tar.gz
-    sha256: 43117aca886f5ee2f6a569bba91cef02b59c339aad04ba29950ff18d251c822a
+    sha256: 7a8bf4e58cc6c2f3a8552b5a7a17ba1e4682b6fd4cafb7f461920a66dbd2499f
     target_directory: fastmcp/
   - url: https://pypi.org/packages/source/f/fastmcp-slim/fastmcp_slim-${{ version }}.tar.gz
-    sha256: 06b32a358320a7dc2b2ee040ba89ea55ddc20763dff2949f384f7974b13b5d8f
+    sha256: 390b2b430195e0cdd0327aff80fe5dceb862b2421baf71de6d4eec92f80f99f8
     target_directory: fastmcp-slim/
 
 build:
@@ -198,11 +198,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/fastmcp-feedstock
   cfe-forge-recipe-updates-needed: "deployed feedstock recipe.yaml at 3.4.5 is missing joserfc>=1.1.0 and starlette>=1.0.1 in both fastmcp-slim and fastmcp run/run_constraints (flattened from fastmcp-slim's client+server extras), and has a stale pydantic-monty==0.0.16 pin (upstream now ==0.0.17) - verified against live PyPI requires_dist"
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-08-05T00:00:00Z"
+  cfe-last-checked: 2026-10-10T11:36:27Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: "2026-08-05T00:00:00Z"
-  cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T11:36:40Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -216,6 +216,7 @@ extra:
 #    # mcp-types>=2.0.0,<3.0.0 (already on conda-forge) and further restructures
 #    # the package (fastmcp_remote + fastmcp-tasks split out as separate
 #    # distributions). Re-check when fastmcp ships a v4.0.0 stable/GA release.
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 3.4.7 -> 4.1.0
 # run_constraints:
 #    # prefab-ui (the "apps" extra's sole dep) is not on conda-forge under any
 #    # of the checked name spellings (prefab-ui/prefab_ui/prefabui) - confirmed

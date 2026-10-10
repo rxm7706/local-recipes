@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.24.1"
+  version: "2.26.0"
 
 package:
   name: google-cloud-iam
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/g/google-cloud-iam/google_cloud_iam-${{ version }}.tar.gz
-  sha256: 2d7edfe48fd24a181f55473a77584c0c947cf52915fc7af835d9ae0408fccae0
+  sha256: d44a86e5cb0bbc904c459b1367bd0124eef802fe0af72ac378f87f7f8e5b2d42
 
 build:
   number: 0
@@ -69,12 +69,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-iam-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-2.24.1
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T10:24:55Z
+  cfe-last-checked: 2026-10-10T11:36:53Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T10:24:55Z
   cfe-local-build-status: success
@@ -84,4 +84,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 2.24.1 -> 2.26.0
 ####
