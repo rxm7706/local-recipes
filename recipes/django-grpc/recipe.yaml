@@ -20,22 +20,22 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}
-  - pip
-  - setuptools
+    - python ${{ python_min }}
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - setuptools
-  - django >=4.2
-  - protobuf >=4.21.4
-  - grpcio >=1.47.0,<2.0.0
-  - grpcio-tools >=1.47.0,<2.0.0
+    - python >=${{ python_min }}
+    - setuptools
+    - django >=4.2
+    - protobuf >=4.21.4
+    - grpcio >=1.47.0,<2.0.0
+    - grpcio-tools >=1.47.0,<2.0.0
 
 tests:
 - python:
     imports:
-    - django_grpc
-    - django_grpc_testtools
+      - django_grpc
+      - django_grpc_testtools
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -47,7 +47,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata

@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }},<4.0
-  - django >=2.2.5
-  - chardet
-  - dateparser
+    - python >=${{ python_min }},<4.0
+    - django >=2.2.5
+    - chardet
+    - dateparser
 
 tests:
 - python:
     imports:
-    - csvimport
+      - csvimport
     python_version: ${{ python_min }}.*
     pip_check: true
 
@@ -44,7 +44,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
