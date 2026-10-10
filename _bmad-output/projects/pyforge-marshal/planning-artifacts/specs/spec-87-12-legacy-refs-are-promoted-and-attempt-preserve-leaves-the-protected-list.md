@@ -2,9 +2,9 @@
 title: "87.12: Legacy refs are promoted and attempt-preserve leaves the protected list"
 type: 'chore'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'ed652e85a16964ee2732e29ad9d65fcda1ab83f0'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -13,7 +13,14 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref.md
   - docs/governance/guild-roster.json
   - src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py
-deferred: []
+deferred:
+  - summary: >-
+      Extend dirty-ref story inference with journal/run-id lookup when more legacy refs appear.
+    evidence: |-
+      Heuristic `_infer_story_from_dirty_name` may label some dirty refs as unbound when a story slug is recoverable from run metadata.
+    location: >-
+      scripts/legacy_preserve_promote.py
+    severity: low (unverified)
 declared_low_risk: false
 ---
 
@@ -92,4 +99,35 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 1, false 1, maybe-false 1
+- findings:
+  - `[low]` `[patch]` `legacy_preserve_promote.execute_twins` guessed producer from substring — use `parse_preserve_ref` for trailer producer — fixed in review pass.
+  - `[false]` `[reject]` Fixture tests do not cover full 682-tag inventory — AC is satisfied by classification helper + dry-run manifest shape; live inventory is operator dry-run on primary clone.
+  - `[maybe-false]` `[defer]` Dirty-ref story inference heuristics may miss some run/story mappings — evidence: only name-based rules; operator manifest review (B1) catches mis-twin rows before push.
+    - summary: >-
+        Extend dirty-ref story inference with journal/run-id lookup when more legacy refs appear.
+      evidence: |-
+        Heuristic `_infer_story_from_dirty_name` may label some dirty refs as unbound when a story slug is recoverable from run metadata.
+      location: >-
+        scripts/legacy_preserve_promote.py
+      severity: low (unverified)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Shipped `scripts/legacy_preserve_promote.py` to inventory legacy preserved-work refs, write `legacy-preserve-promote-<date>.json`, optionally create local `preserve/` / `archive/` twins via `pyforge.core.preserve_refs`, classify every `rescue/dangling-*` tag without mutating it, and refuse push until a row is marked reviewed.
+
+**Files changed:**
+- `scripts/legacy_preserve_promote.py` — dry-run-default promotion script
+- `tests/scripts/test_legacy_preserve_promote.py` — fixture git tests (dry run, execute idempotence, push refusal, synthetic classification)
+- `scripts/spec_surface_allowlist.txt` — allowlist entry
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/preserve-manifests/README.md` — operator workflow note
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile + expand (Story 87.12)
+
+**Review:** 1 patch applied (producer parsing); 1 false reject; 1 defer (inference heuristics).
+
+**Verification:** `pytest tests/scripts/test_legacy_preserve_promote.py` (4 passed); `pyforge-doctor-scripts-test` (1439 passed); `pyforge-marshal-test` (12174 passed); `pyforge-deps-test` (130 passed); `lint-types` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0).
+
+**Residual risks:** Live primary-clone manifest row count depends on operator environment; ruleset/roster changes remain operator-gated rows only.
