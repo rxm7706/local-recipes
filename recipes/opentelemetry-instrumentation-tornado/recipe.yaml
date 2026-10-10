@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-tornado
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-tornado/opentelemetry_instrumentation_tornado-${{ version }}.tar.gz
-  sha256: 3178e163086eeafd534b87c7a932a797aefc21b17254463ecdd8b827b78826f5
+  sha256: d571e50cb4cf4b387e8496babbdafdaf8b11dcd93df8b9b7bb26c763da25263f
 
 build:
   number: 0
@@ -68,12 +68,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-tornado-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:50:52Z
+  cfe-last-checked: 2026-10-10T18:01:20Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:50:52Z
   cfe-local-build-status: success
@@ -84,4 +84,5 @@ extra:
 # CFE comments
 # Header:
 #    # added run deps from import test: ['tornado']
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####
