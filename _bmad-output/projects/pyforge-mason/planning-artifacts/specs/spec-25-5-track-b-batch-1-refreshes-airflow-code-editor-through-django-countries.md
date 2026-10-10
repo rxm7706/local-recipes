@@ -2,7 +2,7 @@
 title: "25.5: Track B batch 1 refreshes airflow-code-editor through django-countries"
 type: 'feature'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'f05de4bab8500a64631f84d8a9a0dc6bce064295'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -263,7 +263,50 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-5`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| airflow-code-editor | needs-review | `url-unrenderable` |
+| avro | needs-review | `url-unrenderable` |
+| azure-monitor-opentelemetry-exporter | needs-review | `no-cfe-block` |
+| azure-storage-file-share | needs-review | `no-cfe-block` |
+| billiard | needs-review | `no-cfe-block` |
+| cachetools | needs-review | `dependency-fix: host -setuptools-scm` |
+| dbt | needs-review | `no-feedstock` (manifest used `dbt-feedstock`; lookup name is `dbt`) |
+| django-allauth | needs-review | `dependency-fix: host -setuptools-scm` |
+| django-anymail | needs-review | `url-unrenderable` |
+| django-bootstrap5 | needs-review | `dependency-fix: run pin django` |
+| django-countries | needs-review | `no-cfe-block` |
+
+### After refusal clears (second dry-run)
+
+All eleven: `would-refresh`.
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-5/report.json` (gitignored).
+
+| Recipe | Outcome | Version | Build (linux-64) | Maintainers (G53) |
+|---|---|---|---|---|
+| airflow-code-editor | refreshed | 8.3.0 → 8.3.1 | success | rxm7706, xylar (superset) |
+| avro | refreshed | 1.12.1 → 1.12.2 | success after `python_min.*` host fix | mariusvniekerk, rxm7706 |
+| azure-monitor-opentelemetry-exporter | refreshed | 1.0.0b56 → 1.0.0b58 | success after run-pin sync | rxm7706, conda-forge/opentelemetry-api |
+| azure-storage-file-share | refreshed | 12.26.0 → 12.27.0 | success after `python_min.*` host fix | davidbrochart, rxm7706 |
+| billiard | refreshed | 4.2.4 → 4.3.1 | success | kwilcox, rxm7706 |
+| cachetools | refreshed | 7.1.7 → 7.2.1 | success | maartenbreddels, marcelotrevisani, rxm7706 |
+| dbt | refreshed | 1.12.2 → 1.12.5 | success; patch restored; `License.md` pruned | drewbanin, jthandy, maresb, rxm7706, thewchan, zaneselvans |
+| django-allauth | refreshed | 65.19.1 → 65.19.7 | success | cshaley, jacksund, rxm7706, sannykr |
+| django-anymail | refreshed | 15.1 → 15.2 | success after `python_min.*` host fix | cshaley, elanqo, millsks, rxm7706, zaigner |
+| django-bootstrap5 | refreshed | 26.2 → 26.3 | success | rxm7706, swainn |
+| django-countries | refreshed | 9.0.0 → 9.1.0 | success after `python_min.*` host fix | mxr-conda, rxm7706 |
+
+Gates: `validate=0` on all; `optimize=1` on C1 mirrors (STD-002 expected); `billiard` `check-deps=1` (`cross-python_${{ target_platform }}` placeholder — recorded, not a recipe defect).
+
+### Deferred from B2 (AC 12)
+
+- `billiard`: refreshed (was `no-cfe-block` in 25.2 B2 dry-run).
+- `cachetools`: refreshed after host `setuptools-scm` removed per feedstock (was `dependency-fix` in B2).
 
 ## Review Triage Log
 
