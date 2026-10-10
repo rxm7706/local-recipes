@@ -2,7 +2,7 @@
 title: "25.4: Wave 0's leftover recipes end repaired or carry a recorded reason"
 type: 'fix'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '6d5e84cb6b0ebbd61875196dccd7d6015f197457'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -285,6 +285,18 @@ Closed `DW-mason-25-2-2` — resolution: Story 25.4; 14/14 `repaired`; builds 12
 - `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile (no `--write-baseline`).
 - `git diff origin/main...HEAD -- recipes/` — 14 directories only; no version/number/requirement/maintainer line changes.
 
+## Auto Run Result
+
+Status: done
+
+Summary: Stamped canonical CFE blocks on all 14 Wave 0 leftovers, reran `refresh-wave --repair --apply --gates` (14/14 repaired), recorded linux-64 builds (12 success, 2 failed with documented reasons), filed four `refresh_wave.py` driver gaps in `deferred:`, closed `DW-mason-25-2-2`, landed `retro(cfe): v8.99.2`.
+
+Verification: `pyforge-mason-test` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlogs on `spec-fleet-stewardship`, `spec-pyforge-mason`, and `spec-packaging-factory`.
+
+Follow-up review recommended: false
+
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto (implementation + self-check)
+- verdicts: implementation matches intent-contract; repair left requirements unchanged; driver not edited.
+- findings: none blocking — django-csvimport/django-grpc build failures recorded in run results.
