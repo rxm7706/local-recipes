@@ -447,7 +447,7 @@ development_status:
   87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: done
   87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: done
   87-9-every-preserve-reader-sees-preserve-tags-and-origin: done
-  88-1-marshal-commits-a-tracked-file-under-an-ignored-directory: backlog
+  88-1-marshal-commits-a-tracked-file-under-an-ignored-directory: done
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -622,7 +622,7 @@ development_status:
   epic-86-retrospective: optional
   epic-87: done
   epic-87-retrospective: optional
-  epic-88: backlog
+  epic-88: done
   epic-88-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
