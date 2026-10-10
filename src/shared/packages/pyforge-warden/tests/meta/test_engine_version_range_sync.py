@@ -40,7 +40,11 @@ PIXI_TOML = PACKAGE_ROOT / "pixi.toml"
 def _run_dependencies() -> dict[str, object]:
     with PIXI_TOML.open("rb") as stream:
         data = tomllib.load(stream)
-    return data["package"]["run-dependencies"]
+    run_deps = dict(data["package"]["run-dependencies"])
+    linux = data.get("package", {}).get("target", {}).get("linux-64", {}).get("run-dependencies")
+    if isinstance(linux, dict):
+        run_deps.update(linux)
+    return run_deps
 
 
 def test_pixi_toml_is_found_where_expected():

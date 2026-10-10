@@ -297,7 +297,7 @@
         "story": "15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict",
         "created": "2026-09-28",
         "on_everywhere": "",
-        "cleanup_by": "2026-12-31"
+        "cleanup_by": ""
       }
     },
     "pyforge.steward.ledger_query_postgres_sync": {
