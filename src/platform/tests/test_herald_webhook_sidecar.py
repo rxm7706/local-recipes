@@ -183,22 +183,20 @@ def test_mcp_host_sidecar_herald_dependency_missing_not_blamed_on_herald(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    import pyforge.herald.webhook_host as webhook_host_mod
-
     monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "shared-secret")
-    webhook_host_mod._application = None  # noqa: SLF001
-    sys.modules.pop("pyforge.core.errors", None)
-    sys.modules.pop("pyforge.herald.webhook", None)
+    for name in list(sys.modules):
+        if name in ("pyforge.core.errors",) or name.startswith("pyforge.herald."):
+            sys.modules.pop(name, None)
     finder = _CoreErrorsAbsentFinder()
     sys.meta_path.insert(0, finder)
     try:
-        response = mcp_client.post(_ON_SHIP_PATH, content=b"{}")
+        with pytest.raises(ModuleNotFoundError):
+            mcp_client.post(_ON_SHIP_PATH, content=b"{}")
     finally:
         sys.meta_path.remove(finder)
-        webhook_host_mod._application = None  # noqa: SLF001
-    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-    assert "pyforge.herald is not installed" not in response.text
+        _, webhook_host = _herald_modules()
+        webhook_host._application = None  # noqa: SLF001
     assert mcp_client.get("/health").status_code == HTTPStatus.OK
 
 
