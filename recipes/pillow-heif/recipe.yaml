@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: pillow-heif
-  version: "1.5.0"
+  version: "1.8.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/p/pillow-heif/pillow_heif-${{ version }}.tar.gz
-  sha256: 16b11a37b762ff42da2d36527bb5cb14bd9194c24c389ee911155d6e23c53065
+  sha256: e47c27432c6fd3d66c22f0de9f27fd379383b646c947520bc485854ce72060d0
 
 build:
   number: 0
@@ -91,7 +91,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pillow-heif-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T13:40:00Z
+  cfe-last-checked: 2026-10-10T13:57:54Z
   cfe-generated-by-version: 8.99.9
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
   cfe-local-build-status: not-attempted
@@ -102,4 +102,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 1.5.0 -> 1.8.0
 ####

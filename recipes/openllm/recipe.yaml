@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: openllm
-  version: "0.4.44"
+  version: "0.6.30"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/openllm/openllm-${{ version }}.tar.gz
-  sha256: b1063f19a41479464102222b31ef240bf1a6c9557c8e0cfa24959b2c4c10bb34
+  sha256: 50f521ba49e50ea5c8d4092abcb651e52305128f0e3f3c012cf0dbb97429f1da
 
 build:
   number: 0
@@ -73,6 +73,7 @@ extra:
 
 #### CFE metadata AND comments
 # CFE metadata
+    - pb01ka
   cfe-conda-name: openllm
   cfe-upstream-registry: pypi
   cfe-upstream-name: openllm
@@ -89,15 +90,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openllm-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T13:40:00Z
+  cfe-last-checked: 2026-10-10T13:57:03Z
   cfe-generated-by-version: 8.99.9
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T13:57:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 0.4.44 -> 0.6.30; maintainers added: pb01ka
 ####
