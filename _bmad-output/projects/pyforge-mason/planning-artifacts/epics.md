@@ -3162,7 +3162,7 @@ any proposal parked in the CFE comments block. Nothing leaves the local repo: no
 outside `rxm7706/local-recipes`, no `mason recipe submit` or `mason package ship`, no CFE `submit_pr` or
 `prepare_submission_branch`. The `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry, and
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.14: Wave F's other 18 packages are built by their feedstock's own mirror
 
