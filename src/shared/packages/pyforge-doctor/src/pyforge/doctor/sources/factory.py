@@ -10,8 +10,8 @@ from ``scripts/bmad_drift_check.py``: 13 check functions covering 18 distinct
 finding kinds -- a tracked doc's missing/behind ``source_pin``, a misfiled
 archive artifact or stray file, a stale spec status, a stale deferred-work
 reconciliation stamp, a stale count or atlas-phase list, stale rule content, a
-drifted sync baseline, an uncovered project file, a Tier-1/Tier-3 filing
-misalignment, an unindexed intake spec, and Dream vocabulary/ownership drift.
+drifted sync baseline, an uncovered project file, a Tier-2/Tier-3 filing
+misalignment, and Dream vocabulary/ownership drift.
 
 **Single-``Source`` naming** (mirrors ``sources/ledger.py``, not
 ``sources/chain.py``/``sources/board.py``): ``bmad_drift_check.py`` is one
@@ -250,10 +250,6 @@ def _skill(target: Path) -> Path:
     return target / ".claude" / "skills" / "conda-forge-expert"
 
 
-def _docs_specs(target: Path) -> Path:
-    return target / "docs" / "specs"
-
-
 # Tracked pinned docs and their sync category -- verbatim from the original's
 # own TRACKED list (see that script's own comment for the living/plan/snapshot
 # category meanings). "context" retired with Story 30.2 (2026-09-06) --
@@ -466,8 +462,7 @@ def _read_item(path: Path, check_name: str, target: Path, out: list[Finding]) ->
     rests on ("discards every OTHER real finding the same check had already
     computed"), applied at the granularity these checks actually iterate at.
 
-    Single-input checks (``check_deferred_work``, ``check_baseline``,
-    ``check_spec_indexed``'s ``CLAUDE.md``) deliberately keep the bare
+    Single-input checks (``check_deferred_work``, ``check_baseline``) deliberately keep the bare
     ``_read``: there is no sibling to save, so the whole check genuinely is
     unevaluable and ``_gather``'s per-check net is the right boundary."""
     try:
@@ -1414,8 +1409,7 @@ def check_coverage(target: Path) -> list[Finding]:
 
 
 def check_tier_alignment(target: Path) -> list[Finding]:
-    """Enforce the BMAD-method tier model: Tier-1 intake specs live in
-    ``docs/specs/`` (neutral, tracked), Tier-3 execution output lives in
+    """Enforce the BMAD-method tier model: Tier-3 execution output lives in
     ``implementation-artifacts/`` (gitignored, local-only). A git-tracked
     file under ``implementation-artifacts/`` is misfiled.
 
@@ -1423,7 +1417,7 @@ def check_tier_alignment(target: Path) -> list[Finding]:
     listing tracked implementation-artifact files degrades to an honest
     ``bmad-drift-unevaluable`` WARN for that half of the check, rather than
     silently reporting a clean "nothing tracked" -- see this module's own
-    docstring. The non-git docs/specs half still runs regardless."""
+    docstring."""
     out: list[Finding] = []
     tracked = _git_tracked(target, IMPL_REL)
     if tracked is None:
@@ -1438,7 +1432,7 @@ def check_tier_alignment(target: Path) -> list[Finding]:
         for f in tracked:
             name = f.rsplit("/", 1)[-1]
             remedy = (
-                "intake spec -> git mv to docs/specs/"
+                "intake spec -> git mv to _bmad-output/projects/<station>/planning-artifacts/specs/"
                 if name.startswith("spec-")
                 else "Tier-3 output -> keep local (git rm --cached)"
             )
@@ -1450,48 +1444,7 @@ def check_tier_alignment(target: Path) -> list[Finding]:
                     f"implementation-artifacts is gitignored/local-only; this file is git-tracked ({remedy})",
                 )
             )
-    docs_specs = _docs_specs(target)
-    if _is_dir(docs_specs):
-        for p in _listdir(docs_specs):
-            if _is_file(p) and p.suffix != ".md":
-                out.append(
-                    _finding(
-                        DRIFT,
-                        "docs-specs-nonmd",
-                        f"docs/specs/{p.name}",
-                        "docs/specs holds BMAD intake specs (markdown) — non-.md is misfiled",
-                    )
-                )
     return out
-
-
-def check_spec_indexed(target: Path) -> list[Finding]:
-    """Every Tier-1 intake spec must be referenced in CLAUDE.md's Project
-    Documentation Reference -- verbatim from the original."""
-    docs_specs = _docs_specs(target)
-    if not _is_dir(docs_specs):
-        return []
-    claude_path = target / "CLAUDE.md"
-    if not _is_file(claude_path):
-        return [
-            _finding(
-                DRIFT,
-                "spec-index-unevaluable",
-                "CLAUDE.md",
-                "CLAUDE.md is absent — cannot verify intake spec index",
-            )
-        ]
-    claude = _read(claude_path)
-    return [
-        _finding(
-            DRIFT,
-            "spec-unindexed",
-            f"docs/specs/{p.name}",
-            "not referenced in CLAUDE.md Project Documentation Reference",
-        )
-        for p in _listdir_match(docs_specs, "*.md")
-        if p.name not in claude
-    ]
 
 
 def _roster(target: Path) -> dict:
@@ -1673,7 +1626,6 @@ _CHECK_NAMES: tuple[str, ...] = (
     "check_phase_lists",
     "check_baseline",
     "check_tier_alignment",
-    "check_spec_indexed",
     "check_dream_owners",
     "check_dream_vocab",
     "check_pixi_env_matrix",

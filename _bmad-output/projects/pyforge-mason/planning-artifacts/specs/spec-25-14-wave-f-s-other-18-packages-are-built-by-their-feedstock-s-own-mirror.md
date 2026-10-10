@@ -13,7 +13,7 @@ context:
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - .claude/skills/conda-forge-expert/scripts/refresh_wave.py
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md
@@ -21,7 +21,7 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
 deferred:
   - summary: "Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone."
-    location: docs/specs/feedstock-refresh.md
+    location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - id: refresh-wave-suite-context-version-only
     summary: "refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored."
     location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:701
@@ -113,7 +113,7 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13, S-25.15.
   the driver lives in. No new CAP, so no FR moves.
 - AD-1 (no recipe knowledge in Mason's code); AD-15 (the CFE surface moves only in the `retro(cfe):` commit).
 - CFE G52, G53, G72, G92, G95 and G96; SKILL.md § *Local-mirror fidelity* and § *Bulk refresh waves*;
-  `docs/specs/feedstock-refresh.md` § *Track B* (Wave A step A3, Wave F, coordination rules 1 to 5, landmines 1 to 13).
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B* (Wave A step A3, Wave F, coordination rules 1 to 5, landmines 1 to 13).
 - `spec-fleet-stewardship` CAP-1 governs `recipes/**`; `spec-packaging-factory` governs the CFE surface.
 - `spec-feature-flag-governance` CAP-1, Q2: `flag-exempt: recipe-build`.
 - Siblings: Story 25.7 refreshes `recipes/langflow` first; its batch no longer holds `recipes/lfx` (ruling 2,
@@ -169,7 +169,7 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13, S-25.15.
    owning feedstock, mirror directory, local version and published version. Story 25.13's two rows come from its run
    results. If the mason deferred-work ledger carries the row ingested from Story 25.2's deferral "Twenty
    genuinely-missing local mirrors", that row is closed, naming Stories 25.13 and 25.14. The mapping rule is a row in
-   this spec's `deferred:` frontmatter naming `docs/specs/feedstock-refresh.md` (Wave A step A3), which has no tracked
+   this spec's `deferred:` frontmatter naming `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` (Wave A step A3), which has no tracked
    tool: map a package to its feedstock through the atlas's `packages.feedstock_name`, never by directory name.
 10. **Driver gaps recorded, not patched.** Given driver gap 5 (`refresh-wave` moves `context.version` only, so a
     suite's per-output context versions stay behind) and any other gap the story finds When the story closes Then each
@@ -188,7 +188,7 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13, S-25.15.
 ## Tasks
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1): § *Local-mirror fidelity*, § *Bulk refresh waves*,
-   G52, G53, G72 and G92; and `docs/specs/feedstock-refresh.md` § *Track B*. Where the file, this spec and the skill
+   G52, G53, G72 and G92; and `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*. Where the file, this spec and the skill
    differ, the skill wins, and the story records the difference.
 2. Confirm Stories 25.7, 25.13 and 25.15 are `done`, and read both feedstocks and the 22 registry entries live (AC 1).
 3. `recipes/db-gpt`: compare it with the feedstock (AC 3), run a one-recipe `refresh-wave` dry-run (manifest `track: B`,

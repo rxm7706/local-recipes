@@ -95,7 +95,7 @@ one thread.
 
 **Judgment call: this story does not modify `deck-export` itself.** The task's own framing scoped
 Epic 2 to Herald's `pull` surface; `deck-export`'s own bundle-vs-marp preference logic is out of this
-package entirely (it lives in the repo's Marp/pixi tooling, `docs/specs/presentation-deck.md`'s own
+package entirely (it lives in the repo's Marp/pixi tooling, `docs/how-to/presentation-deck.md`'s own
 territory) and was not touched, read in full, or modified here. If `deck-export` does not already
 implement that preference correctly, that is a `deck-export` defect, not a `pull_standalone_bundle`
 one -- flagged as a verification gap in this story's own Verification section rather than silently

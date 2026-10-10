@@ -12,7 +12,7 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - docs/dreams/pyforge-mason.md
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - .claude/skills/conda-forge-expert/scripts/recipe_updater.py
   - .claude/skills/conda-forge-expert/scripts/recipe_editor.py
@@ -332,7 +332,7 @@ fetch and the hash calculation are mocked, so no test touches the network.
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1). Read the critical constraints at `:150`, `:202` and
    `:246`, the local-mirror rule at `:1157`, and G52, G53, G92, G95, G96 and G113. Read
-   `docs/specs/feedstock-refresh.md`'s landmines 1 to 13. Where this story and the skill disagree, the skill wins and
+   `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`'s landmines 1 to 13. Where this story and the skill disagree, the skill wins and
    the story records the deviation.
 2. Read the untracked 25.1 and 25.2 scripts read-only as evidence of what a wave needed. Never copy them:
    - `.worktrees/dispatch-pyforge-mason-25.1/.cursor/wave_h_*.py` and `.sh`;

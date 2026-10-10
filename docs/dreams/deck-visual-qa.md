@@ -40,7 +40,7 @@ Splits cleanly into two pieces with different dependencies:
 
 ## What is real
 
-Herald's existing deck pipeline (`docs/specs/presentation-deck.md`) has NO dedicated
+Herald's existing deck pipeline (`docs/how-to/presentation-deck.md`) has NO dedicated
 visual/structural QA gate today — checked directly, no `check_xml`/`overflow`/`visual_qa`-shaped
 step exists anywhere in that spec. The gap this Dream's visual-QA half would close is real and
 already named in this repo's own accumulated feedback, not speculative.
@@ -97,7 +97,7 @@ format-specific gates this one's structural half depends on)
   (`deck_qa.py:143-152` — "Chromium needs a real HTTP origin, not `file://`"). **Status held
   at `specified`, not advanced to `realized`**: nothing in the repo calls the gate — no pixi
   task (`pixi.toml` names `deck_qa` only in the playwright dependency comment at line 2352),
-  no CI job, and `docs/specs/presentation-deck.md` still describes a purely run-shaped
+  no CI job, and `docs/how-to/presentation-deck.md` still describes a purely run-shaped
   verify checklist. No run artifact exists — `render_gate` writes `.herald/deck-qa/<slug>/render/`
   (`deck_qa.py:117`, `:245-250`) and `.herald/` is not in the tree. The capability exists;
   the gap it was written to close is still open. Vessel: herald Epic 19 Story 19.3 (give

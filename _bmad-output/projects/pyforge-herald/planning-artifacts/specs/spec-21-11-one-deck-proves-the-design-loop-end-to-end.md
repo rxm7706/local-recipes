@@ -42,7 +42,7 @@ declared_low_risk: false
 ## Binding
 
 Parent Spec capability: `spec-deck-family-lockstep` CAP-5.
-Surface: one deck's `project/` artifacts, its `README.md` ledger, `docs/specs/presentation-deck.md` (§ *The MCP bridge* — the worked pull).
+Surface: one deck's `project/` artifacts, its `README.md` ledger, `docs/how-to/presentation-deck.md` (§ *The MCP bridge* — the worked pull).
 Deps: S-21.4.
 Ledger key: `21-11-one-deck-proves-the-design-loop-end-to-end`.
 Minted 2026-09-18 from `epics.md` (Intent + ACs only) so the filename matches CHAIN-STANDARD §5 (`spec-` + ledger key).

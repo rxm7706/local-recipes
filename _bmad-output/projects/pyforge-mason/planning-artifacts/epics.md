@@ -1987,7 +1987,7 @@ So that bulk feedstock work is a workflow with recorded evidence rather than ad-
 sweeps.
 
 **Type:** docs • **Effort:** M • **Deps:** S-17.1 • **FR/AD:** spec-fleet-stewardship CAP-3
-**Surface:** adopted companions `docs/specs/feedstock-refresh.md`,
+**Surface:** adopted companions `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`,
 `feedstock-platform-expansion.md`, `feedstock-failure-remediation.md` (legacy Tier-1, in
 force)
 **Given** bulk feedstock work could be ad-hoc **When** this practice is in force **Then**
@@ -2113,8 +2113,8 @@ campaigns); canopy:AD-17
 **Surface:** `.claude/skills/mason-feedstock-platform-expansion/**` and `.claude/skills/mason-feedstock-failure-remediation/**`
 (new: `SKILL.md` carrying the how-to's parameterized body, `references/worked-examples.md` carrying its Worked Examples);
 `docs/how-to/feedstock-platform-expansion.md` and `docs/how-to/feedstock-failure-remediation.md` (each becomes a short
-pointer to its skill, frontmatter kept); `docs/specs/feedstock-platform-expansion.md` and
-`docs/specs/feedstock-failure-remediation.md` (the stubs point at the skill); `CLAUDE.md` (the two legacy-index rows'
+pointer to its skill, frontmatter kept); `docs/how-to/feedstock-platform-expansion.md` and
+`docs/how-to/feedstock-failure-remediation.md` (the stubs point at the skill); `CLAUDE.md` (the two legacy-index rows'
 descriptions); `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` (extended);
 `docs/reference/skills-catalog.md` (regenerated); `docs/reference/agent-instruction-notes.md` § *Skill Reference* (two rows).
 **Given** the two how-tos are the orchestration layer over CFE's procedure — in their own words CFE "owns the procedural
@@ -2124,7 +2124,7 @@ detail" and is authoritative on any conflict
 cases append to — moved verbatim, not rewritten; the timeless workflow stays in
 `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md` and CFE's diagnostic chain, linked, never copied
 **And** the how-to and the `docs/specs/` stub each resolve to the skill; `CLAUDE.md`'s legacy index still names both stub
-filenames (`bmad-drift-check`); `test_mason_skills.py` covers both skills; `docs/specs/feedstock-refresh.md` does not
+filenames (`bmad-drift-check`); `test_mason_skills.py` covers both skills; `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` does not
 move; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 **Status:** done
 
@@ -2574,7 +2574,7 @@ entry (v8.91.1); `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 
 Minted 2026-09-29 (evening) from the station Dream's entry of the same name and the operator's ruling of that day.
 `docs/specs/` retires (`spec-one-chain-per-station:CAP-11`), and its one unfinished effort, the two-track feedstock
-refresh in `docs/specs/feedstock-refresh.md`, joins this chain as one story per track. The two stories are independent.
+refresh in `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, joins this chain as one story per track. The two stories are independent.
 Their scope counts date from 2026-06-19, so each story re-counts live first. **HARD boundaries:**
 - Every recipe judgement goes through `conda-forge-expert` (Rule 1), including G53 (re-merge co-maintainers) and G96 (a
   bump's dependency authority is the feedstock).
@@ -2615,7 +2615,7 @@ All nine depend on S-25.3 only and touch disjoint recipe directories, so they ca
 boundaries above hold for each. Each closes with its own `retro(cfe):` commit. Those commits all move the CFE version
 carriers, so a story that lands after another one's retro takes the next version when it merges `main`, as Stories
 21.1 to 21.5 did (v8.93.1 to v8.93.5). The 20 co-maintained feedstocks with no local mirror (Wave F) stay a recorded
-deferral, not a story, until the operator answers `docs/specs/feedstock-refresh.md` Track B Q2 (`<create_missing>`).
+deferral, not a story, until the operator answers `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` Track B Q2 (`<create_missing>`).
 
 A fourth operator ruling, 2026-10-09 (night, later), answers Q2 for Wave F: "create them". Wave A's 20
 no-local-recipe names turn out to come from four feedstocks, not 20. That is what the atlas's `packages.feedstock_name`
