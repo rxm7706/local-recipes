@@ -13,4 +13,4 @@ Operational body lives in the Mason skill
 Invoke **conda-forge-expert** before recipe work. Timeless procedure stays in
 [`.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md`](https://github.com/rxm7706/local-recipes/tree/main/.claude/skills/conda-forge-expert/guides).
 
-Legacy intake stub: [`docs/specs/feedstock-platform-expansion.md`](../specs/feedstock-platform-expansion.md).
+Legacy intake stub (archived): [`archive/docs/specs/feedstock-platform-expansion.md`](../archive/docs/specs/feedstock-platform-expansion.md).

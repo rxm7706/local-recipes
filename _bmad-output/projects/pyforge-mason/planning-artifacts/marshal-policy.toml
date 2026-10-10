@@ -336,8 +336,8 @@ verify_commands = [
   # 19.4: the two campaigns move out of docs/how-to/; stubs and the legacy index repoint
   "docs/how-to/feedstock-platform-expansion.md",
   "docs/how-to/feedstock-failure-remediation.md",
-  "docs/specs/feedstock-platform-expansion.md",
-  "docs/specs/feedstock-failure-remediation.md",
+  "docs/how-to/feedstock-platform-expansion.md",
+  "docs/how-to/feedstock-failure-remediation.md",
   "CLAUDE.md",
   "docs/reference/agent-instruction-notes.md",
   "docs/reference/skills-catalog.md",

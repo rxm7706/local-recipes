@@ -19,7 +19,7 @@ verdict_mode: advisory
 
 **Problem:** The infographic standard (six-act arc, full-depth section set, inline-diagram floor,
 90 KB+ class, source-cited facts) existed only as operator rulings in auto-memory and as three
-exemplar files. `docs/specs/presentation-deck.md` named "the warden family" as the sole form
+exemplar files. `docs/how-to/presentation-deck.md` named "the warden family" as the sole form
 exemplar and its verify checklist was entirely run-shaped — no floor was written anywhere a
 deck author would read.
 
@@ -46,7 +46,7 @@ step; `presentations/README.md` gains a pointer line. No second copy of the floo
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| Reader opens the deck spec | `docs/specs/presentation-deck.md` § Artifact dependency tree | reaches `infographic-standard.md` in one hop; sees both references and the floors | — |
+| Reader opens the deck spec | `docs/how-to/presentation-deck.md` § Artifact dependency tree | reaches `infographic-standard.md` in one hop; sees both references and the floors | — |
 | Reader follows the verify checklist | § How to use this spec, step 5 | the poster step names the floors and the PNG review | — |
 | Reader lands in `presentations/` | `presentations/README.md` | pointer to the standard | — |
 | Floors grep | `grep -rn "≥ 18 sections"` | matches the standard plus link-carrying pointers only, no divergent copy | — |
@@ -64,9 +64,9 @@ no second definition of the floors exists outside `infographic-standard.md`.
 
 ## Auto Run Result
 
-**Summary:** Repointed `docs/specs/presentation-deck.md` (§ Artifact dependency tree paragraph; verify
+**Summary:** Repointed `docs/how-to/presentation-deck.md` (§ Artifact dependency tree paragraph; verify
 step 5 poster sub-step) and `presentations/README.md` at `infographic-standard.md`. No code touched.
 
-**Verification:** `grep -n infographic-standard.md docs/specs/presentation-deck.md presentations/README.md`
+**Verification:** `grep -n infographic-standard.md docs/how-to/presentation-deck.md presentations/README.md`
 → three hits (lines 78, 245; README line 15). `spec-surface-check` reconciles the governed
 `presentation-deck.md` change through `spec-deck-family-currency/.memlog.md` (event appended same date).

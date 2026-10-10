@@ -11,7 +11,7 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
@@ -66,7 +66,7 @@ batch, and this story takes all three.
 
 **Why a re-mirror, not a refresh.** Story 25.3's driver moves a recipe's `context.version` and keeps the rest. Here the
 rest is the wrong package, so the driver would refresh `dbt-core` under an adapter's directory. CFE's mirror rule is the
-fix (SKILL.md § *Local-mirror fidelity*; `docs/specs/feedstock-refresh.md` C1 and C2): take each feedstock's `recipe/`
+fix (SKILL.md § *Local-mirror fidelity*; `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` C1 and C2): take each feedstock's `recipe/`
 directory, keep a v0 feedstock's `meta.yaml` byte-identical beside a local v1 `recipe.yaml`, and keep no `meta.yaml`
 for a v1 feedstock. Story 25.9's AC 13 and Story 25.13 follow the same rule.
 
@@ -99,7 +99,7 @@ Type / Effort / Deps: fix / M / —.
   CAP-23, the CFE machinery. No new CAP, so no FR moves.
 - AD-1 (no recipe knowledge in Mason's code); AD-15 (the CFE surface moves only in the `retro(cfe):` commit).
 - CFE Rule 1, Rule 2 and Rule 3; G52, G53, G62, G65, G92, G94, G95 and G96; SKILL.md § *Local-mirror fidelity* and
-  § *PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern*; `docs/specs/feedstock-refresh.md` § *Track B*,
+  § *PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern*; `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*,
   C1 and C2, coordination rules 1 to 5 and landmines 1 to 13.
 - `spec-fleet-stewardship` CAP-1 (the local mirror is the source of truth, `recipes/<feedstock>/`) governs `recipes/**`;
   `spec-packaging-factory` governs the CFE surface.
@@ -191,7 +191,7 @@ Type / Effort / Deps: fix / M / —.
 ## Tasks
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1): § *Local-mirror fidelity*, § *PyPI `source.url` Must
-   Use the `pypi.org/packages/...` Pattern*, G52, G53, G92, G94 and G95; and `docs/specs/feedstock-refresh.md` C1, C2
+   Use the `pypi.org/packages/...` Pattern*, G52, G53, G92, G94 and G95; and `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` C1, C2
    and § *Track B*. Where the file, this spec and the skill differ, the skill wins, and the story records the
    difference.
 2. Read the three feedstocks live and record them (AC 1).

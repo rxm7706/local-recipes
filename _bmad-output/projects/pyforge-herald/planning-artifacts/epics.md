@@ -552,7 +552,7 @@ steward 46.6 / 46.2 / 46.5 provision first; Path B grammar stays `pyforge herald
 **Given** the two skills installed **When** the herald persona routes release notes to `bmad-os-changelog` and the social variant to `bmad-os-changelog-social` feeding `herald notice` **Then** one release (the next suite refresh) has its note produced through them, the register names herald as sole wielder, and CLAUDE.md is untouched
 
 ### Story 18.3: `slides-generator` is herald-wielded
-**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • `docs/specs/presentation-deck.md` (the deck pipeline it must not fork)
+**Type:** docs • **Effort:** XS • **Deps:** — (after steward 46.5 — cross-station: ledger `blocked`, AD-10) • **FR/AD:** spec-bmad-suite-lifecycle CAP-6 • AD-2 • `docs/how-to/presentation-deck.md` (the deck pipeline it must not fork)
 **Surface:** `.claude/skills/bmad-agent-herald/SKILL.md`, `adoption-register.md` § 2 row, `AGENTS.md` block
 **Given** the labs skill installed by name **When** the herald persona routes quick slide drafts to `slides-generator` while the Claude-Design deck pipeline stays the deck source of record **Then** the register names herald as sole wielder and the routing line states the boundary (draft only; never a deck head)
 
@@ -620,13 +620,13 @@ spec is `ready-for-dev`. The workflow boundary above binds this epic's stories o
 
 ### Story 19.3: The deck-QA gate gets a caller
 **Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** `spec-deck-visual-qa` CAP-1..3 (Epic 14: 14.1/14.2/14.3, all `done`) • batch row C6
-**Surface:** `pixi.toml` (a `deck-qa` task in the `local-recipes` or `pyforge-herald` feature), `docs/specs/presentation-deck.md` § verify checklist, optionally `.github/workflows/` (a deck lane), `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py` (unchanged — this story adds no gate)
-**Given** `herald deck qa <slug>` works (`cli.py:331-341` / `:764-765` / `:982-995`; `deck_qa.py`, 665 lines) and nothing calls it — no pixi task (`pixi.toml` names `deck_qa` only in a playwright dependency comment), no CI job, and `docs/specs/presentation-deck.md`'s verify checklist is still entirely run-shaped, which is the exact gap the Spec was written to close — **When** a pixi task invokes the gate and `presentation-deck.md`'s verify checklist names it as a step **Then** one existing deck (`presentations/agentic-sdlc/`) is run through the gate, its report is produced under `.herald/deck-qa/<slug>/`, and the gate has at least one caller outside its own test file
+**Surface:** `pixi.toml` (a `deck-qa` task in the `local-recipes` or `pyforge-herald` feature), `docs/how-to/presentation-deck.md` § verify checklist, optionally `.github/workflows/` (a deck lane), `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py` (unchanged — this story adds no gate)
+**Given** `herald deck qa <slug>` works (`cli.py:331-341` / `:764-765` / `:982-995`; `deck_qa.py`, 665 lines) and nothing calls it — no pixi task (`pixi.toml` names `deck_qa` only in a playwright dependency comment), no CI job, and `docs/how-to/presentation-deck.md`'s verify checklist is still entirely run-shaped, which is the exact gap the Spec was written to close — **When** a pixi task invokes the gate and `presentation-deck.md`'s verify checklist names it as a step **Then** one existing deck (`presentations/agentic-sdlc/`) is run through the gate, its report is produced under `.herald/deck-qa/<slug>/`, and the gate has at least one caller outside its own test file
 **And** the gate's verdict is advisory or blocking by explicit choice recorded in the story — never blocking by accident, and never a second PR gate
 
 ### Story 19.4: One real station deck renders through the pptx pipeline
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-pptx-deck-generation` CAP-1 • `spec-pptx-custom-shapes` CAP-1 (Epic 15: 15.1/15.2, both `done`) • batch row C6
-**Surface:** a first real `content_plan.json` (none exists anywhere in the tree today), `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py` (unchanged — this story adds no pipeline), `presentations/<station>/src/pptx/`, `docs/specs/presentation-deck.md` (the pptx step, if it earns one)
+**Surface:** a first real `content_plan.json` (none exists anywhere in the tree today), `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py` (unchanged — this story adds no pipeline), `presentations/<station>/src/pptx/`, `docs/how-to/presentation-deck.md` (the pptx step, if it earns one)
 **Given** `pptx_pipeline.py` (1057 lines) ships `extract_spec` / `fill_template` and the shape API (`add_card` / `add_metric_box` / `add_table` / `add_section_label` + Pillow `fit_text` autofit) behind `herald deck pptx-spec` / `pptx-fill` (`cli.py:342-386`), while every `.pptx` under `presentations/*/src/pptx/` is a dated Marp export from 2026-07/08 and no `content_plan.json` exists — **When** one station deck is authored as a `content_plan.json` and filled through the pipeline against the committed interim template (`templates/pyforge-deck-template.pptx`) **Then** the resulting `.pptx` opens with real, editable text runs (not background-image slides), at least one dense slide exercises the shape API, and the file is the pipeline's output rather than a Marp export
 **And** the deck follows the canonical six-act framework with the Warden standalone deck as the shape exemplar; a PyForge-branded `.potx` stays deferred work reachable by a `--template` flag, not a blocker for this story
 
@@ -648,13 +648,13 @@ density/visual-form reference. Wave A = 20.3–20.10; Wave B = 20.11–20.12; 20
 
 ### Story 20.1: The standard has one home and the deck spec points to it
 **Type:** docs • **Effort:** S • **Deps:** — • **FR/AD:** `spec-deck-family-currency` CAP-1
-**Surface:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/infographic-standard.md` (the home — unchanged by this story), `docs/specs/presentation-deck.md` (§ *Artifact dependency tree* "Exemplar for form" sentence; the verify checklist), `presentations/README.md` (pointer line)
+**Surface:** `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/infographic-standard.md` (the home — unchanged by this story), `docs/how-to/presentation-deck.md` (§ *Artifact dependency tree* "Exemplar for form" sentence; the verify checklist), `presentations/README.md` (pointer line)
 **Given** the standard lives in `infographic-standard.md` while `presentation-deck.md` still names "the warden family" as the sole form exemplar and its verify checklist is run-shaped and never names a floor — **When** the deck spec's editing-surfaces section and verify checklist point at the standard and name its floors (six act bands, ≥ 18 sections, ≥ 3 inline SVGs, ≥ 90 KB, every fact a ledger row, full-page PNG reviewed) — **Then** a reader of `presentation-deck.md` reaches the standard in one hop and no second copy of the floors exists anywhere in the tree
 **And** the legacy `docs/specs/` tier gains a pointer only — never a second standard
 
 ### Story 20.2: `deck-facts` derives a per-deck fact ledger and checks a poster against it
 **Type:** feature • **Effort:** M • **Deps:** S-20.1 • **FR/AD:** `spec-deck-family-currency` CAP-2, CAP-5 • companion `facts-ledger.md`
-**Surface:** `scripts/deck_facts.py` (new; the `scripts/deck_export.py` precedent — one script, one pixi task), `pixi.toml` (`[feature.local-recipes.tasks.deck-facts]`), `presentations/pyforge-*/facts.yaml` (first derivations for the ten decks), `docs/specs/presentation-deck.md` (one line naming the task)
+**Surface:** `scripts/deck_facts.py` (new; the `scripts/deck_export.py` precedent — one script, one pixi task), `pixi.toml` (`[feature.local-recipes.tasks.deck-facts]`), `presentations/pyforge-*/facts.yaml` (first derivations for the ten decks), `docs/how-to/presentation-deck.md` (one line naming the task)
 **Given** no poster cites a source for any number it shows and nothing detects poster staleness — **When** `pixi run -e local-recipes deck-facts <slug>` emits `presentations/<slug>/facts.yaml` per `facts-ledger.md` (sprint ledgers through the real `parse_sprint_status`, versions from `pyproject.toml` and `_bmad/_config/manifest.yaml`, CAP counts from `SPEC.md`, counts from `bmad-groundtruth`, CLI verbs from the station's subparsers, test counts from `pytest --collect-only` in the station's own env) and `deck-facts <slug> --check` tokenizes the poster and reports unresolved tokens, drifted rows and unshown rows — **Then** re-deriving on an unchanged tree is byte-identical, a mutated ledger value is named by `--check`, and the marshal poster's known-stale claims (`6.10.0`, `0.9.0`, `128/333`, `4/27`) are each reported on the first run
 **And** the check always exits 0 and never joins `detectors` / `detectors-ci` as a gate — advisory by construction
 
@@ -704,13 +704,13 @@ density/visual-form reference. Wave A = 20.3–20.10; Wave B = 20.11–20.12; 20
 
 ### Story 20.13: The bridge sees the family — `herald deck status` reports all ten linked
 **Type:** fix • **Effort:** S • **Deps:** S-20.3–S-20.12 • **FR/AD:** `spec-deck-family-currency` CAP-4 • `spec-pyforge-herald` HER-3 (status)
-**Surface:** `presentations/pyforge-*/README.md` (`## Design project` sections normalized to the canonical two-line shape through `registry.register`), the `.herald/bridge-state.json` bootstrap (gitignored — its derivation documented in `docs/specs/presentation-deck.md`), and `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` only if `_status_for_slug` is found not to read the README registry fallback
+**Surface:** `presentations/pyforge-*/README.md` (`## Design project` sections normalized to the canonical two-line shape through `registry.register`), the `.herald/bridge-state.json` bootstrap (gitignored — its derivation documented in `docs/how-to/presentation-deck.md`), and `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` only if `_status_for_slug` is found not to read the README registry fallback
 **Given** `herald deck status --repo-root .` reported all fifteen decks `linked: false` on 2026-09-13 because no bridge state exists and every README section predates the canonical shape (DW-1-5-1) — **When** the ten README sections are registered canonically and the state is bootstrapped from them — **Then** `herald deck status` lists the ten PyForge-branded decks `linked: true` with their project ids, and a fresh clone reproduces that answer from the READMEs alone
 **And** no second registry is invented — the README section stays the human-readable record and `bridge-state.json` the operational one, exactly as `registry.py` and `state.py` already divide them
 
 ### Story 20.14: `deck-facts --refresh` rewrites stale marked literals from the ledger
 **Type:** feature • **Effort:** S • **Deps:** S-20.2 • **FR/AD:** `spec-deck-family-currency` CAP-6 (minted 2026-09-13 from the Wave A round-1 landing)
-**Surface:** `scripts/deck_facts.py` (`--refresh`), `tests/scripts/test_deck_facts.py`, `docs/specs/presentation-deck.md` (one line in the poster sub-step)
+**Surface:** `scripts/deck_facts.py` (`--refresh`), `tests/scripts/test_deck_facts.py`, `docs/how-to/presentation-deck.md` (one line in the poster sub-step)
 **Given** the four round-1 posters landed and their own landings moved the fleet and station counts they print (`848/878` → `852/878`, herald `69/81` → `73/81`), so `deck-facts <slug> --check` reads `mismatch` on those marks the moment the reconcile merged — detected by CAP-5, repairable only by hand — **When** `deck-facts <slug> --refresh` re-derives the ledger and rewrites each `data-fact` mark whose text differs from its row, choosing the replacement by the old literal's shape (the row's `value`, or the `shown_as` variant at the same index, keeping a leading `v`) — **Then** the poster is byte-identical outside the rewritten spans, `--check` reports 0 `mismatch` for every rewritten mark, each rewrite is printed as `refreshed  <id>  "<old>" -> "<new>"`, nested marks and marks with no row are printed as `skipped` with the reason, and the exit code is 0
 **And** the verb never touches prose, unmarked tokens, `facts.yaml` rows it did not derive, or any other file; a `--with-tests` flag combines as for derive so a poster that prints `tests_collected` keeps its row
 
@@ -732,13 +732,13 @@ four agents); 21.10–21.11 close the registry and the Design proof.
 
 ### Story 21.1: `deck-trio` derives the Infographic head from the standalone
 **Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** `spec-deck-family-lockstep` CAP-1
-**Surface:** `scripts/deck_trio.py` (new), `pixi.toml` (a `deck-trio` task), `tests/scripts/test_deck_trio.py`, `docs/specs/presentation-deck.md` (§ *Artifact dependency tree* — the head becomes derived)
+**Surface:** `scripts/deck_trio.py` (new), `pixi.toml` (a `deck-trio` task), `tests/scripts/test_deck_trio.py`, `docs/how-to/presentation-deck.md` (§ *Artifact dependency tree* — the head becomes derived)
 **Given** the trio's own definition says the standalone is the head's body with no `x-dc` wrapper and its styles moved into `<head>` (`presentation-deck.md` § *Artifact dependency tree*), while on main the two have diverged by 100 KB and a README flag ("standalone ahead") tracks the fact by hand — **When** `deck-trio <slug> --head` transforms the current standalone into `project/<Persona> - Infographic.dc.html` (wrap the body in `<x-dc>`, move the `<style>` block into `<helmet>`, add the `support.js` script tag and the `data-dc-script` block with a `$preview` sized to the measured page) — **Then** the head's body is byte-identical to the standalone's modulo those three mechanical differences, it renders, and a second run changes nothing
 **And** the verb refuses rather than guesses when the standalone is missing or its `<head>` style block cannot be located, and it never edits the standalone
 
 ### Story 21.2: `deck-trio` derives the Infographic Deck from the standalone
 **Type:** feature • **Effort:** M • **Deps:** S-21.1 • **FR/AD:** `spec-deck-family-lockstep` CAP-1
-**Surface:** `scripts/deck_trio.py` (`--deck`), `tests/scripts/test_deck_trio.py`, `docs/specs/presentation-deck.md`
+**Surface:** `scripts/deck_trio.py` (`--deck`), `tests/scripts/test_deck_trio.py`, `docs/how-to/presentation-deck.md`
 **Given** the Infographic Deck is defined as "the same sections re-laid as 1920×1080 slides" and today's copies are the July stubs — **When** `deck-trio <slug> --deck` emits `project/<Persona> - Infographic Deck.dc.html` with one `<section data-label>` per numbered section of the standalone plus the act bands as section dividers, honouring the prototype contract the extractor reads — **Then** the slide count equals the standalone's numbered-section count plus its act bands, every slide carries a `data-label`, the file renders, and a second run changes nothing
 **And** no content is invented: a section that will not fit a slide is split mechanically, never summarised
 
@@ -786,13 +786,13 @@ four agents); 21.10–21.11 close the registry and the Design proof.
 
 ### Story 21.10: The registry sees all fourteen decks
 **Type:** fix • **Effort:** S • **Deps:** S-21.6, S-21.7, S-21.8, S-21.9 • **FR/AD:** CAP-4
-**Surface:** `presentations/{unity-data-stack,wasm-analytics-stack,deckcraft,presenton-pixi-image}/README.md`, the `.herald/bridge-state.json` bootstrap documented in `docs/specs/presentation-deck.md`
+**Surface:** `presentations/{unity-data-stack,wasm-analytics-stack,deckcraft,presenton-pixi-image}/README.md`, the `.herald/bridge-state.json` bootstrap documented in `docs/how-to/presentation-deck.md`
 **Given** Story 20.13 registered the ten PyForge decks and left the four chain decks unlinked with sections `registry.read` cannot parse (it raises on deckcraft's 24-line body) — **When** each is re-registered through `registry.register` with history preserved under `### Provenance`, and the bootstrap is re-run — **Then** `herald deck status --repo-root .` reports **all fourteen** decks linked with their project ids, and a fresh clone reproduces it from the READMEs alone
 **And** ~~`agentic-sdlc` stays unlinked by design (BMAD-branded, no poster in `project/`)~~ — **superseded 2026-09-14** by the operator's `design-sync-loop` scope ruling (*every* presentation project gets a twin and a registry section): `agentic-sdlc` is registered by `spec-design-sync-loop` Story 23.2, so this story leaves it untouched rather than declaring it unlinked by design
 
 ### Story 21.11: One deck proves the Design loop end to end
 **Type:** feature • **Effort:** M • **Deps:** S-21.4 • **FR/AD:** CAP-5
-**Surface:** one deck's `project/` artifacts, its `README.md` ledger, `docs/specs/presentation-deck.md` (§ *The MCP bridge* — the worked pull)
+**Surface:** one deck's `project/` artifacts, its `README.md` ledger, `docs/how-to/presentation-deck.md` (§ *The MCP bridge* — the worked pull)
 **Given** every push this far has been repo→Design, so the bridge's editing half is unexercised on current content and no rebuilt deck carries a Design-side improvement — **When** one deck is opened in Claude Design, visually improved there by a human, and pulled back byte-exact (`render_preview` → curl → strip the `data-omelette-injected` harness and the blank line the serve layer inserts after `<head>`) — **Then** git holds the improved bytes, the read-back is byte-identical, the README records the etag and the date, and `deck-facts <slug> --check` still reports 0 `mismatch` (the visual pass must not break a mark)
 **And** the pull is the closing act: no Design-side edit is complete until git holds it
 
@@ -905,7 +905,7 @@ narrowed to that delta.
 
 ### Story 23.6: One command, idempotent, reported
 **Type:** feature • **Effort:** M • **Deps:** S-21.3, S-21.5, S-23.1, S-23.2, S-23.3, S-23.4, S-23.5 • **FR/AD:** `spec-design-sync-loop` CAP-8, CAP-3 (the sweep half)
-**Surface:** `.../herald/cli.py` (`deck sync-all`, `--slug`, `--dry-run`), `pixi.toml` (a `deck-sync-all` task), the run report, `docs/specs/presentation-deck.md` § *The MCP bridge* (the loop replaces the runbook), tests.
+**Surface:** `.../herald/cli.py` (`deck sync-all`, `--slug`, `--dry-run`), `pixi.toml` (a `deck-sync-all` task), the run report, `docs/how-to/presentation-deck.md` § *The MCP bridge* (the loop replaces the runbook), tests.
 **Given** every stage exists as its own verb — `status` (23.1), the adopt path (23.2), `pull`/`watch` (kernel), `deck-facts --refresh` over every surface (21.3), `deck-trio` (21.1/21.2), `deck-export`/`pptx-fill` (21.5/23.3), `push` with proof (23.4), the family page (23.5) — and an agent runs them from memory **When** `herald deck sync-all` runs them in that order for every registered deck (or one `--slug`): enumerate → pull every twin whose etag moved → refresh → derive → push → prove → publish, and prints a per-deck report — pulled / **overwrote-local** (a repo-side edit Design had not seen, named) / overrode / derived / pushed / published / unchanged **Then** two consecutive runs leave the second reporting every deck `unchanged` with zero writes to git or Design
 **And** `--dry-run` prints the same report without writing, and the README/spec runbook points at the command rather than the steps
 
@@ -1600,10 +1600,10 @@ So that retiring `docs/specs/` leaves no Herald file pointing at an archived stu
 - Test text: the docstring in `tests/meta/test_deck_registry_sections.py`, and the README fixture text in
   `tests/unit/test_deck_pipeline.py`.
 - The 15 `presentations/*/README.md` that cite the stub.
-**Given** herald's code, skill, tests and deck READMEs cite `docs/specs/presentation-deck.md`, whose body lives at
+**Given** herald's code, skill, tests and deck READMEs cite `docs/how-to/presentation-deck.md`, whose body lives at
 `docs/how-to/presentation-deck.md`
 **When** each citation names the how-to, keeping its section name
-**Then** no herald-owned live file names `docs/specs/presentation-deck.md`, and every cited section exists in the how-to
+**Then** no herald-owned live file names `docs/how-to/presentation-deck.md`, and every cited section exists in the how-to
 (*The MCP bridge*, *Standard export set*, *Artifact dependency tree*, the large-file uploads note)
 **And** `environment.yaml` regenerates unchanged; `spec-surface-check` exits 0 after a memlog entry and a scoped stamp for each
 Spec it names (`spec-pyforge-herald`, `spec-design-code-bridge`, `spec-modernist-identity`); `pixi run --frozen -e

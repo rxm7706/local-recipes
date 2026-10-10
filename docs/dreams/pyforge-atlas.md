@@ -241,7 +241,7 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
 - **2026-09-29 — Recorded, not specced: Atlas computes the definition-of-done verdict for the
   PyPI-to-conda-forge campaign.** Source: a read of `OpenTeams-WFT-CDO/pypi-to-conda-forge`
   (`0456572`, pushed 2026-09-24; the operator owns the org). This is the last unfolded item of
-  `docs/intake/external-repos-analysis-2026-08-22/report.md`. That repo files one tracking issue per
+  `archive/docs/intake/external-repos-analysis-2026-08-22/report.md`. That repo files one tracking issue per
   package (1,000 filed against `openteams-ai/mgmt-wf-python-modernization`, about 3,650 to go), and
   `file_issues.py` ticks four definition-of-done boxes from live data:
   1. the package is on conda-forge, and its PyPI-to-conda mapping is correct;

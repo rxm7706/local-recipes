@@ -39,15 +39,15 @@ found instead that every item in this dream's Realization list already has a rea
 home in this repo's pre-existing legacy Tier-1 specs:
 
 - **Upstream Monitoring** + **Bulk Maintenance** (groups, N processed in parallel) →
-  [`docs/specs/feedstock-refresh.md`](../../../../../../docs/specs/feedstock-refresh.md) —
+  [`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`](../../../../../../_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md) —
   Track A (537 sole-maintained) + Track B (232 co-maintained) = 769-feedstock bulk
   orchestration in waves, driven by cf_atlas's version-delta facts.
 - **Autotick Orchestration** + **Conda-forge Bot Integration** →
-  [`docs/specs/feedstock-failure-remediation.md`](../../../../../../docs/specs/feedstock-failure-remediation.md) —
+  [`docs/how-to/feedstock-failure-remediation.md`](../../../../../../docs/how-to/feedstock-failure-remediation.md) —
   the FLAKE/REAL_FIX/BLOCKED triage taxonomy, CI re-trigger on flake, `@conda-forge-admin`
   command routing, and blocker escalation this dream's item 4 describes.
 - **Safe Version Bumps** (test-bump locally before PR) →
-  [`docs/specs/feedstock-platform-expansion.md`](../../../../../../docs/specs/feedstock-platform-expansion.md)
+  [`docs/how-to/feedstock-platform-expansion.md`](../../../../../../docs/how-to/feedstock-platform-expansion.md)
   and the standing repo convention (build locally, verify green, only then push) — the
   identical safety discipline this dream's item 3 asks for.
 - **Health Tracking** → already shipped, read-side, via cf_atlas's `feedstock-health`,

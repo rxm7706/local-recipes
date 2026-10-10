@@ -462,8 +462,7 @@ def _read_item(path: Path, check_name: str, target: Path, out: list[Finding]) ->
     rests on ("discards every OTHER real finding the same check had already
     computed"), applied at the granularity these checks actually iterate at.
 
-    Single-input checks (``check_deferred_work``, ``check_baseline``,
-    ``check_spec_indexed``'s ``CLAUDE.md``) deliberately keep the bare
+    Single-input checks (``check_deferred_work``, ``check_baseline``) deliberately keep the bare
     ``_read``: there is no sibling to save, so the whole check genuinely is
     unevaluable and ``_gather``'s per-check net is the right boundary."""
     try:

@@ -1,7 +1,7 @@
 # The infographic standard — what every PyForge poster must carry
 
 Companion to `SPEC.md` (CAP-1). This file is the standard's single home;
-`docs/specs/presentation-deck.md` points here. **Unifying Strategy**
+`docs/how-to/presentation-deck.md` points here. **Unifying Strategy**
 (`presentations/pyforge-unifying-strategy/project/PyForge Unifying Strategy Infographic
 standalone.html`) is the structure, acts and length reference. **Warden**
 (`presentations/pyforge-warden/project/Warden Infographic standalone.html`) is the density and

@@ -23,7 +23,7 @@ spec_updated: 2026-07-24
 > shipped in PR #50 under `presentations/agentic-sdlc/`.
 >
 > This is a **framework-neutral workflow guide**, living here in `docs/how-to/`
-> with a `status: workflow` stub retained at `docs/specs/presentation-deck.md`
+> with a `status: workflow` stub retained at `docs/how-to/presentation-deck.md`
 > (Story 23.3). Any agent/human can execute it. It has **no** conda-forge
 > surface, so CLAUDE.md Rules 1 & 2 (invoke `conda-forge-expert`, run a CFE
 > retro) do **not** apply.
@@ -50,7 +50,7 @@ BMAD-method (`bmad-spec`, or the planning chain) turns the same Dream into the
 active spec in `_bmad-output/projects/<slug>/planning-artifacts/`. Everything
 starts with a Dream. (This file itself predates the model; its operational body
 now lives here in `docs/how-to/` as a **timeless workflow** doc, with a
-`status: workflow` stub retained at `docs/specs/presentation-deck.md`.)
+`status: workflow` stub retained at `docs/how-to/presentation-deck.md`.)
 
 **Why this matters to this spec:** **Herald is the presentation persona** — the
 decks produced by this workflow *are* Herald's output. Each persona gets its own

@@ -11,11 +11,11 @@ scope: "Autotick updates, feedstock maintenance, conda-forge integration"
 > **Superseded.** This Dream's full vision — upstream monitoring, autotick orchestration,
 > safe test-bumps, bot-comment routing, bulk maintenance groups, and health tracking across
 > 769 feedstocks — is already covered by pre-existing legacy Tier-1 specs, not by anything in
-> Steward's own scope: [`docs/specs/feedstock-refresh.md`](../specs/feedstock-refresh.md)
+> Steward's own scope: [`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`](../specs/feedstock-refresh.md)
 > (upstream monitoring + bulk maintenance across all 769 feedstocks, Tracks A/B),
-> [`docs/specs/feedstock-failure-remediation.md`](../specs/feedstock-failure-remediation.md)
+> [`docs/how-to/feedstock-failure-remediation.md`](../specs/feedstock-failure-remediation.md)
 > (autotick/bot-comment triage — FLAKE/REAL_FIX/BLOCKED — and CI re-trigger), and
-> [`docs/specs/feedstock-platform-expansion.md`](../specs/feedstock-platform-expansion.md)
+> [`docs/how-to/feedstock-platform-expansion.md`](../specs/feedstock-platform-expansion.md)
 > (the local-build-before-push safety discipline this Dream calls "safe version bumps").
 > Steward's real, already-authored Spec (`spec-pyforge-steward`, CAP-1..CAP-4) is
 > credentials/deploy/provisioning/budget — it has never covered feedstock maintenance, so this
