@@ -736,10 +736,7 @@ def test_perimeter_asgi_override_renders_execstart_and_summary(tmp_path):
     assert result.ok is True
     assert _HERALD_ASGI in result.summary
     unit_text = (tmp_path / "manifests" / "pyforge-steward-dashboard@.service").read_text()
-    assert (
-        f"ExecStart=daphne --bind 127.0.0.1 --port %i --proxy-headers {_HERALD_ASGI}"
-        in unit_text
-    )
+    assert f"ExecStart=daphne --bind 127.0.0.1 --port %i --proxy-headers {_HERALD_ASGI}" in unit_text
     assert "myproject.asgi:application" not in unit_text
     assert "Replace" not in unit_text
 

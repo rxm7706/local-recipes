@@ -914,9 +914,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
         return DutyResult(ok=False, summary=f"deploy perimeter: refused — {exc}")
 
     asgi_application_raw = getattr(ns, "asgi_application", None)
-    asgi_application = (
-        _ASGI_APPLICATION_PLACEHOLDER if asgi_application_raw is None else asgi_application_raw
-    )
+    asgi_application = _ASGI_APPLICATION_PLACEHOLDER if asgi_application_raw is None else asgi_application_raw
     if asgi_application_raw is not None:
         asgi_refusal = _validate_asgi_application(asgi_application_raw)
         if asgi_refusal is not None:
@@ -934,7 +932,6 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
             summary += f", asgi_application={asgi_application!r}"
         summary += " — no --output-dir given, nothing written"
         return DutyResult(ok=True, summary=summary)
-
 
     trusted_addresses = tuple(getattr(ns, "trusted_address", None) or ())
     tls_cert = getattr(ns, "tls_cert", None)
@@ -1032,9 +1029,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
             summary=f"deploy perimeter: refused — could not finalize manifests in {output_path}: {exc}",
         )
 
-    summary = (
-        f"deploy perimeter: rendered daphne unit + nginx edge config + audit-table grants SQL to {output_path}"
-    )
+    summary = f"deploy perimeter: rendered daphne unit + nginx edge config + audit-table grants SQL to {output_path}"
     if asgi_application_raw is not None:
         summary += f" (asgi_application={asgi_application!r})"
     return DutyResult(ok=True, summary=summary)
