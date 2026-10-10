@@ -23,8 +23,9 @@ STATIONS: tuple[str, ...] = tuple(sorted(_ROSTER_STATIONS))
 DENOMINATOR = len(STATIONS) * len(TIERS)
 
 # Roster drain (2026-08-26): all eight 03 stations are declared complete.
-# Mason's skill cell is conda-forge-expert (Epic 11: CFE stays; no second
-# recipe skill). Losing any cell fails CI.
+# Mason's skill cell requires pyforge-mason/ (SKILL.md at any depth) and
+# conda-forge-expert/SKILL.md (operator ruling 2026-09-28; CAP-160). Losing
+# any cell fails CI.
 DECLARED_COMPLETE: frozenset[str] = frozenset(STATIONS)
 
 
@@ -101,9 +102,9 @@ def detect_tiers(repo_root: Path, station: str) -> dict[str, bool]:
     skill_root = repo_root / ".claude" / "skills" / f"pyforge-{station}"
     persona = repo_root / ".claude" / "skills" / f"bmad-agent-{station}" / "SKILL.md"
     skill_present = skill_root.is_dir() and any(skill_root.rglob("SKILL.md"))
-    # Mason 11.1: CFE is the domain skill. Do not require pyforge-mason/.
     if station == "mason":
-        skill_present = (repo_root / ".claude" / "skills" / "conda-forge-expert" / "SKILL.md").is_file()
+        cfe_skill = repo_root / ".claude" / "skills" / "conda-forge-expert" / "SKILL.md"
+        skill_present = skill_present and cfe_skill.is_file()
     return {
         "cli": station in scripts,
         "portal": portal_dir.is_dir(),
