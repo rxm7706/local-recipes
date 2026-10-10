@@ -443,7 +443,7 @@ development_status:
   87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: done
   87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin: done
   87-6-land-retire-and-the-station-branch-never-fight-the-protected-list: done
-  87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: backlog
+  87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: done
   87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: done
   87-9-every-preserve-reader-sees-preserve-tags-and-origin: done
   9-1-findings-model-severity-types-remedies: done
