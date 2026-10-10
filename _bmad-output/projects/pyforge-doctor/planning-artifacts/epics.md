@@ -2870,7 +2870,7 @@ its history (`git log --follow`)
 entry and a scoped stamp for each co-governor it names (scribe for the instruction files, doctor for the docs shelf,
 mason, and any other)
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 38: Doctor stops letting deferrals and dead checks pile up (spec-pyforge-doctor CAP-29, CAP-88, CAP-42, CAP-1)
 
