@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: azure-storage-file-share
-  version: "12.26.0"
+  version: "12.27.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/azure-storage-file-share/azure_storage_file_share-${{ version }}.tar.gz
-  sha256: 08cf8bc436df532cdb9bfdfce7bb10c5f1d83d51360954cd8eef56cbccf4300a
+  sha256: 81a433e27a535f62c8542c24783cd100b3780b00724475cfa9df5fa0fb96647a
 
 build:
   number: 0
@@ -67,14 +67,15 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/azure-storage-file-share-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-last-checked: 2026-10-10T09:21:17Z
   cfe-generated-by-version: 8.99.1
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T09:21:59Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 12.26.0 -> 12.27.0
 ####

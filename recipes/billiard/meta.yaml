@@ -1,12 +1,12 @@
-{% set version = "4.2.4" %}
+{% set version = "4.3.1" %}
 
 package:
   name: billiard
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/b/billiard/billiard-{{ version }}.tar.gz
-  sha256: 55f542c371209e03cd5862299b74e52e4fbcba8250ba611ad94276b369b6a85f
+  url: https://files.pythonhosted.org/packages/source/b/billiard/billiard-{{ version }}.tar.gz
+  sha256: c88559b306ee5dc93f8d5f843d07da15d795d67af26720d14ee9d09f09eb0b22
 
 build:
   number: 0

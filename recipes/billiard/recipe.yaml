@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.2.4"
+  version: "4.3.1"
 
 package:
   name: billiard
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/b/billiard/billiard-${{ version }}.tar.gz
-  sha256: 55f542c371209e03cd5862299b74e52e4fbcba8250ba611ad94276b369b6a85f
+  sha256: c88559b306ee5dc93f8d5f843d07da15d795d67af26720d14ee9d09f09eb0b22
 
 build:
   number: 0
@@ -68,7 +68,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/billiard-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-last-checked: 2026-10-10T09:22:00Z
   cfe-generated-by-version: 8.99.1
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
   cfe-local-build-status: not-attempted
@@ -78,4 +78,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 4.2.4 -> 4.3.1
 ####
