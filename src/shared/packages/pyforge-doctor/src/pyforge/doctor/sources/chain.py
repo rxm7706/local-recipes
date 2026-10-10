@@ -4524,9 +4524,7 @@ def _check_project_deferred_work(
     specs_dir = proj / SPECS_REL
     if _is_dir(specs_dir):
         carried_specs = parse_followup_review_carried_source_specs(tracked_text)
-        tracked_rel = (
-            str(tracked_path.relative_to(target)) if _is_file(tracked_path) else "(none)"
-        )
+        tracked_rel = str(tracked_path.relative_to(target)) if _is_file(tracked_path) else "(none)"
         for spec_path in sorted(specs_dir.rglob("spec-*.md")):
             if not _is_file(spec_path):
                 continue

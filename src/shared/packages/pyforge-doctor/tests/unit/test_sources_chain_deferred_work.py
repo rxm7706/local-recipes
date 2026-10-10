@@ -3125,15 +3125,11 @@ def test_followup_review_carry_in_another_project_ledger_does_not_clear(tmp_path
 
     findings = chain.gather_deferred_work(tmp_path)
 
-    assert any(
-        f.check == "followup-review-uncarried" and f.evidence["project"] == "alpha" for f in findings
-    )
+    assert any(f.check == "followup-review-uncarried" and f.evidence["project"] == "alpha" for f in findings)
 
 
 @pytest.mark.parametrize("flag_value", ["yes", "1"])
-def test_followup_review_explicit_yes_and_one_truthy_report_orphan(
-    tmp_path: Path, flag_value: str
-) -> None:
+def test_followup_review_explicit_yes_and_one_truthy_report_orphan(tmp_path: Path, flag_value: str) -> None:
     spec_name = "spec-1-1-demo.md"
     _write_baseline(tmp_path, {})
     _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec(followup_review_recommended=flag_value))
@@ -3187,8 +3183,5 @@ def test_parse_followup_review_carried_source_specs_matches_marshal_fixture_shap
         ledger = _followup_carry_row(spec_name, origin=origin)
         carried = chain.parse_followup_review_carried_source_specs(ledger)
         assert spec_name in carried
-    wrong = (
-        f"# Ledger\n\n### DW-X-1: x\n\n- source_spec: `{spec_name}`\n"
-        "  origin: spec-deferred fp1\n"
-    )
+    wrong = f"# Ledger\n\n### DW-X-1: x\n\n- source_spec: `{spec_name}`\n  origin: spec-deferred fp1\n"
     assert spec_name not in chain.parse_followup_review_carried_source_specs(wrong)
