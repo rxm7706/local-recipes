@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: modelsearch
-  version: 1.3.1
+  version: 1.3.2
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/modelsearch/modelsearch-${{ version }}.tar.gz
-  sha256: f3b2e304dbef9f7c838423f591cfe0c60f4cef584bae8793d2aa8ac35a3c46e0
+  sha256: 52ede0f65e91efdb9d715f603e0bb3db96a95c80eba695abcd4628c03759999e
 
 build:
   number: 0
@@ -65,7 +65,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/modelsearch-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T12:14:52Z
+  cfe-last-checked: 2026-10-10T12:20:07Z
   cfe-generated-by-version: 8.99.3
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
   cfe-local-build-status: not-attempted
@@ -76,4 +76,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-10-10 Story 25.7: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 1.3.1 -> 1.3.2
 ####
