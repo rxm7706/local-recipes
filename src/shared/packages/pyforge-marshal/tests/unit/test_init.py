@@ -143,6 +143,18 @@ class FakeVcs:
         # Mirrors GitVcs: BRANCH NAMES only (it prefixes refs/heads/).
         return self.refs.get(ref, "same-sha-current")
 
+    def is_commit_ancestor(self, repo_root: Path, ancestor: str, descendant: str) -> bool:
+        return ancestor == "refs/remotes/origin/main"
+
+    def commit_contained_in_tag_prefixes(self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]) -> bool:
+        return False
+
+    def commit_contained_in_remote_refs(self, repo_root: Path, commit: str) -> bool:
+        return False
+
+    def remote_branch_exists(self, repo_root: Path, branch: str, *, remote: str = "origin") -> bool:
+        return branch in getattr(self, "remote_branches", ())
+
     def worktree_head_sha(self, worktree_path: Path) -> str:
         return self.refs.get("HEAD", "same-sha-current")
 
@@ -3830,3 +3842,5 @@ def test_teardown_finding_codes_classify_as_documented():
     assert classify("MRS-TEARDOWN-003") == Verdict.ERROR
     assert classify("MRS-TEARDOWN-004") == Verdict.ERROR
     assert classify("MRS-TEARDOWN-005") == Verdict.ERROR
+    assert classify("MRS-TEARDOWN-006") == Verdict.ERROR
+    assert classify("MRS-TEARDOWN-007") == Verdict.ERROR

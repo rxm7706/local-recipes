@@ -914,6 +914,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-TEARDOWN-004": Verdict.ERROR,
     "MRS-DEPLOY-004": Verdict.WARN,
     "MRS-TEARDOWN-005": Verdict.ERROR,
+    "MRS-TEARDOWN-006": Verdict.ERROR,
+    "MRS-TEARDOWN-007": Verdict.ERROR,
     "MRS-DEPLOY-005": Verdict.WARN,
     "MRS-DEPLOY-006": Verdict.UNEVALUABLE,
     "MRS-DEPLOY-007": Verdict.UNEVALUABLE,
