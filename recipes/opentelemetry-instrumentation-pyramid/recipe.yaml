@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_pyramid-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-pyramid/opentelemetry_instrumentation_pyramid-${{ version }}.tar.gz
   sha256: cb9f86cf25814700ad3246b81cf2f79a05fc011921896970f650ec5dbabd4a84
 
 build:
@@ -20,16 +20,16 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-wsgi ==0.65b0
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
-    - opentelemetry-util-http ==0.65b0
+    - opentelemetry-instrumentation-wsgi ==0.66b1
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
+    - opentelemetry-util-http ==0.66b1
     - wrapt <3.0.0,>=1.0.0
     # - werkzeug ==0.16.1
     # - pyramid >=1.7
@@ -111,3 +111,36 @@ extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-pyramid
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-pyramid
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-pyramid@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-pyramid@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-pyramid
+  cfe-import-names: [opentelemetry.instrumentation.pyramid]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-pyramid-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T18:00:00Z
+  cfe-generated-by-version: 8.99.15
+  cfe-generated-at-datetime: 2026-10-10T18:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T18:00:00Z
+####
+# CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.12: CFE block + URL pre-clear before refresh-wave B-25-12
+####

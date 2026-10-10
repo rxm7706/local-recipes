@@ -24,10 +24,9 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - psycopg2
-    - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-dbapi ==0.65b0
-    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-instrumentation-dbapi ==0.66b1
 
 tests:
   - python:
