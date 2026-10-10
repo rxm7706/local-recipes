@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/ae/a1/1d002b74459ad85645d2ef162fd6f8894f4b155e53689234c39f62f9b17b/django_weasyprint-2.6.0.tar.gz
+  url: https://pypi.org/packages/source/d/django-weasyprint/django_weasyprint-${{ version }}.tar.gz
   sha256: ec69834de0c1b416bdc9a9a6aaf72070d7a0072ce38df9cc9296d123ffcf5e28
 
 build:
@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - wheel
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - wheel
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - django >=3.2
-  - weasyprint >=68
+    - python >=${{ python_min }}
+    - django >=3.2
+    - weasyprint >=68
 
 tests:
 - python:
     imports:
-    - django_weasyprint
+      - django_weasyprint
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -44,7 +44,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata

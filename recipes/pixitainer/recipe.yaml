@@ -27,29 +27,29 @@ outputs:
   build:
     noarch: generic
     script:
-    - mkdir -p $PREFIX/bin
-    - mkdir -p $PREFIX/opt/pixitainer
-    - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
-    - cp lib/sif.sh $PREFIX/opt/pixitainer/sif.sh
-    - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
-        # 0.8.2 added lib/tool.sh; pixi-containerize sources it, so omitting
-        # it makes `pixi-containerize --help` fail at test time.
-    - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
-    - cp pixi-containerize $PREFIX/bin/pixi-containerize
-    - chmod +x $PREFIX/bin/pixi-containerize
+      - mkdir -p $PREFIX/bin
+      - mkdir -p $PREFIX/opt/pixitainer
+      - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
+      - cp lib/sif.sh $PREFIX/opt/pixitainer/sif.sh
+      - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
+          # 0.8.2 added lib/tool.sh; pixi-containerize sources it, so omitting
+          # it makes `pixi-containerize --help` fail at test time.
+      - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
+      - cp pixi-containerize $PREFIX/bin/pixi-containerize
+      - chmod +x $PREFIX/bin/pixi-containerize
   requirements:
     run:
-    - __linux
-    - apptainer >=1.4.5
-    - bash
+      - __linux
+      - apptainer >=1.4.5
+      - bash
   tests:
-  - script:
-    - test -x ${PREFIX}/bin/pixi-containerize
-    - test -f ${PREFIX}/opt/pixitainer/common.sh
-    - test -f ${PREFIX}/opt/pixitainer/sif.sh
-    - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
-    - test -f ${PREFIX}/opt/pixitainer/tool.sh
-    - pixi-containerize --help
+    - script:
+      - test -x ${PREFIX}/bin/pixi-containerize
+      - test -f ${PREFIX}/opt/pixitainer/common.sh
+      - test -f ${PREFIX}/opt/pixitainer/sif.sh
+      - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
+      - test -f ${PREFIX}/opt/pixitainer/tool.sh
+      - pixi-containerize --help
   about:
     summary: Containerize Pixi workspaces into Apptainer/SIF images with a single command
     description: |
@@ -68,26 +68,26 @@ outputs:
   build:
     noarch: generic
     script:
-    - mkdir -p $PREFIX/bin
-    - mkdir -p $PREFIX/opt/pixitainer
-    - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
-    - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
-        # 0.8.2: pixi-containerize-docker sources lib/tool.sh too.
-    - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
-    - cp pixi-containerize-docker $PREFIX/bin/pixi-containerize-docker
-    - chmod +x $PREFIX/bin/pixi-containerize-docker
+      - mkdir -p $PREFIX/bin
+      - mkdir -p $PREFIX/opt/pixitainer
+      - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
+      - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
+          # 0.8.2: pixi-containerize-docker sources lib/tool.sh too.
+      - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
+      - cp pixi-containerize-docker $PREFIX/bin/pixi-containerize-docker
+      - chmod +x $PREFIX/bin/pixi-containerize-docker
   requirements:
     run:
-    - __linux
-    - docker-cli >=29.0.0
-    - bash
+      - __linux
+      - docker-cli >=29.0.0
+      - bash
   tests:
-  - script:
-    - test -x ${PREFIX}/bin/pixi-containerize-docker
-    - test -f ${PREFIX}/opt/pixitainer/common.sh
-    - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
-    - test -f ${PREFIX}/opt/pixitainer/tool.sh
-    - pixi-containerize-docker --help
+    - script:
+      - test -x ${PREFIX}/bin/pixi-containerize-docker
+      - test -f ${PREFIX}/opt/pixitainer/common.sh
+      - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
+      - test -f ${PREFIX}/opt/pixitainer/tool.sh
+      - pixi-containerize-docker --help
   about:
     summary: Containerize Pixi workspaces into Docker images with a single command
     description: |
@@ -112,7 +112,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
