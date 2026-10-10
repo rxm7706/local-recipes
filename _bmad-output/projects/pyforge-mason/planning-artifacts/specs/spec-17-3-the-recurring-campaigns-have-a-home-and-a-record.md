@@ -32,9 +32,9 @@ and no new stories.
 **Always:**
 - Adopted companions stay authoritative where they live (legacy `docs/specs/`,
   in force during the transition):
-  - `docs/specs/feedstock-refresh.md` (Track A/B bulk refresh)
-  - `docs/specs/feedstock-platform-expansion.md` (per-feedstock dual-goal workflow)
-  - `docs/specs/feedstock-failure-remediation.md` (red-PR loop)
+  - `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` (Track A/B bulk refresh)
+  - `docs/how-to/feedstock-platform-expansion.md` (per-feedstock dual-goal workflow)
+  - `docs/how-to/feedstock-failure-remediation.md` (red-PR loop)
 - When a wave runs, evidence lands in that spec's Worked Examples / Current State.
 - CLAUDE.md Rules 1 and 2 apply to every campaign wave.
 - Record CAP-3 dormancy honestly: engine specs last-touched 2026-06/07; Track A
@@ -62,9 +62,9 @@ and no new stories.
 
 ## Code Map
 
-- `docs/specs/feedstock-refresh.md` — Track A/B; Waves B–F evidence; Wave H remaining.
-- `docs/specs/feedstock-platform-expansion.md` — dual-goal per-feedstock workflow.
-- `docs/specs/feedstock-failure-remediation.md` — FLAKE / REAL_FIX / BLOCKED loop.
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` — Track A/B; Waves B–F evidence; Wave H remaining.
+- `docs/how-to/feedstock-platform-expansion.md` — dual-goal per-feedstock workflow.
+- `docs/how-to/feedstock-failure-remediation.md` — FLAKE / REAL_FIX / BLOCKED loop.
 - `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-fleet-stewardship/` — CAP-3 pointer + `.memlog.md`.
 - `docs/dreams/fleet-stewardship.md` — archived practice Dream.
 
@@ -97,7 +97,7 @@ so `recipes/**` stays coverage-only).
 ## Verification
 
 **Commands:**
-- `git log -1 --format='%h %ci' -- docs/specs/feedstock-refresh.md docs/specs/feedstock-failure-remediation.md docs/specs/feedstock-platform-expansion.md`
+- `git log -1 --format='%h %ci' -- _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md docs/how-to/feedstock-failure-remediation.md docs/how-to/feedstock-platform-expansion.md`
 
 **Landing evidence:**
 - Epic mint `92c419b052` (2026-09-14).

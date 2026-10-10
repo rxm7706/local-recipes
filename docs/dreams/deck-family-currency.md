@@ -39,7 +39,7 @@ memory.**
 
 ## What it looks like when real
 
-- **One standard, written once.** `docs/specs/presentation-deck.md` carries the infographic
+- **One standard, written once.** `docs/how-to/presentation-deck.md` carries the infographic
   standard as a checklist: the six-act arc with full-bleed act bands, the full-depth section set
   (problem · pipeline · cast · journey · flows · autonomy · phase×persona table · relay · shipped
   product · doctrine · stack · which-tool-when · escalation · per-leader value · enterprise ·

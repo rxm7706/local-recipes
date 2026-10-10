@@ -13,7 +13,7 @@ context:
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - .claude/skills/conda-forge-expert/scripts/refresh_wave.py
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
@@ -30,7 +30,7 @@ version (the v1-refresh bucket). Its pilots refreshed four. The operator then re
 pilots, and split the other 92 into eight batch stories, each small enough for one dispatch ("Land 25.2 now, split
 rest", 2026-10-09). This is batch 2 of 8: 12 recipes, the next twelve, alphabetically, outside the OpenTelemetry
 family. Every one is co-maintained: the deployed feedstock lists `rxm7706` and at least one other maintainer. So the
-refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `docs/specs/feedstock-refresh.md` §
+refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` §
 *Track B*).
 
 **The batch.** Versions and maintainer lists are Wave A's snapshot of 2026-10-09; the dry-run reads each feedstock
@@ -86,7 +86,7 @@ Type / Effort / Deps: feature / M / S-25.3.
   manifest is that parameter); CAP-23, the CFE machinery the driver lives in. No new CAP, so no FR moves.
 - AD-1 (no recipe knowledge in Mason's code); AD-15 (the CFE surface moves only in the `retro(cfe):` commit).
 - CFE G52, G53, G62, G92, G95 and G96; SKILL.md § *PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern* and
-  the *Bulk refresh waves* paragraph; `docs/specs/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
+  the *Bulk refresh waves* paragraph; `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
   landmines 1 to 13.
 - `spec-fleet-stewardship` governs `recipes/**`; `spec-packaging-factory` governs the CFE surface.
 - `spec-feature-flag-governance` CAP-1, Q2: `flag-exempt: recipe-build`.
@@ -153,7 +153,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 ## Tasks
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1), its *Bulk refresh waves* paragraph, and
-   `docs/specs/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
+   `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
    spec and the skill differ, the skill wins, and the story records the difference.
 2. Write the manifest and run the dry-run (AC 1). Record the plan.
 3. Clear the refusals a CFE step can clear (AC 2), one commit per fix kind or per recipe, then dry-run again.

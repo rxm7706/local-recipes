@@ -8075,7 +8075,7 @@ follow the move)
 **Surface:**
 - `scripts/bmad_drift_check.py`: `DOCS_SPECS`, `cmd_specs`, the `--specs` flag, and its help and docstring lines.
 - A test for the retired flag.
-- `scripts/fleet_scan.py`: the one comment citing `docs/specs/presentation-deck.md` names `docs/how-to/presentation-deck.md`.
+- `scripts/fleet_scan.py`: the one comment citing `docs/how-to/presentation-deck.md` names `docs/how-to/presentation-deck.md`.
 - `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md`:
   - `docs/specs/` leaves the source-of-truth surface list and the out-of-band `git diff` command;
   - the `docs-specs-nonmd` row leaves the finding table.

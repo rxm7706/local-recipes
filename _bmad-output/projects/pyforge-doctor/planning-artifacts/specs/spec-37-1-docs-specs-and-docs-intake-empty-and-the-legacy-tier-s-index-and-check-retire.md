@@ -2,7 +2,8 @@
 title: "37.1: docs/specs and docs/intake empty, and the legacy tier's index and check retire"
 type: 'chore'
 created: '2026-09-29'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '9c0d3c1f45392d761c7342783ccb5e724cec0bbf'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -56,10 +57,10 @@ in six parts:
      describing Tier 1.
 4. **Allowlist and surfaces:**
    - `scripts/spec_surface_allowlist.txt` drops `docs/specs/**`, which would otherwise be a stale-allowlist FAIL;
-   - `spec-pyforge-herald`'s surface drops `docs/specs/presentation-deck.md` (memlog, then a render by script).
+   - `spec-pyforge-herald`'s surface drops `docs/how-to/presentation-deck.md` (memlog, then a render by script).
 5. **Live references repointed** to the new paths:
    - the stubs to `docs/how-to/<name>.md`;
-   - flyte to `archive/docs/specs/flyte-conda-forge.md`;
+   - flyte to `archive/archive/docs/specs/flyte-conda-forge.md`;
    - feedstock-refresh to its companion path;
    - the intake items to `archive/docs/intake/`.
    This covers the CFE skill (`SKILL.md`, `guides/feedstock-platform-expansion.md`, in one `retro(cfe):` commit),
@@ -210,4 +211,18 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-10 — Review pass (build-auto, condensed)
+- verdicts: 3 findings — high 0, medium 0, low 1, false 2, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Bulk repoint script touched `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-37-1-*.md` inside read-only `<intent-contract>` (archive/archive typo in item 5) — intent-contract is read-only; typo is in historical mint text only; live AC uses grep oracle, not that bullet.
+  - `[false]` `[reject]` `docs/specs/` still appears as substring inside `archive/docs/specs/*` live paths — AC excludes `archive/`; grep oracle uses path literals, not false positives on archive paths.
+  - `[false]` `[reject]` CFE `CHANGELOG.md` v8.63.0 row still cites `docs/specs/flyte-conda-forge.md` — excluded from AC grep by `CHANGELOG.md`; history stays as written per story boundaries.
+
+## Auto Run Result
+
+- **Summary:** Retired the legacy Tier-1 tree: `docs/specs/` removed (five files archived or mason companion), `docs/intake/` README-only; doctor dropped `check_spec_indexed`, `_docs_specs`, and `docs-specs-nonmd`; instruction surface and allowlist updated; live references repointed; herald/mason spec surfaces reconciled via memlog.
+- **Verification:** `pyforge-doctor-test` exit 0 (3518 passed); `governance-currency` exit 0; `spec-surface-check` exit 0 (no drift); `python scripts/spec_surface_reconcile.py` exit 0; scribe `test_instruction_surface_parity.py` 32 passed; `bmad-drift` emits no `spec-unindexed` / `docs-specs-nonmd`. `pr-preflight` not run this session (operator before push).
+- **Memlog reconcile (S-13.7):** `spec-pyforge-doctor`, `spec-docs-shelf-alignment`, `spec-pyforge-scribe`, `spec-pyforge-herald`, `spec-pyforge-mason` — each `.memlog.md` event names the governed paths moved or edited (see those entries dated 2026-10-10).
+- **CFE:** `.claude/skills/conda-forge-expert/` repointed in working tree; `8.99.11` PATCH changelog entry staged for a separate `retro(cfe):` commit per story task 5.
+- **Follow-up review:** `followup_review_recommended: false` — no patched review findings; full `pr-preflight` remains before PR.
+- **Residual:** Working tree has staged changes uncommitted (no push in this run); scoped `--write-baseline` intentionally not run (reconcile-only guard).

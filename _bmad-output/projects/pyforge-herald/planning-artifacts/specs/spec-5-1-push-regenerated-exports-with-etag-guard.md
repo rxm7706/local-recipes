@@ -59,7 +59,7 @@ there yet) as the `if_match` guard.
 
 **Never:**
 - No PPTX push in this story. `DesignTransport.write_files`'s `data` field is documented and proven
-  (by `seed`/`pull_prototype`) only as inline *text* content; `docs/specs/presentation-deck.md` §
+  (by `seed`/`pull_prototype`) only as inline *text* content; `docs/how-to/presentation-deck.md` §
   *Standard export set* names two PPTX companions that are binary, and no story in this package has
   observed or proven a binary `write_files` wire shape. `_discover_export_files` covers only the
   text-content standalone HTML poster (`{slug}-infographic-standalone-*.html`) -- see Design Notes.

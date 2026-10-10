@@ -513,7 +513,7 @@ Office formats:
   LibreOffice/headless-Office dependency. Ships on all three platforms
   (linux-64 / osx-arm64 / win-64), so it is an unconditional `local-recipes` dep.
 - **pptxgenjs** (>=4.0.1) — JavaScript (Node) library for *generating* .pptx decks
-  programmatically; used by the deck workflows (`docs/specs/presentation-deck.md`).
+  programmatically; used by the deck workflows (`docs/how-to/presentation-deck.md`).
 - **pptxgenjs-plus** (>=4.2.1) — maintained fork of PptxGenJS (`require('pptxgenjs-plus')`).
   SelfExplainML `noarch`; needs `nodejs >=24`. Set `NODE_PATH=$CONDA_PREFIX/lib/node_modules`.
   Does not include the separate `pptxgenjs-plus-jsx` package.
