@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.7.0"
+  version: "0.11.0"
 
 package:
   name: langchain-litellm
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/l/langchain-litellm/langchain_litellm-${{ version }}.tar.gz
-  sha256: d3b8d0e6f65132f048fbe9d706e5334d45830e3c49aa033d32c37c6683ad2ceb
+  sha256: 0d2025c1159d10c45afa197c47c10cf1841794b53ebed0e33066affdefca3bc3
 
 build:
   number: 0
@@ -58,6 +58,7 @@ extra:
 
 #### CFE metadata AND comments
 # CFE metadata
+    - pb01ka
   cfe-conda-name: langchain-litellm
   cfe-upstream-registry: pypi
   cfe-upstream-name: langchain-litellm
@@ -76,7 +77,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-last-checked: 2026-10-10T12:18:04Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
@@ -95,4 +96,8 @@ extra:
 #  run:
 #    # Upstream upper bounds mirrored from pyproject.toml [project.dependencies];
 #    # load-bearing under pip_check (see CFE skill G24/G26).
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 0.7.0 -> 0.11.0; maintainers added: pb01ka
 ####
