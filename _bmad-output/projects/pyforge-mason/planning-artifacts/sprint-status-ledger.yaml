@@ -78,7 +78,7 @@ development_status:
   23-3-a-negative-corpus-proves-each-cfe-check-keeps-rejecting-its-defect: done
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
   25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: done
-  25-10-track-b-batch-6-refreshes-opentelemetry-s-core-packages-and-exporters: backlog
+  25-10-track-b-batch-6-refreshes-opentelemetry-s-core-packages-and-exporters: done
   25-11-track-b-batch-7-refreshes-opentelemetry-instrumentation-from-distro-through-httpx: backlog
   25-12-track-b-batch-8-refreshes-opentelemetry-instrumentation-from-mysql-through-wsgi: backlog
   25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe: done
