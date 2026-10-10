@@ -1745,7 +1745,8 @@ status: open
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-10 (dispatch-land finalize: Merge pyforge-mason/12-8 into main)
+  status: closed
 
 ### DW-FRR-7-2: Follow-up review still recommended for story 7.2
 
@@ -1847,7 +1848,8 @@ status: open
   origin: spec-deferred bbb96e18dced — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 25.4 (2026-10-10): canonical CFE blocks stamped for all 14; `refresh-wave --repair --apply --gates` repaired 14/14; linux-64 builds 12 success, django-csvimport failed (PyPI 404 on unrendered URL), django-grpc failed (pre-existing host python pin shape).
 
 ### DW-mason-25-2-3: Track B v1-refresh queue (92 remaining after B2) plus G53 audit and retro(cfe).
 
@@ -1869,4 +1871,48 @@ status: open
   origin: spec-deferred 8548a052f98d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-4: _render_url only substitutes bare ${{ var }}; feedstock URLs with ${{ name[0] }}/{{ name }} stay unrenderable for dist lookup and block canonical URL repair planning.
+
+- source_spec: `planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md`
+  summary: _render_url only substitutes bare ${{ var }}; feedstock URLs with ${{ name[0] }}/{{ name }} stay unrenderable for dist lookup and block canonical URL repair planning.
+  evidence: _render_url only substitutes bare ${{ var }}; feedstock URLs with ${{ name[0] }}/{{ name }} stay unrenderable for dist lookup and block canonical URL repair planning.
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:372
+  origin: spec-deferred 0563a5803e7d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-4-2: _whitespace_only_change reports '#### CFE metadata count changed' when the block count is 0 before and after, hiding a missing block.
+
+- source_spec: `planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md`
+  summary: _whitespace_only_change reports '#### CFE metadata count changed' when the block count is 0 before and after, hiding a missing block.
+  evidence: _whitespace_only_change reports '#### CFE metadata count changed' when the block count is 0 before and after, hiding a missing block.
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:947
+  origin: spec-deferred db6ae9c104ff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-4-3: _dependency_diff compares maintainer-commented pins only; uncommented exact pins moved on the feedstock are not reported.
+
+- source_spec: `planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md`
+  summary: _dependency_diff compares maintainer-commented pins only; uncommented exact pins moved on the feedstock are not reported.
+  evidence: _dependency_diff compares maintainer-commented pins only; uncommented exact pins moved on the feedstock are not reported.
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:398
+  origin: spec-deferred d16d771377d8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-4-4: _url_problem flags url-version-baked when ${{ version }} is absent from the literal URL even if context templates the tag.
+
+- source_spec: `planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md`
+  summary: _url_problem flags url-version-baked when ${{ version }} is absent from the literal URL even if context templates the tag.
+  evidence: _url_problem flags url-version-baked when ${{ version }} is absent from the literal URL even if context templates the tag.
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:380
+  origin: spec-deferred 181969988e28 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

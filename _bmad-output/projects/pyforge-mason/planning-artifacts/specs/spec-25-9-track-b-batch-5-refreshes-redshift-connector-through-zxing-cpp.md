@@ -54,12 +54,21 @@ supersedes.
 
 - `stringzilla` lives in `recipes/StringZilla/`. Its manifest entry is `name: StringZilla` with
   `feedstock: stringzilla`. It moves 4.6.3 → 5.2.0.
-- `wagtail` 7.4.2 → 8.0 and `zxing-cpp` 2.3.0 → 3.1.1 are major moves, so expect `dependency-fix` (AC 5).
+- `wagtail` 7.4.2 → 8.0 and `zxing-cpp` 2.3.0 → 3.1.1 are major moves, so expect `dependency-fix` (AC 5). For
+  `zxing-cpp` the move is a change of identity, not only of version (the last bullet, AC 13).
 - `recipes/tree-sitter-swift` templates its URL through `context.tag`, which is `${{ version }}-with-generated-files`
   on purpose (`recipe.yaml:6-12`): that tag carries the generated parser, so the build needs no node toolchain. The
   driver refuses it as `url-version-baked` (gap 4 in Story 25.4's spec). Keep the URL, and refresh it through CFE's
   version-and-sha256 path instead (AC 12).
 - `tree-sitter-php` has no CFE block. Both tree-sitter recipes are abi3 builds; G5 applies if a source changes.
+- **`zxing-cpp`'s feedstock changed identity (found at the Wave F mint, 2026-10-09, night).**
+  `conda-forge/zxing-cpp-feedstock` was repurposed on 2026-09-08 by its PR #10 (merged `44fc37f4b5`). It used to build
+  the Python bindings from the PyPI sdist. It now builds the C++ library from the GitHub tag `v${{ version }}`, with
+  `build.sh`, `build.bat`, cmake and ninja, a `run_exports` pin and `package_contents` tests, and it lists `TomNysWF`
+  beside `carlodri` and `rxm7706`. The bindings moved to `zxing-cpp-python-feedstock`. `recipes/zxing-cpp` still holds
+  the old bindings recipe at 2.3.0, and Wave A's maintainer snapshot above predates the move. Bumping that recipe to
+  3.1.1 would build bindings under the library's name, so this story re-mirrors it instead (AC 13). The bindings get
+  their own mirror, `recipes/zxing-cpp-python`, in Story 25.13.
 
 **Approach:** run the batch as one Track B wave through Story 25.3's driver, `refresh-wave`.
 1. Write the manifest: `track: B`, `wave: 25-9`, these 11 recipes, with no version pins. Put it under
@@ -148,6 +157,15 @@ Type / Effort / Deps: feature / M / S-25.3.
 12. **A deliberate URL stays.** Given `tree-sitter-swift`'s `${{ tag }}` URL When the story refreshes it Then the URL
     and its `context.tag` comment are unchanged; the version and sha256 move through CFE's update path
     (`update_recipe`); and the recipe still builds from the `-with-generated-files` tag.
+13. **`zxing-cpp` follows its repurposed feedstock.** Given `conda-forge/zxing-cpp-feedstock` now builds the C++
+    library (PR #10, merged 2026-09-08) When the story handles `recipes/zxing-cpp` Then the recipe is re-mirrored from
+    the feedstock's `recipe/` directory (`recipe.yaml`, `build.sh`, `build.bat`, `LICENSE` and `test/`), not
+    version-bumped. The PyPI bindings recipe it held is replaced. The CFE block names the new identity: a GitHub
+    upstream, the feedstock's URL and `cfe-on-conda-forge-status: confirmed-on-conda-forge`. Its `recipe-maintainers`
+    is a superset of the feedstock's live list (G53), `TomNysWF` included. It passes AC 8's gates and builds on
+    linux-64 under AC 9, with the feedstock's `package_contents` and CMake test passing. The driver's dry-run verdict
+    on it is recorded, not acted on. The bindings' mirror, `recipes/zxing-cpp-python`, is Story 25.13's; this story
+    does not create it.
 
 ## Tasks
 
@@ -199,6 +217,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 | now sole | the feedstock lost its other maintainers | refreshed; noted in § *Run results* | — |
 | directory differs from name | `recipes/StringZilla` for `stringzilla` | manifest `name: StringZilla`, `feedstock: stringzilla` | — |
 | deliberate URL template | `tree-sitter-swift`'s `${{ tag }}` | kept; refreshed through `update_recipe` | needs-review if the tag scheme is gone upstream |
+| feedstock changed identity | `zxing-cpp-feedstock` now builds the C++ library | re-mirrored from the feedstock (AC 13), not version-bumped | needs-review if the library build or its tests fail |
 
 </intent-contract>
 
