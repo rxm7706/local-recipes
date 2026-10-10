@@ -2,7 +2,7 @@
 title: "67.9: The conda-recipe-manager click notes state the cap as it stands"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -241,4 +241,10 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-10: bmad-build-auto pass — AC (1)–(6) verified locally; `spec_surface_reconcile.py` OK after memlogs; `pyforge-steward-test` green post `retro(cfe):` commit.
+
+## Auto Run Result
+
+Status: done
+
+Implemented comment-only updates at all ten stale sites; CFE retro v8.99.11 in commit `96e7267592`. Branch: `dispatch/pyforge-steward/67.9` (merge `origin/main` before PR — branch tip predates main’s doctor chain.py additions).
