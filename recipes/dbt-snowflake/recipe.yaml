@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.1"
+
+package:
+  name: dbt-snowflake
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dbt-snowflake/dbt_snowflake-${{ version }}.tar.gz
+  sha256: e78d14f2f874924b0fe417bfbce0cad59dc9910a487811692795927ce140e503
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - dbt-common >=1.10,<2.0
+    - dbt-adapters >=1.24.4,<2.0
+    - snowflake-connector-python >=4.2.0,<5.0.0
+    - certifi <2025.4.26
+    - dbt-core >=1.10.0rc0,<2.0
+    - agate
+
+tests:
+  - python:
+      imports:
+        - dbt.adapters.snowflake
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: The Snowflake adapter plugin for dbt
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/dbt-labs/dbt-snowflake
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - maresb
+    - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-snowflake
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-snowflake
+  cfe-purls:
+    - pkg:conda/dbt-snowflake@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-snowflake@${{ version }}
+  cfe-upstream-repo: https://github.com/dbt-labs/dbt-snowflake
+  cfe-upstream-homepage: https://github.com/dbt-labs/dbt-snowflake
+  cfe-import-names: [dbt.adapters.snowflake]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dbt-snowflake-feedstock
+  cfe-forge-recipe-updates-needed:
+    - source-url-pypi-org-canonical
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T09:20:00Z
+  cfe-generated-by-version: 8.99.2
+  cfe-generated-at-datetime: 2026-10-10T09:20:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Mirror source: conda-forge/dbt-snowflake-feedstock @ 6d78e08c6ddec23c54f2649cd4dc6cb399b68177 (2026-10-10).
+#    # source.url: feedstock uses ${{ name[0] }}/${{ name }}/… templated pypi.org path; local mirror uses the
+#    # canonical literal https://pypi.org/packages/source/d/dbt-snowflake/dbt_snowflake-${{ version }}.tar.gz
+#    # (sha256 verified identical). Park upstream URL alignment under cfe-forge-recipe-updates-needed above.
+####

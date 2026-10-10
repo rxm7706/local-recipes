@@ -2,7 +2,8 @@
 title: "25.13: Wave F mirrors the two co-maintained feedstocks that have no local recipe"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: f05de4bab8500a64631f84d8a9a0dc6bce064295
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
