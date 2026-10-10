@@ -201,7 +201,7 @@ def test_cli_filters_opengrep_when_flag_off(monkeypatch) -> None:
     monkeypatch.setenv("WARDEN_OPTIONAL_SCANNERS", "opengrep")
     monkeypatch.setattr(cli_module, "read_boolean", lambda _key, default=False: False)
     enabled = enabled_optional_from_environ()
-    if "opengrep" in enabled and not read_boolean(SAST_OPENGREP_FLAG, default=False):
+    if "opengrep" in enabled and not cli_module.read_boolean(SAST_OPENGREP_FLAG, default=False):
         enabled = tuple(x for x in enabled if x != "opengrep")
     selected = select_scanner_plugins(enabled_optional=enabled)
     assert all(getattr(p, "scanner_id", "") != "opengrep" for p in selected)
