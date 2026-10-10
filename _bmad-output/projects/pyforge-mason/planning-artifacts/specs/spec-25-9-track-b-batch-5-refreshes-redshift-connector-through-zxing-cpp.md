@@ -2,7 +2,7 @@
 title: "25.9: Track B batch 5 refreshes redshift_connector through zxing-cpp"
 type: 'feature'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '378590c8772520d3d414250c75fd8c0c9fbcf177'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -17,7 +17,11 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
-deferred: []
+deferred:
+  - location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
+    reason: maintainer union can insert `- <name>` inside the `#### CFE metadata` header (StringZilla, vlmrun B-25-9; same as Stories 25.7–25.8) — CRM parse failure until moved under `recipe-maintainers`
+  - location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
+    reason: tree-sitter-swift deliberate `${{ tag }}` URL reports `url-version-baked` (gap 4); refresh through hand `update_recipe`, not driver bump
 declared_low_risk: false
 ---
 
