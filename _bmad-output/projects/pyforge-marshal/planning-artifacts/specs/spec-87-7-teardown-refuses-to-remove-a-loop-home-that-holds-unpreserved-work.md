@@ -2,7 +2,8 @@
 title: "87.7: Teardown refuses to remove a loop home that holds unpreserved work"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '634fe8d660497572264a33c020e811ca80a8965b'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
