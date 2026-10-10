@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import importlib
+import json
 import os
 from http import HTTPStatus
 from typing import Any
@@ -23,6 +25,38 @@ from django_pyforge.mcp_dual_era import asgi_for_station
 from django_pyforge.mcp_dual_era import match_station_mcp
 from django_pyforge.mcp_dual_era import mcp_child_scope
 from django_pyforge.mcp_dual_era import send_http
+
+HERALD_WEBHOOK_PATH_PREFIX = "/stations/herald/api/v1/webhooks/"
+
+
+async def _json_detail(send, status: HTTPStatus, detail: str) -> None:
+    body = json.dumps({"detail": detail}).encode("utf-8")
+    await send_http(send, status, body)
+
+
+async def _dispatch_herald_webhook(scope: dict, receive, send) -> bool:
+    path = scope.get("path", "")
+    if not path.startswith(HERALD_WEBHOOK_PATH_PREFIX):
+        return False
+    try:
+        webhook_host = importlib.import_module("pyforge.herald.webhook_host")
+    except ModuleNotFoundError as exc:
+        await _json_detail(
+            send,
+            HTTPStatus.NOT_FOUND,
+            f"pyforge.herald is not installed ({exc.name})",
+        )
+        return True
+    from pyforge.herald.errors import HeraldError
+
+    try:
+        herald_app = webhook_host.application
+    except HeraldError as exc:
+        await _json_detail(send, HTTPStatus.SERVICE_UNAVAILABLE, str(exc))
+        return True
+    await herald_app(scope, receive, send)
+    return True
+
 
 DEFAULT_STATIONS = (
     "atlas",
@@ -146,6 +180,8 @@ async def app(scope: dict, receive, send) -> None:
     path = scope.get("path", "")
     if path in {"/health", "/api/health"}:
         await send_http(send, HTTPStatus.OK, b'{"status":"ok"}')
+        return
+    if await _dispatch_herald_webhook(scope, receive, send):
         return
     station = match_station_mcp(path)
     if station is None or station not in _apps:
