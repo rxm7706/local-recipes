@@ -5775,7 +5775,7 @@ So that an optional station's absence no longer stops the whole host at import.
 **When** the host imports in an env where `pyforge.herald` is not installed
 **Then** `import config.asgi` succeeds, and herald v1 is not registered (`iter_station_apps()` lists no herald entry). One WARNING record names herald, the missing module and the remedy. `GET /stations/herald/api/v1/health`, `GET …/openapi.json` and `POST …/webhooks/on-ship` each return 404 with a JSON `detail` that says herald is not installed on this host. An unknown station keeps its exact `{"detail": "Not Found"}` body, and warden v1's health still returns 200.
 **And** only a missing herald is skipped: a `ModuleNotFoundError` naming any other module still stops the import. With herald present, every existing herald host test passes unchanged (`test_station_api_host_dispatch.py`, `test_station_api_seam.py`, `test_herald_deck_exports.py`, `test_herald_portal_deck_viewer.py`). The absent cases run in a fresh interpreter with a meta-path finder that refuses `pyforge.herald` and its submodules. The import-linter contract and the no-pyforge-import meta-tests stay green, with no `import pyforge` or `from pyforge` text under `src/platform/`. `DW-herald-19-1` closes with this story's evidence. `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green. Every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp.
-**Status:** backlog
+**Status:** done
 
 ### Story 87.2: The platform host boots without Langflow, and the full-stack env runs it
 
