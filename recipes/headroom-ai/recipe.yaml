@@ -128,9 +128,9 @@ extra:
   cfe-pip-check: "false:ast-grep-cli-satisfied-by-conda-ast-grep-binary"
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
-  cfe-forge-recipe-updates-needed: run-fastapi-kept-for-cli-import-closure
+  cfe-forge-recipe-updates-needed: [run-fastapi-kept-for-cli-import-closure, dependency-fix]
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-26T12:44:16Z"
+  cfe-last-checked: 2026-10-10T11:43:08Z
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T16:05:00Z"
   cfe-local-build-status: success
@@ -145,6 +145,7 @@ extra:
 #    # is an unrelated CLI assistant). GitHub org renamed
 #    # chopratejas/headroom -> headroomlabs-ai/headroom; PyPI project_urls
 #    # still point at the old org (redirects).
+#    # 2026-10-10 refresh_wave B-25-6: needs-review, dependency-fix (run -fastapi)
 # build:
 #    # maturin/pyo3 (rust ext headroom._core, abi3 upstream wheels) ->
 #    # compiled per-python conda build; rust toolchain requires

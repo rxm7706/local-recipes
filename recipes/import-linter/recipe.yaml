@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: import-linter
-  version: "2.13"
+  version: "2.15"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/i/import-linter/import_linter-${{ version }}.tar.gz
-  sha256: 13af4a1d6b06044c58ea784e8732fd7fe48eec821a75feb4d6a1a2de36dd5c27
+  sha256: 1da912bea5e172a82a3ce617b5543f75cf64dc0d8f4d9b46c5578b68ccb81590
 
 build:
   number: 0
@@ -80,7 +80,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/import-linter-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-2.12, meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-10-10T11:43:09Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
@@ -91,4 +91,5 @@ extra:
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 2.13 -> 2.15
 ####
