@@ -1059,9 +1059,7 @@ def _archive_worktree(
         unlanded_branch = False
         preserve_meta: _PreserveParkOutcome | None = None
         if note is None and wt.is_dir():
-            preserve_on = (
-                workspace_preserve_tag_enabled() if preserve_tag_enabled is None else preserve_tag_enabled
-            )
+            preserve_on = workspace_preserve_tag_enabled() if preserve_tag_enabled is None else preserve_tag_enabled
             unlanded_branch = not _branch_merged_into_or_unlanded(root, record.branch, record.source)
             if preserve_on and unlanded_branch:
                 try:

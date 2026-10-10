@@ -9,8 +9,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from pyforge.core.preserve_refs import parse_preserve_ref
+
 from pyforge.steward.workspace import (
     WORKSPACE_PRESERVE_TAG_FLAG,
     clean_workspaces,
@@ -180,7 +180,9 @@ def test_flag_on_writes_preserve_tag_and_removes_worktree(repo: Path, tmp_path: 
 
 def test_flag_on_push_debt_still_removes_worktree(repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     wt = tmp_path / "ahead"
-    start_workspace("ahead", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main")
+    start_workspace(
+        "ahead", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main"
+    )
     _git("commit", "--allow-empty", "-m", "ahead", cwd=wt)
 
     def _push_fail(*_a, **_k):
@@ -199,7 +201,9 @@ def test_flag_on_push_debt_still_removes_worktree(repo: Path, tmp_path: Path, mo
 
 def test_flag_on_tag_failure_keeps_worktree(repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     wt = tmp_path / "blocked"
-    start_workspace("blocked", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main")
+    start_workspace(
+        "blocked", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main"
+    )
     _git("commit", "--allow-empty", "-m", "ahead", cwd=wt)
 
     from pyforge.core.preserve_refs import PreserveGitError
@@ -219,7 +223,9 @@ def test_flag_on_tag_failure_keeps_worktree(repo: Path, tmp_path: Path, monkeypa
 
 def test_flag_on_landed_worktree_keeps_note_not_tag(repo: Path, tmp_path: Path) -> None:
     wt = tmp_path / "landed"
-    start_workspace("landed", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main")
+    start_workspace(
+        "landed", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main"
+    )
 
     result = _clean(repo, tmp_path, "landed", preserve_tag_enabled=True)
 
@@ -267,7 +273,9 @@ def test_mutation_removing_park_call_must_fail(repo: Path, tmp_path: Path) -> No
     import pyforge.steward.workspace as ws
 
     wt = tmp_path / "mut"
-    start_workspace("mut", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main")
+    start_workspace(
+        "mut", root=repo, bookkeeping=repo / ".steward" / "workspaces.yaml", path=wt, from_ref="origin/main"
+    )
     _git("commit", "--allow-empty", "-m", "ahead", cwd=wt)
 
     real = ws._park_unlanded_preserve
