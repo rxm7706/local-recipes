@@ -50,7 +50,10 @@ def _load_yaml(text: str) -> dict[str, Any]:
         import yaml
     except ImportError as exc:
         raise RuntimeError(f"PyYAML not importable: {exc}") from exc
-    data = yaml.safe_load(text)
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"YAML parse error: {exc}") from exc
     if not isinstance(data, dict):
         raise ValueError("registry root must be a mapping")
     return data
@@ -139,6 +142,8 @@ def check_registry(
             findings.append(f"{item_id}: unknown decided_by {decided_by!r}")
 
         date_val = raw.get("date")
+        if hasattr(date_val, "isoformat"):
+            date_val = date_val.isoformat()
         if not isinstance(date_val, str) or not date_val.strip():
             findings.append(f"{item_id}: missing or empty date")
 
@@ -223,8 +228,10 @@ def check_upstream_todos(
         return [f"missing sbom-gaps.md: {gaps_path.relative_to(repo_root)}"]
     try:
         registry = _load_yaml(registry_path.read_text(encoding="utf-8"))
-    except (RuntimeError, ValueError) as exc:
-        return [f"registry unreadable: {exc}"]
+    except RuntimeError as exc:
+        raise RuntimeError(f"registry unreadable: {exc}") from exc
+    except ValueError as exc:
+        raise RuntimeError(f"registry unreadable: {exc}") from exc
     gaps_text = gaps_path.read_text(encoding="utf-8")
     return check_registry(registry, gaps_text=gaps_text, repo_root=repo_root)
 
@@ -250,6 +257,9 @@ def main(argv: list[str] | None = None) -> int:
             registry_path=args.registry,
             gaps_path=args.gaps_doc,
         )
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     except OSError as exc:
         print(f"could not run: {exc}", file=sys.stderr)
         return 2
