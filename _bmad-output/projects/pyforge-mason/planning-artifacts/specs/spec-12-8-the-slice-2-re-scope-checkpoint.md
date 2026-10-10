@@ -2,11 +2,11 @@
 title: The slice-2 re-scope checkpoint
 type: chore
 created: '2026-08-27'
-status: done
+status: in-review
 updated: '2026-08-28'
 baseline_revision: 7e84b9174d740a7a488ba3f5d50d9fea6d0784a4
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md
