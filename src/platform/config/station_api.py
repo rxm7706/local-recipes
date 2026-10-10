@@ -12,6 +12,7 @@ contract probe routes here.
 
 from __future__ import annotations
 
+import contextlib
 import re
 from typing import Any
 
@@ -183,7 +184,5 @@ def assert_routes_are_versioned(app: FastAPI) -> list[str]:
 
 # Seed station APIs at import time (warden v1; herald v1 when installed).
 register_station_api("warden", 1)
-try:
+with contextlib.suppress(KeyError):
     register_station_api("herald", 1)
-except KeyError:
-    pass
