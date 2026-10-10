@@ -1,13 +1,13 @@
 {% set name = "avro" %}
-{% set version = "1.12.1" %}
+{% set version = "1.12.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/avro-{{ version }}.tar.gz
-  sha256: c5b8dd2dd4c10816f0dc127cc29cfd43b5e405cf7e6840e89460a024bf3d098d
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/avro-{{ version }}.tar.gz
+  sha256: e900e7b59a4781f63d9e935e88f6ec50c4d60be3f4adf9c63b51ed39d578fe08
 
 build:
   noarch: python
@@ -24,6 +24,8 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
+    # - zstandard 
+    # - python-snappy 
     # - zstandard 
     # - python-snappy 
 

@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-anymail
-  version: "15.1"
+  version: "15.2"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_anymail-${{ version }}.tar.gz
-  sha256: 299fb12a21ac4101e9706c2ade461d18deacbb6bc3750cfa6ca08aeea1fc9442
+  url: https://pypi.org/packages/source/d/django-anymail/django_anymail-${{ version }}.tar.gz
+  sha256: 65b26b1c99e6a09051b71b012ac4dfdd75a33aeb057315944dd9fb872cae57cf
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - hatchling
     - pip
   run:
@@ -71,17 +71,18 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-anymail-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-15.0, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-10-10T09:25:47Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-datetime: 2026-10-10T09:26:43Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 15.1 -> 15.2
 ####

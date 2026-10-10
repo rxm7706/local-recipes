@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "65.19.1"
+  version: "65.19.7"
 
 package:
   name: django-allauth
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/django-allauth/django_allauth-${{ version }}.tar.gz
-  sha256: 999d01d5c422a82734cf5804df9f5a0d1d4ddd6acbb2f807db976ed7d49f9cb3
+  sha256: c7749551b659ca954e483f6f634cd0c262d65dd8144f5219b3a31cba0426e981
 
 build:
   number: 0
@@ -22,7 +22,6 @@ requirements:
     - python ${{ python_min }}.*
     - pip
     - setuptools >=75.3.0
-    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
     - django >=4.2.16
@@ -70,19 +69,19 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-allauth-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
-    - version-update-to-65.19.1
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T08:45:57Z
+  cfe-last-checked: 2026-10-10T09:24:36Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T08:45:57Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T08:45:57Z
+  cfe-local-build-datetime: 2026-10-10T09:25:47Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 65.19.1 -> 65.19.7
 ####
