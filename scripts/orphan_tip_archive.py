@@ -25,7 +25,6 @@ DEFAULT_GITHUB_REPO = "rxm7706/local-recipes"
 DEFAULT_ACTIVITY_DATE = "2026-10-04"
 ORIGIN_MAIN = "refs/remotes/origin/main"
 ARCHIVE_PREFIX = "refs/tags/archive/"
-PRESERVE_PREFIX = "refs/tags/preserve/"
 MANIFEST_REL = (
     "_bmad-output/projects/pyforge-marshal/planning-artifacts/preserve-manifests"
 )
