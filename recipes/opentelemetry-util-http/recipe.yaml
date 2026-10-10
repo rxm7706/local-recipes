@@ -28,7 +28,8 @@ requirements:
 tests:
   - python:
       imports:
-        - opentelemetry.util.http
+        - opentelemetry
+        - opentelemetry.util
       pip_check: true
       python_version:
         - ${{ python_min }}.*
