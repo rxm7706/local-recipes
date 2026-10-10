@@ -2,7 +2,8 @@
 title: "25.11: Track B batch 7 refreshes OpenTelemetry instrumentation from distro through httpx"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '65182f78f018207075ce3b9b2195e81de4c0561a'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
