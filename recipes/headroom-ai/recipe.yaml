@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.32.1"
+  version: "0.39.1"
 
 package:
   name: headroom-ai
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/h/headroom-ai/headroom_ai-${{ version }}.tar.gz
-  sha256: 329dda3328f0fb45ec7128353f7fc9108f08e9676c9dc1873b4841c5c00c94bd
+  sha256: 204f4970730896a66f5ba567236d0f050650e14602bc756dbcc0357ac660b695
 
 build:
   number: 0
@@ -56,15 +56,13 @@ requirements:
     - python
     - tiktoken >=0.5.0
     - pydantic >=2.0.0
-    - if: match(python, "<3.14")
-      then:
-        - litellm >=1.86.2,<2.0
     - click >=8.3.3
     - rich >=13.0.0
     - opentelemetry-api >=1.24.0
-    - ast-grep >=0.30.0
     - pyyaml >=6.0
     - tomlkit >=0.13.0,<1.0
+    - litellm >=1.96.2,<2.0
+    - ast-grep >=0.30.0,!=0.44.1
     # 0.32.x: the CLI eagerly imports headroom.providers.aider ->
     # headroom.proxy.request_scope -> fastapi at module scope, so `headroom
     # --help` hard-requires fastapi even though upstream still declares it

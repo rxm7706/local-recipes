@@ -32,7 +32,7 @@ requirements:
     - rich >=14.2.0
     - python >=${{ python_min }}
     - click >=6
-    - grimp >=3.14
+    - grimp >=3.17
     - tomli >=1.2.1
     - typing-extensions >=3.10.0.0
     - typing_extensions >=3.10.0.0

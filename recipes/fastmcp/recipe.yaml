@@ -41,28 +41,29 @@ outputs:
       run:
         - python >=${{ python_min }},<4
         - email-validator >=2.0.0
+        - mcp-types >=2.0.0,<3.0.0
         - platformdirs >=4.0.0
-        - pydantic >=2.11.7
+        - pydantic >=2.12.0
         - pydantic-settings >=2.0.0
         - python-dotenv >=1.1.0
         - rich >=13.9.4
         - typing_extensions >=4.0.0
       run_constraints:
-        - anthropic >=0.48.0
+        - anthropic >=0.48.0,<2
         - authlib >=1.6.11
         - azure-identity >=1.16.0
         - cyclopts >=4.0.0
         - exceptiongroup >=1.2.2
         - google-genai >=1.18.0
         - griffelib >=2.0.0
-        - httpx >=0.28.1,<1.0
-        - joserfc >=1.1.0
+        - httpx2 >=2.5.0
+        - joserfc >=1.5.0
         - jsonref >=1.1.0
         - jsonschema-path >=0.3.4
-        - mcp >=1.24.0,<2.0  # move to mcp>=2.0.0 is fastmcp v4.0.0
+        - mcp >=2.0.0,<3.0.0
         - openai >=1.102.0
         - openapi-pydantic >=0.5.1
-        - opentelemetry-api >=1.20.0
+        - opentelemetry-api >=1.28.0
         - packaging >=24.0
         - prefab-ui >=0.18.0
         - pydantic-monty ==0.0.17
@@ -74,7 +75,7 @@ outputs:
         - python-multipart >=0.0.26
         - pyyaml >=6.0,<7.0
         - starlette >=1.0.1
-        - uncalled-for >=0.2.0
+        - uncalled-for >=0.4.0
         - uvicorn >=0.35
         - watchfiles >=1.0.0
         - websockets >=15.0.1
@@ -114,11 +115,11 @@ outputs:
         - cyclopts >=4.0.0
         - exceptiongroup >=1.2.2
         - griffelib >=2.0.0
-        - httpx >=0.28.1,<1.0
+        - httpx2 >=2.5.0
         - joserfc >=1.1.0
         - jsonref >=1.1.0
         - jsonschema-path >=0.3.4
-        - mcp >=1.24.0,<2.0
+        - mcp >=2.0.0,<3.0.0
         - openapi-pydantic >=0.5.1
         - opentelemetry-api >=1.20.0
         - packaging >=24.0
@@ -132,12 +133,12 @@ outputs:
         - python-multipart >=0.0.26
         - pyyaml >=6.0,<7.0
         - starlette >=1.0.1
-        - uncalled-for >=0.2.0
+        - uncalled-for >=0.4.0
         - uvicorn >=0.35
         - watchfiles >=1.0.0
         - websockets >=15.0.1
       run_constraints:
-        - anthropic >=0.48.0
+        - anthropic >=0.48.0,<2
         - azure-identity >=1.16.0
         - google-genai >=1.18.0
         - openai >=1.102.0
@@ -171,12 +172,6 @@ about:
   repository: https://github.com/PrefectHQ/fastmcp
   license: Apache-2.0
   license_file: fastmcp/LICENSE
-
-extra:
-  recipe-maintainers:
-    - dbast
-    - moritzwilksch
-    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
