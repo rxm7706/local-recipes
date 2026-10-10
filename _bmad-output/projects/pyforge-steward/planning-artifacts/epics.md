@@ -4986,7 +4986,7 @@ and the `DECLARED_COMPLETE` comment at :25-27), tests: `src/shared/packages/pyfo
 `.claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md`; the `active/` path in the Given above does not exist on `main`,
 so "holds a `SKILL.md`" means anywhere under `.claude/skills/pyforge-mason/`, as `detect_tiers`' general rule already
 matches (`rglob`).
-**Status:** backlog
+**Status:** done
 
 ## Epic 73: The session check reads the seed check it asks (spec-pyforge-steward CAP-162)
 
