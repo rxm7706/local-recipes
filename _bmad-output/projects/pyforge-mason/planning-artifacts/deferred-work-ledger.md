@@ -1826,3 +1826,47 @@ status: open
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+
+### DW-mason-25-2: Twenty genuinely-missing local mirrors (mostly dbgpt-* outputs) await Wave F after operator confirms create_missing scope (feedstock-refresh Track B Q2 default yes).
+
+- source_spec: `planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md`
+  summary: Twenty genuinely-missing local mirrors (mostly dbgpt-* outputs) await Wave F after operator confirms create_missing scope (feedstock-refresh Track B Q2 default yes).
+  evidence: Wave A co_maint discovery: genuinely_missing_names in .cursor/track_b_baseline.json (20 packages).
+  location: docs/specs/feedstock-refresh.md
+  origin: spec-deferred 9f72bcd76dd7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-2-2: Wave 0 repair left 14 recipes in needs-review or failed; manual CFE fixes before re-run refresh-wave --repair --apply --gates.
+
+- source_spec: `planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md`
+  summary: Wave 0 repair left 14 recipes in needs-review or failed; manual CFE fixes before re-run refresh-wave --repair --apply --gates.
+  evidence: Report .claude/data/conda-forge-expert/refresh-waves/A-W0-repair-25-1/report.json (2026-10-09): needs-review 10, failed 4 (write-check or url/dist-name/indent+CFE-block reasons).
+  location: recipes/
+  origin: spec-deferred bbb96e18dced — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-2-3: Track B v1-refresh queue (92 remaining after B2) plus G53 audit and retro(cfe).
+
+- source_spec: `planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md`
+  summary: Track B v1-refresh queue (92 remaining after B2) plus G53 audit and retro(cfe).
+  evidence: Wave A bucket v1-refresh count 96; refreshed assemblyai, bmad-method (B2); cron-descriptor and cssselect2 already at published version in tree. B1/B2 dry-runs: url-unrenderable, no-cfe-block, dependency-fix. Rule-2 retro not started.
+  location: .cursor/track_b_baseline.json
+  origin: spec-deferred ac7cb93c54db — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-2-4: B2 dry-run blocked billiard (no CFE block) and cachetools (host setuptools-scm dependency diff).
+
+- source_spec: `planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md`
+  summary: B2 dry-run blocked billiard (no CFE block) and cachetools (host setuptools-scm dependency diff).
+  evidence: refresh-waves/B-B2/report.md (2026-10-09): billiard no-cfe-block; cachetools dependency-fix host -setuptools-scm.
+  location: recipes/billiard/recipe.yaml
+  origin: spec-deferred 8548a052f98d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
