@@ -1837,7 +1837,8 @@ status: open
   origin: spec-deferred 9f72bcd76dd7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-10 — Story 25.14 (Wave F outputs inside recipes/db-gpt and recipes/langflow) with Story 25.13 (dbt-snowflake, zxing-cpp-python mirrors). No standalone recipes/<output>/ directories created.
 
 ### DW-mason-25-2-2: Wave 0 repair left 14 recipes in needs-review or failed; manual CFE fixes before re-run refresh-wave --repair --apply --gates.
 
