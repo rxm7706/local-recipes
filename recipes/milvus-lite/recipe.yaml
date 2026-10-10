@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "3.0"
+  version: "3.2.1"
 
 package:
   name: milvus-lite
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/milvus-lite/milvus_lite-${{ version }}.tar.gz
-  sha256: 2c35d0d046b1faae3402cde1fb73d65f51ee8c6aba65f54de1dda46f7bb18b9b
+  sha256: 4d988fe0a6bbdfc708046014ad69f4b140c43567ecafd8b6df300ad7d37210f3
   patches:
     # conda faiss-cpu exposes bindings under dist-info `faiss` (no `faiss-cpu`
     # dist-info); rewrite the wheel METADATA dep so `pip check` sees `faiss` (G28).
@@ -36,6 +36,7 @@ requirements:
     - faiss-cpu >=1.7.4
     - grpcio >=1.50
     - tomli >=2.0
+    - pymilvus
 
 tests:
   # pip_check re-enabled: the build rewrites the wheel METADATA dep
@@ -65,6 +66,7 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -85,11 +87,11 @@ extra:
   cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33892
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-25T05:00:00Z
+  cfe-last-checked: 2026-10-10T12:19:27Z
   cfe-generated-by-version: 8.34.0
   cfe-generated-at-datetime: 2026-06-19T20:40:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T01:41:02Z
+  cfe-local-build-datetime: 2026-10-10T12:20:07Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -105,6 +107,7 @@ extra:
 #    # recipe is therefore conda-forge-submittable as-is. 3.0 satisfies
 #    # pymilvus[milvus_lite]'s milvus-lite>=2.4.0 constraint (which is also
 #    # gated sys_platform != "win32", matching the no-Windows scope).
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 3.0 -> 3.2.1; maintainers added: pb01ka
 # build:
 #    # noarch:python — pure-Python, one artifact covers all platforms. The
 #    # grayskull-emitted `skip: match(python, "<3.10")` was dropped: it is
