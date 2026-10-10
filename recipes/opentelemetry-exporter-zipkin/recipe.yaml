@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.44.0"
+  version: "1.45.1"
 
 package:
   name: opentelemetry-exporter-zipkin
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-exporter-zipkin/opentelemetry_exporter_zipkin-${{ version }}.tar.gz
-  sha256: 536dedebf6d735190b6f3a3fafef83530ace2b6472d14fc31fe65c4f515acf5e
+  sha256: 4e28ad817929b70ac71c717005600b9913ae6ad7c18a5527d918fe3c9314f11b
 
 build:
   number: 0
@@ -64,10 +64,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-zipkin-feedstock
   cfe-forge-recipe-updates-needed: []
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-last-checked: 2026-10-10T17:01:06Z
   cfe-generated-by-version: 8.99.13
   cfe-generated-at-datetime: 2026-10-10T00:00:00Z
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 1.44.0 -> 1.45.1
 ####
