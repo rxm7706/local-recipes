@@ -83,7 +83,7 @@ development_status:
   25-12-track-b-batch-8-refreshes-opentelemetry-instrumentation-from-mysql-through-wsgi: backlog
   25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe: done
   25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror: backlog
-  25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow: backlog
+  25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow: done
   25-16-three-dbt-adapter-recipes-are-re-mirrored-from-their-own-feedstocks: backlog
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: done
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done

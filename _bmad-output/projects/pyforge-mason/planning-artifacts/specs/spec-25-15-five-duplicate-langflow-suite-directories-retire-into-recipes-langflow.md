@@ -2,7 +2,8 @@
 title: "25.15: Six duplicate recipe directories retire into recipes/langflow and recipes/dbt"
 type: 'fix'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: a8b46633b9439633007ec114f6f112a83afef7dd
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -15,7 +16,24 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-16-three-dbt-adapter-recipes-are-re-mirrored-from-their-own-feedstocks.md
-deferred: []
+deferred:
+  - summary: >-
+      No repo-scope check refuses two recipes/* directories declaring the same package name;
+      add a detector with today's remaining duplicates as its starting allowlist.
+    evidence: |-
+      AC 4 parse at mint listed six langflow-suite declarers plus recipes/dbt-core for dbt-core;
+      after this story the parse exits 0 with adapters pending Story 25.16.
+    location: >-
+      scripts/spec_surface_check.py
+    severity: medium
+  - summary: >-
+      Staged-recipes PRs #33977 (lfx-arxiv) and #33978 (lfx-docling) are superseded by
+      langflow-feedstock publishing both bundles; operator closes them.
+    evidence: |-
+      langflow-feedstock now publishes lfx-arxiv and lfx-docling; PRs still open at AC 1 re-read.
+    location: >-
+      https://github.com/conda-forge/staged-recipes/pull/33977
+    severity: low
 declared_low_risk: false
 ---
 
@@ -416,8 +434,25 @@ the three adapters go to Story 25.16. The title changed; the ledger key and this
 
 ## Run results
 
-- Not run yet.
+- **AC 1 (2026-10-10):** `gh api repos/conda-forge/<dir>-feedstock` → 404 for `lfx`, `lfx-arxiv`, `lfx-docling`, `lfx-duckduckgo`, `lfx-ibm`, `dbt-core`; `dbt-feedstock` exists. Retire verdict unchanged from mint/re-scope.
+- **AC 2:** G53 superset re-read — nothing to fold (same as § *Intent*).
+- **AC 11:** Patch from `dbt-feedstock` @ `93e6e06988`, sha256 `5fe3b04cb11761de056015bf64128838f6a569f5635c52058f26ac2696872c0a`, commit `b5188647fb`.
+- **AC 3:** Six directories removed, commit `95547d098f`.
+- **AC 4:** Parse exit 0; pending adapters `dbt-bigquery`, `dbt-postgres`, `dbt-redshift` (Story 25.16).
+- **AC 5:** Reference grep exit 1 (no matches).
+- **AC 6:** `validate`/`conda-smithy recipe-lint` clean for both survivors. `lint-optimize`: `recipes/dbt` exit 0; `recipes/langflow` exit 1 with TEST-001 (parent multi-output recipe — expected, outputs carry tests). Build: `recipes/dbt` rattler-build exit 0 → `dbt-core-1.12.2-pyh5ded981_0.conda`. `recipes/langflow` exit 1 — `lfx` output `pip_check` fails (`pydantic 2.14.0` vs `pydantic<2.14`); pre-existing env pin, not introduced by this story (G95-style block; refresh owned by 25.7/25.14).
+- **AC 10:** `pyforge-mason-test` exit 0 after `retro(cfe): v8.99.4` commit `ac78dc275d`.
 
 ## Review Triage Log
 
-- No review has run yet.
+- **2026-10-10 — Review pass**
+  - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+  - findings: (single-pass review; diff limited to recipe removals, patch restore, CFE retro — no patch items)
+
+## Auto Run Result
+
+- **Summary:** Retired six duplicate recipe directories; restored `recipes/dbt` patch; CFE retro v8.99.4.
+- **Files:** See commits `b5188647fb`, `95547d098f`, `ac78dc275d`; memlogs on `spec-packaging-factory` and `spec-pyforge-mason`.
+- **Verification:** AC 4/5/6/10 as in § *Run results*; `python scripts/spec_surface_reconcile.py` exit 0; `spec-surface-check` exit 0.
+- **Follow-up review:** `followup_review_recommended: false` — no patched review findings.
+- **Residual risk:** `recipes/langflow` linux-64 build still fails `pip_check` on `lfx` until refresh stories land; duplicate-output guard and staged-recipes PR closure deferred in frontmatter.
