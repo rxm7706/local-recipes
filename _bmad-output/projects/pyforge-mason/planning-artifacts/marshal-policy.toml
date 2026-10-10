@@ -221,6 +221,8 @@ verify_commands = [
   #   one retro(cfe) commit, and one pixi.toml task table.
   # - 25.4 to 25.12 (2026-10-09, night): recipes/** for their named recipes and one retro(cfe) commit each; 25.4 and
   #   25.5 also close the deferred-work ledger rows ingested from Story 25.2's deferrals, hence that ledger below.
+  # - 25.13 and 25.14 (2026-10-09, night, later; Wave F): recipes/** for their named recipes and one retro(cfe) commit
+  #   each; 25.14 also closes the ledger row ingested from Story 25.2's Wave F deferral.
   # - Every story: the station ledger and every Spec memlog a surface reconcile names (spec-fleet-stewardship governs
   #   recipes/**; spec-packaging-factory and spec-conda-forge-expert-rebuild govern the CFE surface).
   "src/shared/packages/pyforge-mason/**",
