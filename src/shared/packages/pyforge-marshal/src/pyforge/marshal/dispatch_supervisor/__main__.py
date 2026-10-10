@@ -1375,10 +1375,13 @@ def _maybe_run_verify_fix_turn(
                 stdout=str(row.get("output_tail") or ""),
                 stderr="",
                 exit_code=row.get("exit_code") if isinstance(row.get("exit_code"), int) else None,
+                gate=str(row["gate"]) if isinstance(row.get("gate"), str) else None,
             )
             for row in failed_rows
             if row.get("command")
         )
+        trigger_gate = _verification_failed_gate(folded, run_id)
+        failed_gates = sorted({cmd.gate for cmd in failed_cmds if cmd.gate})
         decision = decide_verify_fix_turn(
             flag_enabled=flag_enabled,
             verification_verdict=v_outcome,
@@ -1447,6 +1450,8 @@ def _maybe_run_verify_fix_turn(
                 "failed_command_count": len(failed_cmds),
                 "wall_clock_budget_s": fix_policy.wall_clock_seconds,
                 "worktree_head_before_turn": head_before_turn,
+                "trigger_gate": trigger_gate,
+                "failed_gates": failed_gates,
             },
         )
         counter += 1

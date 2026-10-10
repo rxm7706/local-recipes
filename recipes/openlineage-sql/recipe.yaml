@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: openlineage-sql
-  version: "1.52.0"
+  version: "1.53.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openlineage_sql-${{ version }}.tar.gz
-  sha256: fd00e6ead0e87875a60054bf7fa361c36a8e410f2bbd88d5f82ffa738563953c
+  url: https://pypi.org/packages/source/o/openlineage-sql/openlineage_sql-${{ version }}.tar.gz
+  sha256: fa2a0bc9a056bc896c8abd7a7152b605ba7af6736a9b5dcc7718e63a6bb02db6
 
 build:
   number: 0
@@ -53,3 +53,35 @@ extra:
   recipe-maintainers:
     - rxm7706
     - millsks
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openlineage-sql
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openlineage-sql
+  cfe-purls:
+    - pkg:conda/openlineage-sql@${{ version }}?channel=conda-forge
+    - pkg:pypi/openlineage-sql@${{ version }}
+  cfe-upstream-repo: https://github.com/OpenLineage/OpenLineage
+  cfe-upstream-homepage: https://github.com/OpenLineage/OpenLineage
+  cfe-import-names: [openlineage_sql]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openlineage-sql-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T13:52:34Z
+  cfe-generated-by-version: 8.99.9
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T13:57:02Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 1.52.0 -> 1.53.0
+####

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 608
+# stories: 609
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -422,6 +422,7 @@ development_status:
   85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
   85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification: done
   85-6-a-fix-turn-re-runs-only-the-failing-commands-and-knows-the-flag-checklist: done
+  85-7-a-cross-surface-refusal-gets-the-same-one-fix-turn: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done

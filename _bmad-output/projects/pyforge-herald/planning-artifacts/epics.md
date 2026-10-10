@@ -1051,7 +1051,7 @@ So that a change far from the docs does not pay for a site build, and the local 
 **When** `pr-preflight` selects its lanes for a fixture diff
 **Then** a diff touching only `src/shared/packages/pyforge-marshal/` leaves `pages-check` unselected, and a diff touching `docs/how-to/x.md` selects it, as shown by 71.2's own selection report
 **And** `test_preflight_pages_lane.py` passes in `pyforge-herald-test`; `pr-preflight` never runs `site-check` and `pages-check` together
-**Status:** backlog
+**Status:** done
 
 ### Story 27.6: The docs site builds from a clean checkout
 
