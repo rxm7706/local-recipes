@@ -214,6 +214,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`how-to/reconcile-spec-surface.md`](how-to/reconcile-spec-surface.md) | doctor | authored |
 | [`how-to/restore-operations.md`](how-to/restore-operations.md) | fleet | authored |
 | [`how-to/run-and-understand-detectors.md`](how-to/run-and-understand-detectors.md) | doctor | authored |
+| [`how-to/run-herald-live-backend-locally.md`](how-to/run-herald-live-backend-locally.md) | herald | authored |
 | [`how-to/station-cli-operations.md`](how-to/station-cli-operations.md) | fleet | authored |
 | [`how-to/troubleshoot-bmad-agent-loops.md`](how-to/troubleshoot-bmad-agent-loops.md) | fleet | authored |
 | [`how-to/troubleshooting-recipe-builds.md`](how-to/troubleshooting-recipe-builds.md) | fleet | authored |

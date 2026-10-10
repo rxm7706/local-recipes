@@ -3143,6 +3143,10 @@ cmd = "herald deck sync-all"
 description = "Story 24.3 (spec-pyforge-herald CAP-50): opt-in live idempotency proof for `deck sync-all`, gated on HERALD_LIVE_SYNC_PROOF=1. Run it twice against a real seeded deck; each run's per-deck report plus its tree/etag stamp is written under --proof-dir (default .herald/sync-proof/, gitignored -- per-deck subdirectory is <proof-dir>/<slug>/). The second run's report must be all-unchanged with zero git/Design writes. Never in the default gate, pr-preflight, or any CI lane -- operator-run only, needs live Claude Design credentials. Run from repo root: HERALD_LIVE_SYNC_PROOF=1 pixi run -e pyforge-herald deck-sync-proof -- --slug <slug>. See _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/live-proof-surfaces.md."
 cmd = "herald deck sync-all --proof-dir .herald/sync-proof"
 
+[feature.pyforge-herald.tasks.herald-ship-local]
+description = "Story 19.2: derive a real landing merge on origin/main with pyforge.core.landing_evidence, sign on-ship and on-pr-close, and POST both to a loopback platform ASGI host. Requires HERALD_WEBHOOK_SECRET and a running host (see docs/how-to/run-herald-live-backend-locally.md). Run from the primary checkout: pixi run -e pyforge-foundry-full-stack herald-ship-local"
+cmd = "python -m pyforge.herald.local_ship"
+
 [feature.pyforge-core.tasks.pyforge-core-test]
 description = "Run the pyforge.core test suite"
 cmd = "pytest src/shared/packages/pyforge-core/tests -q"

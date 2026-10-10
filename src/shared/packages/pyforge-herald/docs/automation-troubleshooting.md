@@ -8,21 +8,15 @@ fully unit-tested an HMAC-verified webhook handler
 (`src/pyforge/herald/webhook.py`, see
 [`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)),
 and Story 13.6 mounted it for real behind `daphne`
-(`src/pyforge/herald/webhook_host.py`) — but the ONLY place that host runs
-is inside `.github/workflows/herald-live-demo.yml`'s three demonstration
-jobs (`on-ship`/`on-pr-close`/`scheduler-demo`), each against its own
-scratch, job-local database. There is still no persistent, always-
-listening endpoint outside CI for a delivery to fail to reach — "the
-webhook isn't firing against MY checkout" is not a bug, it is the
-documented boundary (see the [`cli-runbooks.md`](cli-runbooks.md#what-is-not-a-failure-mode-here)
-troubleshooting note this section doesn't repeat). What CAN genuinely
-fail now, and is worth a section of its own below, is the CI job itself:
-[Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci). See
-`docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
-live-backend design this is working toward (a persistent host every
-checkout shares) — Steward's `deploy perimeter` gaining the ability to
-target an arbitrary ASGI callable is the tracked deferred-work gap ahead
-of that. "Cron job missed" is a real, if narrow, possibility: Story 13.5
+(`src/pyforge/herald/webhook_host.py`). **Story 19.2** documents the
+persistent local path: loopback `config.asgi:application`, `.herald/herald.db`
+on the primary checkout, and `herald-ship-local` —
+[`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md).
+The disabled `herald-live-demo.yml` workflow is still a separate, CI-contained
+demo (throwaway stores). What CAN genuinely fail in CI is covered in
+[Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci). For local
+host failures (secret mismatch, host down, DW-13-6-2 timeouts), start from that
+how-to's troubleshooting section. "Cron job missed" is a real, if narrow, possibility: Story 13.5
 added `herald scheduler run` plus a documented, *opt-in* local `crontab`
 entry for an operator's own real database (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)) —

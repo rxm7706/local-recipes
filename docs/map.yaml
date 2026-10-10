@@ -98,6 +98,10 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/run-herald-live-backend-locally.md
+    quadrant: how-to
+    owner: herald
+    kind: authored
   - path: how-to/purge-preserved-refs.md
     quadrant: how-to
     owner: marshal

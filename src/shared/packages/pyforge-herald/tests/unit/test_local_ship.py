@@ -27,14 +27,14 @@ def test_classify_landing_subject_one_per_station(station: str) -> None:
 
 
 def test_non_landing_subject_refuses_before_send(tmp_path: Path) -> None:
-    landing = local_ship.LandingCommit(
-        sha="abc123",
-        subject="chore: not a merge",
-        station="herald",
-        story_key="19-2",
-    )
-    with pytest.raises(SystemExit):
-        local_ship.classify_landing_subject(landing.subject)
+    assert local_ship.classify_landing_subject("chore: not a merge") is None
+    with patch.object(
+        local_ship.subprocess,
+        "run",
+        return_value=type("R", (), {"returncode": 0, "stdout": "sha\tchore: not a merge", "stderr": ""})(),
+    ):
+        with pytest.raises(SystemExit, match="not a landing merge"):
+            local_ship.resolve_landing_commit(tmp_path, "sha")
 
 
 def test_handlers_accept_bodies_from_local_ship(tmp_path: Path) -> None:
