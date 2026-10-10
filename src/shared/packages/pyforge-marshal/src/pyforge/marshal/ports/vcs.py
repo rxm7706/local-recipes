@@ -554,3 +554,7 @@ class VcsPort(Protocol):
     def commit_contained_in_tag_prefixes(self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]) -> bool:
         """Story 87.6: ``git for-each-ref --contains <commit>`` under tag prefixes."""
         ...
+
+    def commit_contained_in_remote_refs(self, repo_root: Path, commit: str) -> bool:
+        """Story 87.7: ``git for-each-ref --contains <commit> refs/remotes/``."""
+        ...

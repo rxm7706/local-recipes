@@ -669,7 +669,7 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
-    # Story 87.3 grammar + Story 87.15 push|retire; default off (spec flag.default).
+    # Stories 87.3/87.7/87.15; default off (spec flag.default).
     "pyforge.marshal.preserve_refs": False,
     "pyforge.herald.deck_publish": {
         "dev": True,
