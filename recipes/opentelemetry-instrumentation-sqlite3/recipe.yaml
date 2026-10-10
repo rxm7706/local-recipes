@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-sqlite3
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-sqlite3/opentelemetry_instrumentation_sqlite3-${{ version }}.tar.gz
-  sha256: f11fb91d159724037cadf970d5b612da720b38bd67d1c25d48c5ae09116eacc6
+  sha256: e5d672a347deac385a71fb52d556ea443e2f3cc51eac05cac8f0a739cac0bb38
 
 build:
   number: 0
@@ -67,19 +67,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-sqlite3-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:47:40Z
+  cfe-last-checked: 2026-10-10T17:59:47Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:47:40Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:47:40Z
+  cfe-local-build-datetime: 2026-10-10T18:00:32Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####

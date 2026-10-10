@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-system-metrics
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-system-metrics/opentelemetry_instrumentation_system_metrics-${{ version }}.tar.gz
-  sha256: c8b82821ccc95c5f2c516bb72356f75673ced51364eed583a14bf3b85fa6a0c7
+  sha256: b0fccbc1aecf35c182431a035ec4809b8f9607eec692243cf70f23b3bda51231
 
 build:
   number: 0
@@ -71,12 +71,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-system-metrics-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:49:15Z
+  cfe-last-checked: 2026-10-10T18:00:32Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:49:15Z
   cfe-local-build-status: success
@@ -86,4 +86,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####
