@@ -133,7 +133,6 @@ class _HeraldAbsentFinder:
     def find_spec(self, fullname, path, target=None):
         if fullname == "pyforge.herald" or fullname.startswith("pyforge.herald."):
             raise ModuleNotFoundError(name=fullname)
-        return None
 
 
 def test_mcp_host_sidecar_herald_absent_returns_404_json(
@@ -436,7 +435,6 @@ class _CoreErrorsAbsentFinder:
     def find_spec(self, fullname, path, target=None):
         if fullname == "pyforge.core.errors":
             raise ModuleNotFoundError(name=fullname)
-        return None
 
 
 def test_mcp_host_sidecar_herald_dependency_missing_not_blamed_on_herald(

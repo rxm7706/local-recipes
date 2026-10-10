@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import time
+import tomllib
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
@@ -17,7 +18,6 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
-import tomllib
 from django_pyforge.flags import ENV_FLAGD_PATH
 from django_pyforge.flags import ENV_FLAGS_PATH
 from django_pyforge.flags import configure_file_provider
@@ -81,7 +81,10 @@ def _sign(secret: bytes, timestamp: str, body: bytes) -> str:
     )
 
 
-def _signed_post_headers(body: bytes, secret: bytes = b"shared-secret") -> dict[str, str]:
+def _signed_post_headers(
+    body: bytes,
+    secret: bytes = b"shared-secret",
+) -> dict[str, str]:
     ts = str(int(time.time()))
     return {
         "Content-Type": "application/json",
@@ -92,7 +95,7 @@ def _signed_post_headers(body: bytes, secret: bytes = b"shared-secret") -> dict[
     }
 
 
-def _sidecar_flag_tree(on: bool) -> bytes:
+def _sidecar_flag_tree(*, on: bool) -> bytes:
     return json.dumps(
         {
             "flags": {
@@ -113,7 +116,7 @@ def forward_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
     monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
     tree = tmp_path / "on.json"
-    tree.write_bytes(_sidecar_flag_tree(True))
+    tree.write_bytes(_sidecar_flag_tree(on=True))
     configure_file_provider(tree)
     yield
     api.clear_providers()
@@ -185,9 +188,11 @@ def test_host_rejects_non_allowlisted_webhook_paths(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     async def _run():
-        with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
-            with caplog.at_level("ERROR"):
-                status, body, _ = await _asgi_request(path, content=b"x")
+        with (
+            patch("httpx.AsyncClient", return_value=_FakeSidecarClient()),
+            caplog.at_level("ERROR"),
+        ):
+            status, body, _ = await _asgi_request(path, content=b"x")
         return status, body
 
     status, body = asyncio.run(_run())
@@ -218,7 +223,8 @@ def test_host_forwards_only_literal_paths_no_query(forward_env) -> None:
         "http://127.0.0.1:8090/stations/herald/api/v1/webhooks/on-ship"
     )
     assert _FakeSidecarClient.requests[0]["content"] == body
-    lowered = {k.lower(): v for k, v in _FakeSidecarClient.requests[0]["headers"].items()}
+    req_headers = _FakeSidecarClient.requests[0]["headers"]
+    lowered = {k.lower(): v for k, v in req_headers.items()}
     assert "authorization" not in lowered
     assert "cookie" not in lowered
 
@@ -313,7 +319,7 @@ def test_flag_off_reaches_in_process_herald(
     monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
     monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
     tree = tmp_path / "off.json"
-    tree.write_bytes(_sidecar_flag_tree(False))
+    tree.write_bytes(_sidecar_flag_tree(on=False))
     configure_file_provider(tree)
     webhook, webhook_host = (
         importlib.import_module("pyforge.herald.webhook"),
@@ -326,9 +332,14 @@ def test_flag_off_reaches_in_process_herald(
 
     async def _run():
         transport = ASGITransport(app=application)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        base = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base) as client:
             with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
-                return await client.post(webhook.ON_SHIP_PATH, content=body, headers=headers)
+                return await client.post(
+                    webhook.ON_SHIP_PATH,
+                    content=body,
+                    headers=headers,
+                )
 
     response = asyncio.run(_run())
     api.clear_providers()
@@ -345,7 +356,7 @@ def test_host_unset_sidecar_url_does_not_forward(
     monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
     monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
     tree = tmp_path / "on.json"
-    tree.write_bytes(_sidecar_flag_tree(True))
+    tree.write_bytes(_sidecar_flag_tree(on=True))
     configure_file_provider(tree)
     webhook = _herald_webhook_module()
     monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
@@ -354,7 +365,8 @@ def test_host_unset_sidecar_url_does_not_forward(
 
     async def _run():
         transport = ASGITransport(app=application)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        base = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base) as client:
             with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
                 return await client.post(
                     webhook.ON_SHIP_PATH,
@@ -371,7 +383,8 @@ def test_host_unset_sidecar_url_does_not_forward(
 def test_flag_on_skips_openapi_and_health(forward_env) -> None:
     async def _run():
         transport = ASGITransport(app=application)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        base = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base) as client:
             with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
                 o = await client.get("/stations/herald/api/v1/openapi.json")
                 h = await client.get("/stations/herald/api/v1/health")
@@ -392,7 +405,8 @@ def test_mcp_host_serve_task_pythonpath_and_bind() -> None:
     raw_path = task["env"]["PYTHONPATH"]
     project_root = Path(os.environ.get("PIXI_PROJECT_ROOT", str(_REPO_ROOT)))
     entries = [
-        Path(p.replace("$PIXI_PROJECT_ROOT", str(project_root))) for p in raw_path.split(":")
+        Path(p.replace("$PIXI_PROJECT_ROOT", str(project_root)))
+        for p in raw_path.split(":")
     ]
     for entry in entries:
         assert entry.is_dir(), entry
