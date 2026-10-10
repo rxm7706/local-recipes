@@ -30,7 +30,8 @@ as codegraph's) and 2026-09-26 (version-floor re-sync: 57 floors caught up to
 `bmad-loop`, `caveman-installer`, `codegraph`, `bmad-module-skill-forge`,
 `fastmcp`/`fastmcp-slim`, `kedro-mcp`, `silo` and `openfeature-flagd-api`
 now resolve from conda-forge and their SelfExplainML
-channel pins are gone). Channels: conda-forge + SelfExplainML.
+channel pins are gone) and 2026-10-10 (Story 67.9: conda-recipe-manager + dbt-core catalog entries — crm click cap >=8.2.1,<=8.4.1, feedstock PR #46, feedstock PR #44 closed unmerged 2026-09-01, sbom-crm-click-cap; prose only, `llms-full-check` unchanged). Channels:
+conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -214,9 +215,11 @@ Recipe generation & migration:
   mapping the factory caches.
 - **conda-recipe-manager** (>=0.8.0) — parse, lint, and migrate recipes v0 ↔ v1
   programmatically (CRM library + `crm` CLI). **grayskull env only** since
-  2026-08-30 (`[feature.crm.dependencies]`): its feedstock's exact click==8.2.1
-  pin (feedstock bug, conda-forge/conda-recipe-manager-feedstock#44) walled
-  headroom-ai + the dbt trio out of local-recipes. Run via
+  2026-08-30 (`[feature.crm.dependencies]`): crm 0.10.5's exact click pin walled
+  headroom-ai + the dbt trio until the split; crm 0.10.6 (feedstock PR #46) caps
+  click >=8.2.1,<=8.4.1 (feedstock PR #44 closed unmerged 2026-09-01). local-recipes
+  resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1; latest click is
+  8.5.0 — lifting <=8.4.1 is Story 67.4 sbom-crm-click-cap. Run via
   `pixi run -e grayskull crm …`.
 - **feedrattler** (>=0.3.14) — convert an existing conda-forge feedstock from v0
   `meta.yaml` to v1 `recipe.yaml` end-to-end. **grayskull env only** since
@@ -350,9 +353,11 @@ SQL engines & tooling:
 - **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
 - **dbt-core** (>=1.12.5) + **dbt-duckdb** (>=1.11.0) + **dbt-postgres** (>=1.11.0) —
-  SQL transformation framework + adapters. Unblocked 2026-08-30: the click conflict
-  that pinned the trio out fell when conda-recipe-manager (exact click==8.2.1
-  feedstock pin) moved to the grayskull-only `crm` feature.
+  SQL transformation framework + adapters. Unblocked 2026-08-30: crm 0.10.5's exact
+  click pin walled the trio until crm moved to `[feature.crm.dependencies]`; local-recipes
+  now resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1 (feedstock PR #46
+  caps >=8.2.1,<=8.4.1; feedstock PR #44 closed unmerged 2026-09-01). Latest click
+  is 8.5.0 — Story 67.4 sbom-crm-click-cap holds the open cap-lift ask.
 - **duckdb-server** (>=0.31.0) — Mosaic's DuckDB HTTP/Arrow server (`duckdb-server`
   CLI; the import package is `pkg`, NOT `duckdb_server`). **pyforge-atlas env,
   linux-64 only** (hard-deps `socketify`, which conda-forge lacks on
