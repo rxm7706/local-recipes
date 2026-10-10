@@ -2,7 +2,7 @@
 title: "72.2: Mason's five-tier skill cell requires its station skill and conda-forge-expert"
 type: 'fix'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: bbcc97ebee183d1d1cd30da2ab3765f6c900c350
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -111,3 +111,43 @@ Minted 2026-09-28 so `marshal factory dispatch` can resolve this spec once the o
   Given's `active/` path is noted as absent and the `SKILL.md` rule as recursive. No acceptance criterion changed.
 
 ## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 11 findings — high 0, medium 1, low 2, false 6, maybe-false 0, reject 2
+- findings:
+  - `[false]` `[reject]` Mason-only fixture lacked `check()` — AC3 names only `detect_tiers`; I/O matrix "as above" triggered a patch adding `check()` with `match="skill"`.
+  - `[false]` `[reject]` No dual-skill isolated fixture — AC1 is live-tree only; `test_live_roster_is_five_tier_complete` covers it.
+  - `[false]` `[reject]` No explicit non-mason regression test — AC4 satisfied by unchanged non-mason code path.
+  - `[false]` `[reject]` Missing scoped baseline stamp — producer must not `--write-baseline`; memlog reconcile only.
+  - `[false]` `[defer]` No sprint-ledger sync — story forbids hand-editing ledger; operator/harness path.
+  - `[false]` `[defer]` No chain-currency sweep evidence — memlog event entries only; no planning doc drift from this fix.
+  - `[low]` `[reject]` Module docstring omits Mason dual rule — DECLARED_COMPLETE comment documents contract; docstring describes generic AD-14 check.
+  - `[low]` `[reject]` No test for CFE dir without SKILL.md — `is_file()` behavior is standard; out of matrix scope.
+  - `[medium]` `[patch]` I/O matrix row "station skill only" expects `check` failure like CFE-only — added `pytest.raises(FiveTierCompleteError, match="skill")` to `test_mason_skill_missing_when_only_pyforge_mason_station_skill`.
+  - `[false]` `[reject]` Spec metadata incomplete mid-review — filled in Auto Run Result at finalize.
+  - `[false]` `[reject]` Memlog should cite verification commands — not required by spec surface contract.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Mason's five-tier `skill` cell now requires both `pyforge-mason/` (recursive `SKILL.md`) and `conda-forge-expert/SKILL.md`. Removed the CFE-only carve-out; updated comments, live-test docstring, and two fixture tests (plus matrix-aligned `check()` on mason-only).
+
+**Files changed:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py` — conjunctive Mason skill detection and CAP-160 comment.
+- `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` — docstring fix, CFE-only and mason-only fixtures.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` — surface reconcile paths.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor reconcile paths.
+
+**Review:** 1 patch applied (medium); remainder rejected or deferred as above. `followup_review_recommended: false` (0 high patches; 1 medium patch only).
+
+**Verification:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2292 passed, exit 0.
+- `pixi run -e pyforge-guild spec-surface-check` — exit 0 (`spec-surface: ok`).
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog entries.
+
+**Governed paths reconciled (memlog):**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py`
+- `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py`
+
+**Residual risk:** Live 40/40 depends on both Mason skills remaining on `main`; fixture tests cover partial trees only.

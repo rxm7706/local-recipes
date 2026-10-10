@@ -167,6 +167,8 @@ def test_mason_skill_missing_when_only_pyforge_mason_station_skill(tmp_path: Pat
     mason_skill.write_text("# mason\n", encoding="utf-8")
     tiers = detect_tiers(tmp_path, "mason")
     assert tiers["skill"] is False
+    with pytest.raises(FiveTierCompleteError, match="skill"):
+        check(tmp_path, declared_complete=frozenset({"mason"}))
 
 
 def test_no_pyforge_under_src_platform():
