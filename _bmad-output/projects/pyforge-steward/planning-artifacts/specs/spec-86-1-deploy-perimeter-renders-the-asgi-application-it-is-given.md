@@ -2,7 +2,8 @@
 title: "86.1: Deploy perimeter renders the ASGI application it is given"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f05de4bab8500a64631f84d8a9a0dc6bce064295'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

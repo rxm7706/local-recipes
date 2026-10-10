@@ -676,3 +676,187 @@ def test_bare_deploy_still_names_perimeter_among_available_verbs():
     result = duty.run(argparse.Namespace())
     assert result.ok is True
     assert "perimeter" in result.summary
+
+
+# ── Story 86.1: `--asgi-application` (DW-13-6-1) ────────────────────────────
+
+_HERALD_ASGI = "pyforge.herald.webhook_host:application"
+
+
+def _perimeter_output_namespace(tmp_path, **overrides):
+    base = dict(
+        deploy_verb="perimeter",
+        workers=2,
+        cache_backend=_REDIS_CACHE,
+        channel_layer_backend=_REDIS_CHANNEL_LAYER,
+        trusted_address=["10.0.0.1", "10.0.0.2"],
+        tls_cert="/etc/tls/dashboard.crt",
+        tls_key="/etc/tls/dashboard.key",
+        app_db_role=_APP_DB_ROLE,
+        audit_retention_db_role=_AUDIT_RETENTION_DB_ROLE,
+        output_dir=str(tmp_path / "manifests"),
+        asgi_application=None,
+    )
+    base.update(overrides)
+    return argparse.Namespace(**base)
+
+
+def test_perimeter_default_render_matches_story_9_5_golden(tmp_path):
+    """AC (1): default render is byte-identical to Story 9.5 at 6d5e84cb6b."""
+    topology = DeploymentTopology(
+        worker_count=2, cache_backend=_REDIS_CACHE, channel_layer_backend=_REDIS_CHANNEL_LAYER
+    )
+    unit_golden = render_daphne_unit(topology)
+    edge_golden = render_edge_config(
+        topology,
+        trusted_addresses=("10.0.0.1", "10.0.0.2"),
+        tls_cert="/etc/tls/dashboard.crt",
+        tls_key="/etc/tls/dashboard.key",
+    )
+    grants_golden = render_audit_table_grants(
+        app_role=_APP_DB_ROLE,
+        retention_role=_AUDIT_RETENTION_DB_ROLE,
+    )
+
+    duty = DeployDuty()
+    result = duty.run(_perimeter_output_namespace(tmp_path))
+
+    assert result.ok is True
+    output_dir = tmp_path / "manifests"
+    assert unit_golden == (output_dir / "pyforge-steward-dashboard@.service").read_text()
+    assert edge_golden == (output_dir / "pyforge-steward-dashboard.nginx.conf").read_text()
+    assert grants_golden == (output_dir / "pyforge-steward-dashboard-audit-grants.sql").read_text()
+
+
+def test_perimeter_asgi_override_renders_execstart_and_summary(tmp_path):
+    """AC (2): override names Herald webhook host in ExecStart and summary."""
+    duty = DeployDuty()
+    result = duty.run(_perimeter_output_namespace(tmp_path, asgi_application=_HERALD_ASGI))
+
+    assert result.ok is True
+    assert _HERALD_ASGI in result.summary
+    unit_text = (tmp_path / "manifests" / "pyforge-steward-dashboard@.service").read_text()
+    assert (
+        f"ExecStart=daphne --bind 127.0.0.1 --port %i --proxy-headers {_HERALD_ASGI}"
+        in unit_text
+    )
+    assert "myproject.asgi:application" not in unit_text
+    assert "Replace" not in unit_text
+
+
+def test_perimeter_asgi_override_via_cli(tmp_path):
+    output_dir = tmp_path / "manifests"
+    rc = main(
+        [
+            "deploy",
+            "perimeter",
+            "--workers",
+            "1",
+            "--asgi-application",
+            _HERALD_ASGI,
+            "--trusted-address",
+            "10.0.0.1",
+            "--tls-cert",
+            "/etc/tls/dashboard.crt",
+            "--tls-key",
+            "/etc/tls/dashboard.key",
+            "--app-db-role",
+            _APP_DB_ROLE,
+            "--audit-retention-db-role",
+            _AUDIT_RETENTION_DB_ROLE,
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+    assert rc == EXIT_OK
+    unit_text = (output_dir / "pyforge-steward-dashboard@.service").read_text()
+    assert f"--proxy-headers {_HERALD_ASGI}" in unit_text
+
+
+def test_perimeter_edge_config_unchanged_by_asgi_override(tmp_path):
+    """AC (4): nginx edge config does not depend on the ASGI target."""
+    topology = DeploymentTopology(
+        worker_count=2, cache_backend=_REDIS_CACHE, channel_layer_backend=_REDIS_CHANNEL_LAYER
+    )
+    edge_default = render_edge_config(
+        topology,
+        trusted_addresses=("10.0.0.1", "10.0.0.2"),
+        tls_cert="/etc/tls/dashboard.crt",
+        tls_key="/etc/tls/dashboard.key",
+    )
+    duty = DeployDuty()
+    result = duty.run(_perimeter_output_namespace(tmp_path, asgi_application=_HERALD_ASGI))
+    assert result.ok is True
+    edge_override = (tmp_path / "manifests" / "pyforge-steward-dashboard.nginx.conf").read_text()
+    assert edge_default == edge_override
+
+
+@pytest.mark.parametrize(
+    "bad_asgi",
+    [
+        "",
+        "app",
+        "pkg.mod:",
+        ":application",
+        "pkg mod:application",
+        "pkg.mod:application;rm -rf /",
+        "pkg.mod:application\nExecStartPre=/bin/sh",
+        "pkg..mod:application",
+    ],
+)
+def test_perimeter_refuses_invalid_asgi_application_with_output_dir(tmp_path, bad_asgi):
+    """AC (3): invalid --asgi-application values refuse before writing."""
+    duty = DeployDuty()
+    output_dir = tmp_path / "manifests"
+    result = duty.run(_perimeter_output_namespace(tmp_path, asgi_application=bad_asgi))
+
+    assert result.ok is False
+    assert result.summary.startswith("deploy perimeter: refused")
+    assert "--asgi-application" in result.summary
+    assert not output_dir.exists()
+
+
+@pytest.mark.parametrize(
+    "bad_asgi",
+    [
+        "",
+        "app",
+        "pkg.mod:",
+        ":application",
+        "pkg mod:application",
+        "pkg.mod:application;rm -rf /",
+        "pkg.mod:application\nExecStartPre=/bin/sh",
+        "pkg..mod:application",
+    ],
+)
+def test_perimeter_refuses_invalid_asgi_application_validation_only(bad_asgi):
+    duty = DeployDuty()
+    ns = argparse.Namespace(
+        deploy_verb="perimeter",
+        workers=1,
+        cache_backend=_LOCMEM_CACHE,
+        channel_layer_backend=_INMEMORY_CHANNEL_LAYER,
+        trusted_address=None,
+        tls_cert=None,
+        tls_key=None,
+        output_dir=None,
+        asgi_application=bad_asgi,
+    )
+    result = duty.run(ns)
+    assert result.ok is False
+    assert result.summary.startswith("deploy perimeter: refused")
+    assert "--asgi-application" in result.summary
+
+
+def test_perimeter_help_lists_asgi_application():
+    import subprocess
+    import sys
+
+    proc = subprocess.run(
+        [sys.executable, "-m", "pyforge.steward.cli", "deploy", "perimeter", "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0
+    assert "--asgi-application" in proc.stdout

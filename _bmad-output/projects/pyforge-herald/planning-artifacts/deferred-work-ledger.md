@@ -595,12 +595,14 @@ deployment.
   `render_daphne_unit`'s `_ASGI_APPLICATION_PLACEHOLDER` substitution, and confirm
   `render_edge_config`'s nginx assumptions (single upstream shape, `X-Forwarded-For` handling) hold
   for a non-Django ASGI app before Herald's webhook is ever pointed at it for real.
-  status: open
+  status: resolved
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-6-1` there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 1/2 present (absent: _bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-10 — resolved — steward Story 86.1 added `steward deploy perimeter --asgi-application MODULE:ATTR`, threaded through `render_daphne_unit`, validated before any render, and confirmed `render_edge_config` is unchanged for default vs override (`test_perimeter_asgi_override_renders_execstart_and_summary`, `test_perimeter_edge_config_unchanged_by_asgi_override` in `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py`). Ledger status mapped to resolved.
 
 ### DW-13-6-2: `webhook_host.py`'s bounded timeout stops the client from waiting, but does not free the OS thread a genuinely-hung handler still occupies
 

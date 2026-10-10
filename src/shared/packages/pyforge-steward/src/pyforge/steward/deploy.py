@@ -69,6 +69,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -531,12 +532,25 @@ def check_shareable_state(topology: DeploymentTopology) -> None:
 
 _DEFAULT_BASE_PORT = 8001
 _DEFAULT_BIND_HOST = "127.0.0.1"
-# The spec's own Code Map names no CLI flag for the ASGI application import
-# path, and this story renders plain text with no templating engine — so
-# rather than invent an unrequested flag, the adopter edits this one
-# placeholder line by hand, same as any other systemd unit before enabling
-# it (judgment call, recorded here).
+# Story 86.1 / herald DW-13-6-1: optional `--asgi-application` names the daphne
+# target; without it the rendered unit keeps the Story 9.5 placeholder the
+# adopter replaces by hand.
 _ASGI_APPLICATION_PLACEHOLDER = "myproject.asgi:application"  # adopter fills in
+_ASGI_APPLICATION_PATTERN = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*:"
+    r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$"
+)
+
+
+def _validate_asgi_application(value: str) -> str | None:
+    """Return a refusal message when *value* is not a safe MODULE:ATTR path."""
+    if not _ASGI_APPLICATION_PATTERN.fullmatch(value):
+        return (
+            f"--asgi-application {value!r} is not a valid MODULE:ATTR import path "
+            "(expected dotted module, colon, dotted attribute — e.g. "
+            "myproject.asgi:application)"
+        )
+    return None
 
 
 def _worker_ports(topology: DeploymentTopology, *, base_port: int) -> tuple[int, ...]:
@@ -566,6 +580,7 @@ def render_daphne_unit(
     *,
     base_port: int = _DEFAULT_BASE_PORT,
     bind_host: str = _DEFAULT_BIND_HOST,
+    asgi_application: str = _ASGI_APPLICATION_PLACEHOLDER,
 ) -> str:
     """Render a systemd TEMPLATE unit for a fleet of `topology.worker_count`
     daphne ASGI workers — daphne has no built-in worker-pool flag (unlike
@@ -596,21 +611,26 @@ def render_daphne_unit(
     """
     ports = _worker_ports(topology, base_port=base_port)
     enable_cmd = " ".join(f"pyforge-steward-dashboard@{p}.service" for p in ports)
+    if asgi_application == _ASGI_APPLICATION_PLACEHOLDER:
+        placeholder_comment = (
+            f"# Replace {_ASGI_APPLICATION_PLACEHOLDER} below with your project's real\n"
+            f"# ASGI application import path before enabling.\n"
+            "\n"
+        )
+    else:
+        placeholder_comment = ""
     return f"""# pyforge-steward[dashboard] — daphne ASGI worker fleet (Story 9.5, CAP-6/AD-5/AD-8)
 # Template unit: one instance per worker, named by the port it binds. Enable
 # the full fleet for this topology (worker_count={topology.worker_count}) with:
 #   systemctl enable --now {enable_cmd}
 #
-# Replace {_ASGI_APPLICATION_PLACEHOLDER} below with your project's real
-# ASGI application import path before enabling.
-
-[Unit]
+{placeholder_comment}[Unit]
 Description=pyforge-steward dashboard daphne worker on port %i
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=daphne --bind {bind_host} --port %i --proxy-headers {_ASGI_APPLICATION_PLACEHOLDER}
+ExecStart=daphne --bind {bind_host} --port %i --proxy-headers {asgi_application}
 Restart=on-failure
 RestartSec=2
 
@@ -876,18 +896,28 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     except (TypeError, ValueError, AttributeError) as exc:
         return DutyResult(ok=False, summary=f"deploy perimeter: refused — {exc}")
 
+    asgi_application_raw = getattr(ns, "asgi_application", None)
+    asgi_application = (
+        _ASGI_APPLICATION_PLACEHOLDER if asgi_application_raw is None else asgi_application_raw
+    )
+    if asgi_application_raw is not None:
+        asgi_refusal = _validate_asgi_application(asgi_application_raw)
+        if asgi_refusal is not None:
+            return DutyResult(ok=False, summary=f"deploy perimeter: refused — {asgi_refusal}")
+
     output_dir = getattr(ns, "output_dir", None)
     if not output_dir:
-        return DutyResult(
-            ok=True,
-            summary=(
-                "deploy perimeter: topology valid "
-                f"(workers={topology.worker_count}, "
-                f"cache_backend={topology.cache_backend!r}, "
-                f"channel_layer_backend={topology.channel_layer_backend!r}) "
-                "— no --output-dir given, nothing written"
-            ),
+        summary = (
+            "deploy perimeter: topology valid "
+            f"(workers={topology.worker_count}, "
+            f"cache_backend={topology.cache_backend!r}, "
+            f"channel_layer_backend={topology.channel_layer_backend!r})"
         )
+        if asgi_application_raw is not None:
+            summary += f", asgi_application={asgi_application!r}"
+        summary += " — no --output-dir given, nothing written"
+        return DutyResult(ok=True, summary=summary)
+
 
     trusted_addresses = tuple(getattr(ns, "trusted_address", None) or ())
     tls_cert = getattr(ns, "tls_cert", None)
@@ -918,7 +948,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
         )
 
     try:
-        unit_text = render_daphne_unit(topology)
+        unit_text = render_daphne_unit(topology, asgi_application=asgi_application)
         edge_text = render_edge_config(
             topology,
             trusted_addresses=trusted_addresses,
@@ -985,12 +1015,12 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
             summary=f"deploy perimeter: refused — could not finalize manifests in {output_path}: {exc}",
         )
 
-    return DutyResult(
-        ok=True,
-        summary=(
-            f"deploy perimeter: rendered daphne unit + nginx edge config + audit-table grants SQL to {output_path}"
-        ),
+    summary = (
+        f"deploy perimeter: rendered daphne unit + nginx edge config + audit-table grants SQL to {output_path}"
     )
+    if asgi_application_raw is not None:
+        summary += f" (asgi_application={asgi_application!r})"
+    return DutyResult(ok=True, summary=summary)
 
 
 # ── Static export (CAP-8, AD-10, Story 9.7) ─────────────────────────────────
