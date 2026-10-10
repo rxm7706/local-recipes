@@ -2,7 +2,8 @@
 title: "25.8: Track B batch 4 refreshes ocrmypdf through pysqlite3"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'a848e67f384b1a8092c07c22752c06798802b5b6'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
