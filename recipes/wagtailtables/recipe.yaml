@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/ce/8a/4245e13b1b94d13f3c7ebe3b3028dc2142679cbead8a11650bc36e970c14/wagtailtables-0.3.0.tar.gz
+  url: https://pypi.org/packages/source/w/wagtailtables/wagtailtables-${{ version }}.tar.gz
   sha256: fc05a63a659597706cfd4eb82c9a18fa6678addb50c500ab28ea3534f19d4c43
 
 build:
@@ -20,17 +20,17 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - wagtail >=3.0
+    - python >=${{ python_min }}
+    - wagtail >=3.0
 
 tests:
 - python:
     imports:
-    - wagtailtables
+      - wagtailtables
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -42,8 +42,35 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wagtailtables
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wagtailtables
+  cfe-purls:
+    - pkg:conda/wagtailtables@${{ version }}?channel=conda-forge
+    - pkg:pypi/wagtailtables@${{ version }}
+  cfe-upstream-repo: https://github.com/wagtail/wagtailtables
+  cfe-upstream-homepage: https://github.com/wagtail/wagtailtables
+  cfe-import-names: [wagtailtables]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtailtables-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T08:27:50Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T08:27:50Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: '2026-10-09T11:30:56Z'
+  cfe-local-build-datetime: '2026-10-10T08:35:31Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Story 25.4: canonical block stamped before Wave 0-leftovers repair rerun.
+####
