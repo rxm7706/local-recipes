@@ -2,7 +2,7 @@
 title: "87.3: The host forwards Herald's webhooks to the mcp-host sidecar"
 type: 'feature'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '5f141b983ec9ed60127f0706c5d5e3a82e5198a3'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -317,3 +317,11 @@ by the same ruling (its spec's banner).
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: in-review
+
+Implementation on branch `dispatch/pyforge-steward/87.3`: mcp-host env carries `pyforge-herald`; sidecar serves webhook ASGI; host forwards under `pyforge.steward.herald_webhook_sidecar` + `MCP_HOST_SIDECAR_BASE_URL`; flag registered; deferred row `DW-steward-87-3-2` added.
+
+Verification: `python scripts/spec_surface_reconcile.py` OK; `pixi run --frozen -e pyforge-steward pyforge-steward-test` 2292 passed; `platform-ci-test` herald webhook tests 13 passed; `flag-gate-check --spec` pass; `pixi install --frozen -e mcp-host` + herald import OK. `platform-ci-local --test` mypy leg still fails on pre-existing `pyforge-herald` webhook.py syntax check (unchanged herald source).
