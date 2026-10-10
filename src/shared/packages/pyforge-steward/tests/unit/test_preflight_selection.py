@@ -310,6 +310,18 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     assert not any(suite(s) in chosen for s in (*STATIONS, "core", "testing-kit"))
 
 
+def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
+    pixi = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    by_task = {lane.task: lane for lane in preflight.list_preflight_lanes(pixi, invoking_env=INVOKING_ENV)}
+    for name in PAGES_CHECK_LEAVES:
+        assert name in by_task
+    assert by_task["pages-check"].depends_on == (("pages-build", "site"),)
+    assert set(by_task["pages-build"].depends_on) == {
+        ("docs-site-install", "site"),
+        ("docs-site-sidebar", "site"),
+    }
+
+
 def test_docsite_branch_selects_the_docsite_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"docsite/page.html": "<p>x</p>\n"})
     assert selected_tasks(select(repo)) == ALWAYS_ON | DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
