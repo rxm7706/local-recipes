@@ -43,17 +43,32 @@ def _prepare_stub_root(root: Path) -> Path:
         """\
         #!/usr/bin/env bash
         log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
+        lock="${PLATFORM_CI_LOCAL_LOCK:-}"
         name="$(basename "$0")"
         work=""
+        pgdata=""
         args=("$@")
         for i in "${!args[@]}"; do
-          if [ "${args[$i]}" = "-D" ]; then work="${args[$((i + 1))]%/pg}"; fi
+          if [ "${args[$i]}" = "-D" ]; then
+            pgdata="${args[$((i + 1))]}"
+            work="${pgdata%/pg}"
+          fi
         done
-        echo "$name $*" >> "$log"
+        held=""
+        if [ -n "$lock" ]; then
+          for fd in /proc/self/fd/*; do
+            target="$(readlink "$fd" 2>/dev/null || true)"
+            [ "$target" = "$lock" ] && held=yes
+          done
+        fi
+        echo "$name $* pid=$$ lock_fd=${held:-no}" >> "$log"
         case "$name" in
           pg_ctl)
             if [[ "$*" == *stop* ]]; then
               echo "stop pg $$" >> "$log"
+              if [ -n "$pgdata" ] && [ -f "$pgdata/postmaster.pid" ]; then
+                kill "$(head -1 "$pgdata/postmaster.pid")" 2>/dev/null || true
+              fi
               if [ "${PLATFORM_CI_LOCAL_NO_LOCK:-0}" = 1 ] && [ -n "$work" ] && [ -f "$work/.active" ]; then
                 active="$(cat "$work/.active")"
                 if [ "$active" != "$$" ]; then
@@ -64,13 +79,45 @@ def _prepare_stub_root(root: Path) -> Path:
             fi
             if [[ "$*" == *start* ]]; then
               echo "start pg $$" >> "$log"
-              if [ -n "$work" ]; then echo "$$" > "$work/.active"; fi
+              if [ -n "$pgdata" ]; then
+                cat > "$pgdata/postgres" <<'STIN'
+        #!/usr/bin/env bash
+        sleep 999999
+        STIN
+                chmod +x "$pgdata/postgres"
+                setsid "$pgdata/postgres" -D "$pgdata" >> "$log" 2>&1 &
+                echo $! > "$pgdata/postmaster.pid"
+                if [ -n "$work" ]; then echo "$!" > "$work/.active"; fi
+              fi
             fi
             ;;
           pg_isready)
             if [ -n "$work" ] && [ -f "$work/.broken" ]; then exit 1; fi
             ;;
-          redis-server) echo "start redis $$" >> "$log" ;;
+          redis-server)
+            rdir=""
+            rport=""
+            prev=""
+            for arg in "$@"; do
+              if [ "$prev" = "--dir" ]; then rdir="$arg"; fi
+              if [ "$prev" = "--port" ]; then rport="$arg"; fi
+              prev="$arg"
+            done
+            pidfile=""
+            for i in "${!args[@]}"; do
+              if [ "${args[$i]}" = "--pidfile" ]; then pidfile="${args[$((i + 1))]}"; fi
+            done
+            echo "start redis $$" >> "$log"
+            if [ -n "$rdir" ]; then
+              cat > "$rdir/redis-server" <<'STIN'
+        #!/usr/bin/env bash
+        sleep 999999
+        STIN
+              chmod +x "$rdir/redis-server"
+              setsid "$rdir/redis-server" --port "${rport:-0}" >> "$log" 2>&1 &
+              [ -n "$pidfile" ] && echo $! > "$pidfile"
+            fi
+            ;;
           initdb)
             data=""
             prev=""
@@ -143,6 +190,8 @@ def _run_platform_ci_local(
     run_env["PATH"] = f"{bin_dir}:{run_env.get('PATH', '')}"
     run_env["PLATFORM_CI_LOCAL_ENGINE"] = "docker"
     run_env["PLATFORM_CI_STUB_LOG"] = str(stub_log)
+    run_env.setdefault("PLATFORM_CI_LOCAL_PG_PORT", "35432")
+    run_env.setdefault("PLATFORM_CI_LOCAL_REDIS_PORT", "36379")
     if env:
         run_env.update(env)
     stub_log.parent.mkdir(parents=True, exist_ok=True)
