@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: airflow-code-editor
-  version: "8.3.0"
+  version: "8.3.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/airflow_code_editor-${{ version }}.tar.gz
-  sha256: f7a44b44e02c62a2b29c83dd21b69462078ae0590135118c998bd09f350a4146
+  url: https://pypi.org/packages/source/a/airflow-code-editor/airflow_code_editor-${{ version }}.tar.gz
+  sha256: ee86233ece9b08747b446f6556852c02c3b33c080ab339d814c4e05bcdaf72c0
 
 build:
   number: 0
@@ -67,11 +67,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/airflow-code-editor-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-10-10T09:19:30Z
   cfe-generated-by-version: 8.40.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-10-10T09:20:21Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -80,6 +80,7 @@ extra:
 #    # CO-MAINTAINER C2 sweep: feedstock already v1 at 8.2.4; authored
 #    # recipe.yaml mirroring the deployed feedstock, deleted the stale local
 #    # meta.yaml (was 7.4.1, single-maintainer rxm7706).
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 8.3.0 -> 8.3.1
 # requirements:
 #  host:
 #    # setuptools kept in host — setup.py/setup.cfg + pyproject build-backend

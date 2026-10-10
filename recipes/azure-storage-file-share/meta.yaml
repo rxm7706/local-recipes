@@ -1,13 +1,13 @@
 {% set name = "azure-storage-file-share" %}
-{% set version = "12.26.0" %}
+{% set version = "12.27.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/azure_storage_file_share-{{ version }}.tar.gz
-  sha256: 08cf8bc436df532cdb9bfdfce7bb10c5f1d83d51360954cd8eef56cbccf4300a
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/azure_storage_file_share-{{ version }}.tar.gz
+  sha256: 81a433e27a535f62c8542c24783cd100b3780b00724475cfa9df5fa0fb96647a
 
 build:
   noarch: python

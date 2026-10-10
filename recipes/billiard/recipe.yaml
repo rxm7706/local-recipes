@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.2.4"
+  version: "4.3.1"
 
 package:
   name: billiard
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/b/billiard/billiard-${{ version }}.tar.gz
-  sha256: 55f542c371209e03cd5862299b74e52e4fbcba8250ba611ad94276b369b6a85f
+  sha256: c88559b306ee5dc93f8d5f843d07da15d795d67af26720d14ee9d09f09eb0b22
 
 build:
   number: 0
@@ -49,3 +49,34 @@ extra:
   recipe-maintainers:
     - rxm7706
     - kwilcox
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: billiard
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: billiard
+  cfe-purls:
+    - pkg:conda/billiard@${{ version }}?channel=conda-forge
+    - pkg:pypi/billiard@${{ version }}
+  cfe-upstream-repo: https://github.com/celery/billiard
+  cfe-upstream-homepage: https://github.com/celery/billiard
+  cfe-import-names: [billiard]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: false
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/billiard-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T09:22:00Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T09:23:10Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-5: refreshed 4.2.4 -> 4.3.1
+####
