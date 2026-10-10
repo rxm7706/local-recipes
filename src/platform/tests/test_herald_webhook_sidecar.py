@@ -25,10 +25,13 @@ _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 if str(_PLATFORM_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLATFORM_ROOT))
 
-from pyforge.herald import webhook  # noqa: E402
-from pyforge.herald import webhook_host  # noqa: E402
-
 from mcp_host.app import app as mcp_host_app  # noqa: E402
+
+
+def _herald_modules():
+    webhook = importlib.import_module("pyforge.herald.webhook")
+    webhook_host = importlib.import_module("pyforge.herald.webhook_host")
+    return webhook, webhook_host
 
 
 def _sign(secret: bytes, timestamp: str, body: bytes) -> str:
@@ -57,6 +60,7 @@ def _signed_headers(secret: bytes, body: bytes) -> dict[str, str]:
 
 @pytest.fixture(autouse=True)
 def _reset_herald_application_cache():
+    _, webhook_host = _herald_modules()
     webhook_host._application = None  # noqa: SLF001
     yield
     webhook_host._application = None  # noqa: SLF001
@@ -73,6 +77,7 @@ def test_mcp_host_sidecar_webhook_signed_on_ship(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    webhook, webhook_host = _herald_modules()
     monkeypatch.setenv(webhook_host.REPO_ROOT_ENV_VAR, str(tmp_path))
     monkeypatch.setenv(webhook.SECRET_ENV_VAR, "shared-secret")
     body = json.dumps({"station": "warden"}).encode("utf-8")
@@ -89,6 +94,7 @@ def test_mcp_host_sidecar_webhook_bad_signature(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    webhook, webhook_host = _herald_modules()
     monkeypatch.setenv(webhook_host.REPO_ROOT_ENV_VAR, str(tmp_path))
     monkeypatch.setenv(webhook.SECRET_ENV_VAR, "shared-secret")
     body = json.dumps({"station": "warden"}).encode("utf-8")
@@ -103,6 +109,7 @@ def test_mcp_host_sidecar_webhook_get_is_405(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    webhook, webhook_host = _herald_modules()
     monkeypatch.setenv(webhook_host.REPO_ROOT_ENV_VAR, str(tmp_path))
     monkeypatch.setenv(webhook.SECRET_ENV_VAR, "shared-secret")
     response = mcp_client.get(webhook.ON_SHIP_PATH)
@@ -127,6 +134,7 @@ def test_mcp_host_sidecar_herald_absent_returns_404_json(
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(importlib, "import_module", _import)
+    webhook, _ = _herald_modules()
     response = mcp_client.post(webhook.ON_SHIP_PATH, content=b"{}")
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "pyforge.herald" in response.json()["detail"]
@@ -153,6 +161,7 @@ def test_mcp_host_sidecar_missing_secret_503(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    webhook, webhook_host = _herald_modules()
     monkeypatch.setenv(webhook_host.REPO_ROOT_ENV_VAR, str(tmp_path))
     monkeypatch.delenv(webhook.SECRET_ENV_VAR, raising=False)
     response = mcp_client.post(webhook.ON_SHIP_PATH, content=b"{}")
@@ -165,6 +174,7 @@ def test_mcp_host_sidecar_missing_repo_root_503(
     mcp_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    webhook, webhook_host = _herald_modules()
     monkeypatch.setenv(webhook.SECRET_ENV_VAR, "shared-secret")
     monkeypatch.delenv(webhook_host.REPO_ROOT_ENV_VAR, raising=False)
     response = mcp_client.post(webhook.ON_SHIP_PATH, content=b"{}")
