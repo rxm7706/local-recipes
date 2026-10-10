@@ -2,7 +2,8 @@
 title: "25.7: Track B batch 3 refreshes jhub-apps through niquests"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '2d90c634f324c68d67a41a3e0e9477061113a8f8'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -17,7 +18,9 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
-deferred: []
+deferred:
+  - summary: "refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge"
+    location: ".claude/skills/conda-forge-expert/scripts/refresh_wave.py"
 declared_low_risk: false
 ---
 
@@ -272,8 +275,62 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-7`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| jhub-apps | needs-review | `no-cfe-block` |
+| json5 | would-refresh | feedstock 0.17.3 (spec snapshot 0.16.0) |
+| kedro-dagster | needs-review | `no-cfe-block` |
+| kedro-viz | needs-review | `dependency-fix: run +uvicorn -uvicorn-standard` |
+| langchain-litellm | would-refresh | |
+| langflow | would-refresh | driver version-only; AC-12 re-mirror applied first |
+| llm | needs-review | `no-cfe-block` |
+| milvus-lite | needs-review | `dependency-fix: run +pymilvus` |
+| modelsearch | needs-review | `no-cfe-block` |
+| niquests | would-refresh | |
+
+### After refusal clears (second dry-run)
+
+Six `would-refresh`, one `already-current` (`langflow`), three `needs-review` (dependency-fix).
+
+### After dependency pre-sync (third dry-run)
+
+Nine `would-refresh`, one `already-current` (`langflow`).
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-7/report.json`.
+
+| Recipe | Outcome | Version | Build (linux-64) | Maintainers (G53) |
+|---|---|---|---|---|
+| jhub-apps | refreshed | 2026.8.1 → 2026.9.1 | success | aktech, costrouc, dcmcand, rxm7706 (superset) |
+| json5 | refreshed | 0.15.0 → 0.17.3 | success | ian-r-rose, rxm7706 |
+| kedro-dagster | refreshed | 0.8.0 → 0.8.1 | success | gtauzin, rxm7706 |
+| kedro-viz | refreshed | 12.4.0 → 12.5.0 | success | cshaley, elanqo, millsks, rxm7706, zaigner |
+| langchain-litellm | refreshed | 0.7.0 → 0.11.0 | success | pb01ka, rxm7706 |
+| langflow | already-current | 1.12.4 | see below | pb01ka, rxm7706 |
+| llm | refreshed | 0.31 → 0.36 | success (after patch restore) | pavelzw, rxm7706 |
+| milvus-lite | refreshed | 3.0 → 3.2.1 | success | pb01ka, rxm7706 |
+| modelsearch | refreshed | 1.3.1 → 1.3.2 | success | darynwhite, rxm7706 |
+| niquests | refreshed | 3.21.0 → 3.21.2 | success | jan-janssen, rxm7706 |
+
+**langflow (AC 12):** Re-mirrored from `conda-forge/langflow-feedstock` (`recipe.yaml`, `patch_deps.py`, `license-checker-format.json`); local `patches/` removed. Manual `recipe-build`: outputs through `lfx-docling` green; **`langflow-base` test `pip_check` failed** (`msal-extensions` vs `portalocker` versions in test env). Local `lfx` run pin tightened to `pydantic >=2.0.0,<2.14` for wheel METADATA (proposal parked in CFE comments). **`conda-forge.yml` kept** (githubreleases bot config) — feedstock differs; noted here.
+
+**llm:** `validate_recipe` still reports conda-smithy `noarch`+platform selectors (feedstock-faithful). **`0001-remove-pip-setuptools.patch`** restored from feedstock after v1 meta removal dropped the file.
+
+**Gates:** Expected `optimize=1` on several recipes (STD-002 on C1 mirrors). `langchain-litellm` / `milvus-lite` CRM parse errors cleared by fixing maintainer list placement after driver apply.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — build-auto pass
+- Driver maintainer merge corrupted CFE YAML on two recipes — fixed manually (see `deferred:`).
+- langflow-base pip_check block recorded; eight other suite outputs built green.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 3 (B-25-7) refreshed ten co-maintained recipes; langflow re-mirrored with `patch_deps.py`; CFE retro v8.99.8.
+
+Verification: `refresh-wave` dry-run/apply; `pixi run --frozen -e pyforge-mason pyforge-mason-test` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0 after memlog).
