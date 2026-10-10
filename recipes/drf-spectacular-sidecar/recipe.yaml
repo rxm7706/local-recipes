@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2026.8.1"
+  version: "2026.10.1"
 
 package:
   name: drf-spectacular-sidecar
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/drf-spectacular-sidecar/drf_spectacular_sidecar-${{ version }}.tar.gz
-  sha256: 9d9ee678e5ec70cdda2c7ed95cafcdb6141664dc3e11def8a8599c8ad36cf6f5
+  sha256: ec8d20b2594e8a10ebf22e5bab62ec313c7cf8793753a050290b209e16e81c9c
 
 build:
   number: 0
@@ -66,12 +66,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/drf-spectacular-sidecar-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-2026.8.1
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T09:06:05Z
+  cfe-last-checked: 2026-10-10T11:35:41Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T09:06:05Z
   cfe-local-build-status: success
@@ -81,4 +81,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 2026.8.1 -> 2026.10.1
 ####
