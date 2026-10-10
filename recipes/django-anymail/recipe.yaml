@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_anymail-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-anymail/django_anymail-${{ version }}.tar.gz
   sha256: 299fb12a21ac4101e9706c2ade461d18deacbb6bc3750cfa6ca08aeea1fc9442
 
 build:

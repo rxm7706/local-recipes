@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/avro-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/avro/avro-${{ version }}.tar.gz
   sha256: c5b8dd2dd4c10816f0dc127cc29cfd43b5e405cf7e6840e89460a024bf3d098d
 
 build:

@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/airflow_code_editor-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/airflow-code-editor/airflow_code_editor-${{ version }}.tar.gz
   sha256: f7a44b44e02c62a2b29c83dd21b69462078ae0590135118c998bd09f350a4146
 
 build:

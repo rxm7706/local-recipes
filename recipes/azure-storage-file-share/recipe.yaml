@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_storage_file_share-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/azure-storage-file-share/azure_storage_file_share-${{ version }}.tar.gz
   sha256: 08cf8bc436df532cdb9bfdfce7bb10c5f1d83d51360954cd8eef56cbccf4300a
 
 build:

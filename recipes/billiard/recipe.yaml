@@ -49,3 +49,33 @@ extra:
   recipe-maintainers:
     - rxm7706
     - kwilcox
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: billiard
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: billiard
+  cfe-purls:
+    - pkg:conda/billiard@${{ version }}?channel=conda-forge
+    - pkg:pypi/billiard@${{ version }}
+  cfe-upstream-repo: https://github.com/celery/billiard
+  cfe-upstream-homepage: https://github.com/celery/billiard
+  cfe-import-names: [billiard]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: false
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/billiard-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####

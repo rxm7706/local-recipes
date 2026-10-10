@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_countries-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-countries/django_countries-${{ version }}.tar.gz
   sha256: a993416af08a8a4e6e866d56b71c7ce92351c81a2543da213cd7899917567a42
 
 build:
@@ -47,3 +47,33 @@ extra:
   recipe-maintainers:
     - mxr-conda
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-countries
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-countries
+  cfe-purls:
+    - pkg:conda/django-countries@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-countries@${{ version }}
+  cfe-upstream-repo: https://github.com/SmileyChris/django-countries
+  cfe-upstream-homepage: https://github.com/SmileyChris/django-countries/
+  cfe-import-names: [django_countries]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-countries-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T00:00:00Z
+  cfe-generated-by-version: 8.99.1
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+####
