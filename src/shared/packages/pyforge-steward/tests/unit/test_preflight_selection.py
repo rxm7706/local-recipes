@@ -55,6 +55,7 @@ LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}
 ALWAYS_ON_SINCE_SPEC = {"pyforge-doctor-aggregate-scripts-test"}
 DOCS_SITE_VALIDATE = {"docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"}
+PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install", "docs-site-sidebar"}
 GATES = {f"pyforge-{s}-coverage-gate" for s in STATIONS}
 NO_CI_COUNTERPART = {"docs-map-render-test", "docs-gen-test"}
 ALWAYS_ON = SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC
@@ -304,14 +305,14 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     chosen = selected_tasks(select(repo))
     assert SPEC_ALWAYS_ON <= chosen
     # `docs/**` is a docsite-check.yml trigger path, so its three validators run too.
-    assert chosen == ALWAYS_ON | DOCS_SITE_VALIDATE | {"pages-check"}
+    assert chosen == ALWAYS_ON | DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
     assert not chosen & LINT and "test-ci" not in chosen and not chosen & GATES
     assert not any(suite(s) in chosen for s in (*STATIONS, "core", "testing-kit"))
 
 
 def test_docsite_branch_selects_the_docsite_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"docsite/page.html": "<p>x</p>\n"})
-    assert selected_tasks(select(repo)) == ALWAYS_ON | DOCS_SITE_VALIDATE | {"pages-check"}
+    assert selected_tasks(select(repo)) == ALWAYS_ON | DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
 
 
 def test_testing_kit_branch_selects_only_the_kit_not_core_or_stations(tmp_path: Path) -> None:
@@ -384,7 +385,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
     if _oracle_fires(repo, "cfe-regression-net.yml", changed):
         chosen.add("test-ci")
     if _oracle_fires(repo, "docsite-check.yml", changed):
-        chosen |= DOCS_SITE_VALIDATE | {"pages-check"}
+        chosen |= DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
     if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
         out = _oracle_outputs(repo, "pyforge-station-tests.yml", tmp_path)
         for key, lane in [("core", "pyforge-core-test"), ("testing_kit", "pyforge-testing-kit-test")] + [
