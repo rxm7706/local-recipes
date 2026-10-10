@@ -1,13 +1,13 @@
 {% set name = "opentelemetry-exporter-otlp-proto-http" %}
-{% set version = "1.44.0" %}
+{% set version = "1.45.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_otlp_proto_http-{{ version }}.tar.gz
-  sha256: c633d7270ad6b57cd4cfbe8b0007a9e2e7c0cb50bd6c50fe2a7b245f721a09d8
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_otlp_proto_http-{{ version }}.tar.gz
+  sha256: 45c218405ce3fd879596924b1874bf9a8f6880206d61065c5a912c8e5c297fb7
 
 build:
   noarch: python
@@ -20,14 +20,16 @@ requirements:
     - hatchling
     - pip
   run:
+    - opentelemetry-exporter-http-transport ==0.66b1
+    - opentelemetry-exporter-otlp-common ==0.66b1
     - typing_extensions >=4.5.0
     - python >={{ python_min }}
     - deprecated >=1.2.6
     - googleapis-common-protos >=1.52,<2.dev0
     - opentelemetry-api >=1.15,<2.dev0
-    - opentelemetry-proto ==1.44.0
-    - opentelemetry-sdk >=1.44.0,<1.45.dev0
-    - opentelemetry-exporter-otlp-proto-common ==1.44.0
+    - opentelemetry-proto ==1.45.1
+    - opentelemetry-sdk >=1.45.1,<1.46.dev0
+    - opentelemetry-exporter-otlp-proto-common ==1.45.1
     - requests >=2.7,<3.dev0
   # NOTE backoff only required for py<37 but pip checks fails without it
     #- backoff >=1.10.0,<3.0.0
@@ -38,6 +40,10 @@ requirements:
     # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
     # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
     # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
+    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
+    # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
+    # - opentelemetry-exporter-otlp-common ==0.66b0
+    # - opentelemetry-exporter-http-transport ==0.66b0
     # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
     # - opentelemetry-exporter-credential-provider-gcp >=0.59b0
 
