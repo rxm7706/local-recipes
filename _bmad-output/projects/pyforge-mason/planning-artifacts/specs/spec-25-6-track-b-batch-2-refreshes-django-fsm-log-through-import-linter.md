@@ -2,7 +2,8 @@
 title: "25.6: Track B batch 2 refreshes django-fsm-log through import-linter"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '56ab419334cf105c6d723f316eed78255b7b1492'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
