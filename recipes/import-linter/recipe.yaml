@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/import_linter-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/i/import-linter/import_linter-${{ version }}.tar.gz
   sha256: 13af4a1d6b06044c58ea784e8732fd7fe48eec821a75feb4d6a1a2de36dd5c27
 
 build:
@@ -27,7 +27,6 @@ requirements:
     - hatchling
     - pip
   run:
-    - nox
     - fastapi
     - uvicorn
     - rich >=14.2.0

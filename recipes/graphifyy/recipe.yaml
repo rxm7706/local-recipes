@@ -105,3 +105,32 @@ extra:
     - killua156
     - mgorny
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: graphifyy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: graphifyy
+  cfe-purls:
+    - pkg:conda/graphifyy@${{ version }}?channel=conda-forge
+    - pkg:pypi/graphifyy@${{ version }}
+  cfe-upstream-repo: https://github.com/safishamsi/graphify
+  cfe-upstream-homepage: https://github.com/safishamsi/graphify
+  cfe-import-names: [graphify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/graphifyy-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T11:40:00Z
+  cfe-generated-by-version: 8.99.6
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: ""
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+####

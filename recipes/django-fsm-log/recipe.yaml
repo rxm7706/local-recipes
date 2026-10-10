@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-fsm-log-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/django-fsm-log/django-fsm-log-${{ version }}.tar.gz
   sha256: 9ef766f5e6d7c573d1953cf91df73538a611373cc1ef97488eff19a3f71d6ed6
 
 build:
@@ -22,11 +22,12 @@ requirements:
   host:
     - python ${{ python_min }}
     - pip
-    - setuptools
+    - hatchling
+    - hatch-vcs
   run:
-    - python >=${{ python_min }},<3.11
-    - django >=1.8
-    - django-fsm >=2
+    - django-fsm-2
+    - python >=${{ python_min }}
+    - django >=4.2
     - django-appconf
 
 tests:

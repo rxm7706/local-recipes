@@ -10,10 +10,10 @@ recipe:
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastmcp-${{ version }}.tar.gz
+  - url: https://pypi.org/packages/source/f/fastmcp/fastmcp-${{ version }}.tar.gz
     sha256: 43117aca886f5ee2f6a569bba91cef02b59c339aad04ba29950ff18d251c822a
     target_directory: fastmcp/
-  - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-slim/fastmcp_slim-${{ version }}.tar.gz
+  - url: https://pypi.org/packages/source/f/fastmcp-slim/fastmcp_slim-${{ version }}.tar.gz
     sha256: 06b32a358320a7dc2b2ee040ba89ea55ddc20763dff2949f384f7974b13b5d8f
     target_directory: fastmcp-slim/
 

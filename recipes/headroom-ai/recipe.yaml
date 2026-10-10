@@ -128,7 +128,7 @@ extra:
   cfe-pip-check: "false:ast-grep-cli-satisfied-by-conda-ast-grep-binary"
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
-  cfe-forge-recipe-updates-needed: none
+  cfe-forge-recipe-updates-needed: run-fastapi-kept-for-cli-import-closure
   cfe-forge-blocker-list: []
   cfe-last-checked: "2026-07-26T12:44:16Z"
   cfe-generated-by-version: 8.76.0
@@ -158,4 +158,8 @@ extra:
 #    # (lazily imported; core paths never touch it).
 #    # Only core deps are packaged; upstream [proxy]/[ml]/[code]/[memory]
 #    # etc. extras are deliberately omitted (Simplicity First).
+# run:
+#    # Feedstock 0.39.x dropped run:fastapi; kept here (comment above) so
+#    # `headroom --help` resolves headroom.proxy.request_scope (coordination
+#    # rule 2, landmine 12).
 ####

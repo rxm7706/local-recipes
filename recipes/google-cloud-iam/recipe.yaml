@@ -29,7 +29,7 @@ requirements:
     - grpc-google-iam-v1 <1.0.0,>=0.14.2
     - grpcio <2.0.0,>=1.59.0
     - proto-plus <2.0.0,>=1.26.1
-    - protobuf <8.0.0,>=6.33.5
+    - protobuf >=6.33.5,<8.0.0
 
 tests:
   - python:
