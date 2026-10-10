@@ -103,7 +103,7 @@ development_status:
   30-3-the-reference-pages-are-generated-pixi-tasks-station-clis-detectors-skills-and-stamped: done
   31-1-every-doctor-source-names-the-branch-it-reads-by-its-full-refname: done
   32-1-the-gates-base-normalizer-names-the-remote-tracking-ref: done
-  33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: backlog
+  33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries: done
   34-1-the-flag-rule-has-a-closed-exemption-list-a-rule-date-baseline-and-one-block-shape: done
   34-2-the-flag-gate-ships-in-scripts-outside-every-station-and-runs-in-detectors-ci: done
   34-3-the-flag-gate-reads-the-tree-metadata-per-environment-defaults-and-the-90-day-clock: done
@@ -214,7 +214,7 @@ development_status:
   epic-31-retrospective: optional
   epic-32: done
   epic-32-retrospective: optional
-  epic-33: backlog
+  epic-33: done
   epic-33-retrospective: optional
   epic-34: done
   epic-34-retrospective: optional
