@@ -448,7 +448,7 @@ development_status:
   87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: done
   87-9-every-preserve-reader-sees-preserve-tags-and-origin: done
   88-1-marshal-commits-a-tracked-file-under-an-ignored-directory: done
-  89-1-a-re-dispatch-never-lands-a-story-whose-review-failed: backlog
+  89-1-a-re-dispatch-never-lands-a-story-whose-review-failed: done
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -625,7 +625,7 @@ development_status:
   epic-87-retrospective: optional
   epic-88: done
   epic-88-retrospective: optional
-  epic-89: backlog
+  epic-89: done
   epic-89-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
