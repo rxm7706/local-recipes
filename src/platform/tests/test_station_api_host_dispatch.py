@@ -8,7 +8,12 @@ without the factory conda package.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
+import json
+import sqlite3
 import sys
+import time
 from http import HTTPStatus
 from unittest.mock import MagicMock
 
@@ -22,6 +27,7 @@ sys.modules.setdefault("langflow.main", _langflow_pkg.main)
 from httpx import ASGITransport  # noqa: E402
 from httpx import AsyncClient  # noqa: E402
 
+from config import station_api  # noqa: E402
 from config.asgi import application  # noqa: E402
 
 
@@ -103,23 +109,33 @@ def test_legacy_bare_api_herald_webhook_does_not_reach_station_handler():
     assert response.json() == {"detail": "Not Found"}
 
 
+def _reset_herald_webhook_app(monkeypatch) -> None:
+    """Clear herald's lazily built webhook app so this test's secret applies.
+
+    The host seeds herald's sub-app once per process and builds its webhook
+    callable on the first request; a test that ran earlier with another
+    ``HERALD_WEBHOOK_SECRET`` would otherwise answer 401 here. Reached through
+    the mounted route, never a ``pyforge`` import.
+    """
+    herald_app = station_api.register_station_api("herald", 1)
+    for route in herald_app.routes:
+        lazy = getattr(route, "app", None)
+        if hasattr(lazy, "_inner"):
+            monkeypatch.setattr(lazy, "_inner", None)
+
+
 def test_host_dispatches_herald_webhook_signed_on_ship_returns_201(
     monkeypatch,
     tmp_path,
 ):
-    import hashlib
-    import hmac
-    import json
-    import sqlite3
-    import time
-
+    _reset_herald_webhook_app(monkeypatch)
     monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
     secret = b"platform-test-secret"
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", secret.decode("utf-8"))
 
-    body = json.dumps({"station": "warden", "unblock_narrative": "Merge pyforge-warden/1-1 into main"}).encode(
-        "utf-8"
-    )
+    body = json.dumps(
+        {"station": "warden", "unblock_narrative": "Merge pyforge-warden/1-1 into main"}
+    ).encode("utf-8")
     ts = str(int(time.time()))
     signature = (
         "sha256="
@@ -155,6 +171,7 @@ def test_host_dispatches_herald_webhook_unsigned_returns_401(
     monkeypatch,
     tmp_path,
 ):
+    _reset_herald_webhook_app(monkeypatch)
     monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "test-secret")
 
