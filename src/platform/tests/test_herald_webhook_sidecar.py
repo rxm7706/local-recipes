@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import importlib
 import asyncio
 import hashlib
 import hmac
+import importlib
 import json
 import logging
 import sys
@@ -16,6 +16,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from django_pyforge.flags import evaluate_boolean
 from django_pyforge.sidecar_forward import HERALD_WEBHOOK_SIDECAR_FLAG
 from django_pyforge.sidecar_forward import dispatch_herald_webhook_forward
 from starlette.testclient import TestClient
@@ -24,16 +25,20 @@ _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 if str(_PLATFORM_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLATFORM_ROOT))
 
-import mcp_host.app as mcp_host_app_module  # noqa: E402
-from mcp_host.app import app as mcp_host_app  # noqa: E402
 from pyforge.herald import webhook  # noqa: E402
 from pyforge.herald import webhook_host  # noqa: E402
+
+from mcp_host.app import app as mcp_host_app  # noqa: E402
 
 
 def _sign(secret: bytes, timestamp: str, body: bytes) -> str:
     return (
         "sha256="
-        + hmac.new(secret, timestamp.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
+        + hmac.new(
+            secret,
+            timestamp.encode("ascii") + b"." + body,
+            hashlib.sha256,
+        ).hexdigest()
     )
 
 
@@ -52,9 +57,9 @@ def _signed_headers(secret: bytes, body: bytes) -> dict[str, str]:
 
 @pytest.fixture(autouse=True)
 def _reset_herald_application_cache():
-    webhook_host._application = None
+    webhook_host._application = None  # noqa: SLF001
     yield
-    webhook_host._application = None
+    webhook_host._application = None  # noqa: SLF001
 
 
 @pytest.fixture(scope="module")
@@ -117,7 +122,8 @@ def test_mcp_host_sidecar_herald_absent_returns_404_json(
 
     def _import(name: str, *args, **kwargs):
         if name == "pyforge.herald.webhook_host":
-            raise ModuleNotFoundError("pyforge.herald.webhook_host")
+            msg = "pyforge.herald.webhook_host"
+            raise ModuleNotFoundError(msg)
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(importlib, "import_module", _import)
@@ -223,7 +229,11 @@ def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch) -> No
 
     async def _run():
         with patch("httpx.AsyncClient", return_value=_CaptureClient()):
-            return await dispatch_herald_webhook_forward(_webhook_scope(body), receive, send)
+            return await dispatch_herald_webhook_forward(
+                _webhook_scope(body),
+                receive,
+                send,
+            )
 
     assert asyncio.run(_run()) is True
     assert _CaptureClient.last is not None
@@ -239,7 +249,7 @@ def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch) -> No
     assert "authorization" not in lowered
     assert "cookie" not in lowered
     start = next(m for m in sent if m["type"] == "http.response.start")
-    assert start["status"] == 201
+    assert start["status"] == HTTPStatus.CREATED
 
 
 def test_host_forward_sidecar_down_one_error_log(
@@ -280,15 +290,22 @@ def test_host_does_not_forward_when_flag_off(monkeypatch: pytest.MonkeyPatch) ->
         return {"type": "http.request", "body": b"x", "more_body": False}
 
     async def send(message):
-        raise AssertionError("should not forward")
+        msg = "should not forward"
+        raise AssertionError(msg)
 
     async def _run():
-        return await dispatch_herald_webhook_forward(_webhook_scope(b"x"), receive, send)
+        return await dispatch_herald_webhook_forward(
+            _webhook_scope(b"x"),
+            receive,
+            send,
+        )
 
     assert asyncio.run(_run()) is False
 
 
-def test_host_does_not_forward_non_webhook_paths(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_host_skips_forward_for_non_webhook_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
     scope = {
@@ -302,7 +319,8 @@ def test_host_does_not_forward_non_webhook_paths(monkeypatch: pytest.MonkeyPatch
         return {"type": "http.request", "body": b"", "more_body": False}
 
     async def send(message):
-        raise AssertionError("should not forward health")
+        msg = "should not forward health"
+        raise AssertionError(msg)
 
     async def _run():
         return await dispatch_herald_webhook_forward(scope, receive, send)
@@ -320,7 +338,8 @@ def test_sidecar_forward_does_not_import_pyforge_in_platform() -> None:
 
 
 def test_herald_webhook_sidecar_flag_registered() -> None:
-    from django_pyforge.flags import evaluate_boolean
-
     assert HERALD_WEBHOOK_SIDECAR_FLAG == "pyforge.steward.herald_webhook_sidecar"
-    assert isinstance(evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False), bool)
+    assert isinstance(
+        evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False),
+        bool,
+    )
