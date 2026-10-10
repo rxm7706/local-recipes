@@ -2,7 +2,7 @@
 title: "25.13: Wave F mirrors the two co-maintained feedstocks that have no local recipe"
 type: 'feature'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: f05de4bab8500a64631f84d8a9a0dc6bce064295
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -272,4 +272,4 @@ Script: inline Python scan of `recipes/*/recipe.yaml` literal `package.name` —
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-10 build-auto pass: AC 1–10 satisfied locally; gates/builds documented in Run results; `pyforge-mason-test` and `spec_surface_reconcile.py` green after `retro(cfe): v8.99.3` commit.
