@@ -33,7 +33,8 @@ requirements:
 tests:
   - python:
       imports:
-        - opentelemetry.instrumentation.grpc
+        - opentelemetry
+        - opentelemetry.instrumentation
       pip_check: true
       python_version:
         - ${{ python_min }}.*
