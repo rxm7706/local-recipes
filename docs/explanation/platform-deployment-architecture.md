@@ -309,13 +309,18 @@ capability-naming reason where helm/PyYAML are absent.
 - **mcp-host sidecar (Story 87.3).** The isolated `mcp-host` env (`pixi.toml`
   `[feature.mcp-host]`, `mcp 2.x`) serves station MCP faces and, when
   `pyforge-herald` is installed in that env, Herald's webhook ASGI at
-  `/stations/herald/api/v1/webhooks/*` unchanged. HMAC verification runs in
+  `/stations/herald/api/v1/webhooks/on-ship` and
+  `/stations/herald/api/v1/webhooks/on-pr-close` unchanged. HMAC verification runs in
   the sidecar (`pyforge.herald.webhook`), not in the web pod. When
   `MCP_HOST_SIDECAR_BASE_URL` is set and flag `pyforge.steward.herald_webhook_sidecar`
-  is ON, the platform host forwards those webhook paths to the sidecar with
-  an inbound header allowlist (`content-type`, `x-hub-signature-256`,
-  `x-hub-timestamp`, `traceparent`, `tracestate` only — no `authorization` or
-  `cookie`). Other Herald v1 routes stay in-process or absent per Story 87.1.
+  is ON, the platform host forwards only those two paths to the sidecar (no client
+  query string), with body reads capped at herald's limits (1,000,000 bytes and
+  10,000 ASGI messages — over either cap the host answers 413 and never contacts
+  the sidecar). Any other path under `/stations/herald/api/v1/webhooks/` gets the
+  host's usual 404 with nothing forwarded. Inbound header allowlist:
+  `content-type`, `x-hub-signature-256`, `x-hub-timestamp`, `traceparent`,
+  `tracestate` only — no `authorization` or `cookie`. Other Herald v1 routes stay
+  in-process or absent per Story 87.1.
   Local loopback: `pixi run --frozen -e mcp-host mcp-host-serve` binds
   `127.0.0.1:8090`. Staging and production keep the flag OFF until chart
   `platform.mcpHostEnv` and compose's `mcp-host` service pass
