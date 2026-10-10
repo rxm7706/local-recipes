@@ -2034,7 +2034,7 @@ def _parse_blame_porcelain(text: str) -> dict[int, tuple[str, int]]:
             if line.startswith("committer-time "):
                 try:
                     committer_time = int(line.split()[1])
-                except (IndexError, ValueError):
+                except IndexError, ValueError:
                     committer_time = 0
             index += 1
         facts[final_line] = (sha, committer_time)

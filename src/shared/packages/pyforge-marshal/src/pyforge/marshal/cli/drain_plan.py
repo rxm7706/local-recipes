@@ -42,11 +42,11 @@ from ..core import dispatch as dispatch_core
 from ..core import dispatch_fleet, dispatch_prelaunch, identity, policy
 from ..core import promotion as promotion_core
 from ..core.dispatch_harness_done import (
+    evaluate_land_only_spec_gate,
     followup_review_recommended,
+    land_only_spec_refusal_message,
     parse_blocking_condition,
     parse_spec_status,
-    evaluate_land_only_spec_gate,
-    land_only_spec_refusal_message,
     should_take_harness_done_land_only,
     should_take_verification_refusal_land_only,
 )

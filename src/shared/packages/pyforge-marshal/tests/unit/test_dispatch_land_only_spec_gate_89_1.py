@@ -5,8 +5,6 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from pyforge.marshal.adapters.vcs_git import GitVcs, _parse_blame_porcelain
 from pyforge.marshal.core.dispatch_harness_done import (
     LineBlameFact,
@@ -81,12 +79,7 @@ def test_evaluate_gate_permits_in_review_empty_log() -> None:
 
 
 def test_parse_blame_porcelain_sample() -> None:
-    sample = (
-        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 1 1 1\n"
-        "author Author\n"
-        "committer-time 1700000000\n"
-        "\tline one\n"
-    )
+    sample = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 1 1 1\nauthor Author\ncommitter-time 1700000000\n\tline one\n"
     facts = _parse_blame_porcelain(sample)
     assert facts[1] == ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1700000000)
 

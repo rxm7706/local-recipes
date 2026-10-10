@@ -480,11 +480,7 @@ def evaluate_land_only_spec_gate(
 def land_only_spec_refusal_message(*, story_key: str, verdict: LandOnlySpecGateVerdict) -> str:
     """Operator-facing ``MRS-DISP-063`` text (Story 89.1)."""
     status = verdict.spec_status or "unreadable"
-    heading_part = (
-        f", latest review entry {verdict.failed_heading!r}"
-        if verdict.failed_heading is not None
-        else ""
-    )
+    heading_part = f", latest review entry {verdict.failed_heading!r}" if verdict.failed_heading is not None else ""
     if verdict.unevaluable:
         detail = "the Review Triage Log could not be read from git"
     else:
