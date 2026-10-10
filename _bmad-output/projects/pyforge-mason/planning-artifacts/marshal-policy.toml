@@ -223,6 +223,8 @@ verify_commands = [
   #   25.5 also close the deferred-work ledger rows ingested from Story 25.2's deferrals, hence that ledger below.
   # - 25.13 and 25.14 (2026-10-09, night, later; Wave F): recipes/** for their named recipes and one retro(cfe) commit
   #   each; 25.14 also closes the ledger row ingested from Story 25.2's Wave F deferral.
+  # - 25.15 (2026-10-09, night, latest; a fix): removes five recipes/** directories (recipes/langflow only for a fold),
+  #   files its follow-ups as deferred: rows on its own spec, and lands one retro(cfe) commit. No glob change.
   # - Every story: the station ledger and every Spec memlog a surface reconcile names (spec-fleet-stewardship governs
   #   recipes/**; spec-packaging-factory and spec-conda-forge-expert-rebuild govern the CFE surface).
   "src/shared/packages/pyforge-mason/**",

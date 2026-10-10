@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 164
+# stories: 165
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -83,6 +83,7 @@ development_status:
   25-12-track-b-batch-8-refreshes-opentelemetry-instrumentation-from-mysql-through-wsgi: backlog
   25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe: backlog
   25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror: backlog
+  25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow: backlog
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
   25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
   25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason: backlog

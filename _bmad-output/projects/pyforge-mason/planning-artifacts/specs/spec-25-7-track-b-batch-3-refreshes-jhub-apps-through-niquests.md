@@ -16,6 +16,7 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
 deferred: []
 declared_low_risk: false
 ---
@@ -27,8 +28,8 @@ declared_low_risk: false
 **Problem:** Story 25.2's Wave A, on 2026-10-09, found 96 co-maintained recipes behind their feedstock's published
 version (the v1-refresh bucket). Its pilots refreshed four. The operator then re-scoped 25.2 to Wave 0 and those
 pilots, and split the other 92 into eight batch stories, each small enough for one dispatch ("Land 25.2 now, split
-rest", 2026-10-09). This is batch 3 of 8: 11 recipes, eleven more, alphabetically, outside the OpenTelemetry family.
-Every one is co-maintained: the deployed feedstock lists `rxm7706` and at least one other maintainer. So the refresh
+rest", 2026-10-09). This is batch 3 of 8: 10 recipes, alphabetically, outside the OpenTelemetry family. It was
+minted with 11, and the ruling note below the table drops `recipes/lfx`. Every one is co-maintained: the deployed feedstock lists `rxm7706` and at least one other maintainer. So the refresh
 keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `docs/specs/feedstock-refresh.md` § *Track
 B*).
 
@@ -44,18 +45,26 @@ supersedes.
 | `kedro-viz` | 12.4.0 → 12.5.0 | v1 | cshaley, elanqo, millsks, rxm7706, zaigner | — |
 | `langchain-litellm` | 0.7.0 → 0.11.0 | v1 | pb01ka, rxm7706 | — |
 | `langflow` | 1.11.4 → 1.12.4 | v1 | pb01ka, rxm7706 | multi-output `langflow-suite` (also builds `lfx`, `langflow-base`, `langflow-sdk`); three patches |
-| `lfx` | 1.11.3 → 1.12.4 | v1 | pb01ka, rxm7706 | `recipes/langflow` also builds an `lfx` output |
 | `llm` | 0.31 → 0.36 | v1: drop the local `meta.yaml` (C2) | pavelzw, rxm7706 | no CFE block; `${{ name… }}` in `source.url` |
 | `milvus-lite` | 3.0 → 3.2.1 | v1 | pb01ka, rxm7706 | — |
 | `modelsearch` | 1.3.1 → 1.3.2 | v1 | darynwhite, rxm7706 | no CFE block; `${{ name… }}` in `source.url` |
 | `niquests` | 3.21.0 → 3.21.2 | v1 | jan-janssen, rxm7706 | — |
 
+**Ruling note (2026-10-09, night, latest).** The operator ruled "Retire in a fix story" on the duplicate recipe
+directories: "Mint a mason fix story that removes the six duplicate dirs (folded into recipes/langflow and
+recipes/dbt-core) and drops recipes/lfx from 25.7's batch." So `recipes/lfx` leaves this batch, and Story 25.15
+retires it. It was a copy of `langflow-suite` at 1.11.3 that declared all eight suite outputs, and no feedstock
+mirrors it: `conda-forge/lfx-feedstock` is a 404, and the `feedstock-outputs` registry gives `lfx` to `langflow`.
+Wave A matched the package `lfx` to that directory by name. `lfx` is an output of `recipes/langflow`, so this batch's
+refresh of the suite still moves it to the published version. The batch holds 10 recipes; the title, the Surface
+line and the ledger key stand.
+
 **Known before the dry-run:**
 
 - `recipes/langflow` is the multi-output `langflow-suite` recipe (`recipe.yaml:14-15`). It builds
   `langflow-sdk`, `lfx`, four `lfx-*` bundles, `langflow-base` and `langflow`, with `lfx` at langflow's own version
-  (`recipe.yaml:75-77`), beside the separate `recipes/lfx`. Refresh `langflow` 1.11.4 → 1.12.4 and `lfx` 1.11.3 →
-  1.12.4 in the same run, and record how the two `lfx` definitions relate afterwards.
+  (`recipe.yaml:75-77`). Refreshing `langflow` 1.11.4 → 1.12.4 moves `lfx` with it. (Amended 2026-10-09 under ruling
+  2: the separate `recipes/lfx` is no longer in this batch; Story 25.15 retires it.)
 - `recipes/langflow` carries three patches that strip integration dependencies on purpose (`patches/0001` to `0003`,
   `recipe.yaml:21-30`). They are a maintainer choice: each still applies at 1.12.4, or is re-based through CFE, never
   dropped (coordination rule 2).
@@ -63,7 +72,7 @@ supersedes.
   → 0.11.0 and `llm` 0.31 → 0.36.
 
 **Approach:** run the batch as one Track B wave through Story 25.3's driver, `refresh-wave`.
-1. Write the manifest: `track: B`, `wave: 25-7`, these 11 recipes, with no version pins. Put it under
+1. Write the manifest: `track: B`, `wave: 25-7`, these 10 recipes, with no version pins. Put it under
    `.claude/data/conda-forge-expert/feedstock-update/`, which is gitignored. The report lands in
    `refresh-waves/B-25-7/`.
 2. Dry-run, and record each recipe's plan.
@@ -94,7 +103,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 
 ## Acceptance Criteria
 
-1. **Dry-run first.** Given this spec's 11 recipes When the story starts Then it writes the batch manifest naming
+1. **Dry-run first.** Given this spec's 10 recipes When the story starts Then it writes the batch manifest naming
    exactly them, runs `pixi run -e local-recipes refresh-wave <manifest>` as a dry-run, and records each recipe's
    planned outcome in § *Run results* before any recipe changes. A recipe `main` already carries at its published
    version is recorded `already-current` and left alone. A feedstock that has published past this spec's version is
@@ -181,7 +190,8 @@ Type / Effort / Deps: feature / M / S-25.3.
   `gh api` write outside `rxm7706/local-recipes`; no issue or comment; no `mason recipe submit` or
   `mason package ship`; no CFE `submit_pr` or `prepare_submission_branch`.
 - Do not drop a co-maintainer from any `recipe-maintainers` list, and never self-merge on a co-maintained feedstock.
-- Do not touch a recipe outside this spec's list: another batch, Story 25.4 or Story 25.2 owns it.
+- Do not touch a recipe outside this spec's list: another batch, Story 25.4 or Story 25.2 owns it. That includes
+  `recipes/lfx`, which Story 25.15 retires (ruling 2, 2026-10-09).
 - Do not edit `refresh_wave.py`, or any CFE file outside the `retro(cfe):` commit. Do not touch
   `src/shared/packages/pyforge-mason/`, `pixi.toml`, `pixi.lock` or `environment.yaml`.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
@@ -198,7 +208,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 | feedstock moved on | published past this spec's version | refreshed to the live version, noted | landmine 1 (tag numbering) |
 | test env pollution | a dependency solve fails for a package on conda-forge | rebuild isolated before recording a block | G52, landmine 13 |
 | now sole | the feedstock lost its other maintainers | refreshed; noted in § *Run results* | — |
-| multi-output recipe | `langflow-suite` builds `lfx` too | refreshed with `recipes/lfx` in one run; relation recorded | needs-review if the two disagree |
+| multi-output recipe | `langflow-suite` builds `lfx` too | `lfx` moves with the suite's `version`; `recipes/lfx` is not in the batch | Story 25.15 retires `recipes/lfx` |
 | patch no longer applies | `patches/0002` fails at 1.12.4 | re-based through CFE | needs-review, never dropped |
 
 </intent-contract>
@@ -211,6 +221,8 @@ its pilots, and Track B continues in batch stories*.
 Ledger key: `25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests`.
 Ledger status at mint: `backlog`.
 Deps: S-25.3 (done).
+Amended 2026-10-09 (night, latest) on the operator's ruling "Retire in a fix story": `recipes/lfx` left the batch
+(11 → 10 recipes) for Story 25.15 to retire.
 Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability behind a flag).
 Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split rest").
 

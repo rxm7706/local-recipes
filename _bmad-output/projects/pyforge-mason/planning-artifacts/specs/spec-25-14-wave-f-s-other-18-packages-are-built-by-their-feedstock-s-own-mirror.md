@@ -17,6 +17,7 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-13-wave-f-mirrors-the-two-co-maintained-feedstocks-that-have-no-local-recipe.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
 deferred: []
 declared_low_risk: false
 ---
@@ -69,7 +70,8 @@ would give each of the 18 its own standalone mirror. The mint read what that bre
   mirrors' fidelity, and reverses G72, the fold that put `langflow-sdk` into the suite.
 
 So this story takes option (b): each of the 18 is built by its feedstock's own mirror at its published version, and
-no directory is created. If the operator meant 20 directories, see § *Open questions*.
+no directory is created. If the operator meant 20 directories, see § *Open questions*. (Resolved 2026-10-09: the
+operator confirmed option (b), "Yes, inside the mirrors"; open question 1.)
 
 **What the mirrors need, read at mint:**
 - `recipes/db-gpt` is current and faithful. Outside `extra:` it matches `db-gpt-feedstock`'s `recipe.yaml` but for one
@@ -96,7 +98,7 @@ no directory is created. If the operator meant 20 directories, see § *Open ques
 
 Ledger key: `25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror`.
 Ledger status at mint: `backlog`.
-Type / Effort / Deps: feature / M / S-25.7, S-25.13.
+Type / Effort / Deps: feature / M / S-25.7, S-25.13, S-25.15.
 
 ### Living CAP citations
 
@@ -107,8 +109,9 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13.
   `docs/specs/feedstock-refresh.md` § *Track B* (Wave A step A3, Wave F, coordination rules 1 to 5, landmines 1 to 13).
 - `spec-fleet-stewardship` CAP-1 governs `recipes/**`; `spec-packaging-factory` governs the CFE surface.
 - `spec-feature-flag-governance` CAP-1, Q2: `flag-exempt: recipe-build`.
-- Siblings: Story 25.7 refreshes `recipes/langflow` and `recipes/lfx` first. Story 25.13 mirrors the other two Wave F
-  feedstocks. Story 25.4's spec holds driver gaps 1 to 4.
+- Siblings: Story 25.7 refreshes `recipes/langflow` first; its batch no longer holds `recipes/lfx` (ruling 2,
+  2026-10-09). Story 25.15 retires the five `lfx*` copies first. Story 25.13 mirrors the other two Wave F feedstocks.
+  Story 25.4's spec holds driver gaps 1 to 4.
 
 ## Acceptance Criteria
 
@@ -148,11 +151,12 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13.
    `cfe-local-build-*` fields record `build-clean-test-blocked` (G95) or `not-attempted` with the reason. A mirror
    whose change stays inside its CFE block and comments is not rebuilt, and its existing `cfe-local-build-*` record
    stands, as § *Run results* notes.
-8. **Duplicates recorded, not removed.** Given the 22 names When every `recipes/*/recipe.yaml` and `meta.yaml` is
-   parsed for `package.name` and each `outputs[].package.name` Then § *Run results* lists every directory other than
-   the feedstock's mirror that declares one of them, with its version. At mint those were `recipes/lfx`,
-   `recipes/lfx-arxiv`, `recipes/lfx-docling`, `recipes/lfx-duckduckgo` and `recipes/lfx-ibm`, each declaring all
-   eight. The story removes none of them; open question 2 holds that decision.
+8. **One declarer per name.** Given the 22 names When every `recipes/*/recipe.yaml` and `meta.yaml` is parsed for
+   `package.name` and each `outputs[].package.name` Then each name is declared by its feedstock's mirror alone, and
+   § *Run results* records the parse and its result. At mint the five `lfx*` copies also declared the eight
+   `langflow-suite` outputs. Story 25.15 retires them first (ruling 2, 2026-10-09; this story's Deps), so the story
+   expects no other declarer. A directory that still declares one of the 22 names is listed with its version, and
+   left for the operator; this story removes none.
 9. **The corrected mapping, and Wave F's deferral closed.** Given Wave A's 20 no-local-recipe names and the four
    bundles it bucketed `v1-ahead` When the story closes Then § *Run results* carries one row per name: package,
    owning feedstock, mirror directory, local version and published version. Story 25.13's two rows come from its run
@@ -179,7 +183,7 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13.
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1): § *Local-mirror fidelity*, § *Bulk refresh waves*,
    G52, G53, G72 and G92; and `docs/specs/feedstock-refresh.md` § *Track B*. Where the file, this spec and the skill
    differ, the skill wins, and the story records the difference.
-2. Confirm Stories 25.7 and 25.13 are `done`, and read both feedstocks and the 22 registry entries live (AC 1).
+2. Confirm Stories 25.7, 25.13 and 25.15 are `done`, and read both feedstocks and the 22 registry entries live (AC 1).
 3. `recipes/db-gpt`: compare it with the feedstock (AC 3), run a one-recipe `refresh-wave` dry-run (manifest `track: B`,
    `wave: 25-14`, `name: db-gpt`, `feedstock: db-gpt`, under the gitignored `feedstock-update/` directory), update the
    CFE block (AC 4) and audit maintainers (AC 6).
@@ -206,7 +210,7 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13.
   `gh api` write outside `rxm7706/local-recipes`; no issue or comment; no `mason recipe submit` or
   `mason package ship`; no CFE `submit_pr` or `prepare_submission_branch`.
 - Do not create a `recipes/<output>/` directory for any of the 22 names, and do not remove or empty any recipe
-  directory, the five `lfx*` copies and `recipes/dbt` included (open question 2).
+  directory. Story 25.15 retires the five `lfx*` copies, and keeps `recipes/dbt` (open question 2, resolved).
 - Do not drop a co-maintainer from any `recipe-maintainers` list, and never self-merge on a co-maintained feedstock.
 - Do not touch a recipe directory other than `recipes/db-gpt/` and `recipes/langflow/`; touch `recipes/langflow/` only
   after Story 25.7 is `done`.
@@ -221,10 +225,10 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13.
 | output already current | `recipes/db-gpt` at the feedstock's 0.8.2 | `already-current`; CFE block corrected only; no rebuild | — |
 | output behind in a suite | `langflow-sdk` at 0.3.3 after Story 25.7 | `sdk_version` moved to the feedstock's; rebuilt | needs-review if a patch no longer applies |
 | registry moved | a name's `feedstock-outputs` entry names another feedstock | recorded; that name `needs-review` | AC 1 |
-| duplicate declarer | `recipes/lfx*` declare all eight suite outputs | listed with versions; left in place | open question 2 |
+| duplicate declarer | a directory other than the mirror declares one of the 22 names | listed with its version; left in place | AC 8; Story 25.15 retires the `lfx*` copies first |
 | maintainer clobber | a mirror would carry fewer handles than its feedstock | the deployed list re-merged | G53, landmine 10 |
 | test env pollution | a dependency solve fails for a package on conda-forge | rebuild isolated before recording a block | G52, landmine 13 |
-| dependency left | 25.7 or 25.13 not `done` | stop; the story does not start | Deps |
+| dependency left | 25.7, 25.13 or 25.15 not `done` | stop; the story does not start | Deps |
 
 ## Open questions
 
@@ -235,6 +239,9 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13.
    multi-output mirrors (each mirrors no feedstock, cannot be submitted, and shadows its twin in the local channel) or
    instead of their outputs (option (a): both mirrors stop matching their feedstocks). Either alternative re-scopes
    this story before it starts.
+   **Resolved 2026-10-09 (night, latest), operator ruling 1, "Yes, inside the mirrors":** keep Story 25.13 (the two
+   new recipes) and this story (the 18 outputs at their published versions inside `recipes/db-gpt` and
+   `recipes/langflow`). No standalone directory. This story stands as written.
 2. **Retire the duplicate recipe directories?** `recipes/lfx`, `recipes/lfx-arxiv`, `recipes/lfx-docling`,
    `recipes/lfx-duckduckgo` and `recipes/lfx-ibm` each re-declare all eight `langflow-suite` outputs, a version behind
    `recipes/langflow`. `recipes/dbt` builds the same `dbt-core` 1.12.2 as `recipes/dbt-core`. They are why Wave A
@@ -242,6 +249,12 @@ Type / Effort / Deps: feature / M / S-25.7, S-25.13.
    `recipes/lfx`. *Recommended:* retire the duplicates in a fix story of their own once the operator agrees; the git
    history keeps them. *Alternative:* keep them, and accept the drift and the local-channel shadowing. This story changes
    none of them either way.
+   **Resolved 2026-10-09 (night, latest), operator ruling 2, "Retire in a fix story":** "Mint a mason fix story that
+   removes the six duplicate dirs (folded into recipes/langflow and recipes/dbt-core) and drops recipes/lfx from 25.7's
+   batch." Story 25.15 is that fix, and this story depends on it. Its mint verified ownership first. The five `lfx*`
+   copies mirror no feedstock and retire. `recipes/dbt` is kept: it is the `recipes/<feedstock>/` mirror of
+   `conda-forge/dbt-feedstock`, so Story 25.15's open question 1 returns the `recipes/dbt`/`recipes/dbt-core` pair to
+   the operator. Story 25.7's batch dropped `recipes/lfx`.
 
 </intent-contract>
 
@@ -252,7 +265,10 @@ Dream: `docs/dreams/pyforge-mason.md` § Realization log → *2026-10-09 (night,
 missing mirrors, and the 18 outputs stay in their feedstock's mirror*.
 Ledger key: `25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror`.
 Ledger status at mint: `backlog`.
-Deps: S-25.7, S-25.13.
+Deps: S-25.7, S-25.13, S-25.15.
+Amended 2026-10-09 (night, latest) on the operator's rulings "Yes, inside the mirrors" and "Retire in a fix story":
+both open questions resolved, and S-25.15 added, because this story moves the `lfx-*` bundles that the five
+`lfx*` copies also declared.
 Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability behind a flag).
 Minted 2026-10-09 on the operator's answer to Track B Q2 ("create them").
 
