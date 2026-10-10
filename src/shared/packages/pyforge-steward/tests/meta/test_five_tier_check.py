@@ -160,9 +160,7 @@ def test_mason_skill_missing_when_only_conda_forge_expert(tmp_path: Path):
 
 
 def test_mason_skill_missing_when_only_pyforge_mason_station_skill(tmp_path: Path):
-    mason_skill = (
-        tmp_path / ".claude" / "skills" / "pyforge-mason" / "0.1.0" / "pyforge-mason" / "SKILL.md"
-    )
+    mason_skill = tmp_path / ".claude" / "skills" / "pyforge-mason" / "0.1.0" / "pyforge-mason" / "SKILL.md"
     mason_skill.parent.mkdir(parents=True)
     mason_skill.write_text("# mason\n", encoding="utf-8")
     tiers = detect_tiers(tmp_path, "mason")
