@@ -2,7 +2,7 @@
 title: "85.7: A cross-surface refusal gets the same one fix turn"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '21aae5aa16e9537aa983afed72125d240a8b8a1d'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -230,3 +230,35 @@ spend its 900 s budget and park with `MRS-DISP-059`, as any slow turn does today
 - Mutation: restore the `verify command '`-only parse in the extraction and re-run the station suite; AC1's test fails. Restore it.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
 - On the next dispatch whose only refusal is cross-surface, the run's `journal.jsonl` shows a `dispatch-verify-fix` INTENT with `trigger_gate: MRS-GATE-015`.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — AC1–AC9 covered by new unit tests; self-review against diff)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Cross-surface verification refusals (`MRS-GATE-015`) now flow through the same fix-turn path as story verify refusals (`MRS-GATE-001`): unified command parsing, merged command reports from `commands` and `cross_surface_checks`, `gate` on each `failed_commands` row, and `trigger_gate` / `failed_gates` on the fix-turn INTENT. Troubleshooting doc updated.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py` — `_command_from_verify_refusal_message` for both refusal prefixes
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py` — `command_reports_for_verify_fix`, `gate` on `FailedVerifyCommand`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verification_journal.py` — cross-surface reports in extraction
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` — INTENT `trigger_gate` / `failed_gates`
+- `docs/how-to/troubleshoot-bmad-agent-loops.md` — fix-turn operator passage (AC8)
+- Marshal unit tests for AC1–AC7, AC9 mutations, and doc grep
+
+Review: 0 patch / 0 defer from formal review layers (build-auto pass); existing deferred frontmatter unchanged.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 12184 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK after memlog on spec-pyforge-marshal, spec-pyforge-core, spec-pyforge-doctor
+
+Residual risk: `platform-ci-local -- --test` fix turns may still hit MRS-DISP-059 on slow re-runs (unchanged).
