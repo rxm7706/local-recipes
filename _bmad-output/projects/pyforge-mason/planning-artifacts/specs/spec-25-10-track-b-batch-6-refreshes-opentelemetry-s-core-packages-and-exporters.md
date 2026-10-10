@@ -2,7 +2,8 @@
 title: "25.10: Track B batch 6 refreshes OpenTelemetry's core packages and exporters"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '2b428b5493aae83dd53be6dd3aba4ce50e5c1e50'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
