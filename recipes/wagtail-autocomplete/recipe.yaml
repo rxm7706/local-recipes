@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/43/86/013e4adfb5503d8fb5374ac4a030a149cd28f774364e321941ee0b9987bd/wagtail_autocomplete-0.12.1.tar.gz
+  url: https://pypi.org/packages/source/w/wagtail-autocomplete/wagtail_autocomplete-${{ version }}.tar.gz
   sha256: 87ae8b42bc67016417e6c108befef84a451bdfe0eb8e9b5e86a9bbdb420bb55d
 
 build:
@@ -20,17 +20,17 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - wagtail >=4.1
+    - python >=${{ python_min }}
+    - wagtail >=4.1
 
 tests:
 - python:
     imports:
-    - wagtailautocomplete
+      - wagtailautocomplete
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -42,7 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
