@@ -97,11 +97,13 @@ MINIFORGE_HOME = "$CONDA_PREFIX"
 [feature.grayskull.dependencies]
 grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
 [feature.crm.dependencies]
-# crm+feedrattler isolated from the grayskull FEATURE 2026-08-30 so local-recipes
-# (which composes grayskull) stops inheriting conda-recipe-manager's exact
-# click==8.2.1 pin (feedstock bug, conda-forge/conda-recipe-manager-feedstock#44) —
-# that pin walled headroom-ai + the dbt trio out of local-recipes. Only the
-# standalone grayskull ENV includes this feature; migrations still run via
+# crm+feedrattler isolated in [feature.crm.dependencies] 2026-08-30: crm 0.10.5's
+# exact click pin walled headroom-ai + the dbt trio out of local-recipes. Today crm
+# 0.10.6 (feedstock PR #46) and upstream cap click >=8.2.1,<=8.4.1; feedstock PR
+# #44 closed unmerged 2026-09-01 (maintainers declined to unpin click). local-recipes
+# resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1; latest click is
+# 8.5.0 — lifting <=8.4.1 is Story 67.4 sbom-crm-click-cap. Only the standalone
+# grayskull ENV composes this feature; migrations run via
 # `pixi run -e grayskull conda-recipe-manager convert …` / `… feedrattler …`.
 conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format (moved here with crm — it requires conda-recipe-manager >=0.4.0)
@@ -2121,7 +2123,7 @@ frozendict = "*"                  # immutable dict (transitive build dep)
 rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 ##[feature.grayskull.dependencies]
 grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
-#conda-recipe-manager = ">=0.8.0" # REMOVED from local-recipes 2026-08-30 (disposition: stale-here): nothing in this repo invokes crm/conda_recipe_manager (verified — zero task/script/source hits), and its feedstock's click==8.2.1 exact pin (feedstock bug, upstream pyproject declares click unpinned; conda-forge/conda-recipe-manager-feedstock#44) was the wall blocking headroom-ai + the dbt trio in THIS env. Still available via `pixi run -e grayskull crm …` ([feature.grayskull.dependencies] keeps it, isolated). Restore here only if a local-recipes task grows a real crm call — and then via a SelfExplainML rebuild with click unpinned (recipes/conda-recipe-manager is ready) or after feedstock#44 merges.
+#conda-recipe-manager = ">=0.8.0" # REMOVED from local-recipes 2026-08-30 (disposition: stale-here): nothing in this repo invokes crm/conda_recipe_manager (verified — zero task/script/source hits). The 2026-08-30 wall was crm 0.10.5's exact click pin; today crm 0.10.6 (feedstock PR #46) caps click >=8.2.1,<=8.4.1 and feedstock PR #44 closed unmerged 2026-09-01. local-recipes still resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1. Still available via `pixi run -e grayskull crm …` ([feature.crm.dependencies]). Restore here only if a local-recipes task grows a real crm call.
 ##[feature.conda-smithy.dependencies]
 conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter
 ##[feature.shellcheck]
@@ -2153,7 +2155,7 @@ conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda 
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
 conda-pypi = ">=0.12.0"           # Better PyPI interoperability for the conda ecosystem
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
-#feedrattler = ">=0.3.14"         # moved to [feature.crm.dependencies] 2026-08-30: requires conda-recipe-manager >=0.4.0, transitively re-importing the click==8.2.1 wall this pass removed from local-recipes. Still available via `pixi run -e grayskull feedrattler …` (zero in-repo invocations — interactive/agent tool only).
+#feedrattler = ">=0.3.14"         # moved to [feature.crm.dependencies] 2026-08-30: requires conda-recipe-manager >=0.4.0; crm's click cap (>=8.2.1,<=8.4.1 on 0.10.6) stays in that feature, not local-recipes. Still available via `pixi run -e grayskull feedrattler …` (zero in-repo invocations — interactive/agent tool only).
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.80.0"                 # Pixi package & environment manager
 # pixitainer moved to [feature.local-recipes.target.linux-64.dependencies] (Story 10.2):
@@ -2204,7 +2206,7 @@ bmad-manticore = ">=3.1.0.dev0"   # From brain dump to a rendered, graphics-rich
 #claude-mem = "*"                  # Persistent context across sessions for coding agents - captures, compresses, and re-injects session memory.
 #caveman = "*"                     # moved to [feature.local-recipes.target.linux-64.dependencies] 2026-08-30 (SelfExplainML build is linux-64-only, like codegraph)
 #codegraph = ">=1.4.1"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local.
-headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. Promoted cross-platform 2026-08-30 (operator edit); also listed in the linux-64 target table with the other token-economy instruments.
+headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; crm 0.10.5's exact click pin walled this env until crm+feedrattler moved to [feature.crm.dependencies] (crm 0.10.6 caps click >=8.2.1,<=8.4.1; feedstock PR #44 closed unmerged 2026-09-01; open cap lift: Story 67.4 sbom-crm-click-cap). Promoted cross-platform 2026-08-30 (operator edit); also listed in the linux-64 target table with the other token-economy instruments.
 cocoindex = ">=1.0.24"            # Incremental engine for long horizon agents
 graphifyy = ">=0.9.68"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ppt-master = ">=5.1.0"            # Claude skill for creating professional PowerPoint presentations using SVG-based templates
@@ -2221,12 +2223,12 @@ dagster-webserver = ">=1.13.24"   # Web UI for dagster.
 dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 # --- dbt / dlt: blocked, root causes verified 2026-07-26 -----------------------
 # dbt trio: UNBLOCKED 2026-08-30. Was blocked by a `click` conflict inside THIS
-# env: dbt-core >=1.11.11 requires click >=8.3.0,<9.0, but conda-recipe-manager
-# 0.10.5 pinned `click ==8.2.1` exactly (a FEEDSTOCK BUG — upstream pyproject
-# declares plain `"click"`; conda-forge/conda-recipe-manager-feedstock#44 is the
-# unpin PR). Resolved by REMOVING conda-recipe-manager from this env entirely
-# (nothing here invokes it; it lives on in the grayskull env) rather than
-# waiting on the feedstock fix.
+# env: dbt-core >=1.11.11 requires click >=8.3.0,<9.0, but crm 0.10.5's exact
+# click pin walled the solve. crm+feedrattler moved to [feature.crm.dependencies];
+# local-recipes resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1
+# (feedstock PR #46 caps >=8.2.1,<=8.4.1; feedstock PR #44 closed unmerged
+# 2026-09-01). Latest click is 8.5.0; lifting <=8.4.1 is Story 67.4
+# sbom-crm-click-cap.
 dbt-core = ">=1.12.5"             # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 dbt-duckdb = ">=1.11.0"           # dbt DuckDB adapter
 dbt-postgres = ">=1.11.0"         # dbt PostgreSQL adapter
@@ -2447,7 +2449,7 @@ caveman-installer = ">=2.7.0"     # Claude Code token-compression skill (~65% ou
 cocoindex = ">=1.0.20"            # Incremental engine for long horizon agents
 codegraph = ">=1.6.0"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local. On conda-forge (all platforms, nodejs 24) since 2026-09-25; linux-64 only here for now.
 graphifyy = ">=0.9.51"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
-headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, conda-forge/conda-recipe-manager-feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. linux-64 here by operator preference (grouped with the token-economy instruments; solves cross-platform if ever promoted).
+headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; crm 0.10.5's exact click pin walled this env until crm+feedrattler moved to [feature.crm.dependencies] (crm 0.10.6 caps click >=8.2.1,<=8.4.1; feedstock PR #44 closed unmerged 2026-09-01; open cap lift: Story 67.4 sbom-crm-click-cap). linux-64 here by operator preference (grouped with the token-economy instruments; solves cross-platform if ever promoted).
 
 [feature.local-recipes.target.win-64.dependencies]
 
