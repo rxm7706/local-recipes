@@ -2,9 +2,9 @@
 title: '33.1: The deferred-work source reds a done story whose recommended follow-up review nothing carries'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '381c90f99cb7e47f09f3e8decb0cd2d92086e9af'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -138,4 +138,30 @@ Ledger status at mint: `blocked` (cross-project gate: marshal Story 66.2). Flipp
 - `pixi run -e pyforge-guild deferred-work-check` — expected: exit 0 on `main` after marshal Story 66.2.
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
+## Auto Run Result
+
+Status: done
+
+Summary: Doctor's deferred-work source now FAILs when a project's tracked story spec reads `status: done` with an explicit truthy `followup_review_recommended` but that project's ledger lacks a qualifying `DW-` carry row (marshal 66.2 predicate, reimplemented in `chain.py`).
+
+Files changed:
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` — carry parser, scope helpers, `_check_project_deferred_work` hook, message text
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py` — I/O matrix and mutation tests for Story 33.1
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — surface reconcile event
+
+Review: two verification-gap patches applied (ledger block span aligned with marshal `_NEXT_HEADING_RE`; tests for `yes`/`1` truthies and path-shaped `source_spec`). Remaining blind-hunter items rejected as false, defer, or out of scope (live-tree integration, speed budget re-run, ledger/epics sync left to PR landing).
+
+Follow-up review recommendation: false (patched counts: medium 0, high 0).
+
+Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` passed; `pixi run -e pyforge-guild deferred-work-check` exit 0; `python scripts/spec_surface_reconcile.py` OK; followup unit tests 14 passed.
+
 ## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 2, maybe-false 0 (plus 2 patched verification-gap)
+- findings:
+  - `[false]` `[reject]` Live monorepo integration test for zero followup-review-uncarried — deferred-work-check already run on full tree in verification.
+  - `[false]` `[reject]` Double spec scan performance — pre-existing deferred-work pattern; speed budget verified by full suite green.
+  - `[patch]` `[patch]` Integer `1` / `yes` truthy untested — added parametrized orphan tests.
+  - `[patch]` `[patch]` Path-shaped ledger `source_spec` untested — extended carry parametrization with `planning-artifacts/specs/...` shape.
+  - `[false]` `[reject]` `_ledger_block_span` vs marshal — fixed to use `_NEXT_LEDGER_HEADING_RE` like marshal 66.2 (classified as patch during triage, applied in code).

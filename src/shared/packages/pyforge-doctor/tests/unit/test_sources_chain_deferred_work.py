@@ -3051,10 +3051,12 @@ def _followup_carry_row(
     *,
     origin: str = "dispatch-followup-review",
     row_id: str = "DW-FRR-1-1",
+    source_spec: str | None = None,
 ) -> str:
+    cited = source_spec if source_spec is not None else spec_name
     return (
         f"# Ledger\n\n### {row_id}: Follow-up review still recommended for story 1.1\n\n"
-        f"- source_spec: `{spec_name}`\n  origin: {origin}\n  status: open\n"
+        f"- source_spec: `{cited}`\n  origin: {origin}\n  status: open\n"
     )
 
 
@@ -3067,15 +3069,29 @@ def test_followup_review_uncarried_orphan_reports_fail(tmp_path: Path) -> None:
     _assert_one_followup_review_uncarried(chain.gather_deferred_work(tmp_path))
 
 
-@pytest.mark.parametrize("origin", ["dispatch-followup-review", "review-budget-followup"])
+@pytest.mark.parametrize(
+    ("origin", "source_spec"),
+    [
+        ("dispatch-followup-review", None),
+        ("review-budget-followup", None),
+        (
+            "dispatch-followup-review",
+            "planning-artifacts/specs/spec-1-1-demo.md",
+        ),
+    ],
+)
 def test_followup_review_carried_by_dispatch_or_loop_origin_reports_nothing(
-    tmp_path: Path, origin: str
+    tmp_path: Path, origin: str, source_spec: str | None
 ) -> None:
     spec_name = "spec-1-1-demo.md"
     _write_baseline(tmp_path, {})
     _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec())
     row_id = "DW-FU-1-1" if origin == "review-budget-followup" else "DW-FRR-1-1"
-    _write_tracked(tmp_path, "proj", _followup_carry_row(spec_name, origin=origin, row_id=row_id))
+    _write_tracked(
+        tmp_path,
+        "proj",
+        _followup_carry_row(spec_name, origin=origin, row_id=row_id, source_spec=source_spec),
+    )
 
     findings = chain.gather_deferred_work(tmp_path)
 
@@ -3112,6 +3128,18 @@ def test_followup_review_carry_in_another_project_ledger_does_not_clear(tmp_path
     assert any(
         f.check == "followup-review-uncarried" and f.evidence["project"] == "alpha" for f in findings
     )
+
+
+@pytest.mark.parametrize("flag_value", ["yes", "1"])
+def test_followup_review_explicit_yes_and_one_truthy_report_orphan(
+    tmp_path: Path, flag_value: str
+) -> None:
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec(followup_review_recommended=flag_value))
+    _write_tracked(tmp_path, "proj", "# empty\n")
+
+    _assert_one_followup_review_uncarried(chain.gather_deferred_work(tmp_path))
 
 
 @pytest.mark.parametrize(

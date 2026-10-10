@@ -3800,6 +3800,7 @@ _FRONTMATTER_SOURCE_SPEC_RE = re.compile(
 _FOLLOWUP_REVIEW_TRUTHY = frozenset({"true", "yes", "1"})
 _FOLLOWUP_REVIEW_CARRY_ORIGINS = frozenset({"dispatch-followup-review", "review-budget-followup"})
 _LEDGER_DW_HEADING_RE = re.compile(r"^### (?P<dw_id>DW-[A-Za-z0-9-]+): ", re.MULTILINE)
+_NEXT_LEDGER_HEADING_RE = re.compile(r"^#{1,6} ", re.MULTILINE)
 _LEDGER_SOURCE_SPEC_FIELD_RE = re.compile(
     r"^[ \t]*(?:-[ \t]+)?source_spec:[ \t]*(?P<value>[^\n]*)$",
     re.MULTILINE,
@@ -3959,7 +3960,7 @@ def _normalize_ledger_source_spec_basename(raw: str) -> str:
 
 
 def _ledger_block_span(text: str, heading_start: int) -> tuple[int, int]:
-    next_heading = _LEDGER_DW_HEADING_RE.search(text, heading_start + 1)
+    next_heading = _NEXT_LEDGER_HEADING_RE.search(text, heading_start + 1)
     end = next_heading.start() if next_heading is not None else len(text)
     return heading_start, end
 
