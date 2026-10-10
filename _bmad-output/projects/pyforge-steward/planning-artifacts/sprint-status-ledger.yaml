@@ -344,7 +344,7 @@ development_status:
   85-7-the-session-denial-form-check-never-stamps-the-real-spec-surface-baseline: done
   85-8-an-agent-session-never-writes-outside-this-repository: done
   85-9-the-session-hook-reads-its-denial-roster-from-its-own-tree: done
-  86-1-deploy-perimeter-renders-the-asgi-application-it-is-given: backlog
+  86-1-deploy-perimeter-renders-the-asgi-application-it-is-given: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -520,7 +520,7 @@ development_status:
   epic-84-retrospective: optional
   epic-85: in-progress
   epic-85-retrospective: optional
-  epic-86: backlog
+  epic-86: done
   epic-86-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
