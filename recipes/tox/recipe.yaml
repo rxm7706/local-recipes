@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.60.0"
+  version: "4.64.10"
 
 package:
   name: tox
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/t/tox/tox-${{ version }}.tar.gz
-  sha256: 6f93bb580d35e00fc69cfec1116eecbe21155f747753ca5019374f7c69b2eac9
+  sha256: 7482b96fefe1e4b49e406a9a62b25b415690bec2cebe9cc0cd59e38af88ce671
 
 build:
   number: 0
@@ -83,7 +83,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tox-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T12:27:23Z
+  cfe-last-checked: 2026-10-10T14:49:41Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T12:27:23Z
   cfe-local-build-status: failed
@@ -93,4 +93,5 @@ extra:
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-9: refreshed 4.60.0 -> 4.64.10
 ####
