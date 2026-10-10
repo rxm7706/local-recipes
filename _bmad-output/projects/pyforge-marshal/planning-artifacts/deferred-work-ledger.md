@@ -9061,3 +9061,14 @@ status: open
   severity: medium (unverified)
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-87-12: Extend dirty-ref story inference with journal/run-id lookup when more legacy refs appear.
+
+- source_spec: `planning-artifacts/specs/spec-87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list.md`
+  summary: Extend dirty-ref story inference with journal/run-id lookup when more legacy refs appear.
+  evidence: Heuristic `_infer_story_from_dirty_name` may label some dirty refs as unbound when a story slug is recoverable from run metadata.
+  location: scripts/legacy_preserve_promote.py
+  origin: spec-deferred 4baf13092070 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low (unverified)
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
