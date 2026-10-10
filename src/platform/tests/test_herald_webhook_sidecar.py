@@ -129,20 +129,25 @@ def test_mcp_host_health_and_unknown_path_unchanged(mcp_client: TestClient) -> N
     assert mcp_client.get("/stations/nope/mcp").status_code == HTTPStatus.NOT_FOUND
 
 
+class _HeraldAbsentFinder:
+    def find_spec(self, fullname, path, target=None):
+        if fullname == "pyforge.herald" or fullname.startswith("pyforge.herald."):
+            raise ModuleNotFoundError(name=fullname)
+
+
 def test_mcp_host_sidecar_herald_absent_returns_404_json(
     mcp_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    real_import = importlib.import_module
-
-    def _import(name: str, *args, **kwargs):
-        if name == "pyforge.herald.webhook_host":
-            msg = "pyforge.herald.webhook_host"
-            raise ModuleNotFoundError(msg)
-        return real_import(name, *args, **kwargs)
-
-    monkeypatch.setattr(importlib, "import_module", _import)
-    response = mcp_client.post(_ON_SHIP_PATH, content=b"{}")
+    for name in list(sys.modules):
+        if name == "pyforge.herald" or name.startswith("pyforge.herald."):
+            del sys.modules[name]
+    finder = _HeraldAbsentFinder()
+    sys.meta_path.insert(0, finder)
+    try:
+        response = mcp_client.post(_ON_SHIP_PATH, content=b"{}")
+    finally:
+        sys.meta_path.remove(finder)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "pyforge.herald" in response.json()["detail"]
     assert mcp_client.get("/health").status_code == HTTPStatus.OK
@@ -263,7 +268,7 @@ def test_host_forwards_webhook_to_sidecar(monkeypatch: pytest.MonkeyPatch) -> No
     assert _CaptureClient.last is not None
     assert _CaptureClient.last["method"] == "POST"
     assert _CaptureClient.last["url"] == (
-        "http://127.0.0.1:8090/stations/herald/api/v1/webhooks/on-ship?x=1"
+        "http://127.0.0.1:8090/stations/herald/api/v1/webhooks/on-ship"
     )
     assert _CaptureClient.last["content"] == body
     lowered = {k.lower(): v for k, v in _CaptureClient.last["headers"].items()}
@@ -424,3 +429,32 @@ def test_herald_webhook_sidecar_flag_two_states(
         assert asyncio.run(_forward()) is False
     finally:
         api.clear_providers()
+
+
+class _CoreErrorsAbsentFinder:
+    def find_spec(self, fullname, path, target=None):
+        if fullname == "pyforge.core.errors":
+            raise ModuleNotFoundError(name=fullname)
+
+
+def test_mcp_host_sidecar_herald_dependency_missing_not_blamed_on_herald(
+    mcp_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "shared-secret")
+    for name in list(sys.modules):
+        if name in ("pyforge.core.errors",) or name.startswith("pyforge.herald."):
+            sys.modules.pop(name, None)
+    finder = _CoreErrorsAbsentFinder()
+    sys.meta_path.insert(0, finder)
+    try:
+        with pytest.raises(ModuleNotFoundError):
+            mcp_client.post(_ON_SHIP_PATH, content=b"{}")
+    finally:
+        sys.meta_path.remove(finder)
+        _, webhook_host = _herald_modules()
+        webhook_host._application = None  # noqa: SLF001
+        importlib.reload(mcp_host_module)
+    assert mcp_client.get("/health").status_code == HTTPStatus.OK

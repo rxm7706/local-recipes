@@ -2,9 +2,10 @@
 title: "87.4: The herald webhook forward closes its review findings"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
 followup_review_recommended: false
+baseline_revision: 'a0f47b730119c6d44a6f4551d38c2811ead230de'
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -277,6 +278,30 @@ the host's packages, except AC (2)'s live run. A fake sidecar records every requ
   stamps.
 - `git diff origin/main -- src/platform` searched for `import pyforge` and `from pyforge`, and
   `git diff origin/main -- src/shared/packages/django-pyforge` searched for `pyforge.herald` — expected: no match.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 0, false 2, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Blind hunter suggested missing herald-absent ASGI host test — `test_host_boots_without_herald.py` already drives `config.asgi.application` with a meta-path finder for herald-absent 404; AC 4 herald-absent is covered at the host entry point there and in sidecar tests.
+  - `[false]` `[reject]` Verification gap for unset `MCP_HOST_SIDECAR_BASE_URL` — added `test_host_unset_sidecar_url_does_not_forward` in `test_herald_webhook_forward_host.py` during review.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Closed Story 87.3 review findings — exact webhook path allowlist, herald body caps, fixed `mcp-host-serve` PYTHONPATH, ASGI integration tests, honest sidecar 404, dev flag ON.
+
+Files changed: `sidecar_forward.py`, `mcp_host/app.py`, `pixi.toml`, flag overlays and default tables, herald webhook tests, deployment doc, 87.3 flag metadata, spec memlogs.
+
+Review: 0 patches applied; 2 findings rejected as false.
+
+Follow-up review recommended: false
+
+Verification: `pyforge-steward-test` pass; herald platform tests pass (32); `lint-types` exit 0; `flag-gate-check` exit 0; 87.3 spec flag-gate pass; `python scripts/spec_surface_reconcile.py` exit 0.
+
+Residual risk: AC (2) live `mcp-host-serve` bind not exercised in CI (manual check in spec).
 
 ## Spec Change Log
 
