@@ -1834,7 +1834,7 @@ status: open
   summary: Twenty genuinely-missing local mirrors (mostly dbgpt-* outputs) await Wave F after operator confirms create_missing scope (feedstock-refresh Track B Q2 default yes).
   evidence: Wave A co_maint discovery: genuinely_missing_names in .cursor/track_b_baseline.json (20 packages).
   location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
-  origin: spec-deferred 9f72bcd76dd7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  origin: spec-deferred 0bd9db62c4d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: closed
@@ -1966,7 +1966,7 @@ status: open
   summary: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
   evidence: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
   location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
-  origin: spec-deferred d8fdac672a17 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  origin: spec-deferred 532381eb779f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 

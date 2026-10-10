@@ -7,7 +7,7 @@ the BMAD mission itself: **B**uild **M**ore **A**rchitect **D**reams. It is
 **Tier 0** of the framework-neutral layout (see
 [`AGENTS.md` → the tiers](https://github.com/rxm7706/local-recipes/tree/main)), upstream of the spec BMAD produces
 in `_bmad-output/projects/<slug>/planning-artifacts/` (legacy hand-authored
-specs remain in [`docs/specs/`](../specs/feedstock-refresh.md)).
+specs are archived under `archive/docs/specs/`).
 
 `docs/dreams/` is the home for the **starting point of each deliverable**. Going
 forward, a deliverable **begins as a Dream here** — a vision, unconstrained by
