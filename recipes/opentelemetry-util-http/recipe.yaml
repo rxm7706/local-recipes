@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-util-http
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-util-http/opentelemetry_util_http-${{ version }}.tar.gz
-  sha256: 84f82d826978bba416ab453460ff6a7391cdc3534c93a786595e4068680016b7
+  sha256: 047dea1a628031f857a5a32261dc0e955bc162d39993ed1cffb8f2cff5ba8a62
 
 build:
   number: 0
@@ -65,12 +65,12 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-util-http-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:57:17Z
+  cfe-last-checked: 2026-10-10T16:56:54Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:57:17Z
   cfe-local-build-status: build-clean-test-blocked
@@ -81,4 +81,5 @@ extra:
 # CFE comments
 # Header:
 #    # added run deps from import test: ['opentelemetry']
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 0.65b0 -> 0.66b1
 ####
