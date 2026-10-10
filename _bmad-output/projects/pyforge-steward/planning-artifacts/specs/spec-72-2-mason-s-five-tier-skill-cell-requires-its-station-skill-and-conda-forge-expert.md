@@ -2,8 +2,7 @@
 title: "72.2: Mason's five-tier skill cell requires its station skill and conda-forge-expert"
 type: 'fix'
 created: '2026-09-28'
-status: 'blocked'
-blocking_condition: 'blocked until mason Story 19.1 (spec-pyforge-mason:CAP-29, "Mason''s station skill is SKF-compiled, exported and consulted by the persona") has landed on main; the operator flips the ledger key, never a session'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -38,8 +37,16 @@ the new rule reads Mason's cell missing and the live roster test reds. The ledge
 marshal's `Deps:` parser is station-local, so a cross-station precondition has to be a ledger gate (AGENTS.md § Known
 pitfalls; herald 27.5 is the precedent). Do not start this story while 19.1 is unlanded.
 
+**Unblocked 2026-10-10.** The operator ruled "lets look at each one of these and see if we can get them moving and
+complete them" (spec memlog). Mason Story 19.1 is `done` in mason's ledger, and its skill is on `main` (`6d5e84cb6b`) at
+`.claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md`. The path in the epic's Given,
+`.claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md`, does not exist: there is no `active/` twin. So the AC's
+rule, "`.claude/skills/pyforge-mason/` holds a `SKILL.md`", matches at any depth under that directory, which is what
+`detect_tiers`' general rule already does (`skill_root.rglob("SKILL.md")`, `five_tier.py:103`). Do not add a fixed
+`active/` or `0.1.0/` path; the first fixture's AC below already uses the versioned path.
+
 Ledger key: `72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert`.
-Ledger status (do not edit the ledger): `blocked` (cross-station gate: mason Story 19.1).
+Ledger status (do not edit the ledger): `backlog` (flipped from `blocked` on 2026-10-10 by the operator's ruling).
 Type / Effort / Deps: fix / S / — (cross-station gate above).
 
 ### Living CAP citations
@@ -85,7 +92,7 @@ Type / Effort / Deps: fix / S / — (cross-station gate above).
 Parent Spec capability: `spec-pyforge-steward` CAP-160 (FR-33).
 Dream: `docs/dreams/pyforge-steward.md` § Realization log → *2026-09-28 — Proposed: Mason's skill cell is two skills, and the Guild environment answers `pyforge mason`*.
 Ledger key: `72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert`.
-Ledger status at mint: `blocked`, until mason Story 19.1 has landed; the operator flips it.
+Ledger status at mint: `blocked`, until mason Story 19.1 has landed; the operator flips it. Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (19.1 `done`), through the Tier-3 feed and `sprint-ledger-sync --project steward --allow-regression`.
 Deps: — . Cross-station gate: mason Story 19.1 (`spec-pyforge-mason:CAP-29`).
 Minted 2026-09-28 so `marshal factory dispatch` can resolve this spec once the operator unblocks it.
 
@@ -96,5 +103,10 @@ Minted 2026-09-28 so `marshal factory dispatch` can resolve this spec once the o
 
 **Manual checks:**
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the co-governor reconcile.
+
+## Spec Change Log
+
+- 2026-10-10: unblocked (mason 19.1 `done`); status `blocked` → `ready-for-dev`; the `blocking_condition` field is removed; the
+  Given's `active/` path is noted as absent and the `SKILL.md` rule as recursive. No acceptance criterion changed.
 
 ## Review Triage Log

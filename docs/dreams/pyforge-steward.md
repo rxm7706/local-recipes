@@ -1151,6 +1151,59 @@ Drift — orphaned between stations.
   `scripts/commit_msg_hook.py`. **Constraints:** a fix story, no CAP, no flag; only the hook and its tests change; no
   roster entry, reason or matcher moves; AGENTS.md gains no rule. Owner `spec-pyforge-steward` CAP-5 (Story 63.3's
   closed list and its fail-loud parity check). → Epic 85 / Story 85.9, specced 2026-10-09.
+- **2026-10-10 (upstream to-dos) — Ruled: the estate keeps a list of what it needs fixed upstream, and only the operator
+  files, tracks or retires an item.** The operator ruled in chat: "lets record it here - that there are issues we need
+  to open and resolve upstream - and maintain a list of upstream to-do's but leave it to the operator to decide to file,
+  decide to track (once and issue has been opened), and decide to retire - but make the story self contained to this
+  repo". Story 67.4 was minted on 2026-09-25 to open one upstream issue per `upstream` row of
+  `docs/foundry/sbom-gaps.md`, and it was held `blocked` because that is outward work. Since Story 85.8 the session hook
+  refuses an agent's outward GitHub write, so the story could never have run as written. Meanwhile upstream defects
+  turn up in sessions and live only in CFE gotchas and story deferrals:
+  - staged-recipes PRs #33977 and #33978 are still open although `langflow-feedstock` publishes both bundles (mason
+    Story 25.15's deferred row);
+  - conda-recipe-manager's v0→v1 converter leaks a `SentinelType` repr as a mapping key (CFE G121, v8.98.0);
+  - conda-recipe-manager's parser crashes on a valid re-indented recipe, so conda-smithy's lint calls it unparseable
+    (CFE G93's addendum, v8.99.1, from mason Story 25.2's `mem0ai` finding).
+
+  **What it looks like when real:** one registry, `docs/foundry/upstream-todos.yaml`, steward's. It holds one entry per
+  item: an id, its source, the proposed target tracker, a state, a link to a paste-ready draft under
+  `docs/foundry/upstream-drafts/`, and the issue URL once filed. Each state change records `decided_by` and a date. An
+  agent proposes an item with evidence and drafts its text. Only the operator files it, tracks it once an issue is open,
+  resolves it, or retires it with a reason; an agent records those states only when the operator says so in chat. While
+  an item is tracked, an agent may refresh its observed upstream state by a read-only GET. A repo check reds an
+  operator-only state with no `decided_by: operator` and date, and an `upstream` SBOM row with no entry, so a new row
+  joins the list. **Constraints:** no agent files, comments on or closes anything outside this repository (Story 85.8's
+  denials enforce it); the registry adds no session denial; no CAP is minted (fnd:CAP-13 owns the gap list and its
+  operator-flipped upstream filing; CAP-5 is the guard). Owner `spec-python-foundry-cutover` fnd:CAP-13, citing
+  `spec-pyforge-steward` CAP-5. → Story 67.4 re-scoped repo-only and flipped `blocked` → `backlog` by the same ruling,
+  specced 2026-10-10.
+- **2026-10-10 (cleared gates) — Ruled: three stories whose cross-station gates have cleared move.** The operator ruled:
+  "lets look at each one of these and see if we can get them moving and complete them". Each gate was read on `main`
+  (`6d5e84cb6b`):
+  - **Story 85.5** waited on marshal Story 87.3, which ships `pyforge.core.preserve_refs`. 87.3 is `done`, and so is
+    87.15, the content gate the story's push goes through. → `blocked` → `backlog`.
+  - **Story 72.2** waited on mason Story 19.1, which is `done`. The skill sits at
+    `.claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md`; the `active/` path the story's Given names does not
+    exist, so the rule matches a `SKILL.md` anywhere under `.claude/skills/pyforge-mason/`. → `blocked` → `backlog`.
+  - **Index row 49.13** flips when scribe's compile is in effect. Scribe Epic 8 is `done` with Stories 8.1–8.6. Its
+    schedule is the checked-in `pyforge-scribe-nightly-compile.timer`, and `scribe-graph-freshness-check` proves a
+    run fired. → `done`. The row's placement note stands: a compile that must survive the cutover belongs on the
+    Foundry side, not in a workstation unit.
+
+  Index row 49.11 stays `blocked` on herald Epic 19 (the next entry).
+- **2026-10-10 (local host) — Ruled: Herald's live store runs on this machine's local stack, and `deploy perimeter`
+  learns to front any ASGI application.** Index row 49.11 waits on herald Epic 19, whose Story 19.2 needs a persistent
+  host. That host was the Foundry perimeter, and `steward deploy perimeter` cannot target Herald's
+  `webhook_host:application`. `render_daphne_unit` writes the hardcoded `myproject.asgi:application` into the unit's
+  `ExecStart` (`deploy.py:539` on `6d5e84cb6b`; herald's DW-13-6-1 cites `:484`), and no flag overrides it. The operator
+  chose option 1, verbatim "go with option 1, local host": "Mint a small steward fix that adds `--asgi-application` to
+  `deploy perimeter`. Then re-scope herald 19.2 so its host and store are this machine's local stack:
+  `pyforge-foundry-full-stack` with PostgreSQL 17. No public endpoint, nothing outside the repo. Herald Epic 19 then
+  closes, and 49.11 flips to done." **What it looks like when fixed:** `steward deploy perimeter --asgi-application
+  <module:attr>` renders the unit for that application; without the flag the render is byte-identical to today's.
+  **Constraints:** a fix story, no CAP, no flag; local only, since the duty renders files and deploys nothing; herald's
+  re-scope of 19.2 is herald's chain. Owner `spec-pyforge-steward` CAP-114 (the perimeter, Story 9.5). → Epic 86 /
+  Story 86.1, specced 2026-10-10; 49.11 flips to `done` when herald Epic 19 closes.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

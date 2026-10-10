@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-10-07'   # RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and its flag values); lands on AD-1, AD-8, canopy:AD-11, canopy:AD-19 and CAP-94's exception as written, no AD amended. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: prd->arch cascade after the PRD's 2026-10-07 re-stamp (independent review of the free-threading Dream entry; no CAP, no FR); no AD added, amended or removed. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only; 85.5 and 72.2 unblocked; index 49.13 done; Story 86.1, a fix under CAP-114). Lands on AD-1, AD-8 and fnd:AD-23's local-evidence rule as written; no AD added, amended or removed. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and its flag values); lands on AD-1, AD-8, canopy:AD-11, canopy:AD-19 and CAP-94's exception as written, no AD amended. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: prd->arch cascade after the PRD's 2026-10-07 re-stamp (independent review of the free-threading Dream entry; no CAP, no FR); no AD added, amended or removed. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2303,5 +2303,27 @@ CAP exists.
 
 No port, adapter or package boundary moves. `src/platform/` still imports no `pyforge.*`; the chart change is templates
 and values only.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-10
+
+`prd→arch` edge after the PRD's 2026-10-10 re-stamp (§ Currency reconciliation — 2026-10-10 there): Story 67.4 re-scoped
+repo-only under `spec-python-foundry-cutover` fnd:CAP-13, Stories 85.5 and 72.2 unblocked, index row 49.13 `done`, and
+Story 86.1 minted as a fix under CAP-114. No CAP or FR moved. Checked against the decisions as written:
+
+- **AD-1 (wrap, never reimplement).** Story 67.4's check reads `docs/foundry/sbom-gaps.md` through
+  `sbom_gap_derive.parse_gaps_document`, the parser Story 67.3 shipped, and the story forbids a second row regex.
+  Story 86.1's unit still runs `daphne`; the new flag only names its target.
+- **AD-8 (exit-code sole ownership).** Story 67.4's check is a script detector with the 0 / 1 / 2 domain of
+  `docs/reference/judgement-vocabulary.md`, and its `main()` alone returns the code. Story 86.1's refusal is a
+  `DutyResult`, so `cli.main()` keeps the exit.
+- **Outward work stays the operator's.** Story 67.4 adds no session denial and makes no network call. Filing, tracking
+  and retiring are operator acts recorded in the registry, inside the boundary Story 85.8's denials already enforce
+  under CAP-5. Story 86.1 renders files and deploys nothing.
+- **fnd:AD-23 (CI evidence is a real local run)** is untouched: the new detector joins `detectors-ci`, the fresh-clone
+  gate that AD names.
+
+No port, adapter or package boundary moves.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-07"   # RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2579,6 +2579,29 @@ None of these entries adds or changes a requirement.
 wiring; a release sets the two apart. With the flag on and the chart value off, a call raises `ImproperlyConfigured`
 naming `OBJECT_STORAGE_BUCKET`, the named failure FR-36 asks for. No code calls the seam yet: herald's Stories 29.1 and
 29.2 are `backlog`.
+
+**ONE kernel FR space still FR-1..FR-38** (FR-39 = next free id).
+
+**Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-10
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward`'s memlog gained seven entries on 2026-10-10, three
+days after this PRD's 2026-10-07 re-stamp. `SPEC.md` is unchanged. No CAP is added or amended, and no FR moves.*
+
+### What the Spec's memlog carries
+
+- **Story 67.4, re-scoped repo-only.** The operator ruled that the estate keeps a list of the fixes it needs upstream,
+  and that only the operator files, tracks or retires an item. The story now builds `docs/foundry/upstream-todos.yaml`,
+  paste-ready drafts, and a repo-scope check; it files nothing. Its parent is `spec-python-foundry-cutover` fnd:CAP-13
+  (Epic 67), which decomposes from the cutover Spec, not from this PRD. CAP-5 is cited for the session hook's outward
+  denials, which Story 85.8 added to CAP-5's closed `session_denials` list; this story does not extend them. No kernel
+  FR maps to it.
+- **Three cleared gates.** Story 85.5 (FR-38 / CAP-165) and Story 72.2 (FR-33 / CAP-160) move from `blocked` to
+  `backlog`; their FR text already describes them and does not change. Index row 49.13 is `done`; it carries no FR.
+- **Story 86.1, a fix under CAP-114.** `steward deploy perimeter` gains `--asgi-application`, so the perimeter can
+  front Herald's webhook host on this machine's local stack (operator ruling "go with option 1, local host"). CAP-114
+  comes from `spec-secure-live-dashboards` and decomposes there (§ the scope boundary above), so no FR is registered.
 
 **ONE kernel FR space still FR-1..FR-38** (FR-39 = next free id).
 
