@@ -422,7 +422,7 @@ development_status:
   85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
   85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification: done
   85-6-a-fix-turn-re-runs-only-the-failing-commands-and-knows-the-flag-checklist: done
-  85-7-a-cross-surface-refusal-gets-the-same-one-fix-turn: backlog
+  85-7-a-cross-surface-refusal-gets-the-same-one-fix-turn: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
@@ -615,7 +615,7 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: in-progress
+  epic-85: done
   epic-85-retrospective: done
   epic-86: in-progress
   epic-86-retrospective: optional
