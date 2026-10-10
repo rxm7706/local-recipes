@@ -1248,18 +1248,20 @@ def clean_workspaces(
                         in_flight = None
                         continue
                     _execute_delete(record, root=root)
-                else:
-                    if merged_only and not _branch_merged_into(root, record.branch, record.source):
-                        skipped.append({**record.to_dict(), "reason": "not-merged"})
-                        remaining.append(record)
-                        in_flight = None
-                        continue
-                    if not merged_only and not confirm_fn(record.slug):
-                        skipped.append({**record.to_dict(), "reason": "declined"})
-                        remaining.append(record)
-                        in_flight = None
-                        continue
-                    outcome = _archive_worktree(record, root=root, archive_dir=archive_dir)
+                    in_flight = None
+                    deleted.append(record.to_dict())
+                    continue
+                if merged_only and not _branch_merged_into(root, record.branch, record.source):
+                    skipped.append({**record.to_dict(), "reason": "not-merged"})
+                    remaining.append(record)
+                    in_flight = None
+                    continue
+                if not merged_only and not confirm_fn(record.slug):
+                    skipped.append({**record.to_dict(), "reason": "declined"})
+                    remaining.append(record)
+                    in_flight = None
+                    continue
+                outcome = _archive_worktree(record, root=root, archive_dir=archive_dir)
             except WorkspaceError as exc:
                 skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
@@ -1276,19 +1278,16 @@ def clean_workspaces(
                 )
                 remaining.append(record)
                 continue
-            if delete:
-                deleted.append(record.to_dict())
-            else:
-                row = {**record.to_dict(), "archive": str(outcome.archive_path)}
-                if outcome.branch_kept:
-                    row["branch_kept"] = record.branch  # unmerged: its commits exist nowhere else (Story 69.1)
-                if outcome.preserve_tag:
-                    row["preserve_tag"] = outcome.preserve_tag
-                if outcome.preserve_debt:
-                    row["preserve_debt"] = outcome.preserve_debt
-                if outcome.host_local:
-                    row["host_local"] = "true"
-                archived.append(row)
+            row = {**record.to_dict(), "archive": str(outcome.archive_path)}
+            if outcome.branch_kept:
+                row["branch_kept"] = record.branch  # unmerged: its commits exist nowhere else (Story 69.1)
+            if outcome.preserve_tag:
+                row["preserve_tag"] = outcome.preserve_tag
+            if outcome.preserve_debt:
+                row["preserve_debt"] = outcome.preserve_debt
+            if outcome.host_local:
+                row["host_local"] = "true"
+            archived.append(row)
     finally:
         # Persist removals already archived even if a later record fails —
         # otherwise archived trees stay listed in bookkeeping.
