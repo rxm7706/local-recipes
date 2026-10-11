@@ -551,6 +551,10 @@ def gather_dispatch_git_facts(
     story_merged = normalize(story_key) in merged_keys
     if story_merged and not run_head_reached_ref(vcs, repo_root, current_head_sha, ORIGIN_MAIN):
         story_merged = False
+    # Story 90.1: same divergence rule as ``branch_merged`` (Story 22.10) — a merge subject on
+    # ``origin/main`` from before this run must not count while the head still sits at launch baseline.
+    if story_merged and current_head_sha == baseline_head_sha:
+        story_merged = False
     return DispatchGitFacts(
         baseline_head_sha=baseline_head_sha,
         current_head_sha=current_head_sha,
