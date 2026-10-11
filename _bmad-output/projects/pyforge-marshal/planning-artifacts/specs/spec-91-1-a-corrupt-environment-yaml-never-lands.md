@@ -2,7 +2,7 @@
 title: "91.1: A corrupt environment.yaml never lands"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '6b5182c155fa451b9d5af75f8945e57537166a33'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -248,3 +248,34 @@ and the clean text on stdout.
   emits; only `marshal deploy batch-pr` reads `landing_rules`.
 - **`main`'s current corrupt file** is repaired by whichever lands first, atlas 25.1's PR #2104 or this story's own
   first dispatch that touches the file; this story adds no hand repair.
+
+## Review Triage Log
+
+### 2026-10-11 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — blind, edge-case, verification-gap, and intent-alignment passes found no actionable gaps against the diff and intent-contract)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Dispatch now regenerates `environment.yaml` from pixi export stdout (stderr never written) before verification when the story diff touches `environment.yaml` or `pixi.toml`, journals `dispatch-environment-yaml`, and adds cross-surface rule `environment-yaml` running `steward provision --verify` with an `MRS-GATE-015` message that names the fix export command.
+
+**Files changed:**
+- `core/dispatch_environment_yaml.py` — pure triggers + pre-verify regeneration edge
+- `core/gate.py` — fourth cross-surface rule and path matching
+- `core/dispatch.py` — journal kind constant
+- `dispatch_verify.py` — wrapper, refusal message enrichment
+- `dispatch_supervisor/__main__.py` — journal hook before verify
+- `cli/dispatch.py` — CAP-4 verify path parity
+- `tests/unit/test_dispatch_environment_yaml.py` — AC1–AC4 and matrix coverage
+- `tests/unit/test_gate.py` — four-rule mutation pin
+- `spec-pyforge-marshal/.memlog.md` and `spec-pyforge-core/.memlog.md` — surface reconcile entries
+
+**Review:** No patches, deferrals, or rejections.
+
+**Follow-up review recommended:** false
+
+**Verification:** `pyforge-marshal-test` pass (12239 tests); `pyforge-deps-test` pass; `lint-types` exit 0; `spec_surface_reconcile.py` exit 0; `spec-surface-check` ok.
+
+**Residual risk:** Hand-landed branches still bypass dispatch verification (`DW-marshal-91-1-1` remains steward's detector work).
