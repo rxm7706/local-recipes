@@ -2,7 +2,8 @@
 title: "94.1: The review gate orders review entries by their real commit times"
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '378cfdf3f0cbed72caf9b2dbcfd36a124318865e'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
