@@ -36,7 +36,6 @@ from django_warden_fabric.tasks import run_fleet_inventory
 
 _EXAMPLE_ORG = "example-org"
 _FIXTURE_REPO_COUNT = 3
-_PAGINATED_REPO_COUNT = 2
 _EXIT_REFUSED = 2
 _SENTINEL = "sentinel-token-must-not-leak-16-1"
 _SRC_ROOT = Path(__file__).resolve().parents[2]
