@@ -171,6 +171,9 @@ def _seed_live_dispatch_journal(
 ) -> Path:
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
+    fs.dirs.add(worktree)
     journal_path = run_dir / "journal.jsonl"
     intent = prepare_for_write(
         build_entry(
@@ -181,7 +184,7 @@ def _seed_live_dispatch_journal(
             phase=Phase.INTENT,
             payload={
                 "story_key": story_key,
-                "worktree_path": str(tmp_path / "wt"),
+                "worktree_path": str(worktree),
                 "baseline_head_sha": "aaa111",
             },
         )

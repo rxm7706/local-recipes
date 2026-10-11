@@ -17,16 +17,23 @@ class _FakeProcess:
 
 
 def test_iter_session_group_members_filters_by_pgid_and_maps_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
     rows = [
-        _FakeProcess({"pid": 100, "pgid": 42, "create_time": 1.5, "status": psutil.STATUS_RUNNING}),
-        _FakeProcess({"pid": 200, "pgid": 99, "create_time": 2.0, "status": psutil.STATUS_RUNNING}),
-        _FakeProcess({"pid": 101, "pgid": 42, "create_time": None, "status": psutil.STATUS_ZOMBIE}),
+        _FakeProcess({"pid": 100, "create_time": 1.5, "status": psutil.STATUS_RUNNING}),
+        _FakeProcess({"pid": 200, "create_time": 2.0, "status": psutil.STATUS_RUNNING}),
+        _FakeProcess({"pid": 101, "create_time": None, "status": psutil.STATUS_ZOMBIE}),
     ]
+    pgid_by_pid = {100: 42, 200: 99, 101: 42}
 
     def _process_iter(_attrs: list[str]) -> Iterator[_FakeProcess]:
         yield from rows
 
+    def _getpgid(pid: int) -> int:
+        return pgid_by_pid[pid]
+
     monkeypatch.setattr(psutil, "process_iter", _process_iter)
+    monkeypatch.setattr(os, "getpgid", _getpgid)
 
     members = list(PsutilSessionGroup().iter_session_group_members(42))
 
