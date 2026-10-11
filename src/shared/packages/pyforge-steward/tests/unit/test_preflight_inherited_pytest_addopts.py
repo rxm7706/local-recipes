@@ -42,9 +42,7 @@ def _cache_dir_values(addopts: str) -> list[str]:
         tok = tokens[i]
         if tok.startswith("--override-ini=cache_dir="):
             values.append(tok.split("=", 2)[-1])
-        elif tok == "--override-ini" and i + 1 < len(tokens) and tokens[i + 1].startswith(
-            "cache_dir="
-        ):
+        elif tok == "--override-ini" and i + 1 < len(tokens) and tokens[i + 1].startswith("cache_dir="):
             values.append(tokens[i + 1].split("=", 1)[1])
             i += 1
         elif tok.startswith(("-ocache_dir=", "-o=cache_dir=")):
@@ -101,9 +99,7 @@ def test_lane_scratch_env_unset_or_empty_inherited(tmp_path: Path) -> None:
     )
 
 
-def test_lane_scratch_env_unclosed_quote_passes_through(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_lane_scratch_env_unclosed_quote_passes_through(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     broken = '-p no:randomly --basetemp=/outer "unclosed'
     monkeypatch.setenv("PYTEST_ADDOPTS", broken)
     lane_dir = tmp_path / "lane"
@@ -123,16 +119,12 @@ def test_collect_pytest_node_ids_strips_inherited_basetemp(tmp_path: Path) -> No
     cache.mkdir()
     addopts = f"--basetemp={outer} -o cache_dir={cache}"
     ids_plain = psr.collect_pytest_node_ids(repo, f"pytest {test_file} -q")
-    ids_inherited = psr.collect_pytest_node_ids(
-        repo, f"pytest {test_file} -q", env={"PYTEST_ADDOPTS": addopts}
-    )
+    ids_inherited = psr.collect_pytest_node_ids(repo, f"pytest {test_file} -q", env={"PYTEST_ADDOPTS": addopts})
     assert ids_inherited == ids_plain
     assert repo.exists()
 
 
-def test_run_preflight_child_pytest_under_outer_basetemp(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_run_preflight_child_pytest_under_outer_basetemp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("lane"))

@@ -50,11 +50,7 @@ def strip_inherited_pytest_basetemp_and_cache(addopts: str) -> str:
         if tok.startswith("--override-ini=cache_dir="):
             i += 1
             continue
-        if (
-            tok == "--override-ini"
-            and i + 1 < len(tokens)
-            and tokens[i + 1].startswith("cache_dir=")
-        ):
+        if tok == "--override-ini" and i + 1 < len(tokens) and tokens[i + 1].startswith("cache_dir="):
             i += 2
             continue
         if tok == "-o" and i + 1 < len(tokens) and tokens[i + 1].startswith("cache_dir="):
