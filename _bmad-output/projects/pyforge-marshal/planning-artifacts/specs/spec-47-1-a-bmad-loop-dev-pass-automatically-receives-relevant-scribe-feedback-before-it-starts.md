@@ -2,8 +2,8 @@
 title: '47.1: A bmad-loop dev pass automatically receives relevant scribe feedback before it starts'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '2026-09-18'
-status: 'ready-for-dev' # draft | ready-for-dev | in-progress | in-review | done | blocked
-baseline_revision: '4733295ea59e2bffe5407fea9bb47513d108b8ea'
+status: 'done' # draft | ready-for-dev | in-progress | in-review | done | blocked
+baseline_revision: '909a725e165c5648a1818aa8c12e509ffbb5cf73'
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 followup_review_recommended: false # set by step-04 on status: done; step-01 READS this — false HALTs, true allows one follow-up then forces false
 context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md']
@@ -147,3 +147,46 @@ The review's question 2 (a file versus a prompt) is settled by what shipped: bot
 - question 3 (`run_resume`): stays behind the same launcher seam; not in this story.
 - the lower findings, re-read against the shipped code: the double-failure branch still returns only the write-failure reason (`inject_recall_feedback`, the `except (OSError, PyforgeError)` return precedes the `if not outcome.ok` check), so it is now an acceptance criterion; the `MRS-SPIN-018` WARN wording no longer applies (that code now names the supervisor-spawn finding and no shipped caller reports a recall WARN); the `_await_file` fix was reapplied with its docstring (`tests/unit/test_harness_bmadbuild.py:403`).
 - chain: memlog entries on `spec-marshal-recall-in-the-loop` (the ruling verbatim, the question-2 settlement, the re-derived CAP-1); the `SPEC.md` re-render was refused by the session hook and is the parent session's to land. `DW-marshal-47-1-intent-gap-2026-09-20` carries a `ruled:` line and stays open until this story lands. Status `ready-for-dev`; ledger `blocked` → `backlog`, operator-confirmed by this answer.
+
+### 2026-10-10 — Review pass
+- verdicts: 5 findings — high 0, medium 0, low 1, false 4, maybe-false 0
+- findings:
+  - `[low]` `[patch]` `augment_bmad_loop_session_prompt_with_recall` docstring still said "scoped feedback" after Story 47.1 dropped `--scope` on the dev-pass query — Updated the docstring to "team-memory feedback block".
+  - `[false]` `[reject]` `render_scribe_recall_argv` would forward `--scope` together with `--mode memory` if a future caller passed both — Refuted: `inject_recall_feedback` is the only memory-mode caller and passes no scope; planning-graph callers keep default planning mode with scope unchanged.
+  - `[false]` `[reject]` No test covers `ScribeCli.recall` refusing an invalid mode before subprocess — Refuted: `test_planning_graph.py::test_unrecognized_mode_refuses_before_subprocess` exercises the renderer; `ScribeCli.recall` maps `ValueError` to `ok=False` without subprocess (same guard).
+  - `[false]` `[reject]` Double-failure branch still untested — Refuted: `test_double_failure_reason_includes_both_scribe_and_write_errors` added in `test_harness_bmadloop_recall.py`.
+  - `[false]` `[reject]` Matrix row "Unrecognized mode" requires an exception to the caller but `ScribeCli.recall` never raises — Refuted: the I/O matrix names the renderer/caller contract; dev-pass path uses `ScribeCli`, which degrades invalid mode to `ok=False` per the adapter's never-raises rule, while direct renderer callers get `ValueError` as specified.
+
+## Auto Run Result
+
+Status: done
+
+### Summary
+Dev-pass recall injection now runs `scribe recall <query> --mode memory` with no `--scope`, while planning-graph retrieve keeps the prior `--mode planning [--scope <slug>]` argv. Invalid recall modes are refused in `render_scribe_recall_argv`; the double-failure write path reports both scribe and filesystem errors.
+
+### Files changed
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py` — `mode` parameter on `render_scribe_recall_argv`, allowed modes guard.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py` — `ScribeCli.recall(..., mode=)` wiring.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` — dev-pass uses `mode="memory"`; combined failure reason; docstring.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py` — memory mode and invalid-mode tests.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_recall.py` — real `ScribeCli` argv test, team-memory citation fold, double-failure test.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` — closed `DW-marshal-47-1-intent-gap-2026-09-20`.
+- `spec-marshal-recall-in-the-loop/.memlog.md` and `spec-pyforge-marshal/.memlog.md` — surface reconcile entries (Story 47.1 paths).
+
+### Review
+- Patches applied: 1 low (docstring wording).
+- Deferred: none.
+- Rejected: 4 false findings (see triage log).
+
+### Follow-up review
+`followup_review_recommended: false` — one low docstring patch only; no unverified high/medium risk.
+
+### Verification
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (12250 passed, 20 skipped).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -k recall` — pass (66 passed, 1 skipped).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass (130 passed, 3 skipped).
+- `python scripts/spec_surface_reconcile.py` — exit 0.
+- `pixi run --frozen -e pyforge-guild lint-types` — pass after import-order fix in recall tests.
+
+### Residual risks
+Live `bmad-loop` launcher wiring (`DW-marshal-47-2`, `DW-marshal-47-3`) remains out of scope; recall runs only where `inject_recall_feedback` / `augment_bmad_loop_session_prompt_with_recall` are already called.
