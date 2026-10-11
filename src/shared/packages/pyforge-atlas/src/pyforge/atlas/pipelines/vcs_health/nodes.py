@@ -18,7 +18,9 @@ import time
 from typing import Any
 
 import pandas as pd
+from pyforge.core.flags import read_boolean
 
+from pyforge.atlas.datasets import dependency_history
 from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS
 from pyforge.atlas.datasets.refresh import RefreshRequest, clamp_ttl_cadence
 
@@ -679,20 +681,16 @@ def classify_migration_readiness(
 
 
 def build_repo_dependency_history(
-    warden_fleet_inventory: dict | None,
     dependency_history_repos: list | None,
-) -> Any:
+) -> dependency_history.DependencyHistoryBuildRequest:
     """Pure trigger for :class:`~pyforge.atlas.datasets.RepoDependencyHistoryDataset` (CAP-61).
 
-    Story 25.2's fleet sensor targets this op by name; IO stays in the dataset (AD-2).
+    Story 25.2's fleet sensor targets this op by name; IO stays in the dataset (AD-2), which
+    owns incrementality from its own per-repo head metadata (AD-5) -- the node takes no
+    Warden inventory, so it never loads a file that may be absent. With the flag OFF the
+    request is ``not-applicable`` and the dataset clones nothing.
     """
-    from pyforge.core.flags import read_boolean
-
-    from pyforge.atlas.datasets.dependency_history import FLAG_KEY, build_dependency_history_request
-
-    request = build_dependency_history_request(
-        flag_on=read_boolean(FLAG_KEY),
+    return dependency_history.build_dependency_history_request(
+        flag_on=read_boolean(dependency_history.FLAG_KEY),
         repo_sources=dependency_history_repos or [],
-        fleet_inventory=warden_fleet_inventory,
     )
-    return request

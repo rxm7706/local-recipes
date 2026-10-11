@@ -805,9 +805,11 @@ warden_fleet_inventory:
     layer: raw
 
 # Story 25.1 (CAP-61) — per-repo dependency history (git-pkgs + estate pixi parser).
+# A directory partitioned by repo: one <owner>@<repo>.parquet per repo, plus the
+# per-repo head/degradation state (.repo_state.json) and the AD-13 .staleness.json.
 repo_dependency_history:
   type: pyforge.atlas.datasets.RepoDependencyHistoryDataset
-  filepath: ${globals:paths.data_root}/primary/repo_dependency_history/repo_dependency_history.parquet
+  filepath: ${globals:paths.data_root}/primary/repo_dependency_history
   cache_dir: ${globals:paths.repo_dependency_cache}
   metadata:
     layer: primary

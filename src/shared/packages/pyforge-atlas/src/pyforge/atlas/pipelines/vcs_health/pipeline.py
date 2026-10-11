@@ -138,7 +138,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             # Story 25.1 (CAP-61) — dependency-history trigger; Story 25.2 sensor job target.
             node(
                 func=build_repo_dependency_history,
-                inputs=["warden_fleet_inventory", "params:dependency_history.repos"],
+                inputs="params:dependency_history.repos",
                 outputs="repo_dependency_history",
                 name="build_repo_dependency_history",
             ),

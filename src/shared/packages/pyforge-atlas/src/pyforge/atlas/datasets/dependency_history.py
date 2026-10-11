@@ -1,9 +1,28 @@
 """Per-repo dependency history dataset (Story 25.1, CAP-61 / FR-69).
 
-Dataset-owned IO (AD-2): clones, ``git`` / ``git pkgs`` invocations, DuckDB reads
-of git-pkgs' transient SQLite DB, and the estate ``pixi.toml`` history walk all
-live here — never in ``pipelines/`` nodes. Nodes emit a small
-:class:`DependencyHistoryBuildRequest` trigger only.
+Dataset-owned IO (AD-2): clones, ``git`` / ``git pkgs`` invocations and the estate
+``pixi.toml`` / ``pixi.lock`` history walk all live here -- never in ``pipelines/`` nodes.
+Nodes emit a small :class:`DependencyHistoryBuildRequest` trigger only.
+
+Every repo is scanned in a clone kept in Atlas's own cache (a ``local_path`` source is
+cloned too), so git-pkgs never runs against an operator's working copy and nothing is
+written into a scanned repo. git-pkgs runs as ``git pkgs init --no-hooks`` with
+``GIT_PKGS_DB`` in a throwaway directory outside the repo, and its change rows are read
+from its own JSON output (``git pkgs history --format json``) -- no ``sqlite3`` import and
+no DuckDB extension, so nothing is ever ``INSTALL``-ed (AD-13). The throwaway directory,
+and every SQLite side file with it, is deleted before the next repo.
+
+Store layout (one directory, partitioned by repo)::
+
+    <filepath>/<owner>@<repo>.parquet   one partition per repo (its last-good rows)
+    <filepath>/.repo_state.json         per repo: walked head SHA, degradation, reason (AD-5)
+    <filepath>/.staleness.json          AD-13 marker, present while any repo is degraded
+
+A repo whose head has not moved since its last complete walk is not re-walked (AD-5). A
+repo that cannot be reached keeps its last-good partition and reads ``stale`` (AD-13); a
+repo whose git-pkgs half cannot run (git-pkgs absent, outside its tested range, or
+failing) reads ``unresolved`` and is re-walked on the next run. No verdict, score or
+threshold is computed here ("Atlas measures; Warden judges").
 """
 
 from __future__ import annotations
@@ -13,18 +32,19 @@ import logging
 import os
 import re
 import shutil
+import tempfile
 import tomllib
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
-import duckdb
 import pandas as pd
+import yaml
 from kedro.io import AbstractDataset
-from kedro_datasets.pandas import ParquetDataset
-from pyforge.core.atomic_write import atomic_write
-from pyforge.core.process import PosixProcess, ProcessPort
+from pyforge.core.atomic_write import atomic_write, atomic_write_text
+from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from .refresh import StalenessMarker
 
@@ -35,11 +55,22 @@ FLAG_KEY = "pyforge.atlas.dependency_history"
 SOURCE_GIT_PKGS = "git-pkgs"
 SOURCE_ESTATE_PIXI = "estate-pixi-parser"
 
+# Degradation vocabulary (AD-13): never interchanged.
+STALE = "stale"
+UNRESOLVED = "unresolved"
+NOT_APPLICABLE = "not-applicable"
+
+#: git-pkgs's tested version range, ``>=0.21.0,<0.22`` (mason Story 21.1 built 0.21.0).
+#: Mirrored by the root ``pixi.toml`` ``[feature.pyforge-atlas.target.linux-64.dependencies]`` pin.
+GIT_PKGS_MIN_VERSION: tuple[int, int, int] = (0, 21, 0)
+GIT_PKGS_MAX_VERSION: tuple[int, int, int] = (0, 22, 0)  # exclusive
+
 HISTORY_COLUMNS: tuple[str, ...] = (
     "repo_full_name",
     "commit_sha",
     "commit_time",
     "manifest_path",
+    "manifest_scope",
     "ecosystem",
     "name",
     "requirement_before",
@@ -49,16 +80,53 @@ HISTORY_COLUMNS: tuple[str, ...] = (
     "degradation",
 )
 
-_REPO_HEADS_SUFFIX = ".repo_heads.json"
-_STALENESS_SUFFIX = ".staleness.json"
+_STATE_FILENAME = ".repo_state.json"
+_STALENESS_FILENAME = ".staleness.json"
+_PARTITION_SUFFIX = ".parquet"
+_STATE_FIELDS = ("head", "degradation", "reason")
 
-_GIT_PKGS_TIMEOUT_S = 900.0
 _GIT_TIMEOUT_S = 120.0
+_CLONE_TIMEOUT_S = 900.0
+_GIT_PKGS_TIMEOUT_S = 900.0
+
+# <owner>/<repo>, ASCII word characters, dots and dashes only; "." and ".." segments are refused.
+_FULL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+# scp-like ssh form, ``git@host:owner/repo.git``.
+_SCP_URL_RE = re.compile(r"^[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+:[A-Za-z0-9_.~/-]+$")
+_ALLOWED_URL_PREFIXES = ("https://", "ssh://", "file://")
+
+_PIXI_MANIFEST = "pixi.toml"
+_PIXI_LOCK = "pixi.lock"
+_CONDA_TABLES = ("dependencies", "host-dependencies", "build-dependencies", "run-dependencies")
+_PYPI_TABLE = "pypi-dependencies"
+_YAML_LOADER: Any = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+_CONDA_SUFFIXES = (".conda", ".tar.bz2")
+
+# (manifest_scope, ecosystem, name) -> requirement text
+_DepKey = tuple[str, str, str]
+
+
+class GitProcessPort(Protocol):
+    """The slice of ``pyforge.core.process`` this dataset uses: ``PosixProcess.run`` with ``env=``.
+
+    ``ProcessPort`` carries no environment parameter; ``GIT_PKGS_DB`` and
+    ``GIT_TERMINAL_PROMPT`` must reach the child, so the dataset takes ``PosixProcess``'s
+    own signature (the sanctioned way to hand a child a curated environment).
+    """
+
+    def run(
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: Path,
+        timeout_s: float | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> ProcessResult: ...
 
 
 @dataclass(frozen=True)
 class RepoSource:
-    """One repo to scan: a local path or a clone URL (catalog / params declared)."""
+    """One repo to scan: a local path or a clone URL (params-declared)."""
 
     full_name: str
     local_path: str | None = None
@@ -67,10 +135,9 @@ class RepoSource:
 
 @dataclass(frozen=True)
 class DependencyHistoryBuildRequest:
-    """Pure node output → dataset ``save`` input (trigger, not row payload)."""
+    """Pure node output -> dataset ``save`` input (a trigger, not a row payload)."""
 
     repos: tuple[RepoSource, ...] = ()
-    fleet_heads: Mapping[str, str] | None = None
     force: bool = False
     not_applicable: bool = False
 
@@ -79,14 +146,32 @@ class DependencyHistoryBuildRequest:
         return cls(not_applicable=True)
 
 
+@dataclass(frozen=True)
+class _RepoOutcome:
+    degradation: str = ""
+    reason: str = ""
+    rows: list[dict[str, Any]] | None = None  # None: keep the last-good partition untouched
+    head: str | None = None  # None: keep the head of the last complete walk
+
+
+class _InvalidSource(Exception):
+    """The source cannot be scanned as declared (``unresolved``)."""
+
+
+class _Unreachable(Exception):
+    """The repo could not be cloned or fetched (``stale``)."""
+
+
+class _WalkError(Exception):
+    """A history walk of a reachable clone failed (``unresolved``)."""
+
+
 def _empty_history() -> pd.DataFrame:
     return pd.DataFrame(columns=list(HISTORY_COLUMNS))
 
 
 def _parse_repo_sources(raw: Any) -> tuple[RepoSource, ...]:
-    if not raw:
-        return ()
-    if not isinstance(raw, list):
+    if not raw or not isinstance(raw, list):
         return ()
     out: list[RepoSource] = []
     for item in raw:
@@ -107,435 +192,592 @@ def _parse_repo_sources(raw: Any) -> tuple[RepoSource, ...]:
     return tuple(out)
 
 
-def _fleet_heads(raw: Mapping[str, Any] | None) -> dict[str, str]:
-    if not raw or not isinstance(raw, Mapping):
-        return {}
-    repos = raw.get("repos")
-    if not isinstance(repos, list):
-        return {}
-    heads: dict[str, str] = {}
-    for item in repos:
-        if isinstance(item, Mapping):
-            name = item.get("full_name")
-            sha = item.get("head_sha")
-            if name and sha:
-                heads[str(name)] = str(sha)
-    return heads
+def _fs_name(full_name: str) -> str:
+    """``owner/repo`` -> ``owner@repo``; ``@`` is outside the name alphabet, so no two names collide."""
+    return full_name.replace("/", "@")
 
 
-def _name_column(ecosystem: str, name: str, purl: str | None) -> str:
-    eco = (ecosystem or "").lower()
-    if eco == "pypi":
-        return name
-    if eco == "conda":
-        return name
-    if purl and purl.startswith("pkg:"):
-        # Never persist a purl as the join key — strip to the native name segment.
-        tail = purl.split("/")[-1]
-        if "@" in tail:
-            tail = tail.split("@", 1)[0]
-        if tail:
-            return tail
-    return name
+def _clone_url_allowed(url: str) -> bool:
+    if any(ch.isspace() or ord(ch) < 32 for ch in url):
+        return False
+    if url.startswith(_ALLOWED_URL_PREFIXES):
+        return True
+    return bool(_SCP_URL_RE.match(url))
 
 
-def _epoch_seconds_from_git_timestamp(ts: str) -> int:
-    ts = (ts or "").strip()
-    if not ts:
+def _source_problem(source: RepoSource) -> str:
+    """Why ``source`` cannot be scanned as declared, or ``""`` when it can."""
+    name = source.full_name
+    if not _FULL_NAME_RE.match(name) or any(part in {".", ".."} for part in name.split("/")):
+        return f"invalid repo full name {name!r} (expected <owner>/<repo>)"
+    if source.clone_url:
+        if not _clone_url_allowed(source.clone_url):
+            return f"clone URL scheme not allowed (https://, ssh://, file:// or user@host:path): {source.clone_url!r}"
+        return ""
+    if not source.local_path:
+        return "neither a local path nor a clone URL is declared"
+    return ""
+
+
+def _git_env(extra: Mapping[str, str] | None = None) -> dict[str, str]:
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+    if extra:
+        env.update(extra)
+    return env
+
+
+def _tail(text: str, limit: int = 200) -> str:
+    text = (text or "").strip()
+    return text[-limit:]
+
+
+def _epoch_from_iso(value: Any) -> int:
+    text = str(value or "").strip()
+    if not text:
         return 0
-    if ts.isdigit():
-        return int(ts)
     try:
-        # git log %ct — epoch seconds
-        return int(float(ts.split()[0]))
+        return int(datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp())
     except ValueError:
         return 0
 
 
-def _read_git_pkgs_changes(db_path: Path) -> pd.DataFrame:
-    con = duckdb.connect()
+def _row(
+    *,
+    repo_full_name: str,
+    commit_sha: str,
+    commit_time: int,
+    manifest_path: str,
+    manifest_scope: str,
+    ecosystem: str,
+    name: str,
+    requirement_before: str,
+    requirement_after: str,
+    change_kind: str,
+    source: str,
+) -> dict[str, Any]:
+    return {
+        "repo_full_name": repo_full_name,
+        "commit_sha": commit_sha,
+        "commit_time": int(commit_time),
+        "manifest_path": manifest_path,
+        "manifest_scope": manifest_scope,
+        "ecosystem": ecosystem,
+        "name": name,
+        "requirement_before": requirement_before,
+        "requirement_after": requirement_after,
+        "change_kind": change_kind,
+        "source": source,
+        "degradation": "",
+    }
+
+
+# --- git-pkgs ------------------------------------------------------------------------------
+
+
+def _parse_version(text: str) -> tuple[int, int, int] | None:
+    match = re.search(r"(\d+)\.(\d+)\.(\d+)", text or "")
+    if match is None:
+        return None
+    major, minor, patch = (int(part) for part in match.groups())
+    return major, minor, patch
+
+
+def _git_pkgs_problem(process: GitProcessPort, cwd: Path) -> str:
+    """``""`` when ``git pkgs`` resolves inside its tested range, else why it cannot be used."""
     try:
-        con.execute("INSTALL sqlite; LOAD sqlite;")
-        query = """
-        SELECT
-            c.sha AS commit_sha,
-            epoch(CAST(c.committed_at AS TIMESTAMP))::BIGINT AS commit_time,
-            m.path AS manifest_path,
-            dc.ecosystem AS ecosystem,
-            dc.name AS name,
-            dc.previous_requirement AS requirement_before,
-            dc.requirement AS requirement_after,
-            dc.change_type AS change_kind,
-            dc.purl AS purl
-        FROM sqlite_scan(?, 'dependency_changes') dc
-        JOIN sqlite_scan(?, 'commits') c ON dc.commit_id = c.id
-        JOIN sqlite_scan(?, 'manifests') m ON dc.manifest_id = m.id
-        """
-        return con.execute(query, [str(db_path), str(db_path), str(db_path)]).fetchdf()
-    finally:
-        con.close()
+        res = process.run(["git", "pkgs", "--version"], cwd=cwd, timeout_s=_GIT_TIMEOUT_S, env=_git_env())
+    except ProcessError as exc:
+        return f"git-pkgs could not be launched: {exc}"
+    if res.returncode != 0:
+        return f"git-pkgs is not installed (`git pkgs --version` exited {res.returncode})"
+    version = _parse_version(res.stdout)
+    if version is None:
+        return f"git-pkgs version unreadable: {_tail(res.stdout)!r}"
+    if not GIT_PKGS_MIN_VERSION <= version < GIT_PKGS_MAX_VERSION:
+        found = ".".join(str(part) for part in version)
+        return f"git-pkgs {found} is outside its tested range >=0.21.0,<0.22"
+    return ""
 
 
-def _git_pkgs_rows(frame: pd.DataFrame, repo_full_name: str) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for rec in frame.to_dict(orient="records"):
-        eco = str(rec.get("ecosystem") or "")
-        name = str(rec.get("name") or "")
-        rows.append(
-            {
-                "repo_full_name": repo_full_name,
-                "commit_sha": str(rec.get("commit_sha") or ""),
-                "commit_time": int(rec.get("commit_time") or 0),
-                "manifest_path": str(rec.get("manifest_path") or ""),
-                "ecosystem": eco,
-                "name": _name_column(eco, name, rec.get("purl")),
-                "requirement_before": str(rec.get("requirement_before") or ""),
-                "requirement_after": str(rec.get("requirement_after") or ""),
-                "change_kind": str(rec.get("change_kind") or ""),
-                "source": SOURCE_GIT_PKGS,
-                "degradation": "",
-            }
+def _git_pkgs_change_row(item: Mapping[str, Any], repo_full_name: str) -> dict[str, Any]:
+    kind = str(item.get("change_type") or "")
+    requirement = str(item.get("requirement") or "")
+    previous = str(item.get("previous_requirement") or "")
+    if kind == "removed":
+        before, after = previous or requirement, ""
+    else:
+        before, after = previous, requirement
+    return _row(
+        repo_full_name=repo_full_name,
+        commit_sha=str(item.get("sha") or ""),
+        commit_time=_epoch_from_iso(item.get("committed_at")),
+        manifest_path=str(item.get("manifest_path") or ""),
+        manifest_scope="",
+        ecosystem=str(item.get("ecosystem") or ""),
+        name=str(item.get("name") or ""),
+        requirement_before=before,
+        requirement_after=after,
+        change_kind=kind,
+        source=SOURCE_GIT_PKGS,
+    )
+
+
+def _git_pkgs_rows(process: GitProcessPort, repo: Path, repo_full_name: str) -> list[dict[str, Any]]:
+    """Index ``repo`` into a throwaway database and read its change rows from git-pkgs' JSON."""
+    with tempfile.TemporaryDirectory(prefix="atlas-git-pkgs-") as scratch:
+        env = _git_env({"GIT_PKGS_DB": str(Path(scratch) / "pkgs.sqlite3")})
+        init = process.run(
+            ["git", "-C", str(repo), "pkgs", "init", "--no-hooks", "--quiet"],
+            cwd=repo,
+            timeout_s=_GIT_PKGS_TIMEOUT_S,
+            env=env,
         )
-    return rows
-
-
-def _parse_pixi_toml_bytes(raw: bytes) -> dict[str, str]:
+        if init.returncode != 0:
+            raise _WalkError(f"git pkgs init exited {init.returncode}: {_tail(init.stderr)}")
+        history = process.run(
+            ["git", "-C", str(repo), "pkgs", "history", "--format", "json"],
+            cwd=repo,
+            timeout_s=_GIT_PKGS_TIMEOUT_S,
+            env=env,
+        )
+        if history.returncode != 0:
+            raise _WalkError(f"git pkgs history exited {history.returncode}: {_tail(history.stderr)}")
     try:
-        data = tomllib.loads(raw.decode("utf-8"))
-    except (tomllib.TOMLDecodeError, UnicodeDecodeError):
-        return {}
-    deps: dict[str, str] = {}
-    project = data.get("project") if isinstance(data.get("project"), Mapping) else {}
-    if isinstance(project, Mapping):
-        pd_deps = project.get("dependencies")
-        if isinstance(pd_deps, list):
-            for item in pd_deps:
-                if isinstance(item, str):
-                    spec = item.strip()
-                    if spec:
-                        name = re.split(r"[<>=! \[]", spec, maxsplit=1)[0].strip()
-                        if name:
-                            deps[name] = spec
-    table_deps = data.get("dependencies")
-    if isinstance(table_deps, Mapping):
-        for name, spec in table_deps.items():
-            deps[str(name)] = str(spec) if spec is not None else ""
+        payload = json.loads(history.stdout or "[]")
+    except ValueError as exc:
+        raise _WalkError(f"git pkgs history printed no JSON: {exc}") from exc
+    if payload is None:
+        payload = []
+    if not isinstance(payload, list):
+        raise _WalkError(f"git pkgs history printed {type(payload).__name__}, not a list")
+    return [_git_pkgs_change_row(item, repo_full_name) for item in payload if isinstance(item, Mapping)]
+
+
+# --- estate pixi parser --------------------------------------------------------------------
+
+
+def _requirement_text(spec: Any) -> str:
+    """One canonical string per spec: a string as written, a ``{version = ...}`` table as its version."""
+    if isinstance(spec, str):
+        return spec.strip()
+    if isinstance(spec, Mapping):
+        if set(spec) == {"version"}:
+            return str(spec["version"]).strip()
+        return json.dumps(dict(spec), sort_keys=True, separators=(", ", ": "), default=str)
+    return json.dumps(spec, sort_keys=True, default=str)
+
+
+def _targets(prefix: str, table: Mapping[str, Any]) -> Iterator[tuple[str, Mapping[str, Any]]]:
+    targets = table.get("target")
+    if isinstance(targets, Mapping):
+        for platform, body in targets.items():
+            if isinstance(body, Mapping):
+                yield f"{prefix}target.{platform}.", body
+
+
+def _dependency_scopes(data: Mapping[str, Any]) -> Iterator[tuple[str, Mapping[str, Any]]]:
+    """Every table of a pixi manifest that can hold dependency tables, with its dotted prefix."""
+    yield "", data
+    yield from _targets("", data)
+    features = data.get("feature")
+    if isinstance(features, Mapping):
+        for feature_name, feature in features.items():
+            if isinstance(feature, Mapping):
+                prefix = f"feature.{feature_name}."
+                yield prefix, feature
+                yield from _targets(prefix, feature)
+    package = data.get("package")
+    if isinstance(package, Mapping):
+        yield "package.", package
+        yield from _targets("package.", package)
+
+
+def _parse_pixi_manifest(text: str) -> dict[_DepKey, str] | None:
+    """Every declared dependency of a ``pixi.toml`` revision; ``None`` when it does not parse."""
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return None
+    deps: dict[_DepKey, str] = {}
+    for prefix, table in _dependency_scopes(data):
+        for table_name in (*_CONDA_TABLES, _PYPI_TABLE):
+            entries = table.get(table_name)
+            if not isinstance(entries, Mapping):
+                continue
+            ecosystem = "pypi" if table_name == _PYPI_TABLE else "conda"
+            for name, spec in entries.items():
+                deps[(f"{prefix}{table_name}", ecosystem, str(name))] = _requirement_text(spec)
     return deps
 
 
-def _diff_pixi_deps(
-    before: dict[str, str], after: dict[str, str]
-) -> list[tuple[str, str, str, str]]:
-    """Return (change_kind, name, req_before, req_after) tuples."""
-    changes: list[tuple[str, str, str, str]] = []
-    names = set(before) | set(after)
-    for name in sorted(names):
-        b = before.get(name)
-        a = after.get(name)
-        if b is None and a is not None:
-            changes.append(("added", name, "", a))
-        elif b is not None and a is None:
-            changes.append(("removed", name, b, ""))
-        elif b != a:
-            changes.append(("modified", name, b or "", a or ""))
+def _conda_name_version(locator: str) -> tuple[str, str] | None:
+    filename = locator.rstrip("/").rsplit("/", 1)[-1]
+    for suffix in _CONDA_SUFFIXES:
+        if filename.endswith(suffix):
+            parts = filename[: -len(suffix)].rsplit("-", 2)
+            if len(parts) == 3 and parts[0] and parts[1]:
+                return parts[0], parts[1]
+    return None
+
+
+def _version_sort_key(version: str) -> tuple[tuple[int, int | str], ...]:
+    return tuple((0, int(part)) if part.isdigit() else (1, part) for part in re.split(r"(\d+)", version) if part)
+
+
+def _parse_pixi_lock(text: str) -> dict[_DepKey, str] | None:
+    """Every locked package of a ``pixi.lock`` revision as ``name -> versions``; ``None`` when unparsable.
+
+    The lock's top-level ``packages`` list holds each locked artifact once across every
+    environment and platform; the versions a name resolves to are joined, natural-sorted.
+    """
+    try:
+        data = yaml.load(text, Loader=_YAML_LOADER)
+    except yaml.YAMLError:
+        return None
+    if not isinstance(data, Mapping):
+        return None
+    versions: dict[tuple[str, str], set[str]] = {}
+    for item in data.get("packages") or []:
+        if not isinstance(item, Mapping):
+            continue
+        kind = item.get("kind")
+        if "conda" in item or kind == "conda":
+            ecosystem, locator = "conda", item.get("conda") or item.get("url")
+        elif "pypi" in item or kind == "pypi":
+            ecosystem, locator = "pypi", item.get("pypi") or item.get("url")
+        else:
+            continue
+        name, version = item.get("name"), item.get("version")
+        if (not name or not version) and ecosystem == "conda" and isinstance(locator, str):
+            parsed = _conda_name_version(locator)
+            if parsed is not None:
+                name, version = parsed
+        if name and version:
+            versions.setdefault((ecosystem, str(name)), set()).add(str(version))
+    return {
+        ("", ecosystem, name): ",".join(sorted(found, key=_version_sort_key))
+        for (ecosystem, name), found in versions.items()
+    }
+
+
+def _diff_deps(before: Mapping[_DepKey, str], after: Mapping[_DepKey, str]) -> list[tuple[str, _DepKey, str, str]]:
+    """``(change_kind, key, requirement_before, requirement_after)`` for every changed key."""
+    changes: list[tuple[str, _DepKey, str, str]] = []
+    for key in sorted(set(before) | set(after)):
+        old, new = before.get(key), after.get(key)
+        if old is None and new is not None:
+            changes.append(("added", key, "", new))
+        elif old is not None and new is None:
+            changes.append(("removed", key, old, ""))
+        elif old != new:
+            changes.append(("modified", key, old or "", new or ""))
     return changes
 
 
-def _estate_pixi_rows(
-    process: ProcessPort,
-    repo_path: Path,
-    repo_full_name: str,
-) -> list[dict[str, Any]]:
-    log = process.run(
-        ["git", "-C", str(repo_path), "log", "--format=%H %ct", "--", "pixi.toml", "pixi.lock"],
-        cwd=repo_path,
+def _file_revisions(process: GitProcessPort, repo: Path, path: str) -> list[tuple[str, int]]:
+    """Mainline commits touching ``path``, oldest first, as ``(sha, epoch seconds)``."""
+    res = process.run(
+        ["git", "-C", str(repo), "log", "--first-parent", "--reverse", "--format=%H %ct", "--", path],
+        cwd=repo,
         timeout_s=_GIT_TIMEOUT_S,
+        env=_git_env(),
     )
-    if log.returncode != 0:
-        return []
-    commits: list[tuple[str, int]] = []
-    for line in log.stdout.splitlines():
-        parts = line.strip().split(None, 1)
-        if len(parts) == 2:
-            commits.append((parts[0], _epoch_seconds_from_git_timestamp(parts[1])))
-    commits.reverse()
-    prev_deps: dict[str, str] = {}
+    if res.returncode != 0:
+        raise _WalkError(f"git log -- {path} exited {res.returncode}: {_tail(res.stderr)}")
+    revisions: list[tuple[str, int]] = []
+    for line in res.stdout.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[1].isdigit():
+            revisions.append((parts[0], int(parts[1])))
+    return revisions
+
+
+def _estate_pixi_rows(process: GitProcessPort, repo: Path, repo_full_name: str) -> list[dict[str, Any]]:
+    """The Atlas-native ``pixi.toml`` / ``pixi.lock`` history (git-pkgs has no pixi parser)."""
+    parsers: tuple[tuple[str, Callable[[str], dict[_DepKey, str] | None]], ...] = (
+        (_PIXI_MANIFEST, _parse_pixi_manifest),
+        (_PIXI_LOCK, _parse_pixi_lock),
+    )
     rows: list[dict[str, Any]] = []
-    for sha, ts in commits:
-        show = process.run(
-            ["git", "-C", str(repo_path), "show", f"{sha}:pixi.toml"],
-            cwd=repo_path,
-            timeout_s=_GIT_TIMEOUT_S,
-        )
-        if show.returncode != 0 or not show.stdout:
-            continue
-        deps = _parse_pixi_toml_bytes(show.stdout.encode("utf-8"))
-        for kind, name, req_before, req_after in _diff_pixi_deps(prev_deps, deps):
-            rows.append(
-                {
-                    "repo_full_name": repo_full_name,
-                    "commit_sha": sha,
-                    "commit_time": ts,
-                    "manifest_path": "pixi.toml",
-                    "ecosystem": "conda",
-                    "name": name,
-                    "requirement_before": req_before,
-                    "requirement_after": req_after,
-                    "change_kind": kind,
-                    "source": SOURCE_ESTATE_PIXI,
-                    "degradation": "",
-                }
+    for path, parser in parsers:
+        previous: dict[_DepKey, str] = {}
+        for sha, committed in _file_revisions(process, repo, path):
+            shown = process.run(
+                ["git", "-C", str(repo), "show", f"{sha}:{path}"],
+                cwd=repo,
+                timeout_s=_GIT_TIMEOUT_S,
+                env=_git_env(),
             )
-        prev_deps = deps
+            # A non-zero `git show` is the file being absent at that commit (it was deleted).
+            current = parser(shown.stdout) if shown.returncode == 0 else {}
+            if current is None:
+                logger.warning("%s: %s at %s does not parse; revision skipped", repo_full_name, path, sha)
+                continue
+            for kind, (scope, ecosystem, name), before, after in _diff_deps(previous, current):
+                rows.append(
+                    _row(
+                        repo_full_name=repo_full_name,
+                        commit_sha=sha,
+                        commit_time=committed,
+                        manifest_path=path,
+                        manifest_scope=scope,
+                        ecosystem=ecosystem,
+                        name=name,
+                        requirement_before=before,
+                        requirement_after=after,
+                        change_kind=kind,
+                        source=SOURCE_ESTATE_PIXI,
+                    )
+                )
+            previous = current
     return rows
 
 
-def _repo_head(process: ProcessPort, repo_path: Path) -> str:
+def _repo_head(process: GitProcessPort, repo: Path) -> str:
     res = process.run(
-        ["git", "-C", str(repo_path), "rev-parse", "HEAD"],
-        cwd=repo_path,
+        ["git", "-C", str(repo), "rev-parse", "HEAD"],
+        cwd=repo,
         timeout_s=_GIT_TIMEOUT_S,
+        env=_git_env(),
     )
-    if res.returncode != 0:
-        return ""
-    return res.stdout.strip()
-
-
-def _run_git_pkgs_init(process: ProcessPort, repo_path: Path, db_path: Path) -> bool:
-    env = {**os.environ, "GIT_PKGS_DB": str(db_path)}
-    res = process.run(
-        ["git", "-C", str(repo_path), "pkgs", "init", "--no-hooks"],
-        cwd=repo_path,
-        timeout_s=_GIT_PKGS_TIMEOUT_S,
-        env=env,
-    )
-    return res.returncode == 0
-
-
-def _resolve_repo_path(
-    process: ProcessPort,
-    source: RepoSource,
-    cache_dir: Path,
-) -> tuple[Path | None, str]:
-    """Return (path, degradation) — degradation non-empty on unreachable."""
-    if source.local_path:
-        path = Path(source.local_path).resolve()
-        if path.is_dir() and (path / ".git").is_dir():
-            return path, ""
-        return None, "unresolved"
-    if source.clone_url:
-        safe = source.full_name.replace("/", "__")
-        dest = cache_dir / safe
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if dest.is_dir() and (dest / ".git").is_dir():
-            pull = process.run(
-                ["git", "-C", str(dest), "pull", "--ff-only"],
-                cwd=dest,
-                timeout_s=_GIT_TIMEOUT_S,
-            )
-            if pull.returncode != 0:
-                return dest if (dest / ".git").is_dir() else None, "stale"
-            return dest, ""
-        if dest.exists():
-            shutil.rmtree(dest, ignore_errors=True)
-        clone = process.run(
-            ["git", "clone", "--quiet", source.clone_url, str(dest)],
-            cwd=cache_dir,
-            timeout_s=_GIT_PKGS_TIMEOUT_S,
-        )
-        if clone.returncode != 0:
-            return None, "stale" if dest.is_dir() else "unresolved"
-        return dest, ""
-    return None, "unresolved"
+    head = res.stdout.strip() if res.returncode == 0 else ""
+    if not head:
+        raise _WalkError(f"git rev-parse HEAD exited {res.returncode}: {_tail(res.stderr)}")
+    return head
 
 
 class RepoDependencyHistoryDataset(AbstractDataset):
-    """Primary-layer dependency history store (CAP-61)."""
+    """Primary-layer dependency history store, partitioned by repo (CAP-61)."""
 
     def __init__(
         self,
         *,
         filepath: str,
         cache_dir: str,
-        process: ProcessPort | None = None,
-        load_args: dict[str, Any] | None = None,
-        save_args: dict[str, Any] | None = None,
-        credentials: dict[str, Any] | None = None,
+        process: GitProcessPort | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        self._filepath = str(filepath)
+        self._root = Path(filepath)
         self._cache_dir = Path(cache_dir)
         self._process = process
-        self._inner = ParquetDataset(
-            filepath=filepath,
-            load_args=load_args,
-            save_args=save_args,
-            credentials=credentials,
-            metadata=metadata,
-        )
+        self.metadata = metadata
+
+    # --- paths and metadata --------------------------------------------------------------
 
     @property
-    def _heads_path(self) -> Path:
-        p = Path(self._filepath)
-        return p.with_name(p.name + _REPO_HEADS_SUFFIX)
+    def _state_path(self) -> Path:
+        return self._root / _STATE_FILENAME
 
     @property
     def _staleness_path(self) -> Path:
-        p = Path(self._filepath)
-        return p.with_name(p.name + _STALENESS_SUFFIX)
+        return self._root / _STALENESS_FILENAME
 
-    def _process_port(self) -> ProcessPort:
+    def _partition_path(self, full_name: str) -> Path:
+        return self._root / f"{_fs_name(full_name)}{_PARTITION_SUFFIX}"
+
+    def _process_port(self) -> GitProcessPort:
         return self._process if self._process is not None else PosixProcess()
 
-    def _read_heads(self) -> dict[str, str]:
-        path = self._heads_path
-        if not path.is_file():
-            return {}
+    def _read_state(self) -> dict[str, dict[str, str]]:
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+            payload = json.loads(self._state_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
             return {}
-        if not isinstance(data, dict):
+        except (OSError, ValueError) as exc:
+            logger.warning("repo_dependency_history state unreadable (%s); every repo is re-walked", exc)
             return {}
-        return {str(k): str(v) for k, v in data.items() if v}
+        repos = payload.get("repos") if isinstance(payload, dict) else None
+        if not isinstance(repos, dict):
+            return {}
+        return {
+            str(name): {field: str(entry.get(field) or "") for field in _STATE_FIELDS}
+            for name, entry in repos.items()
+            if isinstance(entry, dict)
+        }
 
-    def _write_heads(self, heads: Mapping[str, str]) -> None:
-        payload = dict(sorted(heads.items()))
+    def _write_state(self, state: Mapping[str, Mapping[str, str]]) -> None:
+        text = json.dumps({"repos": {name: dict(state[name]) for name in sorted(state)}}, indent=2, sort_keys=True)
+        atomic_write_text(self._state_path, text + "\n")
 
-        def _write(target: Path) -> None:
-            target.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-
-        atomic_write(self._heads_path, _write)
-
-    def _mark_stale(self, reason: str) -> None:
+    def _write_staleness(self, state: Mapping[str, Mapping[str, str]]) -> None:
+        degraded = {name: entry for name, entry in sorted(state.items()) if entry.get("degradation")}
+        if not degraded:
+            self._staleness_path.unlink(missing_ok=True)
+            return
         marker = StalenessMarker(
             stale=True,
-            reason=reason,
-            last_good_exists=Path(self._filepath).is_file(),
+            reason="; ".join(f"{name}: {entry['degradation']} ({entry['reason']})" for name, entry in degraded.items()),
+            last_good_exists=any(self._root.glob(f"*{_PARTITION_SUFFIX}")),
         )
+        payload = {**marker.to_dict(), "repos": {name: entry["degradation"] for name, entry in degraded.items()}}
+        text = json.dumps(payload, indent=2, sort_keys=True)
+        atomic_write_text(self._staleness_path, text + "\n")
 
-        def _write(target: Path) -> None:
-            target.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8")
-
+    def _read_partition_rows(self, full_name: str) -> list[dict[str, Any]]:
+        path = self._partition_path(full_name)
+        if not path.is_file():
+            return []
         try:
-            atomic_write(self._staleness_path, _write)
-        except OSError as exc:
-            logger.warning("could not write staleness marker: %s", exc)
+            frame = pd.read_parquet(path)
+        except Exception as exc:  # noqa: BLE001 -- a damaged partition degrades, never crashes the build
+            logger.warning("partition %s unreadable: %s", path, exc)
+            return []
+        return [dict(row) for row in frame.to_dict(orient="records")]
 
-    def _clear_stale(self) -> None:
+    def _write_partition(self, full_name: str, rows: list[dict[str, Any]]) -> None:
+        frame = pd.DataFrame(rows, columns=list(HISTORY_COLUMNS)) if rows else _empty_history()
+        if rows:
+            frame["commit_time"] = frame["commit_time"].astype("int64")
+            frame = frame.sort_values(
+                ["commit_time", "manifest_path", "manifest_scope", "ecosystem", "name", "source"], kind="stable"
+            ).reset_index(drop=True)
+        frame["degradation"] = ""  # the repo-level marker lives in the state file, overlaid on load
+        atomic_write(self._partition_path(full_name), lambda target: frame.to_parquet(target, index=False))
+
+    # --- one repo ------------------------------------------------------------------------
+
+    def _clone_dir(self, full_name: str) -> Path:
+        cache = self._cache_dir.resolve()
+        dest = (cache / _fs_name(full_name)).resolve()
+        if dest == cache or not dest.is_relative_to(cache):
+            raise _InvalidSource(f"clone directory for {full_name!r} escapes the cache")
+        return dest
+
+    def _sync_clone(self, process: GitProcessPort, source: RepoSource) -> Path:
+        """Clone or fast-forward Atlas's own clone of ``source``; raise ``_Unreachable`` on failure."""
+        dest = self._clone_dir(source.full_name)
+        if source.clone_url:
+            origin = source.clone_url
+        else:
+            local = Path(str(source.local_path)).expanduser().resolve()
+            if not local.is_dir():
+                raise _Unreachable(f"local path {local} does not exist")
+            origin = str(local)
         try:
-            self._staleness_path.unlink(missing_ok=True)
-        except OSError:
-            pass
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if (dest / ".git").is_dir():
+                pulled = process.run(
+                    ["git", "-C", str(dest), "pull", "--ff-only", "--quiet"],
+                    cwd=dest,
+                    timeout_s=_CLONE_TIMEOUT_S,
+                    env=_git_env(),
+                )
+                if pulled.returncode != 0:
+                    raise _Unreachable(f"git pull exited {pulled.returncode}: {_tail(pulled.stderr)}")
+                return dest
+            if dest.exists():
+                shutil.rmtree(dest)
+            cloned = process.run(
+                ["git", "clone", "--quiet", "--", origin, str(dest)],
+                cwd=dest.parent,
+                timeout_s=_CLONE_TIMEOUT_S,
+                env=_git_env(),
+            )
+            if cloned.returncode != 0:
+                shutil.rmtree(dest, ignore_errors=True)
+                raise _Unreachable(f"git clone exited {cloned.returncode}: {_tail(cloned.stderr)}")
+        except (ProcessError, OSError) as exc:
+            raise _Unreachable(f"git could not run: {exc}") from exc
+        return dest
+
+    def _refresh_repo(
+        self,
+        process: GitProcessPort,
+        source: RepoSource,
+        prior_head: str,
+        force: bool,
+        git_pkgs_problem: Callable[[], str],
+    ) -> _RepoOutcome:
+        problem = _source_problem(source)
+        if problem:
+            return _RepoOutcome(UNRESOLVED, problem)
+        try:
+            clone = self._sync_clone(process, source)
+            head = _repo_head(process, clone)
+        except _InvalidSource as exc:
+            return _RepoOutcome(UNRESOLVED, str(exc))
+        except (_Unreachable, _WalkError, ProcessError) as exc:
+            return _RepoOutcome(STALE, str(exc))
+        if not force and head == prior_head:
+            # Unmoved since its last complete walk: not re-walked (AD-5); reachable again, so no marker.
+            return _RepoOutcome(head=head)
+        try:
+            pixi_rows = _estate_pixi_rows(process, clone, source.full_name)
+        except (_WalkError, ProcessError) as exc:
+            return _RepoOutcome(UNRESOLVED, f"pixi history walk failed: {exc}")
+        problem = git_pkgs_problem()
+        pkgs_rows: list[dict[str, Any]] = []
+        if not problem:
+            try:
+                pkgs_rows = _git_pkgs_rows(process, clone, source.full_name)
+            except (_WalkError, ProcessError, OSError) as exc:
+                problem = f"git-pkgs walk failed: {exc}"
+        if problem:
+            # The pixi half is fresh; the git-pkgs half keeps its last-good rows. The head is not
+            # advanced, so the next run walks this repo again.
+            kept = [row for row in self._read_partition_rows(source.full_name) if row.get("source") == SOURCE_GIT_PKGS]
+            return _RepoOutcome(UNRESOLVED, problem, rows=kept + pixi_rows)
+        return _RepoOutcome(rows=pkgs_rows + pixi_rows, head=head)
+
+    # --- Kedro dataset API ---------------------------------------------------------------
 
     def load(self) -> pd.DataFrame:
-        path = Path(self._filepath)
-        if not path.is_file():
+        if not self._root.is_dir():
             return _empty_history()
-        try:
-            frame = self._inner.load()
-        except Exception as exc:
-            logger.warning("repo_dependency_history load failed: %s", exc)
-            self._mark_stale(f"parquet unreadable: {type(exc).__name__}")
-            return _empty_history()
-        missing = [c for c in HISTORY_COLUMNS if c not in frame.columns]
-        for col in missing:
-            frame[col] = ""
-        return frame[list(HISTORY_COLUMNS)]
-
-    def _build_one_repo(
-        self,
-        process: ProcessPort,
-        source: RepoSource,
-        prior_heads: dict[str, str],
-        force: bool,
-    ) -> tuple[list[dict[str, Any]], str, str]:
-        repo_path, reach = _resolve_repo_path(process, source, self._cache_dir)
-        if repo_path is None:
-            return [], prior_heads.get(source.full_name, ""), reach or "unresolved"
-        head = _repo_head(process, repo_path)
-        if not force and head and prior_heads.get(source.full_name) == head:
-            return [], head, ""
-        db_path = self._cache_dir / f".git-pkgs-{source.full_name.replace('/', '__')}.sqlite"
-        try:
-            if db_path.exists():
-                db_path.unlink()
-            if not _run_git_pkgs_init(process, repo_path, db_path):
-                return [], head, "unresolved"
-            if not db_path.is_file():
-                return [], head, "unresolved"
-            pkgs_frame = _read_git_pkgs_changes(db_path)
-            rows = _git_pkgs_rows(pkgs_frame, source.full_name)
-            rows.extend(_estate_pixi_rows(process, repo_path, source.full_name))
-            return rows, head, reach
-        finally:
+        frames: list[pd.DataFrame] = []
+        for partition in sorted(self._root.glob(f"*{_PARTITION_SUFFIX}")):
             try:
-                db_path.unlink(missing_ok=True)
-            except OSError:
-                pass
+                frame = pd.read_parquet(partition)
+            except Exception as exc:  # noqa: BLE001 -- a damaged partition degrades, never crashes the read
+                logger.warning("partition %s unreadable: %s", partition, exc)
+                continue
+            if not frame.empty:
+                frames.append(frame)
+        if not frames:
+            return _empty_history()
+        history = pd.concat(frames, ignore_index=True)
+        for column in HISTORY_COLUMNS:
+            if column not in history.columns:
+                history[column] = ""
+        degradation = {name: entry["degradation"] for name, entry in self._read_state().items()}
+        history["degradation"] = [degradation.get(str(name), "") for name in history["repo_full_name"]]
+        return history[list(HISTORY_COLUMNS)].reset_index(drop=True)
 
     def save(self, data: Any) -> None:
         if not isinstance(data, DependencyHistoryBuildRequest):
-            raise NotImplementedError(
-                f"{type(self).__name__} only accepts DependencyHistoryBuildRequest triggers."
-            )
+            raise NotImplementedError(f"{type(self).__name__} only accepts DependencyHistoryBuildRequest triggers.")
         if data.not_applicable:
+            logger.info("repo_dependency_history: flag %s is off; %s, nothing cloned", FLAG_KEY, NOT_APPLICABLE)
             return
         process = self._process_port()
-        existing = self.load()
-        prior_heads = self._read_heads()
-        fleet_heads = dict(data.fleet_heads or {})
-        new_heads = dict(prior_heads)
-        all_rows: list[dict[str, Any]] = []
-        stale_reasons: list[str] = []
+        state = self._read_state()
+        checked: list[str] = []
+
+        def git_pkgs_problem() -> str:
+            if not checked:
+                self._cache_dir.mkdir(parents=True, exist_ok=True)
+                checked.append(_git_pkgs_problem(process, self._cache_dir))
+            return checked[0]
 
         for source in data.repos:
-            built, head, degradation = self._build_one_repo(
-                process, source, prior_heads, data.force
-            )
-            if degradation == "stale":
-                stale_reasons.append(f"{source.full_name}: unreachable")
-                if not existing.empty:
-                    kept = existing[existing["repo_full_name"] == source.full_name]
-                    if not kept.empty:
-                        kept = kept.copy()
-                        kept["degradation"] = "stale"
-                        all_rows.extend(kept.to_dict(orient="records"))
-                continue
-            if degradation == "unresolved" and not built:
-                stale_reasons.append(f"{source.full_name}: git-pkgs unavailable or clone failed")
-                if not existing.empty:
-                    kept = existing[existing["repo_full_name"] == source.full_name]
-                    if not kept.empty:
-                        kept = kept.copy()
-                        kept["degradation"] = "unresolved"
-                        all_rows.extend(kept.to_dict(orient="records"))
-                continue
-            if head:
-                new_heads[source.full_name] = head
-            if built:
-                all_rows.extend(built)
-            elif not existing.empty:
-                kept = existing[existing["repo_full_name"] == source.full_name]
-                all_rows.extend(kept.to_dict(orient="records"))
-
-        untouched = set(existing["repo_full_name"].unique()) if not existing.empty else set()
-        touched = {s.full_name for s in data.repos}
-        for name in untouched - touched:
-            part = existing[existing["repo_full_name"] == name]
-            all_rows.extend(part.to_dict(orient="records"))
-
-        out = pd.DataFrame(all_rows, columns=list(HISTORY_COLUMNS)) if all_rows else _empty_history()
-        self._inner.save(out)
-        self._write_heads(new_heads)
-        if stale_reasons:
-            self._mark_stale("; ".join(stale_reasons))
-        else:
-            self._clear_stale()
+            prior = state.get(source.full_name, {})
+            outcome = self._refresh_repo(process, source, prior.get("head", ""), data.force, git_pkgs_problem)
+            if outcome.rows is not None:
+                self._write_partition(source.full_name, outcome.rows)
+            if outcome.degradation:
+                logger.warning("%s: %s -- %s", source.full_name, outcome.degradation, outcome.reason)
+            state[source.full_name] = {
+                "head": outcome.head if outcome.head is not None else prior.get("head", ""),
+                "degradation": outcome.degradation,
+                "reason": outcome.reason,
+            }
+        self._root.mkdir(parents=True, exist_ok=True)
+        self._write_state(state)
+        self._write_staleness(state)
 
     def _describe(self) -> dict[str, Any]:
         return {
-            "filepath": self._filepath,
+            "filepath": str(self._root),
             "cache_dir": str(self._cache_dir),
             "type": "RepoDependencyHistoryDataset",
         }
@@ -545,11 +787,8 @@ def build_dependency_history_request(
     *,
     flag_on: bool,
     repo_sources: Any,
-    fleet_inventory: Mapping[str, Any] | None,
     force: bool = False,
 ) -> DependencyHistoryBuildRequest:
     if not flag_on:
         return DependencyHistoryBuildRequest.skip()
-    repos = _parse_repo_sources(repo_sources)
-    heads = _fleet_heads(fleet_inventory)
-    return DependencyHistoryBuildRequest(repos=repos, fleet_heads=heads, force=force)
+    return DependencyHistoryBuildRequest(repos=_parse_repo_sources(repo_sources), force=force)

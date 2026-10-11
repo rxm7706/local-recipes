@@ -279,9 +279,10 @@ DERIVED_STORE_PATHS = {
 MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
 
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
-# data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
+# data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6, +1 path
+# by Story 25.1's repo_dependency_cache):
 # endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
-# extra_overrides 4 + fetcher_urls 3 + paths 7 = 41. Mirrored by a comment in globals.yml.
+# extra_overrides 4 + fetcher_urls 3 + paths 8 = 42. Mirrored by a comment in globals.yml.
 EXPECTED_ENV_OVERRIDE_SURFACE = 42
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
