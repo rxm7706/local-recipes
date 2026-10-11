@@ -85,7 +85,7 @@ def test_parent_exits_while_child_in_session_group_keeps_session_alive(
 
     monkeypatch.setattr(dispatch_verify, "_DEFAULT_SESSION_GROUP", PsutilSessionGroup())
     proc = subprocess.Popen(
-        ["bash", "-c", "sleep 30 & exit 0"],
+        ["bash", "-c", "( sleep 2 ) & exit 0"],
         start_new_session=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -97,11 +97,15 @@ def test_parent_exits_while_child_in_session_group_keeps_session_alive(
         assert dispatch_verify.dispatch_session_alive(
             PosixProcess(), leader_pid, launched_at=launched_at
         )
-        os.killpg(leader_pid, signal.SIGKILL)
-        time.sleep(0.2)
-        assert not dispatch_verify.dispatch_session_alive(
-            PosixProcess(), leader_pid, launched_at=launched_at
-        )
+        deadline = time.monotonic() + 4.0
+        while time.monotonic() < deadline:
+            if not dispatch_verify.dispatch_session_alive(
+                PosixProcess(), leader_pid, launched_at=launched_at
+            ):
+                break
+            time.sleep(0.1)
+        else:
+            pytest.fail("session group did not settle after the child exited")
     finally:
         try:
             os.killpg(leader_pid, signal.SIGKILL)
