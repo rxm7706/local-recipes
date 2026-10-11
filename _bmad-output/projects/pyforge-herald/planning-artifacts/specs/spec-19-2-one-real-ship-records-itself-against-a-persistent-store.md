@@ -4,7 +4,7 @@ type: 'feature'
 created: '2026-09-18'
 status: 'in-progress'
 baseline_revision: '647abbc9b21d09c54e75cc59f1e93c1ea4331f4b'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -470,6 +470,24 @@ feed and `sprint-ledger-sync --project herald --allow-regression`, which named t
 - **2026-10-11 — dispatch reused a pre-sidecar branch.** The 2026-10-11 dispatch (run `pyforge-herald-20261011T145445292Z-69725fea`) found `dispatch/pyforge-herald/19.2` from 2026-10-10, whose spec read `done` under the scope before the sidecar re-scope; it ran a follow-up review pass and tried to land, and the landing was refused (MRS-DISP-038, this file conflicted with main). Main's spec is the record. The branch's code and its review records are kept as the starting point; status moves to `in-progress` until an independent review judges the branch against the current ACs (the sidecar re-scope: AC1, AC2, AC3, AC5, AC9) and the gaps are closed.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent gap review against the sidecar re-scope, iteration 1: sent back (3 high, 3 medium, 5 low)
+
+Separate agent, on `d0192628cf` (PR #2123), judged against this spec as re-scoped (host from `platform-dev`, herald's webhook in the mcp-host sidecar, the host forwarding to `MCP_HOST_SIDECAR_BASE_URL`). The caller and the default-gate tests hold under the re-scope: live on 127.0.0.1, `herald-ship-local` derived a real landing from origin/main and sent it through the sidecar app; on-ship and on-pr-close returned 201 with a claim_id and re-delivery returned the same claim_id. `environment.yaml` matches the export; AC7 holds; nothing binds beyond 127.0.0.1; no secret committed; records stay in SQLite; `platform-dev` cannot import herald. Gates: `pyforge-herald-test` 0 (1768), `platform-ci-local -- --test` 0 (1206), `lint-types` 0, `spec-surface-check` 0, `docs-currency-check` 0, `flag-gate-check` 0; the opt-in live smoke 1; the platform host-dispatch tests 1 once `MCP_HOST_SIDECAR_BASE_URL` is exported. AC verdicts: AC4, AC6, AC7 pass; AC5 correctly operator-owned; AC1, AC2, AC3 gaps; AC8, AC9 fail.
+
+1. `[high]` `[patch]` `src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py:241` calls `claims.list_claims(tmp_path)` on the repo root and raises `HeraldError: unable to open database file`; use `claims.list_claims(tmp_path / claims.DEFAULT_CLAIMS_PATH)`; wrap `_start_daphne` in try/finally with a kill fallback.
+2. `[high]` `[patch]` `docs/how-to/run-herald-live-backend-locally.md` describes the pre-sidecar topology. Rewrite: host on `platform-dev`; sidecar `pixi run --frozen -e mcp-host mcp-host-serve` with `HERALD_REPO_ROOT` and `webhook.env` (the host needs no secret); host gets `MCP_HOST_SIDECAR_BASE_URL=http://127.0.0.1:8090` and `PYFORGE_ENVIRONMENT` unset or `dev`; restart both processes, capturing `ps -o args=` and `ss` for 8001 and 8090; the negative check that `import pyforge.herald` fails under `platform-dev`; a troubleshooting table (401, 404, 502, same-day second on-ship); DW-13-6-2's remedy is restarting the sidecar; the AC5 raw-log layout `.herald/live-host/<UTC ts>/` and transcription checklist.
+3. `[high]` `[patch]` the how-to's render command exits 1: since steward 84.1 `--output-dir` also requires `--trusted-address`, `--tls-cert`, `--tls-key`, `--app-db-role`, `--audit-retention-db-role`. Use placeholders, say the nginx conf and grants SQL are never installed or applied, and record the extra flags against AC1's wording in this Spec Change Log.
+4. `[medium]` `[patch]` the rendered ExecStart is `daphne --bind 127.0.0.1 --port %i --proxy-headers config.asgi:application` on instance port 8001 (`steward/deploy.py:532`); the how-to's hand-written `-p 8000` line, its `HERALD_WEBHOOK_URL` and `local_ship.py:189`'s default all say 8000. Quote the rendered line with 8001 and match the URL and default.
+5. `[medium]` `[patch]` `src/platform/tests/test_station_api_host_dispatch.py:127`, `:170`, `:228` need `monkeypatch.delenv("MCP_HOST_SIDECAR_BASE_URL", raising=False)`; they return 502 whenever the AC2 environment is exported.
+6. `[medium]` `[patch]` `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md:564` says "Story 19.2 landed (run ...a4b44f7d)"; it never landed. Replace that branch-only line with a co-governor surface-reconcile entry for `local_ship.py` and re-stamp `spec-pyforge-core` scoped.
+7. `[low]` `[patch]` herald `cli-runbooks.md:161-167`, `:490-520` and `automation-troubleshooting.md:155-165` still describe the disabled CI demo as running; point at the how-to and name the sidecar.
+8. `[low]` `[patch]` `pixi.toml:3166` (task description) and `local_ship.py:6` still say `pyforge-foundry-full-stack`; use `pixi run -e pyforge-herald herald-ship-local`.
+9. `[low]` `[patch]` `test_bridge.py:386` cites a nonexistent "CAP-58"; this spec mints no CAP.
+10. `[low]` `[patch]` `local_ship.py`: print the target URL in the JSON; record a per-request `URLError` instead of exiting (`:143-144`), so a failed on-pr-close keeps the on-ship response; raise the 120 s timeout above `webhook_host`'s own 120 s.
+11. `[low]` `[patch]` Auto Run Result reads "Status: done" against frontmatter `in-progress`; `baseline_revision` is stale.
+
+Send-back: 1-11 in one pass; AC5's live proof stays the operator's. A fresh independent review gates the landing.
 
 ### 2026-10-10 — Review pass
 - verdicts: 2 findings — high 0, medium 1, low 0, false 0, maybe-false 1
