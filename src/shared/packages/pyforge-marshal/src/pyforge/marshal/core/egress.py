@@ -223,6 +223,8 @@ EGRESS_PORTS: Mapping[str, bool] = {
     # Story 84.1 (CAP-285): operator-run model-list fetch -- ingress to providers,
     # not a durable egress sink; credentials stay at the adapter boundary (AD-34).
     "ModelListFetchPort": False,
+    # Story 90.1: host process-group observation only -- no durable egress payload.
+    "SessionGroupPort": False,
 }
 
 

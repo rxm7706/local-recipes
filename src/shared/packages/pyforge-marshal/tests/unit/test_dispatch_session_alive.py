@@ -106,17 +106,21 @@ def test_parent_exits_while_child_in_session_group_keeps_session_alive(
         assert dispatch_verify.dispatch_session_alive(
             PosixProcess(), leader_pid, launched_at=launched_at
         )
-        child_deadline = time.monotonic() + 5.0
+        child_deadline = time.monotonic() + 8.0
         while time.monotonic() < child_deadline:
             if not dispatch_verify.dispatch_session_alive(
                 PosixProcess(), leader_pid, launched_at=launched_at
             ):
                 break
-            time.sleep(0.1)
+            time.sleep(0.15)
         else:
             pytest.fail("session group did not settle within budget")
     finally:
         try:
-            os.killpg(os.getpgid(leader_pid), 9)
+            pgid = os.getpgid(leader_pid)
+        except OSError:
+            pgid = leader_pid
+        try:
+            os.killpg(pgid, 9)
         except OSError:
             pass

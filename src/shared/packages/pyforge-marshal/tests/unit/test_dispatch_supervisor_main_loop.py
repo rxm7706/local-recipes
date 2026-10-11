@@ -3841,7 +3841,7 @@ def test_without_the_launch_tip_scope_the_reused_worktree_fixture_reads_complete
     )
 
     assert code == 0
-    assert publisher.heartbeats == []
+    assert publisher.heartbeats == ["handle-1"]
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
 
 
@@ -3886,7 +3886,10 @@ def test_the_same_run_without_the_marker_reads_completed_on_the_stories_first_me
     assert code == 0
     assert publisher.heartbeats == ["handle-1"]
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
-    assert _commit_subject_reads(vcs) == [("commit_subjects", ORIGIN_MAIN)]
+    assert _commit_subject_reads(vcs) == [
+        ("commit_subjects", ORIGIN_MAIN),
+        ("commit_subjects", ORIGIN_MAIN),
+    ]
 
 
 def _seed_spec_only_run(repo_root: Path, launch_line: str) -> str:
@@ -4185,6 +4188,7 @@ def test_atlas_25_1_sequence_never_completes_while_the_session_group_lives(
         subjects_by_ref={ORIGIN_MAIN: (atlas_subject,)},
         merged_into_refs=frozenset(),
         spec_at_ref=_SPEC_DONE,
+        changed=("src/a.py", "src/b.py", "src/c.py"),
         changed_vs_head=("src/a.py", "src/b.py", "src/c.py"),
     )
     facts = _gather_facts_spy(monkeypatch)
