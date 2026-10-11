@@ -118,7 +118,6 @@ from ..dispatch_verify import (
     TerminateProcessGroupResult,
     check_unsanctioned_cfe_commits,
     compose_dispatch_policy,
-    dispatch_session_alive,
     evaluate_dispatch_verification,
     fix_session_alive,
     resolve_spec_text_for_story,
@@ -1999,11 +1998,7 @@ def _journal_heartbeat(
             "session_alive": session_alive,
             "current_head_sha": git_facts.current_head_sha,
             "changed_path_count": len(git_facts.changed_paths),
-            **(
-                {"session_liveness_error": session_liveness_error}
-                if session_liveness_error is not None
-                else {}
-            ),
+            **({"session_liveness_error": session_liveness_error} if session_liveness_error is not None else {}),
         },
     )
     try:
@@ -2649,9 +2644,7 @@ def run_dispatch_supervisor(
 
         from ..dispatch_verify import assess_dispatch_session_liveness
 
-        liveness = assess_dispatch_session_liveness(
-            process, session_pid, launched_at=session_launched_at
-        )
+        liveness = assess_dispatch_session_liveness(process, session_pid, launched_at=session_launched_at)
         session_alive = liveness.alive
         session_liveness_error = liveness.liveness_error
         session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)

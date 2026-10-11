@@ -5,14 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..ports.fs import FsPort
 from . import dispatch as dispatch_core
 from .dispatch_completion import DispatchSessionVerdict
 from .dispatch_supervisor_state import landing_journal_indicates_complete
-from ..ports.fs import FsPort
 
-_STALE_QUARANTINE_SUFFIX = (
-    "implementation-artifacts/dispatch-runs-quarantine/README.md"
-)
+_STALE_QUARANTINE_SUFFIX = "implementation-artifacts/dispatch-runs-quarantine/README.md"
 
 
 @dataclass(frozen=True)
@@ -76,4 +74,3 @@ def stale_dispatch_run_payload(stale: DispatchStaleRun) -> dict[str, str]:
         "worktree_path": stale.worktree_path,
         "remedy": stale.remedy,
     }
-

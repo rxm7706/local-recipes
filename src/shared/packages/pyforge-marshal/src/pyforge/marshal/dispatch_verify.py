@@ -1179,9 +1179,7 @@ def assess_dispatch_session_liveness(
     if fix_session_alive(process, pid, launched_at=launched_at):
         return DispatchSessionLiveness(alive=True)
     port = session_group if session_group is not None else _DEFAULT_SESSION_GROUP
-    group_alive, liveness_error = session_group_has_live_member(
-        port, pid, launched_at=launched_at, process=process
-    )
+    group_alive, liveness_error = session_group_has_live_member(port, pid, launched_at=launched_at, process=process)
     if group_alive:
         return DispatchSessionLiveness(alive=True)
     if liveness_error is not None:
