@@ -1371,10 +1371,11 @@ def inject_recall_feedback(
     scribe: ScribeCli | None = None,
 ) -> RecallInjectionResult:
     """Before a ``bmad-loop`` dev pass launches: shell ``scribe recall
-    --scope <station_slug>`` (CLI subprocess, never ``import
-    pyforge.scribe``) and, on a grounded hit, write the clearly-labeled
-    block CAP-1 requires to ``{implementation_artifacts}/recall-feedback.md``.
-    Read-only against scribe's own capture store; never raises."""
+    <query> --mode memory`` with no ``--scope`` (CLI subprocess, never
+    ``import pyforge.scribe``) and, on a grounded hit, write the
+    clearly-labeled block CAP-1 requires to
+    ``{implementation_artifacts}/recall-feedback.md``. Read-only against
+    scribe's own capture store; never raises."""
     if not station_slug:
         return RecallInjectionResult(attempted=False)
     target = _recall_feedback_target(loop_home, station_slug)
@@ -1382,7 +1383,7 @@ def inject_recall_feedback(
     outcome = client.recall(
         repo_root=repo_root,
         query=recall_feedback.build_recall_query(station_slug),
-        scope=station_slug,
+        mode="memory",
     )
     content = recall_feedback.format_recall_feedback_for_injection(
         ok=outcome.ok,
@@ -1397,10 +1398,18 @@ def inject_recall_feedback(
         fs.write_text_atomic(target, content)
         fs.write_text_atomic(marker, "")
     except (OSError, PyforgeError) as exc:
+        write_reason = f"could not write {target} ({exc})"
+        if not outcome.ok and outcome.reason:
+            return RecallInjectionResult(
+                attempted=True,
+                ok=False,
+                reason=f"{outcome.reason}; {write_reason}",
+                target=target,
+            )
         return RecallInjectionResult(
             attempted=True,
             ok=False,
-            reason=f"could not write {target} ({exc})",
+            reason=write_reason,
             target=target,
         )
     if not outcome.ok:

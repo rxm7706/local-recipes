@@ -35,6 +35,8 @@ __all__ = (
     "layer_aggressiveness",
     "layer_enabled",
     "parse_recall_output",
+    "RECALL_MODE_MEMORY",
+    "RECALL_MODE_PLANNING",
     "render_scribe_recall_argv",
     "resolve_retrieval_mode",
 )
@@ -91,7 +93,18 @@ def build_routing_query(*, project_slug: str, epic: str, story: str | None = Non
     return base
 
 
-def render_scribe_recall_argv(binary_path: str, query: str, *, scope: str | None = None) -> tuple[str, ...]:
+RECALL_MODE_PLANNING = "planning"
+RECALL_MODE_MEMORY = "memory"
+_ALLOWED_RECALL_MODES = frozenset({RECALL_MODE_PLANNING, RECALL_MODE_MEMORY})
+
+
+def render_scribe_recall_argv(
+    binary_path: str,
+    query: str,
+    *,
+    scope: str | None = None,
+    mode: str = RECALL_MODE_PLANNING,
+) -> tuple[str, ...]:
     """The one place the recall grammar's argv is spelled.
 
     ``scope`` (Story 28.27, live incident 2026-09-10): binds ``--scope
@@ -103,9 +116,13 @@ def render_scribe_recall_argv(binary_path: str, query: str, *, scope: str | None
     token among several). Always passed when the caller has a resolved
     project slug -- ``run_context_retrieve`` never calls this unscoped.
     Story 12.1: never pass ``--kind``; inherit scribe's default bag.
-    Story 18.1: always name ``--mode planning`` so retrieve does not
-    compete with memory and commits."""
-    argv = (binary_path, *SCRIBE_RECALL_ARGV, query, "--mode", "planning")
+    Story 18.1: default ``--mode planning`` so retrieve does not compete
+    with memory and commits. Story 47.1: dev-pass feedback uses
+    ``--mode memory`` with no ``--scope`` (team memory is repo-wide)."""
+    if mode not in _ALLOWED_RECALL_MODES:
+        msg = f"unrecognized scribe recall mode {mode!r} (allowed: {sorted(_ALLOWED_RECALL_MODES)!r})"
+        raise ValueError(msg)
+    argv = (binary_path, *SCRIBE_RECALL_ARGV, query, "--mode", mode)
     if scope:
         argv = (*argv, "--scope", scope)
     return argv
