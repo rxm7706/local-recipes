@@ -267,7 +267,8 @@ def _bounded_env(start: Path, extra: Mapping[str, str] | None = None) -> dict[st
     climbs into an enclosing one -- the cache defaults to ``data/`` inside the operator's own
     checkout, and a partial ``.git`` would otherwise hand every call to that checkout.
     """
-    return _git_env({"GIT_CEILING_DIRECTORIES": str(start.parent), **(extra or {})})
+    # git ignores a relative ceiling entry, and the cache path may be relative (``data/...``).
+    return _git_env({"GIT_CEILING_DIRECTORIES": str(start.resolve().parent), **(extra or {})})
 
 
 def _tail(text: str, limit: int = 200) -> str:
@@ -587,6 +588,13 @@ def _git_in(process: GitProcessPort, repo: Path, *args: str, timeout_s: float = 
     return process.run(["git", "-C", str(repo), *args], cwd=repo, timeout_s=timeout_s, env=_bounded_env(repo))
 
 
+def _remote_has_branches(process: GitProcessPort, repo: Path) -> bool:
+    res = _git_in(process, repo, "for-each-ref", "--count=1", "refs/remotes/origin/")
+    if res.returncode != 0:
+        raise _WalkError(f"git for-each-ref exited {res.returncode}: {_tail(res.stderr)}")
+    return bool(res.stdout.strip())
+
+
 def _repo_head(process: GitProcessPort, repo: Path) -> str:
     """The clone's ``HEAD`` commit, or ``""`` for a repository with no commits yet (an unborn ``HEAD``)."""
     res = _git_in(process, repo, "rev-parse", "--verify", "--quiet", "HEAD")
@@ -665,6 +673,17 @@ class RepoDependencyHistoryDataset(AbstractDataset):
         text = json.dumps(payload, indent=2, sort_keys=True)
         atomic_write_text(self._staleness_path, text + "\n")
 
+    def _partition_reads(self, full_name: str) -> bool:
+        path = self._partition_path(full_name)
+        if not path.is_file():
+            return False
+        try:
+            pd.read_parquet(path)
+        except Exception as exc:  # noqa: BLE001 -- any read failure means the partition must be rebuilt
+            logger.warning("partition %s unreadable (%s); the repo is walked again", path, exc)
+            return False
+        return True
+
     def _read_partition_rows(self, full_name: str) -> list[dict[str, Any]]:
         path = self._partition_path(full_name)
         if not path.is_file():
@@ -690,19 +709,38 @@ class RepoDependencyHistoryDataset(AbstractDataset):
 
     def _clone_dir(self, full_name: str) -> Path:
         cache = self._cache_dir.resolve()
-        dest = (cache / _fs_name(full_name)).resolve()
+        slot = cache / _fs_name(full_name)
+        if slot.is_symlink():
+            raise _InvalidSource(f"clone slot for {full_name!r} is a symlink")
+        dest = slot.resolve()
         if dest == cache or not dest.is_relative_to(cache):
             raise _InvalidSource(f"clone directory for {full_name!r} escapes the cache")
         return dest
 
     def _clone_is_usable(self, process: GitProcessPort, dest: Path) -> bool:
-        """True only when ``dest`` is itself a repository: its top level is ``dest``, not an enclosing one."""
-        if not (dest / ".git").is_dir():
+        """True only when ``dest`` is a repository of its own.
+
+        Its ``.git`` is a real directory (never a symlink), and its top level, git directory and
+        common directory all resolve to the clone itself -- not an enclosing checkout, and not
+        another repository's object store reached through a ``commondir`` file.
+        """
+        git_dir = dest / ".git"
+        if git_dir.is_symlink() or not git_dir.is_dir():
             return False
-        res = _git_in(process, dest, "rev-parse", "--show-toplevel")
-        if res.returncode != 0 or not res.stdout.strip():
+        res = _git_in(
+            process,
+            dest,
+            "rev-parse",
+            "--path-format=absolute",
+            "--show-toplevel",
+            "--absolute-git-dir",
+            "--git-common-dir",
+        )
+        lines = res.stdout.splitlines()
+        if res.returncode != 0 or len(lines) != 3:
             return False
-        return Path(res.stdout.strip()).resolve() == dest
+        top, own_dir, common_dir = (Path(line.strip()).resolve() for line in lines)
+        return top == dest and own_dir == git_dir and common_dir == git_dir
 
     def _follow_upstream(self, process: GitProcessPort, dest: Path) -> bool:
         """Hard-reset a fetched clone to its upstream; False when a fresh clone is needed instead."""
@@ -711,9 +749,12 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             return _git_in(process, dest, "reset", "--hard", "--quiet", "@{upstream}").returncode == 0
         if _repo_head(process, dest):
             return False  # its upstream branch is gone: clone afresh to follow the remote's default
-        # Unborn HEAD and no upstream ref: current while the remote is still empty.
-        refs = _git_in(process, dest, "for-each-ref", "--count=1", "refs/remotes/origin/")
-        return refs.returncode == 0 and not refs.stdout.strip()
+        if not _remote_has_branches(process, dest):
+            return True  # unborn HEAD beside an empty remote: current as it is
+        # Unborn HEAD beside remote branches: the remote's HEAD names no branch. A fresh clone
+        # would land in the same place, so keep this one until the remote names a branch again.
+        named = _git_in(process, dest, "remote", "set-head", "origin", "--auto", timeout_s=_CLONE_TIMEOUT_S)
+        return named.returncode != 0
 
     def _sync_clone(self, process: GitProcessPort, source: RepoSource) -> Path:
         """Bring Atlas's own clone of ``source`` up to its remote; raise ``_Unreachable`` when it cannot.
@@ -756,8 +797,10 @@ class RepoDependencyHistoryDataset(AbstractDataset):
                     if self._follow_upstream(process, dest):
                         return dest
                     logger.warning("%s: clone cannot follow its upstream; cloning afresh", source.full_name)
-            if dest.exists():
+            if dest.is_dir():
                 shutil.rmtree(dest)
+            elif dest.exists():
+                dest.unlink()  # a stray file at the clone slot (rmtree would raise NotADirectoryError)
             try:
                 cloned = process.run(
                     ["git", "clone", "--quiet", "--", origin, str(dest)],
@@ -805,11 +848,15 @@ class RepoDependencyHistoryDataset(AbstractDataset):
         except (_Unreachable, _WalkError, ProcessError) as exc:
             return _RepoOutcome(STALE, str(exc))
         if not head:
-            # Reachable, but no commits yet: an explicit empty history, not a failure (nothing to re-clone).
+            if _remote_has_branches(process, clone):
+                # The remote has commits but its HEAD names no branch: nothing to check out. Keep the
+                # last-good partition and head; the clone is kept too (``_follow_upstream``).
+                return _RepoOutcome(UNRESOLVED, "remote HEAD names no branch")
+            # Reachable, with no branch at all yet: an explicit empty history (nothing to re-clone).
             return _RepoOutcome(reason="repository has no commits yet", rows=[], head="")
-        if not force and head == prior_head and self._partition_path(source.full_name).is_file():
-            # Unmoved since its last complete walk and its partition is there: not re-walked (AD-5);
-            # reachable again, so no marker. A missing partition is rebuilt whatever the head.
+        if not force and head == prior_head and self._partition_reads(source.full_name):
+            # Unmoved since its last complete walk and its partition reads: not re-walked (AD-5);
+            # reachable again, so no marker. A missing or unreadable partition is rebuilt.
             return _RepoOutcome(head=head)
         try:
             pixi_rows = _estate_pixi_rows(process, clone, source.full_name)
@@ -866,7 +913,7 @@ class RepoDependencyHistoryDataset(AbstractDataset):
         def git_pkgs_problem() -> str:
             if not checked:
                 self._cache_dir.mkdir(parents=True, exist_ok=True)
-                checked.append(_git_pkgs_problem(process, self._cache_dir))
+                checked.append(_git_pkgs_problem(process, self._cache_dir.resolve()))
             return checked[0]
 
         for source in data.repos:

@@ -2,7 +2,7 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
 review_loop_iteration: 4
 followup_review_recommended: false
@@ -235,6 +235,21 @@ Deps: — (cross-station: mason Story 21.1).
 - **Malformed repo entries.** Each list entry that cannot be read as a repo source (not a mapping, no `full_name`,
   or a list that is not a list) is warned by index and counted on the request (`malformed_entries`); while any
   exists, nothing is pruned, so a mistyped entry never deletes a repo's state, last-good partition or clone.
+
+### 2026-10-10 — Implementer response to review iteration 4
+
+- **An unborn `HEAD` is an empty repository only when the remote has no branch.** When the remote has branches
+  but its `HEAD` names a missing one (a bare repository whose default branch was never pushed, a renamed default),
+  the repo reads `unresolved` ("remote HEAD names no branch"), keeps its last-good partition and head, and keeps
+  its clone; it is cloned afresh only once `git remote set-head origin --auto` finds the remote naming a branch
+  again. This corrects the iteration-3 entry above, which read every unborn `HEAD` as "no commits yet".
+- **A clone owns its git directory.** Besides its top level, the clone's `--absolute-git-dir` and
+  `--git-common-dir` must resolve to its own `.git`, and that `.git` must be a real directory, not a symlink —
+  so a `commondir` file or a symlinked `.git` can never route a fetch or reset into another repository. A clone
+  slot that is itself a symlink reads `unresolved`; a stray file at the slot is unlinked before cloning.
+- **The discovery ceiling is always absolute** (the cache path may be relative, and git ignores a relative ceiling).
+- **"A damaged partition is rebuilt" (iteration 3) now holds:** the unchanged-head skip requires a partition that
+  reads, not only one that exists.
 
 ## Review Triage Log
 
@@ -480,6 +495,48 @@ pyforge-core pyforge-core-test` exit 0 (2384 passed, 1 skipped); `scripts/flag_g
 `python -m pyforge.doctor.sources spec-surface` exit 0 (reconcile event appended to the `spec-pyforge-atlas` memlog,
 no baseline stamped); `python -m pyforge.doctor.sources deferred-work` exit 0; `test_dh.py` 52 passed. Only atlas files changed in this
 response (plus this spec and the `spec-pyforge-atlas` memlog), so `pyforge-station-tests` was not re-run.
+
+### 2026-10-10 — Implementer response to iteration 4
+
+Each finding of the iteration-4 review, with its fix and the test that fails without it (mutation-checked: each
+fix reverted reddens the named test). `dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`;
+`test_dh.py` = `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py`. Not a review verdict.
+
+- `[medium]` an unborn `HEAD` beside remote branches read "no commits yet", wiped the last-good partition and
+  re-cloned every run — **fixed.** `_refresh_repo` (`dh.py:850-856`) reads an unborn `HEAD` as empty only when
+  `_remote_has_branches` (`dh.py:591-595`, `for-each-ref --count=1 refs/remotes/origin/`) is false; otherwise
+  `unresolved` "remote HEAD names no branch" with no rows and no head, so the last-good partition and head are kept.
+  `_follow_upstream` (`dh.py:745-757`) keeps such a clone and re-clones only when `git remote set-head origin
+  --auto` succeeds (the remote names a branch again). Test:
+  `test_a_remote_head_naming_no_branch_keeps_the_last_good_history` (a healthy 4-row build; the remote's default
+  branch renamed and its `HEAD` pointed at the old name; rebuild: `unresolved`, head and 4 rows kept, marker
+  written; two more builds clone nothing; the remote repointed: `""` again). Reverting the empty check or the
+  set-head guard each reddens it.
+- `[low]` a symlinked `.git` or a `commondir` reached another repository — **fixed.** `_clone_is_usable`
+  (`dh.py:720-743`) rejects a symlinked `.git` and requires `--show-toplevel`, `--absolute-git-dir` and
+  `--git-common-dir` (`--path-format=absolute`) to resolve to the clone and its own `.git`. Test:
+  `test_a_clone_borrowing_another_git_dir_is_cloned_afresh[commondir|symlink]` (a victim repo with an unpushed
+  commit: its `HEAD` and the commit survive, and the clone is replaced).
+- `[low]` the version probe ran with a relative ceiling — **fixed.** `_bounded_env` resolves before taking the
+  parent (`dh.py:271`), and the probe gets the resolved cache (`dh.py:916`). Test:
+  `test_version_probe_ceiling_is_absolute_with_a_relative_cache` (a relative `data/cache`: every ceiling is
+  absolute and the probe's is the resolved `data`).
+- `[low]` the unchanged-head skip only checked that the partition exists — **fixed** (`_partition_reads`,
+  `dh.py:676-685`, used at `:857`); the iteration-3 Change Log claim now holds. Test:
+  `test_an_unreadable_partition_is_rebuilt_on_an_unchanged_head`.
+- `[low]` a regular file at the clone slot made the repo `stale` forever — **fixed** (`dh.py:800-803` unlinks a
+  non-directory slot). Test: `test_a_stray_file_at_the_clone_slot_is_replaced`. Related hardening: a symlinked slot
+  reads `unresolved` and its target is never touched (`_clone_dir`, `dh.py:710-718`); test
+  `test_a_symlinked_clone_slot_is_unresolved_and_its_target_untouched`.
+
+Verification on the working tree (each verdict from its exit code): `env -u PYTEST_ADDOPTS pixi run --frozen -e
+pyforge-atlas kedro-test` exit 0 (2204 passed, 20 skipped; then 103 passed); `kedro-catalog-check` exit 0 (69
+passed); `pixi run --frozen -e pyforge-guild lint-types` exit 0; `env -u PYTEST_ADDOPTS pixi run --frozen -e
+pyforge-core pyforge-core-test` exit 0 (2384 passed, 1 skipped); `scripts/flag_gate_check.py --spec <this spec>`
+exit 0 (`pass`; with the status simulated `done` the two-state and per-environment-default checks report nothing);
+`python -m pyforge.doctor.sources spec-surface` exit 0 (reconcile event appended to the `spec-pyforge-atlas`
+memlog, no baseline stamped); `python -m pyforge.doctor.sources deferred-work` exit 0; `test_dh.py` 59 passed.
+Only atlas files changed (plus this spec and its memlog), so `pyforge-station-tests` was not re-run.
 
 ## Auto Run Result
 

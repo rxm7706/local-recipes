@@ -986,3 +986,119 @@ def test_an_empty_repository_is_an_empty_history_not_a_reclone(tmp_path: Path, f
     assert proc.count("clone") == 1
     assert _state(tmp_path)["org/empty"]["head"] == _commits(fixture_repo)[-1][0]
     assert len(ds.load()) == 4
+
+
+# --- iteration 4: a dangling remote HEAD, borrowed git dirs, relative caches, stray slots -------
+
+
+@needs_git_pkgs
+def test_a_remote_head_naming_no_branch_keeps_the_last_good_history(
+    tmp_path: Path, fixture_repo: Path, private_tmp: Path
+):
+    remote = _bare_remote(fixture_repo, tmp_path / "remote.git")
+    proc = _Proc()
+    ds = _dataset(tmp_path, proc)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", clone_url=f"file://{remote}"),))
+    ds.save(request)
+    good_head = _state(tmp_path)["org/fixture"]["head"]
+    assert len(ds.load()) == 4
+
+    branch = _default_branch(fixture_repo)
+    _git(remote, "branch", "-m", branch, "main")
+    _git(remote, "symbolic-ref", "HEAD", f"refs/heads/{branch}")  # the remote's HEAD now names a missing branch
+    ds.save(request)
+    entry = _state(tmp_path)["org/fixture"]
+    assert entry["degradation"] == UNRESOLVED and "names no branch" in entry["reason"]
+    assert entry["head"] == good_head, "the last-good head was dropped"
+    kept = ds.load()
+    assert len(kept) == 4 and set(kept["degradation"]) == {UNRESOLVED}, "the last-good partition was overwritten"
+    assert _staleness(tmp_path)["repos"] == {"org/fixture": UNRESOLVED}
+
+    clones = proc.count("clone")
+    ds.save(request)
+    ds.save(request)
+    assert proc.count("clone") == clones, "a remote whose HEAD names no branch was re-cloned every run"
+
+    _git(remote, "symbolic-ref", "HEAD", "refs/heads/main")  # the remote names a branch again
+    ds.save(request)
+    assert _state(tmp_path)["org/fixture"]["degradation"] == ""
+    assert len(ds.load()) == 4 and _staleness(tmp_path) is None
+
+
+@pytest.mark.parametrize("borrow", ["commondir", "symlink"])
+def test_a_clone_borrowing_another_git_dir_is_cloned_afresh(tmp_path: Path, fixture_repo: Path, borrow: str):
+    victim = _second_repo(fixture_repo, tmp_path / "victim")
+    _commit(victim, {"README.md": "unpushed\n"}, "the victim's unpushed commit")
+    victim_head = _git(victim, "rev-parse", "HEAD").strip()
+    proc = _Proc(_fake_version(None))
+    ds = _dataset(tmp_path, proc)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds.save(request)
+    clone = (tmp_path / "cache" / "org@fixture").resolve()
+    if borrow == "commondir":
+        (clone / ".git" / "commondir").write_text(f"{victim / '.git'}\n", encoding="utf-8")
+    else:
+        shutil.rmtree(clone / ".git")
+        (clone / ".git").symlink_to(victim / ".git", target_is_directory=True)
+    clones = proc.count("clone")
+
+    ds.save(DependencyHistoryBuildRequest(repos=request.repos, force=True))
+    assert proc.count("clone") == clones + 1, "a clone borrowing another git dir was used"
+    assert _git(victim, "rev-parse", "HEAD").strip() == victim_head
+    assert _git(victim, "rev-list", "--count", "@{upstream}..HEAD").strip() == "1"
+    assert not (clone / ".git").is_symlink() and not (clone / ".git" / "commondir").exists()
+
+
+def test_version_probe_ceiling_is_absolute_with_a_relative_cache(
+    tmp_path: Path, fixture_repo: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(tmp_path)
+    proc = _Proc(_fake_version(None))
+    ds = RepoDependencyHistoryDataset(filepath="store/repo_dependency_history", cache_dir="data/cache", process=proc)
+    ds.save(DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),)))
+    probes = [env for call, env in zip(proc.calls, proc.envs, strict=True) if call[:3] == ["git", "pkgs", "--version"]]
+    assert probes and all(
+        env and env["GIT_CEILING_DIRECTORIES"] == str((tmp_path / "data").resolve()) for env in probes
+    )
+    ceilings = [env["GIT_CEILING_DIRECTORIES"] for env in proc.envs if env and "GIT_CEILING_DIRECTORIES" in env]
+    assert ceilings and all(Path(ceiling).is_absolute() for ceiling in ceilings)
+
+
+@needs_git_pkgs
+def test_an_unreadable_partition_is_rebuilt_on_an_unchanged_head(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    proc = _Proc()
+    ds = _dataset(tmp_path, proc)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds.save(request)
+    partition = tmp_path / "store" / "repo_dependency_history" / "org@fixture.parquet"
+    partition.write_bytes(b"not a parquet file")
+    ds.save(request)  # the head has not moved, but its partition does not read: walked again
+    assert proc.count("pkgs", "init") == 2
+    assert len(ds.load()) == 4
+
+
+@needs_git_pkgs
+def test_a_stray_file_at_the_clone_slot_is_replaced(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    slot = tmp_path / "cache" / "org@fixture"
+    slot.parent.mkdir(parents=True)
+    slot.write_text("a stray file\n", encoding="utf-8")
+    ds = _dataset(tmp_path)
+    ds.save(DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),)))
+    assert _state(tmp_path)["org/fixture"]["degradation"] == ""
+    assert (slot / ".git").is_dir() and len(ds.load()) == 4
+
+
+def test_a_symlinked_clone_slot_is_unresolved_and_its_target_untouched(tmp_path: Path, fixture_repo: Path):
+    cache = tmp_path / "cache"
+    other = cache / "org@other"
+    other.mkdir(parents=True)
+    (other / "keep.txt").write_text("another repo's clone\n", encoding="utf-8")
+    (cache / "org@fixture").symlink_to(other, target_is_directory=True)
+    proc = _Proc(_fake_version(None))
+    _dataset(tmp_path, proc).save(
+        DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    )
+    entry = _state(tmp_path)["org/fixture"]
+    assert entry["degradation"] == UNRESOLVED and "symlink" in entry["reason"]
+    assert (other / "keep.txt").read_text(encoding="utf-8") == "another repo's clone\n"
+    assert proc.count("clone") == 0
