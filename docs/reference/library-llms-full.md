@@ -301,6 +301,11 @@ All in `local-recipes`.
   declared manifest (core of the pyforge-warden effort).
 - **osv-scanner** (>=2.6.0) — Google's OSV vulnerability scanner (Go binary): scans
   lockfiles, manifests, SBOMs, and directories against the osv.dev database.
+- **opengrep** (>=1.30.2,<1.31) — `opengrep` CLI; open-source Semgrep-compatible SAST
+  engine (rule-based pattern scanning of source code). `pyforge-warden` env, linux-64
+  only, channel-pinned to the local SelfExplainML build (mason Story 21.4). Warden runs
+  it as an optional scanner that informs but never publishes the verdict (warden Story
+  15.1, CAP-25).
 - **appthreat-vulnerability-db** (>=6.7.0) — `import vdb`; AppThreat multi-source
   vulnerability database library (OSV + GHSA sources locally; CVE, EPSS, CWE data
   model). Present in BOTH `local-recipes` and `vuln-db`; the ~600MB local DB lives at
