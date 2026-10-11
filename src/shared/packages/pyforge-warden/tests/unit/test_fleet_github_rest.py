@@ -11,6 +11,7 @@ import http.client
 import io
 import json
 import logging
+import ssl
 import traceback
 import urllib.error
 import urllib.request
@@ -363,6 +364,103 @@ def test_client_repr_redacts_the_token() -> None:
     client = GitHubRestOrgReposClient(token=_SENTINEL)
     assert _SENTINEL not in repr(client)
     assert "redacted" in repr(client)
+
+
+# --- N1 (iteration 2): transport errors urllib does not wrap -------------------------------------
+
+_PARTIAL_BODY = (
+    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n"
+    b'[{"full_name": "example-org/alpha"'
+)
+
+
+class _ScriptedReader(io.BytesIO):
+    """Serves ``head``, then raises ``then`` (or reports EOF) once it runs dry."""
+
+    def __init__(self, head: bytes, then: BaseException | None) -> None:
+        super().__init__(head)
+        self._then = then
+
+    def _dry(self, data: bytes) -> bytes:
+        if not data and self._then is not None:
+            raise self._then
+        return data
+
+    def readline(self, size: int | None = -1) -> bytes:
+        return self._dry(super().readline(size))
+
+    def read(self, size: int | None = -1) -> bytes:
+        return self._dry(super().read(size))
+
+
+class _FakeSocket:
+    """Accepts the request bytes and answers from a script; never touches the network."""
+
+    def __init__(self, reader: _ScriptedReader) -> None:
+        self._reader = reader
+
+    def sendall(self, data: bytes) -> None:
+        del data
+
+    def makefile(self, mode: str, *args: object, **kwargs: object) -> _ScriptedReader:
+        return self._reader
+
+    def close(self) -> None:
+        pass
+
+
+def _serve_from_script(monkeypatch: pytest.MonkeyPatch, head: bytes, then: BaseException | None) -> None:
+    """Replace the TLS connect with a scripted socket, so the real ``do_open``/``getresponse`` run."""
+
+    def _connect(self: http.client.HTTPConnection) -> None:
+        self.sock = _FakeSocket(_ScriptedReader(head, then))
+
+    monkeypatch.setattr(http.client.HTTPSConnection, "connect", _connect)
+
+
+@pytest.mark.parametrize(
+    ("head", "then", "kind", "in_do_open"),
+    [
+        (b"", TimeoutError("timed out"), "TimeoutError: timed out", True),
+        (b"", ConnectionResetError(104, "Connection reset by peer"), "ConnectionResetError", True),
+        (b"", None, "RemoteDisconnected", True),
+        (b"", ssl.SSLEOFError(8, "EOF occurred in violation of protocol"), "SSLEOFError", True),
+        (_PARTIAL_BODY, None, "IncompleteRead", False),
+    ],
+    ids=["read-timeout", "reset-in-getresponse", "remote-disconnected", "ssl-eof", "incomplete-read"],
+)
+def test_unwrapped_transport_error_is_typed_and_never_renders_the_token(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    head: bytes,
+    then: BaseException | None,
+    kind: str,
+    in_do_open: bool,
+) -> None:
+    """urllib wraps only ``h.request()``; what ``getresponse()`` and ``read()`` raise is caught here."""
+    _serve_from_script(monkeypatch, head, then)
+    client = GitHubRestOrgReposClient(token=_SENTINEL)
+    with pytest.raises(FleetInventoryApiError, match=f"transport failed: {kind}") as caught:
+        client.list_org_repos(_EXAMPLE_ORG)
+    assert caught.value.__cause__ is None
+    assert caught.value.__suppress_context__ is True
+    _assert_sentinel_absent(caught.value, caplog)
+    suppressed = caught.value.__context__
+    assert suppressed is not None
+    assert not isinstance(suppressed, urllib.error.URLError)
+    if in_do_open:
+        # Control: raised inside urllib's do_open, whose ``headers`` local holds the token.
+        assert _SENTINEL in _rendered_with_locals(suppressed)
+
+
+def test_header_value_error_never_echoes_the_token(caplog: pytest.LogCaptureFixture) -> None:
+    """``http.client`` refuses an illegal header value by quoting it; the message keeps only the type."""
+    client = GitHubRestOrgReposClient(token=f"{_SENTINEL}\nX-Injected: 1")
+    with pytest.raises(FleetInventoryApiError, match=r"transport failed: ValueError$") as caught:
+        client.list_org_repos(_EXAMPLE_ORG)
+    _assert_sentinel_absent(caught.value, caplog)
+    # Control: the refused ValueError itself quotes the token.
+    assert _SENTINEL in str(caught.value.__context__)
 
 
 def test_invalid_json_is_refused() -> None:

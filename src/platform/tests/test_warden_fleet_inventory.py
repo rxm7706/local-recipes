@@ -8,11 +8,14 @@ stub urllib transport (``github_wire``), and the root conftest's autouse
 from __future__ import annotations
 
 import ast
+import contextlib
 import io
 import json
 import logging
 import os
+import re
 import subprocess
+import time
 import traceback
 import urllib.error
 import urllib.response
@@ -23,12 +26,14 @@ from http import HTTPStatus
 from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 from typing import Protocol
 from unittest.mock import patch
 
 import pytest
 import structlog
 from django.core.management import call_command
+from django.test import Client
 from django.test.utils import override_settings
 from django_pyforge.flags import evaluate_from_source
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
@@ -43,6 +48,7 @@ from django_warden_fabric.fleet_inventory import GhAuthTokenProvider
 from django_warden_fabric.fleet_inventory import GhBinaryMissingError
 from django_warden_fabric.fleet_inventory import GhLoginMissingError
 from django_warden_fabric.fleet_inventory import GhTimeoutError
+from django_warden_fabric.fleet_inventory import _run_gh as real_run_gh
 from django_warden_fabric.fleet_inventory import atomic_write_json
 from django_warden_fabric.fleet_inventory import fleet_checkout_root
 from django_warden_fabric.fleet_inventory import load_leak_guard_terms
@@ -52,9 +58,11 @@ from django_warden_fabric.fleet_inventory import resolve_fleet_target_config_pat
 from django_warden_fabric.fleet_inventory import run_fleet_inventory_sync
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.tasks import run_fleet_inventory
+from django_warden_fabric.views import FLEET_INVENTORY_CONFIG_REFUSAL
 
 from config.observability.logging import JSON
 from config.observability.logging import build_logging_config
+from tests.gh_guard import refuse_real_gh
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -66,6 +74,7 @@ _EXIT_REFUSED = 2
 _SENTINEL = "sentinel-token-must-not-leak-16-1"
 _GH = "/opt/example/bin/gh"
 _TWO_WRITES = 2
+_SLEEPER_SECONDS = 5
 _SRC_ROOT = Path(__file__).resolve().parents[2]
 _REPO_ROOT = _SRC_ROOT.parent
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
@@ -477,6 +486,42 @@ def test_guard_refuses_the_real_gh_runner(real_gh_attempts: list[list[str]]) -> 
     real_gh_attempts.clear()
 
 
+def test_gh_guard_still_fails_a_test_that_swallowed_the_refusal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """N3: the guard's teardown fails a test whose broad ``except`` ate the refusal."""
+    guard = refuse_real_gh(monkeypatch)
+    attempts = next(guard)
+    with (
+        patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=_GH),
+        contextlib.suppress(AssertionError),
+    ):
+        GhAuthTokenProvider().token()
+    assert attempts == [["auth", "token", "--hostname", "github.com"]]
+    with pytest.raises(
+        pytest.fail.Exception, match="reached the real gh token provider"
+    ):
+        next(guard)
+
+
+def test_real_gh_runner_enforces_its_timeout(tmp_path: Path) -> None:
+    """N2: the real ``_run_gh`` seam stops a hung ``gh`` (a harmless sleeper here)."""
+    sleeper = tmp_path / "gh"
+    sleeper.write_text("#!/bin/sh\nexec sleep 5\n", encoding="utf-8")
+    sleeper.chmod(0o755)
+    provider = GhAuthTokenProvider(runner=real_run_gh, timeout=0.2)
+    started = time.monotonic()
+    with (
+        patch(
+            "django_warden_fabric.fleet_inventory.shutil.which",
+            return_value=str(sleeper),
+        ),
+        pytest.raises(GhTimeoutError, match=r"within 0\.2s"),
+    ):
+        provider.token()
+    assert time.monotonic() - started < _SLEEPER_SECONDS
+
+
 def test_missing_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     missing = tmp_path / "missing.toml"
     monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(missing))
@@ -601,6 +646,22 @@ def test_leak_guard_skips_when_config_absent(
     missing = tmp_path / "absent" / "fleet-target.toml"
     monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(missing))
     assert _leak_guard_terms() == (None, missing)
+
+
+def test_leak_guard_terms_must_be_a_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """N5: a bare string is refused, never silently dropped from the guard."""
+    config = tmp_path / "fleet-target.toml"
+    config.write_text(
+        '[github]\norganisation = "example-org"\nleak_guard_terms = "example-term"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(config))
+    with pytest.raises(FleetTargetConfigError, match="leak_guard_terms"):
+        load_leak_guard_terms(config)
+    with pytest.raises(FleetTargetConfigError, match="leak_guard_terms"):
+        _leak_guard_terms()
 
 
 def test_leak_guard_finds_a_planted_term(tmp_path: Path) -> None:
@@ -742,6 +803,105 @@ def test_connection_failure_log_lines_never_carry_the_token(
     assert not export.exists()
 
 
+_PARTIAL_BODY = (
+    b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+    b"Content-Length: 100\r\n\r\n"
+    b'[{"full_name": "example-org/alpha"'
+)
+
+
+class _ScriptedReader(io.BytesIO):
+    """Serves ``head``, then raises ``then`` (or reports EOF) once it runs dry."""
+
+    def __init__(self, head: bytes, then: BaseException | None) -> None:
+        super().__init__(head)
+        self._then = then
+
+    def _dry(self, data: bytes) -> bytes:
+        if not data and self._then is not None:
+            raise self._then
+        return data
+
+    def readline(self, size: int | None = -1) -> bytes:
+        return self._dry(super().readline(size))
+
+    def read(self, size: int | None = -1) -> bytes:
+        return self._dry(super().read(size))
+
+
+class _FakeSocket:
+    """Takes the request bytes and answers from a script; never touches the network."""
+
+    def __init__(self, reader: _ScriptedReader) -> None:
+        self._reader = reader
+
+    def sendall(self, data: bytes) -> None:
+        del data
+
+    def makefile(self, mode: str, *args: object, **kwargs: object) -> _ScriptedReader:
+        return self._reader
+
+    def close(self) -> None:
+        pass
+
+
+@pytest.mark.django_db
+@pytest.mark.usefixtures("inventory_flags_on")
+@pytest.mark.parametrize(
+    "case",
+    [
+        (b"", TimeoutError("timed out"), "TimeoutError"),
+        (b"", ConnectionResetError(104, "Connection reset by peer"), "ConnectionReset"),
+        (_PARTIAL_BODY, None, "IncompleteRead"),
+    ],
+    ids=["read-timeout", "reset-in-getresponse", "incomplete-read"],
+)
+def test_unwrapped_transport_error_never_reaches_logs_or_the_debug_page(
+    inventory_paths: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    settings,
+    case: tuple[bytes, BaseException | None, str],
+) -> None:
+    """N1: a failure urllib does not wrap (in ``getresponse()`` or ``read()``) is typed.
+
+    Driven from the portal in eager mode with DEBUG on: the task's own per-run log
+    fires, and neither the production JSON log lines (``django.request`` and the
+    rest, with frame locals) nor the DEBUG 500 page carries the token.
+    """
+    head, then, kind = case
+    _config, export = inventory_paths
+
+    def _connect(connection: Any) -> None:
+        connection.sock = _FakeSocket(_ScriptedReader(head, then))
+
+    monkeypatch.setattr("http.client.HTTPSConnection.connect", _connect)
+    portal = Client(raise_request_exception=False)
+    _authed(portal, settings)
+    stream = StringIO()
+    handler = _platform_json_log_handler(stream)
+    root = logging.getLogger()
+    root.addHandler(handler)
+    try:
+        with (
+            patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider),
+            override_settings(DEBUG=True, CELERY_TASK_ALWAYS_EAGER=True),
+        ):
+            response = portal.post("/stations/warden/fleet/inventory/start/")
+    finally:
+        root.removeHandler(handler)
+    body = response.content.decode("utf-8", errors="replace")
+    rendered = stream.getvalue()
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert '"locals"' in rendered
+    assert _SENTINEL not in body
+    assert _SENTINEL not in rendered
+    # Typed: the DEBUG page names the client's error, and the task's per-run log fired.
+    assert "FleetInventoryApiError at /stations/warden/fleet/inventory/start/" in body
+    assert f"transport failed: {kind}" in body
+    assert re.search(r"fleet inventory [0-9a-f-]{36} failed", rendered)
+    assert not export.exists()
+
+
 @pytest.mark.django_db
 def test_task_missing_gh_binary_leaves_no_export(
     inventory_paths: tuple[Path, Path],
@@ -859,6 +1019,27 @@ def test_portal_fleet_inventory_refuses_when_flag_off(
     response = client.post("/stations/warden/fleet/inventory/start/")
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert b"disabled" in response.content.lower()
+
+
+@pytest.mark.django_db
+@pytest.mark.usefixtures("inventory_flags_on")
+def test_portal_config_refusal_names_no_path(
+    client,
+    settings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """N6a: the portal shows a fixed message; the config path goes to the server log."""
+    missing = tmp_path / "absent" / "fleet-target.toml"
+    monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(missing))
+    _authed(client, settings)
+    caplog.set_level(logging.WARNING)
+    response = client.post("/stations/warden/fleet/inventory/start/")
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.content.decode() == FLEET_INVENTORY_CONFIG_REFUSAL
+    assert str(missing) not in response.content.decode()
+    assert str(missing) in caplog.text
 
 
 @pytest.mark.django_db

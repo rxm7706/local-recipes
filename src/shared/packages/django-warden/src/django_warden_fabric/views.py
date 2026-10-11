@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import tempfile
 import uuid
 from pathlib import Path
@@ -44,6 +45,14 @@ from .proposals import dismiss_proposal
 from .tasks import SUPPORTED_SUFFIXES
 from .tasks import run_compliance_job
 from .tasks import run_fleet_inventory
+
+logger = logging.getLogger(__name__)
+
+# Story 16.1: what a portal user sees when the target config is unusable. The detail
+# (the config's absolute path and what is wrong with it) goes to the server log only.
+FLEET_INVENTORY_CONFIG_REFUSAL = (
+    "fleet inventory target config is missing or invalid; see the server log"
+)
 
 _WELL_KNOWN_MANIFEST_NAMES = frozenset(
     {
@@ -211,7 +220,8 @@ def start_fleet_inventory(request: HttpRequest) -> HttpResponse:
     try:
         organisation = load_organisation_from_config()
     except FleetInventoryError as exc:
-        return HttpResponse(str(exc), status=400)
+        logger.warning("fleet inventory refused: %s", exc)
+        return HttpResponse(FLEET_INVENTORY_CONFIG_REFUSAL, status=400)
     run_id = uuid.uuid4()
     run_fleet_inventory.delay(str(run_id), organisation)
     return render(

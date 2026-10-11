@@ -11,6 +11,7 @@ URL off that origin is refused before it is requested.
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import urllib.error
@@ -18,7 +19,6 @@ import urllib.parse
 import urllib.request
 from collections.abc import Sequence
 from dataclasses import dataclass
-from http.client import HTTPMessage
 from typing import IO, Any
 
 from pyforge.core.errors import PyforgeError
@@ -122,6 +122,18 @@ def _listed_repo_from_api(entry: object) -> ListedRepo | str:
     )
 
 
+def _transport_failure(exc: BaseException) -> str:
+    """A message for a transport error that never echoes a request header.
+
+    Only an ``OSError``'s text is kept (a timeout, a reset, an SSL reason). A
+    ``ValueError`` can quote a header value (``http.client`` refuses an illegal
+    Authorization value by printing it), so it, and ``HTTPException``, give only
+    their type.
+    """
+    detail = f": {exc}" if isinstance(exc, OSError) else ""
+    return f"GitHub API transport failed: {type(exc).__name__}{detail}"
+
+
 class _ApiHostRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Follow a redirect only within ``https://<api_host>``, carrying the token there."""
 
@@ -135,7 +147,7 @@ class _ApiHostRedirectHandler(urllib.request.HTTPRedirectHandler):
         fp: IO[bytes],
         code: int,
         msg: str,
-        headers: HTTPMessage,
+        headers: http.client.HTTPMessage,
         newurl: str,
     ) -> urllib.request.Request | None:
         if not is_api_url(newurl, self._api_host):
@@ -221,14 +233,20 @@ class GitHubRestOrgReposClient:
             with self._opener.open(request, timeout=120) as response:
                 body = response.read()
                 link = response.headers.get("Link")
-        # ``from None``: urllib's own frames (``do_open`` holds the request headers,
-        # Authorization included, as a local) must not ride along on the chain into
-        # a log renderer that prints frame locals (the platform's ``dict_tracebacks``).
+        # ``from None`` throughout: urllib's own frames (``do_open`` holds the request
+        # headers, Authorization included, as a local) must not ride along on the chain
+        # into a log renderer that prints frame locals (the platform's
+        # ``dict_tracebacks``, Django's DEBUG 500 page).
         except urllib.error.HTTPError as exc:
             msg = f"GitHub API HTTP {exc.code}"
             raise FleetInventoryApiError(msg) from None
         except urllib.error.URLError as exc:
             msg = f"GitHub API request failed: {exc.reason}"
+            raise FleetInventoryApiError(msg) from None
+        # urllib wraps only ``h.request()``: a read timeout, a reset or an SSL error in
+        # ``getresponse()``, or ``IncompleteRead`` in ``read()``, escapes unwrapped.
+        except (OSError, http.client.HTTPException, ValueError) as exc:
+            msg = _transport_failure(exc)
             raise FleetInventoryApiError(msg) from None
         try:
             parsed = json.loads(body.decode("utf-8"))

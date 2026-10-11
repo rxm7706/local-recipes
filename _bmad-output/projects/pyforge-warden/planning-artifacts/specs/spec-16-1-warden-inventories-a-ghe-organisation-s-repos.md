@@ -278,6 +278,64 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
 
 ## Review Triage Log
 
+### 2026-10-11 — Fix pass for iteration 2 (implementer)
+
+Implementer pass on the iteration-2 send-back below; not a review verdict (iteration 3 judges it). Same rules as
+before: fictional identifiers only, no network, no `gh`, no `.warden/` read. Each mutation was applied in place, the
+named test(s) went red, the file was restored byte-identical (`cmp`), and the test(s) went green again. Below, `R` is
+`src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`, `U` is `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py`, `P` is `src/platform/tests/test_warden_fleet_inventory.py`, `F` is `src/shared/packages/django-warden/src/django_warden_fabric/fleet_inventory.py` and `G` is `src/platform/tests/gh_guard.py`.
+
+- N1 (security, AC7): `_get_json` also catches `(OSError, http.client.HTTPException, ValueError)` around open and
+  read (`R:248-250`), after the `HTTPError`/`URLError` clauses, and re-raises `FleetInventoryApiError` `from None`.
+  The message comes from `_transport_failure` (`R:125`). It keeps an `OSError`'s text (timeout, reset, SSL reason)
+  and only the type name for `HTTPException` and `ValueError`, because `http.client` refuses an illegal Authorization
+  value by quoting it. No frame on the re-raised path holds the token: the chain is cut, `except ... as exc` names
+  are cleared, the client `repr` is redacted, and the task holds no token local. The task's
+  `except (FleetInventoryError, FleetInventoryApiError)` (`tasks.py:145`) now catches these, so its per-run log
+  fires.
+  - Unit `U:432`: the real opener and the real `do_open`/`getresponse`, with TLS connect replaced by a scripted
+    socket. Cases: read timeout, reset during `getresponse`, `RemoteDisconnected`, SSL EOF, `IncompleteRead` during
+    `read`. Each asserts a typed error, a cut chain, and the sentinel absent from str, repr, logs and rendered frame
+    locals. A control proves the suppressed error does hold the token for the four `do_open` cases.
+  - Unit `U:456`: an illegal header value. Typed error, type-only message; the control shows the refused
+    `ValueError` quotes the token.
+  - Platform `P:859`: the portal start in eager mode with `DEBUG` on, for read timeout, reset in `getresponse` and
+    `IncompleteRead` in `read`. Asserts a 500 whose DEBUG page names `FleetInventoryApiError` and the transport
+    failure. The sentinel is absent from the DEBUG body and from every line through the production JSON renderer
+    (frame locals on, `django.request` included). The task's per-run log line is present and no export is written.
+  - Mutations: `OSError` dropped from the tuple: unit 3 red (timeout, reset, ssl-eof); platform 2 red, failing on
+    the sentinel in the DEBUG body. `HTTPException` dropped: unit 1 red; platform 1 red (incomplete-read, untyped).
+    Whole clause removed: unit 6 red; platform 3 red.
+- N2: `test_real_gh_runner_enforces_its_timeout` (`P:507`) runs the real `_run_gh` seam (imported before the
+  autouse guard swaps it) against a fake `gh` that `exec sleep 5`s, with a 0.2 s timeout. It expects
+  `GhTimeoutError` well inside 5 s. Mutation: `timeout=timeout` deleted from `_run_gh` (`F:156`) -> red.
+- N3: the guard moved to an importable generator, `refuse_real_gh` (`G:27`). The root conftest's autouse
+  `real_gh_attempts` (`src/platform/conftest.py:65`) now delegates to it. `test_gh_guard_still_fails_a_test_that_swallowed_the_refusal`
+  (`P:489`) drives it: a refusal swallowed by `contextlib.suppress` still makes the teardown raise
+  `pytest.fail.Exception`. Mutation: the teardown `pytest.fail` disabled (`G:41-42`) -> red.
+- N4: `scrub_token_from_text` removed from `F`; nothing called it.
+- N5: a `leak_guard_terms` that is not a list of strings raises `FleetTargetConfigError` (`F:132-135`). Test
+  `test_leak_guard_terms_must_be_a_list` (`P:651`), through both the loader and the guard's helper. Mutation: back to
+  `return []` -> red.
+- N6a: `start_fleet_inventory` returns the fixed `FLEET_INVENTORY_CONFIG_REFUSAL` (`views.py:53`, `:224`) and logs the
+  detail at WARNING (`views.py:223`). Test `test_portal_config_refusal_names_no_path` (`P:1026`): 400, the fixed body,
+  no config path in the body, the path in the log.
+- N6b: deferred to `DW-warden-16-1` in `_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md`
+  (stale `FleetRepo` rows for repos deleted or renamed upstream, which 16.2 still clones). `deferred-work-check` 0.
+- N7: Auto Run Result below refreshed to the current state.
+- Spec surface: memlog events appended to `spec-pyforge-unifying-strategy`, `spec-pyforge-warden` and
+  `spec-pyforge-core`, naming every moved path. `spec-surface-check` named one Spec (drift-presumed: the new
+  `src/platform/tests/gh_guard.py`), so `git add -A`, then
+  `python scripts/spec_surface_check.py --write-baseline --spec pyforge-steward/spec-pyforge-unifying-strategy`
+  (scoped; staged). Re-run: 0.
+- Scratch services: the platform tests ran against this agent's own cluster (a uniquely named scratch directory,
+  ports 25461/26461), stopped by exact PID. A shared-scratch reset by another agent did not touch it.
+- Gates (exit codes read from files): `pixi run -e pyforge-warden pyforge-warden-test` 0 (2329 passed);
+  `pixi run -e pyforge-guild lint-types` 0; `pixi run -e pyforge-guild platform-ci-local -- --test` 0 (seven steps
+  PASS; 1243 passed, 14 skipped); `pixi run -e pyforge-guild spec-surface-check` 0;
+  `pixi run -e pyforge-guild detectors-ci` 0 (45 pass); `pixi run -e pyforge-guild deferred-work-check` 0.
+  The 22 `src/platform` diff-guard meta tests (X2/X3 from iteration 1) still pass.
+
 ### 2026-10-11 — Independent review, iteration 2: sent back (1 major, 5 minor)
 
 Fresh separate agent, review of `git diff origin/main...HEAD` at cd7f627c51. Every iteration-1 item (F1-F5, M1-M9, X1-X3) is closed: 18 client mutations and 24 of 26 platform mutations caught. Confidentiality holds (only fictional identifiers; nothing under `.warden/` read; no network, no `gh`). Gates: `pyforge-warden-test` 0 (2323 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0, `platform-ci-local -- --test` 0 (1236 passed, 14 skipped), flag gate `--spec` 0.
@@ -407,9 +465,40 @@ Send-back: F1-F5 required; M1-M9 in the same pass. A fresh independent review (i
 
 ## Auto Run Result
 
-- **Summary:** Fleet inventory for an operator-designated github.com org: gitignored TOML + JSON export, `gh auth token` in the Celery worker only, GET-only listing via `pyforge.warden.fleet_github_rest`, feature flag `pyforge.warden.fleet_inventory`, portal HTMX + management command, fixture org `example-org` in tests.
-- **Files changed:** `django_warden_fabric` (fleet inventory sync, tasks, views, chrome template, command); `pyforge/warden/fleet_github_rest.py`; platform flags/tests; `.gitignore`; `pixi.toml` (`platform-ci-test` + `pyforge-warden`); memlogs on warden, unifying-strategy, core, feature-flag-governance, pages specs.
-- **Review:** 8 patches applied from triage; 4 false/reject; 2 deferred (`head_sha` contract, CI leak-guard scope).
-- **Follow-up review recommended:** `false`
-- **Verification:** `pyforge-warden-test` 2299 passed; `platform-ci-local -- --test` PASS; `flag_gate_check.py --spec` pass; `spec_surface_reconcile.py` OK; `git check-ignore` on default `.warden/` paths OK. Live inventory with operator `gh` login not run (operator-owned).
-- **Residual risks:** Atlas export shape vs `head_sha` (deferred); leak-guard runs only when local gitignored config exists; operator must configure `.warden/fleet-target.toml` and github.com `gh` login for live runs.
+- **Summary:** Fleet inventory of an operator-designated github.com organisation, behind `pyforge.warden.fleet_inventory`.
+  - The target organisation is read from the gitignored `.warden/fleet-target.toml`, anchored to the checkout root.
+  - The credential is read once per run through `gh auth token`, in the Celery worker only. It runs through one
+    time-bounded seam and is never written anywhere.
+  - Listing is GET-only via `pyforge.warden.fleet_github_rest`. The token rides only to `https://api.github.com`:
+    an unredirected header, redirects and `Link` next URLs pinned, every transport error typed and cut from its
+    chain.
+  - Rows are upserted into `FleetRepo`. Entries the listing cannot inventory are named under `skipped`.
+  - The gitignored JSON export is written atomically.
+  - The portal button and the `warden_fleet_inventory` command share one code path; OFF, both refuse.
+  - Tests use the fictional `example-org` only.
+- **Files changed:**
+  - `django_warden_fabric`: `fleet_inventory.py`, `tasks.py`, `views.py`, `fleet.py`, the command, `portal_urls.py`
+    and the templates.
+  - `pyforge/warden/fleet_github_rest.py` and its unit tests.
+  - Platform: `config/flags.json` and overlays, `conftest.py`, `tests/gh_guard.py`, `tests/test_warden_fleet_inventory.py`.
+  - `.gitignore` (`.warden/`) and `pixi.toml` (`platform-ci-test` gains `pyforge-warden`).
+  - Memlogs on the governing Specs, and the warden deferred-work row `DW-warden-16-1`.
+- **Review:** three review passes so far, each followed by a fix pass.
+  - The build-time pass applied 8 patches.
+  - Independent iteration 1 sent back 5 major and 9 minor; all were fixed, plus X1-X3.
+  - Independent iteration 2 sent back 1 major and 5 minor (N1-N6a fixed, N6b deferred, N7 refreshed).
+  - Every fix is proven by mutation. Iteration 3 gates the landing.
+- **Follow-up review recommended:** `false` (an independent iteration-3 review is required instead)
+- **Verification (iteration-2 fix pass):**
+  - `pyforge-warden-test` 0 (2329 passed); `lint-types` 0.
+  - `platform-ci-local -- --test` 0 (1243 passed, 14 skipped).
+  - `spec-surface-check` 0, after a scoped stamp of `spec-pyforge-unifying-strategy`.
+  - `detectors-ci` 0 (45 pass); `deferred-work-check` 0; flag gate `--spec` 0.
+  - Each `git check-ignore -q` on the default `.warden/` paths: 0.
+  - The live inventory with the operator's `gh` login has not been run (operator-owned).
+- **Residual risks:**
+  - Atlas's reader expects `head_sha`, which the export does not carry. This is an open operator question for
+    `spec-pyforge-atlas:CAP-61`.
+  - The live leak guard runs only where the gitignored config exists.
+  - Stale `FleetRepo` rows are not retired (`DW-warden-16-1`).
+  - A live run needs the operator's config and github.com `gh` login.

@@ -129,9 +129,11 @@ def load_leak_guard_terms(config_path: Path | None = None) -> list[str]:
     terms = github.get("leak_guard_terms")
     if terms is None:
         return []
-    if not isinstance(terms, list):
-        return []
-    return [str(item) for item in terms if str(item).strip()]
+    if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
+        # A bare string would otherwise be ignored and the guard would run without it.
+        msg = "leak_guard_terms under [github] must be a list of strings"
+        raise FleetTargetConfigError(path, msg)
+    return [item for item in terms if item.strip()]
 
 
 class CredentialProvider(Protocol):
@@ -304,9 +306,3 @@ def run_fleet_inventory_sync(
     )
     atomic_write_json(destination, document)
     return document
-
-
-def scrub_token_from_text(text: str, token: str) -> str:
-    if not token:
-        return text
-    return text.replace(token, "<redacted>")

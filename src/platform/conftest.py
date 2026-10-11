@@ -61,33 +61,9 @@ def _isolate_caches():
     supervisor._runners.clear()  # noqa: SLF001
 
 
-class RealGhInvokedError(AssertionError):
-    """A test reached the operator's ``gh`` token provider (Story 16.1, M7)."""
-
-
 @pytest.fixture(autouse=True)
 def real_gh_attempts(monkeypatch):
-    """No test may run the operator's ``gh`` (it hands out a live GitHub token).
+    """No test may run the operator's ``gh`` (Story 16.1); see ``tests/gh_guard.py``."""
+    from tests.gh_guard import refuse_real_gh  # noqa: PLC0415
 
-    Story 16.1: the fleet-inventory task runs ``gh auth token`` through one seam,
-    ``django_warden_fabric.fleet_inventory._run_gh``. Here that seam refuses, and
-    the test fails at teardown even when the refusal was swallowed (an eager
-    Celery task, a broad ``except``). Inject a fake provider or ``runner=``.
-    """
-    attempts: list[list[str]] = []
-
-    def _refuse(argv, *, timeout):
-        attempts.append(list(argv[1:]))
-        msg = (
-            "a test reached the real gh token provider; inject a fake "
-            "provider or GhAuthTokenProvider(runner=...)"
-        )
-        raise RealGhInvokedError(msg)
-
-    monkeypatch.setattr("django_warden_fabric.fleet_inventory._run_gh", _refuse)
-    yield attempts
-    if attempts:
-        pytest.fail(
-            f"{len(attempts)} call(s) reached the real gh token provider",
-            pytrace=False,
-        )
+    yield from refuse_real_gh(monkeypatch)
