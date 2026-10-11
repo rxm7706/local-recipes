@@ -9,7 +9,7 @@ followup_review_recommended: false
 flag:
   key: pyforge.steward.herald_webhook_sidecar
   provider: openfeature-file
-  default: {production: off, staging: off, dev: on}
+  default: {production: off, staging: off, dev: off}
   scope: global
   fallback: "Story 87.1's behaviour: the host serves herald's webhook in-process when pyforge-herald is installed and answers 404 with the absent reason when it is not; nothing is forwarded"
   cleanup: 90 days after ON in every environment (Q4)
@@ -314,6 +314,9 @@ by the same ruling (its spec's banner).
   story is `type: feature` with a flag: it adds a forwarded route through a second process, which no shipped
   behaviour covered. Flag defaults: dev ON for herald 19.2's local proof; staging and production OFF until the chart
   wires herald's store and secret.
+- 2026-10-10 (later): dev OFF again by operator ruling ("Dark again + mint 87.5 (Recommended)"): Story 87.4 turned
+  dev back ON, and its independent review then failed (a client disconnect mid-body spins the host's event loop).
+  The forward stays dark everywhere until steward Story 87.5 lands and passes an independent review.
 
 ## Review Triage Log
 

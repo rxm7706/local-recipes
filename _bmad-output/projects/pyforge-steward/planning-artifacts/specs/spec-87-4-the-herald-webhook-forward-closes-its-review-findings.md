@@ -281,6 +281,16 @@ the host's packages, except AC (2)'s live run. A fake sidecar records every requ
 
 ## Review Triage Log
 
+### 2026-10-10 — Independent review of the landed merge `cd32c401cc`: FAIL (1 high, 1 medium, 3 low)
+
+Run after landing by a separate agent against this spec's ACs (the dispatch landed without a held review). Verified closed by probes: path traversal (every `..`/`%2e%2e`/`%3F`/`%23`/`%0d%0a`/case/slash variant gets 404 and never reaches the sidecar), `mcp-host-serve` binds 127.0.0.1:8090 with `/health` 200, `environment.yaml` parses and equals the export, the body and message caps answer 413 before the sidecar, the sidecar 404 checks `exc.name`. Open, carried to steward Story 87.5 by operator ruling ("Dark again + mint 87.5 (Recommended)"); the flag is OFF in dev again until 87.5 passes its own independent review:
+
+- `[high]` `src/shared/packages/django-pyforge/src/django_pyforge/sidecar_forward.py` `_read_webhook_body` `continue`s on every non-`http.request` message, so an `http.disconnect` after a partial body spins forever: one unauthenticated connection pins a worker's event loop at 100% CPU (reproduced through `config.asgi.application`: 100,001 `receive()` calls). Fix: stop on `http.disconnect` without contacting the sidecar, as herald's `_ClientDisconnected` does; test a partial body then a disconnect.
+- `[medium]` `src/platform/tests/test_webhook_herald_forward_host.py` AC 6 tests depend on run order (`webhook_host._application` is cached and the first test's `asyncio.run` shuts its executor); the file fails run alone. Fix: reset the cache in a fixture.
+- `[low]` with the flag OFF or the URL unset, non-allowlisted paths under `/webhooks/` now get the host's generic 404 before the flag/URL checks, changing 87.1's absent-reason answer (check base and flag first, or document).
+- `[low]` `src/platform/mcp_host/app.py`: a sidecar env without herald raises `exc.name == "pyforge"` and answers 500; treat parents of `pyforge.herald` as absent.
+- `[low]` AC 4's forward-ON tests build the scope by hand and do not assert the allowlisted headers or the response body pass through.
+
 ### 2026-10-10 — Review pass
 - verdicts: 2 findings — high 0, medium 0, low 0, false 2, maybe-false 0
 - findings:
