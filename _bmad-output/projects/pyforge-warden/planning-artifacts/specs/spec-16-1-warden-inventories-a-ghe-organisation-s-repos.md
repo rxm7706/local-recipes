@@ -2,9 +2,9 @@
 title: "16.1: Warden inventories an operator-designated GitHub organisation's repos"
 type: 'feature'
 created: '2026-09-28'
-status: 'done'
+status: 'in-progress'
 baseline_revision: 'e0d12c1d4ec1d22ec49fd0d6f72e12025462900f'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
@@ -268,6 +268,20 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
   - The items of the operator-designated GitHub Projects split out to Story 16.5.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 1: sent back (5 major, 9 minor)
+
+Separate agent, fresh review of `git diff origin/main...HEAD` against this spec and the 2026-10-11 decisions on `spec-pyforge-warden`; mutations in a scratch copy, no network. Confidentiality holds: no real organisation, repository or project name in the diff, the 25 commit messages or the PR #2131 body (checked separately); every identifier is fictional; `.warden/` is ignored for the config, the export, the temp file and `src/platform/.warden/`; no live run happened (no `.warden/` anywhere, no GitHub call journaled); the only `gh` call is `gh auth token --hostname github.com` as an argv list. ACs 1-5, 8 and 11 pass (each mutation caught); AC10 correctly not run. Gates: `pyforge-warden-test` 0 (2310), `lint-types` 0, `spec-surface-check` 0, `flag-gate-check` 0, `platform-ci-local -- --test` 0 (1225); `detectors-ci` 1 (F5).
+
+- `[major]` `[patch]` F1 (security) the bearer token reaches any host on a redirect or a cross-host pagination link: `fleet_github_rest.py:81` `build_opener()` keeps urllib's default redirect handler, `:110` `add_header("Authorization", ...)` is copied onto the redirected request, `:105` follows the `Link` next URL with no scheme/host check. Proven offline: a 302 to `http://evil.example` and a cross-host `Link` next both received the token (the first downgraded to http). Fix: `add_unredirected_header` for Authorization; refuse any redirect whose target is not `https://api.github.com`; refuse a next URL unless it is https on the API host; stub-handler tests for both.
+- `[major]` `[patch]` F2 (AC9) the leak guard misses pyforge-warden and never runs in the platform harness: `src/platform/tests/test_warden_fleet_inventory.py:52` scans `_REPO_ROOT / "shared/packages/pyforge-warden"` (does not exist; should be `_SRC_ROOT / ...`); `:203`/`:208` check the relative `.warden/fleet-target.toml`, but the platform suite's cwd is `src/platform`, so a repo-root config makes the guard skip, and `WARDEN_FLEET_TARGET_CONFIG` is ignored; a live `manage.py` from `src/platform` has the same cwd problem. Fix: correct the root, anchor default paths to the repo root, assert every scan root exists.
+- `[major]` `[patch]` F3 (AC6) "every request is a GET" is never checked on the real request path: `RecordingOrgReposClient` hard-codes `"GET"` into its record (`django_warden_fabric/fleet_inventory.py:162`); changing `fleet_github_rest.py:109` to `method="POST"` keeps every test green. (The refusal of POST/PUT/PATCH/DELETE before a socket opens holds and is caught.) Fix: a test that captures the method of the actual outgoing request.
+- `[major]` `[patch]` F4 (AC7) the sentinel test never runs the real client's error paths: putting the token into `GitHubRestOrgReposClient`'s HTTPError message survives every test. Fix: drive the real client's HTTP-error and URL-error paths with a stub handler and assert the sentinel token is absent from `str(exc)`, `repr`, logs and the export.
+- `[major]` `[patch]` F5 (merge gate) `detectors-ci` 1: `ad_citation_check` flags an unqualified atlas capability citation in this spec's Review Triage Log; qualify it as `spec-pyforge-atlas:CAP-61`. The branch is behind origin/main (herald 36.1's merge); merge main and re-run.
+- `[minor]` M1 the Verification command `git check-ignore -q <two paths>` exits 128 (`-q` takes one path); split it. M2 `pyforge/warden/__init__.py:14-15` `fleet_inventory = "..."` constant is unnecessary, contradicts the skill's "`__init__` exports only `__version__`" and takes a submodule's name; remove it. M3 record the placement deviation (client in `pyforge.warden.fleet_github_rest`, seams in `fleet_inventory.py`) in the Spec Change Log. M4 dedupe `ListedRepo`, the in-task adapter class and `FLEET_INVENTORY_FLAG`. M5 `fleet_inventory.py:136` `gh auth token` needs a timeout. M6 `fleet_github_rest.py:55-66`: a missing `default_branch` silently becomes `"main"` and entries missing name/clone URL drop silently — record or refuse them. M7 add a conftest guard so no test can invoke the real `gh` provider under eager Celery. M8 `test_leak_guard_skips_when_config_absent` asserts nothing. M9 the export temp file has a fixed name; use a unique temp name.
+- Info: I1 no inventory job row (failure shows only as Celery task state); I2 frontmatter read `done` while the PR was held; I3 baseline stamps equal origin/main's, nothing laundered.
+
+Send-back: F1-F5 required; M1-M9 in the same pass. A fresh independent review (iteration 2) gates the landing.
 
 ### 2026-10-11 — Review pass
 - verdicts: 18 findings — high 3, medium 5, low 4, false 4, maybe-false 2
