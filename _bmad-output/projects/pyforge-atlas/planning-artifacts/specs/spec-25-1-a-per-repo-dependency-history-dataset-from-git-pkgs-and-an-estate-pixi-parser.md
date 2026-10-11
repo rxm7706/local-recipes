@@ -2,9 +2,9 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
-review_loop_iteration: 3
+review_loop_iteration: 4
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -237,6 +237,16 @@ Deps: — (cross-station: mason Story 21.1).
   exists, nothing is pruned, so a mistyped entry never deletes a repo's state, last-good partition or clone.
 
 ## Review Triage Log
+
+### 2026-10-10 — Independent review, iteration 4: sent back (1 medium, 4 low)
+
+Separate agent, on `79af278090`. All seven gates exit 0. Every iteration-3 fix re-probed in scratch-built repos (absolute and relative caches inside a checkout with an unpushed commit and an uncommitted edit: HEAD, refs, bytes and hooks unchanged; `.git` pointer files re-cloned; a symlinked clone dir reads `unresolved`; strace shows `git pkgs init` writes only in its temp database); nine single reverts each redden their named test. New findings (`dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`):
+
+- `[medium]` `[patch]` `dh.py:807-809` with `:590-598`, `:712-716`: an unborn HEAD is always read as "repository has no commits yet", also when the remote has commits but its HEAD names a missing branch (`git init --bare` defaulting to `master` with only `main` pushed, or an unborn orphan branch). The last-good partition is overwritten empty, degradation `""`, no `.staleness.json`, and the repo re-clones every run (verified: 4 rows -> 0 rows, 3 clones in 3 runs); a regression from `74ded30ecc`. Fix: empty only when `git for-each-ref --count=1 refs/remotes/origin/` is empty, else `unresolved` ("remote HEAD names no branch") keeping the last-good partition and head; test a dangling-HEAD remote after a healthy build.
+- `[low]` `[patch]` `dh.py:698-705`: `_clone_is_usable` follows a symlinked `.git` and accepts a `.git` whose `commondir` points at another repo (`--show-toplevel` still equals the clone dir); with a matching origin URL, fetch and `reset --hard` ran in that other gitdir. Needs a hand-placed symlink/`commondir` in Atlas's own cache. Fix: also require resolved `rev-parse --absolute-git-dir` and `--git-common-dir` to equal `dest/.git`, and `.git` not a symlink.
+- `[low]` `[patch]` `dh.py:869` with `:270`: `git pkgs --version` runs with the unresolved relative cache dir, so `GIT_CEILING_DIRECTORIES` is the relative `data` (ignored by git) and git reads the enclosing checkout's `.git/HEAD`/`config` (read-only). Fix: `_bounded_env(start.resolve())`.
+- `[low]` `[patch]` `dh.py:810`: the unchanged-head skip checks only that the partition exists, so a corrupt partition is never rebuilt (and the iteration-3 Change Log claims damaged ones are). Fix: skip only when the partition reads, or correct the claim.
+- `[low]` `[patch]` `dh.py:759-760`: a regular file at the clone slot makes `rmtree` raise `NotADirectoryError`, so the repo reads `stale` forever. Fix: unlink a non-directory slot before cloning.
 
 ### 2026-10-10 — Independent review, iteration 3: sent back (1 high, 1 medium, 3 low)
 
