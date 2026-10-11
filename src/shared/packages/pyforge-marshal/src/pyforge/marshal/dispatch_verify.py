@@ -1097,32 +1097,99 @@ def _is_zombie(pid: int) -> bool:
 _DEFAULT_SESSION_GROUP = PsutilSessionGroup()
 
 
+@dataclass(frozen=True)
+class DispatchSessionLiveness:
+    """Story 92.1: dispatch session liveness with optional group-read degradation."""
+
+    alive: bool
+    liveness_error: str | None = None
+
+
+def _proc_cmdline_names_binary(pid: int, binary: str) -> bool:
+    try:
+        raw = Path(f"/proc/{pid}/cmdline").read_bytes()
+    except OSError:
+        return False
+    if not raw:
+        return False
+    cmdline = raw.replace(b"\x00", b" ").decode("utf-8", errors="replace")
+    return binary in cmdline
+
+
+def _member_started_with_session(start_time: float | None, launched_at: datetime | None) -> bool:
+    """Story 92.1: a group member counts when it started at or after the launch (with clock allowance)."""
+    if launched_at is None:
+        return True
+    if start_time is None:
+        return False
+    return start_time >= launched_at.timestamp() - dispatch_core.PID_START_TOLERANCE_SECONDS
+
+
+def identity_checked_leader_alive(
+    process: ProcessPort,
+    pid: int,
+    *,
+    launched_at: datetime | None,
+    harness_binary: str | None = None,
+) -> bool:
+    """Story 92.1: leader-only fallback when the group read fails — never degrade to alive on unreadable identity."""
+    if not process.is_alive(pid) or _is_zombie(pid):
+        return False
+    start_time = process.process_start_time(pid)
+    if start_time is not None and launched_at is not None:
+        return dispatch_core.pid_start_matches_launch(start_time, launched_at)
+    if harness_binary and _proc_cmdline_names_binary(pid, harness_binary):
+        return True
+    return False
+
+
 def session_group_has_live_member(
     session_group: SessionGroupPort,
     session_leader_pid: int,
     *,
     launched_at: datetime | None,
     process: ProcessPort,
-) -> bool:
-    """True when any non-zombie group member started near the launch still runs (Story 90.1)."""
+) -> tuple[bool, str | None]:
+    """True when any non-zombie group member that belongs to this session still runs (Story 90.1/92.1)."""
     try:
         members = tuple(session_group.iter_session_group_members(session_leader_pid))
-    except SessionGroupReadError:
-        return True
-    launch_ts = launched_at.timestamp() if launched_at is not None else None
+    except SessionGroupReadError as exc:
+        return False, str(exc)
     for member in members:
         if member.is_zombie:
             continue
-        if launch_ts is not None:
-            started_at = member.started_at
-            if started_at is None:
-                started_at = process.process_start_time(member.pid)
-            if started_at is None:
-                continue
-            if not dispatch_core.pid_start_matches_launch(started_at, launched_at):
-                continue
-        return True
-    return False
+        started_at = member.started_at
+        if started_at is None:
+            started_at = process.process_start_time(member.pid)
+        if not _member_started_with_session(started_at, launched_at):
+            continue
+        return True, None
+    return False, None
+
+
+def assess_dispatch_session_liveness(
+    process: ProcessPort,
+    pid: int,
+    *,
+    launched_at: datetime | None,
+    session_group: SessionGroupPort | None = None,
+    harness_binary: str | None = None,
+) -> DispatchSessionLiveness:
+    """Story 83.1/90.1/92.1: leader pid, then the launch's process group, with identity-checked fallback."""
+    if fix_session_alive(process, pid, launched_at=launched_at):
+        return DispatchSessionLiveness(alive=True)
+    port = session_group if session_group is not None else _DEFAULT_SESSION_GROUP
+    group_alive, liveness_error = session_group_has_live_member(
+        port, pid, launched_at=launched_at, process=process
+    )
+    if group_alive:
+        return DispatchSessionLiveness(alive=True)
+    if liveness_error is not None:
+        leader_alive = identity_checked_leader_alive(
+            process, pid, launched_at=launched_at, harness_binary=harness_binary
+        )
+        return DispatchSessionLiveness(alive=leader_alive, liveness_error=liveness_error)
+    return DispatchSessionLiveness(alive=False)
 
 
 def dispatch_session_alive(
@@ -1131,12 +1198,16 @@ def dispatch_session_alive(
     *,
     launched_at: datetime | None,
     session_group: SessionGroupPort | None = None,
+    harness_binary: str | None = None,
 ) -> bool:
-    """Story 83.1/90.1: dispatch session liveness — leader pid, then the launch's process group."""
-    if fix_session_alive(process, pid, launched_at=launched_at):
-        return True
-    port = session_group if session_group is not None else _DEFAULT_SESSION_GROUP
-    return session_group_has_live_member(port, pid, launched_at=launched_at, process=process)
+    """Story 83.1/90.1/92.1: dispatch session liveness — leader pid, then the launch's process group."""
+    return assess_dispatch_session_liveness(
+        process,
+        pid,
+        launched_at=launched_at,
+        session_group=session_group,
+        harness_binary=harness_binary,
+    ).alive
 
 
 def fix_session_alive(process: ProcessPort, pid: int, *, launched_at: datetime | None) -> bool:
