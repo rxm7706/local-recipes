@@ -7293,3 +7293,142 @@ class TestPreserveDebtPureCore:
         assert [e["ref"] for e in status.unmatched_unpushed_refs(by_ref, matched)] == ["dispatch/beta/1.1", "x/y"]
         assert status.unpushed_refs_matched_to_row(facts, None) == frozenset()
         assert status.unmatched_unpushed_refs(None, set()) == []
+
+
+class _AlivePidsWithUnreadableStart(_FakeProcess):
+    """Story 92.1: the dispatch liveness read asks for the leader's start time -- unreadable here (a reused pid)."""
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
+
+def _write_story_dispatch_run(
+    repo_root: Path,
+    slug: str,
+    run_id: str,
+    *,
+    story_key: str,
+    worktree: Path,
+    session_pid: int,
+    extra: list[dict[str, object]] = (),  # type: ignore[assignment]
+) -> Path:
+    run_dir = repo_root / "_bmad-output/projects" / slug / "implementation-artifacts/dispatch-runs" / run_id
+    run_dir.mkdir(parents=True)
+    entries: list[dict[str, object]] = [
+        {
+            "id": {"writer_id": "test", "counter": 0},
+            "ts": "2026-10-04T16:52:02.938Z",
+            "run_id": run_id,
+            "kind": "dispatch-launch",
+            "phase": "intent",
+            "payload": {"story_key": story_key, "worktree_path": str(worktree)},
+        },
+        {
+            "id": {"writer_id": "test", "counter": 1},
+            "ts": "2026-10-04T16:52:03.000Z",
+            "run_id": run_id,
+            "kind": "dispatch-launch",
+            "phase": "outcome",
+            "intent_id": {"writer_id": "test", "counter": 0},
+            "payload": {"ok": True, "session_pid": session_pid, "supervisor_pid": session_pid + 1},
+        },
+        *extra,
+    ]
+    (run_dir / "journal.jsonl").write_text("".join(json.dumps(entry) + "\n" for entry in entries), encoding="utf-8")
+    return run_dir
+
+
+class TestStaleDispatchRunsInTheSweep:
+    """Story 92.1 AC9 (review M1): a run whose worktree is gone is listed on its station's row -- JSON and text --
+    with its run id, story, missing worktree and the quarantine remedy, and the station never reads ``running``
+    because of it, even when the run is the station's latest and its session pid still reads alive (reused)."""
+
+    def _sweep(self, tmp_path: Path, monkeypatch, capsys, *, format: str):
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
+        vcs = _FakeVcs(repo_root_value=tmp_path, worktrees=())
+        exit_code = status_cli.run_status(
+            _args(project="acme", format=format),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_AlivePidsWithUnreadableStart(alive_pids=frozenset({63830, 63831})),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        return exit_code, capsys.readouterr().out
+
+    def test_a_stale_latest_run_is_listed_and_never_reads_running(self, tmp_path, capsys, monkeypatch):
+        missing = tmp_path / ".worktrees" / "dispatch-acme-86.6"
+        run_dir = _write_story_dispatch_run(
+            tmp_path, "acme", "acme-20261004T165202766Z-fc6ece35", story_key="86.6", worktree=missing, session_pid=63830
+        )
+
+        exit_code, out = self._sweep(tmp_path, monkeypatch, capsys, format="json")
+
+        row = json.loads(out)["data"]["homes"][0]
+        assert exit_code == 0
+        assert row["state"] != "running"
+        assert "dispatch_phase" not in row
+        assert row.get("current_story") is None
+        assert row["dispatch_stale_runs"] == [
+            {
+                "run_id": run_dir.name,
+                "story_key": "86.6",
+                "worktree_path": str(missing),
+                "remedy": (
+                    "move the run dir to _bmad-output/projects/acme/implementation-artifacts/dispatch-runs-quarantine/"
+                    " and list it in implementation-artifacts/dispatch-runs-quarantine/README.md; moving it back "
+                    "reverses it"
+                ),
+            }
+        ]
+        assert run_dir.is_dir(), "a reader never moves a run dir"
+
+    def test_the_text_sweep_names_the_stale_run_and_its_remedy(self, tmp_path, capsys, monkeypatch):
+        missing = tmp_path / ".worktrees" / "dispatch-acme-86.6"
+        _write_story_dispatch_run(
+            tmp_path, "acme", "acme-20261004T165202766Z-fc6ece35", story_key="86.6", worktree=missing, session_pid=63830
+        )
+
+        exit_code, out = self._sweep(tmp_path, monkeypatch, capsys, format="text")
+
+        assert exit_code == 0
+        assert "running" not in out
+        assert "STALE_RUNS n=1 [acme-20261004T165202766Z-fc6ece35 story=86.6 worktree=" in out
+        assert str(missing) in out
+        assert "dispatch-runs-quarantine/README.md" in out
+
+    def test_a_live_runs_failed_group_read_reaches_the_row(self, tmp_path, capsys, monkeypatch):
+        """AC3: the supervisor's heartbeat named a failed group read; ``marshal status`` shows it, JSON and text."""
+        worktree = tmp_path / ".worktrees" / "dispatch-acme-92.2"
+        worktree.mkdir(parents=True)
+        _write_story_dispatch_run(
+            tmp_path,
+            "acme",
+            "acme-20261011T090000000Z-c0ffee00",
+            story_key="92.2",
+            worktree=worktree,
+            session_pid=63830,
+            extra=[
+                {
+                    "id": {"writer_id": "supervisor", "counter": 0},
+                    "ts": "2026-10-04T16:53:03.000Z",
+                    "run_id": "acme-20261011T090000000Z-c0ffee00",
+                    "kind": "dispatch-supervisor-attach",
+                    "phase": "observation",
+                    "payload": {
+                        "heartbeat": True,
+                        "session_alive": True,
+                        "session_liveness_error": "psutil: invalid attr name 'pgid'",
+                    },
+                }
+            ],
+        )
+
+        _exit, out = self._sweep(tmp_path, monkeypatch, capsys, format="json")
+        row = json.loads(out)["data"]["homes"][0]
+        _exit, text = self._sweep(tmp_path, monkeypatch, capsys, format="text")
+
+        assert row["state"] == "running"
+        assert row["dispatch_session_liveness_error"] == "psutil: invalid attr name 'pgid'"
+        assert "dispatch_stale_runs" not in row
+        assert "LIVENESS_ERROR=\"psutil: invalid attr name 'pgid'\"" in text
