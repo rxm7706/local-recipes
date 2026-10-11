@@ -172,6 +172,7 @@ ENGINE_VERSION_CHECK_TIMEOUT_SECONDS = 10
 DEPTRY_VERSION_RANGE = SpecifierSet(">=0.25.1,<0.26")
 OSV_SCANNER_VERSION_RANGE = SpecifierSet(">=2.4.0,<2.5")
 PIXI_VERSION_RANGE = SpecifierSet(">=0.80.0,<0.81")
+OPENGREP_VERSION_RANGE = SpecifierSet(">=1.30.2,<1.31")
 PIXI_VERSION_PATTERN = re.compile(r"pixi (\d+\.\d+\.\d+)")
 PIXI_LOCK_TIMEOUT_SECONDS = 600.0
 
@@ -181,6 +182,10 @@ PIXI_LOCK_TIMEOUT_SECONDS = 600.0
 TEA_TEST_REVIEW_TIMEOUT_SECONDS = 1800.0
 _TEA_DEFAULT_BASE_REF = "refs/remotes/origin/main"
 _TEA_DEFAULT_AGENT = "claude"
+
+# Story 15.1: opengrep SAST advisory spawn budget (local rules only).
+OPENGREP_TIMEOUT_SECONDS = 300.0
+_OPENGREP_VERSION_PATTERN = re.compile(r"(\d+\.\d+\.\d+)")
 
 # ``deptry --version`` prints ``deptry 0.25.1``; ``osv-scanner --version``
 # prints a multi-line block starting ``osv-scanner version: 2.4.0`` — both
@@ -444,6 +449,60 @@ def run_tea_test_review_engine(
             os.unlink(report_path)
         except OSError:
             pass
+
+
+def build_opengrep_scan_argv(
+    *,
+    binary: str,
+    rules_dir: Path,
+    target: Path,
+    json_output: str,
+) -> list[str]:
+    """Story 15.1: argv for ``opengrep scan`` — local rules dir, JSON to a temp file."""
+    return [
+        binary,
+        "scan",
+        "--disable-version-check",
+        "--json",
+        "--json-output",
+        json_output,
+        "--config",
+        str(rules_dir),
+        str(target),
+    ]
+
+
+def run_opengrep_engine(
+    *,
+    binary: str,
+    rules_dir: Path,
+    cwd: Path,
+) -> tuple[str | None, ErrorRecord | None, int | None]:
+    """Story 15.1: run ``opengrep`` through ``_engine_env`` (sole subprocess seam)."""
+    version_error = _check_engine_version(
+        owner="opengrep",
+        argv=[binary, "--version"],
+        version_pattern=_OPENGREP_VERSION_PATTERN,
+        expected=OPENGREP_VERSION_RANGE,
+        cwd=cwd,
+    )
+    if version_error is not None:
+        return None, version_error, None
+    return _engine_env(
+        lambda output_path: build_opengrep_scan_argv(
+            binary=binary,
+            rules_dir=rules_dir,
+            target=cwd,
+            json_output=output_path,
+        ),
+        owner="opengrep",
+        cwd=cwd,
+        timeout=OPENGREP_TIMEOUT_SECONDS,
+        extra_env={
+            "SEMGREP_SEND_METRICS": "off",
+            "OPENGREP_ENABLE_VERSION_CHECK": "0",
+        },
+    )
 
 
 def _check_engine_version(
