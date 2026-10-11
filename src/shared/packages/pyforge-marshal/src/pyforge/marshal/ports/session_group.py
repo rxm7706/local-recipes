@@ -6,8 +6,10 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Protocol
 
+from pyforge.core.errors import PyforgeError
 
-class SessionGroupReadError(Exception):
+
+class SessionGroupReadError(PyforgeError, Exception):
     """The host could not enumerate the session's process group."""
 
 
