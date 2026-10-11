@@ -568,8 +568,9 @@ class VcsPort(Protocol):
         worktree: Path | None = None,
         ref: str | None = None,
     ) -> dict[int, tuple[str, int]]:
-        """Story 89.1: ``git blame --porcelain`` for ``path`` — maps 1-based line numbers to
-        ``(commit_sha, committer_time)``. Uncommitted lines use the all-zero sha. Exactly one of
-        ``worktree`` (blame the checked-out file) or ``ref`` (blame ``ref:path`` at ``repo_root``)
-        must be set. Raises ``VcsCommandError`` when blame cannot run."""
+        """Story 89.1 / 94.1: ``git blame --porcelain`` for ``path`` — maps 1-based line numbers to
+        ``(commit_sha, committer_time)``. Every committed line carries its own commit's
+        ``committer-time``; uncommitted lines use the all-zero sha. Exactly one of ``worktree``
+        (blame the checked-out file) or ``ref`` (blame ``ref:path`` at ``repo_root``) must be set.
+        Raises ``VcsCommandError`` when blame cannot run."""
         ...

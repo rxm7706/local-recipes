@@ -84,29 +84,208 @@ def test_parse_blame_porcelain_sample() -> None:
     assert facts[1] == ("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1700000000)
 
 
-def _git_run(cwd: Path, *args: str) -> None:
-    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+def _git_run(cwd: Path, *args: str, env: dict[str, str] | None = None) -> None:
+    merged = None
+    if env is not None:
+        import os
+
+        merged = os.environ.copy()
+        merged.update(env)
+    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, env=merged)
 
 
-def test_git_blame_orders_triage_headings(tmp_path: Path) -> None:
+def _git_commit_at(cwd: Path, when: str, message: str) -> str:
+    _git_run(
+        cwd,
+        "commit",
+        "-m",
+        message,
+        env={"GIT_COMMITTER_DATE": when, "GIT_AUTHOR_DATE": when},
+    )
+    out = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return out.stdout.strip()
+
+
+def _init_spec_repo(tmp_path: Path) -> tuple[Path, Path]:
     repo = tmp_path / "repo"
     repo.mkdir()
     _git_run(repo, "init")
     _git_run(repo, "config", "user.email", "t@test")
     _git_run(repo, "config", "user.name", "t")
     spec = repo / "spec.md"
+    return repo, spec
+
+
+def _blame_facts(vcs: GitVcs, repo: Path, spec: Path, *, ref: str | None = None) -> dict[int, LineBlameFact]:
+    raw = (
+        vcs.line_blame_facts(repo_root=repo, path="spec.md", ref=ref)
+        if ref is not None
+        else vcs.line_blame_facts(repo_root=repo, path="spec.md", worktree=repo)
+    )
+    return {k: LineBlameFact(c, t) for k, (c, t) in raw.items()}
+
+
+def test_parse_blame_porcelain_reuses_committer_time_on_bare_headers() -> None:
+    sha = "a" * 40
+    sample = (
+        f"{sha} 1 1 1\nauthor Author\ncommitter-time 1700000001\n\tfirst\n{sha} 1 2 2\n\tsecond\n{sha} 1 3 3\n\tthird\n"
+    )
+    facts = _parse_blame_porcelain(sample)
+    assert facts[1] == (sha, 1700000001)
+    assert facts[2] == (sha, 1700000001)
+    assert facts[3] == (sha, 1700000001)
+
+
+def test_parse_blame_porcelain_omits_committed_lines_without_committer_time() -> None:
+    sha = "b" * 40
+    sample = f"{sha} 1 1 1\nauthor Author\nsummary line\n\tline one\n"
+    facts = _parse_blame_porcelain(sample)
+    assert facts == {}
+
+
+def test_missing_committer_time_makes_gate_unevaluable() -> None:
+    text = "---\nstatus: in-review\n---\n\n## Review Triage Log\n\n### 2026-10-11 — Independent review: PASS\n\nbody\n"
+    headings = iter_review_triage_heading_lines(text)
+    assert headings
+    blame: dict[int, LineBlameFact] = {}
+    assert latest_review_triage_headings(headings, blame) is None
+    verdict = evaluate_land_only_spec_gate(spec_text=text, spec_status="in-review", blame=blame)
+    assert not verdict.permitted
+    assert verdict.unevaluable
+
+
+def test_git_blame_orders_triage_headings(tmp_path: Path) -> None:
+    repo, spec = _init_spec_repo(tmp_path)
     spec.write_text("## Review Triage Log\n\n### old pass\n", encoding="utf-8")
     _git_run(repo, "add", "spec.md")
-    _git_run(repo, "commit", "-m", "first")
+    _git_commit_at(repo, "2020-01-01T00:00:00", "first")
     spec.write_text(
         "## Review Triage Log\n\n### old pass\n\n### newer FAIL (1 high)\n",
         encoding="utf-8",
     )
     _git_run(repo, "add", "spec.md")
-    _git_run(repo, "commit", "-m", "second")
+    sha_second = _git_commit_at(repo, "2020-01-02T00:00:00", "second")
     vcs = GitVcs()
     blame = vcs.line_blame_facts(repo_root=repo, path="spec.md", worktree=repo)
-    headings = iter_review_triage_heading_lines(spec.read_text(encoding="utf-8"))
-    blame_facts = {k: LineBlameFact(c, t) for k, (c, t) in blame.items()}
+    text = spec.read_text(encoding="utf-8")
+    headings = iter_review_triage_heading_lines(text)
+    blame_facts = _blame_facts(vcs, repo, spec)
+    pass_line = next(ln for ln, h in headings if "pass" in h.lower())
+    fail_line = next(ln for ln, h in headings if "FAIL" in h)
+    assert blame[pass_line][1] != 0
+    assert blame[fail_line][1] != 0
+    assert blame[pass_line][1] != blame[fail_line][1]
     latest = latest_review_triage_headings(headings, blame_facts)
-    assert latest is not None and any("FAIL" in h for h in latest)
+    assert latest == ("newer FAIL (1 high)",)
+    ct = subprocess.run(
+        ["git", "log", "-1", "--format=%ct", sha_second],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert blame[fail_line][1] == int(ct)
+
+
+def test_ac1_pass_after_send_back_with_frontmatter_edit(tmp_path: Path) -> None:
+    repo, spec = _init_spec_repo(tmp_path)
+    base = "---\nstatus: 'in-review'\nreview_loop_iteration: 0\n---\n\n## Review Triage Log\n\n"
+    spec.write_text(base, encoding="utf-8")
+    _git_run(repo, "add", "spec.md")
+    _git_commit_at(repo, "2020-01-01T00:00:00", "seed")
+    spec.write_text(
+        base + "### 2026-10-11 — Independent review, iteration 1: sent back (1 major)\n\ndetails\n",
+        encoding="utf-8",
+    )
+    _git_run(repo, "add", "spec.md")
+    _git_commit_at(repo, "2020-01-02T00:00:00", "send-back")
+    spec.write_text(
+        "---\nstatus: 'in-review'\nreview_loop_iteration: 1\n---\n\n"
+        "## Review Triage Log\n\n"
+        "### 2026-10-11 — Independent review, iteration 2: PASS\n\n"
+        "pass body\n\n"
+        "### 2026-10-11 — Independent review, iteration 1: sent back (1 major)\n\n"
+        "details\n",
+        encoding="utf-8",
+    )
+    _git_run(repo, "add", "spec.md")
+    _git_commit_at(repo, "2020-01-03T00:00:00", "pass")
+    text = spec.read_text(encoding="utf-8")
+    vcs = GitVcs()
+    for ref in (None, "HEAD"):
+        blame = _blame_facts(vcs, repo, spec, ref=ref)
+        verdict = evaluate_land_only_spec_gate(
+            spec_text=text,
+            spec_status="in-review",
+            blame=blame,
+        )
+        assert verdict.permitted, ref
+        assert verdict.failed_heading is None
+        latest = latest_review_triage_headings(iter_review_triage_heading_lines(text), blame)
+        assert latest is not None and len(latest) == 1
+        assert "PASS" in latest[0]
+
+
+def test_ac2_fail_after_pass_with_frontmatter_edit(tmp_path: Path) -> None:
+    repo, spec = _init_spec_repo(tmp_path)
+    base = "---\nstatus: 'in-review'\nreview_loop_iteration: 0\n---\n\n## Review Triage Log\n\n"
+    spec.write_text(base, encoding="utf-8")
+    _git_run(repo, "add", "spec.md")
+    _git_commit_at(repo, "2020-01-01T00:00:00", "seed")
+    spec.write_text(
+        base + "### Review pass\n\nok\n",
+        encoding="utf-8",
+    )
+    _git_run(repo, "add", "spec.md")
+    _git_commit_at(repo, "2020-01-02T00:00:00", "pass")
+    spec.write_text(
+        "---\nstatus: 'in-review'\nreview_loop_iteration: 1\n---\n\n"
+        "## Review Triage Log\n\n"
+        "### Review pass\n\nok\n\n"
+        "### Independent review: FAIL (1 high)\n\n"
+        "fail body\n",
+        encoding="utf-8",
+    )
+    _git_run(repo, "add", "spec.md")
+    _git_commit_at(repo, "2020-01-03T00:00:00", "fail")
+    text = spec.read_text(encoding="utf-8")
+    vcs = GitVcs()
+    for ref in (None, "HEAD"):
+        blame = _blame_facts(vcs, repo, spec, ref=ref)
+        verdict = evaluate_land_only_spec_gate(
+            spec_text=text,
+            spec_status="in-review",
+            blame=blame,
+        )
+        assert not verdict.permitted
+        assert verdict.failed_heading is not None
+        assert "FAIL" in verdict.failed_heading
+        latest = latest_review_triage_headings(iter_review_triage_heading_lines(text), blame)
+        assert latest == (verdict.failed_heading,)
+
+
+def test_every_line_of_multi_line_commit_shares_committer_time(tmp_path: Path) -> None:
+    repo, spec = _init_spec_repo(tmp_path)
+    spec.write_text("line1\nline2\nline3\n", encoding="utf-8")
+    _git_run(repo, "add", "spec.md")
+    sha = _git_commit_at(repo, "2020-06-15T12:00:00", "multi")
+    vcs = GitVcs()
+    blame = vcs.line_blame_facts(repo_root=repo, path="spec.md", worktree=repo)
+    ct = int(
+        subprocess.run(
+            ["git", "log", "-1", "--format=%ct", sha],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    )
+    for line_no in (1, 2, 3):
+        assert blame[line_no][1] == ct
+        assert blame[line_no][1] != 0
