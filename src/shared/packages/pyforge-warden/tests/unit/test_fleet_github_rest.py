@@ -6,8 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient
-from pyforge.warden.fleet_github_rest import HttpMethodRefusedError
+from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient, HttpMethodRefusedError
 
 _EXAMPLE_ORG = "example-org"
 _PAGINATED_REPO_COUNT = 2

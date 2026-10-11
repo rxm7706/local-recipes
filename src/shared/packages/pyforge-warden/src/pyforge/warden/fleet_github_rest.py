@@ -80,10 +80,7 @@ class GitHubRestOrgReposClient:
 
     def list_org_repos(self, organisation: str) -> list[ListedRepo]:
         encoded = urllib.parse.quote(organisation, safe="")
-        url = (
-            f"https://{self._api_host}{_ORG_REPOS_PATH.format(organisation=encoded)}"
-            f"?type=all&per_page=100"
-        )
+        url = f"https://{self._api_host}{_ORG_REPOS_PATH.format(organisation=encoded)}?type=all&per_page=100"
         collected: list[ListedRepo] = []
         seen_next: set[str] = set()
         while url:
