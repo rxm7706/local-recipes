@@ -102,3 +102,11 @@ bokeh = ">=3.9.2"
 # entries.
 tornado = ">=6.5.8"
 starlette = ">=1.6.0"
+# Story 25.1 (CAP-61): git-pkgs's tested range is >=0.21.0,<0.22 (recipes/git-pkgs;
+# SelfExplainML, linux-64 only). It is declared where it can resolve -- the root
+# [feature.pyforge-atlas.target.linux-64.dependencies] env table -- and enforced at
+# run time by RepoDependencyHistoryDataset (`git pkgs --version` outside the range ->
+# the repo reads `unresolved`). Deliberately NOT a package run-dep: this package
+# builds for osx-arm64 and win-64 too, where no git-pkgs build exists, and git-pkgs is
+# an optional CLI the dataset degrades without, never a module-level import
+# (AUD-ATLAS-010's rule). Recorded as a deviation in the 25.1 story spec.

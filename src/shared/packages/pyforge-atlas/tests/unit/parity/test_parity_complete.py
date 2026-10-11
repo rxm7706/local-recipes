@@ -14,7 +14,7 @@ from .harness import NODE_REGISTRY
 _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
 _EXPECTED_NODE_COUNTS = {
     "core": 8,  # Story 21.4 +enumerate_anaconda_main_packages (Tier-1 materializer, new-signal — AD-14, not parity-gated)
-    "vcs_health": 11,  # Story 25.2 +build_repo_dependency_history (25.1 placeholder; new-signal, AD-14)
+    "vcs_health": 11,  # Story 25.2 +build_repo_dependency_history (filled by Story 25.1; new-signal, AD-14)
     "pypi_intelligence": 17,  # Story 23.1: +5 Tier-3 refresh triggers + flag_tier3_channels
     "vulnerability": 9,  # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19)
 }

@@ -2776,6 +2776,8 @@ boring-semantic-layer = ">=0.2.0" # A boring semantic layer built with ibis
 # Import name is "pkg", NOT "duckdb_server" (recipes/duckdb-server G7 note).
 # Floor confirmed against the solve 2026-08-27: conda-forge carries 0.27.0–0.31.0.
 duckdb-server = ">=0.31.0"
+# Story 25.1 (CAP-61): git-pkgs CLI (SelfExplainML linux-64 only; mason 21.1 at 0.21.0).
+git-pkgs = ">=0.21.0,<0.22"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-test]
 description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'. Story 27.1: a second pytest run gates the inventory quartet's tests (tests/packaging/test_openteams_handoffs.py and scripts/tests/) -- they hold the kill tests for the quartet scripts and no other lane ran them. A separate run keeps the station suite's own rootdir."

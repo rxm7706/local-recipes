@@ -135,6 +135,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.atlas.dependency_history": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "atlas",
+        "story": "25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.fix_target_resolution": {
       "state": "ENABLED",
       "variants": {
