@@ -3806,6 +3806,197 @@ def _seed_hold_spec(worktree: Path, *, landing_review: str = "required") -> None
 _HOLD_STORY_KEY = "83-18-hold-fixture"
 
 
+class _HeldDraftForge(FakeForge):
+    """Story 94.2: simulates a draft PR an earlier held landing left open."""
+
+    def __init__(
+        self,
+        *,
+        open_is_draft: bool = True,
+        pr_number: int = 2111,
+        ready_raises: ForgeCommandError | None = None,
+        ready_still_draft: bool = False,
+    ) -> None:
+        super().__init__()
+        self.open_is_draft = open_is_draft
+        self.pr_number = pr_number
+        self.ready_raises = ready_raises
+        self.ready_still_draft = ready_still_draft
+        self.call_log: list[tuple[str, object]] = []
+        self.merge_count = 0
+        self.pr_is_draft = open_is_draft
+
+    def find_open_pr(self, repo, head_branch):
+        self.call_log.append(("find_open_pr", head_branch.value))
+        if not self.open_is_draft and self.pr_number == 0:
+            return None
+        return PrInfo(
+            number=self.pr_number,
+            url=f"https://example/pr/{self.pr_number}",
+            state="open",
+            base="main",
+            is_draft=self.open_is_draft,
+        )
+
+    def check_runs(self, repo, ref):
+        self.call_log.append(("check_runs", ref.value))
+        return _GREEN_RUNS
+
+    def set_pr_draft(self, repo, number, *, draft: bool):
+        self.call_log.append(("set_pr_draft", draft))
+        if not draft and self.ready_raises is not None:
+            raise self.ready_raises
+        if not draft and self.ready_still_draft:
+            return PrInfo(
+                number=number,
+                url=f"https://example/pr/{number}",
+                state="open",
+                base="main",
+                is_draft=True,
+            )
+        return super().set_pr_draft(repo, number, draft=draft)
+
+    def merge_pr(self, repo, number, strategy, *, expected_head_sha, delete_branch, subject):
+        self.call_log.append(("merge_pr", expected_head_sha.value))
+        if self.pr_is_draft:
+            raise ForgeCommandError("cannot merge draft pull request")
+        self.merge_count += 1
+        return None
+
+
+def _hold_land(
+    tmp_path: Path,
+    forge: FakeForge,
+    *,
+    landing_review: str = "required",
+    hold_landing_cli: bool = False,
+    spec_body: str | None = None,
+) -> tuple:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    if spec_body is None:
+        _seed_hold_spec(worktree, landing_review=landing_review)
+    else:
+        specs = worktree / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
+        specs.mkdir(parents=True)
+        (specs / "spec-83-18-hold-fixture.md").write_text(spec_body, encoding="utf-8")
+    return execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key=_HOLD_STORY_KEY,
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=forge,
+        process=FakeProcess(),
+        hold_landing_cli=hold_landing_cli,
+    )
+
+
+def _set_pr_draft_calls(forge: _HeldDraftForge) -> list[bool]:
+    return [draft for name, draft in forge.call_log if name == "set_pr_draft"]
+
+
+def test_execute_dispatch_land_marks_held_draft_ready_when_landing_review_passed(tmp_path: Path) -> None:
+    forge = _HeldDraftForge()
+    result, envelope = _hold_land(tmp_path, forge, landing_review="passed")
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert forge.merge_count == 1
+    assert _set_pr_draft_calls(forge) == [False]
+    check_idx = max(i for i, (n, _) in enumerate(forge.call_log) if n == "check_runs")
+    ready_idx = next(i for i, (n, _) in enumerate(forge.call_log) if n == "set_pr_draft")
+    merge_idx = next(i for i, (n, _) in enumerate(forge.call_log) if n == "merge_pr")
+    assert check_idx < ready_idx < merge_idx
+    assert envelope.data.get("marked_ready_for_review") is True
+    assert "MRS-DISP-018" not in _codes(envelope)
+    assert "MRS-DISP-020" not in _codes(envelope)
+
+
+def test_execute_dispatch_land_marks_ready_for_quoted_passed_and_hold_cli(tmp_path: Path) -> None:
+    quoted = "---\nlanding_review: 'passed'\nstatus: in-progress\n---\n\nbody\n"
+    forge = _HeldDraftForge()
+    result, envelope = _hold_land(tmp_path, forge, spec_body=quoted)
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert envelope.data.get("marked_ready_for_review") is True
+
+    forge2 = _HeldDraftForge()
+    result2, envelope2 = _hold_land(tmp_path, forge2, landing_review="passed", hold_landing_cli=True)
+    assert result2.verdict == DispatchLandingVerdict.LANDED
+    assert envelope2.data.get("marked_ready_for_review") is True
+
+
+def test_execute_dispatch_land_refuses_merge_on_draft_without_passed_review(tmp_path: Path) -> None:
+    forge = _HeldDraftForge()
+    no_key = "---\nstatus: in-progress\n---\n\nbody\n"
+    result, envelope = _hold_land(tmp_path, forge, spec_body=no_key)
+
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert False not in _set_pr_draft_calls(forge)
+    assert "MRS-DISP-020" in _codes(envelope)
+    assert envelope.data.get("marked_ready_for_review") is None
+
+
+def test_execute_dispatch_land_skips_ready_when_pr_not_draft(tmp_path: Path) -> None:
+    forge = _HeldDraftForge(open_is_draft=False)
+    result, envelope = _hold_land(tmp_path, forge, landing_review="passed")
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert _set_pr_draft_calls(forge) == []
+    assert envelope.data.get("marked_ready_for_review") is None
+
+
+def test_execute_dispatch_land_refuses_when_mark_ready_fails(tmp_path: Path) -> None:
+    forge = _HeldDraftForge(ready_raises=ForgeCommandError("gh pr ready failed"))
+    result, envelope = _hold_land(tmp_path, forge, landing_review="passed")
+
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert forge.merge_count == 0
+    assert envelope.data.get("marked_ready_for_review") is None
+    assert envelope.findings
+    assert envelope.findings[0].code == "MRS-DISP-018"
+    assert "2111" in envelope.findings[0].message
+
+    forge2 = _HeldDraftForge(ready_still_draft=True)
+    result2, envelope2 = _hold_land(tmp_path, forge2, landing_review="passed")
+    assert result2.verdict == DispatchLandingVerdict.REFUSED
+    assert forge2.merge_count == 0
+    assert "MRS-DISP-018" in _codes(envelope2)
+
+
+def test_execute_dispatch_land_never_marks_ready_before_green_checks(tmp_path: Path) -> None:
+    class _RedChecksForge(_HeldDraftForge):
+        def check_runs(self, repo, ref):
+            self.call_log.append(("check_runs", ref.value))
+            return (_run("Lint / ruff", conclusion="failure"),)
+
+    forge = _RedChecksForge()
+    result, envelope = _hold_land(tmp_path, forge, landing_review="passed")
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    assert "MRS-DISP-056" in _codes(envelope)
+    assert False not in _set_pr_draft_calls(forge)
+    assert forge.pr_is_draft is True
+
+
+def test_execute_dispatch_land_holds_required_ready_pr_marks_draft_not_ready(tmp_path: Path) -> None:
+    forge = _HeldDraftForge(open_is_draft=False)
+    result, envelope = _hold_land(tmp_path, forge, landing_review="required")
+
+    assert result.verdict == DispatchLandingVerdict.HELD_FOR_REVIEW
+    assert _set_pr_draft_calls(forge) == [True]
+    assert False not in _set_pr_draft_calls(forge)
+    assert envelope.data.get("marked_ready_for_review") is None
+
+
+def test_execute_dispatch_land_holds_required_existing_draft_without_set_pr_draft(tmp_path: Path) -> None:
+    forge = _HeldDraftForge(open_is_draft=True)
+    result, envelope = _hold_land(tmp_path, forge, landing_review="required")
+
+    assert result.verdict == DispatchLandingVerdict.HELD_FOR_REVIEW
+    assert _set_pr_draft_calls(forge) == []
+    assert envelope.data.get("held_for_review") is True
+
+
 def test_execute_dispatch_land_holds_with_draft_pr_when_landing_review_required(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()

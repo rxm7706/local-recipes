@@ -2,7 +2,8 @@
 title: "94.2: A held PR is marked ready when its landing review passes"
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e9ee1dd23aba03d12006d6a6a1017966c7d7cd4c'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
