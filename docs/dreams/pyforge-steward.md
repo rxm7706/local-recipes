@@ -1415,6 +1415,29 @@ Drift — orphaned between stations.
   500 on a host without herald. Its landing also waits for an independent review. Owner
   `spec-pyforge-unifying-strategy`. → Epic 91 / Story 91.1, specced 2026-10-11; its ledger key is minted `blocked`
   until herald 37.1 is `done` on `main`.
+- **2026-10-11 (eviction guard flake) — Found: the guard that proves CAP-11's eviction test is not vacuous fails about
+  one run in eight, and refuses landings that never touched Redis.** Story 49.5 shipped two real-Redis tests in
+  `src/platform/tests/test_redis_cache_eviction_broker_survival.py`. The split test fills `redis-cache` to its
+  `allkeys-lru` limit and proves the broker keeps its queued task, stream entry and pending entry. The guard,
+  `test_unsplit_redis_loses_broker_state_under_cache_pressure`, runs the same pressure on one shared instance and
+  asserts the broker loses something; without it the split test could pass because nothing was ever evicted. Redis's
+  LRU is approximate: it evicts from a small random sample of keys, and its clock ticks once a second, so keys written
+  within the same second look equally idle. The guard's one fill (to the first eviction, then 50 more writes) sometimes
+  leaves both broker keys standing, and the guard fails with "unsplit redis must lose broker-side state under cache
+  eviction; otherwise the split survival test would pass vacuously". On 2026-10-11 that failed warden 16.1's landing
+  verification (MRS-GATE-015, `platform-ci-local -- --test`: 1 failed, 1224 passed) and herald 37.1's (1 failed, 1206
+  passed), and the same trees passed on a re-run. Measured on `27af54f73b`: 8 of 60 runs of the guard alone failed.
+  Asked how to handle it, the operator chose, verbatim label "Mint steward fix story (Recommended)": "Steward fix
+  story: make the regression guard deterministic (fill past maxmemory with enough keys and retry a bounded number of
+  times until eviction is observed, or use the allkeys-random policy in that test). Mutation-check it, then dispatch it
+  ahead of the next platform-touching landings." **What it looks like when fixed:** the guard sees the shared instance
+  lose broker state on every run, because it keeps turning the keyspace over, a bounded number of times, until it
+  does. Twenty runs in a row pass. Take the eviction pressure away and the guard fails on every run, so it still
+  proves the split test is not vacuous. The split test does not change and still passes. **Constraints:** a fix under
+  `spec-pyforge-unifying-strategy` CAP-11 (Story 49.5's capability), no CAP, no flag; test-only: the chart's Redis
+  split, its eviction policies and the platform's Redis settings do not change; never a skip, an xfail or a rerun.
+  Owner `spec-pyforge-unifying-strategy`. → Epic 92 / Story 92.1, specced 2026-10-11, to be dispatched ahead of the
+  next platform-touching landings.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
