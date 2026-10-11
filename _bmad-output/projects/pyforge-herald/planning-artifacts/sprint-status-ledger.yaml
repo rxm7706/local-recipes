@@ -122,7 +122,7 @@ development_status:
   35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals: done
   35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence: done
   36-1-the-ci-live-demo-workflow-moves-to-the-archive-and-its-readers-follow: done
-  37-1-the-herald-portal-loads-without-herald-and-says-why: backlog
+  37-1-the-herald-portal-loads-without-herald-and-says-why: done
   4-1-poll-loop-with-quiescence-debounce: done
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
@@ -204,7 +204,7 @@ development_status:
   epic-35-retrospective: optional
   epic-36: done
   epic-36-retrospective: optional
-  epic-37: backlog
+  epic-37: done
   epic-37-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
