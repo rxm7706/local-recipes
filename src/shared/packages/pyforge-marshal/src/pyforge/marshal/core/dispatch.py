@@ -55,6 +55,9 @@ KIND_DISPATCH_PUSH = "dispatch-push"
 #: Story 83.9: ``ruff format`` applied to the story's own changed ``.py`` files
 #: immediately before independent verification runs.
 KIND_DISPATCH_RUFF_FORMAT = "dispatch-ruff-format"
+#: Story 91.1: ``environment.yaml`` regenerated from the pixi exporter stdout
+#: immediately before independent verification runs.
+KIND_DISPATCH_ENVIRONMENT_YAML = "dispatch-environment-yaml"
 #: Story 28.16 (parallel dispatch fan-out, CAP-3): one wave's membership,
 #: cap, refused candidates, and per-member terminal outcomes.
 KIND_DISPATCH_WAVE = "dispatch-wave"

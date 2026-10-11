@@ -146,6 +146,7 @@ from ..dispatch_verification_journal import build_dispatch_verification_journal_
 from ..dispatch_verify import (
     _verify_commands_with_surface_guard,
     evaluate_dispatch_verification,
+    run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
 )
 from ..ports.build_harness import BuildHarnessPort
@@ -1185,6 +1186,12 @@ def _verification_verdict_for_cap4(
     """Independent verify only — never a harness self-report (CAP-3)."""
     if callable(getattr(vcs, "commit_paths", None)):
         run_dispatch_ruff_format_before_verify(
+            worktree=worktree,
+            repo_root=repo_root,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+        )
+        run_dispatch_environment_yaml_before_verify(
             worktree=worktree,
             repo_root=repo_root,
             vcs=vcs,  # CommittingVcs duck type

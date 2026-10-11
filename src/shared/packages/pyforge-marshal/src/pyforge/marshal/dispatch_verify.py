@@ -35,6 +35,10 @@ from .core.dispatch_cfe_commit import (
     findings_for_unsanctioned_cfe_entries,
     unsanctioned_cfe_entries,
 )
+from .core.dispatch_environment_yaml import (
+    DispatchEnvironmentYamlResult,
+    apply_dispatch_environment_yaml_before_verify,
+)
 from .core.dispatch_ruff_format import (
     DispatchRuffFormatResult,
     apply_dispatch_ruff_format_before_verify,
@@ -988,6 +992,16 @@ def evaluate_dispatch_verification(
                         severity=cross_finding.severity,
                         message=cross_finding.message.replace("verify command", "cross-surface verify command"),
                     )
+                if rule.rule_id == "environment-yaml" and cross_finding.code == gate.CROSS_SURFACE_GATE_CODE:
+                    cross_finding = Finding(
+                        code=gate.CROSS_SURFACE_GATE_CODE,
+                        severity=cross_finding.severity,
+                        message=(
+                            f"{cross_finding.message} "
+                            f"environment.yaml must match the pixi export; "
+                            f"fix with: {gate.ENVIRONMENT_YAML_FIX_COMMAND}"
+                        ),
+                    )
                 findings.append(cross_finding)
             cross_surface_check_entries.append(
                 {
@@ -1039,6 +1053,22 @@ def run_dispatch_ruff_format_before_verify(
 ) -> DispatchRuffFormatResult:
     """Story 83.9 entry: format only the story's changed ``.py`` files before verify."""
     return apply_dispatch_ruff_format_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        process=process,
+    )
+
+
+def run_dispatch_environment_yaml_before_verify(
+    *,
+    worktree: Path,
+    repo_root: Path,
+    vcs: CommittingVcs,
+    process: ProcessPort,
+) -> DispatchEnvironmentYamlResult:
+    """Story 91.1 entry: regenerate ``environment.yaml`` from exporter stdout before verify."""
+    return apply_dispatch_environment_yaml_before_verify(
         worktree=worktree,
         repo_root=repo_root,
         vcs=vcs,
