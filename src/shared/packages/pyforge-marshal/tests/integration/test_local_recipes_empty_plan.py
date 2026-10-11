@@ -122,8 +122,7 @@ def assertable_skipped_artifact_ids(
     unknown = set(expected) - {entry.id for entry in _load_packaged_manifest().entries}
     if unknown:
         raise AssertionError(
-            "LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS lists ids absent from the manifest: "
-            f"{sorted(unknown)}"
+            f"LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS lists ids absent from the manifest: {sorted(unknown)}"
         )
     actual = frozenset(item.artifact_id for item in skipped)
     if actual != frozenset(expected):

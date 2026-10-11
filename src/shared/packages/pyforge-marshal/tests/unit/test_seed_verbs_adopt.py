@@ -1132,9 +1132,7 @@ def test_manifest_for_adopt_renders_slug_paths_and_drops_loop_home_only_entries(
     filtered = _manifest_for_adopt(packaged, "pyforge-marshal", in_loop_home=False)
     entry_ids = {entry.id for entry in filtered.entries}
     assert "bmad-loop-policy" not in entry_ids
-    assert any(
-        entry.path == "_bmad-output/projects/pyforge-marshal/.bmad-config.toml" for entry in filtered.entries
-    )
+    assert any(entry.path == "_bmad-output/projects/pyforge-marshal/.bmad-config.toml" for entry in filtered.entries)
 
 
 # --- StateInvalid propagates, never downgraded ------------------------------
