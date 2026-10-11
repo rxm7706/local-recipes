@@ -1113,11 +1113,13 @@ def session_group_has_live_member(
     for member in members:
         if member.is_zombie:
             continue
-        if launch_ts is not None and member.started_at is not None:
-            if not dispatch_core.pid_start_matches_launch(member.started_at, launched_at):
+        if launch_ts is not None:
+            started_at = member.started_at
+            if started_at is None:
+                started_at = process.process_start_time(member.pid)
+            if started_at is None:
                 continue
-        elif launch_ts is not None:
-            if not dispatch_core.pid_start_matches_launch(process.process_start_time(member.pid), launched_at):
+            if not dispatch_core.pid_start_matches_launch(started_at, launched_at):
                 continue
         return True
     return False

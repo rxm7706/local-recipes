@@ -77,7 +77,12 @@ def test_reused_pid_before_launch_does_not_count() -> None:
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="POSIX process-group integration")
-def test_parent_exits_while_child_in_session_group_keeps_session_alive(tmp_path: Path) -> None:
+def test_parent_exits_while_child_in_session_group_keeps_session_alive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.adapters.session_group_psutil import PsutilSessionGroup
+
+    monkeypatch.setattr(dispatch_verify, "_DEFAULT_SESSION_GROUP", PsutilSessionGroup())
     out = tmp_path / "growth.txt"
     out.write_text("", encoding="utf-8")
     shell = (

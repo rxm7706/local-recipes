@@ -16,8 +16,15 @@ import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
 from pyforge.marshal.cli.init import ENV_LOOP_HOME_ROOT
-
+from pyforge.marshal import dispatch_verify
 flag_provider = make_flag_provider_fixture()
+
+
+class _EmptySessionGroup:
+    """Hermetic default: unit tests never scan the host process table (Story 90.1)."""
+
+    def iter_session_group_members(self, _session_leader_pid: int):
+        return iter(())
 
 
 @pytest.fixture(autouse=True)
@@ -34,3 +41,8 @@ def _pin_cursor_config_dir_under_tmp(tmp_path_factory: pytest.TempPathFactory, m
     config_dir = tmp_path_factory.mktemp("cursor-config")
     (config_dir / "cli-config.json").write_text('{"version": 1}\n', encoding="utf-8")
     monkeypatch.setenv("CURSOR_CONFIG_DIR", str(config_dir))
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_dispatch_session_group(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(dispatch_verify, "_DEFAULT_SESSION_GROUP", _EmptySessionGroup())
