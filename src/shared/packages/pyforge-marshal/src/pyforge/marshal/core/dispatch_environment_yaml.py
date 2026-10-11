@@ -69,7 +69,7 @@ def apply_dispatch_environment_yaml_before_verify(
         on_disk = ""
 
     if not export_stdout_differs_from_file(export_stdout=export_text, file_text=on_disk):
-        return DispatchEnvironmentYamlResult((ENVIRONMENT_YAML_PATH,), False, result.returncode)
+        return DispatchEnvironmentYamlResult((), False, result.returncode)
 
     env_path.write_text(export_text, encoding="utf-8")
 

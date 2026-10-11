@@ -17,12 +17,12 @@ from pyforge.marshal.core.dispatch_environment_yaml import (
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.policy import compose
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
-from pyforge.marshal.dispatch_verify import evaluate_dispatch_verification
-from pyforge.marshal.dispatch_verification import (
+from pyforge.marshal.core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
+from pyforge.marshal.dispatch_verify import evaluate_dispatch_verification
 
 _ENV_PATH = "environment.yaml"
 _PIXI_PATH = "pixi.toml"
