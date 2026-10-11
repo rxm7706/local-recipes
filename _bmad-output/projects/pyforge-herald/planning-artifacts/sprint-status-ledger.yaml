@@ -52,7 +52,7 @@ development_status:
   18-2-release-comms-go-through-bmad-os-changelog-and-social: done
   18-3-slides-generator-is-herald-wielded: done
   19-1-the-webhook-routes-move-onto-the-station-api-seam: done
-  19-2-one-real-ship-records-itself-against-a-persistent-store: backlog
+  19-2-one-real-ship-records-itself-against-a-persistent-store: done
   19-3-the-deck-qa-gate-gets-a-caller: done
   19-4-one-real-station-deck-renders-through-the-pptx-pipeline: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
@@ -163,7 +163,7 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
-  epic-19: in-progress
+  epic-19: done
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
