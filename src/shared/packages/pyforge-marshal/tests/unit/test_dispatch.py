@@ -2385,6 +2385,42 @@ def test_harness_done_land_carries_the_landing_checks_record_into_the_command_da
     assert attempt.data["landing_checks"] == record
 
 
+def test_harness_done_land_carries_marked_ready_for_review_into_command_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 94.2: land-only copies ``marked_ready_for_review`` from the landing envelope."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core.model import build_envelope
+    from pyforge.marshal.core.verdict import compute_verdict
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "94-2-marked-ready"
+    _write_worktree_spec(tmp_path, slug, story, _DONE_SPEC)
+    envelope = build_envelope(
+        command="dispatch land",
+        verdict=compute_verdict(()),
+        data={"marked_ready_for_review": True},
+        findings=(),
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #9", envelope),
+    )
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert attempt.data["land_verdict"] == "landed"
+    assert attempt.data["marked_ready_for_review"] is True
+
+
 def test_followup_true_still_launches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)

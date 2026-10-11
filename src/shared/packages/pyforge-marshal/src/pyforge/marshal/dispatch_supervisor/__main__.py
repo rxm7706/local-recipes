@@ -2122,6 +2122,8 @@ def _run_and_journal_landing(
     landing_checks = envelope.data.get(LANDING_CHECKS_FIELD)
     if landing_checks is not None:
         outcome_payload[LANDING_CHECKS_FIELD] = landing_checks
+    if envelope.data.get("marked_ready_for_review") is True:
+        outcome_payload["marked_ready_for_review"] = True
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
