@@ -8,7 +8,12 @@ without the factory conda package.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
+import json
+import sqlite3
 import sys
+import time
 from http import HTTPStatus
 from unittest.mock import MagicMock
 
@@ -22,6 +27,7 @@ sys.modules.setdefault("langflow.main", _langflow_pkg.main)
 from httpx import ASGITransport  # noqa: E402
 from httpx import AsyncClient  # noqa: E402
 
+from config import station_api  # noqa: E402
 from config.asgi import application  # noqa: E402
 
 
@@ -103,10 +109,133 @@ def test_legacy_bare_api_herald_webhook_does_not_reach_station_handler():
     assert response.json() == {"detail": "Not Found"}
 
 
+def _reset_herald_webhook_app(monkeypatch) -> None:
+    """Clear herald's lazily built webhook app so this test's secret applies.
+
+    The host seeds herald's sub-app once per process and builds its webhook
+    callable on the first request; a test that ran earlier with another
+    ``HERALD_WEBHOOK_SECRET`` would otherwise answer 401 here. Reached through
+    the mounted route, never a ``pyforge`` import.
+
+    It also unsets ``MCP_HOST_SIDECAR_BASE_URL``: these tests pin the
+    in-process Story 19.1 seam, and with that variable exported (as the
+    Story 19.2 live run does) the host forwards both webhook paths to the
+    mcp-host sidecar (Story 87.3) and answers 502 when nothing listens there.
+    """
+    monkeypatch.delenv("MCP_HOST_SIDECAR_BASE_URL", raising=False)
+    herald_app = station_api.register_station_api("herald", 1)
+    for route in herald_app.routes:
+        lazy = getattr(route, "app", None)
+        if hasattr(lazy, "_inner"):
+            monkeypatch.setattr(lazy, "_inner", None)
+
+
+def test_host_dispatches_herald_webhook_signed_on_ship_returns_201(
+    monkeypatch,
+    tmp_path,
+):
+    _reset_herald_webhook_app(monkeypatch)
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    secret = b"platform-test-secret"
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", secret.decode("utf-8"))
+
+    body = json.dumps(
+        {"station": "warden", "unblock_narrative": "Merge pyforge-warden/1-1 into main"}
+    ).encode("utf-8")
+    ts = str(int(time.time()))
+    signature = (
+        "sha256="
+        + hmac.new(secret, ts.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
+    )
+
+    async def _call():
+        transport = ASGITransport(app=application)
+        base_url = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base_url) as client:
+            return await client.post(
+                "/stations/herald/api/v1/webhooks/on-ship",
+                content=body,
+                headers={
+                    "X-Hub-Signature-256": signature,
+                    "X-Hub-Timestamp": ts,
+                    "Content-Type": "application/json",
+                },
+            )
+
+    response = asyncio.run(_call())
+
+    assert response.status_code == HTTPStatus.CREATED
+    db_path = tmp_path / ".herald" / "herald.db"
+    assert db_path.is_file()
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT station FROM progress LIMIT 1").fetchone()
+    assert row is not None
+    assert row[0] == "warden"
+
+
+def test_host_dispatches_herald_webhook_signed_on_pr_close_returns_201(
+    monkeypatch,
+    tmp_path,
+):
+    _reset_herald_webhook_app(monkeypatch)
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    secret = b"platform-test-secret"
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", secret.decode("utf-8"))
+
+    commit_sha = "c" * 40
+    body = json.dumps(
+        {
+            "merged": True,
+            "gates_passed": True,
+            "project_name": "warden 1-1",
+            "event_id": f"rxm7706/local-recipes@{commit_sha}",
+            "evidence": [
+                {
+                    "type": "other",
+                    "url": f"https://github.com/rxm7706/local-recipes/commit/{commit_sha}",
+                    "label": "landing commit",
+                }
+            ],
+        }
+    ).encode("utf-8")
+    ts = str(int(time.time()))
+    signature = (
+        "sha256="
+        + hmac.new(secret, ts.encode("ascii") + b"." + body, hashlib.sha256).hexdigest()
+    )
+
+    async def _call():
+        transport = ASGITransport(app=application)
+        base_url = "http://testserver"
+        async with AsyncClient(transport=transport, base_url=base_url) as client:
+            return await client.post(
+                "/stations/herald/api/v1/webhooks/on-pr-close",
+                content=body,
+                headers={
+                    "X-Hub-Signature-256": signature,
+                    "X-Hub-Timestamp": ts,
+                    "Content-Type": "application/json",
+                },
+            )
+
+    response = asyncio.run(_call())
+
+    assert response.status_code == HTTPStatus.CREATED
+    payload = response.json()
+    assert "claim_id" in payload
+    db_path = tmp_path / ".herald" / "herald.db"
+    assert db_path.is_file()
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute("SELECT id FROM claims LIMIT 1").fetchone()
+    assert row is not None
+    assert row[0] == payload["claim_id"]
+
+
 def test_host_dispatches_herald_webhook_unsigned_returns_401(
     monkeypatch,
     tmp_path,
 ):
+    _reset_herald_webhook_app(monkeypatch)
     monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "test-secret")
 

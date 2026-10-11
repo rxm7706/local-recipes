@@ -20,5 +20,6 @@ Task-oriented documentation: "how do I do X?" operational instructions.
 | [`feedstock-failure-remediation.md`](feedstock-failure-remediation.md) | Pointer → Mason skill `mason-feedstock-failure-remediation` (red PR remediation campaign) |
 | [`feedstock-platform-expansion.md`](feedstock-platform-expansion.md) | Pointer → Mason skill `mason-feedstock-platform-expansion` (refresh + platform matrix campaign) |
 | [`presentation-deck.md`](presentation-deck.md) | Claude Design prototype → self-contained React/Vite slide deck (Marp + PPTX exports) |
+| [`run-herald-live-backend-locally.md`](run-herald-live-backend-locally.md) | Loopback platform host, persistent `.herald/herald.db`, and `herald-ship-local` (Story 19.2) |
 
 See [`docs/MAP.md`](../MAP.md) for the full Diátaxis-adapted information architecture.

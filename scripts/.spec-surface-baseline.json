@@ -532,9 +532,9 @@
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
    "pixi.lock": "99b84151b51fa5ab631a7b8848b38f916dc5272a",
-   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
+   "pixi.toml": "38b0712bdcd0ea09d1c7a179124ee870cf125842"
   },
-  "memlog": "a48c8838740edc787117438d40eb736e520b00ec"
+  "memlog": "46a38707a7ecf7184283c4cfc0988dce165ab3fb"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -792,15 +792,15 @@
  },
  "pyforge-herald/spec-deck-family-currency": {
   "files": {
-   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
+   "pixi.toml": "38b0712bdcd0ea09d1c7a179124ee870cf125842"
   },
-  "memlog": "6a325a54b8453aea1baa270727202100b8e264aa"
+  "memlog": "220ce2ce03508388e4525c27491b8a1e7c751d10"
  },
  "pyforge-herald/spec-deck-family-lockstep": {
   "files": {
-   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
+   "pixi.toml": "38b0712bdcd0ea09d1c7a179124ee870cf125842"
   },
-  "memlog": "cceff536451b6c3d4b450289eea0653a6a8c7b39"
+  "memlog": "29d01a21c1878fef1a7955e21a5887c5a04dd4a4"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
@@ -2694,9 +2694,9 @@
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
    ".gitignore": "5c22309b480bab8aef74a35f9a762bfb706c4135",
-   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
+   "pixi.toml": "38b0712bdcd0ea09d1c7a179124ee870cf125842"
   },
-  "memlog": "b58784fe1d4842a4c237ea75b2e7ebd402164af1"
+  "memlog": "e650882fc6125282747158ddd38b2664880a0d5f"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {},

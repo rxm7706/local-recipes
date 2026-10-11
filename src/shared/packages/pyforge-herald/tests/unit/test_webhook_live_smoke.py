@@ -18,7 +18,7 @@ gate's autouse ``deny_network`` fixture exists to keep out.
 Run it deliberately:
 
     HERALD_LIVE_WEBHOOK=1 pixi run -e pyforge-herald pytest \\
-        src/shared/packages/pyforge-herald/tests/test_webhook_live_smoke.py -v
+        src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py -v
 
 Uses ``httpx2`` (already a Herald dependency -- Boundaries & Constraints
 names it explicitly) to make the real HTTP call; no new test dependency.
@@ -143,6 +143,118 @@ def test_daphne_answers_a_real_signed_on_ship_post(live_daphne):
     records = progress.read_all(repo_root / progress.DEFAULT_PROGRESS_PATH)
     assert len(records) == 1
     assert records[0].compute_hours == 1.5
+
+
+def _stop_daphne(process: subprocess.Popen[str]) -> None:
+    """Terminate, then kill if SIGTERM is not honoured within 5 s -- the same
+    fallback the ``live_daphne`` fixture uses, so no daphne outlives the test."""
+    process.terminate()
+    try:
+        process.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.communicate()
+
+
+def _start_daphne(repo_root: Path, port: int) -> subprocess.Popen[str]:
+    env = dict(os.environ)
+    env["HERALD_REPO_ROOT"] = str(repo_root)
+    env["HERALD_WEBHOOK_SECRET"] = _SECRET.decode("utf-8")
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "daphne",
+            "-b",
+            "127.0.0.1",
+            "-p",
+            str(port),
+            "pyforge.herald.webhook_host:application",
+        ],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    try:
+        _wait_for_port("127.0.0.1", port, timeout=_STARTUP_TIMEOUT_SECONDS)
+    except BaseException:
+        _stop_daphne(process)
+        raise
+    return process
+
+
+def test_daphne_survives_restart_and_keeps_claim_id(tmp_path: Path):
+    """Story 19.2: signed on-ship + on-pr-close, restart daphne, re-deliver same event_id."""
+    port = _free_loopback_port()
+    base_url = f"http://127.0.0.1:{port}"
+    on_ship_body = json.dumps({"station": "warden", "unblock_narrative": "Merge pyforge-warden/11-1 into main"}).encode(
+        "utf-8"
+    )
+    on_close_body = json.dumps(
+        {
+            "merged": True,
+            "gates_passed": True,
+            "project_name": "warden 11-1",
+            "event_id": "rxm7706/local-recipes@deadbeef",
+            "evidence": [{"type": "other", "url": "https://example.test/commit", "label": "landing"}],
+        }
+    ).encode("utf-8")
+
+    process = _start_daphne(tmp_path, port)
+    try:
+        ts = str(int(time.time()))
+        ship = httpx2.post(
+            f"{base_url}/stations/herald/api/v1/webhooks/on-ship",
+            content=on_ship_body,
+            headers={
+                "X-Hub-Signature-256": _sign(_SECRET, ts, on_ship_body),
+                "X-Hub-Timestamp": ts,
+                "Content-Type": "application/json",
+            },
+            timeout=10.0,
+        )
+        assert ship.status_code == 201
+        ts = str(int(time.time()))
+        close = httpx2.post(
+            f"{base_url}/stations/herald/api/v1/webhooks/on-pr-close",
+            content=on_close_body,
+            headers={
+                "X-Hub-Signature-256": _sign(_SECRET, ts, on_close_body),
+                "X-Hub-Timestamp": ts,
+                "Content-Type": "application/json",
+            },
+            timeout=10.0,
+        )
+        assert close.status_code == 201
+        claim_id = close.json()["claim_id"]
+    finally:
+        _stop_daphne(process)
+
+    restarted = _start_daphne(tmp_path, port)
+    try:
+        ts = str(int(time.time()))
+        redeliver = httpx2.post(
+            f"{base_url}/stations/herald/api/v1/webhooks/on-pr-close",
+            content=on_close_body,
+            headers={
+                "X-Hub-Signature-256": _sign(_SECRET, ts, on_close_body),
+                "X-Hub-Timestamp": ts,
+                "Content-Type": "application/json",
+            },
+            timeout=10.0,
+        )
+        assert redeliver.status_code == 201
+        assert redeliver.json()["claim_id"] == claim_id
+    finally:
+        _stop_daphne(restarted)
+
+    from pyforge.herald import claims, progress
+
+    assert len(claims.list_claims(tmp_path / claims.DEFAULT_CLAIMS_PATH)) == 1
+    records = progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)
+    assert len(records) == 1
+    assert records[0].station == "warden"
 
 
 def test_daphne_rejects_an_unsigned_request(live_daphne):

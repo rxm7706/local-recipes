@@ -12,21 +12,23 @@ explicit `herald` command by hand, or the HMAC-verified webhook handlers
 Story 13.4 built (`src/pyforge/herald/webhook.py`'s `on-ship`/
 `on-pr-close`, see [The webhook endpoint](#the-webhook-endpoint-ci-calls-story-134)
 below), mounted behind a real ASGI host as of Story 13.6
-(`src/pyforge/herald/webhook_host.py`). **This package still ships no
-persistent, always-on webhook listener** — the mount point is
-`.github/workflows/herald-live-demo.yml`, a bounded, CI-contained
-demonstration that starts `webhook_host:application` behind `daphne` for
-one job's lifetime and discards it when the job ends (proven real on
-every push to `main`, every PR close, and a weekly schedule), never a
-publicly-reachable deployment. An operator can still create every record
-by hand at any time; the webhook path is additive, not a replacement.
+(`src/pyforge/herald/webhook_host.py`). **Story 19.2 — persistent local host:**
+the platform host (`config.asgi:application` from `platform-dev`, which carries no
+herald) listens on `127.0.0.1:8001` and forwards the two webhook routes to
+steward's mcp-host sidecar on `127.0.0.1:8090` (steward Story 87.3). Herald's
+webhook runs in that sidecar against SQLite at `<primary checkout>/.herald/herald.db`,
+and `herald-ship-local` delivers one real landing — see
+[`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md).
+`.github/workflows/herald-live-demo.yml` is disabled (`disabled_manually`); its
+throwaway runner stores are not that proof. An operator can still create every
+record by hand; the webhook path is additive, not a replacement.
 `herald scheduler run`'s derived-state refresh (Story 13.5, see [How to
 run the scheduled
 job](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
-below) is likewise proven unattended by that same workflow's
-`scheduler-demo` job, though its own documented trigger for a real
-checkout remains an operator-local `cron` entry (a GitHub-hosted runner
-never has the gitignored `.herald/herald.db` a real repo checkout would).
+below) was proven unattended by that workflow's `scheduler-demo` job while it
+ran; its documented trigger for a real checkout is an operator-local `cron`
+entry (the how-to gives the line), because a GitHub-hosted runner never has the
+gitignored `.herald/herald.db` a real repo checkout would.
 Persistent, publicly-reachable hosting behind Steward's live perimeter is
 tracked as deferred work (`_bmad-output/implementation-artifacts/deferred-work.md`),
 not built here. See `docs/dreams/herald-moments-2-4-live-backend.md` for
@@ -158,14 +160,18 @@ same storage `herald progress --update`/`herald success create` write:
 an HMAC-verified ASGI3 callable (`webhook.create_app(repo_root, secret)`),
 built and fully unit-tested in isolation, and — as of Story 13.6 —
 demonstrably real: `src/pyforge/herald/webhook_host.py` mounts it behind
-`daphne` (a stable `application` object, `daphne pyforge.herald.webhook_host:application`),
-and `.github/workflows/herald-live-demo.yml` starts that host for real on
-every push to `main` and every PR close, POSTs a real signed request, and
-tears the process down at the end of the job. There is still no
-persistent, always-reachable URL to `curl` from outside CI — that
-deployment shape stays out of Surface (see the Scope note above) — but
-`herald progress --update`/`herald success create` are no longer the
-*only* way a record gets created outside a Python test.
+`daphne` (a stable `application` object, `daphne pyforge.herald.webhook_host:application`).
+`.github/workflows/herald-live-demo.yml` once started that host for one CI job
+at a time; it has been `disabled_manually` since its last run on 2026-08-24, and
+Story 36.1 archives it. As of Story 19.2 the persistent path is local: the
+platform host on `127.0.0.1:8001` forwards these two routes to steward's
+mcp-host sidecar, which serves `webhook_host`'s application against
+`<primary checkout>/.herald/herald.db`, and `herald-ship-local` delivers a real
+landing through them — see
+[`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md).
+There is still no publicly reachable URL — no public endpoint, by the
+operator's ruling — but `herald progress --update`/`herald success create`
+are no longer the *only* way a record gets created outside a Python test.
 
 The shape:
 
@@ -302,10 +308,11 @@ a GitHub Actions workflow: `.herald/` is gitignored, per-operator state,
 so a GitHub-hosted runner has no access to it and would run this against
 an empty database every time (see this story's spec Design Notes for the
 full reasoning). `herald-live-demo.yml`'s `scheduler-demo` job (Story
-13.6) *does* run `herald scheduler run --json` inside GitHub Actions, but
-only to prove the command runs unattended — it seeds and revalidates its
-own throwaway scratch database, never yours; it is a proof this machinery
-works, not a substitute for installing the cron entry below. `cd` into `pyforge-herald`'s own package
+13.6) ran `herald scheduler run --json` inside GitHub Actions while the
+workflow ran (it is `disabled_manually` now), but only to prove the command
+runs unattended — it seeded and revalidated its own throwaway scratch
+database, never yours; it was a proof this machinery works, not a substitute
+for installing the cron entry below. `cd` into `pyforge-herald`'s own package
 directory first, not an arbitrary checkout: unlike `deck`'s `--repo-root`
 (any `presentations/<slug>/`-holding project), `scheduler`/`progress`/
 `success`/`notice` treat `--repo-root` as *this package's own* checkout
@@ -490,41 +497,33 @@ herald: error: no command given; valid subcommands: deck, progress, success, not
 
 ### What is *not* a failure mode here
 
-**"My local `.herald/herald.db` doesn't have the record `herald-live-demo.yml` just created in CI" is not a bug.**
-As of Story 13.6 the webhook handlers (`webhook.py`, [above](#the-webhook-endpoint-ci-calls-story-134))
-fire for real on every push to `main` and every PR close
-(`.github/workflows/herald-live-demo.yml`'s `on-ship`/`on-pr-close`
-jobs) — but each job writes into a scratch, JOB-LOCAL
-`.herald/herald.db` under the runner's temp directory, discarded the
-moment the job ends. This is a bounded, CI-contained demonstration that
-the wiring works, never a persistent, publicly-reachable deployment (see
-the Scope note above) — it does **not** write into any checkout's real
-`.herald/herald.db`, yours included. If you want a record in *your* local
-store, run the CLI command yourself
-(`herald progress <station> --update` / `herald success create`, see
-[`operator-guide.md`](operator-guide.md)'s FAQ); the webhook path and the
-CLI path are two independent writers onto two independent stores in this
-demo shape, not one shared source of truth yet.
+**"My local `.herald/herald.db` has no record of a landing" is not a bug.**
+Nothing delivers landings to your checkout on its own. `herald-live-demo.yml`
+is `disabled_manually`, and while it ran each of its jobs wrote into a
+scratch, JOB-LOCAL `.herald/herald.db` under the runner's temp directory,
+discarded when the job ended — never into any checkout's real store. To record
+a landing in *your* store, deliver it through the local host and sidecar with
+`herald-ship-local` (see
+[`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md)),
+or run the CLI command yourself (`herald progress <station> --update` /
+`herald success create`, see [`operator-guide.md`](operator-guide.md)'s FAQ).
 
-The failure mode actually worth watching for is `herald-live-demo.yml`
-itself going red — check the Actions tab, not your local database. One
-specific way it fails loudly rather than silently: if
-`HERALD_WEBHOOK_SECRET` is not configured as a repo secret,
-`webhook_host.application` raises at daphne startup (the same fail-fast
-`resolve_webhook_secret` always guaranteed) and the job's "wait for daphne
-to start listening" step fails with a clear error, rather than the
-workflow quietly no-op'ing.
+The failure modes worth watching are the local ones: the how-to's
+[Troubleshooting](../../../../docs/how-to/run-herald-live-backend-locally.md#troubleshooting) table covers a `401`
+(the caller and the sidecar loaded different secrets), a `404` (the host's
+forward is off), a `502` (the sidecar is down), a `503` (the sidecar started
+without `HERALD_REPO_ROOT` or the secret) and DW-13-6-2's repeated timeouts,
+whose remedy is restarting the sidecar.
 
 `herald scheduler run`
 (Story 13.5, [above](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot))
-has the identical split: `herald-live-demo.yml`'s `scheduler-demo` job
-proves the command runs unattended (weekly schedule + manual
-`workflow_dispatch`), against its own scratch seed data — the documented
-trigger for *your* real, durable `.herald/herald.db` is still an
-operator-installed local `crontab` entry, because a GitHub-hosted runner
-never has the gitignored database a real checkout would. A *missed* run
-of that local cron entry (the machine was off, the entry was never
-installed) is a real, if narrow, failure mode.
+has the same split: `herald-live-demo.yml`'s `scheduler-demo` job proved the
+command ran unattended against its own scratch seed data while the workflow
+ran — the documented trigger for *your* real, durable `.herald/herald.db` is
+an operator-installed local `crontab` entry (the how-to gives the line),
+because a GitHub-hosted runner never has the gitignored database a real
+checkout would. A *missed* run of that local cron entry (the machine was off,
+the entry was never installed) is a real, if narrow, failure mode.
 
 ## Escalation path
 
