@@ -4,7 +4,7 @@ type: 'feature'
 created: '2026-09-28'
 status: 'in-progress'
 baseline_revision: 'e0d12c1d4ec1d22ec49fd0d6f72e12025462900f'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
@@ -277,6 +277,21 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
   checkout root, not the cwd. No AC changed.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 2: sent back (1 major, 5 minor)
+
+Fresh separate agent, review of `git diff origin/main...HEAD` at cd7f627c51. Every iteration-1 item (F1-F5, M1-M9, X1-X3) is closed: 18 client mutations and 24 of 26 platform mutations caught. Confidentiality holds (only fictional identifiers; nothing under `.warden/` read; no network, no `gh`). Gates: `pyforge-warden-test` 0 (2323 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0, `platform-ci-local -- --test` 0 (1236 passed, 14 skipped), flag gate `--spec` 0.
+
+- `[major]` `[patch]` N1 (security, AC7) `fleet_github_rest.py:221-232` `_get_json` catches only `HTTPError`/`URLError`. urllib's `do_open` wraps only `h.request()`, so errors from `h.getresponse()` (read timeout, `RemoteDisconnected`, `ConnectionResetError`, SSL errors) and from `response.read()` (`IncompleteRead`, timeout) escape untyped, and their traceback keeps `do_open`'s `headers` local holding the bearer token; the task's `except` (`tasks.py:145`) misses them. Proven offline in eager mode with the production JSON renderer: the sentinel token appears in the `django.request` and `django_structlog` error lines, and in the DEBUG 500 body. Fix: catch `(OSError, http.client.HTTPException, ValueError)` around open and read, re-raise as the typed client error `from None`; unit and platform tests for a read timeout, a reset during `getresponse` and `IncompleteRead` during `read`, each asserting a typed error and no token in rendered locals, logs or the DEBUG 500 body.
+- `[minor]` `[patch]` N2 `fleet_inventory.py:147-155` deleting `timeout=` from `_run_gh`'s `subprocess.run` survives (the conftest guard always replaces `_run_gh`); test the real `_run_gh` against a harmless sleeper with a tiny timeout.
+- `[minor]` `[patch]` N3 `src/platform/conftest.py:89-93` removing the teardown `pytest.fail` survives; pin the "swallowed refusal still fails" claim (pytester or equivalent).
+- `[minor]` `[patch]` N4 `fleet_inventory.py:309-312` `scrub_token_from_text` has no callers; remove it.
+- `[minor]` `[patch]` N5 `fleet_inventory.py:132-133` a non-list `leak_guard_terms` (e.g. a bare string) is silently ignored; raise the config error instead.
+- `[minor]` `[patch]` N6a `views.py:212` returns `str(exc)` with the absolute config path to portal users as a 400; return a fixed message and log the detail.
+- `[minor]` `[defer]` N6b `persist_fleet_repos` never retires rows for repos deleted or renamed upstream, and Story 16.2 clones those rows. Retirement semantics are a behaviour change for 16.2's fleet run; recorded as a warden deferred-work row, not fixed here.
+- Info N7: the Auto Run Result section still describes the first pass (refresh it); the task lazy-imports `pyforge.warden.fleet_github_rest` (recorded in the Spec Change Log); one branch commit subject begins "Story 16.1:" (harmless: every other station's 16.1 key is already `done`).
+
+Send-back: N1-N6a in one pass, N6b as a deferred-work row; a fresh independent review (iteration 3) gates the landing.
 
 ### 2026-10-11 — Fix pass for iteration 1 (implementer)
 
