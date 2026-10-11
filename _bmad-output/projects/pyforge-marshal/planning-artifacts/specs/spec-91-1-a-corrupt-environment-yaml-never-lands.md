@@ -2,7 +2,8 @@
 title: "91.1: A corrupt environment.yaml never lands"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '6b5182c155fa451b9d5af75f8945e57537166a33'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -637,6 +637,11 @@ CROSS_SURFACE_VERIFY_COMMAND = (
 )
 _BMAD_ESTATE_VERIFY_COMMAND = "pixi run -e pyforge-guild bmad-estate-check"
 _FLAG_GATE_VERIFY_COMMAND = "pixi run -e pyforge-guild flag-gate-check"
+_ENVIRONMENT_YAML_VERIFY_COMMAND = "pixi run -e pyforge-guild steward provision --verify"
+ENVIRONMENT_YAML_FIX_COMMAND = (
+    "pixi project export conda-environment -e build 2>/dev/null > environment.yaml"
+)
+_ENVIRONMENT_YAML_CROSS_SURFACE_PATHS = frozenset({"environment.yaml", "pixi.toml"})
 _STORY_SPEC_PATH_MARKER = "/planning-artifacts/specs/spec-"
 _FLAG_EXACT_PATHS = (
     "src/platform/config/flags.json",
@@ -648,6 +653,7 @@ CROSS_SURFACE_RULES: tuple[CrossSurfaceRule, ...] = (
     CrossSurfaceRule("platform", CROSS_SURFACE_VERIFY_COMMAND),
     CrossSurfaceRule("bmad-estate", _BMAD_ESTATE_VERIFY_COMMAND),
     CrossSurfaceRule("flag-gate", _FLAG_GATE_VERIFY_COMMAND),
+    CrossSurfaceRule("environment-yaml", _ENVIRONMENT_YAML_VERIFY_COMMAND),
 )
 
 
@@ -664,6 +670,8 @@ def _path_touched_by_cross_surface_rule(path: str, rule: CrossSurfaceRule) -> bo
         if path in _FLAG_EXACT_PATHS:
             return True
         return path.startswith("_bmad-output/projects/") and _STORY_SPEC_PATH_MARKER in path
+    if rule.rule_id == "environment-yaml":
+        return path in _ENVIRONMENT_YAML_CROSS_SURFACE_PATHS
     raise ValueError(f"unknown cross-surface rule_id: {rule.rule_id!r}")
 
 
