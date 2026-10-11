@@ -4,9 +4,8 @@ type: 'fix'
 created: '2026-10-11'
 status: 'done'
 baseline_revision: 'e9ee1dd23aba03d12006d6a6a1017966c7d7cd4c'
-review_loop_iteration: 0
-followup_review_recommended: false
 review_loop_iteration: 1
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -20,6 +19,16 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py
 declared_low_risk: false
+deferred:
+  - summary: >-
+      Optional AC5 timeout case with _HeldDraftForge (check-wait timeout before ready call).
+    evidence: |-
+      Check-wait timeout uses the same early return as MRS-DISP-056 tests before the Story 94.2
+      ready call; existing timeout tests cover _wait_for_landing_checks. A held-draft-specific
+      timeout test would only duplicate that path unless a regression hid ready before checks.
+    location: >-
+      src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py
+    severity: medium (unverified)
 ---
 
 <intent-contract>
