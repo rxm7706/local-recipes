@@ -98,5 +98,6 @@ def test_herald_guard_propagates_dependency_module_not_found(monkeypatch) -> Non
         raise AssertionError(name)
 
     monkeypatch.setattr(herald_guard.importlib, "import_module", _fake)
-    with pytest.raises(ModuleNotFoundError, match="some_herald_dependency_xyz"):
+    with pytest.raises(ModuleNotFoundError) as excinfo:
         herald_guard.herald_is_installed()
+    assert excinfo.value.name == "some_herald_dependency_xyz"

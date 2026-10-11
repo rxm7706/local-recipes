@@ -8,10 +8,10 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
-from django.test import Client
-
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
+
+# Fresh pytest-django DB has no Wagtail page at /stations/ (404 with herald too).
+_EXPECTED_STATIONS_STATUS = 404
 
 
 def _build_child_script(expected_stations_status: int) -> str:
@@ -101,10 +101,8 @@ def _run_child(expected_stations_status: int) -> subprocess.CompletedProcess[str
     )
 
 
-@pytest.mark.django_db
 def test_herald_portal_pages_without_herald():
-    stations_status = Client().get("/stations/").status_code
-    proc = _run_child(stations_status)
+    proc = _run_child(_EXPECTED_STATIONS_STATUS)
     assert proc.returncode == 0, proc.stderr or proc.stdout
     assert "OK" in proc.stdout
     combined = proc.stdout + proc.stderr
