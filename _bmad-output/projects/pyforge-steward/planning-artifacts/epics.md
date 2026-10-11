@@ -6003,7 +6003,7 @@ So that it passes on every run while still proving the split survival test is no
 **When** the guard runs
 **Then** after the 49.5 fill it writes turnover rounds (`2 * maxmemory // _FILL_VALUE_BYTES` fresh keys each, under a round-unique name), reads the broker after each and stops at the first round that shows loss, at most `_BROKER_LOSS_MAX_ROUNDS` (20); the shared instance stays `allkeys-lru`, and `broker_lost` keeps its four conditions and its message, which also names the rounds run and `evicted_keys` when it fails
 **And** the guard passes 20 of 20 consecutive runs of its node id, and the whole module 20 of 20; with the eviction pressure removed the guard fails 5 of 5 runs (mutation); the split test, its helpers and the module constants keep every line they have and the split test passes every run; the diff adds no skip, `xfail` or rerun; only the test file changes; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-unifying-strategy` memlog reconciles the test file before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
