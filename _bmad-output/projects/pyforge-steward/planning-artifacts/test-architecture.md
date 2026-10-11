@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 07c9a0994f67cab4
-story_count: 347
-test_file_count: 110
+source_fingerprint: 6da3af4cd13a57f2
+story_count: 348
+test_file_count: 112
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 347
-- **Epics parsed:** 90
-- **Test files inventoried:** 110 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 348
+- **Epics parsed:** 91
+- **Test files inventoried:** 112 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `07c9a0994f67cab4`
+- **Source fingerprint:** `6da3af4cd13a57f2`
 
 ## Risk Assessment
 
@@ -118,6 +118,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 88: The preflight runs each task once, after its dependencies (fix under CAP-159)
 - Epic 89: A killed `platform-ci-local` run never blocks the next one (fix under CAP-152)
 - Epic 90: A pytest the preflight starts never inherits another run's basetemp (fix under CAP-159)
+- Epic 91: The host lists its station portals at `/stations/` (feature under unifying CAP-3)
 
 ### Low-risk epics
 
@@ -195,9 +196,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` | unit | none observed |
@@ -593,6 +596,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 88.1 | The preflight runs each task once, after its dependencies | none observed |
 | 89.1 | A killed `platform-ci-local` run never blocks the next one | none observed |
 | 90.1 | A pytest the preflight starts never inherits another run's basetemp | none observed |
+| 91.1 | The stations index lists each station portal as mounted or absent, and why | none observed |
 
 ## Quality Gates
 
