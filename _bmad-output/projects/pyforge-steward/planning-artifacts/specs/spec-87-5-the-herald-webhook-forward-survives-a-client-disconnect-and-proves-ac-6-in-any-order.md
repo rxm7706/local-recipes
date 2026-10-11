@@ -2,7 +2,7 @@
 title: "87.5: The herald webhook forward survives a client disconnect and proves AC 6 in any order"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-review'
+status: 'done'
 baseline_revision: '47397de509c4b12b68309f77022ca915db29d5b5'
 review_loop_iteration: 2
 followup_review_recommended: false
