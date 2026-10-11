@@ -46,6 +46,8 @@ from pathlib import Path
 from typing import Any, Protocol
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 import yaml
 from kedro.io import AbstractDataset
 from pyforge.core.atomic_write import atomic_write, atomic_write_text
@@ -90,6 +92,9 @@ _STATE_FILENAME = ".repo_state.json"
 _STALENESS_FILENAME = ".staleness.json"
 _PARTITION_SUFFIX = ".parquet"
 _STATE_FIELDS = ("head", "degradation", "reason")
+# Parquet schema-metadata key: the head a partition reflects, written atomically with its rows
+# ("" for a partition that reflects no complete walk -- the git-pkgs half kept from an older head).
+_PARTITION_HEAD_KEY = b"pyforge.atlas.dependency_history.head"
 
 _GIT_TIMEOUT_S = 120.0
 _CLONE_TIMEOUT_S = 900.0
@@ -197,6 +202,7 @@ def _parse_repo_sources(raw: Any) -> tuple[tuple[RepoSource, ...], int]:
         logger.warning("dependency_history.repos is a %s, not a list; no repo is read from it", type(raw).__name__)
         return (), 1
     out: list[RepoSource] = []
+    seen: set[str] = set()
     malformed = 0
     for index, item in enumerate(raw):
         if not isinstance(item, Mapping):
@@ -208,6 +214,13 @@ def _parse_repo_sources(raw: Any) -> tuple[tuple[RepoSource, ...], int]:
             logger.warning("dependency_history.repos[%d] has no full_name; skipped", index)
             malformed += 1
             continue
+        if full_name in seen:
+            logger.warning(
+                "dependency_history.repos[%d] repeats full_name %r; the first entry is kept", index, full_name
+            )
+            malformed += 1
+            continue
+        seen.add(full_name)
         local_path = item.get("path") or item.get("local_path")
         clone_url = item.get("clone_url")
         out.append(
@@ -673,16 +686,17 @@ class RepoDependencyHistoryDataset(AbstractDataset):
         text = json.dumps(payload, indent=2, sort_keys=True)
         atomic_write_text(self._staleness_path, text + "\n")
 
-    def _partition_reads(self, full_name: str) -> bool:
+    def _partition_head(self, full_name: str) -> str | None:
+        """The head a partition reflects (``""`` when it reflects no complete walk); ``None`` when it does not read."""
         path = self._partition_path(full_name)
         if not path.is_file():
-            return False
+            return None
         try:
-            pd.read_parquet(path)
+            table = pq.read_table(path)
         except Exception as exc:  # noqa: BLE001 -- any read failure means the partition must be rebuilt
             logger.warning("partition %s unreadable (%s); the repo is walked again", path, exc)
-            return False
-        return True
+            return None
+        return (table.schema.metadata or {}).get(_PARTITION_HEAD_KEY, b"").decode("utf-8", "replace")
 
     def _read_partition_rows(self, full_name: str) -> list[dict[str, Any]]:
         path = self._partition_path(full_name)
@@ -695,7 +709,7 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             return []
         return [dict(row) for row in frame.to_dict(orient="records")]
 
-    def _write_partition(self, full_name: str, rows: list[dict[str, Any]]) -> None:
+    def _write_partition(self, full_name: str, rows: list[dict[str, Any]], head: str) -> None:
         frame = pd.DataFrame(rows, columns=list(HISTORY_COLUMNS)) if rows else _empty_history()
         if rows:
             frame["commit_time"] = frame["commit_time"].astype("int64")
@@ -703,7 +717,9 @@ class RepoDependencyHistoryDataset(AbstractDataset):
                 ["commit_time", "manifest_path", "manifest_scope", "ecosystem", "name", "source"], kind="stable"
             ).reset_index(drop=True)
         frame["degradation"] = ""  # the repo-level marker lives in the state file, overlaid on load
-        atomic_write(self._partition_path(full_name), lambda target: frame.to_parquet(target, index=False))
+        table = pa.Table.from_pandas(frame, preserve_index=False)
+        table = table.replace_schema_metadata({**(table.schema.metadata or {}), _PARTITION_HEAD_KEY: head.encode()})
+        atomic_write(self._partition_path(full_name), lambda target: pq.write_table(table, target))
 
     # --- one repo ------------------------------------------------------------------------
 
@@ -722,7 +738,8 @@ class RepoDependencyHistoryDataset(AbstractDataset):
 
         Its ``.git`` is a real directory (never a symlink), and its top level, git directory and
         common directory all resolve to the clone itself -- not an enclosing checkout, and not
-        another repository's object store reached through a ``commondir`` file.
+        another repository's object store reached through a ``commondir`` file or a symlinked
+        ``objects`` / ``refs`` directory.
         """
         git_dir = dest / ".git"
         if git_dir.is_symlink() or not git_dir.is_dir():
@@ -735,18 +752,45 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             "--show-toplevel",
             "--absolute-git-dir",
             "--git-common-dir",
+            "--git-path",
+            "objects",
+            "--git-path",
+            "refs",
         )
         lines = res.stdout.splitlines()
-        if res.returncode != 0 or len(lines) != 3:
+        if res.returncode != 0 or len(lines) != 5:
             return False
-        top, own_dir, common_dir = (Path(line.strip()).resolve() for line in lines)
-        return top == dest and own_dir == git_dir and common_dir == git_dir
+        top, own_dir, common_dir, objects, refs = (Path(line.strip()).resolve() for line in lines)
+        return (
+            top == dest
+            and own_dir == git_dir
+            and common_dir == git_dir
+            and objects == git_dir / "objects"
+            and refs == git_dir / "refs"
+        )
+
+    def _follow_target(self, process: GitProcessPort, dest: Path) -> str:
+        """``@{upstream}``, or the remote's default branch when it has switched to another one.
+
+        ``git remote set-head origin --auto`` re-reads the remote's ``HEAD``; when it now names a
+        branch other than the clone's upstream (a default-branch switch that kept the old branch),
+        the clone follows the new default.
+        """
+        if _git_in(process, dest, "remote", "set-head", "origin", "--auto", timeout_s=_CLONE_TIMEOUT_S).returncode:
+            return "@{upstream}"
+        default = _git_in(process, dest, "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD")
+        current = _git_in(process, dest, "rev-parse", "--symbolic-full-name", "@{upstream}")
+        if default.returncode == 0 and current.returncode == 0 and default.stdout.strip() != current.stdout.strip():
+            return "refs/remotes/origin/HEAD"
+        return "@{upstream}"
 
     def _follow_upstream(self, process: GitProcessPort, dest: Path) -> bool:
         """Hard-reset a fetched clone to its upstream; False when a fresh clone is needed instead."""
         upstream = _git_in(process, dest, "rev-parse", "--verify", "--quiet", "@{upstream}")
         if upstream.returncode == 0:
-            return _git_in(process, dest, "reset", "--hard", "--quiet", "@{upstream}").returncode == 0
+            return (
+                _git_in(process, dest, "reset", "--hard", "--quiet", self._follow_target(process, dest)).returncode == 0
+            )
         if _repo_head(process, dest):
             return False  # its upstream branch is gone: clone afresh to follow the remote's default
         if not _remote_has_branches(process, dest):
@@ -852,11 +896,15 @@ class RepoDependencyHistoryDataset(AbstractDataset):
                 # The remote has commits but its HEAD names no branch: nothing to check out. Keep the
                 # last-good partition and head; the clone is kept too (``_follow_upstream``).
                 return _RepoOutcome(UNRESOLVED, "remote HEAD names no branch")
+            if prior_head:
+                # Built before, its remote now has no branch: keep the last-good history, never wipe it.
+                return _RepoOutcome(UNRESOLVED, "the remote has no branches any more")
             # Reachable, with no branch at all yet: an explicit empty history (nothing to re-clone).
             return _RepoOutcome(reason="repository has no commits yet", rows=[], head="")
-        if not force and head == prior_head and self._partition_reads(source.full_name):
-            # Unmoved since its last complete walk and its partition reads: not re-walked (AD-5);
-            # reachable again, so no marker. A missing or unreadable partition is rebuilt.
+        if not force and self._partition_head(source.full_name) == head:
+            # The partition reflects exactly this head (recorded with its rows): not re-walked (AD-5);
+            # reachable again, so no marker. A missing, unreadable, partial or other-head partition
+            # is walked again -- whatever the state file says.
             return _RepoOutcome(head=head)
         try:
             pixi_rows = _estate_pixi_rows(process, clone, source.full_name)
@@ -870,8 +918,9 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             except (_WalkError, ProcessError, OSError) as exc:
                 problem = f"git-pkgs walk failed: {exc}"
         if problem:
-            # The pixi half is fresh; the git-pkgs half keeps its last-good rows. The head is not
-            # advanced, so the next run walks this repo again.
+            # The pixi half is fresh; the git-pkgs half keeps its last-good rows. The partition is
+            # written as reflecting no head and the state head is not advanced, so the next run
+            # walks this repo again whatever its head is then.
             kept = [row for row in self._read_partition_rows(source.full_name) if row.get("source") == SOURCE_GIT_PKGS]
             return _RepoOutcome(UNRESOLVED, problem, rows=kept + pixi_rows)
         return _RepoOutcome(rows=pkgs_rows + pixi_rows, head=head)
@@ -921,7 +970,8 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             try:
                 outcome = self._refresh_repo(process, source, prior.get("head", ""), data.force, git_pkgs_problem)
                 if outcome.rows is not None:
-                    self._write_partition(source.full_name, outcome.rows)
+                    complete = outcome.head if outcome.head and not outcome.degradation else ""
+                    self._write_partition(source.full_name, outcome.rows, complete)
             except Exception as exc:  # noqa: BLE001 -- one repo's failure never fails the others (AD-13)
                 logger.exception("%s: dependency history build failed", source.full_name)
                 outcome = _RepoOutcome(UNRESOLVED, f"build failed: {type(exc).__name__}: {exc}")

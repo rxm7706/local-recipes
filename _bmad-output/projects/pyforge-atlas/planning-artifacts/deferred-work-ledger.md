@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**180** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**181** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -4824,4 +4824,15 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: review finding, atlas Story 25.1 independent review iteration 2
   severity: low
   promoted: 2026-10-10 -- implementer response to 25.1 review iteration 2
+  status: open
+
+### DW-atlas-25-1-2: A timed-out `git pkgs` leaves `git-pkgs` running orphaned: the timeout kills only the top-level `git`.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: `RepoDependencyHistoryDataset` runs git-pkgs as `git -C <clone> pkgs init|history` through `pyforge.core.process.PosixProcess.run` with a per-call timeout. On a timeout, `subprocess.run` kills only its direct child -- the `git` dispatcher -- so the `git-pkgs` it started survives as an orphan and keeps indexing (and holding its throwaway database directory) until it finishes on its own. The repo itself still reads `unresolved` and the run continues. Fix in pyforge-core, not in the station: have `PosixProcess.run` start the child in its own session or process group (`start_new_session=True`) and kill the whole group (`os.killpg`) on a timeout, so every caller's grandchildren die with the child.
+  evidence: 25.1 independent review iteration 5, `[low] [defer]` (2026-10-10). Calling the `git-pkgs` binary directly instead of `git pkgs` was considered and not taken: the spec names `git pkgs init --no-hooks`, and a direct call removes only the `git` layer -- any process git-pkgs starts itself would still outlive a timeout -- so only a process-group kill closes it for every caller.
+  location: src/shared/packages/pyforge-core/src/pyforge/core/process.py (PosixProcess.run, its timeout path); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py (`_git_pkgs_rows`, the `git pkgs` calls)
+  origin: review finding, atlas Story 25.1 independent review iteration 5
+  severity: low
+  promoted: 2026-10-10 -- implementer response to 25.1 review iteration 5
   status: open

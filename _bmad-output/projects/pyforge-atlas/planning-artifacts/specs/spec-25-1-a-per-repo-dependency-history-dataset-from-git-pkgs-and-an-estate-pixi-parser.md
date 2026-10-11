@@ -2,7 +2,7 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
 review_loop_iteration: 5
 followup_review_recommended: false
@@ -250,6 +250,30 @@ Deps: — (cross-station: mason Story 21.1).
 - **The discovery ceiling is always absolute** (the cache path may be relative, and git ignores a relative ceiling).
 - **"A damaged partition is rebuilt" (iteration 3) now holds:** the unchanged-head skip requires a partition that
   reads, not only one that exists.
+
+### 2026-10-10 — Implementer response to review iteration 5
+
+- **A partition carries the head it reflects.** Each `<owner>@<repo>.parquet` records, in its Parquet schema
+  metadata (`pyforge.atlas.dependency_history.head`), the head of the complete walk its rows come from — written in
+  the same atomic file write as the rows. A partition that reflects no complete walk (the git-pkgs half kept from an
+  older head beside a fresh pixi half) records `""`. The unchanged-head skip compares the clone's head with the
+  partition's own head, not with the state file, so neither a partial partition nor a run killed between the
+  partition write and the state write can ever be served for another head. `.repo_state.json`'s `head` stays the
+  head of the last complete walk, for reporting. (This refines the store layout of iteration 1.)
+- **Duplicate `full_name` entries** keep the first, are warned by index and count as malformed (so nothing is pruned
+  that run).
+- **A remote emptied after a build** (every branch deleted) reads `unresolved` ("the remote has no branches any
+  more") and keeps its last-good partition and head; only a repo never built reads as an empty history.
+- **A clone also owns its `objects` and `refs`.** `rev-parse --git-path objects` / `--git-path refs` must resolve
+  under the clone's own `.git`, so a symlinked object store or refs directory is replaced by a fresh clone.
+- **A default-branch switch is followed.** After the fetch, `git remote set-head origin --auto` re-reads the remote's
+  `HEAD`; when `origin/HEAD` names another branch than the clone's upstream (the old default kept), the clone is reset
+  to `origin/HEAD`.
+- **Deferred (review `[low] [defer]`).** A `git pkgs` call that times out kills only the top-level `git`;
+  `git-pkgs` survives as an orphan. The fix is a process-group kill in pyforge-core's `PosixProcess.run`, not a
+  station change; recorded as `DW-atlas-25-1-2` (open, low) in `planning-artifacts/deferred-work-ledger.md`. The
+  dataset keeps calling `git pkgs` (the spec's command): calling the `git-pkgs` binary directly would remove only
+  the `git` layer, not any process git-pkgs starts itself.
 
 ## Review Triage Log
 
@@ -548,6 +572,47 @@ exit 0 (`pass`; with the status simulated `done` the two-state and per-environme
 `python -m pyforge.doctor.sources spec-surface` exit 0 (reconcile event appended to the `spec-pyforge-atlas`
 memlog, no baseline stamped); `python -m pyforge.doctor.sources deferred-work` exit 0; `test_dh.py` 59 passed.
 Only atlas files changed (plus this spec and its memlog), so `pyforge-station-tests` was not re-run.
+
+### 2026-10-10 — Implementer response to iteration 5
+
+Each finding of the iteration-5 review, with its fix and the test that fails without it (mutation-checked: each
+fix reverted reddens the named test). `dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`;
+`test_dh.py` = `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py`. Not a review verdict.
+
+- `[medium]` the unchanged-head skip could serve a partition that does not reflect the head — **fixed.** The head a
+  partition reflects is written into its Parquet schema metadata in the same atomic write as its rows
+  (`_PARTITION_HEAD_KEY`, `dh.py:97`; `_write_partition`, `:712-722`); a partial partition (the git-pkgs-problem path,
+  `:925`) records `""` (`:973-974`). The skip reads that head back (`_partition_head`, `:689-699`) and skips only when
+  it equals the clone's head (`:904`), never on the state file. Tests:
+  `test_a_partial_partition_is_never_served_for_an_older_head` (git-pkgs fails at H2, the source is reset to H1: the
+  next run re-walks and no H2 row remains) and `test_a_run_killed_before_its_state_write_never_skips_later` (the
+  state write raises after the H2 partition lands; after a reset to H1 nothing from H2 is served). Reverting the
+  skip to the state head reddens both.
+- `[low]` duplicate `full_name` entries — **fixed** (`dh.py:217-223`: first kept, warned, counted malformed). Test:
+  `test_duplicate_full_names_are_deduplicated_warned_and_counted`.
+- `[low]` a remote emptied after a healthy build wiped the history — **fixed** (`dh.py:899-901`: with a prior head it
+  reads `unresolved` and keeps the partition and head). Test:
+  `test_a_remote_emptied_after_a_healthy_build_keeps_the_last_good_history` (4 rows kept, no re-clone on the next run).
+- `[low]` a symlinked `.git/objects` passed `_clone_is_usable` — **fixed** (`dh.py:736-770`: `--git-path objects`
+  and `--git-path refs` must resolve to the clone's own `.git/objects` and `.git/refs`). Test:
+  `test_a_clone_with_a_symlinked_objects_or_refs_dir_is_cloned_afresh[objects|refs]` (re-cloned; a victim repo's
+  `HEAD` and unpushed commit survive).
+- `[low]` a default-branch switch that keeps the old branch was never followed — **fixed** (`_follow_target`,
+  `dh.py:772-785`, used by `_follow_upstream`): after `remote set-head origin --auto`, the clone resets to
+  `origin/HEAD` when it names another branch than its upstream. Test: `test_a_default_branch_switch_is_followed`.
+- `[low]` `[defer]` a timed-out `git pkgs` orphans `git-pkgs` — **deferred** as `DW-atlas-25-1-2` (open, low) in
+  `planning-artifacts/deferred-work-ledger.md`, naming the process-group kill in pyforge-core's `PosixProcess.run` as
+  the fix; recorded in the Spec Change Log. pyforge-core is unchanged; the dataset keeps calling `git pkgs`.
+
+Verification on the working tree (each verdict from its exit code): `env -u PYTEST_ADDOPTS pixi run --frozen -e
+pyforge-atlas kedro-test` exit 0 (2211 passed, 20 skipped; then 103 passed); `kedro-catalog-check` exit 0 (69
+passed); `pixi run --frozen -e pyforge-guild lint-types` exit 0; `env -u PYTEST_ADDOPTS pixi run --frozen -e
+pyforge-core pyforge-core-test` exit 0 (2384 passed, 1 skipped); `scripts/flag_gate_check.py --spec <this spec>`
+exit 0 (`pass`; with the status simulated `done` the two-state and per-environment-default checks report nothing);
+`python -m pyforge.doctor.sources spec-surface` exit 0 (reconcile event appended to the `spec-pyforge-atlas`
+memlog, no baseline stamped); `python -m pyforge.doctor.sources deferred-work` exit 0; `test_dh.py` 66 passed.
+Only atlas files changed (plus this spec, its memlog and the atlas deferred-work ledger), so `pyforge-station-tests`
+was not re-run.
 
 ## Auto Run Result
 

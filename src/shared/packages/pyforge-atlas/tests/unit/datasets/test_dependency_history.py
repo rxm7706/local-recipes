@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from kedro.io.core import DatasetError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 from pyforge.testing_kit.flags import flagd_tree
 
@@ -1102,3 +1103,132 @@ def test_a_symlinked_clone_slot_is_unresolved_and_its_target_untouched(tmp_path:
     assert entry["degradation"] == UNRESOLVED and "symlink" in entry["reason"]
     assert (other / "keep.txt").read_text(encoding="utf-8") == "another repo's clone\n"
     assert proc.count("clone") == 0
+
+
+# --- iteration 5: a partition is served only for the head it reflects ---------------------------
+
+
+_NUMPY_PIXI = _PIXI + 'numpy = ">=2"\n'
+
+
+@needs_git_pkgs
+def test_a_partial_partition_is_never_served_for_an_older_head(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds = _dataset(tmp_path)
+    ds.save(request)
+    h1 = _commits(fixture_repo)[-1][0]
+    _commit(fixture_repo, {"pixi.toml": _NUMPY_PIXI}, "H2 adds numpy")
+    h2 = _commits(fixture_repo)[-1][0]
+
+    _dataset(tmp_path, _Proc(_fake_version(None))).save(request)  # git-pkgs fails at H2: a partial partition
+    assert _state(tmp_path)["org/fixture"]["degradation"] == UNRESOLVED and "numpy" in set(ds.load()["name"])
+
+    _git(fixture_repo, "reset", "-q", "--hard", h1)  # the source goes back to H1
+    ds.save(request)
+    frame = ds.load()
+    assert h2 not in set(frame["commit_sha"]) and "numpy" not in set(frame["name"]), "H2 rows served at H1"
+    entry = _state(tmp_path)["org/fixture"]
+    assert entry["head"] == h1 and entry["degradation"] == ""
+
+
+class _Killed(Exception):
+    """Stands in for the process dying between the partition write and the state write."""
+
+
+@needs_git_pkgs
+def test_a_run_killed_before_its_state_write_never_skips_later(
+    tmp_path: Path, fixture_repo: Path, private_tmp: Path, monkeypatch: pytest.MonkeyPatch
+):
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds = _dataset(tmp_path)
+    ds.save(request)
+    h1 = _commits(fixture_repo)[-1][0]
+    _commit(fixture_repo, {"pixi.toml": _NUMPY_PIXI}, "H2 adds numpy")
+
+    def _die(self, state):
+        raise _Killed
+
+    with monkeypatch.context() as patch:
+        patch.setattr(RepoDependencyHistoryDataset, "_write_state", _die)
+        with pytest.raises(DatasetError) as killed:  # Kedro wraps the save failure
+            ds.save(request)  # the H2 partition is written; the state still says H1
+    assert isinstance(killed.value.__cause__, _Killed)
+    assert _state(tmp_path)["org/fixture"]["head"] == h1
+
+    _git(fixture_repo, "reset", "-q", "--hard", h1)
+    ds.save(request)
+    assert "numpy" not in set(ds.load()["name"]), "a partition for H2 was served at H1"
+
+
+def test_duplicate_full_names_are_deduplicated_warned_and_counted(caplog: pytest.LogCaptureFixture):
+    with caplog.at_level("WARNING", logger="pyforge.atlas.datasets.dependency_history"):
+        request = build_dependency_history_request(
+            flag_on=True,
+            repo_sources=[
+                {"full_name": "org/a", "path": "/x"},
+                {"full_name": "org/a", "clone_url": "https://example.invalid/org/a.git"},
+            ],
+        )
+    assert request.repos == (RepoSource("org/a", local_path="/x"),)
+    assert request.malformed_entries == 1
+    assert any("repos[1]" in r.getMessage() and "repeats" in r.getMessage() for r in caplog.records)
+
+
+@needs_git_pkgs
+def test_a_remote_emptied_after_a_healthy_build_keeps_the_last_good_history(
+    tmp_path: Path, fixture_repo: Path, private_tmp: Path
+):
+    remote = _bare_remote(fixture_repo, tmp_path / "remote.git")
+    proc = _Proc()
+    ds = _dataset(tmp_path, proc)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", clone_url=f"file://{remote}"),))
+    ds.save(request)
+    good_head = _state(tmp_path)["org/fixture"]["head"]
+
+    _git(remote, "update-ref", "-d", f"refs/heads/{_default_branch(fixture_repo)}")  # the remote has no branch now
+    ds.save(request)
+    entry = _state(tmp_path)["org/fixture"]
+    assert entry["degradation"] == UNRESOLVED and "no branches" in entry["reason"] and entry["head"] == good_head
+    assert len(ds.load()) == 4, "the last-good history was wiped"
+    clones = proc.count("clone")
+    ds.save(request)
+    assert proc.count("clone") == clones and len(ds.load()) == 4
+
+
+@pytest.mark.parametrize("planted", ["objects", "refs"])
+def test_a_clone_with_a_symlinked_objects_or_refs_dir_is_cloned_afresh(
+    tmp_path: Path, fixture_repo: Path, planted: str
+):
+    victim = _second_repo(fixture_repo, tmp_path / "victim")
+    _commit(victim, {"README.md": "unpushed\n"}, "the victim's unpushed commit")
+    victim_head = _git(victim, "rev-parse", "HEAD").strip()
+    proc = _Proc(_fake_version(None))
+    ds = _dataset(tmp_path, proc)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds.save(request)
+    clone = (tmp_path / "cache" / "org@fixture").resolve()
+    shutil.rmtree(clone / ".git" / planted)
+    (clone / ".git" / planted).symlink_to(victim / ".git" / planted, target_is_directory=True)
+    clones = proc.count("clone")
+
+    ds.save(DependencyHistoryBuildRequest(repos=request.repos, force=True))
+    assert proc.count("clone") == clones + 1, f"a clone with a symlinked .git/{planted} was used"
+    assert not (clone / ".git" / planted).is_symlink()
+    assert _git(victim, "rev-parse", "HEAD").strip() == victim_head
+
+
+@needs_git_pkgs
+def test_a_default_branch_switch_is_followed(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    remote = _bare_remote(fixture_repo, tmp_path / "remote.git")
+    ds = _dataset(tmp_path)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", clone_url=f"file://{remote}"),))
+    ds.save(request)
+    assert "numpy" not in set(ds.load()["name"])
+
+    _git(fixture_repo, "checkout", "-q", "-b", "main")
+    _commit(fixture_repo, {"pixi.toml": _NUMPY_PIXI}, "main moves on")
+    _git(fixture_repo, "push", "-q", str(remote), "main")
+    _git(remote, "symbolic-ref", "HEAD", "refs/heads/main")  # the default switches; the old branch stays
+    ds.save(request)
+    assert _state(tmp_path)["org/fixture"]["head"] == _commits(fixture_repo)[-1][0]
+    assert "numpy" in set(ds.load()["name"])
