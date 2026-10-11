@@ -1994,7 +1994,7 @@ class GitVcs:
         worktree: Path | None = None,
         ref: str | None = None,
     ) -> dict[int, tuple[str, int]]:
-        """Story 89.1: porcelain blame for Review Triage Log ordering."""
+        """Story 89.1 / 94.1: porcelain blame — every committed line carries its commit's time."""
         if (worktree is None) == (ref is None):
             raise VcsCommandError("line_blame_facts requires exactly one of worktree or ref")
         if worktree is not None:
@@ -2008,8 +2008,20 @@ class GitVcs:
         return _parse_blame_porcelain(result.stdout)
 
 
+_UNCOMMITTED_BLAME_SHA = "0" * 40
+
+
 def _parse_blame_porcelain(text: str) -> dict[int, tuple[str, int]]:
+    """Map 1-based line numbers to (sha, committer_time).
+
+    ``git blame --porcelain`` repeats commit metadata only on the first line of
+    each commit in file order; later lines of the same commit are bare headers.
+    Cache ``committer-time`` by sha (Story 94.1). Committed lines whose time
+    cannot be read are omitted — never stored as time 0.
+    """
     facts: dict[int, tuple[str, int]] = {}
+    commit_times: dict[str, int] = {}
+    shas_missing_time: set[str] = set()
     lines = text.splitlines()
     index = 0
     while index < len(lines):
@@ -2025,19 +2037,32 @@ def _parse_blame_porcelain(text: str) -> dict[int, tuple[str, int]]:
             final_line = int(final_line_s)
         except ValueError:
             continue
-        committer_time = 0
+        block_time: int | None = None
+        saw_metadata = False
         while index < len(lines):
             line = lines[index]
             if line.startswith("\t"):
                 index += 1
                 break
+            saw_metadata = True
             if line.startswith("committer-time "):
                 try:
-                    committer_time = int(line.split()[1])
+                    block_time = int(line.split()[1])
                 except IndexError, ValueError:
-                    committer_time = 0
+                    block_time = None
             index += 1
-        facts[final_line] = (sha, committer_time)
+        if block_time is not None:
+            commit_times[sha] = block_time
+        elif saw_metadata and sha != _UNCOMMITTED_BLAME_SHA:
+            shas_missing_time.add(sha)
+        if sha in shas_missing_time:
+            continue
+        if sha == _UNCOMMITTED_BLAME_SHA:
+            facts[final_line] = (sha, block_time if block_time is not None else 0)
+            continue
+        if sha not in commit_times:
+            continue
+        facts[final_line] = (sha, commit_times[sha])
     return facts
 
 

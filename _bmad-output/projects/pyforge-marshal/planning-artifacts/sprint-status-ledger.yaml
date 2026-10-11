@@ -459,7 +459,7 @@ development_status:
   91-1-a-corrupt-environment-yaml-never-lands: done
   92-1-the-dispatch-supervisor-reads-session-liveness-correctly-and-never-treats-a-vanished-worktree-as-live: backlog
   93-1-every-live-session-gets-the-recall-its-layer-promises-and-the-run-records-the-outcome: done
-  94-1-the-review-gate-orders-review-entries-by-their-real-commit-times: backlog
+  94-1-the-review-gate-orders-review-entries-by-their-real-commit-times: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -642,5 +642,5 @@ development_status:
   epic-92-retrospective: optional
   epic-93: done
   epic-93-retrospective: optional
-  epic-94: backlog
+  epic-94: done
   epic-94-retrospective: optional
