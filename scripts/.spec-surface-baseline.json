@@ -7214,7 +7214,7 @@
    "src/shared/packages/pyforge-warden/scripts/refresh_endoflife_feed.py": "984214b3c08087fed19d5bbadbbc73d36c20193e",
    "src/shared/packages/pyforge-warden/scripts/refresh_epss_feed.py": "7cc029f32d2af27cc91e1bdb60ef150d4c74982e",
    "src/shared/packages/pyforge-warden/scripts/refresh_kev_feed.py": "ea80d8414d32800d7e8fad048a6a5c9419451ec6",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py": "82c91c1197d2778d72eadbe6dee2ac33bdd74626",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py": "6ba57e26bb0701fa702a8464c1351e8c36c6d3ba",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py": "d5f9c9d9870049dbf9f91252757a60c2211a21c8",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py": "66c8114e2c2d9387eca2a27851264c03b660fd7b",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/config.py": "2e0ccf3ee10edac3ea30b1c4b7b78cd3cc4a63aa",
@@ -7235,6 +7235,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/extract/recipe_v1.py": "e84c7546bac65497a5073c0277af16c88327b286",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/feeds.py": "5c7c97a70640734554156c519ce0d393cbe68f2f",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/fix_solver.py": "40459d656cb59469100716b492d18e42b5b5ce34",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py": "e9fd974a62511a5c9f3c8d6f877ce550474f0508",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/hooks.py": "d039f9afa2e92311de637d0c59eb5bf1b02d4711",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/hygiene.py": "2d5104660048523e993e99ceac7ccddf091e38fe",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/interfaces.py": "04a22e1c554072578966984fc5f32bca8060d359",
@@ -9422,6 +9423,7 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_feeds.py": "ed476d0bcee090088ba814efeee49e8e81992da2",
    "src/shared/packages/pyforge-warden/tests/unit/test_fix_solver_seam.py": "02b1b3a229217b2a0e960a6de047a154ea81ef72",
    "src/shared/packages/pyforge-warden/tests/unit/test_fix_target_resolution.py": "a067817c553635a830d5855ee63ed707c0549b54",
+   "src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py": "ab7889564e2ade6e2675428a2d4207b24e4dc4e2",
    "src/shared/packages/pyforge-warden/tests/unit/test_hooks.py": "e4bf8c85e92ce44c57c7866622366005df5662a6",
    "src/shared/packages/pyforge-warden/tests/unit/test_hygiene.py": "3cd8ba275157ebb96c4afe1d4cdd2092b85a81d8",
    "src/shared/packages/pyforge-warden/tests/unit/test_identity.py": "a100e797a6c22a436a1cb99d282d32d1e2f4bc17",
@@ -9452,7 +9454,7 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_vuln.py": "b538f20c90b16709694b0dd8391c87f6d80ce7d8",
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "7fe1a886458dd61ba73fb6c41c51b1eb99df09bd"
   },
-  "memlog": "d32e4023ec918515bc78f792ef4c0988531201b5"
+  "memlog": "33b3d2b97991c83a98c8562b01df605e40b6ec70"
  },
  "pyforge-warden/spec-pyforge-warden-compliance-gates": {
   "files": {},
