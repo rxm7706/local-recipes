@@ -2048,7 +2048,7 @@ def _parse_blame_porcelain(text: str) -> dict[int, tuple[str, int]]:
             if line.startswith("committer-time "):
                 try:
                     block_time = int(line.split()[1])
-                except (IndexError, ValueError):
+                except IndexError, ValueError:
                     block_time = None
             index += 1
         if block_time is not None:

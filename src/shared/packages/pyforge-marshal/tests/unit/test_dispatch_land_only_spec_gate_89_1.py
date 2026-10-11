@@ -134,9 +134,7 @@ def _blame_facts(vcs: GitVcs, repo: Path, spec: Path, *, ref: str | None = None)
 def test_parse_blame_porcelain_reuses_committer_time_on_bare_headers() -> None:
     sha = "a" * 40
     sample = (
-        f"{sha} 1 1 1\nauthor Author\ncommitter-time 1700000001\n\tfirst\n"
-        f"{sha} 1 2 2\n\tsecond\n"
-        f"{sha} 1 3 3\n\tthird\n"
+        f"{sha} 1 1 1\nauthor Author\ncommitter-time 1700000001\n\tfirst\n{sha} 1 2 2\n\tsecond\n{sha} 1 3 3\n\tthird\n"
     )
     facts = _parse_blame_porcelain(sample)
     assert facts[1] == (sha, 1700000001)
@@ -152,10 +150,7 @@ def test_parse_blame_porcelain_omits_committed_lines_without_committer_time() ->
 
 
 def test_missing_committer_time_makes_gate_unevaluable() -> None:
-    text = (
-        "---\nstatus: in-review\n---\n\n## Review Triage Log\n\n"
-        "### 2026-10-11 — Independent review: PASS\n\nbody\n"
-    )
+    text = "---\nstatus: in-review\n---\n\n## Review Triage Log\n\n### 2026-10-11 — Independent review: PASS\n\nbody\n"
     headings = iter_review_triage_heading_lines(text)
     assert headings
     blame: dict[int, LineBlameFact] = {}
@@ -200,17 +195,12 @@ def test_git_blame_orders_triage_headings(tmp_path: Path) -> None:
 
 def test_ac1_pass_after_send_back_with_frontmatter_edit(tmp_path: Path) -> None:
     repo, spec = _init_spec_repo(tmp_path)
-    base = (
-        "---\nstatus: 'in-review'\nreview_loop_iteration: 0\n---\n\n"
-        "## Review Triage Log\n\n"
-    )
+    base = "---\nstatus: 'in-review'\nreview_loop_iteration: 0\n---\n\n## Review Triage Log\n\n"
     spec.write_text(base, encoding="utf-8")
     _git_run(repo, "add", "spec.md")
     _git_commit_at(repo, "2020-01-01T00:00:00", "seed")
     spec.write_text(
-        base
-        + "### 2026-10-11 — Independent review, iteration 1: sent back (1 major)\n\n"
-        "details\n",
+        base + "### 2026-10-11 — Independent review, iteration 1: sent back (1 major)\n\ndetails\n",
         encoding="utf-8",
     )
     _git_run(repo, "add", "spec.md")
