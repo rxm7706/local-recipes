@@ -2,7 +2,8 @@
 title: "16.1: Warden inventories an operator-designated GitHub organisation's repos"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e0d12c1d4ec1d22ec49fd0d6f72e12025462900f'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
