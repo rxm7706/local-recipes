@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**178** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**180** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -4814,3 +4814,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   resolution: Story 27.5 pins each filter-declaring page's data source to the build-time frame `_declared_filter_bundle` already read so Vizro does not mark the filter `_dynamic` and hide its selector until clientside reload.
   verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:500 — `_data_page` registers `build_frame` in `data_manager` when `_declared_filter_bundle` succeeds.
   status: closed
+
+### DW-atlas-25-1-1: Story 25.2's fleet sensor re-runs the 25.1 job over `params:dependency_history.repos` only, so the link to Warden's inventory (CAP-26) is nominal.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: The `dependency_history_fleet_sensor` decides from Warden's fleet inventory which repos moved, but its `RunRequest` carries only tags (a run key and a moved-repo count), and the `build_repo_dependency_history` node it triggers scans the repos listed in `params:dependency_history.repos` (default `[]`). A repo Warden inventories but the params do not list is never scanned, and the moved-repo names never reach the job. Follow-up: carry the moved repos (with a clone source) from the inventory into the job -- run config or a catalog input that degrades to empty when the export is absent -- so the inventory, not the params list, is the scan set.
+  evidence: 25.1 review iteration 2, `[low] [note]` (2026-10-10). The sensor's `RunRequest` passes no run config; the node's only input is `params:dependency_history.repos` (25.1 dropped the `warden_fleet_inventory` input because Kedro loaded the absent export before the flag could skip the node -- iteration-1 finding, high); the inventory rows hold `full_name` and `head_sha`, no clone URL.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py (build_fleet_inventory_sensor, the RunRequest); src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/pipeline.py (build_repo_dependency_history inputs)
+  origin: review finding, atlas Story 25.1 independent review iteration 2
+  severity: low
+  promoted: 2026-10-10 -- implementer response to 25.1 review iteration 2
+  status: open

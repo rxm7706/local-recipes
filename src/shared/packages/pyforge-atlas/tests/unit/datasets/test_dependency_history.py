@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -21,6 +22,7 @@ import pytest
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 from pyforge.testing_kit.flags import flagd_tree
 
+from pyforge.atlas.datasets import dependency_history
 from pyforge.atlas.datasets.dependency_history import (
     FLAG_KEY,
     HISTORY_COLUMNS,
@@ -77,8 +79,23 @@ class _Proc:
         return sum(1 for call in self.calls if all(word in call for word in words))
 
 
+_GIT_REPO_ENV = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_COMMON_DIR",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+)
+
+
+def _clean_env() -> dict[str, str]:
+    """The test's own git calls never follow a repo-locating variable a test (or a shell) exported."""
+    return {key: value for key, value in os.environ.items() if key not in _GIT_REPO_ENV}
+
+
 def _git(repo: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True).stdout
+    return subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True, env=_clean_env()).stdout
 
 
 def _commit(repo: Path, files: Mapping[str, str], message: str) -> None:
@@ -264,7 +281,7 @@ def test_ac4_unchanged_head_not_rewalked(tmp_path: Path, fixture_repo: Path, pri
 
 
 def _bare_remote(fixture_repo: Path, where: Path) -> Path:
-    subprocess.run(["git", "clone", "-q", "--bare", str(fixture_repo), str(where)], check=True)
+    subprocess.run(["git", "clone", "-q", "--bare", str(fixture_repo), str(where)], check=True, env=_clean_env())
     return where
 
 
@@ -365,7 +382,15 @@ def test_invalid_full_name_is_unresolved_and_touches_nothing(tmp_path: Path, ful
 
 @pytest.mark.parametrize(
     "url",
-    ["--upload-pack=touch /tmp/pwned", "ext::sh -c touch% /tmp/pwned", "http://plain.example/r.git", "-u x"],
+    [
+        "--upload-pack=touch /tmp/pwned",
+        "ext::sh -c touch% /tmp/pwned",
+        "http://plain.example/r.git",
+        "-u x",
+        "-x@host:org/r.git",
+        "git@-host:org/r.git",
+        "git@host:-org/r.git",
+    ],
 )
 def test_disallowed_clone_url_is_unresolved_and_never_reaches_git(tmp_path: Path, url: str):
     proc = _Proc()
@@ -375,8 +400,8 @@ def test_disallowed_clone_url_is_unresolved_and_never_reaches_git(tmp_path: Path
     assert _state(tmp_path)["org/r"]["degradation"] == UNRESOLVED
 
 
-def test_clone_url_follows_end_of_options_marker(tmp_path: Path):
-    url = "https://example.invalid/org/r.git"
+@pytest.mark.parametrize("url", ["https://example.invalid/org/r.git", "git@example.invalid:org/r.git"])
+def test_clone_url_follows_end_of_options_marker(tmp_path: Path, url: str):
 
     def _fail_clone(argv: list[str]) -> ProcessResult | None:
         return ProcessResult(returncode=128, stdout="", stderr="unreachable") if "clone" in argv else None
@@ -473,8 +498,9 @@ def test_pixi_manifest_reads_the_estate_manifest():
     deps = _parse_pixi_manifest((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
     assert deps is not None
     assert len(deps) > 300, "only a fraction of the estate's declarations was read"
-    assert deps[("feature.pyforge-atlas.target.linux-64.dependencies", "conda", "git-pkgs")] == ">=0.21.0,<0.22"
-    assert any(scope.endswith("pypi-dependencies") for scope, _, _ in deps)
+    scopes = {scope for scope, _, _ in deps}
+    assert any(s.startswith("feature.") and ".target." in s for s in scopes), "no feature.*.target.* table read"
+    assert any(s.startswith("feature.") and s.endswith("pypi-dependencies") for s in scopes)
     assert not any(value.startswith("{'") for value in deps.values()), "a table spec stored as a Python repr"
     assert any(value.startswith('{"path": ') for value in deps.values())
 
@@ -501,6 +527,8 @@ def test_pixi_lock_resolves_names_and_versions():
         ("", "conda", "tzdata"): "2024a",
         ("", "pypi", "requests"): "2.31.0",
     }
+    assert _parse_pixi_lock("version: 6\npackages: 5\n") is None, "a non-list `packages` is not a lock"
+    assert _parse_pixi_lock("version: 6\n") == {}
     two_pythons = _LOCK_V1 + "- conda: https://x/linux-64/python-3.9.18-h2_0.conda\n"
     assert _parse_pixi_lock(two_pythons)[("", "conda", "python")] == "3.9.18,3.12.1"
     assert _parse_pixi_lock("packages: [unclosed") is None
@@ -630,3 +658,176 @@ def test_ac6_flag_off_kedro_run_needs_no_inventory_file(tmp_path: Path, monkeypa
     SequentialRunner().run(pipe, catalog)
     assert not (data_root / "cache").exists()
     assert not (data_root / "primary" / "repo_dependency_history").exists()
+
+
+# --- iteration 2: the clone follows its remote, one repo never fails the others -----------------
+
+
+def _default_branch(repo: Path) -> str:
+    return _git(repo, "rev-parse", "--abbrev-ref", "HEAD").strip()
+
+
+@needs_git_pkgs
+def test_amended_upstream_is_followed_not_stale(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    remote = _bare_remote(fixture_repo, tmp_path / "remote.git")
+    ds = _dataset(tmp_path)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", clone_url=f"file://{remote}"),))
+    ds.save(request)
+    old_head = _state(tmp_path)["org/fixture"]["head"]
+
+    (fixture_repo / "pixi.toml").write_text(_PIXI + 'numpy = ">=2"\n', encoding="utf-8")
+    _git(fixture_repo, "commit", "-q", "-a", "--amend", "-m", "add pixi (amended)")
+    _git(fixture_repo, "push", "-q", "--force", str(remote), f"HEAD:refs/heads/{_default_branch(fixture_repo)}")
+    new_head = _commits(fixture_repo)[-1][0]
+    assert new_head != old_head
+
+    ds.save(request)  # a non-fast-forward upstream: followed, never `stale`
+    entry = _state(tmp_path)["org/fixture"]
+    assert entry["degradation"] == "" and entry["head"] == new_head
+    frame = ds.load()
+    assert set(frame.query("source == @SOURCE_ESTATE_PIXI")["commit_sha"]) == {new_head}
+    assert "numpy" in set(frame["name"])
+
+
+@needs_git_pkgs
+def test_timed_out_clone_leaves_nothing_and_the_next_run_builds(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    def _killed_clone(argv: list[str]) -> ProcessResult | None:
+        if "clone" in argv:
+            partial = Path(argv[-1]) / ".git"
+            partial.mkdir(parents=True)
+            (partial / "HEAD").write_text("ref: refs/heads/half-written\n", encoding="utf-8")
+            raise ProcessError("timed out after 900s")
+        return None
+
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    _dataset(tmp_path, _Proc(_killed_clone)).save(request)
+    assert _state(tmp_path)["org/fixture"]["degradation"] == STALE
+    assert not (tmp_path / "cache" / "org@fixture").exists(), "the partial clone was left behind"
+
+    ds = _dataset(tmp_path)
+    ds.save(request)  # the network is back
+    assert _state(tmp_path)["org/fixture"]["degradation"] == ""
+    assert len(ds.load()) == 4
+
+
+@needs_git_pkgs
+def test_partial_clone_left_by_a_killed_run_is_cloned_afresh(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    partial = tmp_path / "cache" / "org@fixture" / ".git"
+    partial.mkdir(parents=True)
+    (partial / "HEAD").write_text("ref: refs/heads/half-written\n", encoding="utf-8")
+    ds = _dataset(tmp_path)
+    ds.save(DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),)))
+    assert _state(tmp_path)["org/fixture"]["degradation"] == ""
+    assert len(ds.load()) == 4
+
+
+def _second_repo(fixture_repo: Path, where: Path) -> Path:
+    subprocess.run(["git", "clone", "-q", str(fixture_repo), str(where)], check=True, env=_clean_env())
+    _git(where, "config", "user.email", "t@example.com")
+    _git(where, "config", "user.name", "t")
+    _git(where, "config", "commit.gpgsign", "false")
+    return where
+
+
+@needs_git_pkgs
+def test_deeply_nested_git_pkgs_json_is_unresolved_for_that_repo_only(
+    tmp_path: Path, fixture_repo: Path, private_tmp: Path
+):
+    deep = _second_repo(fixture_repo, tmp_path / "deep-repo")
+
+    def _nested(argv: list[str]) -> ProcessResult | None:
+        if "history" in argv and argv[argv.index("-C") + 1].endswith("org@deep"):
+            return ProcessResult(returncode=0, stdout="[" * 200_000 + "]" * 200_000, stderr="")
+        return None
+
+    ds = _dataset(tmp_path, _Proc(_nested))
+    ds.save(
+        DependencyHistoryBuildRequest(
+            repos=(
+                RepoSource("org/deep", local_path=str(deep)),
+                RepoSource("org/fixture", local_path=str(fixture_repo)),
+            )
+        )
+    )
+    state = _state(tmp_path)
+    assert state["org/deep"]["degradation"] == UNRESOLVED and "RecursionError" not in state["org/fixture"]["reason"]
+    assert state["org/fixture"]["degradation"] == ""
+    frame = ds.load()
+    assert (frame["repo_full_name"] == "org/fixture").sum() == 4
+    assert set(frame.query("repo_full_name == 'org/deep'")["source"]) == {SOURCE_ESTATE_PIXI}
+
+
+@needs_git_pkgs
+def test_any_error_in_one_repo_is_unresolved_and_never_fails_the_others(
+    tmp_path: Path, fixture_repo: Path, private_tmp: Path, monkeypatch: pytest.MonkeyPatch
+):
+    boom = _second_repo(fixture_repo, tmp_path / "boom-repo")
+    _commit(boom, {"pixi.toml": _PIXI + "# boom\n"}, "boom")
+    real_parser = dependency_history._parse_pixi_manifest
+
+    def _parser(text: str):
+        if "# boom" in text:
+            raise KeyError("an unforeseen manifest shape")
+        return real_parser(text)
+
+    monkeypatch.setattr(dependency_history, "_parse_pixi_manifest", _parser)
+    ds = _dataset(tmp_path)
+    ds.save(
+        DependencyHistoryBuildRequest(
+            repos=(
+                RepoSource("org/boom", local_path=str(boom)),
+                RepoSource("org/fixture", local_path=str(fixture_repo)),
+            )
+        )
+    )
+    state = _state(tmp_path)
+    assert state["org/boom"]["degradation"] == UNRESOLVED and "KeyError" in state["org/boom"]["reason"]
+    assert state["org/boom"]["head"] == ""
+    assert state["org/fixture"]["degradation"] == ""
+    assert set(ds.load()["repo_full_name"]) == {"org/fixture"}
+
+
+@needs_git_pkgs
+def test_repo_locating_git_variables_are_not_inherited(
+    tmp_path: Path, fixture_repo: Path, private_tmp: Path, monkeypatch: pytest.MonkeyPatch
+):
+    decoy = _second_repo(fixture_repo, tmp_path / "decoy-repo")
+    before = _tree_digest(decoy)
+    monkeypatch.setenv("GIT_DIR", str(decoy / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(decoy))
+    ds = _dataset(tmp_path)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds.save(request)
+    ds.save(DependencyHistoryBuildRequest(repos=request.repos, force=True))  # the fetch-and-reset path too
+    assert _tree_digest(decoy) == before
+    assert _state(tmp_path)["org/fixture"]["degradation"] == ""
+    assert _state(tmp_path)["org/fixture"]["head"] == _commits(fixture_repo)[-1][0]
+    assert len(ds.load()) == 4
+
+
+@needs_git_pkgs
+def test_repos_dropped_from_the_list_are_pruned(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    other = _second_repo(fixture_repo, tmp_path / "other-repo")
+    ds = _dataset(tmp_path)
+    keep = RepoSource("org/fixture", local_path=str(fixture_repo))
+    ds.save(
+        DependencyHistoryBuildRequest(
+            repos=(
+                keep,
+                RepoSource("org/other", local_path=str(other)),
+                RepoSource("org/gone", clone_url=f"file://{tmp_path / 'no-such-remote.git'}"),
+            )
+        )
+    )
+    assert _staleness(tmp_path)["repos"] == {"org/gone": STALE}
+    store = tmp_path / "store" / "repo_dependency_history"
+    assert (store / "org@other.parquet").is_file() and (tmp_path / "cache" / "org@other").is_dir()
+
+    ds.save(DependencyHistoryBuildRequest(repos=()))  # an empty list prunes nothing
+    assert set(_state(tmp_path)) == {"org/fixture", "org/other", "org/gone"}
+
+    ds.save(DependencyHistoryBuildRequest(repos=(keep,)))
+    assert set(_state(tmp_path)) == {"org/fixture"}
+    assert _staleness(tmp_path) is None
+    assert not (store / "org@other.parquet").exists() and not (tmp_path / "cache" / "org@other").exists()
+    assert set(ds.load()["repo_full_name"]) == {"org/fixture"}

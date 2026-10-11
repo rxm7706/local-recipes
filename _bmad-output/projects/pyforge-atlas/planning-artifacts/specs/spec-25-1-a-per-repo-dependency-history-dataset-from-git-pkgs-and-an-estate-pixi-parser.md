@@ -2,7 +2,7 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
 review_loop_iteration: 2
 followup_review_recommended: false
@@ -39,13 +39,15 @@ exits 0 at `2d90c634f3`), and mason's ledger row `21-1-git-pkgs-builds-green-fro
 six cleared stories and dispatch them". The ledger key moved `blocked -> backlog` through a worktree-local Tier-3 feed
 and `sprint-ledger-sync --project atlas --allow-regression`; this spec is `ready-for-dev`.
 
-**Not yet true on 2026-10-10: the package does not resolve.** The second half of the condition above does not hold.
-`git-pkgs` is in no channel the workspace solves from: `api.anaconda.org/package/SelfExplainML/git-pkgs` and
-`.../conda-forge/git-pkgs` both returned 404 on 2026-10-10, and the workspace channels are `["conda-forge",
-"SelfExplainML"]` (`pixi.toml:19`). Mason 21.1 ends at a green local build in `build_artifacts/`, and `pixi.toml:2471`
-bans a local `file://` channel. If the run-dependency range cannot be declared because the package does not resolve,
-the dispatch stops and reports it. It does not add a channel, vendor a binary or download a release, and it does not
-publish the package (an outward act the operator owns).
+**Resolved later on 2026-10-10: the package now resolves** (Spec Change Log, iteration 2). When the gate cleared, the
+second half of the condition above did not hold: `git-pkgs` was in no channel the workspace solves from
+(`api.anaconda.org/package/SelfExplainML/git-pkgs` and `.../conda-forge/git-pkgs` both returned 404, and the workspace
+channels are `["conda-forge", "SelfExplainML"]`, `pixi.toml:19`); mason 21.1 ends at a green local build in
+`build_artifacts/`, and `pixi.toml` bans a local `file://` channel. Later the same day `git-pkgs 0.21.0` (build
+`h1fb1ff7_0`, linux-64) was on the `SelfExplainML` channel: the root `[feature.pyforge-atlas.target.linux-64.dependencies]`
+table declares `git-pkgs = ">=0.21.0,<0.22"` and `pixi.lock` pins
+`https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda`. The dispatch added no channel,
+vendored no binary and published nothing (publishing is an outward act the operator owns).
 
 **Since minting (dated 2026-10-10; Story 25.2 landed first, PR #1882, merge `3f2744da9e`):**
 - The placeholder node `build_repo_dependency_history` already exists (`pipelines/vcs_health/nodes.py:681`, a no-op
@@ -190,6 +192,30 @@ Deps: — (cross-station: mason Story 21.1).
   states (two flagd trees through `PYFORGE_FLAGS_PATH`), so the flag gate's two-state check can judge the spec once
   it is `done`.
 
+### 2026-10-10 — Implementer response to review iteration 2
+
+- **Intent, git-pkgs resolution (dated 2026-10-10).** The Intent paragraph that said git-pkgs "does not resolve" is
+  superseded: later the same day git-pkgs 0.21.0 resolved from `SelfExplainML` (linux-64), as the root pin and the
+  `pixi.lock` URL record. The original condition is kept, in the past tense, for the history.
+- **The clone follows its remote.** An existing clone is fetched (a failed fetch reads `stale`, the clone kept) and
+  hard-reset to its upstream, so an amended or force-pushed upstream is followed instead of reading `stale` forever. A
+  clone that is not a usable repository (a partial `.git` a killed run left) or cannot be reset is removed and cloned
+  afresh; a clone attempt that fails in any way, a timeout included, leaves no directory behind.
+- **One repo never fails the others.** Any exception while building one repo reads `unresolved` for that repo (its
+  last-good partition kept, its head not advanced) and the build goes on; a `pixi.lock` whose `packages` is not a list
+  is an unparsable revision, and git-pkgs JSON too deep to decode is a git-pkgs walk error (the pixi half still lands).
+- **Repo-locating git variables are not inherited.** `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_COMMON_DIR`,
+  `GIT_OBJECT_DIRECTORY` and `GIT_ALTERNATE_OBJECT_DIRECTORIES` are dropped from every child environment.
+- **scp-style clone URLs** must open user, host and path with a non-`-` character.
+- **Pruning.** A repo dropped from a non-empty `dependency_history.repos` loses its state entry, its partition and
+  Atlas's clone of it, so a dropped degraded repo no longer keeps `.staleness.json` alive. An empty list (the shipped
+  offline default) scans nothing and prunes nothing, so an unconfigured run never wipes the history; turning the scan
+  off is the flag's job.
+- **Follow-up, not in this story (review `[note]`).** Story 25.2's fleet sensor re-runs this job over
+  `params:dependency_history.repos` only, so its link to Warden's inventory (`spec-pyforge-warden:CAP-26`) is nominal:
+  the moved repos it detects never reach the job, and a repo Warden inventories but the params do not list is never
+  scanned. Recorded as `DW-atlas-25-1-1` (open, low) in `planning-artifacts/deferred-work-ledger.md`.
+
 ## Review Triage Log
 
 ### 2026-10-10 — Independent review, iteration 2: sent back (2 medium, 5 low)
@@ -314,6 +340,63 @@ lint-types` exit 0; `scripts/flag_gate_check.py --spec <this spec>` exit 0 (`pas
 `python -m pyforge.doctor.sources spec-surface` exit 0 (no drift; reconcile events appended to the
 `spec-pyforge-atlas` and `spec-pyforge-unifying-strategy` memlogs, no baseline stamped); `test_dh.py` 34 passed;
 `dh.py` unit coverage 89%. Not run: `pyforge-station-tests` (`pixi.lock` did not move in this response).
+
+### 2026-10-10 — Implementer response to iteration 2
+
+Each finding of the iteration-2 review, with its fix and the test that fails without it (mutation-checked: each fix
+reverted on its own reddens the named test). `dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`;
+`test_dh.py` = `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py`. Not a review verdict.
+
+- `[medium]` a failed pull or a partial clone stayed `stale` forever — **fixed.** `_sync_clone` (`dh.py:680-737`) no
+  longer pulls: a usable clone (`_clone_is_usable`, `dh.py:669-678`, `rev-parse --verify HEAD`) is fetched
+  (`dh.py:702`; a failed fetch is `stale`, clone kept) and hard-reset to `@{upstream}` (`dh.py:710`), so a rewritten
+  upstream is followed; a clone that is not usable or cannot be reset is removed and cloned afresh; a clone attempt that
+  raises (a timeout) removes its directory (`dh.py:729-731`), as does a non-zero clone. Tests:
+  `test_amended_upstream_is_followed_not_stale` (amend + force-push to the `file://` remote: `""`, new head, new rows),
+  `test_timed_out_clone_leaves_nothing_and_the_next_run_builds`, `test_partial_clone_left_by_a_killed_run_is_cloned_afresh`.
+- `[medium]` only `ProcessError` / walk errors were isolated per repo — **fixed.** The save loop catches any `Exception`
+  per repo and records it `unresolved` (last-good partition kept, head not advanced) (`dh.py:829-838`); `pixi.lock`
+  `packages` must be a list or the revision is unparsable (`dh.py:457-461`); git-pkgs JSON too deep to decode is a
+  git-pkgs walk error, so that repo's pixi half still lands (`dh.py:365`). Tests:
+  `test_any_error_in_one_repo_is_unresolved_and_never_fails_the_others` (a `KeyError` from one repo's manifest),
+  `test_deeply_nested_git_pkgs_json_is_unresolved_for_that_repo_only` (200 000-deep JSON),
+  `test_pixi_lock_resolves_names_and_versions` (`packages: 5` -> `None`).
+- `[low]` `_git_env` passed `GIT_DIR` and its siblings through — **fixed.** `_GIT_REPO_ENV` (`dh.py:102-109`) is dropped
+  from every child environment (`_git_env`, `dh.py:239-244`); the test helper `_git` and every test `subprocess` call
+  use `_clean_env()` (`test_dh.py:92-100`). Test: `test_repo_locating_git_variables_are_not_inherited` (`GIT_DIR` /
+  `GIT_WORK_TREE` point at a decoy repo across a clone and a fetch-and-reset build; the decoy is byte-identical and the
+  rows are the fixture's).
+- `[low]` scp URL accepted a leading `-` — **fixed.** User, host and path must open with a non-`-` character
+  (`_SCP_URL_RE`, `dh.py:98`). Tests: `test_disallowed_clone_url_is_unresolved_and_never_reaches_git` gains
+  `-x@host:org/r.git`, `git@-host:org/r.git`, `git@host:-org/r.git` (`unresolved`, no git call);
+  `test_clone_url_follows_end_of_options_marker` gains a valid scp URL that reaches `git clone --`.
+- `[low]` state never pruned — **fixed.** A repo dropped from a non-empty list loses its state entry, partition and clone
+  (`_forget`, `dh.py:739-748`; `save`, `dh.py:845-849`); an empty list prunes nothing (Spec Change Log). Test:
+  `test_repos_dropped_from_the_list_are_pruned` (`.staleness.json` gone, partition and clone removed, empty list a no-op).
+- `[low]` stale text — **fixed.** `tests/unit/parity/test_parity_complete.py:17` and
+  `tests/unit/pipelines/test_dag_resolves.py:44` no longer say "25.1 placeholder"; the Intent's git-pkgs paragraph is
+  superseded with a dated line (Spec Change Log, iteration 2); `test_pixi_manifest_reads_the_estate_manifest` no longer
+  pins the root `git-pkgs` range, it asserts table shapes only (`test_dh.py:497-505`).
+- `[low]` `[note]` the 25.2 sensor's CAP-26 link is nominal — **recorded**: Spec Change Log (iteration 2) and
+  `DW-atlas-25-1-1` (open, low) in `planning-artifacts/deferred-work-ledger.md` (the ledger's sub-row count prose moved
+  178 -> 180, it was already one behind). `pyforge-station-tests` run below.
+- **Found by `pyforge-station-tests` (not in the review), fixed.** Its first run exited 1 on three `pyforge-core` tests
+  this story had redded: `test_no_unreparented_exception_root[…dependency_history.py]` (the module's exception roots
+  lacked `PyforgeError`, spec-pyforge-core CAP-5 — now `class _InvalidSource(PyforgeError, Exception)` and its two
+  siblings, `dh.py:170-181`), and `test_every_flag_in_the_shipped_tree_carries_the_five_string_fields` /
+  `test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_the_metadata` (the new flag was undated —
+  `src/shared/packages/pyforge-core/tests/unit/test_flags.py` now dates `pyforge.atlas.dependency_history` in
+  `_SHIPPED_CLOCKS` and pins dev on / staging on / production off; reconcile event on the `spec-pyforge-core` memlog).
+
+Verification on the working tree (each verdict from its exit code): `env -u PYTEST_ADDOPTS pixi run --frozen -e
+pyforge-atlas kedro-test` exit 0 (2190 passed, 20 skipped; then 103 passed) — one of four runs exited 1 on
+`tests/integration/publish/test_emit_range.py::test_count_star_reads_footer_only_over_range` (the range server
+recorded no request), a file this story does not touch; it passed alone (12 passed) and on the rerun; `kedro-catalog-check` exit 0 (69
+passed); `pixi run --frozen -e pyforge-guild lint-types` exit 0; `scripts/flag_gate_check.py --spec <this spec>` exit
+0 (`pass`; with the status simulated `done` the two-state, per-environment-default and tree-metadata checks report
+nothing); `python -m pyforge.doctor.sources spec-surface` exit 0 (reconcile events appended to the `spec-pyforge-atlas`
+and `spec-pyforge-core` memlogs, no baseline stamped); `python -m pyforge.doctor.sources deferred-work` exit 0; `test_dh.py` 45 passed;
+`env -u PYTEST_ADDOPTS pixi run --frozen -e pyforge-guild pyforge-station-tests` (`pixi.lock` moved in this story): first run exit 1 (the three `pyforge-core` failures above), after their fix exit 0 — core 2384 passed, testing kit 95, atlas 2190 + 103, doctor 3520 + 1, herald 1744, marshal 12203, mason 1622 + 12, scribe 428, steward 2297, warden 2266.
 
 ## Auto Run Result
 

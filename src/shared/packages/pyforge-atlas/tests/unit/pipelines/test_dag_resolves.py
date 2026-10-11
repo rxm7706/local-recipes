@@ -41,7 +41,7 @@ def test_vcs_health_pipeline_has_eleven_nodes():
     # (FR-21) — both NEW-SIGNAL, not parity-gated (AD-14). Story 21.2 added the three
     # external-refresh trigger nodes (single writers of the GitHub/GitLab/Codeberg/
     # registry live-fetch stores — mirrors refresh_vdb_store/refresh_osv_offline_store).
-    # Story 25.2 added build_repo_dependency_history (25.1 placeholder op for the sensor job).
+    # Story 25.2 added build_repo_dependency_history (the sensor job's op; Story 25.1 filled it).
     vcs = vcs_create()
     assert len(vcs.nodes) == 11
     assert {n.name for n in vcs.nodes} == {

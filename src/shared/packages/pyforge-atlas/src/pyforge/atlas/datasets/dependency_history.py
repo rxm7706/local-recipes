@@ -21,8 +21,10 @@ Store layout (one directory, partitioned by repo)::
 A repo whose head has not moved since its last complete walk is not re-walked (AD-5). A
 repo that cannot be reached keeps its last-good partition and reads ``stale`` (AD-13); a
 repo whose git-pkgs half cannot run (git-pkgs absent, outside its tested range, or
-failing) reads ``unresolved`` and is re-walked on the next run. No verdict, score or
-threshold is computed here ("Atlas measures; Warden judges").
+failing), or whose build fails in any other way, reads ``unresolved`` and is re-walked on
+the next run -- one repo's failure never fails the others. A repo dropped from a non-empty
+repo list is pruned: its state, its partition and Atlas's clone of it. No verdict, score
+or threshold is computed here ("Atlas measures; Warden judges").
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ import pandas as pd
 import yaml
 from kedro.io import AbstractDataset
 from pyforge.core.atomic_write import atomic_write, atomic_write_text
+from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
 from .refresh import StalenessMarker
@@ -91,9 +94,19 @@ _GIT_PKGS_TIMEOUT_S = 900.0
 
 # <owner>/<repo>, ASCII word characters, dots and dashes only; "." and ".." segments are refused.
 _FULL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
-# scp-like ssh form, ``git@host:owner/repo.git``.
-_SCP_URL_RE = re.compile(r"^[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+:[A-Za-z0-9_.~/-]+$")
+# scp-like ssh form, ``git@host:owner/repo.git``; user, host and path never open with ``-``.
+_SCP_URL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*@[A-Za-z0-9][A-Za-z0-9_.-]*:[A-Za-z0-9_.~/][A-Za-z0-9_.~/-]*$")
 _ALLOWED_URL_PREFIXES = ("https://", "ssh://", "file://")
+# Repository-locating variables an operator shell may export; inherited, they would point
+# every git call at another repository than Atlas's clone.
+_GIT_REPO_ENV = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_COMMON_DIR",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+)
 
 _PIXI_MANIFEST = "pixi.toml"
 _PIXI_LOCK = "pixi.lock"
@@ -154,15 +167,15 @@ class _RepoOutcome:
     head: str | None = None  # None: keep the head of the last complete walk
 
 
-class _InvalidSource(Exception):
+class _InvalidSource(PyforgeError, Exception):
     """The source cannot be scanned as declared (``unresolved``)."""
 
 
-class _Unreachable(Exception):
+class _Unreachable(PyforgeError, Exception):
     """The repo could not be cloned or fetched (``stale``)."""
 
 
-class _WalkError(Exception):
+class _WalkError(PyforgeError, Exception):
     """A history walk of a reachable clone failed (``unresolved``)."""
 
 
@@ -205,10 +218,14 @@ def _clone_url_allowed(url: str) -> bool:
     return bool(_SCP_URL_RE.match(url))
 
 
+def _valid_full_name(name: str) -> bool:
+    return bool(_FULL_NAME_RE.match(name)) and not any(part in {".", ".."} for part in name.split("/"))
+
+
 def _source_problem(source: RepoSource) -> str:
     """Why ``source`` cannot be scanned as declared, or ``""`` when it can."""
     name = source.full_name
-    if not _FULL_NAME_RE.match(name) or any(part in {".", ".."} for part in name.split("/")):
+    if not _valid_full_name(name):
         return f"invalid repo full name {name!r} (expected <owner>/<repo>)"
     if source.clone_url:
         if not _clone_url_allowed(source.clone_url):
@@ -220,7 +237,8 @@ def _source_problem(source: RepoSource) -> str:
 
 
 def _git_env(extra: Mapping[str, str] | None = None) -> dict[str, str]:
-    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+    env = {key: value for key, value in os.environ.items() if key not in _GIT_REPO_ENV}
+    env["GIT_TERMINAL_PROMPT"] = "0"
     if extra:
         env.update(extra)
     return env
@@ -344,7 +362,7 @@ def _git_pkgs_rows(process: GitProcessPort, repo: Path, repo_full_name: str) -> 
             raise _WalkError(f"git pkgs history exited {history.returncode}: {_tail(history.stderr)}")
     try:
         payload = json.loads(history.stdout or "[]")
-    except ValueError as exc:
+    except (ValueError, RecursionError) as exc:
         raise _WalkError(f"git pkgs history printed no JSON: {exc}") from exc
     if payload is None:
         payload = []
@@ -436,8 +454,13 @@ def _parse_pixi_lock(text: str) -> dict[_DepKey, str] | None:
         return None
     if not isinstance(data, Mapping):
         return None
+    packages = data.get("packages")
+    if packages is None:
+        packages = []
+    if not isinstance(packages, list):
+        return None
     versions: dict[tuple[str, str], set[str]] = {}
-    for item in data.get("packages") or []:
+    for item in packages:
         if not isinstance(item, Mapping):
             continue
         kind = item.get("kind")
@@ -643,8 +666,27 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             raise _InvalidSource(f"clone directory for {full_name!r} escapes the cache")
         return dest
 
+    def _clone_is_usable(self, process: GitProcessPort, dest: Path) -> bool:
+        if not (dest / ".git").is_dir():
+            return False
+        res = process.run(
+            ["git", "-C", str(dest), "rev-parse", "--verify", "--quiet", "HEAD"],
+            cwd=dest,
+            timeout_s=_GIT_TIMEOUT_S,
+            env=_git_env(),
+        )
+        return res.returncode == 0
+
     def _sync_clone(self, process: GitProcessPort, source: RepoSource) -> Path:
-        """Clone or fast-forward Atlas's own clone of ``source``; raise ``_Unreachable`` on failure."""
+        """Bring Atlas's own clone of ``source`` up to its remote; raise ``_Unreachable`` when it cannot.
+
+        A usable clone is fetched -- a failed fetch is the remote being unreachable, so the
+        clone is kept and the repo reads ``stale`` -- then hard-reset to its upstream, so a
+        rewritten upstream history (an amended commit, a force push) is followed, never
+        refused. A clone that is not a usable repository (a partial ``.git`` a killed run left
+        behind) or that cannot be reset to its upstream is removed and cloned afresh, and a
+        clone attempt that fails in any way, a timeout included, leaves no directory behind.
+        """
         dest = self._clone_dir(source.full_name)
         if source.clone_url:
             origin = source.clone_url
@@ -655,30 +697,55 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             origin = str(local)
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)
-            if (dest / ".git").is_dir():
-                pulled = process.run(
-                    ["git", "-C", str(dest), "pull", "--ff-only", "--quiet"],
+            if self._clone_is_usable(process, dest):
+                fetched = process.run(
+                    ["git", "-C", str(dest), "fetch", "--quiet", "--prune", "origin"],
                     cwd=dest,
                     timeout_s=_CLONE_TIMEOUT_S,
                     env=_git_env(),
                 )
-                if pulled.returncode != 0:
-                    raise _Unreachable(f"git pull exited {pulled.returncode}: {_tail(pulled.stderr)}")
-                return dest
+                if fetched.returncode != 0:
+                    raise _Unreachable(f"git fetch exited {fetched.returncode}: {_tail(fetched.stderr)}")
+                reset = process.run(
+                    ["git", "-C", str(dest), "reset", "--hard", "--quiet", "@{upstream}"],
+                    cwd=dest,
+                    timeout_s=_GIT_TIMEOUT_S,
+                    env=_git_env(),
+                )
+                if reset.returncode == 0:
+                    return dest
+                logger.warning(
+                    "%s: clone cannot follow its upstream (%s); cloning afresh", source.full_name, _tail(reset.stderr)
+                )
             if dest.exists():
                 shutil.rmtree(dest)
-            cloned = process.run(
-                ["git", "clone", "--quiet", "--", origin, str(dest)],
-                cwd=dest.parent,
-                timeout_s=_CLONE_TIMEOUT_S,
-                env=_git_env(),
-            )
+            try:
+                cloned = process.run(
+                    ["git", "clone", "--quiet", "--", origin, str(dest)],
+                    cwd=dest.parent,
+                    timeout_s=_CLONE_TIMEOUT_S,
+                    env=_git_env(),
+                )
+            except BaseException:
+                shutil.rmtree(dest, ignore_errors=True)  # a killed or timed-out clone leaves nothing behind
+                raise
             if cloned.returncode != 0:
                 shutil.rmtree(dest, ignore_errors=True)
                 raise _Unreachable(f"git clone exited {cloned.returncode}: {_tail(cloned.stderr)}")
         except (ProcessError, OSError) as exc:
             raise _Unreachable(f"git could not run: {exc}") from exc
         return dest
+
+    def _forget(self, full_name: str) -> None:
+        """Drop a repo no longer configured: its partition and Atlas's clone of it."""
+        if not _valid_full_name(full_name):
+            return  # an invalid name never had a partition or a clone
+        self._partition_path(full_name).unlink(missing_ok=True)
+        try:
+            clone = self._clone_dir(full_name)
+        except _InvalidSource:
+            return
+        shutil.rmtree(clone, ignore_errors=True)
 
     def _refresh_repo(
         self,
@@ -761,9 +828,13 @@ class RepoDependencyHistoryDataset(AbstractDataset):
 
         for source in data.repos:
             prior = state.get(source.full_name, {})
-            outcome = self._refresh_repo(process, source, prior.get("head", ""), data.force, git_pkgs_problem)
-            if outcome.rows is not None:
-                self._write_partition(source.full_name, outcome.rows)
+            try:
+                outcome = self._refresh_repo(process, source, prior.get("head", ""), data.force, git_pkgs_problem)
+                if outcome.rows is not None:
+                    self._write_partition(source.full_name, outcome.rows)
+            except Exception as exc:  # noqa: BLE001 -- one repo's failure never fails the others (AD-13)
+                logger.exception("%s: dependency history build failed", source.full_name)
+                outcome = _RepoOutcome(UNRESOLVED, f"build failed: {type(exc).__name__}: {exc}")
             if outcome.degradation:
                 logger.warning("%s: %s -- %s", source.full_name, outcome.degradation, outcome.reason)
             state[source.full_name] = {
@@ -771,6 +842,11 @@ class RepoDependencyHistoryDataset(AbstractDataset):
                 "degradation": outcome.degradation,
                 "reason": outcome.reason,
             }
+        configured = {source.full_name for source in data.repos}
+        if configured:  # an empty list scans nothing and prunes nothing (the shipped offline default)
+            for name in sorted(set(state) - configured):
+                self._forget(name)
+                del state[name]
         self._root.mkdir(parents=True, exist_ok=True)
         self._write_state(state)
         self._write_staleness(state)
