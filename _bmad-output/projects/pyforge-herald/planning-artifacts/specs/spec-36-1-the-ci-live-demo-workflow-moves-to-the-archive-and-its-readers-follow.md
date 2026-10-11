@@ -2,7 +2,8 @@
 title: '36.1: The CI live-demo workflow moves to the archive and its readers follow'
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'HEAD'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -317,3 +318,13 @@ Type / Effort / Deps: fix / M / S-19.2.
 
 - 2026-10-11: `## Verification` -> `**Commands:**` now names only herald's `verify_commands`; the doctor, scripts, registry, docs, lint, spec-surface and station-suite commands move unchanged to a "Run before the push" list. Dispatch refused the launch with MRS-DISP-050 (MRS-GATE-011: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` is not among herald's `verify_commands`). No AC, boundary or expected result changed.
 - No change yet.
+
+## Review Triage Log
+
+### 2026-10-11 — Independent review (post-landing): FAIL on one blocker, fixed on main in the follow-up hygiene PR
+
+- Separate agent, fresh review of the head that landed (`99d68b5e42`; merged as `ededb88c09`, PR #2128). The implementing session stopped before its own review; the operator directed a hand-landing, so this review ran alongside and did not gate the merge.
+- AC1-AC9 pass with evidence: one `R100` move with 9 commits of history; the registry site removed and `pixi-version-check` 0 (mutation exits 1 `missing-file`); `pixi.toml` one-line description change, `environment.yaml` byte-identical to the export, `pixi.lock` unchanged; doctor row and tuple correct (doctor suite 3538 passed; the tuple mutation fails the live-tree test); AC7 greps as specified; herald edits docstring/comment-only by AST check (herald suite 1773 passed, `lint-types` 0); `pyforge-station-tests` 0; nothing outward.
+- `[blocker]` F1: `detectors-ci` red on main after the landing — `chain_currency_sweep_check` for pyforge-herald (code dated 2026-10-11 by the comment-only `pyproject.toml` edit; retro 2026-10-07; PRD and spine 2026-10-10). The story's Never list forbade the PRD/spine and its Verification omitted `detectors-ci`, so it could not have avoided this (same as herald Story 32.1). Fixed in the follow-up hygiene PR: `retros/retro-pyforge-herald-2026-10-11.md` plus a 2026-10-11 Currency reconciliation on the herald PRD and spine; `chain-currency-sweep-check` and `detectors-ci` exit 0.
+- `[minor]` F2-F7 fixed in the same follow-up: the doctor catalog's broken relative link (backticked repo path now); the doctor test comment ("one named non-package live-proof mechanism"); `docs/reference/github-workflows.md`'s stale "Four workflows" count; the live smoke test docstring's self-contradiction; herald `pyproject.toml`'s daphne attribution (the opt-in smoke test, not 19.2's uvicorn sidecar); the how-to's tense for the archived workflow.
+- Info (not changed): `webhook_host.py:75` cites `deferred-work.md` where the tracked ledger is `deferred-work-ledger.md` (predates 36.1); `baseline_revision: 'HEAD'` is a literal.

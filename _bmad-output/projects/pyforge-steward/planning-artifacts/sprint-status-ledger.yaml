@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 527
+# stories: 530
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -199,7 +199,7 @@ development_status:
   48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept: done
   49-1-the-verified-column-on-every-capability: done
   49-10-index-atlas-realization-gate-effect-stories: done
-  49-11-index-herald-realization-gate-effect-stories: blocked
+  49-11-index-herald-realization-gate-effect-stories: done
   49-12-index-mason-realization-gate-effect-stories: done
   49-13-index-scribe-realization-gate-effect-stories: done
   49-14-cap-10-in-effect-the-resilience-primitives-get-a-real-caller-or-the-criterion-says-test-only: done
@@ -361,6 +361,7 @@ development_status:
   9-6-isolation-proven-by-tests-that-cannot-pass-vacuously: done
   9-7-hosted-or-static-no-fork: done
   90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp: done
+  91-1-the-stations-index-lists-each-station-portal-as-mounted-or-absent-and-why: blocked
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -447,7 +448,7 @@ development_status:
   epic-47-retrospective: optional
   epic-48: done
   epic-48-retrospective: optional
-  epic-49: in-progress
+  epic-49: done
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
@@ -541,3 +542,5 @@ development_status:
   epic-9-retrospective: optional
   epic-90: done
   epic-90-retrospective: optional
+  epic-91: backlog
+  epic-91-retrospective: optional

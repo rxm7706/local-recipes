@@ -1252,7 +1252,7 @@ description = "Detector: every pixi-version pin site (CI workflows, both Contain
 cmd = "python scripts/pixi_version_check.py"
 
 [feature.local-recipes.tasks.bump-pixi-version]
-description = "Mutator: rewrite every scripts/pixi_version_registry.py site to one target pixi version in a single pass (pixi.toml's $schema/requires-pixi/3 feature floors, dashboard.yml, kedro-viz-publish.yml, herald-live-demo.yml's 3 pins, sync-pypi-mappings/action.yml, staged-recipes-linter.yml's micromamba floor, both Containerfiles + the dbgpt-sidecar one), then regenerates environment.yaml with the real exporter and re-runs pixi-version-check to confirm convergence. Verifies the target ghcr.io/prefix-dev/pixi image tag exists first. Usage: pixi run -e local-recipes bump-pixi-version -- 0.78.0 (omit the version to re-converge sites to pixi.toml's current floor after fixing an unregistered one by hand)."
+description = "Mutator: rewrite every site in scripts/pixi_version_registry.py to one target pixi version in a single pass, then regenerates environment.yaml with the real exporter and re-runs pixi-version-check to confirm convergence. Verifies the target ghcr.io/prefix-dev/pixi image tag exists first. Usage: pixi run -e local-recipes bump-pixi-version -- 0.78.0 (omit the version to re-converge sites to pixi.toml's current floor after fixing an unregistered one by hand)."
 cmd = "python scripts/bump_pixi_version.py"
 
 [feature.guild-tasks.tasks.deferred-work-check]

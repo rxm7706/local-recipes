@@ -1388,6 +1388,33 @@ Drift — orphaned between stations.
   OFF; `src/platform/` imports no `pyforge.*`; the landing is held for that review (marshal Story 83.18's hold); herald
   19.2 stays blocked until this story lands with its review passed (operator ruling 2026-10-10: "Dark again + mint
   87.5 (Recommended)"). Owner `spec-pyforge-steward`. → Epic 87 / Story 87.5, specced 2026-10-10.
+- **2026-10-11 (stations index) — Ruled: `/stations/` lists every station portal, mounted or absent and why, behind a
+  flag.** Herald Story 37.1 (key `37-1-the-herald-portal-loads-without-herald-and-says-why`, minted 2026-10-11) stops
+  the django-herald portal from taking every Django page down on a host without `pyforge-herald`. Its ruling asked for
+  `/stations/` to answer 200, and no env does that today. Measured 2026-10-11 with herald installed (`platform-ci-test`,
+  a fresh test database, an anonymous client): `/` answers 200, `/stations/herald/` 403, `/cms/` 302, and `/stations/`
+  404. `django_pyforge.urls` mounts only `<station>/` paths, so the bare prefix falls to Wagtail's catch-all, and no
+  page has that slug. So 37.1 pins `/stations/` at its with-herald answer. Asked "Keep 37.1 as written (`/` answers
+  200, `/stations/` gives its with-herald answer, never a 5xx)? And do you want a stations index page as its own
+  steward story?", the operator chose, verbatim label "Keep 37.1; mint steward index (Recommended)": "37.1 ships as
+  staged. Also mint a steward feature story, behind a flag and dark in production first: `/stations/` lists each
+  station portal as mounted or absent with its 87.1 reason. Queued after 37.1." The operator confirmed: "lets do this -
+  If you want /stations/ to answer 200, do it as a separate steward story: a stations index page. It would list every
+  station portal and show each one as mounted or absent with its reason, reusing steward 87.1's absent-reason record.
+  That gives operators one place to see what the host is running and why something is missing. The catch: it's a new
+  feature, so it needs a flag (dark in production at first), a Dream entry and its own review. It isn't needed to fix
+  any bug." **What it looks like when real:** an operator signed in with a station role opens `/stations/` and sees
+  each station portal they may reach: mounted, with its link, or absent, with the reason Story 87.1 recorded (`herald
+  is not installed on this host: No module named 'pyforge.herald'`). On a host without herald the page still answers
+  200. A request with no station role gets the 403 a portal page gives. With the flag OFF, `/stations/` answers exactly
+  as it does today. **Constraints:** a feature behind `pyforge.steward.stations_index` (dev on; staging and production
+  off). It is read-only and adds no dependency and no model. `src/platform/` imports no `pyforge.*`, and no station
+  portal module at module scope. The rows come from portal discovery and 87.1's record, never from a host-side roster.
+  No CAP is minted: the page is a host surface of `spec-pyforge-unifying-strategy` CAP-3 (eight portals, one session)
+  that shows what CAP-10 already contains. It lands after herald 37.1, because until then every Django page answers
+  500 on a host without herald. Its landing also waits for an independent review. Owner
+  `spec-pyforge-unifying-strategy`. → Epic 91 / Story 91.1, specced 2026-10-11; its ledger key is minted `blocked`
+  until herald 37.1 is `done` on `main`.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

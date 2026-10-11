@@ -21,7 +21,7 @@ enabled = false
 # ones this repo actually relies on for recipe PRs / spec drift.
 # Leave disabled until then: Test macOS (macos-15-large), Test Windows,
 # Test Linux / Test All, Platform CI, Coverage gates, Dashboard (daily cron),
-# Herald live demo (weekly + PR), Kedro-Viz publish, Sync PyPI mappings.
+# Kedro-Viz publish, Sync PyPI mappings.
 allow_when_enabled = [
     "staged-recipes-linter.yml",
     "detectors.yml",

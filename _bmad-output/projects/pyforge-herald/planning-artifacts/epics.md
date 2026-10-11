@@ -1705,7 +1705,7 @@ how-to, `herald-ship-local` and the opt-in smoke test, and the doctor suite pass
 **And** the `bump-pixi-version` description names the registry, not its sites, and `docs/how-to/pixi-tasks.md` is
 regenerated. Every Spec `spec-surface-check` names is reconciled and stamped scoped. `pyforge-herald-test`,
 `pyforge-doctor-test`, the scripts suite and `pyforge-station-tests` pass.
-**Status:** backlog
+**Status:** done
 
 ## Epic 37: The host's Django pages load without herald installed
 

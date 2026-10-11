@@ -31,8 +31,7 @@ As of Story 19.2 that host runs on your own machine, loopback only: the
 platform host forwards the two webhook routes to steward's mcp-host sidecar,
 where herald's webhook writes to your primary checkout's `.herald/herald.db`
 (see [`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md)).
-`.github/workflows/herald-live-demo.yml`, the CI-contained demonstration whose
-jobs each wrote to a throwaway scratch database, is `disabled_manually`. A local SQLite database (`.herald/herald.db`, Story
+Story 13.6's CI demo is archived under `archive/.github/workflows/` (Story 36.1). A local SQLite database (`.herald/herald.db`, Story
 13.3) backs *your* real storage, and `herald scheduler run` (Story 13.5)
 keeps evidence validation and the progress snapshot current — an operator
 can point an optional local `cron` entry at it
@@ -185,9 +184,8 @@ own. To record a real landing, start the local host and sidecar and run
 `herald-ship-local` (see
 [`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md)), or run
 `herald progress <station> --update` (or `herald success create`) by hand.
-`.github/workflows/herald-live-demo.yml`, whose jobs each wrote into a
-throwaway scratch database, is `disabled_manually` and never wrote to your
-checkout's real `.herald/herald.db`. Two things worth knowing about
+The archived CI demo (Story 36.1) never wrote to your checkout's real
+`.herald/herald.db`. Two things worth knowing about
 the webhook's own behavior regardless: an `on-ship` delivery *replaces*
 the whole day's record for that station, so a same-day CLI entry and a
 same-day webhook delivery would overwrite each other rather than merge;

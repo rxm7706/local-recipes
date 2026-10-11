@@ -15,10 +15,10 @@ to steward's mcp-host sidecar on `127.0.0.1:8090`, where herald's webhook runs
 against `.herald/herald.db` on the primary checkout, and `herald-ship-local`
 delivers a real landing —
 [`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md).
-The `herald-live-demo.yml` workflow is a separate, CI-contained demo
-(throwaway stores) and is `disabled_manually`; its section below,
-[Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci), applies only
-if it is re-enabled. For local failures (secret mismatch, forward off, sidecar
+Story 13.6's CI demo (archived Story 36.1 under `archive/.github/workflows/`)
+used throwaway stores; its section below,
+[Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci), is historical
+only. For local failures (secret mismatch, forward off, sidecar
 down, DW-13-6-2 timeouts), start from that how-to's
 [Troubleshooting](../../../../docs/how-to/run-herald-live-backend-locally.md#troubleshooting) section. "Cron job missed" is a real, if narrow, possibility: Story 13.5
 added `herald scheduler run` plus a documented, *opt-in* local `crontab`
@@ -26,9 +26,9 @@ entry for an operator's own real database (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)) —
 an operator who never installed that entry has nothing to miss, but one
 who did and whose machine was off (or whose cron daemon isn't running)
-genuinely misses a scheduled revalidation. `herald-live-demo.yml`'s own
-`scheduler-demo` job was a separate, unattended proof against its own
-scratch data while the workflow ran, never a substitute for that cron entry. Neither caveat is
+genuinely misses a scheduled revalidation. Story 13.6's archived CI scheduler
+job was a separate, unattended proof against scratch data, never a substitute
+for that cron entry. Neither caveat is
 repeated per section below.
 
 What else exists today, and can genuinely misbehave, is the CLI-triggered
@@ -41,13 +41,12 @@ reproducible failure modes.
 
 ## Webhook demo job failing in CI
 
-The workflow has been `disabled_manually` since its last run on 2026-08-24,
-and Story 36.1 archives it, so this section applies only if it is re-enabled.
-For the local host and sidecar, see
+Story 36.1 archived the CI demo; this section documents failures from when it
+still ran under `.github/workflows/`. For the local host and sidecar, see
 [`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md#troubleshooting).
 
-**Symptom:** `herald-live-demo.yml` (Story 13.6) is red on the Actions
-tab, in one of its three jobs.
+**Symptom:** Story 13.6's CI live-demo workflow (Story 36.1 archive) was red
+on the Actions tab, in one of its three jobs.
 
 - **`on-ship`/`on-pr-close` fail at "Start the webhook host (daphne)"
   with "daphne never started listening":** almost always
