@@ -9092,3 +9092,14 @@ status: open
   severity: medium
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-94-2: Optional AC5 timeout case with _HeldDraftForge (check-wait timeout before ready call).
+
+- source_spec: `planning-artifacts/specs/spec-94-2-a-held-pr-is-marked-ready-when-its-landing-review-passes.md`
+  summary: Optional AC5 timeout case with _HeldDraftForge (check-wait timeout before ready call).
+  evidence: Check-wait timeout uses the same early return as MRS-DISP-056 tests before the Story 94.2 ready call; existing timeout tests cover _wait_for_landing_checks. A held-draft-specific timeout test would only duplicate that path unless a regression hid ready before checks.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py
+  origin: spec-deferred bca0df340100 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
