@@ -4,9 +4,9 @@ type: 'fix'
 created: '2026-10-10'
 status: 'in-review'
 baseline_revision: '6b5182c155fa451b9d5af75f8945e57537166a33'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
-landing_review: 'required'
+landing_review: 'passed'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -684,6 +684,16 @@ mutated.
 | Finalize-pending ignores the stale rule | the finalize-pending stale test (1) |
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 3: PASS (info only)
+
+- Separate agent, fresh review of `git diff origin/main...HEAD` at `f655a1b71e`; every mutation in a scratch copy, probes on the real host (psutil 7.2.2). All 11 ACs pass with file:line evidence (session-first judge `core/dispatch_completion.py:128`; divergence rule `dispatch_supervisor/__main__.py:558`; `os.getpgid` over `psutil.pids()` in `adapters/session_group_psutil.py:21-51`; identity fallback `dispatch_verify.py:1177-1255`; stale rule `core/dispatch_stale.py:32-66`; MRS-DISP-065 WARN `cli/dispatch.py:2290-2303`; resume/attach MRS-DISP-023 refusal `:3889-3901`).
+- Iteration-2 findings re-probed: N1 fixed (stale-run WARN is `MRS-DISP-065`; no other user of 065 or higher on `origin/main`, the 80 newest branches, any `.worktrees/*` checkout or open PR; 93.1's `MRS-DISP-064` recall WARN and `test_dispatch_recall.py` unchanged); m1, m2, I1, I2 fixed and tested. Iteration-1 fixes still hold after the main merge (`liveness_probe`, `stale_probe`, `live_group_probe` pass; pid 4000000 and pid 63830 read not alive).
+- 35 mutations, each fails at least one test (the reverted 90.1 bug fails 19; read error counted alive 9; pid-reuse rule dropped 4; m1 1; m2 2; stale WARN back on 064 4; merge-first judge 14; group read dropped 16; vanished-worktree rule dropped 13).
+- Real data, read-only: 922 run dirs give 0 false stale; of 55 quarantined runs, 50 read stale and 0 read alive.
+- Gates, each exit 0: `pyforge-marshal-test` (12416 passed, 21 skipped), `pyforge-marshal-coverage-gate`, `lint-types`, `spec-surface-check`, `flag-gate-check`, `spec_surface_reconcile.py`, `pyforge-deps-test` (130). `detectors-ci` was 1 only on `chain_currency_sweep_check` (marshal code newer than its retro), which `retro-pyforge-marshal-2026-10-11.md` on main clears; main merged at `3084bbb8c2` (memlogs unioned main-first; `spec-surface-check` 0).
+- Info, not fixed here: `marshal status` cost (every run journal parsed, profiles reloaded per liveness read); the cmdline identity is a substring match (reachable only when the group read fails and the start time is unreadable); small uncovered branches in `dispatch_verify.py`; a group-port exception other than `SessionGroupReadError` propagates (the real adapter maps every psutil and OS error).
+- Verdict: landing review passed; `landing_review` set to `passed`. Until Story 94.2 lands, the held draft PR is marked ready by hand.
 
 ### 2026-10-11 — Independent review, iteration 2: sent back (1 major, 2 minor)
 
