@@ -2,9 +2,9 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -147,6 +147,21 @@ Deps: — (cross-station: mason Story 21.1).
 - `pixi run -e pyforge-guild spec-surface-check` exits 0 after the scoped stamps.
 
 ## Review Triage Log
+
+### 2026-10-10 — Independent review, iteration 1: sent back (2 high, 7 medium)
+
+Run by a separate agent against this spec on `dispatch/pyforge-atlas/25.1` @ `a54599d024` (the dispatch session's own step-04 review never ran: its supervisor recorded completion one second after launch). Verified OK: the `pixi.lock` change adds only `git-pkgs 0.21.0` (SelfExplainML, linux-64) to the intended envs; `environment.yaml` parses and equals the export; `kedro-catalog-check` 69 passed; memlogs name every governed path; no `subprocess`/`sqlite3` import in source. Open, each to be fixed before the story returns to `in-review` (all paths under `src/shared/packages/pyforge-atlas/`; `dh.py` = `src/pyforge/atlas/datasets/dependency_history.py`):
+
+- `[high]` `[patch]` AC5 `stale` marker lost for an already-cloned repo: `_build_one_repo`'s unchanged-head branch returns `([], head, "")`, discarding `reach`; delete the remote of a built repo and rebuild -> rows read degradation `''` and no `.staleness.json`. The AC5 test uses a never-built repo and an `or <sidecar exists>` clause, so it cannot catch this. Fix: return `reach`; test by deleting the remote of a repo already built.
+- `[high]` `[patch]` AC6 flag OFF breaks the node and the weekly bootstrap job: `pipelines/vcs_health/pipeline.py:141` takes `warden_fleet_inventory` (`json.JSONDataset`, file untracked and absent by default); Kedro loads it before the node body, raising `DatasetError`, and `definitions.py` `bootstrap_ops` runs every node op. Fix: the input degrades to `{}` when absent (or the dataset reads the heads itself); test flag OFF with the file absent.
+- `[medium]` `[patch]` `PosixProcess.run` `ProcessError` (timeout or launch failure) is uncaught in `dh.py`, so one hung repo or a missing `git` aborts every repo ("never a crash"). Catch per repo; map to `unresolved`/`stale`.
+- `[medium]` `[patch]` path/argv injection: `_resolve_repo_path` runs `shutil.rmtree(cache_dir / full_name.replace("/", "__"))` — a name `..` wiped a sibling cache dir (verified); `git clone` gets the URL with no `--`. Validate `^[\w.-]+/[\w.-]+$`, reject `.`/`..`, assert `dest.resolve()` is inside `cache_dir`, use `git clone -- <url>` with allowed schemes only.
+- `[medium]` `[patch]` `INSTALL sqlite;` in `_read_git_pkgs_changes` is a network install (atlas never INSTALLs: AD-13/AD-22, `live_attach.py`, `rag/store.py`); passes locally only because `~/.duckdb` already holds `sqlite_scanner`. `LOAD` only; a failed load maps to `unresolved`.
+- `[medium]` `[patch]` `lint-types` red: ruff F841 `fleet_heads` unused (the Warden head feed is dead code), F401 `Sequence`, I001 in `datasets/__init__.py` and the test, F401 `os`/`pandas` in the test; `ruff format --check` fails on `dh.py`; mypy `dh.py:306` passes `env=` the `ProcessPort` protocol does not accept.
+- `[medium]` `[patch]` flag per-environment defaults not rendered: the spec declares dev/staging `on` but `src/platform/config/flag-overlays.json` has no entry, so the tree renders `off` everywhere; `flag_gate_check` would fail `flag-default-env-mismatch` once `done`. Add the overlay entries; the flag test uses two flagd trees (`*flagd_tree*` "on"/"off") rather than patching `read_boolean`.
+- `[medium]` `[patch]` AC2 test proves nothing (hooks snapshot taken after the first build; the second save stops early) and `.sqlite-wal`/`.sqlite-shm` are left in the cache. Snapshot before the first build, use a TemporaryDirectory for the database, assert no `*.sqlite*` remains.
+- `[medium]` `[patch]` the estate pixi parser reads only the top-level `[dependencies]` (5 of 655 declarations on the estate's own `pixi.toml`): `feature.*`, `target.*` and `pypi-dependencies` ignored; table specs stored as a Python dict repr; `pixi.lock` passed to `git log` but never parsed; pixi rows dropped when git-pkgs is absent.
+- `[low]` AC1 test asserts `>=1` not the exact rows; `assert ds.load().empty or True` cannot fail; the git-pkgs version range ("out of range") is unimplemented; a recovered repo keeps `degradation=stale`; output is one file, not partitioned by repo; an unreachable never-cloned repo reads `unresolved` not `stale`; `tests/unit/catalog/conftest.py` comment still says "paths 7 = 41"; the member `pixi.toml` carries only a comment for the version range and the spec records no deviation.
 
 - No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10). Implementation and review stay separate.
 
