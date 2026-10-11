@@ -82,7 +82,7 @@ from pyforge.marshal.seed.state import (
     read_state,
     write_state,
 )
-from pyforge.marshal.seed.verbs.adopt import _GIT_TIMEOUT_S, run_adopt
+from pyforge.marshal.seed.verbs.adopt import _GIT_TIMEOUT_S, _manifest_for_adopt, run_adopt
 
 _VERSION = ModelVersion.parse("1.0.0")
 _NO_NEVER_WRITE = NeverWrite(patterns=())
@@ -1123,6 +1123,16 @@ def test_applies_to_adopt_only_entries_are_included(clean_repo):
     result = run_adopt(clean_repo, manifest, confirm=_unreachable_confirm)
 
     assert {action.artifact_id for action in result.plan.actions} == {"adopt-only"}
+
+
+def test_manifest_for_adopt_renders_slug_paths_and_drops_loop_home_only_entries():
+    manifest_ref = resources.files("pyforge.marshal.seed.templates") / "manifest.yaml"
+    with resources.as_file(manifest_ref) as manifest_path:
+        packaged = load_manifest(manifest_path)
+    filtered = _manifest_for_adopt(packaged, "pyforge-marshal", in_loop_home=False)
+    entry_ids = {entry.id for entry in filtered.entries}
+    assert "bmad-loop-policy" not in entry_ids
+    assert any(entry.path == "docs/dreams/pyforge-marshal.md" for entry in filtered.entries)
 
 
 # --- StateInvalid propagates, never downgraded ------------------------------

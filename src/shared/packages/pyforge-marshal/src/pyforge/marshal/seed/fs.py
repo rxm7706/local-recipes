@@ -514,7 +514,7 @@ def replace_span(
     if not (0 <= start <= end <= len(original)):
         raise ValueError(f"invalid span [{start}, {end}) for {path} ({len(original)} bytes)")
     spliced = original[:start] + new_body + original[end:]
-    atomic_write_bytes(path, spliced)
+    atomic_write_bytes(path, spliced, mode=_mode_to_preserve(path))
 
 
 def ensure_directory(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
