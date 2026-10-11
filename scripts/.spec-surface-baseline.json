@@ -531,10 +531,10 @@
  },
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
-   "pixi.lock": "99b84151b51fa5ab631a7b8848b38f916dc5272a",
-   "pixi.toml": "38b0712bdcd0ea09d1c7a179124ee870cf125842"
+   "pixi.lock": "6ace42d16f1696002d18c656039a861af4fa70d5",
+   "pixi.toml": "6c9d748e1b929c5a12f59ac9b5217121d22245b6"
   },
-  "memlog": "46a38707a7ecf7184283c4cfc0988dce165ab3fb"
+  "memlog": "8e2d3ff86a916dae6652c034ae33c161e3f5a723"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -792,15 +792,15 @@
  },
  "pyforge-herald/spec-deck-family-currency": {
   "files": {
-   "pixi.toml": "38b0712bdcd0ea09d1c7a179124ee870cf125842"
+   "pixi.toml": "6c9d748e1b929c5a12f59ac9b5217121d22245b6"
   },
-  "memlog": "220ce2ce03508388e4525c27491b8a1e7c751d10"
+  "memlog": "72a7945c70e4dc5d47bb0026e39cfd243b105a64"
  },
  "pyforge-herald/spec-deck-family-lockstep": {
   "files": {
-   "pixi.toml": "38b0712bdcd0ea09d1c7a179124ee870cf125842"
+   "pixi.toml": "6c9d748e1b929c5a12f59ac9b5217121d22245b6"
   },
-  "memlog": "29d01a21c1878fef1a7955e21a5887c5a04dd4a4"
+  "memlog": "e6b42a42ee83edc38b15a6d4f5bb7b23ae54a656"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
@@ -6089,7 +6089,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556",
+   "pixi.toml": "6c9d748e1b929c5a12f59ac9b5217121d22245b6",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -6132,8 +6132,8 @@
    "src/platform/config/engine_patterns.py": "d68c9e5022b4a7f76973fe29071a29af5358c053",
    "src/platform/config/estate_dsn.py": "6cdaffbd5751072f1527d4713eb6f8f41acfaf56",
    "src/platform/config/fastapi_app.py": "b264eed02d160a452a20ab1fe25659ca60e5bb82",
-   "src/platform/config/flag-overlays.json": "c3bed93e51d2983c883f72944485be54d249c7db",
-   "src/platform/config/flags.json": "4fdf623677d3aa95e434fbadbfdaa8b9237b82c5",
+   "src/platform/config/flag-overlays.json": "2d668fa38e7a51a3823b4c692a9fc3a82b0f327a",
+   "src/platform/config/flags.json": "f85d274bad2a2f377f06d2c9db29c1cc29fe3ba9",
    "src/platform/config/legacy_compliance.py": "a5b7ab7d326db8c561ab045bad73ffae485af7b0",
    "src/platform/config/local_dev/__init__.py": "74afb56d9e30d68ebfb957be72ad7f86bfe94921",
    "src/platform/config/local_dev/keys.py": "07357d2e4716b558f3fcf829a837c7b47f77d8c7",
@@ -6294,7 +6294,7 @@
    "src/platform/locale/pt_BR/LC_MESSAGES/django.po": "6a9314a649f4cc73da0eea3b3ed8c702df0db980",
    "src/platform/manage.py": "afddd429aa5c12525b3cb3b9821b9907b0c5dfec",
    "src/platform/mcp_host/__init__.py": "7cd7c6040604c1c9621f943c251148d3602640b6",
-   "src/platform/mcp_host/app.py": "b3d9a795b4cb46d8f1f47167032dc805b3f82251",
+   "src/platform/mcp_host/app.py": "789f9f36c1b92abcffec43badcddf8c6e00f2ab8",
    "src/platform/mcp_host/settings.py": "a912bce6abcf2fffb8cd5266afdc7e2184a1fd63",
    "src/platform/platformapp/__init__.py": "7f899ec15c23f70fdc88a20aad17c3a72a7b8321",
    "src/platform/platformapp/conftest.py": "e65aba1fd54026f3b92d1df37615dd5d3ec931b5",
@@ -6426,7 +6426,7 @@
    "src/platform/tests/test_herald_deck_exports.py": "bf2ad3345b4b41ec3d7582a07306e586207c12b6",
    "src/platform/tests/test_herald_portal_deck_status.py": "63b9bccd6ac5054540f561eddb9c85a9ffc70097",
    "src/platform/tests/test_herald_portal_deck_viewer.py": "0dbe8d5c7cc00a3dc27c0d2b40b66085a28f8bec",
-   "src/platform/tests/test_herald_webhook_sidecar.py": "7001c53b2d6a7069be8e2ae9362d63aeed8bf883",
+   "src/platform/tests/test_herald_webhook_sidecar.py": "c9f580c375c24f284be13b88b93801885568251b",
    "src/platform/tests/test_host_board_row_isolation.py": "9dc22419b983f8cbb5de0cbee6e1cfe7d5ab69ff",
    "src/platform/tests/test_host_boots_without_herald.py": "c18067a6cd46fc4582577ac2f85868d054ee415f",
    "src/platform/tests/test_idp_revoke_next_request.py": "ec194ada87405925c736a5c0a2e039184f6cd4d5",
@@ -6447,7 +6447,7 @@
    "src/platform/tests/test_observability_contract.py": "c07d564e98effc905a6d59c4889dc99263085adb",
    "src/platform/tests/test_oidc_identity.py": "4081eec86dc0dee9b70b952776f4a0030fb53ae2",
    "src/platform/tests/test_one_duckdb_writer.py": "a568e50035338660989b3d751540d8d214231fe7",
-   "src/platform/tests/test_openfeature_file_flags.py": "ac6e6772da7c3016c53df35b6ee4424ef707ffbd",
+   "src/platform/tests/test_openfeature_file_flags.py": "a039e65e3d6fc78cc9fa75f866d97dd060096273",
    "src/platform/tests/test_postgres_backup.py": "709603ae00c655363c736a86de3be1d523d22b98",
    "src/platform/tests/test_redis_cache_eviction_broker_survival.py": "7348340c27e2454342924cd17dd944bc6dead203",
    "src/platform/tests/test_restarts_reconcile.py": "392c9496e5b212e125f147db04d558b6aeb25c01",
@@ -6457,7 +6457,7 @@
    "src/platform/tests/test_startup_locality.py": "f921fde592a7fbb49d842da535aefc65b6aa9ae6",
    "src/platform/tests/test_startup_required_settings.py": "6d5643322f3ea738803161665ab35405ddd287b6",
    "src/platform/tests/test_startup_stage_two.py": "b9855381c7d8cd501fd4c9f173b5a20f7fefaf6b",
-   "src/platform/tests/test_station_api_host_dispatch.py": "34a1f9826ac511d633476309bb82fd3c8a27d0ab",
+   "src/platform/tests/test_station_api_host_dispatch.py": "672bb4645c89d018efa3076e1ca3eef2f0ac3d16",
    "src/platform/tests/test_station_api_seam.py": "4b9f776c79a6ac4d3e592c6ea8af85e1064cc19e",
    "src/platform/tests/test_station_port_no_loopback.py": "57d1a5c621cc6855b55d4ee4deb51724b0eec10a",
    "src/platform/tests/test_station_portal_shells.py": "52e05f5e02bf7ec60fef4ee8c878eb9a6bcff8a1",
@@ -6468,10 +6468,11 @@
    "src/platform/tests/test_validation_errors_render_inline.py": "c9b431b0bdade1feb379e2bfdc57f7d4bd1db155",
    "src/platform/tests/test_warden_fabric_phases.py": "c25b384d4432c0b102b83a5ccd7e62f4494244dc",
    "src/platform/tests/test_warden_fabric_rename.py": "a72ac8033b408bba94c8130ea1b85a0f6e2929f7",
+   "src/platform/tests/test_warden_fleet_inventory.py": "2aa5645c541e680a0b9cabf985c0dd778b22dcf6",
    "src/platform/tests/test_warden_fleet_proposals.py": "b81caaea86767e8c34907a443c7d73568f78afd4",
    "src/platform/tests/test_warden_fleet_run.py": "de4c1582a9b3a209d09223ed9ce5e39c3f047241",
    "src/platform/tests/test_warden_portal_audit_start_get.py": "cbe19471547710ba00f6de2112e63e37414c2e31",
-   "src/platform/tests/test_webhook_herald_forward_host.py": "eb84eba04ed42b6247c28a7797805bc197303423",
+   "src/platform/tests/test_webhook_herald_forward_host.py": "83aa0655658f16cb500e8c2ede062c1c14d02805",
    "src/platform/tests/test_ws_events.py": "69709557bbd2c7a30cdd2939ba709b84e054b543",
    "src/platform/utility/install_os_dependencies.sh": "bef4a6b36e028175010152eb749fb4ecd38e031c",
    "src/platform/utility/install_python_dependencies.sh": "959319d2c40d478211010f34c691a113315cef90",
@@ -6604,7 +6605,7 @@
    "src/shared/packages/django-pyforge/src/django_pyforge/queues.py": "20579afb4118fdea91dee7fa32df9578efbf9821",
    "src/shared/packages/django-pyforge/src/django_pyforge/rate_limit.py": "9f78d3cf4950f53f9f46a82148a2cacb96dd5c1e",
    "src/shared/packages/django-pyforge/src/django_pyforge/roles.py": "5117254e582f2a4723387724f41f9774cfcd0dd1",
-   "src/shared/packages/django-pyforge/src/django_pyforge/sidecar_forward.py": "2ba983c08717f0eb40cbbc6de649f6dbd58b1ab6",
+   "src/shared/packages/django-pyforge/src/django_pyforge/sidecar_forward.py": "1150adf7a4a7122f4fcd772da293aea46a5a58ac",
    "src/shared/packages/django-pyforge/src/django_pyforge/sidecars.py": "6d697204fe1e0a0aef145c1a67736fe021d8a832",
    "src/shared/packages/django-pyforge/src/django_pyforge/static/django_pyforge/theme.css": "b1091cb2439e980bb80c892d0f504ae0c1f91b47",
    "src/shared/packages/django-pyforge/src/django_pyforge/static/django_pyforge/vendor/htmx.min.js": "036c582893290060034d6d74923d43bf549cc64b",
@@ -6640,10 +6641,12 @@
    "src/shared/packages/django-warden/pyproject.toml": "ef77690691c59fe80ccd3b46e69eae4e7fe865bf",
    "src/shared/packages/django-warden/src/django_warden_fabric/__init__.py": "b4d8df297364ffaa5f678441ed467d816372161d",
    "src/shared/packages/django-warden/src/django_warden_fabric/apps.py": "9ffa60cfdee748ff567aef297baeda025566edbe",
-   "src/shared/packages/django-warden/src/django_warden_fabric/fleet.py": "69799ef8fea286996194e3ced78322047959ad52",
+   "src/shared/packages/django-warden/src/django_warden_fabric/fleet.py": "fafbe7b669bb988497b87023781656265362c955",
+   "src/shared/packages/django-warden/src/django_warden_fabric/fleet_inventory.py": "88128e14e66cbeea590143bc37126c2c26869f13",
    "src/shared/packages/django-warden/src/django_warden_fabric/management/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_approve.py": "63fcf49f0294bd6574529b4ae918ae70188b71da",
+   "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_inventory.py": "ee812e1df85ac9cb2fcfdf6766077016e067640e",
    "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_run.py": "6f35828ff9aed82d188f51aff3e9861fa41dbbf4",
    "src/shared/packages/django-warden/src/django_warden_fabric/mcp_asgi.py": "b4b82f65e34ecd2b91f6761426a315b044aa1eeb",
    "src/shared/packages/django-warden/src/django_warden_fabric/migrations/0001_initial.py": "f383b6da522b81c561ca1df52af2a71f0b621be4",
@@ -6652,15 +6655,16 @@
    "src/shared/packages/django-warden/src/django_warden_fabric/migrations/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/django-warden/src/django_warden_fabric/models.py": "e63adeeee8042851e114808284727d3e180ec528",
    "src/shared/packages/django-warden/src/django_warden_fabric/phases.py": "ba34831030eb8621497be1dd21617a05a269de03",
-   "src/shared/packages/django-warden/src/django_warden_fabric/portal_urls.py": "088bb4e7a1ea9d296bac9a59104b65ecc9e06eab",
+   "src/shared/packages/django-warden/src/django_warden_fabric/portal_urls.py": "29eccf28bf6b1e3c61b7bec87d24d89a4bae31e8",
    "src/shared/packages/django-warden/src/django_warden_fabric/proposals.py": "e73871c4033b251fe44043a3432d89c10c226fae",
-   "src/shared/packages/django-warden/src/django_warden_fabric/tasks.py": "a8bb1913758ac2d6bcc9a2611a5bf231759d53d4",
+   "src/shared/packages/django-warden/src/django_warden_fabric/tasks.py": "5f0aa674c4d5ef219df0e1636823d2ca604d3519",
    "src/shared/packages/django-warden/src/django_warden_fabric/templates/warden_fabric/audit_started.html": "0a243a9fc9802603376982e95bb196589b94aa61",
    "src/shared/packages/django-warden/src/django_warden_fabric/templates/warden_fabric/audit_status.html": "5e555c605db7387a15a419999edd1bab149cd8b3",
-   "src/shared/packages/django-warden/src/django_warden_fabric/templates/warden_fabric/chrome.html": "a458939a73b9a6392d2207d7396297d3bf1e2e5e",
+   "src/shared/packages/django-warden/src/django_warden_fabric/templates/warden_fabric/chrome.html": "a1f5abfa443e198426779018e93e68a071ad846d",
+   "src/shared/packages/django-warden/src/django_warden_fabric/templates/warden_fabric/fleet_inventory_started.html": "fa475a13576c6b060b6f815eb5d9ec5b50252c61",
    "src/shared/packages/django-warden/src/django_warden_fabric/templates/warden_fabric/fleet_proposals.html": "2abd56c48da886689b433a5f3bb413e8491af74a",
    "src/shared/packages/django-warden/src/django_warden_fabric/urls.py": "d934a939219747acc22d50b7107bab4d77c65e35",
-   "src/shared/packages/django-warden/src/django_warden_fabric/views.py": "f1dc0d552a790a9b80530390aede2262fadadb4d",
+   "src/shared/packages/django-warden/src/django_warden_fabric/views.py": "9e3bdd6cb1b3d49862c3417670c4b5cab6a59a1c",
    "src/shared/packages/pyforge-atlas/.agents/skills/.installed.json": "4c0429d66a6b59987e0857dee32fc56aeb501b5c",
    "src/shared/packages/pyforge-atlas/.agents/skills/catalog-config/SKILL.md": "e01b922ba4544f4cbc20614e36534c9c686aac09",
    "src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/SKILL.md": "e01b922ba4544f4cbc20614e36534c9c686aac09",
@@ -7090,7 +7094,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py": "101475d65160b49c9ef311d035b38af01e85b6b1",
    "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "491f422edc51af21e0ea1b7dee1ee89daca95f61",
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
-   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "7f55cbcb413b3268f9c7e1fa0040468b41a92730",
+   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "82fe25aa9dba01b73fb987af22a71735524f2f12",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
    "src/shared/packages/pyforge-core/tests/unit/test_league_measure.py": "9bd6766e602674c54cb06dd67647707f0c442fdd",
@@ -7151,7 +7155,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "248c20c78bc5ea486a950121657b65e2abba2d12"
+  "memlog": "eaccafbc828647b136cde8ccc8d7f54d957a4d9b"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
