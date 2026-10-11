@@ -2,7 +2,8 @@
 title: '92.1: The unsplit-Redis eviction guard proves broker loss on every run'
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'dfa541096bd38fd7d82cbc3a696cdbe0b795da40'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
