@@ -64,11 +64,12 @@ def test_dispatch_appends_grounded_recall_and_journals_disposition(
         )
     )
     monkeypatch.setattr("pyforge.marshal.adapters.harness_bmadloop.ScribeCli", lambda: scribe)
+    fs = FakeFs()
     harness = FakeBuildHarness()
     monkeypatch.chdir(tmp_path)
     code = run_dispatch(
         argparse.Namespace(slug=slug, story=_STORY, format="json"),
-        fs=FakeFs(),
+        fs=fs,
         vcs=FakeVcs(tmp_path),
         build_harness=harness,
         process=FakeProcess(),
@@ -83,6 +84,63 @@ def test_dispatch_appends_grounded_recall_and_journals_disposition(
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["recall"]["attempted"] is True
     assert payload["data"]["recall"]["outcome"] == "grounded"
+    intents = [
+        json.loads(line)["payload"]
+        for _path, line, _fsync in fs.appended
+        if "dispatch-launch" in line and '"worktree_path"' in line and '"session_pid"' not in line
+    ]
+    assert intents[-1]["recall"] == payload["data"]["recall"]
+
+
+def test_dispatch_recall_miss_has_no_block_and_no_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    slug = "pyforge-marshal"
+    _setup_story(tmp_path, slug)
+    _compose_with_recall(monkeypatch, slug, enabled=True)
+    monkeypatch.setattr(
+        "pyforge.marshal.adapters.harness_bmadloop.ScribeCli",
+        lambda: _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=False)),
+    )
+    fs = FakeFs()
+    harness = FakeBuildHarness()
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        argparse.Namespace(slug=slug, story=_STORY, format="json"),
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["recall"]["outcome"] == "miss"
+    assert harness.calls[0].get("recall_block") in (None, "")
+    assert not any(f["code"] == "MRS-DISP-064" for f in payload["findings"])
+
+
+def test_dispatch_recall_disabled_skips_scribe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    slug = "pyforge-marshal"
+    _setup_story(tmp_path, slug)
+    _compose_with_recall(monkeypatch, slug, enabled=False)
+    scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="nope"))
+    monkeypatch.setattr("pyforge.marshal.adapters.harness_bmadloop.ScribeCli", lambda: scribe)
+    fs = FakeFs()
+    harness = FakeBuildHarness()
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        argparse.Namespace(slug=slug, story=_STORY, format="json"),
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert code == EXIT_OK
+    assert scribe.calls == []
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["recall"]["outcome"] == "disabled"
 
 
 def test_dispatch_recall_failure_warns_and_still_launches(

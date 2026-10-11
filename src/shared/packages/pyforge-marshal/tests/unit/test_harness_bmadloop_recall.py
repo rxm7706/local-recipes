@@ -511,6 +511,35 @@ class TestRecallCacheKeyedByStoryDispatch:
         )
         assert len(scribe.calls) == 2
 
+    def test_same_story_new_run_queries_again(self, loop_home: Path, repo_root: Path) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(
+            ScribeRecallOutcome(ok=True, grounded=True, text="run-specific", citation="mem/x.md")
+        )
+        augment_bmad_loop_session_prompt_with_recall(
+            "A",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key="story-a",
+            run_id="run-1",
+            scribe=scribe,
+        )
+        augment_bmad_loop_session_prompt_with_recall(
+            "B",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key="story-a",
+            run_id="run-2",
+            scribe=scribe,
+        )
+        assert len(scribe.calls) == 2
+
     def test_failed_query_writes_no_marker_so_retry_may_query(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=False, reason="timeout"))

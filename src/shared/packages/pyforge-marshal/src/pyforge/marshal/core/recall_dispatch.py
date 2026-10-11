@@ -66,7 +66,11 @@ def disposition_from_injection(
     *,
     cached_block: bool,
 ) -> RecallDisposition:
-    if injection is None or not injection.attempted:
+    if injection is None:
+        if cached_block:
+            return RecallDisposition(attempted=True, outcome=_OUTCOME_GROUNDED, cached=True)
+        return seed_recall_disposition()
+    if not injection.attempted:
         return seed_recall_disposition()
     if not injection.ok:
         return RecallDisposition(

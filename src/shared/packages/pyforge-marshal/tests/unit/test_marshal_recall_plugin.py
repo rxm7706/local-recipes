@@ -80,3 +80,16 @@ def test_on_pre_session_appends_block_for_dev_then_review_reads_cache(
     plugin.on_pre_session(ctx2)
     assert scribe.calls == 1
     assert "hook body" in (ctx2.proposed_prompt or "")
+
+    ctx3 = HookContext(
+        "pre_session",
+        run_id="run-1",
+        story_key="93-1-story",
+        role="dev",
+        worktree=str(loop_home),
+        repo_root=str(loop_home),
+        proposed_prompt="Second dev attempt.",
+    )
+    plugin.on_pre_session(ctx3)
+    assert scribe.calls == 1
+    assert "hook body" in (ctx3.proposed_prompt or "")

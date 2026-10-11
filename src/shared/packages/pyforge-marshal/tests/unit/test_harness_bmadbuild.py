@@ -268,6 +268,28 @@ def test_dispatch_prompt_carries_the_spec_surface_obligation(tmp_path: Path, bar
     assert _SPEC_SURFACE_OBLIGATION in result.command[5]
 
 
+def test_dispatch_prompt_appends_recall_block_when_provided(tmp_path: Path, bare_path: Path) -> None:
+    from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER
+
+    resolution = _launch_ready_resolution(tmp_path, bare_path)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    block = f"{RECALL_FEEDBACK_HEADER}\n\nTeam memory line.\n\nSource: .claude/memory/feedback/x.md\n"
+    result = BmadBuildHarness().dispatch(
+        worktree,
+        resolution=resolution,
+        project_slug="pyforge-marshal",
+        story_key="93-1-example",
+        spec_path=worktree / "spec.md",
+        model="opus",
+        budget_env={},
+        log_path=tmp_path / "session.log",
+        recall_block=block,
+    )
+    assert RECALL_FEEDBACK_HEADER in result.command[5]
+    assert "Team memory line." in result.command[5]
+
+
 def test_dispatch_omitted_model_tier_reports_reason(tmp_path: Path, bare_path: Path) -> None:
     resolution = _launch_ready_resolution(tmp_path, bare_path)
     worktree = tmp_path / "wt"
