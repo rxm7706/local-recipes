@@ -289,6 +289,20 @@ Type / Effort / Deps: fix / S / S-19.2.
 
 ## Review Triage Log
 
+### 2026-10-11 — Independent review, iteration 3: passed (6 low, 1 reject)
+
+Fresh separate agent, review of `git diff origin/main...HEAD` at e41396b4cd. R1-R9 closed, each confirmed by its own mutation; AC8's guard and boundary mutations caught. AC2 by hand under platform-dev: `import pyforge.herald` exit 1; `manage.py check` exit 0 with one WARNING on `django_herald_portal`; `migrate --plan` exit 0 without `--skip-checks`. Herald present: routing unchanged, no portal WARNING, a dependency error propagates on every call, the catch-all never mounts; ASGI routes `/stations/herald/mcp` and `/stations/herald/api/v1/` ahead of Django, so the catch-all cannot shadow them. Gates: `pyforge-herald-test` 0 (1796 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0, `deferred-work-check` 0, `platform-ci-local -- --test` 0 (1208 passed, 13 skipped).
+
+- `[low]` `[patch]` F1 `test_portal_herald_guard.py`: no case raises `ImportError(name="pyforge.herald")`; widening the catch to `ImportError` with the name check kept stays green (AC6).
+- `[low]` `[patch]` F2 same file: no case covers a herald dependency inside the `pyforge` namespace (`pyforge.core`); a guard treating any `pyforge*` name as absent stays green.
+- `[low]` `[patch]` F3 `test_portal_import_boundary.py` `_follow_imports` never visits `django_herald_portal/__init__.py`; a herald import there passes the dispatch gate and only the AC3 platform test catches it.
+- `[low]` `[patch]` F4 `docs/how-to/run-herald-live-backend-locally.md:134-137` says the daphne host log carries two warnings; the portal record appears at the first Django-routed request (or `manage.py check`), not at `config.asgi` import.
+- `[low]` `[patch]` F5 `test_herald_portal_without_herald.py:16-17` hard-codes `/stations/` at 404; AC3 asks for the status the parent's client gets with herald present.
+- `[low]` `[defer]` F6 open row DW-herald-19-2-2 cites how-to lines this story removed or shifted; Boundaries forbid editing that row here, so it is refreshed in that row's own fix.
+- `[info]` `[reject]` F7 CSRF: token-less POST/PUT/DELETE answer `CsrfViewMiddleware`'s 403 before the view, exactly as with herald present; never 200, never 5xx, and AC3 names GETs. `csrf_exempt` would remove a protection for no gain; the view docstring is corrected.
+
+F1-F5 are fixed in a follow-on pass before landing; the orchestrator re-verifies that delta (mutations and gates) before setting this story done.
+
 ### 2026-10-11 — Fix pass for iteration 2 (implementer)
 
 Separate implementer session on da56592721. R1-R9 fixed; R10 stays rejected. Each mutation was reverted byte-identical (sha256 checked) and its test re-run green.
