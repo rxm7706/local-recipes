@@ -29,6 +29,17 @@ from pyforge.marshal.adapters.scribe_cli import ScribeCli, ScribeRecallOutcome
 from pyforge.marshal.core import recall_feedback as recall_feedback_core
 from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER, build_recall_query
 
+_STORY_KEY = "story-47"
+_RUN_ID = "run-47"
+
+
+def _recall_paths(loop_home: Path, station_slug: str) -> tuple[Path, Path]:
+    rel = recall_feedback_core.recall_feedback_output_relpath(
+        station_slug, story_key=_STORY_KEY, run_id=_RUN_ID
+    )
+    target = loop_home / rel
+    return target, target.with_name(f"{target.name}.query-ran")
+
 
 class _FakeFs:
     """Records every ``ensure_dir``/``write_text_atomic`` call; a real
@@ -110,6 +121,8 @@ class TestGroundedHit:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
         )
 
@@ -126,7 +139,13 @@ class TestGroundedHit:
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="body"))
 
         inject_recall_feedback(
-            fs=fs, loop_home=loop_home, repo_root=repo_root, station_slug="pyforge-doctor", scribe=scribe
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
         )
 
         assert len(scribe.calls) == 1
