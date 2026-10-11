@@ -8,12 +8,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
 from . import recall_feedback
-
-if TYPE_CHECKING:
-    from ..adapters.harness_bmadloop import RecallInjectionResult
+from ..adapters.harness_bmadloop import RecallInjectionResult
 
 __all__ = (
     "RecallDisposition",
