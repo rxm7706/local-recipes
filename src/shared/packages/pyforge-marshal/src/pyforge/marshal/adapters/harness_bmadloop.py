@@ -1344,29 +1344,7 @@ def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> ProcessRe
         return None
 
 
-@dataclass(frozen=True)
-class RecallInjectionResult:
-    """What one pre-launch ``inject_recall_feedback`` attempt did (Story
-    47.1, SPEC-marshal-recall-in-the-loop CAP-1).
-
-    ``attempted=False`` is the "no resolvable station slug" row of the
-    story's own I/O matrix -- the recall query was skipped entirely, no
-    subprocess call, target left untouched. Every other row always
-    attempts exactly one ``scribe recall`` call and always writes
-    ``target`` exactly once (the labeled block on a grounded hit, an empty
-    string otherwise) -- ``FsPort`` has no delete-a-file primitive, and
-    ``implementation-artifacts/`` is backlinked across a project's
-    worktrees, so a stale hit from a previous dispatch must never survive
-    unnoticed. ``ok=False`` is the "scribe CLI unavailable/non-zero/timeout"
-    row -- fail-open, never dispatch-blocking; callers report it as a WARN
-    finding and continue."""
-
-    attempted: bool
-    ok: bool = True
-    injected: bool = False
-    reason: str | None = None
-    target: Path | None = None
-
+from ..core.recall_feedback import RecallInjectionResult
 
 def materialize_marshal_recall_plugin(loop_home: Path) -> Path:
     """Copy the packaged marshal-recall plugin into ``<loop_home>/.bmad-loop/plugins/``."""

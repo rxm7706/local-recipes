@@ -21,10 +21,13 @@ writes an empty string instead when it does not.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
+from pathlib import Path
 
 from .derived_context import implementation_artifacts_relpath
 
 __all__ = (
+    "RecallInjectionResult",
     "RECALL_FEEDBACK_HEADER",
     "RECALL_LAYER",
     "build_recall_query",
@@ -42,6 +45,17 @@ RECALL_LAYER = "recall"
 #: The label distinguishing this block from the story's own spec/intent
 #: content (this story's own "clearly labeled" constraint).
 RECALL_FEEDBACK_HEADER = "# Scribe feedback (auto-recalled for this story dispatch — dev and review pass)"
+
+
+@dataclass(frozen=True)
+class RecallInjectionResult:
+    """What one pre-launch recall attempt did (Story 47.1 / 93.1)."""
+
+    attempted: bool
+    ok: bool = True
+    injected: bool = False
+    reason: str | None = None
+    target: Path | None = None
 
 
 def layer_enabled(layer: Mapping[str, object] | None) -> bool:

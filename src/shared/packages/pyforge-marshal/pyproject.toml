@@ -106,6 +106,7 @@ type = "forbidden"
 source_modules = [
     "pyforge.marshal.cli",
     "pyforge.marshal.core",
+    "pyforge.marshal.data",  # Story 93.1 bmad-loop plugin payloads (no bmad_loop imports)
     "pyforge.marshal.dispatch_supervisor",
     "pyforge.marshal.dispatch_verify",  # Story 22.3 / FR-193 CAP-3 dispatch gate runner
     "pyforge.marshal.dispatch_verification_journal",  # Story 22.17 shared dispatch-verification journal payloads
