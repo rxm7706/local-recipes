@@ -424,7 +424,7 @@ development_status:
   85-6-a-fix-turn-re-runs-only-the-failing-commands-and-knows-the-flag-checklist: done
   85-7-a-cross-surface-refusal-gets-the-same-one-fix-turn: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
-  86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
+  86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: done
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: done
   86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
@@ -456,7 +456,7 @@ development_status:
   9-5-manifest-coverage-check: done
   9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: done
   90-1-the-dispatch-supervisor-records-completion-only-after-the-harness-session-has-really-exited: done
-  91-1-a-corrupt-environment-yaml-never-lands: backlog
+  91-1-a-corrupt-environment-yaml-never-lands: done
   92-1-the-dispatch-supervisor-reads-session-liveness-correctly-and-never-treats-a-vanished-worktree-as-live: backlog
   93-1-every-live-session-gets-the-recall-its-layer-promises-and-the-run-records-the-outcome: backlog
   epic-1: done
@@ -623,7 +623,7 @@ development_status:
   epic-84-retrospective: optional
   epic-85: done
   epic-85-retrospective: done
-  epic-86: in-progress
+  epic-86: done
   epic-86-retrospective: optional
   epic-87: done
   epic-87-retrospective: optional
@@ -635,7 +635,7 @@ development_status:
   epic-9-retrospective: optional
   epic-90: done
   epic-90-retrospective: optional
-  epic-91: backlog
+  epic-91: done
   epic-91-retrospective: optional
   epic-92: backlog
   epic-92-retrospective: optional

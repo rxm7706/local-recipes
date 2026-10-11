@@ -31,7 +31,7 @@ from pyforge.marshal.seed.model.manifest import (
     Manifest,
     load_manifest,
 )
-from pyforge.marshal.seed.plan.types import Action
+from pyforge.marshal.seed.plan.types import Action, SkippedArtifact
 from pyforge.marshal.seed.verbs.adopt import run_adopt
 
 # Explicit exclusion (Story 12.2 AC): the three ``unclassified-deferred`` ids
@@ -44,6 +44,27 @@ UNCLASSIFIED_DEFERRED_ARTIFACT_IDS: frozenset[str] = frozenset(
     }
 )
 
+# Story 86.2: genesis bootstrap records explicit seed skips in
+# ``.marshal/seed-state.yml``; reasons live here because skip patterns carry
+# no reason field (K-02 — not a silent widening of the deferred-id filter).
+LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS: dict[str, str] = {
+    "agents-md": "AGENTS.md already carries instruction-surface content (scribe CAP-27, point-don't-copy)",
+    "claude-md": "CLAUDE.md already carries instruction-surface content (scribe CAP-27, point-don't-copy)",
+    "projects-index": "_bmad-output/PROJECTS.md already carries the live projects table",
+    "gemini-md": "GEMINI.md is a per-tool addendum owned by scribe's instruction-surface parity test",
+    "copilot-instructions": (
+        ".github/copilot-instructions.md is a per-tool addendum owned by scribe's instruction-surface parity test"
+    ),
+    "cursor-rules": ".cursor/rules/specs.mdc is a per-tool addendum owned by scribe's instruction-surface parity test",
+    "planning-artifacts-symlink": (
+        "_bmad-output/planning-artifacts is a per-checkout symlink that scripts/bmad-switch creates"
+    ),
+    "implementation-artifacts-symlink": (
+        "_bmad-output/implementation-artifacts is a per-checkout symlink that scripts/bmad-switch creates"
+    ),
+    "specs-dir-legacy": "docs/specs/ is the retired legacy intake tier (doctor Story 37.1 removed it)",
+}
+
 
 def _local_recipes_root() -> Path | None:
     """Return the ``local-recipes`` monorepo root when this test runs in-tree."""
@@ -54,6 +75,18 @@ def _local_recipes_root() -> Path | None:
             if package_root.is_dir():
                 return candidate
     return None
+
+
+def _resolve_project_slug(repo_root: Path) -> str:
+    marker = repo_root / "_bmad" / "custom" / ".active-project"
+    if marker.is_file():
+        text = marker.read_text(encoding="utf-8").strip()
+        if text:
+            return text
+    from_env = __import__("os").environ.get("BMAD_ACTIVE_PROJECT", "").strip()
+    if from_env:
+        return from_env
+    return "pyforge-marshal"
 
 
 def _load_packaged_manifest() -> Manifest:
@@ -79,6 +112,28 @@ def assertable_adopt_actions(
             f"unclassified-deferred in the packaged manifest: {sorted(unknown_deferred)}"
         )
     return tuple(action for action in actions if action.artifact_id not in deferred_ids)
+
+
+def assertable_skipped_artifact_ids(
+    skipped: tuple[SkippedArtifact, ...],
+    *,
+    expected: dict[str, str] = LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS,
+) -> frozenset[str]:
+    """The skip set the oracle expects after genesis bootstrap — ids only."""
+    unknown = set(expected) - {entry.id for entry in _load_packaged_manifest().entries}
+    if unknown:
+        raise AssertionError(
+            f"LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS lists ids absent from the manifest: {sorted(unknown)}"
+        )
+    actual = frozenset(item.artifact_id for item in skipped)
+    if actual != frozenset(expected):
+        missing = frozenset(expected) - actual
+        extra = actual - frozenset(expected)
+        raise AssertionError(
+            "genesis skip set drifted — update LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS or"
+            f" reconcile seed state. missing={sorted(missing)!r} extra={sorted(extra)!r}"
+        )
+    return actual
 
 
 def format_plan_diff(actions: tuple[Action, ...]) -> str:
@@ -127,6 +182,14 @@ def test_unclassified_deferred_exclusion_is_explicit_and_manifest_aligned():
     assert [action.artifact_id for action in filtered] == ["agents-md"]
 
 
+def test_genesis_recorded_skip_artifact_ids_are_manifest_backed():
+    packaged = _load_packaged_manifest()
+    by_id = {entry.id: entry for entry in packaged.entries}
+    for artifact_id, reason in LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS.items():
+        assert artifact_id in by_id, reason
+        assert reason.strip()
+
+
 def test_format_plan_diff_names_diverged_artifacts():
     actions = (
         Action(
@@ -160,14 +223,18 @@ def test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred():
         def _unreachable_confirm() -> bool:
             raise AssertionError("dry-run must not confirm")
 
+        slug = _resolve_project_slug(repo_root)
         result = run_adopt(
             repo_root,
             manifest,
             apply=False,
             confirm=_unreachable_confirm,
+            slug=slug or None,
+            in_loop_home=False,
         )
         filtered = assertable_adopt_actions(result.plan.actions)
         assert filtered == (), format_plan_diff(filtered)
+        assertable_skipped_artifact_ids(result.plan.skipped)
     finally:
         if had_plan:
             plan_path.write_bytes(prior_plan_bytes)  # type: ignore[arg-type]

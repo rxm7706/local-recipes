@@ -1,3 +1,43 @@
+# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=6dfa035c
+# BMAD: personal config (user-scoped) and per-developer artifacts.
+# Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
+# Note: project-scoped implementation-artifacts are gitignored (per-developer scratch).
+_bmad/custom/.active-project
+_bmad-output/projects/*/implementation-artifacts/
+# ...and the same path as a SYMLINK. The trailing-slash rule above matches only
+# real directories, so in a bmad-loop home -- where `bmad-loop-worktree` creates
+# implementation-artifacts as a Tier-3 backlink to the main checkout -- the path
+# comes back untracked, and `bmad-loop run` refuses to start on a dirty worktree.
+# No trailing slash = matches the symlink too.
+_bmad-output/projects/*/implementation-artifacts
+
+# bmad-loop / upstream-tooling seam: root artifact dirs are LOCAL symlinks to the
+# active project's dirs (re-point on `bmad-switch`).
+_bmad-output/planning-artifacts
+_bmad-output/implementation-artifacts
+_bmad-output/projects/*/.bmad-config.user.toml
+
+# bmad-loop runtime scratch: run worktrees and their cache, never tracked.
+.bmad-loop/runs/
+.bmad-loop/cache/
+# Derived harness policy: rendered whole from the canonical EffectivePolicy on
+# every `marshal config --write-harness-policy` run (AD-12/AD-35). The model
+# classifies it generated-derived, so leaving it tracked leaves every adopting
+# repo permanently dirty -- the same failure the symlink rule above prevents.
+.bmad-loop/policy.toml
+# Derived artifact (Story 33.3, SPEC-marshal-token-economy CAP-2): the
+# wire-compression bmad-loop profile overlay `factory spin` writes per
+# adapter when the `wire` layer is on. Untracked and not ignored, it makes
+# `bmad-loop run` refuse the loop home with "git worktree is not clean" --
+# the same failure shape `.bmad-loop/policy.toml` above already exists to
+# prevent.
+.bmad-loop/profiles/
+
+# The plan artifact (AD-57): derived, cheap to regenerate, and a committed
+# stale plan is a hazard -- so the plan file is ignored, but NOT the whole
+# `.marshal/` directory: `.marshal/seed-state.yml` is git-tracked (AD-52).
+.marshal/plan.json
+# marshal-seed:end region=model-ignores
 django-kedro-src/
 pypi_source_distribution/
 pypi_built_distribution/
@@ -785,8 +825,6 @@ scripts/.spec-surface-baseline.json.tmp
 # Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
 # Note: project-scoped implementation-artifacts are gitignored (per-developer scratch).
 _bmad/config.user.toml
-_bmad/custom/.active-project
-_bmad-output/projects/*/implementation-artifacts/
 # Story 21.2 chain-regen run journals + orphan manifests (local scratch).
 _bmad-output/projects/*/planning-artifacts/.chain-regen/
 # ...and the same path as a SYMLINK. The trailing-slash rule above matches only
@@ -795,13 +833,9 @@ _bmad-output/projects/*/planning-artifacts/.chain-regen/
 # came back untracked, and `bmad-loop run` refuses to start on a dirty worktree.
 # Every new loop home hit this on its first launch (found provisioning marshal,
 # 2026-07-25). No trailing slash = matches the symlink too.
-_bmad-output/projects/*/implementation-artifacts
 
 # bmad-loop / upstream-tooling seam: root artifact dirs are LOCAL symlinks to the
 # active project's dirs (re-point on `bmad-switch`; see docs/specs/bmad-loop-adoption.md)
-_bmad-output/planning-artifacts
-_bmad-output/implementation-artifacts
-_bmad-output/projects/*/.bmad-config.user.toml
 
 # Junie: personal config (user-scoped) and per-developer artifacts.
 .junie/
@@ -809,8 +843,6 @@ _bmad-output/projects/*/.bmad-config.user.toml
 # kedro-viz session store / stats (prototypes/cf-atlas-kedro-viz; build/ is
 # already covered by the global build/ rule above)
 .viz/
-.bmad-loop/runs/
-.bmad-loop/cache/
 # `bmad-loop clean`'s default (non---hard) sweep archives concluded runs here
 # as .tar.gz rather than deleting them -- never listed alongside runs/cache/
 # above, so it showed up as untracked cruft in every loop-home worktree and
@@ -839,7 +871,6 @@ claude_hash.txt
 # never hand-edited, never tracked (closes the F-1 cross-project bleed where
 # a loop home's hand-edit rode `git push origin HEAD:main` onto every
 # project).
-.bmad-loop/policy.toml
 # Derived artifact (Story 6.2, AD-12/AD-36): the skill-tree projection
 # manifest cli/adapters.py::run_adapters_sync writes per loop home --
 # bookkeeping for stale-projection detection only, never hand-edited, never
@@ -854,7 +885,6 @@ claude_hash.txt
 # the same failure shape `.bmad-loop/policy.toml` above already exists to
 # prevent. Directory-scoped (not a single filename) because it is
 # per-adapter, same precedent as `.bmad-loop/archive/`.
-.bmad-loop/profiles/
 # pyforge-marshal Story 28.2 (SPEC-marshal-token-economy CAP-2): the
 # loop-home-scoped wire-compression (CCR) store the harness-seam wrapper
 # writes into. The store lives INSIDE the loop home / dispatch worktree on
