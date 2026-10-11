@@ -2,9 +2,9 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
-review_loop_iteration: 4
+review_loop_iteration: 5
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -252,6 +252,17 @@ Deps: — (cross-station: mason Story 21.1).
   reads, not only one that exists.
 
 ## Review Triage Log
+
+### 2026-10-10 — Independent review, iteration 5: sent back (1 medium, 5 low)
+
+Separate agent, on `38025c8bb7`. All seven gates exit 0; every iteration-4 fix re-probed with real git (shipped relative cache inside a checkout with an unpushed commit and an uncommitted edit: unchanged) and each revert reddens its test. Final pass across all iterations: nothing reaches outside the cache or temp database except the planted-symlink low; no node crash path. Findings (`dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`):
+
+- `[medium]` `[patch]` `dh.py:857` with `:872-876`, `:919-949`: the unchanged-head skip can serve a partition that does not match the recorded head — the git-pkgs-problem path writes fresh pixi rows without advancing the head, and `_write_state` runs only after the loop, so a run killed after a partition write keeps the old head; after a reset/force-push back to that head the next run skips and reports rows from a commit no longer in history (verified both triggers). Fix: record the head a partition reflects with the partition (or write `head=""` for the repo before `_write_partition` and the real head after); test git-pkgs failing at H2 then a reset to H1 forces a re-walk with no H2 rows.
+- `[low]` `[patch]` `dh.py:192-220`: duplicate `full_name` entries with different sources re-clone and re-walk every run (last wins silently). Dedupe, warn, count as malformed.
+- `[low]` `[patch]` `dh.py:850-856`: a remote emptied after a healthy build wipes the last-good history; with a non-empty prior head read `unresolved` and keep the partition.
+- `[low]` `[patch]` `dh.py:720-743`: a symlinked `.git/objects` (planted in Atlas's own cache) passes `_clone_is_usable`; also require `rev-parse --git-path objects` (and refs) under `dest/.git`.
+- `[low]` `[patch]` `dh.py:747-749`: a default-branch switch that keeps the old branch is never followed; after `remote set-head origin --auto`, reset to `origin/HEAD` when it differs from `@{upstream}`.
+- `[low]` `[defer]` `dh.py:333`, `:374-389`, `:805-813`: a timeout SIGKILLs only the top-level `git`; `git pkgs` runs `git-pkgs` as a grandchild that survives orphaned. The fix (process-group kill in `PosixProcess`) is pyforge-core's; recorded as a deferred-work row rather than widened into core here.
 
 ### 2026-10-10 — Independent review, iteration 4: sent back (1 medium, 4 low)
 
