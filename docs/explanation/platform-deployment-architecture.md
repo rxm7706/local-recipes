@@ -319,8 +319,13 @@ capability-naming reason where helm/PyYAML are absent.
   the sidecar). Any other path under `/stations/herald/api/v1/webhooks/` gets the
   host's usual 404 with nothing forwarded. Inbound header allowlist:
   `content-type`, `x-hub-signature-256`, `x-hub-timestamp`, `traceparent`,
-  `tracestate` only — no `authorization` or `cookie`. Other Herald v1 routes stay
-  in-process or absent per Story 87.1.
+  `tracestate` only — no `authorization` or `cookie`.   Other Herald v1 routes stay
+  in-process or absent per Story 87.1. With the forward inactive (flag OFF or
+  `MCP_HOST_SIDECAR_BASE_URL` unset), every path under the webhook prefix
+  behaves as Story 87.1 left it — including unknown webhook paths, which reach
+  the in-process herald router or the absent reason. A client disconnect
+  mid-body ends the read immediately; nothing is forwarded and no response is
+  sent to the client.
   Local loopback: `pixi run --frozen -e mcp-host mcp-host-serve` binds
   `127.0.0.1:8090`. Staging and production keep the flag OFF until chart
   `platform.mcpHostEnv` and compose's `mcp-host` service pass

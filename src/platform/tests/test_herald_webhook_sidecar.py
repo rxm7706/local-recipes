@@ -135,6 +135,30 @@ class _HeraldAbsentFinder:
             raise ModuleNotFoundError(name=fullname)
 
 
+class _PyforgePackageAbsentFinder:
+    def find_spec(self, fullname, path, target=None):
+        if fullname == "pyforge" or fullname.startswith("pyforge."):
+            raise ModuleNotFoundError(name=fullname)
+        return None
+
+
+def test_mcp_host_sidecar_no_pyforge_package_returns_404_json(
+    mcp_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in list(sys.modules):
+        if name == "pyforge" or name.startswith("pyforge."):
+            monkeypatch.delitem(sys.modules, name, raising=False)
+    finder = _PyforgePackageAbsentFinder()
+    sys.meta_path.insert(0, finder)
+    try:
+        response = mcp_client.post(_ON_SHIP_PATH, content=b"{}")
+    finally:
+        sys.meta_path.remove(finder)
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert "pyforge" in response.json()["detail"]
+
+
 def test_mcp_host_sidecar_herald_absent_returns_404_json(
     mcp_client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
