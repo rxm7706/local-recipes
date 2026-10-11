@@ -2,10 +2,11 @@
 title: "94.2: A held PR is marked ready when its landing review passes"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'e9ee1dd23aba03d12006d6a6a1017966c7d7cd4c'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 1
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -246,4 +247,39 @@ this story (a subclass of `FakeForge`):
 
 ## Spec Change Log
 
+- 2026-10-11 — Added `_HeldDraftForge` and Story 94.2 landing tests because `FakeForge` never models an existing draft PR or a merge that refuses drafts; without that fake the AC1 regression (MRS-DISP-020 on a held draft) was invisible.
+
 ## Review Triage Log
+
+### 2026-10-11 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 0, false 2, maybe-false 1
+- findings:
+  - `[false]` `[reject]` Ready call should use a new finding code — spec AC7 forbids new codes; reuse of MRS-DISP-018 matches the draft-hold failure shape at dispatch_land.py:1779.
+  - `[false]` `[reject]` Journal should copy marked_ready on REFUSED landings — supervisor only journals successful ready marks on envelopes that reached merge; refused landings omit the key per AC6.
+  - `[maybe-false]` `[defer]` AC5 timeout row lacks a `_HeldDraftForge` case — check-wait timeout returns before the ready call on the same path as existing MRS-DISP-057 tests; unverified whether a held-draft-specific test adds signal beyond test_landing_refuses_when_runs_are_still_pending_at_the_timeout.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** When `landing_review: passed` and the open PR is still a draft, `execute_dispatch_land` calls `forge.set_pr_draft(..., draft=False)` after green checks and before `merge_pr`, sets `marked_ready_for_review` on success, and refuses with MRS-DISP-018 if the ready call fails. Land-only dispatch and the supervisor journal propagate the flag.
+
+**Files changed:**
+- `dispatch_land.py` — mark held drafts ready before merge when review passed
+- `cli/dispatch.py` — copy `marked_ready_for_review` on harness-done land-only path
+- `dispatch_supervisor/__main__.py` — journal `marked_ready_for_review` on dispatch-land OUTCOME
+- `test_dispatch_landing.py` — `_HeldDraftForge` and matrix tests for AC1–AC5
+- `test_dispatch.py` — land-only data carries `marked_ready_for_review`
+- `test_dispatch_supervisor_spec_block.py` — journal payload tests for the flag
+
+**Review:** 0 patches applied; 1 item deferred (AC5 timeout dedicated test); 2 findings rejected as false.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 12308 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 (after memlog on spec-pyforge-marshal and spec-pyforge-core)
+
+**Residual risks:** Ready mark may appear on GitHub briefly before merge; merge failure leaves PR ready (documented in spec).
