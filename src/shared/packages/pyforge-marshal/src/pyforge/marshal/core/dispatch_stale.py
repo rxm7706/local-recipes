@@ -72,3 +72,4 @@ def stale_dispatch_run_payload(stale: DispatchStaleRun) -> dict[str, str]:
         "worktree_path": stale.worktree_path,
         "remedy": stale.remedy,
     }
+

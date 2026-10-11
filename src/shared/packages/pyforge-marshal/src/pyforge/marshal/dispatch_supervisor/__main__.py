@@ -2653,6 +2653,7 @@ def run_dispatch_supervisor(
             process, session_pid, launched_at=session_launched_at
         )
         session_alive = liveness.alive
+        session_liveness_error = liveness.liveness_error
         session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)
         if session_alive:
             current_log = session_log
@@ -2828,6 +2829,7 @@ def run_dispatch_supervisor(
                     counter=counter,
                     session_alive=session_alive,
                     git_facts=git_facts,
+                    session_liveness_error=session_liveness_error,
                 )
                 _publish_heartbeat()
                 time.sleep(_TICK_SECONDS)

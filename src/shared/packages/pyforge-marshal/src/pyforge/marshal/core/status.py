@@ -1038,6 +1038,8 @@ class FleetHomeFacts:
     # the stranded-work signal fleet-picture ATTENTION names alongside the
     # overlay fix in ``derive_dispatch_phase``.
     dispatch_stranded_work: dict[str, object] | None = None
+    # Story 92.1 (CAP-5): dispatch runs whose journaled worktree is gone — reported, never LIVE.
+    dispatch_stale_runs: tuple[dict[str, object], ...] = ()
     # Story 28.24 (CAP-7): supervisor finalize shell failed — operator must
     # commit/push/verify in the named worktree.
     finalize_escalation_story: str | None = None
@@ -1374,6 +1376,8 @@ def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) ->
         patched["dispatch_in_flight_stories"] = list(facts.dispatch_in_flight_stories)
     if facts.dispatch_stranded_work is not None:
         patched["dispatch_stranded_work"] = facts.dispatch_stranded_work
+    if facts.dispatch_stale_runs:
+        patched["dispatch_stale_runs"] = list(facts.dispatch_stale_runs)
     phase = derive_dispatch_phase(facts)
     if phase is not None:
         patched["dispatch_phase"] = phase

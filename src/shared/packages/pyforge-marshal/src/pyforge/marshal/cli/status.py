@@ -1980,6 +1980,17 @@ def run_status(
         stranded = status_core.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed_by_ref)
         if stranded is not None:
             facts = replace(facts, dispatch_stranded_work=stranded)
+        from ..core.dispatch_stale import stale_dispatch_run, stale_dispatch_run_payload
+        from .dispatch import gather_dispatch_journal_facts, iter_dispatch_run_dirs
+
+        stale_payloads: list[dict[str, object]] = []
+        for run_dir in reversed(iter_dispatch_run_dirs(git_repo_root, slug)):
+            journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+            stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_dir.name, slug=slug)
+            if stale is not None:
+                stale_payloads.append(stale_dispatch_run_payload(stale))
+        if stale_payloads:
+            facts = replace(facts, dispatch_stale_runs=tuple(stale_payloads))
         matched_unpushed_refs |= status_core.unpushed_refs_matched_to_row(facts, unpushed_by_ref)
         # Story 56.1 (CAP-266): a refused landing whose story is on `main`
         # carries that git fact beside its unchanged findings -- never

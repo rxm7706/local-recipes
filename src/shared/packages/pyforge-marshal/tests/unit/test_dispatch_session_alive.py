@@ -49,22 +49,23 @@ class _RecordingProcess:
         return None
 
 
-def test_session_group_read_error_counts_as_alive() -> None:
+def test_session_group_read_error_falls_back_to_identity_checked_leader() -> None:
     port = _RaisingSessionGroup()
     launched_at = datetime(2026, 10, 10, 23, 26, 0, tzinfo=timezone.utc)
-    assert (
-        dispatch_verify.session_group_has_live_member(port, 4242, launched_at=launched_at, process=_RecordingProcess())
-        is True
+    alive, err = dispatch_verify.session_group_has_live_member(
+        port, 4242, launched_at=launched_at, process=_RecordingProcess()
     )
+    assert not alive
+    assert err == "unreadable"
 
 
 def test_zombie_members_do_not_keep_the_group_alive() -> None:
     launched_at = datetime(2026, 10, 10, 23, 26, 0, tzinfo=timezone.utc)
     port = _FakeSessionGroup((SessionGroupMember(pid=99, started_at=launched_at.timestamp(), is_zombie=True),))
-    assert (
-        dispatch_verify.session_group_has_live_member(port, 4242, launched_at=launched_at, process=_RecordingProcess())
-        is False
+    alive, _ = dispatch_verify.session_group_has_live_member(
+        port, 4242, launched_at=launched_at, process=_RecordingProcess()
     )
+    assert not alive
 
 
 def test_dispatch_session_alive_turns_false_once_the_group_has_no_live_members() -> None:
@@ -88,10 +89,10 @@ def test_reused_pid_before_launch_does_not_count() -> None:
     launched_at = datetime(2026, 10, 10, 23, 26, 0, tzinfo=timezone.utc)
     old_start = launched_at.timestamp() - dispatch_core.PID_START_TOLERANCE_SECONDS - 60.0
     port = _FakeSessionGroup((SessionGroupMember(pid=99, started_at=old_start, is_zombie=False),))
-    assert (
-        dispatch_verify.session_group_has_live_member(port, 4242, launched_at=launched_at, process=_RecordingProcess())
-        is False
+    alive, _ = dispatch_verify.session_group_has_live_member(
+        port, 4242, launched_at=launched_at, process=_RecordingProcess()
     )
+    assert not alive
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="POSIX process-group integration")
