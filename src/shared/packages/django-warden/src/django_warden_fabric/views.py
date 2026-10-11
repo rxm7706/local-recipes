@@ -19,6 +19,7 @@ from django.views.decorators.http import require_POST
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.schema import CLAIM_SUB
+from django_pyforge.flags import evaluate_from_source
 from django_pyforge.non_atomic import non_atomic_view
 from django_pyforge.roles import claims_from_request
 from django_pyforge.roles import roles_from_request
@@ -27,18 +28,20 @@ from django_pyforge.supervisor import HandleNotFoundError
 from django_pyforge.supervisor import HandleRefusedError
 from django_pyforge.supervisor import RunBoundExceeded
 from django_pyforge.supervisor import bound_refusal_payload
-from django_pyforge.flags import evaluate_from_source
 
 from .fleet import FLEET_FIX_PROPOSALS_FLAG
 from .fleet import FLEET_INVENTORY_FLAG
+from .fleet_inventory import FleetInventoryError
+from .fleet_inventory import load_organisation_from_config
+from .tasks import run_fleet_inventory
 from .mcp_asgi import RUN_AUDIT_TOOL
+from .mcp_asgi import WARDEN_STATION
+from .models import ComplianceJob
 from .models import FixProposal
+from .phases import current_progress
 from .proposals import ProposalRefusedError
 from .proposals import approve_proposal
 from .proposals import dismiss_proposal
-from .mcp_asgi import WARDEN_STATION
-from .models import ComplianceJob
-from .phases import current_progress
 from .tasks import SUPPORTED_SUFFIXES
 from .tasks import run_compliance_job
 
@@ -201,12 +204,6 @@ def start_fleet_inventory(request: HttpRequest) -> HttpResponse:
     """HTMX: enqueue fleet inventory when the flag is on."""
     if not _fleet_inventory_enabled():
         return HttpResponse("fleet inventory disabled (flag off)", status=403)
-    from django_warden_fabric.fleet_inventory import FleetInventoryError  # noqa: PLC0415
-    from django_warden_fabric.fleet_inventory import load_organisation_from_config  # noqa: PLC0415
-    from django_warden_fabric.tasks import run_fleet_inventory  # noqa: PLC0415
-
-    import uuid
-
     try:
         organisation = load_organisation_from_config()
     except FleetInventoryError as exc:

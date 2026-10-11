@@ -140,10 +140,11 @@ def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
         token = GhAuthTokenProvider().token()
         client = GitHubRestOrgReposClient(token=token)
         run_fleet_inventory_sync(organisation=organisation, listing_client=client)
-        return inventory_run_id
-    except FleetInventoryError as exc:
+    except FleetInventoryError:
         logger.exception("fleet inventory %s failed", inventory_run_id)
         raise
+    else:
+        return inventory_run_id
 
 
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")
@@ -165,7 +166,9 @@ def run_fleet_run(self, fleet_run_id: str) -> str:
     run = FleetRun.objects.get(pk=fleet_run_id)
     run.status = JobStatus.RUNNING
     run.save(update_fields=["status", "updated_at"])
-    repos = FleetRepo.objects.filter(organisation=run.organisation).order_by("full_name")
+    repos = FleetRepo.objects.filter(organisation=run.organisation).order_by(
+        "full_name"
+    )
     try:
         signatures = []
         for repo in repos:
@@ -253,14 +256,20 @@ def _finding_from_report_dict(data: dict[str, object]):
     finding_id = data["id"]
     axis = data["axis"]
     message = data["message"]
-    if not isinstance(finding_id, str) or not isinstance(axis, str) or not isinstance(message, str):
+    if (
+        not isinstance(finding_id, str)
+        or not isinstance(axis, str)
+        or not isinstance(message, str)
+    ):
         msg = "invalid finding entry in report"
         raise ValueError(msg)
     subject = data.get("subject")
     severity_raw = data.get("severity")
     severity = None
     if isinstance(severity_raw, dict) and isinstance(severity_raw.get("tier"), str):
-        severity = Severity(tier=SeverityTier(severity_raw["tier"]), raw=severity_raw.get("raw"))
+        severity = Severity(
+            tier=SeverityTier(severity_raw["tier"]), raw=severity_raw.get("raw")
+        )
     return Finding(
         id=finding_id,
         axis=axis,

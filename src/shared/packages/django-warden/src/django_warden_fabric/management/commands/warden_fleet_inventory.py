@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 import uuid
 
 from django.core.management.base import BaseCommand

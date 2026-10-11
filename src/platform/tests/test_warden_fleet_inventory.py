@@ -15,23 +15,22 @@ from django.core.management import call_command
 from django.test.utils import override_settings
 from django_pyforge.flags import evaluate_from_source
 from django_warden_fabric.fleet import FLEET_INVENTORY_FLAG
-from django_warden_fabric.fleet_inventory import (
-    DEFAULT_FLEET_INVENTORY_PATH,
-    DEFAULT_FLEET_TARGET_CONFIG,
-    ENV_FLEET_INVENTORY_PATH,
-    ENV_FLEET_TARGET_CONFIG,
-    FleetInventoryError,
-    FleetTargetConfigError,
-    GhBinaryMissingError,
-    GhLoginMissingError,
-    GitHubRestOrgReposClient,
-    HttpMethodRefusedError,
-    ListedRepo,
-    RecordingOrgReposClient,
-    atomic_write_json,
-    load_organisation_from_config,
-    run_fleet_inventory_sync,
-)
+from django_warden_fabric.fleet_inventory import DEFAULT_FLEET_TARGET_CONFIG
+from django_warden_fabric.fleet_inventory import ENV_FLEET_INVENTORY_PATH
+from django_warden_fabric.fleet_inventory import ENV_FLEET_TARGET_CONFIG
+from django_warden_fabric.fleet_inventory import FleetInventoryError
+from django_warden_fabric.fleet_inventory import FleetTargetConfigError
+from django_warden_fabric.fleet_inventory import GhAuthTokenProvider
+from django_warden_fabric.fleet_inventory import GhBinaryMissingError
+from django_warden_fabric.fleet_inventory import GhLoginMissingError
+from django_warden_fabric.fleet_inventory import GitHubRestOrgReposClient
+from django_warden_fabric.fleet_inventory import HttpMethodRefusedError
+from django_warden_fabric.fleet_inventory import ListedRepo
+from django_warden_fabric.fleet_inventory import RecordingOrgReposClient
+from django_warden_fabric.fleet_inventory import atomic_write_json
+from django_warden_fabric.fleet_inventory import load_leak_guard_terms
+from django_warden_fabric.fleet_inventory import load_organisation_from_config
+from django_warden_fabric.fleet_inventory import run_fleet_inventory_sync
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.tasks import run_fleet_inventory
 from pyforge.testing_kit.flags import flag_states
@@ -41,7 +40,10 @@ from pyforge.testing_kit.flags import make_flag_provider_fixture
 flag_provider = make_flag_provider_fixture()
 
 _EXAMPLE_ORG = "example-org"
+_FIXTURE_REPO_COUNT = 3
+_PAGINATED_REPO_COUNT = 2
 _EXIT_REFUSED = 2
+_FIXTURE_API_TOKEN = "fixture-token"
 _SENTINEL = "sentinel-token-must-not-leak-16-1"
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
@@ -93,7 +95,9 @@ def _recording_client() -> RecordingOrgReposClient:
 
 
 @pytest.fixture
-def inventory_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+def inventory_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path]:
     config = tmp_path / "fleet-target.toml"
     export = tmp_path / "fleet-inventory.json"
     config.write_text(
@@ -114,8 +118,11 @@ def test_inventory_three_repos(inventory_paths: tuple[Path, Path]) -> None:
         listing_client=client,
         export_path=export,
     )
-    assert FleetRepo.objects.filter(organisation=_EXAMPLE_ORG).count() == 3
-    assert len(document["repos"]) == 3
+    assert (
+        FleetRepo.objects.filter(organisation=_EXAMPLE_ORG).count()
+        == _FIXTURE_REPO_COUNT
+    )
+    assert len(document["repos"]) == _FIXTURE_REPO_COUNT
     payload = json.loads(export.read_text(encoding="utf-8"))
     assert payload == document
     for entry in payload["repos"]:
@@ -123,7 +130,9 @@ def test_inventory_three_repos(inventory_paths: tuple[Path, Path]) -> None:
 
 
 @pytest.mark.django_db
-def test_inventory_rerun_updates_not_duplicates(inventory_paths: tuple[Path, Path]) -> None:
+def test_inventory_rerun_updates_not_duplicates(
+    inventory_paths: tuple[Path, Path],
+) -> None:
     _config, export = inventory_paths
     client = _recording_client()
     run_fleet_inventory_sync(
@@ -136,7 +145,10 @@ def test_inventory_rerun_updates_not_duplicates(inventory_paths: tuple[Path, Pat
         listing_client=client,
         export_path=export,
     )
-    assert FleetRepo.objects.filter(organisation=_EXAMPLE_ORG).count() == 3
+    assert (
+        FleetRepo.objects.filter(organisation=_EXAMPLE_ORG).count()
+        == _FIXTURE_REPO_COUNT
+    )
 
 
 def test_pagination_reads_link_next() -> None:
@@ -156,7 +168,7 @@ def test_pagination_reads_link_next() -> None:
             "archived": False,
         },
     ]
-    client = GitHubRestOrgReposClient(token="fixture-token")
+    client = GitHubRestOrgReposClient(token=_FIXTURE_API_TOKEN)
     link = '<https://api.github.com/orgs/example-org/repos?page=2>; rel="next"'
     with patch.object(
         client,
@@ -167,11 +179,11 @@ def test_pagination_reads_link_next() -> None:
         ],
     ):
         repos = client.list_org_repos(_EXAMPLE_ORG)
-    assert len(repos) == 2
+    assert len(repos) == _PAGINATED_REPO_COUNT
 
 
 def test_http_client_refuses_non_get() -> None:
-    client = GitHubRestOrgReposClient(token="fixture-token")
+    client = GitHubRestOrgReposClient(token=_FIXTURE_API_TOKEN)
     for method in ("POST", "PUT", "PATCH", "DELETE"):
         with pytest.raises(HttpMethodRefusedError):
             client.request(method, "https://api.github.com/orgs/example-org/repos")
@@ -193,23 +205,22 @@ def test_celery_message_keys_not_blobs() -> None:
 
 
 def test_missing_gh_binary(inventory_paths: tuple[Path, Path]) -> None:
-    with patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=None):
-        with pytest.raises(GhBinaryMissingError):
-            from django_warden_fabric.fleet_inventory import GhAuthTokenProvider
-
-            GhAuthTokenProvider().token()
+    with (
+        patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=None),
+        pytest.raises(GhBinaryMissingError),
+    ):
+        GhAuthTokenProvider().token()
 
 
 def test_missing_gh_login(inventory_paths: tuple[Path, Path]) -> None:
-    with patch("django_warden_fabric.fleet_inventory.shutil.which", return_value="/usr/bin/gh"):
-        with patch(
-            "django_warden_fabric.fleet_inventory.subprocess.run",
-            return_value=subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr=""),
-        ):
-            with pytest.raises(GhLoginMissingError):
-                from django_warden_fabric.fleet_inventory import GhAuthTokenProvider
-
-                GhAuthTokenProvider().token()
+    gh_path = "/usr/bin/gh"
+    failed = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="")
+    with (
+        patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=gh_path),
+        patch("django_warden_fabric.fleet_inventory.subprocess.run", return_value=failed),
+        pytest.raises(GhLoginMissingError),
+    ):
+        GhAuthTokenProvider().token()
 
 
 def test_missing_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -241,12 +252,7 @@ def test_leak_guard_skips_when_config_absent() -> None:
 )
 def test_leak_guard_no_operator_terms_in_tracked_tree() -> None:
     organisation = load_organisation_from_config()
-    terms = [organisation.lower()] + [
-        t.lower() for t in __import__(
-            "django_warden_fabric.fleet_inventory",
-            fromlist=["load_leak_guard_terms"],
-        ).load_leak_guard_terms()
-    ]
+    terms = [organisation.lower()] + [t.lower() for t in load_leak_guard_terms()]
     for root in _LEAK_SCAN_ROOTS:
         if root.is_file():
             paths = [root]
@@ -255,7 +261,11 @@ def test_leak_guard_no_operator_terms_in_tracked_tree() -> None:
         for path in paths:
             if ".git" in path.parts:
                 continue
-            rel = path.relative_to(_REPO_ROOT) if path.is_relative_to(_REPO_ROOT) else path
+            rel = (
+                path.relative_to(_REPO_ROOT)
+                if path.is_relative_to(_REPO_ROOT)
+                else path
+            )
             tracked = subprocess.run(  # noqa: S603
                 ["git", "ls-files", "--error-unmatch", str(rel)],
                 cwd=_REPO_ROOT,
@@ -287,16 +297,18 @@ def test_sentinel_token_never_persisted_on_success(
         assert token == _SENTINEL
         return recording
 
-    with patch(
-        "django_warden_fabric.tasks.GhAuthTokenProvider",
-        _SentinelProvider,
-    ):
-        with patch(
+    with (
+        patch(
+            "django_warden_fabric.tasks.GhAuthTokenProvider",
+            _SentinelProvider,
+        ),
+        patch(
             "django_warden_fabric.tasks.GitHubRestOrgReposClient",
             _client_factory,
-        ):
-            with override_settings(CELERY_TASK_ALWAYS_EAGER=True):
-                run_fleet_inventory("run-id", _EXAMPLE_ORG)
+        ),
+        override_settings(CELERY_TASK_ALWAYS_EAGER=True),
+    ):
+        run_fleet_inventory("run-id", _EXAMPLE_ORG)
     assert _SENTINEL not in export.read_text(encoding="utf-8")
     assert _SENTINEL not in caplog.text
     for row in FleetRepo.objects.filter(organisation=_EXAMPLE_ORG):
@@ -339,16 +351,18 @@ def test_api_failure_leaves_no_export(inventory_paths: tuple[Path, Path]) -> Non
             msg = "GitHub API HTTP 503"
             raise FleetInventoryError(msg)
 
-    with patch(
-        "django_warden_fabric.tasks.GhAuthTokenProvider",
-        _SentinelProvider,
-    ):
-        with patch(
+    with (
+        patch(
+            "django_warden_fabric.tasks.GhAuthTokenProvider",
+            _SentinelProvider,
+        ),
+        patch(
             "django_warden_fabric.tasks.GitHubRestOrgReposClient",
             lambda token: _FailClient(),
-        ):
-            with pytest.raises(FleetInventoryError):
-                run_fleet_inventory("run-id", _EXAMPLE_ORG)
+        ),
+        pytest.raises(FleetInventoryError),
+    ):
+        run_fleet_inventory("run-id", _EXAMPLE_ORG)
     assert not export.exists()
 
 
@@ -378,7 +392,9 @@ def inventory_flags_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
 
 
 @pytest.mark.django_db
-def test_flag_off_refuses_exit_2(inventory_flags_off: Path, inventory_paths: tuple[Path, Path]) -> None:
+def test_flag_off_refuses_exit_2(
+    inventory_flags_off: Path, inventory_paths: tuple[Path, Path]
+) -> None:
     stderr = StringIO()
     with pytest.raises(SystemExit) as exc:
         call_command("warden_fleet_inventory", stderr=stderr)
@@ -404,26 +420,30 @@ def test_flag_gates_inventory_command(
     )
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree_path))
     client = _recording_client()
-    with patch(
-        "django_warden_fabric.tasks.GhAuthTokenProvider",
-        _SentinelProvider,
-    ):
-        with patch(
+    with (
+        patch(
+            "django_warden_fabric.tasks.GhAuthTokenProvider",
+            _SentinelProvider,
+        ),
+        patch(
             "django_warden_fabric.tasks.GitHubRestOrgReposClient",
             lambda token: client,
-        ):
-            if flag_provider[FLEET_INVENTORY_FLAG]:
+        ),
+    ):
+        if flag_provider[FLEET_INVENTORY_FLAG]:
+            call_command("warden_fleet_inventory")
+            assert export.exists()
+        else:
+            with pytest.raises(SystemExit) as exc:
                 call_command("warden_fleet_inventory")
-                assert export.exists()
-            else:
-                with pytest.raises(SystemExit) as exc:
-                    call_command("warden_fleet_inventory")
-                assert exc.value.code == _EXIT_REFUSED
+            assert exc.value.code == _EXIT_REFUSED
 
 
 def test_atomic_write_leaves_no_partial_on_failure(tmp_path: Path) -> None:
     target = tmp_path / "out.json"
-    with patch.object(Path, "replace", side_effect=OSError("disk full")):
-        with pytest.raises(OSError):
-            atomic_write_json(target, {"repos": []})
+    with (
+        patch.object(Path, "replace", side_effect=OSError("disk full")),
+        pytest.raises(OSError, match="disk full"),
+    ):
+        atomic_write_json(target, {"repos": []})
     assert not target.exists()

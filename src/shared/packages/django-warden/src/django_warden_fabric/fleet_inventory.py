@@ -44,7 +44,9 @@ class GhBinaryMissingError(FleetInventoryError):
 
 class GhLoginMissingError(FleetInventoryError):
     def __init__(self) -> None:
-        super().__init__("no github.com login in gh (gh auth login --hostname github.com)")
+        super().__init__(
+            "no github.com login in gh (gh auth login --hostname github.com)"
+        )
 
 
 class FleetTargetConfigError(FleetInventoryError):
@@ -93,7 +95,9 @@ def _parse_target_toml(raw: bytes, config_path: Path) -> dict[str, Any]:
 
 
 def load_organisation_from_config(config_path: Path | None = None) -> str:
-    path = config_path if config_path is not None else resolve_fleet_target_config_path()
+    path = (
+        config_path if config_path is not None else resolve_fleet_target_config_path()
+    )
     if not path.is_file():
         msg = "missing config; expected [github] organisation key"
         raise FleetTargetConfigError(path, msg)
@@ -110,7 +114,9 @@ def load_organisation_from_config(config_path: Path | None = None) -> str:
 
 
 def load_leak_guard_terms(config_path: Path | None = None) -> list[str]:
-    path = config_path if config_path is not None else resolve_fleet_target_config_path()
+    path = (
+        config_path if config_path is not None else resolve_fleet_target_config_path()
+    )
     if not path.is_file():
         return []
     document = _parse_target_toml(path.read_bytes(), path)
@@ -203,12 +209,12 @@ class GitHubRestOrgReposClient:
         return collected
 
     def _get_json(self, url: str) -> tuple[Any, str | None]:
-        request = urllib.request.Request(url, method="GET")
+        request = urllib.request.Request(url, method="GET")  # noqa: S310
         request.add_header("Authorization", f"Bearer {self._token}")
         request.add_header("Accept", "application/vnd.github+json")
         request.add_header("User-Agent", "pyforge-warden-fleet-inventory")
         try:
-            with self._opener.open(request, timeout=120) as response:  # noqa: S310
+            with self._opener.open(request, timeout=120) as response:
                 body = response.read()
                 link = response.headers.get("Link")
         except urllib.error.HTTPError as exc:
@@ -258,29 +264,6 @@ class RecordingOrgReposClient:
         return list(self.repos_by_org.get(organisation, []))
 
 
-class PaginatedFixtureOrgReposClient:
-    """Returns repos across pages via ``Link: rel=\"next\"`` on a recording transport."""
-
-    def __init__(
-        self,
-        *,
-        pages: list[list[ListedRepo]],
-        transport: RecordingOrgReposClient | None = None,
-    ) -> None:
-        self._pages = pages
-        self._transport = transport or RecordingOrgReposClient(repos_by_org={})
-        self._page_index = 0
-
-    def list_org_repos(self, organisation: str) -> list[ListedRepo]:
-        # Delegate to GitHubRestOrgReposClient logic via injected mock opener is heavy;
-        # tests call ``list_org_repos`` on a client that merges pages directly.
-        merged: list[ListedRepo] = []
-        for page in self._pages:
-            merged.extend(page)
-            self._transport.calls.append(("GET", f"/orgs/{organisation}/repos?page"))
-        return merged
-
-
 def export_document(repos: list[ListedRepo]) -> dict[str, list[dict[str, str | bool]]]:
     return {
         "repos": [
@@ -328,7 +311,11 @@ def run_fleet_inventory_sync(
     repos = listing_client.list_org_repos(organisation)
     persist_fleet_repos(organisation=organisation, repos=repos)
     document = export_document(repos)
-    destination = export_path if export_path is not None else resolve_fleet_inventory_export_path()
+    destination = (
+        export_path
+        if export_path is not None
+        else resolve_fleet_inventory_export_path()
+    )
     atomic_write_json(destination, document)
     return document
 
