@@ -2,7 +2,8 @@
 title: "90.1: The dispatch supervisor records completion only after the harness session has really exited"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '2578d8a3683dbab9414f221a662ab57f2f2e682a'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

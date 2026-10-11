@@ -993,7 +993,7 @@ def test_gather_git_facts_corroborates_a_station_branch_pr_against_the_tracked_s
     merged = _gather(
         repo_root,
         worktree,
-        FakeVcs(subjects=(subject,), spec_at_ref="---\nstatus: done\n---\n"),
+        FakeVcs(subjects=(subject,), spec_at_ref="---\nstatus: done\n---\n", head_sha=_MOVED),
     )
     not_merged = _gather(
         repo_root,
@@ -3638,7 +3638,8 @@ def test_gather_git_facts_counts_the_merge_when_the_run_head_is_on_origin_main(t
 def test_without_the_run_head_gate_the_manual_merge_fixture_reads_completed_on_the_first_tick(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
-    """Mutation proof (Story 83.14): disabling the head gate makes the manual-merge fixture complete immediately."""
+    """Mutation proof (Story 83.14/90.1): without the head gate a stale merge could complete a live session on tick
+    one; completion must wait until the session exits."""
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -3651,7 +3652,7 @@ def test_without_the_run_head_gate_the_manual_merge_fixture_reads_completed_on_t
     code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=[True, False]), publisher=publisher)
 
     assert code == 0
-    assert publisher.heartbeats == []
+    assert publisher.heartbeats == ["handle-1"]
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
 
 
@@ -3715,8 +3716,8 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
 
     # The premise: the reused worktree's baseline range still holds the first merge, and a normal run reads it.
     assert first_merge in _git(clone, "log", "--format=%s", f"{pre_merge_baseline}..{ORIGIN_MAIN}")
-    assert facts(None).story_merged_on_main is True
-    assert verdict(None) is DispatchSessionVerdict.COMPLETED
+    assert facts(None).story_merged_on_main is False
+    assert verdict(None) is DispatchSessionVerdict.LIVE
     # The follow-up is not fooled by it ...
     assert facts(marker).story_merged_on_main is False
     assert verdict(marker) is DispatchSessionVerdict.LIVE
@@ -3729,7 +3730,11 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
     own_merge = facts(marker)
     assert own_merge.story_merged_on_main is True
     assert own_merge.branch_merged is True
-    assert verdict(marker) is DispatchSessionVerdict.COMPLETED
+    assert verdict(marker) is DispatchSessionVerdict.LIVE
+    assert (
+        judge_dispatch_completion(DispatchCompletionInput(session_alive=False, git=own_merge))
+        is DispatchSessionVerdict.COMPLETED
+    )
 
 
 # -- _spec_land_block_reason: a follow-up's spec-only diff is its record -------------------------------
@@ -3867,7 +3872,7 @@ def test_a_follow_up_run_completes_once_its_own_merge_reaches_origin_main(
 def test_the_same_run_without_the_marker_reads_completed_on_the_stories_first_merge(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
-    """A normal run is judged exactly as today: on this repository its first tick reads COMPLETED."""
+    """A normal run completes once the session exits and its head has moved past baseline."""
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -3879,7 +3884,7 @@ def test_the_same_run_without_the_marker_reads_completed_on_the_stories_first_me
     code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=[True, False]), publisher=publisher)
 
     assert code == 0
-    assert publisher.heartbeats == []
+    assert publisher.heartbeats == ["handle-1"]
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
     assert _commit_subject_reads(vcs) == [("commit_subjects", ORIGIN_MAIN)]
 
