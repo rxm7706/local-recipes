@@ -90,6 +90,7 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Spec Change Log
 
+- 2026-10-11 (landing, second fix): the oracle test's `LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS` table gains `specs-dir-legacy` with its reason. CI caught it: a local empty `docs/specs/` directory (git tracks no empty directory) made the local run pass while CI saw the artifact absent and skipped.
 - 2026-10-11 (landing): `docs/specs/` (artifact `specs-dir-legacy`) joins the recorded seed skips in `.marshal/seed-state.yml`. Doctor Story 37.1 retired the legacy `docs/specs/` tier, so adopt planned to recreate it and PR #2110's `oracle` check (`marshal-local-recipes-seed-oracle`) failed with a one-action plan; with the skip the oracle passes. Same operator ruling ("Explicit seed skips (Recommended)").
 - 2026-10-10 — Operator ruling "Explicit seed skips (Recommended)". Changed: Intent, Acceptance Criteria (four became ten), Boundaries, Design Notes and Verification are re-derived. The 2026-10-03 AC that let the inserted AGENTS.md and CLAUDE.md regions stand is withdrawn: those files and PROJECTS.md are now recorded skips. Known-bad state avoided: the closed attempt's duplicated instruction text, lost execute bits, a tracked `.marshal/plan.json` and hand-edited first-claims. KEEP: K-02, the named CI lane, Story 70.1's renderer and the DW-FU-12-2 closure. `lint-types` moved from Commands to Manual checks; dispatch still runs it as a derived command. Status `ready-for-dev`; the ledger key is already `backlog`.
 

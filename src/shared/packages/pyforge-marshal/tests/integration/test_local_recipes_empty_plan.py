@@ -62,6 +62,7 @@ LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS: dict[str, str] = {
     "implementation-artifacts-symlink": (
         "_bmad-output/implementation-artifacts is a per-checkout symlink that scripts/bmad-switch creates"
     ),
+    "specs-dir-legacy": "docs/specs/ is the retired legacy intake tier (doctor Story 37.1 removed it)",
 }
 
 
