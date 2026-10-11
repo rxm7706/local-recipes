@@ -292,6 +292,8 @@ Type / Effort / Deps: fix / M / S-19.2.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test`: expected to pass (the station's `verify_commands`).
+
+**Run before the push (not dispatch gates; each verdict read from its exit code):**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test`: expected to pass.
 - `pixi run -e pyforge-ci pyforge-doctor-scripts-test`: expected to pass.
 - `pixi run -e pyforge-guild pixi-version-check`: expected to exit 0.
@@ -313,4 +315,5 @@ Type / Effort / Deps: fix / M / S-19.2.
 
 ## Spec Change Log
 
+- 2026-10-11: `## Verification` -> `**Commands:**` now names only herald's `verify_commands`; the doctor, scripts, registry, docs, lint, spec-surface and station-suite commands move unchanged to a "Run before the push" list. Dispatch refused the launch with MRS-DISP-050 (MRS-GATE-011: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` is not among herald's `verify_commands`). No AC, boundary or expected result changed.
 - No change yet.
