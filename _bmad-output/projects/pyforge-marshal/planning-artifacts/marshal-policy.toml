@@ -473,6 +473,21 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"93" = [  # recall reaches every live session (a fix under spec-marshal-recall-in-the-loop CAP-1/CAP-2, carried as
+  # spec-pyforge-marshal CAP-288/CAP-289; Story 93.1), added 2026-10-11, Epic 47's wiring. The default surface, restated
+  # because a declared entry replaces it outright, plus the deferred-work ledger (93.1 closes DW-marshal-47-2 and
+  # DW-marshal-47-3) and every Spec memlog (marshal's src/ is co-governed by spec-pyforge-core).
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "90" = [  # a dispatch run is complete only when its session has really ended (fix stories under CAP-160, no CAP;
   # Story 90.1), added 2026-10-10. The default surface, restated because a declared entry replaces it outright, plus
   # pyforge-core's process port and its tests (if the session's process-group read lands on ProcessPort,

@@ -306,6 +306,11 @@ All in `local-recipes`.
   only, channel-pinned to the local SelfExplainML build (mason Story 21.4). Warden runs
   it as an optional scanner that informs but never publishes the verdict (warden Story
   15.1, CAP-25).
+- **git-pkgs** (>=0.21.0,<0.22) — `git-pkgs` CLI; walks a repository's git history and
+  reports every dependency manifest/lockfile change per commit (added, removed, bumped).
+  `pyforge-atlas` env, linux-64 only, channel-pinned to the local SelfExplainML build
+  (mason Story 21.1). Atlas reads it through `RepoDependencyHistoryDataset` for the
+  per-repo dependency-history dataset (atlas Story 25.1, CAP-61).
 - **appthreat-vulnerability-db** (>=6.7.0) — `import vdb`; AppThreat multi-source
   vulnerability database library (OSV + GHSA sources locally; CVE, EPSS, CWE data
   model). Present in BOTH `local-recipes` and `vuln-db`; the ~600MB local DB lives at
