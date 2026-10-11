@@ -9,6 +9,7 @@ import textwrap
 from pathlib import Path
 
 import pytest
+from django.conf import settings
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 
@@ -17,8 +18,6 @@ _EXPECTED_STATIONS_STATUS = 404
 
 
 def _database_url_for_child() -> str | None:
-    from django.conf import settings
-
     db = settings.DATABASES["default"]
     engine = db.get("ENGINE", "")
     if "postgresql" not in engine:
@@ -41,7 +40,7 @@ def _database_url_for_child() -> str | None:
 
 
 def _build_child_script(expected_stations_status: int) -> str:
-    head = textwrap.dedent(
+    return textwrap.dedent(
         f"""
         import django
         import logging
@@ -63,7 +62,9 @@ def _build_child_script(expected_stations_status: int) -> str:
 
         class _HeraldAbsentFinder:
             def find_spec(self, fullname, path, target=None):
-                if fullname == "pyforge.herald" or fullname.startswith("pyforge.herald."):
+                if fullname == "pyforge.herald" or fullname.startswith(
+                    "pyforge.herald."
+                ):
                     raise ModuleNotFoundError(name=fullname)
                 return None
 
@@ -105,7 +106,6 @@ def _build_child_script(expected_stations_status: int) -> str:
         print("OK")
         """
     )
-    return head
 
 
 def _child_env() -> dict[str, str]:
