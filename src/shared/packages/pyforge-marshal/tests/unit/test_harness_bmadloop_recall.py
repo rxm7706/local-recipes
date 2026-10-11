@@ -121,9 +121,7 @@ class TestGroundedHit:
         assert "always run X before Y" in written
         assert "Source: feedback/x.md" in written
 
-    def test_dev_pass_uses_memory_mode_without_scope_via_fake_scribe(
-        self, loop_home: Path, repo_root: Path
-    ) -> None:
+    def test_dev_pass_uses_memory_mode_without_scope_via_fake_scribe(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="body"))
 
@@ -142,9 +140,7 @@ class TestGroundedHit:
         self, loop_home: Path, repo_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         fs = _FakeFs()
-        process = _RecordingProcess(
-            ProcessResult(returncode=0, stdout="no grounded answer found\n", stderr="")
-        )
+        process = _RecordingProcess(ProcessResult(returncode=0, stdout="no grounded answer found\n", stderr=""))
         scribe = ScribeCli(process)
         monkeypatch.setattr(scribe, "resolve_binary", lambda _root: "/usr/bin/scribe")
 
