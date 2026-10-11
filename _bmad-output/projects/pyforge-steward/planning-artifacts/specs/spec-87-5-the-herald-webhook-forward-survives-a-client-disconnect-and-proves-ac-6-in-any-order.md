@@ -385,7 +385,7 @@ Triage Log. No change to `sidecar_forward.py` or `mcp_host/app.py`; the review f
 
 ## Review Triage Log
 
-### 2026-10-11 — Independent review, iteration 2: PASS (1 minor and 1 trivial deferred)
+### 2026-10-11 — Independent review, iteration 2: PASS (1 minor, 1 trivial and 1 pre-existing hang deferred)
 
 - Separate agent, fresh review of `git diff origin/main...HEAD` at `60935ffe6c` (origin/main `15b4d5cf42`, merges cleanly); every mutation in a scratch copy. ACs (1)-(9) pass with file:line evidence.
 - Iteration-1 findings re-probed: F1 closed (restoring `continue` now fails both disconnect tests in 1.00 s with `TimeoutError`, exit 1, also under platform-ci-local's concurrent load); F2 closed (dependency-missing then `missing_secret_503` exits 0; 24 interleaved and 18 further shuffled orders exit 0); F3, F4, F5 closed (each named mutation fails its test); F6 recorded as accepted; F8 fixed. Every AC (8) mutation fails its test.
