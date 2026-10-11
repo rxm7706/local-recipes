@@ -2,12 +2,11 @@
 title: '37.1: The herald portal loads without herald and says why'
 type: 'fix'
 created: '2026-10-11'
-status: 'done'
+status: 'in-progress'
 followup_review_recommended: false
 baseline_revision: '31230019c7b72b2d5d5f8a143f713b978eb47dae'
 difficulty: 'medium'
-review_loop_iteration: 0
-followup_review_recommended: false
+review_loop_iteration: 1
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/epics.md
@@ -289,6 +288,17 @@ Type / Effort / Deps: fix / S / S-19.2.
   never a 5xx.
 
 ## Review Triage Log
+
+### 2026-10-11 — Landing verification: sent back (2 high, 1 low)
+
+Dispatch land-only re-verification (run `pyforge-herald-20261011T190323017Z-deb8f4a9`) refused three times on MRS-GATE-015, `platform-ci-local -- --test`. The earlier "Review pass" entry below skipped its review layers and never ran AC3/AC4's platform test, so it does not count as a review; an independent review gates this landing.
+
+- `[high]` `[patch]` H1 AC4 fails: `GET /stations/herald/decks/any-slug/view/` answers 500 with herald absent. The deck-viewer route passes `slug`, and `views.herald_portal_unavailable(request)` takes no keyword (`TypeError: herald_portal_unavailable() got an unexpected keyword argument 'slug'`). Fix: accept `slug` as keyword-only and ignore it, so every herald path returns the same 404 reason.
+- `[high]` `[patch]` H2 AC3's one-WARNING assertion reads records named `django_herald_portal`, but `herald_guard` logs on `django_herald_portal.herald_guard` (`logging.getLogger(__name__)`), so the count is 0. The ACs and the Auto Run summary name the logger `django_herald_portal`; fix: `herald_guard` logs on `logging.getLogger("django_herald_portal")`.
+- `[low]` `[patch]` L1 platform ruff (py312 lane): E501, RET504 and PLC0415 in `src/platform/tests/test_herald_portal_without_herald.py`. Fixed in place; no behaviour change.
+- Frontmatter carried `followup_review_recommended` twice; one removed.
+
+H1 and H2 come from the dispatch's own verify-fix turn (saved before an earlier discard, re-applied unchanged); L1 is lint only. Status returns to `in-progress` until a fresh independent review passes.
 
 ### 2026-10-11 — Review pass
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0

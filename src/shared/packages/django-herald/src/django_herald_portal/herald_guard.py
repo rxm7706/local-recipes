@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 import logging
 
-_logger = logging.getLogger(__name__)
+_logger = logging.getLogger("django_herald_portal")
 
 _HERALD_MODULE = "pyforge.herald"
 _COMPONENT = "herald"
