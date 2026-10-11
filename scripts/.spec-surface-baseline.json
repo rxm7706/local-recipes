@@ -3192,7 +3192,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/observer_mux.py": "17a1e52d0df80099c0f157bf57c56061dcb0867a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/oidc_pkce.py": "7f689e5cffcc65f1abb1bf53643d6465b4cd7811",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/published_plane.py": "62c995c99309198a42e00163e64757d18df5ea2f",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py": "079a5495320976d852ee0c01e3c9b2fee266e6dc",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py": "0ffc6827013c100dabc319c34509daa1b5f5157a",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py": "4c81a3009ec49c389ba38e6aaf2cd7cbf4081b2c",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/substrate_store.py": "51e7d1afed19e69c757e953ad48607023e54f81e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py": "9d66f552cc2d900ca429a96c5a9c98bc1f92de9f",
@@ -3261,7 +3261,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model.py": "af02338903d1b44f48b967d76632b30ba7545edc",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_list_refresh.py": "23db79936d6813caf1708e627c215abf9f2b82c2",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/pkce.py": "950ae39beb36b615a0ea83e5a2f51a3112fc2a37",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "2a8070b1ec3515e4e992a008fb47edc40b549c9c",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "20c9726e1e6cca4fb87ec8393f6642202fb66a16",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py": "fd79070c655fdfac40dcf80e735f7b829a2ed570",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "f8f140c351b36ddf6fd0b5e179e78b3e45fb1b6f",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/protected_refs.py": "48d322c479d3815bbfcbf589d7873af40f91d0c3",
@@ -3548,7 +3548,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "42eae16f0e11fce5736761abb0becbf555f89ffb"
+  "memlog": "3b353288a3af562f3ae2dbd896ea923d7dad909b"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -5463,8 +5463,8 @@
    "scripts/scribe_nightly_trigger.py": "9f95036d8b5ee494aa49ff5d708bb725328840e6",
    "scripts/scribe_pg.py": "cbba22a318c2e008b61b43ed98b0d22554bae914",
    "src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py": "369bce620626332ee9e297a5d87ce91060e4e1c0",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "2a8070b1ec3515e4e992a008fb47edc40b549c9c",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py": "029708b7dbc9a38e4846a32d5e10c1157c64c6e9",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py": "20c9726e1e6cca4fb87ec8393f6642202fb66a16",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py": "03abb8e9e624441150bb0b2d9d1bd42bc89c1caa",
    "src/shared/packages/pyforge-scribe/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-scribe/README.md": "25a32ffc7e4f3840f0cef2bbaa22d02a7f29639a",
    "src/shared/packages/pyforge-scribe/docs/cli-runbooks.md": "6b5f26faf9d930fab2ef5cd99fef934cc05d945d",
@@ -5516,7 +5516,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "e03921d4bfa45d2c7f8d2bca9d49dcf0fca948f9"
+  "memlog": "e2f28a0bb7d2dc3ed149f9663619ae77e492729a"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
