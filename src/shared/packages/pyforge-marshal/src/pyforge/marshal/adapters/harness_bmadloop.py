@@ -1437,7 +1437,7 @@ def augment_bmad_loop_session_prompt_with_recall(
     scribe: ScribeCli | None = None,
     context_layers: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[str, RecallInjectionResult | None]:
-    """Review-pass launch path (Story 47.2, CAP-2): fold the same scoped
+    """Review-pass launch path (Story 47.2, CAP-2): fold the same team-memory
     feedback block the dev pass received into ``prompt``.
 
     Story 47.3 (CAP-3): when ``context_layers`` is given, the ``recall``
