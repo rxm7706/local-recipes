@@ -1589,18 +1589,26 @@ def test_gather_dispatch_git_facts_still_recognizes_the_project_own_templated_ke
     fs = FakeFs()
     fs.files[ledger_path] = "development_status:\n  22-11-atlas-owns-this-one: done\n"
 
-    facts = gather_dispatch_git_facts(
-        vcs,
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, "22.11")
+    kwargs = dict(
         fs=fs,
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, "22.11"),
+        worktree=worktree,
         story_key="22.11",
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
         merge_subject_template="Merge {key} into main",
     )
+    facts = gather_dispatch_git_facts(vcs, **kwargs)
 
-    assert facts.story_merged_on_main is True
+    class _MovedHeadSubjectsVcs(_SubjectsVcs):
+        def worktree_head_sha(self, _worktree: Path) -> str:
+            return "moved0002"
+
+    facts_moved = gather_dispatch_git_facts(_MovedHeadSubjectsVcs(tmp_path, subjects), **kwargs)
+
+    assert facts.story_merged_on_main is False
+    assert facts_moved.story_merged_on_main is True
 
 
 def test_gather_dispatch_git_facts_missing_ledger_fails_closed(
@@ -2903,18 +2911,20 @@ def test_the_session_verdict_of_a_live_follow_up_run_is_not_completed_by_the_sto
 
 
 def test_the_session_verdict_of_a_follow_up_run_completes_on_its_own_merge(tmp_path: Path) -> None:
-    vcs = _ReaderVcs(tmp_path, own_merge=True)
+    vcs = _ReaderVcs(tmp_path, own_merge=True, head_sha="moved0001")
 
+    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER) == DispatchSessionVerdict.LIVE
     assert (
-        _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER) == DispatchSessionVerdict.COMPLETED
+        _reader_verdict(tmp_path, vcs, alive=False, followup_review=_READER_MARKER) == DispatchSessionVerdict.COMPLETED
     )
 
 
 def test_the_session_verdict_of_a_normal_run_is_still_completed_by_the_stories_merge(tmp_path: Path) -> None:
-    vcs = _ReaderVcs(tmp_path)
+    vcs = _ReaderVcs(tmp_path, head_sha="moved0001")
 
-    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=None) == DispatchSessionVerdict.COMPLETED
-    assert vcs.reads == [ORIGIN_MAIN]
+    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=None) == DispatchSessionVerdict.LIVE
+    assert _reader_verdict(tmp_path, vcs, alive=False, followup_review=None) == DispatchSessionVerdict.COMPLETED
+    assert vcs.reads == [ORIGIN_MAIN, ORIGIN_MAIN]
 
 
 _READER_SPEC_REL = f"_bmad-output/projects/{_FOLLOWUP_SLUG}/planning-artifacts/specs/spec-51-11-halt.md"
@@ -3085,7 +3095,7 @@ def test_the_drains_block_facts_do_not_read_a_follow_up_run_completed_by_the_sto
 def test_the_drains_block_facts_still_read_a_normal_run_completed_by_the_stories_merge(tmp_path: Path) -> None:
     _seed_reader_spec(tmp_path)
     _seed_reader_run(tmp_path, followup_review=None)
-    vcs = _ReaderVcs(tmp_path)
+    vcs = _ReaderVcs(tmp_path, head_sha="moved0001")
 
     assert _block_facts(tmp_path, vcs) is None
     assert vcs.reads == [ORIGIN_MAIN]

@@ -993,7 +993,7 @@ def test_gather_git_facts_corroborates_a_station_branch_pr_against_the_tracked_s
     merged = _gather(
         repo_root,
         worktree,
-        FakeVcs(subjects=(subject,), spec_at_ref="---\nstatus: done\n---\n"),
+        FakeVcs(subjects=(subject,), spec_at_ref="---\nstatus: done\n---\n", head_sha=_MOVED),
     )
     not_merged = _gather(
         repo_root,
@@ -3638,7 +3638,8 @@ def test_gather_git_facts_counts_the_merge_when_the_run_head_is_on_origin_main(t
 def test_without_the_run_head_gate_the_manual_merge_fixture_reads_completed_on_the_first_tick(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
-    """Mutation proof (Story 83.14): disabling the head gate makes the manual-merge fixture complete immediately."""
+    """Mutation proof (Story 83.14/90.1): without the head gate a stale merge could complete a live session on tick
+    one; completion must wait until the session exits."""
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -3651,7 +3652,7 @@ def test_without_the_run_head_gate_the_manual_merge_fixture_reads_completed_on_t
     code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=[True, False]), publisher=publisher)
 
     assert code == 0
-    assert publisher.heartbeats == []
+    assert publisher.heartbeats == ["handle-1"]
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
 
 
@@ -3715,8 +3716,8 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
 
     # The premise: the reused worktree's baseline range still holds the first merge, and a normal run reads it.
     assert first_merge in _git(clone, "log", "--format=%s", f"{pre_merge_baseline}..{ORIGIN_MAIN}")
-    assert facts(None).story_merged_on_main is True
-    assert verdict(None) is DispatchSessionVerdict.COMPLETED
+    assert facts(None).story_merged_on_main is False
+    assert verdict(None) is DispatchSessionVerdict.LIVE
     # The follow-up is not fooled by it ...
     assert facts(marker).story_merged_on_main is False
     assert verdict(marker) is DispatchSessionVerdict.LIVE
@@ -3729,7 +3730,11 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
     own_merge = facts(marker)
     assert own_merge.story_merged_on_main is True
     assert own_merge.branch_merged is True
-    assert verdict(marker) is DispatchSessionVerdict.COMPLETED
+    assert verdict(marker) is DispatchSessionVerdict.LIVE
+    assert (
+        judge_dispatch_completion(DispatchCompletionInput(session_alive=False, git=own_merge))
+        is DispatchSessionVerdict.COMPLETED
+    )
 
 
 # -- _spec_land_block_reason: a follow-up's spec-only diff is its record -------------------------------
@@ -3817,8 +3822,8 @@ def test_without_the_launch_tip_scope_the_reused_worktree_fixture_reads_complete
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, scope
 ) -> None:
     """Mutation proof for the launch-tip scope: with ``merge_subject_ref`` answering the whole ref, or the run's
-    baseline range, the SAME fixture as the LIVE test above reads the story's first merge as the run's own --
-    COMPLETED on the first tick, no heartbeat -- so that test fails under either mutation."""
+    baseline range, a moved head reads the story's first merge as this run's own once the session exits -- so the
+    scoped LIVE test above fails under either mutation."""
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -3830,13 +3835,13 @@ def test_without_the_launch_tip_scope_the_reused_worktree_fixture_reads_complete
     code = _run(
         repo_root,
         fs=FakeFs(),
-        vcs=_first_landing_vcs(head_sha=_BASELINE),
+        vcs=_first_landing_vcs(head_sha=_MOVED),
         process=FakeProcess(alive=[True, False]),
         publisher=publisher,
     )
 
     assert code == 0
-    assert publisher.heartbeats == []
+    assert publisher.heartbeats == ["handle-1"]
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
 
 
@@ -3867,7 +3872,7 @@ def test_a_follow_up_run_completes_once_its_own_merge_reaches_origin_main(
 def test_the_same_run_without_the_marker_reads_completed_on_the_stories_first_merge(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
-    """A normal run is judged exactly as today: on this repository its first tick reads COMPLETED."""
+    """A normal run completes once the session exits and its head has moved past baseline."""
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -3879,9 +3884,12 @@ def test_the_same_run_without_the_marker_reads_completed_on_the_stories_first_me
     code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=[True, False]), publisher=publisher)
 
     assert code == 0
-    assert publisher.heartbeats == []
+    assert publisher.heartbeats == ["handle-1"]
     assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
-    assert _commit_subject_reads(vcs) == [("commit_subjects", ORIGIN_MAIN)]
+    assert _commit_subject_reads(vcs) == [
+        ("commit_subjects", ORIGIN_MAIN),
+        ("commit_subjects", ORIGIN_MAIN),
+    ]
 
 
 def _seed_spec_only_run(repo_root: Path, launch_line: str) -> str:
@@ -4153,6 +4161,72 @@ def test_a_follow_up_runs_blocked_halt_regathers_with_the_launch_tip_scope(tmp_p
     ]
     assert completion_intent["payload"]["verdict"] == DispatchSessionVerdict.BLOCKED.value
     assert completion_intent["payload"]["story_merged_on_main"] is False
+
+
+# -- Story 90.1: atlas 25.1 sequence — no completion while the session group lives -------------------
+
+
+def test_atlas_25_1_sequence_never_completes_while_the_session_group_lives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """AC1: stale merge subject at baseline, leader dead, process group alive for three ticks."""
+    from pyforge.marshal import dispatch_verify
+
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("working\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch)
+    atlas_subject = "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1"
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    vcs = FakeVcs(
+        branches=frozenset({branch}),
+        head_sha=_BASELINE,
+        subjects_by_ref={ORIGIN_MAIN: (atlas_subject,)},
+        merged_into_refs=frozenset(),
+        spec_at_ref=_SPEC_DONE,
+        changed=("src/a.py", "src/b.py", "src/c.py"),
+        changed_vs_head=("src/a.py", "src/b.py", "src/c.py"),
+    )
+    facts = _gather_facts_spy(monkeypatch)
+    publisher = FakePublisher()
+    fs = FakeFs()
+    tick = {"n": 0}
+
+    def _group_alive(*_args, **_kwargs) -> bool:
+        tick["n"] += 1
+        return tick["n"] <= 3
+
+    monkeypatch.setattr(dispatch_verify, "session_group_has_live_member", _group_alive)
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert tick["n"] >= 4
+    assert len(publisher.heartbeats) >= 3
+    assert all(f.story_merged_on_main is False for f in facts)
+    journal = fs.journal_text(run_dir)
+    assert dispatch_core.KIND_DISPATCH_FINALIZE in journal
+    finalize_at = journal.index(dispatch_core.KIND_DISPATCH_FINALIZE)
+    pre_finalize = journal[:finalize_at]
+    assert dispatch_core.KIND_DISPATCH_COMPLETION not in pre_finalize
+    assert dispatch_core.KIND_DISPATCH_TIMING not in pre_finalize
+
+
+def test_gather_git_facts_ignores_a_corroborated_merge_at_the_launch_baseline(tmp_path: Path) -> None:
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    subject = "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1"
+    facts = _gather(
+        repo_root,
+        worktree,
+        FakeVcs(subjects=(subject,), spec_at_ref=_SPEC_DONE, head_sha=_BASELINE),
+    )
+    assert facts.story_merged_on_main is False
 
 
 # --------------------------------------------------------------------------
