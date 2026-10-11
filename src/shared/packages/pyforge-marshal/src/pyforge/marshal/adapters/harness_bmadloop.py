@@ -1348,9 +1348,7 @@ def materialize_marshal_recall_plugin(loop_home: Path) -> Path:
     """Copy the packaged marshal-recall plugin into ``<loop_home>/.bmad-loop/plugins/``."""
     dest = Path(loop_home) / ".bmad-loop" / "plugins" / MARSHAL_RECALL_PLUGIN_NAME
     if not _MARSHAL_RECALL_PLUGIN_SRC.is_dir():
-        raise HarnessPolicyWriteError(
-            f"marshal-recall plugin sources missing at {_MARSHAL_RECALL_PLUGIN_SRC!s}"
-        )
+        raise HarnessPolicyWriteError(f"marshal-recall plugin sources missing at {_MARSHAL_RECALL_PLUGIN_SRC!s}")
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists():
         shutil.rmtree(dest)
@@ -1369,9 +1367,7 @@ def resolve_loop_home_station_slug(loop_home: Path) -> str | None:
 
 
 def _recall_feedback_target(loop_home: Path, station_slug: str, *, story_key: str, run_id: str) -> Path:
-    return loop_home / recall_feedback.recall_feedback_output_relpath(
-        station_slug, story_key=story_key, run_id=run_id
-    )
+    return loop_home / recall_feedback.recall_feedback_output_relpath(station_slug, story_key=story_key, run_id=run_id)
 
 
 def _recall_query_marker_path(feedback_target: Path) -> Path:

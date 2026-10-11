@@ -21,7 +21,7 @@ def _load_context_layers(project_root: Path) -> dict[str, dict[str, object]] | N
     policy_path = project_root / ".bmad-loop" / "policy.toml"
     try:
         doc = tomllib.loads(policy_path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+    except OSError, tomllib.TOMLDecodeError, UnicodeDecodeError:
         return None
     raw = doc.get("context")
     if not isinstance(raw, dict):

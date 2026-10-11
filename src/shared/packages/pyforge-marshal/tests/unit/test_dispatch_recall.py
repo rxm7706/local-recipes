@@ -18,9 +18,7 @@ from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER
 from pyforge.marshal.core.verdict import EXIT_OK
 
 _STORY = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
-_BINDING = (
-    "\n\n## Verification\n\n- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass\n"
-)
+_BINDING = "\n\n## Verification\n\n- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass\n"
 
 
 class _FakeScribeCli:

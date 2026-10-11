@@ -34,9 +34,7 @@ _RUN_ID = "run-47"
 
 
 def _recall_paths(loop_home: Path, station_slug: str) -> tuple[Path, Path]:
-    rel = recall_feedback_core.recall_feedback_output_relpath(
-        station_slug, story_key=_STORY_KEY, run_id=_RUN_ID
-    )
+    rel = recall_feedback_core.recall_feedback_output_relpath(station_slug, story_key=_STORY_KEY, run_id=_RUN_ID)
     target = loop_home / rel
     return target, target.with_name(f"{target.name}.query-ran")
 
@@ -484,9 +482,7 @@ class TestRecallCacheKeyedByStoryDispatch:
 
     def test_two_stories_each_query_once(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
-        scribe = _FakeScribeCli(
-            ScribeRecallOutcome(ok=True, grounded=True, text="story-specific", citation="mem/x.md")
-        )
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="story-specific", citation="mem/x.md"))
         augment_bmad_loop_session_prompt_with_recall(
             "A",
             role="dev",
@@ -513,9 +509,7 @@ class TestRecallCacheKeyedByStoryDispatch:
 
     def test_same_story_new_run_queries_again(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
-        scribe = _FakeScribeCli(
-            ScribeRecallOutcome(ok=True, grounded=True, text="run-specific", citation="mem/x.md")
-        )
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="run-specific", citation="mem/x.md"))
         augment_bmad_loop_session_prompt_with_recall(
             "A",
             role="dev",

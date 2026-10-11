@@ -2975,9 +2975,7 @@ def dispatch_once(
     # Story 93.1 (CAP-288/CAP-289 wiring): seed recall disposition beside
     # `wire` and `structure_graph` so every post-composition envelope carries it.
     data["recall"] = recall_dispatch.seed_recall_disposition().journal_payload()
-    gate_recall = recall_dispatch.disposition_for_layer_gate(
-        context_layers=context_payload, station_slug=slug
-    )
+    gate_recall = recall_dispatch.disposition_for_layer_gate(context_layers=context_payload, station_slug=slug)
     if gate_recall is not None:
         data["recall"] = gate_recall.journal_payload()
 
@@ -3471,9 +3469,7 @@ def dispatch_once(
 
     feed_key = render_feed_key(story_key)
     recall_block: str | None = None
-    recall_disposition = recall_dispatch.disposition_for_layer_gate(
-        context_layers=context_payload, station_slug=slug
-    )
+    recall_disposition = recall_dispatch.disposition_for_layer_gate(context_layers=context_payload, station_slug=slug)
     if recall_disposition is None:
         recall_target = worktree / recall_feedback.recall_feedback_output_relpath(
             slug, story_key=feed_key, run_id=run_id
