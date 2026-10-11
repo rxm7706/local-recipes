@@ -460,7 +460,7 @@ development_status:
   92-1-the-dispatch-supervisor-reads-session-liveness-correctly-and-never-treats-a-vanished-worktree-as-live: done
   93-1-every-live-session-gets-the-recall-its-layer-promises-and-the-run-records-the-outcome: done
   94-1-the-review-gate-orders-review-entries-by-their-real-commit-times: done
-  94-2-a-held-pr-is-marked-ready-when-its-landing-review-passes: backlog
+  94-2-a-held-pr-is-marked-ready-when-its-landing-review-passes: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -643,5 +643,5 @@ development_status:
   epic-92-retrospective: optional
   epic-93: done
   epic-93-retrospective: optional
-  epic-94: in-progress
+  epic-94: done
   epic-94-retrospective: optional

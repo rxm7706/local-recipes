@@ -3163,7 +3163,7 @@ description = "Story 24.3 (spec-pyforge-herald CAP-50): opt-in live idempotency 
 cmd = "herald deck sync-all --proof-dir .herald/sync-proof"
 
 [feature.pyforge-herald.tasks.herald-ship-local]
-description = "Story 19.2: derive a real landing merge on origin/main with pyforge.core.landing_evidence, sign on-ship and on-pr-close, and POST both to a loopback platform ASGI host. Requires HERALD_WEBHOOK_SECRET and a running host (see docs/how-to/run-herald-live-backend-locally.md). Run from the primary checkout: pixi run -e pyforge-foundry-full-stack herald-ship-local"
+description = "Story 19.2: derive a real landing merge on origin/main with pyforge.core.landing_evidence, sign on-ship and on-pr-close, and POST both to the platform host on loopback (default http://127.0.0.1:8001), which forwards them to the mcp-host sidecar where herald's webhook runs. Requires HERALD_WEBHOOK_SECRET, the host and the sidecar (see docs/how-to/run-herald-live-backend-locally.md). Run from the primary checkout: pixi run -e pyforge-herald herald-ship-local"
 cmd = "python -m pyforge.herald.local_ship"
 
 [feature.pyforge-core.tasks.pyforge-core-test]

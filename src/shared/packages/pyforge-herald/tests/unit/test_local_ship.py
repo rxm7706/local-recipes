@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 import pytest
 from pyforge.core import roster
 
-from pyforge.herald import local_ship, webhook
+from pyforge.herald import local_ship, webhook, webhook_host
 
 
 def _landing_subject(station: str, key: str) -> str:
@@ -183,10 +183,24 @@ def test_post_signed_success_and_http_error() -> None:
     assert "raw" in body
 
 
-def test_post_signed_url_error_exits() -> None:
+def test_post_signed_records_url_error_instead_of_exiting() -> None:
     with patch.object(local_ship, "urlopen", side_effect=URLError("down")):
-        with pytest.raises(SystemExit, match="POST .* failed"):
-            local_ship.post_signed("http://127.0.0.1/x", b"s", b"{}")
+        status, body = local_ship.post_signed("http://127.0.0.1/x", b"s", b"{}")
+    assert status is None
+    assert body == {"error": "POST http://127.0.0.1/x failed: down"}
+
+
+def test_post_signed_records_a_response_timeout() -> None:
+    # urllib wraps only connect-time errors in URLError; a timeout while
+    # waiting for the response surfaces as a bare TimeoutError.
+    with patch.object(local_ship, "urlopen", side_effect=TimeoutError("timed out")):
+        status, body = local_ship.post_signed("http://127.0.0.1/x", b"s", b"{}")
+    assert status is None
+    assert "TimeoutError" in str(body["error"])
+
+
+def test_request_timeout_outlasts_the_webhook_host_timeout() -> None:
+    assert local_ship.REQUEST_TIMEOUT_SECONDS > webhook_host.REQUEST_TIMEOUT_SECONDS
 
 
 def test_deliver_landing_posts_both_webhooks() -> None:
@@ -196,13 +210,58 @@ def test_deliver_landing_posts_both_webhooks() -> None:
         "post_signed",
         side_effect=[(201, {"a": 1}), (201, {"b": 2})],
     ) as post:
-        out = local_ship.deliver_landing("http://127.0.0.1:8000/", b"s", landing)
+        out = local_ship.deliver_landing("http://127.0.0.1:8001/", b"s", landing)
     assert post.call_count == 2
     urls = [call.args[0] for call in post.call_args_list]
     assert urls[0].endswith("/stations/herald/api/v1/webhooks/on-ship")
     assert urls[1].endswith("/stations/herald/api/v1/webhooks/on-pr-close")
+    assert out["target"] == "http://127.0.0.1:8001"
+    assert out["on_ship"] == {"url": urls[0], "status": 201, "body": {"a": 1}}
+    assert out["on_pr_close"] == {"url": urls[1], "status": 201, "body": {"b": 2}}
+
+
+def test_deliver_landing_keeps_on_ship_when_on_pr_close_fails() -> None:
+    landing = local_ship.LandingCommit("d" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
+    with patch.object(
+        local_ship,
+        "post_signed",
+        side_effect=[(201, {"station": "herald"}), (None, {"error": "POST x failed: refused"})],
+    ):
+        out = local_ship.deliver_landing("http://127.0.0.1:8001", b"s", landing)
     assert out["on_ship"]["status"] == 201
-    assert out["on_pr_close"]["status"] == 201
+    assert out["on_ship"]["body"] == {"station": "herald"}
+    assert out["on_pr_close"]["status"] is None
+    assert out["on_pr_close"]["body"] == {"error": "POST x failed: refused"}
+
+
+def test_main_exits_nonzero_and_prints_both_when_one_request_fails(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
+    landing = local_ship.LandingCommit("a" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
+    with patch.object(local_ship, "resolve_landing_commit", return_value=landing):
+        with patch.object(
+            local_ship,
+            "post_signed",
+            side_effect=[(201, {"station": "herald"}), (None, {"error": "POST x failed: refused"})],
+        ):
+            assert local_ship.main(["--url", "http://127.0.0.1:9"]) == 1
+    printed = json.loads(capsys.readouterr().out)
+    assert printed["target"] == "http://127.0.0.1:9"
+    assert printed["on_ship"]["status"] == 201
+    assert printed["on_pr_close"]["status"] is None
+
+
+def test_default_url_is_the_rendered_host_port(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert local_ship.DEFAULT_HOST_URL == "http://127.0.0.1:8001"
+    monkeypatch.delenv("HERALD_WEBHOOK_URL", raising=False)
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "s")
+    landing = local_ship.LandingCommit("a" * 40, _landing_subject("herald", "19-2"), "herald", "19-2")
+    ok = {"on_ship": {"status": 201, "body": {}}, "on_pr_close": {"status": 201, "body": {}}}
+    with patch.object(local_ship, "resolve_landing_commit", return_value=landing):
+        with patch.object(local_ship, "deliver_landing", return_value=ok) as deliver:
+            assert local_ship.main([]) == 0
+    assert deliver.call_args.args[0] == "http://127.0.0.1:8001"
 
 
 def test_main_returns_zero_on_success(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:

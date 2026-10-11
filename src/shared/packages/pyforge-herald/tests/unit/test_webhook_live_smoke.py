@@ -18,7 +18,7 @@ gate's autouse ``deny_network`` fixture exists to keep out.
 Run it deliberately:
 
     HERALD_LIVE_WEBHOOK=1 pixi run -e pyforge-herald pytest \\
-        src/shared/packages/pyforge-herald/tests/test_webhook_live_smoke.py -v
+        src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py -v
 
 Uses ``httpx2`` (already a Herald dependency -- Boundaries & Constraints
 names it explicitly) to make the real HTTP call; no new test dependency.
@@ -145,6 +145,17 @@ def test_daphne_answers_a_real_signed_on_ship_post(live_daphne):
     assert records[0].compute_hours == 1.5
 
 
+def _stop_daphne(process: subprocess.Popen[str]) -> None:
+    """Terminate, then kill if SIGTERM is not honoured within 5 s -- the same
+    fallback the ``live_daphne`` fixture uses, so no daphne outlives the test."""
+    process.terminate()
+    try:
+        process.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.communicate()
+
+
 def _start_daphne(repo_root: Path, port: int) -> subprocess.Popen[str]:
     env = dict(os.environ)
     env["HERALD_REPO_ROOT"] = str(repo_root)
@@ -165,7 +176,11 @@ def _start_daphne(repo_root: Path, port: int) -> subprocess.Popen[str]:
         stderr=subprocess.STDOUT,
         text=True,
     )
-    _wait_for_port("127.0.0.1", port, timeout=_STARTUP_TIMEOUT_SECONDS)
+    try:
+        _wait_for_port("127.0.0.1", port, timeout=_STARTUP_TIMEOUT_SECONDS)
+    except BaseException:
+        _stop_daphne(process)
+        raise
     return process
 
 
@@ -214,8 +229,7 @@ def test_daphne_survives_restart_and_keeps_claim_id(tmp_path: Path):
         assert close.status_code == 201
         claim_id = close.json()["claim_id"]
     finally:
-        process.terminate()
-        process.communicate(timeout=5)
+        _stop_daphne(process)
 
     restarted = _start_daphne(tmp_path, port)
     try:
@@ -233,12 +247,11 @@ def test_daphne_survives_restart_and_keeps_claim_id(tmp_path: Path):
         assert redeliver.status_code == 201
         assert redeliver.json()["claim_id"] == claim_id
     finally:
-        restarted.terminate()
-        restarted.communicate(timeout=5)
+        _stop_daphne(restarted)
 
     from pyforge.herald import claims, progress
 
-    assert len(claims.list_claims(tmp_path)) == 1
+    assert len(claims.list_claims(tmp_path / claims.DEFAULT_CLAIMS_PATH)) == 1
     records = progress.read_all(tmp_path / progress.DEFAULT_PROGRESS_PATH)
     assert len(records) == 1
     assert records[0].station == "warden"

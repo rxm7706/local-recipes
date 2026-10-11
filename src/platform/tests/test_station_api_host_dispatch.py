@@ -116,7 +116,13 @@ def _reset_herald_webhook_app(monkeypatch) -> None:
     callable on the first request; a test that ran earlier with another
     ``HERALD_WEBHOOK_SECRET`` would otherwise answer 401 here. Reached through
     the mounted route, never a ``pyforge`` import.
+
+    It also unsets ``MCP_HOST_SIDECAR_BASE_URL``: these tests pin the
+    in-process Story 19.1 seam, and with that variable exported (as the
+    Story 19.2 live run does) the host forwards both webhook paths to the
+    mcp-host sidecar (Story 87.3) and answers 502 when nothing listens there.
     """
+    monkeypatch.delenv("MCP_HOST_SIDECAR_BASE_URL", raising=False)
     herald_app = station_api.register_station_api("herald", 1)
     for route in herald_app.routes:
         lazy = getattr(route, "app", None)

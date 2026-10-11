@@ -9,22 +9,26 @@ fully unit-tested an HMAC-verified webhook handler
 [`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)),
 and Story 13.6 mounted it for real behind `daphne`
 (`src/pyforge/herald/webhook_host.py`). **Story 19.2** documents the
-persistent local path: loopback `config.asgi:application`, `.herald/herald.db`
-on the primary checkout, and `herald-ship-local` —
+persistent local path: the platform host (`config.asgi:application` from
+`platform-dev`, no herald) on `127.0.0.1:8001` forwards the two webhook routes
+to steward's mcp-host sidecar on `127.0.0.1:8090`, where herald's webhook runs
+against `.herald/herald.db` on the primary checkout, and `herald-ship-local`
+delivers a real landing —
 [`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md).
-The disabled `herald-live-demo.yml` workflow is still a separate, CI-contained
-demo (throwaway stores). What CAN genuinely fail in CI is covered in
-[Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci). For local
-host failures (secret mismatch, host down, DW-13-6-2 timeouts), start from that
-how-to's [DW-13-6-2 (request timeouts)](../../../../docs/how-to/run-herald-live-backend-locally.md#dw-13-6-2-request-timeouts) section. "Cron job missed" is a real, if narrow, possibility: Story 13.5
+The `herald-live-demo.yml` workflow is a separate, CI-contained demo
+(throwaway stores) and is `disabled_manually`; its section below,
+[Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci), applies only
+if it is re-enabled. For local failures (secret mismatch, forward off, sidecar
+down, DW-13-6-2 timeouts), start from that how-to's
+[Troubleshooting](../../../../docs/how-to/run-herald-live-backend-locally.md#troubleshooting) section. "Cron job missed" is a real, if narrow, possibility: Story 13.5
 added `herald scheduler run` plus a documented, *opt-in* local `crontab`
 entry for an operator's own real database (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)) —
 an operator who never installed that entry has nothing to miss, but one
 who did and whose machine was off (or whose cron daemon isn't running)
 genuinely misses a scheduled revalidation. `herald-live-demo.yml`'s own
-`scheduler-demo` job is a separate, unattended proof against its own
-scratch data, not a substitute for that cron entry. Neither caveat is
+`scheduler-demo` job was a separate, unattended proof against its own
+scratch data while the workflow ran, never a substitute for that cron entry. Neither caveat is
 repeated per section below.
 
 What else exists today, and can genuinely misbehave, is the CLI-triggered
@@ -32,10 +36,15 @@ equivalent of each of those automations — including "auto-extract" (see
 below): Epic 9's `herald success create` is a standing, operator-run
 alternative that does the same storage work the `on-pr-close` webhook
 handler does, for an operator who wants a record in their own checkout
-right now rather than waiting on CI. This guide covers those real,
+right now without running the local host. This guide covers those real,
 reproducible failure modes.
 
 ## Webhook demo job failing in CI
+
+The workflow has been `disabled_manually` since its last run on 2026-08-24,
+and Story 36.1 archives it, so this section applies only if it is re-enabled.
+For the local host and sidecar, see
+[`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md#troubleshooting).
 
 **Symptom:** `herald-live-demo.yml` (Story 13.6) is red on the Actions
 tab, in one of its three jobs.
@@ -155,12 +164,13 @@ published claim.
 auto-extract a draft claim's `project_name`/`shipped_date`/evidence from
 CI's payload the moment a PR merged with all gates green. Story 13.4 built
 that webhook handler (`on-pr-close`), and Story 13.6 mounted it for real
-behind `daphne` inside `herald-live-demo.yml`'s CI-contained demo jobs
-(see [`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134))
-— but since each demo job's database is scratch and job-local, an
-operator who wants a claim in their OWN checkout still runs
-`herald success create <project>` by hand, supplying the same fields
-explicitly via flags (see
+behind `daphne` (see [`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134)).
+As of Story 19.2 that handler can create the draft in your OWN checkout:
+`herald-ship-local` derives the payload from a real landing commit and
+delivers it through the local host and the mcp-host sidecar (see
+[`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md)).
+Without the local host, run `herald success create <project>` by hand,
+supplying the same fields explicitly via flags (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-publish-a-success-claim) for the
 full create -> review -> publish walkthrough).
 

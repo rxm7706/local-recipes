@@ -542,6 +542,27 @@ def test_run_and_journal_landing_omits_the_landing_checks_key_when_the_landing_n
     assert "landing_checks" not in _landing_outcome_payload(run_dir)
 
 
+def test_run_and_journal_landing_journals_marked_ready_for_review_when_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 94.2: the dispatch-land OUTCOME carries ``marked_ready_for_review`` when the landing did."""
+    run_dir = _journal_landing_with(
+        tmp_path,
+        monkeypatch,
+        findings=(),
+        data={"marked_ready_for_review": True},
+    )
+    payload = _landing_outcome_payload(run_dir)
+    assert payload["marked_ready_for_review"] is True
+
+
+def test_run_and_journal_landing_omits_marked_ready_for_review_when_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = _journal_landing_with(tmp_path, monkeypatch, findings=(), data={})
+    assert "marked_ready_for_review" not in _landing_outcome_payload(run_dir)
+
+
 def test_an_oversized_landing_checks_record_is_offloaded_and_the_refusal_stays_visible(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

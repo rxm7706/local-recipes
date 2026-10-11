@@ -1,9 +1,11 @@
 """Local loopback caller for one real landing ship (Story 19.2).
 
 Derives station and story from ``pyforge.core.landing_evidence``, signs
-payloads the way ``webhook.verify_signature`` accepts, and POSTs them to a
-loopback Herald webhook host. Not a ``herald`` CLI verb — operator-run via
-``pixi run -e pyforge-foundry-full-stack herald-ship-local``.
+payloads the way ``webhook.verify_signature`` accepts, and POSTs them to the
+platform host on loopback, which forwards herald's two webhook paths to the
+mcp-host sidecar where herald's webhook runs (steward Story 87.3). Not a
+``herald`` CLI verb — operator-run via
+``pixi run -e pyforge-herald herald-ship-local``.
 """
 
 from __future__ import annotations
@@ -11,6 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import hmac
+import http.client
 import json
 import os
 import subprocess
@@ -27,6 +30,12 @@ from pyforge.core import landing_evidence, roster
 _MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 _DEFAULT_REPO = "rxm7706/local-recipes"
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+DEFAULT_HOST_URL = "http://127.0.0.1:8001"
+"""The host's loopback URL: the rendered daphne unit binds ``127.0.0.1`` on
+instance port 8001 (``steward deploy perimeter``'s first worker port)."""
+REQUEST_TIMEOUT_SECONDS = 150.0
+"""Above ``webhook_host.REQUEST_TIMEOUT_SECONDS`` (120 s), so a hung handler's
+``500`` (DW-13-6-2) reaches the caller instead of racing a client timeout."""
 
 
 @dataclass(frozen=True)
@@ -125,7 +134,12 @@ def build_on_pr_close_body(landing: LandingCommit, *, repo: str = _DEFAULT_REPO)
     return json.dumps(payload, separators=(",", ":")).encode("utf-8")
 
 
-def post_signed(url: str, secret: bytes, body: bytes, *, timeout: float = 120.0) -> tuple[int, dict[str, object]]:
+def post_signed(
+    url: str, secret: bytes, body: bytes, *, timeout: float = REQUEST_TIMEOUT_SECONDS
+) -> tuple[int | None, dict[str, object]]:
+    """POST one signed body. Returns ``(status, body)``; a transport failure
+    (refused connection, timeout, reset) is ``(None, {"error": ...})`` so the
+    caller keeps every response it already received."""
     ts = str(int(time.time()))
     headers = {
         "Content-Type": "application/json",
@@ -141,7 +155,11 @@ def post_signed(url: str, secret: bytes, body: bytes, *, timeout: float = 120.0)
         status = exc.code
         raw = exc.read()
     except URLError as exc:
-        raise SystemExit(f"POST {url} failed: {exc}") from exc
+        return None, {"error": f"POST {url} failed: {exc.reason}"}
+    except (OSError, http.client.HTTPException) as exc:
+        # A timeout or reset while waiting for the response is not wrapped
+        # in URLError by urllib (only connect-time errors are).
+        return None, {"error": f"POST {url} failed: {type(exc).__name__}: {exc}"}
     try:
         payload: dict[str, object] = json.loads(raw)
     except json.JSONDecodeError:
@@ -155,30 +173,27 @@ def deliver_landing(
     landing: LandingCommit,
 ) -> dict[str, object]:
     base = base_url.rstrip("/")
-    on_ship_status, on_ship_body = post_signed(
-        f"{base}/stations/herald/api/v1/webhooks/on-ship",
-        secret,
-        build_on_ship_body(landing),
-    )
-    on_close_status, on_close_body = post_signed(
-        f"{base}/stations/herald/api/v1/webhooks/on-pr-close",
-        secret,
-        build_on_pr_close_body(landing),
-    )
+    on_ship_url = f"{base}/stations/herald/api/v1/webhooks/on-ship"
+    on_close_url = f"{base}/stations/herald/api/v1/webhooks/on-pr-close"
+    on_ship_status, on_ship_body = post_signed(on_ship_url, secret, build_on_ship_body(landing))
+    on_close_status, on_close_body = post_signed(on_close_url, secret, build_on_pr_close_body(landing))
     return {
+        "target": base,
         "landing": {
             "sha": landing.sha,
             "subject": landing.subject,
             "station": landing.station,
             "story_key": landing.story_key,
         },
-        "on_ship": {"status": on_ship_status, "body": on_ship_body},
-        "on_pr_close": {"status": on_close_status, "body": on_close_body},
+        "on_ship": {"url": on_ship_url, "status": on_ship_status, "body": on_ship_body},
+        "on_pr_close": {"url": on_close_url, "status": on_close_status, "body": on_close_body},
     }
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Deliver one real landing to a loopback Herald webhook host.")
+    parser = argparse.ArgumentParser(
+        description="Deliver one real landing to the platform host on loopback (it forwards to the mcp-host sidecar)."
+    )
     parser.add_argument(
         "commit",
         nargs="?",
@@ -186,8 +201,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--url",
-        default=os.environ.get("HERALD_WEBHOOK_URL", "http://127.0.0.1:8000"),
-        help="Loopback base URL for the platform ASGI host (default HERALD_WEBHOOK_URL or http://127.0.0.1:8000)",
+        default=os.environ.get("HERALD_WEBHOOK_URL", DEFAULT_HOST_URL),
+        help=f"Loopback base URL of the platform ASGI host (default: HERALD_WEBHOOK_URL or {DEFAULT_HOST_URL})",
     )
     parser.add_argument(
         "--repo-root",

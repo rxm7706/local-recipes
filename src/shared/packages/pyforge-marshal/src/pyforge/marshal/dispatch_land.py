@@ -34,7 +34,11 @@ from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import deferred_work, identity, promotion
 from .core import dispatch as dispatch_core
 from .core.commit_vcs import CommittingVcs
-from .core.dispatch_harness_done import FollowupReview, resolve_hold_dispatch_landing
+from .core.dispatch_harness_done import (
+    FollowupReview,
+    landing_review_passed,
+    resolve_hold_dispatch_landing,
+)
 from .core.dispatch_landing import (
     SPEC_SURFACE_BASELINE_REL,
     DispatchLandingVerdict,
@@ -1816,6 +1820,58 @@ def execute_dispatch_land(
             ),
             envelope,
         )
+
+    # Story 94.2: a held draft whose spec reads ``passed`` must be marked ready before merge.
+    if landing_review_passed(story_spec_text) and pr.is_draft:
+        try:
+            pr = forge.set_pr_draft(repo_ref, pr.number, draft=False)
+        except ForgeCommandError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-018",
+                    severity=Severity.ERROR,
+                    message=f"cannot mark PR #{pr.number} ready for landing merge: {exc}",
+                )
+            )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        if pr.is_draft:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-018",
+                    severity=Severity.ERROR,
+                    message=f"cannot mark PR #{pr.number} ready for landing merge: PR is still a draft",
+                )
+            )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        data["marked_ready_for_review"] = True
 
     try:
         forge.merge_pr(
