@@ -533,6 +533,63 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
     assert code == EXIT_OK
 
 
+def test_a_stale_run_on_the_station_warns_mrs_disp_064_and_dispatch_proceeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 92.1 AC8/AC9 at the CLI: another story's run on THIS station lost its worktree (an operator sweep) and
+    its session pid still reads alive (reused). ``marshal factory dispatch`` launches anyway -- never MRS-DISP-021
+    -- and its envelope carries the MRS-DISP-064 WARN naming the run and the quarantine remedy."""
+    import json
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-stale", story_key="86.6")
+    stale_worktree = tmp_path / "wt"
+    stale_worktree.rmdir()
+    fs.dirs.discard(stale_worktree)
+
+    story = "22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(
+        '---\ndifficulty: medium\nsurface: ["src/free/**"]\n---\n' + _BV,
+        encoding="utf-8",
+    )
+    point_scope_triangle(tmp_path, slug)
+    monkeypatch.setenv("BMAD_ACTIVE_PROJECT", slug)
+    monkeypatch.chdir(tmp_path)
+
+    class CleanVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ()
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+    code = run_dispatch(
+        argparse.Namespace(slug=slug, story=story, format="json"),
+        fs=fs,
+        vcs=CleanVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(alive=True),
+    )
+
+    envelope = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in envelope["findings"]]
+    assert code == EXIT_OK
+    assert "MRS-DISP-021" not in codes
+    stale = [finding for finding in envelope["findings"] if finding["code"] == "MRS-DISP-064"]
+    assert len(stale) == 1
+    assert stale[0]["severity"] == "warn"
+    assert run_dir.name in stale[0]["message"]
+    assert "'86.6'" in stale[0]["message"]
+    assert "dispatch-runs-quarantine/" in stale[0]["message"]
+
+
 def test_overlap_advisory_is_warn_and_dispatch_proceeds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _init_git_repo(tmp_path)
     slug_a = "pyforge-marshal"

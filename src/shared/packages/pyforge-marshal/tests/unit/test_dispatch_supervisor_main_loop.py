@@ -23,6 +23,7 @@ from pathlib import Path
 import pytest
 from pyforge.core.process import ProcessResult
 
+from pyforge.marshal import dispatch_verify
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
@@ -48,6 +49,7 @@ from pyforge.marshal.core.refs import ORIGIN_MAIN, local_branch_ref
 from pyforge.marshal.dispatch_land import DispatchLandingResult
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 from pyforge.marshal.ports.commit import VcsRef
+from pyforge.marshal.ports.session_group import SessionGroupMember, SessionGroupReadError
 
 _SLUG = "pyforge-marshal"
 
@@ -3668,7 +3670,12 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
 ) -> None:
     """The story landed once, its dispatch worktree survived at the PRE-merge tip, and a follow-up review run
     was launched into it. Its ``baseline_head_sha`` is not a descendant of the first merge, so a baseline scope
-    would count that merge and read the run COMPLETED on its first tick. The launch tip does not."""
+    would count that merge as the run's own -- COMPLETED as soon as the session exits. The launch tip does not.
+
+    Since Story 90.1/92.1 a merge counts only once the run's head has moved past its baseline (and, Story 83.14,
+    once that head is on ``origin/main``), and a live session never completes. So the premise is read after the
+    run's first move -- bringing its worktree up to ``origin/main`` -- the verdicts judge an exited session, and
+    two assertions pin that a live one reads LIVE."""
     remote, clone = tmp_path / "remote.git", tmp_path / "clone"
     subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True)
     subprocess.run(["git", "clone", "-q", str(remote), str(clone)], check=True, capture_output=True)
@@ -3710,17 +3717,27 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
             followup_review=followup_review,
         )
 
-    def verdict(followup_review: FollowupReview | None) -> DispatchSessionVerdict:
-        """The completion judgment of a run whose session is still alive."""
-        return judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=facts(followup_review)))
+    def verdict(followup_review: FollowupReview | None, *, session_alive: bool = False) -> DispatchSessionVerdict:
+        """The completion judgment of the run -- by default once its session has exited."""
+        return judge_dispatch_completion(
+            DispatchCompletionInput(session_alive=session_alive, git=facts(followup_review))
+        )
 
-    # The premise: the reused worktree's baseline range still holds the first merge, and a normal run reads it.
-    assert first_merge in _git(clone, "log", "--format=%s", f"{pre_merge_baseline}..{ORIGIN_MAIN}")
+    # At its baseline nothing counts yet (the divergence rule): the head has not moved.
     assert facts(None).story_merged_on_main is False
-    assert verdict(None) is DispatchSessionVerdict.LIVE
-    # The follow-up is not fooled by it ...
+    # The run's first move: bring the reused worktree up to origin/main -- the head leaves its baseline.
+    _git(worktree, "merge", "-q", "--ff-only", ORIGIN_MAIN)
+    assert _git(worktree, "rev-parse", "HEAD") == launch_tip != pre_merge_baseline
+    # The premise: the reused worktree's baseline range still holds the first merge, and a normal run reads it as
+    # its own -- COMPLETED once the session exits. That is the trap.
+    assert first_merge in _git(clone, "log", "--format=%s", f"{pre_merge_baseline}..{ORIGIN_MAIN}")
+    assert facts(None).story_merged_on_main is True
+    assert verdict(None) is DispatchSessionVerdict.COMPLETED
+    # A live session never completes, whatever the merge facts read (Story 90.1/92.1).
+    assert verdict(None, session_alive=True) is DispatchSessionVerdict.LIVE
+    # The follow-up is not fooled by it: its scope starts at the launch tip. (Its verdict here is not asserted: a
+    # head fast-forwarded onto origin/main is merged by ancestry -- `branch_merged` -- for any run.)
     assert facts(marker).story_merged_on_main is False
-    assert verdict(marker) is DispatchSessionVerdict.LIVE
     # ... and still sees its own merge, which reaches origin/main after the launch tip.
     (worktree / "review.md").write_text("reviewed\n", encoding="utf-8")
     _git(worktree, "add", "-A")
@@ -3730,11 +3747,8 @@ def test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_th
     own_merge = facts(marker)
     assert own_merge.story_merged_on_main is True
     assert own_merge.branch_merged is True
-    assert verdict(marker) is DispatchSessionVerdict.LIVE
-    assert (
-        judge_dispatch_completion(DispatchCompletionInput(session_alive=False, git=own_merge))
-        is DispatchSessionVerdict.COMPLETED
-    )
+    assert verdict(marker) is DispatchSessionVerdict.COMPLETED
+    assert verdict(marker, session_alive=True) is DispatchSessionVerdict.LIVE
 
 
 # -- _spec_land_block_reason: a follow-up's spec-only diff is its record -------------------------------
@@ -4163,15 +4177,101 @@ def test_a_follow_up_runs_blocked_halt_regathers_with_the_launch_tip_scope(tmp_p
     assert completion_intent["payload"]["story_merged_on_main"] is False
 
 
-# -- Story 90.1: atlas 25.1 sequence — no completion while the session group lives -------------------
+# -- Story 90.1/92.1: no completion while the session's process group lives -------------------------------------
+
+#: A corroborated merge subject naming THIS fixture's story (``pyforge-marshal`` 51.11), as the atlas 25.1 run saw
+#: "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1" -- the story's earlier landing, not this run's.
+_STALE_STORY_MERGE = f"Merge pull request #1114 from rxm7706/dispatch/{_SLUG}/{_STORY_KEY}"
+#: The launch INTENT's timestamp ``_launch_line`` journals -- what a group member's start time is judged against.
+_LAUNCH_TS = datetime(2026, 9, 20, 10, 0, 0, tzinfo=timezone.utc).timestamp()
 
 
-def test_atlas_25_1_sequence_never_completes_while_the_session_group_lives(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
-) -> None:
-    """AC1: stale merge subject at baseline, leader dead, process group alive for three ticks."""
-    from pyforge.marshal import dispatch_verify
+class _GroupScript:
+    """``SessionGroupPort`` stand-in, one answer per read: a tuple of members, or an exception to raise."""
 
+    def __init__(self, rounds: list[object], *, then: object = ()) -> None:
+        self._rounds = list(rounds)
+        self._then = then
+        self.reads = 0
+
+    def iter_session_group_members(self, _session_leader_pid: int):
+        self.reads += 1
+        answer = self._rounds.pop(0) if self._rounds else self._then
+        if isinstance(answer, BaseException):
+            raise answer
+        return iter(answer)
+
+
+def _live_member(pid: int = 5151) -> SessionGroupMember:
+    return SessionGroupMember(pid=pid, started_at=_LAUNCH_TS + 120.0, is_zombie=False)
+
+
+def _use_session_group(monkeypatch: pytest.MonkeyPatch, port: _GroupScript) -> _GroupScript:
+    monkeypatch.setattr(dispatch_verify, "_DEFAULT_SESSION_GROUP", port)
+    return port
+
+
+class _InWindowLeader(FakeProcess):
+    """A leader whose start time sits inside Story 83.1's window -- the identity the read-error fallback checks --
+    alive for the first ``live_ticks`` ticks of the loop (counted off the fake clock's tick sleeps, since one tick
+    may ask ``is_alive`` more than once)."""
+
+    def __init__(self, clock: _FakeClock, *, live_ticks: int) -> None:
+        super().__init__(alive=False)
+        self._clock = clock
+        self._live_ticks = live_ticks
+
+    def is_alive(self, pid: int) -> bool:
+        self.is_alive_calls += 1
+        return len(self._clock.sleeps) < self._live_ticks
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return _LAUNCH_TS + 2.0
+
+
+class _AtlasSequenceVcs(FakeVcs):
+    """The atlas 25.1 run: the head stays at the launch baseline (which is on ``origin/main``) while the session
+    writes -- the changed paths grow tick by tick -- and ``origin/main`` already carries the story's earlier merge.
+    A commit moves the head to a tip ``origin/main`` does not hold."""
+
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)  # type: ignore[arg-type]
+        self.changed_reads = 0
+
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
+        if base == "HEAD":
+            return super().changed_files(repo_root, worktree_path, base=base)
+        self.changed_reads += 1
+        return tuple(f"src/pyforge/marshal/step_{index}.py" for index in range(self.changed_reads))
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        self.calls.append(("merge_base", a, b))
+        return a if a == _BASELINE else "not-the-run-head"
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        sha = super().commit_paths(repo_root, paths, message)
+        self.head_sha = _MOVED
+        self.dirty = False
+        return sha
+
+
+def _journal_entries(fs: FakeFs, run_dir: Path) -> list[dict]:
+    return [json.loads(line) for line in fs.journal_text(run_dir).splitlines() if line.strip()]
+
+
+def _heartbeats(entries: list[dict]) -> list[dict]:
+    return [
+        entry["payload"]
+        for entry in entries
+        if entry["kind"] == dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH and entry["payload"].get("heartbeat") is True
+    ]
+
+
+def _first_index(entries: list[dict], kind: str) -> int | None:
+    return next((index for index, entry in enumerate(entries) if entry["kind"] == kind), None)
+
+
+def _atlas_sequence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path, _AtlasSequenceVcs]:
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -4179,54 +4279,222 @@ def test_atlas_25_1_sequence_never_completes_while_the_session_group_lives(
     (run_dir / "session.log").write_text("working\n", encoding="utf-8")
     _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
     _patch_verification(monkeypatch, _clean_envelope)
-    _patch_landing(monkeypatch)
-    atlas_subject = "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1"
-    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
-    vcs = FakeVcs(
-        branches=frozenset({branch}),
+    vcs = _AtlasSequenceVcs(
+        branches=frozenset({dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)}),
         head_sha=_BASELINE,
-        subjects_by_ref={ORIGIN_MAIN: (atlas_subject,)},
+        subjects_by_ref={ORIGIN_MAIN: (_STALE_STORY_MERGE,)},
         merged_into_refs=frozenset(),
         spec_at_ref=_SPEC_DONE,
-        changed=("src/a.py", "src/b.py", "src/c.py"),
-        changed_vs_head=("src/a.py", "src/b.py", "src/c.py"),
     )
-    facts = _gather_facts_spy(monkeypatch)
-    publisher = FakePublisher()
-    fs = FakeFs()
-    tick = {"n": 0}
-
-    def _group_alive(*_args, **_kwargs) -> tuple[bool, str | None]:
-        tick["n"] += 1
-        return tick["n"] <= 3, None
-
-    monkeypatch.setattr(dispatch_verify, "session_group_has_live_member", _group_alive)
-
-    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
-
-    assert code == 0
-    assert tick["n"] >= 4
-    assert len(publisher.heartbeats) >= 3
-    assert all(f.story_merged_on_main is False for f in facts)
-    journal = fs.journal_text(run_dir)
-    assert dispatch_core.KIND_DISPATCH_FINALIZE in journal
-    finalize_at = journal.index(dispatch_core.KIND_DISPATCH_FINALIZE)
-    pre_finalize = journal[:finalize_at]
-    assert dispatch_core.KIND_DISPATCH_COMPLETION not in pre_finalize
-    assert dispatch_core.KIND_DISPATCH_TIMING not in pre_finalize
+    return repo_root, run_dir, vcs
 
 
-def test_gather_git_facts_ignores_a_corroborated_merge_at_the_launch_baseline(tmp_path: Path) -> None:
+def test_the_atlas_25_1_merge_subject_counts_for_this_fixtures_story_once_the_head_has_moved(tmp_path: Path) -> None:
+    """The oracle the AC1 test leans on: the subject DOES name this fixture's story -- at a moved head that is on
+    ``origin/main`` it reads merged. Only the divergence rule (Story 22.10, extended by 90.1/92.1) keeps it from
+    counting at the launch baseline."""
     repo_root = _repo(tmp_path)
     worktree = _worktree(repo_root)
-    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
-    subject = "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1"
-    facts = _gather(
-        repo_root,
-        worktree,
-        FakeVcs(subjects=(subject,), spec_at_ref=_SPEC_DONE, head_sha=_BASELINE),
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+
+    def _gather_at(head: str) -> DispatchGitFacts:
+        return _gather(
+            repo_root, worktree, FakeVcs(subjects=(_STALE_STORY_MERGE,), spec_at_ref=_SPEC_DONE, head_sha=head)
+        )
+
+    assert _gather_at(_MOVED).story_merged_on_main is True
+    assert _gather_at(_BASELINE).story_merged_on_main is False
+
+
+def test_atlas_25_1_sequence_never_completes_while_the_session_group_lives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """AC1: the leader is dead from the first tick, its process group lives for three ticks while the changed paths
+    grow, and ``origin/main`` carries a corroborated merge of this story from before the run. No completion or
+    timing entry while the group lives -- each of those ticks journals ``session_alive: true`` and every gathered
+    ``story_merged_on_main`` is false -- then the dirty exit is finalized before anything completes."""
+    repo_root, run_dir, vcs = _atlas_sequence(tmp_path, monkeypatch)
+    _patch_landing(monkeypatch)
+    facts = _gather_facts_spy(monkeypatch)
+    port = _use_session_group(monkeypatch, _GroupScript([(_live_member(),)] * 3))
+    fs = FakeFs()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=FakePublisher())
+
+    assert code == 0
+    assert port.reads >= 4
+    entries = _journal_entries(fs, run_dir)
+    beats = _heartbeats(entries)
+    assert [beat["session_alive"] for beat in beats[:3]] == [True, True, True]
+    assert [beat["changed_path_count"] for beat in beats[:3]] == [1, 2, 3]
+    assert all(beat["current_head_sha"] == _BASELINE for beat in beats[:3])
+    assert facts and all(gathered.story_merged_on_main is False for gathered in facts)
+    finalize = [entry for entry in entries if entry["kind"] == dispatch_core.KIND_DISPATCH_FINALIZE]
+    assert [entry["phase"] for entry in finalize] == [Phase.INTENT.value, Phase.OUTCOME.value]
+    finalize_at = _first_index(entries, dispatch_core.KIND_DISPATCH_FINALIZE)
+    for kind in (dispatch_core.KIND_DISPATCH_COMPLETION, dispatch_core.KIND_DISPATCH_TIMING):
+        first = _first_index(entries, kind)
+        assert first is None or first > finalize_at, f"{kind} journaled before the finalize"
+    timing = [entry for entry in entries if entry["kind"] == dispatch_core.KIND_DISPATCH_TIMING]
+    assert all(entry["payload"].get("final_revision") != _BASELINE for entry in timing)
+
+
+def test_atlas_25_1_sequence_judged_on_a_merge_fact_still_waits_for_the_group(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """AC1/AC5, the judgment layer alone: even when the gathered facts read the stale merge as this run's (the
+    facts 90.1's revert gathered, with no divergence rule), the run does not complete while its group lives."""
+    repo_root, run_dir, vcs = _atlas_sequence(tmp_path, monkeypatch)
+    _patch_landing(monkeypatch)
+    real_gather = supervisor_main.gather_dispatch_git_facts
+
+    def _stale_merge_reads_merged(*args, **kwargs) -> DispatchGitFacts:
+        facts = real_gather(*args, **kwargs)
+        return DispatchGitFacts(
+            baseline_head_sha=facts.baseline_head_sha,
+            current_head_sha=facts.current_head_sha,
+            changed_paths=facts.changed_paths,
+            branch_merged=facts.branch_merged,
+            story_merged_on_main=True,
+        )
+
+    monkeypatch.setattr(supervisor_main, "gather_dispatch_git_facts", _stale_merge_reads_merged)
+    _use_session_group(monkeypatch, _GroupScript([(_live_member(),)] * 3))
+    fs = FakeFs()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=FakePublisher())
+
+    assert code == 0
+    entries = _journal_entries(fs, run_dir)
+    completion_at = _first_index(entries, dispatch_core.KIND_DISPATCH_COMPLETION)
+    assert completion_at is not None
+    before = _heartbeats(entries[:completion_at])
+    assert [beat["session_alive"] for beat in before] == [True, True, True]
+    assert _completion_payload(fs, run_dir, Phase.INTENT)["session_alive"] is False
+
+
+def test_a_failed_group_read_is_journaled_on_every_heartbeat_and_on_the_completion_intent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """AC3 / review m4: while the group read raises, the identity-checked leader answers, each heartbeat names the
+    error, and so does the completion INTENT of the tick that ends the run (it journals no heartbeat)."""
+    repo_root, run_dir, vcs = _atlas_sequence(tmp_path, monkeypatch)
+    _patch_landing(monkeypatch)
+    _use_session_group(monkeypatch, _GroupScript([], then=SessionGroupReadError("psutil: invalid attr name 'pgid'")))
+    fs = FakeFs()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=_InWindowLeader(clock, live_ticks=2), publisher=FakePublisher())
+
+    assert code == 0
+    entries = _journal_entries(fs, run_dir)
+    beats = _heartbeats(entries)
+    live = [beat for beat in beats if beat["session_alive"]]
+    assert len(live) == 2
+    assert all(beat["session_liveness_error"] == "psutil: invalid attr name 'pgid'" for beat in beats)
+    intent = _completion_payload(fs, run_dir, Phase.INTENT)
+    assert intent["session_alive"] is False
+    assert intent["session_liveness_error"] == "psutil: invalid attr name 'pgid'"
+
+
+class _UnreadableStartLeader(_InWindowLeader):
+    """A leader whose start time cannot be read (a host without ``/proc``): only its cmdline can name it."""
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
+
+def test_the_supervisor_matches_the_leaders_cmdline_against_its_runs_harness_binary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """AC3 / review M2: with the group read failing and the leader's start time unreadable, the identity left is
+    the leader's cmdline -- matched against the ``binary`` of the harness profile the launch journaled."""
+    repo_root, run_dir, vcs = _atlas_sequence(tmp_path, monkeypatch)
+    _seed_journal(
+        run_dir,
+        (
+            _launch_line(),
+            _line(
+                kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+                phase=Phase.OUTCOME,
+                payload={"ok": True, "session_pid": _SESSION_PID, "harness_profile": "cursor"},
+                counter=1,
+                intent_id=JournalEntryId("dispatch-launcher-1", 0),
+            ),
+        ),
     )
-    assert facts.story_merged_on_main is False
+    _patch_landing(monkeypatch)
+    _use_session_group(monkeypatch, _GroupScript([], then=SessionGroupReadError("psutil: boom")))
+    cmdlines: list[int] = []
+
+    def _cmdline(pid: int) -> str:
+        cmdlines.append(pid)
+        return "node /home/op/.local/share/cursor-agent/versions/2026.10/index.js --print"
+
+    monkeypatch.setattr(dispatch_verify, "_process_cmdline", _cmdline)
+    fs = FakeFs()
+
+    code = _run(
+        repo_root, fs=fs, vcs=vcs, process=_UnreadableStartLeader(clock, live_ticks=2), publisher=FakePublisher()
+    )
+
+    assert code == 0
+    beats = _heartbeats(_journal_entries(fs, run_dir))
+    assert [beat["session_alive"] for beat in beats[:2]] == [True, True]
+    assert all(beat["session_liveness_error"] == "psutil: boom" for beat in beats)
+    assert cmdlines and set(cmdlines) == {_SESSION_PID}
+
+
+_STALL_SPEC_TEXT = "---\nstatus: done\nlanding_review: 'required'\n---\n\n## Intent\n\nShipped.\n"
+
+
+@pytest.mark.parametrize("group_read", ["raises-every-tick", "works-until-the-last-member-exits"])
+def test_ac4_the_2026_10_11_stall_does_not_recur(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, group_read: str
+) -> None:
+    """AC4, shaped like run ``pyforge-marshal-20261011T030728372Z-51af3462``: the session's spec reads done, its
+    head has moved past the baseline, its worktree is clean. Once the session ends (its leader, with the group read
+    raising on every tick; or its last group member, with a working read) no ``session_alive: true`` heartbeat
+    follows: the run is verified and goes to its landing under policy, the spec's landing hold included."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT, worktree_text=_STALL_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    land_calls = _patch_landing(monkeypatch, wait_ticks=1)
+    process: FakeProcess
+    if group_read == "raises-every-tick":
+        _use_session_group(
+            monkeypatch, _GroupScript([], then=SessionGroupReadError("psutil: invalid attr name 'pgid'"))
+        )
+        process = _InWindowLeader(clock, live_ticks=2)
+    else:
+        _use_session_group(monkeypatch, _GroupScript([(_live_member(),), (_live_member(),)]))
+        process = FakeProcess(alive=False)
+    vcs = FakeVcs(
+        branches=frozenset({dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)}),
+        head_sha=_MOVED,
+        dirty=False,
+        head_on_origin_main=False,
+    )
+    fs = FakeFs()
+    publisher = FakePublisher()
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=process, publisher=publisher)
+
+    assert code == 0
+    entries = _journal_entries(fs, run_dir)
+    alive_flags = [beat["session_alive"] for beat in _heartbeats(entries)]
+    assert alive_flags[:2] == [True, True]
+    assert True not in alive_flags[2:], f"a session_alive: true heartbeat followed the exit: {alive_flags}"
+    assert False in alive_flags[2:], "the landing's wait tick journals the exited session"
+    assert _completion_payload(fs, run_dir, Phase.INTENT)["session_alive"] is False
+    verification = [entry for entry in entries if entry["kind"] == dispatch_core.KIND_DISPATCH_VERIFICATION]
+    assert [entry["phase"] for entry in verification] == [Phase.INTENT.value, Phase.OUTCOME.value]
+    assert len(land_calls) == 1
+    assert "landing_review: 'required'" in (land_calls[0]["story_spec_text"] or "")
+    assert publisher.completions[0][1] == DispatchSessionVerdict.COMPLETED.value
 
 
 # --------------------------------------------------------------------------

@@ -116,10 +116,12 @@ from ..dispatch_verification_journal import build_dispatch_verification_journal_
 from ..dispatch_verify import (
     ProcessWaitResult,
     TerminateProcessGroupResult,
+    assess_dispatch_session_liveness,
     check_unsanctioned_cfe_commits,
     compose_dispatch_policy,
     evaluate_dispatch_verification,
     fix_session_alive,
+    harness_binary_for_profile,
     resolve_spec_text_for_story,
     run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
@@ -2691,6 +2693,12 @@ def run_dispatch_supervisor(
             except ValueError:
                 session_launched_at = None
             break
+    # Story 92.1: the run's harness ``binary``, from the profile its launch journaled -- the identity the
+    # liveness fallback matches against the leader's cmdline when the group read fails and the leader's start
+    # time cannot be read.
+    launch_profile_name, _launch_model, _launch_wire, _launch_hsid = _launch_context_from_folded(folded, run_id)
+    session_harness_binary = harness_binary_for_profile(launch_profile_name, repo_root=repo_root)
+    session_liveness_error: str | None = None
 
     while True:
         tick_count += 1
@@ -2715,9 +2723,12 @@ def run_dispatch_supervisor(
             time.sleep(_TICK_SECONDS)
             continue
 
-        from ..dispatch_verify import assess_dispatch_session_liveness
-
-        liveness = assess_dispatch_session_liveness(process, session_pid, launched_at=session_launched_at)
+        liveness = assess_dispatch_session_liveness(
+            process,
+            session_pid,
+            launched_at=session_launched_at,
+            harness_binary=session_harness_binary,
+        )
         session_alive = liveness.alive
         session_liveness_error = liveness.liveness_error
         session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)
@@ -3061,6 +3072,9 @@ def run_dispatch_supervisor(
             "branch_merged": git_facts.branch_merged,
             "story_merged_on_main": git_facts.story_merged_on_main,
         }
+        if session_liveness_error is not None:
+            # Story 92.1: the tick that ends the run journals no heartbeat, so its group-read error rides here.
+            intent_payload["session_liveness_error"] = session_liveness_error
         if stale_blocked_finding is not None:
             intent_payload["finding"] = stale_blocked_finding
         intent_entry = build_entry(

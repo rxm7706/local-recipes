@@ -42,11 +42,8 @@ def dispatch_run_is_stale(*, fs: FsPort, journal: dispatch_core.DispatchJournalF
         return False
     if landing_journal_indicates_complete(journal.landing_verdict):
         return False
-    worktree = Path(journal.worktree_path)
-    exists = getattr(fs, "exists", None)
-    if exists is not None:
-        return not exists(worktree)
-    return not worktree.exists()
+    # AD-4: the existence read goes through the FsPort, never ``Path.exists`` inside ``core/``.
+    return not fs.exists(Path(journal.worktree_path))
 
 
 def stale_dispatch_run(
@@ -56,6 +53,8 @@ def stale_dispatch_run(
     run_id: str,
     slug: str,
 ) -> DispatchStaleRun | None:
+    """The stale-run report for one run dir (run id, story, the missing worktree, the quarantine remedy), else
+    ``None``. A reader only reports it: the operator moves the run dir, marshal never does."""
     if journal.story_key is None or not dispatch_run_is_stale(fs=fs, journal=journal):
         return None
     assert journal.worktree_path is not None

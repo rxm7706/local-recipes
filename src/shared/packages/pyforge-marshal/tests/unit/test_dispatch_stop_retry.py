@@ -173,6 +173,10 @@ class FakeFs:
         except OSError:
             return None
 
+    def exists(self, path: Path) -> bool:
+        # Story 92.1: the stale-run read (a run whose worktree is gone) goes through ``FsPort.exists``.
+        return path.exists()
+
 
 class FakeVcs:
     def __init__(self, repo_root: Path, *, head_sha: str = "bbb222") -> None:

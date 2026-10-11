@@ -24,7 +24,7 @@ from pyforge.core.flags import FlagConfigError, read_boolean
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
-from .adapters.session_group_psutil import PsutilSessionGroup
+from .adapters.session_group_psutil import PsutilSessionGroup, process_cmdline
 from .adapters.vcs_git import VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
@@ -50,6 +50,7 @@ from .core.dispatch_verification import (
 )
 from .core.dispatch_verify_fix import VERIFY_FIX_LOOP_FLAG_KEY
 from .core.egress import to_redacted_text
+from .core.harness_profile import HarnessProfileError, load_profiles
 from .core.identity import StoryKey, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
@@ -1129,25 +1130,43 @@ _DEFAULT_SESSION_GROUP = PsutilSessionGroup()
 
 @dataclass(frozen=True)
 class DispatchSessionLiveness:
-    """Story 92.1: dispatch session liveness with optional group-read degradation."""
+    """Story 92.1: dispatch session liveness, with the group read's error when that read failed."""
 
     alive: bool
     liveness_error: str | None = None
 
 
-def _proc_cmdline_names_binary(pid: int, binary: str) -> bool:
+def _process_cmdline(pid: int) -> str | None:
+    """The impure cmdline read behind the identity fallback; a unit test replaces it, never a real pid's."""
+    return process_cmdline(pid)
+
+
+def _cmdline_names_binary(pid: int, binary: str) -> bool:
+    cmdline = _process_cmdline(pid)
+    if not cmdline:
+        return False
+    name = Path(binary).name or binary
+    return name in cmdline
+
+
+def harness_binary_for_profile(profile_name: str | None, *, repo_root: Path | None) -> str | None:
+    """Story 92.1: the ``binary`` a run's harness profile declares (packaged profiles, overlaid by
+    ``repo_root``'s), or ``None`` when the run names no profile or the profile cannot be loaded -- the identity
+    fallback then has no cmdline to match, and an unreadable start time reads not alive."""
+    if not profile_name:
+        return None
     try:
-        raw = Path(f"/proc/{pid}/cmdline").read_bytes()
-    except OSError:
-        return False
-    if not raw:
-        return False
-    cmdline = raw.replace(b"\x00", b" ").decode("utf-8", errors="replace")
-    return binary in cmdline
+        profiles, _overlay_errors = load_profiles(repo_root)
+    except HarnessProfileError, OSError:
+        return None
+    profile = profiles.get(profile_name)
+    return profile.binary if profile is not None else None
 
 
 def _member_started_with_session(start_time: float | None, launched_at: datetime | None) -> bool:
-    """Story 92.1: a group member counts when it started at or after the launch (with clock allowance)."""
+    """Story 92.1: a group member counts when it started at or after the launch, less Story 83.1's clock allowance,
+    with no upper bound -- a child the session starts hours in is still the session. One that started earlier is
+    another process."""
     if launched_at is None:
         return True
     if start_time is None:
@@ -1162,13 +1181,18 @@ def identity_checked_leader_alive(
     launched_at: datetime | None,
     harness_binary: str | None = None,
 ) -> bool:
-    """Story 92.1: leader-only fallback when the group read fails — never degrade to alive on unreadable identity."""
+    """Story 92.1: the answer when the group read failed -- the launched pid alone, with its identity checked.
+
+    It must exist and not be a zombie, and it must be the launch's process: a start time inside Story 83.1's
+    window, or, when the start time cannot be read, a cmdline naming the run's harness ``binary``. Anything
+    else -- including an unreadable start time with no binary to match -- is not the session: a read error never
+    degrades to alive."""
     if not process.is_alive(pid) or _is_zombie(pid):
         return False
     start_time = process.process_start_time(pid)
     if start_time is not None and launched_at is not None:
         return dispatch_core.pid_start_matches_launch(start_time, launched_at)
-    if harness_binary and _proc_cmdline_names_binary(pid, harness_binary):
+    if harness_binary and _cmdline_names_binary(pid, harness_binary):
         return True
     return False
 
@@ -1180,7 +1204,8 @@ def session_group_has_live_member(
     launched_at: datetime | None,
     process: ProcessPort,
 ) -> tuple[bool, str | None]:
-    """True when any non-zombie group member that belongs to this session still runs (Story 90.1/92.1)."""
+    """``(alive, read_error)``: alive when any non-zombie member of the launch's group started at or after the
+    launch (Story 90.1/92.1). A failed read is ``(False, message)`` -- never alive."""
     try:
         members = tuple(session_group.iter_session_group_members(session_leader_pid))
     except SessionGroupReadError as exc:
@@ -1205,19 +1230,31 @@ def assess_dispatch_session_liveness(
     session_group: SessionGroupPort | None = None,
     harness_binary: str | None = None,
 ) -> DispatchSessionLiveness:
-    """Story 83.1/90.1/92.1: leader pid, then the launch's process group, with identity-checked fallback."""
-    if fix_session_alive(process, pid, launched_at=launched_at):
-        return DispatchSessionLiveness(alive=True)
+    """Story 83.1/90.1/92.1: is the dispatch session still running -- its leader, or any process of its group?
+
+    1. A leader pid that exists, is not a zombie and has a readable start time outside Story 83.1's window is
+       another process (pid reuse). The pid of a live process-group leader is never handed out again, so the
+       session's own group has ended too: not alive, and the group is not read -- its members are the new
+       process's.
+    2. Otherwise the launch's process group is read (the session runs under ``start_new_session=True``, so its
+       group id is the leader pid). A member that started at or after the launch keeps the session alive.
+    3. When that read fails, the answer is the identity-checked leader (``identity_checked_leader_alive``), with
+       the read's error carried for the heartbeat -- never "alive" for the error itself.
+    4. A read that succeeded but found no member leaves Story 83.1's leader rule: an existing, non-zombie leader
+       whose start time cannot be read (or whose launch is unknown) is judged by its existence."""
+    leader_present = process.is_alive(pid) and not _is_zombie(pid)
+    if leader_present and not dispatch_core.pid_start_matches_launch(process.process_start_time(pid), launched_at):
+        return DispatchSessionLiveness(alive=False)
     port = session_group if session_group is not None else _DEFAULT_SESSION_GROUP
     group_alive, liveness_error = session_group_has_live_member(port, pid, launched_at=launched_at, process=process)
     if group_alive:
         return DispatchSessionLiveness(alive=True)
     if liveness_error is not None:
-        leader_alive = identity_checked_leader_alive(
-            process, pid, launched_at=launched_at, harness_binary=harness_binary
+        return DispatchSessionLiveness(
+            alive=identity_checked_leader_alive(process, pid, launched_at=launched_at, harness_binary=harness_binary),
+            liveness_error=liveness_error,
         )
-        return DispatchSessionLiveness(alive=leader_alive, liveness_error=liveness_error)
-    return DispatchSessionLiveness(alive=False)
+    return DispatchSessionLiveness(alive=leader_present)
 
 
 def dispatch_session_alive(
@@ -1228,7 +1265,7 @@ def dispatch_session_alive(
     session_group: SessionGroupPort | None = None,
     harness_binary: str | None = None,
 ) -> bool:
-    """Story 83.1/90.1/92.1: dispatch session liveness — leader pid, then the launch's process group."""
+    """Story 83.1/90.1/92.1: dispatch session liveness -- ``assess_dispatch_session_liveness``'s answer alone."""
     return assess_dispatch_session_liveness(
         process,
         pid,

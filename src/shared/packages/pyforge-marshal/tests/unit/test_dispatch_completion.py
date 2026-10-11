@@ -86,16 +86,48 @@ def test_run_head_reached_ref_fails_closed_on_vcs_error() -> None:
     assert run_head_reached_ref(_Vcs(), Path("/tmp"), "abc123", "refs/remotes/origin/main") is False
 
 
-def test_judge_live_when_session_alive_even_if_story_merged_on_main() -> None:
+@pytest.mark.parametrize("branch_merged", [False, True])
+@pytest.mark.parametrize("story_merged_on_main", [False, True])
+@pytest.mark.parametrize("head_moved", [False, True])
+def test_judge_is_live_while_the_session_lives_whatever_main_says(
+    branch_merged: bool, story_merged_on_main: bool, head_moved: bool
+) -> None:
+    """Story 90.1/92.1 AC5: a live session is LIVE for every combination of the merge facts and progress."""
     git = DispatchGitFacts(
         baseline_head_sha="aaa",
-        current_head_sha="bbb",
+        current_head_sha="bbb" if head_moved else "aaa",
         changed_paths=(),
-        branch_merged=True,
-        story_merged_on_main=True,
+        branch_merged=branch_merged,
+        story_merged_on_main=story_merged_on_main,
     )
-    verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git))
-    assert verdict == DispatchSessionVerdict.LIVE
+
+    assert (
+        judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git)) == DispatchSessionVerdict.LIVE
+    )
+
+
+@pytest.mark.parametrize(
+    ("branch_merged", "story_merged_on_main", "head_moved", "expected"),
+    [
+        (True, False, True, DispatchSessionVerdict.COMPLETED),
+        (False, True, True, DispatchSessionVerdict.COMPLETED),
+        (True, True, False, DispatchSessionVerdict.COMPLETED),
+        (False, False, True, DispatchSessionVerdict.LIVE),
+        (False, False, False, DispatchSessionVerdict.FAILED),
+    ],
+)
+def test_judge_of_an_exited_session_is_what_it_was_before_90_1(
+    branch_merged: bool, story_merged_on_main: bool, head_moved: bool, expected: DispatchSessionVerdict
+) -> None:
+    git = DispatchGitFacts(
+        baseline_head_sha="aaa",
+        current_head_sha="bbb" if head_moved else "aaa",
+        changed_paths=(),
+        branch_merged=branch_merged,
+        story_merged_on_main=story_merged_on_main,
+    )
+
+    assert judge_dispatch_completion(DispatchCompletionInput(session_alive=False, git=git)) == expected
 
 
 def test_judge_completed_when_story_merged_on_main() -> None:
