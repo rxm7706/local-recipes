@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**178** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**185** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -4814,3 +4814,73 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   resolution: Story 27.5 pins each filter-declaring page's data source to the build-time frame `_declared_filter_bundle` already read so Vizro does not mark the filter `_dynamic` and hide its selector until clientside reload.
   verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:500 — `_data_page` registers `build_frame` in `data_manager` when `_declared_filter_bundle` succeeds.
   status: closed
+
+### DW-atlas-25-1-1: Story 25.2's fleet sensor re-runs the 25.1 job over `params:dependency_history.repos` only, so the link to Warden's inventory (CAP-26) is nominal.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: The `dependency_history_fleet_sensor` decides from Warden's fleet inventory which repos moved, but its `RunRequest` carries only tags (a run key and a moved-repo count), and the `build_repo_dependency_history` node it triggers scans the repos listed in `params:dependency_history.repos` (default `[]`). A repo Warden inventories but the params do not list is never scanned, and the moved-repo names never reach the job. Follow-up: carry the moved repos (with a clone source) from the inventory into the job -- run config or a catalog input that degrades to empty when the export is absent -- so the inventory, not the params list, is the scan set.
+  evidence: 25.1 review iteration 2, `[low] [note]` (2026-10-10). The sensor's `RunRequest` passes no run config; the node's only input is `params:dependency_history.repos` (25.1 dropped the `warden_fleet_inventory` input because Kedro loaded the absent export before the flag could skip the node -- iteration-1 finding, high); the inventory rows hold `full_name` and `head_sha`, no clone URL.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py (build_fleet_inventory_sensor, the RunRequest); src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/pipeline.py (build_repo_dependency_history inputs)
+  origin: review finding, atlas Story 25.1 independent review iteration 2
+  severity: low
+  promoted: 2026-10-10 -- implementer response to 25.1 review iteration 2
+  status: open
+
+### DW-atlas-25-1-2: A timed-out `git pkgs` leaves `git-pkgs` running orphaned: the timeout kills only the top-level `git`.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: `RepoDependencyHistoryDataset` runs git-pkgs as `git -C <clone> pkgs init|history` through `pyforge.core.process.PosixProcess.run` with a per-call timeout. On a timeout, `subprocess.run` kills only its direct child -- the `git` dispatcher -- so the `git-pkgs` it started survives as an orphan and keeps indexing (and holding its throwaway database directory) until it finishes on its own. The repo itself still reads `unresolved` and the run continues. Fix in pyforge-core, not in the station: have `PosixProcess.run` start the child in its own session or process group (`start_new_session=True`) and kill the whole group (`os.killpg`) on a timeout, so every caller's grandchildren die with the child.
+  evidence: 25.1 independent review iteration 5, `[low] [defer]` (2026-10-10). Calling the `git-pkgs` binary directly instead of `git pkgs` was considered and not taken: the spec names `git pkgs init --no-hooks`, and a direct call removes only the `git` layer -- any process git-pkgs starts itself would still outlive a timeout -- so only a process-group kill closes it for every caller.
+  location: src/shared/packages/pyforge-core/src/pyforge/core/process.py (PosixProcess.run, its timeout path); src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py (`_git_pkgs_rows`, the `git pkgs` calls)
+  origin: review finding, atlas Story 25.1 independent review iteration 5
+  severity: low
+  promoted: 2026-10-10 -- implementer response to 25.1 review iteration 5
+  status: open
+
+### DW-atlas-25-1-3: An emptied remote still wipes the history of a repo that was only ever built partially.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: The empty-remote guard keys on the state head, which a partial build never advances; git-pkgs is absent on osx-arm64 and win-64, so there every build is partial. Verified: pixi rows go to 0, degradation "", reason "no commits yet". The Spec Change Log line "only a repo never built reads as an empty history" overstates the fix.
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: key the guard on an existing partition (`_partition_head(...) is not None`)
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
+  status: open
+
+### DW-atlas-25-1-4: A `local_path` source follows whatever branch the operator has checked out.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: Since iteration 5's `_follow_target`, a `local_path` clone resets to the source's current HEAD branch: a dependency added only on a feature branch appeared then vanished, and each branch switch re-walks the full history (before iteration 5 the clone stayed on its first upstream).
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: pin the walked ref for local paths, or name the walked ref in the spec
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
+  status: open
+
+### DW-atlas-25-1-5: A symlinked `.git/logs` (or `hooks`/`info`) planted in Atlas's own cache still passes `_clone_is_usable`.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: Verified: reflog appends landed in the symlink's target repo. Requires a hand-placed symlink inside Atlas's cache; no code path creates one.
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: reject any symlink under the clone's `.git`
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
+  status: open
+
+### DW-atlas-25-1-6: Two story tests fail on hosts with `init.defaultBranch=main`, and the spec's Auto Run Result text is stale.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: `test_a_default_branch_switch_is_followed` and `test_a_remote_head_naming_no_branch_keeps_the_last_good_history` fail where git's `init.defaultBranch` is `main` (verified); the spec's "Auto Run Result" still says "DuckDB sqlite scan", "fleet inventory + params" and "7 passed".
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: `git init -b master` in `_init_fixture_repo`; refresh or mark the Auto Run Result historical
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
+  status: open
