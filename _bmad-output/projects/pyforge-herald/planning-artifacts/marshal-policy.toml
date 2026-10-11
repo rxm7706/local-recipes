@@ -461,6 +461,22 @@ verify_commands = [
   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"37" = [  # the host's Django pages load without herald installed (fix, no CAP), added 2026-10-11 with Story 37.1 (operator ruling "Mint a herald fix story (Recommended)"; Deps S-19.2).
+  # The default surface, restated because a declared entry replaces it outright, plus what 37.1 reaches outside the
+  # herald package: the django-herald portal (the guard, urls.py, views.py, deck_viewer.py), the new platform test,
+  # 19.2's how-to (its --skip-checks note and expected-warning sentence), herald's deferred-work ledger
+  # (DW-herald-19-2-1), and every Spec memlog (spec-pyforge-unifying-strategy governs django_herald_portal/ and
+  # src/platform/tests/). Never src/platform/config/** or django-pyforge (the story spec's Never list).
+  "src/shared/packages/pyforge-herald/**",
+  "src/shared/packages/django-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/tests/test_herald_portal_without_herald.py",
+  "docs/how-to/run-herald-live-backend-locally.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
