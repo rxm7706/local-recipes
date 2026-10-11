@@ -6,7 +6,7 @@ status: 'in-progress'
 followup_review_recommended: false
 baseline_revision: '31230019c7b72b2d5d5f8a143f713b978eb47dae'
 difficulty: 'medium'
-review_loop_iteration: 1
+review_loop_iteration: 2
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/epics.md
@@ -288,6 +288,23 @@ Type / Effort / Deps: fix / S / S-19.2.
   never a 5xx.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 2: sent back (2 medium, 6 low)
+
+Separate agent, fresh review of `git diff origin/main...HEAD` at be1e9071e3 against the intent, ACs, Boundaries and I/O matrix. H1, H2 and L1 hold; AC1, AC2 (platform-dev: `manage.py check` with one portal warning, `migrate --plan` without `--skip-checks`), AC3/AC4/AC5 platform files (50 passed) and the AC7/AC8 mutations hold. Gates: `pyforge-herald-test` 0 (1780 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0, `deferred-work-check` 0.
+
+- `[medium]` `[patch]` R1 `django_herald_portal/herald_guard.py:35` sets `_decided = True` before the import attempt, so a dependency error that must propagate is raised once and every later call returns the cached `False`. Django retries a failed URLconf import, so the second resolution mounts the absent branch silently (no WARNING) and herald paths answer 500 with `RuntimeError: portal_absent_reason called while herald is installed`. Breaks the I/O row "herald present, a herald dependency missing: the URLconf import fails, naming it" for a long-running process. Fix: set `_decided` only in the absent and success branches; test two calls under a dependency `ModuleNotFoundError`, both raise.
+- `[medium]` `[patch]` R2 `django_herald_portal/urls.py:12-20` mounts only the three named routes when herald is absent; `/stations/herald/decks/x/`, `/stations/herald/other/` fall through to Wagtail's serve and `/stations/herald/decks/a.b/view/` gets Resolver404, against "every path under `/stations/herald/`". Fix: a trailing catch-all route to the unavailable view (accepting `**kwargs`); add a non-route path to the AC3 loop.
+- `[low]` `[patch]` R3 `pyforge-herald/tests/meta/test_portal_herald_guard.py:73-83` the throwaway-package test never calls the guard (a "catch any MNFE" mutation stays green). Fix: point the guard's module name at the throwaway package and call `herald_is_installed()`.
+- `[low]` `[patch]` R4 `src/platform/tests/test_herald_portal_without_herald.py:151-153` asserts `combined.count(X) == combined.count(X)` (tautology). Fix: `== 1`.
+- `[low]` `[patch]` R5 `docs/how-to/run-herald-live-backend-locally.md:134-137` names the logger `django_herald_portal.herald_guard`; it is `django_herald_portal` since H2.
+- `[low]` `[patch]` R6 herald `deferred-work-ledger.md` `DW-herald-19-2-1` `verified:` cites `herald_guard.py:28` (a blank line); `herald_is_installed` is at `:30` (re-check after R1).
+- `[low]` `[patch]` R7 `test_portal_import_boundary.py:24-35` misses `from pyforge import herald`; only AC3 caught that mutation. Fix: also flag `ImportFrom` module `pyforge` with alias `herald`.
+- `[low]` `[patch]` R8 AC5 bullet 3 (no WARNING on `django_herald_portal` with herald present) and bullet 2 (resolve to the named views) have no direct test; a spurious-warning mutation passed 49 tests. Fix: a platform test asserting `resolve(...).url_name`/`func` and no portal WARNING.
+- `[low]` `[patch]` R9 `views.py:34` `@require_GET` on the unavailable view makes POST/HEAD answer 405 instead of the 404 reason; the absent branch should answer every method with the reason.
+- `[low]` `[reject]` R10 Boundaries say "one meta-test"; the diff adds two plus a one-line marker edit. A reasonable split, and the memlog names all three.
+
+Send-back: R1-R9 in one pass; a fresh independent review (iteration 3) gates the landing.
 
 ### 2026-10-11 — Landing verification: sent back (2 high, 1 low)
 
