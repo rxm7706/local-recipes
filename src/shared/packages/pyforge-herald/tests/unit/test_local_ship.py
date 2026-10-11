@@ -198,6 +198,9 @@ def test_deliver_landing_posts_both_webhooks() -> None:
     ) as post:
         out = local_ship.deliver_landing("http://127.0.0.1:8000/", b"s", landing)
     assert post.call_count == 2
+    urls = [call.args[0] for call in post.call_args_list]
+    assert urls[0].endswith("/stations/herald/api/v1/webhooks/on-ship")
+    assert urls[1].endswith("/stations/herald/api/v1/webhooks/on-pr-close")
     assert out["on_ship"]["status"] == 201
     assert out["on_pr_close"]["status"] == 201
 

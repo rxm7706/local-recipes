@@ -16,7 +16,7 @@ The disabled `herald-live-demo.yml` workflow is still a separate, CI-contained
 demo (throwaway stores). What CAN genuinely fail in CI is covered in
 [Webhook demo job failing in CI](#webhook-demo-job-failing-in-ci). For local
 host failures (secret mismatch, host down, DW-13-6-2 timeouts), start from that
-how-to's troubleshooting section. "Cron job missed" is a real, if narrow, possibility: Story 13.5
+how-to's [DW-13-6-2 (request timeouts)](../../../../docs/how-to/run-herald-live-backend-locally.md#dw-13-6-2-request-timeouts) section. "Cron job missed" is a real, if narrow, possibility: Story 13.5
 added `herald scheduler run` plus a documented, *opt-in* local `crontab`
 entry for an operator's own real database (see
 [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)) —
