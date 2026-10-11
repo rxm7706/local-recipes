@@ -532,9 +532,9 @@
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
    "pixi.lock": "99b84151b51fa5ab631a7b8848b38f916dc5272a",
-   "pixi.toml": "4ea0cd290744c9cf7d493ffeeb86b6e0e99b7b69"
+   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
   },
-  "memlog": "39ccf012762552e35b64981d7737a12aca19b07a"
+  "memlog": "a48c8838740edc787117438d40eb736e520b00ec"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -792,15 +792,15 @@
  },
  "pyforge-herald/spec-deck-family-currency": {
   "files": {
-   "pixi.toml": "4ea0cd290744c9cf7d493ffeeb86b6e0e99b7b69"
+   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
   },
-  "memlog": "6138907ffb13122e1853a32b57748956b95367b0"
+  "memlog": "6a325a54b8453aea1baa270727202100b8e264aa"
  },
  "pyforge-herald/spec-deck-family-lockstep": {
   "files": {
-   "pixi.toml": "4ea0cd290744c9cf7d493ffeeb86b6e0e99b7b69"
+   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
   },
-  "memlog": "e1e91ff00c4f3355c29c82c9bddd387d095ae68a"
+  "memlog": "cceff536451b6c3d4b450289eea0653a6a8c7b39"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
@@ -6082,7 +6082,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "4ea0cd290744c9cf7d493ffeeb86b6e0e99b7b69",
+   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -7144,7 +7144,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "60ae9bd26c934e0fa41ed2d17d426b51b9887193"
+  "memlog": "248c20c78bc5ea486a950121657b65e2abba2d12"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
