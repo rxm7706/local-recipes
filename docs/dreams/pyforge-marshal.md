@@ -1319,6 +1319,24 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   grounding, recall stays a CLI subprocess, and marshal never edits bmad-loop's installed package (operator rulings
   2026-10-11: "in-progress (Recommended)", "Mint a wiring story (Recommended)" and "Fold into pyforge-marshal
   (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 93 / Story 93.1, specced 2026-10-11.
+- **2026-10-11 (a passing review read as older)** — **Found: the review gate read a passing review as older than the
+  failure it answered, and refused a finished story.** Story 89.1's land-only gate takes the latest Review Triage Log
+  entry in git's order, from `git blame --porcelain`. That format prints a commit's details, its committer time among
+  them, only the first time the commit appears in the output. Marshal's parser gives every later line of the same
+  commit the time 0. Steward 87.5's iteration-2 PASS commit (`a937d924be`) also changed two frontmatter lines above the
+  log, so its PASS heading read 0. The older "Independent review, iteration 1: sent back" heading (`ddbd78cca7`) read
+  its real time, so the gate took it as the latest entry, and `marshal factory dispatch` refused the land-only re-run
+  with `MRS-DISP-063`. A commit that touched only the heading line (`b80f33a196`) worked around it. The same read
+  serves the drain's plan and the landing finalize's promotion check, and the error cuts both ways: a failed review
+  committed together with a frontmatter edit can read as older than the pass before it, and then a re-dispatch or a
+  finalize passes it. **What it looks like when fixed:** every line git blames carries its own commit's committer
+  time. A line whose time cannot be read makes the log unreadable, so the gate refuses (AD-8); it never counts as
+  oldest. A test with a real repository commits a "sent back" entry, then a commit that edits the frontmatter and adds
+  a later PASS heading: the gate takes the PASS, and the mirror case refuses. **Constraints:** a fix story under
+  CAP-169 (the land-only path, whose gate Story 89.1 added) with CAP-229 (the promotion check), no CAP, no flag; the
+  gate's rule and its callers do not change, and git's order stays the authority (operator ruling 2026-10-11: "Mint fix
+  story (Recommended)", queued after Story 93.1). Owner `spec-pyforge-marshal`. → Epic 94 / Story 94.1, specced
+  2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
