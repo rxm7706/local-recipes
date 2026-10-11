@@ -12,7 +12,7 @@ a big change. Provenance comes from `git log --diff-filter=A -- <file>`.
 
 ## Added since the 2026-07-26 audit
 
-Four workflows landed after the original audit and this table never caught up:
+Workflows landed after the original audit and this table never caught up (one, `herald-live-demo.yml`, has since been archived):
 
 | workflow | trigger | what it does |
 |---|---|---|

@@ -199,7 +199,7 @@ development_status:
   48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept: done
   49-1-the-verified-column-on-every-capability: done
   49-10-index-atlas-realization-gate-effect-stories: done
-  49-11-index-herald-realization-gate-effect-stories: blocked
+  49-11-index-herald-realization-gate-effect-stories: done
   49-12-index-mason-realization-gate-effect-stories: done
   49-13-index-scribe-realization-gate-effect-stories: done
   49-14-cap-10-in-effect-the-resilience-primitives-get-a-real-caller-or-the-criterion-says-test-only: done
@@ -448,7 +448,7 @@ development_status:
   epic-47-retrospective: optional
   epic-48: done
   epic-48-retrospective: optional
-  epic-49: in-progress
+  epic-49: done
   epic-49-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional

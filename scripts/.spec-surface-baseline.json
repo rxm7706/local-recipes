@@ -576,7 +576,7 @@
    "docs/how-to/reconcile-spec-surface.md": "f9cf25fd5f8adb36331a3c90aad489c6cd661035",
    "docs/how-to/restore-operations.md": "50eb40bfd6b76462878a403e547625ffb0217f14",
    "docs/how-to/run-and-understand-detectors.md": "360ba71515c1199d7100819b2c266ce16537ec65",
-   "docs/how-to/run-herald-live-backend-locally.md": "ffba42bedd6b1647055ca5a260a6fc2c9e8578f8",
+   "docs/how-to/run-herald-live-backend-locally.md": "1e0c02bd8ce1b2b5c24c5f6ba3df4c5783f18177",
    "docs/how-to/station-cli-operations.md": "9e2551ec419f3541373843fc98f5d229fe9774bc",
    "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "5cafb00243b95e5616910c5b404095b9305b8691",
@@ -749,7 +749,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py": "1c91135e08dbbbf9225a7abbac57ed17e5a6296d",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py": "48ad6f9c55c88d7044bb7aa8e6b1cf077962f8ed",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py": "44bcb672ed752054ad17fa550370fe29f30ec0c7",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py": "b3deb127e1253bb8b56b6e0e2fde630cceca78bb",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py": "926db86411b426a6db62d1e867e5f6696ed40739",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_marshal_story_status.py": "49497bbade16fa7f2493404cfd19a9cb33923ba6",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain.py": "07d66f717a1e7d68fc328f93117b9bd60540fc09",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fold_complete.py": "d921448a16d2f7d6b8f51ec45a2cb91909437592",
@@ -765,7 +765,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "ee8e21be1715925381aeac239ca7872f7e54da00"
+  "memlog": "eb1f96aa3f7d6d23d496aa2f00dd41445e33b8f8"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -2531,7 +2531,7 @@
    "src/shared/packages/pyforge-herald/docs/operator-guide.md": "7fcd1179671e5f982c28509bea85d6911f08be37",
    "src/shared/packages/pyforge-herald/docs/web-ux-guide.md": "42e5daf22baf6e7d064c17c32a7078e39a596edc",
    "src/shared/packages/pyforge-herald/pixi.toml": "61128b142b49c0b2d70c47d848d22e783335786f",
-   "src/shared/packages/pyforge-herald/pyproject.toml": "d2eb61babe5e2c327c202bd085fa29bf6de43894",
+   "src/shared/packages/pyforge-herald/pyproject.toml": "d39e635f31ac75adb61360dc837ae332acf76bb3",
    "src/shared/packages/pyforge-herald/scripts/export_notices_snapshot.py": "d5b5c98483e0bb91ad6c9e412e0e516a0f676f5e",
    "src/shared/packages/pyforge-herald/scripts/export_progress_snapshot.py": "307893e413d4a2496fcc00bd4f326a10892b0a55",
    "src/shared/packages/pyforge-herald/scripts/export_web_snapshot.py": "d206b259f0cd8d056444e1d9458e5bf77357cca9",
@@ -2660,7 +2660,7 @@
    "src/shared/packages/pyforge-herald/tests/unit/test_watch.py": "8ac8d8d37b772e4ff6c5555553e2b138f6f5fa28",
    "src/shared/packages/pyforge-herald/tests/unit/test_webhook.py": "1ce907a87634f26bd1d9b8b0921acce5a18a2aaa",
    "src/shared/packages/pyforge-herald/tests/unit/test_webhook_host.py": "d041b05d563878af52fdd52e3b0e6beaa20e9a46",
-   "src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py": "64403eef37f428a3d703059b2347613c8cc5b550",
+   "src/shared/packages/pyforge-herald/tests/unit/test_webhook_live_smoke.py": "963074823d1e6e6da388e8c0d8bcc6dd46b9f921",
    "src/shared/packages/pyforge-herald/web/.gitignore": "5a55b1e8e23c782e141182ac4fbf4542fbec7e2d",
    "src/shared/packages/pyforge-herald/web/README.md": "e5b71aa4beac887a401faf1e8646c989e19f70b6",
    "src/shared/packages/pyforge-herald/web/index.html": "6b4b9380dc76531df96b5b2af78c79f6637a4b28",
@@ -2692,7 +2692,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "c3643cedecf958137b4b9870e00fbf11d946663c"
+  "memlog": "b89b254a93fe131c87e177b5038d3ad52d205f8f"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
