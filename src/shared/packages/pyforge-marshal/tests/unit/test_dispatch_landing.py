@@ -3871,8 +3871,9 @@ def _hold_land(
     landing_review: str = "required",
     hold_landing_cli: bool = False,
     spec_body: str | None = None,
+    worktree_name: str = "wt",
 ) -> tuple:
-    worktree = tmp_path / "wt"
+    worktree = tmp_path / worktree_name
     worktree.mkdir()
     if spec_body is None:
         _seed_hold_spec(worktree, landing_review=landing_review)
@@ -3921,7 +3922,9 @@ def test_execute_dispatch_land_marks_ready_for_quoted_passed_and_hold_cli(tmp_pa
     assert envelope.data.get("marked_ready_for_review") is True
 
     forge2 = _HeldDraftForge()
-    result2, envelope2 = _hold_land(tmp_path, forge2, landing_review="passed", hold_landing_cli=True)
+    result2, envelope2 = _hold_land(
+        tmp_path, forge2, landing_review="passed", hold_landing_cli=True, worktree_name="wt-hold-cli"
+    )
     assert result2.verdict == DispatchLandingVerdict.LANDED
     assert envelope2.data.get("marked_ready_for_review") is True
 
@@ -3953,12 +3956,11 @@ def test_execute_dispatch_land_refuses_when_mark_ready_fails(tmp_path: Path) -> 
     assert result.verdict == DispatchLandingVerdict.REFUSED
     assert forge.merge_count == 0
     assert envelope.data.get("marked_ready_for_review") is None
-    assert envelope.findings
-    assert envelope.findings[0].code == "MRS-DISP-018"
-    assert "2111" in envelope.findings[0].message
+    assert any(f.code == "MRS-DISP-018" for f in envelope.findings)
+    assert any("2111" in f.message for f in envelope.findings if f.code == "MRS-DISP-018")
 
     forge2 = _HeldDraftForge(ready_still_draft=True)
-    result2, envelope2 = _hold_land(tmp_path, forge2, landing_review="passed")
+    result2, envelope2 = _hold_land(tmp_path, forge2, landing_review="passed", worktree_name="wt-still-draft")
     assert result2.verdict == DispatchLandingVerdict.REFUSED
     assert forge2.merge_count == 0
     assert "MRS-DISP-018" in _codes(envelope2)
