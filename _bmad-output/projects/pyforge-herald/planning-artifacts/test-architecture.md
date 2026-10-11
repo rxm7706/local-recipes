@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 91be4448670e3be6
-story_count: 129
-test_file_count: 83
+source_fingerprint: a1036d825854f80f
+story_count: 130
+test_file_count: 85
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 129
-- **Epics parsed:** 36
-- **Test files inventoried:** 83 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 130
+- **Epics parsed:** 37
+- **Test files inventoried:** 85 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `91be4448670e3be6`
+- **Source fingerprint:** `a1036d825854f80f`
 
 ## Risk Assessment
 
@@ -64,6 +64,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 33: The genesis deck counts archived Dreams where they now live (spec-one-chain-per-station CAP-11)
 - Epic 34: Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11)
 - Epic 36: The CI live demo retires to the archive once a ship records itself locally
+- Epic 37: The host's Django pages load without herald installed
 
 ### Low-risk epics
 
@@ -92,6 +93,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` | meta | none observed |
@@ -136,6 +138,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_export_web_snapshot.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_integration_epic11.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_live_design_spike.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_local_ship.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_locking.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_mcp_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_notices.py` | unit | none observed |
@@ -294,6 +297,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 35.1 | The deck transport, sync-all, deck tooling and docs site close their open def... | none observed |
 | 35.2 | The docs-site checks and the sync-proof row close on real evidence | none observed |
 | 36.1 | The CI live-demo workflow moves to the archive and its readers follow | none observed |
+| 37.1 | The herald portal loads without herald and says why | none observed |
 
 ## Quality Gates
 
