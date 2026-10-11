@@ -2693,10 +2693,10 @@
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
-   ".gitignore": "f1e39281d01f68d8837d03991142af4bb177c11d",
-   "pixi.toml": "4ea0cd290744c9cf7d493ffeeb86b6e0e99b7b69"
+   ".gitignore": "5c22309b480bab8aef74a35f9a762bfb706c4135",
+   "pixi.toml": "e7b194c3c34e5dbc08006f29f5fa3c153a7ee556"
   },
-  "memlog": "0d404b3d62c8259b7192fba3129373df12d387cd"
+  "memlog": "b58784fe1d4842a4c237ea75b2e7ebd402164af1"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {},
