@@ -122,6 +122,7 @@ from ..dispatch_verify import (
     evaluate_dispatch_verification,
     fix_session_alive,
     resolve_spec_text_for_story,
+    run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
     terminate_process_group,
     verify_fix_loop_enabled,
@@ -2379,6 +2380,66 @@ def _run_and_journal_ruff_format(
     return counter
 
 
+def _run_and_journal_environment_yaml(
+    *,
+    fs: FsPort,
+    vcs: CommittingVcs,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    story_key: str,
+    worktree: Path,
+) -> int:
+    """Story 91.1: regenerate ``environment.yaml`` and journal when it changed or export failed."""
+    result = run_dispatch_environment_yaml_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        process=process,
+    )
+    if not result.paths and result.export_exit_code is None:
+        return counter
+    if not result.paths and not result.committed and result.export_exit_code == 0:
+        return counter
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_ENVIRONMENT_YAML,
+        phase=Phase.INTENT,
+        payload={"story_key": story_key, "paths": list(result.paths)},
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_ENVIRONMENT_YAML,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "story_key": story_key,
+            "paths": list(result.paths),
+            "committed": result.committed,
+            "export_exit_code": result.export_exit_code,
+            "ok": result.committed,
+        },
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal environment.yaml regen for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
+
+
 def _run_and_journal_verification(
     *,
     fs: FsPort,
@@ -2397,6 +2458,18 @@ def _run_and_journal_verification(
     """Run independent gate verification and journal the outcome (Story 22.3)."""
     if callable(getattr(vcs, "commit_paths", None)):
         counter = _run_and_journal_ruff_format(
+            fs=fs,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            story_key=story_key,
+            worktree=worktree,
+        )
+        counter = _run_and_journal_environment_yaml(
             fs=fs,
             vcs=vcs,  # CommittingVcs duck type
             process=process,

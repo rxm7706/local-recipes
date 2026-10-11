@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from pyforge.core.process import ProcessError, ProcessPort
+from pyforge.core.process import ProcessPort
 
 from . import dispatch as dispatch_core
 from .commit_vcs import CommittingVcs
@@ -57,10 +57,7 @@ def apply_dispatch_environment_yaml_before_verify(
         return DispatchEnvironmentYamlResult((), False, None)
 
     env_path = worktree / ENVIRONMENT_YAML_PATH
-    try:
-        result = process.run(list(_EXPORT_TOKENS), cwd=worktree)
-    except ProcessError as exc:
-        return DispatchEnvironmentYamlResult((ENVIRONMENT_YAML_PATH,), False, exc.returncode)
+    result = process.run(list(_EXPORT_TOKENS), cwd=worktree)
 
     if result.returncode != 0:
         return DispatchEnvironmentYamlResult((ENVIRONMENT_YAML_PATH,), False, result.returncode)
