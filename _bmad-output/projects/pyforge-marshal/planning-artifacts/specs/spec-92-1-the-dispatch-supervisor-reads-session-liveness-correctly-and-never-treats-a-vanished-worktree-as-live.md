@@ -2,7 +2,7 @@
 title: "92.1: The dispatch supervisor reads session liveness correctly and never treats a vanished worktree as live"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '6b5182c155fa451b9d5af75f8945e57537166a33'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -437,3 +437,19 @@ the run-dir shape the supervisor reads. The real process tests are POSIX only an
 - **`supervisor_should_exit`'s result is ignored.** 90.1 named this, and it is unchanged here.
 - **The verify-fix turn's liveness stays leader-only.** The fix turn is bounded by its budget and stopped with
   `terminate_process_group`.
+
+## Review Triage Log
+
+### 2026-10-11 — Review pass (build-auto implementation)
+- verdicts: 0 findings from parallel review layers (implementation verified locally; independent landing review still required per `landing_review: 'required'`)
+- findings: none
+
+## Auto Run Result
+
+Implementation re-lands Story 90.1 session liveness with Story 92.1 fixes: process-group membership via `os.getpgid` (not psutil `pgid`), session-first completion judgment, baseline divergence for `story_merged_on_main`, identity-checked leader fallback on group-read errors with `session_liveness_error` heartbeats, and stale runs when the journaled worktree is missing (`MRS-DISP-064`, `dispatch_stale_runs` on status, fleet-picture ATTENTION watch).
+
+Verification: `pyforge-marshal-test` (12270 passed), `pyforge-deps-test` (130 passed), `lint-types` (exit 0), `python scripts/spec_surface_reconcile.py` (exit 0).
+
+Follow-up review recommendation: `false` (no patch-tier review findings from this pass). Operator still owes the separate landing review in this spec before release per Story 83.18.
+
+Residual risk: while group reads fail, liveness follows the leader only (documented in spec); cmdline identity fallback is best-effort via `/proc/pid/cmdline` when `create_time` is unreadable.
