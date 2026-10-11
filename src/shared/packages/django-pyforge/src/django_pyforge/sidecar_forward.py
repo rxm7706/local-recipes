@@ -71,6 +71,10 @@ def _sidecar_url(base: str, allowed_path: str) -> str:
     return f"{base}{allowed_path}"
 
 
+class _ClientDisconnected(Exception):
+    pass
+
+
 async def _read_webhook_body(receive: Any) -> bytes:
     chunks: list[bytes] = []
     size = 0
@@ -78,7 +82,7 @@ async def _read_webhook_body(receive: Any) -> bytes:
     while True:
         message = await receive()
         if message["type"] != "http.request":
-            continue
+            raise _ClientDisconnected()
         messages += 1
         if messages > MAX_BODY_MESSAGES:
             msg = f"request body arrived in more than {MAX_BODY_MESSAGES} chunks"
@@ -120,14 +124,14 @@ async def dispatch_herald_webhook_forward(
     path = scope.get("path", "")
     if not is_herald_webhook_path(path):
         return False
-    if not is_allowed_herald_webhook_path(path):
-        await _send_host_not_found(send)
-        return True
     base = sidecar_base_url()
     if not base:
         return False
     if not evaluate_boolean(HERALD_WEBHOOK_SIDECAR_FLAG, default=False):
         return False
+    if not is_allowed_herald_webhook_path(path):
+        await _send_host_not_found(send)
+        return True
     await proxy_herald_webhook(base, path, scope, receive, send)
     return True
 
@@ -145,6 +149,8 @@ async def proxy_herald_webhook(
     hop_failures = (httpx.RequestError, httpx.StreamError, httpx.InvalidURL)
     try:
         body = await _read_webhook_body(receive)
+    except _ClientDisconnected:
+        return
     except _BodyTooLarge as exc:
         await _send_body_too_large(send, exc)
         return

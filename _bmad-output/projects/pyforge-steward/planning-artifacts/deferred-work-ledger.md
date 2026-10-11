@@ -6311,6 +6311,29 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-10-10 — Story 87.3 AC (13)
   status: open
 
+### DW-steward-87-5-1: The AC (3) herald-absent test leaks optional-component state and re-imports a second herald copy; two docstrings still say the flag is OFF everywhere until Story 87.4
+
+- source_spec: `planning-artifacts/specs/spec-87-5-the-herald-webhook-forward-survives-a-client-disconnect-and-proves-ac-6-in-any-order.md`
+  summary: `test_webhook_herald_forward_host.py`'s AC (3) herald-absent case calls `import_optional` directly, which sets `optional_components._absent_reasons["herald"]` and `_logged_absent` with nothing clearing them, and its `finally` calls `_reset_herald_webhook_caches` while the `pyforge.herald*` modules are still removed, importing a second herald copy. No current test order fails; a later test asserting `absent_reason("herald") is None` or patching `"pyforge.herald.x.Y"` by string would. Also `test_herald_webhook_sidecar.py:270` and `:315` still read "The flag is OFF in every environment until Story 87.4 lands".
+  evidence: independent review iteration 2 (2026-10-11, PASS on `60935ffe6c`): after the test, `sys.modules["pyforge"].herald is not sys.modules["pyforge.herald"]` and `absent_reason("herald")` returns the not-installed reason with herald installed; `test_webhook_herald_forward_host.py:512-558`, `:531-538`, `:555`.
+  location: src/platform/tests/test_webhook_herald_forward_host.py
+  origin: Story 87.5 independent review iteration 2 (minor + trivial), deferred at landing
+  fix: monkeypatch `_absent_reasons` and `_logged_absent` to fresh containers; in the `finally` reset only the mount's `_inner` without importing `webhook_host`; update the two docstrings.
+  severity: low
+  promoted: 2026-10-11 — Story 87.5 landing review
+  status: open
+
+### DW-steward-87-5-2: The module-scoped `TestClient(mcp_host_app)` fixture hangs at teardown when it is set up twice in one process
+
+- source_spec: `planning-artifacts/specs/spec-87-5-the-herald-webhook-forward-survives-a-client-disconnect-and-proves-ac-6-in-any-order.md`
+  summary: `src/platform/tests/test_mcp_host_sidecar.py:52-55` opens a module-scoped `with TestClient(mcp_host_app)`. When tests from different files interleave so the fixture is set up twice in one process, teardown hangs (exit 124 under a timeout). Normal and file-grouped orders are unaffected, so CI is green; a randomized or interleaved run (pytest-randomly, `-p xdist` with loadscope off) would hang. Predates Story 87.5: reproduces on `origin/main` with no 87.5 test involved.
+  evidence: independent review iteration 2 (2026-10-11): smallest repro is the initialize test, any test from another file, then the get-405 test; an orphaned 70-minute pytest from such an order was found and killed.
+  location: src/platform/tests/test_mcp_host_sidecar.py
+  origin: Story 87.5 independent review iteration 2 (info, pre-existing)
+  severity: low
+  promoted: 2026-10-11 — Story 87.5 landing review
+  status: open
+
 ### DW-steward-90-1-1: Three load-sensitive assertions in doctor, marshal and atlas fail under a 28-lane `pr-preflight` and pass alone; out of scope for Story 90.1
 
 - source_spec: `planning-artifacts/specs/spec-90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp.md`
