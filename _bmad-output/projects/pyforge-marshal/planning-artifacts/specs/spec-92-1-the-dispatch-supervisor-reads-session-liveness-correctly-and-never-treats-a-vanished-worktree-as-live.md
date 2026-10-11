@@ -2,9 +2,9 @@
 title: "92.1: The dispatch supervisor reads session liveness correctly and never treats a vanished worktree as live"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: '6b5182c155fa451b9d5af75f8945e57537166a33'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 landing_review: 'required'
 context:
@@ -594,6 +594,17 @@ mutated.
 | Finalize-pending ignores the stale rule | the finalize-pending stale test (1) |
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 2: sent back (1 major, 2 minor)
+
+Separate agent, fresh review on `3bc84d22ee`; probes on the real host (psutil 7.2.2), mutations in a scratch copy. All iteration-1 findings (B1, M1-M5, m1-m6) are fixed and re-probed; every AC passes on the branch tip; every sampled mutation fails a test (the reverted 90.1 bug now fails 19). The AC10 deviation (premise read after a fast-forward onto `origin/main`) is faithful, not a weakening. Liveness-order regression checks clean (the reused-pid short-circuit matches main's Story 83.1 answer; launch-to-spawn gap at most 1.24 s across 921 runs; 0 of 921 run dirs falsely stale). Gates exit 0: `pyforge-marshal-test` (12354 passed), `pyforge-marshal-coverage-gate`, `lint-types`, `spec-surface-check`, `flag-gate-check`, `spec_surface_reconcile.py`, `pyforge-deps-test`; `detectors-ci` 1 only on `ledger-direction` (main moved; clears on merge). Paths under `src/shared/packages/pyforge-marshal/`.
+
+- `[major]` `[patch]` N1 `MRS-DISP-064` collides with Story 93.1 on `main`: 93.1 (merge `544b6b683b`) registers `MRS-DISP-064` as "scribe recall failed on factory dispatch -- WARN" (`core/findings.py:2015-2016`, `core/verdict.py:1280`, emitted at `cli/dispatch.py:3499`, pinned by `test_dispatch_recall.py:117,167`). This branch registers the same code for the stale-run WARN. Merging main conflicts in `core/findings.py`; resolved naively, the story's own stale-run test sees two `MRS-DISP-064` findings. Fix: merge `origin/main` (memlogs unioned main-first), re-mint the stale-run WARN as the next free `MRS-DISP-` code on current main (re-check at merge time), update `findings.py`, `verdict.py`, `test_findings.py`, every test asserting the old code, this spec (Intent/ACs and a Spec Change Log line) and `epics.md` if it names the code; re-stamp scoped and re-run every gate.
+- `[minor]` `[patch]` m1 (AC5 second bullet): CLI group liveness is untested -- making `_is_dispatch_session_alive` (`cli/dispatch.py:1830`) return False whenever the leader pid is dead, without reading the group, passes the full suite. Fix: a test with a dead leader and a live post-launch group member asserting the guard refuses (`MRS-DISP-011`) and the status row reads running.
+- `[minor]` `[patch]` m2 resume/attach ignore the stale rule: `_ensure_dispatch_supervision` (`cli/dispatch.py:3812-3925`) proceeds when the session reads alive although the stale run's verdict is `None`, respawning a supervisor on a missing worktree that loops forever (its tick `continue`s on the git failure before the liveness read, `dispatch_supervisor/__main__.py:2718-2724`). Fix: refuse with `MRS-DISP-023` naming the missing worktree and the quarantine remedy; test it.
+- Info: I1 a stale latest run skips `dispatch_in_flight_stories` (`cli/status.py:950`), dropping an earlier live parallel run from the row; I2 `test_session_group_psutil.py`'s own-group test calls `pid_exists` then `getpgid` (small race under xdist); I3 `marshal status` 8.1 s vs 6.8 s on base (every run journal parsed, profiles reloaded per liveness read); I4 cmdline identity is a substring match, reachable only when the group read fails and the start time is unreadable; I5 small uncovered branches at `dispatch_verify.py:1141`, `:1147`, `:1160-1161`, `:1171`, `:1173`, `:1218`.
+
+Send-back: N1 required; m1 and m2 in the same pass; I1 and I2 fixed if cheap. A fresh independent review (iteration 3) gates the landing.
 
 ### 2026-10-11 — Independent review, iteration 1: sent back (1 blocker, 5 major, 6 minor)
 
