@@ -432,7 +432,7 @@ def test_rendered_policy_template_documents_recall_context_layer():
     assert "CONTEXT_LAYER_NAMES" in text or "planning-graph, recall" in text
 
 
-def test_recall_layer_enabled_lists_marshal_recall_plugin(tmp_path: Path) -> None:
+def test_recall_layer_enabled_lists_marshal_recall_plugin(tmp_path) -> None:
     from pyforge.marshal.adapters.harness_bmadloop import MARSHAL_RECALL_PLUGIN_NAME, write_policy_toml
 
     effective = _compose(context={"recall": {"enabled": True, "aggressiveness": "medium"}})

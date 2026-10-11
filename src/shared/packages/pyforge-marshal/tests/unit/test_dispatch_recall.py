@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from test_dispatch import FakeBuildHarness, FakeFs, FakeProcess, FakeVcs, _init_git_repo
 
 from pyforge.marshal.adapters.scribe_cli import ScribeRecallOutcome
 from pyforge.marshal.cli import dispatch as dispatch_module
@@ -15,7 +16,6 @@ from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER
 from pyforge.marshal.core.verdict import EXIT_OK
-from test_dispatch import FakeBuildHarness, FakeFs, FakeProcess, FakeVcs, _init_git_repo
 
 _STORY = "22-1-the-dispatch-verb-launches-one-governed-isolated-story-session"
 _BINDING = (

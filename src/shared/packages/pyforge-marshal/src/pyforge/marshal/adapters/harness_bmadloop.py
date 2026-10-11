@@ -204,7 +204,6 @@ import shutil
 import subprocess
 import time
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -236,6 +235,7 @@ from ..core.model_cost import (
     resolve_model_price,
     weighted_total,
 )
+from ..core.recall_feedback import RecallInjectionResult
 from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..ports.fs import FsPort
 from ..ports.harness import (
@@ -1343,8 +1343,6 @@ def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> ProcessRe
     except ProcessError:
         return None
 
-
-from ..core.recall_feedback import RecallInjectionResult
 
 def materialize_marshal_recall_plugin(loop_home: Path) -> Path:
     """Copy the packaged marshal-recall plugin into ``<loop_home>/.bmad-loop/plugins/``."""
