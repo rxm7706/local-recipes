@@ -168,6 +168,7 @@ surface:
   - scripts/.spec-surface-baseline.json
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py
   - src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py
+  - .marshal/seed-state.yml
 surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/published_plane.py
