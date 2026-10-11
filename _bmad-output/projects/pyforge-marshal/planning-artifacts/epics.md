@@ -6355,10 +6355,13 @@ tests.
 **Given** a story about to dispatch names a station and a set of touched-surface globs (from its
 own Spec's `surface:` frontmatter, the same source `spec-surface-check` already reads)
 **When** the dev pass launches
-**Then** it first runs `scribe recall --scope <station-slug>` (this story resolves Open Question 1
-by reusing the `--scope <slug>` mechanism `scribe-marshal-fact-visibility` CAP-1 already proves,
-rather than a narrower per-file-glob scope) and, if the answer is grounded (non-empty), folds it
-into the session's starting context as a clearly-labeled block
+**Then** it first runs `scribe recall <query> --mode memory` with no `--scope` and, if the answer
+is grounded (non-empty), folds it into the session's starting context as a clearly-labeled block.
+The operator ruled this on 2026-10-10 ("Marshal --mode memory (Recommended)"; team memory is
+repo-wide). It replaces this story's 2026-09-18 resolution of Open Question 1, which reused
+`--scope <station-slug>`: that query could never ground a `.claude/memory/**` capture, the
+2026-09-20 intent gap. `ScribeCli.recall` gains a mode, every other caller keeps `--mode planning`,
+and scribe is untouched
 **And** this story resolves Open Question 2 by scoping v1 to `bmad-loop` dev passes only, matching
 the source Dream's own literal text — a `bmad-build-auto` extension is out of scope here, a
 separate future story if pursued
@@ -6383,7 +6386,7 @@ same scope, no re-query
 **And** a review verdict that contradicts a known, injected correction is a visible discrepancy in
 the review's own output, not a silent miss (the review pass's existing findings-report shape
 carries it as a named entry, no new reporting mechanism)
-**Status:** backlog
+**Status:** done
 
 ### Story 47.3: The recall-injection layer composes with the existing [context] pipeline
 
@@ -6407,7 +6410,7 @@ effect on the other five layers' own behavior
 context-injection concern)
 **And** the query and injected-block size are counted toward the story's existing weighted-token
 accounting the same way every other layer's output already is — no separate, uncounted budget
-**Status:** backlog
+**Status:** done
 
 ### Story 47.4: A genuine recall miss injects nothing, never a fabricated confidence claim
 
@@ -6425,7 +6428,7 @@ citable hit — scribe's own "never invents an uncited answer" behavior, unchang
 no synthesized "nothing found" confidence claim
 **And** a fixture test asserts the empty-hit case produces zero injected text, distinguishing it
 from a non-empty hit's formatted block
-**Status:** backlog
+**Status:** done
 
 ## Epic 50: The landing self-drives — what the first autonomous drain still needed a human for (spec-pyforge-marshal CAP-244..248)
 
@@ -9243,9 +9246,9 @@ Minted 2026-10-03 from the operator's Phase 3 rulings on the deferral burn-down 
 
 ### Story 86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green
 
-**Type:** fix • **Effort:** S • **Deps:** S-70.1 • **Closes:** DW-FU-12-2 •
-**Surface:** src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py, the oracle test, a CI lane; AGENTS.md, CLAUDE.md, .gitignore, README.md, _bmad-output/PROJECTS.md, .marshal/seed-state.yml
-**Spec:** `planning-artifacts/specs/spec-86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green.md` (the operator's 2026-10-03 Phase 3 rulings; see its rows and acceptance criteria)
+**Type:** fix • **Effort:** M • **Deps:** S-70.1 • **Closes:** DW-FU-12-2 •
+**Surface:** src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/** (verbs/adopt.py, verbs/update.py, the seed write path), the oracle test, a CI lane (pixi.toml, environment.yaml, a workflow job); .gitignore, README.md, .marshal/seed-state.yml. AGENTS.md, CLAUDE.md and _bmad-output/PROJECTS.md are recorded seed skips and stay untouched (operator ruling 2026-10-10, explicit seed skips)
+**Spec:** `planning-artifacts/specs/spec-86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green.md` (the operator's 2026-10-03 Phase 3 rulings, re-scoped by the 2026-10-10 explicit-seed-skips ruling; see its rows and acceptance criteria)
 
 ### Story 86.3: Spin and the journal clean up a failed launch and record what they ran
 
