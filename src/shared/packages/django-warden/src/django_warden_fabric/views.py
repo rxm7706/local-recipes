@@ -30,6 +30,7 @@ from django_pyforge.supervisor import bound_refusal_payload
 from django_pyforge.flags import evaluate_from_source
 
 from .fleet import FLEET_FIX_PROPOSALS_FLAG
+from .fleet import FLEET_INVENTORY_FLAG
 from .mcp_asgi import RUN_AUDIT_TOOL
 from .models import FixProposal
 from .proposals import ProposalRefusedError
@@ -188,6 +189,35 @@ def job_status(request: HttpRequest, job_id: str) -> HttpResponse:
 
 def _fleet_fix_proposals_enabled() -> bool:
     return evaluate_from_source(key=FLEET_FIX_PROPOSALS_FLAG)
+
+
+def _fleet_inventory_enabled() -> bool:
+    return evaluate_from_source(key=FLEET_INVENTORY_FLAG)
+
+
+@require_POST
+@require_station_role("warden")
+def start_fleet_inventory(request: HttpRequest) -> HttpResponse:
+    """HTMX: enqueue fleet inventory when the flag is on."""
+    if not _fleet_inventory_enabled():
+        return HttpResponse("fleet inventory disabled (flag off)", status=403)
+    from django_warden_fabric.fleet_inventory import FleetInventoryError  # noqa: PLC0415
+    from django_warden_fabric.fleet_inventory import load_organisation_from_config  # noqa: PLC0415
+    from django_warden_fabric.tasks import run_fleet_inventory  # noqa: PLC0415
+
+    import uuid
+
+    try:
+        organisation = load_organisation_from_config()
+    except FleetInventoryError as exc:
+        return HttpResponse(str(exc), status=400)
+    run_id = uuid.uuid4()
+    run_fleet_inventory.delay(str(run_id), organisation)
+    return render(
+        request,
+        "warden_fabric/fleet_inventory_started.html",
+        {"run_id": run_id},
+    )
 
 
 @require_GET

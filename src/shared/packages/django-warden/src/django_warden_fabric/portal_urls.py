@@ -8,6 +8,11 @@ urlpatterns = [
     path("audits/start/", views.start_audit, name="warden-audit-start"),
     path("audits/", views.get_audit, name="warden-audit-get"),
     path(
+        "fleet/inventory/start/",
+        views.start_fleet_inventory,
+        name="warden-fleet-inventory-start",
+    ),
+    path(
         "fleet/proposals/",
         views.fleet_proposal_queue,
         name="warden-fleet-proposals",

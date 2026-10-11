@@ -59,3 +59,8 @@ def _isolate_caches():
     for mod in _cache_mods:
         mod._CACHE.clear()  # noqa: SLF001
     supervisor._runners.clear()  # noqa: SLF001
+
+
+from pyforge.testing_kit.flags import make_flag_provider_fixture
+
+flag_provider = make_flag_provider_fixture()

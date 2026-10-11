@@ -17,6 +17,10 @@ from django.conf import settings
 from .fleet import mkdtemp_clone_dir
 from .fleet import remove_clone_dir
 from .fleet import shallow_clone
+from .fleet_inventory import FleetInventoryError
+from .fleet_inventory import GhAuthTokenProvider
+from .fleet_inventory import GitHubRestOrgReposClient
+from .fleet_inventory import run_fleet_inventory_sync
 from .models import ComplianceJob
 from .models import FixProposal
 from .models import FleetRepo
@@ -127,6 +131,19 @@ def _run_warden_engines(
         msg = f"warden scan exited {code}: {err.getvalue()[:500]}"
         raise RuntimeError(msg)
     return report_json, "{}", int(code)
+
+
+@shared_task(bind=True, name="warden_fabric.run_fleet_inventory")
+def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
+    """List github.com org repos — Celery message carries ids and org name only."""
+    try:
+        token = GhAuthTokenProvider().token()
+        client = GitHubRestOrgReposClient(token=token)
+        run_fleet_inventory_sync(organisation=organisation, listing_client=client)
+        return inventory_run_id
+    except FleetInventoryError as exc:
+        logger.exception("fleet inventory %s failed", inventory_run_id)
+        raise
 
 
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")
