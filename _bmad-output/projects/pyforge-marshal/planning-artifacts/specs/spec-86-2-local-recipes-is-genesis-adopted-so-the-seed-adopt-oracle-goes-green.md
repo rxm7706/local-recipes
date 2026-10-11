@@ -2,7 +2,8 @@
 title: "86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 47397de509c4b12b68309f77022ca915db29d5b5
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

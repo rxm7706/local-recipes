@@ -106,6 +106,7 @@ from __future__ import annotations
 
 import fnmatch
 import os
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -444,6 +445,13 @@ def check_never_write(path: Path, *, repo_root: Path, never_write: NeverWrite) -
     _guard(path, repo_root=repo_root, never_write=never_write)
 
 
+def _mode_to_preserve(path: Path) -> int | None:
+    """When ``path`` already exists as a regular file, preserve its permission bits."""
+    if not path.is_file():
+        return None
+    return stat.S_IMODE(path.stat().st_mode)
+
+
 def write(path: Path, data: bytes, *, repo_root: Path, never_write: NeverWrite) -> None:
     """Write ``data`` to ``path`` atomically, after the never-write guard
     clears.
@@ -456,7 +464,7 @@ def write(path: Path, data: bytes, *, repo_root: Path, never_write: NeverWrite) 
     the underlying exception propagates unchanged on failure, per this
     module's own "no new exception type" contract."""
     _guard(path, repo_root=repo_root, never_write=never_write)
-    atomic_write_bytes(path, data)
+    atomic_write_bytes(path, data, mode=_mode_to_preserve(path))
 
 
 def replace_span(
