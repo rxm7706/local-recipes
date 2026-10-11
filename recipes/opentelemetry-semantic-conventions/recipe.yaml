@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-semantic-conventions
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-semantic-conventions/opentelemetry_semantic_conventions-${{ version }}.tar.gz
-  sha256: f9b2b81e9d5b64f11bc952075e7e9c7fb0aab075c7fd1c46d597f1b919852d60
+  sha256: 497ca63bf383723411e8eaf60c8779e9877633c936bb641080adab59d0eb6ec8
 
 build:
   number: 0
@@ -24,8 +24,8 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api ==1.44.0
-    - typing_extensions >=4.5.0
+    - opentelemetry-api ==1.45.1
+    - typing-extensions >=4.5.0
 
 tests:
   - python:
@@ -68,19 +68,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-semantic-conventions-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:24:44Z
+  cfe-last-checked: 2026-10-10T16:56:16Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T02:24:44Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T02:24:44Z
+  cfe-local-build-datetime: 2026-10-10T16:56:53Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 0.65b0 -> 0.66b1
 ####

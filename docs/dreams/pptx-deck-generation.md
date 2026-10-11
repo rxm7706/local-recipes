@@ -17,7 +17,7 @@ fill placeholders without touching OOXML by hand — solves a real, well-documen
 audiences that need an EDITABLE PowerPoint file, not a browser deck. This repo already has a deck
 pipeline, but it produces a genuinely different artifact: Herald's own bridge (`bridge.py`,
 `deck_pipeline.py`) round-trips through Claude Design's MCP tools to a React+Vite HTML slide deck
-(`docs/specs/presentation-deck.md`'s own workflow), never a `.pptx` file. This Dream is not a port
+(`docs/how-to/presentation-deck.md`'s own workflow), never a `.pptx` file. This Dream is not a port
 of that pipeline — it shares no code with it — it is a SECOND, parallel capability for the one
 thing the HTML pipeline structurally cannot produce: a file PowerPoint itself can open and edit.
 
@@ -41,7 +41,7 @@ produces:
 ## What is real
 
 Herald's own deck pipeline already produces a real `.pptx` file, shipped, not merely planned:
-`docs/specs/presentation-deck.md`'s `deck-export` step writes a dated PowerPoint export to
+`docs/how-to/presentation-deck.md`'s `deck-export` step writes a dated PowerPoint export to
 `src/pptx/<slug>-YYYY-MM-DD.pptx`, derived from the deck's Marp narrative — confirmed by reading
 the spec directly (§ the artifact dependency tree names the exact path and derivation). This
 substantially narrows this Dream's actual premise: it is NOT "nothing produces `.pptx` here,"

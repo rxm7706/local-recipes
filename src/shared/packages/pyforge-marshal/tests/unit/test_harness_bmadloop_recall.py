@@ -18,15 +18,25 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.harness_bmadloop import (
     RecallInjectionResult,
     augment_bmad_loop_session_prompt_with_recall,
     inject_recall_feedback,
 )
-from pyforge.marshal.adapters.scribe_cli import ScribeRecallOutcome
+from pyforge.marshal.adapters.scribe_cli import ScribeCli, ScribeRecallOutcome
 from pyforge.marshal.core import recall_feedback as recall_feedback_core
-from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER
+from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER, build_recall_query
+
+_STORY_KEY = "story-47"
+_RUN_ID = "run-47"
+
+
+def _recall_paths(loop_home: Path, station_slug: str) -> tuple[Path, Path]:
+    rel = recall_feedback_core.recall_feedback_output_relpath(station_slug, story_key=_STORY_KEY, run_id=_RUN_ID)
+    target = loop_home / rel
+    return target, target.with_name(f"{target.name}.query-ran")
 
 
 class _FakeFs:
@@ -62,9 +72,29 @@ class _FakeScribeCli:
         self.outcome = outcome
         self.calls: list[dict[str, object]] = []
 
-    def recall(self, *, repo_root: Path, query: str, scope: str | None = None, binary_path: Path | None = None):
-        self.calls.append({"repo_root": repo_root, "query": query, "scope": scope, "binary_path": binary_path})
+    def recall(
+        self,
+        *,
+        repo_root: Path,
+        query: str,
+        scope: str | None = None,
+        mode: str = "planning",
+        binary_path: Path | None = None,
+    ):
+        self.calls.append(
+            {"repo_root": repo_root, "query": query, "scope": scope, "mode": mode, "binary_path": binary_path}
+        )
         return self.outcome
+
+
+class _RecordingProcess:
+    def __init__(self, result: ProcessResult) -> None:
+        self.result = result
+        self.calls: list[tuple[tuple[str, ...], Path]] = []
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        self.calls.append((tuple(argv), Path(cwd)))
+        return self.result
 
 
 @pytest.fixture
@@ -89,6 +119,8 @@ class TestGroundedHit:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
         )
 
@@ -100,21 +132,84 @@ class TestGroundedHit:
         assert "always run X before Y" in written
         assert "Source: feedback/x.md" in written
 
-    def test_scopes_the_recall_call_by_station_slug_and_runs_it_against_repo_root(
-        self, loop_home: Path, repo_root: Path
-    ) -> None:
+    def test_dev_pass_uses_memory_mode_without_scope_via_fake_scribe(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="body"))
 
         inject_recall_feedback(
-            fs=fs, loop_home=loop_home, repo_root=repo_root, station_slug="pyforge-doctor", scribe=scribe
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
         )
 
         assert len(scribe.calls) == 1
         call = scribe.calls[0]
-        assert call["scope"] == "pyforge-doctor"
+        assert call["mode"] == "memory"
+        assert call["scope"] is None
         assert call["repo_root"] == repo_root
         assert "pyforge-doctor" in call["query"]
+
+    def test_dev_pass_argv_is_memory_mode_without_scope_on_real_scribe_cli(
+        self, loop_home: Path, repo_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fs = _FakeFs()
+        process = _RecordingProcess(ProcessResult(returncode=0, stdout="no grounded answer found\n", stderr=""))
+        scribe = ScribeCli(process)
+        monkeypatch.setattr(scribe, "resolve_binary", lambda _root: "/usr/bin/scribe")
+
+        inject_recall_feedback(
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
+        )
+
+        assert len(process.calls) == 1
+        argv, cwd = process.calls[0]
+        assert cwd == repo_root
+        assert argv == (
+            "/usr/bin/scribe",
+            "recall",
+            build_recall_query("pyforge-marshal"),
+            "--mode",
+            "memory",
+        )
+
+    def test_team_memory_citation_grounds_through_parse_and_prompt_fold(
+        self, loop_home: Path, repo_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fs = _FakeFs()
+        stdout = (
+            "Always reconcile spec surface before stamping.\n"
+            "[source: .claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md]\n"
+        )
+        process = _RecordingProcess(ProcessResult(returncode=0, stdout=stdout, stderr=""))
+        scribe = ScribeCli(process)
+        monkeypatch.setattr(scribe, "resolve_binary", lambda _root: "/usr/bin/scribe")
+
+        dev_prompt, dev_injection = augment_bmad_loop_session_prompt_with_recall(
+            "Implement CAP-1.",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
+        )
+
+        assert dev_injection is not None and dev_injection.injected is True
+        assert "Source: .claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md" in dev_prompt
+        target, _marker = _recall_paths(loop_home, "pyforge-marshal")
+        assert "Source: .claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md" in fs.writes[target]
 
 
 class TestGroundedMiss:
@@ -125,7 +220,13 @@ class TestGroundedMiss:
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=False))
 
         result = inject_recall_feedback(
-            fs=fs, loop_home=loop_home, repo_root=repo_root, station_slug="pyforge-doctor", scribe=scribe
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
         )
 
         assert result.attempted is True
@@ -143,7 +244,13 @@ class TestScribeUnavailable:
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=False, reason="scribe binary not found on PATH"))
 
         result = inject_recall_feedback(
-            fs=fs, loop_home=loop_home, repo_root=repo_root, station_slug="pyforge-doctor", scribe=scribe
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
         )
 
         assert result.attempted is True
@@ -154,18 +261,48 @@ class TestScribeUnavailable:
         # stale previous hit sitting in the target either (FsPort has no
         # delete-a-file primitive, so "clear it" means "overwrite it").
         assert fs.writes[result.target] == ""
+        _target, marker = _recall_paths(loop_home, "pyforge-doctor")
+        assert marker not in fs.writes
 
     def test_a_write_failure_reports_ok_false_with_the_write_reason(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs(fail_write=True)
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="body"))
 
         result = inject_recall_feedback(
-            fs=fs, loop_home=loop_home, repo_root=repo_root, station_slug="pyforge-doctor", scribe=scribe
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
         )
 
         assert result.attempted is True
         assert result.ok is False
         assert result.reason is not None
+        assert "disk full" in result.reason
+
+    def test_double_failure_reason_includes_both_scribe_and_write_errors(
+        self, loop_home: Path, repo_root: Path
+    ) -> None:
+        fs = _FakeFs(fail_write=True)
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=False, reason="scribe binary not found on PATH"))
+
+        result = inject_recall_feedback(
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-doctor",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
+        )
+
+        assert result.attempted is True
+        assert result.ok is False
+        assert result.reason is not None
+        assert "scribe binary not found on PATH" in result.reason
         assert "disk full" in result.reason
 
 
@@ -175,7 +312,13 @@ class TestNoResolvableStationSlug:
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="body"))
 
         result = inject_recall_feedback(
-            fs=fs, loop_home=loop_home, repo_root=repo_root, station_slug=None, scribe=scribe
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug=None,
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
         )
 
         assert result == RecallInjectionResult(attempted=False)
@@ -201,6 +344,8 @@ class TestReviewPassReusesCachedRecall:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
         )
         review_prompt, review_injection = augment_bmad_loop_session_prompt_with_recall(
@@ -210,6 +355,8 @@ class TestReviewPassReusesCachedRecall:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
         )
 
@@ -231,6 +378,8 @@ class TestReviewPassReusesCachedRecall:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
         )
 
@@ -249,6 +398,8 @@ class TestReviewPassReusesCachedRecall:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
         )
         review_prompt, _ = augment_bmad_loop_session_prompt_with_recall(
@@ -258,14 +409,17 @@ class TestReviewPassReusesCachedRecall:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
         )
 
         assert len(scribe.calls) == 1
         assert dev_prompt == "Dev."
         assert review_prompt == "Review."
-        target = loop_home / recall_feedback_core.recall_feedback_output_relpath("pyforge-marshal")
+        target, marker = _recall_paths(loop_home, "pyforge-marshal")
         assert fs.writes[target] == ""
+        assert marker in fs.writes
 
 
 class TestRecallContextLayerGate:
@@ -287,6 +441,8 @@ class TestRecallContextLayerGate:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
             context_layers=layers,
         )
@@ -310,6 +466,8 @@ class TestRecallContextLayerGate:
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
             scribe=scribe,
             context_layers=layers,
         )
@@ -317,3 +475,88 @@ class TestRecallContextLayerGate:
         assert len(scribe.calls) == 1
         assert injection is not None and injection.injected is True
         assert "correction text" in prompt
+
+
+class TestRecallCacheKeyedByStoryDispatch:
+    """Story 93.1 AC4: cache is per story dispatch, not station slug alone."""
+
+    def test_two_stories_each_query_once(self, loop_home: Path, repo_root: Path) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="story-specific", citation="mem/x.md"))
+        augment_bmad_loop_session_prompt_with_recall(
+            "A",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key="story-a",
+            run_id="run-1",
+            scribe=scribe,
+        )
+        augment_bmad_loop_session_prompt_with_recall(
+            "B",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key="story-b",
+            run_id="run-1",
+            scribe=scribe,
+        )
+        assert len(scribe.calls) == 2
+
+    def test_same_story_new_run_queries_again(self, loop_home: Path, repo_root: Path) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="run-specific", citation="mem/x.md"))
+        augment_bmad_loop_session_prompt_with_recall(
+            "A",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key="story-a",
+            run_id="run-1",
+            scribe=scribe,
+        )
+        augment_bmad_loop_session_prompt_with_recall(
+            "B",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key="story-a",
+            run_id="run-2",
+            scribe=scribe,
+        )
+        assert len(scribe.calls) == 2
+
+    def test_failed_query_writes_no_marker_so_retry_may_query(self, loop_home: Path, repo_root: Path) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=False, reason="timeout"))
+        inject_recall_feedback(
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
+        )
+        _target, marker = _recall_paths(loop_home, "pyforge-marshal")
+        assert marker not in fs.writes
+        scribe.calls.clear()
+        scribe.outcome = ScribeRecallOutcome(ok=True, grounded=True, text="second try", citation=None)
+        inject_recall_feedback(
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            story_key=_STORY_KEY,
+            run_id=_RUN_ID,
+            scribe=scribe,
+        )
+        assert len(scribe.calls) == 1

@@ -26,7 +26,7 @@ prints each `docs/specs/*.md` status and whether `CLAUDE.md` indexes it. No pixi
 residual. Once the tier is gone the mode reports nothing.
 
 Three more marshal files still describe the tier:
-- `scripts/fleet_scan.py` (~line 2257) cites `docs/specs/presentation-deck.md`.
+- `scripts/fleet_scan.py` (~line 2257) cites `docs/how-to/presentation-deck.md`.
 - `SYNC-RUNBOOK.md` lists `docs/specs/` in the source-of-truth surface that "the baseline check (`surface-changed`)
   detects". That was already untrue: doctor's `FINGERPRINT_KEYS` never covered `docs/specs/`.
 - `SYNC-RUNBOOK.md` also names `docs/specs` in its out-of-band `git diff` command and has a `docs-specs-nonmd` row in its
@@ -111,7 +111,7 @@ Line numbers are from `2157e66d12`; measured, not copied from the intent.
   paths), 84 (`tracked-impl-artifact` remedy) and 85 (`docs-specs-nonmd` row). The intent named 46, 76 and 85; line 84
   is the fourth hit and the "finds nothing" AC needs it gone too.
 - `scripts/fleet_scan.py` -- edit two comments. 1126 (specs-roster header: "docs/specs legacy is deliberately out"; the
-  intent named only the second hit) and 2294 (the 6-artifact family standard, cited to `docs/specs/presentation-deck.md`;
+  intent named only the second hit) and 2294 (the 6-artifact family standard, cited to `docs/how-to/presentation-deck.md`;
   the intent said ~2257).
 - `tests/scripts/test_bmad_drift_check_specs_retired.py` -- new. No `bmad_drift_check` test exists in `tests/scripts/`;
   style follows `test_bmad_loop_baseline_drift_check.py` (importlib-load the script by path).

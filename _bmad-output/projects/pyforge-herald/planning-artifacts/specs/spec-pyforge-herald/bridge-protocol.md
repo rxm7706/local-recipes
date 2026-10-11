@@ -59,7 +59,7 @@ filenames verbatim.
 - Design project name: `PyForge <Persona> deck`; prototype file: `PyForge <Persona>.dc.html` (spaces kept — the Design export convention).
 - Modernist design system id: `fbc1d6c8-b35f-4df6-9044-a64d2675427b`.
 - Per-deck registry: the deck README's § *Design project* records project name, id, and file URL — the durable link any session can pull from.
-- Deck engine + export contracts: `docs/specs/presentation-deck.md` (adopted companion) — § *The MCP bridge*, § *Standard export set*, the prototype contract.
+- Deck engine + export contracts: `docs/how-to/presentation-deck.md` (adopted companion) — § *The MCP bridge*, § *Standard export set*, the prototype contract.
 
 ## Pilot evidence (2026-07-23 — ground truth for acceptance fixtures)
 

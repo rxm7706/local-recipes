@@ -116,6 +116,22 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-10 (live backend, via the sidecar) — Ruled: the ship lands on the platform host, and herald's webhook runs
+  in steward's mcp-host sidecar.** The local-host ruling (two entries down) put the host on
+  `pyforge-foundry-full-stack`, which cannot import it (`config/celery_app.py:4`, no `celery`), and steward's Story
+  87.2 that would have fixed that is retired. The image env cannot hold herald either: herald's run-dep
+  `mcp >=2.2.0` meets langflow-base and lfx 1.12.x's `mcp <2.0.0`. The operator chose, verbatim label "Via the sidecar
+  (Recommended)": "Mint a steward story: mcp-host env gains pyforge-herald; the sidecar mounts herald's webhook ASGI;
+  the host forwards /stations/herald/api/v1/webhooks/* to MCP_HOST_SIDECAR_BASE_URL like MCP. 19.2's proof runs host +
+  sidecar locally (loopback). 87.1 stays (host never imports herald); 87.2's full-stack composition can be dropped."
+  **What it looks like when real:** the platform host runs from `platform-dev`, rendered by `steward deploy perimeter`
+  and bound to loopback; herald's webhook, its HMAC check and its SQLite store run in the mcp-host sidecar
+  (`mcp-host-serve`, `127.0.0.1:8090`); the local caller posts to the host, which forwards; a restart of both keeps the
+  record. **Constraints:** herald's code changes only by the caller; the sidecar is steward's process, not a herald
+  one, and no port is public; AD-14 and AD-13/AD-17 as built hold. Owner `spec-pyforge-herald` (CAP-38, CAP-39). →
+  Story 19.2, re-scoped again 2026-10-10 and `blocked` on steward Story 87.3
+  (`87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar`); it flips `blocked -> backlog` once 87.3 is
+  `done` on main.
 - **2026-10-10 (live demo archive) — Ruled: `herald-live-demo.yml` moves to the archive once Story 19.2 closes.**
   The workflow reads `disabled_manually` (Actions API, 2026-10-10), and its last run was on 2026-08-24. Two of its
   three jobs start a standalone `pyforge.herald.webhook_host:application` under daphne

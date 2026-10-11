@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.44.0"
+  version: "1.45.1"
 
 package:
   name: opentelemetry-proto
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-proto/opentelemetry_proto-${{ version }}.tar.gz
-  sha256: c547a79c2f8c0c515d31509154682e5921c7cfd5ca67b70e1f9266e2c3e103f3
+  sha256: 79e0fb95e4616691a469439238aa9224d75779b3e108e895d1aa125ab29ca77c
 
 build:
   number: 0
@@ -67,19 +67,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-proto-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-1.44.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:23:58Z
+  cfe-last-checked: 2026-10-10T16:55:39Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T02:23:58Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T02:23:58Z
+  cfe-local-build-datetime: 2026-10-10T16:56:16Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 1.44.0 -> 1.45.1
 ####

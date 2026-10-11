@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-10-05'   # RE-STAMPED 2026-10-05 (generator trust): Story 40.2 added to done Epic 40 (fix, no CAP); epic-40 reopens to in-progress. Prior: RE-STAMPED 2026-10-04 (env count): Story 6.12 added to done Epic 6 (fix, no CAP); epic-6 reopens to in-progress. Prior: RE-STAMPED 2026-10-04 (later): Story 41.6 added to Epic 41 (fix, no CAP) from the Epic 41 retrospective: INV-A reads the one-chain fold's citation window again; a new story reopens its done epic. Prior: RE-STAMPED 2026-10-04: Story 41.5 added to Epic 41 (fix, no CAP): a new story reopens its done epic. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 41 / Stories 41.1-41.4 minted from the operator's Phase 4+5 rulings (fix stories, no CAP, no flag; 122 of 123 open medium and low deferrals). Prior: RE-STAMPED 2026-09-29 (evening): Epic 37 / Story 37.1 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 36 / Stories 36.1-36.2 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-10'   # AMENDED 2026-10-10 (gate flips): Stories 33.1 (marshal 66.2 done, PR #1760) and 37.1 (atlas 26.1, steward 77.1, herald 34.1, marshal 76.1 done) flipped blocked -> backlog by the operator's ruling "yes flip the six cleared stories and dispatch them"; their Status lines read backlog; no epic, story, CAP or FR added or changed. Prior: RE-STAMPED 2026-10-05 (generator trust): Story 40.2 added to done Epic 40 (fix, no CAP); epic-40 reopens to in-progress. Prior: RE-STAMPED 2026-10-04 (env count): Story 6.12 added to done Epic 6 (fix, no CAP); epic-6 reopens to in-progress. Prior: RE-STAMPED 2026-10-04 (later): Story 41.6 added to Epic 41 (fix, no CAP) from the Epic 41 retrospective: INV-A reads the one-chain fold's citation window again; a new story reopens its done epic. Prior: RE-STAMPED 2026-10-04: Story 41.5 added to Epic 41 (fix, no CAP): a new story reopens its done epic. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 41 / Stories 41.1-41.4 minted from the operator's Phase 4+5 rulings (fix stories, no CAP, no flag; 122 of 123 open medium and low deferrals). Prior: RE-STAMPED 2026-09-29 (evening): Epic 37 / Story 37.1 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 36 / Stories 36.1-36.2 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -2564,7 +2564,7 @@ the PRD, citing CAP-86).
 and the spec; a `dispatch-followup-review` or `review-budget-followup` row naming it clears it; a row under another
 `origin:`, or in another project's ledger, does not; flag `false` / absent / `no` and status `in-review` report nothing;
 `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** blocked
+**Status:** done
 
 ## Epic 34: Every capability ships behind a flag — the rule, the gate outside every station, and the retrofit inventory (spec-feature-flag-governance CAP-1, CAP-2, CAP-7; CAP-4's gate clause)
 
@@ -2839,12 +2839,9 @@ steward Story 77.1, herald Story 34.1 and marshal Story 76.1 land first; ledger 
 **difficulty:** medium
 **Surface:**
 - Moves, each a `git mv`:
-  - `docs/specs/flyte-conda-forge.md`, `feedstock-failure-remediation.md`, `feedstock-platform-expansion.md` and
-    `presentation-deck.md` go to `archive/docs/specs/`.
-  - `docs/specs/feedstock-refresh.md` goes to
-    `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, and joins that
-    Spec's `companions:` (memlog first, then a render by script).
-  - `docs/intake/agentic-sdlc/` and `docs/intake/external-repos-analysis-2026-08-22/` go to `archive/docs/intake/`.
+  - the four done or stub specs under the retired `docs/specs/` tree go to `archive/docs/specs/`;
+  - `feedstock-refresh.md` joins `spec-pyforge-mason` as a companion beside that Spec;
+  - the two intake items go to `archive/docs/intake/`.
 - `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`:
   - drops `check_spec_indexed`, `_docs_specs` and the `docs-specs-nonmd` branch of `check_tier_alignment`;
   - its misfiled-intake remedy stops naming `docs/specs/`.
@@ -2854,7 +2851,7 @@ steward Story 77.1, herald Story 34.1 and marshal Story 76.1 land first; ledger 
   - `AGENTS.md`'s Tier 1 row and its other `docs/specs/` lines, including the one naming `bmad_drift_check.py --specs`;
   - `.cursor/rules/specs.mdc`, kept as a pointer file, because scribe's parity test pins it.
 - `scripts/spec_surface_allowlist.txt` drops `docs/specs/**`.
-- `spec-pyforge-herald`'s surface drops `docs/specs/presentation-deck.md` (memlog first, then a render by script).
+- `spec-pyforge-herald`'s surface drops the retired intake stub path (memlog first, then a render by script).
 - Live references to the moved paths are repointed:
   - `.claude/skills/conda-forge-expert/` (`SKILL.md`, `guides/`), in one `retro(cfe):` commit;
   - `docs/reference/agent-instruction-notes.md` § *Intake specs*, `docs/MAP.md`,
@@ -2873,7 +2870,7 @@ its history (`git log --follow`)
 entry and a scoped stamp for each co-governor it names (scribe for the instruction files, doctor for the docs shelf,
 mason, and any other)
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** blocked
+**Status:** done
 
 ## Epic 38: Doctor stops letting deferrals and dead checks pile up (spec-pyforge-doctor CAP-29, CAP-88, CAP-42, CAP-1)
 

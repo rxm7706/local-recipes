@@ -1170,6 +1170,187 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   finalize's post-merge carry finds the row and adds nothing. **Constraints:** fix stories, no CAP, no flag; the
   meta-test keeps no exemption; the relaunch rule for a `done`, flagged spec is not changed here. Owner
   `spec-pyforge-marshal`. → Stories 22.20, 22.21, specced 2026-10-08.
+- **2026-10-10 (cross-surface fix turn)** — **Found: a refusal at the cross-surface gate never gets its fix turn.**
+  Dispatch verification refuses at two gates: `MRS-GATE-001`, when a story verify command fails, and `MRS-GATE-015`,
+  when a cross-surface command fails (`flag-gate-check`, `platform-ci-local -- --test`, `bmad-estate-check`). Story
+  85.1's fix turn reads its failed commands from the verification's `failed_commands`. That list is built by a parser
+  that only accepts a message starting `verify command '…'`, from reports read only out of the envelope's `commands`.
+  A `MRS-GATE-015` message starts `cross-surface verify command '…'`, and its report sits under
+  `cross_surface_checks`. So a refusal whose only failure is cross-surface journals `failed_commands: []`, the
+  decision reads `no failed verify command to fix`, and the run goes straight to `failed` with nothing journaled about
+  the skipped turn. That happened twice: marshal 87.5 (run `pyforge-marshal-20261009T221327283Z-283f3080`) and
+  steward 85.5 (run `pyforge-steward-20261010T100406402Z-aee344c6`), both on `flag-gate-check` exit 1. Both were fixed
+  by hand. Herald 19.2 (run `pyforge-herald-20261010T105313078Z-a4b44f7d`) got its one turn on `MRS-GATE-001`, then
+  re-verification refused at `MRS-GATE-015` on `platform-ci-local -- --test`. It parked with `MRS-DISP-060` naming no
+  command (`failed_command: null`), against CAP-286's own success criterion. Its first verification counted four
+  findings but handed the turn only the three `MRS-GATE-001` commands. Marshal 87.4's turn on `MRS-GATE-001` stopped
+  at its reconcile, and its `flag-gate-check` failure surfaced only at hand landing. **What it looks like when
+  fixed:** a cross-surface failure reaches the fix turn the way a story command does. The prompt quotes the failed
+  command and its output tail and mandates the exact re-run. The budget stays one turn per run across both gates, and
+  that one turn sees every failed command of both gates at once. A still-red re-verification parks with
+  `MRS-DISP-060` naming the command, and the turn's journal names the gate that triggered it. Teaching the prompt the
+  flag gate's two-state test shape, the trap behind two of the four refusals, is recorded as a follow-up. **Constraints:**
+  a fix story under CAP-286, no CAP, no flag (it rides `pyforge.marshal.verify_fix_loop`); never a second turn, never
+  an unbounded loop (operator ruling 2026-10-10: "mint the MRS-GATE-015 fix-turn marshal story"). Owner
+  `spec-pyforge-marshal`. → Story 85.7, specced 2026-10-10.
+- **2026-10-10 (ignored-directory commit)** — **Found: a session's work is left uncommitted when it edits a tracked
+  file under an ignored directory.** Every commit marshal makes in a story worktree goes through one port,
+  `commit_paths`: the supervisor's finalize, the pre-verify WIP commit, the fix-turn commit, the idle auto-checkpoint
+  and the landing's bookkeeping commits. It stages each named path with `git add -- <path>`. Git refuses that for a
+  file that is tracked but sits inside a directory `.gitignore` excludes: it prints "The following paths are ignored
+  by one of your .gitignore files" and exits 1, whether the change is staged or not. `git add -u -- <path>` stages the
+  same file and exits 0. This repo tracks 24 such files: 12 under `.cursor/` (`.gitignore:693` is `.cursor/`), 10
+  under `recipes/.idea/`, one under `.junie/` and one under `.pixi/`. Doctor Story 37.1 (run
+  `pyforge-doctor-20261010T145603286Z-16048b81`) edited `.cursor/rules/specs.mdc`. Its finalize journaled
+  `failed_step: commit` naming that path, the run ended `stopped_externally`, and the whole story sat uncommitted
+  until the operator committed it by hand (PR #2081). The idle checkpoint goes through the same port and swallows its
+  failure, so it saved nothing either. **What it looks like when fixed:** a tracked path the session changed is
+  committed wherever it lives, modified or deleted. A path git does not track is still refused under an ignored
+  directory, and marshal never forces it in. The rename and staged-deletion handling of Story 83.16 is unchanged, and
+  the landing heal's conflict staging gets the same treatment. **Constraints:** a fix story, no CAP, no flag; never
+  `git add -f`, never `git add -A` (operator ruling 2026-10-10: "Mint both (Recommended)"). Owner
+  `spec-pyforge-marshal`. → Story 88.1, specced 2026-10-10.
+- **2026-10-10 (a failed review landed)** — **Found: a re-dispatch merged a story whose independent review had just
+  failed it.** Steward 87.3's first run (`pyforge-steward-20261010T154144466Z-88c00f58`) ended `failed`: verification
+  refused at `MRS-GATE-015`, and its one fix turn ran out its budget (`MRS-DISP-059`). The operator fixed two problems
+  by hand, then recorded an independent review in the tracked spec on the branch: status back to `in-progress`,
+  `review_loop_iteration: 1`, and a Review Triage Log entry headed "Independent review, iteration 1: FAIL (3 high, 3
+  medium)". Re-running `marshal factory dispatch` was meant to send the story back to work. Instead Story 83.10's
+  land-only rule read the moved head as "the operator fixed the branch" and `in-progress` as "where a session
+  stopped". It re-verified green, merged the branch (`85e70dedf5`), and finalize marked the spec `done`
+  (`a8eae09dce`). A forward that lets a client reach the sidecar's unauthenticated MCP faces reached `main`. The
+  same two facts were right on 2026-10-02, when marshal 82.5's operator fixed a branch and left its spec at
+  `in-progress`. So the status alone cannot tell a fixed branch from a sent-back one; the review entry can.
+  **What it looks like when fixed:** a re-dispatch lands only a story whose spec reads `in-review` or `done` and
+  whose latest review entry did not fail, latest by the order git added the entries. Otherwise it refuses by name,
+  journals the refusal, and says how to go on: set `ready-for-dev` to resume, or `in-review` to land finished work.
+  It never lands, and it never launches a session on a guess. A finalize never marks a spec `done` past a failed
+  review. A send-back, a first run and a held landing behave as before. **Constraints:** a fix story under CAP-169
+  (Story 29.2's land-only path, extended by 83.7, 83.10 and 83.18) and CAP-229 (Story 79.1's promotion), no CAP, no
+  flag; marshal never edits the spec, the log or the ledger to get past its own gate (operator ruling 2026-10-10:
+  "Yes, mint it (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 89 / Story 89.1, specced 2026-10-10.
+- **2026-10-10 (completed while the session ran)** — **Found: the supervisor recorded a dispatch `completed` 1.3
+  seconds after launch, while the session went on working for six more minutes.** Atlas Story 25.1's run
+  (`pyforge-atlas-20261010T232600552Z-1b28d6db`, cursor, `composer-2.5-fast`) launched at 23:26:00Z. On its first
+  tick the supervisor journaled `dispatch-completion` `completed` with `session_alive: true`, `changed_paths: []`,
+  `story_merged_on_main: true` and a final revision equal to its baseline, then exited. The merge it saw was not this
+  run's: `origin/main` holds the 2026-09-10 landing of atlas's earlier Story 25.1 (PR #1114, from
+  `dispatch/pyforge-atlas/25.1`), a key the station's 2026-09-17 rekey later gave to today's story. The check that the
+  run's head is on `main` (Story 83.14) proved nothing, because the run had not committed yet and its head was
+  `main`'s own tip. And the completion judge reads a merge before it reads whether the session is alive. The cursor
+  session kept writing until about 23:32Z: 19 files, 869 lines, and a closing note that it had not run its review
+  loop or committed. Nothing committed, verified, reviewed or landed that work; the operator committed it by hand.
+  **What it looks like when fixed:** a run is complete only after every process of its session has exited, not just
+  the one marshal launched. A merge counts only when the run itself has moved its head, the rule `branch_merged`
+  already follows (Story 22.10). While the session lives the supervisor keeps polling, whatever `main` says. When the
+  session exits with work left in the worktree, the supervisor commits, verifies and lands it as it does for any
+  finished session. Tests reproduce a session whose launched process exits early while a child keeps writing.
+  **Constraints:** a fix story under CAP-160 (Story 22.2's completion judgment), no CAP, no flag; completion stays
+  judged from git and process facts, never the session's word (AD-75, AD-9); a fact the supervisor cannot settle never
+  reads as done (AD-8) (operator ruling 2026-10-10: "Yes, mint it (Recommended)"). Owner `spec-pyforge-marshal`. →
+  Epic 90 / Story 90.1, specced 2026-10-10.
+- **2026-10-10 (a corrupt environment.yaml landed)** — **Found: dispatch landings carried a pixi warning inside
+  `environment.yaml` onto `main` six times in one week.** The file is derived: it must equal the stdout of `pixi project
+  export conda-environment -e build`. Inside a `pixi run` shell in a story worktree, pixi prints "WARN Using local
+  manifest <worktree>/pixi.toml rather than <primary>/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`" on
+  stderr. A session that regenerated the file with stderr captured put that coloured line first, and `yaml.safe_load`
+  refuses the result. Marshal's idle checkpoint committed it as `wip: <key> (auto-checkpoint)`, and nothing on the
+  dispatch path compares the file with the export. Verification runs the station's commands, `lint-types` and the
+  cross-surface checks, and none of them reads the file. The landing waits on every CI check (Story 80.1), but the
+  repo's only sync lint (`.github/workflows/scripts/linter.py`) runs in the `staged-recipes-linter` workflow, which
+  has been disabled since 2026-08-24. The pre-push preflight skips `dispatch/*` branches. So the file reached `main` with
+  the landings of marshal 86.6 (2026-10-04), herald 27.3 (2026-10-08), steward 71.5 and 71.7 (2026-10-08 and -09),
+  steward 87.3 and warden 15.1 (2026-10-10, PR #2099). Each time a later merge or a hand fix took it out, and `main`
+  has carried it again since warden 15.1's landing (`bab2162d73`). **What it looks like when fixed:** before dispatch
+  verifies a story whose diff touches `environment.yaml` or `pixi.toml`, marshal regenerates the file from the export's
+  stdout alone and commits it on the dispatch branch, journaled, the way it already applies `ruff format`. Verification
+  then runs one more cross-surface check for those two paths, steward's `provision --verify`, and a mismatch refuses the
+  landing under `MRS-GATE-015`, naming the file and the fix command `pixi project export conda-environment -e build
+  2>/dev/null > environment.yaml`. A repo-scope detector that catches the same file on a hand-landed branch is steward's,
+  recorded as a follow-up row. **Constraints:** a fix story under CAP-170 (Story 22.14's cross-surface rule table), no
+  CAP, no flag; marshal never hand-edits the file and regenerates it only from the exporter (operator ruling
+  2026-10-10: "yes mint both stories"). Owner `spec-pyforge-marshal`. → Epic 91 / Story 91.1, specced 2026-10-10.
+- **2026-10-10 (a dead run read as live)** — **Found: once Story 90.1 landed, every dispatch run whose session had
+  exited read as live, and one whose worktree was gone crashed the next launch.** Story 90.1 made session liveness read
+  the session's process group through a psutil adapter. The adapter asked `psutil.process_iter` for a `pgid` attribute
+  that psutil does not have, so on psutil 7.2.2 every call raised "invalid attr name 'pgid'". Story 90.1 counted a group
+  read that cannot answer as alive (AD-8), and its real-process test checked only the live half. So a run with no
+  `dispatch-completion` outcome read as live for good. On the host at `909a725e16`, `dispatch_session_alive` was true
+  for marshal 86.6's run of 2026-10-04, whose pid 63830 has not existed since the host booted on 2026-10-06, and for a
+  pid that never existed. The primary checkout fast-forwarded to 90.1 at 03:02Z (UTC), and by 03:07Z marshal 47.1's
+  launch had crashed: `station_in_flight_conflict` read the stale 86.6 run as live and gathered its git facts for the
+  refusal text, and `git rev-parse HEAD` failed in `.worktrees/dispatch-pyforge-marshal-86.6`, which an operator
+  worktree sweep had removed. No caller caught that `VcsCommandError`. The operator moved 51 such runs on seven stations
+  into `dispatch-runs-quarantine/` and launched 47.1 again at 03:07Z. That run's session finished at 03:11Z with its
+  work committed, yet its supervisor kept journaling `session_alive: true` every minute afterwards, so 47.1 was neither
+  verified nor landed. On 2026-10-11 the operator ruled "Revert 90.1 now (Recommended)": a hotfix (PR #2106,
+  `a085cd0344`) reverted 90.1's code and tests (merge `d013fdb9fe`), and its spec, memlog and `done` key stay. That brings back the defect 90.1 fixed,
+  atlas 25.1's run read `completed` while its session still wrote. **What it looks like when fixed:** 90.1's
+  behaviour lands again, in a form that works. Completion is recorded only after the session's whole process group has
+  exited, and a merge counts only once the run has moved its head. The group is read with calls that exist
+  (`os.getpgid`, or psutil APIs present in 7.2.2), and a member counts when it started at or after the launch. A read
+  error is never "alive": that tick falls back to the launched pid with its identity checked, so a reused pid is not
+  the session, and the heartbeat names the error. A run whose recorded worktree no longer exists is never live and never
+  crashes a launch or a status read. It is reported as stale, with the quarantine directory as the remedy, and dispatch
+  goes on. The story lands only after an independent review. **Constraints:** a fix story under CAP-160 (Story 22.2's
+  completion judgment, extended by Stories 83.1 and 90.1), with CAP-167, CAP-141, CAP-163 (the one-in-flight guard)
+  and CAP-5 (fleet visibility), no CAP, no flag. Marshal reports a stale run and never moves or deletes one (operator
+  rulings: 2026-10-10 "yes mint both stories"; 2026-10-11 "Revert 90.1 now (Recommended)" and "Retitle
+  (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 92 / Story 92.1 ("The dispatch supervisor reads session
+  liveness correctly and never treats a vanished worktree as live"), specced 2026-10-10, reshaped 2026-10-11.
+- **2026-10-11 (recall is built and never runs)** — **Found: the recall layer is built, tested and reported as enabled,
+  and no live session has ever received a recall.** Stories 47.1–47.4 (`spec-marshal-recall-in-the-loop` CAP-1..4)
+  landed on 2026-10-08 and 2026-10-11. `inject_recall_feedback` runs `scribe recall --mode memory` and writes the loop
+  home's `recall-feedback.md`; `augment_bmad_loop_session_prompt_with_recall` folds that block into a dev or review
+  prompt behind `[context.recall]`; a miss injects nothing. Nothing outside the unit tests calls the fold
+  (`DW-marshal-47-2`, `DW-marshal-47-3`). `cli/spin.py` launches `bmad-loop run` with `[plugins] enabled = []`, so
+  bmad-loop's `pre_session` hook, the one place its session prompt can change (`proposed_prompt`), never sees the
+  block. `marshal factory dispatch` builds its `bmad-build-auto` prompt (`adapters/harness_bmadbuild.py` :415) with no
+  recall at all, while every dispatch envelope reports `"context": {"recall": {"enabled": true, ...}}`: a layer
+  declared on and never attempted. The Spec also sat outside this chain under a `cross-station-seam` exemption, which
+  AGENTS.md reserves for the kernel and testing-kit seams. **What it looks like when fixed:** the satellite Dream is
+  folded into this one (the 2026-10-11 section at the end) and moves to `archive/docs/dreams/`; its four CAPs continue as
+  `spec-pyforge-marshal` CAP-288..CAP-291 and its Spec folder becomes a pointer. When `[context.recall]` is enabled,
+  both engines call the one fold before a session starts: the dispatch prompt carries a grounded block, and a
+  `bmad-loop` dev or review session gets the same block through `pre_session`. One `scribe recall` runs per story
+  dispatch. The dispatch envelope and journal say whether recall ran and whether it grounded, missed or failed, never
+  `enabled` without an attempt, and a miss injects nothing. **Constraints:** a fix story under the carried CAP-1 and
+  CAP-2 (CAP-288 and CAP-289 after the render), no further CAP, no flag; scribe stays the sole owner of capture and
+  grounding, recall stays a CLI subprocess, and marshal never edits bmad-loop's installed package (operator rulings
+  2026-10-11: "in-progress (Recommended)", "Mint a wiring story (Recommended)" and "Fold into pyforge-marshal
+  (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 93 / Story 93.1, specced 2026-10-11.
+- **2026-10-11 (a passing review read as older)** — **Found: the review gate read a passing review as older than the
+  failure it answered, and refused a finished story.** Story 89.1's land-only gate takes the latest Review Triage Log
+  entry in git's order, from `git blame --porcelain`. That format prints a commit's details, its committer time among
+  them, only the first time the commit appears in the output. Marshal's parser gives every later line of the same
+  commit the time 0. Steward 87.5's iteration-2 PASS commit (`a937d924be`) also changed two frontmatter lines above the
+  log, so its PASS heading read 0. The older "Independent review, iteration 1: sent back" heading (`ddbd78cca7`) read
+  its real time, so the gate took it as the latest entry, and `marshal factory dispatch` refused the land-only re-run
+  with `MRS-DISP-063`. A commit that touched only the heading line (`b80f33a196`) worked around it. The same read
+  serves the drain's plan and the landing finalize's promotion check, and the error cuts both ways: a failed review
+  committed together with a frontmatter edit can read as older than the pass before it, and then a re-dispatch or a
+  finalize passes it. **What it looks like when fixed:** every line git blames carries its own commit's committer
+  time. A line whose time cannot be read makes the log unreadable, so the gate refuses (AD-8); it never counts as
+  oldest. A test with a real repository commits a "sent back" entry, then a commit that edits the frontmatter and adds
+  a later PASS heading: the gate takes the PASS, and the mirror case refuses. **Constraints:** a fix story under
+  CAP-169 (the land-only path, whose gate Story 89.1 added) with CAP-229 (the promotion check), no CAP, no flag; the
+  gate's rule and its callers do not change, and git's order stays the authority (operator ruling 2026-10-11: "Mint fix
+  story (Recommended)", queued after Story 93.1). Owner `spec-pyforge-marshal`. → Epic 94 / Story 94.1, specced
+  2026-10-11.
+- **2026-10-11 (a held PR is never marked ready)** — **Found: a landing held for review is never released, so a passed
+  review cannot land.** Story 83.18 holds a send-back's landing at a draft PR until the operator marks the PR ready or
+  the spec reads `landing_review: passed`. Only the first route works. Marshal marks a PR a draft in two places and
+  never marks one ready: the forge adapter's ready call (`gh pr ready`) has no caller. With `landing_review: passed`,
+  the land-only re-dispatch decides not to hold and goes straight to the merge, and GitHub will not merge a draft.
+  Steward 87.5's re-dispatch refused that way (`MRS-DISP-020` on PR #2111), and the PR was marked ready by hand. Story
+  83.18's test of the passed route opens a fresh PR that was never a draft, so it never saw the gap. **What it looks
+  like when fixed:** when the spec reads `landing_review: passed` and the PR is a draft, the landing marks it ready,
+  records that, and merges. A ready call that fails refuses the landing and merges nothing (AD-8). A held story still
+  opens or keeps a draft, and marshal never marks ready a draft whose review has not passed. **Constraints:** a fix
+  story under CAP-169 (the land-only path, which Story 83.18 extended with the hold), no CAP, no flag; the hold rule
+  and its predicates do not change (operator ruling 2026-10-11: "Fold into 94.1 (Recommended)"; Story 94.1 had
+  already been dispatched, so the fold is a second story in the same epic). Owner `spec-pyforge-marshal`. → Epic 94 /
+  Story 94.2, specced 2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
@@ -1561,7 +1742,7 @@ synthesizes all four:
 ## The frontier
 
 - Fold the four-views white paper into the deck as a new act — all source
-  material is staged in `docs/intake/agentic-sdlc/` (white paper, infographic +
+  material is staged in `archive/docs/intake/agentic-sdlc/` (white paper, infographic +
   masterclass HTMLs, updated Marp draft) awaiting the refresh.
 - **Formal L-level adoption**: label story modes L1–L5; publish the mapping.
 - Fleet-level resource budgets; privilege-drift management ([[pyforge-doctor]]).
@@ -5673,3 +5854,66 @@ green gate immediately surfaced a hole none of them covered, twice in two days:
   plus the green verdict *"every tracked file governed or allowlisted; no drift"*. Against this
   Dream's own opening measurement (61 findings, then 994 presumed) the instrument is clear and the
   signal is trustworthy. Epic 13 (13.1–13.7) all `done`. Batch: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.
+
+## 2026-10-11 — The review bot remembers the correction you gave two weeks ago (folded from marshal-recall-in-the-loop)
+
+*Folded 2026-10-11 under spec-one-chain-per-station CAP-11 (operator ruling 2026-10-11: "Fold into pyforge-marshal
+(Recommended)"). The body below is `docs/dreams/marshal-recall-in-the-loop.md`, verbatim, with its headings demoted one
+level; the file moved to `archive/docs/dreams/marshal-recall-in-the-loop.md`. Its Spec's four capabilities continue as
+`spec-pyforge-marshal` CAP-288..CAP-291 (← `spec-marshal-recall-in-the-loop` CAP-1..CAP-4), and its folder stays as a
+pointer. The wiring that makes them live is Story 93.1 (Realization log, 2026-10-11).*
+
+## The review bot remembers the correction you gave two weeks ago
+
+### The Dream
+
+Scribe already captures corrections and feedback (`feedback` / `project` /
+`reference` capture types) and can answer a grounded `recall` query — never
+inventing an uncited answer, explicit about a real miss. That primitive is
+shipped, real, a complete BMAD project.
+
+What it doesn't do yet is reach forward on its own. A correction captured
+today doesn't automatically show up in the next `bmad-loop` dev pass working
+nearby code, and it doesn't automatically show up in the review pass grading
+that work either — both still start from a blank context unless a human (or
+this session, by hand) remembers to run `scribe recall` first and paste the
+result in. The memory exists; the propagation into every future session that
+should see it does not.
+
+This is not identity-scoped citation (that's already real —
+[[scribe-marshal-fact-visibility]] lets `recall` cite a project's own
+`facts.yaml` under its own scope) and it's not token-compression (that's
+[[marshal-token-economy]]'s `derived-context` layer, which recomputes
+codebase/planning *structure* when its sources change — a different kind of
+staleness than "a human corrected an agent and nobody downstream heard
+about it").
+
+### What it looks like when real
+
+- Before a `bmad-loop` dev pass or review pass starts a story, it queries
+  `scribe recall` scoped to the story's touched surface/station, and any
+  relevant feedback entries fold into that session's starting context
+  automatically — no human has to remember to run it.
+- Composes with the existing `[context]` pipeline (`wire` / `output` /
+  `structure-graph` / `derived-context` / `planning-graph`) as its own layer,
+  rather than becoming a sixth ad hoc mechanism bolted on beside it.
+- `recall`'s own honesty is preserved end to end: a genuine miss injects
+  nothing, never a fabricated "no relevant corrections found" confidence
+  the agent didn't earn.
+- Stays within the same token-economy discipline the rest of the pipeline
+  already answers to — this is a context layer, not an unbounded reread.
+
+### Constraints / Non-goals
+
+- Does not change what scribe *captures* — that surface is already built and
+  correct.
+- Does not replace human review or lower its bar; it feeds the review pass
+  more of what it should already have known, not less scrutiny.
+- Not a general RAG-everything layer — scoped to the same
+  feedback/correction material scribe already curates, not a blanket
+  full-repo retrieval pass.
+
+### Kinships
+
+[[pyforge-marshal]] · [[pyforge-scribe]] · [[marshal-token-economy]] ·
+[[scribe-marshal-fact-visibility]]

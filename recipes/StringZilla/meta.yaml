@@ -1,5 +1,5 @@
 {% set name = "StringZilla" %}
-{% set version = "4.6.3" %}
+{% set version = "5.2.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,14 +7,11 @@ package:
 
 source:
   url: https://github.com/ashvardanian/StringZilla/archive/v{{ version }}.tar.gz
-  sha256: 5470ed92c91032ac11b8b95c2a0967822b81ad72e68a9db0653c2c8d4316e7e6
+  sha256: 95b0f91a013a1113fd6dc5585f39a31f2fe2321a0ea0ed64334e57f0383f4b56
   #patches:
     #- patches/0001-fix-build-option.patch
 
 build:
-  entry_points:
-    - sz_split=cli.split:main
-    - sz_wc=cli.wc:main
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
@@ -34,11 +31,9 @@ requirements:
 
 test:
   imports:
-    - cli
+    - stringzilla
   commands:
     - pip check
-    - sz_split --help
-    - sz_wc --help
   requires:
     - pip
 
@@ -52,3 +47,4 @@ extra:
   recipe-maintainers:
     - mukhery
     - rxm7706
+    - pb01ka

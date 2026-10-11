@@ -51,7 +51,7 @@ removed the same day this lands.
 
 **Approach:** Add a routing note to `bmad-agent-herald/SKILL.md` naming
 `slides-generator` and stating the CAP-6 boundary verbatim (draft only; the
-Claude-Design → Vite deck pipeline in `docs/specs/presentation-deck.md` stays the
+Claude-Design → Vite deck pipeline in `docs/how-to/presentation-deck.md` stays the
 deck source of record, never forked or superseded). Remove `slides-generator` from
 steward's `_ROUTING_STORY_NOT_YET_LANDED` carve-out now that the mention exists, and
 add a herald-local meta-test proving the routing note, the boundary language, and
@@ -93,13 +93,13 @@ here).
 - `src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py` lines 224-228 -- `_ROUTING_STORY_NOT_YET_LANDED` dict; remove the `"slides-generator": "herald 18.3"` entry per its own comment ("Remove a name from this set the same day its own cited story lands the persona mention, never before").
 - `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` line 44 -- already correct (`slides-generator | labs | herald | bmad-agent-herald | herald 18.3`); read-only reference, not edited.
 - `.claude/skills/slides-generator/SKILL.md` -- read-only reference for what the skill does (React+Tailwind quick slide drafts, standalone HTML export).
-- `docs/specs/presentation-deck.md` -- read-only reference for the deck-pipeline boundary language ("the deck pipeline it must not fork").
+- `docs/how-to/presentation-deck.md` -- read-only reference for the deck-pipeline boundary language ("the deck pipeline it must not fork").
 - New: `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` -- herald-local meta-test mirroring the shape of Story 18.2's `test_release_comms_routing.py` pattern (producer-on-disk check + synthetic missing-producer proof, routing-section token check, boundary-language check, CLAUDE.md silence check).
 
 ## Tasks & Acceptance
 
 **Execution:**
-- `.claude/skills/bmad-agent-herald/SKILL.md` -- add a `slides-generator` routing note stating: the skill is wielded for quick slide drafts, it never becomes a deck head, and the Claude-Design → Vite pipeline (`docs/specs/presentation-deck.md`) remains the deck source of record -- so `bmad-agent-herald` carries a concrete, checkable boundary statement, not a bare "wields" mention.
+- `.claude/skills/bmad-agent-herald/SKILL.md` -- add a `slides-generator` routing note stating: the skill is wielded for quick slide drafts, it never becomes a deck head, and the Claude-Design → Vite pipeline (`docs/how-to/presentation-deck.md`) remains the deck source of record -- so `bmad-agent-herald` carries a concrete, checkable boundary statement, not a bare "wields" mention.
 - `src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py` -- remove `"slides-generator": "herald 18.3"` from `_ROUTING_STORY_NOT_YET_LANDED` -- so steward's own generic AD-2 gate now asserts the positive "herald mentions it" half for this row instead of skipping it.
 - `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` (new) -- machine-check the routing note's presence, the boundary language, the producer-on-disk state (+ a synthetic missing-producer proof), and CLAUDE.md's continued silence on `slides-generator` -- so `pyforge-herald-test` alone proves this story's acceptance criteria.
 - `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml` -- flip the `18-3-slides-generator-is-herald-wielded` row from `blocked` to `done`.
@@ -152,7 +152,7 @@ never a deck head" is a factual boundary, not a style preference.
 **Summary:** Implemented Story 18.3 in full: `bmad-agent-herald/SKILL.md` now
 carries a concrete AD-2 routing note for `slides-generator` (quick draft slides
 only; never a deck head; the Claude-Design → Vite pipeline in
-`docs/specs/presentation-deck.md` stays the deck source of record), steward's
+`docs/how-to/presentation-deck.md` stays the deck source of record), steward's
 `_ROUTING_STORY_NOT_YET_LANDED` carve-out no longer lists this row, a new
 herald-local meta-test proves the routing note and the carve-out removal, and the
 sprint ledger flips `18-3` to `done`. A four-layer review found 10 findings across

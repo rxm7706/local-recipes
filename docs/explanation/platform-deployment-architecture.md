@@ -306,6 +306,30 @@ capability-naming reason where helm/PyYAML are absent.
   keys fall through to the image's baked TOML defaults). LLM API keys, when
   wired, come from the same pre-created `existingSecret` via
   `sidecar.llm.apiKeySecretKey` — the chart never renders Secrets (AD-12).
+- **mcp-host sidecar (Story 87.3).** The isolated `mcp-host` env (`pixi.toml`
+  `[feature.mcp-host]`, `mcp 2.x`) serves station MCP faces and, when
+  `pyforge-herald` is installed in that env, Herald's webhook ASGI at
+  `/stations/herald/api/v1/webhooks/on-ship` and
+  `/stations/herald/api/v1/webhooks/on-pr-close` unchanged. HMAC verification runs in
+  the sidecar (`pyforge.herald.webhook`), not in the web pod. When
+  `MCP_HOST_SIDECAR_BASE_URL` is set and flag `pyforge.steward.herald_webhook_sidecar`
+  is ON, the platform host forwards only those two paths to the sidecar (no client
+  query string), with body reads capped at herald's limits (1,000,000 bytes and
+  10,000 ASGI messages — over either cap the host answers 413 and never contacts
+  the sidecar). Any other path under `/stations/herald/api/v1/webhooks/` gets the
+  host's usual 404 with nothing forwarded. Inbound header allowlist:
+  `content-type`, `x-hub-signature-256`, `x-hub-timestamp`, `traceparent`,
+  `tracestate` only — no `authorization` or `cookie`. Other Herald v1 routes stay
+  in-process or absent per Story 87.1. With the forward inactive (flag OFF or
+  `MCP_HOST_SIDECAR_BASE_URL` unset), every path under the webhook prefix
+  behaves as Story 87.1 left it — including unknown webhook paths, which reach
+  the in-process herald router or the absent reason. A client disconnect
+  mid-body ends the read immediately; nothing is forwarded and no response is
+  sent to the client.
+  Local loopback: `pixi run --frozen -e mcp-host mcp-host-serve` binds
+  `127.0.0.1:8090`. Staging and production keep the flag OFF until chart
+  `platform.mcpHostEnv` and compose's `mcp-host` service pass
+  `HERALD_REPO_ROOT` and `HERALD_WEBHOOK_SECRET` (deferred-work ledger).
 - **Sizing (Story 48.2 / R-18).** Default requests/limits land on web (memory-bound;
   Langflow + Vizro/BSL in-process), general worker, worker-builds, mcp-host, DB-GPT
   sidecar, and the Liquibase hook Job. Web gunicorn runs with `--preload` and an explicit

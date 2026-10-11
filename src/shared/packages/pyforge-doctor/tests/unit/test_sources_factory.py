@@ -869,23 +869,8 @@ def test_git_tracked_impl_artifact_is_flagged(tmp_path: Path) -> None:
     finding = findings[0]
     assert finding.check == "tracked-impl-artifact"
     assert finding.status is DoctorStatus.FAIL
-    assert "git mv to docs/specs" in finding.message
-
-
-def test_docs_specs_nonmd_reports_warn(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    _bootstrap(repo)
-    docs_specs = repo / "docs" / "specs"
-    docs_specs.mkdir(parents=True, exist_ok=True)
-    (docs_specs / "foo.txt").write_text("x\n", encoding="utf-8")
-    (repo / "CLAUDE.md").write_text("# Project\n", encoding="utf-8")
-
-    findings = factory.gather(repo)
-
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.check == "docs-specs-nonmd"
-    assert finding.status is DoctorStatus.WARN
+    assert "planning-artifacts/specs" in finding.message
+    assert "docs/specs" not in finding.message
 
 
 def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(
@@ -920,40 +905,6 @@ def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(
     assert unevaluable.status is DoctorStatus.WARN
     assert "check_tier_alignment" in unevaluable.message
     assert unevaluable.evidence == {"check": "check_tier_alignment", "target": str(repo), "unevaluable": True}
-
-
-# --------------------------------------------------------------------- spec index
-
-
-def test_spec_unindexed_reports_warn(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    _bootstrap(repo)
-    docs_specs = repo / "docs" / "specs"
-    docs_specs.mkdir(parents=True, exist_ok=True)
-    (docs_specs / "bar.md").write_text("x\n", encoding="utf-8")
-    (repo / "CLAUDE.md").write_text("# Project\n\nNo intake index here.\n", encoding="utf-8")
-
-    findings = factory.gather(repo)
-
-    assert len(findings) == 1
-    finding = findings[0]
-    assert finding.check == "spec-unindexed"
-    assert finding.status is DoctorStatus.WARN
-    assert finding.evidence["subject"] == "docs/specs/bar.md"
-
-
-def test_spec_indexed_in_claude_md_is_not_flagged(tmp_path: Path) -> None:
-    repo = tmp_path / "repo"
-    _bootstrap(repo)
-    docs_specs = repo / "docs" / "specs"
-    docs_specs.mkdir(parents=True, exist_ok=True)
-    (docs_specs / "bar.md").write_text("x\n", encoding="utf-8")
-    (repo / "CLAUDE.md").write_text("See docs/specs/bar.md for details.\n", encoding="utf-8")
-
-    findings = factory.gather(repo)
-
-    assert len(findings) == 1
-    assert findings[0].check == "bmad-drift"
 
 
 # ------------------------------------------------------------------- Dream vocab

@@ -69,7 +69,7 @@ ships, it does not add one.
   `herald deck pptx-spec` / `pptx-fill` wiring (read-only reference)
 - `presentations/<station>/src/pptx/` — output location for the new deck
 - `templates/pyforge-deck-template.pptx` — the committed interim template filled against
-- `docs/specs/presentation-deck.md` — the pptx step, if it earns one
+- `docs/how-to/presentation-deck.md` — the pptx step, if it earns one
 
 ## Tasks & Acceptance
 
@@ -113,7 +113,7 @@ ships, it does not add one.
 - `presentations/pyforge-warden/src/content_plan.json` — six-act Warden deck content plan (15 slides, shape API on slide 9)
 - `presentations/pyforge-warden/src/pptx/pyforge-warden-deck-2026-09-10.pptx` — pipeline-filled editable deck output
 - `src/shared/packages/pyforge-herald/tests/unit/test_story_19_4_warden_deck.py` — matrix coverage tests for the committed artifact
-- `docs/specs/presentation-deck.md` — documents the preferred `pptx-fill` path vs Marp interim exports
+- `docs/how-to/presentation-deck.md` — documents the preferred `pptx-fill` path vs Marp interim exports
 - `_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml` — story 19.4 → `done`
 
 **Review:** 0 patches, 0 deferred, 3 rejected (see triage log).

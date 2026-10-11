@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-exporter-prometheus
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-exporter-prometheus/opentelemetry_exporter_prometheus-${{ version }}.tar.gz
-  sha256: 2777cbf41c403c119e10f418fce5d645c956b47f673a2ee120285d1d0c6df2d5
+  sha256: 1c702a0cc7a1b8c5e1f3f246aeb4273dbd707179af30dbb66182a75e16a06ed8
 
 build:
   number: 0
@@ -24,9 +24,9 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api ~=1.12
-    - opentelemetry-sdk ~=1.44.0
-    - prometheus_client <1.0.0,>=0.5.0
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-sdk >=1.45.1,<1.46.dev0
+    - prometheus_client >=0.5.0,<1.0.0
 
 tests:
   - python:
@@ -72,14 +72,15 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-prometheus-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:23:12Z
+  cfe-last-checked: 2026-10-10T16:59:23Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T02:23:12Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T02:23:12Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:00:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 0.65b0 -> 0.66b1
 ####

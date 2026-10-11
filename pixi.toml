@@ -97,11 +97,13 @@ MINIFORGE_HOME = "$CONDA_PREFIX"
 [feature.grayskull.dependencies]
 grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
 [feature.crm.dependencies]
-# crm+feedrattler isolated from the grayskull FEATURE 2026-08-30 so local-recipes
-# (which composes grayskull) stops inheriting conda-recipe-manager's exact
-# click==8.2.1 pin (feedstock bug, conda-forge/conda-recipe-manager-feedstock#44) —
-# that pin walled headroom-ai + the dbt trio out of local-recipes. Only the
-# standalone grayskull ENV includes this feature; migrations still run via
+# crm+feedrattler isolated in [feature.crm.dependencies] 2026-08-30: crm 0.10.5's
+# exact click pin walled headroom-ai + the dbt trio out of local-recipes. Today crm
+# 0.10.6 (feedstock PR #46) and upstream cap click >=8.2.1,<=8.4.1; feedstock PR
+# #44 closed unmerged 2026-09-01 (maintainers declined to unpin click). local-recipes
+# resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1; latest click is
+# 8.5.0 — lifting <=8.4.1 is Story 67.4 sbom-crm-click-cap. Only the standalone
+# grayskull ENV composes this feature; migrations run via
 # `pixi run -e grayskull conda-recipe-manager convert …` / `… feedrattler …`.
 conda-recipe-manager = ">=0.8.0"  # lint + migrate v0 ↔ v1 conda recipes
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format (moved here with crm — it requires conda-recipe-manager >=0.4.0)
@@ -393,6 +395,10 @@ libpq = ">=17.11,<18"             # Story 67.1: PostgreSQL 17 client library eve
 pyjwt = ">=2.15.0,<3"             # django-pyforge's own dependency (assertion verify)
 cryptography = ">=50.0.1"         # django-pyforge's own dependency; python 3.14-compatible build (matches other python-3.14 envs in this file -- the <45 pin django-pyforge itself carries targets an older python)
 django-environ = ">=0.14.0"       # DATABASE_URL -> DATABASES via env.db(), matches the web image's own parsing
+pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 87.3: herald webhook ASGI in the sidecar (mcp 2.x)
+
+[feature.mcp-host.tasks]
+mcp-host-serve = { cmd = "uvicorn mcp_host.app:app --host 127.0.0.1 --port 8090", cwd = "src/platform", env = { PYTHONPATH = "$PIXI_PROJECT_ROOT/src/platform:$PIXI_PROJECT_ROOT/src/shared/packages/django-pyforge/src:$PIXI_PROJECT_ROOT/src/shared/packages/django-marshal/src" } }
 
 [feature.platform-ci-test]
 # --- platform-ci-test (Platform CI `test` job, conda-only) ---
@@ -748,6 +754,10 @@ cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\" -n au
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]
 description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
 cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m slow"
+
+[feature.pyforge-marshal.tasks.marshal-local-recipes-seed-oracle]
+description = "SC-02 / Story 86.2: the local-recipes empty-plan oracle (marshal seed adopt dry-run against this repo)."
+cmd = "pytest src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py -q -m slow"
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (marshal)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in marshal's own env, against the 80% unit floor. Distinct from pyforge-marshal-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
@@ -1593,6 +1603,10 @@ depends-on = [
 description = "Story 67.3 (fnd:CAP-13): read-only check that docs/foundry/sbom-gaps.md lists every feature outside pyforge-foundry-full and pyforge-foundry-full-stack and every fat-only local-recipes pin, each with promote / won't-do / upstream, a reason and an owner — derived from pixi.toml via scripts/sbom_gap_derive.py. Exit 0 pass / 1 findings (docs/reference/judgement-vocabulary.md)."
 cmd = "python scripts/sbom_gap_derive.py"
 
+[feature.guild-tasks.tasks.upstream-todos-check]
+description = "Story 67.4: read-only check that docs/foundry/upstream-todos.yaml covers every upstream sbom-gaps row, draft files match schema, and operator-only states are well-formed. Exit 0 pass / 1 findings / 2 could not run (docs/reference/judgement-vocabulary.md)."
+cmd = "python scripts/upstream_todos_check.py"
+
 [feature.guild-tasks.tasks.pr-preflight-lanes]
 description = """Serial reference for every lane a PR gates on — same graph ``pr-preflight`` runs, without journaling. Story 71.1 moved this aggregate here unchanged; ``pr-preflight`` is now ``python -m pyforge.steward.preflight``.
 
@@ -1604,8 +1618,8 @@ Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivale
 
 NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
 
-Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) mirrors the new `docsite-check.yml` `pull_request` lane -- until then no `pr-preflight` leg, and no PR-gating CI lane at all, ran `docsite/build.py`, so a broken family-page template could merge with every gate green. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, not a declared `pyforge-ci` dependency (each test file skips cleanly there via `pytest.importorskip` if that ever stops being transitively available), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs only node (no npm install, no build), so it runs unconditionally until steward Story 71.2 selects legs by each lane's paths."""
-depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
+Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) was the first docsite preflight leg (replaced 2026-10-10 by herald Story 27.5, spec-pyforge-herald CAP-52 / D8): `pages-check` (`-e site`) mirrors `docsite-check.yml`'s `pages-check` step and is selected only when that workflow's own `paths` fire (steward Story 71.2), because `pages-build` already runs `docsite/build.py --check` (the whole of `site-check`), so keeping both would build the dossier twice per preflight; `site-check` stays a pixi task for the local docsite loop. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, not a declared `pyforge-ci` dependency (each test file skips cleanly there via `pytest.importorskip` if that ever stops being transitively available), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs only node (no npm install, no build); steward Story 71.2 selects it from `docsite-check.yml`'s `paths` alongside `pages-check`."""
+depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "pages-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
 
 [feature.guild-tasks.tasks.pr-preflight]
 description = "Story 71.1 (spec-pyforge-steward CAP-159): run pr-preflight-lanes serially, journal each lane's wall time and exit code to .steward/preflight-runs.jsonl, stop on the first red leg — same lanes and verdict as pr-preflight-lanes. The pre-push hook still calls pixi run --frozen -e pyforge-guild pr-preflight."
@@ -2117,7 +2131,7 @@ frozendict = "*"                  # immutable dict (transitive build dep)
 rattler-build-conda-compat = ">=1.2.0,<2.0.0a0"  # rattler-build ↔ conda-build compat shims
 ##[feature.grayskull.dependencies]
 grayskull = ">=2.7.3"             # auto-generate conda recipes from PyPI / CRAN
-#conda-recipe-manager = ">=0.8.0" # REMOVED from local-recipes 2026-08-30 (disposition: stale-here): nothing in this repo invokes crm/conda_recipe_manager (verified — zero task/script/source hits), and its feedstock's click==8.2.1 exact pin (feedstock bug, upstream pyproject declares click unpinned; conda-forge/conda-recipe-manager-feedstock#44) was the wall blocking headroom-ai + the dbt trio in THIS env. Still available via `pixi run -e grayskull crm …` ([feature.grayskull.dependencies] keeps it, isolated). Restore here only if a local-recipes task grows a real crm call — and then via a SelfExplainML rebuild with click unpinned (recipes/conda-recipe-manager is ready) or after feedstock#44 merges.
+#conda-recipe-manager = ">=0.8.0" # REMOVED from local-recipes 2026-08-30 (disposition: stale-here): nothing in this repo invokes crm/conda_recipe_manager (verified — zero task/script/source hits). The 2026-08-30 wall was crm 0.10.5's exact click pin; today crm 0.10.6 (feedstock PR #46) caps click >=8.2.1,<=8.4.1 and feedstock PR #44 closed unmerged 2026-09-01. local-recipes still resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1. Still available via `pixi run -e grayskull crm …` ([feature.crm.dependencies]). Restore here only if a local-recipes task grows a real crm call.
 ##[feature.conda-smithy.dependencies]
 conda-smithy = ">=3.44.6,<4"      # feedstock generator + recipe linter
 ##[feature.shellcheck]
@@ -2149,7 +2163,7 @@ conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda 
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
 conda-pypi = ">=0.12.0"           # Better PyPI interoperability for the conda ecosystem
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
-#feedrattler = ">=0.3.14"         # moved to [feature.crm.dependencies] 2026-08-30: requires conda-recipe-manager >=0.4.0, transitively re-importing the click==8.2.1 wall this pass removed from local-recipes. Still available via `pixi run -e grayskull feedrattler …` (zero in-repo invocations — interactive/agent tool only).
+#feedrattler = ">=0.3.14"         # moved to [feature.crm.dependencies] 2026-08-30: requires conda-recipe-manager >=0.4.0; crm's click cap (>=8.2.1,<=8.4.1 on 0.10.6) stays in that feature, not local-recipes. Still available via `pixi run -e grayskull feedrattler …` (zero in-repo invocations — interactive/agent tool only).
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.80.0"                 # Pixi package & environment manager
 # pixitainer moved to [feature.local-recipes.target.linux-64.dependencies] (Story 10.2):
@@ -2200,7 +2214,7 @@ bmad-manticore = ">=3.1.0.dev0"   # From brain dump to a rendered, graphics-rich
 #claude-mem = "*"                  # Persistent context across sessions for coding agents - captures, compresses, and re-injects session memory.
 #caveman = "*"                     # moved to [feature.local-recipes.target.linux-64.dependencies] 2026-08-30 (SelfExplainML build is linux-64-only, like codegraph)
 #codegraph = ">=1.4.1"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local.
-headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. Promoted cross-platform 2026-08-30 (operator edit); also listed in the linux-64 target table with the other token-economy instruments.
+headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; crm 0.10.5's exact click pin walled this env until crm+feedrattler moved to [feature.crm.dependencies] (crm 0.10.6 caps click >=8.2.1,<=8.4.1; feedstock PR #44 closed unmerged 2026-09-01; open cap lift: Story 67.4 sbom-crm-click-cap). Promoted cross-platform 2026-08-30 (operator edit); also listed in the linux-64 target table with the other token-economy instruments.
 cocoindex = ">=1.0.24"            # Incremental engine for long horizon agents
 graphifyy = ">=0.9.68"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ppt-master = ">=5.1.0"            # Claude skill for creating professional PowerPoint presentations using SVG-based templates
@@ -2217,12 +2231,12 @@ dagster-webserver = ">=1.13.24"   # Web UI for dagster.
 dask-core = ">=2026.8.0"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
 # --- dbt / dlt: blocked, root causes verified 2026-07-26 -----------------------
 # dbt trio: UNBLOCKED 2026-08-30. Was blocked by a `click` conflict inside THIS
-# env: dbt-core >=1.11.11 requires click >=8.3.0,<9.0, but conda-recipe-manager
-# 0.10.5 pinned `click ==8.2.1` exactly (a FEEDSTOCK BUG — upstream pyproject
-# declares plain `"click"`; conda-forge/conda-recipe-manager-feedstock#44 is the
-# unpin PR). Resolved by REMOVING conda-recipe-manager from this env entirely
-# (nothing here invokes it; it lives on in the grayskull env) rather than
-# waiting on the feedstock fix.
+# env: dbt-core >=1.11.11 requires click >=8.3.0,<9.0, but crm 0.10.5's exact
+# click pin walled the solve. crm+feedrattler moved to [feature.crm.dependencies];
+# local-recipes resolves crm 0.10.6 through grayskull 3.1.1 with click 8.4.1
+# (feedstock PR #46 caps >=8.2.1,<=8.4.1; feedstock PR #44 closed unmerged
+# 2026-09-01). Latest click is 8.5.0; lifting <=8.4.1 is Story 67.4
+# sbom-crm-click-cap.
 dbt-core = ">=1.12.5"             # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 dbt-duckdb = ">=1.11.0"           # dbt DuckDB adapter
 dbt-postgres = ">=1.11.0"         # dbt PostgreSQL adapter
@@ -2443,7 +2457,7 @@ caveman-installer = ">=2.7.0"     # Claude Code token-compression skill (~65% ou
 cocoindex = ">=1.0.20"            # Incremental engine for long horizon agents
 codegraph = ">=1.6.0"             # Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local. On conda-forge (all platforms, nodejs 24) since 2026-09-25; linux-64 only here for now.
 graphifyy = ">=0.9.51"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
-headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; the wall (conda-recipe-manager's exact click==8.2.1 feedstock pin, conda-forge/conda-recipe-manager-feedstock#44) fell when crm+feedrattler moved to the grayskull-only [feature.crm.dependencies]. linux-64 here by operator preference (grouped with the token-economy instruments; solves cross-platform if ever promoted).
+headroom-ai = ">=0.37.0"          # Context-optimization layer (headroom CLI + lib, Rust core). UNBLOCKED 2026-08-30: needs click >=8.3.3; crm 0.10.5's exact click pin walled this env until crm+feedrattler moved to [feature.crm.dependencies] (crm 0.10.6 caps click >=8.2.1,<=8.4.1; feedstock PR #44 closed unmerged 2026-09-01; open cap lift: Story 67.4 sbom-crm-click-cap). linux-64 here by operator preference (grouped with the token-economy instruments; solves cross-platform if ever promoted).
 
 [feature.local-recipes.target.win-64.dependencies]
 
@@ -2649,6 +2663,9 @@ jsonschema = ">=4.26.0"           # report.py
 packageurl-python = ">=0.17.6"    # sbom.py, sources.py, eligibility_sbom.py; imports as `packageurl`
 license-expression = ">=30.4.4"   # license.py; imports as `license_expression`
 
+[feature.pyforge-warden.target.linux-64.dependencies]
+opengrep = { version = ">=1.30.2,<1.31", channel = "SelfExplainML" }  # Story 15.1 (CAP-25): optional SAST engine; SelfExplainML linux-64 only (mason 21.4)
+
 [feature.pyforge-warden.tasks.warden-scan]
 description = "Run the Warden multi-axis dependency gate (hygiene + security [+ license/currency v1.x])"
 cmd = "warden"
@@ -2759,6 +2776,8 @@ boring-semantic-layer = ">=0.2.0" # A boring semantic layer built with ibis
 # Import name is "pkg", NOT "duckdb_server" (recipes/duckdb-server G7 note).
 # Floor confirmed against the solve 2026-08-27: conda-forge carries 0.27.0–0.31.0.
 duckdb-server = ">=0.31.0"
+# Story 25.1 (CAP-61): git-pkgs CLI (SelfExplainML linux-64 only; mason 21.1 at 0.21.0).
+git-pkgs = ">=0.21.0,<0.22"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-test]
 description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'. Story 27.1: a second pytest run gates the inventory quartet's tests (tests/packaging/test_openteams_handoffs.py and scripts/tests/) -- they hold the kill tests for the quartet scripts and no other lane ran them. A separate run keeps the station suite's own rootdir."

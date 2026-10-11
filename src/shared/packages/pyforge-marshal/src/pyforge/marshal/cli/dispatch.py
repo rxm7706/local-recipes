@@ -50,7 +50,12 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, Proces
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
-from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
+from ..adapters.harness_bmadloop import (
+    HarnessError,
+    _recall_query_marker_path,
+    augment_bmad_loop_session_prompt_with_recall,
+    resolve_loop_runner,
+)
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import (
     deferred_work,
@@ -61,6 +66,8 @@ from ..core import (
     gate,
     harness_profile,
     policy,
+    recall_dispatch,
+    recall_feedback,
 )
 from ..core import dispatch as dispatch_core
 from ..core import promotion as promotion_core
@@ -75,9 +82,13 @@ from ..core.dispatch_completion import (
 from ..core.dispatch_harness_done import (
     HOLD_LANDING_PAYLOAD_KEY,
     FollowupReview,
+    LandOnlySpecGateVerdict,
+    LineBlameFact,
+    evaluate_land_only_spec_gate,
     followup_review_recommended,
     is_followup_review_spec,
     land_fail_operator_message,
+    land_only_spec_refusal_message,
     parse_blocking_condition,
     parse_spec_status,
     should_take_harness_done_land_only,
@@ -142,6 +153,7 @@ from ..dispatch_verification_journal import build_dispatch_verification_journal_
 from ..dispatch_verify import (
     _verify_commands_with_surface_guard,
     evaluate_dispatch_verification,
+    run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
 )
 from ..ports.build_harness import BuildHarnessPort
@@ -302,6 +314,7 @@ def _land_only_verification_writer_id() -> str:
 
 
 _CAP4_VERIFICATION_EVAL_FAILED = "MRS-DISP-062"
+_LAND_ONLY_SPEC_GATE_REFUSED = "MRS-DISP-063"
 
 
 @dataclass(frozen=True)
@@ -419,6 +432,111 @@ def _append_entry(
     if prepared.sidecar_relative_path is not None:
         fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
+
+
+def _spec_path_for_blame(*, repo_root: Path, worktree: Path, spec_path: Path) -> str | None:
+    for base in (worktree, repo_root):
+        try:
+            return str(spec_path.relative_to(base))
+        except ValueError:
+            continue
+    return None
+
+
+def _spec_line_blame_for_worktree(
+    vcs: VcsPort,
+    *,
+    repo_root: Path,
+    worktree: Path,
+    spec_path: Path,
+) -> dict[int, LineBlameFact] | None:
+    rel = _spec_path_for_blame(repo_root=repo_root, worktree=worktree, spec_path=spec_path)
+    if rel is None:
+        return None
+    try:
+        raw = vcs.line_blame_facts(repo_root=repo_root, path=rel, worktree=worktree)
+    except VcsCommandError:
+        return None
+    return {
+        line: LineBlameFact(commit=sha, committer_time=committer_time) for line, (sha, committer_time) in raw.items()
+    }
+
+
+def _journal_next_counter_for_writer(journal_text: str, writer_id: str) -> int:
+    max_counter = -1
+    for line in journal_text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        entry_id = entry.get("id")
+        if not isinstance(entry_id, dict):
+            continue
+        if entry_id.get("writer_id") != writer_id:
+            continue
+        counter = entry_id.get("counter")
+        if isinstance(counter, int) and counter > max_counter:
+            max_counter = counter
+    return max_counter + 1
+
+
+def _journal_land_only_spec_refused(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    story_key: str,
+    worktree: Path,
+    head_sha: str | None,
+    gate: LandOnlySpecGateVerdict,
+) -> None:
+    """Story 89.1 / 51.4: record a land-only refusal in the story's latest run dir."""
+    journal_path = run_dir / _JOURNAL_FILENAME
+    journal_text = fs.read_text(journal_path)
+    if journal_text is None:
+        return
+    writer_id = _writer_id()
+    counter = _journal_next_counter_for_writer(journal_text, writer_id)
+    run_id = run_dir.name
+    ts = _format_entry_ts(_now_utc())
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=ts,
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.INTENT,
+        payload={
+            "story_key": story_key,
+            "worktree_path": str(worktree),
+            "code": _LAND_ONLY_SPEC_GATE_REFUSED,
+            "status": gate.spec_status,
+            "failed_heading": gate.failed_heading,
+            "worktree_head_sha": head_sha,
+        },
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=ts,
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_BLOCKED,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "story_key": story_key,
+            "code": _LAND_ONLY_SPEC_GATE_REFUSED,
+            "status": gate.spec_status,
+            "failed_heading": gate.failed_heading,
+            "worktree_head_sha": head_sha,
+            "ok": True,
+        },
+    )
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError:
+        return
 
 
 def _emit(
@@ -1080,6 +1198,12 @@ def _verification_verdict_for_cap4(
             vcs=vcs,  # CommittingVcs duck type
             process=process,
         )
+        run_dispatch_environment_yaml_before_verify(
+            worktree=worktree,
+            repo_root=repo_root,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+        )
     try:
         envelope = evaluate_dispatch_verification(
             project_slug=slug,
@@ -1548,7 +1672,12 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     verification_failed_gate: str | None = None
     verification_failed_message: str | None = None
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
+    harness_profile: str | None = None
+    session_liveness_error: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
+        raw_profile = entry.payload.get("harness_profile")
+        if isinstance(raw_profile, str) and raw_profile:
+            harness_profile = raw_profile
         if entry.phase == Phase.INTENT:
             # Story 73.1 (CAP-281): the follow-up review marker rides the launch INTENT, read back here for
             # every reader of this run's merge facts.
@@ -1576,7 +1705,16 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
                 supervisor_pid = sup_val
             elif isinstance(sup_val, str) and sup_val.isdigit():
                 supervisor_pid = int(sup_val)
+    # Story 92.1: the supervisor's latest heartbeat names a failed group read (`session_liveness_error`), and the
+    # completion INTENT carries the one on the tick that ended the run -- `marshal status` shows it on the row.
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH):
+        if entry.phase == Phase.OBSERVATION and entry.payload.get("heartbeat") is True:
+            raw_error = entry.payload.get("session_liveness_error")
+            session_liveness_error = raw_error if isinstance(raw_error, str) else None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_COMPLETION):
+        if entry.phase == Phase.INTENT:
+            raw_error = entry.payload.get("session_liveness_error")
+            session_liveness_error = raw_error if isinstance(raw_error, str) else None
         if entry.phase == Phase.OUTCOME:
             verdict_val = entry.payload.get("verdict")
             if isinstance(verdict_val, str):
@@ -1680,19 +1818,30 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         preserve_tag=preserve_tag,
         verify_fix_session_pid=in_flight_fix.session_pid if in_flight_fix is not None else None,
         verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
+        harness_profile=harness_profile,
+        session_liveness_error=session_liveness_error,
     )
 
 
 def _is_dispatch_session_alive(
     process: ProcessPort,
     journal: dispatch_core.DispatchJournalFacts,
+    *,
+    repo_root: Path | None = None,
 ) -> bool:
-    """Check if a dispatch session is genuinely alive, not just a reused PID (Story 83.1/85.3)."""
-    from ..dispatch_verify import dispatch_session_alive
+    """Check if a dispatch session is genuinely alive, not just a reused PID (Story 83.1/85.3), reading its whole
+    process group (Story 92.1) -- the same check the supervisor's tick makes, with the run's harness ``binary`` as
+    the identity a failed group read falls back to."""
+    from ..dispatch_verify import dispatch_session_alive, harness_binary_for_profile
 
     if journal.session_pid is None:
         return False
-    return dispatch_session_alive(process, journal.session_pid, launched_at=journal.launched_at)
+    return dispatch_session_alive(
+        process,
+        journal.session_pid,
+        launched_at=journal.launched_at,
+        harness_binary=harness_binary_for_profile(journal.harness_profile, repo_root=repo_root),
+    )
 
 
 def resolve_dispatch_session_verdict(
@@ -1723,6 +1872,10 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
+    from ..core.dispatch_stale import dispatch_run_is_stale
+
+    if dispatch_run_is_stale(fs=fs, journal=journal):
+        return None
     # Story 85.2/85.3 (CAP-286): an open fix-turn INTENT is LIVE work to every reader -- `dispatch status`,
     # `marshal status`, the in-flight guard, resume -- while its session runs and after it exited: only a
     # supervisor settles the turn (commit + re-verify, or stop and park), so resume must re-spawn one rather than
@@ -1730,7 +1883,7 @@ def resolve_dispatch_session_verdict(
     # (`verify_fix_started_at` is set exactly while an INTENT is open), so every caller reads it the same way.
     if journal.verify_fix_started_at is not None:
         return DispatchSessionVerdict.LIVE
-    session_alive = _is_dispatch_session_alive(process, journal)
+    session_alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
     try:
@@ -1787,32 +1940,48 @@ def _live_dispatch_evidence(
                     branch_merged=False,
                     story_merged_on_main=False,
                 ),
-                session_alive=_is_dispatch_session_alive(process, journal),
+                session_alive=_is_dispatch_session_alive(process, journal, repo_root=repo_root),
                 harness_reported_failure=harness_reported_failure,
             )
             or f"story {story_key!r} dispatch session is still live"
         )
-    git_facts = gather_dispatch_git_facts(
-        vcs,
-        fs=fs,
-        repo_root=repo_root,
-        worktree=Path(journal.worktree_path),
-        story_key=journal.story_key,
-        project_slug=slug,
-        baseline_head_sha=journal.baseline_head_sha,
-        merge_subject_template=effective_policy.merge_subject_template.value,
-        followup_review=journal.followup_review,
-    )
-    return (
+    try:
+        git_facts = gather_dispatch_git_facts(
+            vcs,
+            fs=fs,
+            repo_root=repo_root,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            project_slug=slug,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+            followup_review=journal.followup_review,
+        )
+    except (VcsCommandError, ValueError) as exc:
+        # Story 92.1: a git read that fails here (a worktree removed or broken under a run that still reads live)
+        # means "no git facts" -- reported in the evidence, never raised out of the in-flight guard.
+        git_facts = DispatchGitFacts(
+            baseline_head_sha=journal.baseline_head_sha or "",
+            current_head_sha="",
+            changed_paths=(),
+            branch_merged=False,
+            story_merged_on_main=False,
+        )
+        reason = " ".join(str(exc).split())
+        git_unreadable = f"; git facts unreadable for worktree {journal.worktree_path!r}: {reason}"
+    else:
+        git_unreadable = ""
+    evidence = (
         zombie_redispatch_evidence(
             story_key=story_key,
             verdict=verdict,
             git=git_facts,
-            session_alive=_is_dispatch_session_alive(process, journal),
+            session_alive=_is_dispatch_session_alive(process, journal, repo_root=repo_root),
             harness_reported_failure=harness_reported_failure,
         )
         or f"story {story_key!r} dispatch session is still live"
     )
+    return evidence + git_unreadable
 
 
 def _epics_path(repo_root: Path, slug: str) -> Path:
@@ -1940,6 +2109,13 @@ def station_finalize_pending_story(
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
     if journal.story_key is None:
         return None
+    from ..core.dispatch_stale import dispatch_run_is_stale
+
+    # Story 92.1: a run whose worktree is gone cannot be mid-finalize -- its supervisor has nothing left to commit
+    # or push -- so a pid that still reads alive (reused) must never hold the station's drain. `marshal status`
+    # reports it stale instead.
+    if dispatch_run_is_stale(fs=fs, journal=journal):
+        return None
     on_backlog: str | None = None
     for raw in backlog:
         try:
@@ -1950,7 +2126,7 @@ def station_finalize_pending_story(
             continue
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     landing_complete = landing_journal_indicates_complete(journal.landing_verdict)
-    session_alive = _is_dispatch_session_alive(process, journal)
+    session_alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     if session_alive and not landing_complete:
         # A session still running is plain in-flight, not finalize-pending:
         # CAP-2's own verdict already reads LIVE and the MRS-DISP-011 relay
@@ -2073,6 +2249,7 @@ def station_in_flight_conflict(
     candidate_spec_text: str | None = None,
     deps_graph: Mapping[str, tuple] | None = None,
     parallel_dispatch: bool = False,
+    preflight_advisories: list[Finding] | None = None,
 ) -> DispatchPreflightConflict | None:
     """Refuse when an in-flight story blocks this candidate (22.5 / 28.16).
 
@@ -2104,9 +2281,25 @@ def station_in_flight_conflict(
         effective_policy=effective_policy,
     )
     candidate_refused_landing_open = feed_story in refused_landing_open
+    from ..core.dispatch_stale import stale_dispatch_run
+
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key is None:
+            continue
+        stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_dir.name, slug=slug)
+        if stale is not None:
+            if preflight_advisories is not None:
+                preflight_advisories.append(
+                    Finding(
+                        code="MRS-DISP-065",
+                        severity=Severity.WARN,
+                        message=(
+                            f"stale dispatch run {run_dir.name!r} for story {stale.story_key!r}: "
+                            f"worktree {stale.worktree_path!r} is missing — {stale.remedy}"
+                        ),
+                    )
+                )
             continue
         verdict = resolve_dispatch_session_verdict(
             fs=fs,
@@ -2229,6 +2422,7 @@ def spin_loop_home_in_flight_conflict(
     slug: str,
     story_key: str,
     effective_policy: policy.EffectivePolicy,
+    preflight_advisories: list[Finding] | None = None,
 ) -> DispatchPreflightConflict | None:
     """Refuse ``factory spin`` when this loop home already has a live run (34.1).
 
@@ -2246,6 +2440,7 @@ def spin_loop_home_in_flight_conflict(
         story_key=story_key,
         effective_policy=effective_policy,
         parallel_dispatch=False,
+        preflight_advisories=preflight_advisories,
     )
     if dispatch_conflict is not None:
         return dispatch_conflict
@@ -2848,6 +3043,12 @@ def dispatch_once(
     # real outcome once the worktree is provisioned.
     structure_graph = StructureGraphSeed()
     data["structure_graph"] = structure_graph.journal_payload()
+    # Story 93.1 (CAP-288/CAP-289 wiring): seed recall disposition beside
+    # `wire` and `structure_graph` so every post-composition envelope carries it.
+    data["recall"] = recall_dispatch.seed_recall_disposition().journal_payload()
+    gate_recall = recall_dispatch.disposition_for_layer_gate(context_layers=context_payload, station_slug=slug)
+    if gate_recall is not None:
+        data["recall"] = gate_recall.journal_payload()
 
     # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
     # policy's ordered `harness_preference` walked to the first profile
@@ -3003,6 +3204,8 @@ def dispatch_once(
         candidate_spec_text=spec_text,
         deps_graph=_load_station_deps_graph(repo_root, slug),
         parallel_dispatch=parallel_dispatch,
+        # Story 92.1: a stale run (its worktree gone) never refuses -- its MRS-DISP-065 WARN lands here.
+        preflight_advisories=findings,
     )
     if conflict is not None:
         findings.append(
@@ -3199,6 +3402,41 @@ def dispatch_once(
             current_head_sha=current_head,
         )
     if take_land_only:
+        blame = _spec_line_blame_for_worktree(
+            vcs,
+            repo_root=repo_root,
+            worktree=worktree,
+            spec_path=spec_path,
+        )
+        land_only_gate = evaluate_land_only_spec_gate(
+            spec_text=live_spec_text,
+            spec_status=spec_status,
+            blame=blame,
+        )
+        if not land_only_gate.permitted:
+            data["land_only_spec_gate_refused"] = True
+            feed_key = render_feed_key(story_key)
+            try:
+                head_sha = vcs.worktree_head_sha(worktree)
+            except VcsCommandError:
+                head_sha = None
+            if latest_run_dir is not None:
+                _journal_land_only_spec_refused(
+                    fs=fs,
+                    run_dir=latest_run_dir,
+                    story_key=feed_key,
+                    worktree=worktree,
+                    head_sha=head_sha,
+                    gate=land_only_gate,
+                )
+            findings.append(
+                Finding(
+                    code=_LAND_ONLY_SPEC_GATE_REFUSED,
+                    severity=Severity.ERROR,
+                    message=land_only_spec_refusal_message(story_key=feed_key, verdict=land_only_gate),
+                )
+            )
+            return _done()
         data["harness_done_land_only"] = True
         land_verdict, named_target, land_envelope = _attempt_harness_done_cap4(
             slug=slug,
@@ -3302,6 +3540,42 @@ def dispatch_once(
         )
         return _done()
 
+    feed_key = render_feed_key(story_key)
+    recall_block: str | None = None
+    recall_disposition = recall_dispatch.disposition_for_layer_gate(context_layers=context_payload, station_slug=slug)
+    if recall_disposition is None:
+        recall_target = worktree / recall_feedback.recall_feedback_output_relpath(
+            slug, story_key=feed_key, run_id=run_id
+        )
+        recall_marker = _recall_query_marker_path(recall_target)
+        had_cached_marker = fs.read_text(recall_marker) is not None
+        augmented, recall_injection = augment_bmad_loop_session_prompt_with_recall(
+            "",
+            role="dev",
+            fs=fs,
+            loop_home=worktree,
+            repo_root=repo_root,
+            station_slug=slug,
+            story_key=feed_key,
+            run_id=run_id,
+            context_layers=context_payload,
+        )
+        if augmented.strip():
+            recall_block = augmented
+        recall_disposition = recall_dispatch.disposition_from_injection(
+            recall_injection, cached_block=had_cached_marker
+        )
+        if recall_disposition.outcome == "failed":
+            reason = recall_disposition.reason or "scribe recall failed"
+            findings.append(
+                Finding(
+                    code="MRS-DISP-064",
+                    severity=Severity.WARN,
+                    message=f"recall layer failed for this dispatch ({reason}); launch proceeds without injected feedback",
+                )
+            )
+    data["recall"] = recall_disposition.journal_payload()
+
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, 0),
         ts=_format_entry_ts(mint_moment),
@@ -3309,7 +3583,7 @@ def dispatch_once(
         kind=dispatch_core.KIND_DISPATCH_LAUNCH,
         phase=Phase.INTENT,
         payload={
-            "story_key": render_feed_key(story_key),
+            "story_key": feed_key,
             "spec_path": str(spec_path),
             "worktree_path": str(worktree),
             "model": model,
@@ -3318,6 +3592,7 @@ def dispatch_once(
             "baseline_head_sha": baseline_head_sha,
             "harness_profile": resolution.profile,
             "context": context_payload,
+            "recall": recall_disposition.journal_payload(),
             **_dispatch_launch_version_journal_fields(),
             **(
                 {
@@ -3364,6 +3639,7 @@ def dispatch_once(
             # never the whole `[context]` payload. The launch seam has no
             # business reading a layer it does not implement.
             wire_layer=context_payload[harness_profile.WIRE_LAYER_NAME],
+            recall_block=recall_block,
             harness_session_id=harness_session_id,
         )
     except BuildHarnessError as exc:
@@ -3448,6 +3724,7 @@ def dispatch_once(
             # session open on an index?" is a recorded fact. A fresh dict,
             # like `wire`'s, so the journal and the envelope never alias.
             "structure_graph": structure_graph.journal_payload(),
+            "recall": recall_disposition.journal_payload(),
         },
     )
     try:
@@ -3604,7 +3881,25 @@ def _ensure_dispatch_supervision(
         "run_id": run_id,
         "story_key": journal.story_key,
     }
-    session_alive = _is_dispatch_session_alive(process, journal)
+    from ..core.dispatch_stale import stale_dispatch_run
+
+    # Story 92.1 (review m2): a run whose recorded worktree is gone is stale, never a dispatch to recover. A resume
+    # or attach would respawn a supervisor whose tick never gets past the git read of the missing worktree, and
+    # journal onto a run the operator quarantines -- so refuse before reading liveness. Marshal never moves it.
+    stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_id, slug=slug)
+    if stale is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-023",
+                severity=Severity.ERROR,
+                message=(
+                    f"no live dispatch to recover on station {slug!r}: run {run_id!r} for story "
+                    f"{stale.story_key!r} is stale -- its worktree {stale.worktree_path!r} is missing; {stale.remedy}"
+                ),
+            )
+        )
+        return None, findings, data
+    session_alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     verdict = resolve_dispatch_session_verdict(
         fs=fs,

@@ -1,0 +1,125 @@
+schema_version: 1
+items:
+  - id: sbom-conda-smithy-co-solve
+    title: conda-smithy CalVer 2026.x needs conda package for SBOM co-solve
+    source: sbom-gaps:feature:conda-smithy
+    evidence:
+      - docs/foundry/sbom-gaps.md:11
+      - pixi.toml:121-122
+      - pixi.toml:1114-1119
+      - pixi.toml:2642
+    target:
+      tracker: github
+      repo: conda-forge/conda-smithy-feedstock
+      kind: issue
+      verified: 2026-10-10
+    state: drafted
+    draft: docs/foundry/upstream-drafts/sbom-conda-smithy-co-solve.md
+    issue_url: null
+    observed: null
+    decided_by: agent
+    date: 2026-10-10
+    history: []
+
+  - id: sbom-crm-click-cap
+    title: Lift crm 0.10.6 click cap so click 8.5.x resolves with mcp
+    source: sbom-gaps:feature:crm
+    evidence:
+      - docs/foundry/sbom-gaps.md:12
+      - pixi.toml:1114-1119
+      - https://github.com/conda-forge/conda-recipe-manager-feedstock/pull/44
+      - https://github.com/conda-forge/conda-recipe-manager-feedstock/pull/46
+      - conda-forge/conda-recipe-manager-feedstock recipe/meta.yaml:29
+      - conda-forge/click-feedstock recipe/recipe.yaml (click 8.5.0)
+      - pixi.lock (click 8.4.1 in grayskull/local-recipes; 8.5.0 elsewhere)
+      - pixi.toml:102
+      - pixi.toml:2120-2446
+    target:
+      tracker: github
+      repo: conda-forge/conda-recipe-manager-feedstock
+      kind: issue
+      verified: 2026-10-10
+    state: drafted
+    draft: docs/foundry/upstream-drafts/sbom-crm-click-cap.md
+    issue_url: null
+    observed: null
+    decided_by: agent
+    date: 2026-10-10
+    history: []
+
+  - id: sbom-python-agent-platform-co-solve
+    title: langflow/pandas/onnxruntime co-solve blocks python-agent-platform in SBOM
+    source: sbom-gaps:feature:python-agent-platform
+    evidence:
+      - docs/foundry/sbom-gaps.md:23
+      - docs/dreams/pyforge-unifying-strategy.md:806-808
+    target:
+      tracker: github
+      repo: conda-forge/langflow-feedstock
+      kind: issue
+      verified: 2026-10-10
+    state: drafted
+    draft: docs/foundry/upstream-drafts/sbom-python-agent-platform-co-solve.md
+    issue_url: null
+    observed: null
+    decided_by: agent
+    date: 2026-10-10
+    history: []
+
+  - id: staged-recipes-lfx-bundles-superseded
+    title: Close superseded staged-recipes PRs #33977 and #33978
+    source: finding:mason-25.15
+    evidence:
+      - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-15-five-duplicate-langflow-suite-directories-retire-into-recipes-langflow.md
+      - archive/docs/specs/langflow-conda-forge.md:155-156
+    target:
+      tracker: github
+      repo: conda-forge/staged-recipes
+      kind: pr-close
+      verified: 2026-10-10
+    state: drafted
+    draft: docs/foundry/upstream-drafts/staged-recipes-lfx-bundles-superseded.md
+    issue_url: null
+    observed: null
+    decided_by: agent
+    date: 2026-10-10
+    history: []
+
+  - id: crm-sentinel-type-key-leak
+    title: crm 0.10.6 SentinelType repr leaked as YAML key (G121)
+    source: finding:cfe-G121
+    evidence:
+      - .claude/skills/conda-forge-expert/SKILL.md:4384
+      - .claude/skills/conda-forge-expert/CHANGELOG.md
+    target:
+      tracker: github
+      repo: conda/conda-recipe-manager
+      kind: issue
+      verified: 2026-10-10
+    state: drafted
+    draft: docs/foundry/upstream-drafts/crm-sentinel-type-key-leak.md
+    issue_url: null
+    observed: null
+    decided_by: agent
+    date: 2026-10-10
+    history: []
+
+  - id: crm-parse-crash-on-valid-indentation
+    title: crm 0.10.6 parse crash on indented comments (G93 addendum)
+    source: finding:cfe-G93-addendum
+    evidence:
+      - .claude/skills/conda-forge-expert/SKILL.md:3871-3881
+      - .claude/skills/conda-forge-expert/CHANGELOG.md
+      - recipes/mem0ai/recipe.yaml
+    target:
+      tracker: github
+      repo: conda/conda-recipe-manager
+      kind: issue
+      verified: 2026-10-10
+    state: drafted
+    draft: docs/foundry/upstream-drafts/crm-parse-crash-on-valid-indentation.md
+    issue_url: null
+    observed: null
+    decided_by: agent
+    date: 2026-10-10
+    history: []

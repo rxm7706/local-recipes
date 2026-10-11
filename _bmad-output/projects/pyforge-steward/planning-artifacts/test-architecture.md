@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 266e0d2e507111ca
-story_count: 338
-test_file_count: 109
+source_fingerprint: 07c9a0994f67cab4
+story_count: 347
+test_file_count: 110
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 338
-- **Epics parsed:** 86
-- **Test files inventoried:** 109 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 347
+- **Epics parsed:** 90
+- **Test files inventoried:** 110 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `266e0d2e507111ca`
+- **Source fingerprint:** `07c9a0994f67cab4`
 
 ## Risk Assessment
 
@@ -38,6 +38,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 52: The last two suite skips become an authoring path and an isolated sidecar
 - Epic 71: The preflight answers in under a minute (spec-pyforge-steward CAP-159)
 - Epic 78: Two platform auth controls stop failing open (security hotfix)
+- Epic 87: The platform host boots without the optional engines it mounts (fix under unifying CAP-10)
 
 ### Medium-risk epics
 
@@ -114,6 +115,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 84: Phase 3 of the deferral burn-down: steward's ruled fixes
 - Epic 85: The protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward CAP-165)
 - Epic 86: `deploy perimeter` fronts the ASGI application it is given (fix under CAP-114)
+- Epic 88: The preflight runs each task once, after its dependencies (fix under CAP-159)
+- Epic 89: A killed `platform-ci-local` run never blocks the next one (fix under CAP-152)
+- Epic 90: A pytest the preflight starts never inherits another run's basetemp (fix under CAP-159)
 
 ### Low-risk epics
 
@@ -234,6 +238,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_clean_delete.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_preserve_tag.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py` | unit | none observed |
 
@@ -530,6 +535,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 67.6 | Index — herald's dossier states the cutover's control plane (herald 26.1) | none observed |
 | 67.7 | Index — scribe's instruction surface names the estate first (scribe 21.1) | none observed |
 | 67.8 | The cutover spine drops the archive | none observed |
+| 67.9 | The conda-recipe-manager click notes state the cap as it stands | none observed |
 | 68.1 | A workspace archive holds the work, not the environments, and one bad record ... | none observed |
 | 68.2 | The pre-push gate skips a push that carries nothing new, and its journal name... | none observed |
 | 69.1 | `workspace clean` keeps a note, not a tarball, for a worktree already on its ... | none observed |
@@ -579,6 +585,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.8 | An agent session never writes outside this repository | none observed |
 | 85.9 | The session hook reads its denial roster from its own tree | none observed |
 | 86.1 | Deploy perimeter renders the ASGI application it is given | none observed |
+| 87.1 | The platform host boots without Herald and says why | none observed |
+| 87.2 | The platform host boots without Langflow, and the full-stack env runs it | none observed |
+| 87.3 | The host forwards Herald's webhooks to the mcp-host sidecar | none observed |
+| 87.4 | The herald webhook forward closes its review findings | none observed |
+| 87.5 | The herald webhook forward survives a client disconnect and proves AC 6 in an... | none observed |
+| 88.1 | The preflight runs each task once, after its dependencies | none observed |
+| 89.1 | A killed `platform-ci-local` run never blocks the next one | none observed |
+| 90.1 | A pytest the preflight starts never inherits another run's basetemp | none observed |
 
 ## Quality Gates
 

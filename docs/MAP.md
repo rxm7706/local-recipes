@@ -84,9 +84,9 @@ These guides map the internal PyForge scripts to their corresponding human opera
 
 | Former location | New home | Notes |
 |-----------------|----------|-------|
-| `docs/specs/feedstock-failure-remediation.md` | [`docs/how-to/feedstock-failure-remediation.md`](how-to/feedstock-failure-remediation.md) | Redirect stub at old path |
-| `docs/specs/feedstock-platform-expansion.md` | [`docs/how-to/feedstock-platform-expansion.md`](how-to/feedstock-platform-expansion.md) | Redirect stub at old path |
-| `docs/specs/presentation-deck.md` | [`docs/how-to/presentation-deck.md`](how-to/presentation-deck.md) | Redirect stub at old path |
+| `docs/how-to/feedstock-failure-remediation.md` | [`docs/how-to/feedstock-failure-remediation.md`](how-to/feedstock-failure-remediation.md) | Redirect stub at old path |
+| `docs/how-to/feedstock-platform-expansion.md` | [`docs/how-to/feedstock-platform-expansion.md`](how-to/feedstock-platform-expansion.md) | Redirect stub at old path |
+| `docs/how-to/presentation-deck.md` | [`docs/how-to/presentation-deck.md`](how-to/presentation-deck.md) | Redirect stub at old path |
 
 ## Per-file classification: `docs/reference/` (Story 22.4)
 
@@ -216,6 +216,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`how-to/run-and-understand-detectors.md`](how-to/run-and-understand-detectors.md) | doctor | authored |
 | [`how-to/run-herald-live-backend-locally.md`](how-to/run-herald-live-backend-locally.md) | herald | authored |
 | [`how-to/station-cli-operations.md`](how-to/station-cli-operations.md) | fleet | authored |
+| [`how-to/track-upstream-todos.md`](how-to/track-upstream-todos.md) | steward | authored |
 | [`how-to/troubleshoot-bmad-agent-loops.md`](how-to/troubleshoot-bmad-agent-loops.md) | fleet | authored |
 | [`how-to/troubleshooting-recipe-builds.md`](how-to/troubleshooting-recipe-builds.md) | fleet | authored |
 

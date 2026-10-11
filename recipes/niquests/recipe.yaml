@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "3.21.0"
+  version: "3.21.2"
 
 package:
   name: niquests
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/n/niquests/niquests-${{ version }}.tar.gz
-  sha256: 5b7d10a05f4c7ed08cede0af74f492ae7a8a5a71291833d029e23365fc3ea80a
+  sha256: 586d6b9475c9018a42f19f1e4688077b8158101cbf40673c63d2c1a096cc7665
 
 build:
   number: 0
@@ -70,15 +70,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/niquests-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:20:53Z
+  cfe-last-checked: 2026-10-10T12:20:44Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:20:53Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:20:53Z
+  cfe-local-build-datetime: 2026-10-10T12:21:23Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # added run deps from import test: ['wassima']
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 3.21.0 -> 3.21.2
 ####

@@ -44,7 +44,7 @@ how-to's body into a Mason skill, verbatim — a move, not a rewrite (doctor Sto
   `docs/reference/agent-instruction-notes.md` § *Skill Reference* gains two rows.
 
 The operator's ruling supersedes, for these two campaigns only, Story 17.3's *Never* ("never absorb the three workflow
-procedures into a new mason-owned rewrite"): this is a verbatim move, and `docs/specs/feedstock-refresh.md` does not move.
+procedures into a new mason-owned rewrite"): this is a verbatim move, and `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` does not move.
 
 Ledger key: `19-4-the-two-feedstock-campaigns-become-mason-skills`.
 Ledger status (do not edit the ledger): `backlog`.
@@ -73,7 +73,7 @@ Type / Effort / Deps: docs / M / S-19.3.
 **Never:**
 - Do not rewrite, summarize or reorder the campaign bodies; do not copy CFE guide or gotcha text into a skill.
 - Do not edit the CFE surface (AD-15) — its pointer back is Story 19.5's `retro(cfe):` commit.
-- Do not move `docs/specs/feedstock-refresh.md` or edit any `recipes/**`.
+- Do not move `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` or edit any `recipes/**`.
 - Do not author a new file under `docs/specs/`; do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
 
 ## I/O & Edge-Case Matrix

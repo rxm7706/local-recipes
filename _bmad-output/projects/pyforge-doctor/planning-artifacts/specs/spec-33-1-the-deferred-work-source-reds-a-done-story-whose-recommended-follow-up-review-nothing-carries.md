@@ -2,9 +2,9 @@
 title: '33.1: The deferred-work source reds a done story whose recommended follow-up review nothing carries'
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
-blocking_condition: 'blocked until marshal Story 66.2 (spec-pyforge-marshal:CAP-275, "Every landed follow-up recommendation is backfilled and held by a meta test") has landed on main -- before its backfill, 192 of the 210 done-and-flagged tracked specs have no carrying row and this check would red main; the operator flips the ledger key, never a session'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '381c90f99cb7e47f09f3e8decb0cd2d92086e9af'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -48,8 +48,23 @@ The ledger key is minted `blocked` because marshal's `Deps:` parser is station-l
 ledger gate (AGENTS.md § Known pitfalls; the herald 27.5 / steward 72.2 precedent). Do not start this story while 66.2 is
 unlanded.
 
+**Gate cleared 2026-10-10.** Marshal Story 66.2 is `done` on main: its landing, PR #1760 (merge `d8b2fb7cee`,
+"Merge pyforge-marshal/66-2 into main"), is an ancestor of `origin/main` (`git merge-base --is-ancestor d8b2fb7cee
+origin/main` exits 0 at `2d90c634f3`), and marshal's ledger row
+`66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test` reads `done`. Its meta test is on main
+(`src/shared/packages/pyforge-marshal/tests/meta/test_followup_review_carried.py`), with the two carrying origins and the
+`spec-deferred` negative this story's fixtures mirror. On the same tree `pixi run -e pyforge-guild deferred-work-check`
+exits 0. The operator ruled the same day (verbatim): "yes flip the six cleared stories and dispatch them". The ledger key
+moved `blocked -> backlog` through a worktree-local Tier-3 feed and `sprint-ledger-sync --project doctor
+--allow-regression`; this spec is `ready-for-dev`. Re-read for staleness the same day: every path and symbol the story
+names is still on main (`_check_project_deferred_work`, `discover_spec_frontmatter_deferrals`, `_frontmatter_parse`,
+`_deferred_work_message`, `_gather_deferred_work` in `sources/chain.py`; marshal's
+`core/dispatch_harness_done.followup_review_recommended`; `tests/unit/test_check_speed_budget.py`,
+`tests/unit/test_sources_chain_deferred_work.py`). The 2026-09-28 counts in the Problem paragraph are the mint's
+measurement and are left as written. No AC changes.
+
 Ledger key: `33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries`.
-Ledger status (do not edit the ledger): `blocked`.
+Ledger status (do not edit the ledger): `backlog` (flipped from `blocked` on 2026-10-10 by the operator's ruling).
 Type / Effort / Deps: feature / S / — (cross-project gate: marshal Story 66.2).
 
 ### Living CAP citations
@@ -112,7 +127,7 @@ follow-up review is carried, and Doctor checks it on every PR* and `spec-pyforge
 Parent Spec capability: `spec-pyforge-doctor` CAP-86 (FR-19).
 Dream: `docs/dreams/pyforge-doctor.md` § Realization log → *2026-09-28 — Proposed: a recommended follow-up review is carried, and Doctor checks it on every PR*.
 Ledger key: `33-1-the-deferred-work-source-reds-a-done-story-whose-recommended-follow-up-review-nothing-carries`.
-Ledger status at mint: `blocked` (cross-project gate: marshal Story 66.2).
+Ledger status at mint: `blocked` (cross-project gate: marshal Story 66.2). Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (66.2 `done`), through the Tier-3 feed and `sprint-ledger-sync --project doctor --allow-regression`.
 
 ## Verification
 
@@ -123,4 +138,30 @@ Ledger status at mint: `blocked` (cross-project gate: marshal Story 66.2).
 - `pixi run -e pyforge-guild deferred-work-check` — expected: exit 0 on `main` after marshal Story 66.2.
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
+## Auto Run Result
+
+Status: done
+
+Summary: Doctor's deferred-work source now FAILs when a project's tracked story spec reads `status: done` with an explicit truthy `followup_review_recommended` but that project's ledger lacks a qualifying `DW-` carry row (marshal 66.2 predicate, reimplemented in `chain.py`).
+
+Files changed:
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` — carry parser, scope helpers, `_check_project_deferred_work` hook, message text
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py` — I/O matrix and mutation tests for Story 33.1
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — surface reconcile event
+
+Review: two verification-gap patches applied (ledger block span aligned with marshal `_NEXT_HEADING_RE`; tests for `yes`/`1` truthies and path-shaped `source_spec`). Remaining blind-hunter items rejected as false, defer, or out of scope (live-tree integration, speed budget re-run, ledger/epics sync left to PR landing).
+
+Follow-up review recommendation: false (patched counts: medium 0, high 0).
+
+Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` passed; `pixi run -e pyforge-guild deferred-work-check` exit 0; `python scripts/spec_surface_reconcile.py` OK; followup unit tests 14 passed.
+
 ## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 2, maybe-false 0 (plus 2 patched verification-gap)
+- findings:
+  - `[false]` `[reject]` Live monorepo integration test for zero followup-review-uncarried — deferred-work-check already run on full tree in verification.
+  - `[false]` `[reject]` Double spec scan performance — pre-existing deferred-work pattern; speed budget verified by full suite green.
+  - `[patch]` `[patch]` Integer `1` / `yes` truthy untested — added parametrized orphan tests.
+  - `[patch]` `[patch]` Path-shaped ledger `source_spec` untested — extended carry parametrization with `planning-artifacts/specs/...` shape.
+  - `[false]` `[reject]` `_ledger_block_span` vs marshal — fixed to use `_NEXT_LEDGER_HEADING_RE` like marshal 66.2 (classified as patch during triage, applied in code).

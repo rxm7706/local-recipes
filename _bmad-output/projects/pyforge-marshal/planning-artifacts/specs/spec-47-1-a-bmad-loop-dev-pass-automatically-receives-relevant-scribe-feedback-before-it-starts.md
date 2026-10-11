@@ -2,8 +2,8 @@
 title: '47.1: A bmad-loop dev pass automatically receives relevant scribe feedback before it starts'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '2026-09-18'
-status: 'blocked' # draft | ready-for-dev | in-progress | in-review | done | blocked
-baseline_revision: '2f98ede57d5ebb7df285bbd1383782cf6a7c86af'
+status: 'done' # draft | ready-for-dev | in-progress | in-review | done | blocked
+baseline_revision: '909a725e165c5648a1818aa8c12e509ffbb5cf73'
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 followup_review_recommended: false # set by step-04 on status: done; step-01 READS this — false HALTs, true allows one follow-up then forces false
 context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md']
@@ -15,64 +15,101 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** Scribe's `recall`/`capture` primitive is real, shipped, and grounded (a genuine miss
-is explicit, never an invented answer) — but it doesn't reach forward on its own. A correction
-captured today doesn't automatically show up in the next `bmad-loop` dev pass working nearby
-code; a human has to remember to run `scribe recall` and paste the result in by hand.
+**Problem:** Scribe's `recall` primitive is real, shipped and grounded, but it does not reach a
+`bmad-loop` dev pass on its own. Stories 47.2–47.4 shipped the injection plumbing (the
+`recall-feedback.md` cache with its one-query marker, the prompt-fold helper, the `[context.recall]`
+gate, the CAP-4 empty branch), but the query it runs is the planning-graph shape: `ScribeCli.recall`
+always renders `--mode planning` (kinds `doc`, `memlog`), and `inject_recall_feedback` passes
+`scope=<station-slug>`, which scribe's `_citation_in_scope` narrows to `_bmad-output/projects/<slug>/`.
+A `.claude/memory/{feedback,project,reference}/*.md` capture (kind `memory`) can therefore never
+ground — the 2026-09-20 intent gap.
 
-**Approach:** Before a `bmad-loop` dev pass (`bmad-dev-auto`) launches, `harness_bmadloop.py`
-shells `scribe recall --scope <station-slug>` (CLI subprocess, never a direct `pyforge.scribe`
-import — Scribe stays the sole owner of capture/compile per the parent Spec's own constraint) and,
-if the answer is grounded, folds it into the dev-pass session's starting context as a
-clearly-labeled block.
+**Approach:** Operator ruling 2026-10-10 ("Marshal --mode memory (Recommended)"): a marshal-only
+change. `render_scribe_recall_argv` and `ScribeCli.recall` gain a recall-mode parameter whose
+default stays `planning`, so every existing caller's argv is unchanged; `inject_recall_feedback`
+asks for `memory` with no scope, so the dev-pass query is `scribe recall <query> --mode memory`.
+Team memory is repo-wide, so the query carries no `--scope`. Scribe is untouched.
 
 ## Boundaries & Constraints
 
 **Always:**
-- Query scoped by `--scope <station-slug>`, reusing the mechanism `scribe-marshal-fact-visibility`
-  CAP-1 already proves — never a narrower per-file-glob scope (this story's own resolution of the
-  parent Spec's Open Question 1).
-- One `scribe recall` subprocess call per story dispatch, run before the dev-pass session launches.
-- The injected context block is clearly labeled as scribe-sourced feedback, distinguishable from
-  the story's own spec/intent-contract content.
-- Reach Scribe only through its CLI (`scribe recall ...` subprocess) — never `import
-  pyforge.scribe`, matching this Spec's "read-only consumer" constraint.
-- Scoped to `bmad-loop` dev passes only in this story — `bmad-build-auto` dispatch is explicitly
-  out of scope here (this story's own resolution of Open Question 2, matching the source Dream's
-  literal text).
+- Reach scribe only through its CLI (`adapters/scribe_cli.py`), never `import pyforge.scribe`.
+- The dev-pass query is `--mode memory` with no `--scope` and no `--kind` (`--mode` and `--kind`
+  are exclusive in scribe's CLI).
+- Every other caller keeps its argv byte for byte: `marshal context retrieve` and the planning-graph
+  layer still render `--mode planning` plus `--scope <slug>` (`cli/context.py`).
+- Keep what 47.2–47.4 shipped: one `scribe recall` per story dispatch (the `.query-ran` marker), the
+  labeled block (`RECALL_FEEDBACK_HEADER`), the `[context.recall]` gate, fail-open on an unavailable
+  scribe (WARN, never dispatch-blocking), and CAP-4's rule that a miss injects nothing.
+- Scope stays `bmad-loop` dev passes; `bmad-build-auto` dispatch sessions are out of scope.
+- Fix each defect where the behaviour lives and pin it with a test that fails without the fix.
 
 **Never:**
-- Never treat a recall failure (subprocess error, scribe unavailable) as a dispatch-blocking
-  error — degrade silently to no injected context, same fail-open discipline this fleet's other
-  live-query findings already use (e.g. doctor CAP-2/CAP-14).
-- Never write to scribe's own capture store from this path — read-only consumer only.
-- Never inject a fabricated or synthesized confidence claim when the query fails or times out —
-  absence of a block is the correct behavior (Story 47.4 owns the "genuine empty hit" case; this
-  story owns "the query didn't run at all," which behaves identically — no block).
+- Never edit `pyforge-scribe`: no scope rule admitting `.claude/memory/**`, no new scribe flag.
+- Never inject text on a grounded miss, a failed query or a skipped query — no synthesized "no
+  relevant corrections found" line (CAP-4).
+- Never write to scribe's capture store; this path is a read-only consumer.
+- Never forward an unrecognized recall mode to the subprocess.
+- Never wire `augment_bmad_loop_session_prompt_with_recall` into a live `bmad-loop` launcher here
+  and never close `DW-marshal-47-2` / `DW-marshal-47-3`: that seam is outside this story.
 
 ## I/O & Edge-Case Matrix
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| Relevant feedback exists | `scribe recall --scope <slug>` returns a grounded hit for the story's station | Dev-pass session context includes the labeled feedback block before it starts working | No error expected |
-| No relevant feedback | `scribe recall` returns a grounded miss (Story 47.4's own scope) | No block injected | No error expected |
-| `scribe` CLI unavailable | subprocess exits non-zero or times out | No block injected; dispatch proceeds unaffected (fail-open) | Warn-level log only, never blocks dispatch |
-| Story with no resolvable station slug | dispatch context lacks a station scope | Recall query skipped entirely (nothing to scope it to) | No error expected |
+| Grounded team-memory hit | `scribe recall <query> --mode memory` prints a body and `[source: .claude/memory/feedback/<x>.md]` | `recall-feedback.md` holds the labeled block ending `Source: .claude/memory/feedback/<x>.md`; the dev-role prompt fold appends it; `injected=True` | No error expected |
+| Grounded miss | scribe prints `no grounded answer found` | empty string written, no block in the prompt, `injected=False`, `ok=True` | No error expected |
+| `scribe` CLI unavailable | binary unresolved, non-zero exit or timeout | no block; `ok=False` with a reason; dispatch proceeds | WARN-level only, never blocks dispatch |
+| No resolvable station slug | dispatch context lacks a station | query skipped (no loop-home target to write), `attempted=False` | No error expected |
+| Planning-graph retrieve | `ScribeCli.recall` called with no mode, with or without a scope | argv unchanged: `recall <q> --mode planning [--scope <slug>]` | No error expected |
+| Unrecognized mode | a caller passes a mode other than `planning` or `memory` | refused before any subprocess starts | Error raised to the caller, never forwarded |
+
+</intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py` -- `render_scribe_recall_argv` (:94), the one place the recall argv is spelled; hardcodes `--mode planning` today.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py` -- `ScribeCli.recall` (:240), routes through the renderer with no mode override.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` -- `inject_recall_feedback` (:1365) passes `scope=station_slug` at :1385; `augment_bmad_loop_session_prompt_with_recall` (:1420) folds the cached block.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/context.py` -- `marshal context retrieve` (:541), the planning-graph caller whose argv must not move.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py` (`TestRecallArgvScope`), `tests/unit/test_harness_bmadloop_recall.py` (its `_FakeScribeCli.recall` double and the scope assertion in `test_scopes_the_recall_call_by_station_slug_and_runs_it_against_repo_root`, which this ruling inverts), `tests/unit/test_cli_context_retrieve.py`.
+
+## Tasks & Acceptance
+
+**Acceptance Criteria:**
+- Given `inject_recall_feedback` runs for a station, when it calls scribe through the real `ScribeCli` with a recording `ProcessPort`, then the argv is exactly `(<scribe>, "recall", build_recall_query(<slug>), "--mode", "memory")`: no `--scope`, no `--kind`, `--mode` once. The test uses the real adapter, not the `_FakeScribeCli` double, and fails if `--mode planning` or `--scope` returns.
+- Given `render_scribe_recall_argv` or `ScribeCli.recall` is called without a mode, when the planning-graph layer or `marshal context retrieve` runs, then the argv is byte-identical to today's, and the existing `TestRecallArgvScope` and `test_cli_context_retrieve.py` assertions pass unchanged.
+- Given a recall mode other than `planning` or `memory`, when the renderer is called, then it refuses before any subprocess starts.
+- Given scribe stdout whose `[source: …]` line cites `.claude/memory/feedback/<x>.md`, when the dev-pass path runs, then `recall-feedback.md` carries the labeled block with `Source: .claude/memory/feedback/<x>.md`, and `augment_bmad_loop_session_prompt_with_recall(role="dev")` returns the prompt with that block appended. The test feeds the stdout through `parse_recall_output`, so the `.claude/memory/**` citation grounds end to end on marshal's side.
+- Given a grounded miss, a non-zero exit or a missing binary under the new query, when the dev-pass path runs, then no text is injected and 47.2's one-query marker, 47.3's layer gate and 47.4's empty branch behave as their own tests already pin (all stay green).
+- Given the recall query fails and the `recall-feedback.md` write also fails, when `inject_recall_feedback` returns, then its `reason` names both failures, never the write failure alone (the 2026-09-20 review's low `[patch]` finding, still present in the shipped code).
+- Given this story lands, when `DW-marshal-47-1-intent-gap-2026-09-20` is read, then it is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` of the `mode="memory"` call. `DW-marshal-47-2` and `DW-marshal-47-3` stay open.
+
+## Design Notes
+
+The ruling picks option (a) of the 2026-09-20 review's question 1. Option (b), dropping the scope
+while keeping `--mode planning`, would still exclude kind `memory`. Option (c), extending scribe's
+`_citation_in_scope`, is scribe-owned and outside this Spec's read-only-consumer constraint.
+
+Probe, 2026-10-10, primary checkout: `pixi run --frozen -e pyforge-guild scribe recall "feedback corrections guidance for pyforge-marshal" --mode memory` exited 0 with a grounded answer whose last line is `[source: .claude/memory/project/2026-10-08-marshal-story-47-2-cap-2-implemented-in-dispatch.md]`. The same query with `--mode planning --scope pyforge-marshal` cited a planning memlog.
+
+The review's question 2 (a file versus a prompt) is settled by what shipped: both, the cache file and the prompt fold. Its question 3 (`run_resume`) stays behind the open launcher seam.
 
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-011 binding corrected 2026-09-19 — the `-k recall` scoping is a manual check below, not the declared command).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010/011 binding).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010/011 binding).
+- `python scripts/spec_surface_reconcile.py` — expected: exit 0 (the derived surface guard; `spec-marshal-recall-in-the-loop` and `spec-pyforge-marshal` memlogs name every governed path this story moves).
 
 **Manual checks:**
-- `pixi run -e pyforge-marshal pyforge-marshal-test -k recall` -- expected: all new tests pass,
-  covering every I/O matrix row above via fixture `scribe recall` output, not a live scribe
-  process
-- `pixi run -e pyforge-marshal marshal factory dispatch pyforge-doctor <a real backlog story>`
-  (manual smoke, read-only recall query only) -- expected: the dispatch's own session log shows
-  the recall query ran and, if scribe has a relevant entry for pyforge-doctor, that it was folded
-  into context
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -k recall` — expected: every new and existing recall test passes, through fixture scribe output and a recording `ProcessPort`, never a live scribe process.
+- `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
+- `pixi run --frozen -e pyforge-guild scribe recall "feedback corrections guidance for pyforge-marshal" --mode memory`, from a checkout with a compiled graph — expected: a grounded answer whose `[source: …]` line is under `.claude/memory/`.
+
+## Spec Change Log
+
+- 2026-10-10 — Operator ruling on the 2026-09-20 intent gap ("Marshal --mode memory (Recommended)"). Changed: Problem, Approach, Boundaries, the I/O matrix, Code Map, Acceptance Criteria, Design Notes and Verification are re-derived for the `--mode memory`, no-scope query. The old Always bullet mandating `--scope <station-slug>` is withdrawn. Known-bad state avoided: a green suite whose query can never ground a `.claude/memory/**` capture. KEEP: 47.2's one-query marker, 47.3's layer gate, 47.4's empty branch, fail-open on an unavailable scribe, the `bmad-loop`-only scope. Status moves from `blocked` to `ready-for-dev`; the ledger key moves from `blocked` to `backlog` with the operator's answer as the confirmation.
 
 ## Review Triage Log
 
@@ -101,3 +138,55 @@ clearly-labeled block.
 1. **Grounding is structurally impossible as specified.** The Boundaries mandate `--scope <station-slug>`, reusing the `scribe-marshal-fact-visibility` CAP-1 mechanism, which hardcodes `--mode planning` (kinds `{doc, memlog}`) and, independently, scribe's `_citation_in_scope()` never admits a `.claude/memory/**` citation under any per-station scope. Does the fix (a) add a `mode`/`kind` override to `ScribeCli.recall()`/`render_scribe_recall_argv()` (new public surface, marshal-side only), (b) drop the mandatory per-station scope for this query (contradicts the Boundaries' explicit "never a narrower... scope" but the Boundaries never anticipated an *unscopable* content kind), or (c) extend scribe's own `_citation_in_scope()` to admit team-memory citations under some rule (a `pyforge-scribe`-owned change, outside this story's stated read-only-consumer boundary)? Each has a different owner and blast radius; the spec does not pick one.
 2. **"Folds into the dev-pass session's starting context" names an outcome, not a surface.** Does CAP-1's deliverable end at writing a correctly-labeled `recall-feedback.md` artifact (trusting a separate, not-yet-built capability to consume it), or does this story also need to wire an actual reader into `bmad-loop`'s own session-context assembly (which lives outside this repo's control surface, as an externally-installed tool)? If the latter, which file/step is the intended read point?
 3. (Lower-priority, logged but not blocking on its own) Should `run_resume` also inject recall context, or is "only the initial launch" intentional?
+
+### 2026-10-10 — Operator ruling: the 2026-09-20 intent gap is resolved (Marshal --mode memory)
+
+- ruling (verbatim answer): "Marshal --mode memory (Recommended)"; the option read: "Dev-pass query runs scribe recall --mode memory with no station scope (team memory is repo-wide); marshal-only change, scribe untouched. bmad-spec re-derives CAP-1, then 47.1 is flipped and dispatched."
+- question 1 (grounding): resolved as option (a). Marshal's `ScribeCli.recall` and `render_scribe_recall_argv` take a mode, and the dev-pass query runs `--mode memory` with no `--scope`. Scribe's `_citation_in_scope` is unchanged.
+- question 2 (file or prompt): settled by what Stories 47.2–47.4 shipped. It is both: `recall-feedback.md` with its one-query marker, and `augment_bmad_loop_session_prompt_with_recall` folding the block into the dev and review prompt. No in-tree `bmad-loop` launcher calls the helper yet (`DW-marshal-47-2`, `DW-marshal-47-3`, both open); this story does not take that seam.
+- question 3 (`run_resume`): stays behind the same launcher seam; not in this story.
+- the lower findings, re-read against the shipped code: the double-failure branch still returns only the write-failure reason (`inject_recall_feedback`, the `except (OSError, PyforgeError)` return precedes the `if not outcome.ok` check), so it is now an acceptance criterion; the `MRS-SPIN-018` WARN wording no longer applies (that code now names the supervisor-spawn finding and no shipped caller reports a recall WARN); the `_await_file` fix was reapplied with its docstring (`tests/unit/test_harness_bmadbuild.py:403`).
+- chain: memlog entries on `spec-marshal-recall-in-the-loop` (the ruling verbatim, the question-2 settlement, the re-derived CAP-1); the `SPEC.md` re-render was refused by the session hook and is the parent session's to land. `DW-marshal-47-1-intent-gap-2026-09-20` carries a `ruled:` line and stays open until this story lands. Status `ready-for-dev`; ledger `blocked` → `backlog`, operator-confirmed by this answer.
+
+### 2026-10-10 — Review pass
+- verdicts: 5 findings — high 0, medium 0, low 1, false 4, maybe-false 0
+- findings:
+  - `[low]` `[patch]` `augment_bmad_loop_session_prompt_with_recall` docstring still said "scoped feedback" after Story 47.1 dropped `--scope` on the dev-pass query — Updated the docstring to "team-memory feedback block".
+  - `[false]` `[reject]` `render_scribe_recall_argv` would forward `--scope` together with `--mode memory` if a future caller passed both — Refuted: `inject_recall_feedback` is the only memory-mode caller and passes no scope; planning-graph callers keep default planning mode with scope unchanged.
+  - `[false]` `[reject]` No test covers `ScribeCli.recall` refusing an invalid mode before subprocess — Refuted: `test_planning_graph.py::test_unrecognized_mode_refuses_before_subprocess` exercises the renderer; `ScribeCli.recall` maps `ValueError` to `ok=False` without subprocess (same guard).
+  - `[false]` `[reject]` Double-failure branch still untested — Refuted: `test_double_failure_reason_includes_both_scribe_and_write_errors` added in `test_harness_bmadloop_recall.py`.
+  - `[false]` `[reject]` Matrix row "Unrecognized mode" requires an exception to the caller but `ScribeCli.recall` never raises — Refuted: the I/O matrix names the renderer/caller contract; dev-pass path uses `ScribeCli`, which degrades invalid mode to `ok=False` per the adapter's never-raises rule, while direct renderer callers get `ValueError` as specified.
+
+## Auto Run Result
+
+Status: done
+
+### Summary
+Dev-pass recall injection now runs `scribe recall <query> --mode memory` with no `--scope`, while planning-graph retrieve keeps the prior `--mode planning [--scope <slug>]` argv. Invalid recall modes are refused in `render_scribe_recall_argv`; the double-failure write path reports both scribe and filesystem errors.
+
+### Files changed
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py` — `mode` parameter on `render_scribe_recall_argv`, allowed modes guard.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/scribe_cli.py` — `ScribeCli.recall(..., mode=)` wiring.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` — dev-pass uses `mode="memory"`; combined failure reason; docstring.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py` — memory mode and invalid-mode tests.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_recall.py` — real `ScribeCli` argv test, team-memory citation fold, double-failure test.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` — closed `DW-marshal-47-1-intent-gap-2026-09-20`.
+- `spec-marshal-recall-in-the-loop/.memlog.md` and `spec-pyforge-marshal/.memlog.md` — surface reconcile entries (Story 47.1 paths).
+
+### Review
+- Patches applied: 1 low (docstring wording).
+- Deferred: none.
+- Rejected: 4 false findings (see triage log).
+
+### Follow-up review
+`followup_review_recommended: false` — one low docstring patch only; no unverified high/medium risk.
+
+### Verification
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (12250 passed, 20 skipped).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -k recall` — pass (66 passed, 1 skipped).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass (130 passed, 3 skipped).
+- `python scripts/spec_surface_reconcile.py` — exit 0.
+- `pixi run --frozen -e pyforge-guild lint-types` — pass after import-order fix in recall tests.
+
+### Residual risks
+Live `bmad-loop` launcher wiring (`DW-marshal-47-2`, `DW-marshal-47-3`) remains out of scope; recall runs only where `inject_recall_feedback` / `augment_bmad_loop_session_prompt_with_recall` are already called.

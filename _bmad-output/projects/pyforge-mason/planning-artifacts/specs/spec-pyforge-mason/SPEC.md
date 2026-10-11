@@ -26,6 +26,7 @@ companions:
   - ../../architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md   # adopted (chain): the ADs (AD-1..AD-16 + AD-25/AD-26; Presenton AD-17..AD-24), structural seed, stack, diagrams
   - ../../epics.md                                                                   # adopted (chain): 11 epics / 50 stories as-built (was 5/38 at authoring; see § Currency reconciliation)
   - ../spec-packaging-factory/SPEC.md # adopted: the Spec governing the CFE surface Mason wraps — authoritative over Mason (Rule 1)
+  - feedstock-refresh.md # adopted: legacy intake spec carried from docs/specs/ (Story 37.1)
 sources:
   - ../../../../../../docs/dreams/packaging-factory.md
   - ../../briefs/brief-pyforge-mason-2026-07-25/brief.md
@@ -305,7 +306,7 @@ A pain to solve, and an asset to free. The repository's packaging capability is 
 
 ### CAP-35 — The feedstock refresh campaign is Mason's: every feedstock `rxm7706` can modify has a local recipe at its published version
 
-- **intent:** The two-track campaign in `docs/specs/feedstock-refresh.md` joins this Spec, because `docs/specs/` retires
+- **intent:** The two-track campaign in `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` joins this Spec, because `docs/specs/` retires
   (`spec-one-chain-per-station:CAP-11`). Track A finishes the sole-maintainer campaign's Wave H, the recipes its
   behind-only scope missed. Track B refreshes the co-maintained feedstocks and authors a local mirror where none exists,
   preserving every other maintainer's work (G53). Each track re-counts its scope live from the atlas before it starts,

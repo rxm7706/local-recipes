@@ -12,7 +12,7 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-9-track-b-batch-5-refreshes-redshift-connector-through-zxing-cpp.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md
@@ -25,7 +25,7 @@ declared_low_risk: false
 ## Intent
 
 **Problem:** Story 25.2's Wave A, on 2026-10-09, put 20 co-maintained packages in the no-local-recipe bucket
-(`genuinely_missing_names` in its baseline). That is Track B's Wave F, which `docs/specs/feedstock-refresh.md` Q2
+(`genuinely_missing_names` in its baseline). That is Track B's Wave F, which `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` Q2
 (`<create_missing>`) governed. The operator answered Q2 on 2026-10-09: "create them". A mint-time read of the 20
 against the atlas's `packages.feedstock_name` and conda-forge's `feedstock-outputs` registry finds four feedstocks, not
 20:
@@ -36,7 +36,7 @@ against the atlas's `packages.feedstock_name` and conda-forge's `feedstock-outpu
 - **Two are feedstocks of their own with no local recipe in any directory: `dbt-snowflake` and `zxing-cpp-python`.**
   This story mirrors them. Both are co-maintained: each deployed recipe lists `rxm7706` and at least one other
   maintainer, so the mirror keeps every other maintainer's work (G53, and coordination rules 1 to 5 of
-  `docs/specs/feedstock-refresh.md` § *Track B*).
+  `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*).
 
 **The two.** A live read at mint (2026-10-09, raw GETs and `gh api` GETs only) of each feedstock's `main`:
 
@@ -82,7 +82,7 @@ Type / Effort / Deps: feature / M / —.
   CAP-20, the recurring campaigns; CAP-23, the CFE machinery. No new CAP, so no FR moves.
 - AD-1 (no recipe knowledge in Mason's code); AD-15 (the CFE surface moves only in the `retro(cfe):` commit).
 - CFE G52, G53, G92, G95 and G96; SKILL.md § *Local-mirror fidelity*, § *PyPI `source.url` Must Use the
-  `pypi.org/packages/...` Pattern* and step 1b (*Feedstock-aware enrichment*); `docs/specs/feedstock-refresh.md`
+  `pypi.org/packages/...` Pattern* and step 1b (*Feedstock-aware enrichment*); `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`
   § *Track B* Wave F, coordination rules 1 to 5 and landmines 1 to 13.
 - `spec-fleet-stewardship` CAP-1 (the local mirror is the source of truth, `recipes/<feedstock>/`) governs
   `recipes/**`; `spec-packaging-factory` governs the CFE surface.
@@ -142,7 +142,7 @@ Type / Effort / Deps: feature / M / —.
 ## Tasks
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1): § *Local-mirror fidelity*, step 1b, § *PyPI
-   `source.url` Must Use the `pypi.org/packages/...` Pattern*, G52, G53 and G92; and `docs/specs/feedstock-refresh.md`
+   `source.url` Must Use the `pypi.org/packages/...` Pattern*, G52, G53 and G92; and `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`
    § *Track B* (Wave F, coordination rules 1 to 5, landmines 1 to 13). Where the file, this spec and the skill differ,
    the skill wins, and the story records the difference.
 2. Read both feedstocks live and record them (AC 1).

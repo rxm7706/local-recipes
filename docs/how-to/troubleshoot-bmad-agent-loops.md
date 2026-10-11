@@ -2,13 +2,15 @@
 sources:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py
   - scripts/promote_sprint_status.py
   - scripts/loop_stall_check.py
   - scripts/bmad_loop_baseline_drift_check.py
   - .claude/memory/reference/bmad-loop-escalation-and-landing-traps.md
   - .claude/memory/reference/fleet-landing-pass-liveness.md
   - docs/how-to/driving-a-pyforge-station-backlog.md
-verified: 2026-09-19
+verified: 2026-10-10
 ---
 
 # Troubleshoot BMAD Agent Loops
@@ -44,6 +46,19 @@ For a paused-on-escalation run, do not re-arm blindly — the re-arm default re-
    ```bash
    pixi run -e pyforge-guild scribe recall "<what you are seeing>" --mode memory
    ```
+
+## Dispatch verification fix turn (one per run)
+
+When `pyforge.marshal.verify_fix_loop` is on (dev and staging; off in production), a dispatch run that finishes its build session but refuses at verification gets **one** fix turn: the supervisor launches a short fix session, commits its edits, reconciles spec-surface drift, and re-runs verification once.
+
+- **`MRS-GATE-001`** — a story verify command named in the story spec refused (for example `pixi run -e pyforge-marshal pyforge-marshal-test`).
+- **`MRS-GATE-015`** — an independent cross-surface command refused (for example `pixi run -e pyforge-guild flag-gate-check`, `platform-ci-local -- --test`, or `bmad-estate-check`).
+
+The fix-turn prompt lists **exactly** the failed command(s) quoted from the verification OUTCOME, with exit code and a scrubbed output tail. The session must re-run those same commands verbatim to confirm the fix — not a substitute task or a raw package `tests/` tree.
+
+If re-verification is still red, the run parks with **`MRS-DISP-060`**, naming the still-failing command (never `null`). There is no second fix turn in the same run; the one-turn budget applies across both gates.
+
+Read the turn from the run's `journal.jsonl`: look for `dispatch-verify-fix` INTENT/OUTCOME entries (including `trigger_gate` and `failed_gates` on the INTENT). The verification OUTCOME's `failed_commands` rows carry the command, exit code, output tail, and `gate` (`MRS-GATE-001` or `MRS-GATE-015`).
 
 ## Step 4: Inspect the Ledger Drift
 A common failure mode is an agent operating against a stale `sprint-status-ledger.yaml`. For example, a merged story whose tracked row was left at `backlog` respawns on every drain until the row is corrected.

@@ -2009,6 +2009,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 22.17: harness-done land-only independent verify raised before
         # gate findings were produced -- ERROR, same tier as a refused gate.
         "MRS-DISP-062",
+        # Story 89.1: land-only re-dispatch refused — worktree spec not in-review/done or latest
+        # Review Triage Log entry records a failed review (ERROR, exit before verify/land).
+        "MRS-DISP-063",
+        # Story 93.1: scribe recall failed on factory dispatch -- WARN, launch proceeds.
+        "MRS-DISP-064",
+        # Story 92.1: dispatch run whose worktree was removed — WARN, never blocks launch.
+        "MRS-DISP-065",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

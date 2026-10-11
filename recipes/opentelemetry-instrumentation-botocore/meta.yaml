@@ -1,13 +1,13 @@
 {% set name = "opentelemetry-instrumentation-botocore" %}
-{% set version = "0.65b0" %}
+{% set version = "0.66b1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_botocore-{{ version }}.tar.gz
-  sha256: 64987326ac98a47a85821606a981f5058864de0e98b43c8de892eb0fe625b04e
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_botocore-{{ version }}.tar.gz
+  sha256: c601923e40aa008f4c0466b714c112fe47da07adb72ae6c69e2ac95992bcd66e
 
 build:
   noarch: python
@@ -22,8 +22,8 @@ requirements:
   run:
     - python >={{ python_min }}
     - opentelemetry-api ~=1.37
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
     - opentelemetry-propagator-aws-xray ~=1.0
     # - opentelemetry-test-utils ==0.37b0
     # - opentelemetry-instrumentation-botocore 
@@ -69,6 +69,12 @@ requirements:
     # - wrapt <3.0.0,>=1.0.0
     # - botocore ~=1.0
     # - aiobotocore ~=2.0
+    # - wrapt <3.0.0,>=1.0.0
+    # - botocore ~=1.0
+    # - aiobotocore <4.0,>=2.0
+    # - wrapt <3.0.0,>=1.0.0
+    # - botocore ~=1.0
+    # - aiobotocore <4.0,>=2.0
     # - wrapt <3.0.0,>=1.0.0
     # - botocore ~=1.0
     # - aiobotocore <4.0,>=2.0

@@ -10,14 +10,13 @@ Two rules meet in one directory and they want opposite things:
   ``claude_hash.txt`` are: ``bmad-loop run`` refuses to start on a dirty
   worktree, and the loop's own ``git add -A`` would otherwise sweep the
   cache into a merge commit.
-- ``.marshal/seed-state.yml`` and ``.marshal/plan.json`` belong to the
-  Genesis seed subsystem, which handles its own dirty-tree problem by
-  EXCLUDING ``.marshal/`` with a git pathspec (``seed/verbs/adopt.py``'s
-  ``':!.marshal/'``) rather than ignoring it -- and ``seed-state.yml``'s
-  documented remedy for a ``state-invalid`` finding is literally "Restore
+- ``.marshal/seed-state.yml`` belongs to the Genesis seed subsystem and
+  stays tracked; ``seed-state.yml``'s documented remedy for a
+  ``state-invalid`` finding is literally "Restore
   ``.marshal/seed-state.yml`` from version control"
   (``docs/finding-remedy-reference.md``). A blanket ``.marshal/`` rule
-  shadows that recovery path.
+  shadows that recovery path. ``.marshal/plan.json`` is the derived plan
+  artifact (AD-57) and is git-ignored instead -- never tracked.
 
 Story 28.2 first shipped the blanket rule; this test pins the narrowed one
 so the namespace cannot be re-shadowed by a later convenience edit. It
@@ -48,9 +47,10 @@ _IGNORED = (
 #: visible to git.
 _NOT_IGNORED = (
     ".marshal/seed-state.yml",
-    ".marshal/plan.json",
     "homes/acme/.marshal/seed-state.yml",
 )
+
+_PLAN_ARTIFACT_IGNORED = (".marshal/plan.json",)
 
 
 def _repo_root() -> Path:
@@ -83,6 +83,15 @@ def test_the_ccr_store_is_ignored(path: str) -> None:
         f"{path} must be git-ignored -- the wire-compression store would "
         "otherwise dirty a loop worktree (blocking `bmad-loop run`) and be "
         f"swept into a commit by `git add -A` (rc={result.returncode})"
+    )
+
+
+@pytest.mark.parametrize("path", _PLAN_ARTIFACT_IGNORED)
+def test_the_plan_artifact_is_gitignored(path: str) -> None:
+    result = _check_ignore(path)
+    assert result.returncode == 0, (
+        f"{path} must be git-ignored -- the derived plan artifact is cheap to"
+        " regenerate and a committed stale plan is a hazard (AD-57)"
     )
 
 

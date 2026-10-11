@@ -2,39 +2,44 @@
 schema_version: 1
 
 context:
-  version: "1.52.0"
+  version: "1.53.0"
 
 package:
   name: openlineage-python
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/py3/o/openlineage-python/openlineage_python-1.52.0-py3-none-any.whl
-  sha256: e1bd73b3066021eecf69cc5c3571f6fd7e253768ea941f2c76f18969ea0ecb20
+  url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
+  sha256: f78ef097dd2f9e67b359d5624b9b3eabed2b44f5058fe4d2f2afad08c5781eaa
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - cd client/python
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ol-generate-code = openlineage.client.generator.cli:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - uv-build >=0.9.4,<0.13.0
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - attrs >=20.0
     - python-dateutil >=2.8.2
     - pyyaml >=5.4
     - requests >=2.32.4
-    - httpx >=0.27.0
+    - httpx2 >=2.12.0
     - packaging >=21.0
 
 tests:
   - python:
       imports:
-        - openlineage_python
+        - openlineage.client
       pip_check: true
       python_version:
         - ${{ python_min }}.*
@@ -62,24 +67,26 @@ extra:
   cfe-purls:
     - pkg:conda/openlineage-python@${{ version }}?channel=conda-forge
     - pkg:pypi/openlineage-python@${{ version }}
-  cfe-upstream-repo: none
+  cfe-upstream-repo: https://github.com/OpenLineage/OpenLineage
   cfe-upstream-homepage: https://pypi.org/project/openlineage-python/
-  cfe-import-names: [openlineage_python]
-  cfe-source-kind: pypi-wheel
+  cfe-import-names: [openlineage.client]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
   cfe-noarch: python
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openlineage-python-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:17:44Z
-  cfe-generated-by-version: 8.81.0
-  cfe-generated-at-datetime: 2026-08-18T02:17:44Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-08-18T02:17:44Z
-  cfe-local-build-platform: linux-64
-  cfe-local-build-tool: rattler-build
+  cfe-last-checked: 2026-10-10T14:30:00Z
+  cfe-generated-by-version: 8.99.9
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 Story 25.8: mirror feedstock github source (G54); was pypi wheel
+#    # 2026-10-10 Story 25.8: templated wheel source.url on ${{ version }} (AC 2)
 ####

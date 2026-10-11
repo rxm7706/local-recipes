@@ -64,7 +64,7 @@ it.
 **Execution:**
 - `presentations/pyforge-*/README.md` (×10) -- re-register the section; add `### Provenance` where history existed.
 - `.herald/bridge-state.json` -- bootstrapped (gitignored, not committed).
-- `docs/specs/presentation-deck.md` -- the registry contract and the bootstrap recipe.
+- `docs/how-to/presentation-deck.md` -- the registry contract and the bootstrap recipe.
 - `spec-deck-family-currency/.memlog.md` -- the landing event naming every governed file.
 
 **Acceptance Criteria:**

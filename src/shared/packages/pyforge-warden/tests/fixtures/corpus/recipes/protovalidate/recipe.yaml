@@ -86,7 +86,7 @@ extra:
 ####
 # CFE comments
 # Header:
-#    # Flyte-2 closure, LOCAL-ONLY (not cf-submittable): see docs/specs/flyte-conda-forge.md § BLOCKER.
+#    # Flyte-2 closure, LOCAL-ONLY (not cf-submittable): see archive/docs/specs/flyte-conda-forge.md § BLOCKER.
 # source:
 #    # patches/0001 ships the buf.validate protobuf stubs upstream's wheel omits
 #    # (they live in gen/, written by `buf generate`). Makes protovalidate the

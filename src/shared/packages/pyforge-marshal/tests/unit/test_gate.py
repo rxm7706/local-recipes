@@ -542,11 +542,12 @@ def test_resolve_review_cycles_rejects_out_of_vocabulary_tier():
 
 def test_cross_surface_rules_table_pins_all_three_rules() -> None:
     """Mutation guard: removing a rule from ``CROSS_SURFACE_RULES`` fails here."""
-    assert len(gate.CROSS_SURFACE_RULES) == 3
+    assert len(gate.CROSS_SURFACE_RULES) == 4
     assert [rule.rule_id for rule in gate.CROSS_SURFACE_RULES] == [
         "platform",
         "bmad-estate",
         "flag-gate",
+        "environment-yaml",
     ]
 
 

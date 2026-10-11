@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-urllib3
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-urllib3/opentelemetry_instrumentation_urllib3-${{ version }}.tar.gz
-  sha256: 6345f5c38785801e1a112895967eabec4e1076e30ecc7e9bd2af87dffc541bf9
+  sha256: 31e84a2ccfa86ca1d4f1209ea66c1f709c335348d5c487477d3843172efcc408
 
 build:
   number: 0
@@ -24,17 +24,17 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - urllib3
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
-    - opentelemetry-util-http ==0.65b0
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
+    - opentelemetry-util-http ==0.66b1
     - wrapt <3.0.0,>=1.0.0
 
 tests:
   - python:
       imports:
-        - opentelemetry.instrumentation.urllib3
+        - opentelemetry
+        - opentelemetry.instrumentation
       pip_check: true
       python_version:
         - ${{ python_min }}.*
@@ -70,20 +70,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-urllib3-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:52:32Z
+  cfe-last-checked: 2026-10-10T18:02:08Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:52:32Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:52:32Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T18:02:53Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # added run deps from import test: ['urllib3']
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####

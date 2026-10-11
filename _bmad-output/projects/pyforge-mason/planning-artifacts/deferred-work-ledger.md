@@ -1833,11 +1833,12 @@ status: open
 - source_spec: `planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md`
   summary: Twenty genuinely-missing local mirrors (mostly dbgpt-* outputs) await Wave F after operator confirms create_missing scope (feedstock-refresh Track B Q2 default yes).
   evidence: Wave A co_maint discovery: genuinely_missing_names in .cursor/track_b_baseline.json (20 packages).
-  location: docs/specs/feedstock-refresh.md
-  origin: spec-deferred 9f72bcd76dd7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
+  origin: spec-deferred 0bd9db62c4d1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-10 — Story 25.14 (Wave F outputs inside recipes/db-gpt and recipes/langflow) with Story 25.13 (dbt-snowflake, zxing-cpp-python mirrors). No standalone recipes/<output>/ directories created.
 
 ### DW-mason-25-2-2: Wave 0 repair left 14 recipes in needs-review or failed; manual CFE fixes before re-run refresh-wave --repair --apply --gates.
 
@@ -1936,5 +1937,46 @@ status: open
   location: https://github.com/conda-forge/staged-recipes/pull/33977
   origin: spec-deferred ee27817e3b32 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-16: Repo-scope detector when extra.feedstock-name names a different feedstock than cfe-on-conda-forge-feedstock (identity-snapshot wrong-mirror class). At run time 2 recipes remain after this story fixed dbt-bigquery and dbt-postgres.
+
+- source_spec: `planning-artifacts/specs/spec-25-16-three-dbt-adapter-recipes-are-re-mirrored-from-their-own-feedstocks.md`
+  summary: Repo-scope detector when extra.feedstock-name names a different feedstock than cfe-on-conda-forge-feedstock (identity-snapshot wrong-mirror class). At run time 2 recipes remain after this story fixed dbt-bigquery and dbt-postgres.
+  evidence: Repo-scope detector when extra.feedstock-name names a different feedstock than cfe-on-conda-forge-feedstock (identity-snapshot wrong-mirror class). At run time 2 recipes remain after this story fixed dbt-bigquery and dbt-postgres.
+  location: recipes/dspy/recipe.yaml
+  origin: spec-deferred 36e8ee4d28d8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-7: refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge
+
+- source_spec: `planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md`
+  summary: refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge
+  evidence: refresh-wave maintainer union can insert a list item under the CFE header when recipe-maintainers was empty before merge
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py
+  origin: spec-deferred 312d5812d3dd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-14: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+
+- source_spec: `planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md`
+  summary: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+  evidence: Map co-maintained packages to feedstocks via atlas packages.feedstock_name (Wave A step A3), never by recipes/<name>/ directory name alone.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
+  origin: spec-deferred 532381eb779f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-25-14-2: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+
+- source_spec: `planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md`
+  summary: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+  evidence: refresh-wave moves context.version only (refresh_recipe compares lv/tv from context.version); G72 suites keep sdk_version and bundle context pins behind unless hand-synced or re-mirrored.
+  location: .claude/skills/conda-forge-expert/scripts/refresh_wave.py:701
+  origin: spec-deferred 1192a393755d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

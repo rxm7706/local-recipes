@@ -12,4 +12,4 @@ Operational body lives in the Mason skill
 
 Invoke **conda-forge-expert** before recipe work.
 
-Legacy intake stub: [`docs/specs/feedstock-failure-remediation.md`](../specs/feedstock-failure-remediation.md).
+Legacy intake stub (archived): `archive/docs/specs/feedstock-failure-remediation.md`.

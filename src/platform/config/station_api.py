@@ -12,7 +12,7 @@ contract probe routes here.
 
 from __future__ import annotations
 
-import importlib
+import contextlib
 import re
 from typing import Any
 
@@ -23,6 +23,8 @@ from fastapi import Request
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
 from starlette.routing import Mount
+
+from config.optional_components import import_optional
 
 _STATION_API_RE = re.compile(
     r"^/stations/(?P<station>[a-z][a-z0-9-]*)/api/v(?P<version>\d+)(?:/|$)",
@@ -110,20 +112,30 @@ def _register_warden_v1(app: FastAPI) -> None:
         }
 
 
-def _register_herald_v1(app: FastAPI) -> None:
+def _register_herald_v1(app: FastAPI, herald_station_api: Any) -> None:
     prefix = "/stations/herald/api/v1"
 
     @app.get(f"{prefix}/health")
     async def herald_health() -> dict[str, str]:
         return {"status": "ok", "station": "herald"}
 
-    # ``src/platform/`` never imports ``pyforge.*`` — load herald's mount
-    # helper by module name (Story 19.1 / pap:AD-2).
-    herald_station_api = importlib.import_module("pyforge.herald.station_api")
     herald_station_api.attach_webhook_asgi(app)
 
 
-def _build_station_app(station: str, version: int) -> FastAPI:
+def _build_station_app(station: str, version: int) -> FastAPI | None:
+    herald_station_api: Any | None = None
+    if station == "herald" and version == 1:
+        # ``src/platform/`` never imports ``pyforge.*`` — load herald's mount
+        # helper by module name (Story 19.1 / pap:AD-2).
+        herald_station_api = import_optional(
+            "pyforge.herald.station_api",
+            component="herald",
+            provided_by="pyforge.herald",
+            remedy="Install pyforge-herald on this host to enable herald routes.",
+        )
+        if herald_station_api is None:
+            return None
+
     openapi_url = f"/stations/{station}/api/v{version}/openapi.json"
     app = FastAPI(
         title=f"PyForge {station} API",
@@ -135,16 +147,23 @@ def _build_station_app(station: str, version: int) -> FastAPI:
     if station == "warden" and version == 1:
         _register_warden_v1(app)
     elif station == "herald" and version == 1:
-        _register_herald_v1(app)
+        assert herald_station_api is not None
+        _register_herald_v1(app, herald_station_api)
     return app
 
 
 def register_station_api(station: str, version: int) -> FastAPI:
     """Register (or return) the FastAPI sub-app for ``station`` at ``version``."""
     key = (station, version)
-    if key not in _station_apps:
-        _station_apps[key] = _build_station_app(station, version)
-    return _station_apps[key]
+    existing = _station_apps.get(key)
+    if existing is not None:
+        return existing
+    built = _build_station_app(station, version)
+    if built is None:
+        msg = f"no station API registered for {station!r} v{version}"
+        raise KeyError(msg)
+    _station_apps[key] = built
+    return built
 
 
 def assert_routes_are_versioned(app: FastAPI) -> list[str]:
@@ -163,6 +182,7 @@ def assert_routes_are_versioned(app: FastAPI) -> list[str]:
     return violations
 
 
-# Seed station APIs at import time (warden v1, herald v1).
+# Seed station APIs at import time (warden v1; herald v1 when installed).
 register_station_api("warden", 1)
-register_station_api("herald", 1)
+with contextlib.suppress(KeyError):
+    register_station_api("herald", 1)

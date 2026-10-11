@@ -3023,3 +3023,165 @@ def test_a_baseline_matching_the_live_count_is_not_warned_about(tmp_path: Path) 
     findings = chain.gather_deferred_work(tmp_path)
 
     assert [f for f in findings if f.check == "stale-deferred-work-baseline"] == []
+
+
+# --- Story 33.1 / CAP-86: follow-up review carry on every PR -------------------
+
+
+def _followup_flagged_spec(**overrides: str) -> str:
+    fm = {"title": "demo", "status": "done", "followup_review_recommended": "true"}
+    fm.update(overrides)
+    body = ["---"]
+    for key, value in fm.items():
+        body.append(f"{key}: {value}")
+    body.extend(["---", "", "# Demo"])
+    return "\n".join(body) + "\n"
+
+
+def _assert_one_followup_review_uncarried(findings: tuple) -> None:
+    uncarried = [f for f in findings if f.check == "followup-review-uncarried"]
+    assert len(uncarried) == 1
+    assert uncarried[0].status is DoctorStatus.FAIL
+    assert uncarried[0].evidence["project"] == "proj"
+    assert uncarried[0].evidence["id"] == "spec-1-1-demo.md"
+
+
+def _followup_carry_row(
+    spec_name: str,
+    *,
+    origin: str = "dispatch-followup-review",
+    row_id: str = "DW-FRR-1-1",
+    source_spec: str | None = None,
+) -> str:
+    cited = source_spec if source_spec is not None else spec_name
+    return (
+        f"# Ledger\n\n### {row_id}: Follow-up review still recommended for story 1.1\n\n"
+        f"- source_spec: `{cited}`\n  origin: {origin}\n  status: open\n"
+    )
+
+
+def test_followup_review_uncarried_orphan_reports_fail(tmp_path: Path) -> None:
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec())
+    _write_tracked(tmp_path, "proj", "# empty\n")
+
+    _assert_one_followup_review_uncarried(chain.gather_deferred_work(tmp_path))
+
+
+@pytest.mark.parametrize(
+    ("origin", "source_spec"),
+    [
+        ("dispatch-followup-review", None),
+        ("review-budget-followup", None),
+        (
+            "dispatch-followup-review",
+            "planning-artifacts/specs/spec-1-1-demo.md",
+        ),
+    ],
+)
+def test_followup_review_carried_by_dispatch_or_loop_origin_reports_nothing(
+    tmp_path: Path, origin: str, source_spec: str | None
+) -> None:
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec())
+    row_id = "DW-FU-1-1" if origin == "review-budget-followup" else "DW-FRR-1-1"
+    _write_tracked(
+        tmp_path,
+        "proj",
+        _followup_carry_row(spec_name, origin=origin, row_id=row_id, source_spec=source_spec),
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "followup-review-uncarried" for f in findings)
+
+
+def test_followup_review_spec_deferred_origin_does_not_carry(tmp_path: Path) -> None:
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec())
+    _write_tracked(
+        tmp_path,
+        "proj",
+        (
+            f"# Ledger\n\n### DW-X-1: x\n\n- source_spec: `{spec_name}`\n"
+            "  origin: spec-deferred abcdef012345\n  status: open\n"
+        ),
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert any(f.check == "followup-review-uncarried" for f in findings)
+
+
+def test_followup_review_carry_in_another_project_ledger_does_not_clear(tmp_path: Path) -> None:
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "alpha", spec_name, _followup_flagged_spec())
+    _write_tracked(tmp_path, "alpha", "# empty\n")
+    _write_tracked(tmp_path, "beta", _followup_carry_row(spec_name))
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert any(f.check == "followup-review-uncarried" and f.evidence["project"] == "alpha" for f in findings)
+
+
+@pytest.mark.parametrize("flag_value", ["yes", "1"])
+def test_followup_review_explicit_yes_and_one_truthy_report_orphan(tmp_path: Path, flag_value: str) -> None:
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec(followup_review_recommended=flag_value))
+    _write_tracked(tmp_path, "proj", "# empty\n")
+
+    _assert_one_followup_review_uncarried(chain.gather_deferred_work(tmp_path))
+
+
+@pytest.mark.parametrize(
+    "spec_body",
+    [
+        _followup_flagged_spec(followup_review_recommended="false"),
+        _followup_flagged_spec(followup_review_recommended="no"),
+        "---\ntitle: demo\nstatus: done\n---\n\n# Demo\n",
+        _followup_flagged_spec(status="in-review"),
+    ],
+)
+def test_followup_review_out_of_scope_specs_report_nothing(tmp_path: Path, spec_body: str) -> None:
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", spec_name, spec_body)
+    _write_tracked(tmp_path, "proj", "# empty\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "followup-review-uncarried" for f in findings)
+
+
+def test_followup_review_uncarried_mutation_guard(tmp_path: Path, monkeypatch) -> None:
+    """Removing the check must make the orphan fixture fail (AC mutation)."""
+    spec_name = "spec-1-1-demo.md"
+    _write_baseline(tmp_path, {})
+    _write_spec(tmp_path, "proj", spec_name, _followup_flagged_spec())
+    _write_tracked(tmp_path, "proj", "# empty\n")
+
+    real = chain._check_project_deferred_work
+
+    def _skip_followup(target, proj, findings, baseline):
+        real(target, proj, findings, baseline)
+        findings[:] = [f for f in findings if f.get("kind") != "followup-review-uncarried"]
+
+    monkeypatch.setattr(chain, "_check_project_deferred_work", _skip_followup)
+
+    with pytest.raises(AssertionError):
+        _assert_one_followup_review_uncarried(chain.gather_deferred_work(tmp_path))
+
+
+def test_parse_followup_review_carried_source_specs_matches_marshal_fixture_shapes() -> None:
+    spec_name = "spec-1-1-demo.md"
+    for origin in ("dispatch-followup-review", "review-budget-followup"):
+        ledger = _followup_carry_row(spec_name, origin=origin)
+        carried = chain.parse_followup_review_carried_source_specs(ledger)
+        assert spec_name in carried
+    wrong = f"# Ledger\n\n### DW-X-1: x\n\n- source_spec: `{spec_name}`\n  origin: spec-deferred fp1\n"
+    assert spec_name not in chain.parse_followup_review_carried_source_specs(wrong)

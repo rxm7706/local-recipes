@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 608
+# stories: 631
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -280,7 +280,7 @@ development_status:
   46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: done
-  47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: blocked
+  47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: done
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: done
   47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: done
   47-4-a-genuine-recall-miss-injects-nothing-never-a-fabricated-confidence-claim: done
@@ -422,8 +422,9 @@ development_status:
   85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
   85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification: done
   85-6-a-fix-turn-re-runs-only-the-failing-commands-and-knows-the-flag-checklist: done
+  85-7-a-cross-surface-refusal-gets-the-same-one-fix-turn: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
-  86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
+  86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: done
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: done
   86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
@@ -446,12 +447,20 @@ development_status:
   87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: done
   87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: done
   87-9-every-preserve-reader-sees-preserve-tags-and-origin: done
+  88-1-marshal-commits-a-tracked-file-under-an-ignored-directory: done
+  89-1-a-re-dispatch-never-lands-a-story-whose-review-failed: done
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
   9-4-legacy-convention-detection: done
   9-5-manifest-coverage-check: done
   9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: done
+  90-1-the-dispatch-supervisor-records-completion-only-after-the-harness-session-has-really-exited: done
+  91-1-a-corrupt-environment-yaml-never-lands: done
+  92-1-the-dispatch-supervisor-reads-session-liveness-correctly-and-never-treats-a-vanished-worktree-as-live: done
+  93-1-every-live-session-gets-the-recall-its-layer-promises-and-the-run-records-the-outcome: done
+  94-1-the-review-gate-orders-review-entries-by-their-real-commit-times: done
+  94-2-a-held-pr-is-marked-ready-when-its-landing-review-passes: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -534,7 +543,7 @@ development_status:
   epic-45-retrospective: optional
   epic-46: done
   epic-46-retrospective: optional
-  epic-47: in-progress
+  epic-47: done
   epic-47-retrospective: optional
   epic-5: done
   epic-5-retrospective: done
@@ -616,9 +625,23 @@ development_status:
   epic-84-retrospective: optional
   epic-85: done
   epic-85-retrospective: done
-  epic-86: in-progress
+  epic-86: done
   epic-86-retrospective: optional
   epic-87: done
   epic-87-retrospective: optional
+  epic-88: done
+  epic-88-retrospective: optional
+  epic-89: done
+  epic-89-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
+  epic-90: done
+  epic-90-retrospective: optional
+  epic-91: done
+  epic-91-retrospective: optional
+  epic-92: done
+  epic-92-retrospective: optional
+  epic-93: done
+  epic-93-retrospective: optional
+  epic-94: in-progress
+  epic-94-retrospective: optional

@@ -603,7 +603,7 @@ scripts/                                     # 14 tracked entries (+ __pycache__
 
 presentations/                               # 14 deck dirs + README.md; 692 tracked files of 31,718 on disk
 │                                            # (node_modules/ + dist/ dominate the untracked remainder)
-├── agentic-sdlc/                            # Worked Example 1 of docs/specs/presentation-deck.md (45 slides)
+├── agentic-sdlc/                            # Worked Example 1 of docs/how-to/presentation-deck.md (45 slides)
 ├── pyforge-{atlas,doctor,genesis,herald,marshal,mason,scribe,steward,warden}/
 ├── deckcraft/ · presenton-pixi-image/ · unity-data-stack/ · wasm-analytics-stack/
 └── <deck>/                                  # each mirrors a Claude Design project and carries the same

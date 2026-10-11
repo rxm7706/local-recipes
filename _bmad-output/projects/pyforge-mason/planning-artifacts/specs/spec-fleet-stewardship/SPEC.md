@@ -9,9 +9,9 @@ surface:
   - recipes/**
 surface-drift: exempt   # recipes are the product line — per-recipe governance is the CFE workflow, not spec re-derivation
 companions:
-  - ../../../../../../docs/specs/feedstock-platform-expansion.md    # adopted: the per-feedstock procedural core (legacy Tier-1, in force)
-  - ../../../../../../docs/specs/feedstock-failure-remediation.md   # adopted: the red-PR remediation loop (legacy Tier-1, in force)
-  - ../../../../../../docs/specs/feedstock-refresh.md               # adopted: the two-track bulk refresh campaign (legacy Tier-1, in force)
+  - ../../../../../../docs/how-to/feedstock-platform-expansion.md    # adopted: the per-feedstock procedural core (legacy Tier-1, in force)
+  - ../../../../../../docs/how-to/feedstock-failure-remediation.md   # adopted: the red-PR remediation loop (legacy Tier-1, in force)
+  - ../../../../../../_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md               # adopted: the two-track bulk refresh campaign (legacy Tier-1, in force)
 ---
 
 # Absorbed into spec-pyforge-mason

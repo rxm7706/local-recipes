@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 510
+# stories: 527
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -279,11 +279,12 @@ development_status:
   67-1-the-sbom-composes-the-laptop-bill-of-materials-on-three-platforms-with-postgresql-17-held: done
   67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: done
   67-3-every-gap-and-every-fat-only-pin-has-a-disposition-and-an-owner: done
-  67-4-upstream-tickets-for-the-gaps-that-need-one: backlog
+  67-4-upstream-tickets-for-the-gaps-that-need-one: done
   67-5-the-estate-points-at-the-sbom: done
   67-6-index-herald-s-dossier-states-the-cutover-s-control-plane-herald-26-1: done
   67-7-index-scribe-s-instruction-surface-names-the-estate-first-scribe-21-1: done
   67-8-the-cutover-spine-drops-the-archive: done
+  67-9-the-conda-recipe-manager-click-notes-state-the-cap-as-it-stands: done
   68-1-a-workspace-archive-holds-the-work-not-the-environments-and-one-bad-record-never-stops-the-sweep: done
   68-2-the-pre-push-gate-skips-a-push-that-carries-nothing-new-and-its-journal-names-what-was-pushed: done
   69-1-workspace-clean-keeps-a-note-not-a-tarball-for-a-worktree-already-on-its-source: done
@@ -305,7 +306,7 @@ development_status:
   71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout: done
   71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests: done
   72-1-the-guild-environment-answers-pyforge-mason: done
-  72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: backlog
+  72-2-mason-s-five-tier-skill-cell-requires-its-station-skill-and-conda-forge-expert: done
   73-1-steward-session-check-reads-marshal-seed-check-s-envelope-whatever-its-exit-code: done
   74-1-a-station-streams-bytes-to-object-storage-by-sha256-key-herald-s-deck-exports-wait-on-it: done
   74-2-the-chart-names-the-bucket-and-prefix-per-environment-and-reaches-only-the-consumed-store: done
@@ -339,12 +340,19 @@ development_status:
   85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it: done
   85-3-the-pre-push-gate-skips-a-push-it-can-prove-carries-only-preserve-or-archive-tags: done
   85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits: done
-  85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: backlog
+  85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: done
   85-6-every-command-a-session-denial-names-as-the-sanctioned-form-exists: done
   85-7-the-session-denial-form-check-never-stamps-the-real-spec-surface-baseline: done
   85-8-an-agent-session-never-writes-outside-this-repository: done
   85-9-the-session-hook-reads-its-denial-roster-from-its-own-tree: done
   86-1-deploy-perimeter-renders-the-asgi-application-it-is-given: done
+  87-1-the-platform-host-boots-without-herald-and-says-why: done
+  87-2-the-platform-host-boots-without-langflow-and-the-full-stack-env-runs-it: blocked
+  87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar: done
+  87-4-the-herald-webhook-forward-closes-its-review-findings: done
+  87-5-the-herald-webhook-forward-survives-a-client-disconnect-and-proves-ac-6-in-any-order: done
+  88-1-the-preflight-runs-each-task-once-after-its-dependencies: done
+  89-1-a-killed-platform-ci-local-run-never-blocks-the-next-one: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -352,6 +360,7 @@ development_status:
   9-5-the-perimeter-ships-with-the-pattern: done
   9-6-isolation-proven-by-tests-that-cannot-pass-vacuously: done
   9-7-hosted-or-static-no-fork: done
+  90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -478,7 +487,7 @@ development_status:
   epic-65-retrospective: optional
   epic-66: done
   epic-66-retrospective: optional
-  epic-67: in-progress
+  epic-67: done
   epic-67-retrospective: optional
   epic-68: done
   epic-68-retrospective: optional
@@ -490,7 +499,7 @@ development_status:
   epic-70-retrospective: optional
   epic-71: done
   epic-71-retrospective: optional
-  epic-72: in-progress
+  epic-72: done
   epic-72-retrospective: optional
   epic-73: done
   epic-73-retrospective: optional
@@ -518,9 +527,17 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: in-progress
+  epic-85: done
   epic-85-retrospective: optional
   epic-86: done
   epic-86-retrospective: optional
+  epic-87: in-progress
+  epic-87-retrospective: optional
+  epic-88: done
+  epic-88-retrospective: optional
+  epic-89: done
+  epic-89-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
+  epic-90: done
+  epic-90-retrospective: optional

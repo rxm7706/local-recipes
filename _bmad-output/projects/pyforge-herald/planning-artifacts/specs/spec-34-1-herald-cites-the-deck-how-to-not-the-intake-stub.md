@@ -82,7 +82,7 @@ Type / Effort / Deps: chore / S / —.
 - Read every verdict from the exit code, never through a pipe.
 
 **Never:**
-- Do not move or edit `docs/specs/presentation-deck.md` in this story.
+- Do not move or edit `docs/how-to/presentation-deck.md` in this story.
 - Do not re-render any deck poster or export.
 - Do not change a `pixi.toml` dependency or task command; descriptions only.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
@@ -91,7 +91,7 @@ Type / Effort / Deps: chore / S / —.
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| code comment | `docs/specs/presentation-deck.md` § *Standard export set* | `docs/how-to/presentation-deck.md` § *Standard export set* | — |
+| code comment | `docs/how-to/presentation-deck.md` § *Standard export set* | `docs/how-to/presentation-deck.md` § *Standard export set* | — |
 | skill + test pin | SKILL.md AD-2 and `DECK_PIPELINE_SPEC` | both name the how-to | the routing test fails if only one changes |
 | path-list fixture | `test_deck_status.py`'s synthetic mirrored-tree paths | left as is: it lists file paths, it does not cite the contract | — |
 | a missing section | a citation whose section is absent from the how-to | stop and report it | do not invent a section |
@@ -128,7 +128,7 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 Status: done
 
-**Summary:** Repointed every herald-owned `docs/specs/presentation-deck.md` citation to `docs/how-to/presentation-deck.md` (section names unchanged). Regenerated `docs/how-to/pixi-tasks.md` and confirmed `environment.yaml` unchanged.
+**Summary:** Repointed every herald-owned `docs/how-to/presentation-deck.md` citation to `docs/how-to/presentation-deck.md` (section names unchanged). Regenerated `docs/how-to/pixi-tasks.md` and confirmed `environment.yaml` unchanged.
 
 **Files changed:** See memlog entries on `spec-pyforge-herald`, co-governors `spec-design-code-bridge`, `spec-modernist-identity`, and `spec-pyforge-doctor` (Story 34.1 surface reconcile 2026-10-08).
 

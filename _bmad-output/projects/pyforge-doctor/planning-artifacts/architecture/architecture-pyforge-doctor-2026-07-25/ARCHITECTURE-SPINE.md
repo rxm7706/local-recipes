@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-10-07'   # RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-10'   # RE-STAMPED 2026-10-10: prd→arch cascade for the PRD's 2026-10-10 re-stamp (Stories 33.1 and 37.1 move blocked -> backlog; fix Stories 6.13 and 34.6 minted 2026-10-07); no AD amended; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -640,5 +640,17 @@ Stories 41.3, 41.5, 41.6, 6.12 and 27.6 change rules inside existing sources, am
 package. `feed_status.py` is a helper behind
 the dispatcher, not a dispatched source, so the growth the 2026-08-26 section records stays quantitative. No component,
 port or station boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-10
+
+*The `prd→arch` cascade for the PRD's 2026-10-10 re-stamp: Stories 33.1 and 37.1 move from `blocked` to `backlog`.*
+
+Checked against every AD. The change is two ledger keys, two story specs and two epics Status lines. No module, port,
+source or station boundary moves. The two specs, as written, land on the ADs as written:
+- 33.1 adds one finding kind inside `sources/chain.py`. It adds no `Source` member (AD-3), and it reads tracked files
+  and imports no station (AD-11).
+- 37.1 removes `check_spec_indexed` and the `docs-specs-nonmd` branch from `sources/factory.py`.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

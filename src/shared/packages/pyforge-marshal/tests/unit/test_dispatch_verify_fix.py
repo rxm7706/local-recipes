@@ -14,12 +14,17 @@ import pytest
 from pyforge.core.flags import FlagConfigError
 from pyforge.core.process import PosixProcess
 
-from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
+from pyforge.marshal.core import dispatch_verify_fix as verify_fix_module
+from pyforge.marshal.core.dispatch_verification import (
+    DispatchVerificationVerdict,
+    _command_from_gate_001_message,
+)
 from pyforge.marshal.core.dispatch_verify_fix import (
     FailedVerifyCommand,
     VerifyFixLaunchMode,
     build_verify_fix_prompt,
     choose_verify_fix_launch_mode,
+    command_reports_for_verify_fix,
     decide_verify_fix_turn,
     extract_failed_verify_commands,
     scrub_fix_turn_exposure,
@@ -27,6 +32,7 @@ from pyforge.marshal.core.dispatch_verify_fix import (
     tail_bytes,
     verify_fix_prompt_flag_checklist_applies,
 )
+from pyforge.marshal.core.gate import CROSS_SURFACE_GATE_CODE
 from pyforge.marshal.core.harness_profile import parse_profile
 from pyforge.marshal.core.harness_profile import render_verify_fix_argv as render_fix
 from pyforge.marshal.core.model import Finding, Severity
@@ -174,6 +180,88 @@ def test_extract_failed_verify_commands_from_gate_reports():
     extracted = extract_failed_verify_commands(reports, findings)
     assert len(extracted) == 1
     assert extracted[0].command == "pixi run test"
+    assert extracted[0].gate == "MRS-GATE-001"
+
+
+def test_extract_failed_verify_commands_reads_cross_surface_gate_and_report():
+    flag_cmd = "pixi run -e pyforge-guild flag-gate-check"
+    reports = command_reports_for_verify_fix(
+        {
+            "commands": [],
+            "cross_surface_checks": [
+                {
+                    "command": flag_cmd,
+                    "report": {
+                        "returncode": 1,
+                        "stdout": "flag-test-not-two-state\n",
+                        "stderr": "",
+                    },
+                }
+            ],
+        }
+    )
+    findings = (
+        Finding(
+            code=CROSS_SURFACE_GATE_CODE,
+            severity=Severity.ERROR,
+            message=f"cross-surface verify command {flag_cmd!r} exited 1",
+        ),
+    )
+    extracted = extract_failed_verify_commands(reports, findings)
+    assert len(extracted) == 1
+    assert extracted[0].command == flag_cmd
+    assert extracted[0].gate == CROSS_SURFACE_GATE_CODE
+    assert "flag-test-not-two-state" in extracted[0].stdout
+
+
+def test_mutation_verify_command_only_parser_skips_gate_015(monkeypatch: pytest.MonkeyPatch) -> None:
+    flag_cmd = "pixi run -e pyforge-guild flag-gate-check"
+    reports = (
+        {
+            "command": flag_cmd,
+            "returncode": 1,
+            "stdout": "flag-test-not-two-state\n",
+            "stderr": "",
+        },
+    )
+    findings = (
+        Finding(
+            code=CROSS_SURFACE_GATE_CODE,
+            severity=Severity.ERROR,
+            message=f"cross-surface verify command {flag_cmd!r} exited 1",
+        ),
+    )
+    monkeypatch.setattr(verify_fix_module, "_command_from_verify_refusal_message", _command_from_gate_001_message)
+    assert extract_failed_verify_commands(reports, findings) == ()
+
+
+def test_mutation_without_cross_surface_reports_yields_empty_output_tail():
+    flag_cmd = "pixi run -e pyforge-guild flag-gate-check"
+    findings = (
+        Finding(
+            code=CROSS_SURFACE_GATE_CODE,
+            severity=Severity.ERROR,
+            message=f"cross-surface verify command {flag_cmd!r} exited 1",
+        ),
+    )
+    extracted = extract_failed_verify_commands((), findings)
+    assert len(extracted) == 1
+    assert extracted[0].stdout == ""
+
+
+def test_troubleshoot_doc_names_fix_turn_gates() -> None:
+    from pathlib import Path
+
+    doc = Path("docs/how-to/troubleshoot-bmad-agent-loops.md").read_text(encoding="utf-8")
+    for needle in (
+        "MRS-GATE-001",
+        "MRS-GATE-015",
+        "pyforge.marshal.verify_fix_loop",
+        "MRS-DISP-060",
+        "dispatch-verify-fix",
+        "journal.jsonl",
+    ):
+        assert needle in doc
 
 
 def test_resume_vs_fix_only_from_profile():

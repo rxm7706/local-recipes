@@ -49,6 +49,7 @@ django_application = get_asgi_application()
 # module would have needed one; see the registry-consult touchpoint below.
 from django_pyforge.mcp_http import dispatch_station_mcp  # noqa: E402
 from django_pyforge.mcp_http import loaded_station_mcp_apps  # noqa: E402
+from django_pyforge.sidecar_forward import dispatch_herald_webhook_forward  # noqa: E402
 
 from config.engine_patterns import ENGINE_PATTERNS  # noqa: E402
 from config.fastapi_app import fastapi_application  # noqa: E402
@@ -131,6 +132,8 @@ async def _dispatch_http(scope, receive, send) -> None:
     path = scope["path"]
     if await dispatch_station_mcp(scope, receive, send):
         return
+    if await dispatch_herald_webhook_forward(scope, receive, send):
+        return
     station_api = parse_station_api_path(path)
     if station_api is not None:
         station, version = station_api
@@ -139,7 +142,10 @@ async def _dispatch_http(scope, receive, send) -> None:
         except KeyError:
             from starlette.responses import JSONResponse
 
-            response = JSONResponse({"detail": "Not Found"}, status_code=404)
+            from config.optional_components import absent_reason
+
+            detail = absent_reason(station) or "Not Found"
+            response = JSONResponse({"detail": detail}, status_code=404)
             await response(scope, receive, send)
             return
         await app(scope, receive, send)

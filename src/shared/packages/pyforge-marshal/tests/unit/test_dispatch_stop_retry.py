@@ -173,6 +173,10 @@ class FakeFs:
         except OSError:
             return None
 
+    def exists(self, path: Path) -> bool:
+        # Story 92.1: the stale-run read (a run whose worktree is gone) goes through ``FsPort.exists``.
+        return path.exists()
+
 
 class FakeVcs:
     def __init__(self, repo_root: Path, *, head_sha: str = "bbb222") -> None:
@@ -280,6 +284,8 @@ def test_live_session_still_refuses_redispatch(tmp_path: Path) -> None:
     slug = "pyforge-marshal"
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, "run-live")
     run_dir.mkdir(parents=True, exist_ok=True)
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
     intent = prepare_for_write(
         build_entry(
             id=JournalEntryId("w", 0),
@@ -289,7 +295,7 @@ def test_live_session_still_refuses_redispatch(tmp_path: Path) -> None:
             phase=Phase.INTENT,
             payload={
                 "story_key": "28.13",
-                "worktree_path": str(tmp_path / "wt"),
+                "worktree_path": str(worktree),
                 "baseline_head_sha": "aaa111",
             },
         )

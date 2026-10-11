@@ -1204,6 +1204,190 @@ Drift — orphaned between stations.
   **Constraints:** a fix story, no CAP, no flag; local only, since the duty renders files and deploys nothing; herald's
   re-scope of 19.2 is herald's chain. Owner `spec-pyforge-steward` CAP-114 (the perimeter, Story 9.5). → Epic 86 /
   Story 86.1, specced 2026-10-10; 49.11 flips to `done` when herald Epic 19 closes.
+- **2026-10-10 (stale crm-click text) — Ruled: the text that still calls feedstock PR #44 the fix is corrected.** The
+  operator ruled, verbatim: "mint the stale #44 cleanup story now". Earlier the same day the operator corrected Story
+  67.4's `sbom-crm-click-cap` seed. conda-forge/conda-recipe-manager-feedstock #44 is a pull request, and it closed
+  unmerged on 2026-09-01: the maintainer kept a click cap rather than unpin it. #46, merged 2026-09-03, widened the cap
+  to `click >=8.2.1,<=8.4.1` (`recipe/meta.yaml:29`, version 0.10.6). Upstream conda/conda-recipe-manager caps click
+  too, since its PR #555 (2026-08-31), and its main branch reads `>=8.2.1,<=8.4.1` after #559. The latest click is
+  8.5.0. Ten places in the tree still describe the 2026-08-30 picture as current:
+  - six `pixi.toml` comments: the `crm` feature header (`:100`-`:105`), the retired crm line (`:2120`), the retired
+    feedrattler line (`:2152`), both headroom-ai lines (`:2203`, `:2446`) and the dbt block (`:2219`-`:2225`). They
+    call crm's pin `click==8.2.1` and a feedstock bug, call #44 the unpin PR, or wait for #44 to merge;
+  - the library catalog's crm and dbt entries (`docs/reference/library-llms-full.md:215`-`:220`, `:352`-`:355`);
+  - `docs/dreams/pixi-candidate-currency.md:104`, which names #44 as the long-term path back;
+  - the CFE comment in `recipes/conda-recipe-manager/recipe.yaml` (`:96`-`:99`), which says #44's diff leaves the test
+    dependencies alone. Its third commit capped pytest-socket.
+
+  The lock adds a fact the comments miss. grayskull 3.1.1 depends on an unversioned conda-recipe-manager, so
+  `local-recipes` resolves crm 0.10.6 and click 8.4.1 through grayskull, as the `grayskull` env does; the SBOM envs
+  hold crm 0.5.0. **What it looks like when fixed:** each place says what #44 became, what caps click today, and where
+  the open ask lives: Story 67.4's `sbom-crm-click-cap` seed, which only the operator files. A grep finds no live line
+  that calls #44 the fix or crm's pin `click==8.2.1`. Dated history in memlogs, in the archived Dreams' 2026-08-30
+  snapshots and in done story specs stays as written. **Constraints:** a fix story, no CAP, no flag. Text only: no
+  dependency, pin or lock moves. The recipe comment is a recipe edit, so the story invokes conda-forge-expert (Rule 1)
+  and closes with a Rule-2 CFE retro, with mason's Specs reconciled as co-governors, as Story 67.5 did. Nothing leaves
+  the repository. Owner `spec-python-foundry-cutover` fnd:CAP-13 (the gap list and its `upstream` disposition). →
+  Story 67.9, specced 2026-10-10.
+- **2026-10-10 (herald absent) — Found and ruled: the platform host stops at import when `pyforge-herald` is not
+  installed.** Herald Story 19.1 (checkpoint `73f887353b`, completed in `55e539ce7c`) seeds herald v1 on the station API
+  seam at import time (`src/platform/config/station_api.py:168`), and `_register_herald_v1` loads
+  `pyforge.herald.station_api` by name with no guard (`:122`). Only `platform-ci-test` carries `pyforge-herald`
+  (`pixi.toml:410`). The image env (`src/platform/Containerfile:90`, `pixi install --frozen -e python-agent-platform`) and
+  `platform-dev` do not, so `import config.asgi` stops with `ModuleNotFoundError: No module named 'pyforge.herald'`
+  (`config/asgi.py:55` → `station_api.py:168` → `:122`; reproduced 2026-10-10 in `platform-dev`; the image was not built,
+  because `PAUSE_PLATFORM_CONTAINER_BUILDS` pauses container builds). Nothing caught it. 19.1's review rejected "importlib
+  crash when pyforge-herald absent" as false because `platform-ci-test` now carries herald
+  (`spec-19-1-the-webhook-routes-move-onto-the-station-api-seam.md:93`), and no herald deferred-work row records it.
+  Adding herald to the image feature does not solve: herald needs `mcp >=2.2.0`, and every langflow-base 1.12.x pins
+  `mcp >=1.28.0,<2.0.0`. So the image stays without herald. The operator chose, verbatim "Yes, lazy import story":
+  "Mint a fix story: _register_herald_v1 imports herald lazily (or the herald mount is skipped with a logged reason when
+  the package is absent), plus a test that config.asgi imports without pyforge-herald installed." **What it looks like
+  when fixed:** with herald absent, the host imports, logs one line naming herald and the missing module, and answers
+  `/stations/herald/api/v1/…` with a 404 that says herald is not installed. With herald present, nothing changes.
+  **Constraints:** a fix story, no CAP, no flag. `src/platform/` still never imports `pyforge.*`; the module name stays
+  a string. Only a missing herald is skipped; any other import error still stops the host. Owner
+  `spec-pyforge-unifying-strategy` CAP-10 (failure is contained), over Story 43.2's seam (CAP-6). → Epic 87 / Story 87.1,
+  specced 2026-10-10.
+- **2026-10-10 (host without Langflow) — Ruled: the platform host boots without Langflow, and the full-stack laptop env
+  runs it.** Herald Story 19.2's live proof needs one locked env that imports `config.asgi:application` with
+  `pyforge-herald`. The image feature cannot take herald (the `mcp` conflict above). `pyforge-foundry-full-stack` has
+  daphne, PostgreSQL 17 and herald, but `import config` stops at `config/__init__.py:3` → `config/celery_app.py:4`
+  (`No module named 'celery'`, reproduced 2026-10-10). Past that, `config/asgi.py:65`-`:66` builds Langflow's app at
+  import (`langflow_integration/asgi.py:42`-`:44`), and the platform tests stub `langflow.main` to get past it. The gap
+  is wider than the first error. Measured on the lock at `2d90c634f3`, the full-stack env lacks 42 of the 56 packages
+  `[feature.python-agent-platform.dependencies]` declares (path packages aside). Setting aside the engines, `dlt`,
+  `psycopg2`, the Liquibase CLI and `uvicorn-worker` leaves 30 Django-host packages, among them django-environ, wagtail,
+  django-allauth, django-crispy-forms, django-celery-beat (celery comes through it), django-structlog, django-compressor,
+  whitenoise and the OpenTelemetry Django and Celery instrumentation. `[feature.platform-ci-test]`, the env Platform CI
+  already imports the host in without Langflow, declares 26 of the 30 directly; the other four come in transitively. The
+  operator chose, verbatim "Host without langflow": "Make config.asgi boot without langflow and give
+  pyforge-foundry-full-stack celery, django-environ and wagtail (cross-station: steward's SBOM env). Matches 19.2's
+  original 'full-stack' wording." **What it looks like when fixed:** with Langflow absent, the host imports, logs one line
+  naming Langflow, and answers Langflow's paths with a 404 that says Langflow is not installed. The full-stack env
+  composes the platform's own host set, so `import config.asgi` exits 0 there and herald's station routes answer.
+  **Constraints:** a fix story, no CAP, no flag. The lock moves through `pixi lock`, never a live `pixi add`, and only
+  the full-stack env's lock changes. No `postgresql` or `libpq` pin goes past 17 and no psycopg cap is lifted. The image
+  and `platform-dev` keep Langflow. Owners: `spec-pyforge-unifying-strategy` CAP-10 (the host half) and
+  `spec-python-foundry-cutover` fnd:CAP-12 (the layer env). Herald 19.2's live proof waits on this story. The ruling
+  pre-authorises flipping herald's 19.2 key when this story is `done` on `main`, and that flip is herald's to write. →
+  Epic 87 / Story 87.2, specced 2026-10-10; retired the same day, before dispatch (next entry).
+- **2026-10-10 (herald via the sidecar) — Ruled: herald's webhook runs in the mcp-host sidecar, and the host forwards
+  to it; Story 87.2 is dropped.** Story 87.2's env half would have composed Platform CI's host set into
+  `pyforge-foundry-full-stack` so one laptop env could run the host beside herald. The estate already has a process
+  for mcp 2.x code: the mcp-host sidecar (`spec-mcp-era-isolation`, steward CAP-68 and CAP-69), which the host reaches
+  for `POST /stations/<name>/mcp` through `MCP_HOST_SIDECAR_BASE_URL`. The operator chose, verbatim label "Via the
+  sidecar (Recommended)": "Mint a steward story: mcp-host env gains pyforge-herald; the sidecar mounts herald's webhook
+  ASGI; the host forwards /stations/herald/api/v1/webhooks/* to MCP_HOST_SIDECAR_BASE_URL like MCP. 19.2's proof runs
+  host + sidecar locally (loopback). 87.1 stays (host never imports herald); 87.2's full-stack composition can be
+  dropped." And, verbatim label "Yes, deferred row (Recommended)": "Steward deferred-work row with the trigger and the
+  follow-ups: retire the ImportError skip, reconsider the sidecar split, and let herald join the web image." **What it
+  looks like when real:** the image host, with herald absent, forwards a signed `on-ship` to the sidecar with its body
+  and its `X-Hub-Signature-256` and `X-Hub-Timestamp` headers intact; herald verifies it there and records it. With the
+  sidecar URL unset, the host answers as Story 87.1 does. Herald 19.2's proof runs the host from `platform-dev` and the
+  sidecar from `mcp-host`, both on loopback. **Constraints:** only the `mcp-host` env's lock moves; the image env and
+  `platform-dev` keep Langflow and `mcp 1.28.1`; `src/platform/` still imports no `pyforge.*`; no PostgreSQL pin moves.
+  A new forwarded route through a second process is new behaviour, so the story ships behind
+  `pyforge.steward.herald_webhook_sidecar` (dev on; staging and production off until the chart hands the sidecar
+  herald's store and secret). No CAP is minted: the story widens CAP-68's env and CAP-69's forward by one route.
+  **The trigger that ends the split** is langflow-base and lfx accepting `mcp >=2`. The bridge's other retirement
+  condition, FastMCP 4 on conda-forge on mcp 2.x, has already fired (`fastmcp 4.0.10`, locked for kedro-mcp). Owner
+  `spec-pyforge-steward` (CAP-68, CAP-69). → Epic 87 / Story 87.3, specced 2026-10-10; Story 87.2 retired (key
+  `blocked`); `DW-steward-87-3-1`; herald 19.2 re-scoped onto the host plus the sidecar and held `blocked` on 87.3.
+- **2026-10-10 (preflight deps run twice) — Found: the preflight runs a task's dependencies twice, at the same time,
+  into the same directories.** `pr-preflight` flattens each lane's `depends-on` into separate leaf lanes, and it also
+  keeps the task itself as a lane when the task has a `cmd`. Every lane starts in the pool with no order between
+  them, and each runs `pixi run --frozen -e <env> <task>`, which runs the task's dependencies again. So the
+  `pages-check` lane re-runs `pages-build`, `docs-site-install` and `docs-site-sidebar`, while the `pages-build`,
+  `docs-site-install` and `docs-site-sidebar` lanes run the same tasks, all writing into one `docs-site/` and one
+  `dist/`. `docs-site-validate-sidebar` and its `docs-site-validate-sidebar-order` have the same shape. On the herald
+  sidecar chain's two pushes (runs `ced93a76` and `fdba8d13`, `.steward/preflight-runs.jsonl`), all four pages lanes
+  started at the same offset and `pages-check` went red: first "download size mismatch" on a herald deck, then
+  "assemble_pages: collision at herald/". The red lane stopped the run and cancelled `detectors-ci` and two doctor
+  lanes, so the whole preflight was lost, and both pushes went out under `PYFORGE_PREFLIGHT_SKIP`.
+  `pixi run --frozen -e site pages-check` alone exits 0. **What it looks like when fixed:** within one preflight
+  each task runs once. A lane whose task has dependencies starts only after they are green and does not run them
+  again. A failed dependency is reported once, by name, and the lanes that need it do not start. The journal holds
+  each task once, and the lanes CI's rules select for a diff do not change. **Constraints:** a fix under CAP-159 (Epic
+  71), no CAP, no flag; lanes stay concurrent where nothing orders them; nothing that is checked today is skipped
+  (operator ruling 2026-10-10: "Mint both (Recommended)"). Owner `spec-pyforge-steward`. → Epic 88 / Story 88.1,
+  specced 2026-10-10.
+- **2026-10-10 (platform-ci-local lock outlives its run) — Found: a killed `platform-ci-local` run keeps its lock
+  held, and the next run waits two hours for nobody.** Story 63.7 serialises runs with a machine-wide `flock` on
+  `${TMPDIR:-/tmp}/platform-ci-local.lock`, opened on fd 9 with a 7200 s wait, and writes the holder (pid, checkout,
+  stages, start time) to `.lock.holder`. The script then starts PostgreSQL (`pg_ctl`) and Redis
+  (`redis-server --daemonize yes`), and both inherit fd 9. Each puts itself in its own session, so a signal to the
+  run's process group never reaches them. When the run dies, they live on and keep the lock held. Steward 87.3's
+  dispatch run `pyforge-steward-20261010T154144466Z-88c00f58` hit the 900 s verify-fix cap (MRS-DISP-059;
+  `terminate_process_group` at 16:19:55Z). The script died with that session, and its EXIT trap never stopped the
+  services. `.lock.holder` still named the dead pid 2564298, and `fuser` listed the orphaned postmaster and
+  redis-server as the lock's holders. The re-verification started at about 11:22 (-05:00), waited the full 7200 s, and
+  exited 2 with "lock held longer than 7200s". Only TERMing the orphans released the lock. **What it looks like when
+  fixed:** the lock lives exactly as long as the run's own shell. No service or step the run starts holds it. A
+  killed run (SIGTERM or SIGKILL, the group or the shell alone) never makes the next run wait. The next run stops the
+  services the dead run left, found through the pid files in the work dir every run shares. It never stops a process
+  it cannot prove is one of them; it refuses instead, naming the pid. When the lock really is contended, the wait names
+  the live holder, not a stale record. **Constraints:** a fix under CAP-152 (Epic 63), no CAP, no flag. The fix
+  lives in the script: marshal's kill path is the trigger, not the defect, and marshal's command does not change.
+  Story 63.7's tests, overrides, step names and exit codes stay (operator ruling 2026-10-10: "yes mint the
+  platform-ci-local lock fix story"). Owner `spec-pyforge-steward`. → Epic 89 / Story 89.1, specced 2026-10-10.
+- **2026-10-10 (herald forward review findings) — Found: Story 87.3 landed with its independent review's findings
+  unfixed, and its forward is not safe to turn on.** The review, recorded in 87.3's spec as "Independent review,
+  iteration 1: FAIL (3 high, 3 medium)", found that the host forwards any path under
+  `/stations/herald/api/v1/webhooks/` and builds the sidecar URL from the client's path and query. httpx resolves
+  `..`, so a request reached the sidecar's unauthenticated `POST /stations/marshal/mcp`, past the host's MCP assertion
+  and rate limit; `%3F`, `%23` and `%0d%0a` inject a query, a fragment or a log line. The host also buffers a webhook
+  body with no cap, `mcp-host-serve` cannot start (its `PYTHONPATH` is written from the repo root while the task runs
+  in `src/platform`), the tests never drive the host's real entry point, and the sidecar blames herald for any
+  missing module. A re-dispatch merged the branch anyway (merge `85e70dedf5`), and finalize marked the spec `done`.
+  The same day a hygiene change turned `pyforge.steward.herald_webhook_sidecar` OFF in every environment and fixed
+  the corrupted `environment.yaml`. **What it looks like when fixed:** the host forwards only herald's two webhook
+  paths, `on-ship` and `on-pr-close`, to the literal path with no query, and answers 404 itself for anything else
+  under the prefix. It reads no more than herald's own caps before it answers 413. `mcp-host-serve` binds
+  `127.0.0.1:8090` and answers `/health`. Tests through `config.asgi.application` prove the forward, the flag-OFF
+  fallback and the routes that are never forwarded. Only then does dev turn the flag back ON. **Constraints:** a fix
+  under CAP-68 and CAP-69 (Story 87.3's CAPs), in Epic 87, no CAP, no flag of its own; staging and production stay
+  OFF; `src/platform/` still imports no `pyforge.*`; MCP forwarding does not change. Herald 19.2's proof waits on this
+  story, not on 87.3 (operator ruling 2026-10-10: "Forward-fix (Recommended)"). Owner `spec-pyforge-steward`. →
+  Epic 87 / Story 87.4, specced 2026-10-10.
+- **2026-10-10 (preflight basetemp inherited) — Found: under `pr-preflight`, steward's own suite fails nine tests,
+  because each pytest it starts inherits the lane's `--basetemp`.** `pr-preflight` gives each lane its own pytest
+  basetemp and cache dir by appending them to `PYTEST_ADDOPTS`, after whatever value the preflight itself inherited.
+  Steward's preflight tests start child pytest runs in scratch repos under `tmp_path`, and `tmp_path` lives under the
+  lane's basetemp. Every child inherits that `--basetemp`, which is now a parent of its working directory, so pytest
+  refuses it ("basetemp must not be empty, the current working directory or any parent directory of it", "config
+  source: via PYTEST_ADDOPTS") and exits 4. On hygiene PR #2092's `--keep-going` run (`089d593c`, 2026-10-10,
+  28 lanes) `pyforge-steward-test` failed 9 of 2294 tests that way. With `PYTEST_ADDOPTS` unset, as CI runs them,
+  the same tests pass. So any change that makes the preflight run steward's whole suite, every `pyforge-core` edit
+  among them, can never go green locally, and #2092 went out under `PYFORGE_PREFLIGHT_SKIP` after each red lane was
+  proved green outside the preflight. Two more tests pass only because of the same usage error, and marshal hit the
+  same class the same day: a child pytest that inherited a valid basetemp wiped the parent's at start-up. **What it
+  looks like when fixed:** a pytest the preflight starts, in a lane or to collect node ids, carries only its own
+  basetemp and cache dir, never one it inherited, and the invoker's other pytest options still pass through.
+  Steward's suite is green with an outer `--basetemp` set, as it is without one. No test passes because of a usage
+  error. Every test in the estate that starts a child pytest is listed, with the ones outside steward left as
+  follow-up rows. **Constraints:** a fix under CAP-159 (Epic 71), no CAP, no flag; which lanes run, what each runs,
+  the journal and the exit codes do not change (operator ruling 2026-10-10: "yes mint the steward preflight fix
+  story"). Owner `spec-pyforge-steward`. → Epic 90 / Story 90.1, specced 2026-10-10.
+- **2026-10-10 (herald forward disconnect) — Found: Story 87.4 closed 87.3's findings, and its own independent review
+  failed.** A separate agent reviewed the landed merge `cd32c401cc` against 87.4's spec and recorded "Independent
+  review of the landed merge `cd32c401cc`: FAIL (1 high, 1 medium, 3 low)" in its Review Triage Log. The path
+  allowlist, the body caps, the loopback task and the sidecar's honest 404 held. Five defects did not. The host's
+  body read skips every message that is not `http.request`, so a client that sends part of a body and then
+  disconnects pins a worker's event loop at full CPU: one unauthenticated connection, 100,001 `receive()` calls in the
+  reproduction. The flag-OFF tests pass only in one order, because herald's app is cached between them. With the
+  forward inactive, an unknown path under the webhook prefix gets the host's generic 404 instead of Story 87.1's
+  answer. A sidecar env with no `pyforge` package at all answers 500, not 404. The forward-ON tests never check that
+  the allowed headers and the sidecar's answer pass through. The dispatch landed 87.4 with no held review, so the
+  operator turned `pyforge.steward.herald_webhook_sidecar` OFF in dev again. **What it looks like when fixed:** a
+  disconnect ends the read at once, with nothing forwarded and no spin; the flag-OFF tests pass alone, reversed and in
+  the suite; with the forward inactive the prefix behaves exactly as Story 87.1 left it; a sidecar missing `pyforge`
+  itself says herald is absent; the forward-ON tests prove the headers and the answer through the host's real entry
+  point. Only then does dev turn back ON, and the story lands only after a separate review passes. **Constraints:** a
+  fix under CAP-68 and CAP-69 (Story 87.3's CAPs), in Epic 87, no CAP, no flag of its own; staging and production stay
+  OFF; `src/platform/` imports no `pyforge.*`; the landing is held for that review (marshal Story 83.18's hold); herald
+  19.2 stays blocked until this story lands with its review passed (operator ruling 2026-10-10: "Dark again + mint
+  87.5 (Recommended)"). Owner `spec-pyforge-steward`. → Epic 87 / Story 87.5, specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

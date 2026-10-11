@@ -172,7 +172,7 @@ Verified 2026-09-26:
 | CLAUDE.md § Skill Reference | whole section | `docs/reference/agent-instruction-notes.md` | Skill Reference | yes |
 | CLAUDE.md § BMAD ↔ conda-forge-expert integration | Rules 1–3 | `docs/reference/agent-instruction-notes.md` | Rule 3 — Planner constraints for conda-forge stories | yes |
 | CLAUDE.md § Project Documentation Reference | whole section incl. intake-spec index | `docs/reference/agent-instruction-notes.md` | Intake specs (`docs/specs/` | yes |
-| CLAUDE.md § Project Documentation Reference | docs/specs filenames | `CLAUDE.md` | `docs/specs/feedstock-refresh.md` | yes |
+| CLAUDE.md § Project Documentation Reference | docs/specs filenames | `CLAUDE.md` | `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` | yes |
 | CLAUDE.md § conda-forge-expert v7.0.0 layout | incl. three-place rule | `docs/reference/agent-instruction-notes.md` | Three-place rule for a new CI script | yes |
 | CLAUDE.md § Skill Reference / § Project Documentation Reference | 2 home-directory citations (deleted, ground 3) | `docs/reference/agent-instruction-notes.md` | home-directory auto-memory was removed here | yes |
 | CLAUDE.md § BMAD ↔ conda-forge-expert integration | Rule 1: the skill wins over a story | `AGENTS.md` | the skill wins and the story records the deviation | yes |

@@ -133,8 +133,7 @@ def path_in_story_blast_radius(
     return False
 
 
-def _command_from_gate_001_message(message: str) -> str | None:
-    prefix = "verify command "
+def _command_from_quoted_verify_prefix(message: str, prefix: str) -> str | None:
     if not message.startswith(prefix):
         return None
     rest = message[len(prefix) :]
@@ -146,6 +145,20 @@ def _command_from_gate_001_message(message: str) -> str | None:
     if end <= 0:
         return None
     return rest[1:end]
+
+
+def _command_from_gate_001_message(message: str) -> str | None:
+    """Story verify command refusals only (``MRS-GATE-001`` family)."""
+    return _command_from_quoted_verify_prefix(message, "verify command ")
+
+
+def _command_from_verify_refusal_message(message: str) -> str | None:
+    """Quoted command from a story or cross-surface verify refusal (Stories 85.1, 85.7)."""
+    for prefix in ("verify command ", "cross-surface verify command "):
+        cmd = _command_from_quoted_verify_prefix(message, prefix)
+        if cmd is not None:
+            return cmd
+    return None
 
 
 def _report_for_command(command: str, command_reports: tuple[dict[str, object], ...]) -> dict[str, object] | None:

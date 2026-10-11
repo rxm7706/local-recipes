@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-celery
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-celery/opentelemetry_instrumentation_celery-${{ version }}.tar.gz
-  sha256: ff4d192b6371cfe06969005862dc558cc8b79b03b0bbdfbf65b9a59e4dcd7fee
+  sha256: 3b6c5539c8d4a060edbc0eb1f334ef909d0f9a5ecb7af545bdd73644e6e2e814
 
 build:
   number: 0
@@ -24,16 +24,15 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - celery
-    - billiard
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
 
 tests:
   - python:
       imports:
-        - opentelemetry.instrumentation.celery
+        - opentelemetry
+        - opentelemetry.instrumentation
       pip_check: true
       python_version:
         - ${{ python_min }}.*
@@ -69,16 +68,16 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-celery-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:34:36Z
+  cfe-last-checked: 2026-10-10T17:27:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:34:36Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:34:36Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:27:40Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -86,4 +85,5 @@ extra:
 # Header:
 #    # added run deps from import test: ['billiard']
 #    # added run deps from import test: ['celery']
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
 ####

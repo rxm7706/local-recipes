@@ -11,7 +11,7 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-5-track-b-batch-1-refreshes-airflow-code-editor-through-django-countries.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-7-track-b-batch-3-refreshes-jhub-apps-through-niquests.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-14-wave-f-s-other-18-packages-are-built-by-their-feedstock-s-own-mirror.md

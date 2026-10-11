@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: ocrmypdf
-  version: "17.10.0"
+  version: "17.13.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ocrmypdf-${{ version }}.tar.gz
-  sha256: 3e80a22e7ca9a746034e990414c9f18791f168800f3ede92101504f45be6129c
+  url: https://pypi.org/packages/source/o/ocrmypdf/ocrmypdf-${{ version }}.tar.gz
+  sha256: 151c35d810eb628fbc5cb9bbe80b834ecf094737efa0e7a2e9e1fac3c730ed49
 
 build:
   number: 0
@@ -77,3 +77,35 @@ extra:
     - izahn
     - carlodri
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ocrmypdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ocrmypdf
+  cfe-purls:
+    - pkg:conda/ocrmypdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/ocrmypdf@${{ version }}
+  cfe-upstream-repo: https://github.com/ocrmypdf/OCRmyPDF
+  cfe-upstream-homepage: https://github.com/jbarlow83/OCRmyPDF
+  cfe-import-names: [ocrmypdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ocrmypdf-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T13:36:14Z
+  cfe-generated-by-version: 8.99.9
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T13:37:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 17.10.0 -> 17.13.0
+####

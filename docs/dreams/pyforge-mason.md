@@ -394,7 +394,7 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   Owner: mason. → `spec-pyforge-mason` CAP-34 / Epic 24 / Story 24.1 (FR-56), specced 2026-09-29; landed in PR #1669.
 - **2026-09-29 (evening) — Proposed: the feedstock refresh campaign joins Mason's chain.** Operator ruling,
   2026-09-29: `docs/specs/` retires (`spec-one-chain-per-station` CAP-11), and the one unfinished effort
-  there, `docs/specs/feedstock-refresh.md`, is carried into Mason's chain before its file moves. That
+  there, `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, is carried into Mason's chain before its file moves. That
   file is a legacy intake spec with two tracks, covering every conda-forge feedstock `rxm7706` can
   modify (769 at its 2026-06-19 count):
   - **Track A, sole-maintainer (537 feedstocks).** Waves B to F shipped on 2026-06-21 for the 252

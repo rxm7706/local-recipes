@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.65b0"
+  version: "0.66b1"
 
 package:
   name: opentelemetry-instrumentation-psycopg2
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-psycopg2/opentelemetry_instrumentation_psycopg2-${{ version }}.tar.gz
-  sha256: 4eba60bef5f25d163a098109c2960773f3753e0b7e39824b9f398ba49ffab783
+  sha256: f7454114191930b854fa7a176d4009d727084ab2fb3bf4016c8ab0719ac89a6e
 
 build:
   number: 0
@@ -24,15 +24,15 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - psycopg2
-    - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-dbapi ==0.65b0
-    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-instrumentation-dbapi ==0.66b1
 
 tests:
   - python:
       imports:
-        - opentelemetry.instrumentation.psycopg2
+        - opentelemetry
+        - opentelemetry.instrumentation
       pip_check: true
       python_version:
         - ${{ python_min }}.*
@@ -69,20 +69,21 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-psycopg2-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-0.65b0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T10:43:32Z
+  cfe-last-checked: 2026-10-10T17:56:06Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T10:43:32Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T10:43:32Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:56:56Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # added run deps from import test: ['psycopg2']
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
 ####

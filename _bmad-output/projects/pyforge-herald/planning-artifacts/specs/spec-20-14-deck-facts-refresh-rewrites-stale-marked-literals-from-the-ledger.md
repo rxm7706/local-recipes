@@ -28,7 +28,7 @@ declared_low_risk: false
 - The poster is rewritten by splicing the original bytes: everything outside the rewritten spans is byte-identical (verified by the tests on a fixture with mixed content). Line endings and encoding are preserved.
 - Output lines: `refreshed  <id>  "<old>" -> "<new>"`, `skipped  <id>  <reason>`, then `summary   <slug>: N refreshed, M skipped`. `--refresh` implies the derive (the ledger is written first) and may be combined with `--with-tests`; `--refresh --check` runs the check after the refresh.
 - Tests in `tests/scripts/test_deck_facts.py` cover: value → value, `shown_as[k]` shape preserved (`N of M`), leading `v` restored, nested mark skipped, no-row skipped, byte-identical outside spans, idempotence (a second `--refresh` rewrites nothing), and `--check` clean afterwards.
-- `docs/specs/presentation-deck.md`'s poster sub-step gains one clause naming `--refresh`.
+- `docs/how-to/presentation-deck.md`'s poster sub-step gains one clause naming `--refresh`.
 
 **Never:**
 - Never touch prose, unmarked tokens, attributes, SVG geometry, or any file other than the poster and its `facts.yaml`; never re-render or push.
@@ -53,7 +53,7 @@ declared_low_risk: false
 
 - `scripts/deck_facts.py` — `_PosterText` (HTMLParser: marks + segments, `_norm`, `_LEADING_V`), `check()`, `main()` argparse; `render_yaml`/`derive` unchanged. Add `refresh(root, slug, previous, fresh, poster_text) -> (new_text, lines)` using a regex over the raw text for `<tag … data-fact="id" …>TEXT</tag>` where TEXT has no `<`; reuse `_norm` and the leading-`v` rule for matching.
 - `tests/scripts/test_deck_facts.py` — fixture `root` (synthetic repo, `POSTER`), `_rows`; extend with a refresh fixture that moves a ledger value between runs (edit the synthetic `sprint-status-ledger.yaml`/manifest) and asserts bytes outside spans.
-- `docs/specs/presentation-deck.md:79` — the poster sub-step line naming `deck-facts <slug> [--check]`.
+- `docs/how-to/presentation-deck.md:79` — the poster sub-step line naming `deck-facts <slug> [--check]`.
 - `presentations/pyforge-marshal/project/PyForge Marshal Infographic standalone.html` — a live poster with 128 marks incl. `N of M` shapes and `tests_collected`; run `--refresh --with-tests` against it as a manual check (do not commit poster changes in this story — the operator's currency sweep does).
 
 ## Tasks & Acceptance
@@ -61,8 +61,8 @@ declared_low_risk: false
 **Execution:**
 - `scripts/deck_facts.py` -- add `refresh()` + the `--refresh` flag and output lines -- CAP-6.
 - `tests/scripts/test_deck_facts.py` -- the seven matrix rows + byte-identity + idempotence.
-- `docs/specs/presentation-deck.md` -- one clause naming `--refresh` in the poster sub-step.
-- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/.memlog.md` -- append an event naming `scripts/deck_facts.py` and `docs/specs/presentation-deck.md` so `spec-surface-check` reconciles.
+- `docs/how-to/presentation-deck.md` -- one clause naming `--refresh` in the poster sub-step.
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/.memlog.md` -- append an event naming `scripts/deck_facts.py` and `docs/how-to/presentation-deck.md` so `spec-surface-check` reconciles.
 
 **Acceptance Criteria:**
 - Given the live marshal poster and a ledger moved by the round-1 landings, when `deck-facts pyforge-marshal --refresh --with-tests --check` runs, then every previously mismatched mark is `refreshed`, the check reports 0 `mismatch`, and a `git diff --stat` of the poster shows only the rewritten literals.
@@ -128,7 +128,7 @@ regex survives only as a net for `unparsed tag`. Advisory: exit 0 always.
   `refresh()`; previous-ledger parse moved under `--check`/`--refresh`; poster read before the
   ledger write; atomic poster write; `poster:` / `unvisited` / five skip reasons.
 - `tests/scripts/test_deck_facts.py` — 45 tests (from 33): twelve new, none replaced.
-- `docs/specs/presentation-deck.md` — the "Where to edit WHAT" row splits marked vs new literals.
+- `docs/how-to/presentation-deck.md` — the "Where to edit WHAT" row splits marked vs new literals.
 - `spec-deck-family-currency/.memlog.md` — the landing event; also collapsed a **double `updated:`
   key** in its frontmatter that PyYAML was silently resolving to the *earlier* timestamp, so the
   memlog read as older than it was.

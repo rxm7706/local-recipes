@@ -5,7 +5,7 @@ created: '2026-08-14'
 status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
-context: ['{project-root}/docs/specs/presentation-deck.md']
+context: ['{project-root}/docs/how-to/presentation-deck.md']
 warnings: ['oversized']
 baseline_revision: 'ef0b9482d2824018c7cb410f8ae49d160fcebf07'
 final_revision: '3ab650982398e8944d250b8c234a0cbc9ed42165'

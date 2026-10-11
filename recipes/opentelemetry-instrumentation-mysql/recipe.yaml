@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-mysql
-  version: 0.65b0
+  version: 0.66b1
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_mysql-${{ version }}.tar.gz
-  sha256: 54f7f6897aa92378c34c2df330fb3817afe98179ec7b8c1f6c7deefd8f19379c
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-mysql/opentelemetry_instrumentation_mysql-${{ version }}.tar.gz
+  sha256: 5b7b20af1433269ca48b25a4e977e07a57f2db71c319a918cf68ba541ca65bfe
 
 build:
   number: 0
@@ -20,14 +20,14 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-dbapi ==0.65b0
-    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-instrumentation-dbapi ==0.66b1
+    - opentelemetry-instrumentation ==0.66b1
     # - opentelemetry-test-utils ==0.37b0
     # - opentelemetry-instrumentation-mysql
     # - mysql-connector-python ~=8.0
@@ -101,3 +101,37 @@ extra:
   recipe-maintainers:
     - rxm7706
     - mariusvniekerk
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-mysql
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-mysql
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-mysql@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-mysql@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-mysql
+  cfe-import-names: [opentelemetry.instrumentation.mysql]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-mysql-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T17:55:19Z
+  cfe-generated-by-version: 8.99.15
+  cfe-generated-at-datetime: 2026-10-10T18:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T17:56:05Z
+####
+# CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.12: CFE block + URL pre-clear before refresh-wave B-25-12
+#    # 2026-10-10 refresh_wave B-25-12: refreshed 0.65b0 -> 0.66b1
+####

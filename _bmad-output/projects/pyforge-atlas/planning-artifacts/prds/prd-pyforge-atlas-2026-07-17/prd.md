@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-10"   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3138,6 +3138,26 @@ can see when a vulnerable dependency arrived and which other repos carry it. Atl
 
 The rows record review work the loop's follow-up budget left behind for atlas stories; they live in the deferred-work
 ledger, not in this PRD's requirements. No atlas behaviour, CAP or FR changes.
+
+**ONE FR space still FR-1..FR-69** (FR-70 = next free id).
+
+**Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-10
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-atlas`'s memlog gained a contract entry on 2026-10-10, seven
+days after this PRD's 2026-10-03 re-stamp. `SPEC.md` is unchanged. No CAP is added or amended, and no FR moves.*
+
+### What the Spec's memlog carries since the 2026-10-03 re-stamp
+
+- **Story 25.1's gate cleared (2026-10-10).** Mason Story 21.1 (the git-pkgs recipe) is done on main, and the operator
+  ruled "yes flip the six cleared stories and dispatch them". The story's key moves from `blocked` to `backlog`, and its spec reads `ready-for-dev`. FR-69 already
+  describes the dataset, and its text does not change. The spec records one open condition: git-pkgs does not yet
+  resolve from any channel the workspace solves from.
+- **The Phase 4+5 rulings and the Epic 27 mints (2026-10-03 and 2026-10-04).** Stories 27.1-27.5 are fixes with no CAP
+  and no FR.
+- **Everything else is bookkeeping.** The other entries are surface reconciles and landing records (Stories 27.1-27.5,
+  25.2, 26.1 and 20.4, and co-governor edits). They register no FR.
 
 **ONE FR space still FR-1..FR-69** (FR-70 = next free id).
 

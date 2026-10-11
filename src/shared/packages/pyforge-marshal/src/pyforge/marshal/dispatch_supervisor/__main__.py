@@ -116,12 +116,14 @@ from ..dispatch_verification_journal import build_dispatch_verification_journal_
 from ..dispatch_verify import (
     ProcessWaitResult,
     TerminateProcessGroupResult,
+    assess_dispatch_session_liveness,
     check_unsanctioned_cfe_commits,
     compose_dispatch_policy,
-    dispatch_session_alive,
     evaluate_dispatch_verification,
     fix_session_alive,
+    harness_binary_for_profile,
     resolve_spec_text_for_story,
+    run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
     terminate_process_group,
     verify_fix_loop_enabled,
@@ -550,6 +552,10 @@ def gather_dispatch_git_facts(
     )
     story_merged = normalize(story_key) in merged_keys
     if story_merged and not run_head_reached_ref(vcs, repo_root, current_head_sha, ORIGIN_MAIN):
+        story_merged = False
+    # Story 90.1: same divergence rule as ``branch_merged`` (Story 22.10) — a merge subject on
+    # ``origin/main`` from before this run must not count while the head still sits at launch baseline.
+    if story_merged and current_head_sha == baseline_head_sha:
         story_merged = False
     return DispatchGitFacts(
         baseline_head_sha=baseline_head_sha,
@@ -1375,10 +1381,13 @@ def _maybe_run_verify_fix_turn(
                 stdout=str(row.get("output_tail") or ""),
                 stderr="",
                 exit_code=row.get("exit_code") if isinstance(row.get("exit_code"), int) else None,
+                gate=str(row["gate"]) if isinstance(row.get("gate"), str) else None,
             )
             for row in failed_rows
             if row.get("command")
         )
+        trigger_gate = _verification_failed_gate(folded, run_id)
+        failed_gates = sorted({cmd.gate for cmd in failed_cmds if cmd.gate})
         decision = decide_verify_fix_turn(
             flag_enabled=flag_enabled,
             verification_verdict=v_outcome,
@@ -1447,6 +1456,8 @@ def _maybe_run_verify_fix_turn(
                 "failed_command_count": len(failed_cmds),
                 "wall_clock_budget_s": fix_policy.wall_clock_seconds,
                 "worktree_head_before_turn": head_before_turn,
+                "trigger_gate": trigger_gate,
+                "failed_gates": failed_gates,
             },
         )
         counter += 1
@@ -1972,6 +1983,7 @@ def _journal_heartbeat(
     counter: int,
     session_alive: bool,
     git_facts: DispatchGitFacts,
+    session_liveness_error: str | None = None,
 ) -> int:
     """Append the tick loop's heartbeat observation; return the next counter.
 
@@ -1989,6 +2001,7 @@ def _journal_heartbeat(
             "session_alive": session_alive,
             "current_head_sha": git_facts.current_head_sha,
             "changed_path_count": len(git_facts.changed_paths),
+            **({"session_liveness_error": session_liveness_error} if session_liveness_error is not None else {}),
         },
     )
     try:
@@ -2374,6 +2387,66 @@ def _run_and_journal_ruff_format(
     return counter
 
 
+def _run_and_journal_environment_yaml(
+    *,
+    fs: FsPort,
+    vcs: CommittingVcs,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    story_key: str,
+    worktree: Path,
+) -> int:
+    """Story 91.1: regenerate ``environment.yaml`` and journal when it changed or export failed."""
+    result = run_dispatch_environment_yaml_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        process=process,
+    )
+    if not result.paths and result.export_exit_code is None:
+        return counter
+    if not result.paths and not result.committed and result.export_exit_code == 0:
+        return counter
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_ENVIRONMENT_YAML,
+        phase=Phase.INTENT,
+        payload={"story_key": story_key, "paths": list(result.paths)},
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_ENVIRONMENT_YAML,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "story_key": story_key,
+            "paths": list(result.paths),
+            "committed": result.committed,
+            "export_exit_code": result.export_exit_code,
+            "ok": result.committed,
+        },
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal environment.yaml regen for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
+
+
 def _run_and_journal_verification(
     *,
     fs: FsPort,
@@ -2392,6 +2465,18 @@ def _run_and_journal_verification(
     """Run independent gate verification and journal the outcome (Story 22.3)."""
     if callable(getattr(vcs, "commit_paths", None)):
         counter = _run_and_journal_ruff_format(
+            fs=fs,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            story_key=story_key,
+            worktree=worktree,
+        )
+        counter = _run_and_journal_environment_yaml(
             fs=fs,
             vcs=vcs,  # CommittingVcs duck type
             process=process,
@@ -2608,6 +2693,12 @@ def run_dispatch_supervisor(
             except ValueError:
                 session_launched_at = None
             break
+    # Story 92.1: the run's harness ``binary``, from the profile its launch journaled -- the identity the
+    # liveness fallback matches against the leader's cmdline when the group read fails and the leader's start
+    # time cannot be read.
+    launch_profile_name, _launch_model, _launch_wire, _launch_hsid = _launch_context_from_folded(folded, run_id)
+    session_harness_binary = harness_binary_for_profile(launch_profile_name, repo_root=repo_root)
+    session_liveness_error: str | None = None
 
     while True:
         tick_count += 1
@@ -2632,7 +2723,14 @@ def run_dispatch_supervisor(
             time.sleep(_TICK_SECONDS)
             continue
 
-        session_alive = dispatch_session_alive(process, session_pid, launched_at=session_launched_at)
+        liveness = assess_dispatch_session_liveness(
+            process,
+            session_pid,
+            launched_at=session_launched_at,
+            harness_binary=session_harness_binary,
+        )
+        session_alive = liveness.alive
+        session_liveness_error = liveness.liveness_error
         session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)
         if session_alive:
             current_log = session_log
@@ -2808,6 +2906,7 @@ def run_dispatch_supervisor(
                     counter=counter,
                     session_alive=session_alive,
                     git_facts=git_facts,
+                    session_liveness_error=session_liveness_error,
                 )
                 _publish_heartbeat()
                 time.sleep(_TICK_SECONDS)
@@ -2973,6 +3072,9 @@ def run_dispatch_supervisor(
             "branch_merged": git_facts.branch_merged,
             "story_merged_on_main": git_facts.story_merged_on_main,
         }
+        if session_liveness_error is not None:
+            # Story 92.1: the tick that ends the run journals no heartbeat, so its group-read error rides here.
+            intent_payload["session_liveness_error"] = session_liveness_error
         if stale_blocked_finding is not None:
             intent_payload["finding"] = stale_blocked_finding
         intent_entry = build_entry(

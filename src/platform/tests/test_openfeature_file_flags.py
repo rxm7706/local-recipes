@@ -634,6 +634,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.atlas.dependency_history": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     "pyforge.warden.fix_target_resolution": {
         "dev": True,
         "staging": True,
@@ -662,6 +667,16 @@ _SHIPPED_BOOLEANS = {
     "pyforge.steward.sync_github_only_marker": {
         "dev": True,
         "staging": True,
+        "production": False,
+    },
+    "pyforge.steward.workspace_preserve_tag": {
+        "dev": False,
+        "staging": False,
+        "production": False,
+    },
+    "pyforge.steward.herald_webhook_sidecar": {
+        "dev": True,
+        "staging": False,
         "production": False,
     },
     "pyforge.marshal.verify_fix_loop": {
@@ -693,6 +708,11 @@ _SHIPPED_BOOLEANS = {
         "production": False,
     },
     "pyforge.warden.non_python_ecosystems": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
+    "pyforge.warden.sast_opengrep": {
         "dev": True,
         "staging": True,
         "production": False,
@@ -752,6 +772,38 @@ def test_every_flag_in_the_shipped_tree_carries_its_metadata_through_the_file_pr
         assert details.flag_metadata == metadata, (environment, key)
         rendered = json.loads(render_flag_tree(environment, _FLAGS_JSON))
         assert rendered["flags"][key]["metadata"] == metadata, (environment, key)
+
+
+_SAST_OPENGREP_FLAG = "pyforge.warden.sast_opengrep"
+
+
+def _sast_opengrep_flagd_tree(default_variant: str) -> bytes:
+    return json.dumps(
+        {
+            "flags": {
+                _SAST_OPENGREP_FLAG: {
+                    "state": "ENABLED",
+                    "variants": {"on": True, "off": False},
+                    "defaultVariant": default_variant,
+                },
+            },
+        },
+    ).encode()
+
+
+def test_pyforge_warden_sast_opengrep_flag_two_states(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Story 15.1: sast_opengrep ON/OFF through the file provider."""
+    on_tree = tmp_path / "on.json"
+    on_tree.write_bytes(_sast_opengrep_flagd_tree("on"))
+    off_tree = tmp_path / "off.json"
+    off_tree.write_bytes(_sast_opengrep_flagd_tree("off"))
+    configure_file_provider(on_tree)
+    assert evaluate_boolean(_SAST_OPENGREP_FLAG, default=False) is True
+    configure_file_provider(off_tree)
+    assert evaluate_boolean(_SAST_OPENGREP_FLAG, default=False) is False
 
 
 @pytest.mark.parametrize(

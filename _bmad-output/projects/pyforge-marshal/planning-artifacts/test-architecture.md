@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 5f113c933d61b5e4
-story_count: 438
-test_file_count: 241
+source_fingerprint: 847f493ba2c4ec91
+story_count: 447
+test_file_count: 255
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 438
-- **Epics parsed:** 85
-- **Test files inventoried:** 241 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 447
+- **Epics parsed:** 92
+- **Test files inventoried:** 255 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5f113c933d61b5e4`
+- **Source fingerprint:** `847f493ba2c4ec91`
 
 ## Risk Assessment
 
@@ -107,6 +107,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 84: Every harness's model list refreshes from its own live source (spec-pyforge-marshal CAP-285)
 - Epic 85: A verification refusal goes back to the session that wrote the change (spec-pyforge-marshal CAP-286)
 - Epic 87: Preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287)
+- Epic 88: Marshal's commits stage every tracked path they name
+- Epic 89: A story lands only when its spec says the work is finished and its review did not fail
+- Epic 90: A dispatch run is complete only when its session has really ended
+- Epic 91: A derived file lands only as its generator wrote it
+- Epic 92: A dispatch run is live only while its session really runs in its worktree
+- Epic 93: Recall reaches every live session (spec-pyforge-marshal CAP-288..CAP-291 ← spec-marshal-recall-in-the-loop CAP-1..4)
+- Epic 94: A review entry is as new as the commit that wrote it
 
 ### Low-risk epics
 
@@ -157,6 +164,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_dispatch_supervisor_main_coverage_floor.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_finding_remedy_reference_sync.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_flag_mandate_overrides.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_fleet_picture_attention_dispatch_refused.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_fleet_picture_landing_findings.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_fleet_picture_missing_spec.py` | meta | none observed |
@@ -214,17 +222,21 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cap4_verification_reporting.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_flag_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_harness_done.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_hotfix.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` | unit | 89.1 |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_output_layer.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_preserve_tag.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_push.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_re_preflight.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_recall.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry_83_10.py` | unit | 83.10 |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py` | unit | none observed |
@@ -246,6 +258,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_drain_plan.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_durability.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_egress.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_engine_preserve.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_fold.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_forge_gh.py` | unit | none observed |
@@ -256,6 +269,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_engine_liveness.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_probe.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_recall.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_run_status_snapshot.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_run_terminal_verdict.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadloop_smoke.py` | unit | none observed |
@@ -268,6 +282,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_index_freshness.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_init.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_init_teardown_preserve.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_intent_gap_preserve.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_journal.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_land.py` | unit | none observed |
@@ -279,6 +294,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_local_branch_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_login.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_loop_runner_hook.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_marshal_recall_plugin.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_registration.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model.py` | unit | none observed |
@@ -293,10 +309,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_pkce.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_policy.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_preserve_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_promotion.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_protected_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_published_plane.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_publisher.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_recall_feedback.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_refresh.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_repo_root.py` | unit | none observed |
@@ -356,12 +375,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_substrate_store.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_supervise.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_supervisor.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_teardown_preserve.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_testing_kit_reexport.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_token_economy_benchmark.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_upstream.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_upstream_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git_merged_check_objects.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_verify_scope.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_watch.py` | unit | none observed |
@@ -786,6 +807,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.4 | The fix turn's redaction never hangs the supervisor or hides what the fix needs | none observed |
 | 85.5 | The verify fix turn's edits get the spec-surface reconcile before re-verifica... | none observed |
 | 85.6 | A fix turn re-runs only the failing commands and knows the flag checklist | none observed |
+| 85.7 | A cross-surface refusal gets the same one fix turn | none observed |
 | 86.1 | Seed honours recorded skips, refuses shared manifest paths, and pins director... | none observed |
 | 86.2 | local-recipes is genesis-adopted so the seed-adopt oracle goes green | none observed |
 | 86.3 | Spin and the journal clean up a failed launch and record what they ran | none observed |
@@ -810,6 +832,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.14 | The sweeper reports stale-locked agent worktrees and orphan directories | none observed |
 | 87.15 | A preserve reaches origin only through the content gate | none observed |
 | 87.16 | The orphaned tips are re-preserved as local archive tags | none observed |
+| 88.1 | Marshal commits a tracked file under an ignored directory | none observed |
+| 89.1 | A re-dispatch never lands a story whose review failed | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` |
+| 90.1 | The dispatch supervisor records completion only after the harness session has... | none observed |
+| 91.1 | A corrupt `environment.yaml` never lands | none observed |
+| 92.1 | The dispatch supervisor reads session liveness correctly and never treats a v... | none observed |
+| 93.1 | Every live session gets the recall its layer promises, and the run records th... | none observed |
+| 94.1 | The review gate orders review entries by their real commit times | none observed |
+| 94.2 | A held PR is marked ready when its landing review passes | none observed |
 
 ## Quality Gates
 

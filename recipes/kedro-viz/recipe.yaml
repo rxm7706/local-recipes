@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "12.4.0"
+  version: "12.5.0"
 
 package:
   name: kedro-viz
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/k/kedro-viz/kedro_viz-${{ version }}.tar.gz
-  sha256: c4ccc28b14395aff68fdf55d3c4edf8a2811eed9cd2667fe96c06a8cbcdd824f
+  sha256: d107ef009f3f813d73e202f21579f20248f83adb3bafa57f8d19ab5ca0ac947b
 
 build:
   number: 0
@@ -46,7 +46,7 @@ requirements:
     - plotly >=4.0
     - pydantic >=2.0.0
     - secure >=0.3.0
-    - uvicorn-standard >=0.30.0,<1.0
+    - uvicorn >=0.30.0,<1.0
     - watchfiles >=0.24.0
     - werkzeug >=3.0.0
 
@@ -107,15 +107,16 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kedro-viz-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-12.4.0]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-04T22:24:52Z
+  cfe-last-checked: 2026-10-10T12:17:20Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T12:18:04Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # 2026-10-10 refresh_wave B-25-7: refreshed 12.4.0 -> 12.5.0
 ####

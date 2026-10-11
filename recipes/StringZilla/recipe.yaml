@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: StringZilla
-  version: "4.6.3"
+  version: "5.2.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/ashvardanian/StringZilla/archive/v${{ version }}.tar.gz
-  sha256: 5470ed92c91032ac11b8b95c2a0967822b81ad72e68a9db0653c2c8d4316e7e6
+  sha256: 95b0f91a013a1113fd6dc5585f39a31f2fe2321a0ea0ed64334e57f0383f4b56
   #patches:
   #- patches/0001-fix-build-option.patch
 
@@ -60,6 +60,7 @@ about:
 extra:
   recipe-maintainers:
     - mukhery
+    - pb01ka
     - rxm7706
 
 #### CFE metadata AND comments
@@ -81,11 +82,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/stringzilla-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-09T10:08:00Z
+  cfe-last-checked: 2026-10-10T14:47:48Z
   cfe-generated-by-version: 8.98.0
   cfe-generated-at-datetime: 2026-10-09T10:08:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-10-09T10:06:59Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T14:49:40Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -96,6 +97,7 @@ extra:
 #    # The feedstock is still v0 and has since moved to 5.2.0; this mirror and its meta.yaml are at 4.6.3.
 #    # The recipe-dir conda_build_config.yaml (c_stdlib_version 10.13 on osx, below the 11.0 baseline) is
 #    # removed: the feedstock has none (G94), and it failed validate_recipe's lint.
+#    # 2026-10-10 refresh_wave B-25-9: refreshed 4.6.3 -> 5.2.0; maintainers added: pb01ka
 # tests:
 #    # LOCAL BUILD 2026-10-09 (linux-64): py3.11-3.14 built; imports, pip check and both CLIs passed.
 ####

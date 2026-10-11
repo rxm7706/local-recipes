@@ -60,6 +60,36 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.steward.workspace_preserve_tag": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree",
+        "created": "2026-10-04",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.steward.herald_webhook_sidecar": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar",
+        "created": "2026-10-10",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.marshal.verify_fix_loop": {
       "state": "ENABLED",
       "variants": {
@@ -100,6 +130,21 @@
       "metadata": {
         "owner": "atlas",
         "story": "25-2-a-poll-cursor-sensor-refreshes-the-history-over-warden-s-fleet-inventory",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.atlas.dependency_history": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "atlas",
+        "story": "25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser",
         "created": "2026-09-28",
         "on_everywhere": "",
         "cleanup_by": ""
@@ -250,6 +295,21 @@
       "metadata": {
         "owner": "warden",
         "story": "16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.warden.sast_opengrep": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict",
         "created": "2026-09-28",
         "on_everywhere": "",
         "cleanup_by": ""

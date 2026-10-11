@@ -65,6 +65,7 @@ packages = ["src/pyforge"]
 # package -- scripts/coverage_gate.py and docs/governance/coverage-thresholds.toml.
 [tool.hatch.build.targets.wheel.force-include]
 "src/pyforge/marshal/data/harness_profiles" = "pyforge/marshal/data/harness_profiles"
+"src/pyforge/marshal/data/bmad_loop_plugins" = "pyforge/marshal/data/bmad_loop_plugins"
 
 [tool.pytest.ini_options]
 # Story 1.4: tests/integration/test_init_worktree.py is a real end-to-end
@@ -105,6 +106,7 @@ type = "forbidden"
 source_modules = [
     "pyforge.marshal.cli",
     "pyforge.marshal.core",
+    "pyforge.marshal.data",  # Story 93.1 bmad-loop plugin payloads (no bmad_loop imports)
     "pyforge.marshal.dispatch_supervisor",
     "pyforge.marshal.dispatch_verify",  # Story 22.3 / FR-193 CAP-3 dispatch gate runner
     "pyforge.marshal.dispatch_verification_journal",  # Story 22.17 shared dispatch-verification journal payloads

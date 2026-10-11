@@ -3,54 +3,49 @@ schema_version: 1
 
 context:
   name: openllm
-  version: "0.4.44"
+  version: "0.6.30"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/openllm-${{ version }}.tar.gz
-  sha256: b1063f19a41479464102222b31ef240bf1a6c9557c8e0cfa24959b2c4c10bb34
+  url: https://pypi.org/packages/source/o/openllm/openllm-${{ version }}.tar.gz
+  sha256: 50f521ba49e50ea5c8d4092abcb651e52305128f0e3f3c012cf0dbb97429f1da
 
 build:
   number: 0
-  skip: match(python, "<3.8")
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  script:
+    - ${{ PYTHON }} -c "import pathlib; p = pathlib.Path('pyproject.toml'); p.write_text(p.read_text().replace('bentoml==1.4.8', 'bentoml>=1.4.8'))"
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - openllm = openllm_cli.entrypoint:cli
-      - openllm-dive-bentos = openllm_cli.extension.dive_bentos:cli
-      - openllm-get-containerfile = openllm_cli.extension.get_containerfile:cli
-      - openllm-get-prompt = openllm_cli.extension.get_prompt:cli
-      - openllm-list-bentos = openllm_cli.extension.list_bentos:cli
-      - openllm-list-models = openllm_cli.extension.list_models:cli
-      - openllm-playground = openllm_cli.extension.playground:cli
+      - openllm = openllm.__main__:app
 
 requirements:
   host:
     - python
-    - hatchling ==1.18.0
-    - hatch-vcs ==0.3.0
-    - hatch-fancy-pypi-readme ==23.1.0
+    - hatchling ==1.27.0
+    - hatch-vcs ==0.4.0
     - pip
   run:
-    - python
-    - bentoml >=1.1.11,<1.2
-    - transformers >=4.36.0
-    - openllm-client >=${{ version }}
-    - openllm-core >=${{ version }}
-    - safetensors
-    - optimum >=1.12.0
-    - accelerate
-    - ghapi
-    - einops
-    - sentencepiece
-    - scipy
-    - python-build <1
-    - click >=8.1.3
-    - cuda-python
-    - bitsandbytes <0.42
+    - python >=${{ python_min }}
+    - attrs
+    - bentoml >=1.4.8
+    - dulwich
+    - hf-xet
+    - huggingface_hub
+    - nvidia-ml-py
+    - openai ==1.73.0
+    - pip-requirements-parser
+    - psutil
+    - pyaml
+    - questionary
+    - tabulate
+    - typer
+    - typing_extensions >=4.12.2
+    - python-uv
 
 tests:
   - python:
@@ -60,18 +55,14 @@ tests:
   - requirements:
       run:
         - pip
+        - python ${{ python_min }}.*
     script:
       - openllm --help
-      - openllm-dive-bentos --help
-      - openllm-get-containerfile --help
-      - openllm-get-prompt --help
-      - openllm-list-bentos --help
-      - openllm-list-models --help
 
 about:
   summary: "OpenLLM: Operating LLMs in production"
   license: Apache-2.0
-  license_file: LICENSE.md
+  license_file: LICENSE
   homepage: https://github.com/bentoml/OpenLLM
 
 extra:
@@ -79,3 +70,36 @@ extra:
     - rxm7706
     - conda-forge/openllm-client
     - conda-forge/openllm-core
+    - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openllm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openllm
+  cfe-purls:
+    - pkg:conda/openllm@${{ version }}?channel=conda-forge
+    - pkg:pypi/openllm@${{ version }}
+  cfe-upstream-repo: https://github.com/bentoml/OpenLLM
+  cfe-upstream-homepage: https://github.com/bentoml/OpenLLM
+  cfe-import-names: [openllm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openllm-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T13:57:03Z
+  cfe-generated-by-version: 8.99.9
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-10T13:57:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.8: stamped CFE block + canonical source.url (AC 2)
+#    # 2026-10-10 refresh_wave B-25-8: refreshed 0.4.44 -> 0.6.30; maintainers added: pb01ka
+####

@@ -18,7 +18,9 @@ import time
 from typing import Any
 
 import pandas as pd
+from pyforge.core.flags import read_boolean
 
+from pyforge.atlas.datasets import dependency_history
 from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS
 from pyforge.atlas.datasets.refresh import RefreshRequest, clamp_ttl_cadence
 
@@ -678,10 +680,17 @@ def classify_migration_readiness(
     return out[_MIGRATION_READINESS_COLS].reset_index(drop=True)
 
 
-def build_repo_dependency_history() -> pd.DataFrame:
-    """Story 25.1 lands the real dependency-history builder (CAP-61).
+def build_repo_dependency_history(
+    dependency_history_repos: list | None,
+) -> dependency_history.DependencyHistoryBuildRequest:
+    """Pure trigger for :class:`~pyforge.atlas.datasets.RepoDependencyHistoryDataset` (CAP-61).
 
-    Story 25.2's fleet sensor targets this op by name; until 25.1 ships the body
-    is a no-op placeholder so Dagster job wiring can load offline.
+    Story 25.2's fleet sensor targets this op by name; IO stays in the dataset (AD-2), which
+    owns incrementality from its own per-repo head metadata (AD-5) -- the node takes no
+    Warden inventory, so it never loads a file that may be absent. With the flag OFF the
+    request is ``not-applicable`` and the dataset clones nothing.
     """
-    return pd.DataFrame()
+    return dependency_history.build_dependency_history_request(
+        flag_on=read_boolean(dependency_history.FLAG_KEY),
+        repo_sources=dependency_history_repos or [],
+    )

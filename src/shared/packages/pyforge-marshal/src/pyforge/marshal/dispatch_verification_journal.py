@@ -18,7 +18,11 @@ from .core.dispatch_verification import (
     judge_dispatch_verification,
     primary_gate_failure,
 )
-from .core.dispatch_verify_fix import extract_failed_verify_commands, scrub_then_tail_bytes
+from .core.dispatch_verify_fix import (
+    command_reports_for_verify_fix,
+    extract_failed_verify_commands,
+    scrub_then_tail_bytes,
+)
 from .core.egress import redact_raw_text
 from .core.journal import (
     SCOPE_VIOLATION_ADVISORIES_FIELD,
@@ -63,8 +67,7 @@ def build_dispatch_verification_journal_entries(
     )
     failed_commands_payload: list[dict[str, object]] = []
     if record_failed_commands:
-        command_reports = verify_data.get("commands")
-        reports_tuple = tuple(command_reports) if isinstance(command_reports, list) else ()
+        reports_tuple = command_reports_for_verify_fix(verify_data)
         fix_settings = resolve_verify_fix_settings(effective)
         for item in extract_failed_verify_commands(reports_tuple, findings):
             combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
@@ -72,13 +75,14 @@ def build_dispatch_verification_journal_entries(
                 redact_raw_text(combined) or "",
                 max_bytes=fix_settings.output_tail_bytes,
             )
-            failed_commands_payload.append(
-                {
-                    "command": item.command,
-                    "exit_code": item.exit_code,
-                    "output_tail": redacted_tail,
-                }
-            )
+            row: dict[str, object] = {
+                "command": item.command,
+                "exit_code": item.exit_code,
+                "output_tail": redacted_tail,
+            }
+            if item.gate is not None:
+                row["gate"] = item.gate
+            failed_commands_payload.append(row)
     scope_advisories = [
         {"code": finding.code, "path": finding.path}
         for finding in findings

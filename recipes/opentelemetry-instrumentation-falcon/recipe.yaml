@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-falcon
-  version: 0.65b0
+  version: 0.66b1
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_falcon-${{ version }}.tar.gz
-  sha256: 494e45cff0cd6e64a35200644715de09e970c66ff8709133e17f87112935a2c9
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-falcon/opentelemetry_instrumentation_falcon-${{ version }}.tar.gz
+  sha256: 08a1304c2e7a50888e2161ea31f87df2455a763b1166b651540caff1d722cddc
 
 build:
   number: 0
@@ -20,16 +20,16 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - hatchling
   run:
     - python >=${{ python_min }}
     - opentelemetry-api ~=1.12
-    - opentelemetry-instrumentation-wsgi ==0.65b0
-    - opentelemetry-instrumentation ==0.65b0
-    - opentelemetry-semantic-conventions ==0.65b0
-    - opentelemetry-util-http ==0.65b0
+    - opentelemetry-instrumentation-wsgi ==0.66b1
+    - opentelemetry-instrumentation ==0.66b1
+    - opentelemetry-semantic-conventions ==0.66b1
+    - opentelemetry-util-http ==0.66b1
     - packaging >=20.0
     - falcon <5.0.0,>=1.4.1
 
@@ -53,3 +53,37 @@ extra:
     - rxm7706
     - mariusvniekerk
     - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-falcon
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-falcon
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-falcon@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-falcon@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-falcon
+  cfe-import-names: [opentelemetry.instrumentation.falcon]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-falcon-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.65b0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T17:29:18Z
+  cfe-generated-by-version: 8.99.14
+  cfe-generated-at-datetime: 2026-10-10T12:00:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T17:30:04Z
+####
+# CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-11: refreshed 0.65b0 -> 0.66b1
+####

@@ -1891,6 +1891,7 @@ def run_spin(
         slug=slug,
         story_key=guard_story_key,
         effective_policy=effective_policy,
+        preflight_advisories=findings,
     )
     if spin_conflict is not None:
         findings.append(

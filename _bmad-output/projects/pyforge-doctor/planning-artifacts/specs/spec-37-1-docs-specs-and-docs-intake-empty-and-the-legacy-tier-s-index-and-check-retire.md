@@ -2,7 +2,8 @@
 title: "37.1: docs/specs and docs/intake empty, and the legacy tier's index and check retire"
 type: 'chore'
 created: '2026-09-29'
-status: 'blocked'
+status: 'done'
+baseline_revision: '9c0d3c1f45392d761c7342783ccb5e724cec0bbf'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -56,10 +57,10 @@ in six parts:
      describing Tier 1.
 4. **Allowlist and surfaces:**
    - `scripts/spec_surface_allowlist.txt` drops `docs/specs/**`, which would otherwise be a stale-allowlist FAIL;
-   - `spec-pyforge-herald`'s surface drops `docs/specs/presentation-deck.md` (memlog, then a render by script).
+   - `spec-pyforge-herald`'s surface drops `docs/how-to/presentation-deck.md` (memlog, then a render by script).
 5. **Live references repointed** to the new paths:
    - the stubs to `docs/how-to/<name>.md`;
-   - flyte to `archive/docs/specs/flyte-conda-forge.md`;
+   - flyte to `archive/archive/docs/specs/flyte-conda-forge.md`;
    - feedstock-refresh to its companion path;
    - the intake items to `archive/docs/intake/`.
    This covers the CFE skill (`SKILL.md`, `guides/feedstock-platform-expansion.md`, in one `retro(cfe):` commit),
@@ -71,9 +72,47 @@ in six parts:
    Currency-reconciliation sections, and `archive/`. They record what was true when they were written.
 
 Ledger key: `37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire`.
-Ledger status (do not edit the ledger): `blocked` — the cross-project gate; the operator flips it once atlas 26.1,
-steward 77.1, herald 34.1 and marshal 76.1 have landed.
+Ledger status (do not edit the ledger): `backlog` (flipped from `blocked` on 2026-10-10 by the operator's ruling; it
+was `blocked` as the cross-project gate until atlas 26.1, steward 77.1, herald 34.1 and marshal 76.1 had landed).
 Type / Effort / Deps: chore / L / — (cross-project gate above).
+
+**Gate cleared 2026-10-10.** All four reader stories are `done` on main. Each landing is an ancestor of `origin/main`
+(`git merge-base --is-ancestor <merge> origin/main` exits 0 at `2d90c634f3`), and each station's ledger row reads `done`:
+- atlas 26.1: PR #1947, merge `5d91c5648b` ("Merge pyforge-atlas/26-1 into main").
+- steward 77.1: PR #1696, merge `a9d495e800` ("Merge pyforge-steward/77-1 into main").
+- herald 34.1: PR #1935, merge `3412c55055` ("Merge pyforge-herald/34-1 into main").
+- marshal 76.1: PR #1691, merge `9db8b2f42b` ("Merge pyforge-marshal/76-1 into main").
+
+The operator ruled the same day (verbatim): "yes flip the six cleared stories and dispatch them". The ledger key moved
+`blocked -> backlog` through a worktree-local Tier-3 feed and `sprint-ledger-sync --project doctor --allow-regression`.
+This spec is `ready-for-dev`. Task 1's merge check is done here, and the dispatch repeats it.
+
+**Since minting (re-read 2026-10-10).** No AC changes. The Problem's inventory still holds: `docs/specs/` has the same
+five files and `docs/intake/` the same two items besides its README. The text below is now wrong or incomplete:
+- **Two stub bodies moved (mason Story 19.4).** The bodies of `feedstock-platform-expansion` and
+  `feedstock-failure-remediation` now live in `.claude/skills/mason-feedstock-platform-expansion/SKILL.md` and
+  `.claude/skills/mason-feedstock-failure-remediation/SKILL.md`. Their `docs/how-to/<name>.md` pages are pointer pages,
+  so "whose bodies live in `docs/how-to/`" is true only of `presentation-deck`. Repointing a stub reference at
+  `docs/how-to/<name>.md` still lands on a live page. Both pointer pages also link the legacy stub
+  (`docs/how-to/feedstock-platform-expansion.md:16`, `docs/how-to/feedstock-failure-remediation.md:15`), so they are
+  readers to repoint too.
+- **`--specs` is gone (marshal Story 76.1).** `scripts/bmad_drift_check.py --specs` no longer exists. The three stubs'
+  line 10 and `AGENTS.md:230` already describe a mode that is gone. This story removes the AGENTS.md sentence anyway;
+  the stubs move to the archive as written.
+- **The reader set grew.** Item 5 names "mason Epic 25, and the `context:` of Stories 25.1 and 25.2". Since the mint,
+  17 more live files name a moved path:
+  - mason story specs 25.3 and 25.5-25.16;
+  - `_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md`;
+  - `docs/dreams/README.md:10`;
+  - the two pointer pages above.
+
+  The AC's `git grep` is the oracle, and item 5's list is not exhaustive.
+- **Readers the mint did not list.** These were already on main at the mint, and the same `git grep` finds them:
+  - comment lines in `recipes/{flyte,pyqwest,protovalidate,connectrpc}/recipe.yaml`;
+  - `recipes/protovalidate/patches/0001-ship-buf-validate-stubs.patch`;
+  - warden's corpus copies of those four recipes under `src/shared/packages/pyforge-warden/tests/fixtures/corpus/recipes/`;
+  - herald's `tests/unit/test_deck_status.py:371`;
+  - `_bmad-output/PROJECTS.md:55`.
 
 ### Living CAP citations
 
@@ -154,7 +193,7 @@ Type / Effort / Deps: chore / L / — (cross-project gate above).
 Parent capability: `spec-one-chain-per-station:CAP-11` (Guild relay; no doctor CAP or FR).
 Dream: `docs/dreams/one-chain-per-station.md` → § *2026-09-29 — One archive home*.
 Ledger key: `37-1-docs-specs-and-docs-intake-empty-and-the-legacy-tier-s-index-and-check-retire`.
-Ledger status at mint: `blocked` (cross-project gate: atlas 26.1, steward 77.1, herald 34.1, marshal 76.1).
+Ledger status at mint: `blocked` (cross-project gate: atlas 26.1, steward 77.1, herald 34.1, marshal 76.1). Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (all four `done`), through the Tier-3 feed and `sprint-ledger-sync --project doctor --allow-regression`.
 Deps: —.
 Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
@@ -172,4 +211,18 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-10 — Review pass (build-auto, condensed)
+- verdicts: 3 findings — high 0, medium 0, low 1, false 2, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Bulk repoint script touched `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-37-1-*.md` inside read-only `<intent-contract>` (archive/archive typo in item 5) — intent-contract is read-only; typo is in historical mint text only; live AC uses grep oracle, not that bullet.
+  - `[false]` `[reject]` `docs/specs/` still appears as substring inside `archive/docs/specs/*` live paths — AC excludes `archive/`; grep oracle uses path literals, not false positives on archive paths.
+  - `[false]` `[reject]` CFE `CHANGELOG.md` v8.63.0 row still cites `docs/specs/flyte-conda-forge.md` — excluded from AC grep by `CHANGELOG.md`; history stays as written per story boundaries.
+
+## Auto Run Result
+
+- **Summary:** Retired the legacy Tier-1 tree: `docs/specs/` removed (five files archived or mason companion), `docs/intake/` README-only; doctor dropped `check_spec_indexed`, `_docs_specs`, and `docs-specs-nonmd`; instruction surface and allowlist updated; live references repointed; herald/mason spec surfaces reconciled via memlog.
+- **Verification:** `pyforge-doctor-test` exit 0 (3518 passed); `governance-currency` exit 0; `spec-surface-check` exit 0 (no drift); `python scripts/spec_surface_reconcile.py` exit 0; scribe `test_instruction_surface_parity.py` 32 passed; `bmad-drift` emits no `spec-unindexed` / `docs-specs-nonmd`. `pr-preflight` not run this session (operator before push).
+- **Memlog reconcile (S-13.7):** `spec-pyforge-doctor`, `spec-docs-shelf-alignment`, `spec-pyforge-scribe`, `spec-pyforge-herald`, `spec-pyforge-mason` — each `.memlog.md` event names the governed paths moved or edited (see those entries dated 2026-10-10).
+- **CFE:** `.claude/skills/conda-forge-expert/` repointed in working tree; `8.99.11` PATCH changelog entry staged for a separate `retro(cfe):` commit per story task 5.
+- **Follow-up review:** `followup_review_recommended: false` — no patched review findings; full `pr-preflight` remains before PR.
+- **Residual:** Working tree has staged changes uncommitted (no push in this run); scoped `--write-baseline` intentionally not run (reconcile-only guard).

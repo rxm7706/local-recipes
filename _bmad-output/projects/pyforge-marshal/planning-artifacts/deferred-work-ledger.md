@@ -2026,9 +2026,12 @@ status: open
   origin: spec-deferred 96f6f96ebc9f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.2 (`86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green`) — explicit seed skips for instruction-surface files, bootstrap `marshal seed adopt --apply`, SC-02 oracle lane `marshal-local-recipes-seed-oracle`.
+  verified: 2026-10-11 — RESOLVED — `pixi run --frozen -e pyforge-marshal marshal-local-recipes-seed-oracle` passes; `.marshal/seed-state.yml:71` records `skips:`; `src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py:237` asserts `assertable_skipped_artifact_ids(result.plan.skipped)`.
   verified: 2026-10-01 — NEEDS-DECISION — Reproduced read-only 2026-09-30 by running run_adopt's own plan pipeline in memory (read_state -> classify -> build_plan -> _augment_plan_with_first_claims, skipping write_plan; seed/verbs/adopt.py:998-1022): state=None (no .marshal/ at the repo root), 22 actions, 21 after the 3 unclassified-deferred ids -- identical to the recorded count. The 21: 5 present-divergent hybrid regions (AGENTS.md, CLAUDE.md, .gitignore, README.md, _bmad-output/PROJECTS.md), 12 first-claims of files that already exist (scripts/bmad-switch, scripts/bmad-loop-worktree, scripts/detectors.py, .github/workflows/detectors.yml, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/specs.mdc, docs/dreams/, docs/drea… (2026-09-30 deferral burn-down triage)
   decision: Should the control-plane repo itself be genesis-adopted (seed adopt --apply inserts managed regions into AGENTS.md/CLAUDE.md/.gitignore/README.md/PROJECTS.md, claims 12 existing files as tool-owned and writes .marshal/seed-state.yml), or should SC-02's oracle be re-scoped for this repo (render {{ slug }} as Story 70.1 does for check, skip loop-home-only entries) -- K-02 forbids simply widening the exclusion set?
+  ruled: 2026-10-10 — "Explicit seed skips (Recommended)": the AGENTS.md, CLAUDE.md and `_bmad-output/PROJECTS.md` hybrid regions are recorded as explicit skips in this repo's `.marshal/seed-state.yml` `skips:`, not inserted. A fresh run from `origin/main` keeps the scripts' execute bits, leaves `.marshal/plan.json` untracked and makes no hand-edited claims (2026-10-03 ruling: genesis-adopt; 2026-10-05: held after PR #1872's review). Recorded in `spec-pyforge-marshal/.memlog.md`; Story 86.2's spec is re-scoped to it (`ready-for-dev`, ledger `backlog`). This row stays open until Story 86.2 lands.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -7648,9 +7651,11 @@ status: open
   location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md
   severity: medium
   fix: operator decides, then `bmad-spec` re-derives CAP-1 (memlog first): (a) grounding — add a `mode`/`kind` override to marshal's `ScribeCli.recall()` (marshal surface), drop the mandatory per-station scope for this query, or extend scribe's `_citation_in_scope()` to admit team-memory citations (scribe-owned); (b) whether CAP-1 ends at the `recall-feedback.md` artifact or also wires a reader into bmad-loop's session-context assembly, and at which step; (c) whether `run_resume` also injects. Then flip 47-1 back from `blocked` (operator-confirmed, AGENTS.md § Policy) and re-dispatch.
-  status: open
-  verified: 2026-10-01 — NEEDS-DECISION — sprint-status-ledger.yaml:273 47-1 reads blocked, :274-276 47.2-47.4 backlog, :449 epic-47 backlog; spec-marshal-recall-in-the-loop/.memlog.md carries the recovered 2026-09-20 review entry naming both intent gaps, and SPEC.md's open question on the scope mechanism is still unanswered. (2026-09-30 deferral burn-down triage)
   decision: For CAP-1, which recall path should the dev pass use so .claude/memory feedback can ground (for example --mode memory, or a scope rule that admits .claude/memory/** citations under a station scope), and what concrete surface folds the result into the session (a policy/prompt injection versus a file the dev skill is required to read)?
+  ruled: 2026-10-10 — "Marshal --mode memory (Recommended)": the dev-pass query runs `scribe recall --mode memory` with no station scope (team memory is repo-wide), a marshal-only change with scribe untouched. Recorded in `spec-marshal-recall-in-the-loop/.memlog.md`; Story 47.1's spec is re-scoped to it (`ready-for-dev`) and its ledger key moves `blocked` → `backlog`. The surface question is settled by what Stories 47.2–47.4 shipped: both the `recall-feedback.md` cache and the prompt fold (`augment_bmad_loop_session_prompt_with_recall`). The live launcher seam stays with `DW-marshal-47-2` / `DW-marshal-47-3`.
+  status: closed
+  resolution: Story 47.1 (dispatch/pyforge-marshal/47.1) — dev-pass `inject_recall_feedback` calls `ScribeCli.recall` with `mode="memory"` and no `scope`; `render_scribe_recall_argv` defaults stay `--mode planning` for planning-graph retrieve.
+  verified: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py:1383 (`mode="memory"` on the dev-pass recall call)
 
 ## DW-marshal-local-branch-short-names-2026-09-27 — marshal reads its local landing branch as the short name `main`, which a tag named `main` shadows
 
@@ -8994,7 +8999,9 @@ status: open
   origin: spec-deferred 5136dfccc6cc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 93.1 — marshal-recall bmad-loop plugin `on_pre_session` calls the fold for dev and review; factory dispatch calls the same fold before bmad-build-auto and passes `recall_block` into the build harness prompt.
+  verified: src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/bmad_loop_plugins/marshal-recall/marshal_recall_plugin.py:56 (`augment_bmad_loop_session_prompt_with_recall` from `on_pre_session`); src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3483 (dispatch recall fold before launch)
 
 ### DW-marshal-47-3: Live bmad-loop launch paths do not yet pass resolve_context_layers into augment_bmad_loop_session_prompt_with_recall (pre-existing 47.1/47.2 seam).
 
@@ -9005,7 +9012,9 @@ status: open
   origin: spec-deferred 4dfe6b79d429 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 93.1 — dispatch passes composed `context_payload` into the fold; the plugin reads `[context]` from loop-home policy.toml and passes resolved layers into the same helper; `render_policy_toml` enables marshal-recall only when the recall layer is enabled.
+  verified: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3492 (`context_layers=context_payload`); src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/bmad_loop_plugins/marshal-recall/marshal_recall_plugin.py:54-65 (`context_layers` from policy); src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py:679-684 (plugin enabled when recall layer on)
 
 ### DW-marshal-87-6: Policy protected additions do not print with provenance (AD-10 / AD-16 / AD-27) on land or retire output.
 
@@ -9071,4 +9080,15 @@ status: open
   origin: spec-deferred 4baf13092070 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low (unverified)
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-85-7: Teach the fix-turn prompt the flag gate's two-state test shape when flag-gate-check fails with flag-test-not-two-state.
+
+- source_spec: `planning-artifacts/specs/spec-85-7-a-cross-surface-refusal-gets-the-same-one-fix-turn.md`
+  summary: Teach the fix-turn prompt the flag gate's two-state test shape when flag-gate-check fails with flag-test-not-two-state.
+  evidence: Two of the four 2026-10-09/10 cross-surface refusals were flag-gate-check exit 1 on flag-test-not-two-state: marshal 87.5 (run pyforge-marshal-20261009T221327283Z-283f3080; its tests named the flag key through an imported constant, which the static check cannot see, and hand fix 0af3a4267e names it literally) and steward 85.5 (run pyforge-steward-20261010T100406402Z-aee344c6; hand fix 7cda758bab writes the two flagd trees through a *flagd_tree* writer with the literal key). scripts/flag_gate_check.py judge_two_state (:571) reads the files a done spec's ## Verification names and wants the spec's flag.key written literally together with pyforge.testing_kit.flags.flag_states, or two *flagd_tree* calls, one with "on" and one with "off" (:35-:42, :478-:483). Story 85.6's checklist (core/dispatch_verify_fix.py build_verify_fix_prompt) names the four registration points only. Out of Story 85.7's scope: it changes the prompt's content, needs its own mutation test, and needs a line in docs/reference/story-spec-flag-block.md.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py
+  origin: spec-deferred d2f9695ffbee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

@@ -21,15 +21,19 @@ writes an empty string instead when it does not.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
+from pathlib import Path
 
 from .derived_context import implementation_artifacts_relpath
 
 __all__ = (
+    "RecallInjectionResult",
     "RECALL_FEEDBACK_HEADER",
     "RECALL_LAYER",
     "build_recall_query",
     "format_recall_feedback_for_injection",
     "layer_enabled",
+    "recall_feedback_artifact_stem",
     "recall_feedback_output_relpath",
     "render_recall_feedback_block",
 )
@@ -41,6 +45,17 @@ RECALL_LAYER = "recall"
 #: The label distinguishing this block from the story's own spec/intent
 #: content (this story's own "clearly labeled" constraint).
 RECALL_FEEDBACK_HEADER = "# Scribe feedback (auto-recalled for this story dispatch — dev and review pass)"
+
+
+@dataclass(frozen=True)
+class RecallInjectionResult:
+    """What one pre-launch recall attempt did (Story 47.1 / 93.1)."""
+
+    attempted: bool
+    ok: bool = True
+    injected: bool = False
+    reason: str | None = None
+    target: Path | None = None
 
 
 def layer_enabled(layer: Mapping[str, object] | None) -> bool:
@@ -55,11 +70,21 @@ def build_recall_query(station_slug: str) -> str:
     return f"feedback corrections guidance for {station_slug}"
 
 
-def recall_feedback_output_relpath(project_slug: str) -> str:
-    """Where a grounded hit is written, repo-relative -- a sibling of
-    ``epic-<N>-context.md`` in the same Tier-3 ``implementation-artifacts``
-    directory step-01 already reads derived artifacts from."""
-    return f"{implementation_artifacts_relpath(project_slug)}/recall-feedback.md"
+def _cache_token_part(value: str) -> str:
+    """Filesystem-safe fragment for story/run cache keys (Story 93.1 AC4)."""
+    return "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in value)
+
+
+def recall_feedback_artifact_stem(*, story_key: str, run_id: str) -> str:
+    """Basename (no suffix) for one story-dispatch recall cache pair."""
+    return f"recall-feedback__{_cache_token_part(story_key)}__{_cache_token_part(run_id)}"
+
+
+def recall_feedback_output_relpath(project_slug: str, *, story_key: str, run_id: str) -> str:
+    """Where a grounded hit is written, repo-relative -- keyed to one story
+    dispatch (Story 93.1), not the station slug alone."""
+    stem = recall_feedback_artifact_stem(story_key=story_key, run_id=run_id)
+    return f"{implementation_artifacts_relpath(project_slug)}/{stem}.md"
 
 
 def format_recall_feedback_for_injection(

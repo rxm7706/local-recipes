@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-silk
-  version: "5.5.2"
+  version: "5.6.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: c488ee1eab763a6f3d0db09a969e7a91b637743f04159cd8d10141386157ec0d
+  url: https://pypi.org/packages/source/d/django-silk/django_silk-${{ version }}.tar.gz
+  sha256: bb741fb8af45eba663e8ed832207d16ecd731496313311f6dfae5fe776bed38e
 
 build:
   number: 0
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - setuptools-scm
     - setuptools
     - pip
@@ -48,3 +48,36 @@ extra:
   recipe-maintainers:
     - rxm7706
     - cshaley
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-silk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-silk
+  cfe-purls:
+    - pkg:conda/django-silk@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-silk@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-silk
+  cfe-upstream-homepage: https://github.com/jazzband/django-silk
+  cfe-import-names: [silk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-silk-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T11:35:03Z
+  cfe-generated-by-version: 8.99.6
+  cfe-generated-at-datetime: 2026-10-10T00:00:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-10T11:35:41Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 refresh_wave B-25-6: refreshed 5.5.2 -> 5.6.0
+####

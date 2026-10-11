@@ -2,7 +2,9 @@
 title: "15.1: Opengrep is an optional SAST scanner that informs, never publishes, the verdict"
 type: 'feature'
 created: '2026-09-28'
-status: 'blocked'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: 'f9c6a87dbe45d0e03d9a422dd708e466ce19bada'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -31,6 +33,34 @@ constraint: engines arrive as conda packages with tested version ranges, never c
 station-local, so the ledger row is minted `blocked`; the operator flips it once mason 21.4 is `done` and the package
 resolves in the `pyforge-warden` environment.
 
+**Gate cleared 2026-10-10.** Mason Story 21.4 is `done` on main: its landing, PR #1996 (merge `78bfde70fc`, "Merge
+pyforge-mason/21-4 into main"), is an ancestor of `origin/main` (`git merge-base --is-ancestor 78bfde70fc origin/main`
+exits 0 at `2d90c634f3`), and mason's ledger row
+`21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe` reads `done`. `recipes/opengrep/recipe.yaml`
+is on main at version `1.30.2`, built on linux-64; its binary is `opengrep`, and its test checks `opengrep --version`. The
+operator ruled the same day (verbatim): "yes flip the six cleared stories and dispatch them". The ledger key moved
+`blocked -> backlog` through a worktree-local Tier-3 feed and `sprint-ledger-sync --project warden --allow-regression`;
+this spec is `ready-for-dev`.
+
+**Not yet true on 2026-10-10: the package does not resolve.** The second half of the condition above does not hold.
+`opengrep` is in no channel the workspace solves from: `api.anaconda.org/package/SelfExplainML/opengrep` and
+`.../conda-forge/opengrep` both returned 404 on 2026-10-10, and the workspace channels are `["conda-forge",
+"SelfExplainML"]` (`pixi.toml:19`). Mason 21.4 is a local-only recipe whose output stays in `build_artifacts/`, and
+`pixi.toml:2471` bans a local `file://` channel. If the tested version range cannot be declared in the member `pixi.toml`
+because the package does not resolve, the dispatch stops and reports it. It does not add a channel, vendor a binary or
+download a release (the Dream's "never curl-fetched"), and it does not publish the package (an outward act the operator
+owns).
+
+**Since minting (re-read 2026-10-10).** Every path and symbol the story names is still on main:
+- `scanner_plugins.py`: `PR_GATE_SCAN`, `WARDEN_OPTIONAL_SCANNERS`, `OptionalScanPlugin` and `GhasScanPlugin`;
+- `engines.py:229` `_engine_env()`;
+- `tea_advisory.py`, which appends to `context["advisory_notes"]`;
+- `report.py:192` `REPORT_SCHEMA_VERSION = "1.1.0"`.
+
+The flag reader exists: `pyforge.core.flags.read_boolean` (`pyforge-core/src/pyforge/core/flags.py:496`, steward 75.1),
+so the "if 75.1 has not landed" clause does not apply. The `spec-feature-flag-governance:CAP-4` fixture has landed
+(marshal Story 74.1, `pyforge.testing_kit.flags`). No AC changes.
+
 **Problem:** Warden has no SAST lens. The PR-gate hook book has optional scanner slots (`scanner_plugins.py`:
 Checkmarx, Sonar, Black Duck, `ghas`, profile-local — all stubs) and one real advisory lens (`tea_advisory.py`). The
 operator ruled on 2026-09-28 that opengrep (LGPL-2.1) takes the SAST slot with rules the estate owns; CodeQL is rejected
@@ -46,7 +76,7 @@ omit-not-error; an out-of-range version or unparseable output is an advisory not
 read through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); with it OFF, `opengrep` is not selectable.
 
 Ledger key: `15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict`.
-Ledger status (do not edit the ledger): `blocked`.
+Ledger status (do not edit the ledger): `backlog` (flipped from `blocked` on 2026-10-10 by the operator's ruling).
 Type / Effort / Deps: feature / M / — (cross-station: mason Story 21.4).
 
 ### Living CAP citations
@@ -95,7 +125,7 @@ Type / Effort / Deps: feature / M / — (cross-station: mason Story 21.4).
 Parent Spec capability: `spec-pyforge-warden` CAP-25 (FR-42).
 Dream: `docs/dreams/pyforge-warden.md` § Realization log → *2026-09-28 (night) — Proposed: the fix-PR actuator finishes the fix, SAST joins as a plugin, and Warden scans the enterprise fleet*.
 Ledger key: `15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict`.
-Ledger status at mint: `blocked` — until mason Story 21.4 (the opengrep conda package) is `done`; the operator flips the row.
+Ledger status at mint: `blocked` — until mason Story 21.4 (the opengrep conda package) is `done`; the operator flips the row. Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (21.4 `done`), through the Tier-3 feed and `sprint-ledger-sync --project warden --allow-regression`.
 Deps: — (cross-station: mason Story 21.4).
 
 ## Verification
@@ -104,10 +134,36 @@ Deps: — (cross-station: mason Story 21.4).
 - `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (the station's `verify_commands`).
 
 **Manual checks:**
-- Flag ON/OFF: a test writes two flagd trees (`pyforge.warden.sast_opengrep` on, then off; the `src/platform/tests/test_openfeature_file_flags.py` shape until the `spec-feature-flag-governance:CAP-4` fixture lands): ON selects the scanner and writes the note, OFF leaves the report unchanged.
+- Flag ON/OFF: a test writes two flagd trees (`pyforge.warden.sast_opengrep` on, then off; the `src/platform/tests/test_openfeature_file_flags.py` shape until the `spec-feature-flag-governance:CAP-4` fixture lands): ON selects the scanner and writes the note, OFF leaves the report unchanged. *(2026-10-10: that fixture has landed, marshal Story 74.1: write the trees with `pyforge.testing_kit.flags.flagd_tree` and parametrize with `flag_states`.)*
 - `pixi run -e pyforge-guild pyforge-station-tests` — expected: pass (`pixi.lock` moved for the run-dependency).
 - `pixi run -e pyforge-guild spec-surface-check` exits 0 after the scoped stamps.
 
 ## Review Triage Log
 
-- No review yet (minted 2026-09-28, `blocked`). Implementation and review stay separate.
+- No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10). Implementation and review stay separate.
+
+### 2026-10-10 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 1, false 2, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Real opengrep integration test against live binary not in default suite — injected-runner tests cover AC; live binary optional via pyforge-warden env on linux-64.
+  - `[false]` `[reject]` Missing pyproject entry point for OpengrepScanPlugin — TEA uses direct registry registration; same pattern applied.
+  - `[low]` `[reject]` `test_flag_states_do_not_change_default_scan_exit` mocks `_engine_env` broadly — acceptable narrow harness proof; full suite green (2284 passed).
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added optional `OpengrepScanPlugin` (Story 15.1 / CAP-25): estate rules under `data/sast-rules/`, spawn via `engines.run_opengrep_engine` / `_engine_env`, advisory notes only, gated by `pyforge.warden.sast_opengrep` and `WARDEN_OPTIONAL_SCANNERS=opengrep`. Opengrep `>=1.30.2,<1.31` on SelfExplainML linux-64 (member + feature target deps).
+
+Files changed:
+- `sast.py`, `engines.py`, `scanner_plugins.py`, `cli.py` — plugin, subprocess seam, flag filter
+- `data/sast-rules/planted-opengrep-match.yaml`, fixtures, `test_sast_opengrep.py`
+- `flags.json`, `flag-overlays.json`, `pixi.toml`, `pixi.lock`, `environment.yaml`
+
+Review: 0 patches; 1 low rejected; 2 false.
+
+Verification:
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2284 passed
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconciles on `spec-pyforge-warden`, `spec-pyforge-core`, `spec-pyforge-unifying-strategy`
+
+Residual: opengrep conda package is linux-64-only on SelfExplainML; other platforms omit-not-error. Landing requires commit, scoped spec-surface baseline stamps (human), and PR.

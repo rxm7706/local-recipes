@@ -157,8 +157,12 @@ def test_pytest_fails_when_scratch_lives_inside_checkout_mutation(tmp_path: Path
         [sys.executable, "-m", "pytest", str(test_file), "-q", "-p", "no:cacheprovider"],
         env=env,
         cwd=repo,
+        capture_output=True,
+        text=True,
     )
-    assert proc.returncode != 0
+    assert proc.returncode == 1
+    combined = proc.stdout + proc.stderr
+    assert "assert r.returncode != 0" in combined or "AssertionError" in combined
 
 
 def test_green_run_removes_scratch_root(tmp_path: Path) -> None:

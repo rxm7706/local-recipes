@@ -243,6 +243,7 @@ class ScribeCli:
         repo_root: Path,
         query: str,
         scope: str | None = None,
+        mode: str = "planning",
         binary_path: str | None = None,
     ) -> ScribeRecallOutcome:
         """Run the declared ``scribe recall`` grammar and return what it
@@ -258,7 +259,10 @@ class ScribeCli:
                     "epic-context-file fallback applies"
                 ),
             )
-        argv = render_scribe_recall_argv(resolved, query, scope=scope)
+        try:
+            argv = render_scribe_recall_argv(resolved, query, scope=scope, mode=mode)
+        except ValueError as exc:
+            return ScribeRecallOutcome(ok=False, reason=str(exc))
         try:
             result = self._process.run(argv, cwd=Path(repo_root), timeout_s=_RECALL_TIMEOUT_S)
         except ProcessError as exc:

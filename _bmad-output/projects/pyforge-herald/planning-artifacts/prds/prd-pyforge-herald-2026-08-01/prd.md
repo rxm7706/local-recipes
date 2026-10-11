@@ -988,7 +988,7 @@ runbook's 2-day grace window.*
    re-grounded to say so:
    - **The deck-QA gate has a caller** (Story 19.3, PR #1150). Verified live this
      pass: `pixi.toml` declares `[feature.pyforge-herald.tasks.deck-qa]`, and
-     `docs/specs/presentation-deck.md`'s verify checklist names it as a step.
+     `docs/how-to/presentation-deck.md`'s verify checklist names it as a step.
    - **The `.pptx` pipeline has rendered a real station deck** (Story 19.4, PR #1155).
      Verified live: `presentations/pyforge-warden/src/content_plan.json` exists — the
      first real `content_plan.json` in the tree.

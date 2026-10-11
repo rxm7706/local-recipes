@@ -136,3 +136,12 @@ org_audit_candidates:
 # attended bring-up — out of scope here (Story 15.1 Design Notes).
 artifactory:
   virtual_repos: []
+
+# Story 25.1 (CAP-61) — repo sources for dependency-history scans. Each entry is
+# {full_name: <owner>/<repo>, path: <local repo>} or {full_name, clone_url} (https://,
+# ssh://, file:// or user@host:path). Either way Atlas scans its own clone under
+# paths.repo_dependency_cache, never the working copy. The dataset keeps each repo's
+# walked head SHA, so an unmoved head is not re-walked (AD-5); an empty list is the
+# offline default.
+dependency_history:
+  repos: []

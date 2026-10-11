@@ -368,7 +368,7 @@ def _hand_mirrored_repo_files() -> list[ListedFile]:
         "src/pyforge/atlas/phases/phase_c.py",
         ".claude/skills/conda-forge-expert/SKILL.md",
         "docs/dreams/design-code-bridge.md",
-        "docs/specs/presentation-deck.md",
+        "docs/how-to/presentation-deck.md",
     ]
     flat = ["pixi.toml", "README.md", "CLAUDE.md", "conda-forge.yml", "AGENTS.md"]
     files = [ListedFile(path=p, etag=f"E{i}") for i, p in enumerate(nested + flat)]

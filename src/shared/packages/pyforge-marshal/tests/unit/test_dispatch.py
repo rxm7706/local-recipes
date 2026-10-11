@@ -126,6 +126,7 @@ class FakeVcs:
         # checked out -- the two facts branch resolution reads.
         self.branches: set[str] = set()
         self.worktrees: dict[str, Path] = {}
+        self.blame_lines: dict[int, tuple[str, int]] = {}
 
     def repo_common_root(self, _cwd: Path) -> Path:
         return self.repo_root
@@ -161,6 +162,17 @@ class FakeVcs:
 
     def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
         return a
+
+    def line_blame_facts(
+        self,
+        *,
+        repo_root: Path,
+        path: str,
+        worktree: Path | None = None,
+        ref: str | None = None,
+    ) -> dict[int, tuple[str, int]]:
+        _ = (repo_root, path, worktree, ref)
+        return dict(self.blame_lines)
 
 
 class FakeBuildHarness:
@@ -1577,18 +1589,26 @@ def test_gather_dispatch_git_facts_still_recognizes_the_project_own_templated_ke
     fs = FakeFs()
     fs.files[ledger_path] = "development_status:\n  22-11-atlas-owns-this-one: done\n"
 
-    facts = gather_dispatch_git_facts(
-        vcs,
+    worktree = dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, "22.11")
+    kwargs = dict(
         fs=fs,
         repo_root=tmp_path,
-        worktree=dispatch_core.dispatch_worktree_path(tmp_path, _ATLAS, "22.11"),
+        worktree=worktree,
         story_key="22.11",
         project_slug=_ATLAS,
         baseline_head_sha="baseline0001",
         merge_subject_template="Merge {key} into main",
     )
+    facts = gather_dispatch_git_facts(vcs, **kwargs)
 
-    assert facts.story_merged_on_main is True
+    class _MovedHeadSubjectsVcs(_SubjectsVcs):
+        def worktree_head_sha(self, _worktree: Path) -> str:
+            return "moved0002"
+
+    facts_moved = gather_dispatch_git_facts(_MovedHeadSubjectsVcs(tmp_path, subjects), **kwargs)
+
+    assert facts.story_merged_on_main is False
+    assert facts_moved.story_merged_on_main is True
 
 
 def test_gather_dispatch_git_facts_missing_ledger_fails_closed(
@@ -2096,13 +2116,88 @@ def _seed_held_for_review_dispatch_land_run(
 def test_in_progress_spec_with_refused_landing_journal_is_land_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Story 83.7: a refused dispatch-land on the latest run → CAP-4 only, no session."""
+    """Story 89.1: in-progress after refused dispatch-land → MRS-DISP-063, not CAP-4."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     story = "83-7-redispatch"
     _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    _seed_refused_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261002T120000000Z-deadbeef",
+        story_key=story,
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("CAP-4 must not run")),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data.get("harness_done_land_only") is not True
+    assert any(f.code == "MRS-DISP-063" for f in attempt.findings)
+
+
+def test_in_progress_spec_with_held_landing_journal_is_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 89.1: in-progress after held dispatch-land → MRS-DISP-063."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-18-redispatch"
+    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    _seed_held_for_review_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261003T120000000Z-heldbeef",
+        story_key=story,
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("CAP-4 must not run")),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data.get("harness_done_land_only") is not True
+    assert any(f.code == "MRS-DISP-063" for f in attempt.findings)
+
+
+_IN_REVIEW_SPEC = "---\nstatus: in-review\ndifficulty: medium\n---\n# spec\n"
+
+
+def test_in_review_spec_with_refused_landing_journal_still_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.7 / 89.1: in-review with refused dispatch-land still takes CAP-4."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-7-in-review"
+    _write_worktree_spec(tmp_path, slug, story, _IN_REVIEW_SPEC)
     _seed_refused_dispatch_land_run(
         tmp_path,
         slug,
@@ -2127,43 +2222,6 @@ def test_in_progress_spec_with_refused_landing_journal_is_land_only(
     assert harness.calls == []
     assert attempt.data["harness_done_land_only"] is True
     assert attempt.data["land_verdict"] == "landed"
-
-
-def test_in_progress_spec_with_held_landing_journal_is_land_only(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Story 83.18: held-for-review dispatch-land → CAP-4 only, no MRS-DISP-040."""
-    from pyforge.marshal.cli import dispatch as dispatch_module
-
-    slug = "pyforge-marshal"
-    _init_git_repo(tmp_path, scope_slug=slug)
-    story = "83-18-redispatch"
-    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
-    _seed_held_for_review_dispatch_land_run(
-        tmp_path,
-        slug,
-        run_id="pyforge-marshal-20261003T120000000Z-heldbeef",
-        story_key=story,
-    )
-    monkeypatch.setattr(
-        dispatch_module,
-        "_attempt_harness_done_cap4",
-        lambda **_kwargs: (DispatchLandingVerdict.HELD_FOR_REVIEW, "PR #1796", None),
-    )
-    monkeypatch.chdir(tmp_path)
-    harness = FakeBuildHarness()
-    attempt = dispatch_once(
-        slug=slug,
-        story=story,
-        fs=FakeFs(),
-        vcs=FakeVcs(tmp_path),
-        build_harness=harness,
-        process=FakeProcess(),
-    )
-    assert harness.calls == []
-    assert attempt.data["harness_done_land_only"] is True
-    assert attempt.data["land_verdict"] == "held-for-review"
-    assert not any(f.code == "MRS-DISP-040" for f in attempt.findings)
 
 
 def test_in_progress_spec_without_landing_journal_still_launches(
@@ -2223,7 +2281,7 @@ def test_ready_for_dev_with_refused_landing_journal_still_launches(
 def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Story 83.7: a land-only path that still cannot merge leaves the PR open."""
+    """Story 89.1: in-progress after refused land cannot reach CAP-4 (MRS-DISP-063)."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
     slug = "pyforge-marshal"
@@ -2236,11 +2294,10 @@ def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
         run_id="pyforge-marshal-20261002T130000000Z-cafebabe",
         story_key=story,
     )
-    pr_url = "https://github.com/rxm7706/local-recipes/pull/8307"
     monkeypatch.setattr(
         dispatch_module,
         "_attempt_harness_done_cap4",
-        lambda **_kwargs: (DispatchLandingVerdict.REFUSED, pr_url, None),
+        lambda **_kwargs: (_ for _ in ()).throw(AssertionError("CAP-4 must not run")),
     )
     monkeypatch.chdir(tmp_path)
     harness = FakeBuildHarness()
@@ -2253,8 +2310,7 @@ def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
         process=FakeProcess(),
     )
     assert harness.calls == []
-    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-040"]
-    assert "8307" in finding.message
+    assert any(f.code == "MRS-DISP-063" for f in attempt.findings)
 
 
 def test_harness_done_lands_via_cap4_without_second_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2795,12 +2851,14 @@ def _seed_reader_spec(tmp_path: Path) -> None:
 
 
 def _reader_journal(tmp_path: Path, followup_review: FollowupReview | None):
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
     return dispatch_core.DispatchJournalFacts(
         story_key=_READER_STORY,
         session_pid=999999,
         model=None,
         launched_at=None,
-        worktree_path=str(tmp_path / "wt"),
+        worktree_path=str(worktree),
         baseline_head_sha="baseline0001",
         followup_review=followup_review,
     )
@@ -2855,18 +2913,20 @@ def test_the_session_verdict_of_a_live_follow_up_run_is_not_completed_by_the_sto
 
 
 def test_the_session_verdict_of_a_follow_up_run_completes_on_its_own_merge(tmp_path: Path) -> None:
-    vcs = _ReaderVcs(tmp_path, own_merge=True)
+    vcs = _ReaderVcs(tmp_path, own_merge=True, head_sha="moved0001")
 
+    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER) == DispatchSessionVerdict.LIVE
     assert (
-        _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER) == DispatchSessionVerdict.COMPLETED
+        _reader_verdict(tmp_path, vcs, alive=False, followup_review=_READER_MARKER) == DispatchSessionVerdict.COMPLETED
     )
 
 
 def test_the_session_verdict_of_a_normal_run_is_still_completed_by_the_stories_merge(tmp_path: Path) -> None:
-    vcs = _ReaderVcs(tmp_path)
+    vcs = _ReaderVcs(tmp_path, head_sha="moved0001")
 
-    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=None) == DispatchSessionVerdict.COMPLETED
-    assert vcs.reads == [ORIGIN_MAIN]
+    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=None) == DispatchSessionVerdict.LIVE
+    assert _reader_verdict(tmp_path, vcs, alive=False, followup_review=None) == DispatchSessionVerdict.COMPLETED
+    assert vcs.reads == [ORIGIN_MAIN, ORIGIN_MAIN]
 
 
 _READER_SPEC_REL = f"_bmad-output/projects/{_FOLLOWUP_SLUG}/planning-artifacts/specs/spec-51-11-halt.md"
@@ -2955,9 +3015,11 @@ def _seed_reader_run(
     run_id = "pyforge-marshal-20261001T000000000Z-cafebabe"
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, _FOLLOWUP_SLUG, run_id)
     run_dir.mkdir(parents=True)
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
     payload: dict[str, object] = {
         "story_key": story_key,
-        "worktree_path": str(tmp_path / "wt"),
+        "worktree_path": str(worktree),
         "baseline_head_sha": "baseline0001",
     }
     if followup_review is not None:
@@ -3037,7 +3099,7 @@ def test_the_drains_block_facts_do_not_read_a_follow_up_run_completed_by_the_sto
 def test_the_drains_block_facts_still_read_a_normal_run_completed_by_the_stories_merge(tmp_path: Path) -> None:
     _seed_reader_spec(tmp_path)
     _seed_reader_run(tmp_path, followup_review=None)
-    vcs = _ReaderVcs(tmp_path)
+    vcs = _ReaderVcs(tmp_path, head_sha="moved0001")
 
     assert _block_facts(tmp_path, vcs) is None
     assert vcs.reads == [ORIGIN_MAIN]

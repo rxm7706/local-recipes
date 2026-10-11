@@ -84,8 +84,9 @@ primitives:
   (``ref="refs/heads/main"``, Story 61.1) -- the caller decides which ``ref`` each route needs;
   this method has no branch-name opinion of its own.
 - ``commit_paths`` -- the one write, now on ``CommitPort`` (Story 82.9): stages
-  EXACTLY ``paths`` (an individual ``git add -- <path>`` per entry, never ``git
-  add -A``) and commits ONLY those paths, the literal AD-29 requirement that a
+  EXACTLY ``paths`` (``git add -u --`` when the index tracks the path, else
+  ``git add --`` per entry; Story 88.1; never ``git add -A``) and commits ONLY
+  those paths, the literal AD-29 requirement that a
   promotion commit contain only promotion paths. ``cli/deploy.py`` calls it
   through ``core.commit_vcs.CommittingVcs``, the one name that is both ports.
 
@@ -557,4 +558,19 @@ class VcsPort(Protocol):
 
     def commit_contained_in_remote_refs(self, repo_root: Path, commit: str) -> bool:
         """Story 87.7: ``git for-each-ref --contains <commit> refs/remotes/``."""
+        ...
+
+    def line_blame_facts(
+        self,
+        *,
+        repo_root: Path,
+        path: str,
+        worktree: Path | None = None,
+        ref: str | None = None,
+    ) -> dict[int, tuple[str, int]]:
+        """Story 89.1 / 94.1: ``git blame --porcelain`` for ``path`` — maps 1-based line numbers to
+        ``(commit_sha, committer_time)``. Every committed line carries its own commit's
+        ``committer-time``; uncommitted lines use the all-zero sha. Exactly one of ``worktree``
+        (blame the checked-out file) or ``ref`` (blame ``ref:path`` at ``repo_root``) must be set.
+        Raises ``VcsCommandError`` when blame cannot run."""
         ...

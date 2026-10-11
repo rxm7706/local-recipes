@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.44.0"
+  version: "1.45.1"
 
 package:
   name: opentelemetry-exporter-otlp-proto-common
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-exporter-otlp-proto-common/opentelemetry_exporter_otlp_proto_common-${{ version }}.tar.gz
-  sha256: dc87a5a5bc58f149a56d1547e4691588fa12994cdc3bc039a694ccb3375862ac
+  sha256: 2e4adcc3a67bcf57804fc49514f0ef64974ca7590aa3491da389852b4a0628f6
 
 build:
   number: 0
@@ -24,7 +24,8 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - opentelemetry-proto ==1.44.0
+    - opentelemetry-proto ==${{ version }}
+    - backoff >=1.10.0,<3.0.0
 
 tests:
   - python:
@@ -67,19 +68,20 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-exporter-otlp-proto-common-feedstock
-  cfe-forge-recipe-updates-needed: 
+  cfe-forge-recipe-updates-needed:
     - meta-yaml-to-recipe-yaml
     - version-update-to-1.44.0
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-18T02:20:51Z
+  cfe-last-checked: 2026-10-10T16:58:07Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T02:20:51Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-08-18T02:20:51Z
+  cfe-local-build-datetime: 2026-10-10T16:58:45Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
+#    # 2026-10-10 refresh_wave B-25-10: refreshed 1.44.0 -> 1.45.1
 ####

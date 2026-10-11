@@ -101,8 +101,9 @@ solver-verified, landed):**
   (verified: zero task/script/source hits), so `conda-recipe-manager` + `feedrattler` (which
   transitively requires it) moved out of `feature.grayskull`/`feature.local-recipes` into a
   new grayskull-env-only `[feature.crm.dependencies]`. Migration tooling still runs via
-  `pixi run -e grayskull …`; the upstream fix (conda-forge/conda-recipe-manager-feedstock#44)
-  remains the long-term path back if local-recipes ever grows a real crm call. Note the
+  `pixi run -e grayskull …`; feedstock PR #44 closed unmerged 2026-09-01 (2026-10-10
+  correction); crm 0.10.6 caps click >=8.2.1,<=8.4.1 and lifting that cap is Story 67.4
+  sbom-crm-click-cap if local-recipes ever needs click 8.5.x. Note the
   false-dawn on the way: headroom-ai 0.37.0's `pixi search` listing appeared click-free, but
   anaconda.org repodata shows every 0.37.0 build carries `click >=8.3.3` — the wall was real
   until crm left the env.

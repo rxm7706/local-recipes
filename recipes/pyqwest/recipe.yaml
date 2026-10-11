@@ -81,7 +81,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - "part of the flyte-2 local-only closure (docs/specs/flyte-conda-forge.md); consumer connectrpc/flyte blocked on the buf.validate upstream issue"
+    - "part of the flyte-2 local-only closure (archive/docs/specs/flyte-conda-forge.md); consumer connectrpc/flyte blocked on the buf.validate upstream issue"
   cfe-last-checked: "2026-07-01T00:00:00Z"
   cfe-generated-by-version: "8.62.0"
   cfe-generated-at-datetime: "2026-07-01T00:00:00Z"

@@ -55,6 +55,9 @@ KIND_DISPATCH_PUSH = "dispatch-push"
 #: Story 83.9: ``ruff format`` applied to the story's own changed ``.py`` files
 #: immediately before independent verification runs.
 KIND_DISPATCH_RUFF_FORMAT = "dispatch-ruff-format"
+#: Story 91.1: ``environment.yaml`` regenerated from the pixi exporter stdout
+#: immediately before independent verification runs.
+KIND_DISPATCH_ENVIRONMENT_YAML = "dispatch-environment-yaml"
 #: Story 28.16 (parallel dispatch fan-out, CAP-3): one wave's membership,
 #: cap, refused candidates, and per-member terminal outcomes.
 KIND_DISPATCH_WAVE = "dispatch-wave"
@@ -138,6 +141,10 @@ class DispatchJournalFacts:
     # when no turn is open, or when the turn never recorded a pid.
     verify_fix_session_pid: int | None = None
     verify_fix_started_at: datetime | None = None
+    # Story 92.1: the harness profile the launch journaled (its ``binary`` is the liveness fallback's identity) and
+    # the group-read error the supervisor's latest heartbeat (or the completion INTENT) recorded, else ``None``.
+    harness_profile: str | None = None
+    session_liveness_error: str | None = None
 
 
 #: Story 83.1: how far a process's start time may sit from its journaled launch before the pid is judged reused.

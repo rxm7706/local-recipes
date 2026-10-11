@@ -13,6 +13,7 @@ from pyforge.steward.five_tier import (
     FiveTierCompleteError,
     WorkItem,
     check,
+    detect_tiers,
     report,
 )
 
@@ -87,7 +88,7 @@ def test_live_matrix_reports_eight_stations_times_five_tiers():
 
 
 def test_live_roster_is_five_tier_complete():
-    """Drain closeout: every 03 station has all five cells. Mason's skill is CFE."""
+    """Drain closeout: every 03 station has all five cells; Mason needs station skill and CFE."""
     result = check(_repo_root())
     assert not result.failures
     holes = [row.station for row in result.matrix if row.missing()]
@@ -146,6 +147,26 @@ def test_02_spec_plus_skill_complete_does_not_fail(tmp_path: Path):
     assert (tmp_path / "02-skill" / "spec.md").is_file()
     assert (tmp_path / "02-skill" / "SKILL.md").is_file()
     check(_repo_root(), extra=(item,))
+
+
+def test_mason_skill_missing_when_only_conda_forge_expert(tmp_path: Path):
+    cfe = tmp_path / ".claude" / "skills" / "conda-forge-expert" / "SKILL.md"
+    cfe.parent.mkdir(parents=True)
+    cfe.write_text("# cfe\n", encoding="utf-8")
+    tiers = detect_tiers(tmp_path, "mason")
+    assert tiers["skill"] is False
+    with pytest.raises(FiveTierCompleteError, match="skill"):
+        check(tmp_path, declared_complete=frozenset({"mason"}))
+
+
+def test_mason_skill_missing_when_only_pyforge_mason_station_skill(tmp_path: Path):
+    mason_skill = tmp_path / ".claude" / "skills" / "pyforge-mason" / "0.1.0" / "pyforge-mason" / "SKILL.md"
+    mason_skill.parent.mkdir(parents=True)
+    mason_skill.write_text("# mason\n", encoding="utf-8")
+    tiers = detect_tiers(tmp_path, "mason")
+    assert tiers["skill"] is False
+    with pytest.raises(FiveTierCompleteError, match="skill"):
+        check(tmp_path, declared_complete=frozenset({"mason"}))
 
 
 def test_no_pyforge_under_src_platform():

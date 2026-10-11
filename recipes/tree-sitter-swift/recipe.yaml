@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.7.3"
+  version: "0.7.4"
   # Upstream alex-pinkus/tree-sitter-swift ships TWO parallel tag schemes:
   # `vX.Y.Z` (clean source, no src/parser.c — would require tree-sitter CLI
   # + nodejs to run `tree-sitter generate`) and `X.Y.Z-with-generated-files`
@@ -17,10 +17,10 @@ package:
 
 source:
   url: https://github.com/alex-pinkus/tree-sitter-swift/archive/refs/tags/${{ tag }}.tar.gz
-  sha256: e2e84d3b97cf6a0afbcab793c4910123da92a34c395b09cc8d0880562a21e956
+  sha256: bf4d34383638f41cde398f4678dea72cdcda8442c7cfd13944f4bb63e9a96f70
 
 build:
-  number: 2
+  number: 0
   # abi3 packages build once at python_min and ship one artifact per platform.
   skip: is_abi3 and not is_python_min
   # Upstream's pyproject.toml carries a placeholder `version = "0.0.1"` that
@@ -90,3 +90,33 @@ extra:
     - killua156
     - mgorny
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tree-sitter-swift
+  cfe-upstream-registry: github
+  cfe-upstream-name: tree-sitter-swift
+  cfe-purls:
+    - pkg:conda/tree-sitter-swift@${{ version }}?channel=conda-forge
+  cfe-upstream-repo: https://github.com/alex-pinkus/tree-sitter-swift
+  cfe-upstream-homepage: https://github.com/alex-pinkus/tree-sitter-swift
+  cfe-import-names: [tree_sitter_swift]
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tree-sitter-swift-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-10T14:45:00Z
+  cfe-generated-by-version: 8.99.10
+  cfe-generated-at-datetime: 2026-10-10T14:45:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-10-10 Story 25.9: stamped CFE block (AC 2); deliberate ${{ tag }} URL unchanged (AC 12)
+####

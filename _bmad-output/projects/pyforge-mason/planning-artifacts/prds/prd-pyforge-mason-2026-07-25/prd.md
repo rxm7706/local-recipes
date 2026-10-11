@@ -2097,7 +2097,7 @@ PRD's re-stamp for CAP-34. The FR is derived from the CAP (`one-chain-per-statio
 ### The FR space: FR-57 registered
 
 `docs/specs/` retires (`spec-one-chain-per-station:CAP-11`, 2026-09-29), and the one unfinished effort there,
-`docs/specs/feedstock-refresh.md`, joins this Spec. It is a two-track campaign over every conda-forge feedstock `rxm7706`
+`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md`, joins this Spec. It is a two-track campaign over every conda-forge feedstock `rxm7706`
 can modify. Track A (sole-maintainer) shipped Waves B to F in June and was reopened for Wave H. Track B (co-maintained) was
 scoped and never started. FR-57 decomposes into **Epic 25**: Story 25.1 runs Track A's Wave H, and Story 25.2 runs Track B.
 The recipes live under `recipes/`, which `spec-fleet-stewardship` governs coverage-only; no FR about the `mason` CLI
@@ -2114,7 +2114,7 @@ The feedstock refresh campaign runs as Mason stories, one per track, each agains
 - Track B drops no co-maintainer from any `recipe-maintainers` list (G53), and authors a local mirror where none exists.
 - No feedstock or staged-recipes PR is opened without an explicit ask. Each story lands a `retro(cfe):` commit with a CFE
   `CHANGELOG.md` semver entry.
-- `docs/specs/feedstock-refresh.md` becomes a companion of `spec-pyforge-mason` in the PR that empties `docs/specs/`.
+- `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` becomes a companion of `spec-pyforge-mason` in the PR that empties `docs/specs/`.
 
 **ONE FR space now FR-1..FR-57** (FR-58 = next free id).
 

@@ -24,7 +24,6 @@ surface:
   - presentations/pyforge-*/README.md
   - presentations/README.md
   - scripts/deck_facts.py
-  - docs/specs/presentation-deck.md
   - presentations/pyforge-*/project/*.dc.html
   - presentations/pyforge-*/src/marp/**
   - presentations/pyforge-*/src/pptx/**
@@ -193,7 +192,7 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 
 - **CAP-14 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-1 (shipped 2026-09-17)
   - **intent:** One codified infographic standard exists that any author or reviewer can check a poster against — the six-act arc with act bands, the full-depth section set adapted per subject, the inline-diagram floor, the length class and the source-cited-facts rule — with Unifying Strategy as the structure, acts and length reference and Warden as the density and visual-form reference.
-  - **success:** `infographic-standard.md` is the standard's single home and `docs/specs/presentation-deck.md`'s verify checklist points to it; each rebuilt poster's README ledger records its measured values (sections, act bands, inline SVGs, bytes, cited facts) against the floors; a poster below any floor is not marked current.
+  - **success:** `infographic-standard.md` is the standard's single home and `docs/how-to/presentation-deck.md`'s verify checklist points to it; each rebuilt poster's README ledger records its measured values (sections, act bands, inline SVGs, bytes, cited facts) against the floors; a poster below any floor is not marked current.
 
 - **CAP-15 — from spec-deck-family-currency** ← spec-deck-family-currency CAP-2 (shipped 2026-09-17)
   - **intent:** Every count, version, status and date a poster shows is traceable to a live source through a per-deck fact ledger, `presentations/<slug>/facts.yaml`, re-derivable on demand from the tracked ledgers and manifests — never from a prior poster or from memory.

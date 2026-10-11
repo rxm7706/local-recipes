@@ -60,8 +60,9 @@ class VcsRef:
 
 class CommitPort(Protocol):
     def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
-        """Story 4.1 (AD-29): stages exactly ``paths`` -- one ``git add --
-        <path>`` per entry, never ``git add -A`` -- then commits ONLY those
+        """Story 4.1 (AD-29): stages exactly ``paths`` -- one staging call per
+        entry (``git add -u --`` when the index tracks the path, else ``git add
+        --``; Story 88.1), never ``git add -A`` -- then commits ONLY those
         paths (``git commit -m <message> -- <path> <path> ...``, never a
         bare ``git commit`` that would sweep in a pre-existing index) and
         returns the new commit's sha (``git rev-parse HEAD`` immediately

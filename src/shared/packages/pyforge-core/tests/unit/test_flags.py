@@ -875,6 +875,8 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.ghe_fleet_credentials": ("steward", "75-1-", "2026-09-29", "", ""),
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
     "pyforge.steward.sync_github_only_marker": ("steward", "84-4-", "2026-10-03", "", ""),
+    "pyforge.steward.workspace_preserve_tag": ("steward", "85-5-", "2026-10-04", "", ""),
+    "pyforge.steward.herald_webhook_sidecar": ("steward", "87-3-", "2026-10-10", "", ""),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
     # Stories 87.3/87.7/87.15 share this key (default off in every environment).
     "pyforge.marshal.preserve_refs": ("marshal", "87-3-", "2026-10-04", "", ""),
@@ -920,7 +922,15 @@ _SHIPPED_CLOCKS = {
         "",
         "",
     ),
+    "pyforge.warden.sast_opengrep": (
+        "warden",
+        "15-1-",
+        "2026-09-28",
+        "",
+        "",
+    ),
     "pyforge.atlas.dependency_history_sensor": ("atlas", "25-2-", "2026-09-28", "", ""),
+    "pyforge.atlas.dependency_history": ("atlas", "25-1-", "2026-09-28", "", ""),
     "pyforge.herald.deck_publish": ("herald", "29-1-", "2026-09-28", "", ""),
     # CAP-55 deck_viewer: Story 30.1 publish/twins; Story 30.2 portal + deck-twins API routes.
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
@@ -1021,8 +1031,11 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
     per_environment = {
         "pyforge.steward.object_store_consumer": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
+        "pyforge.steward.workspace_preserve_tag": {"dev": False, "staging": False, "production": False},
+        "pyforge.steward.herald_webhook_sidecar": {"dev": True, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
+        "pyforge.atlas.dependency_history": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_manifest_edit": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.deck_publish": {"dev": True, "staging": True, "production": False},
@@ -1033,6 +1046,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.warden.fleet_scan": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fleet_fix_proposals": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.non_python_ecosystems": {"dev": True, "staging": True, "production": False},
+        "pyforge.warden.sast_opengrep": {"dev": True, "staging": True, "production": False},
     }
     assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(
         expected

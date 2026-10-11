@@ -119,7 +119,7 @@ the binder becomes a stub). CAP-1..6 stay shipped. Nothing here unships them.
   `_bmad-output/` debris, already campaigned once.
 - [[secure-live-dashboards]] — specified; owns the Vizro pattern, not
   the kedro-viz publish tree.
-- [[agentic-sdlc-autonomy]] — pitched/specified; owns `docs/intake/agentic-sdlc/`.
+- [[agentic-sdlc-autonomy]] — pitched/specified; owns `archive/docs/intake/agentic-sdlc/`.
 - [[jira-github-projects-sync]] — specified; owns that intake folder
   until the operator decision.
 - [[enterprise-airgap]] — realized; air-gap fold must not invent a

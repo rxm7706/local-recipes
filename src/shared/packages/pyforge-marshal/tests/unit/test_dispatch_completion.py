@@ -86,6 +86,50 @@ def test_run_head_reached_ref_fails_closed_on_vcs_error() -> None:
     assert run_head_reached_ref(_Vcs(), Path("/tmp"), "abc123", "refs/remotes/origin/main") is False
 
 
+@pytest.mark.parametrize("branch_merged", [False, True])
+@pytest.mark.parametrize("story_merged_on_main", [False, True])
+@pytest.mark.parametrize("head_moved", [False, True])
+def test_judge_is_live_while_the_session_lives_whatever_main_says(
+    branch_merged: bool, story_merged_on_main: bool, head_moved: bool
+) -> None:
+    """Story 90.1/92.1 AC5: a live session is LIVE for every combination of the merge facts and progress."""
+    git = DispatchGitFacts(
+        baseline_head_sha="aaa",
+        current_head_sha="bbb" if head_moved else "aaa",
+        changed_paths=(),
+        branch_merged=branch_merged,
+        story_merged_on_main=story_merged_on_main,
+    )
+
+    assert (
+        judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git)) == DispatchSessionVerdict.LIVE
+    )
+
+
+@pytest.mark.parametrize(
+    ("branch_merged", "story_merged_on_main", "head_moved", "expected"),
+    [
+        (True, False, True, DispatchSessionVerdict.COMPLETED),
+        (False, True, True, DispatchSessionVerdict.COMPLETED),
+        (True, True, False, DispatchSessionVerdict.COMPLETED),
+        (False, False, True, DispatchSessionVerdict.LIVE),
+        (False, False, False, DispatchSessionVerdict.FAILED),
+    ],
+)
+def test_judge_of_an_exited_session_is_what_it_was_before_90_1(
+    branch_merged: bool, story_merged_on_main: bool, head_moved: bool, expected: DispatchSessionVerdict
+) -> None:
+    git = DispatchGitFacts(
+        baseline_head_sha="aaa",
+        current_head_sha="bbb" if head_moved else "aaa",
+        changed_paths=(),
+        branch_merged=branch_merged,
+        story_merged_on_main=story_merged_on_main,
+    )
+
+    assert judge_dispatch_completion(DispatchCompletionInput(session_alive=False, git=git)) == expected
+
+
 def test_judge_completed_when_story_merged_on_main() -> None:
     git = DispatchGitFacts(
         baseline_head_sha="aaa",
@@ -428,6 +472,9 @@ def test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch(
     fs = FakeFs()
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, "run-1")
     run_dir.mkdir(parents=True, exist_ok=True)
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
+    fs.dirs.add(worktree)
     session_log = run_dir / "session.log"
     session_log.write_text("budget-stop: idle ceiling reached\n", encoding="utf-8")
     fs.files[session_log] = session_log.read_text(encoding="utf-8")
@@ -441,7 +488,7 @@ def test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch(
             phase=Phase.INTENT,
             payload={
                 "story_key": "22.2",
-                "worktree_path": "/tmp/wt",
+                "worktree_path": str(worktree),
                 "baseline_head_sha": "aaa111",
             },
         )

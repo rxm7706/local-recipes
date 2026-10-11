@@ -104,7 +104,9 @@ def _journaled_refusal_with_failed_commands() -> tuple[str, str]:
             "failed_gate": "MRS-GATE-001",
             "failed_message": f"verify command {_COMMAND!r} exited 1",
             "scope_violation_advisories": [],
-            "failed_commands": [{"command": _COMMAND, "exit_code": 1, "output_tail": _SHORT_TAIL}],
+            "failed_commands": [
+                {"command": _COMMAND, "exit_code": 1, "output_tail": _SHORT_TAIL, "gate": "MRS-GATE-001"}
+            ],
         },
         counter=1,
     )
@@ -211,7 +213,9 @@ def test_a_flag_on_refusal_outcome_carries_the_failed_commands(tmp_path: Path, m
 
     outcome = _verification_outcomes(fs)[-1]
     assert set(outcome) == _MAIN_OUTCOME_KEYS | {"failed_commands"}
-    assert outcome["failed_commands"] == [{"command": _COMMAND, "exit_code": 1, "output_tail": _SHORT_TAIL}]
+    assert outcome["failed_commands"] == [
+        {"command": _COMMAND, "exit_code": 1, "output_tail": _SHORT_TAIL, "gate": "MRS-GATE-001"}
+    ]
 
 
 # --------------------------------------------------------------------------
@@ -2144,3 +2148,284 @@ def test_a_fix_turn_journals_ruff_format_before_reconcile_and_reverify_skips_ruf
         if entry["payload"].get("step") == "reconcile" and entry["payload"].get("paths")
     ]
     assert reconcile_paths == [[_FORMAT_PATH]]
+
+
+# --------------------------------------------------------------------------
+# Story 85.7 — cross-surface refusal gets the same one fix turn
+# --------------------------------------------------------------------------
+
+_FLAG_GATE_COMMAND = "pixi run -e pyforge-guild flag-gate-check"
+_PLATFORM_CI_COMMAND = "pixi run -e pyforge-guild platform-ci-local -- --test"
+_CROSS_SURFACE_TAIL = "flag-test-not-two-state\n"
+
+
+def _refused_cross_surface_flag_gate(*, tail: str = _CROSS_SURFACE_TAIL):
+    return build_envelope(
+        command="dispatch verify",
+        verdict="gate-failed",
+        data={
+            "slug": loop._SLUG,
+            "commands": [],
+            "cross_surface_checks": [
+                {
+                    "rule_id": "flag-gate",
+                    "command": _FLAG_GATE_COMMAND,
+                    "touched_paths": ["src/platform/config/flags.json"],
+                    "report": {
+                        "command": _FLAG_GATE_COMMAND,
+                        "returncode": 1,
+                        "stdout": tail,
+                        "stderr": "",
+                    },
+                }
+            ],
+        },
+        findings=(
+            Finding(
+                code="MRS-GATE-015",
+                severity=Severity.ERROR,
+                message=f"cross-surface verify command {_FLAG_GATE_COMMAND!r} exited 1",
+            ),
+        ),
+    )
+
+
+def _journaled_cross_surface_refusal(*, tail: str = _CROSS_SURFACE_TAIL) -> tuple[str, str]:
+    return loop._outcome_pair(
+        kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+        payload={
+            "verdict": "refused",
+            "ok": False,
+            "failed_gate": "MRS-GATE-015",
+            "failed_message": f"cross-surface verify command {_FLAG_GATE_COMMAND!r} exited 1",
+            "scope_violation_advisories": [],
+            "failed_commands": [
+                {
+                    "command": _FLAG_GATE_COMMAND,
+                    "exit_code": 1,
+                    "output_tail": tail,
+                    "gate": "MRS-GATE-015",
+                }
+            ],
+        },
+        counter=1,
+    )
+
+
+def test_a_flag_on_cross_surface_refusal_outcome_carries_failed_commands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    monkeypatch.setattr(
+        supervisor_main,
+        "evaluate_dispatch_verification",
+        lambda **_k: _refused_cross_surface_flag_gate(),
+    )
+    fs = loop.FakeFs()
+
+    loop._verify(fs, repo_root, worktree)
+
+    outcome = _verification_outcomes(fs)[-1]
+    assert outcome["failed_gate"] == "MRS-GATE-015"
+    row = outcome["failed_commands"][0]
+    assert row["command"] == _FLAG_GATE_COMMAND
+    assert row["gate"] == "MRS-GATE-015"
+    assert _CROSS_SURFACE_TAIL.strip() in row["output_tail"]
+
+
+def test_a_first_cross_surface_refusal_launches_one_fix_turn_and_lands_when_reverify_is_green(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(
+        monkeypatch,
+        events,
+        _refused_cross_surface_flag_gate(),
+        loop._clean_envelope(),
+    )
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert launches == [88001]
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is True
+    intents = [e for e in _verify_fix_entries(fs) if e["phase"] == "intent"]
+    assert intents[0]["payload"]["trigger_gate"] == "MRS-GATE-015"
+    assert intents[0]["payload"]["failed_gates"] == ["MRS-GATE-015"]
+
+
+def test_cross_surface_still_red_after_fix_turn_parks_with_mrs_disp_060(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_cross_surface_flag_gate())
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert launches == [88001]
+    parks = [
+        entry["payload"]
+        for entry in _verify_fix_entries(fs)
+        if entry["payload"].get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ]
+    assert len(parks) == 1
+    assert parks[0]["failed_command"] == _FLAG_GATE_COMMAND
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is False
+
+
+def test_gate_001_then_gate_015_spends_the_one_turn_and_parks_naming_platform_ci(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
+    def _refused_platform_cross_surface():
+        return build_envelope(
+            command="dispatch verify",
+            verdict="gate-failed",
+            data={
+                "slug": loop._SLUG,
+                "commands": [],
+                "cross_surface_checks": [
+                    {
+                        "rule_id": "platform",
+                        "command": _PLATFORM_CI_COMMAND,
+                        "touched_paths": ["src/platform/tests/test_foo.py"],
+                        "report": {
+                            "command": _PLATFORM_CI_COMMAND,
+                            "returncode": 1,
+                            "stdout": "FAILED\n",
+                            "stderr": "",
+                        },
+                    }
+                ],
+            },
+            findings=(
+                Finding(
+                    code="MRS-GATE-015",
+                    severity=Severity.ERROR,
+                    message=f"cross-surface verify command {_PLATFORM_CI_COMMAND!r} exited 1",
+                ),
+            ),
+        )
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(
+        monkeypatch,
+        events,
+        _refused_with_output(_SHORT_TAIL),
+        _refused_platform_cross_surface(),
+    )
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert launches == [88001]
+    parks = [
+        entry["payload"]
+        for entry in _verify_fix_entries(fs)
+        if entry["payload"].get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ]
+    assert len(parks) == 1
+    assert parks[0]["failed_command"] == _PLATFORM_CI_COMMAND
+    intents = [e for e in _verify_fix_entries(fs) if e["phase"] == "intent"]
+    assert intents[0]["payload"]["trigger_gate"] == "MRS-GATE-001"
+    assert intents[0]["payload"]["failed_gates"] == ["MRS-GATE-001"]
+
+
+def test_both_gates_at_once_hand_one_turn_all_failed_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    cmd_b = "pixi run --frozen -e pyforge-guild lint-types"
+    cmd_c = "pixi run --frozen -e pyforge-ci pyforge-deps-test"
+
+    def _refused_mixed():
+        return build_envelope(
+            command="dispatch verify",
+            verdict="gate-failed",
+            data={
+                "slug": loop._SLUG,
+                "commands": [
+                    {"command": _COMMAND, "returncode": 1, "stdout": "a\n", "stderr": ""},
+                    {"command": cmd_b, "returncode": 1, "stdout": "b\n", "stderr": ""},
+                    {"command": cmd_c, "returncode": 1, "stdout": "c\n", "stderr": ""},
+                ],
+                "cross_surface_checks": [
+                    {
+                        "rule_id": "flag-gate",
+                        "command": _FLAG_GATE_COMMAND,
+                        "touched_paths": [],
+                        "report": {
+                            "command": _FLAG_GATE_COMMAND,
+                            "returncode": 1,
+                            "stdout": _CROSS_SURFACE_TAIL,
+                            "stderr": "",
+                        },
+                    }
+                ],
+            },
+            findings=(
+                Finding(
+                    code="MRS-GATE-001",
+                    severity=Severity.ERROR,
+                    message=f"verify command {_COMMAND!r} exited 1",
+                ),
+                Finding(
+                    code="MRS-GATE-001",
+                    severity=Severity.ERROR,
+                    message=f"verify command {cmd_b!r} exited 1",
+                ),
+                Finding(
+                    code="MRS-GATE-001",
+                    severity=Severity.ERROR,
+                    message=f"verify command {cmd_c!r} exited 1",
+                ),
+                Finding(
+                    code="MRS-GATE-015",
+                    severity=Severity.ERROR,
+                    message=f"cross-surface verify command {_FLAG_GATE_COMMAND!r} exited 1",
+                ),
+            ),
+        )
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    captured: list[str] = []
+    real_prompt = supervisor_main.build_verify_fix_prompt
+
+    def _capture_prompt(failed, **kwargs: object) -> str:
+        prompt = real_prompt(failed, **kwargs)
+        captured.append(prompt)
+        return prompt
+
+    monkeypatch.setattr(supervisor_main, "build_verify_fix_prompt", _capture_prompt)
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _NoProfile())
+    monkeypatch.setattr(
+        supervisor_main.BmadBuildHarness,
+        "dispatch_verify_fix",
+        lambda *_a, **_k: (_ for _ in ()).throw(supervisor_main.BuildHarnessError("unreachable")),
+    )
+    monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", lambda **_k: _refused_mixed())
+    fs = loop.FakeFs()
+
+    _finalize(fs, repo_root, worktree)
+
+    intents = [e for e in _verify_fix_entries(fs) if e["phase"] == "intent"]
+    assert intents[0]["payload"]["failed_command_count"] == 4
+    assert intents[0]["payload"]["failed_gates"] == ["MRS-GATE-001", "MRS-GATE-015"]
+    assert captured, "fix turn must reach launch"
+    prompt = captured[0]
+    for cmd in sorted([_COMMAND, cmd_b, cmd_c, _FLAG_GATE_COMMAND]):
+        assert f"Failed command: {cmd}" in prompt

@@ -34,7 +34,7 @@ mirrored — with git still the archive of record.
 | Four decks never entered the wave: unity-data-stack, wasm-analytics-stack, deckcraft, presenton-pixi-image — 15–19 KB stubs, no act bands, no `facts.yaml` | `presentations/{unity-data-stack,wasm-analytics-stack,deckcraft,presenton-pixi-image}/project/` |
 | Those four report `linked: false` and their `## Design project` sections are malformed for `registry.read` | `herald deck status --repo-root .` — 10 of 15 linked |
 | No deck has been through a Design-side visual pass since the rebuild; the bridge's editing half is unexercised on current content | `spec-deck-family-currency` § Non-goals, and every README ledger's "Design etag" row |
-| The mechanical path already exists and is unused for this: the standalone **is** the head's body, minus the `x-dc` wrapper, with styles moved into `<head>` | `docs/specs/presentation-deck.md` § *Artifact dependency tree*; the trio's own definition |
+| The mechanical path already exists and is unused for this: the standalone **is** the head's body, minus the `x-dc` wrapper, with styles moved into `<head>` | `docs/how-to/presentation-deck.md` § *Artifact dependency tree*; the trio's own definition |
 
 ## What it looks like when real
 

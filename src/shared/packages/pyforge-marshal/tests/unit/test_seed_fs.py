@@ -22,6 +22,7 @@ namespace, regardless of how a caller imports them.
 from __future__ import annotations
 
 import dataclasses
+import stat
 from pathlib import Path
 
 import pytest
@@ -209,6 +210,18 @@ def test_write_with_no_match_overwrites_pre_existing_content_via_the_real_atomic
     fs.write(target, b"new content", repo_root=tmp_path, never_write=NeverWrite(()))
 
     assert target.read_bytes() == b"new content"
+
+
+def test_write_preserves_executable_mode_on_an_existing_file(tmp_path):
+    """Story 86.2: first-claim overwrites must not strip ``100755`` scripts."""
+    target = tmp_path / "scripts" / "bmad-switch"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"#!/bin/sh\necho ok\n")
+    target.chmod(0o755)
+
+    fs.write(target, b"#!/bin/sh\necho updated\n", repo_root=tmp_path, never_write=NeverWrite(()))
+
+    assert stat.S_IMODE(target.stat().st_mode) == 0o755
 
 
 # --- write: direct never-write hit, I/O Matrix row 2 ------------------------

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -134,7 +133,7 @@ def _run_reduced_lane_via_preflight(
         lane=preflight.Lane(task=task, environment=env),
         scratch_dir=lane_dir,
         log_path=log_path,
-        env=os.environ.copy(),
+        env=preflight._lane_scratch_env(lane_dir),  # noqa: SLF001
     )
 
     resolved_task_cmd = task_cmd or ""
@@ -637,5 +636,5 @@ def test_reduction_skip_journal_and_gate_collect_shell(tmp_path: Path) -> None:
 
 
 def test_collect_pytest_node_ids_raises_on_failure(tmp_path: Path) -> None:
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="definitely-not-a-real-path-xyz"):
         psr.collect_pytest_node_ids(tmp_path, "pytest definitely-not-a-real-path-xyz -q")

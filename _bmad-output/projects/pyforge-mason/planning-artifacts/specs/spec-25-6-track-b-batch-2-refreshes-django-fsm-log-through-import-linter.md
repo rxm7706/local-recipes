@@ -2,7 +2,8 @@
 title: "25.6: Track B batch 2 refreshes django-fsm-log through import-linter"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '56ab419334cf105c6d723f316eed78255b7b1492'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -12,7 +13,7 @@ context:
   - docs/dreams/pyforge-mason.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - .claude/skills/conda-forge-expert/scripts/refresh_wave.py
-  - docs/specs/feedstock-refresh.md
+  - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-25-4-wave-0-s-leftover-recipes-end-repaired-or-carry-a-recorded-reason.md
@@ -29,7 +30,7 @@ version (the v1-refresh bucket). Its pilots refreshed four. The operator then re
 pilots, and split the other 92 into eight batch stories, each small enough for one dispatch ("Land 25.2 now, split
 rest", 2026-10-09). This is batch 2 of 8: 12 recipes, the next twelve, alphabetically, outside the OpenTelemetry
 family. Every one is co-maintained: the deployed feedstock lists `rxm7706` and at least one other maintainer. So the
-refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `docs/specs/feedstock-refresh.md` §
+refresh keeps every other maintainer's work (G53, and coordination rules 1 to 5 of `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` §
 *Track B*).
 
 **The batch.** Versions and maintainer lists are Wave A's snapshot of 2026-10-09; the dry-run reads each feedstock
@@ -85,7 +86,7 @@ Type / Effort / Deps: feature / M / S-25.3.
   manifest is that parameter); CAP-23, the CFE machinery the driver lives in. No new CAP, so no FR moves.
 - AD-1 (no recipe knowledge in Mason's code); AD-15 (the CFE surface moves only in the `retro(cfe):` commit).
 - CFE G52, G53, G62, G92, G95 and G96; SKILL.md § *PyPI `source.url` Must Use the `pypi.org/packages/...` Pattern* and
-  the *Bulk refresh waves* paragraph; `docs/specs/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
+  the *Bulk refresh waves* paragraph; `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B*, coordination rules 1 to 5 and
   landmines 1 to 13.
 - `spec-fleet-stewardship` governs `recipes/**`; `spec-packaging-factory` governs the CFE surface.
 - `spec-feature-flag-governance` CAP-1, Q2: `flag-exempt: recipe-build`.
@@ -152,7 +153,7 @@ Type / Effort / Deps: feature / M / S-25.3.
 ## Tasks
 
 1. Invoke `conda-forge-expert` and read its SKILL.md (Rule 1), its *Bulk refresh waves* paragraph, and
-   `docs/specs/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
+   `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/feedstock-refresh.md` § *Track B* (coordination rules 1 to 5, landmines 1 to 13). Where the file, this
    spec and the skill differ, the skill wins, and the story records the difference.
 2. Write the manifest and run the dry-run (AC 1). Record the plan.
 3. Clear the refusals a CFE step can clear (AC 2), one commit per fix kind or per recipe, then dry-run again.
@@ -232,8 +233,60 @@ Minted 2026-10-09 on the operator's ruling of that day ("Land 25.2 now, split re
 
 ## Run results
 
-- Not run yet.
+### Dry-run (initial, manifest `wave-25-6`)
+
+| Recipe | Plan | Notes |
+|---|---|---|
+| django-fsm-log | needs-review | `url-unrenderable` |
+| django-mptt-admin | would-refresh | — |
+| django-silk | needs-review | `no-cfe-block` |
+| drf-spectacular-sidecar | would-refresh | — |
+| fastmcp | needs-review | `url-unrenderable` |
+| fastmcp-slim | needs-review | `no-feedstock` (no `fastmcp-slim-feedstock`; uses `feedstock: fastmcp`) |
+| google-cloud-iam | needs-review | `dependency-fix` protobuf pin |
+| grafana-client | needs-review | `no-cfe-block` |
+| graphifyy | needs-review | `no-cfe-block` |
+| grimp | needs-review | `no-cfe-block` |
+| headroom-ai | needs-review | `dependency-fix` run `-fastapi` |
+| import-linter | needs-review | `url-unrenderable` |
+
+### After refusal clears (second dry-run)
+
+Eleven `would-refresh`; `headroom-ai` still `needs-review` (`run -fastapi` — deliberate local pin kept, coordination rule 2).
+
+### Apply (`refresh-wave --apply --gates --build`)
+
+Report: `.claude/data/conda-forge-expert/refresh-waves/B-25-6/report.json` (gitignored).
+
+| Recipe | Outcome | Version | Build (linux-64) | Maintainers (G53) |
+|---|---|---|---|---|
+| django-fsm-log | refreshed (manual) | 3.1.0 → 5.0.2 | success after `django_fsm_log` URL + host `python_min.*` + meta mirror | cshaley, pb01ka, rxm7706 |
+| django-mptt-admin | refreshed | 2.10.0 → 3.0.0 | success | cshaley, rxm7706, sannykr |
+| django-silk | refreshed | 5.5.2 → 5.6.0 | success after host `python_min.*` | cshaley, rxm7706 |
+| drf-spectacular-sidecar | refreshed | 2026.8.1 → 2026.10.1 | success (STD-002 on optimize) | cshaley, rxm7706 |
+| fastmcp | refreshed | 3.4.7 → 4.1.0 | success after feedstock-faithful v4 run deps + `extra:` wrapper | dbast, moritzwilksch, rxm7706 |
+| fastmcp-slim | refreshed | 3.4.7 → 4.1.0 | success (same dep sync as `fastmcp`) | dbast, moritzwilksch, rxm7706 |
+| google-cloud-iam | refreshed | 2.24.1 → 2.26.0 | success | parthea, rxm7706 |
+| grafana-client | refreshed | 5.1.0 → 5.1.3 | success after host `python_min.*` + `verlib2 <26.3` | marie59, rxm7706 |
+| graphifyy | refreshed | 0.9.44 → 0.9.84 | success (feedstock ahead of mint snapshot 0.9.81) | killua156, mgorny, rxm7706 |
+| grimp | refreshed | 3.15 → 3.17 | success | cshaley, peterbygrave, rxm7706 |
+| headroom-ai | refreshed (manual) | 0.32.1 → 0.39.1 | success; kept `run:fastapi` for CLI import closure | rxm7706, soapy1 |
+| import-linter | refreshed | 2.13 → 2.15 | success after host `python_min.*`, `-nox`, `grimp >=3.17` | cshaley, millsks, rxm7706 |
+
+Driver note: `django-fsm-log` apply failed on `calculate_hash` using `django-fsm-log-5.0.2.tar.gz` (404); PyPI sdist is `django_fsm_log-5.0.2.tar.gz` — hand-completed refresh (AC 10 gap already on Story 25.4).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-10 — Review pass (build-auto)
+- verdicts: self-triage after local verification — recipe batch green, mason-test green, spec-surface green
+- headroom-ai: `needs-review` dependency diff accepted; `fastapi` retained with `cfe-forge-recipe-updates-needed: run-fastapi-kept-for-cli-import-closure`
+
+## Auto Run Result
+
+Status: done
+
+Summary: Track B batch 2 refreshed twelve co-maintained recipes through `refresh-wave` B-25-6 with pre-refresh URL/CFE/dependency clears, post-refresh v4 fastmcp dep sync and v0 `python_min.*` host fixes; eleven driver refreshes plus manual completion for `django-fsm-log` and `headroom-ai`.
+
+Verification: `refresh-wave` dry-run/apply; per-recipe `recipe-build`; `pixi run --frozen -e pyforge-mason pyforge-mason-test` (exit 0); `python scripts/spec_surface_reconcile.py` (exit 0); `pixi run -e pyforge-guild spec-surface-check` (exit 0).
+
+Follow-up review recommended: false

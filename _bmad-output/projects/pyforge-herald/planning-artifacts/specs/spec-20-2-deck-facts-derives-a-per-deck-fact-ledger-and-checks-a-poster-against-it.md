@@ -36,7 +36,7 @@ declared_low_risk: false
 - `--check`: visible text via `html.parser` skipping `<style>`/`<script>`; `data-fact="<id>"` elements must equal `value` or a `shown_as` literal, else `mismatch`; visible `n/n`, `x.y.z`, `YYYY-MM-DD` tokens matching no row → `unmarked`; rows whose fresh derivation differs → `drifted`; rows neither marked nor shown → `unshown`. One line per finding plus a summary; exit 0.
 - Test counts only under `--with-tests` (`pixi run -e pyforge-<station> pytest --collect-only -q`); the default run is offline, seconds.
 - `pixi.toml` gains only `[feature.local-recipes.tasks.deck-facts]` (`cmd = "python scripts/deck_facts.py"`); `environment.yaml` re-exported, byte-identical.
-- `docs/specs/presentation-deck.md`'s poster sub-step names the task in one line; the ten `facts.yaml` files come from running the task.
+- `docs/how-to/presentation-deck.md`'s poster sub-step names the task in one line; the ten `facts.yaml` files come from running the task.
 
 **Never:**
 - No `DETECTOR` marker; never in `detectors`/`detectors-ci`; non-zero exit only for usage errors.
@@ -64,7 +64,7 @@ declared_low_risk: false
 - `_bmad/_config/manifest.yaml` (`installation.version: 6.12.0`); `pixi.lock` (`bmad-loop-0.11.1`); `.claude/skills/conda-forge-expert/SKILL.md` (`version: 8.90.5`); `pixi run -e local-recipes bmad-groundtruth` → JSON `{atlas_phases, gotcha_max, mcp_tools, pixi_envs, schema_version, skill_version}`.
 - `src/shared/packages/pyforge-<s>/pyproject.toml` (`version`, `[project.scripts]`); argparse verbs in `pyforge/<s>/cli.py` (herald, mason, steward, warden), `__main__.py` (doctor), `cli/*.py` (marshal); atlas, scribe expose none.
 - `docs/governance/guild-roster.json` `stations` (8 strings); `docs/dreams/*.md` `status:` (144 files); `recipes/*/` (7,874).
-- `pixi.toml:1130` `deck-export` task (add `deck-facts` after it); `docs/specs/presentation-deck.md:74-78` poster sub-step; `tests/scripts/` -- repo-script pytest home (`pixi.toml:770` runs it).
+- `pixi.toml:1130` `deck-export` task (add `deck-facts` after it); `docs/how-to/presentation-deck.md:74-78` poster sub-step; `tests/scripts/` -- repo-script pytest home (`pixi.toml:770` runs it).
 - `presentations/<slug>/project/* Infographic standalone.html` -- persona = filename prefix; ten Wave A/B slugs per `spec-deck-family-currency/deck-inventory.md`.
 
 ## Tasks & Acceptance
@@ -73,7 +73,7 @@ declared_low_risk: false
 - `scripts/deck_facts.py` -- new: derive, `--check`, `--with-tests`.
 - `tests/scripts/test_deck_facts.py` -- new: determinism, fixture-ledger counts, planted `mismatch`, `unmarked` sweep, exit codes.
 - `pixi.toml` -- `deck-facts` task after `deck-export`; `environment.yaml` -- re-export, expect no diff.
-- `docs/specs/presentation-deck.md` -- one line naming `deck-facts <slug> [--check]`.
+- `docs/how-to/presentation-deck.md` -- one line naming `deck-facts <slug> [--check]`.
 - `presentations/pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden,genesis,unifying-strategy}/facts.yaml` -- first derivations by running the task.
 - `spec-deck-family-currency/.memlog.md` -- append an event naming `scripts/deck_facts.py`, `pixi.toml`, the ten `facts.yaml` so `spec-surface-check` reconciles.
 
@@ -152,7 +152,7 @@ declared_low_risk: false
 - `scripts/deck_facts.py` — new: derive, `--check`, `--with-tests` (the `deck_export.py` shape; no DETECTOR marker).
 - `tests/scripts/test_deck_facts.py` — new: 24 tests on a synthetic root (determinism, parser counts, proxy, genesis, sub-package CLI scan, ambiguous lock, groundtruth argv + failure branches, check kinds, exit codes, not-a-detector).
 - `pixi.toml` — `[feature.local-recipes.tasks.deck-facts]`; `environment.yaml` re-export byte-identical (untouched).
-- `docs/specs/presentation-deck.md` — poster sub-step names the task; "Where to edit WHAT" gains the `facts.yaml` row.
+- `docs/how-to/presentation-deck.md` — poster sub-step names the task; "Where to edit WHAT" gains the `facts.yaml` row.
 - `presentations/pyforge-{atlas,doctor,herald,marshal,mason,scribe,steward,warden,genesis,unifying-strategy}/facts.yaml` — first derivations.
 - `spec-deck-family-currency/{SPEC.md,facts-ledger.md,.memlog.md}` — CAP-2 shape text and the source catalog reconciled with the implementation (memlog decisions); status `ready → in-progress`.
 - `spec-pyforge-herald/{SPEC.md,.memlog.md}` — `surface-drift-exclude` gains the four deck-family surfaces the narrower Spec owns.
