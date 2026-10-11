@@ -83,9 +83,26 @@ def _portal_path_for_module(root: Path, dotted: str) -> Path | None:
     return init if init.is_file() else None
 
 
+def _package_inits(root: Path, path: Path) -> list[Path]:
+    """Every package ``__init__.py`` Python runs before ``path`` (portal-local)."""
+    portal = _portal_root(root)
+    if not path.is_relative_to(portal):
+        return []
+    inits: list[Path] = []
+    package = path.parent
+    while True:
+        init = package / "__init__.py"
+        if init.is_file() and init != path:
+            inits.append(init)
+        if package == portal:
+            return inits
+        package = package.parent
+
+
 def _follow_imports(root: Path, path: Path) -> list[Path]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
-    discovered: list[Path] = []
+    # Reaching any portal module runs its package __init__ chain first.
+    discovered: list[Path] = _package_inits(root, path)
     for node in _iter_module_level_stmts(tree.body):
         if isinstance(node, ast.ImportFrom):
             if node.level == 0 and node.module:
@@ -142,6 +159,19 @@ def test_portal_urlconf_reach_has_no_module_level_pyforge_herald_import() -> Non
             if nxt not in seen:
                 queue.append(nxt)
     assert offenders == []
+
+
+def test_follow_imports_reaches_the_package_init() -> None:
+    root = _repo_root()
+    portal = _portal_root(root)
+    assert portal / "__init__.py" in _follow_imports(root, portal / "urls.py")
+    command = portal / "management" / "commands" / "refresh_deck_exports.py"
+    assert _package_inits(root, command) == [
+        portal / "management" / "commands" / "__init__.py",
+        portal / "management" / "__init__.py",
+        portal / "__init__.py",
+    ]
+    assert _package_inits(root, portal / "__init__.py") == []
 
 
 @pytest.mark.parametrize(

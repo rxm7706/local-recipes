@@ -6,15 +6,13 @@ import os
 import subprocess
 import sys
 import textwrap
+from http import HTTPStatus
 from pathlib import Path
 
 import pytest
 from django.conf import settings
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
-
-# Fresh pytest-django DB has no Wagtail page at /stations/ (404 with herald too).
-_EXPECTED_STATIONS_STATUS = 404
 
 
 def _database_url_for_child() -> str | None:
@@ -144,12 +142,16 @@ def _run_child(
 
 
 @pytest.mark.django_db
-def test_herald_portal_pages_without_herald():
+def test_herald_portal_pages_without_herald(client):
+    # AC3: the child answers /stations/ exactly as this parent's client does with
+    # herald present (404 on a fresh test database: no page has that slug).
+    stations_status = client.get("/stations/").status_code
+    assert stations_status < HTTPStatus.INTERNAL_SERVER_ERROR
     extra: dict[str, str] = {}
     db_url = _database_url_for_child()
     if db_url is not None:
         extra["DATABASE_URL"] = db_url
-    proc = _run_child(_EXPECTED_STATIONS_STATUS, extra_env=extra)
+    proc = _run_child(stations_status, extra_env=extra)
     assert proc.returncode == 0, proc.stderr or proc.stdout
     assert "OK" in proc.stdout
     combined = proc.stdout + proc.stderr

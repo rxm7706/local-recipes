@@ -131,10 +131,13 @@ ss -ltnH '( sport = :8001 or sport = :8090 )' | tee "$LOG/ss-1.txt"   # 127.0.0.
 pixi run --frozen -e platform-dev python -c "import pyforge.herald"   # must fail: ModuleNotFoundError
 ```
 
-The host's log carries two expected warnings when herald is absent: steward Story 87.1's
-station-API skip (`config.optional_components`) and herald Story 37.1's portal skip
-(`django_herald_portal`), each `herald is not installed on this host` once per
-process. With the forward on, herald's two webhook paths never reach the station-API skip.
+Once daphne has imported `config.asgi`, the host's log carries one expected warning,
+`herald is not installed on this host`, from steward Story 87.1's station-API skip
+(`config.optional_components`). Herald Story 37.1's portal skip logs the same reason on
+`django_herald_portal`, once per process, but only when Django first loads its URLconf: at the
+first Django-routed page request, or under `manage.py check`, never at import. This how-to's
+webhook flow makes no Django request, so the portal skip never logs there. With the forward on,
+herald's two webhook paths never reach the station-API skip.
 
 ## 4. Deliver one real landing
 

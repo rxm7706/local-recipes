@@ -32,8 +32,13 @@ def _deck_viewer_enabled() -> bool:
 
 
 def herald_portal_unavailable(request: HttpRequest, **kwargs: object) -> HttpResponse:
-    """Answer every method on every herald path with the 404 reason (Story 37.1)."""
-    del request, kwargs  # one body for every path and method while herald is absent
+    """Answer every herald path with the 404 reason while herald is absent (Story 37.1).
+
+    The view takes any method. ``CsrfViewMiddleware`` runs first, though: an unsafe
+    method (POST, PUT, PATCH, DELETE) without a CSRF token is refused with 403
+    before this view runs, exactly as it is with herald present.
+    """
+    del request, kwargs  # one body for every herald path while herald is absent
     reason = herald_guard.portal_absent_reason()
     return HttpResponse(reason, status=404, content_type="text/plain")
 

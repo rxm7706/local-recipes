@@ -87,25 +87,55 @@ def test_herald_guard_propagates_non_module_not_found(monkeypatch) -> None:
         herald_guard.herald_is_installed()
 
 
-def test_herald_guard_propagates_dependency_module_not_found(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "dependency",
+    ["some_herald_dependency_xyz", "pyforge.core"],
+    ids=["third-party-dependency", "sibling-pyforge-package"],
+)
+def test_herald_guard_propagates_dependency_module_not_found(dependency: str, monkeypatch) -> None:
     def _fake(name: str) -> object:
         if name == "pyforge.herald":
-            raise ModuleNotFoundError(name="some_herald_dependency_xyz")
+            raise ModuleNotFoundError(name=dependency)
         raise AssertionError(name)
 
     monkeypatch.setattr(herald_guard.importlib, "import_module", _fake)
     with pytest.raises(ModuleNotFoundError) as excinfo:
         herald_guard.herald_is_installed()
-    assert excinfo.value.name == "some_herald_dependency_xyz"
+    assert excinfo.value.name == dependency
+    assert herald_guard._absent_reason is None  # noqa: SLF001
+
+
+def test_herald_guard_propagates_import_error_naming_herald(monkeypatch) -> None:
+    """An ImportError that is not ModuleNotFoundError never reads as absence (AC6)."""
+
+    def _fake(name: str) -> object:
+        raise ImportError(
+            "cannot import name 'deck_twins' from partially initialized module 'pyforge.herald'",
+            name="pyforge.herald",
+        )
+
+    monkeypatch.setattr(herald_guard.importlib, "import_module", _fake)
+    with pytest.raises(ImportError) as excinfo:
+        herald_guard.herald_is_installed()
+    assert type(excinfo.value) is ImportError
+    assert excinfo.value.name == "pyforge.herald"
+    assert herald_guard._absent_reason is None  # noqa: SLF001
 
 
 @pytest.mark.parametrize(
     "error",
     [
         ModuleNotFoundError(name="some_herald_dependency_xyz"),
+        ModuleNotFoundError(name="pyforge.core"),
+        ImportError("partially initialized module 'pyforge.herald'", name="pyforge.herald"),
         RuntimeError("broken herald install"),
     ],
-    ids=["dependency-module-not-found", "other-error"],
+    ids=[
+        "dependency-module-not-found",
+        "sibling-pyforge-module-not-found",
+        "import-error-naming-herald",
+        "other-error",
+    ],
 )
 def test_herald_guard_propagates_on_every_call(error: Exception, monkeypatch) -> None:
     calls: list[str] = []

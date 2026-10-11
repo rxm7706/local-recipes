@@ -2589,8 +2589,8 @@
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": "c07d4482ee26c1d009c50c74b9736cc6b97b048a",
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_second_host.py": "590b100af280bdf078904841a56330bec1c65765",
    "src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py": "95343f6a9af31828b223e36b930c07e822580566",
-   "src/shared/packages/pyforge-herald/tests/meta/test_portal_herald_guard.py": "775815111cc31eaa827deb92d45b249ca124d7a0",
-   "src/shared/packages/pyforge-herald/tests/meta/test_portal_import_boundary.py": "5c66d48a2b2dfdd2af0263ae25d0d283d24fc38e",
+   "src/shared/packages/pyforge-herald/tests/meta/test_portal_herald_guard.py": "7d75ffc625c88d053d16259289ee0c62ad1cbf21",
+   "src/shared/packages/pyforge-herald/tests/meta/test_portal_import_boundary.py": "51347ace4af82e49ce6ddbe0c75cd5f45760c9c8",
    "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py": "06d7d8210a964c90740c49ab23f22b286a968d52",
    "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py": "b38865322f8677940e9443b49c6b7f9fb1fae868",
    "src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py": "3c24534c496bf78416e73682726424cb4cc0675f",
@@ -2694,7 +2694,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "2521fed2f824543455de610c79ca08c1cbde6f5c"
+  "memlog": "42ff5b9d3fe82ec022d199fa04374f1a249ca067"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
