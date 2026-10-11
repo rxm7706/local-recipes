@@ -2,7 +2,7 @@
 title: "16.1: Warden inventories an operator-designated GitHub organisation's repos"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e0d12c1d4ec1d22ec49fd0d6f72e12025462900f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -269,4 +269,33 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
 
 ## Review Triage Log
 
-- No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10; re-scoped 2026-10-11). Implementation and review stay separate.
+### 2026-10-11 — Review pass
+- verdicts: 18 findings — high 3, medium 5, low 4, false 4, maybe-false 2
+- findings:
+  - `[high]` `[patch]` `RecordingOrgReposClient` required `calls` without default — TypeError in platform inventory tests — added `field(default_factory=list)`.
+  - `[high]` `[patch]` urllib in `django_warden_fabric` tripped `test_portal_raw_http_to_a_service_is_review_blocking` — moved GET client to `pyforge.warden.fleet_github_rest`, task lazy-import + adapter.
+  - `[high]` `[patch]` leak-guard roots used `parents[2]` (src/) not repo root — fixed `_SRC_ROOT` / `_REPO_ROOT` / `_FABRIC_ROOT` in platform tests.
+  - `[medium]` `[patch]` portal flag OFF not verified over HTTP; chrome always enabled — disabled button + message; POST 403 tests added.
+  - `[medium]` `[patch]` missing archived field and recording-client GET assertions — extended `test_inventory_three_repos`.
+  - `[medium]` `[patch]` platform tests imported `pyforge` at module level — meta guard failed; moved REST unit tests to `pyforge-warden/tests/unit/test_fleet_github_rest.py`.
+  - `[medium]` `[patch]` `platform-ci-test` env lacked `pyforge-warden` for eager Celery task — pixi path dep added (memlog on unifying-strategy).
+  - `[medium]` `[patch]` task-level missing-`gh` path untested — `test_task_missing_gh_binary_leaves_no_export` added.
+  - `[low]` `[reject]` duplicate `FLEET_INVENTORY_FLAG` strings — intentional django vs station constant; no user harm.
+  - `[low]` `[reject]` hard-coded HTMX URL in chrome — matches existing audit form pattern in same template.
+  - `[low]` `[reject]` `scrub_token_from_text` unused — no demonstrated leak path in this diff.
+  - `[low]` `[reject]` Celery org not re-read from config in worker — spec AC keys-not-blobs allows org in message; command loads config at enqueue.
+  - `[false]` `[reject]` leak-guard never scans on CI — AC explicitly skips when gitignored config absent.
+  - `[false]` `[reject]` `pyforge.core` `test_flags.py` must list new flag — flag_gate_check passed; not a platform import surface requirement.
+  - `[false]` `[reject]` seams must live in `fleet.py` — memlog documents `fleet_inventory.py`; flag constant in `fleet.py`.
+  - `[false]` `[reject]` verification must use `flagd_tree` in platform tests — platform forbids `pyforge.testing_kit` imports; equivalent `_flag_tree` fixtures used.
+  - `[maybe-false]` `[defer]` export lacks `head_sha` for atlas CAP-61 — severity medium (unverified); open operator question in spec Named section; location: `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`.
+  - `[maybe-false]` `[defer]` live leak-guard never runs in CI without operator config — real if operator commits forbidden strings; AC allows skip; location: `src/platform/tests/test_warden_fleet_inventory.py`.
+
+## Auto Run Result
+
+- **Summary:** Fleet inventory for an operator-designated github.com org: gitignored TOML + JSON export, `gh auth token` in the Celery worker only, GET-only listing via `pyforge.warden.fleet_github_rest`, feature flag `pyforge.warden.fleet_inventory`, portal HTMX + management command, fixture org `example-org` in tests.
+- **Files changed:** `django_warden_fabric` (fleet inventory sync, tasks, views, chrome template, command); `pyforge/warden/fleet_github_rest.py`; platform flags/tests; `.gitignore`; `pixi.toml` (`platform-ci-test` + `pyforge-warden`); memlogs on warden, unifying-strategy, core, feature-flag-governance, pages specs.
+- **Review:** 8 patches applied from triage; 4 false/reject; 2 deferred (`head_sha` contract, CI leak-guard scope).
+- **Follow-up review recommended:** `false`
+- **Verification:** `pyforge-warden-test` 2299 passed; `platform-ci-local -- --test` PASS; `flag_gate_check.py --spec` pass; `spec_surface_reconcile.py` OK; `git check-ignore` on default `.warden/` paths OK. Live inventory with operator `gh` login not run (operator-owned).
+- **Residual risks:** Atlas export shape vs `head_sha` (deferred); leak-guard runs only when local gitignored config exists; operator must configure `.warden/fleet-target.toml` and github.com `gh` login for live runs.
