@@ -2,7 +2,8 @@
 title: '36.1: The CI live-demo workflow moves to the archive and its readers follow'
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'HEAD'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false

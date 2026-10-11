@@ -28,7 +28,6 @@ These run on `pull_request` events (several also re-run on push to `main`):
 |----------|----------|------|
 | `dashboard.yml` | push to `main`, `workflow_dispatch` | Fleet dashboard Pages deploy |
 | `kedro-viz-publish.yml` | push to `main` (path-filtered), `workflow_dispatch` | Kedro viz publish |
-| `herald-live-demo.yml` | push to `main`, PR closed on `main`, weekly schedule | Herald live demo |
 | `linter_issue_comment.yml` | `issue_comment` | Re-runs linter on maintainer comment |
 
 ### On-demand / manual workflows

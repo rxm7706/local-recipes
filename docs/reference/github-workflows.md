@@ -17,9 +17,10 @@ Four workflows landed after the original audit and this table never caught up:
 | workflow | trigger | what it does |
 |---|---|---|
 | **`detectors.yml`** | `pull_request`, `push` to main, dispatch | Runs the `detectors-ci` scope=repo subset of the doctor-sources detector suite. Added 2026-07-31 specifically because it *hadn't* existed: this repo had 9 detectors, 7 pixi tasks, 3 dashboard rows, and zero automatic invocation — every green was hand-run by whoever remembered, and PR #170 merged green while breaking `spec_surface_check` because nothing else ran it. |
-| **`herald-live-demo.yml`** | `push` to main, `pull_request` (closed), weekly cron (Mon 07:00 UTC), dispatch | Story 13.6: bounded, CI-contained proof that Herald's webhook + scheduler run as real processes, not just unit-tested in isolation — each job uses a throwaway job-local `.herald/herald.db`, never persisted or reused. Not a persistent deployment. |
 | **`kedro-viz-publish.yml`** | `push` to main (path-filtered to `pyforge-atlas`'s pipelines), dispatch | Epic 12/FR-62: builds and publishes the real pyforge-atlas Kedro DAG's static kedro-viz export via `steward deploy dashboard`, reusing Steward's own reconciled-push logic rather than a bespoke commit step or the dormant third-party `publish-kedro-viz` Action. |
 | **`platform-ci.yml`** | `pull_request`/`push`, path-filtered to `src/platform/**` + the shared packages/pixi files it builds from | Story 10.1: CI for the separately-built Django platform host (`src/platform/`) — ruff/mypy/pytest + a two-engine container build matrix, cost-isolated from the conda-forge factory's own detector/linter CI via the path filter. |
+
+**2026-10-11 (Story 36.1):** Story 13.6's retired CI live-demo workflow moved to `archive/.github/workflows/herald-live-demo.yml` (byte-identical `git mv`; GitHub no longer loads it). Live webhook proof superseded by Story 19.2's [`docs/how-to/run-herald-live-backend-locally.md`](../how-to/run-herald-live-backend-locally.md).
 
 ---
 

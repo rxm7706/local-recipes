@@ -447,17 +447,14 @@ _GUILD_CONTAINER_GLOBS = (
     "scripts/container-gates*",
 )
 
-# The real catalog's own herald rows name two real, currently-tracked
-# live-proof mechanisms that sit OUTSIDE src/shared/packages/pyforge-herald/
-# (the live-demo webhook workflow, the PPTX-export script) -- confirmed via
-# `git ls-files` against the live tree. A strict single-package-prefix
-# station check would false-fail on this real, legitimate catalog content,
-# so these two paths are named exceptions here, mirroring the Boundaries'
-# own "or the named cross-station paths for the container row" carve-out.
-_HERALD_NAMED_NON_PACKAGE_PATHS = (
-    "scripts/deck_export.py",
-    ".github/workflows/herald-live-demo.yml",
-)
+# The herald *PPTX export* row names one real, currently-tracked path
+# outside src/shared/packages/pyforge-herald/ (`scripts/deck_export.py`) --
+# confirmed via `git ls-files` against the live tree. A strict
+# single-package-prefix station check would false-fail on that catalog
+# content, so this one path is a named exception here, mirroring the
+# Boundaries' own "or the named cross-station paths for the container row"
+# carve-out.
+_HERALD_NAMED_NON_PACKAGE_PATHS = ("scripts/deck_export.py",)
 
 
 def test_zero_false_positives_against_the_live_tracked_tree() -> None:

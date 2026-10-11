@@ -3,8 +3,9 @@ daphne-pointable ``application`` object, plus the bounded timeout and
 dedicated executor DW-FU-13-4-3 named as whoever mounts ``webhook.py``'s
 job to add. Neither existed anywhere before this module -- ``webhook.py``
 (Story 13.4) and ``scheduler.py`` (Story 13.5) were both built and fully
-unit-tested but never run as a real, listening process; this module (plus
-``.github/workflows/herald-live-demo.yml``) is what actually starts one.
+unit-tested but never run as a real, listening process until Story 13.6
+mounted it; Story 19.2 runs it persistently on loopback via the platform
+host and sidecar (see ``docs/how-to/run-herald-live-backend-locally.md``).
 
 **Why a separate module, not more of webhook.py.** AD-8 (Steward's
 ``spec-secure-live-dashboards`` architecture: "the library binds at the ASGI
@@ -68,11 +69,10 @@ later exactly like any other transient failure.
 handler occupies its worker thread.** ``asyncio.wait_for`` cancels the
 *awaiting* coroutine; it cannot force-terminate a
 ``concurrent.futures.Future`` whose work already started running on a
-thread (``Future.cancel()`` is a documented no-op past that point). Every
-job in ``herald-live-demo.yml`` starts one throwaway process for exactly
-one request, so this residual is currently inert -- it becomes live risk
-only under a future persistent, multi-request deployment. Tracked as
-``deferred-work.md``'s ``DW-FU-13-6-2``, not re-litigated here."""
+thread (``Future.cancel()`` is a documented no-op past that point). Under Story
+19.2's persistent local host, a timed-out handler can still occupy a worker
+thread until it finishes -- live risk for multi-request deployments. Tracked as
+``deferred-work.md``'s ``DW-FU-13-6-2`` / ``DW-13-6-2``, not re-litigated here."""
 
 from __future__ import annotations
 

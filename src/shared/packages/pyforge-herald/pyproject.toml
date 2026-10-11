@@ -57,8 +57,9 @@ dependencies = [
 # Story 13.6: the ASGI host `webhook_host.py` mounts behind -- opt-in, not a
 # base dependency, mirroring AD-8 ("no adopter may be asked to change
 # frameworks to adopt"): only whoever actually runs the webhook as a live
-# process (this extra's installer, and `.github/workflows/herald-live-demo.yml`)
-# needs `daphne` at all; `webhook.py` itself stays a plain, framework-free
+# process (this extra's installer, or whoever runs `daphne` against
+# `webhook_host:application` locally per Story 19.2) needs `daphne` at all;
+# `webhook.py` itself stays a plain, framework-free
 # ASGI3 callable. Floor is byte-identical to pyforge-steward's own
 # `[dashboard]` extra's `daphne` pin (its Story 9.5 rationale: terminates
 # both HTTP and WebSocket, already verified solvable in this workspace) and
