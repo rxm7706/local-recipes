@@ -2,7 +2,8 @@
 title: "90.1: A pytest the preflight starts never inherits another run's basetemp"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'c0956c0f14fa632ab837b1cdd5c39cd3b8845fff'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -286,3 +287,40 @@ Production code that starts a pytest with an inherited environment, for the reco
 - Mutation: put the inherited basetemp back in `_lane_scratch_env` and re-run the new test module; AC1 and AC3 fail. Restore it.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog reconciles and scoped stamps.
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
+
+## Review Triage Log
+
+### 2026-10-11 — Review pass
+
+- verdicts: 2 findings — high 0, medium 0, low 2, false 0, maybe-false 0
+- findings:
+  - `[low]` `[patch]` Unused `os` import in `test_preflight_suite_reduction.py` after env helper change — removed import; ruff clean.
+  - `[low]` `[patch]` Unused `textwrap` import in new `test_preflight_inherited_pytest_addopts.py` — removed import; ruff clean.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `strip_inherited_pytest_basetemp_and_cache` in `preflight_suite_reduction.py`, applied it in `_lane_scratch_env` and `collect_pytest_node_ids`, switched reduced-lane tests to `_lane_scratch_env`, tightened two misleading assertions, and added `test_preflight_inherited_pytest_addopts.py` for AC1–AC3 and matrix rows.
+
+Files changed:
+
+- `preflight_suite_reduction.py` — helper + collection env sanitization
+- `preflight.py` — lane env strips inherited basetemp/cache before appending lane scratch
+- `test_preflight_suite_reduction.py` — real lane env in helper; stricter `raises_on_failure` match
+- `test_preflight_scratch.py` — mutation test asserts exit 1 and assertion output
+- `test_preflight_inherited_pytest_addopts.py` — new coverage for lane env, collect-only, run_preflight child
+
+Review: 2 low patches applied (unused imports); nothing deferred.
+
+Follow-up review recommendation: false (no high/medium patches).
+
+Verification:
+
+- `pyforge-steward-test` — pass
+- `lint-types` — pass (after ruff fixes)
+- Story module tests with outer `PYTEST_ADDOPTS` — 45 passed
+- `python scripts/spec_surface_reconcile.py` — OK
+- `spec-surface-check` — ok (pre-existing stale-surface warns only)
+
+Residual risk: unlisted future pytest spellings for basetemp/cache_dir could still pass through (documented in spec).

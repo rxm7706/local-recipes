@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: cc0671fd2976f1fe
-story_count: 446
-test_file_count: 252
+source_fingerprint: 847f493ba2c4ec91
+story_count: 447
+test_file_count: 255
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 446
+- **Stories parsed:** 447
 - **Epics parsed:** 92
-- **Test files inventoried:** 252 under `src/shared/packages/pyforge-marshal/tests/`
+- **Test files inventoried:** 255 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `cc0671fd2976f1fe`
+- **Source fingerprint:** `847f493ba2c4ec91`
 
 ## Risk Assessment
 
@@ -222,6 +222,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cap4_verification_reporting.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_flag_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_harness_done.py` | unit | none observed |
@@ -235,6 +236,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_preserve_tag.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_push.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_re_preflight.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_recall.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry_83_10.py` | unit | 83.10 |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py` | unit | none observed |
@@ -292,6 +294,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_local_branch_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_login.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_loop_runner_hook.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_marshal_recall_plugin.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_registration.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_mcp_tools.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_model.py` | unit | none observed |
@@ -836,6 +839,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 92.1 | The dispatch supervisor reads session liveness correctly and never treats a v... | none observed |
 | 93.1 | Every live session gets the recall its layer promises, and the run records th... | none observed |
 | 94.1 | The review gate orders review entries by their real commit times | none observed |
+| 94.2 | A held PR is marked ready when its landing review passes | none observed |
 
 ## Quality Gates
 

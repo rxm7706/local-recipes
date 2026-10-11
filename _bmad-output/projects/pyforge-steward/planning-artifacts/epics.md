@@ -5940,7 +5940,7 @@ So that steward's suite gives the same verdict under `pr-preflight` as in CI, an
 **When** a lane, the node-id collection or a steward test starts a pytest while `PYTEST_ADDOPTS` carries another run's `--basetemp` or cache dir
 **Then** the child pytest carries only its own: the lane's env keeps the inherited options except any `--basetemp` and any `cache_dir` override, in every spelling pytest accepts, then adds the lane's own once; the collection run drops the same two and adds none; the reduced-lane test helper builds its env with `_lane_scratch_env`, as the pool does; the other inherited options pass through in order
 **And** with an outer `--basetemp` set to a parent of the tests' scratch repos, the nine tests pass, changed only through the reduced-lane helper's env, and a new test proves the lane env, the collection and a real child pytest under it; `test_collect_pytest_node_ids_raises_on_failure` and the scratch mutation test assert the failure they exist for, never a usage error (exit 4); the spec records every test in the ten `pyforge-*` packages and `src/platform` that starts a child pytest, and whether it inherits `PYTEST_ADDOPTS`; Stories 71.x and 88.1's lane selection, suite reduction, dependency order and journal are unchanged; restoring the inherited basetemp fails the new test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
