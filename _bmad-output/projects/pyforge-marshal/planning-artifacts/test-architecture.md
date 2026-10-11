@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: c80c3e4f91c585ad
-story_count: 441
-test_file_count: 251
+source_fingerprint: 9970af3c9a79737e
+story_count: 442
+test_file_count: 252
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 441
-- **Epics parsed:** 87
-- **Test files inventoried:** 251 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 442
+- **Epics parsed:** 88
+- **Test files inventoried:** 252 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c80c3e4f91c585ad`
+- **Source fingerprint:** `9970af3c9a79737e`
 
 ## Risk Assessment
 
@@ -109,6 +109,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 87: Preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287)
 - Epic 88: Marshal's commits stage every tracked path they name
 - Epic 89: A story lands only when its spec says the work is finished and its review did not fail
+- Epic 90: A dispatch run is complete only when its session has really ended
 
 ### Low-risk epics
 
@@ -223,6 +224,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_hotfix.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` | unit | 89.1 |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_output_layer.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_prelaunch.py` | unit | none observed |
@@ -824,7 +826,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 87.15 | A preserve reaches origin only through the content gate | none observed |
 | 87.16 | The orphaned tips are re-preserved as local archive tags | none observed |
 | 88.1 | Marshal commits a tracked file under an ignored directory | none observed |
-| 89.1 | A re-dispatch never lands a story whose review failed | none observed |
+| 89.1 | A re-dispatch never lands a story whose review failed | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` |
+| 90.1 | The dispatch supervisor records completion only after the harness session has... | none observed |
 
 ## Quality Gates
 

@@ -1369,6 +1369,25 @@ Drift — orphaned between stations.
   follow-up rows. **Constraints:** a fix under CAP-159 (Epic 71), no CAP, no flag; which lanes run, what each runs,
   the journal and the exit codes do not change (operator ruling 2026-10-10: "yes mint the steward preflight fix
   story"). Owner `spec-pyforge-steward`. → Epic 90 / Story 90.1, specced 2026-10-10.
+- **2026-10-10 (herald forward disconnect) — Found: Story 87.4 closed 87.3's findings, and its own independent review
+  failed.** A separate agent reviewed the landed merge `cd32c401cc` against 87.4's spec and recorded "Independent
+  review of the landed merge `cd32c401cc`: FAIL (1 high, 1 medium, 3 low)" in its Review Triage Log. The path
+  allowlist, the body caps, the loopback task and the sidecar's honest 404 held. Five defects did not. The host's
+  body read skips every message that is not `http.request`, so a client that sends part of a body and then
+  disconnects pins a worker's event loop at full CPU: one unauthenticated connection, 100,001 `receive()` calls in the
+  reproduction. The flag-OFF tests pass only in one order, because herald's app is cached between them. With the
+  forward inactive, an unknown path under the webhook prefix gets the host's generic 404 instead of Story 87.1's
+  answer. A sidecar env with no `pyforge` package at all answers 500, not 404. The forward-ON tests never check that
+  the allowed headers and the sidecar's answer pass through. The dispatch landed 87.4 with no held review, so the
+  operator turned `pyforge.steward.herald_webhook_sidecar` OFF in dev again. **What it looks like when fixed:** a
+  disconnect ends the read at once, with nothing forwarded and no spin; the flag-OFF tests pass alone, reversed and in
+  the suite; with the forward inactive the prefix behaves exactly as Story 87.1 left it; a sidecar missing `pyforge`
+  itself says herald is absent; the forward-ON tests prove the headers and the answer through the host's real entry
+  point. Only then does dev turn back ON, and the story lands only after a separate review passes. **Constraints:** a
+  fix under CAP-68 and CAP-69 (Story 87.3's CAPs), in Epic 87, no CAP, no flag of its own; staging and production stay
+  OFF; `src/platform/` imports no `pyforge.*`; the landing is held for that review (marshal Story 83.18's hold); herald
+  19.2 stays blocked until this story lands with its review passed (operator ruling 2026-10-10: "Dark again + mint
+  87.5 (Recommended)"). Owner `spec-pyforge-steward`. → Epic 87 / Story 87.5, specced 2026-10-10.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

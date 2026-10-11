@@ -47,10 +47,13 @@ async def _dispatch_herald_webhook(scope: Scope, receive: Receive, send: Send) -
     try:
         webhook_host = importlib.import_module("pyforge.herald.webhook_host")
     except ModuleNotFoundError as exc:
+        name = exc.name or ""
+        if name != "pyforge.herald" and not name.startswith("pyforge.herald."):
+            raise
         await _json_detail(
             send,
             HTTPStatus.NOT_FOUND,
-            f"pyforge.herald is not installed ({exc.name})",
+            f"pyforge.herald is not installed ({name})",
         )
         return True
     herald_errors = importlib.import_module("pyforge.herald.errors")

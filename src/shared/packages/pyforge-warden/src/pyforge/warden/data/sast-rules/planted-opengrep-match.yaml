@@ -1,0 +1,6 @@
+rules:
+  - id: planted-opengrep-match
+    message: found planted match
+    severity: WARNING
+    languages: [python]
+    pattern: PLANTED_OPENGREP_MATCH

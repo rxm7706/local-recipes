@@ -398,7 +398,7 @@ django-environ = ">=0.14.0"       # DATABASE_URL -> DATABASES via env.db(), matc
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 87.3: herald webhook ASGI in the sidecar (mcp 2.x)
 
 [feature.mcp-host.tasks]
-mcp-host-serve = { cmd = "uvicorn mcp_host.app:app --host 127.0.0.1 --port 8090", cwd = "src/platform", env = { PYTHONPATH = "src/platform:src/shared/packages/django-pyforge/src:src/shared/packages/django-marshal/src" } }
+mcp-host-serve = { cmd = "uvicorn mcp_host.app:app --host 127.0.0.1 --port 8090", cwd = "src/platform", env = { PYTHONPATH = "$PIXI_PROJECT_ROOT/src/platform:$PIXI_PROJECT_ROOT/src/shared/packages/django-pyforge/src:$PIXI_PROJECT_ROOT/src/shared/packages/django-marshal/src" } }
 
 [feature.platform-ci-test]
 # --- platform-ci-test (Platform CI `test` job, conda-only) ---
@@ -2658,6 +2658,9 @@ packaging = ">=26.3"              # hygiene.py, engines.py, extract/_identity.py
 jsonschema = ">=4.26.0"           # report.py
 packageurl-python = ">=0.17.6"    # sbom.py, sources.py, eligibility_sbom.py; imports as `packageurl`
 license-expression = ">=30.4.4"   # license.py; imports as `license_expression`
+
+[feature.pyforge-warden.target.linux-64.dependencies]
+opengrep = { version = ">=1.30.2,<1.31", channel = "SelfExplainML" }  # Story 15.1 (CAP-25): optional SAST engine; SelfExplainML linux-64 only (mason 21.4)
 
 [feature.pyforge-warden.tasks.warden-scan]
 description = "Run the Warden multi-axis dependency gate (hygiene + security [+ license/currency v1.x])"

@@ -35,6 +35,7 @@ from .engines import (
 from .hooks import PR_GATE_SCAN
 from .interfaces import Engine
 from .models import AXIS_INGESTION, Finding
+from .sast import OpengrepScanPlugin
 from .tea_advisory import TeaAdvisoryScanPlugin
 
 OPTIONAL_SCANNER_IDS: tuple[str, ...] = (
@@ -43,6 +44,7 @@ OPTIONAL_SCANNER_IDS: tuple[str, ...] = (
     "blackduck",
     "ghas",
     "profile-local",
+    "opengrep",
     # Story 11.2: tea-test-review is NOT an OptionalScanPlugin subclass (it
     # appends to context["advisory_notes"], never context["plugin_findings"]
     # -- a stub Finding would be a lie about what an advisory lens does), so
@@ -220,6 +222,8 @@ def scanner_plugin_registry() -> PluginRegistry:
     # the OPTIONAL_SCANNER_IDS comment above). No injected runner here: a
     # shipped registry always resolves the real tea-test-review binary.
     registry.register(TeaAdvisoryScanPlugin())
+    # Story 15.1: SAST advisory lens (CAP-25) — registered directly like TEA.
+    registry.register(OpengrepScanPlugin())
     return registry
 
 

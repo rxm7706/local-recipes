@@ -8819,6 +8819,7 @@ environments:
       channel-priority: flexible
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.2-pyh59285b8_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pgjdbc-42.7.13-hc364b38_0.conda
@@ -9427,7 +9428,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.2-pyh59285b8_1.conda
@@ -10054,6 +10055,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/at-spi2-atk-2.38.0-h0630a04_3.tar.bz2
@@ -10526,7 +10528,7 @@ environments:
       - conda_source: pyforge-atlas[8fd8162b] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
@@ -11743,6 +11745,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pptxgenjs-plus-4.2.1-h59285b8_0.conda
@@ -12392,7 +12395,7 @@ environments:
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
       - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-eval-quality-4.3.0-h98f672e_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/kedro-skills-0.1.1-pyhcf101f3_0.conda
@@ -13748,6 +13751,7 @@ environments:
     - url: https://conda.anaconda.org/SelfExplainML/
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cffi-2.1.1-py314h8d76f0c_3.conda
@@ -13852,7 +13856,7 @@ environments:
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-doctor[a461c9cf] @ src/shared/packages/pyforge-doctor
       - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
@@ -14065,6 +14069,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -14792,7 +14797,7 @@ environments:
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
       - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
@@ -16254,6 +16259,7 @@ environments:
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/SelfExplainML/linux-64/git-pkgs-0.21.0-h1fb1ff7_0.conda
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-creative-intelligence-suite-0.3.2-ha7a566d_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-dashboard-1.2.2.dev0-pyhcba1bba_0.conda
@@ -16992,7 +16998,7 @@ environments:
       - conda_source: pyforge-scribe[fd291461] @ src/shared/packages/pyforge-scribe
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
       - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/6f/ad/6afd073b0f817b3e03f9e37ad626ae341805891f23c74b5292818f49ac63/sqlite_vec-0.1.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux1_x86_64.whl
   pyforge-guild:
     channels:
@@ -20377,6 +20383,7 @@ environments:
     - url: https://conda.anaconda.org/SelfExplainML/
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.2.0-py314hcd2bdb6_4.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
@@ -20544,7 +20551,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-testing-kit[4820af29] @ src/shared/packages/pyforge-testing-kit
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -20888,6 +20895,7 @@ environments:
       channel-priority: flexible
     packages:
       linux-64:
+      - conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.2-pyh59285b8_1.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/pgjdbc-42.7.13-hc364b38_0.conda
@@ -21470,7 +21478,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-core[b1144d49] @ src/shared/packages/pyforge-core
       - conda_source: pyforge-steward[f49bb4d2] @ src/shared/packages/pyforge-steward
-      - conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
       osx-arm64-min:
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-flagd-core-1.0.0-pyh59285b8_0.conda
       - conda: https://conda.anaconda.org/SelfExplainML/noarch/openfeature-provider-flagd-0.5.2-pyh59285b8_1.conda
@@ -23450,6 +23458,12 @@ packages:
   license: MIT
   size: 48112695
   timestamp: 1789340529872
+- conda: https://conda.anaconda.org/SelfExplainML/linux-64/opengrep-1.30.2-he562398_0.conda
+  sha256: 814fad4bcf8c64a2a71460b1580f69d560a637c222c1902722df3e45c7bc99cc
+  md5: 8948c2f84eb6962c7115851a9da750c2
+  license: LGPL-2.1-only
+  size: 46388501
+  timestamp: 1791516468380
 - conda: https://conda.anaconda.org/SelfExplainML/noarch/bmad-builder-2.2.2-ha7a566d_0.conda
   sha256: dbbd6fd842ee928283187a7f95ff04eea34a53215703ba5a12f9da1107cbd689
   md5: b5cd1c5e1998b6a6fb4f2dddb8839be0
@@ -67174,7 +67188,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-- conda_source: pyforge-warden[f90f954b] @ src/shared/packages/pyforge-warden
+- conda_source: pyforge-warden[ff17c698] @ src/shared/packages/pyforge-warden
   variants:
     target_platform: noarch
   depends:
@@ -67190,6 +67204,7 @@ packages:
   - packageurl-python
   - license-expression
   - pyforge-core
+  - opengrep >=1.30.2,<1.31
   license: MIT
   source_depends:
     pyforge-core:

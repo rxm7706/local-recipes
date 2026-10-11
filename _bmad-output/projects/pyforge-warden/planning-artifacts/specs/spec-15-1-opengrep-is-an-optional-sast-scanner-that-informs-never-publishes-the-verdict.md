@@ -2,7 +2,9 @@
 title: "15.1: Opengrep is an optional SAST scanner that informs, never publishes, the verdict"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: 'f9c6a87dbe45d0e03d9a422dd708e466ce19bada'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -139,3 +141,29 @@ Deps: — (cross-station: mason Story 21.4).
 ## Review Triage Log
 
 - No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10). Implementation and review stay separate.
+
+### 2026-10-10 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 1, false 2, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Real opengrep integration test against live binary not in default suite — injected-runner tests cover AC; live binary optional via pyforge-warden env on linux-64.
+  - `[false]` `[reject]` Missing pyproject entry point for OpengrepScanPlugin — TEA uses direct registry registration; same pattern applied.
+  - `[low]` `[reject]` `test_flag_states_do_not_change_default_scan_exit` mocks `_engine_env` broadly — acceptable narrow harness proof; full suite green (2284 passed).
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added optional `OpengrepScanPlugin` (Story 15.1 / CAP-25): estate rules under `data/sast-rules/`, spawn via `engines.run_opengrep_engine` / `_engine_env`, advisory notes only, gated by `pyforge.warden.sast_opengrep` and `WARDEN_OPTIONAL_SCANNERS=opengrep`. Opengrep `>=1.30.2,<1.31` on SelfExplainML linux-64 (member + feature target deps).
+
+Files changed:
+- `sast.py`, `engines.py`, `scanner_plugins.py`, `cli.py` — plugin, subprocess seam, flag filter
+- `data/sast-rules/planted-opengrep-match.yaml`, fixtures, `test_sast_opengrep.py`
+- `flags.json`, `flag-overlays.json`, `pixi.toml`, `pixi.lock`, `environment.yaml`
+
+Review: 0 patches; 1 low rejected; 2 false.
+
+Verification:
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2284 passed
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconciles on `spec-pyforge-warden`, `spec-pyforge-core`, `spec-pyforge-unifying-strategy`
+
+Residual: opengrep conda package is linux-64-only on SelfExplainML; other platforms omit-not-error. Landing requires commit, scoped spec-surface baseline stamps (human), and PR.

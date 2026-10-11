@@ -25,7 +25,7 @@ from pathlib import Path
 from packaging.specifiers import SpecifierSet
 
 import pyforge.warden
-from pyforge.warden.engines import DEPTRY_VERSION_RANGE, OSV_SCANNER_VERSION_RANGE
+from pyforge.warden.engines import DEPTRY_VERSION_RANGE, OPENGREP_VERSION_RANGE, OSV_SCANNER_VERSION_RANGE
 
 _PACKAGE_FILE = pyforge.warden.__file__
 if _PACKAGE_FILE is None:
@@ -40,7 +40,11 @@ PIXI_TOML = PACKAGE_ROOT / "pixi.toml"
 def _run_dependencies() -> dict[str, object]:
     with PIXI_TOML.open("rb") as stream:
         data = tomllib.load(stream)
-    return data["package"]["run-dependencies"]
+    run_deps = dict(data["package"]["run-dependencies"])
+    linux = data.get("package", {}).get("target", {}).get("linux-64", {}).get("run-dependencies")
+    if isinstance(linux, dict):
+        run_deps.update(linux)
+    return run_deps
 
 
 def test_pixi_toml_is_found_where_expected():
@@ -48,6 +52,7 @@ def test_pixi_toml_is_found_where_expected():
     run_deps = _run_dependencies()
     assert "deptry" in run_deps
     assert "osv-scanner" in run_deps
+    assert "opengrep" in run_deps
 
 
 def test_deptry_range_matches_pixi_toml():
@@ -68,10 +73,20 @@ def test_osv_scanner_range_matches_pixi_toml():
     )
 
 
+def test_opengrep_range_matches_pixi_toml():
+    run_deps = _run_dependencies()
+    pixi_range = SpecifierSet(str(run_deps["opengrep"]))
+    assert str(pixi_range) == str(OPENGREP_VERSION_RANGE), (
+        "pixi.toml's opengrep run-dependency range and engines.py's "
+        "OPENGREP_VERSION_RANGE have drifted apart — edit both together"
+    )
+
+
 def test_ranges_are_ranges_not_exact_pins():
     """NFR-C1: a range, not an exact pin — engines come from feedstocks."""
     assert len(DEPTRY_VERSION_RANGE) >= 2
     assert len(OSV_SCANNER_VERSION_RANGE) >= 2
+    assert len(OPENGREP_VERSION_RANGE) >= 2
 
 
 def test_evidence_backed_versions_are_in_range():
@@ -83,6 +98,7 @@ def test_evidence_backed_versions_are_in_range():
 
     assert Version("0.25.1") in DEPTRY_VERSION_RANGE
     assert Version("2.4.0") in OSV_SCANNER_VERSION_RANGE
+    assert Version("1.30.2") in OPENGREP_VERSION_RANGE
 
 
 def test_ranges_do_not_widen_to_the_next_untested_minor():
@@ -92,3 +108,4 @@ def test_ranges_do_not_widen_to_the_next_untested_minor():
 
     assert Version("0.26.0") not in DEPTRY_VERSION_RANGE
     assert Version("2.5.0") not in OSV_SCANNER_VERSION_RANGE
+    assert Version("1.31.0") not in OPENGREP_VERSION_RANGE
