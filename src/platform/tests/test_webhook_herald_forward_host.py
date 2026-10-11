@@ -19,9 +19,6 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
-from starlette.routing import Mount
-
-import config.station_api as station_api_mod
 from django_pyforge.flags import ENV_FLAGD_PATH
 from django_pyforge.flags import ENV_FLAGS_PATH
 from django_pyforge.flags import configure_file_provider
@@ -32,6 +29,9 @@ from django_pyforge.sidecar_forward import MAX_BODY_MESSAGES
 from httpx import ASGITransport
 from httpx import AsyncClient
 from openfeature import api
+from starlette.routing import Mount
+
+import config.station_api as station_api_mod
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 _REPO_ROOT = _PLATFORM_ROOT.parents[1]
