@@ -20,14 +20,7 @@ def _repo_root() -> Path:
 
 
 def _portal_src() -> Path:
-    return (
-        _repo_root()
-        / "src"
-        / "shared"
-        / "packages"
-        / "django-herald"
-        / "src"
-    )
+    return _repo_root() / "src" / "shared" / "packages" / "django-herald" / "src"
 
 
 _portal_src = str(_portal_src())
