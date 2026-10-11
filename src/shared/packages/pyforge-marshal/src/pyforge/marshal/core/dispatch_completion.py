@@ -125,11 +125,9 @@ def has_git_progress(git: DispatchGitFacts, *, spec_relative_path: str | None = 
 
 def judge_dispatch_completion(inp: DispatchCompletionInput) -> DispatchSessionVerdict:
     """Judge completion from git + process facts only."""
-    if inp.session_alive:
-        return DispatchSessionVerdict.LIVE
     if inp.git.branch_merged or inp.git.story_merged_on_main:
         return DispatchSessionVerdict.COMPLETED
-    if has_git_progress(inp.git):
+    if inp.session_alive or has_git_progress(inp.git):
         return DispatchSessionVerdict.LIVE
     return DispatchSessionVerdict.FAILED
 
