@@ -86,6 +86,18 @@ def test_run_head_reached_ref_fails_closed_on_vcs_error() -> None:
     assert run_head_reached_ref(_Vcs(), Path("/tmp"), "abc123", "refs/remotes/origin/main") is False
 
 
+def test_judge_live_when_session_alive_even_if_story_merged_on_main() -> None:
+    git = DispatchGitFacts(
+        baseline_head_sha="aaa",
+        current_head_sha="bbb",
+        changed_paths=(),
+        branch_merged=True,
+        story_merged_on_main=True,
+    )
+    verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git))
+    assert verdict == DispatchSessionVerdict.LIVE
+
+
 def test_judge_completed_when_story_merged_on_main() -> None:
     git = DispatchGitFacts(
         baseline_head_sha="aaa",
