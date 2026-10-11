@@ -511,8 +511,8 @@ def test_zero_false_positives_against_the_live_tracked_tree() -> None:
                 violations.append(f"{row.station}/{row.surface}: matched known false positive {false_positive!r}")
 
         # Station attribution: every hit sits under the row's own station,
-        # or the container row's named cross-station paths, or herald's two
-        # named non-package live-proof mechanisms.
+        # or the container row's named cross-station paths, or herald's one
+        # named non-package live-proof mechanism.
         if row.station == "guild (cross-station)":
             for path in matched:
                 if not any(pattern.match(path) for pattern in guild_patterns):
