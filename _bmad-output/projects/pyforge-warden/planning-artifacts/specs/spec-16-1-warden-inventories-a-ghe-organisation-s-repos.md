@@ -4,7 +4,7 @@ type: 'feature'
 created: '2026-09-28'
 status: 'in-progress'
 baseline_revision: 'e0d12c1d4ec1d22ec49fd0d6f72e12025462900f'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
@@ -277,6 +277,15 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
   checkout root, not the cwd. No AC changed.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 3: sent back (1 major)
+
+Fresh separate agent, review of `git diff origin/main...HEAD` at 86480688b5. Every N1-N6a fix holds: 19 of 19 mutations caught (client error typing, `from None`, message echo, `gh` timeout, guard teardown, `leak_guard_terms`, portal message, header pinning, redirect and next-link pins, GET-only, flag and command gates, task locals, redacted repr). Confidentiality holds (fictional identifiers only across diff, 30 commit messages, spec and memlogs; nothing under `.warden/` read; no network, no `gh`). Gates: `pyforge-warden-test` 0 (2329 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0, `deferred-work-check` 0, `platform-ci-local -- --test` 0 (1243 passed, 14 skipped).
+
+- `[major]` `[patch]` P1 (security, AC7) `fleet_github_rest.py:240-250` `_get_json` types only `HTTPError`, `URLError`, `OSError`, `http.client.HTTPException` and `ValueError`. Any other exception raised inside urllib's `do_open` (connect, send, `getresponse()`) escapes untyped with `do_open`'s `headers` local holding the bearer token, and the worker's django_structlog Celery receiver (`config/celery_app.py:24`, `DJANGO_STRUCTLOG_CELERY_ENABLED`) logs it with frame locals. Reachable on the expected stall path: the global `CELERY_TASK_SOFT_TIME_LIMIT = 60` (`config/settings/base.py:489`) is below the client's 120 s socket timeout, so a stalled response ends in `SoftTimeLimitExceeded` inside `getresponse()`. Proven offline through `run_fleet_inventory.apply()` with a scripted socket and the receiver connected: the sentinel appears in the `task_failed` event (frame `do_open`, local `headers`) for `SoftTimeLimitExceeded` and for `RuntimeError`. Fix: keep the token out of urllib's request headers entirely (inject it at the connection layer from a redacting holder, so no urllib frame local ever holds it), and as defence in depth type every `Exception` around open and read `from None` (clear frames of anything re-raised), the same in the `gh` token provider; give `run_fleet_inventory` an explicit soft/hard time limit sized for pagination with a per-request timeout below it; a platform test with the Celery receiver connected that raises `SoftTimeLimitExceeded` and `RuntimeError` from the socket and finds no sentinel in any rendered line.
+- Info: the task does not re-check the flag (the portal and the command do); the config is read at enqueue (AC4 allows the organisation name in the message); no inventory job row (iteration 1's I1); `.warden/` sits in `.gitignore`'s Django block (cosmetic).
+
+Send-back: P1; a fresh independent review (iteration 4) gates the landing.
 
 ### 2026-10-11 — Fix pass for iteration 2 (implementer)
 
