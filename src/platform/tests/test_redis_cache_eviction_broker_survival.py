@@ -320,9 +320,15 @@ def test_unsplit_redis_loses_broker_state_under_cache_pressure(tmp_path: Path) -
     try:
         shared_url = f"redis://127.0.0.1:{port}/0"
         before = _seed_broker_state(shared_url)
-        after = _broker_snapshot(shared_url, cloudevent_id=before["event_id"])
-        rounds_run = 0
-        evicted_keys = 0
+        _fill_cache_to_eviction(shared_url)
+        after, rounds_run = _broker_loss_rounds_until_eviction(
+            shared_url,
+            before=before,
+            cloudevent_id=before["event_id"],
+        )
+
+        client = redis.Redis.from_url(shared_url, decode_responses=True)
+        evicted_keys = int(client.info("stats").get("evicted_keys", 0))
 
         broker_lost = (
             after["queued_depth"] < before["queued_depth"]
