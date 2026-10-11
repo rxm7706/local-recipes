@@ -155,7 +155,9 @@ def test_mcp_host_sidecar_no_pyforge_package_returns_404_json(
     finally:
         sys.meta_path.remove(finder)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert "pyforge" in response.json()["detail"]
+    # Every absent detail starts "pyforge.herald is not installed"; the missing
+    # module's name closes it, so only the suffix proves the parent was named.
+    assert response.json()["detail"].endswith("(pyforge)")
 
 
 def test_mcp_host_sidecar_herald_absent_returns_404_json(
@@ -164,7 +166,7 @@ def test_mcp_host_sidecar_herald_absent_returns_404_json(
 ) -> None:
     for name in list(sys.modules):
         if name == "pyforge.herald" or name.startswith("pyforge.herald."):
-            del sys.modules[name]
+            monkeypatch.delitem(sys.modules, name, raising=False)
     finder = _HeraldAbsentFinder()
     sys.meta_path.insert(0, finder)
     try:
@@ -467,9 +469,11 @@ def test_mcp_host_sidecar_herald_dependency_missing_not_blamed_on_herald(
 ) -> None:
     monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
     monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "shared-secret")
+    # Through monkeypatch, so every removed module comes back at teardown: a bare
+    # pop left later tests a second pyforge.core.errors (and a second HeraldError).
     for name in list(sys.modules):
-        if name in ("pyforge.core.errors",) or name.startswith("pyforge.herald."):
-            sys.modules.pop(name, None)
+        if name == "pyforge.core.errors" or name.startswith("pyforge.herald."):
+            monkeypatch.delitem(sys.modules, name, raising=False)
     finder = _CoreErrorsAbsentFinder()
     sys.meta_path.insert(0, finder)
     try:
@@ -477,7 +481,5 @@ def test_mcp_host_sidecar_herald_dependency_missing_not_blamed_on_herald(
             mcp_client.post(_ON_SHIP_PATH, content=b"{}")
     finally:
         sys.meta_path.remove(finder)
-        _, webhook_host = _herald_modules()
-        webhook_host._application = None  # noqa: SLF001
         importlib.reload(mcp_host_module)
     assert mcp_client.get("/health").status_code == HTTPStatus.OK

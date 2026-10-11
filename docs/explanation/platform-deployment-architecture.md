@@ -319,7 +319,7 @@ capability-naming reason where helm/PyYAML are absent.
   the sidecar). Any other path under `/stations/herald/api/v1/webhooks/` gets the
   host's usual 404 with nothing forwarded. Inbound header allowlist:
   `content-type`, `x-hub-signature-256`, `x-hub-timestamp`, `traceparent`,
-  `tracestate` only — no `authorization` or `cookie`.   Other Herald v1 routes stay
+  `tracestate` only — no `authorization` or `cookie`. Other Herald v1 routes stay
   in-process or absent per Story 87.1. With the forward inactive (flag OFF or
   `MCP_HOST_SIDECAR_BASE_URL` unset), every path under the webhook prefix
   behaves as Story 87.1 left it — including unknown webhook paths, which reach

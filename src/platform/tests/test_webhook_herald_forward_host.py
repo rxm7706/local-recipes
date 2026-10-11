@@ -148,6 +148,31 @@ def forward_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     api.clear_providers()
 
 
+_FORWARD_INACTIVE_MODES = ("flag_off", "url_unset")
+
+
+@pytest.fixture(params=_FORWARD_INACTIVE_MODES)
+def forward_inactive(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    """The forward inactive: flag OFF with the URL set, or URL unset with flag ON."""
+    _FakeSidecarClient.requests = []
+    monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
+    monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
+    tree = tmp_path / "inactive.json"
+    if request.param == "flag_off":
+        monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
+        tree.write_bytes(_sidecar_flag_tree(on=False))
+    else:
+        monkeypatch.delenv("MCP_HOST_SIDECAR_BASE_URL", raising=False)
+        tree.write_bytes(_sidecar_flag_tree(on=True))
+    configure_file_provider(tree)
+    yield request.param
+    api.clear_providers()
+
+
 async def _asgi_request(
     path: str,
     *,
@@ -241,6 +266,31 @@ async def _post_via_transport(
         return await client.post(path, content=content, headers=headers, params=params)
 
 
+def _assert_forwarded_once(
+    response: Any,
+    *,
+    path: str,
+    body: bytes,
+    headers: dict[str, str],
+) -> None:
+    """The caller got the fake sidecar's answer; the fake got body and allowlist."""
+    assert response.status_code == HTTPStatus.CREATED
+    assert response.headers["content-type"] == "application/json"
+    assert response.json() == {"forwarded": True}
+    assert len(_FakeSidecarClient.requests) == 1
+    assert _FakeSidecarClient.requests[0]["url"] == f"http://127.0.0.1:8090{path}"
+    assert _FakeSidecarClient.requests[0]["content"] == body
+    req_headers = _FakeSidecarClient.requests[0]["headers"]
+    assert set(req_headers.keys()) == {
+        "content-type",
+        "x-hub-signature-256",
+        "x-hub-timestamp",
+    }
+    assert req_headers["content-type"] == headers["Content-Type"]
+    assert req_headers["x-hub-signature-256"] == headers["X-Hub-Signature-256"]
+    assert req_headers["x-hub-timestamp"] == headers["X-Hub-Timestamp"]
+
+
 def test_host_forwards_only_literal_paths_no_query(forward_env) -> None:
     body = b'{"x":1}'
     headers = _signed_post_headers(body)
@@ -255,27 +305,16 @@ def test_host_forwards_only_literal_paths_no_query(forward_env) -> None:
             )
 
     response = asyncio.run(_run())
-    assert response.status_code == HTTPStatus.CREATED
-    assert response.headers["content-type"] == "application/json"
-    assert response.json() == {"forwarded": True}
-    assert len(_FakeSidecarClient.requests) == 1
-    assert _FakeSidecarClient.requests[0]["url"] == (
-        "http://127.0.0.1:8090/stations/herald/api/v1/webhooks/on-ship"
+    _assert_forwarded_once(
+        response,
+        path="/stations/herald/api/v1/webhooks/on-ship",
+        body=body,
+        headers=headers,
     )
-    assert _FakeSidecarClient.requests[0]["content"] == body
-    req_headers = _FakeSidecarClient.requests[0]["headers"]
-    assert set(req_headers.keys()) == {
-        "content-type",
-        "x-hub-signature-256",
-        "x-hub-timestamp",
-    }
-    assert req_headers["content-type"] == headers["Content-Type"]
-    assert req_headers["x-hub-signature-256"] == headers["X-Hub-Signature-256"]
-    assert req_headers["x-hub-timestamp"] == headers["X-Hub-Timestamp"]
 
 
 def test_host_forwards_on_pr_close(forward_env) -> None:
-    body = b"{}"
+    body = b'{"pull_request":{"number":7}}'
     headers = _signed_post_headers(body)
 
     async def _run():
@@ -284,18 +323,16 @@ def test_host_forwards_on_pr_close(forward_env) -> None:
                 HERALD_WEBHOOK_ON_PR_CLOSE_PATH,
                 content=body,
                 headers=headers,
+                params={"x": "1"},
             )
 
     response = asyncio.run(_run())
-    assert response.status_code == HTTPStatus.CREATED
-    assert response.json() == {"forwarded": True}
-    assert _FakeSidecarClient.requests[0]["url"].endswith("/on-pr-close")
-    req_headers = _FakeSidecarClient.requests[0]["headers"]
-    assert set(req_headers.keys()) == {
-        "content-type",
-        "x-hub-signature-256",
-        "x-hub-timestamp",
-    }
+    _assert_forwarded_once(
+        response,
+        path="/stations/herald/api/v1/webhooks/on-pr-close",
+        body=body,
+        headers=headers,
+    )
 
 
 def test_host_body_byte_cap_returns_413(forward_env) -> None:
@@ -371,6 +408,11 @@ def test_client_disconnect_after_partial_body_ends_read(forward_env) -> None:
 
         async def receive():
             nonlocal receive_count
+            # Yield to the event loop on every call, as a real server's receive()
+            # does: a read loop that skips the message and calls again then still
+            # lets wait_for's timeout fire, so a regression fails with TimeoutError
+            # instead of hanging the run.
+            await asyncio.sleep(0)
             receive_count += 1
             if receive_count == 1:
                 return {
@@ -410,6 +452,8 @@ def test_non_request_message_ends_body_read(forward_env) -> None:
 
         async def receive():
             nonlocal receive_count
+            # Yields for the same reason as the disconnect test's receive().
+            await asyncio.sleep(0)
             receive_count += 1
             if receive_count == 1:
                 return {
@@ -444,15 +488,9 @@ def test_non_request_message_ends_body_read(forward_env) -> None:
 def test_forward_inactive_unknown_path_reaches_in_process_herald(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    forward_inactive: str,
     reset_herald_webhook_host_app,
 ) -> None:
-    _FakeSidecarClient.requests = []
-    monkeypatch.setenv("MCP_HOST_SIDECAR_BASE_URL", "http://127.0.0.1:8090")
-    monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
-    monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
-    tree = tmp_path / "off.json"
-    tree.write_bytes(_sidecar_flag_tree(on=False))
-    configure_file_provider(tree)
     webhook, webhook_host = (
         importlib.import_module("pyforge.herald.webhook"),
         importlib.import_module("pyforge.herald.webhook_host"),
@@ -469,7 +507,6 @@ def test_forward_inactive_unknown_path_reaches_in_process_herald(
             )
 
     response = asyncio.run(_run())
-    api.clear_providers()
     assert _FakeSidecarClient.requests == []
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "no such webhook route" in response.json()["error"]
@@ -477,16 +514,8 @@ def test_forward_inactive_unknown_path_reaches_in_process_herald(
 
 def test_forward_inactive_unknown_path_herald_absent_uses_story_87_1(
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
+    forward_inactive: str,
 ) -> None:
-    _FakeSidecarClient.requests = []
-    monkeypatch.delenv("MCP_HOST_SIDECAR_BASE_URL", raising=False)
-    monkeypatch.setenv(ENV_FLAGS_PATH, str(tmp_path / "unused.json"))
-    monkeypatch.setenv(ENV_FLAGD_PATH, str(tmp_path / "unused.json"))
-    tree = tmp_path / "on.json"
-    tree.write_bytes(_sidecar_flag_tree(on=True))
-    configure_file_provider(tree)
-
     class _HeraldAbsentFinder:
         def find_spec(self, fullname, path, target=None):
             if fullname == "pyforge.herald" or fullname.startswith("pyforge.herald."):
@@ -523,7 +552,6 @@ def test_forward_inactive_unknown_path_herald_absent_uses_story_87_1(
         sys.meta_path.remove(finder)
         if removed_app is not None:
             station_api_mod._station_apps[herald_key] = removed_app  # noqa: SLF001
-        api.clear_providers()
         _reset_herald_webhook_caches(monkeypatch)
     assert _FakeSidecarClient.requests == []
     assert response.status_code == HTTPStatus.NOT_FOUND

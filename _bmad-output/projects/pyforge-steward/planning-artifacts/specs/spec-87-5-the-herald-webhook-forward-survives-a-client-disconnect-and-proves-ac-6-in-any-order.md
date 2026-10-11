@@ -2,7 +2,7 @@
 title: "87.5: The herald webhook forward survives a client disconnect and proves AC 6 in any order"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '47397de509c4b12b68309f77022ca915db29d5b5'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -236,7 +236,8 @@ host's packages. A fake sidecar records every request it receives.
 - Run every pixi task from the repo root, and read every verdict from its exit code, never through a pipe.
 
 **Never:**
-- Never contact the sidecar, or send a response, after a client disconnect.
+- Never contact the sidecar, or send a response, after a client disconnect that arrives before the full body has
+  been read (mid-body). A disconnect after the full body has been read is the accepted case below.
 - Never forward a path outside herald's two webhook paths, any client query string, or a header off 87.3's allowlist.
 - Never write `import pyforge` or `from pyforge` under `src/platform/`, and never import `pyforge.herald` from
   `django_pyforge`.
@@ -248,6 +249,12 @@ host's packages. A fake sidecar records every request it receives.
 - Never run `pixi add`, `pixi update` or an unfrozen install, and never hand-edit `SPEC.md`, a ledger or a derived
   file.
 
+**Accepted (not watched):**
+- A client disconnect after the full body has been read is not watched. The forward completes against the sidecar,
+  bounded by the 300 s timeout floor (`CELERY_HARD_LIMIT_SECONDS` through `proxy_timeout_seconds`,
+  `django_pyforge/mcp_http.py`), and the server drops the response sent into the closed connection. Nothing spins,
+  nothing leaks, and no exception escapes. (Independent review iteration 1, F6.)
+
 ## I/O & Edge-Case Matrix
 
 | Request | Today (`bab2162d73`) | After |
@@ -255,6 +262,7 @@ host's packages. A fake sidecar records every request it receives.
 | forward active, partial body then `http.disconnect` | `receive()` called forever; the event loop spins | read ends at once; nothing forwarded or sent |
 | forward active, a message type other than `http.request` | skipped; the read keeps waiting | read ends; nothing forwarded or sent |
 | forward active, body complete, or over a cap | forwarded, or 413 | unchanged |
+| forward active, client disconnects after the full body is read | forwarded; the server drops the answer | unchanged (accepted, not watched) |
 | flag OFF or URL unset, `…/webhooks/other` | host's generic 404 | in-process herald's 404, or 87.1's 404 with the absent reason |
 | forward active, `…/webhooks/other` | host's 404, nothing forwarded | unchanged |
 | sidecar, no `pyforge` package at all | 500 | 404 naming the missing module |
@@ -311,6 +319,64 @@ host's packages. A fake sidecar records every request it receives.
   independent review's passing entry is recorded here.
 
 ## Spec Change Log
+
+### 2026-10-11 — Implementer response to review iteration 1
+
+Answers the send-back "Independent review, iteration 1: sent back (1 major, 4 minor, 2 info, 1 trivial)" in the Review
+Triage Log. No change to `sidecar_forward.py` or `mcp_host/app.py`; the review found that code correct.
+
+- **F1 (major, required).** `src/platform/tests/test_webhook_herald_forward_host.py`: both fake `receive()` functions
+  in `test_client_disconnect_after_partial_body_ends_read` and `test_non_request_message_ends_body_read` now
+  `await asyncio.sleep(0)` first, as a real server's `receive()` suspends, so `asyncio.wait_for(timeout=1.0)` can fire
+  when the read loop skips a message and calls again.
+  - **AC (8) bullet 1, mutation evidence.** Done in a scratch copy (`git archive HEAD src pixi.toml`, this pass's two
+    test files copied in), never in the worktree. Control, unmutated: `timeout 120 env -u PYTHONSAFEPATH python -m
+    pytest -p no:cacheprovider -p no:randomly -q` on the two node ids, from the copy's `src/platform` with the
+    `platform-ci-test` interpreter: exit 0, `2 passed`. Mutation: `raise _ClientDisconnected()` in
+    `_read_webhook_body` replaced by `continue` (87.4's line), same command: exit 1 (not 124), `2 failed` in about
+    2.7 s; each test's call phase took 1.00 s and failed with `E   TimeoutError` (`asyncio/timeouts.py:115`, raised
+    from the `CancelledError` delivered at the fake's `await asyncio.sleep(0)`). Repeated on the final test files with
+    the same result; the worktree's `sidecar_forward.py` equals `HEAD`.
+- **F2 (minor).** `src/platform/tests/test_herald_webhook_sidecar.py`: the dependency-missing test removes
+  `pyforge.core.errors` and the `pyforge.herald.*` modules with `monkeypatch.delitem(sys.modules, name,
+  raising=False)`, so they come back at teardown, and its `finally` no longer re-imports herald while they are out
+  (that re-import minted the second `pyforge.core.errors`; the autouse fixture resets `webhook_host._application` on
+  the restored module). The herald-absent test's bare `del sys.modules[name]` in the same file got the same fix (same
+  defect class, same "any order" property). Proof: the dependency-missing test then
+  `test_mcp_host_sidecar_missing_secret_503`, by explicit node ids in that order with `-p no:randomly`: exit 0
+  (`2 passed`); the same pair against `HEAD`'s copy of the file, in the scratch copy: exit 1
+  (`test_mcp_host_sidecar_missing_secret_503` fails with a `HeraldError` that escapes the 503 handler).
+- **F3 (minor).** The no-pyforge test asserts `detail.endswith("(pyforge)")`, matching `mcp_host/app.py`'s
+  `f"pyforge.herald is not installed ({name})"`.
+- **F4 (minor).** A parametrized `forward_inactive` fixture (`flag_off`: URL set, flag OFF; `url_unset`: URL unset,
+  flag ON; providers cleared at teardown) drives both AC (3) inactive tests, so herald present and herald absent each
+  run under both, four combinations in all.
+- **F5 (minor).** `test_host_forwards_on_pr_close` posts a non-empty body with a query string and, through a helper
+  shared with the on-ship test, asserts the exact sidecar URL (no query), one request, body bytes, the three forwarded
+  header names and values, and the response's status, `content-type` and JSON body.
+- **F6 (info).** Boundaries & Constraints gains **Accepted (not watched)**: a disconnect after the full body has been
+  read is not watched; the forward completes against the sidecar within the 300 s floor and the server drops the
+  answer. The **Never** bullet now names the mid-body case only, and the I/O matrix gains the matching row.
+- **F7 (info), F9.** No action; both were already closed by the merge of `origin/main` (`c7162c5438`).
+- **F8 (trivial).** `docs/explanation/platform-deployment-architecture.md:322`: the triple space is one space.
+- **Order proofs.** Using a scratch-only seeded reordering plugin over the two test files (39 tests): forward, files
+  reversed, every item reversed, eight file-grouped shuffles (seeds 1-8) and sixteen interleaved shuffles (seeds
+  1-16): every run exit 0. The same plugin and seeds against `HEAD`'s two files (37 tests) failed 5 of 8 grouped and
+  4 of 16 interleaved runs, every failure `test_mcp_host_sidecar_missing_secret_503`. AC (2)'s two runs: the file
+  alone, exit 0 (`23 passed`); the two tests reversed by node id, exit 0.
+- **Surface.** `spec-surface-check` exited 2 with drift on `spec-pyforge-unifying-strategy` alone: the two test files
+  and three of this story's implementation paths (`sidecar_forward.py`, `flag-overlays.json`,
+  `test_openfeature_file_flags.py`), whose stamp atlas Story 25.1 recorded on `main` before the merge. Two memlog
+  entries on that Spec name those five paths and the two more the scoped stamp moves (`mcp_host/app.py`,
+  `pyforge-core/tests/unit/test_flags.py`); stamped with `--spec pyforge-steward/spec-pyforge-unifying-strategy`
+  only, then `spec-surface-check` exit 0.
+- **Verification (exit codes).** `pixi run --frozen -e pyforge-guild platform-ci-local -- --test`: 0 (every step
+  PASS; full suite `1204 passed, 13 skipped`). The three platform test files with `helm` on `PATH`: 0
+  (`91 passed`), and 0 in four interleaved shuffles across all three. `ruff check`, `ruff format --check` and `mypy`
+  (src/platform's own config) on the two changed test files: 0, 0, 0. `spec-surface-check`,
+  `chain-currency-sweep-check`, `deferred-work-check`, `docs-currency-check`, `story-status-check`: 0 each.
+
+### 2026-10-10 — Minted
 
 - 2026-10-10: minted from the operator's ruling "Dark again + mint 87.5 (Recommended)": Story 87.4 stays `done` on
   `main`, the forward is dark in dev again, and this story closes 87.4's independent review findings, then turns dev
