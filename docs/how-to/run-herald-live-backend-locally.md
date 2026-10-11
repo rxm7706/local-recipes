@@ -133,7 +133,7 @@ pixi run --frozen -e platform-dev python -c "import pyforge.herald"   # must fai
 
 The host's log carries two expected warnings when herald is absent: steward Story 87.1's
 station-API skip (`config.optional_components`) and herald Story 37.1's portal skip
-(`django_herald_portal.herald_guard`), each `herald is not installed on this host` once per
+(`django_herald_portal`), each `herald is not installed on this host` once per
 process. With the forward on, herald's two webhook paths never reach the station-API skip.
 
 ## 4. Deliver one real landing

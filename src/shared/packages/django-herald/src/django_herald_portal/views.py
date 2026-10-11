@@ -31,13 +31,9 @@ def _deck_viewer_enabled() -> bool:
     return evaluate_boolean(DECK_VIEWER_FLAG, default=False)
 
 
-@require_GET
-def herald_portal_unavailable(
-    request: HttpRequest,
-    *,
-    slug: str | None = None,
-) -> HttpResponse:
-    del slug  # same 404 body for every herald route when pyforge.herald is absent
+def herald_portal_unavailable(request: HttpRequest, **kwargs: object) -> HttpResponse:
+    """Answer every method on every herald path with the 404 reason (Story 37.1)."""
+    del request, kwargs  # one body for every path and method while herald is absent
     reason = herald_guard.portal_absent_reason()
     return HttpResponse(reason, status=404, content_type="text/plain")
 

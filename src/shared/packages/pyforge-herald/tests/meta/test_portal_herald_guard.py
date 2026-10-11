@@ -62,17 +62,20 @@ def test_herald_is_installed_false_for_pyforge_chain(missing_name: str, monkeypa
     assert "pyforge.herald" in reason or missing_name in reason
 
 
-def test_herald_guard_propagates_unrelated_module_not_found(tmp_path: Path) -> None:
+def test_herald_guard_propagates_unrelated_module_not_found(tmp_path: Path, monkeypatch) -> None:
     pkg = tmp_path / "throwaway_guard_pkg"
     pkg.mkdir()
     (pkg / "__init__.py").write_text("import missing_dep_guard_37\n", encoding="utf-8")
+    monkeypatch.setattr(herald_guard, "_HERALD_MODULE", "throwaway_guard_pkg")
     sys.path.insert(0, str(tmp_path))
     try:
-        with pytest.raises(ModuleNotFoundError, match="missing_dep_guard_37"):
-            importlib.import_module("throwaway_guard_pkg")
+        with pytest.raises(ModuleNotFoundError, match="missing_dep_guard_37") as excinfo:
+            herald_guard.herald_is_installed()
+        assert excinfo.value.name == "missing_dep_guard_37"
     finally:
         sys.path.remove(str(tmp_path))
         sys.modules.pop("throwaway_guard_pkg", None)
+    assert herald_guard._absent_reason is None  # noqa: SLF001
 
 
 def test_herald_guard_propagates_non_module_not_found(monkeypatch) -> None:
@@ -94,3 +97,27 @@ def test_herald_guard_propagates_dependency_module_not_found(monkeypatch) -> Non
     with pytest.raises(ModuleNotFoundError) as excinfo:
         herald_guard.herald_is_installed()
     assert excinfo.value.name == "some_herald_dependency_xyz"
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        ModuleNotFoundError(name="some_herald_dependency_xyz"),
+        RuntimeError("broken herald install"),
+    ],
+    ids=["dependency-module-not-found", "other-error"],
+)
+def test_herald_guard_propagates_on_every_call(error: Exception, monkeypatch) -> None:
+    calls: list[str] = []
+
+    def _fake(name: str) -> object:
+        calls.append(name)
+        raise error
+
+    monkeypatch.setattr(herald_guard.importlib, "import_module", _fake)
+    for _ in range(2):
+        with pytest.raises(type(error)):
+            herald_guard.herald_is_installed()
+    assert calls == ["pyforge.herald", "pyforge.herald"]
+    with pytest.raises(type(error)):
+        herald_guard.portal_absent_reason()

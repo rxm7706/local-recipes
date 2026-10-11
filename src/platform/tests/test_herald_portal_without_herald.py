@@ -1,4 +1,4 @@
-"""Story 37.1 — herald portal loads without pyforge.herald installed."""
+"""Story 37.1 — the herald portal without pyforge.herald, and with it unchanged."""
 
 from __future__ import annotations
 
@@ -87,13 +87,18 @@ def _build_child_script(expected_stations_status: int) -> str:
             "/stations/herald/",
             "/stations/herald/decks/",
             "/stations/herald/decks/any-slug/view/",
+            "/stations/herald/decks/x/",
+            "/stations/herald/other/",
+            "/stations/herald/decks/a.b/view/",
         ):
-            resp = client.get(path)
-            assert resp.status_code == 404
-            assert resp["Content-Type"].startswith("text/plain")
-            body = resp.content.decode()
-            assert "herald" in body
-            assert "pyforge.herald" in body
+            for method in ("get", "post", "put", "patch", "delete", "options"):
+                resp = getattr(client, method)(path)
+                assert resp.status_code == 404, (method, path, resp.status_code)
+                assert resp["Content-Type"].startswith("text/plain"), (method, path)
+                body = resp.content.decode()
+                assert "herald" in body, (method, path)
+                assert "pyforge.herald" in body, (method, path)
+            assert client.head(path).status_code == 404, ("head", path)
 
         clear_url_caches()
         resolve("/stations/herald/")
@@ -148,7 +153,56 @@ def test_herald_portal_pages_without_herald():
     assert proc.returncode == 0, proc.stderr or proc.stdout
     assert "OK" in proc.stdout
     combined = proc.stdout + proc.stderr
-    assert combined.count("herald is not installed on this host") >= 1
-    assert combined.count("herald is not installed on this host") == combined.count(
-        "herald is not installed on this host"
+    assert combined.count("herald is not installed on this host") == 1
+
+
+_PRESENT_CHILD_SCRIPT = textwrap.dedent(
+    """
+    import django
+    import logging
+    from django.urls import resolve
+
+    records: list[logging.LogRecord] = []
+
+    class _CaptureHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    cap = _CaptureHandler()
+    cap.setLevel(logging.WARNING)
+    logging.getLogger("django_herald_portal").addHandler(cap)
+    logging.getLogger("django_herald_portal").setLevel(logging.WARNING)
+
+    django.setup()
+    from django_herald_portal import views
+
+    for path, url_name, func in (
+        ("/stations/herald/", "herald-home", views.chrome_home),
+        ("/stations/herald/decks/", "herald-deck-list", views.deck_list),
+        ("/stations/herald/decks/x/view/", "herald-deck-view", views.deck_view),
+    ):
+        match = resolve(path)
+        assert match.url_name == url_name, (path, match.url_name)
+        assert match.func is func, (path, match.func)
+    other = resolve("/stations/herald/other/")
+    assert other.func is not views.herald_portal_unavailable, other.func
+
+    assert records == [], [r.getMessage() for r in records]
+    print("OK")
+    """
+)
+
+
+def test_herald_portal_routes_unchanged_with_herald_present():
+    proc = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", _PRESENT_CHILD_SCRIPT],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=180,
+        cwd=_PLATFORM_ROOT,
+        env=_child_env(),
     )
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+    assert "OK" in proc.stdout
+    assert "herald is not installed on this host" not in proc.stdout + proc.stderr

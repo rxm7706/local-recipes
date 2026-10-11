@@ -2589,11 +2589,13 @@
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": "c07d4482ee26c1d009c50c74b9736cc6b97b048a",
    "src/shared/packages/pyforge-herald/tests/meta/test_pages_second_host.py": "590b100af280bdf078904841a56330bec1c65765",
    "src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py": "95343f6a9af31828b223e36b930c07e822580566",
+   "src/shared/packages/pyforge-herald/tests/meta/test_portal_herald_guard.py": "775815111cc31eaa827deb92d45b249ca124d7a0",
+   "src/shared/packages/pyforge-herald/tests/meta/test_portal_import_boundary.py": "5c66d48a2b2dfdd2af0263ae25d0d283d24fc38e",
    "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py": "06d7d8210a964c90740c49ab23f22b286a968d52",
    "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py": "b38865322f8677940e9443b49c6b7f9fb1fae868",
    "src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py": "3c24534c496bf78416e73682726424cb4cc0675f",
    "src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py": "452758db448c05f425826f566170e119c058d738",
-   "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": "5862d317f1bbadbb550f007aa9f96bc49bda39c5",
+   "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": "2a36091b4d9c6c8193b08b948ccb66183937bdd1",
    "src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py": "f83967e034e3820acede1fbffd11490ce49572a5",
    "src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py": "1cfb91cb9fa7b05d72b3f3835ddc7338ded95720",
    "src/shared/packages/pyforge-herald/tests/unit/test_agent_sdk_transport.py": "19103d43d9c5f24a0821849f51a87e9bb47002c3",
@@ -2692,7 +2694,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "b89b254a93fe131c87e177b5038d3ad52d205f8f"
+  "memlog": "2521fed2f824543455de610c79ca08c1cbde6f5c"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {

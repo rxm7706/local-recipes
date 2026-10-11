@@ -28,27 +28,32 @@ def _is_provided_by_absent(exc_name: str | None, provided_by: str) -> bool:
 
 
 def herald_is_installed() -> bool:
-    """Return whether ``pyforge.herald`` is importable; decide and log once."""
+    """Return whether ``pyforge.herald`` is importable; decide and log once.
+
+    Only an answer is cached. An error that is not herald's absence (a herald
+    dependency missing, a broken install) propagates on every call, as
+    ``config.optional_components.import_optional`` does.
+    """
     global _decided, _herald_installed, _absent_reason, _logged_absent
     if _decided:
         return _herald_installed
-    _decided = True
     try:
         importlib.import_module(_HERALD_MODULE)
     except ModuleNotFoundError as exc:
         if not _is_provided_by_absent(exc.name, _HERALD_MODULE):
             raise
-        _herald_installed = False
         _absent_reason = (
             f"{_COMPONENT} is not installed on this host: No module named '{exc.name}'"
         )
+        _herald_installed = False
+        _decided = True
         if not _logged_absent:
             _logged_absent = True
             _logger.warning("%s %s", _absent_reason, _REMEDY)
         return False
-    else:
-        _herald_installed = True
-        return True
+    _herald_installed = True
+    _decided = True
+    return True
 
 
 def portal_absent_reason() -> str:

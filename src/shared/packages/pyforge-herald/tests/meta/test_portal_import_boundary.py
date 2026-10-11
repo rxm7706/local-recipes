@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import ast
+import textwrap
 from pathlib import Path
+
+import pytest
 
 _PORTAL_PKG = "django_herald_portal"
 
@@ -34,6 +37,8 @@ def _module_level_pyforge_herald_imports(body: list[ast.stmt]) -> list[str]:
             module = node.module or ""
             if module == "pyforge.herald" or module.startswith("pyforge.herald."):
                 found.append(f"from {module} import ...")
+            elif module == "pyforge" and node.level == 0:
+                found.extend(f"from pyforge import {alias.name}" for alias in node.names if alias.name == "herald")
         elif isinstance(node, ast.Try):
             found.extend(_module_level_pyforge_herald_imports(node.body))
             found.extend(_module_level_pyforge_herald_imports(node.orelse))
@@ -137,3 +142,37 @@ def test_portal_urlconf_reach_has_no_module_level_pyforge_herald_import() -> Non
             if nxt not in seen:
                 queue.append(nxt)
     assert offenders == []
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import pyforge.herald",
+        "import pyforge.herald.deck_twins as twins",
+        "from pyforge.herald import deck_twins",
+        "from pyforge.herald.deck_twins import NotFound",
+        "from pyforge import herald",
+        "from pyforge import core, herald as h",
+        "if True:\n    from pyforge import herald",
+        "try:\n    import pyforge.herald\nexcept ImportError:\n    pass",
+        "with open('x'):\n    from pyforge.herald import deck_twins",
+    ],
+)
+def test_detector_flags_module_scope_herald_import(source: str) -> None:
+    tree = ast.parse(textwrap.dedent(source))
+    assert _module_level_pyforge_herald_imports(tree.body) != []
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "def f():\n    from pyforge import herald",
+        "class C:\n    import pyforge.herald",
+        "from pyforge import core",
+        "from pyforge import heraldry",
+        "import pyforge",
+    ],
+)
+def test_detector_ignores_function_scope_and_other_modules(source: str) -> None:
+    tree = ast.parse(textwrap.dedent(source))
+    assert _module_level_pyforge_herald_imports(tree.body) == []

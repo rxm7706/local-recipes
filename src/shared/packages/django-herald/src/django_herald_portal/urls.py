@@ -1,7 +1,6 @@
-from django.urls import path
+from django.urls import path, re_path
 
-from django_herald_portal import herald_guard
-from django_herald_portal import views
+from django_herald_portal import herald_guard, views
 
 if herald_guard.herald_is_installed():
     urlpatterns = [
@@ -18,4 +17,6 @@ else:
             views.herald_portal_unavailable,
             name="herald-deck-view",
         ),
+        # Every other path under /stations/herald/ answers the same reason.
+        re_path(r"^.*$", views.herald_portal_unavailable),
     ]
