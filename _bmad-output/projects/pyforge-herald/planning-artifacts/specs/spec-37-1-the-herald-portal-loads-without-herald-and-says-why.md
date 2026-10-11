@@ -2,7 +2,7 @@
 title: '37.1: The herald portal loads without herald and says why'
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
 followup_review_recommended: false
 baseline_revision: '31230019c7b72b2d5d5f8a143f713b978eb47dae'
 difficulty: 'medium'
@@ -288,6 +288,10 @@ Type / Effort / Deps: fix / S / S-19.2.
   never a 5xx.
 
 ## Review Triage Log
+
+### 2026-10-11 — Orchestrator delta verification of the iteration-3 lows: passed
+
+The orchestrator (not the implementer, not the iteration-3 reviewer) read the F1-F5 delta at 1926409670 and re-ran two mutations: a guard treating any `pyforge*` name as absent reds `test_herald_guard_propagates_dependency_module_not_found[sibling-pyforge-package]` and `...on_every_call[sibling-pyforge-module-not-found]` (F2); a module-scope `from pyforge import herald` in `django_herald_portal/__init__.py` reds `test_portal_urlconf_reach_has_no_module_level_pyforge_herald_import` (F3); both restored byte-identical, 28 meta-tests green. The implementer's gate codes after the last source edit: `pyforge-herald-test` 0 (1801 passed), `lint-types` 0, `platform-ci-local -- --test` 0 (1208 passed), `spec-surface-check` 0, `detectors-ci` 0, `deferred-work-check` 0. F6 stays deferred to DW-herald-19-2-2's own fix; F7 rejected. Story done; landing proceeds.
 
 ### 2026-10-11 — Fix pass for iteration 3 lows (implementer)
 
