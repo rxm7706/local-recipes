@@ -922,6 +922,13 @@ _SHIPPED_CLOCKS = {
         "",
         "",
     ),
+    "pyforge.warden.sast_opengrep": (
+        "warden",
+        "15-1-",
+        "2026-09-28",
+        "",
+        "",
+    ),
     "pyforge.atlas.dependency_history_sensor": ("atlas", "25-2-", "2026-09-28", "", ""),
     "pyforge.herald.deck_publish": ("herald", "29-1-", "2026-09-28", "", ""),
     # CAP-55 deck_viewer: Story 30.1 publish/twins; Story 30.2 portal + deck-twins API routes.
@@ -1024,7 +1031,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.object_store_consumer": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.workspace_preserve_tag": {"dev": False, "staging": False, "production": False},
-        "pyforge.steward.herald_webhook_sidecar": {"dev": True, "staging": False, "production": False},
+        "pyforge.steward.herald_webhook_sidecar": {"dev": False, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
@@ -1037,6 +1044,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.warden.fleet_scan": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fleet_fix_proposals": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.non_python_ecosystems": {"dev": True, "staging": True, "production": False},
+        "pyforge.warden.sast_opengrep": {"dev": True, "staging": True, "production": False},
     }
     assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(
         expected

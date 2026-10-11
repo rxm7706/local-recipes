@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 615
+# stories: 618
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -280,7 +280,7 @@ development_status:
   46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: done
-  47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: blocked
+  47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: backlog
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: done
   47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: done
   47-4-a-genuine-recall-miss-injects-nothing-never-a-fabricated-confidence-claim: done
@@ -455,6 +455,7 @@ development_status:
   9-4-legacy-convention-detection: done
   9-5-manifest-coverage-check: done
   9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: done
+  90-1-the-dispatch-supervisor-records-completion-only-after-the-harness-session-has-really-exited: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -629,3 +630,5 @@ development_status:
   epic-89-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
+  epic-90: done
+  epic-90-retrospective: optional

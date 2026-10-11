@@ -52,3 +52,7 @@ jsonschema = "*"
 packageurl-python = "*"
 license-expression = "*"
 pyforge-core = { path = "../pyforge-core" }
+
+# Story 15.1: opengrep is published on SelfExplainML for linux-64 only (mason 21.4).
+[package.target.linux-64.run-dependencies]
+opengrep = ">=1.30.2,<1.31"
