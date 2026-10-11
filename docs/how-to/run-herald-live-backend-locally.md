@@ -320,8 +320,10 @@ PostgreSQL" (AD-13/AD-17). PostgreSQL 17 is the host's Django database. A herald
 would be a new capability, which Epic 19 does not build. WAL needs a local disk, which the primary
 checkout is on.
 
-## Why `herald-live-demo.yml` is not the proof
+## Why the retired CI live-demo workflow is not the proof
 
-That workflow is `disabled_manually`. When it ran, each job wrote a throwaway `runner.temp`
-database on a GitHub-hosted runner and needed a GitHub repository secret, so it could never show a
-record surviving a restart on this machine. Story 36.1 archives it after Story 19.2 lands.
+Story 13.6's CI-contained demo lived at
+`archive/.github/workflows/herald-live-demo.yml` after Story 36.1 archived it. When it still ran
+from `.github/workflows/`, each job wrote a throwaway `runner.temp` database on a GitHub-hosted
+runner and needed a GitHub repository secret, so it could never show a record surviving a restart
+on this machine. This how-to and `herald-ship-local` are the estate's live proof instead.

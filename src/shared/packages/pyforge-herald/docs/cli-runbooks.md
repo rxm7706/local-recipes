@@ -19,8 +19,8 @@ steward's mcp-host sidecar on `127.0.0.1:8090` (steward Story 87.3). Herald's
 webhook runs in that sidecar against SQLite at `<primary checkout>/.herald/herald.db`,
 and `herald-ship-local` delivers one real landing — see
 [`docs/how-to/run-herald-live-backend-locally.md`](../../../../docs/how-to/run-herald-live-backend-locally.md).
-`.github/workflows/herald-live-demo.yml` is disabled (`disabled_manually`); its
-throwaway runner stores are not that proof. An operator can still create every
+The retired CI demo (archived Story 36.1) used throwaway runner stores and is
+not that proof. An operator can still create every
 record by hand; the webhook path is additive, not a replacement.
 `herald scheduler run`'s derived-state refresh (Story 13.5, see [How to
 run the scheduled
@@ -161,9 +161,8 @@ an HMAC-verified ASGI3 callable (`webhook.create_app(repo_root, secret)`),
 built and fully unit-tested in isolation, and — as of Story 13.6 —
 demonstrably real: `src/pyforge/herald/webhook_host.py` mounts it behind
 `daphne` (a stable `application` object, `daphne pyforge.herald.webhook_host:application`).
-`.github/workflows/herald-live-demo.yml` once started that host for one CI job
-at a time; it has been `disabled_manually` since its last run on 2026-08-24, and
-Story 36.1 archives it. As of Story 19.2 the persistent path is local: the
+Story 13.6's CI demo once started that host for one job at a time; Story 36.1
+archived it under `archive/.github/workflows/`. As of Story 19.2 the persistent path is local: the
 platform host on `127.0.0.1:8001` forwards these two routes to steward's
 mcp-host sidecar, which serves `webhook_host`'s application against
 `<primary checkout>/.herald/herald.db`, and `herald-ship-local` delivers a real
@@ -307,9 +306,8 @@ often you run this command, not by anything inside it. Install a local
 a GitHub Actions workflow: `.herald/` is gitignored, per-operator state,
 so a GitHub-hosted runner has no access to it and would run this against
 an empty database every time (see this story's spec Design Notes for the
-full reasoning). `herald-live-demo.yml`'s `scheduler-demo` job (Story
-13.6) ran `herald scheduler run --json` inside GitHub Actions while the
-workflow ran (it is `disabled_manually` now), but only to prove the command
+full reasoning). Story 13.6's archived CI `scheduler-demo` job ran
+`herald scheduler run --json` inside GitHub Actions, but only to prove the command
 runs unattended — it seeded and revalidated its own throwaway scratch
 database, never yours; it was a proof this machinery works, not a substitute
 for installing the cron entry below. `cd` into `pyforge-herald`'s own package
@@ -498,9 +496,9 @@ herald: error: no command given; valid subcommands: deck, progress, success, not
 ### What is *not* a failure mode here
 
 **"My local `.herald/herald.db` has no record of a landing" is not a bug.**
-Nothing delivers landings to your checkout on its own. `herald-live-demo.yml`
-is `disabled_manually`, and while it ran each of its jobs wrote into a
-scratch, JOB-LOCAL `.herald/herald.db` under the runner's temp directory,
+Nothing delivers landings to your checkout on its own. The archived CI demo,
+while it still ran, wrote each job into a scratch, JOB-LOCAL `.herald/herald.db`
+under the runner's temp directory,
 discarded when the job ended — never into any checkout's real store. To record
 a landing in *your* store, deliver it through the local host and sidecar with
 `herald-ship-local` (see
@@ -517,9 +515,9 @@ whose remedy is restarting the sidecar.
 
 `herald scheduler run`
 (Story 13.5, [above](#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot))
-has the same split: `herald-live-demo.yml`'s `scheduler-demo` job proved the
-command ran unattended against its own scratch seed data while the workflow
-ran — the documented trigger for *your* real, durable `.herald/herald.db` is
+has the same split: Story 13.6's archived CI scheduler job proved the command
+ran unattended against scratch seed data — the documented trigger for *your*
+real, durable `.herald/herald.db` is
 an operator-installed local `crontab` entry (the how-to gives the line),
 because a GitHub-hosted runner never has the gitignored database a real
 checkout would. A *missed* run of that local cron entry (the machine was off,

@@ -7,8 +7,9 @@ Every other webhook/webhook_host test (``test_webhook.py``,
 ``send`` triple -- deliberately, per Boundaries & Constraints ("mirror
 13.4's hand-built scope/receive/send pattern for non-socket tests") -- so
 none of them prove the ASGI callable actually answers a REAL socket, behind
-a REAL ASGI server, the way ``.github/workflows/herald-live-demo.yml``'s
-three jobs do for real. This test is that proof, and the only one: opt-in
+a REAL ASGI server — the same shape Story 13.6 once proved in CI (now
+archived) and Story 19.2's local host relies on. This test is the opt-in unit
+gate proof, and the only one in the default suite: opt-in
 only (``live_webhook`` marker + ``HERALD_LIVE_WEBHOOK`` skipif, mirroring
 ``test_live_design_spike.py``'s existing ``live``/``HERALD_LIVE_DESIGN``
 precedent), so it never runs in the default ``pyforge-herald-test`` gate --

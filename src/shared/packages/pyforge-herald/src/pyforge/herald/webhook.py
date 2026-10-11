@@ -15,13 +15,11 @@ delivery, because a same-day second delivery replaces rather than merges
 -- see "Same-day ``on-ship`` deliveries REPLACE" below before wiring the
 step. Writing the actual ``.github/workflows/*.yml`` step and mounting this
 module into a live ASGI host were Story 13.6's job -- done: ``webhook_host.py``
-mounts this callable behind ``daphne``, and
-``.github/workflows/herald-live-demo.yml`` drives it as a bounded,
-CI-contained demonstration (never a persistent, publicly-reachable
-deployment -- that stays out of Surface; see this repo's deferred-work
-ledger for the tracked gap in Steward's own perimeter tooling). This
+mounts this callable behind ``daphne``. Story 19.2 documents the persistent
+local host (platform ASGI + mcp-host sidecar); Story 13.6's CI demo is archived
+at ``archive/.github/workflows/herald-live-demo.yml`` (Story 36.1). This
 module itself is still built and fully tested in isolation, independent of
-that host.
+any host.
 
 **What holding the secret buys.** The CLI's own ``herald progress
 --update`` runs behind ``auth.require_operator_role`` (AD-16); this
