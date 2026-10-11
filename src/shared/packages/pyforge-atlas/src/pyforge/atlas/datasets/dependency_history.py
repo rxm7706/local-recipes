@@ -6,7 +6,10 @@ Nodes emit a small :class:`DependencyHistoryBuildRequest` trigger only.
 
 Every repo is scanned in a clone kept in Atlas's own cache (a ``local_path`` source is
 cloned too), so git-pkgs never runs against an operator's working copy and nothing is
-written into a scanned repo. git-pkgs runs as ``git pkgs init --no-hooks`` with
+written into a scanned repo. Every git call against a clone is bounded to it
+(``GIT_CEILING_DIRECTORIES``), and a clone is used only when its top level is the clone
+directory itself and its ``origin`` is the declared source -- the cache defaults to
+``data/`` inside the operator's checkout, so a partial clone must never hand a call to it. git-pkgs runs as ``git pkgs init --no-hooks`` with
 ``GIT_PKGS_DB`` in a throwaway directory outside the repo, and its change rows are read
 from its own JSON output (``git pkgs history --format json``) -- no ``sqlite3`` import and
 no DuckDB extension, so nothing is ever ``INSTALL``-ed (AD-13). The throwaway directory,
@@ -153,6 +156,9 @@ class DependencyHistoryBuildRequest:
     repos: tuple[RepoSource, ...] = ()
     force: bool = False
     not_applicable: bool = False
+    #: entries of the configured list that could not be read as a repo source; while any exist
+    #: the configured set is not known, so nothing is pruned.
+    malformed_entries: int = 0
 
     @classmethod
     def skip(cls) -> DependencyHistoryBuildRequest:
@@ -183,15 +189,24 @@ def _empty_history() -> pd.DataFrame:
     return pd.DataFrame(columns=list(HISTORY_COLUMNS))
 
 
-def _parse_repo_sources(raw: Any) -> tuple[RepoSource, ...]:
-    if not raw or not isinstance(raw, list):
-        return ()
+def _parse_repo_sources(raw: Any) -> tuple[tuple[RepoSource, ...], int]:
+    """The repo sources a configured list declares, and how many of its entries were malformed."""
+    if not raw:
+        return (), 0
+    if not isinstance(raw, list):
+        logger.warning("dependency_history.repos is a %s, not a list; no repo is read from it", type(raw).__name__)
+        return (), 1
     out: list[RepoSource] = []
-    for item in raw:
+    malformed = 0
+    for index, item in enumerate(raw):
         if not isinstance(item, Mapping):
+            logger.warning("dependency_history.repos[%d] is a %s, not a mapping; skipped", index, type(item).__name__)
+            malformed += 1
             continue
         full_name = str(item.get("full_name") or "").strip()
         if not full_name:
+            logger.warning("dependency_history.repos[%d] has no full_name; skipped", index)
+            malformed += 1
             continue
         local_path = item.get("path") or item.get("local_path")
         clone_url = item.get("clone_url")
@@ -202,7 +217,7 @@ def _parse_repo_sources(raw: Any) -> tuple[RepoSource, ...]:
                 clone_url=str(clone_url) if clone_url else None,
             )
         )
-    return tuple(out)
+    return tuple(out), malformed
 
 
 def _fs_name(full_name: str) -> str:
@@ -242,6 +257,17 @@ def _git_env(extra: Mapping[str, str] | None = None) -> dict[str, str]:
     if extra:
         env.update(extra)
     return env
+
+
+def _bounded_env(start: Path, extra: Mapping[str, str] | None = None) -> dict[str, str]:
+    """``_git_env`` with repository discovery bounded to ``start`` itself.
+
+    ``GIT_CEILING_DIRECTORIES`` names ``start``'s parent, so a git call run from ``start`` (a
+    clone at ``<cache>/<owner>@<repo>``, or the cache) looks for a repository there and never
+    climbs into an enclosing one -- the cache defaults to ``data/`` inside the operator's own
+    checkout, and a partial ``.git`` would otherwise hand every call to that checkout.
+    """
+    return _git_env({"GIT_CEILING_DIRECTORIES": str(start.parent), **(extra or {})})
 
 
 def _tail(text: str, limit: int = 200) -> str:
@@ -303,7 +329,7 @@ def _parse_version(text: str) -> tuple[int, int, int] | None:
 def _git_pkgs_problem(process: GitProcessPort, cwd: Path) -> str:
     """``""`` when ``git pkgs`` resolves inside its tested range, else why it cannot be used."""
     try:
-        res = process.run(["git", "pkgs", "--version"], cwd=cwd, timeout_s=_GIT_TIMEOUT_S, env=_git_env())
+        res = process.run(["git", "pkgs", "--version"], cwd=cwd, timeout_s=_GIT_TIMEOUT_S, env=_bounded_env(cwd))
     except ProcessError as exc:
         return f"git-pkgs could not be launched: {exc}"
     if res.returncode != 0:
@@ -343,7 +369,7 @@ def _git_pkgs_change_row(item: Mapping[str, Any], repo_full_name: str) -> dict[s
 def _git_pkgs_rows(process: GitProcessPort, repo: Path, repo_full_name: str) -> list[dict[str, Any]]:
     """Index ``repo`` into a throwaway database and read its change rows from git-pkgs' JSON."""
     with tempfile.TemporaryDirectory(prefix="atlas-git-pkgs-") as scratch:
-        env = _git_env({"GIT_PKGS_DB": str(Path(scratch) / "pkgs.sqlite3")})
+        env = _bounded_env(repo, {"GIT_PKGS_DB": str(Path(scratch) / "pkgs.sqlite3")})
         init = process.run(
             ["git", "-C", str(repo), "pkgs", "init", "--no-hooks", "--quiet"],
             cwd=repo,
@@ -503,7 +529,7 @@ def _file_revisions(process: GitProcessPort, repo: Path, path: str) -> list[tupl
         ["git", "-C", str(repo), "log", "--first-parent", "--reverse", "--format=%H %ct", "--", path],
         cwd=repo,
         timeout_s=_GIT_TIMEOUT_S,
-        env=_git_env(),
+        env=_bounded_env(repo),
     )
     if res.returncode != 0:
         raise _WalkError(f"git log -- {path} exited {res.returncode}: {_tail(res.stderr)}")
@@ -529,7 +555,7 @@ def _estate_pixi_rows(process: GitProcessPort, repo: Path, repo_full_name: str) 
                 ["git", "-C", str(repo), "show", f"{sha}:{path}"],
                 cwd=repo,
                 timeout_s=_GIT_TIMEOUT_S,
-                env=_git_env(),
+                env=_bounded_env(repo),
             )
             # A non-zero `git show` is the file being absent at that commit (it was deleted).
             current = parser(shown.stdout) if shown.returncode == 0 else {}
@@ -556,17 +582,20 @@ def _estate_pixi_rows(process: GitProcessPort, repo: Path, repo_full_name: str) 
     return rows
 
 
+def _git_in(process: GitProcessPort, repo: Path, *args: str, timeout_s: float = _GIT_TIMEOUT_S) -> ProcessResult:
+    """``git -C <repo> <args>`` with discovery bounded to ``repo`` (never an enclosing repository)."""
+    return process.run(["git", "-C", str(repo), *args], cwd=repo, timeout_s=timeout_s, env=_bounded_env(repo))
+
+
 def _repo_head(process: GitProcessPort, repo: Path) -> str:
-    res = process.run(
-        ["git", "-C", str(repo), "rev-parse", "HEAD"],
-        cwd=repo,
-        timeout_s=_GIT_TIMEOUT_S,
-        env=_git_env(),
-    )
+    """The clone's ``HEAD`` commit, or ``""`` for a repository with no commits yet (an unborn ``HEAD``)."""
+    res = _git_in(process, repo, "rev-parse", "--verify", "--quiet", "HEAD")
     head = res.stdout.strip() if res.returncode == 0 else ""
-    if not head:
-        raise _WalkError(f"git rev-parse HEAD exited {res.returncode}: {_tail(res.stderr)}")
-    return head
+    if head:
+        return head
+    if res.returncode == 1 and not res.stderr.strip():
+        return ""  # `--verify --quiet` exits 1, silently, exactly when HEAD names no commit yet
+    raise _WalkError(f"git rev-parse HEAD exited {res.returncode}: {_tail(res.stderr)}")
 
 
 class RepoDependencyHistoryDataset(AbstractDataset):
@@ -667,25 +696,37 @@ class RepoDependencyHistoryDataset(AbstractDataset):
         return dest
 
     def _clone_is_usable(self, process: GitProcessPort, dest: Path) -> bool:
+        """True only when ``dest`` is itself a repository: its top level is ``dest``, not an enclosing one."""
         if not (dest / ".git").is_dir():
             return False
-        res = process.run(
-            ["git", "-C", str(dest), "rev-parse", "--verify", "--quiet", "HEAD"],
-            cwd=dest,
-            timeout_s=_GIT_TIMEOUT_S,
-            env=_git_env(),
-        )
-        return res.returncode == 0
+        res = _git_in(process, dest, "rev-parse", "--show-toplevel")
+        if res.returncode != 0 or not res.stdout.strip():
+            return False
+        return Path(res.stdout.strip()).resolve() == dest
+
+    def _follow_upstream(self, process: GitProcessPort, dest: Path) -> bool:
+        """Hard-reset a fetched clone to its upstream; False when a fresh clone is needed instead."""
+        upstream = _git_in(process, dest, "rev-parse", "--verify", "--quiet", "@{upstream}")
+        if upstream.returncode == 0:
+            return _git_in(process, dest, "reset", "--hard", "--quiet", "@{upstream}").returncode == 0
+        if _repo_head(process, dest):
+            return False  # its upstream branch is gone: clone afresh to follow the remote's default
+        # Unborn HEAD and no upstream ref: current while the remote is still empty.
+        refs = _git_in(process, dest, "for-each-ref", "--count=1", "refs/remotes/origin/")
+        return refs.returncode == 0 and not refs.stdout.strip()
 
     def _sync_clone(self, process: GitProcessPort, source: RepoSource) -> Path:
         """Bring Atlas's own clone of ``source`` up to its remote; raise ``_Unreachable`` when it cannot.
 
-        A usable clone is fetched -- a failed fetch is the remote being unreachable, so the
-        clone is kept and the repo reads ``stale`` -- then hard-reset to its upstream, so a
-        rewritten upstream history (an amended commit, a force push) is followed, never
-        refused. A clone that is not a usable repository (a partial ``.git`` a killed run left
-        behind) or that cannot be reset to its upstream is removed and cloned afresh, and a
-        clone attempt that fails in any way, a timeout included, leaves no directory behind.
+        Every git call against the clone is bounded to it (``_bounded_env``), and the clone is
+        used only when its top level is the clone directory itself and its ``origin`` is the
+        declared one. A usable clone is fetched -- a failed fetch is the remote being
+        unreachable, so the clone is kept and the repo reads ``stale`` -- then hard-reset to its
+        upstream, so a rewritten upstream history is followed, never refused. Anything else (a
+        partial ``.git`` a killed run left behind, a changed ``clone_url`` / ``local_path``, an
+        upstream that cannot be followed) is removed -- inside the cache only, ``_clone_dir``
+        guarantees it -- and cloned afresh; a clone attempt that fails in any way, a timeout
+        included, leaves no directory behind.
         """
         dest = self._clone_dir(source.full_name)
         if source.clone_url:
@@ -698,25 +739,23 @@ class RepoDependencyHistoryDataset(AbstractDataset):
         try:
             dest.parent.mkdir(parents=True, exist_ok=True)
             if self._clone_is_usable(process, dest):
-                fetched = process.run(
-                    ["git", "-C", str(dest), "fetch", "--quiet", "--prune", "origin"],
-                    cwd=dest,
-                    timeout_s=_CLONE_TIMEOUT_S,
-                    env=_git_env(),
-                )
-                if fetched.returncode != 0:
-                    raise _Unreachable(f"git fetch exited {fetched.returncode}: {_tail(fetched.stderr)}")
-                reset = process.run(
-                    ["git", "-C", str(dest), "reset", "--hard", "--quiet", "@{upstream}"],
-                    cwd=dest,
-                    timeout_s=_GIT_TIMEOUT_S,
-                    env=_git_env(),
-                )
-                if reset.returncode == 0:
-                    return dest
-                logger.warning(
-                    "%s: clone cannot follow its upstream (%s); cloning afresh", source.full_name, _tail(reset.stderr)
-                )
+                current = _git_in(process, dest, "config", "--get", "remote.origin.url").stdout.strip()
+                if current != origin:
+                    logger.warning(
+                        "%s: the declared origin is %r, the clone's is %r; cloning afresh",
+                        source.full_name,
+                        origin,
+                        current,
+                    )
+                else:
+                    fetched = _git_in(
+                        process, dest, "fetch", "--quiet", "--prune", "origin", timeout_s=_CLONE_TIMEOUT_S
+                    )
+                    if fetched.returncode != 0:
+                        raise _Unreachable(f"git fetch exited {fetched.returncode}: {_tail(fetched.stderr)}")
+                    if self._follow_upstream(process, dest):
+                        return dest
+                    logger.warning("%s: clone cannot follow its upstream; cloning afresh", source.full_name)
             if dest.exists():
                 shutil.rmtree(dest)
             try:
@@ -724,7 +763,7 @@ class RepoDependencyHistoryDataset(AbstractDataset):
                     ["git", "clone", "--quiet", "--", origin, str(dest)],
                     cwd=dest.parent,
                     timeout_s=_CLONE_TIMEOUT_S,
-                    env=_git_env(),
+                    env=_bounded_env(dest.parent),
                 )
             except BaseException:
                 shutil.rmtree(dest, ignore_errors=True)  # a killed or timed-out clone leaves nothing behind
@@ -765,8 +804,12 @@ class RepoDependencyHistoryDataset(AbstractDataset):
             return _RepoOutcome(UNRESOLVED, str(exc))
         except (_Unreachable, _WalkError, ProcessError) as exc:
             return _RepoOutcome(STALE, str(exc))
-        if not force and head == prior_head:
-            # Unmoved since its last complete walk: not re-walked (AD-5); reachable again, so no marker.
+        if not head:
+            # Reachable, but no commits yet: an explicit empty history, not a failure (nothing to re-clone).
+            return _RepoOutcome(reason="repository has no commits yet", rows=[], head="")
+        if not force and head == prior_head and self._partition_path(source.full_name).is_file():
+            # Unmoved since its last complete walk and its partition is there: not re-walked (AD-5);
+            # reachable again, so no marker. A missing partition is rebuilt whatever the head.
             return _RepoOutcome(head=head)
         try:
             pixi_rows = _estate_pixi_rows(process, clone, source.full_name)
@@ -843,7 +886,15 @@ class RepoDependencyHistoryDataset(AbstractDataset):
                 "reason": outcome.reason,
             }
         configured = {source.full_name for source in data.repos}
-        if configured:  # an empty list scans nothing and prunes nothing (the shipped offline default)
+        if data.malformed_entries:
+            # The configured set is not known while an entry cannot be read: prune nothing, so a
+            # mistyped entry never deletes a repo's state, last-good partition or clone.
+            logger.warning(
+                "repo_dependency_history: %d malformed repo entr%s; nothing pruned",
+                data.malformed_entries,
+                "y" if data.malformed_entries == 1 else "ies",
+            )
+        elif configured:  # an empty list scans nothing and prunes nothing (the shipped offline default)
             for name in sorted(set(state) - configured):
                 self._forget(name)
                 del state[name]
@@ -867,4 +918,5 @@ def build_dependency_history_request(
 ) -> DependencyHistoryBuildRequest:
     if not flag_on:
         return DependencyHistoryBuildRequest.skip()
-    return DependencyHistoryBuildRequest(repos=_parse_repo_sources(repo_sources), force=force)
+    repos, malformed = _parse_repo_sources(repo_sources)
+    return DependencyHistoryBuildRequest(repos=repos, force=force, malformed_entries=malformed)

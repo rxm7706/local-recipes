@@ -831,3 +831,158 @@ def test_repos_dropped_from_the_list_are_pruned(tmp_path: Path, fixture_repo: Pa
     assert _staleness(tmp_path) is None
     assert not (store / "org@other.parquet").exists() and not (tmp_path / "cache" / "org@other").exists()
     assert set(ds.load()["repo_full_name"]) == {"org/fixture"}
+
+
+# --- iteration 3: never an enclosing repository, follow a changed origin, keep what is unknown ---
+
+
+@needs_git_pkgs
+def test_partial_clone_inside_an_enclosing_checkout_never_touches_it(
+    tmp_path: Path, fixture_repo: Path, private_tmp: Path
+):
+    """The cache defaults to ``data/`` inside the operator's checkout: a partial ``.git`` there must
+    never hand a git call (fetch, reset, log, git-pkgs) to the enclosing checkout."""
+    checkout = _second_repo(fixture_repo, tmp_path / "operator-checkout")  # tracks an upstream
+    _commit(checkout, {"README.md": "unpushed work\n"}, "unpushed commit")
+    (checkout / "pyproject.toml").write_text("# an uncommitted edit\n", encoding="utf-8")
+    head_before = _git(checkout, "rev-parse", "HEAD").strip()
+    status_before = _git(checkout, "status", "--porcelain", "--untracked-files=no")
+    edited_before = (checkout / "pyproject.toml").read_bytes()
+    cache = checkout / "data" / "cache"
+    partial = cache / "org@fixture" / ".git"
+    partial.mkdir(parents=True)
+    (partial / "HEAD").write_text("ref: refs/heads/half-written\n", encoding="utf-8")
+
+    pkgs_toplevels: list[str] = []
+
+    def _record_pkgs_target(argv: list[str]) -> ProcessResult | None:
+        if "pkgs" in argv and "init" in argv:
+            where = Path(argv[argv.index("-C") + 1])
+            pkgs_toplevels.append(_git(where, "rev-parse", "--show-toplevel").strip())
+        return None
+
+    proc = _Proc(_record_pkgs_target)
+    ds = RepoDependencyHistoryDataset(
+        filepath=str(tmp_path / "store" / "repo_dependency_history"),
+        cache_dir=str(cache),
+        process=proc,
+    )
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds.save(request)
+    ds.save(DependencyHistoryBuildRequest(repos=request.repos, force=True))
+
+    assert _git(checkout, "rev-parse", "HEAD").strip() == head_before, "the unpushed commit was reset away"
+    assert _git(checkout, "rev-list", "--count", "@{upstream}..HEAD").strip() == "1"
+    assert (checkout / "pyproject.toml").read_bytes() == edited_before, "the uncommitted edit was discarded"
+    assert _git(checkout, "status", "--porcelain", "--untracked-files=no") == status_before
+    clone = (cache / "org@fixture").resolve()
+    assert pkgs_toplevels and set(pkgs_toplevels) == {str(clone)}, "git-pkgs ran outside Atlas's clone"
+    assert _state(tmp_path)["org/fixture"]["degradation"] == ""
+    assert len(ds.load()) == 4
+    # every git call against the clone is bounded to it: discovery never climbs past the cache
+    against_clone = [(call, env) for call, env in zip(proc.calls, proc.envs, strict=True) if "-C" in call]
+    assert against_clone
+    for call, env in against_clone:
+        assert env is not None and env.get("GIT_CEILING_DIRECTORIES") == str(cache.resolve()), call
+
+
+@needs_git_pkgs
+def test_a_clone_whose_top_level_is_elsewhere_is_cloned_afresh(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    enclosing = str(tmp_path)
+
+    def _elsewhere(argv: list[str]) -> ProcessResult | None:
+        if "--show-toplevel" in argv:
+            return ProcessResult(returncode=0, stdout=f"{enclosing}\n", stderr="")
+        return None
+
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    _dataset(tmp_path).save(request)  # a real clone in the cache
+    proc = _Proc(_elsewhere)
+    _dataset(tmp_path, proc).save(DependencyHistoryBuildRequest(repos=request.repos, force=True))
+    assert proc.count("clone") == 1, "a clone that resolves to another top level was used"
+    assert proc.count("fetch") == 0 and proc.count("reset") == 0
+
+
+@needs_git_pkgs
+def test_a_changed_origin_is_followed_fork_to_canonical(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    canonical = _bare_remote(fixture_repo, tmp_path / "canonical.git")
+    fork_work = _second_repo(fixture_repo, tmp_path / "fork-work")
+    _commit(fork_work, {"pixi.toml": _PIXI + 'numpy = ">=2"\n'}, "fork adds numpy")
+    fork = _bare_remote(fork_work, tmp_path / "fork.git")
+    ds = _dataset(tmp_path)
+
+    ds.save(DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", clone_url=f"file://{fork}"),)))
+    assert "numpy" in set(ds.load()["name"])
+
+    to_canonical = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", clone_url=f"file://{canonical}"),))
+    ds.save(to_canonical)
+    entry = _state(tmp_path)["org/fixture"]
+    assert entry["degradation"] == "" and entry["head"] == _commits(fixture_repo)[-1][0]
+    assert "numpy" not in set(ds.load()["name"]), "the fork's rows survived the switch to the canonical remote"
+
+    shutil.rmtree(fork)  # the old remote vanishing no longer matters
+    ds.save(to_canonical)
+    assert _state(tmp_path)["org/fixture"]["degradation"] == ""
+
+
+def test_malformed_entries_warn_and_are_counted(caplog: pytest.LogCaptureFixture):
+    with caplog.at_level("WARNING", logger="pyforge.atlas.datasets.dependency_history"):
+        request = build_dependency_history_request(
+            flag_on=True,
+            repo_sources=[{"full_name": "org/a", "path": "/x"}, "org/b", {"path": "/y"}, {"full_name": " "}],
+        )
+    assert [source.full_name for source in request.repos] == ["org/a"]
+    assert request.malformed_entries == 3
+    warned = [record.getMessage() for record in caplog.records]
+    assert any("repos[1]" in message for message in warned)
+    assert any("repos[2]" in message for message in warned) and any("repos[3]" in message for message in warned)
+    not_a_list = build_dependency_history_request(flag_on=True, repo_sources={"full_name": "org/a"})
+    assert not_a_list.repos == () and not_a_list.malformed_entries == 1
+
+
+@needs_git_pkgs
+def test_a_malformed_entry_prunes_nothing(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    other = _second_repo(fixture_repo, tmp_path / "other-repo")
+    keep = RepoSource("org/fixture", local_path=str(fixture_repo))
+    ds = _dataset(tmp_path)
+    ds.save(DependencyHistoryBuildRequest(repos=(keep, RepoSource("org/other", local_path=str(other)))))
+    store = tmp_path / "store" / "repo_dependency_history"
+
+    # org/other's entry was mistyped this run: it is not known to be dropped, so it is not pruned.
+    ds.save(DependencyHistoryBuildRequest(repos=(keep,), malformed_entries=1))
+    assert set(_state(tmp_path)) == {"org/fixture", "org/other"}
+    assert (store / "org@other.parquet").is_file() and (tmp_path / "cache" / "org@other").is_dir()
+
+
+@needs_git_pkgs
+def test_missing_partition_is_rebuilt_on_an_unchanged_head(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    proc = _Proc()
+    ds = _dataset(tmp_path, proc)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/fixture", local_path=str(fixture_repo)),))
+    ds.save(request)
+    partition = tmp_path / "store" / "repo_dependency_history" / "org@fixture.parquet"
+    partition.unlink()
+    ds.save(request)  # the head has not moved, but its partition is gone: walked again
+    assert proc.count("pkgs", "init") == 2
+    assert partition.is_file() and len(ds.load()) == 4
+
+
+@needs_git_pkgs
+def test_an_empty_repository_is_an_empty_history_not_a_reclone(tmp_path: Path, fixture_repo: Path, private_tmp: Path):
+    empty = tmp_path / "empty.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(empty)], check=True, env=_clean_env())
+    proc = _Proc()
+    ds = _dataset(tmp_path, proc)
+    request = DependencyHistoryBuildRequest(repos=(RepoSource("org/empty", clone_url=f"file://{empty}"),))
+    ds.save(request)
+    ds.save(request)
+    assert proc.count("clone") == 1, "a reachable empty repository was cloned again"
+    entry = _state(tmp_path)["org/empty"]
+    assert entry["degradation"] == "" and "no commits" in entry["reason"]
+    assert _staleness(tmp_path) is None and ds.load().empty
+
+    _git(fixture_repo, "push", "-q", str(empty), f"HEAD:refs/heads/{_default_branch(fixture_repo)}")
+    ds.save(request)  # its first commits arrive: followed without a re-clone
+    assert proc.count("clone") == 1
+    assert _state(tmp_path)["org/empty"]["head"] == _commits(fixture_repo)[-1][0]
+    assert len(ds.load()) == 4

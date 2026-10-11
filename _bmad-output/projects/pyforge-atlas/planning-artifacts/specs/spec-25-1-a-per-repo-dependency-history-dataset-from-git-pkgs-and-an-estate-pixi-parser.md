@@ -2,7 +2,7 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
 review_loop_iteration: 3
 followup_review_recommended: false
@@ -216,6 +216,26 @@ Deps: — (cross-station: mason Story 21.1).
   the moved repos it detects never reach the job, and a repo Warden inventories but the params do not list is never
   scanned. Recorded as `DW-atlas-25-1-1` (open, low) in `planning-artifacts/deferred-work-ledger.md`.
 
+### 2026-10-10 — Implementer response to review iteration 3
+
+- **A clone is never an enclosing repository.** The cache defaults to `data/` inside the operator's checkout, so a
+  partial `.git` there let git discover the checkout. Every git call against a clone (and the clone and version
+  probe run from the cache) now sets `GIT_CEILING_DIRECTORIES` to the parent of the directory it runs in, so
+  discovery looks only at the clone; a clone is used only when `git rev-parse --show-toplevel` is the clone
+  directory itself. Anything else is removed inside the cache and cloned afresh.
+- **A changed source is followed.** Before fetching, the clone's `remote.origin.url` is compared with the declared
+  `clone_url` (or the resolved `local_path`); on a mismatch the clone is replaced by a fresh clone of the declared
+  source (re-cloning rather than `remote set-url`, so no object, branch or default-branch state of the old remote
+  is carried over).
+- **An empty repository is an explicit empty history.** A reachable repository with no commits (unborn `HEAD`)
+  writes an empty partition, reads degradation `""` with the state reason "repository has no commits yet", and is
+  only fetched on later runs (not re-cloned) until its first commits arrive.
+- **The unchanged-head skip requires the partition.** A repo whose head has not moved is skipped only while its
+  partition file exists; a deleted or damaged partition is rebuilt on the next run.
+- **Malformed repo entries.** Each list entry that cannot be read as a repo source (not a mapping, no `full_name`,
+  or a list that is not a list) is warned by index and counted on the request (`malformed_entries`); while any
+  exists, nothing is pruned, so a mistyped entry never deletes a repo's state, last-good partition or clone.
+
 ## Review Triage Log
 
 ### 2026-10-10 — Independent review, iteration 3: sent back (1 high, 1 medium, 3 low)
@@ -407,6 +427,49 @@ passed); `pixi run --frozen -e pyforge-guild lint-types` exit 0; `scripts/flag_g
 nothing); `python -m pyforge.doctor.sources spec-surface` exit 0 (reconcile events appended to the `spec-pyforge-atlas`
 and `spec-pyforge-core` memlogs, no baseline stamped); `python -m pyforge.doctor.sources deferred-work` exit 0; `test_dh.py` 45 passed;
 `env -u PYTEST_ADDOPTS pixi run --frozen -e pyforge-guild pyforge-station-tests` (`pixi.lock` moved in this story): first run exit 1 (the three `pyforge-core` failures above), after their fix exit 0 — core 2384 passed, testing kit 95, atlas 2190 + 103, doctor 3520 + 1, herald 1744, marshal 12203, mason 1622 + 12, scribe 428, steward 2297, warden 2266.
+
+### 2026-10-10 — Implementer response to iteration 3
+
+Each finding of the iteration-3 review, with its fix and the test that fails without it (mutation-checked: each
+fix reverted reddens the named test). `dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`;
+`test_dh.py` = `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py`. Not a review verdict.
+
+- `[high]` a partial `.git` in the cache made git climb to the enclosing checkout — **fixed, two independent guards.**
+  (1) `_bounded_env` (`dh.py:262-270`) sets `GIT_CEILING_DIRECTORIES` to the parent of the directory a call runs in;
+  every git call against a clone goes through `_git_in` (`dh.py:585-587`) or passes it directly (git-pkgs `:372`,
+  the version probe `:332`, the clone `:762-767`). (2) `_clone_is_usable` (`dh.py:698-705`) requires `.git` to be a
+  directory and `git rev-parse --show-toplevel` to resolve to exactly the clone directory; otherwise the directory
+  is removed (inside the cache, `_clone_dir`) and cloned afresh (`dh.py:759-760`). Tests:
+  `test_partial_clone_inside_an_enclosing_checkout_never_touches_it` (the cache inside an enclosing checkout that
+  tracks an upstream, with an unpushed commit and an uncommitted edit, plus a partial `.git` in the clone slot; two
+  builds: the checkout's `HEAD`, its one unpushed commit, the edited file's bytes and its tracked status are unchanged,
+  `git pkgs init` ran only where `--show-toplevel` is Atlas's clone, and every `-C` call carried the ceiling — reverting
+  both guards reddens it, and reverting the ceiling alone reddens its ceiling assertion);
+  `test_a_clone_whose_top_level_is_elsewhere_is_cloned_afresh` (pins the top-level equality on its own).
+- `[medium]` a changed `clone_url` / `local_path` was never followed — **fixed.** `remote.origin.url` is compared with
+  the declared source before any fetch (`dh.py:742-749`); a mismatch re-clones. Test:
+  `test_a_changed_origin_is_followed_fork_to_canonical` (fork rows gone after the switch, the canonical head
+  recorded, and the fork remote's removal no longer reads `stale`).
+- `[low]` malformed entries dropped silently, then pruned — **fixed.** `_parse_repo_sources` (`dh.py:192-220`) warns
+  per dropped entry by index and counts it; the request carries `malformed_entries` (`dh.py:161`, `:921-922`); `save`
+  prunes nothing while it is non-zero (`dh.py:889-900`). Tests: `test_malformed_entries_warn_and_are_counted`,
+  `test_a_malformed_entry_prunes_nothing`.
+- `[low]` the unchanged-head skip trusted state without the partition — **fixed** (`dh.py:810`). Test:
+  `test_missing_partition_is_rebuilt_on_an_unchanged_head`.
+- `[low]` an empty repository (unborn `HEAD`) read `stale` and re-cloned every run — **fixed.** `_repo_head`
+  returns `""` for an unborn `HEAD` (`dh.py:590-598`), `_refresh_repo` records an explicit empty history
+  (`dh.py:807-809`), and `_follow_upstream` keeps an empty clone of a still-empty remote instead of re-cloning
+  (`dh.py:707-716`). Test: `test_an_empty_repository_is_an_empty_history_not_a_reclone` (one clone across three
+  builds; `""` with "no commits"; its first pushed commits are then followed).
+
+Verification on the working tree (each verdict from its exit code): `env -u PYTEST_ADDOPTS pixi run --frozen -e
+pyforge-atlas kedro-test` exit 0 (2197 passed, 20 skipped; then 103 passed); `kedro-catalog-check` exit 0 (69
+passed); `pixi run --frozen -e pyforge-guild lint-types` exit 0; `env -u PYTEST_ADDOPTS pixi run --frozen -e
+pyforge-core pyforge-core-test` exit 0 (2384 passed, 1 skipped); `scripts/flag_gate_check.py --spec <this spec>` exit 0
+(`pass`; with the status simulated `done` the two-state and per-environment-default checks report nothing);
+`python -m pyforge.doctor.sources spec-surface` exit 0 (reconcile event appended to the `spec-pyforge-atlas` memlog,
+no baseline stamped); `python -m pyforge.doctor.sources deferred-work` exit 0; `test_dh.py` 52 passed. Only atlas files changed in this
+response (plus this spec and the `spec-pyforge-atlas` memlog), so `pyforge-station-tests` was not re-run.
 
 ## Auto Run Result
 
