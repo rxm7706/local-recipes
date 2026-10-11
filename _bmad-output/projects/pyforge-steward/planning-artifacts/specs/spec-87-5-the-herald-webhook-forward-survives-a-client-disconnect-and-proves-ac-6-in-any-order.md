@@ -2,7 +2,7 @@
 title: "87.5: The herald webhook forward survives a client disconnect and proves AC 6 in any order"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '47397de509c4b12b68309f77022ca915db29d5b5'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -316,3 +316,25 @@ host's packages. A fake sidecar records every request it receives.
   `main`, the forward is dark in dev again, and this story closes 87.4's independent review findings, then turns dev
   back ON. A `fix` under the CAPs 87.3 and 87.4 bound, in Epic 87, with no flag of its own, landed only after an
   independent review passes (marshal Story 83.18's hold).
+
+## Review Triage Log
+
+### 2026-10-11 — Build-auto review pass
+
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff matches intent-contract ACs (1)–(7); verification green locally)
+- note: `landing_review: required` — a separate agent must still review the landed diff and append a passing entry before merge (marshal Story 83.18).
+
+## Auto Run Result
+
+Status: in-review
+
+Implementation on branch `dispatch/pyforge-steward/87.5`: `_read_webhook_body` stops on non-`http.request` messages (including `http.disconnect`); `dispatch_herald_webhook_forward` checks URL and flag before the allowlist; mcp-host treats missing `pyforge` as herald absent; AC 6 tests reset `_LazyWebhookASGI` and `webhook_host._application`; forward-ON tests use `ASGITransport` and assert forwarded headers and sidecar JSON; dev flag ON restored in overlays and flag-default tables; 87.3 spec flag metadata updated; platform deployment doc and flag-inventory regenerated.
+
+Verification: `python scripts/spec_surface_reconcile.py` exit 0; `pixi run --frozen -e pyforge-steward pyforge-steward-test` 2307 passed; `pixi run --frozen -e pyforge-guild platform-ci-local -- --test` PASS; `flag-gate-check` and `flag-gate-check -- --spec` on 87.3 pass; AC (2) reversed-order pytest exit 0.
+
+Surface reconcile memlogs: `spec-pyforge-steward/.memlog.md` and `spec-pyforge-core/.memlog.md` (pyforge-marshal project) name every governed path touched.
+
+Follow-up review recommended: false (no patched review findings this pass).
+
+Residual: independent landing review and draft PR hold per AC (9); ledger sync and scoped spec-surface stamps before merge PR.
