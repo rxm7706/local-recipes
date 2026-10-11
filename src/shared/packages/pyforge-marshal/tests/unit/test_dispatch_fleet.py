@@ -622,9 +622,11 @@ def _seed_live_dispatch_journal(
     """
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
+    worktree = tmp_path / ".worktrees" / f"dispatch-{slug}"
+    worktree.mkdir(parents=True, exist_ok=True)
     intent_payload: dict[str, object] = {
         "story_key": story_key,
-        "worktree_path": str(tmp_path / ".worktrees" / f"dispatch-{slug}"),
+        "worktree_path": str(worktree),
         "baseline_head_sha": baseline_head_sha,
     }
     if followup_review is not None:
@@ -4045,6 +4047,8 @@ def _seed_finalize_pending_journal(
     """
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
+    worktree = tmp_path / ".worktrees" / f"dispatch-{slug}"
+    worktree.mkdir(parents=True, exist_ok=True)
     launch_outcome_payload: dict[str, object] = {"session_pid": session_pid}
     if supervisor_pid is not None:
         launch_outcome_payload["supervisor_pid"] = supervisor_pid
@@ -4058,7 +4062,7 @@ def _seed_finalize_pending_journal(
                 phase=Phase.INTENT,
                 payload={
                     "story_key": story_key,
-                    "worktree_path": str(tmp_path / ".worktrees" / f"dispatch-{slug}"),
+                    "worktree_path": str(worktree),
                     "baseline_head_sha": baseline_head_sha,
                 },
             )

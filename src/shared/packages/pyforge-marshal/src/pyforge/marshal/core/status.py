@@ -1038,6 +1038,10 @@ class FleetHomeFacts:
     # the stranded-work signal fleet-picture ATTENTION names alongside the
     # overlay fix in ``derive_dispatch_phase``.
     dispatch_stranded_work: dict[str, object] | None = None
+    # Story 92.1 (CAP-5): dispatch runs whose journaled worktree is gone — reported, never LIVE.
+    dispatch_stale_runs: tuple[dict[str, object], ...] = ()
+    # Story 92.1 (AC3): the supervisor's last failed process-group read for the latest run, else ``None``.
+    dispatch_session_liveness_error: str | None = None
     # Story 28.24 (CAP-7): supervisor finalize shell failed — operator must
     # commit/push/verify in the named worktree.
     finalize_escalation_story: str | None = None
@@ -1303,10 +1307,18 @@ def _apply_finalize_escalation(row: dict[str, object], facts: FleetHomeFacts) ->
 
 def _apply_dispatch_overlay(row: dict[str, object], facts: FleetHomeFacts) -> dict[str, object]:
     """Story 22.1/22.2: when a dispatch session is live, surface it in fleet status."""
+    if facts.dispatch_stale_runs:
+        # Story 92.1 (CAP-5): listed whatever the latest run is -- a stale latest run carries no overlay at all
+        # (`dispatch_story` stays unset), and its report must still reach the row.
+        row = {**row, "dispatch_stale_runs": list(facts.dispatch_stale_runs)}
     phase = derive_dispatch_phase(facts)
     if phase is not None:
         row = {**row, "dispatch_phase": phase}
     if not facts.dispatch_story:
+        if facts.dispatch_in_flight_stories:
+            # Story 92.1 (review iteration 2, I1): a stale latest run carries no overlay, but an earlier live
+            # parallel run (Story 28.16) still reaches the row.
+            row = {**row, "dispatch_in_flight_stories": list(facts.dispatch_in_flight_stories)}
         return row
     dispatch_live = _dispatch_overlay_active(facts)
     if not dispatch_live:
@@ -1374,6 +1386,8 @@ def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) ->
         patched["dispatch_in_flight_stories"] = list(facts.dispatch_in_flight_stories)
     if facts.dispatch_stranded_work is not None:
         patched["dispatch_stranded_work"] = facts.dispatch_stranded_work
+    if facts.dispatch_session_liveness_error is not None:
+        patched["dispatch_session_liveness_error"] = facts.dispatch_session_liveness_error
     phase = derive_dispatch_phase(facts)
     if phase is not None:
         patched["dispatch_phase"] = phase

@@ -141,6 +141,10 @@ class DispatchJournalFacts:
     # when no turn is open, or when the turn never recorded a pid.
     verify_fix_session_pid: int | None = None
     verify_fix_started_at: datetime | None = None
+    # Story 92.1: the harness profile the launch journaled (its ``binary`` is the liveness fallback's identity) and
+    # the group-read error the supervisor's latest heartbeat (or the completion INTENT) recorded, else ``None``.
+    harness_profile: str | None = None
+    session_liveness_error: str | None = None
 
 
 #: Story 83.1: how far a process's start time may sit from its journaled launch before the pid is judged reused.

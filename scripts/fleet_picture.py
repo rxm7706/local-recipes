@@ -185,6 +185,18 @@ def _dispatch_stranded_work_needs_lines(
     return lines
 
 
+def _dispatch_stale_runs_watch_lines(*, slug: str, live_row: dict) -> list[str]:
+    """ATTENTION ``watch`` lines for stale dispatch runs (Story 92.1)."""
+    stale = live_row.get("dispatch_stale_runs")
+    if not isinstance(stale, list) or not stale:
+        return []
+    quarantine = "implementation-artifacts/dispatch-runs-quarantine/"
+    return [
+        f"{slug}: {len(stale)} stale dispatch run(s) — worktree gone; "
+        f"quarantine under {quarantine} and list in its README.md"
+    ]
+
+
 def _open_prs_by_head_ref(
     repo: pathlib.Path = REPO, timeout: int = 120
 ) -> dict[str, dict[str, object]]:
@@ -876,6 +888,7 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
                 "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
                 "dispatch_stranded_work": r.get("dispatch_stranded_work"),
+                "dispatch_stale_runs": r.get("dispatch_stale_runs") or [],
             }
             if r.get("state") == "running":
                 running.add(slug)
@@ -1036,6 +1049,10 @@ def main() -> int:
             )
         except Exception:  # noqa: BLE001 -- ATTENTION never kills the report
             watch.append(f"{slug}: could not check stranded dispatch work")
+        try:
+            watch.extend(_dispatch_stale_runs_watch_lines(slug=slug, live_row=live_row))
+        except Exception:  # noqa: BLE001
+            watch.append(f"{slug}: could not check stale dispatch runs")
         # Same scoping as station_state()'s STUCK label above: a `refused`
         # verdict is dispatch-specific state that outlives the dispatch run
         # it describes, so `run` alone (true for ANY live engine on this

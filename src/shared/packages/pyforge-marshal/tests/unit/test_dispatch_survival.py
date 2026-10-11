@@ -56,6 +56,9 @@ class FakeFs:
     def read_text(self, path: Path) -> str | None:
         return self.files.get(path)
 
+    def exists(self, path: Path) -> bool:
+        return path in self.dirs or path in self.files
+
 
 class FakeProcess:
     def __init__(self, *, alive_pids: set[int] | None = None) -> None:
@@ -321,6 +324,7 @@ def test_dispatch_resume_respawns_dead_supervisor(monkeypatch: pytest.MonkeyPatc
     repo = Path("/repo")
     run_dir = repo / "_bmad-output/projects/pyforge-marshal/implementation-artifacts/dispatch-runs/run1"
     fs.dirs.add(run_dir)
+    fs.dirs.add(repo / "wt")  # Story 92.1: a journaled worktree that is missing reads stale, never resumable
     launch = build_entry(
         id=JournalEntryId("w", 0),
         ts="2026-08-23T12:00:00.000Z",

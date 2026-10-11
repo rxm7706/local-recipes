@@ -2,10 +2,11 @@
 title: "92.1: The dispatch supervisor reads session liveness correctly and never treats a vanished worktree as live"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'in-review'
+baseline_revision: '6b5182c155fa451b9d5af75f8945e57537166a33'
+review_loop_iteration: 3
 followup_review_recommended: false
-landing_review: 'required'
+landing_review: 'passed'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -164,8 +165,10 @@ at `a085cd0344`.
   - `resolve_dispatch_session_verdict` checks for it first, ahead of the open-fix-turn rule (`cli/dispatch.py:1841`),
     and returns a non-live verdict for it;
   - `station_in_flight_conflict` never refuses on it (no `MRS-DISP-011`, `021`, `034` or `035`); it adds an
-    `MRS-DISP-064` WARN, the next free code at mint, naming the run dir, its story, the missing worktree and the
-    remedy;
+    `MRS-DISP-065` WARN naming the run dir, its story, the missing worktree and the remedy. The code was re-minted
+    at review iteration 2: `064`, free when this story was minted, went to Story 93.1's recall WARN on `main` first;
+  - `marshal factory dispatch-resume` and `dispatch-attach` refuse it with `MRS-DISP-023`, naming the missing
+    worktree and the remedy; they spawn no supervisor and journal nothing on it;
   - none of these raises on it: `_live_dispatch_evidence`, `_dispatch_git_facts_for_journal` (`:2093`),
     `_live_dispatch_story_keys` (`:1989`), `list_live_dispatch_stories` (`cli/status.py:886`) or
     `_merge_dispatch_overlay` (`cli/status.py:921`). A `VcsCommandError` from `gather_dispatch_git_facts` outside the
@@ -305,12 +308,15 @@ the run-dir shape the supervisor reads. The real process tests are POSIX only an
   - **And** a candidate story with another key, a process fake on which pid 63830 reads alive (a reused pid whose
     start time cannot be read), and the real git adapter on a `tmp_path` repository.
   - **When** `station_in_flight_conflict` runs **Then** it raises nothing and returns no conflict for the stale run. It
-    reports an `MRS-DISP-064` WARN naming the run dir, `86.6`, the missing worktree and the quarantine remedy.
+    reports an `MRS-DISP-065` WARN naming the run dir, `86.6`, the missing worktree and the quarantine remedy, and
+    no other finding names the run (Story 93.1's `MRS-DISP-064` recall WARN keeps its own meaning).
   - **And** on the code before this story the same fixture raises `VcsCommandError`. The test names the commit it
     reproduces.
   - **And** none of these reads the run as `LIVE` or raises: `resolve_dispatch_session_verdict`,
     `_live_dispatch_story_keys`, `list_live_dispatch_stories` and `_merge_dispatch_overlay`. With the candidate's key
     `86.6`, there is no `MRS-DISP-011`.
+  - **And** `dispatch-resume` / `dispatch-attach` on the run refuse `MRS-DISP-023` naming the missing worktree and
+    the quarantine remedy, spawn no supervisor and leave the journal byte-identical.
 - **AC9 — A stale run is reported, not blocking.**
   - `marshal status` (text and `--format json`) lists the AC8 run under `dispatch_stale_runs`, with its run id, story,
     worktree path and the remedy naming `implementation-artifacts/dispatch-runs-quarantine/` and its `README.md`. The
@@ -381,7 +387,7 @@ the run-dir shape the supervisor reads. The real process tests are POSIX only an
 | none | present | dead | group empty | 90.1: `LIVE` forever (the 47.1 stall) | dead; judged, finalized or landed |
 | none | present | dead | the read raises | 90.1: `LIVE` forever | dead (the fallback); `session_liveness_error` journaled |
 | none | present | a reused pid (create_time outside the window) | the read raises | 90.1: `LIVE` | dead |
-| none | missing | dead or a reused pid | any | `LIVE` or a launch crash on `VcsCommandError` | stale; `MRS-DISP-064` WARN; dispatch proceeds |
+| none | missing | dead or a reused pid | any | `LIVE` or a launch crash on `VcsCommandError` | stale; `MRS-DISP-065` WARN; dispatch proceeds |
 | completed / failed | any | any | any | that verdict | that verdict, unchanged |
 
 </intent-contract>
@@ -436,3 +442,300 @@ the run-dir shape the supervisor reads. The real process tests are POSIX only an
 - **`supervisor_should_exit`'s result is ignored.** 90.1 named this, and it is unchanged here.
 - **The verify-fix turn's liveness stays leader-only.** The fix turn is bounded by its budget and stopped with
   `terminate_process_group`.
+
+## Spec Change Log
+
+### 2026-10-11 — Implementer response to review iteration 2
+
+The implementing agent's response to "Independent review, iteration 2: sent back (1 major, 2 minor)". Paths are
+under `src/shared/packages/pyforge-marshal/` unless they start with `scripts/` or `_bmad-output/`. `origin/main`
+(`c0956c0f14`) is merged into the branch: `core/findings.py` conflicted, and both memlogs were unioned main-first.
+`scripts/.spec-surface-baseline.json` and both ledgers came from `main` without conflicts.
+
+**N1 [major]: `MRS-DISP-064` collided with Story 93.1.** The stale-run WARN is now `MRS-DISP-065`.
+- That was the next free code on the merged tree. `MRS-DISP-064` was the highest code used in the marshal package,
+  the marshal planning artifacts, `scripts/` and `docs/`. Among the 60 most recent local branches and the 60 most
+  recent remote branches, none uses `065` or higher in the marshal package.
+- `064` stays exactly as `main` has it, Story 93.1's "scribe recall failed on factory dispatch" WARN, in
+  `core/findings.py`, `core/verdict.py`, `cli/dispatch.py::dispatch_once` and `tests/unit/test_dispatch_recall.py`.
+- `065` is registered in `core/findings.py`, classified WARN in `core/verdict.py` and listed in
+  `tests/unit/test_findings.py`. `cli/dispatch.py::station_in_flight_conflict` emits it.
+- The tests that asserted the stale-run `064` now assert `065`:
+  - `tests/unit/test_dispatch_stale_worktree.py`: the guard test, renamed
+    `test_the_guard_neither_raises_nor_refuses_on_a_stale_run_and_warns_mrs_disp_065`, plus the own-story test and
+    the spin test;
+  - `tests/unit/test_dispatch_station_guard.py`: `test_a_stale_run_on_the_station_warns_mrs_disp_064_and_dispatch_proceeds`
+    is renamed `..._warns_mrs_disp_065_...`. The iteration-1 M3 entry below names it by its old name.
+- That CLI test now also asserts that exactly one finding names the stale run, coded `065`, and that every `064`
+  finding is the recall WARN. On this host its envelope carries one of each.
+- Intent (vanished-worktree bullet), AC8, the I/O matrix and `epics.md`'s Story 92.1 text now name `065`. The
+  iteration-1 entries below, the review logs and the Auto Run Result keep `064`, as written at the time.
+
+**m1 [minor]: the CLI readers' group liveness was untested.**
+- New test: `tests/unit/test_dispatch_station_guard.py::test_a_live_session_group_behind_a_dead_leader_refuses_redispatch_and_reads_building`.
+- Setup: the leader is dead, and the injected session group yields a member that started five minutes after the
+  launch.
+- While that member lives:
+  - `station_in_flight_conflict` for the same story refuses `MRS-DISP-011` "(session process alive)";
+  - the `marshal status` row (`_merge_dispatch_overlay`, then `build_fleet_row`) reads `running`, with the run's
+    story and `dispatch_phase: building`.
+- Once the group is empty, the guard returns no conflict and the phase is no longer `building`.
+
+**m2 [minor]: resume and attach ignored the stale rule.**
+- `cli/dispatch.py::_ensure_dispatch_supervision` checks `stale_dispatch_run` before it reads liveness.
+- On a stale run it refuses `MRS-DISP-023`, naming the run, its story, the missing worktree and the quarantine
+  remedy. It spawns no supervisor and appends nothing to the journal.
+- `dispatch-resume` and `dispatch-attach` share this function. Intent and AC8 now say so.
+- New test: `tests/unit/test_dispatch_stale_worktree.py::test_resume_and_attach_refuse_a_stale_run_and_never_respawn_its_supervisor`,
+  parametrized over `resume` and `attach`.
+  - It uses the AC8 fixture, with the session pid reading alive and a dead supervisor.
+  - It asserts that premise (`_is_dispatch_session_alive` is true), the single `MRS-DISP-023` with its message, no
+    spawn, and a byte-identical journal.
+
+**I1 [info]: a stale latest run dropped the in-flight list.**
+- `cli/status.py::_merge_dispatch_overlay` now computes `dispatch_in_flight_stories` before the stale early return,
+  and carries it on the stale branch.
+- `core/status.py::_apply_dispatch_overlay` lists it on a row that has no overlay story.
+- The station's state is unchanged.
+- New test: `test_dispatch_stale_worktree.py::test_a_stale_latest_run_keeps_an_earlier_live_parallel_run_on_the_status_row`,
+  which uses a live earlier run in its own real git worktree.
+
+**I2 [info]: a race in the own-group adapter test.** In `tests/unit/test_session_group_psutil.py`, the own-group
+test now reads each member's group through `_pgid_now`. That helper returns `None` for a pid that has exited, so a
+sibling worker's short-lived child no longer races the `pid_exists`/`getpgid` pair.
+
+**Not changed:** I3 (the cost of `marshal status`), I4 (the cmdline substring match) and I5 (small uncovered
+branches). Each is information only.
+
+**Other changed test expectations (AC10):**
+- `tests/unit/test_dispatch_survival.py`'s `FakeFs` gains `exists`.
+- `test_dispatch_resume_respawns_dead_supervisor` creates its journaled worktree (`/repo/wt`) on that fake, because
+  resume now reads the stale rule and a missing worktree reads stale.
+
+**Mutation evidence.**
+- Each mutation was applied to a scratch copy of the merged tree (`impl921b-mut` under the session scratchpad).
+- The targeted marshal tests ran there, with the scratch sources first on `PYTHONPATH`:
+  - the iteration-1 list;
+  - `test_dispatch_survival.py`, `test_dispatch_recall.py` and `test_findings.py`.
+- The unmutated copy fails one environment-only test, `test_status.py::TestRunDetail::test_run_status_with_default_ports_and_run_flag_does_not_crash`,
+  because it is not a git checkout.
+- Every mutation exited 1 with added failures, and the worktree was never mutated.
+
+| Mutation | New failures |
+|---|---|
+| `_is_dispatch_session_alive` returns false for a dead leader before any group read (m1) | the m1 test (1) |
+| `_ensure_dispatch_supervision` without the stale refusal (m2) | the m2 test, `resume` and `attach` (2) |
+| The stale-run WARN back on `MRS-DISP-064` (N1) | the guard, own-story and spin tests; the CLI stale-run test (4) |
+| The stale run reported under both `065` and `064` (N1) | the same four; the CLI test fails on the new "exactly one finding names the run" assertion (4) |
+| The stale early return drops the in-flight list (I1) | the I1 test (1) |
+| The row skips the in-flight list when no overlay applies (I1) | the I1 test (1) |
+
+### 2026-10-11 — Implementer response to review iteration 1
+
+The implementing agent's response to "Independent review, iteration 1: sent back (1 blocker, 5 major, 6 minor)".
+Paths are under `src/shared/packages/pyforge-marshal/` unless they start with `scripts/`. Nothing in the
+`<intent-contract>` changed; the rules this pass adds or sharpens are recorded here.
+
+**Liveness, as shipped now** (`dispatch_verify.py::assess_dispatch_session_liveness`):
+1. A leader pid that exists, is not a zombie and has a readable start time outside Story 83.1's window is another
+   process: not alive, and the group is not read (M4). A pid still in use as a process-group id is never handed
+   out again, so the session's own group has ended too.
+2. Otherwise the launch's group is read; a non-zombie member that started at or after the launch, less the clock
+   allowance, keeps the session alive, with no upper bound.
+3. A failed read answers with the identity-checked leader (exists, not a zombie, start time inside the window,
+   or, when the start time cannot be read, a cmdline naming the profile's `binary`), and carries the error.
+4. A read that worked but found no member leaves Story 83.1's leader rule unchanged: an existing leader whose
+   start time cannot be read (or whose launch is unknown) is judged by its existence.
+
+**Each finding and what changed:**
+- **B1** (the tests did not catch the reverted 90.1 bug). New real-host tests in
+  `tests/unit/test_dispatch_session_alive.py`, all with `start_new_session=True` processes killed by their own
+  group id in `finally`:
+  - AC2's exit half: a growing file; alive on every read while it grows; not alive within one second of the
+    child's exit;
+  - the late child;
+  - a pid that cannot exist;
+  - an unreaped zombie leader;
+  - the M4 reused-pid group leader.
+  
+  AC3's leader cases go through `assess_dispatch_session_liveness` with a raising port. In
+  `tests/unit/test_dispatch_supervisor_main_loop.py`, the AC4 stall test runs both read modes, and two more tests
+  cover the per-heartbeat error and the profile-binary cmdline match. The mutation table below lists every
+  mutation and the test it fails.
+- **M1** (a stale latest run read `running`). `cli/status.py::_merge_dispatch_overlay` applies no overlay to a
+  stale latest run. `core/status.py::_apply_dispatch_overlay` lists `dispatch_stale_runs` whatever the latest run
+  is; before, it went only through `_merge_dispatch_row_fields`, which needs a dispatch story. The text renderer
+  prints `STALE_RUNS n=… [run story worktree] remedy: …`. Tests: `tests/unit/test_status.py::
+  TestStaleDispatchRunsInTheSweep`, JSON and text.
+- **M2** (the identity fallback was unreachable). The leader-first short-circuit is gone: the order above makes
+  the fallback reachable. The supervisor resolves the profile's `binary` once, from the launch journal's
+  `harness_profile` (`harness_binary_for_profile`, packaged profiles overlaid by the repo's). The CLI readers do
+  the same through `DispatchJournalFacts.harness_profile`. The cmdline is read with psutil
+  (`adapters/session_group_psutil.py::process_cmdline`), which also works on a host without `/proc`.
+  `gather_dispatch_journal_facts` reads `session_liveness_error` off the latest heartbeat or the completion
+  INTENT, and `marshal status` shows it as `dispatch_session_liveness_error` (JSON) and `LIVENESS_ERROR=…` (text).
+- **M3** (MRS-DISP-064 was never shown). `dispatch_once` passes `preflight_advisories=findings`.
+  `spin_loop_home_in_flight_conflict` gains the same parameter, and `marshal factory spin` passes its findings.
+  `live_dispatch_conflict` has no production caller and is unchanged. Tests:
+  - `tests/unit/test_dispatch_station_guard.py::test_a_stale_run_on_the_station_warns_mrs_disp_064_and_dispatch_proceeds`
+    drives `run_dispatch` end to end;
+  - `tests/unit/test_dispatch_stale_worktree.py` was rewritten on the real `GitVcs` over a `tmp_path` repository
+    whose worktree was added, then removed. It reproduces the base's crash (the docstring names `6b5182c155`),
+    covers the four named readers and candidate `86.6`, and has the fixture's heartbeats and push pair.
+  
+  A host probe on `6b5182c155` raised `VcsCommandError` from `station_in_flight_conflict` on that fixture.
+- **M4** (the pid-reuse hole). Rule 1 above. Tests: the fake case asserts the group is never read; the real-host
+  case is a `setsid` process started two hours after the launch.
+- **M5** (weak oracles). The AC1 merge subject now names the fixture's story (`Merge pull request #1114 from
+  rxm7706/dispatch/pyforge-marshal/51.11`), and a companion test proves that subject counts at a moved head. The
+  AC1 test also asserts:
+  - `session_alive: true` and the growing `changed_path_count` on each of the three heartbeats;
+  - every gathered `story_merged_on_main` is false;
+  - a separate INTENT and OUTCOME for the finalize.
+  
+  An AC1 judgment-layer test feeds the stale merge as a gathered fact and still sees no completion while the group
+  lives. The vacuous baseline-gather test was replaced. Late-child and real-git AC8 tests are listed under B1 and
+  M3.
+- **m1** (AC10). This log. The real-git follow-up test
+  (`test_a_follow_up_in_the_stories_surviving_pre_merge_worktree_is_scoped_by_the_launch_tip_against_real_git`)
+  now reads its premise after the run's first move: a fast-forward onto `origin/main`. At that point a normal run
+  reads the first merge as its own (`COMPLETED` once it exits), while the follow-up does not. The verdicts judge an
+  exited session, and two assertions pin `LIVE` for a live one. The stale "a normal run reads it" comment is gone.
+  A "run commit" alone cannot show the trap: Story 83.14's head gate keeps a merge from counting until the run's
+  head is on `origin/main`. After the fast-forward the follow-up's own verdict is not asserted, because a head on
+  `origin/main` reads `branch_merged` by ancestry for any run.
+- **m2** (AD-4). `core/dispatch_stale.py` reads `FsPort.exists` only. `tests/unit/test_dispatch_stop_retry.py`'s
+  `FakeFs` gains `exists`.
+- **m3**. `_live_dispatch_evidence` appends `; git facts unreadable for worktree '<path>': <error>` to its evidence.
+- **m4**. The completion INTENT carries `session_liveness_error` when the ending tick's group read failed.
+- **m5**. The adapter reads membership with `os.getpgid` over `psutil.pids()`. It skips a pid that exits
+  (`ProcessLookupError`) or may not be read (`PermissionError`), and a member that exits or is `AccessDenied`
+  between the two reads. One process never fails the whole read. A group scan takes about 4 ms on this host;
+  the reviewer measured about 0.24 s for the old scan.
+- **m6**. `tests/unit/test_session_group_psutil.py` keeps the fake shape tests and adds the real adapter on the
+  test's own group and on a launched session group.
+- **One addition beyond the findings, held to AC9's "not refused because of the stale run".**
+  `cli/dispatch.py::station_finalize_pending_story` never reports a stale latest run as mid-finalize, so a reused
+  supervisor pid cannot hold a station's drain. Test:
+  `test_a_stale_latest_run_never_holds_the_drain_as_mid_finalize`, whose oracle is the same run with its worktree
+  present.
+
+**Other changed test expectations (AC10)**, each keeping what it tests:
+- `tests/unit/test_dispatch.py`:
+  - `test_gather_dispatch_git_facts_still_recognizes_the_project_own_templated_key` reads false at the baseline and
+    true at a moved head (the divergence rule).
+  - `test_the_session_verdict_of_a_follow_up_run_completes_on_its_own_merge` and
+    `test_the_session_verdict_of_a_normal_run_is_still_completed_by_the_stories_merge` run at a moved head. A live
+    session reads `LIVE` and an exited one `COMPLETED`, with two subject reads.
+  - `test_the_drains_block_facts_still_read_a_normal_run_completed_by_the_stories_merge` runs at a moved head.
+- `tests/unit/test_dispatch_supervisor_main_loop.py`:
+  - `test_without_the_launch_tip_scope_the_reused_worktree_fixture_reads_completed_on_its_first_tick` and
+    `test_the_same_run_without_the_marker_reads_completed_on_the_stories_first_merge`: one heartbeat, then
+    completion after the exit (a live session never completes), with the head moved where the merge must count.
+- Fixture worktrees are now created on disk, because a journaled worktree that is missing reads stale:
+  - `tests/unit/test_dispatch.py` (`_reader_journal`, `_seed_reader_run`);
+  - `tests/unit/test_dispatch_completion.py` (`test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch`);
+  - `tests/unit/test_dispatch_fleet.py` (`_seed_live_dispatch_journal`, `_seed_finalize_pending_journal`);
+  - `tests/unit/test_dispatch_station_guard.py` (`_seed_live_dispatch_journal`);
+  - `tests/unit/test_dispatch_stop_retry.py` (`test_live_session_still_refuses_redispatch`).
+- `tests/unit/test_dispatch_completion.py`: the single live-judge test became AC5's full parametrization, plus the
+  exited-session verdicts as before 90.1.
+- `tests/unit/conftest.py` pins an empty session group, so no unit test reads the host's process table unless it
+  opts into the real adapter.
+
+**Mutation table (AC11 and the review's list).** Each mutation was applied in a scratch copy of this tree
+(`impl921-mut-work` under the session scratchpad). The targeted marshal tests then ran with the scratch package
+sources first on `PYTHONPATH`:
+- `test_dispatch_session_alive.py`, `test_session_group_psutil.py`, `test_dispatch_stale_worktree.py`,
+  `test_dispatch_completion.py`, `test_dispatch.py`, `test_dispatch_supervisor_main_loop.py`,
+  `test_dispatch_station_guard.py`, `test_dispatch_fleet.py`, `test_dispatch_stop_retry.py`, `test_status.py`;
+- `tests/meta/test_fleet_picture_stale_dispatch.py`.
+
+The unmutated scratch copy exits 1 on one environment-only test,
+`test_status.py::TestRunDetail::test_run_status_with_default_ports_and_run_flag_does_not_crash`, because the
+scratch copy is not a git checkout; that test passes in the worktree. A mutation counts as caught when it adds a
+failure to that baseline. Every mutation exited 1 with at least one added failure, and the worktree was never
+mutated.
+
+| Mutation | Fails (new failures) |
+|---|---|
+| Merge-first `judge_dispatch_completion` | AC1 judgment-layer test; AC5 parametrization (6 cases); the follow-up real-git test; 6 more (14) |
+| Drop the group read | AC2 real (live half, late child); AC1; AC3 cases; AC4 working-read case (15) |
+| Membership through a `pgid` attribute (90.1's adapter) | AC2 real (live half, late child, nonexistent pid); the adapter tests, real and shape (9) |
+| `pgid` attribute plus a read error counted alive (the reverted 90.1 bug) | AC2 real (incl. nonexistent pid, zombie); AC3; AC4 raising case; heartbeat error (18) |
+| Two-sided member window | AC2 late child (real and fake); AC1; AC4 working-read case (5) |
+| A read error counted alive | AC3 exited leader, reused pid, unreadable start; AC4 raising case; heartbeat error (8) |
+| No identity check in the fallback | AC3 reused pid (unreadable start, cmdline not the binary); the binary-match tests (5) |
+| Drop the divergence rule for `story_merged_on_main` | AC6 templated-key test; AC1 merge assertion; the subject oracle; the follow-up real-git test (4) |
+| Skip the finalize after a dirty exit | AC1; AC4 (both); AC7 `test_supervisor_finalizes_verifies_and_lands_a_finished_harness_session`; 16 more (20) |
+| Drop the vanished-worktree rule | AC8 guard, readers, candidate 86.6, spin; AC9 status JSON and text; the CLI dispatch test (9) |
+| `_live_dispatch_evidence` raises again | AC8 broken-worktree test; the rule-disabled test (2) |
+| Drop the pid-reuse rule (M4) | the fake and real-host reused-pid tests; two Story 83.1 tests (4) |
+| Overlay a stale latest run in status (M1) | AC9 JSON and text; AC8 overlay reader (3) |
+| `dispatch_once` does not pass its findings (M3) | the CLI dispatch MRS-DISP-064 test (1) |
+| Supervisor never passes the profile's `binary` (M2) | the supervisor cmdline test (1) |
+| `marshal status` drops `dispatch_session_liveness_error` (M2) | the status liveness-error test (1) |
+| Leader-first short-circuit restored (M2) | AC3 in-window error carried; AC3 unreadable-start cases; heartbeat error; binary-match tests (7) |
+| No liveness error on the completion INTENT (m4) | the heartbeat/completion error test (1) |
+| `PermissionError` fails the whole read (m5) | the adapter skip test (1) |
+| The stale read bypasses `FsPort` (m2) | the FsPort test (1) |
+| The evidence swallows the git error again (m3) | the broken-worktree and rule-disabled tests (2) |
+| Text status omits stale runs | AC9 text test (1) |
+| Finalize-pending ignores the stale rule | the finalize-pending stale test (1) |
+
+## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 3: PASS (info only)
+
+- Separate agent, fresh review of `git diff origin/main...HEAD` at `f655a1b71e`; every mutation in a scratch copy, probes on the real host (psutil 7.2.2). All 11 ACs pass with file:line evidence (session-first judge `core/dispatch_completion.py:128`; divergence rule `dispatch_supervisor/__main__.py:558`; `os.getpgid` over `psutil.pids()` in `adapters/session_group_psutil.py:21-51`; identity fallback `dispatch_verify.py:1177-1255`; stale rule `core/dispatch_stale.py:32-66`; MRS-DISP-065 WARN `cli/dispatch.py:2290-2303`; resume/attach MRS-DISP-023 refusal `:3889-3901`).
+- Iteration-2 findings re-probed: N1 fixed (stale-run WARN is `MRS-DISP-065`; no other user of 065 or higher on `origin/main`, the 80 newest branches, any `.worktrees/*` checkout or open PR; 93.1's `MRS-DISP-064` recall WARN and `test_dispatch_recall.py` unchanged); m1, m2, I1, I2 fixed and tested. Iteration-1 fixes still hold after the main merge (`liveness_probe`, `stale_probe`, `live_group_probe` pass; pid 4000000 and pid 63830 read not alive).
+- 35 mutations, each fails at least one test (the reverted 90.1 bug fails 19; read error counted alive 9; pid-reuse rule dropped 4; m1 1; m2 2; stale WARN back on 064 4; merge-first judge 14; group read dropped 16; vanished-worktree rule dropped 13).
+- Real data, read-only: 922 run dirs give 0 false stale; of 55 quarantined runs, 50 read stale and 0 read alive.
+- Gates, each exit 0: `pyforge-marshal-test` (12416 passed, 21 skipped), `pyforge-marshal-coverage-gate`, `lint-types`, `spec-surface-check`, `flag-gate-check`, `spec_surface_reconcile.py`, `pyforge-deps-test` (130). `detectors-ci` was 1 only on `chain_currency_sweep_check` (marshal code newer than its retro), which `retro-pyforge-marshal-2026-10-11.md` on main clears; main merged at `3084bbb8c2` (memlogs unioned main-first; `spec-surface-check` 0).
+- Info, not fixed here: `marshal status` cost (every run journal parsed, profiles reloaded per liveness read); the cmdline identity is a substring match (reachable only when the group read fails and the start time is unreadable); small uncovered branches in `dispatch_verify.py`; a group-port exception other than `SessionGroupReadError` propagates (the real adapter maps every psutil and OS error).
+- Verdict: landing review passed; `landing_review` set to `passed`. Until Story 94.2 lands, the held draft PR is marked ready by hand.
+
+### 2026-10-11 — Independent review, iteration 2: sent back (1 major, 2 minor)
+
+Separate agent, fresh review on `3bc84d22ee`; probes on the real host (psutil 7.2.2), mutations in a scratch copy. All iteration-1 findings (B1, M1-M5, m1-m6) are fixed and re-probed; every AC passes on the branch tip; every sampled mutation fails a test (the reverted 90.1 bug now fails 19). The AC10 deviation (premise read after a fast-forward onto `origin/main`) is faithful, not a weakening. Liveness-order regression checks clean (the reused-pid short-circuit matches main's Story 83.1 answer; launch-to-spawn gap at most 1.24 s across 921 runs; 0 of 921 run dirs falsely stale). Gates exit 0: `pyforge-marshal-test` (12354 passed), `pyforge-marshal-coverage-gate`, `lint-types`, `spec-surface-check`, `flag-gate-check`, `spec_surface_reconcile.py`, `pyforge-deps-test`; `detectors-ci` 1 only on `ledger-direction` (main moved; clears on merge). Paths under `src/shared/packages/pyforge-marshal/`.
+
+- `[major]` `[patch]` N1 `MRS-DISP-064` collides with Story 93.1 on `main`: 93.1 (merge `544b6b683b`) registers `MRS-DISP-064` as "scribe recall failed on factory dispatch -- WARN" (`core/findings.py:2015-2016`, `core/verdict.py:1280`, emitted at `cli/dispatch.py:3499`, pinned by `test_dispatch_recall.py:117,167`). This branch registers the same code for the stale-run WARN. Merging main conflicts in `core/findings.py`; resolved naively, the story's own stale-run test sees two `MRS-DISP-064` findings. Fix: merge `origin/main` (memlogs unioned main-first), re-mint the stale-run WARN as the next free `MRS-DISP-` code on current main (re-check at merge time), update `findings.py`, `verdict.py`, `test_findings.py`, every test asserting the old code, this spec (Intent/ACs and a Spec Change Log line) and `epics.md` if it names the code; re-stamp scoped and re-run every gate.
+- `[minor]` `[patch]` m1 (AC5 second bullet): CLI group liveness is untested -- making `_is_dispatch_session_alive` (`cli/dispatch.py:1830`) return False whenever the leader pid is dead, without reading the group, passes the full suite. Fix: a test with a dead leader and a live post-launch group member asserting the guard refuses (`MRS-DISP-011`) and the status row reads running.
+- `[minor]` `[patch]` m2 resume/attach ignore the stale rule: `_ensure_dispatch_supervision` (`cli/dispatch.py:3812-3925`) proceeds when the session reads alive although the stale run's verdict is `None`, respawning a supervisor on a missing worktree that loops forever (its tick `continue`s on the git failure before the liveness read, `dispatch_supervisor/__main__.py:2718-2724`). Fix: refuse with `MRS-DISP-023` naming the missing worktree and the quarantine remedy; test it.
+- Info: I1 a stale latest run skips `dispatch_in_flight_stories` (`cli/status.py:950`), dropping an earlier live parallel run from the row; I2 `test_session_group_psutil.py`'s own-group test calls `pid_exists` then `getpgid` (small race under xdist); I3 `marshal status` 8.1 s vs 6.8 s on base (every run journal parsed, profiles reloaded per liveness read); I4 cmdline identity is a substring match, reachable only when the group read fails and the start time is unreadable; I5 small uncovered branches at `dispatch_verify.py:1141`, `:1147`, `:1160-1161`, `:1171`, `:1173`, `:1218`.
+
+Send-back: N1 required; m1 and m2 in the same pass; I1 and I2 fixed if cheap. A fresh independent review (iteration 3) gates the landing.
+
+### 2026-10-11 — Independent review, iteration 1: sent back (1 blocker, 5 major, 6 minor)
+
+Separate agent, on `33f3c3448a` (PR #2114, held for review); every mutation in a scratch copy, probes on the real host with psutil 7.2.2. At runtime the branch mostly fails safe: the group read uses `os.getpgid`, a read error no longer counts as alive, and a vanished worktree no longer crashes the dispatch guard (probed with the real git adapter on a temp repo; of 920 run dirs none is falsely stale). Gates exit 0: `pyforge-marshal-test` (12269 passed), `lint-types`, `spec-surface-check`, `flag-gate-check`, `pyforge-marshal-coverage-gate`, `pyforge-deps-test`, `spec_surface_reconcile.py`. AC verdicts: AC5, AC6, AC7 pass; AC1, AC2, AC3, AC4, AC8, AC9, AC10, AC11 fail. Paths below are under `src/shared/packages/pyforge-marshal/`.
+
+- `[blocker]` `[patch]` B1 (AC11, test gap): putting the reverted 90.1 bug back (the `pgid` attribute plus "a read error counts as alive") leaves the full suite's failure set identical, and `dispatch_session_alive(4000000)` reads True. The coverage report shows `identity_checked_leader_alive` (`dispatch_verify.py:1136-1143`), the read-error fallback (`:1186-1189`) and the status stale listing (`cli/status.py:1982-1993`) are never run. Fix: add AC2's exit half and a nonexistent-pid test on the real adapter; AC3's four leader cases with a raising port; the AC4 supervisor stall test. Each AC11 mutation must fail its named AC's test (today these survive: merge-first judge, two-sided member window, read error counted as alive, no identity check in the fallback, dropping the divergence rule, `_live_dispatch_evidence` raising again).
+- `[major]` `[patch]` M1 (AC9): a stale latest run still makes the station read `state=running` (`core/status.py:1059-1083`, `:1306-1333`, via `_merge_dispatch_overlay` / `_apply_dispatch_overlay`), and the text renderer (`cli/status.py:2692-2810`) omits stale runs. Fix: skip the dispatch overlay for a stale latest run; render stale runs in text; add a status test.
+- `[major]` `[patch]` M2 (AC3): `dispatch_verify.py:1179` returns alive before the identity fallback can run; `harness_binary` is never passed (`dispatch_supervisor/__main__.py:2647`); `marshal status` never shows `session_liveness_error`. Probe: with a failing group read and an unreadable start time the leader reads alive, never gets the cmdline identity check, and the error is dropped. Fix: group read first (or short-circuit only when the start time is readable); pass the profile's `binary`; surface `session_liveness_error` in status.
+- `[major]` `[patch]` M3 (AC8): production callers never pass `preflight_advisories` (`cli/dispatch.py:2380`, `:2724`, `:3135`), so MRS-DISP-064 is never shown. Fix: pass `preflight_advisories=findings` in `run_dispatch`; test with real git, show the pre-fix crash, cover all four named readers.
+- `[major]` `[patch]` M4 (new pid-reuse hole): when the leader pid exists, is not a zombie, and fails Story 83.1's start window, the group is still read, so any process leading a group with that pid counts as the session (main reads False; the branch reads True). A pid still in use as a group id is never reallocated, so here the original group is necessarily gone. Scenario: an orphaned run with its worktree intact; after pid wrap a setsid'd process takes its pid and the run reads LIVE, refusing the station with MRS-DISP-011/021. Fix: treat that case as not alive without reading the group; test it.
+- `[major]` `[patch]` M5 (weak oracles): AC1's merge subject names `pyforge-atlas/25.1` while the fixture story is marshal 51.11 (`tests/unit/test_dispatch_supervisor_main_loop.py:4183` vs `:52`, `:69`), so it cannot catch the merge-first judge or a missing divergence rule; make it name the fixture story. Add a late-child test and a real-git AC8 test.
+- `[minor]` m1 (AC10): no Spec Change Log though about 7 other test expectations changed; the follow-up real-git test flipped its premise and its comment at `:3717` is now wrong.
+- `[minor]` m2: `core/dispatch_stale.py:45-49` falls back to `Path.exists()` inside `core/` (AD-4); use `FsPort.exists`.
+- `[minor]` m3: `_live_dispatch_evidence` (`cli/dispatch.py:1921-1928`) swallows `VcsCommandError` silently; the spec says "reported".
+- `[minor]` m4: the liveness error is not journaled on the tick that ends the run.
+- `[minor]` m5: the adapter should skip a per-process `PermissionError` instead of failing the whole read.
+- `[minor]` m6: `tests/unit/test_session_group_psutil.py` fakes both `psutil.process_iter` and `os.getpgid`; add one real-process test.
+- Info: I1 main merged into the branch at `e343380280` (91.1 touched `cli/dispatch.py`, `dispatch_supervisor/__main__.py`, `dispatch_verify.py` -- re-verify after the merge); I2 the egress-registry edits are justified (`SessionGroupPort` is a new non-egress port); I3 the baseline re-stamp also re-hashed 86.2's already-reconciled entries; I4 consider having the heartbeat name the live group members when the leader is dead.
+
+Send-back: B1 and M1-M5 required; m1-m6 in the same pass. A fresh independent review (iteration 2) gates the landing.
+
+### 2026-10-11 — Review pass (build-auto implementation)
+- verdicts: 0 findings from parallel review layers (implementation verified locally; independent landing review still required per `landing_review: 'required'`)
+- findings: none
+
+## Auto Run Result
+
+Implementation re-lands Story 90.1 session liveness with Story 92.1 fixes: process-group membership via `os.getpgid` (not psutil `pgid`), session-first completion judgment, baseline divergence for `story_merged_on_main`, identity-checked leader fallback on group-read errors with `session_liveness_error` heartbeats, and stale runs when the journaled worktree is missing (`MRS-DISP-064`, `dispatch_stale_runs` on status, fleet-picture ATTENTION watch).
+
+Verification: `pyforge-marshal-test` (12270 passed), `pyforge-deps-test` (130 passed), `lint-types` (exit 0), `python scripts/spec_surface_reconcile.py` (exit 0).
+
+Follow-up review recommendation: `false` (no patch-tier review findings from this pass). Operator still owes the separate landing review in this spec before release per Story 83.18.
+
+Residual risk: while group reads fail, liveness follows the leader only (documented in spec); cmdline identity fallback is best-effort via `/proc/pid/cmdline` when `create_time` is unreadable.

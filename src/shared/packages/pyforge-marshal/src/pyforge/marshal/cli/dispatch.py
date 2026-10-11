@@ -1672,7 +1672,12 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     verification_failed_gate: str | None = None
     verification_failed_message: str | None = None
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
+    harness_profile: str | None = None
+    session_liveness_error: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
+        raw_profile = entry.payload.get("harness_profile")
+        if isinstance(raw_profile, str) and raw_profile:
+            harness_profile = raw_profile
         if entry.phase == Phase.INTENT:
             # Story 73.1 (CAP-281): the follow-up review marker rides the launch INTENT, read back here for
             # every reader of this run's merge facts.
@@ -1700,7 +1705,16 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
                 supervisor_pid = sup_val
             elif isinstance(sup_val, str) and sup_val.isdigit():
                 supervisor_pid = int(sup_val)
+    # Story 92.1: the supervisor's latest heartbeat names a failed group read (`session_liveness_error`), and the
+    # completion INTENT carries the one on the tick that ended the run -- `marshal status` shows it on the row.
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH):
+        if entry.phase == Phase.OBSERVATION and entry.payload.get("heartbeat") is True:
+            raw_error = entry.payload.get("session_liveness_error")
+            session_liveness_error = raw_error if isinstance(raw_error, str) else None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_COMPLETION):
+        if entry.phase == Phase.INTENT:
+            raw_error = entry.payload.get("session_liveness_error")
+            session_liveness_error = raw_error if isinstance(raw_error, str) else None
         if entry.phase == Phase.OUTCOME:
             verdict_val = entry.payload.get("verdict")
             if isinstance(verdict_val, str):
@@ -1804,19 +1818,30 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         preserve_tag=preserve_tag,
         verify_fix_session_pid=in_flight_fix.session_pid if in_flight_fix is not None else None,
         verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
+        harness_profile=harness_profile,
+        session_liveness_error=session_liveness_error,
     )
 
 
 def _is_dispatch_session_alive(
     process: ProcessPort,
     journal: dispatch_core.DispatchJournalFacts,
+    *,
+    repo_root: Path | None = None,
 ) -> bool:
-    """Check if a dispatch session is genuinely alive, not just a reused PID (Story 83.1/85.3)."""
-    from ..dispatch_verify import dispatch_session_alive
+    """Check if a dispatch session is genuinely alive, not just a reused PID (Story 83.1/85.3), reading its whole
+    process group (Story 92.1) -- the same check the supervisor's tick makes, with the run's harness ``binary`` as
+    the identity a failed group read falls back to."""
+    from ..dispatch_verify import dispatch_session_alive, harness_binary_for_profile
 
     if journal.session_pid is None:
         return False
-    return dispatch_session_alive(process, journal.session_pid, launched_at=journal.launched_at)
+    return dispatch_session_alive(
+        process,
+        journal.session_pid,
+        launched_at=journal.launched_at,
+        harness_binary=harness_binary_for_profile(journal.harness_profile, repo_root=repo_root),
+    )
 
 
 def resolve_dispatch_session_verdict(
@@ -1847,6 +1872,10 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
+    from ..core.dispatch_stale import dispatch_run_is_stale
+
+    if dispatch_run_is_stale(fs=fs, journal=journal):
+        return None
     # Story 85.2/85.3 (CAP-286): an open fix-turn INTENT is LIVE work to every reader -- `dispatch status`,
     # `marshal status`, the in-flight guard, resume -- while its session runs and after it exited: only a
     # supervisor settles the turn (commit + re-verify, or stop and park), so resume must re-spawn one rather than
@@ -1854,7 +1883,7 @@ def resolve_dispatch_session_verdict(
     # (`verify_fix_started_at` is set exactly while an INTENT is open), so every caller reads it the same way.
     if journal.verify_fix_started_at is not None:
         return DispatchSessionVerdict.LIVE
-    session_alive = _is_dispatch_session_alive(process, journal)
+    session_alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
     try:
@@ -1911,32 +1940,48 @@ def _live_dispatch_evidence(
                     branch_merged=False,
                     story_merged_on_main=False,
                 ),
-                session_alive=_is_dispatch_session_alive(process, journal),
+                session_alive=_is_dispatch_session_alive(process, journal, repo_root=repo_root),
                 harness_reported_failure=harness_reported_failure,
             )
             or f"story {story_key!r} dispatch session is still live"
         )
-    git_facts = gather_dispatch_git_facts(
-        vcs,
-        fs=fs,
-        repo_root=repo_root,
-        worktree=Path(journal.worktree_path),
-        story_key=journal.story_key,
-        project_slug=slug,
-        baseline_head_sha=journal.baseline_head_sha,
-        merge_subject_template=effective_policy.merge_subject_template.value,
-        followup_review=journal.followup_review,
-    )
-    return (
+    try:
+        git_facts = gather_dispatch_git_facts(
+            vcs,
+            fs=fs,
+            repo_root=repo_root,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            project_slug=slug,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+            followup_review=journal.followup_review,
+        )
+    except (VcsCommandError, ValueError) as exc:
+        # Story 92.1: a git read that fails here (a worktree removed or broken under a run that still reads live)
+        # means "no git facts" -- reported in the evidence, never raised out of the in-flight guard.
+        git_facts = DispatchGitFacts(
+            baseline_head_sha=journal.baseline_head_sha or "",
+            current_head_sha="",
+            changed_paths=(),
+            branch_merged=False,
+            story_merged_on_main=False,
+        )
+        reason = " ".join(str(exc).split())
+        git_unreadable = f"; git facts unreadable for worktree {journal.worktree_path!r}: {reason}"
+    else:
+        git_unreadable = ""
+    evidence = (
         zombie_redispatch_evidence(
             story_key=story_key,
             verdict=verdict,
             git=git_facts,
-            session_alive=_is_dispatch_session_alive(process, journal),
+            session_alive=_is_dispatch_session_alive(process, journal, repo_root=repo_root),
             harness_reported_failure=harness_reported_failure,
         )
         or f"story {story_key!r} dispatch session is still live"
     )
+    return evidence + git_unreadable
 
 
 def _epics_path(repo_root: Path, slug: str) -> Path:
@@ -2064,6 +2109,13 @@ def station_finalize_pending_story(
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
     if journal.story_key is None:
         return None
+    from ..core.dispatch_stale import dispatch_run_is_stale
+
+    # Story 92.1: a run whose worktree is gone cannot be mid-finalize -- its supervisor has nothing left to commit
+    # or push -- so a pid that still reads alive (reused) must never hold the station's drain. `marshal status`
+    # reports it stale instead.
+    if dispatch_run_is_stale(fs=fs, journal=journal):
+        return None
     on_backlog: str | None = None
     for raw in backlog:
         try:
@@ -2074,7 +2126,7 @@ def station_finalize_pending_story(
             continue
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     landing_complete = landing_journal_indicates_complete(journal.landing_verdict)
-    session_alive = _is_dispatch_session_alive(process, journal)
+    session_alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     if session_alive and not landing_complete:
         # A session still running is plain in-flight, not finalize-pending:
         # CAP-2's own verdict already reads LIVE and the MRS-DISP-011 relay
@@ -2197,6 +2249,7 @@ def station_in_flight_conflict(
     candidate_spec_text: str | None = None,
     deps_graph: Mapping[str, tuple] | None = None,
     parallel_dispatch: bool = False,
+    preflight_advisories: list[Finding] | None = None,
 ) -> DispatchPreflightConflict | None:
     """Refuse when an in-flight story blocks this candidate (22.5 / 28.16).
 
@@ -2228,9 +2281,25 @@ def station_in_flight_conflict(
         effective_policy=effective_policy,
     )
     candidate_refused_landing_open = feed_story in refused_landing_open
+    from ..core.dispatch_stale import stale_dispatch_run
+
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key is None:
+            continue
+        stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_dir.name, slug=slug)
+        if stale is not None:
+            if preflight_advisories is not None:
+                preflight_advisories.append(
+                    Finding(
+                        code="MRS-DISP-065",
+                        severity=Severity.WARN,
+                        message=(
+                            f"stale dispatch run {run_dir.name!r} for story {stale.story_key!r}: "
+                            f"worktree {stale.worktree_path!r} is missing — {stale.remedy}"
+                        ),
+                    )
+                )
             continue
         verdict = resolve_dispatch_session_verdict(
             fs=fs,
@@ -2353,6 +2422,7 @@ def spin_loop_home_in_flight_conflict(
     slug: str,
     story_key: str,
     effective_policy: policy.EffectivePolicy,
+    preflight_advisories: list[Finding] | None = None,
 ) -> DispatchPreflightConflict | None:
     """Refuse ``factory spin`` when this loop home already has a live run (34.1).
 
@@ -2370,6 +2440,7 @@ def spin_loop_home_in_flight_conflict(
         story_key=story_key,
         effective_policy=effective_policy,
         parallel_dispatch=False,
+        preflight_advisories=preflight_advisories,
     )
     if dispatch_conflict is not None:
         return dispatch_conflict
@@ -3133,6 +3204,8 @@ def dispatch_once(
         candidate_spec_text=spec_text,
         deps_graph=_load_station_deps_graph(repo_root, slug),
         parallel_dispatch=parallel_dispatch,
+        # Story 92.1: a stale run (its worktree gone) never refuses -- its MRS-DISP-065 WARN lands here.
+        preflight_advisories=findings,
     )
     if conflict is not None:
         findings.append(
@@ -3808,7 +3881,25 @@ def _ensure_dispatch_supervision(
         "run_id": run_id,
         "story_key": journal.story_key,
     }
-    session_alive = _is_dispatch_session_alive(process, journal)
+    from ..core.dispatch_stale import stale_dispatch_run
+
+    # Story 92.1 (review m2): a run whose recorded worktree is gone is stale, never a dispatch to recover. A resume
+    # or attach would respawn a supervisor whose tick never gets past the git read of the missing worktree, and
+    # journal onto a run the operator quarantines -- so refuse before reading liveness. Marshal never moves it.
+    stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_id, slug=slug)
+    if stale is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-023",
+                severity=Severity.ERROR,
+                message=(
+                    f"no live dispatch to recover on station {slug!r}: run {run_id!r} for story "
+                    f"{stale.story_key!r} is stale -- its worktree {stale.worktree_path!r} is missing; {stale.remedy}"
+                ),
+            )
+        )
+        return None, findings, data
+    session_alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     verdict = resolve_dispatch_session_verdict(
         fs=fs,

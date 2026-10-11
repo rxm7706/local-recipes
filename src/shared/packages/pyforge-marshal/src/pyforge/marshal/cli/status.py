@@ -929,6 +929,7 @@ def _merge_dispatch_overlay(
     facts: status_core.FleetHomeFacts,
 ) -> status_core.FleetHomeFacts:
     """Story 22.1/22.2: overlay ``marshal factory dispatch`` session facts."""
+    from ..core.dispatch_stale import dispatch_run_is_stale
     from .dispatch import (
         _compose_policy,
         _is_dispatch_session_alive,
@@ -943,12 +944,26 @@ def _merge_dispatch_overlay(
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
     if journal.session_pid is None and journal.completion_verdict is None and journal.story_key is None:
         return facts
-    alive = _is_dispatch_session_alive(process, journal)
+    effective_policy = _compose_policy(slug)
+    in_flight = list_live_dispatch_stories(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        effective_policy=effective_policy,
+    )
+    # Story 92.1 (CAP-5): a latest run whose worktree is gone is stale, never the station's live dispatch -- no
+    # overlay, so the row never reads `running` (or `building`/`verifying`) because of it. `run_status` lists it
+    # under `dispatch_stale_runs` instead. An earlier live parallel run (Story 28.16) still reaches the row
+    # through `dispatch_in_flight_stories` (review iteration 2, I1).
+    if dispatch_run_is_stale(fs=fs, journal=journal):
+        return replace(facts, dispatch_in_flight_stories=in_flight) if in_flight else facts
+    alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     elapsed: float | None = None
     if journal.launched_at is not None:
         elapsed = (clock.now() - journal.launched_at).total_seconds()
-    effective_policy = _compose_policy(slug)
     verdict = resolve_dispatch_session_verdict(
         fs=fs,
         vcs=vcs,
@@ -959,14 +974,6 @@ def _merge_dispatch_overlay(
         effective_policy=effective_policy,
     )
     completion_verdict = verdict.value if verdict is not None else journal.completion_verdict
-    in_flight = list_live_dispatch_stories(
-        fs=fs,
-        vcs=vcs,
-        process=process,
-        repo_root=repo_root,
-        slug=slug,
-        effective_policy=effective_policy,
-    )
     wave_id = latest_dispatch_wave_id(repo_root, slug)
     return replace(
         facts,
@@ -990,6 +997,7 @@ def _merge_dispatch_overlay(
         dispatch_landing_verdict=journal.landing_verdict,
         dispatch_wave_id=wave_id,
         dispatch_in_flight_stories=in_flight,
+        dispatch_session_liveness_error=journal.session_liveness_error,
     )
 
 
@@ -1980,6 +1988,17 @@ def run_status(
         stranded = status_core.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed_by_ref)
         if stranded is not None:
             facts = replace(facts, dispatch_stranded_work=stranded)
+        from ..core.dispatch_stale import stale_dispatch_run, stale_dispatch_run_payload
+        from .dispatch import gather_dispatch_journal_facts, iter_dispatch_run_dirs
+
+        stale_payloads: list[dict[str, object]] = []
+        for run_dir in reversed(iter_dispatch_run_dirs(git_repo_root, slug)):
+            journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+            stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_dir.name, slug=slug)
+            if stale is not None:
+                stale_payloads.append(stale_dispatch_run_payload(stale))
+        if stale_payloads:
+            facts = replace(facts, dispatch_stale_runs=tuple(stale_payloads))
         matched_unpushed_refs |= status_core.unpushed_refs_matched_to_row(facts, unpushed_by_ref)
         # Story 56.1 (CAP-266): a refused landing whose story is on `main`
         # carries that git fact beside its unchanged findings -- never
@@ -2786,6 +2805,20 @@ def _render_text_status(data: Mapping[str, object], findings: tuple[Finding, ...
             # advisories`.
             codes = ",".join(dict.fromkeys(entry.get("code", "?") for entry in scope_advisories))
             line += f" SCOPE_ADVISORY n={len(scope_advisories)} codes={codes}"
+        # Story 92.1 (AC3): the SAME `dispatch_session_liveness_error` the JSON row carries -- the supervisor's
+        # failed process-group read, judged on the identity-checked leader instead.
+        liveness_error = home.get("dispatch_session_liveness_error")
+        if liveness_error:
+            line += f" LIVENESS_ERROR={' '.join(str(liveness_error).split())!r}"
+        # Story 92.1 (AC9): the SAME `dispatch_stale_runs` list the JSON row carries -- each run whose worktree
+        # is gone, with its story and missing worktree, and the operator's quarantine remedy (one per station).
+        stale_runs = home.get("dispatch_stale_runs") or ()
+        if stale_runs:
+            listed = ", ".join(
+                f"{entry.get('run_id')} story={entry.get('story_key')} worktree={entry.get('worktree_path')}"
+                for entry in stale_runs
+            )
+            line += f" STALE_RUNS n={len(stale_runs)} [{listed}] remedy: {stale_runs[0].get('remedy')}"
         lines.append(line)
 
     # Story 46.5 (CAP-193): the per-harness rollup -- its own line(s),

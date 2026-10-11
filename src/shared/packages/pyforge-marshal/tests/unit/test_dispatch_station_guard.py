@@ -171,6 +171,9 @@ def _seed_live_dispatch_journal(
 ) -> Path:
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
+    fs.dirs.add(worktree)
     journal_path = run_dir / "journal.jsonl"
     intent = prepare_for_write(
         build_entry(
@@ -181,7 +184,7 @@ def _seed_live_dispatch_journal(
             phase=Phase.INTENT,
             payload={
                 "story_key": story_key,
-                "worktree_path": str(tmp_path / "wt"),
+                "worktree_path": str(worktree),
                 "baseline_head_sha": "aaa111",
             },
         )
@@ -528,6 +531,159 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
         process=FakeProcess(),
     )
     assert code == EXIT_OK
+
+
+def test_a_stale_run_on_the_station_warns_mrs_disp_065_and_dispatch_proceeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 92.1 AC8/AC9 at the CLI: another story's run on THIS station lost its worktree (an operator sweep) and
+    its session pid still reads alive (reused). ``marshal factory dispatch`` launches anyway -- never MRS-DISP-021
+    -- and its envelope carries the MRS-DISP-065 WARN naming the run and the quarantine remedy."""
+    import json
+
+    _init_git_repo(tmp_path)
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-stale", story_key="86.6")
+    stale_worktree = tmp_path / "wt"
+    stale_worktree.rmdir()
+    fs.dirs.discard(stale_worktree)
+
+    story = "22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(
+        '---\ndifficulty: medium\nsurface: ["src/free/**"]\n---\n' + _BV,
+        encoding="utf-8",
+    )
+    point_scope_triangle(tmp_path, slug)
+    monkeypatch.setenv("BMAD_ACTIVE_PROJECT", slug)
+    monkeypatch.chdir(tmp_path)
+
+    class CleanVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ()
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+    code = run_dispatch(
+        argparse.Namespace(slug=slug, story=story, format="json"),
+        fs=fs,
+        vcs=CleanVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(alive=True),
+    )
+
+    envelope = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in envelope["findings"]]
+    assert code == EXIT_OK
+    assert "MRS-DISP-021" not in codes
+    stale = [finding for finding in envelope["findings"] if finding["code"] == "MRS-DISP-065"]
+    assert len(stale) == 1
+    assert stale[0]["severity"] == "warn"
+    assert run_dir.name in stale[0]["message"]
+    assert "'86.6'" in stale[0]["message"]
+    assert "dispatch-runs-quarantine/" in stale[0]["message"]
+    # Story 93.1 owns MRS-DISP-064 (its recall WARN): the stale run is reported once, under 065 alone.
+    about_the_stale_run = [finding for finding in envelope["findings"] if run_dir.name in finding["message"]]
+    assert [finding["code"] for finding in about_the_stale_run] == ["MRS-DISP-065"]
+    assert all(
+        "recall layer failed" in finding["message"]
+        for finding in envelope["findings"]
+        if finding["code"] == "MRS-DISP-064"
+    )
+
+
+def test_a_live_session_group_behind_a_dead_leader_refuses_redispatch_and_reads_building(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 92.1 AC5 (review iteration 2, m1): the CLI readers read the whole session group, not the leader alone.
+    The launched leader is dead, and a member of its group that started five minutes after the launch still runs
+    (the atlas 25.1 shape). The in-flight guard refuses the same story as a live session (MRS-DISP-011), and the
+    ``marshal status`` row reads ``running`` / ``building``. Both flip once the group is empty."""
+    from pyforge.marshal import dispatch_verify
+    from pyforge.marshal.adapters.clock_system import SystemClock
+    from pyforge.marshal.cli import status as status_cli
+    from pyforge.marshal.cli.dispatch import _compose_policy
+    from pyforge.marshal.core import status as status_core
+    from pyforge.marshal.ports.session_group import SessionGroupMember
+
+    slug = "pyforge-marshal"
+    story = "22.1"
+    session_pid = 4242
+    fs = FakeFs()
+    run_dir = _seed_live_dispatch_journal(
+        tmp_path, fs, slug=slug, run_id="run-group", story_key=story, session_pid=session_pid
+    )
+    launched_at = gather_dispatch_journal_facts(fs, run_dir, run_dir.name).launched_at
+    assert launched_at is not None
+
+    class Group:
+        def __init__(self) -> None:
+            self.members: tuple[SessionGroupMember, ...] = (
+                SessionGroupMember(pid=session_pid + 7, started_at=launched_at.timestamp() + 300, is_zombie=False),
+            )
+
+        def iter_session_group_members(self, session_leader_pid: int):
+            assert session_leader_pid == session_pid
+            return iter(self.members)
+
+    group = Group()
+    monkeypatch.setattr(dispatch_verify, "_DEFAULT_SESSION_GROUP", group)
+
+    class WorkingVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/changed.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+    vcs = WorkingVcs(tmp_path)
+    leader_dead = FakeProcess(alive=False)
+
+    def guard():
+        return station_in_flight_conflict(
+            fs=fs,
+            vcs=vcs,
+            process=leader_dead,
+            repo_root=tmp_path,
+            slug=slug,
+            story_key=story,
+            effective_policy=_compose_policy(slug),
+        )
+
+    def status_row() -> dict[str, object]:
+        facts = status_cli._merge_dispatch_overlay(
+            fs=fs,
+            process=leader_dead,
+            clock=SystemClock(),
+            vcs=vcs,
+            repo_root=tmp_path,
+            slug=slug,
+            facts=status_core.FleetHomeFacts(slug=slug, branch=f"loop/{slug}", has_run=False),
+        )
+        row, _finding = status_core.build_fleet_row(facts)
+        return row
+
+    conflict = guard()
+    assert conflict is not None and conflict.code == "MRS-DISP-011"
+    assert "session process alive" in conflict.message
+    row = status_row()
+    assert row["state"] == "running"
+    assert row["current_story"] == story
+    assert row["dispatch_phase"] == "building"
+
+    group.members = ()
+
+    assert guard() is None
+    assert status_row().get("dispatch_phase") != "building"
 
 
 def test_overlap_advisory_is_warn_and_dispatch_proceeds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
