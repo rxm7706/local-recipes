@@ -33,12 +33,6 @@ from django_warden_fabric.fleet_inventory import load_organisation_from_config
 from django_warden_fabric.fleet_inventory import run_fleet_inventory_sync
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.tasks import run_fleet_inventory
-from pyforge.testing_kit.flags import flag_states
-from pyforge.testing_kit.flags import flagd_tree
-from pyforge.testing_kit.flags import make_flag_provider_fixture
-
-flag_provider = make_flag_provider_fixture()
-
 _EXAMPLE_ORG = "example-org"
 _FIXTURE_REPO_COUNT = 3
 _PAGINATED_REPO_COUNT = 2
@@ -404,11 +398,10 @@ def test_flag_off_refuses_exit_2(
     assert exc.value.code == _EXIT_REFUSED
 
 
-@flag_states(FLEET_INVENTORY_FLAG)
 @pytest.mark.django_db
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
-def test_flag_gates_inventory_command(
-    flag_provider: dict[str, bool],
+def test_flag_on_runs_inventory(
+    inventory_flags_on: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -417,29 +410,16 @@ def test_flag_gates_inventory_command(
     config.write_text(f'[github]\norganisation = "{_EXAMPLE_ORG}"\n', encoding="utf-8")
     monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(config))
     monkeypatch.setenv(ENV_FLEET_INVENTORY_PATH, str(export))
-    tree_path = flagd_tree(
-        tmp_path,
-        {FLEET_INVENTORY_FLAG: "on" if flag_provider[FLEET_INVENTORY_FLAG] else "off"},
-    )
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree_path))
     client = _recording_client()
     with (
-        patch(
-            "django_warden_fabric.tasks.GhAuthTokenProvider",
-            _SentinelProvider,
-        ),
+        patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider),
         patch(
             "django_warden_fabric.tasks.GitHubRestOrgReposClient",
             lambda token: client,
         ),
     ):
-        if flag_provider[FLEET_INVENTORY_FLAG]:
-            call_command("warden_fleet_inventory")
-            assert export.exists()
-        else:
-            with pytest.raises(SystemExit) as exc:
-                call_command("warden_fleet_inventory")
-            assert exc.value.code == _EXIT_REFUSED
+        call_command("warden_fleet_inventory")
+    assert export.exists()
 
 
 def test_atomic_write_leaves_no_partial_on_failure(tmp_path: Path) -> None:
