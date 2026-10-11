@@ -440,6 +440,9 @@ def test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch(
     fs = FakeFs()
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, "run-1")
     run_dir.mkdir(parents=True, exist_ok=True)
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
+    fs.dirs.add(worktree)
     session_log = run_dir / "session.log"
     session_log.write_text("budget-stop: idle ceiling reached\n", encoding="utf-8")
     fs.files[session_log] = session_log.read_text(encoding="utf-8")
@@ -453,7 +456,7 @@ def test_live_dispatch_conflict_refuses_marshal_initiated_zombie_redispatch(
             phase=Phase.INTENT,
             payload={
                 "story_key": "22.2",
-                "worktree_path": "/tmp/wt",
+                "worktree_path": str(worktree),
                 "baseline_head_sha": "aaa111",
             },
         )

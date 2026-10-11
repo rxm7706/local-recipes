@@ -2851,12 +2851,14 @@ def _seed_reader_spec(tmp_path: Path) -> None:
 
 
 def _reader_journal(tmp_path: Path, followup_review: FollowupReview | None):
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
     return dispatch_core.DispatchJournalFacts(
         story_key=_READER_STORY,
         session_pid=999999,
         model=None,
         launched_at=None,
-        worktree_path=str(tmp_path / "wt"),
+        worktree_path=str(worktree),
         baseline_head_sha="baseline0001",
         followup_review=followup_review,
     )
@@ -3013,9 +3015,11 @@ def _seed_reader_run(
     run_id = "pyforge-marshal-20261001T000000000Z-cafebabe"
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, _FOLLOWUP_SLUG, run_id)
     run_dir.mkdir(parents=True)
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True, exist_ok=True)
     payload: dict[str, object] = {
         "story_key": story_key,
-        "worktree_path": str(tmp_path / "wt"),
+        "worktree_path": str(worktree),
         "baseline_head_sha": "baseline0001",
     }
     if followup_review is not None:
