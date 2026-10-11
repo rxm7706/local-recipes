@@ -2,9 +2,9 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -191,6 +191,18 @@ Deps: — (cross-station: mason Story 21.1).
   it is `done`.
 
 ## Review Triage Log
+
+### 2026-10-10 — Independent review, iteration 2: sent back (2 medium, 5 low)
+
+Separate agent, on `5d516fbf1e`. Every iteration-1 finding re-probed and fixed (reverted hunks redden the named tests); every recorded deviation judged justified, none drops an AC. Gates green: kedro-test, kedro-catalog-check, lint-types, flag gate (also with status simulated `done`), spec-surface; `environment.yaml` and `pixi.lock` correct. New findings (`dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`):
+
+- `[medium]` `[patch]` `dh.py:658-667`, `:679-680`: a failed `git pull --ff-only` always maps to `stale` and the clone is never rebuilt — after an upstream `commit --amend` every later run reads `stale`; a clone killed by its timeout leaves a partial `.git` (the `ProcessError` path does no `rmtree`) and every later run reads `stale` with zero rows even once the network is back. Fix: `rmtree(dest)` on any clone exception; replace the pull with `git fetch` (failure -> `stale`) plus `git reset --hard` to the fetched head (or re-clone on a non-fast-forward).
+- `[medium]` `[patch]` `dh.py:440` and the save loop `:762-764`: only `ProcessError`/walk errors are isolated per repo — a `pixi.lock` with `packages: 5` raises `TypeError` (surfaces as `DatasetError`) and deeply nested `git pkgs history` JSON raises `RecursionError`; either fails the whole node and saves no repo's state. Fix: validate `packages` is a list; catch `Exception` per repo -> `unresolved`.
+- `[low]` `[patch]` `dh.py:222-226` `_git_env` passes `GIT_DIR`/`GIT_WORK_TREE` through (verified: a set `GIT_DIR` made the dataset fetch into another repo); strip `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_COMMON_DIR`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES` there and in the test helper `_git`.
+- `[low]` `[patch]` `dh.py:95` scp-style URL pattern accepts a leading `-` (git's own guard blocks it, but the repo reads `stale` not `unresolved`); require an alphanumeric first character.
+- `[low]` `[patch]` `dh.py:602-614`, `:776` (read, not run): state entries never pruned — a repo dropped from params while degraded keeps `.staleness.json` alive and its partition keeps loading.
+- `[low]` `[patch]` stale text: `tests/unit/parity/test_parity_complete.py:17` and `tests/unit/pipelines/test_dag_resolves.py:44` still say "25.1 placeholder"; the spec Intent still says git-pkgs "does not resolve" with no dated Change Log line; `test_pixi_manifest_reads_the_estate_manifest` ties a unit test to the root `pixi.toml` pin (read-only).
+- `[low]` `[note]` Story 25.2's sensor now re-triggers a scan over `params:dependency_history.repos` (default `[]`), so the CAP-26 link is nominal — record a follow-up in the Spec Change Log / deferred work. `pyforge-station-tests` is required because `pixi.lock` moved and is not recorded as run.
 
 ### 2026-10-10 — Independent review, iteration 1: sent back (2 high, 7 medium)
 
