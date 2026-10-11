@@ -196,14 +196,14 @@ def test_the_fixture_is_the_crash_the_base_raised(stale) -> None:
         )
 
 
-def test_the_guard_neither_raises_nor_refuses_on_a_stale_run_and_warns_mrs_disp_064(stale) -> None:
+def test_the_guard_neither_raises_nor_refuses_on_a_stale_run_and_warns_mrs_disp_065(stale) -> None:
     repo, run_dir, worktree, _base = stale
     advisories: list[Finding] = []
 
     conflict = _guard(repo, story_key="92.1", advisories=advisories)
 
     assert conflict is None
-    assert [finding.code for finding in advisories] == ["MRS-DISP-064"]
+    assert [finding.code for finding in advisories] == ["MRS-DISP-065"]
     warning = advisories[0]
     assert warning.severity is Severity.WARN
     assert run_dir.name in warning.message
@@ -218,7 +218,7 @@ def test_the_stale_runs_own_story_is_not_refused_as_a_live_session(stale) -> Non
     advisories: list[Finding] = []
 
     assert _guard(repo, story_key=_STALE_STORY, advisories=advisories) is None
-    assert [finding.code for finding in advisories] == ["MRS-DISP-064"]
+    assert [finding.code for finding in advisories] == ["MRS-DISP-065"]
 
 
 def test_no_reader_reads_the_stale_run_live_or_raises(stale) -> None:
@@ -326,7 +326,7 @@ def test_the_spin_guard_forwards_the_stale_run_warning(stale) -> None:
     )
 
     assert conflict is None
-    assert [finding.code for finding in advisories] == ["MRS-DISP-064"]
+    assert [finding.code for finding in advisories] == ["MRS-DISP-065"]
 
 
 def test_a_stale_run_is_listed_with_its_remedy(stale) -> None:
@@ -430,3 +430,112 @@ def test_every_cli_reader_checks_the_leader_against_its_runs_harness_binary(
     journal = gather_dispatch_journal_facts(LocalFs(), run_dir, run_dir.name)
 
     assert dispatch_cli._is_dispatch_session_alive(_ReusedPids(), journal) is alive
+
+
+class _ReusedSessionPidDeadSupervisor(_ReusedPids):
+    """The resume shape: the session pid reads alive (reused, start time unreadable), the supervisor is dead, and
+    a respawn would be recorded rather than run."""
+
+    def __init__(self) -> None:
+        super().__init__(frozenset({_SESSION_PID}))
+        self.spawned: list[list[str]] = []
+
+    def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
+        self.spawned.append(list(argv))
+        return 4242
+
+
+@pytest.mark.parametrize("operator_kind", ["resume", "attach"])
+def test_resume_and_attach_refuse_a_stale_run_and_never_respawn_its_supervisor(stale, operator_kind: str) -> None:
+    """Review iteration 2, m2: ``marshal factory dispatch-resume`` / ``dispatch-attach`` on a run whose worktree is
+    gone refuse MRS-DISP-023 naming the missing worktree and the quarantine remedy. The session pid reads alive, so
+    before this rule the run's verdict (``None``, stale) let them respawn a supervisor on the missing worktree --
+    whose tick never gets past the git read -- and journal an operator entry onto a run the operator quarantines."""
+    repo, run_dir, worktree, _base = stale
+    process = _ReusedSessionPidDeadSupervisor()
+    journal_before = (run_dir / "journal.jsonl").read_bytes()
+    journal = gather_dispatch_journal_facts(LocalFs(), run_dir, run_dir.name)
+    assert dispatch_cli._is_dispatch_session_alive(process, journal) is True  # the premise: the pid reads alive
+
+    supervisor_pid, findings, _data = dispatch_cli._ensure_dispatch_supervision(
+        fs=LocalFs(),
+        vcs=GitVcs(),
+        process=process,
+        repo_root=repo,
+        run_dir=run_dir,
+        run_id=run_dir.name,
+        slug=_SLUG,
+        journal=journal,
+        effective_policy=_compose_policy(_SLUG),
+        operator_kind=operator_kind,
+    )
+
+    assert supervisor_pid is None
+    assert [(finding.code, finding.severity) for finding in findings] == [("MRS-DISP-023", Severity.ERROR)]
+    message = findings[0].message
+    assert run_dir.name in message
+    assert repr(_STALE_STORY) in message
+    assert str(worktree) in message
+    assert f"_bmad-output/projects/{_SLUG}/implementation-artifacts/dispatch-runs-quarantine/" in message
+    assert "README.md" in message
+    assert process.spawned == []
+    assert (run_dir / "journal.jsonl").read_bytes() == journal_before
+
+
+def test_a_stale_latest_run_keeps_an_earlier_live_parallel_run_on_the_status_row(stale) -> None:
+    """Review iteration 2, I1: a stale latest run carries no overlay, but an earlier run on the same station that is
+    still live (Story 28.16's parallel fan-out) stays listed under ``dispatch_in_flight_stories``."""
+    repo, _run_dir, _worktree, base = stale
+    earlier_story, earlier_pid = "86.5", 51515
+    earlier_worktree = dispatch_core.dispatch_worktree_path(repo, _SLUG, earlier_story)
+    _git(
+        repo,
+        "worktree",
+        "add",
+        "-q",
+        "-b",
+        dispatch_core.dispatch_worktree_branch(_SLUG, earlier_story),
+        str(earlier_worktree),
+    )
+    earlier_run = "pyforge-marshal-20261003T120000000Z-0a0a0a0a"  # sorts before the stale run: not the latest
+    earlier_dir = dispatch_core.dispatch_run_dir(repo, _SLUG, earlier_run)
+    earlier_dir.mkdir(parents=True)
+    launch = JournalEntryId("dispatch-launcher-2", 0)
+    lines = [
+        build_entry(
+            id=launch,
+            ts="2026-10-03T12:00:00.000Z",
+            run_id=earlier_run,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={"story_key": earlier_story, "worktree_path": str(earlier_worktree), "baseline_head_sha": base},
+        ),
+        build_entry(
+            id=JournalEntryId("dispatch-launcher-2", 1),
+            ts="2026-10-03T12:00:01.000Z",
+            run_id=earlier_run,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.OUTCOME,
+            payload={"ok": True, "session_pid": earlier_pid},
+            intent_id=launch,
+        ),
+    ]
+    (earlier_dir / "journal.jsonl").write_text(
+        "".join(f"{prepare_for_write(entry).line}\n" for entry in lines), encoding="utf-8"
+    )
+    fs, vcs, process = LocalFs(), GitVcs(), _ReusedPids(frozenset({_SESSION_PID, earlier_pid}))
+
+    facts = status_cli._merge_dispatch_overlay(
+        fs=fs,
+        process=process,
+        clock=SystemClock(),
+        vcs=vcs,
+        repo_root=repo,
+        slug=_SLUG,
+        facts=status_core.FleetHomeFacts(slug=_SLUG, branch=f"loop/{_SLUG}"),
+    )
+    row, _finding = status_core.build_fleet_row(facts)
+
+    assert facts.dispatch_story is None  # still no overlay from the stale latest run
+    assert facts.dispatch_in_flight_stories == (earlier_story,)
+    assert row["dispatch_in_flight_stories"] == [earlier_story]

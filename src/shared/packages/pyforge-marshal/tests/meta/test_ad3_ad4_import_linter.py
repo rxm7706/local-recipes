@@ -73,6 +73,7 @@ def test_ad3_harness_seam_contract_shape():
     assert set(contract["source_modules"]) == {
         "pyforge.marshal.cli",
         "pyforge.marshal.core",
+        "pyforge.marshal.data",  # Story 93.1 bmad-loop plugin payloads
         # pyforge.marshal.coverage_gate (Story 19.3 / FR-131) removed
         # 2026-09-20 (doctor Story 24.1, spec-coverage-gate-independence
         # CAP-1): the evaluator moved to scripts/coverage_gate.py.

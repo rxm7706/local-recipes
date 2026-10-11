@@ -350,7 +350,7 @@ development_status:
   87-2-the-platform-host-boots-without-langflow-and-the-full-stack-env-runs-it: blocked
   87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar: done
   87-4-the-herald-webhook-forward-closes-its-review-findings: done
-  87-5-the-herald-webhook-forward-survives-a-client-disconnect-and-proves-ac-6-in-any-order: backlog
+  87-5-the-herald-webhook-forward-survives-a-client-disconnect-and-proves-ac-6-in-any-order: done
   88-1-the-preflight-runs-each-task-once-after-its-dependencies: done
   89-1-a-killed-platform-ci-local-run-never-blocks-the-next-one: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done

@@ -396,6 +396,7 @@ class BmadBuildHarness:
         budget_env: Mapping[str, str],
         log_path: Path,
         wire_layer: Mapping[str, object] | None = None,
+        recall_block: str | None = None,
         harness_session_id: str = "",
     ) -> DispatchLaunchResult:
         if not resolution or resolution.spec is None or resolution.binary_path is None:
@@ -422,6 +423,9 @@ class BmadBuildHarness:
             f"scripts/bmad-switch.\n"
             f"{_SPEC_SURFACE_OBLIGATION}"
         )
+        if recall_block:
+            separator = "\n\n" if prompt and not prompt.endswith("\n\n") else ""
+            prompt = f"{prompt}{separator}{recall_block}"
         # Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-
         # compression decision, resolved from the SAME `[context]` payload
         # `core/policy.py::resolve_context_layers` hands both engines. The

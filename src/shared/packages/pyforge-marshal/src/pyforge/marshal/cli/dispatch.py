@@ -50,7 +50,12 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, Proces
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
-from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
+from ..adapters.harness_bmadloop import (
+    HarnessError,
+    _recall_query_marker_path,
+    augment_bmad_loop_session_prompt_with_recall,
+    resolve_loop_runner,
+)
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import (
     deferred_work,
@@ -61,6 +66,8 @@ from ..core import (
     gate,
     harness_profile,
     policy,
+    recall_dispatch,
+    recall_feedback,
 )
 from ..core import dispatch as dispatch_core
 from ..core import promotion as promotion_core
@@ -2285,7 +2292,7 @@ def station_in_flight_conflict(
             if preflight_advisories is not None:
                 preflight_advisories.append(
                     Finding(
-                        code="MRS-DISP-064",
+                        code="MRS-DISP-065",
                         severity=Severity.WARN,
                         message=(
                             f"stale dispatch run {run_dir.name!r} for story {stale.story_key!r}: "
@@ -3036,6 +3043,12 @@ def dispatch_once(
     # real outcome once the worktree is provisioned.
     structure_graph = StructureGraphSeed()
     data["structure_graph"] = structure_graph.journal_payload()
+    # Story 93.1 (CAP-288/CAP-289 wiring): seed recall disposition beside
+    # `wire` and `structure_graph` so every post-composition envelope carries it.
+    data["recall"] = recall_dispatch.seed_recall_disposition().journal_payload()
+    gate_recall = recall_dispatch.disposition_for_layer_gate(context_layers=context_payload, station_slug=slug)
+    if gate_recall is not None:
+        data["recall"] = gate_recall.journal_payload()
 
     # Story 22.8 (FR-193 CAP-8): profile-aware harness resolution -- the
     # policy's ordered `harness_preference` walked to the first profile
@@ -3191,7 +3204,7 @@ def dispatch_once(
         candidate_spec_text=spec_text,
         deps_graph=_load_station_deps_graph(repo_root, slug),
         parallel_dispatch=parallel_dispatch,
-        # Story 92.1: a stale run (its worktree gone) never refuses -- its MRS-DISP-064 WARN lands here.
+        # Story 92.1: a stale run (its worktree gone) never refuses -- its MRS-DISP-065 WARN lands here.
         preflight_advisories=findings,
     )
     if conflict is not None:
@@ -3527,6 +3540,42 @@ def dispatch_once(
         )
         return _done()
 
+    feed_key = render_feed_key(story_key)
+    recall_block: str | None = None
+    recall_disposition = recall_dispatch.disposition_for_layer_gate(context_layers=context_payload, station_slug=slug)
+    if recall_disposition is None:
+        recall_target = worktree / recall_feedback.recall_feedback_output_relpath(
+            slug, story_key=feed_key, run_id=run_id
+        )
+        recall_marker = _recall_query_marker_path(recall_target)
+        had_cached_marker = fs.read_text(recall_marker) is not None
+        augmented, recall_injection = augment_bmad_loop_session_prompt_with_recall(
+            "",
+            role="dev",
+            fs=fs,
+            loop_home=worktree,
+            repo_root=repo_root,
+            station_slug=slug,
+            story_key=feed_key,
+            run_id=run_id,
+            context_layers=context_payload,
+        )
+        if augmented.strip():
+            recall_block = augmented
+        recall_disposition = recall_dispatch.disposition_from_injection(
+            recall_injection, cached_block=had_cached_marker
+        )
+        if recall_disposition.outcome == "failed":
+            reason = recall_disposition.reason or "scribe recall failed"
+            findings.append(
+                Finding(
+                    code="MRS-DISP-064",
+                    severity=Severity.WARN,
+                    message=f"recall layer failed for this dispatch ({reason}); launch proceeds without injected feedback",
+                )
+            )
+    data["recall"] = recall_disposition.journal_payload()
+
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, 0),
         ts=_format_entry_ts(mint_moment),
@@ -3534,7 +3583,7 @@ def dispatch_once(
         kind=dispatch_core.KIND_DISPATCH_LAUNCH,
         phase=Phase.INTENT,
         payload={
-            "story_key": render_feed_key(story_key),
+            "story_key": feed_key,
             "spec_path": str(spec_path),
             "worktree_path": str(worktree),
             "model": model,
@@ -3543,6 +3592,7 @@ def dispatch_once(
             "baseline_head_sha": baseline_head_sha,
             "harness_profile": resolution.profile,
             "context": context_payload,
+            "recall": recall_disposition.journal_payload(),
             **_dispatch_launch_version_journal_fields(),
             **(
                 {
@@ -3589,6 +3639,7 @@ def dispatch_once(
             # never the whole `[context]` payload. The launch seam has no
             # business reading a layer it does not implement.
             wire_layer=context_payload[harness_profile.WIRE_LAYER_NAME],
+            recall_block=recall_block,
             harness_session_id=harness_session_id,
         )
     except BuildHarnessError as exc:
@@ -3673,6 +3724,7 @@ def dispatch_once(
             # session open on an index?" is a recorded fact. A fresh dict,
             # like `wire`'s, so the journal and the envelope never alias.
             "structure_graph": structure_graph.journal_payload(),
+            "recall": recall_disposition.journal_payload(),
         },
     )
     try:
@@ -3829,6 +3881,24 @@ def _ensure_dispatch_supervision(
         "run_id": run_id,
         "story_key": journal.story_key,
     }
+    from ..core.dispatch_stale import stale_dispatch_run
+
+    # Story 92.1 (review m2): a run whose recorded worktree is gone is stale, never a dispatch to recover. A resume
+    # or attach would respawn a supervisor whose tick never gets past the git read of the missing worktree, and
+    # journal onto a run the operator quarantines -- so refuse before reading liveness. Marshal never moves it.
+    stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_id, slug=slug)
+    if stale is not None:
+        findings.append(
+            Finding(
+                code="MRS-DISP-023",
+                severity=Severity.ERROR,
+                message=(
+                    f"no live dispatch to recover on station {slug!r}: run {run_id!r} for story "
+                    f"{stale.story_key!r} is stale -- its worktree {stale.worktree_path!r} is missing; {stale.remedy}"
+                ),
+            )
+        )
+        return None, findings, data
     session_alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     verdict = resolve_dispatch_session_verdict(

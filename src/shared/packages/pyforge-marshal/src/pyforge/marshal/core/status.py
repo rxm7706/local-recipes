@@ -1315,6 +1315,10 @@ def _apply_dispatch_overlay(row: dict[str, object], facts: FleetHomeFacts) -> di
     if phase is not None:
         row = {**row, "dispatch_phase": phase}
     if not facts.dispatch_story:
+        if facts.dispatch_in_flight_stories:
+            # Story 92.1 (review iteration 2, I1): a stale latest run carries no overlay, but an earlier live
+            # parallel run (Story 28.16) still reaches the row.
+            row = {**row, "dispatch_in_flight_stories": list(facts.dispatch_in_flight_stories)}
         return row
     dispatch_live = _dispatch_overlay_active(facts)
     if not dispatch_live:

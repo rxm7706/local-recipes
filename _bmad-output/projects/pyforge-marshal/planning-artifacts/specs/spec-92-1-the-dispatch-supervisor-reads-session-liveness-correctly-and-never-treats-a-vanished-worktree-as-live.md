@@ -2,7 +2,7 @@
 title: "92.1: The dispatch supervisor reads session liveness correctly and never treats a vanished worktree as live"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '6b5182c155fa451b9d5af75f8945e57537166a33'
 review_loop_iteration: 2
 followup_review_recommended: false
@@ -165,8 +165,10 @@ at `a085cd0344`.
   - `resolve_dispatch_session_verdict` checks for it first, ahead of the open-fix-turn rule (`cli/dispatch.py:1841`),
     and returns a non-live verdict for it;
   - `station_in_flight_conflict` never refuses on it (no `MRS-DISP-011`, `021`, `034` or `035`); it adds an
-    `MRS-DISP-064` WARN, the next free code at mint, naming the run dir, its story, the missing worktree and the
-    remedy;
+    `MRS-DISP-065` WARN naming the run dir, its story, the missing worktree and the remedy. The code was re-minted
+    at review iteration 2: `064`, free when this story was minted, went to Story 93.1's recall WARN on `main` first;
+  - `marshal factory dispatch-resume` and `dispatch-attach` refuse it with `MRS-DISP-023`, naming the missing
+    worktree and the remedy; they spawn no supervisor and journal nothing on it;
   - none of these raises on it: `_live_dispatch_evidence`, `_dispatch_git_facts_for_journal` (`:2093`),
     `_live_dispatch_story_keys` (`:1989`), `list_live_dispatch_stories` (`cli/status.py:886`) or
     `_merge_dispatch_overlay` (`cli/status.py:921`). A `VcsCommandError` from `gather_dispatch_git_facts` outside the
@@ -306,12 +308,15 @@ the run-dir shape the supervisor reads. The real process tests are POSIX only an
   - **And** a candidate story with another key, a process fake on which pid 63830 reads alive (a reused pid whose
     start time cannot be read), and the real git adapter on a `tmp_path` repository.
   - **When** `station_in_flight_conflict` runs **Then** it raises nothing and returns no conflict for the stale run. It
-    reports an `MRS-DISP-064` WARN naming the run dir, `86.6`, the missing worktree and the quarantine remedy.
+    reports an `MRS-DISP-065` WARN naming the run dir, `86.6`, the missing worktree and the quarantine remedy, and
+    no other finding names the run (Story 93.1's `MRS-DISP-064` recall WARN keeps its own meaning).
   - **And** on the code before this story the same fixture raises `VcsCommandError`. The test names the commit it
     reproduces.
   - **And** none of these reads the run as `LIVE` or raises: `resolve_dispatch_session_verdict`,
     `_live_dispatch_story_keys`, `list_live_dispatch_stories` and `_merge_dispatch_overlay`. With the candidate's key
     `86.6`, there is no `MRS-DISP-011`.
+  - **And** `dispatch-resume` / `dispatch-attach` on the run refuse `MRS-DISP-023` naming the missing worktree and
+    the quarantine remedy, spawn no supervisor and leave the journal byte-identical.
 - **AC9 — A stale run is reported, not blocking.**
   - `marshal status` (text and `--format json`) lists the AC8 run under `dispatch_stale_runs`, with its run id, story,
     worktree path and the remedy naming `implementation-artifacts/dispatch-runs-quarantine/` and its `README.md`. The
@@ -382,7 +387,7 @@ the run-dir shape the supervisor reads. The real process tests are POSIX only an
 | none | present | dead | group empty | 90.1: `LIVE` forever (the 47.1 stall) | dead; judged, finalized or landed |
 | none | present | dead | the read raises | 90.1: `LIVE` forever | dead (the fallback); `session_liveness_error` journaled |
 | none | present | a reused pid (create_time outside the window) | the read raises | 90.1: `LIVE` | dead |
-| none | missing | dead or a reused pid | any | `LIVE` or a launch crash on `VcsCommandError` | stale; `MRS-DISP-064` WARN; dispatch proceeds |
+| none | missing | dead or a reused pid | any | `LIVE` or a launch crash on `VcsCommandError` | stale; `MRS-DISP-065` WARN; dispatch proceeds |
 | completed / failed | any | any | any | that verdict | that verdict, unchanged |
 
 </intent-contract>
@@ -439,6 +444,91 @@ the run-dir shape the supervisor reads. The real process tests are POSIX only an
   `terminate_process_group`.
 
 ## Spec Change Log
+
+### 2026-10-11 — Implementer response to review iteration 2
+
+The implementing agent's response to "Independent review, iteration 2: sent back (1 major, 2 minor)". Paths are
+under `src/shared/packages/pyforge-marshal/` unless they start with `scripts/` or `_bmad-output/`. `origin/main`
+(`c0956c0f14`) is merged into the branch: `core/findings.py` conflicted, and both memlogs were unioned main-first.
+`scripts/.spec-surface-baseline.json` and both ledgers came from `main` without conflicts.
+
+**N1 [major]: `MRS-DISP-064` collided with Story 93.1.** The stale-run WARN is now `MRS-DISP-065`.
+- That was the next free code on the merged tree. `MRS-DISP-064` was the highest code used in the marshal package,
+  the marshal planning artifacts, `scripts/` and `docs/`. Among the 60 most recent local branches and the 60 most
+  recent remote branches, none uses `065` or higher in the marshal package.
+- `064` stays exactly as `main` has it, Story 93.1's "scribe recall failed on factory dispatch" WARN, in
+  `core/findings.py`, `core/verdict.py`, `cli/dispatch.py::dispatch_once` and `tests/unit/test_dispatch_recall.py`.
+- `065` is registered in `core/findings.py`, classified WARN in `core/verdict.py` and listed in
+  `tests/unit/test_findings.py`. `cli/dispatch.py::station_in_flight_conflict` emits it.
+- The tests that asserted the stale-run `064` now assert `065`:
+  - `tests/unit/test_dispatch_stale_worktree.py`: the guard test, renamed
+    `test_the_guard_neither_raises_nor_refuses_on_a_stale_run_and_warns_mrs_disp_065`, plus the own-story test and
+    the spin test;
+  - `tests/unit/test_dispatch_station_guard.py`: `test_a_stale_run_on_the_station_warns_mrs_disp_064_and_dispatch_proceeds`
+    is renamed `..._warns_mrs_disp_065_...`. The iteration-1 M3 entry below names it by its old name.
+- That CLI test now also asserts that exactly one finding names the stale run, coded `065`, and that every `064`
+  finding is the recall WARN. On this host its envelope carries one of each.
+- Intent (vanished-worktree bullet), AC8, the I/O matrix and `epics.md`'s Story 92.1 text now name `065`. The
+  iteration-1 entries below, the review logs and the Auto Run Result keep `064`, as written at the time.
+
+**m1 [minor]: the CLI readers' group liveness was untested.**
+- New test: `tests/unit/test_dispatch_station_guard.py::test_a_live_session_group_behind_a_dead_leader_refuses_redispatch_and_reads_building`.
+- Setup: the leader is dead, and the injected session group yields a member that started five minutes after the
+  launch.
+- While that member lives:
+  - `station_in_flight_conflict` for the same story refuses `MRS-DISP-011` "(session process alive)";
+  - the `marshal status` row (`_merge_dispatch_overlay`, then `build_fleet_row`) reads `running`, with the run's
+    story and `dispatch_phase: building`.
+- Once the group is empty, the guard returns no conflict and the phase is no longer `building`.
+
+**m2 [minor]: resume and attach ignored the stale rule.**
+- `cli/dispatch.py::_ensure_dispatch_supervision` checks `stale_dispatch_run` before it reads liveness.
+- On a stale run it refuses `MRS-DISP-023`, naming the run, its story, the missing worktree and the quarantine
+  remedy. It spawns no supervisor and appends nothing to the journal.
+- `dispatch-resume` and `dispatch-attach` share this function. Intent and AC8 now say so.
+- New test: `tests/unit/test_dispatch_stale_worktree.py::test_resume_and_attach_refuse_a_stale_run_and_never_respawn_its_supervisor`,
+  parametrized over `resume` and `attach`.
+  - It uses the AC8 fixture, with the session pid reading alive and a dead supervisor.
+  - It asserts that premise (`_is_dispatch_session_alive` is true), the single `MRS-DISP-023` with its message, no
+    spawn, and a byte-identical journal.
+
+**I1 [info]: a stale latest run dropped the in-flight list.**
+- `cli/status.py::_merge_dispatch_overlay` now computes `dispatch_in_flight_stories` before the stale early return,
+  and carries it on the stale branch.
+- `core/status.py::_apply_dispatch_overlay` lists it on a row that has no overlay story.
+- The station's state is unchanged.
+- New test: `test_dispatch_stale_worktree.py::test_a_stale_latest_run_keeps_an_earlier_live_parallel_run_on_the_status_row`,
+  which uses a live earlier run in its own real git worktree.
+
+**I2 [info]: a race in the own-group adapter test.** In `tests/unit/test_session_group_psutil.py`, the own-group
+test now reads each member's group through `_pgid_now`. That helper returns `None` for a pid that has exited, so a
+sibling worker's short-lived child no longer races the `pid_exists`/`getpgid` pair.
+
+**Not changed:** I3 (the cost of `marshal status`), I4 (the cmdline substring match) and I5 (small uncovered
+branches). Each is information only.
+
+**Other changed test expectations (AC10):**
+- `tests/unit/test_dispatch_survival.py`'s `FakeFs` gains `exists`.
+- `test_dispatch_resume_respawns_dead_supervisor` creates its journaled worktree (`/repo/wt`) on that fake, because
+  resume now reads the stale rule and a missing worktree reads stale.
+
+**Mutation evidence.**
+- Each mutation was applied to a scratch copy of the merged tree (`impl921b-mut` under the session scratchpad).
+- The targeted marshal tests ran there, with the scratch sources first on `PYTHONPATH`:
+  - the iteration-1 list;
+  - `test_dispatch_survival.py`, `test_dispatch_recall.py` and `test_findings.py`.
+- The unmutated copy fails one environment-only test, `test_status.py::TestRunDetail::test_run_status_with_default_ports_and_run_flag_does_not_crash`,
+  because it is not a git checkout.
+- Every mutation exited 1 with added failures, and the worktree was never mutated.
+
+| Mutation | New failures |
+|---|---|
+| `_is_dispatch_session_alive` returns false for a dead leader before any group read (m1) | the m1 test (1) |
+| `_ensure_dispatch_supervision` without the stale refusal (m2) | the m2 test, `resume` and `attach` (2) |
+| The stale-run WARN back on `MRS-DISP-064` (N1) | the guard, own-story and spin tests; the CLI stale-run test (4) |
+| The stale run reported under both `065` and `064` (N1) | the same four; the CLI test fails on the new "exactly one finding names the run" assertion (4) |
+| The stale early return drops the in-flight list (I1) | the I1 test (1) |
+| The row skips the in-flight list when no overlay applies (I1) | the I1 test (1) |
 
 ### 2026-10-11 — Implementer response to review iteration 1
 

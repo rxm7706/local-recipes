@@ -944,17 +944,26 @@ def _merge_dispatch_overlay(
     journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
     if journal.session_pid is None and journal.completion_verdict is None and journal.story_key is None:
         return facts
+    effective_policy = _compose_policy(slug)
+    in_flight = list_live_dispatch_stories(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        effective_policy=effective_policy,
+    )
     # Story 92.1 (CAP-5): a latest run whose worktree is gone is stale, never the station's live dispatch -- no
     # overlay, so the row never reads `running` (or `building`/`verifying`) because of it. `run_status` lists it
-    # under `dispatch_stale_runs` instead.
+    # under `dispatch_stale_runs` instead. An earlier live parallel run (Story 28.16) still reaches the row
+    # through `dispatch_in_flight_stories` (review iteration 2, I1).
     if dispatch_run_is_stale(fs=fs, journal=journal):
-        return facts
+        return replace(facts, dispatch_in_flight_stories=in_flight) if in_flight else facts
     alive = _is_dispatch_session_alive(process, journal, repo_root=repo_root)
     supervisor_alive = journal.supervisor_pid is not None and process.is_alive(journal.supervisor_pid)
     elapsed: float | None = None
     if journal.launched_at is not None:
         elapsed = (clock.now() - journal.launched_at).total_seconds()
-    effective_policy = _compose_policy(slug)
     verdict = resolve_dispatch_session_verdict(
         fs=fs,
         vcs=vcs,
@@ -965,14 +974,6 @@ def _merge_dispatch_overlay(
         effective_policy=effective_policy,
     )
     completion_verdict = verdict.value if verdict is not None else journal.completion_verdict
-    in_flight = list_live_dispatch_stories(
-        fs=fs,
-        vcs=vcs,
-        process=process,
-        repo_root=repo_root,
-        slug=slug,
-        effective_policy=effective_policy,
-    )
     wave_id = latest_dispatch_wave_id(repo_root, slug)
     return replace(
         facts,

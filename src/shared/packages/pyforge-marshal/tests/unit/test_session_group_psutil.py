@@ -137,6 +137,15 @@ def test_any_other_psutil_failure_on_a_member_is_a_read_error(monkeypatch: pytes
 # -- the real adapter on this host (m6) ------------------------------------------------------------------------
 
 
+def _pgid_now(pid: int) -> int | None:
+    """The pid's group now, or ``None`` once it has exited: a sibling xdist worker's short-lived child can exit
+    between the scan and this read (review iteration 2, I2)."""
+    try:
+        return os.getpgid(pid)
+    except ProcessLookupError:
+        return None
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX process groups")
 def test_the_real_adapter_on_the_tests_own_group_raises_nothing_and_yields_its_live_members() -> None:
     members = list(PsutilSessionGroup().iter_session_group_members(os.getpgrp()))
@@ -144,7 +153,7 @@ def test_the_real_adapter_on_the_tests_own_group_raises_nothing_and_yields_its_l
     me = next(member for member in members if member.pid == os.getpid())
     assert me.is_zombie is False
     assert me.started_at == pytest.approx(psutil.Process(os.getpid()).create_time())
-    assert all(os.getpgid(member.pid) == os.getpgrp() for member in members if psutil.pid_exists(member.pid))
+    assert all(_pgid_now(member.pid) in {os.getpgrp(), None} for member in members)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX process groups")
