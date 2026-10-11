@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: e37c61ac23413248
-story_count: 60
-test_file_count: 76
+source_fingerprint: f7c83dba3434a63e
+story_count: 61
+test_file_count: 78
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 60
+- **Stories parsed:** 61
 - **Epics parsed:** 17
-- **Test files inventoried:** 76 under `src/shared/packages/pyforge-warden/tests/`
+- **Test files inventoried:** 78 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e37c61ac23413248`
+- **Source fingerprint:** `f7c83dba3434a63e`
 
 ## Risk Assessment
 
@@ -87,6 +87,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_socket_deny_alive.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py` | meta | none observed |
+| `src/shared/packages/pyforge-warden/tests/meta/test_subprocess_sole_site.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_verdict_sole_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator_draft_pr_estate.py` | unit | none observed |
@@ -128,6 +129,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_refresh_epss_feed.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_refresh_kev_feed.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_report.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_sast_opengrep.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_scanner_plugins.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_smoke.py` | unit | none observed |
@@ -196,10 +198,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 14.2 | The actuator edits the manifest and re-solves the lock in a throwaway copy | none observed |
 | 14.3 | The actuator opens the fix as a draft PR on an estate repo | none observed |
 | 15.1 | Opengrep is an optional SAST scanner that informs, never publishes, the verdict | none observed |
-| 16.1 | Warden inventories a GHE organisation's repos | none observed |
+| 16.1 | Warden inventories an operator-designated GitHub organisation's repos | none observed |
 | 16.2 | A fleet run scans each inventoried repo, one verdict per repo | none observed |
 | 16.3 | Each fleet fix waits in a proposal queue for operator approval | none observed |
 | 16.4 | Non-Python lockfiles scan through osv-scanner's own parsers | none observed |
+| 16.5 | Warden inventories the items of the operator-designated GitHub Projects | none observed |
 | 17.1 | Eligibility records its policy, and warden's other open deferrals close | none observed |
 
 ## Quality Gates

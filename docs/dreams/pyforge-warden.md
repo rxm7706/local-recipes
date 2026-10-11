@@ -164,6 +164,33 @@ the host or the source.
   range is added (`pixi.toml` pins TEA `>=1.27.2`, open-ended, so there is no tested range to mirror). Owner:
   warden; the shipped behaviour is Story 11.2's (`spec-bmad-suite-lifecycle` CAP-4, folded on 2026-09-17 into
   `pyforge-steward:CAP-33`). → Epic 11 / Story 11.3, specced 2026-10-07; Epic 11 reopens.
+- **2026-10-11 — Ruled: the fleet is an operator-designated github.com organisation, read through the operator's
+  `gh` login, and never named in a tracked file.** Story 16.1 was minted for a GitHub Enterprise host, with steward
+  Story 75.1's credentials. On 2026-10-11 the operator designated the fleet instead: an organisation on github.com,
+  its repos, and the items of two of its GitHub Projects (v2). **Rulings** (the Spec memlog records them verbatim,
+  with the names redacted):
+  1. Inventory the whole organisation plus the items of the two designated projects: the widest scope. The project
+     items are a second story.
+  2. This repository is public, so no tracked file names the organisation, its repositories or its projects. The
+     names live only in a gitignored local config, the exports are gitignored and never committed, and tests use
+     fictional fixtures.
+  3. The live run reads through the operator's existing `gh` login at run time. No token is copied into
+     `steward keys` or any file.
+
+  github.com is now the designated host, not a stand-in. That supersedes the 2026-10-10 "no github.com stand-in"
+  condition for this work; its other conditions stand. **What it looks like when real:** the inventory lists every
+  repo of the designated organisation, and every item of its designated projects, into gitignored JSON exports. It
+  reads only, through REST `GET` and GraphQL `query`, and takes the token from `gh` at run time, holding it in memory
+  only. **Constraints:**
+  - The client enforces read-only, because the login's `repo` scope is not read-only on its own.
+  - Fixtures name `example-org`.
+  - A leak-guard test keeps the target's names out of the fleet's tracked paths.
+  - Steward 75.1 stays on main as the path for a future GitHub Enterprise target.
+  - A live fleet run (16.2) or an approved proposal (16.3) on this organisation needs a credential ruling of its
+    own.
+
+  Owner: warden; `spec-pyforge-warden` CAP-26 (FR-43). → Story 16.1 re-scoped (key kept) and Story 16.5 minted,
+  specced 2026-10-11.
 
 ## Folded Dreams (2026-09-17)
 
