@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**181** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**185** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -4835,4 +4835,52 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: review finding, atlas Story 25.1 independent review iteration 5
   severity: low
   promoted: 2026-10-10 -- implementer response to 25.1 review iteration 5
+  status: open
+
+### DW-atlas-25-1-3: An emptied remote still wipes the history of a repo that was only ever built partially.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: The empty-remote guard keys on the state head, which a partial build never advances; git-pkgs is absent on osx-arm64 and win-64, so there every build is partial. Verified: pixi rows go to 0, degradation "", reason "no commits yet". The Spec Change Log line "only a repo never built reads as an empty history" overstates the fix.
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: key the guard on an existing partition (`_partition_head(...) is not None`)
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
+  status: open
+
+### DW-atlas-25-1-4: A `local_path` source follows whatever branch the operator has checked out.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: Since iteration 5's `_follow_target`, a `local_path` clone resets to the source's current HEAD branch: a dependency added only on a feature branch appeared then vanished, and each branch switch re-walks the full history (before iteration 5 the clone stayed on its first upstream).
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: pin the walked ref for local paths, or name the walked ref in the spec
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
+  status: open
+
+### DW-atlas-25-1-5: A symlinked `.git/logs` (or `hooks`/`info`) planted in Atlas's own cache still passes `_clone_is_usable`.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: Verified: reflog appends landed in the symlink's target repo. Requires a hand-placed symlink inside Atlas's cache; no code path creates one.
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: reject any symlink under the clone's `.git`
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
+  status: open
+
+### DW-atlas-25-1-6: Two story tests fail on hosts with `init.defaultBranch=main`, and the spec's Auto Run Result text is stale.
+
+- source_spec: `planning-artifacts/specs/spec-25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser.md`
+  summary: `test_a_default_branch_switch_is_followed` and `test_a_remote_head_naming_no_branch_keeps_the_last_good_history` fail where git's `init.defaultBranch` is `main` (verified); the spec's "Auto Run Result" still says "DuckDB sqlite scan", "fleet inventory + params" and "7 passed".
+  evidence: 25.1 independent review iteration 6 (2026-10-10), recorded as a deferred low under the operator-capped review (only regressions and high/medium findings block landing).
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py; src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py
+  fix: `git init -b master` in `_init_fixture_repo`; refresh or mark the Auto Run Result historical
+  origin: review finding, atlas Story 25.1 independent review iteration 6
+  severity: low
+  promoted: 2026-10-10 -- iteration-6 PASS triage
   status: open

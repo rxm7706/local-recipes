@@ -2,7 +2,7 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
 review_loop_iteration: 5
 followup_review_recommended: false
@@ -276,6 +276,13 @@ Deps: — (cross-station: mason Story 21.1).
   the `git` layer, not any process git-pkgs starts itself.
 
 ## Review Triage Log
+
+### 2026-10-10 — Independent review, iteration 6: PASS
+
+- Separate agent, on `d8580336d3`. Every iteration-5 fix re-probed with real git (git-pkgs failing at H2 then a force-push to H1: no H2 rows; an `os._exit` between the partition and state writes then a reset: nothing served for the old head; duplicate `full_name` suppresses pruning; an emptied remote keeps 4 rows; symlinked `objects`/`refs` re-cloned; a default-branch switch followed); eight single reverts each redden their named test.
+- Iteration 3-4 sweep: the shipped relative cache inside a checkout with an unpushed commit, an uncommitted edit and an untracked file, across 11 plants (partial `.git`, pointer file, `commondir`, symlinked `.git`/`objects`/`refs`/slot, `core.worktree`, `include.path`, stray file) over 3 builds each: the checkout byte-identical; a `git-pkgs` shim shows `init`/`history` only in Atlas's clone, the database in temp, no hook installed.
+- Gates, each exit 0: kedro-test (2211 passed, 20 skipped; 103), kedro-catalog-check (69), lint-types, flag gate (`pass`), spec-surface, deferred-work, pyforge-core-test (2384 passed, 1 skipped).
+- Deferred lows: `DW-atlas-25-1-1` (sensor link nominal), `DW-atlas-25-1-2` (orphaned git-pkgs on timeout), `DW-atlas-25-1-3` (an emptied remote wipes a repo only ever built partially -- the guard keys on the state head; key it on an existing partition), `DW-atlas-25-1-4` (a `local_path` source follows the operator's checked-out branch since `_follow_target`), `DW-atlas-25-1-5` (a symlinked `.git/logs`/`hooks` planted in Atlas's cache passes `_clone_is_usable`), `DW-atlas-25-1-6` (two tests fail where `init.defaultBranch=main`; the stale "Auto Run Result" text).
 
 ### 2026-10-10 — Independent review, iteration 5: sent back (1 medium, 5 low)
 
