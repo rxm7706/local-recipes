@@ -1,5 +1,5 @@
 ---
-title: "16.1: Warden inventories a GHE organisation's repos"
+title: "16.1: Warden inventories an operator-designated GitHub organisation's repos"
 type: 'feature'
 created: '2026-09-28'
 status: 'ready-for-dev'
@@ -7,10 +7,13 @@ review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
+  - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/.memlog.md
   - docs/dreams/pyforge-warden.md
   - docs/governance/spec-feature-flag-governance/SPEC.md
   - src/shared/packages/django-warden/src/django_warden_fabric/models.py
+  - src/shared/packages/django-warden/src/django_warden_fabric/fleet.py
   - src/shared/packages/django-warden/src/django_warden_fabric/tasks.py
+  - src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py
   - src/platform/db/README.md
 flag:
   key: pyforge.warden.fleet_inventory
@@ -27,144 +30,242 @@ declared_low_risk: false
 
 ## Intent
 
-**Blocked (cross-station):** the inventory reads a GitHub Enterprise organisation with credentials Steward provides
-(steward Story 75.1, the GHE host credentials). The Deps parser is station-local, so the ledger row is minted `blocked`;
-the operator flips it once steward 75.1 is `done` and the worker's environment carries the GHE host, token and
-organisation the way that story defines.
+**Re-scoped 2026-10-11 (operator rulings; the `spec-pyforge-warden` memlog records them verbatim, with the target's
+names redacted).** The inventory reads an operator-designated organisation on github.com, not a GitHub Enterprise host.
+github.com is now the designated host, not a stand-in. The rulings supersede the 2026-10-10 condition "It does not
+improvise a host, a token, a github.com stand-in or a mock presented as live" in its host clause only; its other
+clauses still hold (below). Three rulings:
+- **Scope:** every repo of the operator-designated github.com organisation. The items of its operator-designated
+  GitHub Projects are Story 16.5 (Deps S-16.1), which reads the same config and the same credential.
+- **Naming:** this repository is public. No tracked file names the organisation, its repositories or its projects:
+  not this spec, a memlog, a test, a fixture, a doc, a log left in the repo, a commit message or a PR body. They say
+  "the operator-designated github.com organisation". The names live only in a gitignored local config, the export is
+  gitignored and never committed, and tests use fictional fixtures (organisation `example-org`).
+- **Credential:** the live run reads through the operator's existing `gh` login at run time. The operator named its
+  scopes as `repo`, `read:org` and `read:project`. No token is copied into `steward keys`, an env file or any other
+  file.
 
-**Gate cleared 2026-10-10.** Steward Story 75.1 is `done` on main: its landing, PR #1664 (merge `b106386842`, "Merge
-pyforge-steward/75-1 into main"), is an ancestor of `origin/main` (`git merge-base --is-ancestor b106386842 origin/main`
-exits 0 at `2d90c634f3`), and steward's ledger row
-`75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity` reads `done`. The
-operator ruled the same day (verbatim): "yes flip the six cleared stories and dispatch them". The ledger key moved
-`blocked -> backlog` through a worktree-local Tier-3 feed and `sprint-ledger-sync --project warden --allow-regression`;
-this spec is `ready-for-dev`.
+**What the re-scope changes.**
+- **Host.** The GitHub REST API at `https://api.github.com`: `GET /orgs/{org}/repos?type=all&per_page=100`, following
+  the `Link: rel="next"` header until no next page remains.
+- **Target.** The organisation name comes from a gitignored local config, `.warden/fleet-target.toml`
+  (`[github] organisation = "..."`; Story 16.5 reads `projects` from the same file). `WARDEN_FLEET_TARGET_CONFIG`
+  overrides the path. This story adds `.warden/` to `.gitignore` in the same change, before anything is written there.
+- **Credential seam.** It fits warden's injectable-client design, the actuator's `resolve_forge` → `GitHubForgeClient`
+  pair (`actuator.py:325`, `:351`):
+  - A credential provider runs `gh auth token --hostname github.com` once per inventory task, in the worker. It
+    passes an argv list with no shell, captures stdout, and never logs it.
+  - It hands the token to a stdlib-`urllib` listing client, which holds it in memory for that run only.
+  - Both are injectable, so the suite injects a fake provider and a fixture client, and never runs `gh` or opens a
+    socket.
+  - Calling `gh api` once per page was the alternative. It was not chosen because pagination and the GET-only check
+    then stay warden's own code, testable against a fixture client.
+- **Read-only by construction.** GitHub's classic `repo` scope is not read-only, so the client enforces it. It issues
+  `GET` only, and refuses any other method before a socket opens.
+- **Steward Story 75.1 is no longer this story's credential path.** This story does not need
+  `steward keys exec --scope ghe-fleet-read` (`GH_HOST`, `GH_ENTERPRISE_TOKEN`). 75.1's code stays on main and nothing
+  here removes it, so a later GitHub Enterprise target can still use it.
+- **Export.** One JSON document at `WARDEN_FLEET_INVENTORY_PATH`, default `.warden/fleet-inventory.json` (gitignored).
 
-**The operator's conditions for this dispatch (2026-10-10).**
-- A live run needs a real GitHub Enterprise host and the operator's own credentials, read-only: the `ghe-fleet-read`
-  scope, never `ghe-fleet-pr-draft`.
-- If the host or the credentials are absent, the dispatch stops and reports. It does not improvise a host, a token, a
-  github.com stand-in or a mock presented as live.
-- The build and its test suite need no live host. The ACs run against a fixture organisation behind the injectable
-  client, and the Never list already bars reaching GHE from the suite.
-- The dispatch never writes to any repository outside `rxm7706/local-recipes`. The inventory only reads GHE. Steward
-  Story 85.8's outward guard is on main: PR #2021, merge `8d1044b999`, the `session_denials` matchers in
-  `.claude/hooks/pre-shell.py`. It denies an agent session's outward push and `gh` writes, and this story does not
-  route around it.
+**The 2026-10-10 conditions, re-read under the rulings.**
+- A live run needs the operator's own read credential: still holds, and it is now the operator's `gh` login. If
+  `gh` has no github.com login, or the config is absent, the dispatch stops and reports. It does not improvise an
+  organisation, a token or a mock presented as live. github.com as the host is no longer an improvisation.
+- The build and its suite need no live host: still holds. The ACs run against a fictional fixture organisation behind
+  the injectable client.
+- The dispatch never writes to any repository outside `rxm7706/local-recipes`, and steward Story 85.8's outward guard
+  (PR #2021) stays on: still holds. The inventory writes nothing to GitHub at all.
 
-**Since minting (re-read 2026-10-10; Story 16.2 landed first, PR #1974, merge `868eb82717`).** No AC changes.
-- **`FleetRepo` already exists.** It is at `django_warden_fabric/models.py:54`, with exactly this story's fields
-  (organisation, full name, default branch, clone URL, archived, last-seen) and the unique (organisation, full name)
-  constraint. It shipped in `migrations/0002_fleet_run.py`, covered by
-  `src/platform/db/changelog/changes/python-agent-platform-22-warden-fabric-0002-fleet-run.sql`
-  (`sqlmigrate-map.yaml:28`). 16.2's review deferred the rest to this story: rows are fixture-seeded until 16.1 lands,
-  and the GHE inventory sync is 16.1's scope.
-  - The Surface's "`models.py` a `FleetRepo` row" and "`migrations/0002_*.py`" are already done.
-  - This story adds a migration and its covering changeset only if it changes the model (the next number is `0004`).
-    The Always line on the migration applies only then.
-- **`fleet.py` exists.** It holds 16.2's clone helpers and `_GIT_CREDENTIAL_ENV_KEYS`. This story adds the
-  organisation listing to it.
-- **How 75.1 delivers the credential.** "The way that story defines" is:
-  - The enterprise host comes from `GITHUB_API_BASE_URL`.
-  - The read token reaches a process only through `steward keys exec --scope ghe-fleet-read -- <argv>`. That command
-    sets `GH_HOST` and `GH_ENTERPRISE_TOKEN` in the child's environment, strips the ambient `GITHUB_TOKEN`, `GH_TOKEN`,
-    `GH_ENTERPRISE_TOKEN` and `GITHUB_ENTERPRISE_TOKEN`, and needs steward's flag `pyforge.steward.ghe_fleet_credentials`
-    ON.
-  - `GITHUB_API_URL` is the actuator's own variable (`actuator.py:347`), not 75.1's. Where the Approach's
-    "`resolve_forge` shape: `GITHUB_API_URL` names the GHE host" disagrees with 75.1, the Intent's "the way that story
-    defines" governs.
-  - The AC's typed error names the variable that is actually missing.
-- **A reader of the export already exists (atlas Story 25.2, PR #1882).** `parse_fleet_inventory`
-  (`pyforge-atlas/src/pyforge/atlas/orchestration/fleet_inventory_sensor.py:50`) reads `{"repos": [{"full_name": ...,
-  "head_sha": ...}]}` and treats a repo without `head_sha` as a malformed export. Atlas's catalog reads it at
-  `${paths.data_root}/stores/warden_fleet_inventory.json` (`conf/base/globals.yml:164`). This story's AC lists full name,
-  default branch and clone URL, with no head SHA.
-  - This note does not add one. Whether the export also carries each default branch's head SHA for atlas's reader is
-    an open question for the operator.
-  - The dispatch builds the AC as written and reports the mismatch. It does not change atlas's parser.
-  - Atlas 25.2's own cross-station note puts the attended live wiring after 16.1.
-- **The flag reader and fixture are in place.** `pyforge.core.flags.read_boolean` exists (steward 75.1), so the "if
-  75.1 has not landed" clause does not apply. The `spec-feature-flag-governance:CAP-4` fixture has landed (marshal Story
-  74.1, `pyforge.testing_kit.flags`).
+**History (kept for the record; superseded where the re-scope above says so).**
+- *Minted `blocked` 2026-09-28* on steward Story 75.1 (the GHE host credentials).
+- *Gate cleared 2026-10-10.* 75.1 is `done` on main (PR #1664, merge `b106386842`, an ancestor of `origin/main`). The
+  operator ruled "yes flip the six cleared stories and dispatch them"; the key moved `blocked -> backlog` through a
+  worktree-local Tier-3 feed and `sprint-ledger-sync --project warden --allow-regression`.
+- *Since minting (re-read 2026-10-10; Story 16.2 landed first, PR #1974, merge `868eb82717`).* These notes still hold:
+  - **`FleetRepo` already exists** at `django_warden_fabric/models.py:54`, with this story's fields (organisation,
+    full name, default branch, clone URL, archived, last-seen) and the unique (organisation, full name) constraint. It
+    shipped in `migrations/0002_fleet_run.py`, covered by changeset 22
+    (`python-agent-platform-22-warden-fabric-0002-fleet-run.sql`, `sqlmigrate-map.yaml:28`). This story adds a
+    migration and its covering changeset only if it changes the model (the next number is `0004`).
+  - **`fleet.py` exists** with 16.2's clone helpers. This story adds the organisation listing and the credential
+    provider to it.
+  - **A reader of the export already exists** (atlas Story 25.2, PR #1882). `parse_fleet_inventory`
+    (`pyforge-atlas/src/pyforge/atlas/orchestration/fleet_inventory_sensor.py:50`) reads
+    `{"repos": [{"full_name": ..., "head_sha": ...}]}` and treats a repo without `head_sha` as malformed. This story's
+    AC lists full name, default branch and clone URL, with no head SHA. Whether the export also carries each default
+    branch's head SHA is still an open question for the operator; the 2026-10-11 rulings did not answer it. The
+    dispatch builds the AC as written, reports the mismatch, and does not change atlas's parser.
+  - **The flag reader and fixture are in place:** `pyforge.core.flags.read_boolean` (steward 75.1) and
+    `pyforge.testing_kit.flags` (marshal Story 74.1).
+  - The 2026-10-10 note "How 75.1 delivers the credential" is superseded by the credential seam above.
 
 **Problem:** Warden scans one repo per invocation and has no notion of a fleet. The operator ruled on 2026-09-28 that
-Warden scans the enterprise fleet on GitHub Enterprise, lifting the Non-goal "Fleet aggregation"; the first thing a
-fleet run needs is the list of repos, and other stations need it too (Atlas's dependency history,
-`spec-pyforge-atlas:CAP-61`).
+Warden scans the fleet, lifting the Non-goal "Fleet aggregation". A fleet run's first need is the list of repos, and
+other stations need it too (Atlas's dependency history, `spec-pyforge-atlas:CAP-61`). On 2026-10-11 the operator
+designated the fleet: a github.com organisation, named only in a gitignored config.
 
-**Approach:** In `django_warden_fabric` (spine § Currency reconciliation — 2026-09-28, Decision 2): a `FleetRepo` model
-(organisation, full name, default branch, clone URL, archived, last-seen), a `fleet.py` that pages the GHE REST
-organisation-repos listing through an injectable client (the actuator's `resolve_forge` shape: `GITHUB_API_URL` names
-the GHE host), and a keys-not-blobs Celery task that upserts the rows idempotently and writes the inventory as one JSON
-document at a configured path (`WARDEN_FLEET_INVENTORY_PATH`, beside the fabric's blob root). The export is the only
-face other stations read; nobody imports `django_warden_fabric` or `pyforge.warden` for it. The model ships a Django
-migration and its covering Liquibase changeset (`src/platform/db/`, the `sqlmigrate-extraction` gate). The inventory
-action (portal button and management command, one code path) reads the flag through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); OFF, it is
-listed as disabled and refuses.
+**Approach:** In `django_warden_fabric` (spine § Currency reconciliation — 2026-09-28, Decision 2), `fleet.py` gains
+two seams:
+- the credential provider above;
+- a listing client that pages `GET /orgs/{org}/repos` (GET only).
 
-Ledger key: `16-1-warden-inventories-a-ghe-organisation-s-repos`.
-Ledger status (do not edit the ledger): `backlog` (flipped from `blocked` on 2026-10-10 by the operator's ruling).
-Type / Effort / Deps: feature / M / — (cross-station: steward Story 75.1).
+A keys-not-blobs Celery task:
+1. reads the organisation from the gitignored config;
+2. takes the credential once;
+3. upserts `FleetRepo` rows idempotently;
+4. writes the inventory as one JSON document at `WARDEN_FLEET_INVENTORY_PATH`, atomically (a temporary file in the
+   same directory, then a rename), so a failed run leaves no partial export.
+
+The export is the only face other stations read; nobody imports `django_warden_fabric` or `pyforge.warden` for it.
+The inventory action is a portal button and a `warden_fleet_inventory` management command on one code path. It reads
+the flag through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract); OFF, it is listed as disabled and
+refuses.
+
+Ledger key: `16-1-warden-inventories-a-ghe-organisation-s-repos` (kept on the 2026-10-11 re-scope; the key is an
+identifier, and its `ghe` is historical).
+Ledger status (do not edit the ledger): `backlog`.
+Type / Effort / Deps: feature / M / — (steward Story 75.1 no longer required, 2026-10-11).
 
 ### Living CAP citations
 
-- `spec-pyforge-warden` CAP-26 (FR-43); CAP-16 (the service skeleton, keys-not-blobs).
+- `spec-pyforge-warden` CAP-26 (FR-43) and CAP-16 (the service skeleton, keys-not-blobs). CAP-26's `SPEC.md` text
+  still says "a GitHub Enterprise organisation" and "GHE credentials come from Steward (steward Story 75.1)". For this
+  story and Story 16.5 the 2026-10-11 decision entries in the Spec memlog govern where the two differ, until `bmad-spec`
+  re-derives `SPEC.md`.
 - `spec-pyforge-atlas:CAP-61` (reads the export); `spec-feature-flag-governance:CAP-1`.
 
 ## Acceptance Criteria
 
-- Given a fixture GHE organisation of three repos behind the injectable client, When the inventory task runs, Then three `FleetRepo` rows exist and the export lists the same three repos with full name, default branch and clone URL
-- Given the same organisation listed twice, When the task runs again, Then the rows are updated in place, not duplicated
-- Given a paginated listing, When it spans pages, Then every page is read
-- Given the Celery message, When it is inspected, Then it carries only ids and the organisation name (keys-not-blobs), never a token
-- Given a missing credential, When the task runs, Then it fails with a typed error naming the missing variable and writes no partial export
-- Given the flag OFF, When the operator opens the portal or runs the management command, Then the action is listed as disabled and refuses (the command exits 2, warden's usage code)
+- Given a fixture organisation `example-org` of three repos behind the injectable listing client, When the inventory
+  task runs, Then three `FleetRepo` rows exist and the export lists the same three repos with full name, default
+  branch and clone URL
+- Given the same organisation listed twice, When the task runs again, Then the rows are updated in place, not
+  duplicated, and the export is rewritten whole
+- Given a paginated listing, When it spans pages through `Link: rel="next"`, Then every page is read
+- Given the Celery message, When it is inspected, Then it carries only ids and the organisation name (keys-not-blobs),
+  never a token or an `Authorization` header
+- Given no `gh` binary, a `gh` with no github.com login, or a missing config or a config with no `organisation`, When
+  the task runs, Then it fails with a typed error. The error names what is missing: the binary, the login, or the
+  config path and key. It never echoes a token, and no partial export is written
+- Given the inventory run against the fixture with a recording client, When every request is inspected, Then each is a
+  `GET`. A test drives a `POST`, `PUT`, `PATCH` and `DELETE` through the default client and asserts each is refused
+  before a socket opens
+- Given a fake credential provider that returns a sentinel token, When a run ends in success and when it ends in
+  failure, Then the sentinel appears in no log record, Celery message, model field, error text or export
+- Given the default config path `.warden/fleet-target.toml` and the default export path `.warden/fleet-inventory.json`,
+  When `git check-ignore` is asked about each, Then both are ignored (a test pins it)
+- Given the gitignored config present locally, When the leak-guard test runs, Then it finds neither the
+  `organisation` value nor any term in its optional `leak_guard_terms` list in the tracked files of the paths the fleet
+  stories write: `_bmad-output/projects/pyforge-warden/`, `src/shared/packages/django-warden/`,
+  `src/shared/packages/pyforge-warden/`, `src/platform/`, `docs/dreams/pyforge-warden.md` and `.gitignore`. The test
+  matches case-insensitively on a fixed string, and skips, naming why, when the config is absent (CI)
+- Given the operator's `gh` login and the gitignored config, When the operator (or the dispatch, reading through that
+  login) runs the inventory live, Then the export lands only under the gitignored path, `git status --porcelain` is the
+  same before and after the run, and no write request reaches GitHub
+- Given the flag OFF, When the operator opens the portal or runs the management command, Then the action is listed as
+  disabled and refuses (the command exits 2, warden's usage code)
 
 ## Boundaries & Constraints
 
 **Always:**
 - Live in `django-warden`; the `pyforge.warden` scan process gains no socket.
-- Take credentials from the environment Steward provisions, never from a model field, a flag or a log line.
-- Ship the migration with its covering Liquibase changeset; `platform-ci-local -- --test` green.
-- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree (canopy:AD-11). If 75.1 has not landed when this story runs, add it in `pyforge.core` in exactly 75.1's shape (`read_boolean(key, default=False)`, `cutover_root.py`'s tree resolution, False with a named WARN for a missing tree, key or non-bool value; a `spec-pyforge-core` co-governor reconcile) — never a station-local reader or a second tree. Add the key to `src/platform/config/flags.json` (default OFF). The portal view runs inside the host, where `pyforge` may be absent; there, and only there, it evaluates the same key through `django_pyforge.flags`, the Guild's other sanctioned reader.
-- Reconcile every Spec `spec-surface-check` names for the touched paths (`django-warden` and `src/platform/` are co-governed by steward's `spec-pyforge-unifying-strategy`); scoped stamps only.
+- Take the credential at run time from the operator's `gh` login through the injectable provider, and hold it in
+  memory for that run only. Never write it to an env file, a model field, a flag, the Celery message, the export, a
+  log line or error text.
+- Read the organisation only from the gitignored config. Add `.warden/` to `.gitignore` in this story's change,
+  before any file is written there.
+- Issue `GET` requests only, against the GitHub REST API.
+- Use fictional fixtures only (`example-org`, invented repo names).
+- Change the model only if the fields above need it; then ship the migration (`0004`) with its covering Liquibase
+  changeset, and `platform-ci-local -- --test` green.
+- Read the flag only through `pyforge.core.flags.read_boolean` (steward Story 75.1's contract) over the one tree
+  (canopy:AD-11). Add the key to `src/platform/config/flags.json` (default OFF) and its overlay rows. The portal view
+  runs inside the host, where `pyforge` may be absent; there, and only there, it evaluates the same key through
+  `django_pyforge.flags`, the Guild's other sanctioned reader.
+- Reconcile every Spec `spec-surface-check` names for the touched paths (`django-warden` and `src/platform/` are
+  co-governed by steward's `spec-pyforge-unifying-strategy`); scoped stamps only.
 
 **Never:**
 - Clone or scan here (Story 16.2).
+- Call any method but `GET`, or any GitHub write endpoint.
+- Name the operator-designated organisation, its repositories or its projects in a tracked file, a test, a fixture, a
+  commit message or a PR body. Never commit the config or the export.
+- Copy the token into `steward keys`, an env file or any other file.
+- Reach GitHub, or run `gh`, from the test suite.
 - Add a webhook, a FastAPI or SQLAlchemy service, or a gitgres store.
-- Reach GHE from the test suite.
 
 ## I/O & Edge-Case Matrix
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
-| three repos | fixture org | three rows, three-entry export | — |
-| re-run | same org | rows updated, no duplicates | — |
+| three repos | fixture `example-org` | three rows, three-entry export | — |
+| re-run | same org | rows updated, no duplicates, export rewritten | — |
+| two pages | `Link: rel="next"` on page 1 | both pages read | — |
 | archived repo | `archived: true` | row kept, flagged archived | — |
-| no token | env missing | no export | typed error naming the variable |
-| GHE 5xx | listing fails | no partial export | job `failed` with the error |
+| no `gh` | binary absent | no export | typed error naming `gh` |
+| no login | `gh auth token` exits non-zero | no export | typed error naming the github.com login |
+| no config | `.warden/fleet-target.toml` absent | no export | typed error naming the path and `organisation` |
+| non-GET | a `POST` through the client | refused before a socket opens | typed refusal |
+| API 5xx or rate limit | listing fails | no partial export | job `failed` with the error, no token in it |
 | flag OFF | key off | action disabled | refuses, exit 2 |
 
 </intent-contract>
 
 ## Binding
 
-Parent Spec capability: `spec-pyforge-warden` CAP-26 (FR-43).
-Dream: `docs/dreams/pyforge-warden.md` § Realization log → *2026-09-28 (night) — Proposed: the fix-PR actuator finishes the fix, SAST joins as a plugin, and Warden scans the enterprise fleet*.
+Parent Spec capability: `spec-pyforge-warden` CAP-26 (FR-43); the 2026-10-11 memlog decisions govern its host and
+credential wording for this story.
+Dream: `docs/dreams/pyforge-warden.md` § Realization log → *2026-09-28 (night) — Proposed: the fix-PR actuator finishes the fix, SAST joins as a plugin, and Warden scans the enterprise fleet* and *2026-10-11 — Ruled: the fleet is an operator-designated github.com organisation, read through the operator's `gh` login, and never named in a tracked file*.
 Ledger key: `16-1-warden-inventories-a-ghe-organisation-s-repos`.
-Ledger status at mint: `blocked` — until steward Story 75.1 (GHE host credentials) is `done`; the operator flips the row. Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (75.1 `done`), through the Tier-3 feed and `sprint-ledger-sync --project warden --allow-regression`.
-Deps: — (cross-station: steward Story 75.1).
+Ledger status at mint: `blocked` — until steward Story 75.1 (GHE host credentials) is `done`; the operator flips the row. Flipped `blocked` → `backlog` 2026-10-10 by the operator's ruling (75.1 `done`), through the Tier-3 feed and `sprint-ledger-sync --project warden --allow-regression`. Re-scoped 2026-10-11 by the operator's rulings; key and status unchanged.
+Deps: — (steward Story 75.1 no longer required, 2026-10-11).
 
 ## Verification
 
 **Commands:**
 - `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (the station's `verify_commands`).
 
-**Manual checks:**
-- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass (the `django-warden` tests live under `src/platform/tests/`, and the migration's covering changeset passes `sqlmigrate-extraction`).
-- Flag ON/OFF: a test writes two flagd trees (`pyforge.warden.fleet_inventory` on, then off; the `src/platform/tests/test_openfeature_file_flags.py` shape until the `spec-feature-flag-governance:CAP-4` fixture lands): ON runs the inventory, OFF lists the action as disabled and refuses with exit 2. *(2026-10-10: that fixture has landed, marshal Story 74.1: write the trees with `pyforge.testing_kit.flags.flagd_tree` and parametrize with `flag_states`.)*
+**Run before the push (not dispatch gates):**
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass. The `django-warden` tests live under
+  `src/platform/tests/` (`src/platform/tests/test_warden_fleet_inventory.py`); a covering changeset passes
+  `sqlmigrate-extraction` if the model changed.
+- `pixi run -e pyforge-guild python scripts/flag_gate_check.py --spec _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-16-1-warden-inventories-a-ghe-organisation-s-repos.md`
+  — expected: `pass`.
+- `git check-ignore -q .warden/fleet-target.toml .warden/fleet-inventory.json` — expected: exit 0.
 - `pixi run -e pyforge-guild spec-surface-check` exits 0 after the scoped stamps.
+
+**Manual checks:**
+- Flag ON/OFF: `src/platform/tests/test_warden_fleet_inventory.py` writes the trees with
+  `pyforge.testing_kit.flags.flagd_tree` and parametrizes with `flag_states` over `pyforge.warden.fleet_inventory`. ON
+  runs the inventory; OFF lists the action as disabled and refuses with exit 2.
+- Live run, by the operator or by the dispatch reading through the operator's `gh` login (never a token pasted
+  anywhere): with the gitignored config in place, run `warden_fleet_inventory`. Expected: the export lands under
+  `.warden/`, `git status --porcelain` is identical before and after, and nothing from the run is staged. If `gh` has no
+  github.com login or the config is absent, stop and report.
+
+## Named, not fixed here
+
+- **A live fleet run (Story 16.2, done) and an approved proposal (Story 16.3, done) need a credential decision of
+  their own.** 16.2 clones with the credential its worker's environment carries, and 16.3 opens through the actuator's
+  forge credential. The 2026-10-11 rulings cover this read-only inventory and 16.5's project items only. Cloning the
+  designated organisation's private repos, or opening any PR there, is not ruled.
+- **Atlas's `head_sha`** (above): an open operator question.
+
+## Spec Change Log
+
+- 2026-09-28: minted `blocked` on steward Story 75.1 (GHE host credentials).
+- 2026-09-28: amended — the flag reader is `pyforge.core.flags.read_boolean` (steward Story 75.1's contract).
+- 2026-10-10: gate cleared; `ready-for-dev`; ledger `blocked -> backlog` by operator ruling. The operator's
+  conditions were recorded, and the notes re-read against Stories 16.2 and 75.1 and atlas 25.2. No AC changed.
+- 2026-10-11: re-scoped by the operator's rulings. The host is an operator-designated github.com organisation
+  (superseding the 2026-10-10 "no github.com stand-in" clause). The credential is the operator's `gh` login at run
+  time; steward 75.1's `keys exec` path is no longer required. Tracked files never name the target, and the config and
+  export are gitignored.
+  - Title changed; key, status, type, effort and flag unchanged; Deps no longer names 75.1.
+  - ACs rewritten: the fixture organisation is `example-org`; the missing-credential AC now covers `gh` and the config.
+  - ACs added: GET-only, token never persisted, gitignored paths, leak guard, live run.
+  - The items of the operator-designated GitHub Projects split out to Story 16.5.
 
 ## Review Triage Log
 
-- No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10). Implementation and review stay separate.
+- No review yet (minted 2026-09-28, `blocked`; `ready-for-dev` 2026-10-10; re-scoped 2026-10-11). Implementation and review stay separate.

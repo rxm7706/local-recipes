@@ -234,6 +234,10 @@ verify_commands = [
   "src/platform/db/changelog/**",
   "src/platform/db/sqlmigrate-map.yaml",
   "src/platform/config/flags.json",
+  # 2026-10-11 (operator rulings; Story 16.1 re-scoped, Story 16.5 minted): 16.1 adds `.warden/` to .gitignore (the
+  # gitignored target config and exports), and both stories add overlay rows for their flag keys
+  ".gitignore",
+  "src/platform/config/flag-overlays.json",
   "src/shared/packages/pyforge-core/src/pyforge/core/**",
   "src/shared/packages/pyforge-core/tests/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
