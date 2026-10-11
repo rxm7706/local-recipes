@@ -6,17 +6,16 @@ import ast
 import json
 import logging
 import subprocess
+from http import HTTPStatus
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from django.core.management import call_command
-from django.test import Client
 from django.test.utils import override_settings
 from django_pyforge.flags import evaluate_from_source
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
-from http import HTTPStatus
 from django_warden_fabric.fleet import FLEET_INVENTORY_FLAG
 from django_warden_fabric.fleet_inventory import DEFAULT_FLEET_TARGET_CONFIG
 from django_warden_fabric.fleet_inventory import ENV_FLEET_INVENTORY_PATH
@@ -27,8 +26,6 @@ from django_warden_fabric.fleet_inventory import GhAuthTokenProvider
 from django_warden_fabric.fleet_inventory import GhBinaryMissingError
 from django_warden_fabric.fleet_inventory import GhLoginMissingError
 from django_warden_fabric.fleet_inventory import ListedRepo
-from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient
-from pyforge.warden.fleet_github_rest import HttpMethodRefusedError
 from django_warden_fabric.fleet_inventory import RecordingOrgReposClient
 from django_warden_fabric.fleet_inventory import atomic_write_json
 from django_warden_fabric.fleet_inventory import load_leak_guard_terms
@@ -36,6 +33,8 @@ from django_warden_fabric.fleet_inventory import load_organisation_from_config
 from django_warden_fabric.fleet_inventory import run_fleet_inventory_sync
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.tasks import run_fleet_inventory
+from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient
+from pyforge.warden.fleet_github_rest import HttpMethodRefusedError
 
 _EXAMPLE_ORG = "example-org"
 _FIXTURE_REPO_COUNT = 3
@@ -123,9 +122,7 @@ def test_inventory_three_repos(inventory_paths: tuple[Path, Path]) -> None:
     payload = json.loads(export.read_text(encoding="utf-8"))
     assert payload == document
     for entry in payload["repos"]:
-        assert {"full_name", "default_branch", "clone_url", "archived"} <= set(
-            entry
-        )
+        assert {"full_name", "default_branch", "clone_url", "archived"} <= set(entry)
     archived = next(
         e for e in payload["repos"] if e["full_name"].endswith("/archived-one")
     )
@@ -433,7 +430,7 @@ def test_flag_on_runs_inventory(
     assert export.exists()
 
 
-def _authed(client: Client, settings, *, sub: str = "op-1") -> Client:
+def _authed(client, settings, *, sub: str = "op-1"):
     claims: dict[str, object] = {
         "sub": sub,
         "groups": ["pyforge:station:warden"],
@@ -447,7 +444,7 @@ def _authed(client: Client, settings, *, sub: str = "op-1") -> Client:
 
 @pytest.mark.django_db
 def test_portal_fleet_inventory_refuses_when_flag_off(
-    client: Client,
+    client,
     settings,
     inventory_flags_off: Path,
 ) -> None:
@@ -459,7 +456,7 @@ def test_portal_fleet_inventory_refuses_when_flag_off(
 
 @pytest.mark.django_db
 def test_portal_chrome_lists_inventory_disabled_when_flag_off(
-    client: Client,
+    client,
     settings,
     inventory_flags_off: Path,
 ) -> None:
