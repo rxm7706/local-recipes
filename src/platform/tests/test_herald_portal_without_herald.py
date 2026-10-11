@@ -8,10 +8,36 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pytest
+
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 
 # Fresh pytest-django DB has no Wagtail page at /stations/ (404 with herald too).
 _EXPECTED_STATIONS_STATUS = 404
+
+
+def _database_url_for_child() -> str | None:
+    from django.conf import settings
+
+    db = settings.DATABASES["default"]
+    engine = db.get("ENGINE", "")
+    if "postgresql" not in engine:
+        return None
+    name = db.get("NAME")
+    if not name:
+        return None
+    user = db.get("USER") or ""
+    password = db.get("PASSWORD") or ""
+    host = db.get("HOST") or ""
+    port = db.get("PORT") or ""
+    if host.startswith("/"):
+        return f"postgres:///{name}?host={host}"
+    auth = ""
+    if user:
+        auth = f"{user}:{password}@" if password else f"{user}@"
+    host_part = host or "localhost"
+    port_part = f":{port}" if port else ""
+    return f"postgres://{auth}{host_part}{port_part}/{name}"
 
 
 def _build_child_script(expected_stations_status: int) -> str:
@@ -44,6 +70,10 @@ def _build_child_script(expected_stations_status: int) -> str:
         sys.meta_path.insert(0, _HeraldAbsentFinder())
 
         django.setup()
+        from django.conf import settings
+
+        if "testserver" not in settings.ALLOWED_HOSTS:
+            settings.ALLOWED_HOSTS = [*settings.ALLOWED_HOSTS, "testserver"]
         call_command("check")
 
         client = Client()
@@ -88,7 +118,14 @@ def _child_env() -> dict[str, str]:
     return child_env
 
 
-def _run_child(expected_stations_status: int) -> subprocess.CompletedProcess[str]:
+def _run_child(
+    expected_stations_status: int,
+    *,
+    extra_env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    env = _child_env()
+    if extra_env:
+        env.update(extra_env)
     argv = [sys.executable, "-c", _build_child_script(expected_stations_status)]
     return subprocess.run(  # noqa: S603
         argv,
@@ -97,12 +134,17 @@ def _run_child(expected_stations_status: int) -> subprocess.CompletedProcess[str
         text=True,
         timeout=180,
         cwd=_PLATFORM_ROOT,
-        env=_child_env(),
+        env=env,
     )
 
 
+@pytest.mark.django_db
 def test_herald_portal_pages_without_herald():
-    proc = _run_child(_EXPECTED_STATIONS_STATUS)
+    extra: dict[str, str] = {}
+    db_url = _database_url_for_child()
+    if db_url is not None:
+        extra["DATABASE_URL"] = db_url
+    proc = _run_child(_EXPECTED_STATIONS_STATUS, extra_env=extra)
     assert proc.returncode == 0, proc.stderr or proc.stdout
     assert "OK" in proc.stdout
     combined = proc.stdout + proc.stderr

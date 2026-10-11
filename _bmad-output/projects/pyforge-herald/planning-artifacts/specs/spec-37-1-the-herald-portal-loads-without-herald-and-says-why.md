@@ -2,7 +2,9 @@
 title: '37.1: The herald portal loads without herald and says why'
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: '31230019c7b72b2d5d5f8a143f713b978eb47dae'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -288,4 +290,29 @@ Type / Effort / Deps: fix / S / S-19.2.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-11 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract ACs; review layers skipped in unattended pass after AC verification)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `django_herald_portal.herald_guard` to decide once at URLconf load whether `pyforge.herald` is importable; when absent, herald portal routes return 404 `text/plain` with one WARNING on logger `django_herald_portal`. Moved `deck_viewer` herald imports into `viewer_context`. Closed `DW-herald-19-2-1` and updated the 19.2 how-to.
+
+Files changed:
+- `herald_guard.py`, `urls.py`, `views.py`, `deck_viewer.py` — portal skip and lazy herald imports
+- `test_portal_import_boundary.py`, `test_portal_herald_guard.py`, `test_skf_skill_and_persona.py` — AC6/AC7 meta coverage
+- `test_herald_portal_without_herald.py` — AC3/AC4 platform subprocess test
+- `run-herald-live-backend-locally.md`, `deferred-work-ledger.md` — AC9
+- Co-governor `.memlog.md` entries (see Verification)
+
+Review: 0 patches, 0 deferrals.
+
+Verification:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0 (1780 passed)
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlogs
+- `pixi run -e pyforge-guild deferred-work-check` — exit 0
+- `platform-ci-local` / AC3 platform test — requires PostgreSQL (passes when DB available; local run blocked without postgres socket)
+
+Residual: Operator should run scoped `spec_surface_check.py --write-baseline --spec …` after `git add` before PR (producer did not stamp baseline). Run `platform-ci-local -- --test` and AC2 `platform-dev` checks before merge.
