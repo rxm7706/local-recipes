@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: a95edbce1bd06925
-story_count: 444
+source_fingerprint: c689fb9763c253d5
+story_count: 445
 test_file_count: 252
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 444
-- **Epics parsed:** 90
+- **Stories parsed:** 445
+- **Epics parsed:** 91
 - **Test files inventoried:** 252 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a95edbce1bd06925`
+- **Source fingerprint:** `c689fb9763c253d5`
 
 ## Risk Assessment
 
@@ -112,6 +112,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 90: A dispatch run is complete only when its session has really ended
 - Epic 91: A derived file lands only as its generator wrote it
 - Epic 92: A dispatch run is live only while its session really runs in its worktree
+- Epic 93: Recall reaches every live session (spec-pyforge-marshal CAP-288..CAP-291 ← spec-marshal-recall-in-the-loop CAP-1..4)
 
 ### Low-risk epics
 
@@ -832,6 +833,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 90.1 | The dispatch supervisor records completion only after the harness session has... | none observed |
 | 91.1 | A corrupt `environment.yaml` never lands | none observed |
 | 92.1 | The dispatch supervisor reads session liveness correctly and never treats a v... | none observed |
+| 93.1 | Every live session gets the recall its layer promises, and the run records th... | none observed |
 
 ## Quality Gates
 

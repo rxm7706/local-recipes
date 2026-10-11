@@ -3318,6 +3318,31 @@ capabilities:
     heading: "preserved work is an annotated tag, and nothing removes a working copy it does not hold"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-10-11 marshal-recall-in-the-loop fold: spec-marshal-recall-in-the-loop CAP-1..4 carried as CAP-288..291
+  - id: pyforge-marshal:CAP-288
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a dev pass receives relevant team-memory feedback before it starts"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-289
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a review pass sees the same feedback the dev pass saw"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-290
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "the recall injection is its own [context] layer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-291
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a recall miss or failure injects nothing"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core

@@ -2,7 +2,7 @@
 title: The review bot remembers the correction you gave two weeks ago
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 fold-exemption: cross-station-seam   # sits at the marshal (loop orchestration) / scribe (memory ownership) seam by design -- neither station's chain alone owns it, matching pyforge-core's own cross-station-seam precedent
 ---
 

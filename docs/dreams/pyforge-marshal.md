@@ -1298,6 +1298,27 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   rulings: 2026-10-10 "yes mint both stories"; 2026-10-11 "Revert 90.1 now (Recommended)" and "Retitle
   (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 92 / Story 92.1 ("The dispatch supervisor reads session
   liveness correctly and never treats a vanished worktree as live"), specced 2026-10-10, reshaped 2026-10-11.
+- **2026-10-11 (recall is built and never runs)** — **Found: the recall layer is built, tested and reported as enabled,
+  and no live session has ever received a recall.** Stories 47.1–47.4 (`spec-marshal-recall-in-the-loop` CAP-1..4)
+  landed on 2026-10-08 and 2026-10-11. `inject_recall_feedback` runs `scribe recall --mode memory` and writes the loop
+  home's `recall-feedback.md`; `augment_bmad_loop_session_prompt_with_recall` folds that block into a dev or review
+  prompt behind `[context.recall]`; a miss injects nothing. Nothing outside the unit tests calls the fold
+  (`DW-marshal-47-2`, `DW-marshal-47-3`). `cli/spin.py` launches `bmad-loop run` with `[plugins] enabled = []`, so
+  bmad-loop's `pre_session` hook, the one place its session prompt can change (`proposed_prompt`), never sees the
+  block. `marshal factory dispatch` builds its `bmad-build-auto` prompt (`adapters/harness_bmadbuild.py` :415) with no
+  recall at all, while every dispatch envelope reports `"context": {"recall": {"enabled": true, ...}}`: a layer
+  declared on and never attempted. The Spec also sat outside this chain under a `cross-station-seam` exemption, which
+  AGENTS.md reserves for the kernel and testing-kit seams. **What it looks like when fixed:** the satellite Dream is
+  folded into this one (the 2026-10-11 section at the end) and moves to `archive/docs/dreams/`; its four CAPs continue as
+  `spec-pyforge-marshal` CAP-288..CAP-291 and its Spec folder becomes a pointer. When `[context.recall]` is enabled,
+  both engines call the one fold before a session starts: the dispatch prompt carries a grounded block, and a
+  `bmad-loop` dev or review session gets the same block through `pre_session`. One `scribe recall` runs per story
+  dispatch. The dispatch envelope and journal say whether recall ran and whether it grounded, missed or failed, never
+  `enabled` without an attempt, and a miss injects nothing. **Constraints:** a fix story under the carried CAP-1 and
+  CAP-2 (CAP-288 and CAP-289 after the render), no further CAP, no flag; scribe stays the sole owner of capture and
+  grounding, recall stays a CLI subprocess, and marshal never edits bmad-loop's installed package (operator rulings
+  2026-10-11: "in-progress (Recommended)", "Mint a wiring story (Recommended)" and "Fold into pyforge-marshal
+  (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 93 / Story 93.1, specced 2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
@@ -5801,3 +5822,66 @@ green gate immediately surfaced a hole none of them covered, twice in two days:
   plus the green verdict *"every tracked file governed or allowlisted; no drift"*. Against this
   Dream's own opening measurement (61 findings, then 994 presumed) the instrument is clear and the
   signal is trustworthy. Epic 13 (13.1–13.7) all `done`. Batch: `_bmad-output/projects/pyforge-steward/planning-artifacts/research/fleet-readiness-decision-batch-2026-09-09.md`.
+
+## 2026-10-11 — The review bot remembers the correction you gave two weeks ago (folded from marshal-recall-in-the-loop)
+
+*Folded 2026-10-11 under spec-one-chain-per-station CAP-11 (operator ruling 2026-10-11: "Fold into pyforge-marshal
+(Recommended)"). The body below is `docs/dreams/marshal-recall-in-the-loop.md`, verbatim, with its headings demoted one
+level; the file moved to `archive/docs/dreams/marshal-recall-in-the-loop.md`. Its Spec's four capabilities continue as
+`spec-pyforge-marshal` CAP-288..CAP-291 (← `spec-marshal-recall-in-the-loop` CAP-1..CAP-4), and its folder stays as a
+pointer. The wiring that makes them live is Story 93.1 (Realization log, 2026-10-11).*
+
+## The review bot remembers the correction you gave two weeks ago
+
+### The Dream
+
+Scribe already captures corrections and feedback (`feedback` / `project` /
+`reference` capture types) and can answer a grounded `recall` query — never
+inventing an uncited answer, explicit about a real miss. That primitive is
+shipped, real, a complete BMAD project.
+
+What it doesn't do yet is reach forward on its own. A correction captured
+today doesn't automatically show up in the next `bmad-loop` dev pass working
+nearby code, and it doesn't automatically show up in the review pass grading
+that work either — both still start from a blank context unless a human (or
+this session, by hand) remembers to run `scribe recall` first and paste the
+result in. The memory exists; the propagation into every future session that
+should see it does not.
+
+This is not identity-scoped citation (that's already real —
+[[scribe-marshal-fact-visibility]] lets `recall` cite a project's own
+`facts.yaml` under its own scope) and it's not token-compression (that's
+[[marshal-token-economy]]'s `derived-context` layer, which recomputes
+codebase/planning *structure* when its sources change — a different kind of
+staleness than "a human corrected an agent and nobody downstream heard
+about it").
+
+### What it looks like when real
+
+- Before a `bmad-loop` dev pass or review pass starts a story, it queries
+  `scribe recall` scoped to the story's touched surface/station, and any
+  relevant feedback entries fold into that session's starting context
+  automatically — no human has to remember to run it.
+- Composes with the existing `[context]` pipeline (`wire` / `output` /
+  `structure-graph` / `derived-context` / `planning-graph`) as its own layer,
+  rather than becoming a sixth ad hoc mechanism bolted on beside it.
+- `recall`'s own honesty is preserved end to end: a genuine miss injects
+  nothing, never a fabricated "no relevant corrections found" confidence
+  the agent didn't earn.
+- Stays within the same token-economy discipline the rest of the pipeline
+  already answers to — this is a context layer, not an unbounded reread.
+
+### Constraints / Non-goals
+
+- Does not change what scribe *captures* — that surface is already built and
+  correct.
+- Does not replace human review or lower its bar; it feeds the review pass
+  more of what it should already have known, not less scrutiny.
+- Not a general RAG-everything layer — scoped to the same
+  feedback/correction material scribe already curates, not a blanket
+  full-repo retrieval pass.
+
+### Kinships
+
+[[pyforge-marshal]] · [[pyforge-scribe]] · [[marshal-token-economy]] ·
+[[scribe-marshal-fact-visibility]]
