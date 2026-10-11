@@ -43,12 +43,7 @@ _REPO_ROOT = _SRC_ROOT.parent
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
 _FABRIC_ROOT = (
-    _SRC_ROOT
-    / "shared"
-    / "packages"
-    / "django-warden"
-    / "src"
-    / "django_warden_fabric"
+    _SRC_ROOT / "shared" / "packages" / "django-warden" / "src" / "django_warden_fabric"
 )
 _TASKS_PATH = _FABRIC_ROOT / "tasks.py"
 _LEAK_SCAN_ROOTS = (
