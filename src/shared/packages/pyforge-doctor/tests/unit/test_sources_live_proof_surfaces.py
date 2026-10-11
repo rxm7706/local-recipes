@@ -454,9 +454,7 @@ _GUILD_CONTAINER_GLOBS = (
 # content, so this one path is a named exception here, mirroring the
 # Boundaries' own "or the named cross-station paths for the container row"
 # carve-out.
-_HERALD_NAMED_NON_PACKAGE_PATHS = (
-    "scripts/deck_export.py",
-)
+_HERALD_NAMED_NON_PACKAGE_PATHS = ("scripts/deck_export.py",)
 
 
 def test_zero_false_positives_against_the_live_tracked_tree() -> None:
