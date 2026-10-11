@@ -44,6 +44,7 @@ BROKER_MAXMEMORY = "32mb"
 SHARED_MAXMEMORY = "4mb"
 _FILL_VALUE_BYTES = 50_000
 _FILL_MAX_ITERATIONS = 10_000
+_BROKER_LOSS_MAX_ROUNDS = 20
 
 
 def _free_port() -> int:
@@ -175,6 +176,39 @@ def _fill_cache_to_eviction(cache_url: str) -> None:
     assert int(client.info("memory")["used_memory"]) <= limit
 
 
+def _broker_loss_rounds_until_eviction(
+    redis_url: str,
+    *,
+    before: dict[str, Any],
+    cloudevent_id: str,
+) -> tuple[dict[str, Any], int]:
+    """Apply full keyspace turnover rounds until broker state is lost or cap hit."""
+    client = redis.Redis.from_url(redis_url, decode_responses=False)
+    info = client.info("memory")
+    limit = int(info["maxmemory"])
+    assert limit > 0
+    keys_per_round = max(1, (2 * limit) // _FILL_VALUE_BYTES)
+    payload = b"x" * _FILL_VALUE_BYTES
+
+    after = _broker_snapshot(redis_url, cloudevent_id=cloudevent_id)
+    for round_index in range(_BROKER_LOSS_MAX_ROUNDS + 1):
+        broker_lost = (
+            after["queued_depth"] < before["queued_depth"]
+            or after["stream_len"] < before["stream_len"]
+            or after["pending_count"] < before["pending_count"]
+            or not after["event_in_stream"]
+        )
+        if broker_lost:
+            return after, round_index
+        if round_index >= _BROKER_LOSS_MAX_ROUNDS:
+            break
+        for index in range(keys_per_round):
+            client.set(f"broker-loss-turnover:{round_index}:{index}", payload)
+        after = _broker_snapshot(redis_url, cloudevent_id=cloudevent_id)
+
+    return after, _BROKER_LOSS_MAX_ROUNDS
+
+
 def _cloudevent_present(client: Any, cloudevent_id: str) -> bool:
     for _stream_id, fields in client.xrange(STREAM, "-", "+", count=100):
         body = json.loads(fields[EVENT_FIELD])
@@ -287,7 +321,14 @@ def test_unsplit_redis_loses_broker_state_under_cache_pressure(tmp_path: Path) -
         shared_url = f"redis://127.0.0.1:{port}/0"
         before = _seed_broker_state(shared_url)
         _fill_cache_to_eviction(shared_url)
-        after = _broker_snapshot(shared_url, cloudevent_id=before["event_id"])
+        after, rounds_run = _broker_loss_rounds_until_eviction(
+            shared_url,
+            before=before,
+            cloudevent_id=before["event_id"],
+        )
+
+        client = redis.Redis.from_url(shared_url, decode_responses=True)
+        evicted_keys = int(client.info("stats").get("evicted_keys", 0))
 
         broker_lost = (
             after["queued_depth"] < before["queued_depth"]
@@ -297,7 +338,8 @@ def test_unsplit_redis_loses_broker_state_under_cache_pressure(tmp_path: Path) -
         )
         assert broker_lost, (
             "unsplit redis must lose broker-side state under cache eviction; "
-            "otherwise the split survival test would pass vacuously"
+            "otherwise the split survival test would pass vacuously "
+            f"(turnover rounds run={rounds_run}, evicted_keys={evicted_keys})"
         )
     finally:
         _stop_redis(proc)

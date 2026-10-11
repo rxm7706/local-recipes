@@ -319,8 +319,8 @@ checkout is on.
 
 ## Why the retired CI live-demo workflow is not the proof
 
-Story 13.6's CI-contained demo lived at
-`archive/.github/workflows/herald-live-demo.yml` after Story 36.1 archived it. When it still ran
+Story 13.6's CI-contained demo now lives at
+`archive/.github/workflows/herald-live-demo.yml`; Story 36.1 archived it. When it still ran
 from `.github/workflows/`, each job wrote a throwaway `runner.temp` database on a GitHub-hosted
 runner and needed a GitHub repository secret, so it could never show a record surviving a restart
 on this machine. This how-to and `herald-ship-local` are the estate's live proof instead.

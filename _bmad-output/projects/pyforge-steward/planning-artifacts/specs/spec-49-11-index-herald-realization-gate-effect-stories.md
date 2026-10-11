@@ -2,7 +2,7 @@
 title: '49.11: Index — herald realization-gate effect stories'
 type: 'docs'
 created: '2026-09-18'
-status: 'blocked'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -70,3 +70,7 @@ memlog, 2026-10-10.)
 - Herald's part, the re-scope of Story 19.2, is herald's chain. Steward names it and never edits it.
 - The And-clause's dependency changes shape: herald's hosting branch now waits on Story 86.1 and herald's own 19.2, not
   on a Foundry perimeter or steward's chart work.
+
+## Closed — 2026-10-11
+
+Herald's effect epic closed: herald Epic 19 reads `done` on main (19.1-19.4 `done`). Story 19.2 (one real ship records itself against a persistent store, host plus mcp-host sidecar on 127.0.0.1) landed as PR #2123, and Story 36.1 (the disabled CI live-demo workflow moved to `archive/`) landed as PR #2128. The index row closes under the operator's pre-authorisation, 2026-10-11 verbatim: "steward 49.11 (herald realization gate) blocked Your pre-authorization: I mark it done once 36.1 lands - authorized". The ledger key moved `blocked -> done` through a worktree-local Tier-3 feed and `sprint-ledger-sync --project steward --allow-regression`, which named this key only; `epic-49` rolled to `done`. AC5's live-host proof on the primary checkout stays the operator's (herald 19.2's deferred row). Same shape as index row 49.13 (closed 2026-10-10 when scribe Epic 8 closed).
