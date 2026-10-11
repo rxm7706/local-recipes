@@ -1514,3 +1514,26 @@ deployment.
   note: healed by steward Story 87.1 (`87-1-the-platform-host-boots-without-herald-and-says-why`), which skips herald's mount with one logged reason when the package is absent; it closes this row with its evidence when it lands. Herald's code does not change.
   verified: 2026-10-10 — src/platform/config/optional_components.py:28 (`import_optional`); src/platform/config/station_api.py:129 (herald skip); src/platform/config/asgi.py:142 (`absent_reason` 404); src/platform/tests/test_host_boots_without_herald.py:118 (`test_host_imports_without_herald_and_herald_paths_return_reason`); `pixi run -e platform-ci-test pytest tests/test_host_boots_without_herald.py` exit 0.
   status: done
+
+### DW-herald-19-2-1: The django-herald portal imports `pyforge.herald` at module load, so the `platform-dev` host's Django URLconf fails: `manage.py migrate` stops in the URL check and `/`, `/stations/`, `/stations/herald/`, `/cms/` answer 500
+
+- source_spec: `planning-artifacts/specs/spec-19-2-one-real-ship-records-itself-against-a-persistent-store.md`
+  summary: Under `platform-dev` (no herald), the URLconf import chain `config/urls.py:40` -> `django_pyforge/urls.py` (portal discovery) -> `django_herald_portal/urls.py:3` -> `views.py:10` -> `deck_viewer.py:9` hits a module-level `from pyforge.herald.deck_twins import ...` (Story 30.2, `7cde96b702`) and raises `ModuleNotFoundError: No module named 'pyforge.herald'`. `manage.py migrate` exits 1 in the system check (with `--skip-checks` it applies 240 migrations, and `manage.py check` with every non-URL tag reports nothing else), and the host's Django pages answer 500. That breaks steward Story 87.1's "the host boots without herald" contract for every page Django serves; the webhook forward is unaffected because `config/asgi.py:135` routes it before Django resolves URLs.
+  evidence: herald Story 19.2 implementer (2026-10-11) and independent review iteration 2 (2026-10-11, `766c746f73`): `migrate` rc 1 with the traceback above; `GET /`, `/stations/`, `/stations/herald/`, `/cms/` 500 on the platform-dev host; both webhook paths 201 through the forward.
+  location: src/shared/packages/django-herald/src/django_herald_portal/deck_viewer.py
+  origin: herald Story 19.2 landing review, 2026-10-11 (defect outside 19.2's surface; the how-to documents the `--skip-checks` workaround)
+  fix: a function-local import in `deck_viewer.py` that refuses with a clean, logged reason when herald is absent, or do not mount the herald portal's URLs when `pyforge.herald` is not importable (mirroring Story 87.1's skip); test under an env without herald that `manage.py check` passes and `/stations/` answers 200.
+  severity: high
+  promoted: 2026-10-11 — herald Story 19.2 landing review
+  status: open
+
+### DW-herald-19-2-2: Story 19.2 how-to and runbook nits deferred at landing (leak-check ordering, conflicting crontab guidance, a stale Tier-3 path)
+
+- source_spec: `planning-artifacts/specs/spec-19-2-one-real-ship-records-itself-against-a-persistent-store.md`
+  summary: (1) `docs/how-to/run-herald-live-backend-locally.md:250-261` runs the secret-leak check before the AC5 transcription is written, and `git grep` searches tracked files only; re-run it after the transcription with `--untracked` (or after `git add`), and guard the `webhook.env`-missing case where `git grep -f` exits 128 yet the line still prints "no leak". Its "Known issue" note (`:31-35`) should also say the host's Django pages answer 500 under `platform-dev` (DW-herald-19-2-1). (2) herald `cli-runbooks.md:314-338` still tells cron to `cd` into the package dir, which uses a second, un-ignored store `src/shared/packages/pyforge-herald/.herald/herald.db` (`.gitignore:530` re-includes it); point it at the how-to's root-store line, use an absolute pixi path (cron's PATH lacks `~/.pixi/bin`), optionally `flock -n`. (3) `cli-runbooks.md:33` cites the Tier-3 path `_bmad-output/implementation-artifacts/deferred-work.md` (unchanged from main).
+  evidence: herald Story 19.2 independent review iteration 2 (2026-10-11, `766c746f73`), minor findings 3 and 4 and info 6.
+  location: docs/how-to/run-herald-live-backend-locally.md
+  origin: herald Story 19.2 landing review, 2026-10-11 (minors deferred so the reviewed diff lands unchanged)
+  severity: low
+  promoted: 2026-10-11 — herald Story 19.2 landing review
+  status: open

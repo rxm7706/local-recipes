@@ -4,7 +4,7 @@ type: 'feature'
 created: '2026-09-18'
 status: 'in-review'
 baseline_revision: '2a725c113f24b794fc745fc711b04f9a0a491e4f'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -31,7 +31,7 @@ context:
 deferred:
   - 'DW-13-6-1: `steward deploy perimeter` renders only a hardcoded `myproject.asgi:application` (`steward/deploy.py:539` on 2026-10-10; the row says `:484`) with no `--asgi-application` flag. Re-scoped 2026-10-10 (operator ruling): the steward story that closes DW-13-6-1 (key: 86-1-deploy-perimeter-renders-the-asgi-application-it-is-given) adds the flag; this story stays `blocked` until that story is `done` on main, then the operator flips it `blocked -> backlog`. This story never closes on a throwaway store. Gate cleared 2026-10-10: steward 86.1 landed (PR #2056, merge `7d8ab99e88`), herald''s DW-13-6-1 row reads `resolved`, and this story moved `blocked -> backlog` under the ruling.'
   - 'DW-13-6-2: `webhook_host.py`''s timeout frees the caller, not the OS thread a hung handler holds. It becomes reachable once this story keeps a host running; it stays open here (loopback only, one local caller, a restart clears it) and the how-to names the restart as the remedy.'
-  - 'AC5 operator proof (2026-10-10 dispatch): live-host-proof transcription not run in bmad-build-auto; operator must complete AC1–AC6 on the primary checkout and write `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/live-host-proof-2026-10-10.md`.'
+  - 'AC5 operator proof (2026-10-10 dispatch): live-host-proof transcription not run in bmad-build-auto; operator must complete AC1–AC6 on the primary checkout and write `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/live-host-proof-<date>.md`.'
 declared_low_risk: false
 ---
 
@@ -187,7 +187,9 @@ feed and `sprint-ledger-sync --project herald --allow-regression`, which named t
 
 - **AC1 — the host is rendered, not hand-edited; the sidecar runs from steward's task.** Given the steward story
   that closes DW-13-6-1 and steward Story 87.3 are both `done` on main, When `steward deploy perimeter` runs with
-  `--workers 1`, `--asgi-application config.asgi:application` and `--output-dir .herald/perimeter/`, Then:
+  `--workers 1`, `--asgi-application config.asgi:application` and `--output-dir .herald/perimeter/` (plus the five
+  flags steward Story 84.1 made required with `--output-dir`, given placeholder values: `--trusted-address 127.0.0.1`,
+  `--tls-cert`, `--tls-key`, `--app-db-role`, `--audit-retention-db-role`; amended 2026-10-11), Then:
   - the rendered daphne unit's `ExecStart` names `config.asgi:application` and `--bind 127.0.0.1`;
   - the host process is started from that line under `platform-dev`, and the proof record quotes both the rendered
     line and the running process's `ps -o args=`;
@@ -222,10 +224,13 @@ feed and `sprint-ledger-sync --project herald --allow-regression`, which named t
 
   That last pair proves the restarted sidecar, where herald runs, reads the persistent store, not memory.
 - **AC4 — the scheduler runs against the same store (LB-3).** When `herald scheduler run --repo-root <primary
-  checkout> --json` runs, Then:
+  checkout> --out-dir <primary checkout>/.herald --json` runs, Then:
   - it exits 0;
   - `records_aggregated` is at least 1;
-  - `snapshot_path` lies under `<primary checkout>/.herald/`.
+  - `snapshot_path` is `<primary checkout>/.herald/progress.json`.
+
+  *(Amended 2026-10-11: without `--out-dir` the snapshot goes to `web/public/progress.json`, which is neither under
+  `.herald/` nor ignored.)*
 
   The how-to gives the local crontab line for the weekly run. Installing it is the operator's choice, not an AC.
 - **AC5 — a run record the estate can see.** Two copies, and neither holds the secret value:
@@ -245,7 +250,8 @@ feed and `sprint-ledger-sync --project herald --allow-regression`, which named t
 - **AC6 — the store is honest.** The proof's store path:
   - resolves (`realpath`) under the primary checkout's `.herald/`, and not under `.worktrees/`, `/tmp`, `$TMPDIR` or
     any `runner.temp`;
-  - is ignored: `git check-ignore -q .herald/herald.db .herald/webhook.env` exits 0;
+  - is ignored: `git check-ignore -q .herald/herald.db` and `git check-ignore -q .herald/webhook.env` each exit 0
+    *(amended 2026-10-11: `--quiet` with two paths exits 128)*;
   - has a private secret file beside it: `stat -c %a .herald/webhook.env` prints `600`;
   - leaks nothing: `git grep -F` for the secret value finds nothing.
 - **AC7 — the workflow's fate is recorded and holds.** At close, both hold:
@@ -287,7 +293,7 @@ feed and `sprint-ledger-sync --project herald --allow-regression`, which named t
   - delivering a landing with `herald-ship-local`, and reading the records back;
   - the scheduler's crontab line;
   - why the store is SQLite, and why `herald-live-demo.yml` is not the proof;
-  - the DW-13-6-2 symptom (repeated request timeouts) and its remedy (restart the host).
+  - the DW-13-6-2 symptom (repeated request timeouts) and its remedy (restart the sidecar).
 
   The page is registered in `docs/map.yaml` (owner `herald`), rendered into `docs/MAP.md` with `docs-map-render`, and
   linked from `docs/how-to/README.md`. Herald's `docs/cli-runbooks.md` and `docs/automation-troubleshooting.md` point at
@@ -350,7 +356,7 @@ feed and `sprint-ledger-sync --project herald --allow-regression`, which named t
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
 | real ship | a landing merge on `origin/main`, the host up, the secret loaded | `on-ship` 201 (Progress), `on-pr-close` 201 (`claim_id`) | — |
-| restart | the host stopped and started from the same rendered line | records readable; re-delivery returns the same `claim_id`; one claim | — |
+| restart | the host and the sidecar stopped and started again from the same lines | records readable; re-delivery returns the same `claim_id`; one claim | — |
 | not a landing | a commit `landing_evidence` does not classify | nothing sent | caller exits non-zero, naming the subject |
 | no secret | `HERALD_WEBHOOK_SECRET` unset or empty | nothing sent; the host refuses at the first webhook request (`resolve_webhook_secret`) | caller exits non-zero, naming the env var |
 | wrong signature | a secret differing between caller and host | `401` from the webhook | caller exits non-zero, printing the status |
@@ -361,7 +367,7 @@ feed and `sprint-ledger-sync --project herald --allow-regression`, which named t
 | sidecar down | `MCP_HOST_SIDECAR_BASE_URL` set, nothing on `:8090` | the host answers `502` | caller exits non-zero, printing the status |
 | flag OFF or URL unset | the host does not forward | the host answers 87.1's `404` (herald not installed) | caller exits non-zero, printing the status |
 | a same-day second `on-ship` | a second landing for the same station on one UTC day | replaces that day's record (`progress.upsert`, `(station, date)`) | documented in the how-to; not a defect |
-| a hung handler | DW-13-6-2 | the caller's request times out (500 after 120 s) | restart the host; DW-13-6-2 stays open |
+| a hung handler | DW-13-6-2 | the caller's request times out (500 after 120 s) | restart the sidecar; DW-13-6-2 stays open |
 
 </intent-contract>
 
@@ -586,6 +592,15 @@ landing.
 - **2026-10-11 — dispatch reused a pre-sidecar branch.** The 2026-10-11 dispatch (run `pyforge-herald-20261011T145445292Z-69725fea`) found `dispatch/pyforge-herald/19.2` from 2026-10-10, whose spec read `done` under the scope before the sidecar re-scope; it ran a follow-up review pass and tried to land, and the landing was refused (MRS-DISP-038, this file conflicted with main). Main's spec is the record. The branch's code and its review records are kept as the starting point; status moves to `in-progress` until an independent review judges the branch against the current ACs (the sidecar re-scope: AC1, AC2, AC3, AC5, AC9) and the gaps are closed.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 2: PASS (5 minor, deferred or fixed at landing)
+
+- Separate agent, fresh review of `git diff origin/main...HEAD` at `766c746f73`. All 11 iteration-1 items are closed. The how-to was run in order on 127.0.0.1 only against a throwaway PostgreSQL 17.11: render rc 0 (`ExecStart=daphne --bind 127.0.0.1 --port %i --proxy-headers config.asgi:application`, `@8001`); the platform-dev host on 8001 and the mcp-host sidecar on 8090, both 127.0.0.1-only; `import pyforge.herald` fails under platform-dev; `herald-ship-local` sent the real landing `ffc7245fb4` through the host (on-ship 201, on-pr-close 201 with a claim_id); after both processes restarted the records read back, re-delivery returned the same claim_id, one claim; the scheduler wrote `.herald/progress.json` with `records_aggregated` 1; both `check-ignore -q` calls 0, `webhook.env` 600, no leak; the 401, 502, 503, 404 and connection-refused rows reproduced.
+- Gates, each exit 0: `pyforge-herald-test` (1773 passed, 5 skipped), the live smoke with `HERALD_LIVE_WEBHOOK=1` (3 passed), the host-dispatch tests (11 passed with the sidecar URL unset, exported, and exported with `PYFORGE_ENVIRONMENT=dev`), `platform-ci-local -- --test` (1206 passed), `lint-types`, `docs-currency-check`, `docs-map-hygiene-check`, `flag-gate-check`, `spec-surface-check`, `detectors-ci`. `environment.yaml` byte-identical to the export; `pixi.lock` unchanged; AC7 workflow diff empty, `disabled_manually`.
+- AC verdicts: AC1-AC3 pass as procedure (live proof is the operator's); AC4 and AC6 pass with the how-to's `--out-dir` and two single-path `check-ignore -q` calls; AC5 operator-owned and correctly deferred; AC7, AC8, AC9 pass; AC10 at landing.
+- Applied at landing (doc-only, the reviewer's exact text, no re-review needed): AC1 names the five placeholder flags steward 84.1 requires with `--output-dir`; AC4 passes `--out-dir <primary checkout>/.herald` and its snapshot is `.herald/progress.json`; AC6 checks the two paths with separate `check-ignore -q` calls; AC9 and the I/O matrix name "restart the sidecar" as the hung-handler remedy and the restart row covers both processes; the frontmatter deferred row names `live-host-proof-<date>.md`.
+- Deferred: `DW-herald-19-2-1` (high, outside this story's surface: the django-herald portal imports `pyforge.herald` at module load, so under `platform-dev` `manage.py migrate` fails its URL check and the host's Django pages answer 500; the webhook forward is unaffected) and `DW-herald-19-2-2` (low: leak-check ordering in the how-to, conflicting crontab guidance in `cli-runbooks.md`, a stale Tier-3 path).
+- Verdict: pass; status stays `in-review` for landing.
 
 ### 2026-10-11 — Independent gap review against the sidecar re-scope, iteration 1: sent back (3 high, 3 medium, 5 low)
 
