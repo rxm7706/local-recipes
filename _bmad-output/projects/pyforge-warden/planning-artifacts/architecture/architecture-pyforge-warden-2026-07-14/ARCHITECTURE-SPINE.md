@@ -41,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: "2026-10-10"   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Stories 15.1 and 16.1's gates clearing (keys blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD -> arch) for Story 17.1's landing and Stories 14.1-14.2 (FR-41 / CAP-24); lands on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written, no AD amended; one older divergence recorded (tea_advisory.py spawns its own subprocess). See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
+updated: "2026-10-11"   # RE-STAMPED 2026-10-11: chain-currency cascade (spec -> PRD -> arch) for the operator's 2026-10-11 rulings (Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login; Story 16.5 minted); lands on the 2026-09-28 Decision 2 as written, no AD amended. See § Currency reconciliation — 2026-10-11. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Stories 15.1 and 16.1's gates clearing (keys blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD -> arch) for Story 17.1's landing and Stories 14.1-14.2 (FR-41 / CAP-24); lands on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written, no AD amended; one older divergence recorded (tea_advisory.py spawns its own subprocess). See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -637,5 +637,24 @@ socket or service boundary moves. When they are built, both stories land on the 
 
 One fact is recorded for 16.1. Story 16.2 already shipped the `FleetRepo` model and its migration, so 16.1 adds the GHE
 listing, the inventory task and the export. It adds a migration only if it changes the model.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-11
+
+*Trigger: the PRD's re-stamp above (`prd→arch`). Story 16.1 is re-scoped and Story 16.5 is minted.*
+
+Checked against the spine's decisions. Both stories land on the 2026-09-28 Decision 2 as written. The fleet lives in
+`django-warden`, and the inventory listing is "explicit, operator-started egress in the worker, outside `warden scan`'s
+own process, whose socket guard still holds". Three facts are recorded:
+- **What the egress reads.** It now reads github.com: REST `GET /orgs/{org}/repos` (16.1), and GraphQL `query`
+  documents for the project items (16.5).
+- **Where the token comes from.** The worker takes it at run time from the operator's `gh` login
+  (`gh auth token --hostname github.com`). That is a second subprocess in `django_warden_fabric/fleet.py`, beside Story
+  16.2's `git clone`. The sole-spawn-site rule (`engines.py`, Story 11.3's meta test) covers the `pyforge.warden`
+  package and does not reach `django-warden`.
+- **Read-only is enforced in the client**: `GET` only, `query` only. The credential's own scopes are not read-only.
+
+No port, adapter or package boundary moves.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

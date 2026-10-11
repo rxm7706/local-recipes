@@ -14,7 +14,7 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-10-10'   # RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: AMENDED 2026-10-07 (subprocess seam): Story 11.3 minted (fix, no CAP, no flag), reopening Epic 11: the TEA advisory spawns through engines.py. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch->epics edge) after the spine's 2026-10-07 re-stamp (Story 17.1 landing, Stories 14.1-14.2); validation note appended (§ Currency reconciliation — 2026-10-07); no epic or story restructured, no status changed. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
+updated: '2026-10-11'   # AMENDED 2026-10-11 (operator rulings): Story 16.1 re-scoped to an operator-designated github.com organisation read through the operator's gh login (key kept, title changed, steward 75.1 no longer a dep; the target is never named in a tracked file) and Story 16.5 minted (the items of the operator-designated GitHub Projects, CAP-26 / FR-43, Deps S-16.1); arch->epics validation after the spine's 2026-10-11 re-stamp; § Currency reconciliation — 2026-10-11 appended. Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Stories 15.1 and 16.1's gates cleared, their keys flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: AMENDED 2026-10-07 (subprocess seam): Story 11.3 minted (fix, no CAP, no flag), reopening Epic 11: the TEA advisory spawns through engines.py. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch->epics edge) after the spine's 2026-10-07 re-stamp (Story 17.1 landing, Stories 14.1-14.2); validation note appended (§ Currency reconciliation — 2026-10-07); no epic or story restructured, no status changed. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-stamp) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 49/49 stories done across 12/12 epics, which supersedes the Spec's own dated 43-key/11-epic snapshot; the PRD's newly recorded `review_required` gap is deliberately NOT minted as a story here because it is a schema/behaviour change owing a Dream/Spec; the station's coherence checkpoint stays red on three operator-owned open questions. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -933,15 +933,26 @@ failed) is never a verdict, and nothing is ever CLEAN or VULNERABLE; the fleet l
 `ComplianceJob` pattern (spine § Currency reconciliation — 2026-09-28 Decision 2), never a FastAPI/SQLAlchemy service
 and never gitgres; no webhook; nothing auto-opens on a fleet repo; GHE credentials come from Steward.
 
-### Story 16.1: Warden inventories a GHE organisation's repos
-**Type:** feature • **Effort:** M • **Deps:** — (cross-station: steward Story 75.1 provides the GHE host credentials; ledger `blocked` until the operator flips it) • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43) • spine Decision 2
+**Amended 2026-10-11 (operator rulings; the Spec memlog records them, with the target's names redacted).** The
+inventory's fleet is an operator-designated **github.com** organisation, not a GitHub Enterprise host. github.com is
+the designated host, not a stand-in. The inventory reads through the operator's existing `gh` login at run time, and
+no token is copied into `steward keys` or any file; steward Story 75.1 stays on main as the path for a future GitHub
+Enterprise target. This repository is public, so no tracked file names the organisation, its repositories or its
+projects. The names live in a gitignored local config, the exports are gitignored, and tests use fictional fixtures.
+Story 16.1 is re-scoped (key kept, title changed) and Story 16.5 adds the items of the operator-designated GitHub
+Projects. The rest of the HARD boundaries stand. The inventory is read-only: `GET` for REST and `query` for GraphQL.
+
+### Story 16.1: Warden inventories an operator-designated GitHub organisation's repos
+**Type:** feature • **Effort:** M • **Deps:** — (steward Story 75.1 no longer required, 2026-10-11) • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43) • spine Decision 2 • re-scoped 2026-10-11 (operator rulings)
 **Flag:** `pyforge.warden.fleet_inventory` (OFF: the inventory action is listed as disabled and refuses)
-**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/` (`models.py` a `FleetRepo` row, `fleet.py` the GHE listing over an injectable client, `tasks.py` a keys-not-blobs Celery task, `migrations/0002_*.py`, the JSON inventory export), `src/platform/db/changelog/changes/` and `src/platform/db/sqlmigrate-map.yaml` (the covering Liquibase changeset), `src/platform/tests/` (the warden fabric tests), `src/platform/config/flags.json`
-**Given** Steward's GHE credentials in the worker's environment and an organisation name
+**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/` (`fleet.py` the github.com listing over an injectable GET-only client and the `gh`-login credential provider, `tasks.py` a keys-not-blobs Celery task, `management/commands/warden_fleet_inventory.py`, the portal action, the JSON inventory export; `models.py` and a `0004` migration only if `FleetRepo` changes), `src/platform/db/changelog/changes/` and `src/platform/db/sqlmigrate-map.yaml` (a covering changeset only with a migration), `src/platform/tests/` (the warden fabric tests, the gitignore and leak-guard tests), `src/platform/config/flags.json` and `flag-overlays.json`, `.gitignore` (`.warden/`)
+**Spec:** `planning-artifacts/specs/spec-16-1-warden-inventories-a-ghe-organisation-s-repos.md`
+**Given** the operator's `gh` login on github.com and the gitignored `.warden/fleet-target.toml` naming the organisation
 **When** the operator starts an inventory
-**Then** every repo the organisation lists is one `FleetRepo` row (full name, default branch, clone URL, archived flag), refreshed idempotently
-**And** the inventory is exported as a JSON document at a configured path that other stations read as data (Atlas, `spec-pyforge-atlas:CAP-61`) — no station imports `django_warden_fabric` or `pyforge.warden` for it
-**And** a fixture organisation of three repos yields three rows and a three-entry export, with no real network in the suite
+**Then** every repo the organisation lists (`GET /orgs/{org}/repos`, every page) is one `FleetRepo` row (full name, default branch, clone URL, archived flag), refreshed idempotently, and the client issues `GET` only
+**And** the inventory is exported as a JSON document at a configured, gitignored path that other stations read as data (Atlas, `spec-pyforge-atlas:CAP-61`) — no station imports `django_warden_fabric` or `pyforge.warden` for it
+**And** the token is taken at run time and held in memory only (never in a file, a log, the Celery message, the export or error text); a missing `gh`, login or config is a typed error with no partial export
+**And** a fictional fixture organisation (`example-org`) of three repos yields three rows and a three-entry export, with no real network in the suite; a leak-guard test finds no target name from the local config in the fleet's tracked paths
 
 ### Story 16.2: A fleet run scans each inventoried repo, one verdict per repo
 **Type:** feature • **Effort:** L • **Deps:** S-16.1 • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43) • spine Decision 2
@@ -972,6 +983,22 @@ and never gitgres; no webhook; nothing auto-opens on a fleet repo; GHE credentia
 **Then** the security axis reports a `vuln:` finding for it through osv-scanner's own lockfile parser, and hygiene, license and currency are honestly `not-applicable` for that component
 **And** the extractor imports no execution primitive (the AST-denylist meta-test stays green), the `ComplianceReport` validates at 1.1.0, and container and artifact scanning stay out of scope
 **And** a missing or stale database for the ecosystem routes to `indeterminate`, never `clean`
+
+### Story 16.5: Warden inventories the items of the operator-designated GitHub Projects
+
+As the operator,
+I want warden to inventory the items of the GitHub Projects I designated in the fleet's organisation,
+So that the estate can read what those projects track, and in which state, without anyone naming them in this public repository.
+
+**Type:** feature • **Effort:** M • **Deps:** S-16.1 • **FR/AD:** spec-pyforge-warden CAP-26 (FR-43), the project-item extension the operator's 2026-10-11 ruling names • spine Decision 2 • Dream 2026-10-11
+**Flag:** `pyforge.warden.fleet_project_items` (OFF: no project-item inventory exists; the action is listed as disabled and refuses)
+**Surface:** `src/shared/packages/django-warden/src/django_warden_fabric/` (`fleet.py` a query-only GraphQL client over 16.1's credential provider and config reader, `tasks.py` a keys-not-blobs Celery task, `management/commands/warden_fleet_project_items.py`, the portal action, the JSON project-items export; no model, no migration), `src/platform/tests/`, `src/platform/config/flags.json` and `flag-overlays.json`
+**Spec:** `planning-artifacts/specs/spec-16-5-warden-inventories-the-items-of-the-operator-designated-github-projects.md`
+**Given** Story 16.1's credential provider and the project numbers in the gitignored `.warden/fleet-target.toml`
+**When** the operator starts a project-items inventory
+**Then** each item of each designated project is one entry in a gitignored JSON export (project number, content type, title, state, repository full name, `Status` value, updated-at), every page read, rewritten whole on a re-run
+**And** every request is a `POST /graphql` carrying a single `query` operation; a `mutation` or `subscription` is refused before a socket opens, and nothing edits a project, an item or a field
+**And** a fictional fixture organisation (`example-org`) with two fixture projects yields the expected export with no real network in the suite; the token is never persisted, and an unknown project, a GraphQL `errors` array or a missing login is a typed error with no partial export
 
 ## Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
 
@@ -1103,3 +1130,17 @@ with dated notes.
 The two story blocks above are left as minted (they carry no Status line). Story 16.1's Surface names a `FleetRepo` model
 and a `0002_*` migration that Story 16.2 already shipped; its spec records that. Every Story heading still maps 1:1 to a
 `sprint-status-ledger.yaml` key, and no key was added or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-11
+
+The `arch→epics` edge, after the spine's 2026-10-11 re-stamp, and the operator's rulings of the same date.
+
+Story 16.1 is re-scoped to an operator-designated github.com organisation, read through the operator's `gh` login.
+Its key is kept and its title changed, and the Epic 16 note above records the rulings. Story 16.5 is minted under the
+same CAP-26 (FR-43), with Deps S-16.1 and ledger `backlog`. Neither story names the target: the organisation, its
+repositories and its projects live only in a gitignored local config.
+
+Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key. That is 61 `### Story` headings and 17
+`## Epic` headings against 61 story keys and 17 `epic-<n>` keys. The one new key,
+`16-5-warden-inventories-the-items-of-the-operator-designated-github-projects`, was added through the Tier-3 feed and
+`sprint-ledger-sync`, and `epic-16` stays `in-progress`. `updated:` bumped.
