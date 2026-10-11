@@ -5977,6 +5977,34 @@ So that one page says what the host is running and why something is missing.
 **And** with the flag OFF, `GET` and `OPTIONS /stations/` answer byte-identically to a URLconf without the index route, a Wagtail page published at that slug included, and nothing new is imported or logged. No response carries 87.1's remedy, a traceback or a path. The request writes nothing, and the diff adds no dependency or migration. A steward meta-test reads `stations_index.py` and `urls.py` with `ast` and reds a module-scope import of `pyforge.*`, a station portal package or `config.station_api`. The flag is registered in its four places, a two-state test covers it, and `flag-gate-check` passes. The local-platform tutorial names the page and its flag. Moving the flag check after the role check, answering OFF with a bare 404, answering 200 with no role, skipping the `config.station_api` load or rendering the remedy each fails a test (mutation). `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green. Every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp, and the landing stops at a draft PR until an independent review passes
 **Status:** blocked (cross-station gate: herald 37.1; the operator flips it)
 
+## Epic 92: The unsplit-Redis eviction guard proves broker loss on every run (fix under unifying CAP-11)
+
+Minted 2026-10-11 from the station Dream's entry of that date (eviction guard flake) and the operator's ruling "Mint
+steward fix story (Recommended)". Story 49.5's regression guard runs cache-eviction pressure on one shared Redis and
+asserts the broker loses state, which proves the split survival test is not vacuous. Redis's `allkeys-lru` evicts from a
+sample, so the guard's single fill sometimes leaves both broker keys standing: 8 of 60 runs failed on `27af54f73b`, and
+the guard refused warden 16.1's and herald 37.1's landings on 2026-10-11. A defect against `spec-pyforge-unifying-strategy`
+CAP-11 (Story 49.5, Epic 49), so no CAP is minted; a new epic because Epic 49 is `done`. **HARD boundaries:** test-only,
+in `src/platform/tests/test_redis_cache_eviction_broker_survival.py`; the chart's Redis split, its eviction policies, the
+platform's Redis settings and `platform-ci-local` do not change; the split test and its helpers do not change; the guard
+is never skipped, marked `xfail` or rerun.
+
+### Story 92.1: The unsplit-Redis eviction guard proves broker loss on every run
+
+As the operator whose platform-touching landings were refused by a guard that fails about one run in eight,
+I want the unsplit-Redis guard to keep applying cache pressure, a bounded number of times, until it sees the broker lose state,
+So that it passes on every run while still proving the split survival test is not vacuous.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-unifying-strategy` CAP-11 (Story 49.5; Story 40.2's split) • Dream 2026-10-11 (eviction guard flake) • operator ruling 2026-10-11 "Mint steward fix story (Recommended)"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/platform/tests/test_redis_cache_eviction_broker_survival.py` (the guard `test_unsplit_redis_loses_broker_state_under_cache_pressure` about :271-:303, a new bounded-rounds helper beside `_fill_cache_to_eviction` about :144-:175, and one new module constant)
+**Spec:** `planning-artifacts/specs/spec-92-1-the-unsplit-redis-eviction-guard-proves-broker-loss-on-every-run.md`
+**Given** `27af54f73b`, where the guard starts one `redis-server` at 4 MB with `allkeys-lru`, seeds a queued task, a stream entry and a PEL row, runs `_fill_cache_to_eviction` once (50 KB values until `evicted_keys` moves, then 50 more writes) and asserts the broker lost something. Warden 16.1's landing verification (run `pyforge-warden-20261011T180723612Z-6ef4d113`) failed `platform-ci-local -- --test` on it (MRS-GATE-015, "1 failed, 1224 passed, 14 skipped"), herald 37.1's failed the same way, and 8 of 60 runs of the guard alone failed with "unsplit redis must lose broker-side state under cache eviction; otherwise the split survival test would pass vacuously"
+**When** the guard runs
+**Then** after the 49.5 fill it writes turnover rounds (`2 * maxmemory // _FILL_VALUE_BYTES` fresh keys each, under a round-unique name), reads the broker after each and stops at the first round that shows loss, at most `_BROKER_LOSS_MAX_ROUNDS` (20); the shared instance stays `allkeys-lru`, and `broker_lost` keeps its four conditions and its message, which also names the rounds run and `evicted_keys` when it fails
+**And** the guard passes 20 of 20 consecutive runs of its node id, and the whole module 20 of 20; with the eviction pressure removed the guard fails 5 of 5 runs (mutation); the split test, its helpers and the module constants keep every line they have and the split test passes every run; the diff adds no skip, `xfail` or rerun; only the test file changes; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-unifying-strategy` memlog reconciles the test file before one scoped stamp
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
