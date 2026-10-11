@@ -44,7 +44,11 @@ def dispatch_run_is_stale(*, fs: FsPort, journal: dispatch_core.DispatchJournalF
         return False
     if landing_journal_indicates_complete(journal.landing_verdict):
         return False
-    return not fs.exists(Path(journal.worktree_path))
+    worktree = Path(journal.worktree_path)
+    exists = getattr(fs, "exists", None)
+    if exists is not None:
+        return not exists(worktree)
+    return not worktree.exists()
 
 
 def stale_dispatch_run(

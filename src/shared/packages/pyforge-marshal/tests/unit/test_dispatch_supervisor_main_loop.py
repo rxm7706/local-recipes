@@ -4196,9 +4196,9 @@ def test_atlas_25_1_sequence_never_completes_while_the_session_group_lives(
     fs = FakeFs()
     tick = {"n": 0}
 
-    def _group_alive(*_args, **_kwargs) -> bool:
+    def _group_alive(*_args, **_kwargs) -> tuple[bool, str | None]:
         tick["n"] += 1
-        return tick["n"] <= 3
+        return tick["n"] <= 3, None
 
     monkeypatch.setattr(dispatch_verify, "session_group_has_live_member", _group_alive)
 
