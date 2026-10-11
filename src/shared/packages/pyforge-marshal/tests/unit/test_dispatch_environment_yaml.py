@@ -275,9 +275,7 @@ def test_evaluate_dispatch_verification_pixi_toml_triggers_environment_yaml_rule
     assert envelope.data["cross_surface_check"]["checked"] is True
 
 
-def test_verification_journals_environment_yaml_when_committed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verification_journals_environment_yaml_when_committed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import importlib
 
     from pyforge.marshal.core.dispatch_ruff_format import DispatchRuffFormatResult
@@ -311,12 +309,15 @@ def test_matrix_neither_path_skips_exporter_and_rule(tmp_path: Path) -> None:
     worktree.mkdir()
     vcs = _EnvYamlVcs(scope=("src/shared/packages/pyforge-marshal/foo.py",))
     process = _EnvYamlProcess()
-    assert apply_dispatch_environment_yaml_before_verify(
-        worktree=worktree,
-        repo_root=tmp_path,
-        vcs=vcs,
-        process=process,
-    ).export_exit_code is None
+    assert (
+        apply_dispatch_environment_yaml_before_verify(
+            worktree=worktree,
+            repo_root=tmp_path,
+            vcs=vcs,
+            process=process,
+        ).export_exit_code
+        is None
+    )
 
     story_key = normalize("91-1-a-corrupt-environment-yaml-never-lands")
     effective, _ = compose(
