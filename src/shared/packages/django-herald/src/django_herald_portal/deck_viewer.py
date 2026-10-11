@@ -6,10 +6,6 @@ from dataclasses import dataclass
 
 from django_herald_portal.models import DeckExport
 
-from pyforge.herald.deck_twins import NotFound, iframe_twin_path
-
-from django_herald_portal.deck_twin_routes import load_deck_twins_manifest
-
 
 @dataclass(frozen=True, slots=True)
 class PublishedDeck:
@@ -37,6 +33,10 @@ def list_published_decks() -> list[PublishedDeck]:
 
 
 def viewer_context(slug: str) -> DeckViewerContext | None:
+    from pyforge.herald.deck_twins import NotFound, iframe_twin_path
+
+    from django_herald_portal.deck_twin_routes import load_deck_twins_manifest
+
     topic_row = (
         DeckExport.objects.filter(slug=slug).order_by("-export_date").values("topic").first()
     )
