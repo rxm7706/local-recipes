@@ -110,6 +110,7 @@ def _sidecar_flag_tree(*, on: bool) -> bytes:
 
 
 _OTHER_WEBHOOK_PATH = "/stations/herald/api/v1/webhooks/other"
+_DISCONNECT_RECEIVE_CALLS = 2
 
 
 @pytest.fixture
@@ -382,7 +383,7 @@ def test_client_disconnect_after_partial_body_ends_read(forward_env) -> None:
         return sent, receive_count
 
     sent, count = asyncio.run(_run())
-    assert count == 2
+    assert count == _DISCONNECT_RECEIVE_CALLS
     assert _FakeSidecarClient.requests == []
     assert not any(m["type"] == "http.response.start" for m in sent)
 
@@ -421,7 +422,7 @@ def test_non_request_message_ends_body_read(forward_env) -> None:
         return sent, receive_count
 
     sent, count = asyncio.run(_run())
-    assert count == 2
+    assert count == _DISCONNECT_RECEIVE_CALLS
     assert _FakeSidecarClient.requests == []
     assert not any(m["type"] == "http.response.start" for m in sent)
 
@@ -447,7 +448,11 @@ def test_forward_inactive_unknown_path_reaches_in_process_herald(
 
     async def _run():
         with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
-            return await _post_via_transport(_OTHER_WEBHOOK_PATH, content=b"{}", headers={})
+            return await _post_via_transport(
+                _OTHER_WEBHOOK_PATH,
+                content=b"{}",
+                headers={},
+            )
 
     response = asyncio.run(_run())
     api.clear_providers()
@@ -472,7 +477,6 @@ def test_forward_inactive_unknown_path_herald_absent_uses_story_87_1(
         def find_spec(self, fullname, path, target=None):
             if fullname == "pyforge.herald" or fullname.startswith("pyforge.herald."):
                 raise ModuleNotFoundError(name=fullname)
-            return None
 
     finder = _HeraldAbsentFinder()
     sys.meta_path.insert(0, finder)
@@ -480,7 +484,11 @@ def test_forward_inactive_unknown_path_herald_absent_uses_story_87_1(
 
         async def _run():
             with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
-                return await _post_via_transport(_OTHER_WEBHOOK_PATH, content=b"{}", headers={})
+                return await _post_via_transport(
+                _OTHER_WEBHOOK_PATH,
+                content=b"{}",
+                headers={},
+            )
 
         response = asyncio.run(_run())
     finally:
@@ -552,7 +560,11 @@ def test_host_unset_sidecar_url_does_not_forward(
 
     async def _run():
         with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
-            return await _post_via_transport(webhook.ON_SHIP_PATH, content=body, headers=headers)
+            return await _post_via_transport(
+                webhook.ON_SHIP_PATH,
+                content=body,
+                headers=headers,
+            )
 
     response = asyncio.run(_run())
     api.clear_providers()

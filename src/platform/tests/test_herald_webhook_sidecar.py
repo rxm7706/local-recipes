@@ -139,7 +139,6 @@ class _PyforgePackageAbsentFinder:
     def find_spec(self, fullname, path, target=None):
         if fullname == "pyforge" or fullname.startswith("pyforge."):
             raise ModuleNotFoundError(name=fullname)
-        return None
 
 
 def test_mcp_host_sidecar_no_pyforge_package_returns_404_json(

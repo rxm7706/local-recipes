@@ -81,8 +81,7 @@ async def _read_webhook_body(receive: Any) -> bytes:
     messages = 0
     while True:
         message = await receive()
-        msg_type = message["type"]
-        if msg_type in ("http.disconnect",) or msg_type != "http.request":
+        if message["type"] != "http.request":
             raise _ClientDisconnected()
         messages += 1
         if messages > MAX_BODY_MESSAGES:
