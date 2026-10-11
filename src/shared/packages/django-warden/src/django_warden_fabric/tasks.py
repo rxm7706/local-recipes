@@ -19,7 +19,6 @@ from .fleet import remove_clone_dir
 from .fleet import shallow_clone
 from .fleet_inventory import FleetInventoryError
 from .fleet_inventory import GhAuthTokenProvider
-from .fleet_inventory import GitHubRestOrgReposClient
 from .fleet_inventory import run_fleet_inventory_sync
 from .models import ComplianceJob
 from .models import FixProposal
@@ -136,11 +135,31 @@ def _run_warden_engines(
 @shared_task(bind=True, name="warden_fabric.run_fleet_inventory")
 def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
     """List github.com org repos — Celery message carries ids and org name only."""
+    from pyforge.warden.fleet_github_rest import FleetInventoryApiError
+    from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient
+
+    class _RestListingAdapter:
+        def __init__(self, rest_client: GitHubRestOrgReposClient) -> None:
+            self._rest_client = rest_client
+
+        def list_org_repos(self, organisation: str) -> list:
+            from .fleet_inventory import ListedRepo
+
+            return [
+                ListedRepo(
+                    full_name=repo.full_name,
+                    default_branch=repo.default_branch,
+                    clone_url=repo.clone_url,
+                    archived=repo.archived,
+                )
+                for repo in self._rest_client.list_org_repos(organisation)
+            ]
+
     try:
         token = GhAuthTokenProvider().token()
-        client = GitHubRestOrgReposClient(token=token)
+        client = _RestListingAdapter(GitHubRestOrgReposClient(token=token))
         run_fleet_inventory_sync(organisation=organisation, listing_client=client)
-    except FleetInventoryError:
+    except (FleetInventoryError, FleetInventoryApiError):
         logger.exception("fleet inventory %s failed", inventory_run_id)
         raise
     else:

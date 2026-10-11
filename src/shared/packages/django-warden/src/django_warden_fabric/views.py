@@ -75,7 +75,11 @@ def _portal_identity(request: HttpRequest) -> tuple[str, list[str]] | None:
 @require_station_role("warden")
 def chrome_home(request: HttpRequest) -> HttpResponse:
     """HTML face that extends django-pyforge chrome (Story 18.1)."""
-    return render(request, "warden_fabric/chrome.html")
+    return render(
+        request,
+        "warden_fabric/chrome.html",
+        {"fleet_inventory_enabled": _fleet_inventory_enabled()},
+    )
 
 
 @require_POST

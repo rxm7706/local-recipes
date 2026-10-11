@@ -25,7 +25,12 @@
     hx-swap="innerHTML"
   >
     {% csrf_token %}
-    <button type="submit">Refresh fleet inventory</button>
+    <button type="submit" {% if not fleet_inventory_enabled %}disabled{% endif %}>
+      Refresh fleet inventory
+    </button>
   </form>
+  {% if not fleet_inventory_enabled %}
+    <p>Fleet inventory is disabled (flag off).</p>
+  {% endif %}
   <div id="warden-fleet-inventory-panel"></div>
 {% endblock content %}
