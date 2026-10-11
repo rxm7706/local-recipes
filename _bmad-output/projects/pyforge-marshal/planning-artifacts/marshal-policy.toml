@@ -473,6 +473,21 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"93" = [  # recall reaches every live session (a fix under spec-marshal-recall-in-the-loop CAP-1/CAP-2, carried as
+  # spec-pyforge-marshal CAP-288/CAP-289; Story 93.1), added 2026-10-11, Epic 47's wiring. The default surface, restated
+  # because a declared entry replaces it outright, plus the deferred-work ledger (93.1 closes DW-marshal-47-2 and
+  # DW-marshal-47-3) and every Spec memlog (marshal's src/ is co-governed by spec-pyforge-core).
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "90" = [  # a dispatch run is complete only when its session has really ended (fix stories under CAP-160, no CAP;
   # Story 90.1), added 2026-10-10. The default surface, restated because a declared entry replaces it outright, plus
   # pyforge-core's process port and its tests (if the session's process-group read lands on ProcessPort,
@@ -487,6 +502,38 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "src/shared/packages/pyforge-core/src/pyforge/core/process.py",
   "src/shared/packages/pyforge-core/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"91" = [  # a derived file lands only as its generator wrote it (fix stories under CAP-170, no CAP; Story 91.1),
+  # added 2026-10-10. The default surface, restated because a declared entry replaces it outright (it already admits
+  # environment.yaml and pixi.toml), plus every Spec memlog (core/gate.py is co-governed by spec-pyforge-core).
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"92" = [  # a dispatch run is live only while its session really runs in its worktree (fix stories under CAP-160, no
+  # CAP; Story 92.1, which lands Story 90.1's reverted behaviour again), added 2026-10-10, reshaped 2026-10-11. The
+  # default surface, restated because a declared entry replaces it outright, plus pyforge-core's process port and its
+  # tests (if the session's process-group read lands on ProcessPort, spec-pyforge-core co-governs it),
+  # scripts/fleet_picture.py (its stale-run ATTENTION line; the meta test lives in the marshal package) and every Spec
+  # memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-core/src/pyforge/core/process.py",
+  "src/shared/packages/pyforge-core/tests/**",
+  "scripts/fleet_picture.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's

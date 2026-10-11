@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 9970af3c9a79737e
-story_count: 442
+source_fingerprint: c689fb9763c253d5
+story_count: 445
 test_file_count: 252
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 442
-- **Epics parsed:** 88
+- **Stories parsed:** 445
+- **Epics parsed:** 91
 - **Test files inventoried:** 252 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9970af3c9a79737e`
+- **Source fingerprint:** `c689fb9763c253d5`
 
 ## Risk Assessment
 
@@ -110,6 +110,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 88: Marshal's commits stage every tracked path they name
 - Epic 89: A story lands only when its spec says the work is finished and its review did not fail
 - Epic 90: A dispatch run is complete only when its session has really ended
+- Epic 91: A derived file lands only as its generator wrote it
+- Epic 92: A dispatch run is live only while its session really runs in its worktree
+- Epic 93: Recall reaches every live session (spec-pyforge-marshal CAP-288..CAP-291 ← spec-marshal-recall-in-the-loop CAP-1..4)
 
 ### Low-risk epics
 
@@ -828,6 +831,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 88.1 | Marshal commits a tracked file under an ignored directory | none observed |
 | 89.1 | A re-dispatch never lands a story whose review failed | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_only_spec_gate_89_1.py` |
 | 90.1 | The dispatch supervisor records completion only after the harness session has... | none observed |
+| 91.1 | A corrupt `environment.yaml` never lands | none observed |
+| 92.1 | The dispatch supervisor reads session liveness correctly and never treats a v... | none observed |
+| 93.1 | Every live session gets the recall its layer promises, and the run records th... | none observed |
 
 ## Quality Gates
 

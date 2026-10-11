@@ -135,10 +135,10 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="vcs_migration_readiness",
                 name="classify_migration_readiness",
             ),
-            # Story 25.1 (CAP-61) — placeholder until git-pkgs lands; Story 25.2 sensor job target.
+            # Story 25.1 (CAP-61) — dependency-history trigger; Story 25.2 sensor job target.
             node(
                 func=build_repo_dependency_history,
-                inputs=[],
+                inputs="params:dependency_history.repos",
                 outputs="repo_dependency_history",
                 name="build_repo_dependency_history",
             ),
