@@ -18,15 +18,16 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.harness_bmadloop import (
     RecallInjectionResult,
     augment_bmad_loop_session_prompt_with_recall,
     inject_recall_feedback,
 )
-from pyforge.marshal.adapters.scribe_cli import ScribeRecallOutcome
+from pyforge.marshal.adapters.scribe_cli import ScribeCli, ScribeRecallOutcome
 from pyforge.marshal.core import recall_feedback as recall_feedback_core
-from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER
+from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER, build_recall_query
 
 
 class _FakeFs:
@@ -62,9 +63,29 @@ class _FakeScribeCli:
         self.outcome = outcome
         self.calls: list[dict[str, object]] = []
 
-    def recall(self, *, repo_root: Path, query: str, scope: str | None = None, binary_path: Path | None = None):
-        self.calls.append({"repo_root": repo_root, "query": query, "scope": scope, "binary_path": binary_path})
+    def recall(
+        self,
+        *,
+        repo_root: Path,
+        query: str,
+        scope: str | None = None,
+        mode: str = "planning",
+        binary_path: Path | None = None,
+    ):
+        self.calls.append(
+            {"repo_root": repo_root, "query": query, "scope": scope, "mode": mode, "binary_path": binary_path}
+        )
         return self.outcome
+
+
+class _RecordingProcess:
+    def __init__(self, result: ProcessResult) -> None:
+        self.result = result
+        self.calls: list[tuple[tuple[str, ...], Path]] = []
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        self.calls.append((tuple(argv), Path(cwd)))
+        return self.result
 
 
 @pytest.fixture
@@ -100,9 +121,7 @@ class TestGroundedHit:
         assert "always run X before Y" in written
         assert "Source: feedback/x.md" in written
 
-    def test_scopes_the_recall_call_by_station_slug_and_runs_it_against_repo_root(
-        self, loop_home: Path, repo_root: Path
-    ) -> None:
+    def test_dev_pass_uses_memory_mode_without_scope_via_fake_scribe(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="body"))
 
@@ -112,9 +131,64 @@ class TestGroundedHit:
 
         assert len(scribe.calls) == 1
         call = scribe.calls[0]
-        assert call["scope"] == "pyforge-doctor"
+        assert call["mode"] == "memory"
+        assert call["scope"] is None
         assert call["repo_root"] == repo_root
         assert "pyforge-doctor" in call["query"]
+
+    def test_dev_pass_argv_is_memory_mode_without_scope_on_real_scribe_cli(
+        self, loop_home: Path, repo_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fs = _FakeFs()
+        process = _RecordingProcess(ProcessResult(returncode=0, stdout="no grounded answer found\n", stderr=""))
+        scribe = ScribeCli(process)
+        monkeypatch.setattr(scribe, "resolve_binary", lambda _root: "/usr/bin/scribe")
+
+        inject_recall_feedback(
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+        )
+
+        assert len(process.calls) == 1
+        argv, cwd = process.calls[0]
+        assert cwd == repo_root
+        assert argv == (
+            "/usr/bin/scribe",
+            "recall",
+            build_recall_query("pyforge-marshal"),
+            "--mode",
+            "memory",
+        )
+
+    def test_team_memory_citation_grounds_through_parse_and_prompt_fold(
+        self, loop_home: Path, repo_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        fs = _FakeFs()
+        stdout = (
+            "Always reconcile spec surface before stamping.\n"
+            "[source: .claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md]\n"
+        )
+        process = _RecordingProcess(ProcessResult(returncode=0, stdout=stdout, stderr=""))
+        scribe = ScribeCli(process)
+        monkeypatch.setattr(scribe, "resolve_binary", lambda _root: "/usr/bin/scribe")
+
+        dev_prompt, dev_injection = augment_bmad_loop_session_prompt_with_recall(
+            "Implement CAP-1.",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+        )
+
+        assert dev_injection is not None and dev_injection.injected is True
+        assert "Source: .claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md" in dev_prompt
+        target = loop_home / recall_feedback_core.recall_feedback_output_relpath("pyforge-marshal")
+        assert "Source: .claude/memory/feedback/pre-existing-findings-fix-now-is-the-default.md" in fs.writes[target]
 
 
 class TestGroundedMiss:
@@ -166,6 +240,22 @@ class TestScribeUnavailable:
         assert result.attempted is True
         assert result.ok is False
         assert result.reason is not None
+        assert "disk full" in result.reason
+
+    def test_double_failure_reason_includes_both_scribe_and_write_errors(
+        self, loop_home: Path, repo_root: Path
+    ) -> None:
+        fs = _FakeFs(fail_write=True)
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=False, reason="scribe binary not found on PATH"))
+
+        result = inject_recall_feedback(
+            fs=fs, loop_home=loop_home, repo_root=repo_root, station_slug="pyforge-doctor", scribe=scribe
+        )
+
+        assert result.attempted is True
+        assert result.ok is False
+        assert result.reason is not None
+        assert "scribe binary not found on PATH" in result.reason
         assert "disk full" in result.reason
 
 

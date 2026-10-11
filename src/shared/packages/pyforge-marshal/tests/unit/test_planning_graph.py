@@ -96,3 +96,20 @@ class TestRecallArgvScope:
         argv = planning.render_scribe_recall_argv("/bin/scribe", "a query")
         assert argv.count("--mode") == 1
         assert "code" not in argv
+
+    def test_memory_mode_omits_scope_by_default(self):
+        argv = planning.render_scribe_recall_argv(
+            "/bin/scribe", "feedback corrections guidance for pyforge-marshal", mode="memory"
+        )
+        assert argv == (
+            "/bin/scribe",
+            "recall",
+            "feedback corrections guidance for pyforge-marshal",
+            "--mode",
+            "memory",
+        )
+        assert "--scope" not in argv
+
+    def test_unrecognized_mode_refuses_before_subprocess(self):
+        with pytest.raises(ValueError, match="unrecognized scribe recall mode"):
+            planning.render_scribe_recall_argv("/bin/scribe", "a query", mode="code")

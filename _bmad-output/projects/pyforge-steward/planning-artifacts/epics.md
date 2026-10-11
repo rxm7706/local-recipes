@@ -5911,7 +5911,7 @@ So that one killed verification never costs the next one its verdict.
 **When** a run is killed (SIGTERM or SIGKILL, to its process group or to its shell alone) and another run starts
 **Then** the lock was held by the dead run's shell alone, so the next run takes it without waiting out the bound. No service, step or helper the script starts holds the lock's descriptor. The `stop_services` call at the top of `start_services` stays the reclaim of what a dead run left in the shared work dir: PostgreSQL through `pg_ctl ... stop`, Redis through the pid file it wrote, each only after `/proc/<pid>/cmdline` proves the pid is that service, each stop logged by pid and waited for. It never signals a pid whose identity does not match. It refuses a port still held by anything it cannot prove: exit 2, no service started, nothing signalled, and the port, pid and command line named
 **And** a wait that times out names the processes that hold the lock now. A `.holder` record whose pid is dead is shown as stale, not as the holder. A normal run and a SIGTERMed run still stop their own services through the EXIT trap. Story 63.7's six tests stay green, changed only to use free ports and stubs that write the real tools' pid files. New Docker-free tests run the real script with stand-ins that detach the way `pg_ctl` and `redis-server` do, and each fix fails them when removed (mutation). `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` are green
-**Status:** backlog
+**Status:** done
 
 ## Epic 90: A pytest the preflight starts never inherits another run's basetemp (fix under CAP-159)
 

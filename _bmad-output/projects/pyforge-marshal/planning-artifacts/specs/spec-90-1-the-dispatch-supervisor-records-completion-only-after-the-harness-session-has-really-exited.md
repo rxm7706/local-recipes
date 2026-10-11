@@ -302,3 +302,10 @@ Status: done
 - `python scripts/spec_surface_reconcile.py` — pass (after memlog reconcile on `spec-pyforge-marshal`)
 
 **Residual risk:** Processes that leave the session group remain invisible; unreadable group scans keep the run live (AD-8).
+
+> **Code reverted 2026-10-11** (operator ruling "Revert 90.1 now (Recommended)"). The landed `PsutilSessionGroup`
+> asked `psutil.process_iter` for a `pgid` attribute psutil 7.2.2 does not have, so every read raised
+> `ValueError`, which this story counts as a live session: every dispatch supervisor launched after the merge
+> (`d013fdb9fe`) journaled `session_alive: true` forever and never verified or landed (marshal 47.1 stalled). The merge's
+> code and tests were reverted on main; this spec, its memlogs and the ledger key stay as the record. Marshal Story 92.1
+> re-lands the completion-after-exit behaviour with a working group read, with its landing held for an independent review.
