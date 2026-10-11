@@ -24,7 +24,6 @@ from pyforge.core.flags import FlagConfigError, read_boolean
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
-from .adapters.session_group_psutil import PsutilSessionGroup
 from .adapters.vcs_git import VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
@@ -52,7 +51,6 @@ from .core.policy import EffectivePolicy
 from .core.refs import ORIGIN_MAIN
 from .core.spec_surface import SurfaceParseError, parse_declared_surface
 from .core.verdict import compute_verdict
-from .ports.session_group import SessionGroupPort, SessionGroupReadError
 from .ports.vcs import VcsPort
 
 _SCOPE_BASE = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
@@ -1094,49 +1092,10 @@ def _is_zombie(pid: int) -> bool:
     return close != -1 and stat[close + 2 : close + 3] == "Z"
 
 
-_DEFAULT_SESSION_GROUP = PsutilSessionGroup()
-
-
-def session_group_has_live_member(
-    session_group: SessionGroupPort,
-    session_leader_pid: int,
-    *,
-    launched_at: datetime | None,
-    process: ProcessPort,
-) -> bool:
-    """True when any non-zombie group member started near the launch still runs (Story 90.1)."""
-    try:
-        members = tuple(session_group.iter_session_group_members(session_leader_pid))
-    except SessionGroupReadError:
-        return True
-    launch_ts = launched_at.timestamp() if launched_at is not None else None
-    for member in members:
-        if member.is_zombie:
-            continue
-        if launch_ts is not None:
-            started_at = member.started_at
-            if started_at is None:
-                started_at = process.process_start_time(member.pid)
-            if started_at is None:
-                continue
-            if not dispatch_core.pid_start_matches_launch(started_at, launched_at):
-                continue
-        return True
-    return False
-
-
-def dispatch_session_alive(
-    process: ProcessPort,
-    pid: int,
-    *,
-    launched_at: datetime | None,
-    session_group: SessionGroupPort | None = None,
-) -> bool:
-    """Story 83.1/90.1: dispatch session liveness — leader pid, then the launch's process group."""
-    if fix_session_alive(process, pid, launched_at=launched_at):
-        return True
-    port = session_group if session_group is not None else _DEFAULT_SESSION_GROUP
-    return session_group_has_live_member(port, pid, launched_at=launched_at, process=process)
+def dispatch_session_alive(process: ProcessPort, pid: int, *, launched_at: datetime | None) -> bool:
+    """Story 83.1/85.3: the original dispatch session's liveness, with the same zombie and pid-reuse guards as a
+    fix session's -- the tick loop and every CLI reader judge it by this one check."""
+    return fix_session_alive(process, pid, launched_at=launched_at)
 
 
 def fix_session_alive(process: ProcessPort, pid: int, *, launched_at: datetime | None) -> bool:

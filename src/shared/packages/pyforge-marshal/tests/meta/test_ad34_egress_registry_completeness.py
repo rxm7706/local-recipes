@@ -863,7 +863,6 @@ def test_egress_ports_registry_has_exactly_the_known_ports():
         "SkillInvokePort",
         "RunPublisherPort",
         "ModelListFetchPort",
-        "SessionGroupPort",
     }
 
 
