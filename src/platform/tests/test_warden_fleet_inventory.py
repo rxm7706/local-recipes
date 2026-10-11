@@ -326,6 +326,32 @@ def test_api_failure_leaves_no_export(inventory_paths: tuple[Path, Path]) -> Non
     assert not export.exists()
 
 
+def _story_flagd_tree(tmp_path: Path, flags: dict[str, str]) -> Path:
+    """Write a minimal OpenFeature file tree (platform tests must not import pyforge.*)."""
+    tree: dict[str, object] = {"flags": {}}
+    flag_map = tree["flags"]
+    assert isinstance(flag_map, dict)
+    for key, variant in flags.items():
+        flag_map[key] = {
+            "state": "ENABLED",
+            "variants": {"on": True, "off": False},
+            "defaultVariant": variant,
+        }
+    path = tmp_path / "flags-gate.json"
+    path.write_text(json.dumps(tree, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def test_fleet_inventory_flagd_tree_on(tmp_path: Path) -> None:
+    source = _story_flagd_tree(tmp_path, {"pyforge.warden.fleet_inventory": "on"})
+    assert evaluate_from_source(key=FLEET_INVENTORY_FLAG, source=source) is True
+
+
+def test_fleet_inventory_flagd_tree_off(tmp_path: Path) -> None:
+    source = _story_flagd_tree(tmp_path, {"pyforge.warden.fleet_inventory": "off"})
+    assert evaluate_from_source(key=FLEET_INVENTORY_FLAG, source=source) is False
+
+
 def _flag_tree(*, on: bool) -> dict:
     tree = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
     entry = tree["flags"][FLEET_INVENTORY_FLAG]

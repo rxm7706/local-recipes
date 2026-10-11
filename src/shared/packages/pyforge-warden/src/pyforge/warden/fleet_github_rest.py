@@ -14,12 +14,14 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
+from pyforge.core.errors import PyforgeError
+
 GITHUB_API_HOST = "api.github.com"
 _ORG_REPOS_PATH = "/orgs/{organisation}/repos"
 _LINK_NEXT = re.compile(r'<([^>]+)>;\s*rel="next"')
 
 
-class FleetInventoryApiError(Exception):
+class FleetInventoryApiError(PyforgeError, Exception):
     """GitHub listing failed — never carries a token."""
 
 
@@ -80,7 +82,9 @@ class GitHubRestOrgReposClient:
 
     def list_org_repos(self, organisation: str) -> list[ListedRepo]:
         encoded = urllib.parse.quote(organisation, safe="")
-        url = f"https://{self._api_host}{_ORG_REPOS_PATH.format(organisation=encoded)}?type=all&per_page=100"
+        url: str | None = (
+            f"https://{self._api_host}{_ORG_REPOS_PATH.format(organisation=encoded)}?type=all&per_page=100"
+        )
         collected: list[ListedRepo] = []
         seen_next: set[str] = set()
         while url:
