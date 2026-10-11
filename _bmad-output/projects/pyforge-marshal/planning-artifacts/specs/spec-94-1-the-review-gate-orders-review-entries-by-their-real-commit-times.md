@@ -2,7 +2,8 @@
 title: "94.1: The review gate orders review entries by their real commit times"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: '378cfdf3f0cbed72caf9b2dbcfd36a124318865e'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -224,4 +225,20 @@ in the same second. The spec fixture has a frontmatter fence with `status:` and 
 
 ## Spec Change Log
 
+- 2026-10-11 — `test_git_blame_orders_triage_headings` now uses distinct `GIT_COMMITTER_DATE` values and asserts non-zero times with FAIL alone as latest (AC5); prior tie-only pass hid the porcelain reuse bug.
+
+## Auto Run Result
+
+- Summary: `_parse_blame_porcelain` caches `committer-time` by commit sha so bare `--porcelain` headers inherit the real time; committed lines without a readable time are omitted (never time 0).
+- Files: `vcs_git.py` (parser + adapter docstring), `ports/vcs.py` (port docstring), `test_dispatch_land_only_spec_gate_89_1.py` (AC1–AC5 tests).
+- Review: one review pass; 0 patch/defer/intent findings after triage (self-review of diff).
+- Follow-up review recommended: `false`
+- Verification: `pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`, `spec_surface_reconcile` — all exit 0.
+- Residual: finalize still promotes on unevaluable blame (unchanged per spec).
+
 ## Review Triage Log
+
+### 2026-10-11 — Build-auto review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (no findings from review layers)

@@ -158,7 +158,6 @@ def test_missing_committer_time_makes_gate_unevaluable() -> None:
     )
     headings = iter_review_triage_heading_lines(text)
     assert headings
-    line_no = headings[0][0]
     blame: dict[int, LineBlameFact] = {}
     assert latest_review_triage_headings(headings, blame) is None
     verdict = evaluate_land_only_spec_gate(spec_text=text, spec_status="in-review", blame=blame)
