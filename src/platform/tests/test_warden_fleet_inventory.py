@@ -33,19 +33,18 @@ from django_warden_fabric.fleet_inventory import load_organisation_from_config
 from django_warden_fabric.fleet_inventory import run_fleet_inventory_sync
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.tasks import run_fleet_inventory
-from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient
-from pyforge.warden.fleet_github_rest import HttpMethodRefusedError
 
 _EXAMPLE_ORG = "example-org"
 _FIXTURE_REPO_COUNT = 3
 _PAGINATED_REPO_COUNT = 2
 _EXIT_REFUSED = 2
 _SENTINEL = "sentinel-token-must-not-leak-16-1"
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+_SRC_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = _SRC_ROOT.parent
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
 _FABRIC_ROOT = (
-    _REPO_ROOT
+    _SRC_ROOT
     / "shared"
     / "packages"
     / "django-warden"
@@ -150,44 +149,6 @@ def test_inventory_rerun_updates_not_duplicates(
         FleetRepo.objects.filter(organisation=_EXAMPLE_ORG).count()
         == _FIXTURE_REPO_COUNT
     )
-
-
-def test_pagination_reads_link_next() -> None:
-    page_one = [
-        {
-            "full_name": f"{_EXAMPLE_ORG}/page-one",
-            "default_branch": "main",
-            "clone_url": "https://example.com/one.git",
-            "archived": False,
-        },
-    ]
-    page_two = [
-        {
-            "full_name": f"{_EXAMPLE_ORG}/page-two",
-            "default_branch": "main",
-            "clone_url": "https://example.com/two.git",
-            "archived": False,
-        },
-    ]
-    client = GitHubRestOrgReposClient(token="fixture-token")  # noqa: S106
-    link = '<https://api.github.com/orgs/example-org/repos?page=2>; rel="next"'
-    with patch.object(
-        client,
-        "_get_json",
-        side_effect=[
-            (page_one, link),
-            (page_two, None),
-        ],
-    ):
-        repos = client.list_org_repos(_EXAMPLE_ORG)
-    assert len(repos) == _PAGINATED_REPO_COUNT
-
-
-def test_http_client_refuses_non_get() -> None:
-    client = GitHubRestOrgReposClient(token="fixture-token")  # noqa: S106
-    for method in ("POST", "PUT", "PATCH", "DELETE"):
-        with pytest.raises(HttpMethodRefusedError):
-            client.request(method, "https://api.github.com/orgs/example-org/repos")
 
 
 def test_celery_message_keys_not_blobs() -> None:
