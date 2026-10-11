@@ -4160,6 +4160,71 @@ def test_a_follow_up_runs_blocked_halt_regathers_with_the_launch_tip_scope(tmp_p
     assert completion_intent["payload"]["story_merged_on_main"] is False
 
 
+# -- Story 90.1: atlas 25.1 sequence — no completion while the session group lives -------------------
+
+
+def test_atlas_25_1_sequence_never_completes_while_the_session_group_lives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """AC1: stale merge subject at baseline, leader dead, process group alive for three ticks."""
+    from pyforge.marshal import dispatch_verify
+
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    (run_dir / "session.log").write_text("working\n", encoding="utf-8")
+    _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _patch_verification(monkeypatch, _clean_envelope)
+    _patch_landing(monkeypatch)
+    atlas_subject = "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1"
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    vcs = FakeVcs(
+        branches=frozenset({branch}),
+        head_sha=_BASELINE,
+        subjects_by_ref={ORIGIN_MAIN: (atlas_subject,)},
+        merged_into_refs=frozenset(),
+        spec_at_ref=_SPEC_DONE,
+        changed_vs_head=("src/a.py", "src/b.py", "src/c.py"),
+    )
+    facts = _gather_facts_spy(monkeypatch)
+    publisher = FakePublisher()
+    fs = FakeFs()
+    tick = {"n": 0}
+
+    def _group_alive(*_args, **_kwargs) -> bool:
+        tick["n"] += 1
+        return tick["n"] <= 3
+
+    monkeypatch.setattr(dispatch_verify, "session_group_has_live_member", _group_alive)
+
+    code = _run(repo_root, fs=fs, vcs=vcs, process=FakeProcess(alive=False), publisher=publisher)
+
+    assert code == 0
+    assert tick["n"] >= 4
+    assert len(publisher.heartbeats) >= 3
+    assert all(f.story_merged_on_main is False for f in facts)
+    journal = fs.journal_text(run_dir)
+    assert dispatch_core.KIND_DISPATCH_FINALIZE in journal
+    finalize_at = journal.index(dispatch_core.KIND_DISPATCH_FINALIZE)
+    pre_finalize = journal[:finalize_at]
+    assert dispatch_core.KIND_DISPATCH_COMPLETION not in pre_finalize
+    assert dispatch_core.KIND_DISPATCH_TIMING not in pre_finalize
+
+
+def test_gather_git_facts_ignores_a_corroborated_merge_at_the_launch_baseline(tmp_path: Path) -> None:
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    subject = "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1"
+    facts = _gather(
+        repo_root,
+        worktree,
+        FakeVcs(subjects=(subject,), spec_at_ref=_SPEC_DONE, head_sha=_BASELINE),
+    )
+    assert facts.story_merged_on_main is False
+
+
 # --------------------------------------------------------------------------
 # Story 85.2 — verify-fix turn coverage on this module's floor
 # --------------------------------------------------------------------------
