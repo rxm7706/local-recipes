@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import hmac
 import importlib
@@ -18,6 +19,9 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from starlette.routing import Mount
+
+import config.station_api as station_api_mod
 from django_pyforge.flags import ENV_FLAGD_PATH
 from django_pyforge.flags import ENV_FLAGS_PATH
 from django_pyforge.flags import configure_file_provider
@@ -39,6 +43,7 @@ sys.modules.setdefault("langflow", _langflow_pkg)
 sys.modules.setdefault("langflow.main", _langflow_pkg.main)
 
 from config.asgi import application  # noqa: E402
+from config.optional_components import import_optional  # noqa: E402
 
 
 class _FakeSidecarClient:
@@ -113,12 +118,21 @@ _OTHER_WEBHOOK_PATH = "/stations/herald/api/v1/webhooks/other"
 _DISCONNECT_RECEIVE_CALLS = 2
 
 
-@pytest.fixture
-def reset_herald_webhook_host_app(monkeypatch: pytest.MonkeyPatch):
+def _reset_herald_webhook_caches(monkeypatch: pytest.MonkeyPatch) -> None:
     webhook_host = importlib.import_module("pyforge.herald.webhook_host")
     monkeypatch.setattr(webhook_host, "_application", None, raising=False)
+    with contextlib.suppress(KeyError):
+        herald_app = station_api_mod.register_station_api("herald", 1)
+        for route in herald_app.routes:
+            if isinstance(route, Mount) and hasattr(route.app, "_inner"):
+                route.app._inner = None  # noqa: SLF001
+
+
+@pytest.fixture
+def reset_herald_webhook_host_app(monkeypatch: pytest.MonkeyPatch):
+    _reset_herald_webhook_caches(monkeypatch)
     yield
-    monkeypatch.setattr(webhook_host, "_application", None, raising=False)
+    _reset_herald_webhook_caches(monkeypatch)
 
 
 @pytest.fixture
@@ -478,9 +492,23 @@ def test_forward_inactive_unknown_path_herald_absent_uses_story_87_1(
             if fullname == "pyforge.herald" or fullname.startswith("pyforge.herald."):
                 raise ModuleNotFoundError(name=fullname)
 
+    for name in list(sys.modules):
+        if name == "pyforge.herald" or name.startswith("pyforge.herald."):
+            monkeypatch.delitem(sys.modules, name, raising=False)
+    herald_key = ("herald", 1)
+    removed_app = station_api_mod._station_apps.pop(herald_key, None)  # noqa: SLF001
     finder = _HeraldAbsentFinder()
     sys.meta_path.insert(0, finder)
     try:
+        assert (
+            import_optional(
+                "pyforge.herald.station_api",
+                component="herald",
+                provided_by="pyforge.herald",
+                remedy="Install pyforge-herald on this host to enable herald routes.",
+            )
+            is None
+        )
 
         async def _run():
             with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
@@ -493,7 +521,10 @@ def test_forward_inactive_unknown_path_herald_absent_uses_story_87_1(
         response = asyncio.run(_run())
     finally:
         sys.meta_path.remove(finder)
+        if removed_app is not None:
+            station_api_mod._station_apps[herald_key] = removed_app  # noqa: SLF001
         api.clear_providers()
+        _reset_herald_webhook_caches(monkeypatch)
     assert _FakeSidecarClient.requests == []
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "pyforge.herald" in response.json()["detail"]
