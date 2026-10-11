@@ -63,7 +63,7 @@ def flag_on_tree(tmp_path: Path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def _clear_flag_providers() -> None:
+def _clear_flag_providers():
     yield
     api.clear_providers()
 
