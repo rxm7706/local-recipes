@@ -4,9 +4,9 @@ type: 'fix'
 created: '2026-10-10'
 status: 'in-review'
 baseline_revision: '47397de509c4b12b68309f77022ca915db29d5b5'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
-landing_review: 'required'
+landing_review: 'passed'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -384,6 +384,16 @@ Triage Log. No change to `sidecar_forward.py` or `mcp_host/app.py`; the review f
   independent review passes (marshal Story 83.18's hold).
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 2: PASS (1 minor and 1 trivial deferred)
+
+- Separate agent, fresh review of `git diff origin/main...HEAD` at `60935ffe6c` (origin/main `15b4d5cf42`, merges cleanly); every mutation in a scratch copy. ACs (1)-(9) pass with file:line evidence.
+- Iteration-1 findings re-probed: F1 closed (restoring `continue` now fails both disconnect tests in 1.00 s with `TimeoutError`, exit 1, also under platform-ci-local's concurrent load); F2 closed (dependency-missing then `missing_secret_503` exits 0; 24 interleaved and 18 further shuffled orders exit 0); F3, F4, F5 closed (each named mutation fails its test); F6 recorded as accepted; F8 fixed. Every AC (8) mutation fails its test.
+- Gates, each exit 0: `platform-ci-local -- --test` (1204 passed, 13 skipped), `pyforge-steward-test` (2306 passed, 3 skipped), `lint-types`, `spec-surface-check`, `flag-gate-check`, `docs-currency-check`, `scripts/spec_surface_reconcile.py`, pyforge-core `test_flags.py` (161).
+- Spec-surface stamp moves only `pyforge-steward/spec-pyforge-unifying-strategy`; its two memlog entries name all seven moved paths with reasons.
+- Deferred: `DW-steward-87-5-1` (minor: the AC (3) herald-absent test leaks `_absent_reasons`/`_logged_absent` and re-imports a second herald copy in its `finally`; trivial: two docstrings still say the flag is OFF until 87.4) and `DW-steward-87-5-2` (info, predates 87.5: the module-scoped `TestClient(mcp_host_app)` fixture hangs at teardown when set up twice in one process).
+- Note: the branch no longer carries the flag-inventory regeneration (iteration-1 F7); references to it in this spec's Auto Run Result and the 2026-10-10 steward memlog event describe the first pass only.
+- Verdict: landing review passed; `landing_review` set to `passed`.
 
 ### 2026-10-11 — Independent review, iteration 1: sent back (1 major, 4 minor, 2 info, 1 trivial)
 
