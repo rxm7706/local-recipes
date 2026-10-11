@@ -485,10 +485,10 @@ def test_forward_inactive_unknown_path_herald_absent_uses_story_87_1(
         async def _run():
             with patch("httpx.AsyncClient", return_value=_FakeSidecarClient()):
                 return await _post_via_transport(
-                _OTHER_WEBHOOK_PATH,
-                content=b"{}",
-                headers={},
-            )
+                    _OTHER_WEBHOOK_PATH,
+                    content=b"{}",
+                    headers={},
+                )
 
         response = asyncio.run(_run())
     finally:
