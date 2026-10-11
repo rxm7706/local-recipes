@@ -3822,8 +3822,8 @@ def test_without_the_launch_tip_scope_the_reused_worktree_fixture_reads_complete
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, scope
 ) -> None:
     """Mutation proof for the launch-tip scope: with ``merge_subject_ref`` answering the whole ref, or the run's
-    baseline range, the SAME fixture as the LIVE test above reads the story's first merge as the run's own --
-    COMPLETED on the first tick, no heartbeat -- so that test fails under either mutation."""
+    baseline range, a moved head reads the story's first merge as this run's own once the session exits -- so the
+    scoped LIVE test above fails under either mutation."""
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
@@ -3835,7 +3835,7 @@ def test_without_the_launch_tip_scope_the_reused_worktree_fixture_reads_complete
     code = _run(
         repo_root,
         fs=FakeFs(),
-        vcs=_first_landing_vcs(head_sha=_BASELINE),
+        vcs=_first_landing_vcs(head_sha=_MOVED),
         process=FakeProcess(alive=[True, False]),
         publisher=publisher,
     )

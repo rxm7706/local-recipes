@@ -599,6 +599,7 @@ def test_egress_ports_registry_contents():
         "SkillInvokePort": False,
         "RunPublisherPort": False,
         "ModelListFetchPort": False,
+        "SessionGroupPort": False,
     }
 
 

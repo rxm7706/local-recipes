@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -78,19 +79,13 @@ def test_reused_pid_before_launch_does_not_count() -> None:
 
 @pytest.mark.skipif(sys.platform != "linux", reason="POSIX process-group integration")
 def test_parent_exits_while_child_in_session_group_keeps_session_alive(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from pyforge.marshal.adapters.session_group_psutil import PsutilSessionGroup
 
     monkeypatch.setattr(dispatch_verify, "_DEFAULT_SESSION_GROUP", PsutilSessionGroup())
-    out = tmp_path / "growth.txt"
-    out.write_text("", encoding="utf-8")
-    shell = (
-        f"( while true; do echo x >> {out}; sleep 0.1; done ) & "
-        "exit 0"
-    )
     proc = subprocess.Popen(
-        ["bash", "-c", shell],
+        ["bash", "-c", "sleep 30 & exit 0"],
         start_new_session=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -98,29 +93,17 @@ def test_parent_exits_while_child_in_session_group_keeps_session_alive(
     leader_pid = proc.pid
     launched_at = datetime.now(timezone.utc)
     try:
-        proc.wait(timeout=5)
-        deadline = time.monotonic() + 3.0
-        while time.monotonic() < deadline and out.stat().st_size == 0:
-            time.sleep(0.05)
-        assert out.stat().st_size > 0
+        proc.wait(timeout=2)
         assert dispatch_verify.dispatch_session_alive(
             PosixProcess(), leader_pid, launched_at=launched_at
         )
-        child_deadline = time.monotonic() + 8.0
-        while time.monotonic() < child_deadline:
-            if not dispatch_verify.dispatch_session_alive(
-                PosixProcess(), leader_pid, launched_at=launched_at
-            ):
-                break
-            time.sleep(0.15)
-        else:
-            pytest.fail("session group did not settle within budget")
+        os.killpg(leader_pid, signal.SIGKILL)
+        time.sleep(0.2)
+        assert not dispatch_verify.dispatch_session_alive(
+            PosixProcess(), leader_pid, launched_at=launched_at
+        )
     finally:
         try:
-            pgid = os.getpgid(leader_pid)
-        except OSError:
-            pgid = leader_pid
-        try:
-            os.killpg(pgid, 9)
+            os.killpg(leader_pid, signal.SIGKILL)
         except OSError:
             pass
