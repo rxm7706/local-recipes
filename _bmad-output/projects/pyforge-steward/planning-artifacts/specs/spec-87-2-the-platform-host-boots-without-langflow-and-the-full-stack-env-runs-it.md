@@ -2,7 +2,7 @@
 title: "87.2: The platform host boots without Langflow, and the full-stack env runs it"
 type: 'fix'
 created: '2026-10-10'
-status: 'blocked'
+status: 'superseded'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -283,6 +283,7 @@ Type / Effort / Deps: fix / M / S-87.1.
 
 ## Spec Change Log
 
+- 2026-10-11: retired by the operator, verbatim: "authorized to retire it" (on this story: "Retired in substance: the sidecar re-scope dropped it. The ledger key still reads blocked, and only you can retire it"). The sidecar ruling of 2026-10-10 ("Via the sidecar (Recommended)") dropped 87.2's full-stack composition; steward Stories 87.3-87.5 and herald 19.2 landed on the host-plus-sidecar topology instead. Spec status `blocked` -> `superseded` (terminal). The ledger key stays `blocked` and is never dispatched: the ledger has no retired status, the same convention as Story 44.10.
 - 2026-10-10: minted from the operator's ruling "Host without langflow". The ruling names celery, django-environ and
   wagtail. The mint measured the gap at 30 host packages and meets the ruling's goal by composing Platform CI's host set.
   The three named packages are in that set at Platform CI's pins.
