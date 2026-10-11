@@ -5796,6 +5796,7 @@ So that an optional station's absence no longer stops the whole host at import.
 > **Retired 2026-10-10 — never dispatch.** The operator's ruling "Via the sidecar (Recommended)" drops
 > "87.2's full-stack composition" and routes herald's webhook through the mcp-host sidecar (Story 87.3). The ledger
 > key moved `backlog` → `blocked`; an operator flip does not revive it. The text below is kept as history.
+> Retirement confirmed 2026-10-11 by the operator ("authorized to retire it"); the story spec reads `superseded`.
 
 As the operator who needs one locked env that runs the platform host with `pyforge-herald` (herald Story 19.2's live proof),
 I want the host to start without Langflow and `pyforge-foundry-full-stack` to carry the host's own packages,

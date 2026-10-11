@@ -116,6 +116,49 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-11 (portal without herald) — Ruled: the herald portal stops taking the host's Django pages down when
+  herald is absent.** Story 19.2's landing review found a high defect outside its scope (`DW-herald-19-2-1`, recorded
+  when 19.2 landed as PR #2123, merge `ba613abab3`). The django-herald portal imports `pyforge.herald` at module load:
+  `src/platform/config/urls.py:40` includes `django_pyforge.urls`, whose AppConfig discovery (`:14`-`:17`) includes
+  `django_herald_portal/urls.py`. Its `:3` imports `views.py`, whose `:10` imports `deck_viewer.py`, whose `:9` reads
+  `from pyforge.herald.deck_twins import NotFound, iframe_twin_path` (Story 30.2, `7cde96b702`). Its `:11` reaches a
+  second module-level herald import through `deck_twin_routes.py:8`-`:9`. `platform-dev`, where 19.2's host runs,
+  carries no herald, so the URLconf cannot load there:
+  - `manage.py check` exits 1 with `ModuleNotFoundError: No module named 'pyforge.herald'` (reproduced 2026-10-11 on
+    `origin/main` `2a725c113f` and again on `baf4779b6d`). `manage.py migrate` stops in the same system check; 19.2's
+    how-to works around it with `--skip-checks`.
+  - Every page Django serves (`/`, `/stations/`, `/stations/herald/`, `/cms/`) answers 500. The webhook forward is
+    unaffected, because `config/asgi.py:135` routes it before Django resolves a URL.
+  - Steward Story 87.1's contract, "the host boots without herald", holds for the station API only. Its test imports
+    `config.asgi` and drives the API, and Django resolves the URLconf only at a system check or a page request, so
+    the test never reached the portal.
+
+  The operator was asked: "Herald 19.2's review confirmed a high defect outside its scope (now DW-herald-19-2-1). The
+  django-herald portal imports `pyforge.herald` at module load (deck_viewer.py:9, from Story 30.2). So on the
+  `platform-dev` host (no herald), `manage.py migrate` fails its URL check, and `/`, `/stations/`, `/stations/herald/`
+  and `/cms/` answer 500. That breaks steward 87.1's "host boots without herald" contract for Django pages; the webhook
+  forward is unaffected. How should I handle it?" The operator chose on 2026-10-11, verbatim label "Mint a herald fix
+  story (Recommended)": "Herald chain: Dream entry, a fix story in a new herald epic. It guards the portal import or
+  skips mounting the herald portal when herald is absent, mirroring 87.1. The test: under an env without herald,
+  `manage.py check` passes and `/stations/` answers 200. Then dispatch it." **What it looks like when real:**
+  - **The host checks clean without herald.** Under `platform-dev`, `manage.py check` exits 0 and `manage.py migrate`
+    needs no `--skip-checks`. The how-to's workaround note goes.
+  - **The host's Django pages answer as they do with herald installed.** Measured 2026-10-11 on a fresh test database
+    with herald present (`platform-ci-test`, anonymous client): `/` 200, `/stations/` 404 (the Wagtail catch-all; no
+    page has that slug), `/stations/herald/` 403, `/cms/` 302 to the login. The ruling's test names `/stations/`
+    answering 200, but no env answers that today. The story pins `/` at 200 and `/stations/` at its with-herald status,
+    never a 5xx. A 200 at `/stations/` would need a stations index page, which is a separate decision.
+  - **The portal says why, once.** As in 87.1, the herald portal's pages are skipped with one logged reason. The
+    decision is taken once, when the URLconf loads, and every `/stations/herald/` path answers 404 with that reason.
+    The app stays installed, so its models, migrations and MCP mount do not move.
+  - **With herald installed, nothing changes.** The deck list and viewer pass their Story 30.2 tests unedited.
+  - **Constraints.** Herald's code only: the django-herald portal, a herald meta-test that pins the import boundary,
+    one platform test, the how-to's note and the `DW-herald-19-2-1` row. `src/platform/` never imports `pyforge.*`
+    (pap:AD-2). `config/`, the settings and `django-pyforge`'s discovery are untouched. One `fix` story, no CAP, no
+    flag. `Deps: S-19.2` (done on main 2026-10-11): the story closes 19.2's deferral row and drops its how-to note.
+
+  Owner `spec-pyforge-herald` (CAP-55: Story 30.2 added the import). → Epic 37 / Story 37.1, specced 2026-10-11,
+  `Deps: S-19.2`.
 - **2026-10-10 (live backend, via the sidecar) — Ruled: the ship lands on the platform host, and herald's webhook runs
   in steward's mcp-host sidecar.** The local-host ruling (two entries down) put the host on
   `pyforge-foundry-full-stack`, which cannot import it (`config/celery_app.py:4`, no `celery`), and steward's Story
