@@ -2913,12 +2913,9 @@ def test_the_session_verdict_of_a_live_follow_up_run_is_not_completed_by_the_sto
 def test_the_session_verdict_of_a_follow_up_run_completes_on_its_own_merge(tmp_path: Path) -> None:
     vcs = _ReaderVcs(tmp_path, own_merge=True, head_sha="moved0001")
 
+    assert _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER) == DispatchSessionVerdict.LIVE
     assert (
-        _reader_verdict(tmp_path, vcs, alive=True, followup_review=_READER_MARKER) == DispatchSessionVerdict.LIVE
-    )
-    assert (
-        _reader_verdict(tmp_path, vcs, alive=False, followup_review=_READER_MARKER)
-        == DispatchSessionVerdict.COMPLETED
+        _reader_verdict(tmp_path, vcs, alive=False, followup_review=_READER_MARKER) == DispatchSessionVerdict.COMPLETED
     )
 
 

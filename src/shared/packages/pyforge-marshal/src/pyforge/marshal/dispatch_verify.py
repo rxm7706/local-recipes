@@ -25,7 +25,6 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from .adapters.session_group_psutil import PsutilSessionGroup
-from .ports.session_group import SessionGroupPort, SessionGroupReadError
 from .adapters.vcs_git import VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
@@ -53,6 +52,7 @@ from .core.policy import EffectivePolicy
 from .core.refs import ORIGIN_MAIN
 from .core.spec_surface import SurfaceParseError, parse_declared_surface
 from .core.verdict import compute_verdict
+from .ports.session_group import SessionGroupPort, SessionGroupReadError
 from .ports.vcs import VcsPort
 
 _SCOPE_BASE = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow

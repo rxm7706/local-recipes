@@ -15,8 +15,9 @@ from __future__ import annotations
 import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
-from pyforge.marshal.cli.init import ENV_LOOP_HOME_ROOT
 from pyforge.marshal import dispatch_verify
+from pyforge.marshal.cli.init import ENV_LOOP_HOME_ROOT
+
 flag_provider = make_flag_provider_fixture()
 
 

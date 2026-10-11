@@ -6,17 +6,15 @@ import os
 import signal
 import subprocess
 import sys
-import time
 from collections.abc import Iterator
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 from pyforge.core.process import PosixProcess
 
 from pyforge.marshal import dispatch_verify
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.ports.session_group import SessionGroupMember, SessionGroupPort, SessionGroupReadError
+from pyforge.marshal.ports.session_group import SessionGroupMember, SessionGroupReadError
 
 
 class _FakeSessionGroup:
@@ -55,22 +53,16 @@ def test_session_group_read_error_counts_as_alive() -> None:
     port = _RaisingSessionGroup()
     launched_at = datetime(2026, 10, 10, 23, 26, 0, tzinfo=timezone.utc)
     assert (
-        dispatch_verify.session_group_has_live_member(
-            port, 4242, launched_at=launched_at, process=_RecordingProcess()
-        )
+        dispatch_verify.session_group_has_live_member(port, 4242, launched_at=launched_at, process=_RecordingProcess())
         is True
     )
 
 
 def test_zombie_members_do_not_keep_the_group_alive() -> None:
     launched_at = datetime(2026, 10, 10, 23, 26, 0, tzinfo=timezone.utc)
-    port = _FakeSessionGroup(
-        (SessionGroupMember(pid=99, started_at=launched_at.timestamp(), is_zombie=True),)
-    )
+    port = _FakeSessionGroup((SessionGroupMember(pid=99, started_at=launched_at.timestamp(), is_zombie=True),))
     assert (
-        dispatch_verify.session_group_has_live_member(
-            port, 4242, launched_at=launched_at, process=_RecordingProcess()
-        )
+        dispatch_verify.session_group_has_live_member(port, 4242, launched_at=launched_at, process=_RecordingProcess())
         is False
     )
 
@@ -97,9 +89,7 @@ def test_reused_pid_before_launch_does_not_count() -> None:
     old_start = launched_at.timestamp() - dispatch_core.PID_START_TOLERANCE_SECONDS - 60.0
     port = _FakeSessionGroup((SessionGroupMember(pid=99, started_at=old_start, is_zombie=False),))
     assert (
-        dispatch_verify.session_group_has_live_member(
-            port, 4242, launched_at=launched_at, process=_RecordingProcess()
-        )
+        dispatch_verify.session_group_has_live_member(port, 4242, launched_at=launched_at, process=_RecordingProcess())
         is False
     )
 
@@ -121,9 +111,7 @@ def test_parent_exits_while_child_in_session_group_keeps_session_alive(
     launched_at = datetime.now(timezone.utc)
     try:
         proc.wait(timeout=2)
-        assert dispatch_verify.dispatch_session_alive(
-            PosixProcess(), leader_pid, launched_at=launched_at
-        )
+        assert dispatch_verify.dispatch_session_alive(PosixProcess(), leader_pid, launched_at=launched_at)
     finally:
         try:
             os.killpg(leader_pid, signal.SIGKILL)
