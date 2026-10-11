@@ -232,7 +232,8 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
   `sqlmigrate-extraction` if the model changed.
 - `pixi run -e pyforge-guild python scripts/flag_gate_check.py --spec _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-16-1-warden-inventories-a-ghe-organisation-s-repos.md`
   — expected: `pass`.
-- `git check-ignore -q .warden/fleet-target.toml .warden/fleet-inventory.json` — expected: exit 0.
+- `git check-ignore -q .warden/fleet-target.toml` — expected: exit 0.
+- `git check-ignore -q .warden/fleet-inventory.json` — expected: exit 0.
 - `pixi run -e pyforge-guild spec-surface-check` exits 0 after the scoped stamps.
 
 **Manual checks:**
@@ -266,8 +267,92 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
   - ACs rewritten: the fixture organisation is `example-org`; the missing-credential AC now covers `gh` and the config.
   - ACs added: GET-only, token never persisted, gitignored paths, leak guard, live run.
   - The items of the operator-designated GitHub Projects split out to Story 16.5.
+- 2026-10-11: placement deviation recorded (review iteration 1, M3). The Approach puts both seams in `fleet.py`; the
+  build put the GET-only listing client in `pyforge.warden.fleet_github_rest` (the platform's
+  `test_portal_raw_http_to_a_service_is_review_blocking` refuses raw HTTP imports in `django_warden_fabric`), and the
+  credential provider, config reader, export writer and sync in `django_warden_fabric.fleet_inventory`; `fleet.py`
+  keeps only the flag key. The client owns the repo, skipped-entry and listing types; the fabric reads them
+  structurally, so the portal still imports without `pyforge`. The export gains an additive `skipped` list (each
+  listing entry not inventoried, with its reason); atlas reads only `repos`. Default `.warden/` paths resolve from the
+  checkout root, not the cwd. No AC changed.
 
 ## Review Triage Log
+
+### 2026-10-11 — Fix pass for iteration 1 (implementer)
+
+Implementer pass on the send-back below; not a review verdict (iteration 2 judges it). Fictional identifiers only
+(`example-org`, `evil.example`); no network, no `gh`, no `.warden/` read. Mutation proof for each fix: reverted in
+place, the named test(s) went red, the fix restored byte-identical (checked with `cmp`), the test(s) green again.
+Below, `R` is `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`, `U` is `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py`, `P` is `src/platform/tests/test_warden_fleet_inventory.py` and `F` is `django_warden_fabric/fleet_inventory.py`.
+
+- F1: Authorization is `add_unredirected_header` (`R:217`); `_ApiHostRedirectHandler` (`R:125-147`) refuses any
+  redirect off `https://api.github.com` (http downgrade, other host or port, userinfo) before it is followed, and
+  re-attaches the token only on a same-origin redirect; the `Link: rel="next"` URL (`R:208-210`) and every request
+  URL (`R:214-215`) must pass `is_api_url` (`R:82`), else `OffApiHostRefusedError`; the client refuses a second
+  redirect handler (`R:165`). Tests `U:202-272` drive the real opener through stub urllib handlers that record each
+  request it really sends. Mutations: `add_header` -> 2 red; opener without the redirect pin -> 4 red (off-host,
+  http-downgrade, other-port, userinfo); next-link and request-URL checks removed -> 3 red.
+- F2: `P:77-84` scans `src/shared/packages/pyforge-warden` and the whole `django-warden` package;
+  `test_leak_guard_scan_roots_exist` (`P:579`) asserts every root exists and lists tracked files; the guard reads its
+  target through `resolve_fleet_target_config_path()` (honours `WARDEN_FLEET_TARGET_CONFIG`) and reports paths only,
+  never a term (`P:541-576`); `test_leak_guard_finds_a_planted_term` (`P:606`) proves it is not vacuous. Live path:
+  `F:61-85` anchors the default `.warden/` paths to the checkout root (nearest `.git` above the module), not the cwd,
+  so `manage.py` run from `src/platform` reads the root config; pinned by
+  `test_default_paths_anchor_to_the_checkout_root` (`P:523`, run from a foreign cwd). Mutations: old root -> red;
+  cwd-relative default -> red; env override ignored -> 2 red.
+- F3: the method is read off the request the opener really sends: `test_every_outgoing_request_is_a_get` (`U:176`)
+  and `test_real_client_run_is_get_only_and_never_persists_the_token` (`P:629`: the real task and the real client over
+  a stub transport). The fixture client no longer records a method (`_FixtureListingClient`, `P:116`, records the
+  organisation asked). Mutation: `method="POST"` (`R:216`) -> unit and platform red.
+- F4: the real client's HTTPError and URLError paths run through stub handlers with the sentinel token (`U:322-366`;
+  `test_real_client_failure_never_carries_the_token`, `P:666`, http-error and url-error): the sentinel is absent from
+  `str`, `repr`, the shown exception chain, frame locals, captured logs, rows and the (absent) export. Mutations: token
+  in the HTTP message -> unit and platform red; token in the URL message -> unit and platform red.
+- X1 (found while proving F4; AC7): the platform's JSON log renderer (`config/observability/logging.py`, structlog
+  `dict_tracebacks`) prints every traceback frame's locals, so a failed run would have logged the token twice: the
+  task's `token` local, and, through the `from exc` chain, urllib's `do_open` `headers` local (Authorization). Fixed:
+  urllib errors re-raise `from None` (`R:224-232`), the task holds no token local (`tasks.py:143`), the provider drops
+  `gh`'s result before any raise (`F:183-185`), the client's `repr` is redacted (`R:172`). Tests:
+  `test_connection_failure_log_lines_never_carry_the_token` (`P:711`: real `do_open`, connect refused, the production
+  renderer), `test_connection_failure_in_urllib_never_renders_the_token` (`U:343`, with a control showing the
+  suppressed urllib error does hold the token), `test_missing_gh_login` (`P:421`). Mutations: task `token` local ->
+  red; `from exc` kept -> unit 2 red and platform red; `completed` kept -> red.
+- X2 (pre-existing on the branch, `pr-preflight` red): a `P` docstring line ("must not import" + "pyforge.*", at
+  HEAD `:332`) tripped scribe's `test_src_platform_has_no_pyforge_import` diff-text guard; reworded. X3: this pass's
+  first `P` imported `http.client` and `urllib.request`, which doctor's
+  `test_story_does_not_add_pyforge_under_src_platform` refuses under `src/platform`; `P` now patches the stdlib by
+  dotted name and types the request through a local Protocol. All 22 `src/platform` diff-guard meta tests pass.
+- F5: the `[maybe-false]` `[defer]` bullet below now cites `spec-pyforge-atlas:CAP-61`; `ad-citation-check` 0.
+- M1: one `git check-ignore -q` per path in Verification. M2: `pyforge/warden/__init__.py` back to `__version__` only
+  (identical to `main`; nothing imported the constant). M3: Spec Change Log entry (2026-10-11, placement deviation).
+  M4: `ListedRepo` is defined once (`R:50`) and the fabric reads it structurally (`F:191-221`, Protocols); the
+  in-task adapter is gone (`tasks.py:137-148`); `FLEET_INVENTORY_FLAG` lives only in `fleet.py:17`;
+  `RecordingOrgReposClient` left production code. M5: `gh auth token` runs through one seam, `_run_gh` (`F:147`), with
+  `timeout=` (default 30 s, `F:31`); a timeout is `GhTimeoutError` raised `from None` (`F:50`, `F:180-182`); tests with
+  a fake runner (`P:445`, `P:454`). M6: an entry missing `full_name`, `default_branch` or `clone_url`, with a
+  non-boolean `archived`, or not an object is never defaulted or dropped: it lands in `OrgReposListing.skipped` with
+  page, position and reason (`R:58-73`, `R:107-122`), is never upserted, is named under the export's additive
+  `skipped` list (`F:224-244`) and counted in a warning (`F:296`); tests `U:394-417`, `P:331`. M7:
+  `src/platform/conftest.py:64-93` autouse `real_gh_attempts` makes `_run_gh` refuse and fails the test at teardown
+  even when the refusal was swallowed; `test_guard_refuses_the_real_gh_runner` (`P:469`). M8:
+  `test_leak_guard_skips_when_config_absent` (`P:598`) asserts the guard returns no terms and names the absent path.
+  M9: `atomic_write_json` (`F:247-262`) writes a `mkstemp` file beside the export, renames it and unlinks it on any
+  failure; `.warden/` ignores the temp name (`P:508`); tests `P:881`, `P:891`.
+- Gates on the final tree (exit codes read from files): `pixi run -e pyforge-warden pyforge-warden-test` 0 (2323
+  passed); `pixi run -e pyforge-guild lint-types` 0; `pixi run -e pyforge-guild platform-ci-local -- --test` 0 (seven
+  steps PASS; 1236 passed, 14 skipped; the known redis-eviction flake did not fire);
+  `pixi run -e pyforge-guild spec-surface-check` 0 (names no Spec as drifted, so no stamp was taken; memlog events
+  naming each moved path were appended to `spec-pyforge-warden`, `spec-pyforge-core` and
+  `spec-pyforge-unifying-strategy`); `pixi run -e pyforge-guild detectors-ci` 0 (45 pass);
+  `pixi run -e pyforge-guild pr-preflight -- --keep-going` 1, 34 of 36 lanes ok. The two red lanes are not this
+  diff's: `pyforge-atlas-test`, 2 setup errors in `test_read_only_live_attach.py` (its fixture Postgres runs once
+  `platform-dev` is installed in the worktree, and its Unix socket path under the preflight basetemp is over
+  PostgreSQL's 107-byte limit; the same file passes with a short basetemp, 7 passed); `pyforge-marshal-test`,
+  `test_check_under_nfr_p1_budget` (7.5 s over a 5 s budget under 16 parallel lanes) and
+  `test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns` (refused only inside preflight; both pass
+  alone, and `pixi run -e pyforge-marshal pyforge-marshal-test` exits 0, 12427 passed).
+- Not fixed here: nothing from the send-back. Still open (operator): the export's `head_sha` for
+  `spec-pyforge-atlas:CAP-61`, and a live run with the operator's `gh` login.
 
 ### 2026-10-11 — Independent review, iteration 1: sent back (5 major, 9 minor)
 
@@ -302,7 +387,7 @@ Send-back: F1-F5 required; M1-M9 in the same pass. A fresh independent review (i
   - `[false]` `[reject]` `pyforge.core` `test_flags.py` must list new flag — flag_gate_check passed; not a platform import surface requirement.
   - `[false]` `[reject]` seams must live in `fleet.py` — memlog documents `fleet_inventory.py`; flag constant in `fleet.py`.
   - `[false]` `[reject]` verification must use `flagd_tree` in platform tests — platform forbids `pyforge.testing_kit` imports; equivalent `_flag_tree` fixtures used.
-  - `[maybe-false]` `[defer]` export lacks `head_sha` for atlas CAP-61 — severity medium (unverified); open operator question in spec Named section; location: `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`.
+  - `[maybe-false]` `[defer]` export lacks `head_sha` for `spec-pyforge-atlas:CAP-61` — severity medium (unverified); open operator question in spec Named section; location: `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`.
   - `[maybe-false]` `[defer]` live leak-guard never runs in CI without operator config — real if operator commits forbidden strings; AC allows skip; location: `src/platform/tests/test_warden_fleet_inventory.py`.
 
 ## Auto Run Result

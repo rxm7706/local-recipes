@@ -10,6 +10,3 @@ This module is the Option-B build-wiring skeleton; the E1-E4 implementation
 """
 
 __version__ = "0.1.0"
-
-# Feature-flag key (Story 16.1); read through ``pyforge.core.flags`` / ``django_pyforge.flags``.
-fleet_inventory = "pyforge.warden.fleet_inventory"

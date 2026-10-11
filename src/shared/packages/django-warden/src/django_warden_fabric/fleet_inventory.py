@@ -1,4 +1,9 @@
-"""GitHub.com organisation repo listing for fleet inventory (Story 16.1)."""
+"""GitHub.com organisation repo listing for fleet inventory (Story 16.1).
+
+The listing client (``pyforge.warden.fleet_github_rest``) owns the repo,
+skipped-entry and listing types; this module reads them structurally, so the
+host-side portal can import it without ``pyforge`` installed.
+"""
 
 from __future__ import annotations
 
@@ -7,22 +12,23 @@ import logging
 import os
 import shutil
 import subprocess
+import tempfile
 import tomllib
-from dataclasses import dataclass
-from dataclasses import field
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 from typing import Protocol
 
 logger = logging.getLogger(__name__)
 
-FLEET_INVENTORY_FLAG = "pyforge.warden.fleet_inventory"
-
 ENV_FLEET_TARGET_CONFIG = "WARDEN_FLEET_TARGET_CONFIG"
 ENV_FLEET_INVENTORY_PATH = "WARDEN_FLEET_INVENTORY_PATH"
 
+# Repo-relative defaults; ``resolve_*`` anchors them to the checkout root, never the cwd.
 DEFAULT_FLEET_TARGET_CONFIG = Path(".warden/fleet-target.toml")
 DEFAULT_FLEET_INVENTORY_PATH = Path(".warden/fleet-inventory.json")
+
+GH_AUTH_TOKEN_TIMEOUT_SECONDS = 30.0
 
 
 class FleetInventoryError(Exception):
@@ -41,32 +47,42 @@ class GhLoginMissingError(FleetInventoryError):
         )
 
 
+class GhTimeoutError(FleetInventoryError):
+    def __init__(self, timeout: float) -> None:
+        super().__init__(f"gh auth token did not finish within {timeout:g}s")
+
+
 class FleetTargetConfigError(FleetInventoryError):
     def __init__(self, config_path: Path, detail: str) -> None:
         self.config_path = config_path
         super().__init__(f"{config_path}: {detail}")
 
 
-@dataclass(frozen=True)
-class ListedRepo:
-    full_name: str
-    default_branch: str
-    clone_url: str
-    archived: bool
+def fleet_checkout_root() -> Path:
+    """The checkout this module runs from: its nearest ancestor holding ``.git``.
+
+    A worktree's ``.git`` is a file, so a worktree anchors to itself. Outside a
+    checkout (a container image) there is none, and the cwd stands in; set
+    ``WARDEN_FLEET_TARGET_CONFIG`` and ``WARDEN_FLEET_INVENTORY_PATH`` there.
+    """
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / ".git").exists():
+            return candidate
+    return Path.cwd()
 
 
 def resolve_fleet_target_config_path() -> Path:
     override = os.environ.get(ENV_FLEET_TARGET_CONFIG, "").strip()
     if override:
         return Path(override)
-    return DEFAULT_FLEET_TARGET_CONFIG
+    return fleet_checkout_root() / DEFAULT_FLEET_TARGET_CONFIG
 
 
 def resolve_fleet_inventory_export_path() -> Path:
     override = os.environ.get(ENV_FLEET_INVENTORY_PATH, "").strip()
     if override:
         return Path(override)
-    return DEFAULT_FLEET_INVENTORY_PATH
+    return fleet_checkout_root() / DEFAULT_FLEET_INVENTORY_PATH
 
 
 def _parse_target_toml(raw: bytes, config_path: Path) -> dict[str, Any]:
@@ -122,48 +138,90 @@ class CredentialProvider(Protocol):
     def token(self) -> str: ...
 
 
+class GhRunner(Protocol):
+    def __call__(
+        self, argv: list[str], *, timeout: float
+    ) -> subprocess.CompletedProcess[str]: ...
+
+
+def _run_gh(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+    """The one place ``gh`` runs: an argv list, no shell, a timeout (tests replace it)."""
+    return subprocess.run(  # noqa: S603
+        argv,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+
 class GhAuthTokenProvider:
     """Read the operator's github.com token via ``gh auth token`` (no shell)."""
 
-    def __init__(self, *, hostname: str = "github.com") -> None:
+    def __init__(
+        self,
+        *,
+        hostname: str = "github.com",
+        runner: GhRunner | None = None,
+        timeout: float = GH_AUTH_TOKEN_TIMEOUT_SECONDS,
+    ) -> None:
         self._hostname = hostname
+        self._runner = runner
+        self._timeout = timeout
 
     def token(self) -> str:
         gh = shutil.which("gh")
         if gh is None:
             raise GhBinaryMissingError
         argv = [gh, "auth", "token", "--hostname", self._hostname]
-        completed = subprocess.run(  # noqa: S603
-            argv,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if completed.returncode != 0:
-            raise GhLoginMissingError
-        value = completed.stdout.strip()
+        run = self._runner if self._runner is not None else _run_gh
+        try:
+            completed = run(argv, timeout=self._timeout)
+        except subprocess.TimeoutExpired:
+            # ``from None``: the expired call may hold partial stdout (a token).
+            raise GhTimeoutError(self._timeout) from None
+        value = completed.stdout.strip() if completed.returncode == 0 else ""
+        # Drop the process result before any raise: a logged traceback renders locals.
+        del completed
         if not value:
             raise GhLoginMissingError
         return value
 
 
+class ListedRepoFields(Protocol):
+    @property
+    def full_name(self) -> str: ...
+    @property
+    def default_branch(self) -> str: ...
+    @property
+    def clone_url(self) -> str: ...
+    @property
+    def archived(self) -> bool: ...
+
+
+class SkippedEntryFields(Protocol):
+    @property
+    def page(self) -> int: ...
+    @property
+    def position(self) -> int: ...
+    @property
+    def full_name(self) -> str | None: ...
+    @property
+    def reason(self) -> str: ...
+
+
+class OrgReposListingFields(Protocol):
+    @property
+    def repos(self) -> Sequence[ListedRepoFields]: ...
+    @property
+    def skipped(self) -> Sequence[SkippedEntryFields]: ...
+
+
 class OrgReposListingClient(Protocol):
-    def list_org_repos(self, organisation: str) -> list[ListedRepo]: ...
+    def list_org_repos(self, organisation: str) -> OrgReposListingFields: ...
 
 
-@dataclass
-class RecordingOrgReposClient:
-    """Fixture listing client that records every HTTP method/url pair."""
-
-    repos_by_org: dict[str, list[ListedRepo]]
-    calls: list[tuple[str, str]] = field(default_factory=list)
-
-    def list_org_repos(self, organisation: str) -> list[ListedRepo]:
-        self.calls.append(("GET", f"/orgs/{organisation}/repos"))
-        return list(self.repos_by_org.get(organisation, []))
-
-
-def export_document(repos: list[ListedRepo]) -> dict[str, list[dict[str, str | bool]]]:
+def export_document(listing: OrgReposListingFields) -> dict[str, list[dict[str, Any]]]:
     return {
         "repos": [
             {
@@ -172,20 +230,40 @@ def export_document(repos: list[ListedRepo]) -> dict[str, list[dict[str, str | b
                 "clone_url": repo.clone_url,
                 "archived": repo.archived,
             }
-            for repo in repos
+            for repo in listing.repos
+        ],
+        "skipped": [
+            {
+                "page": entry.page,
+                "position": entry.position,
+                "full_name": entry.full_name,
+                "reason": entry.reason,
+            }
+            for entry in listing.skipped
         ],
     }
 
 
 def atomic_write_json(path: Path, document: dict[str, Any]) -> None:
+    """Write ``document`` through a uniquely named temp file beside ``path``, then rename."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
     data = json.dumps(document, indent=2, sort_keys=True) + "\n"
-    tmp.write_text(data, encoding="utf-8")
-    tmp.replace(path)
+    descriptor, name = tempfile.mkstemp(
+        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+    )
+    tmp = Path(name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(data)
+        tmp.replace(path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
-def persist_fleet_repos(*, organisation: str, repos: list[ListedRepo]) -> None:
+def persist_fleet_repos(
+    *, organisation: str, repos: Sequence[ListedRepoFields]
+) -> None:
     from django_warden_fabric.models import FleetRepo  # noqa: PLC0415
 
     for repo in repos:
@@ -206,10 +284,19 @@ def run_fleet_inventory_sync(
     listing_client: OrgReposListingClient,
     export_path: Path | None = None,
 ) -> dict[str, Any]:
-    """List repos, upsert ``FleetRepo`` rows, write the export atomically."""
-    repos = listing_client.list_org_repos(organisation)
-    persist_fleet_repos(organisation=organisation, repos=repos)
-    document = export_document(repos)
+    """List repos, upsert ``FleetRepo`` rows, write the export atomically.
+
+    Entries the listing could not inventory are never upserted; the export
+    names each one under ``skipped`` with its reason.
+    """
+    listing = listing_client.list_org_repos(organisation)
+    persist_fleet_repos(organisation=organisation, repos=listing.repos)
+    document = export_document(listing)
+    if listing.skipped:
+        logger.warning(
+            "fleet inventory skipped %d incomplete listing entries (see the export)",
+            len(listing.skipped),
+        )
     destination = (
         export_path
         if export_path is not None
