@@ -1981,6 +1981,7 @@ def _journal_heartbeat(
     counter: int,
     session_alive: bool,
     git_facts: DispatchGitFacts,
+    session_liveness_error: str | None = None,
 ) -> int:
     """Append the tick loop's heartbeat observation; return the next counter.
 
@@ -1998,6 +1999,11 @@ def _journal_heartbeat(
             "session_alive": session_alive,
             "current_head_sha": git_facts.current_head_sha,
             "changed_path_count": len(git_facts.changed_paths),
+            **(
+                {"session_liveness_error": session_liveness_error}
+                if session_liveness_error is not None
+                else {}
+            ),
         },
     )
     try:
@@ -2641,7 +2647,12 @@ def run_dispatch_supervisor(
             time.sleep(_TICK_SECONDS)
             continue
 
-        session_alive = dispatch_session_alive(process, session_pid, launched_at=session_launched_at)
+        from ..dispatch_verify import assess_dispatch_session_liveness
+
+        liveness = assess_dispatch_session_liveness(
+            process, session_pid, launched_at=session_launched_at
+        )
+        session_alive = liveness.alive
         session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)
         if session_alive:
             current_log = session_log

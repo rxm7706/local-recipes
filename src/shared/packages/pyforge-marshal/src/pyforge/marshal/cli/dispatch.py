@@ -1833,6 +1833,10 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
+    from ..core.dispatch_stale import dispatch_run_is_stale
+
+    if dispatch_run_is_stale(fs=fs, journal=journal):
+        return None
     # Story 85.2/85.3 (CAP-286): an open fix-turn INTENT is LIVE work to every reader -- `dispatch status`,
     # `marshal status`, the in-flight guard, resume -- while its session runs and after it exited: only a
     # supervisor settles the turn (commit + re-verify, or stop and park), so resume must re-spawn one rather than
@@ -1902,17 +1906,26 @@ def _live_dispatch_evidence(
             )
             or f"story {story_key!r} dispatch session is still live"
         )
-    git_facts = gather_dispatch_git_facts(
-        vcs,
-        fs=fs,
-        repo_root=repo_root,
-        worktree=Path(journal.worktree_path),
-        story_key=journal.story_key,
-        project_slug=slug,
-        baseline_head_sha=journal.baseline_head_sha,
-        merge_subject_template=effective_policy.merge_subject_template.value,
-        followup_review=journal.followup_review,
-    )
+    try:
+        git_facts = gather_dispatch_git_facts(
+            vcs,
+            fs=fs,
+            repo_root=repo_root,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            project_slug=slug,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+            followup_review=journal.followup_review,
+        )
+    except VcsCommandError, ValueError:
+        git_facts = DispatchGitFacts(
+            baseline_head_sha=journal.baseline_head_sha or "",
+            current_head_sha="",
+            changed_paths=(),
+            branch_merged=False,
+            story_merged_on_main=False,
+        )
     return (
         zombie_redispatch_evidence(
             story_key=story_key,
@@ -2183,6 +2196,7 @@ def station_in_flight_conflict(
     candidate_spec_text: str | None = None,
     deps_graph: Mapping[str, tuple] | None = None,
     parallel_dispatch: bool = False,
+    preflight_advisories: list[Finding] | None = None,
 ) -> DispatchPreflightConflict | None:
     """Refuse when an in-flight story blocks this candidate (22.5 / 28.16).
 
@@ -2214,9 +2228,25 @@ def station_in_flight_conflict(
         effective_policy=effective_policy,
     )
     candidate_refused_landing_open = feed_story in refused_landing_open
+    from ..core.dispatch_stale import stale_dispatch_run
+
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key is None:
+            continue
+        stale = stale_dispatch_run(fs=fs, journal=journal, run_id=run_dir.name, slug=slug)
+        if stale is not None:
+            if preflight_advisories is not None:
+                preflight_advisories.append(
+                    Finding(
+                        code="MRS-DISP-064",
+                        severity=Severity.WARN,
+                        message=(
+                            f"stale dispatch run {run_dir.name!r} for story {stale.story_key!r}: "
+                            f"worktree {stale.worktree_path!r} is missing — {stale.remedy}"
+                        ),
+                    )
+                )
             continue
         verdict = resolve_dispatch_session_verdict(
             fs=fs,

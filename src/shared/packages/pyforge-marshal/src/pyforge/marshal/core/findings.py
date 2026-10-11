@@ -2012,6 +2012,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 89.1: land-only re-dispatch refused — worktree spec not in-review/done or latest
         # Review Triage Log entry records a failed review (ERROR, exit before verify/land).
         "MRS-DISP-063",
+        # Story 92.1: dispatch run whose worktree was removed — WARN, never blocks launch.
+        "MRS-DISP-064",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
