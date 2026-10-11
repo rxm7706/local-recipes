@@ -2,7 +2,8 @@
 title: "90.1: A pytest the preflight starts never inherits another run's basetemp"
 type: 'fix'
 created: '2026-10-10'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'c0956c0f14fa632ab837b1cdd5c39cd3b8845fff'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

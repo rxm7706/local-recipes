@@ -25,6 +25,46 @@ _STATION_GATE_RE = re.compile(r"^pyforge-([a-z]+)-coverage-gate$")
 PYTEST_EXIT_NO_TESTS_COLLECTED = 5
 
 
+def strip_inherited_pytest_basetemp_and_cache(addopts: str) -> str:
+    """Drop basetemp and cache_dir overrides from a PYTEST_ADDOPTS string (Story 90.1)."""
+    stripped = addopts.strip()
+    if not stripped:
+        return ""
+    try:
+        tokens = shlex.split(stripped)
+    except ValueError:
+        return addopts
+    out: list[str] = []
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok.startswith("--basetemp="):
+            i += 1
+            continue
+        if tok == "--basetemp":
+            i += 2 if i + 1 < len(tokens) else 1
+            continue
+        if tok.startswith(("-ocache_dir=", "-o=cache_dir=")):
+            i += 1
+            continue
+        if tok.startswith("--override-ini=cache_dir="):
+            i += 1
+            continue
+        if (
+            tok == "--override-ini"
+            and i + 1 < len(tokens)
+            and tokens[i + 1].startswith("cache_dir=")
+        ):
+            i += 2
+            continue
+        if tok == "-o" and i + 1 < len(tokens) and tokens[i + 1].startswith("cache_dir="):
+            i += 2
+            continue
+        out.append(tok)
+        i += 1
+    return shlex.join(out)
+
+
 @dataclass(frozen=True)
 class ReducedSuiteSegment:
     """One pytest invocation in a reduced suite lane (Story 71.9)."""
@@ -418,6 +458,12 @@ def collect_pytest_node_ids(repo_root: Path, shell_cmd: str, *, env: dict[str, s
     ids: set[str] = set()
     segments = [part.strip() for part in shell_cmd.split("&&")]
     run_env = {**os.environ, **(env or {})}
+    if "PYTEST_ADDOPTS" in run_env:
+        cleaned = strip_inherited_pytest_basetemp_and_cache(run_env["PYTEST_ADDOPTS"])
+        if cleaned:
+            run_env["PYTEST_ADDOPTS"] = cleaned
+        else:
+            del run_env["PYTEST_ADDOPTS"]
     for segment in segments:
         if not segment:
             continue
