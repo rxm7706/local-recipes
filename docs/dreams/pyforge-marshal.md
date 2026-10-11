@@ -1337,6 +1337,20 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   gate's rule and its callers do not change, and git's order stays the authority (operator ruling 2026-10-11: "Mint fix
   story (Recommended)", queued after Story 93.1). Owner `spec-pyforge-marshal`. → Epic 94 / Story 94.1, specced
   2026-10-11.
+- **2026-10-11 (a held PR is never marked ready)** — **Found: a landing held for review is never released, so a passed
+  review cannot land.** Story 83.18 holds a send-back's landing at a draft PR until the operator marks the PR ready or
+  the spec reads `landing_review: passed`. Only the first route works. Marshal marks a PR a draft in two places and
+  never marks one ready: the forge adapter's ready call (`gh pr ready`) has no caller. With `landing_review: passed`,
+  the land-only re-dispatch decides not to hold and goes straight to the merge, and GitHub will not merge a draft.
+  Steward 87.5's re-dispatch refused that way (`MRS-DISP-020` on PR #2111), and the PR was marked ready by hand. Story
+  83.18's test of the passed route opens a fresh PR that was never a draft, so it never saw the gap. **What it looks
+  like when fixed:** when the spec reads `landing_review: passed` and the PR is a draft, the landing marks it ready,
+  records that, and merges. A ready call that fails refuses the landing and merges nothing (AD-8). A held story still
+  opens or keeps a draft, and marshal never marks ready a draft whose review has not passed. **Constraints:** a fix
+  story under CAP-169 (the land-only path, which Story 83.18 extended with the hold), no CAP, no flag; the hold rule
+  and its predicates do not change (operator ruling 2026-10-11: "Fold into 94.1 (Recommended)"; Story 94.1 had
+  already been dispatched, so the fold is a second story in the same epic). Owner `spec-pyforge-marshal`. → Epic 94 /
+  Story 94.2, specced 2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
