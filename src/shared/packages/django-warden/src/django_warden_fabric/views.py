@@ -33,7 +33,6 @@ from .fleet import FLEET_FIX_PROPOSALS_FLAG
 from .fleet import FLEET_INVENTORY_FLAG
 from .fleet_inventory import FleetInventoryError
 from .fleet_inventory import load_organisation_from_config
-from .tasks import run_fleet_inventory
 from .mcp_asgi import RUN_AUDIT_TOOL
 from .mcp_asgi import WARDEN_STATION
 from .models import ComplianceJob
@@ -44,6 +43,7 @@ from .proposals import approve_proposal
 from .proposals import dismiss_proposal
 from .tasks import SUPPORTED_SUFFIXES
 from .tasks import run_compliance_job
+from .tasks import run_fleet_inventory
 
 _WELL_KNOWN_MANIFEST_NAMES = frozenset(
     {

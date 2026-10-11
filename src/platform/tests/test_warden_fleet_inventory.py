@@ -43,7 +43,6 @@ _EXAMPLE_ORG = "example-org"
 _FIXTURE_REPO_COUNT = 3
 _PAGINATED_REPO_COUNT = 2
 _EXIT_REFUSED = 2
-_FIXTURE_API_TOKEN = "fixture-token"
 _SENTINEL = "sentinel-token-must-not-leak-16-1"
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
@@ -168,7 +167,7 @@ def test_pagination_reads_link_next() -> None:
             "archived": False,
         },
     ]
-    client = GitHubRestOrgReposClient(token=_FIXTURE_API_TOKEN)
+    client = GitHubRestOrgReposClient(token="fixture-token")  # noqa: S106
     link = '<https://api.github.com/orgs/example-org/repos?page=2>; rel="next"'
     with patch.object(
         client,
@@ -183,7 +182,7 @@ def test_pagination_reads_link_next() -> None:
 
 
 def test_http_client_refuses_non_get() -> None:
-    client = GitHubRestOrgReposClient(token=_FIXTURE_API_TOKEN)
+    client = GitHubRestOrgReposClient(token="fixture-token")  # noqa: S106
     for method in ("POST", "PUT", "PATCH", "DELETE"):
         with pytest.raises(HttpMethodRefusedError):
             client.request(method, "https://api.github.com/orgs/example-org/repos")
@@ -215,9 +214,11 @@ def test_missing_gh_binary(inventory_paths: tuple[Path, Path]) -> None:
 def test_missing_gh_login(inventory_paths: tuple[Path, Path]) -> None:
     gh_path = "/usr/bin/gh"
     failed = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="")
+    which_patch = "django_warden_fabric.fleet_inventory.shutil.which"
+    run_patch = "django_warden_fabric.fleet_inventory.subprocess.run"
     with (
-        patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=gh_path),
-        patch("django_warden_fabric.fleet_inventory.subprocess.run", return_value=failed),
+        patch(which_patch, return_value=gh_path),
+        patch(run_patch, return_value=failed),
         pytest.raises(GhLoginMissingError),
     ):
         GhAuthTokenProvider().token()
@@ -234,7 +235,7 @@ def test_missing_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
 def test_gitignore_pins_warden_paths() -> None:
     for path in (".warden/fleet-target.toml", ".warden/fleet-inventory.json"):
         result = subprocess.run(  # noqa: S603
-            ["git", "check-ignore", "-q", path],
+            ["git", "check-ignore", "-q", path],  # noqa: S607
             cwd=_REPO_ROOT,
             check=False,
         )
@@ -267,7 +268,7 @@ def test_leak_guard_no_operator_terms_in_tracked_tree() -> None:
                 else path
             )
             tracked = subprocess.run(  # noqa: S603
-                ["git", "ls-files", "--error-unmatch", str(rel)],
+                ["git", "ls-files", "--error-unmatch", str(rel)],  # noqa: S607
                 cwd=_REPO_ROOT,
                 check=False,
                 capture_output=True,
@@ -329,14 +330,16 @@ def test_sentinel_token_never_persisted_on_failure(
             msg = "GitHub API HTTP 503"
             raise FleetInventoryError(msg)
 
-    with patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider):
-        with patch(
+    with (
+        patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider),
+        patch(
             "django_warden_fabric.tasks.GitHubRestOrgReposClient",
             lambda token: _FailClient(),
-        ):
-            with override_settings(CELERY_TASK_ALWAYS_EAGER=True):
-                with pytest.raises(FleetInventoryError):
-                    run_fleet_inventory("run-id", _EXAMPLE_ORG)
+        ),
+        override_settings(CELERY_TASK_ALWAYS_EAGER=True),
+        pytest.raises(FleetInventoryError),
+    ):
+        run_fleet_inventory("run-id", _EXAMPLE_ORG)
     assert not export.exists()
     assert _SENTINEL not in caplog.text
 
