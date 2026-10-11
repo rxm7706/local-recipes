@@ -2,7 +2,7 @@
 title: '19.2: One real ship records itself against a persistent store'
 type: 'feature'
 created: '2026-09-18'
-status: 'in-review'
+status: 'done'
 baseline_revision: '647abbc9b21d09c54e75cc59f1e93c1ea4331f4b'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -393,19 +393,51 @@ the ruling's pre-authorisation, the ledger key moved `blocked -> backlog` the sa
   - `[medium]` `[defer]` AC5 live-host proof file not produced in dispatch — operator run on primary checkout still required.
   - `[maybe-false]` `[reject]` environment.yaml unchanged after pixi.toml task add — export produced no diff.
 
+### 2026-10-11 — Review pass (follow-up)
+- verdicts: 24 findings — high 0, medium 0, low 0, false 12, maybe-false 2, defer 8, patch 3 (applied), reject 1
+- findings:
+  - `[false]` `[reject]` Story marked done while AC5 deferred — follow-up pass; AC5 remains operator-side by design (existing deferred row).
+  - `[defer]` `[defer]` AC10 ledger/epic sync not in branch — harness/operator writes Tier-3 feed, not dispatch code.
+  - `[patch]` `[patch]` automation-troubleshooting pointed at missing "troubleshooting section" — fixed anchor to DW-13-6-2 in how-to.
+  - `[defer]` `[defer]` Live restart smoke uses webhook_host not config.asgi — AC8 explicitly places restart on opt-in webhook_host daphne.
+  - `[patch]` `[patch]` Platform test lacked signed on-pr-close through config.asgi — added `test_host_dispatches_herald_webhook_signed_on_pr_close_returns_201`.
+  - `[false]` `[reject]` No worktree guard on --repo-root — how-to documents primary checkout; not an AC8 requirement.
+  - `[false]` `[reject]` Hardcoded _DEFAULT_REPO — matches estate landing grammar and herald-live-demo precedent.
+  - `[false]` `[reject]` Baseline stamp narrative vs marshal co-governor churn — prior landing reconcile; not introduced this pass.
+  - `[defer]` `[reject]` Incomplete spec-pyforge-core memlog — pre-existing; core co-governor unchanged this pass.
+  - `[defer]` `[defer]` How-to example daphne line vs rendered ExecStart — operator doc polish; AC1 proof is operator-run.
+  - `[false]` `[reject]` Git log line missing tab — git `%x09` format always emits tab.
+  - `[false]` `[reject]` socket.timeout uncaught — urlopen wraps timeout in URLError, caught.
+  - `[defer]` `[defer]` Partial delivery leaves progress without claim — exit 1 when either status != 201; acceptable.
+  - `[false]` `[reject]` 201 with empty JSON body — main checks HTTP status only per AC2 status bullets.
+  - `[false]` `[reject]` environment.yaml missing — task-only pixi add; export produces no diff (carried maybe-false from 2026-10-10).
+  - `[defer]` `[carried]` `[defer]` AC5 operator proof — unchanged; primary checkout still required.
+  - `[defer]` `[defer]` Platform CI path filter skips herald-only PRs — estate policy; herald changes touching platform tests run platform-ci.
+  - `[defer]` `[defer]` Opt-in restart not in default gate — AC8 design.
+  - `[patch]` `[patch]` deliver_landing URL paths not asserted — added on-ship/on-pr-close suffix checks in test_local_ship.
+  - `[defer]` `[defer]` Intent alignment Reading B (full AC1–6 before done) — dispatch delivers machinery; operator proof separate.
+  - `[false]` `[reject]` Blind hunter intent-alignment items duplicated above.
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Implemented `pyforge.herald.local_ship`, `herald-ship-local` pixi task, unit/platform/live-smoke tests, Diátaxis how-to, and doc cross-links for Story 19.2. Spec-surface reconciled on `spec-pyforge-herald`, `spec-pyforge-doctor`, and `spec-pyforge-unifying-strategy` memlogs (no `--write-baseline` in this session).
+Summary: Follow-up review on landed Story 19.2 implementation: patched platform signed `on-pr-close` host test, webhook URL assertions in `test_local_ship`, and automation-troubleshooting link to the how-to DW-13-6-2 section. Prior dispatch already shipped `local_ship`, `herald-ship-local`, how-to, and default-gate tests.
+
+Files changed (this pass):
+- `src/platform/tests/test_station_api_host_dispatch.py` — signed on-pr-close 201 + claim persistence
+- `src/shared/packages/pyforge-herald/tests/unit/test_local_ship.py` — assert both webhook URL paths
+- `src/shared/packages/pyforge-herald/docs/automation-troubleshooting.md` — fix cross-link anchor
+- `spec-pyforge-herald/.memlog.md` and `spec-pyforge-unifying-strategy/.memlog.md` — surface reconcile 2026-10-11
+
+Review: 3 patches applied; 8 deferred (AC5 operator proof, AC10 ledger, CI path filters, opt-in live smoke host split, doc polish); 12 false/rejected.
+
+Follow-up review recommended: false (follow-up pass; no high patches).
 
 Verification:
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — pass
-- `pixi run -e platform-ci-test pytest src/platform/tests/test_station_api_host_dispatch.py -q` — pass
-- `pixi run -e pyforge-guild lint-types` — pass
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — pass (1763 passed)
+- `pixi run -e platform-ci-test pytest src/platform/tests/test_station_api_host_dispatch.py -q` — pass (11 passed)
 - `pixi run -e pyforge-guild docs-map-hygiene-check` / `docs-currency-check` — pass
-- `python scripts/spec_surface_reconcile.py` — pass after memlog entries
+- `python scripts/spec_surface_reconcile.py` — pass after memlog entries (no `--write-baseline`)
 
-Follow-up review recommended: true — AC5 operator proof on primary checkout before ledger/epic close.
-
-Residual risks: Operator must complete AC1–AC6 and add `live-host-proof-<date>.md` before treating Epic 19 as fully closed.
+Residual risks: Operator must still run AC1–AC6 on the primary checkout and add `spec-pyforge-herald/live-host-proof-<date>.md` before treating Epic 19 closure evidence complete.
