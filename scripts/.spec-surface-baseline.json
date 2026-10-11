@@ -2866,11 +2866,8 @@
   "memlog": "62cecff1296147371c0dae1f19959b4f90f8846e"
  },
  "pyforge-marshal/spec-marshal-recall-in-the-loop": {
-  "files": {
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py": "91e9cbe0ae164d0d1fd9c347167f26860af01566",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py": "ca8a30a1d4c392c73fe260bfad0b4880626554c4"
-  },
-  "memlog": "70ba35b5de45014ec794503782c1349f6142d934"
+  "files": {},
+  "memlog": "eca5031412211591d400ce7b3b0c092f806cf121"
  },
  "pyforge-marshal/spec-marshal-run-watch": {
   "files": {},
@@ -3819,7 +3816,7 @@
    "docs/dashboard/kedro-viz/telemetry.html": "997e24cc0e47583aba6e7591f5b34b1cabdcc081",
    "docs/dreams/bmad-loop-baseline-drift.md": "15a1e7e4f9d97e3d8acc856de8490bcf36bcc914",
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
-   "docs/reference/library-llms-full.md": "e6f2f6dc3f67b24240b7c626e1b3cfbbb3cb342c",
+   "docs/reference/library-llms-full.md": "c0d57bb761ead038a292bc0dcf56be36dee1e58f",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
    "pixi.toml": "4ea0cd290744c9cf7d493ffeeb86b6e0e99b7b69",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
@@ -4345,7 +4342,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "dcf4174e6cd963ca47a63c38aeb49a4e3cdfcf48"
+  "memlog": "827e70a33e927c01a577bf2cb8dfb474dc9491bb"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 624
+# stories: 627
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -458,6 +458,7 @@ development_status:
   90-1-the-dispatch-supervisor-records-completion-only-after-the-harness-session-has-really-exited: done
   91-1-a-corrupt-environment-yaml-never-lands: backlog
   92-1-the-dispatch-supervisor-reads-session-liveness-correctly-and-never-treats-a-vanished-worktree-as-live: backlog
+  93-1-every-live-session-gets-the-recall-its-layer-promises-and-the-run-records-the-outcome: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -638,3 +639,5 @@ development_status:
   epic-91-retrospective: optional
   epic-92: backlog
   epic-92-retrospective: optional
+  epic-93: backlog
+  epic-93-retrospective: optional
