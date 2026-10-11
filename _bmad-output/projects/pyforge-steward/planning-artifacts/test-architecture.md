@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 6da3af4cd13a57f2
-story_count: 348
+source_fingerprint: 384e59c09bcdb50a
+story_count: 349
 test_file_count: 112
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 348
-- **Epics parsed:** 91
+- **Stories parsed:** 349
+- **Epics parsed:** 92
 - **Test files inventoried:** 112 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `6da3af4cd13a57f2`
+- **Source fingerprint:** `384e59c09bcdb50a`
 
 ## Risk Assessment
 
@@ -119,6 +119,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 89: A killed `platform-ci-local` run never blocks the next one (fix under CAP-152)
 - Epic 90: A pytest the preflight starts never inherits another run's basetemp (fix under CAP-159)
 - Epic 91: The host lists its station portals at `/stations/` (feature under unifying CAP-3)
+- Epic 92: The unsplit-Redis eviction guard proves broker loss on every run (fix under unifying CAP-11)
 
 ### Low-risk epics
 
@@ -597,6 +598,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 89.1 | A killed `platform-ci-local` run never blocks the next one | none observed |
 | 90.1 | A pytest the preflight starts never inherits another run's basetemp | none observed |
 | 91.1 | The stations index lists each station portal as mounted or absent, and why | none observed |
+| 92.1 | The unsplit-Redis eviction guard proves broker loss on every run | none observed |
 
 ## Quality Gates
 
