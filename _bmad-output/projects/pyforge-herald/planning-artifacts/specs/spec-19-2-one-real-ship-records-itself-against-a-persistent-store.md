@@ -2,7 +2,7 @@
 title: '19.2: One real ship records itself against a persistent store'
 type: 'feature'
 created: '2026-09-18'
-status: 'blocked'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -80,6 +80,19 @@ the mcp-host sidecar from the `mcp-host` env, both on loopback. The host forward
 to the sidecar. That forward is steward Story 87.3 (`87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar`),
 and this story waits on it: the ledger key moved `backlog -> blocked` and this spec `ready-for-dev -> blocked`. The
 webhook handlers, the HMAC check and the store are unchanged, and herald's code still changes only by the local caller.
+
+**Gate cleared 2026-10-11.** Steward Story 87.3 is `done` on main, by both tests the Never list below names:
+- its landing (merge `85e70dedf5`, "Merge pyforge-steward/87-3 into main") is an ancestor of `origin/main`
+  (`git merge-base --is-ancestor 85e70dedf5 origin/main` exits 0 at `378cfdf3f0`);
+- steward's ledger row `87-3-the-host-forwards-herald-s-webhooks-to-the-mcp-host-sidecar` reads `done`.
+
+The forward's review findings closed with it: Story 87.4 (dark again after a post-landing review), then Story 87.5
+(the forward survives a client disconnect and proves AC 6 in any order; independent review iteration 2 passed;
+landed as PR #2111), which turned `pyforge.steward.herald_webhook_sidecar` ON in dev. Under the operator's
+standing pre-authorisation for this flip (flip 19.2 `blocked -> backlog` once the steward sidecar fix lands, then
+dispatch 19.2, then 36.1), the one flip ran: the ledger key moved `blocked -> backlog` through a worktree-local Tier-3
+feed and `sprint-ledger-sync --project herald --allow-regression`, which named that one key and no other. This spec is
+`ready-for-dev`.
 
 ### What the ruling means here (decided 2026-10-10)
 
@@ -408,6 +421,7 @@ webhook handlers, the HMAC check and the store are unchanged, and herald's code 
 
 ## Spec Change Log
 
+- **2026-10-11 — unblocked.** Steward Story 87.3 is done on main (merge `85e70dedf5`, ancestor of `origin/main`; ledger `done`), and Story 87.5 closed the forward's review findings (PR #2111). One flip under the operator's pre-authorisation: ledger `blocked -> backlog`, spec `blocked -> ready-for-dev`. No AC, boundary or verification changed.
 - **2026-10-10 — re-scoped to the local host (operator ruling, option 1).**
   - **Before:** "name the host used, or stay explicitly `foundry-side` and blocked on the cutover giving Herald a
     perimeter". The store was "a persistent path or a provisioned DB", and the only AC was "the progress record exists
