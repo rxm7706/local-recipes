@@ -464,6 +464,13 @@ _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 #: still can.
 _SURFACE_RECONCILE_COMMAND = "python scripts/spec_surface_reconcile.py"
 
+# Story 93.1: bmad-loop ``pre_session`` recall wiring ships as a project-local
+# plugin copied into each loop home when ``[context.recall]`` is enabled.
+MARSHAL_RECALL_PLUGIN_NAME = "marshal-recall"
+_MARSHAL_RECALL_PLUGIN_SRC = (
+    Path(__file__).resolve().parent.parent / "data" / "bmad_loop_plugins" / MARSHAL_RECALL_PLUGIN_NAME
+)
+
 
 def render_policy_toml(
     effective: policy.EffectivePolicy,
@@ -669,6 +676,12 @@ def render_policy_toml(
             layer_table["aggressiveness"] = resolved_layers[layer_name]["aggressiveness"]
             context_table[layer_name] = layer_table
         doc["context"] = context_table
+        if recall_feedback.layer_enabled(resolved_layers.get(recall_feedback.RECALL_LAYER)):
+            plugins_table = doc["plugins"]
+            enabled = list(plugins_table.get("enabled", []))
+            if MARSHAL_RECALL_PLUGIN_NAME not in enabled:
+                enabled.append(MARSHAL_RECALL_PLUGIN_NAME)
+            plugins_table["enabled"] = enabled
 
     # Story 28.10 (CAP-11): derive cache-read weight from declared catalog.
     catalog = effective.model_cost_catalog.value
@@ -849,6 +862,10 @@ def write_policy_toml(
     )
     path = _atomic_write_policy_text(text, loop_home)
     _write_model_cost_catalog_sidecar(effective, loop_home)
+    if effective.context.value:
+        resolved_layers = policy.resolve_context_layers(effective)
+        if recall_feedback.layer_enabled(resolved_layers.get(recall_feedback.RECALL_LAYER)):
+            materialize_marshal_recall_plugin(loop_home)
     return path
 
 
@@ -1351,8 +1368,34 @@ class RecallInjectionResult:
     target: Path | None = None
 
 
-def _recall_feedback_target(loop_home: Path, station_slug: str) -> Path:
-    return loop_home / recall_feedback.recall_feedback_output_relpath(station_slug)
+def materialize_marshal_recall_plugin(loop_home: Path) -> Path:
+    """Copy the packaged marshal-recall plugin into ``<loop_home>/.bmad-loop/plugins/``."""
+    dest = Path(loop_home) / ".bmad-loop" / "plugins" / MARSHAL_RECALL_PLUGIN_NAME
+    if not _MARSHAL_RECALL_PLUGIN_SRC.is_dir():
+        raise HarnessPolicyWriteError(
+            f"marshal-recall plugin sources missing at {_MARSHAL_RECALL_PLUGIN_SRC!s}"
+        )
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists():
+        shutil.rmtree(dest)
+    shutil.copytree(_MARSHAL_RECALL_PLUGIN_SRC, dest)
+    return dest
+
+
+def resolve_loop_home_station_slug(loop_home: Path) -> str | None:
+    """Best-effort station slug for a marshal loop home (Story 93.1 plugin)."""
+    marker = loop_home / "_bmad" / "custom" / ".active-project"
+    try:
+        slug = marker.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return slug if policy._is_valid_project_slug(slug) else None
+
+
+def _recall_feedback_target(loop_home: Path, station_slug: str, *, story_key: str, run_id: str) -> Path:
+    return loop_home / recall_feedback.recall_feedback_output_relpath(
+        station_slug, story_key=story_key, run_id=run_id
+    )
 
 
 def _recall_query_marker_path(feedback_target: Path) -> Path:
@@ -1368,6 +1411,8 @@ def inject_recall_feedback(
     loop_home: Path,
     repo_root: Path,
     station_slug: str | None,
+    story_key: str,
+    run_id: str,
     scribe: ScribeCli | None = None,
 ) -> RecallInjectionResult:
     """Before a ``bmad-loop`` dev pass launches: shell ``scribe recall
@@ -1378,7 +1423,7 @@ def inject_recall_feedback(
     scribe's own capture store; never raises."""
     if not station_slug:
         return RecallInjectionResult(attempted=False)
-    target = _recall_feedback_target(loop_home, station_slug)
+    target = _recall_feedback_target(loop_home, station_slug, story_key=story_key, run_id=run_id)
     client = scribe if scribe is not None else ScribeCli()
     outcome = client.recall(
         repo_root=repo_root,
@@ -1396,7 +1441,8 @@ def inject_recall_feedback(
     try:
         fs.ensure_dir(target.parent)
         fs.write_text_atomic(target, content)
-        fs.write_text_atomic(marker, "")
+        if outcome.ok:
+            fs.write_text_atomic(marker, "")
     except (OSError, PyforgeError) as exc:
         write_reason = f"could not write {target} ({exc})"
         if not outcome.ok and outcome.reason:
@@ -1417,9 +1463,16 @@ def inject_recall_feedback(
     return RecallInjectionResult(attempted=True, ok=True, injected=injected, target=target)
 
 
-def read_cached_recall_feedback_block(*, fs: FsPort, loop_home: Path, station_slug: str) -> str | None:
+def read_cached_recall_feedback_block(
+    *,
+    fs: FsPort,
+    loop_home: Path,
+    station_slug: str,
+    story_key: str,
+    run_id: str,
+) -> str | None:
     """Load the formatted block Story 47.1 wrote for this dispatch, if any."""
-    target = _recall_feedback_target(loop_home, station_slug)
+    target = _recall_feedback_target(loop_home, station_slug, story_key=story_key, run_id=run_id)
     text = fs.read_text(target)
     if text is None or not text.strip():
         return None
@@ -1434,6 +1487,8 @@ def augment_bmad_loop_session_prompt_with_recall(
     loop_home: Path,
     repo_root: Path,
     station_slug: str | None,
+    story_key: str,
+    run_id: str,
     scribe: ScribeCli | None = None,
     context_layers: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[str, RecallInjectionResult | None]:
@@ -1457,7 +1512,7 @@ def augment_bmad_loop_session_prompt_with_recall(
         recall_layer = context_layers.get(recall_feedback.RECALL_LAYER)
         if not recall_feedback.layer_enabled(recall_layer):
             return prompt, None
-    target = _recall_feedback_target(loop_home, station_slug)
+    target = _recall_feedback_target(loop_home, station_slug, story_key=story_key, run_id=run_id)
     marker = _recall_query_marker_path(target)
     injection: RecallInjectionResult | None = None
     if role == "dev" and fs.read_text(marker) is None:
@@ -1466,9 +1521,17 @@ def augment_bmad_loop_session_prompt_with_recall(
             loop_home=loop_home,
             repo_root=repo_root,
             station_slug=station_slug,
+            story_key=story_key,
+            run_id=run_id,
             scribe=scribe,
         )
-    block = read_cached_recall_feedback_block(fs=fs, loop_home=loop_home, station_slug=station_slug)
+    block = read_cached_recall_feedback_block(
+        fs=fs,
+        loop_home=loop_home,
+        station_slug=station_slug,
+        story_key=story_key,
+        run_id=run_id,
+    )
     if block is None:
         return prompt, injection
     separator = "\n\n" if prompt and not prompt.endswith("\n\n") else ""
