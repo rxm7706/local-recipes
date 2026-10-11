@@ -2,7 +2,7 @@
 title: "90.1: The dispatch supervisor records completion only after the harness session has really exited"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2578d8a3683dbab9414f221a662ab57f2f2e682a'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -270,3 +270,35 @@ journal in the run-dir shape the supervisor reads. The process-group read is a f
   (`dispatch_supervisor/__main__.py:3064`-`:3070`).
 - **The verify-fix turn's liveness stays leader-only** (`fix_session_alive`, `wait_for_process`). The fix turn is
   bounded by its budget and stopped with `terminate_process_group`, which already signals the whole group.
+
+## Review Triage Log
+
+### 2026-10-10 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches AC1–AC7; verification green)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Dispatch completion now treats a live session (leader or process group) as non-terminal, applies the Story 22.10 baseline divergence rule to `story_merged_on_main`, and observes session process groups through an injectable `SessionGroupPort` with a psutil adapter.
+
+**Files changed:**
+- `core/dispatch_completion.py` — judge `LIVE` while `session_alive`
+- `dispatch_supervisor/__main__.py` — baseline gate on `story_merged_on_main`
+- `dispatch_verify.py` — group-aware `dispatch_session_alive`
+- `ports/session_group.py`, `adapters/session_group_psutil.py` — injectable group read
+- `core/egress.py` — register `SessionGroupPort`
+- Unit tests and hermetic `conftest` default for session group
+
+**Review:** No patch/defer items.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (12241 passed)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass
+- `pixi run --frozen -e pyforge-guild lint-types` — pass
+- `python scripts/spec_surface_reconcile.py` — pass (after memlog reconcile on `spec-pyforge-marshal`)
+
+**Residual risk:** Processes that leave the session group remain invisible; unreadable group scans keep the run live (AD-8).
