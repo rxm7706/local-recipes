@@ -1229,6 +1229,26 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   (Story 29.2's land-only path, extended by 83.7, 83.10 and 83.18) and CAP-229 (Story 79.1's promotion), no CAP, no
   flag; marshal never edits the spec, the log or the ledger to get past its own gate (operator ruling 2026-10-10:
   "Yes, mint it (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 89 / Story 89.1, specced 2026-10-10.
+- **2026-10-10 (completed while the session ran)** — **Found: the supervisor recorded a dispatch `completed` 1.3
+  seconds after launch, while the session went on working for six more minutes.** Atlas Story 25.1's run
+  (`pyforge-atlas-20261010T232600552Z-1b28d6db`, cursor, `composer-2.5-fast`) launched at 23:26:00Z. On its first
+  tick the supervisor journaled `dispatch-completion` `completed` with `session_alive: true`, `changed_paths: []`,
+  `story_merged_on_main: true` and a final revision equal to its baseline, then exited. The merge it saw was not this
+  run's: `origin/main` holds the 2026-09-10 landing of atlas's earlier Story 25.1 (PR #1114, from
+  `dispatch/pyforge-atlas/25.1`), a key the station's 2026-09-17 rekey later gave to today's story. The check that the
+  run's head is on `main` (Story 83.14) proved nothing, because the run had not committed yet and its head was
+  `main`'s own tip. And the completion judge reads a merge before it reads whether the session is alive. The cursor
+  session kept writing until about 23:32Z: 19 files, 869 lines, and a closing note that it had not run its review
+  loop or committed. Nothing committed, verified, reviewed or landed that work; the operator committed it by hand.
+  **What it looks like when fixed:** a run is complete only after every process of its session has exited, not just
+  the one marshal launched. A merge counts only when the run itself has moved its head, the rule `branch_merged`
+  already follows (Story 22.10). While the session lives the supervisor keeps polling, whatever `main` says. When the
+  session exits with work left in the worktree, the supervisor commits, verifies and lands it as it does for any
+  finished session. Tests reproduce a session whose launched process exits early while a child keeps writing.
+  **Constraints:** a fix story under CAP-160 (Story 22.2's completion judgment), no CAP, no flag; completion stays
+  judged from git and process facts, never the session's word (AD-75, AD-9); a fact the supervisor cannot settle never
+  reads as done (AD-8) (operator ruling 2026-10-10: "Yes, mint it (Recommended)"). Owner `spec-pyforge-marshal`. →
+  Epic 90 / Story 90.1, specced 2026-10-10.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

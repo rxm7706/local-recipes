@@ -6355,10 +6355,13 @@ tests.
 **Given** a story about to dispatch names a station and a set of touched-surface globs (from its
 own Spec's `surface:` frontmatter, the same source `spec-surface-check` already reads)
 **When** the dev pass launches
-**Then** it first runs `scribe recall --scope <station-slug>` (this story resolves Open Question 1
-by reusing the `--scope <slug>` mechanism `scribe-marshal-fact-visibility` CAP-1 already proves,
-rather than a narrower per-file-glob scope) and, if the answer is grounded (non-empty), folds it
-into the session's starting context as a clearly-labeled block
+**Then** it first runs `scribe recall <query> --mode memory` with no `--scope` and, if the answer
+is grounded (non-empty), folds it into the session's starting context as a clearly-labeled block.
+The operator ruled this on 2026-10-10 ("Marshal --mode memory (Recommended)"; team memory is
+repo-wide). It replaces this story's 2026-09-18 resolution of Open Question 1, which reused
+`--scope <station-slug>`: that query could never ground a `.claude/memory/**` capture, the
+2026-09-20 intent gap. `ScribeCli.recall` gains a mode, every other caller keeps `--mode planning`,
+and scribe is untouched
 **And** this story resolves Open Question 2 by scoping v1 to `bmad-loop` dev passes only, matching
 the source Dream's own literal text — a `bmad-build-auto` extension is out of scope here, a
 separate future story if pursued
@@ -6383,7 +6386,7 @@ same scope, no re-query
 **And** a review verdict that contradicts a known, injected correction is a visible discrepancy in
 the review's own output, not a silent miss (the review pass's existing findings-report shape
 carries it as a named entry, no new reporting mechanism)
-**Status:** backlog
+**Status:** done
 
 ### Story 47.3: The recall-injection layer composes with the existing [context] pipeline
 
@@ -6407,7 +6410,7 @@ effect on the other five layers' own behavior
 context-injection concern)
 **And** the query and injected-block size are counted toward the story's existing weighted-token
 accounting the same way every other layer's output already is — no separate, uncounted budget
-**Status:** backlog
+**Status:** done
 
 ### Story 47.4: A genuine recall miss injects nothing, never a fabricated confidence claim
 
@@ -6425,7 +6428,7 @@ citable hit — scribe's own "never invents an uncited answer" behavior, unchang
 no synthesized "nothing found" confidence claim
 **And** a fixture test asserts the empty-hit case produces zero injected text, distinguishing it
 from a non-empty hit's formatted block
-**Status:** backlog
+**Status:** done
 
 ## Epic 50: The landing self-drives — what the first autonomous drain still needed a human for (spec-pyforge-marshal CAP-244..248)
 
@@ -9243,9 +9246,9 @@ Minted 2026-10-03 from the operator's Phase 3 rulings on the deferral burn-down 
 
 ### Story 86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green
 
-**Type:** fix • **Effort:** S • **Deps:** S-70.1 • **Closes:** DW-FU-12-2 •
-**Surface:** src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py, the oracle test, a CI lane; AGENTS.md, CLAUDE.md, .gitignore, README.md, _bmad-output/PROJECTS.md, .marshal/seed-state.yml
-**Spec:** `planning-artifacts/specs/spec-86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green.md` (the operator's 2026-10-03 Phase 3 rulings; see its rows and acceptance criteria)
+**Type:** fix • **Effort:** M • **Deps:** S-70.1 • **Closes:** DW-FU-12-2 •
+**Surface:** src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/** (verbs/adopt.py, verbs/update.py, the seed write path), the oracle test, a CI lane (pixi.toml, environment.yaml, a workflow job); .gitignore, README.md, .marshal/seed-state.yml. AGENTS.md, CLAUDE.md and _bmad-output/PROJECTS.md are recorded seed skips and stay untouched (operator ruling 2026-10-10, explicit seed skips)
+**Spec:** `planning-artifacts/specs/spec-86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green.md` (the operator's 2026-10-03 Phase 3 rulings, re-scoped by the 2026-10-10 explicit-seed-skips ruling; see its rows and acceptance criteria)
 
 ### Story 86.3: Spin and the journal clean up a failed launch and record what they ran
 
@@ -9587,6 +9590,31 @@ So that sending a story back can never turn into landing it.
 **When** a single-story dispatch, or `marshal factory drain --plan`, would take the land-only path
 **Then** it refuses with `MRS-DISP-063` (ERROR, exit non-zero) unless the worktree's tracked spec reads `in-review` or `done` and the latest `## Review Triage Log` entry records no failed review (a heading with `FAIL` or `sent back`; latest by the order git added the headings, an uncommitted heading newest, a tie failed if any member is). The message names the status, the failed heading and both ways on: `ready-for-dev` to resume, `in-review` to land finished work. Nothing is verified, pushed, merged or finalized, no session launches, and the refusal is journaled in the latest run dir as a `dispatch-blocked` pair, never as `dispatch-land`
 **And** the landing finalize never promotes a tracked spec whose latest entry at `origin/main` records a failed review; it leaves the spec and its epics **Status:** line alone with an `MRS-DISP-047` WARN naming the heading, and the ledger promotion is unchanged. A send-back to `ready-for-dev` or `draft` still launches a session, a later harness `Review pass` entry lets the story land as before, and a first run is unchanged. Only the two `in-progress` land-only tests of Stories 83.7 and 83.18 change expectation, with `in-review` twins added. Tests replay the 87.3 sequence with a fixture journal and a real git worktree. Dropping the status check, the review check, the git ordering, either caller or the finalize check fails a new test (mutation)
+
+## Epic 90: A dispatch run is complete only when its session has really ended
+
+Minted 2026-10-10 from the station Dream's entry of the same date (completed while the session ran), on the operator's
+ruling "Yes, mint it (Recommended)". Each story fixes one defect of shipped behaviour under the capability that shipped
+it, so no CAP is minted and no flag is added. It is a new epic because the behaviour it fixes spans Epics 22, 28 and
+83, which are all `done`. **HARD boundaries:** completion stays judged from git and process facts, never from the
+session's own report (AD-75, AD-9); a fact the supervisor cannot settle never reads as done (AD-8); the supervisor
+never signals or reads a process it cannot prove belongs to the run; landing, verification, the fix turn and Story
+83.18's hold do not change.
+
+### Story 90.1: The dispatch supervisor records completion only after the harness session has really exited
+
+As the operator whose atlas 25.1 dispatch was journaled `completed` 1.3 seconds after launch while its cursor session kept writing for six more minutes,
+I want the supervisor to record completion only after every process of the session has exited, and to count only a merge this run made,
+So that a session's work is always committed, verified and landed by marshal instead of stranded in its worktree.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-160 (← spec-marshal-single-story-dispatch CAP-2; Story 22.2's completion judgment), with CAP-167 (Story 22.10's divergence rule for `branch_merged`) and CAP-141 (Story 28.24's supervisor finalize); AD-6, AD-8, AD-9, AD-33, AD-75 • Dream 2026-10-10 (completed while the session ran) • operator ruling 2026-10-10 "Yes, mint it (Recommended)"
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` (`dispatch_session_alive` :1095-:1098, `fix_session_alive` :1101-:1110, `_session_group` :1152, `_group_has_members` :1180), `core/dispatch_completion.py` (`judge_dispatch_completion` :126-:132), `core/supervise.py` (`resolve_terminal_session_verdict` :916-:954), `dispatch_supervisor/__main__.py` (`gather_dispatch_git_facts` :465-:560, the tick loop :2617-:3070), a port and adapter for the session's process-group read (in marshal, or `pyforge.core.process`'s `ProcessPort`, co-governed by `spec-pyforge-core`); their unit tests
+**Spec:** `planning-artifacts/specs/spec-90-1-the-dispatch-supervisor-records-completion-only-after-the-harness-session-has-really-exited.md`
+**Given** `bab2162d73`, and atlas Story 25.1's run `pyforge-atlas-20261010T232600552Z-1b28d6db` (cursor, `composer-2.5-fast`, `session_pid` 3985988), whose supervisor journaled `dispatch-completion` `completed` at 23:26:01.828Z, 1.3 s after launch, with `session_alive: true`, `changed_paths: []`, `story_merged_on_main: true`, `stop_reason: null`, and a `dispatch-timing` whose `final_revision` equals its `baseline_revision` (`f9c6a87dbe`), then exited. `story_merged_on_main` was true because `origin/main` holds `56ee2dfbc8` "Merge pull request #1114 from rxm7706/dispatch/pyforge-atlas/25.1", the 2026-09-10 landing of the station's earlier Story 25.1, a dispatch-branch subject trusted without corroboration, and Story 83.14's head check passed only because the run's head was still `main`'s tip. `judge_dispatch_completion` reads the merge facts before `session_alive`. The session wrote 19 files until about 23:32Z, and no finalize, verification, push or landing was journaled
+**When** the supervisor ticks while any process of the session's process group is alive, or after the session exits with work left in the worktree
+**Then** no tick journals `dispatch-completion` while the launched pid or any member of its process group (started at or after the launch) is alive; it journals a heartbeat and polls again, whatever the merge facts read. `story_merged_on_main` counts only once the run's head has moved past its launch baseline, as `branch_merged` already does. After the group exits with a dirty worktree, the supervisor runs its normal finalize (commit on the dispatch branch, push, verify, then land under policy and holds) instead of recording `completed`
+**And** tests reproduce a session whose launched parent exits at once while a child in its process group keeps writing (a real process test and a supervisor-loop test with fakes), and replay the atlas 25.1 journal and git facts. A pid-reused group is not alive. A session that ends normally, Story 83.14's manual merge, Story 73.1's follow-up scoping and the fix turn behave as before; only the tests that assert `completed` for a live session or a merge at the unmoved baseline head change expectation, as the spec names. Restoring the merge-first order, dropping the group read or dropping the divergence rule fails a new test (mutation)
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
