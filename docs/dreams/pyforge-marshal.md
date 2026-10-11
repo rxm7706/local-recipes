@@ -1249,6 +1249,55 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   judged from git and process facts, never the session's word (AD-75, AD-9); a fact the supervisor cannot settle never
   reads as done (AD-8) (operator ruling 2026-10-10: "Yes, mint it (Recommended)"). Owner `spec-pyforge-marshal`. →
   Epic 90 / Story 90.1, specced 2026-10-10.
+- **2026-10-10 (a corrupt environment.yaml landed)** — **Found: dispatch landings carried a pixi warning inside
+  `environment.yaml` onto `main` six times in one week.** The file is derived: it must equal the stdout of `pixi project
+  export conda-environment -e build`. Inside a `pixi run` shell in a story worktree, pixi prints "WARN Using local
+  manifest <worktree>/pixi.toml rather than <primary>/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`" on
+  stderr. A session that regenerated the file with stderr captured put that coloured line first, and `yaml.safe_load`
+  refuses the result. Marshal's idle checkpoint committed it as `wip: <key> (auto-checkpoint)`, and nothing on the
+  dispatch path compares the file with the export. Verification runs the station's commands, `lint-types` and the
+  cross-surface checks, and none of them reads the file. The landing waits on every CI check (Story 80.1), but the
+  repo's only sync lint (`.github/workflows/scripts/linter.py`) runs in the `staged-recipes-linter` workflow, which
+  has been disabled since 2026-08-24. The pre-push preflight skips `dispatch/*` branches. So the file reached `main` with
+  the landings of marshal 86.6 (2026-10-04), herald 27.3 (2026-10-08), steward 71.5 and 71.7 (2026-10-08 and -09),
+  steward 87.3 and warden 15.1 (2026-10-10, PR #2099). Each time a later merge or a hand fix took it out, and `main`
+  has carried it again since warden 15.1's landing (`bab2162d73`). **What it looks like when fixed:** before dispatch
+  verifies a story whose diff touches `environment.yaml` or `pixi.toml`, marshal regenerates the file from the export's
+  stdout alone and commits it on the dispatch branch, journaled, the way it already applies `ruff format`. Verification
+  then runs one more cross-surface check for those two paths, steward's `provision --verify`, and a mismatch refuses the
+  landing under `MRS-GATE-015`, naming the file and the fix command `pixi project export conda-environment -e build
+  2>/dev/null > environment.yaml`. A repo-scope detector that catches the same file on a hand-landed branch is steward's,
+  recorded as a follow-up row. **Constraints:** a fix story under CAP-170 (Story 22.14's cross-surface rule table), no
+  CAP, no flag; marshal never hand-edits the file and regenerates it only from the exporter (operator ruling
+  2026-10-10: "yes mint both stories"). Owner `spec-pyforge-marshal`. → Epic 91 / Story 91.1, specced 2026-10-10.
+- **2026-10-10 (a dead run read as live)** — **Found: once Story 90.1 landed, every dispatch run whose session had
+  exited read as live, and one whose worktree was gone crashed the next launch.** Story 90.1 made session liveness read
+  the session's process group through a psutil adapter. The adapter asked `psutil.process_iter` for a `pgid` attribute
+  that psutil does not have, so on psutil 7.2.2 every call raised "invalid attr name 'pgid'". Story 90.1 counted a group
+  read that cannot answer as alive (AD-8), and its real-process test checked only the live half. So a run with no
+  `dispatch-completion` outcome read as live for good. On the host at `909a725e16`, `dispatch_session_alive` was true
+  for marshal 86.6's run of 2026-10-04, whose pid 63830 has not existed since the host booted on 2026-10-06, and for a
+  pid that never existed. The primary checkout fast-forwarded to 90.1 at 03:02Z (UTC), and by 03:07Z marshal 47.1's
+  launch had crashed: `station_in_flight_conflict` read the stale 86.6 run as live and gathered its git facts for the
+  refusal text, and `git rev-parse HEAD` failed in `.worktrees/dispatch-pyforge-marshal-86.6`, which an operator
+  worktree sweep had removed. No caller caught that `VcsCommandError`. The operator moved 51 such runs on seven stations
+  into `dispatch-runs-quarantine/` and launched 47.1 again at 03:07Z. That run's session finished at 03:11Z with its
+  work committed, yet its supervisor kept journaling `session_alive: true` every minute afterwards, so 47.1 was neither
+  verified nor landed. On 2026-10-11 the operator ruled "Revert 90.1 now (Recommended)": a hotfix (PR #2106,
+  `a085cd0344`) reverted 90.1's code and tests (merge `d013fdb9fe`), and its spec, memlog and `done` key stay. That brings back the defect 90.1 fixed,
+  atlas 25.1's run read `completed` while its session still wrote. **What it looks like when fixed:** 90.1's
+  behaviour lands again, in a form that works. Completion is recorded only after the session's whole process group has
+  exited, and a merge counts only once the run has moved its head. The group is read with calls that exist
+  (`os.getpgid`, or psutil APIs present in 7.2.2), and a member counts when it started at or after the launch. A read
+  error is never "alive": that tick falls back to the launched pid with its identity checked, so a reused pid is not
+  the session, and the heartbeat names the error. A run whose recorded worktree no longer exists is never live and never
+  crashes a launch or a status read. It is reported as stale, with the quarantine directory as the remedy, and dispatch
+  goes on. The story lands only after an independent review. **Constraints:** a fix story under CAP-160 (Story 22.2's
+  completion judgment, extended by Stories 83.1 and 90.1), with CAP-167, CAP-141, CAP-163 (the one-in-flight guard)
+  and CAP-5 (fleet visibility), no CAP, no flag. Marshal reports a stale run and never moves or deletes one (operator
+  rulings: 2026-10-10 "yes mint both stories"; 2026-10-11 "Revert 90.1 now (Recommended)" and "Retitle
+  (Recommended)"). Owner `spec-pyforge-marshal`. → Epic 92 / Story 92.1 ("The dispatch supervisor reads session
+  liveness correctly and never treats a vanished worktree as live"), specced 2026-10-10, reshaped 2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
