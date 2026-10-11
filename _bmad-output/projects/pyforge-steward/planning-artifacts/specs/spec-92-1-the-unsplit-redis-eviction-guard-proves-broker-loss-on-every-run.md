@@ -2,7 +2,8 @@
 title: '92.1: The unsplit-Redis eviction guard proves broker loss on every run'
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'dfa541096bd38fd7d82cbc3a696cdbe0b795da40'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -193,4 +194,33 @@ Type / Effort / Deps: fix / S / none.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-11 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract; no review layer findings recorded)
+
+## Auto Run Result
+
+Status: done
+
+Summary: The unsplit-Redis guard (`test_unsplit_redis_loses_broker_state_under_cache_pressure`) now runs the Story 49.5 fill once, then up to `_BROKER_LOSS_MAX_ROUNDS` (20) full keyspace turnover rounds via `_broker_loss_rounds_until_eviction`, stopping at the first observed broker loss. Failure messages include turnover rounds run and `evicted_keys`. Split test and shared helpers are unchanged.
+
+Files changed:
+- `src/platform/tests/test_redis_cache_eviction_broker_survival.py` — bounded turnover helper and guard wiring
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` — surface reconcile (Story 92.1)
+- `scripts/.spec-surface-baseline.json` — scoped stamp for `pyforge-steward/spec-pyforge-unifying-strategy`
+
+Review: 0 patches, 0 deferred, 0 rejected.
+
+Follow-up review recommended: false
+
+Verification:
+- AC2 guard node id: 20/20 consecutive passes
+- AC2 full module: 20/20 consecutive passes (2 passed each)
+- AC3 mutation (fill + turnover removed): 5/5 AssertionError as expected, then reverted
+- `pixi run -e pyforge-guild platform-ci-local -- --test`: exit 0
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0 (2320 passed; first run hit lock timeout while platform-ci-local was still running; clean re-run green)
+- `python scripts/spec_surface_reconcile.py`: exit 0
+- `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0
+- `pixi run --frozen -e pyforge-guild detectors-ci`: exit 0
+
+Residual risk: bounded rounds make a false red vanishingly unlikely; spec documents worst-case local write volume if eviction never reaches broker keys.
