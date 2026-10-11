@@ -282,7 +282,7 @@
         "story": "16-1-warden-inventories-a-ghe-organisation-s-repos",
         "created": "2026-09-28",
         "on_everywhere": "",
-        "cleanup_by": "2026-12-31"
+        "cleanup_by": ""
       }
     },
     "pyforge.warden.fleet_fix_proposals": {

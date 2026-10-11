@@ -505,6 +505,7 @@ openfeature-sdk = ">=0.10.0"      # Standardizing Feature Flagging for Everyone
 openfeature-flagd-api = ">=1.0.0"  # OpenFeature flagd evaluator API definition
 openfeature-flagd-core = ">=1.0.0"  # OpenFeature flagd evaluator core implementation
 openfeature-provider-flagd = ">=0.5.2"  # OpenFeature provider for the flagd flag evaluation engine
+pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }  # Story 16.1 / CAP-4: platform flagged-story tests use flag_states + flagd_tree
 cachebox = ">=5.2.3,<6"           # The fastest caching Python library written in Rust
 channels = ">=4.3.2,<5.0"         # Story 48.6: `/ws/events/` auth/routing tests import pyforge.steward.dashboard
 daphne = ">=4.2.3,<5.0"           # Story 48.6: websocket ASGI termination (matches `[dashboard]` extra floor)

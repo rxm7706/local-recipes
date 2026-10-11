@@ -36,7 +36,9 @@ from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.tasks import run_fleet_inventory
 from pyforge.testing_kit.flags import flag_states
 from pyforge.testing_kit.flags import flagd_tree
-from pyforge.warden import fleet_inventory as fleet_inventory_key
+from pyforge.testing_kit.flags import make_flag_provider_fixture
+
+flag_provider = make_flag_provider_fixture()
 
 _EXAMPLE_ORG = "example-org"
 _EXIT_REFUSED = 2
@@ -219,18 +221,13 @@ def test_missing_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
 
 
 def test_gitignore_pins_warden_paths() -> None:
-    result = subprocess.run(  # noqa: S603
-        [
-            "git",
-            "check-ignore",
-            "-q",
-            ".warden/fleet-target.toml",
-            ".warden/fleet-inventory.json",
-        ],
-        cwd=_REPO_ROOT,
-        check=False,
-    )
-    assert result.returncode == 0
+    for path in (".warden/fleet-target.toml", ".warden/fleet-inventory.json"):
+        result = subprocess.run(  # noqa: S603
+            ["git", "check-ignore", "-q", path],
+            cwd=_REPO_ROOT,
+            check=False,
+        )
+        assert result.returncode == 0, path
 
 
 def test_leak_guard_skips_when_config_absent() -> None:
@@ -388,7 +385,7 @@ def test_flag_off_refuses_exit_2(inventory_flags_off: Path, inventory_paths: tup
     assert exc.value.code == _EXIT_REFUSED
 
 
-@flag_states(fleet_inventory_key)
+@flag_states(FLEET_INVENTORY_FLAG)
 @pytest.mark.django_db
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 def test_flag_gates_inventory_command(
@@ -403,7 +400,7 @@ def test_flag_gates_inventory_command(
     monkeypatch.setenv(ENV_FLEET_INVENTORY_PATH, str(export))
     tree_path = flagd_tree(
         tmp_path,
-        {fleet_inventory_key: "on" if flag_provider[fleet_inventory_key] else "off"},
+        {FLEET_INVENTORY_FLAG: "on" if flag_provider[FLEET_INVENTORY_FLAG] else "off"},
     )
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree_path))
     client = _recording_client()
@@ -415,7 +412,7 @@ def test_flag_gates_inventory_command(
             "django_warden_fabric.tasks.GitHubRestOrgReposClient",
             lambda token: client,
         ):
-            if flag_provider[fleet_inventory_key]:
+            if flag_provider[FLEET_INVENTORY_FLAG]:
                 call_command("warden_fleet_inventory")
                 assert export.exists()
             else:
