@@ -33,6 +33,7 @@ from django_warden_fabric.fleet_inventory import load_organisation_from_config
 from django_warden_fabric.fleet_inventory import run_fleet_inventory_sync
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.tasks import run_fleet_inventory
+
 _EXAMPLE_ORG = "example-org"
 _FIXTURE_REPO_COUNT = 3
 _PAGINATED_REPO_COUNT = 2
