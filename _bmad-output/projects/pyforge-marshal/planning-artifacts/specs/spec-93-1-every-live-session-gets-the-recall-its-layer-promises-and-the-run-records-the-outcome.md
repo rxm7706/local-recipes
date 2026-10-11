@@ -2,7 +2,7 @@
 title: "93.1: Every live session gets the recall its layer promises, and the run records the outcome"
 type: 'fix'
 created: '2026-10-11'
-status: 'done'
+status: 'in-review'
 baseline_revision: 'e981ff751c113c9b651548c58d5aee16ccb1d438'
 review_loop_iteration: 0
 followup_review_recommended: false
