@@ -2,7 +2,9 @@
 title: "86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: 47397de509c4b12b68309f77022ca915db29d5b5
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -88,6 +90,8 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Spec Change Log
 
+- 2026-10-11 (landing, second fix): the oracle test's `LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS` table gains `specs-dir-legacy` with its reason. CI caught it: a local empty `docs/specs/` directory (git tracks no empty directory) made the local run pass while CI saw the artifact absent and skipped.
+- 2026-10-11 (landing): `docs/specs/` (artifact `specs-dir-legacy`) joins the recorded seed skips in `.marshal/seed-state.yml`. Doctor Story 37.1 retired the legacy `docs/specs/` tier, so adopt planned to recreate it and PR #2110's `oracle` check (`marshal-local-recipes-seed-oracle`) failed with a one-action plan; with the skip the oracle passes. Same operator ruling ("Explicit seed skips (Recommended)").
 - 2026-10-10 — Operator ruling "Explicit seed skips (Recommended)". Changed: Intent, Acceptance Criteria (four became ten), Boundaries, Design Notes and Verification are re-derived. The 2026-10-03 AC that let the inserted AGENTS.md and CLAUDE.md regions stand is withdrawn: those files and PROJECTS.md are now recorded skips. Known-bad state avoided: the closed attempt's duplicated instruction text, lost execute bits, a tracked `.marshal/plan.json` and hand-edited first-claims. KEEP: K-02, the named CI lane, Story 70.1's renderer and the DW-FU-12-2 closure. `lint-types` moved from Commands to Manual checks; dispatch still runs it as a derived command. Status `ready-for-dev`; the ledger key is already `backlog`.
 
 ## Review Triage Log
@@ -117,3 +121,16 @@ Root cause: this repo's AGENTS.md, CLAUDE.md and PROJECTS.md already carry the c
 - LOW: `.gitignore` duplicates → AC 7; the line-1 `verified:` line → AC 10; the hardcoded `in_loop_home` → AC 8.
 - The first landing refusal's items (the oracle red in a fresh clone because of the per-checkout symlinks; per-tool files rewritten; `pixi.toml` without `environment.yaml`) → ACs 2, 3 and 9.
 - chain: the ruling is in the `spec-pyforge-marshal` memlog; `DW-FU-12-2` carries a `ruled:` line and stays open until this story lands. Status `ready-for-dev`. The ledger key already reads `backlog` on `main` (the 2026-10-05 hold was recorded on the branch only), so the sync moves nothing.
+
+### 2026-10-11 — Review pass (bmad-build-auto step-04)
+
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — adversarial read of diff since `47397de509` against all ten ACs; prior 2026-10-05 HIGH/MEDIUM items addressed by explicit skips, execute-bit preservation, AD-57 meta test, oracle constant, and CI lane)
+
+## Auto Run Result
+
+- **Summary:** Bootstrap genesis adopt on local-recipes with eight explicit `--skip` paths; seed adopt/update honour slug rendering and loop-home scope; SC-02 oracle and `marshal-local-recipes-seed-oracle` CI lane; DW-FU-12-2 closed.
+- **Governance:** `spec-pyforge-marshal` surface extended with `.marshal/seed-state.yml`; memlogs on `spec-pyforge-marshal` and `spec-pyforge-core`; `python scripts/spec_surface_reconcile.py` exit 0.
+- **Verification:** `pyforge-marshal-test` and `marshal-local-recipes-seed-oracle` green; manual diff on skipped instruction files empty; `scripts/bmad-switch` and `scripts/bmad-loop-worktree` remain `100755`; `.marshal/plan.json` untracked and gitignored.
+- **Review:** No patch/defer/intent_gap entries; `followup_review_recommended: false`.
+- **Residual:** Fresh-clone slow oracle and `marshal seed update` dry-run in a fresh clone remain operator manual checks per the spec Verification section (not run in this session).

@@ -1,0 +1,24 @@
+name: marshal-local-recipes-seed-oracle
+
+# Story 86.2 / NFR-M2: SC-02 empty-plan oracle against the control-plane repo.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  oracle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-marshal
+          cache: true
+          frozen: true
+      - name: local-recipes seed adopt empty-plan oracle
+        run: pixi run --frozen -e pyforge-marshal marshal-local-recipes-seed-oracle

@@ -285,6 +285,7 @@ from ..derive import projects_index as derive_projects_index
 from ..detect.findings import Finding
 from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
+    _WRITABLE_EXEMPTION_IDS,
     ArtifactState,
     Inventory,
     classify,
@@ -295,7 +296,14 @@ from ..detect.inventory import (
 from ..detect.optout import classify_regions, opt_outs_to_record, opted_out_regions
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
-from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
+from ..model.manifest import (
+    AppliesTo,
+    ArtifactClass,
+    Manifest,
+    ManifestEntry,
+    RequiredIn,
+    render_slug_paths,
+)
 from ..model.version import ModelVersion
 from ..plan.build import build_plan, default_plan_path, write_plan
 from ..plan.types import Action, Plan
@@ -475,13 +483,34 @@ def _unexpected_dirt_since_plan_write(repo_root: Path) -> None:
         )
 
 
-def _manifest_for_adopt(manifest: Manifest) -> Manifest:
+def _manifest_for_adopt(
+    manifest: Manifest,
+    slug: str | None = None,
+    *,
+    in_loop_home: bool | None = None,
+) -> Manifest:
     """``manifest``, scoped to the entries this verb ever touches: ``applies_
-    to in (ADOPT, BOTH)`` -- see the module docstring's own paragraph on
-    why an ``init``-only entry (a ``{{ slug }}``-templated path with no
-    ``--slug`` here) must never reach ``classify``/``build_plan`` at all."""
-    entries = tuple(entry for entry in manifest.entries if entry.applies_to in (AppliesTo.ADOPT, AppliesTo.BOTH))
-    return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
+    to in (ADOPT, BOTH)``, with Story 70.1's slug rendering and loop-home
+    scope (Story 86.2) applied before ``classify``/``build_plan`` see it."""
+    kept: list[ManifestEntry] = []
+    for entry in manifest.entries:
+        if entry.applies_to not in (AppliesTo.ADOPT, AppliesTo.BOTH):
+            continue
+        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED:
+            continue
+        if entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False:
+            continue
+        if slug is None and entry.is_slug_templated:
+            continue
+        kept.append(entry)
+    filtered = Manifest(
+        model_version=manifest.model_version,
+        never_write=manifest.never_write,
+        entries=tuple(kept),
+    )
+    if slug:
+        return render_slug_paths(filtered, slug)
+    return filtered
 
 
 def _read_text_or_blank(target: Path) -> str:
@@ -598,6 +627,10 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
             # belongs to the entries beneath it, each with its own record
             # (Story 86.1, DW-FU-7-5-2). Handed to rung 6 it read as an
             # unreadable file and refused the run.
+            continue
+        if artifact.id in _WRITABLE_EXEMPTION_IDS:
+            # BMAD artifact symlinks are attested by ``ensure_symlinks`` /
+            # ``detect_symlink_desync``, not rung 6 file-body hash (Story 86.2).
             continue
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
@@ -844,6 +877,26 @@ def _default_commit(
         if entry.is_directory:
             fs.ensure_directory(target, repo_root=repo_root, never_write=never_write)
             return
+        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED:
+            return
+        if (
+            FIRST_CLAIM_MARKER in action.rationale
+            and entry.artifact_class is ArtifactClass.COPIED_MANAGED
+            and target.is_file()
+        ):
+            # Brownfield bootstrap (Story 86.2): claim an existing repo file in
+            # state without overwriting -- the packaged template tree carries no
+            # whole-file payload for these script paths.
+            return
+        if entry.id in _WRITABLE_EXEMPTION_IDS:
+            active_slug = str(answers.get("slug") or "").strip()
+            if not active_slug:
+                raise InternalError(
+                    f"cannot materialize {entry.id!r} without a resolved project slug",
+                    remedy="pass --project or set BMAD_ACTIVE_PROJECT / the active-project marker",
+                )
+            derive_projects_index.ensure_symlinks(repo_root, active_slug, never_write=never_write)
+            return
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
             assert entry.format is not None  # ManifestEntry.__post_init__ guarantees this
             for region_name, _matched_anchor in action.chosen_anchor:
@@ -1082,7 +1135,7 @@ def _managed_artifact_after_apply(
             )
         installed_by_the_tool = prior is not None and prior.path == entry.path
         return _hybrid_record(entry, text, spans, named=named, claim_every_present=installed_by_the_tool)
-    content = target.read_text(encoding="utf-8")
+    content = target.read_text(encoding="utf-8") if target.is_file() else ""
     return ManagedArtifact(
         id=entry.id,
         path=entry.path,
@@ -1173,6 +1226,8 @@ def run_adopt(
     confirm: Callable[[], bool],
     template_path: Path | str | None = None,
     commit: CommitAction | None = None,
+    slug: str | None = None,
+    in_loop_home: bool | None = None,
 ) -> AdoptResult:
     """Compose ``resolve -> detect -> plan -> augment -> confirm -> apply ->
     state-write`` against ``repo_root``, writing ``.marshal/plan.json``
@@ -1200,7 +1255,7 @@ def run_adopt(
     silently treating corrupted state as absent would let this run overwrite
     hand-edited managed content state itself could no longer attest to --
     exactly the class of risk SC-04 exists to prevent."""
-    filtered_manifest = _manifest_for_adopt(manifest)
+    filtered_manifest = _manifest_for_adopt(manifest, slug, in_loop_home=in_loop_home)
     state = read_state(repo_root)
     # The state exactly as read: the post-apply state takes the records it
     # REPLACES from here, after `state` below has had derived opt-outs recorded
@@ -1276,6 +1331,7 @@ def run_adopt(
                 "seed_model_version": seed_model_version(),
                 "mode": "adopt",
                 "agents": list(new_agents),
+                **({"slug": slug} if slug else {}),
             },
             template_path=template_path,
         )

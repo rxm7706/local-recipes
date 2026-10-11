@@ -1026,9 +1026,9 @@ def test_write_state_makes_exactly_one_atomic_replace(tmp_path, monkeypatch):
     calls: list[Path] = []
     real = fs.atomic_write_bytes
 
-    def counting(path: Path, data: bytes) -> None:
+    def counting(path: Path, data: bytes, *, mode: int | None = None) -> None:
         calls.append(path)
-        real(path, data)
+        real(path, data, mode=mode)
 
     monkeypatch.setattr(fs, "atomic_write_bytes", counting)
     write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
@@ -1057,7 +1057,7 @@ def test_mid_apply_failure_leaves_state_untouched_and_no_tmp_residue(tmp_path, m
     temp_paths: list[Path] = []
     existed_when_the_fault_fired: list[bool] = []
 
-    def failing_inside_the_real_atomic_write(path: Path, data: bytes) -> None:
+    def failing_inside_the_real_atomic_write(path: Path, data: bytes, *, mode: int | None = None) -> None:
         def write_fn(tmp: Path) -> None:
             tmp.write_bytes(data)
             temp_paths.append(tmp)
@@ -1065,7 +1065,7 @@ def test_mid_apply_failure_leaves_state_untouched_and_no_tmp_residue(tmp_path, m
                 existed_when_the_fault_fired.append(tmp.exists())
                 raise OSError("no space left on device")
 
-        real_atomic_write(path, write_fn)
+        real_atomic_write(path, write_fn, mode=mode)
 
     monkeypatch.setattr(fs, "atomic_write_bytes", failing_inside_the_real_atomic_write)
 
@@ -1106,7 +1106,7 @@ def test_an_os_error_from_fs_propagates_unwrapped(tmp_path, monkeypatch):
     """A failed write means the ENVIRONMENT refused, not that state is
     invalid -- so the ``OSError`` reaches the caller as itself."""
 
-    def boom(path: Path, data: bytes) -> None:
+    def boom(path: Path, data: bytes, *, mode: int | None = None) -> None:
         raise PermissionError("read-only file system")
 
     monkeypatch.setattr(fs, "atomic_write_bytes", boom)
