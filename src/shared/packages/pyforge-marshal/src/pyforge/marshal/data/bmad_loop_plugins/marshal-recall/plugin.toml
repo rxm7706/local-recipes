@@ -1,0 +1,16 @@
+# Marshal recall injection for bmad-loop (Story 93.1).
+#
+# Enabled from rendered policy only when ``[context.recall] enabled = true``.
+# Materialized into ``<loop_home>/.bmad-loop/plugins/marshal-recall/`` by
+# ``write_policy_toml``.
+
+[plugin]
+name = "marshal-recall"
+version = "1.0.0"
+api_version = 1
+description = "Fold scoped scribe team-memory feedback into dev and review session prompts."
+author = "pyforge-marshal"
+
+[python]
+module = "marshal_recall_plugin.py"
+class = "MarshalRecallPlugin"

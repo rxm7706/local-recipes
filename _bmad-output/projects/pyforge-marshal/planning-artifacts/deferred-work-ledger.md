@@ -8999,7 +8999,9 @@ status: open
   origin: spec-deferred 5136dfccc6cc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 93.1 — marshal-recall bmad-loop plugin `on_pre_session` calls the fold for dev and review; factory dispatch calls the same fold before bmad-build-auto and passes `recall_block` into the build harness prompt.
+  verified: src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/bmad_loop_plugins/marshal-recall/marshal_recall_plugin.py:56 (`augment_bmad_loop_session_prompt_with_recall` from `on_pre_session`); src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3483 (dispatch recall fold before launch)
 
 ### DW-marshal-47-3: Live bmad-loop launch paths do not yet pass resolve_context_layers into augment_bmad_loop_session_prompt_with_recall (pre-existing 47.1/47.2 seam).
 
@@ -9010,7 +9012,9 @@ status: open
   origin: spec-deferred 4dfe6b79d429 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 93.1 — dispatch passes composed `context_payload` into the fold; the plugin reads `[context]` from loop-home policy.toml and passes resolved layers into the same helper; `render_policy_toml` enables marshal-recall only when the recall layer is enabled.
+  verified: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:3492 (`context_layers=context_payload`); src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/bmad_loop_plugins/marshal-recall/marshal_recall_plugin.py:54-65 (`context_layers` from policy); src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py:679-684 (plugin enabled when recall layer on)
 
 ### DW-marshal-87-6: Policy protected additions do not print with provenance (AD-10 / AD-16 / AD-27) on land or retire output.
 

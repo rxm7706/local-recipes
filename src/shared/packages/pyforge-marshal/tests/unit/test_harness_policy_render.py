@@ -432,6 +432,23 @@ def test_rendered_policy_template_documents_recall_context_layer():
     assert "CONTEXT_LAYER_NAMES" in text or "planning-graph, recall" in text
 
 
+def test_recall_layer_enabled_lists_marshal_recall_plugin(tmp_path) -> None:
+    from pyforge.marshal.adapters.harness_bmadloop import MARSHAL_RECALL_PLUGIN_NAME, write_policy_toml
+
+    effective = _compose(context={"recall": {"enabled": True, "aggressiveness": "medium"}})
+    doc = tomllib.loads(render_policy_toml(effective))
+    assert MARSHAL_RECALL_PLUGIN_NAME in doc["plugins"]["enabled"]
+    write_policy_toml(effective, tmp_path / "home")
+    plugin_toml = tmp_path / "home" / ".bmad-loop" / "plugins" / MARSHAL_RECALL_PLUGIN_NAME / "plugin.toml"
+    assert plugin_toml.is_file()
+
+
+def test_recall_layer_disabled_leaves_plugins_enabled_empty() -> None:
+    effective = _compose(context={"recall": {"enabled": False, "aggressiveness": "medium"}})
+    doc = tomllib.loads(render_policy_toml(effective))
+    assert doc["plugins"]["enabled"] == []
+
+
 def test_context_partial_declaration_defaults_remaining_layers_off():
     effective = _compose(context={"planning-graph": {"enabled": True}})
     doc = tomllib.loads(render_policy_toml(effective))
