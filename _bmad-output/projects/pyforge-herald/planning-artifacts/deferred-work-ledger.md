@@ -1525,7 +1525,8 @@ deployment.
   fix: a function-local import in `deck_viewer.py` that refuses with a clean, logged reason when herald is absent, or do not mount the herald portal's URLs when `pyforge.herald` is not importable (mirroring Story 87.1's skip); test under an env without herald that `manage.py check` passes and `/stations/` answers 200.
   severity: high
   promoted: 2026-10-11 — herald Story 19.2 landing review
-  status: open
+  verified: 2026-10-11 — src/shared/packages/django-herald/src/django_herald_portal/herald_guard.py:28 (`herald_is_installed`); src/platform/tests/test_herald_portal_without_herald.py (`test_herald_portal_pages_without_herald`); src/shared/packages/pyforge-herald/tests/meta/test_portal_import_boundary.py (`test_portal_urlconf_reach_has_no_module_level_pyforge_herald_import`).
+  status: done
 
 ### DW-herald-19-2-2: Story 19.2 how-to and runbook nits deferred at landing (leak-check ordering, conflicting crontab guidance, a stale Tier-3 path)
 

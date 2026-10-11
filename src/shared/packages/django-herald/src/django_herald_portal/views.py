@@ -7,6 +7,7 @@ from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.flags import evaluate_boolean
 from django_pyforge.roles import claims_from_request, roles_from_request
 
+from django_herald_portal import herald_guard
 from django_herald_portal.deck_viewer import list_published_decks, viewer_context
 
 PORTAL_DECK_SLUG = "pyforge-herald"
@@ -28,6 +29,12 @@ def _portal_sub(request: HttpRequest) -> str:
 
 def _deck_viewer_enabled() -> bool:
     return evaluate_boolean(DECK_VIEWER_FLAG, default=False)
+
+
+@require_GET
+def herald_portal_unavailable(request: HttpRequest) -> HttpResponse:
+    reason = herald_guard.portal_absent_reason()
+    return HttpResponse(reason, status=404, content_type="text/plain")
 
 
 @require_GET
