@@ -2,9 +2,9 @@
 title: "25.1: A per-repo dependency-history dataset from git-pkgs and an estate pixi parser"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: f9c6a87dbe45d0e03d9a422dd708e466ce19bada
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -217,6 +217,16 @@ Deps: — (cross-station: mason Story 21.1).
   scanned. Recorded as `DW-atlas-25-1-1` (open, low) in `planning-artifacts/deferred-work-ledger.md`.
 
 ## Review Triage Log
+
+### 2026-10-10 — Independent review, iteration 3: sent back (1 high, 1 medium, 3 low)
+
+Separate agent, on `74ded30ecc`. Every iteration-2 fix re-probed: nine hunk reverts each redden their named test. All seven gates exit 0 (kedro-test, kedro-catalog-check, lint-types, flag gate, spec-surface, deferred-work, pyforge-core-test). New findings (`dh.py` = `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/dependency_history.py`):
+
+- `[high]` `[patch]` `dh.py:669-678`, `:709-716`: a partial `.git` in the clone cache makes git climb to the enclosing repository — `_clone_is_usable` only checks `dest/.git` is a directory and `rev-parse HEAD` succeeds, and `data_root` defaults to the relative `data` inside the operator's checkout. Probe: with the cache inside a repo tracking an upstream, the run discarded that repo's uncommitted edit, reset away its unpushed commit, then walked it and ran `git pkgs init` on it (breaks the Never rule on the operator's working copy), every run. New in iteration 2 (`reset --hard`). Fix: `_clone_is_usable` requires `git rev-parse --show-toplevel` (or `--absolute-git-dir`) to equal `dest`; set `GIT_CEILING_DIRECTORIES=<cache dir>` on every git call against a clone; test with the cache inside an enclosing git repo that has an uncommitted edit and an unpushed commit, asserting both survive.
+- `[medium]` `[patch]` `dh.py:690-716`: a changed `clone_url`/`local_path` is never followed — the fetch uses the clone's stored `origin`. Verified: switching from a fork to the canonical remote kept reporting the fork's rows; after the old remote vanished the repo read `stale` forever. Fix: compare `remote.origin.url` with the declared origin before fetching; `remote set-url` or re-clone on mismatch; test it.
+- `[low]` `[patch]` `dh.py:186-205`, `:845-849` (read): `_parse_repo_sources` silently drops a malformed entry and pruning then deletes that repo's state/partition/clone (even an unreachable repo's last-good partition). Warn per dropped entry; skip pruning when any entry was malformed.
+- `[low]` `[patch]` `dh.py:768-770` (read): the unchanged-head skip trusts state without checking the partition exists, so a deleted/damaged partition is never rebuilt until the head moves (and a case-only rename on case-insensitive filesystems can leave it missing). Skip only when the partition file exists.
+- `[low]` `[patch]` `dh.py:763-767` (read): a reachable empty repo (unborn HEAD) reads `stale` and re-clones every run; read it `unresolved` (or an explicit empty state) without re-cloning.
 
 ### 2026-10-10 — Independent review, iteration 2: sent back (2 medium, 5 low)
 
