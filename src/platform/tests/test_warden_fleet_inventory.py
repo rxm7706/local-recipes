@@ -327,7 +327,10 @@ def test_api_failure_leaves_no_export(inventory_paths: tuple[Path, Path]) -> Non
 
 
 def _story_flagd_tree(tmp_path: Path, flags: dict[str, str]) -> Path:
-    """Write a minimal OpenFeature file tree (platform tests must not import pyforge.*)."""
+    """Write a minimal OpenFeature file tree.
+
+    Platform tests must not import pyforge.*.
+    """
     tree: dict[str, object] = {"flags": {}}
     flag_map = tree["flags"]
     assert isinstance(flag_map, dict)
