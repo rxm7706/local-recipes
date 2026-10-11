@@ -456,7 +456,7 @@ development_status:
   9-5-manifest-coverage-check: done
   9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: done
   90-1-the-dispatch-supervisor-records-completion-only-after-the-harness-session-has-really-exited: done
-  91-1-a-corrupt-environment-yaml-never-lands: backlog
+  91-1-a-corrupt-environment-yaml-never-lands: done
   92-1-the-dispatch-supervisor-reads-session-liveness-correctly-and-never-treats-a-vanished-worktree-as-live: backlog
   93-1-every-live-session-gets-the-recall-its-layer-promises-and-the-run-records-the-outcome: backlog
   94-1-the-review-gate-orders-review-entries-by-their-real-commit-times: backlog
@@ -636,7 +636,7 @@ development_status:
   epic-9-retrospective: optional
   epic-90: done
   epic-90-retrospective: optional
-  epic-91: backlog
+  epic-91: done
   epic-91-retrospective: optional
   epic-92: backlog
   epic-92-retrospective: optional
