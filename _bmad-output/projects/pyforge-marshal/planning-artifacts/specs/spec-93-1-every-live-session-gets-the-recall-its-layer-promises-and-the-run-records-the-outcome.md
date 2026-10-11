@@ -2,7 +2,7 @@
 title: "93.1: Every live session gets the recall its layer promises, and the run records the outcome"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e981ff751c113c9b651548c58d5aee16ccb1d438'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -257,3 +257,37 @@ a real temporary loop home, never a live bmad-loop run.
   the cache keyed to the story dispatch, a resumed run reads its own dispatch's block. Nothing else is decided here.
 - **Reverse-direction capture.** A correction a review pass surfaces is not captured back into scribe; the folded Spec
   carries this as a non-goal (a separate capability if pursued).
+
+## Spec Change Log
+
+- **2026-10-11 — Story/run cache key (AC4):** `recall_feedback_output_relpath` and marker paths now include `story_key` and `run_id`; tests in `test_harness_bmadloop_recall.py` and `test_recall_feedback.py` updated expectations accordingly (station-only path removed).
+- **2026-10-11 — `RecallInjectionResult` home:** moved to `core/recall_feedback.py` so dispatch and the bmad-loop plugin share one type without adapter cycles.
+
+## Review Triage Log
+
+### 2026-10-11 — Review pass
+
+- verdicts: 24 findings — high 0, medium 2, low 3, false 8, maybe-false 11
+- findings:
+  - `[medium]` `[patch]` Cached-block disposition when `injection is None` — fixed in `recall_dispatch.disposition_from_injection`.
+  - `[medium]` `[patch]` Verification gaps for AC1 prompt argv, INTENT journal, AC3 miss/disabled, AC4 new-run, AC2 second dev — added/extended unit tests.
+  - `[low]` `[reject]` Sprint ledger sync not run in auto session — operator lands via PR with ledger feed per repo workflow.
+  - `[low]` `[reject]` AC7 mutation tests manual-only — spec lists manual mutations; automated AC7 left to operator.
+  - `[low]` `[reject]` Real dispatch manual proof — deferred to operator (not a CI gate in spec).
+  - `[false]` `[reject]` Spec-surface baseline missing — `spec_surface_reconcile.py` exit 0 after memlog reconcile.
+  - `[false]` `[reject]` AD-6 separate pre-query journal entry — launch INTENT carries post-fold disposition in one synchronous pre-launch block (same as structure_graph timing).
+  - `[maybe-false]` `[defer]` bmad-loop hook per-session recall journaling — not implemented; dispatch envelope is the primary disposition channel (see Named, not fixed here for loop journal channel).
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Wired the existing recall fold into factory `dispatch_once` and the `marshal-recall` bmad-loop plugin (`pre_session`), keyed cache by story + run, seeded/journaled `data["recall"]` on every post-composition dispatch envelope, and closed DW-marshal-47-2 / DW-marshal-47-3.
+
+**Files changed:** pyforge-marshal adapters (`harness_bmadbuild`, `harness_bmadloop`), `cli/dispatch.py`, `core/recall_dispatch.py`, `core/recall_feedback.py`, findings/verdict (MRS-DISP-064), packaged plugin under `data/bmad_loop_plugins/marshal-recall/`, unit tests (`test_dispatch_recall`, plugin/harness recall tests), planning memlogs and deferred-work ledger.
+
+**Review:** Two medium patches applied (disposition + tests); low/manual items rejected; bmad-loop session journaling deferred.
+
+**Verification:** `pyforge-marshal-test` 12291 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+
+**Residual:** Manual grounded dispatch run (spec Verification) not recorded; bmad-loop hook does not write marshal journal entries per session; scoped `spec-surface-check` stamp and PR/ledger promotion remain for landing.
