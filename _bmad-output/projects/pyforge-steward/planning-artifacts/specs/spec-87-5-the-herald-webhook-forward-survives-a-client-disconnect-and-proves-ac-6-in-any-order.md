@@ -2,9 +2,9 @@
 title: "87.5: The herald webhook forward survives a client disconnect and proves AC 6 in any order"
 type: 'fix'
 created: '2026-10-10'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: '47397de509c4b12b68309f77022ca915db29d5b5'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 landing_review: 'required'
 context:
@@ -318,6 +318,42 @@ host's packages. A fake sidecar records every request it receives.
   independent review passes (marshal Story 83.18's hold).
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 1: sent back (1 major, 4 minor, 2 info, 1 trivial)
+
+Separate agent, on `1ff032b979` (PR #2111, held for review). Code in `sidecar_forward.py` and `mcp_host/app.py` is
+correct; ACs (1)–(7) and (9) pass, each probed by mutation in a scratch copy. Gates exit 0: pyforge-steward suite
+(2306 passed, 3 skipped), pyforge-core `test_flags.py` (161), the three platform test files (89), ruff/format/mypy on
+the changed files, `spec-surface-check`. AC (8) bullet 1 FAILS: the disconnect regression test cannot fail.
+
+- `[major]` `[patch]` F1 `src/platform/tests/test_webhook_herald_forward_host.py:372-381`, `:396` (same at
+  `:411-420`, `:435`): the fake `receive()` never suspends, so with the `continue` restored the read loop never yields
+  and `asyncio.wait_for(timeout=1.0)` cannot fire -- the test hangs (killed at a 60 s cap, exit 124) instead of
+  failing, and would hang `platform-ci-local`/pr-preflight indefinitely and CI to its 45-minute timeout. Fix: `await
+  asyncio.sleep(0)` at the top of both fake `receive()` functions (or raise after ~3 calls); then re-run AC (8) bullet
+  1 and record that the mutation fails in about 1 s with `TimeoutError`.
+- `[minor]` `[patch]` F2 `src/platform/tests/test_herald_webhook_sidecar.py:463-483` (from 87.4, in a file this story
+  edits, and it breaks the "any order" property): the dependency-missing test pops `pyforge.core.errors` and
+  `pyforge.herald.*` from `sys.modules` and never restores them, so `HeraldError` splits into two classes and
+  `test_mcp_host_sidecar_missing_secret_503` fails whenever it runs after it (2 of 8 file-grouped shuffles, 5 of 16
+  interleaved). Fix: `monkeypatch.delitem(sys.modules, ...)`.
+- `[minor]` `[patch]` F3 `test_herald_webhook_sidecar.py:158`: `"pyforge" in detail` is always true (every detail
+  starts "pyforge.herald is not installed"); assert `detail.endswith("(pyforge)")`.
+- `[minor]` `[patch]` F4 AC (3) tests cover 2 of 4 combinations (flag OFF with herald present; URL unset with herald
+  absent); parametrize over both axes.
+- `[minor]` `[patch]` F5 the on-pr-close test (`test_webhook_herald_forward_host.py:277-298`) does not check body
+  bytes, header values or response content type; assert them as the on-ship test does.
+- `[info]` F6 a client disconnect after the full body is read is not watched: the forward still calls the sidecar,
+  waits up to the 300 s timeout floor (`mcp_http.py:63`, `:295`) and sends into a closed connection that uvicorn drops
+  -- no spin, no leak, no escaping exception. Record this as an explicit acceptance in the spec's Boundaries (the
+  "Never" bullet reads broader than the edge-case matrix, which covers only mid-body disconnects).
+- `[info]` F7 the flag-inventory rewrite is real generator output catching up main's drift, not this story's; the
+  merge of `origin/main` (`c7162c5438`) takes main's inventory, so the branch no longer carries it.
+- `[trivial]` F8 triple space at `docs/explanation/platform-deployment-architecture.md:322`.
+- F9 (merge conflict in `spec-pyforge-core/.memlog.md`): resolved main-first in `c7162c5438`.
+
+Send-back: F1 required; F2, F3, F4, F5, F8 in the same pass; F6 recorded as an acceptance. No change to the code
+under test. A fresh independent review (iteration 2) gates the landing.
 
 ### 2026-10-11 — Build-auto review pass
 
