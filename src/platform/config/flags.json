@@ -90,6 +90,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.steward.stations_index": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "91-1-the-stations-index-lists-each-station-portal-as-mounted-or-absent-and-why",
+        "created": "2026-10-11",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.marshal.verify_fix_loop": {
       "state": "ENABLED",
       "variants": {

@@ -2,7 +2,8 @@
 title: '91.1: The stations index lists each station portal as mounted or absent, and why'
 type: 'feature'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e4ab638bb6276c27466ec0e7c85d55745dec08d7'
 review_loop_iteration: 0
 followup_review_recommended: false
 landing_review: 'required'
