@@ -254,6 +254,8 @@ def _lane_scratch_env(scratch_dir: Path) -> dict[str, str]:
     env["TMPDIR"] = str(scratch_dir)
     env["COVERAGE_FILE"] = str(coverage)
     prior = env.get("PYTEST_ADDOPTS", "").strip()
+    if prior:
+        prior = preflight_suite_reduction.strip_inherited_pytest_basetemp_and_cache(prior)
     extra = f"--basetemp={basetemp} -o cache_dir={cache_dir}"
     env["PYTEST_ADDOPTS"] = f"{prior} {extra}".strip() if prior else extra
     return env

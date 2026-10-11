@@ -360,7 +360,7 @@ development_status:
   9-5-the-perimeter-ships-with-the-pattern: done
   9-6-isolation-proven-by-tests-that-cannot-pass-vacuously: done
   9-7-hosted-or-static-no-fork: done
-  90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp: backlog
+  90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -539,5 +539,5 @@ development_status:
   epic-89-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
-  epic-90: backlog
+  epic-90: done
   epic-90-retrospective: optional
