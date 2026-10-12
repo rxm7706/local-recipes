@@ -99,7 +99,7 @@ class JWKSKeySet:
                 continue
             try:
                 keys[kid] = RSAAlgorithm.from_jwk(json.dumps(jwk))
-            except (PyJWTError, ValueError, TypeError):
+            except PyJWTError, ValueError, TypeError:
                 continue
         if not keys:
             msg = "JWKS document has no usable keys"

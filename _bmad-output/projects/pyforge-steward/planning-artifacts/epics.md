@@ -6093,7 +6093,7 @@ So that the tools hold the code to the interpreter it runs on, and a target that
 **When** `pixi run -e pyforge-guild lint-types` and `platform-ci-local -- --test` run
 **Then** the nine portal packages require `>=3.14` and their tables target `py314`; `src/platform` targets ruff `py314` and mypy `3.14`; `target-version-check` derives `py314` / `3.14` from the pixi pin and checks the ten `pyforge-*` packages as today plus every `requires-python` floor, the nine portal packages' ruff target and `src/platform`'s ruff and mypy targets, with too few packages or no `src/platform/pyproject.toml` as could-not-run; `src/platform` carries what ruff writes at `py314` (four PEP 758 rewrites, one UP035 fix, ten TC001-TC003 imports moved under `TYPE_CHECKING`); the portal packages carry only their 13 PEP 758 rewrites, and `NOT_YET_CLEAN` is unchanged
 **And** the 3.12 residue in `src/platform` and the lines that call the targets `py312` are corrected; removing the portal glob, removing the platform check, hard-coding `py314` or dropping the `requires-python` floor each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types`, `pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-guild pyforge-station-tests` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
 
@@ -6155,6 +6155,40 @@ So that each station's lint-clean fix story lands green and the list can only sh
 **Then** the meta-test asserts every ceiling package is in the seed and every ceiling verb set is a subset of the seed's for that package, and every `NOT_YET_CLEAN` package is in the ceiling with its verbs a subset of the ceiling's; the seed keeps its nine entries, and main's eight-entry ceiling passes
 **And** adding a package the seed lacks to the ceiling, adding a verb to a ceiling entry, and a `NOT_YET_CLEAN` entry absent from the ceiling each fail the test (mutations, reverted); only the meta-test file changes outside `_bmad-output/` and the spec-surface baseline; `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green with `ruff` absent from `PATH` (CI's shape), and the memlog of every Spec `spec-surface-check` names reconciles the file before one scoped stamp each
 **Status:** done
+
+## Epic 98: Station tests run when what they read changes (fix under CAP-159)
+
+Minted 2026-10-12 from the station Dream's entry of that date (station tests run when what they read changes) and the
+operator's ask "Do this task here: Make steward-test run when lint_types or django pkgs change".
+`.github/workflows/pyforge-station-tests.yml` runs each suite only when its own package or the shared surface moves,
+while the suites read files far outside both: herald Story 38.1 changed `scripts/lint_types.py` and `django-herald`,
+CI never ran `steward-test`, and steward's lint meta-test went red on `main` unseen. `pr-preflight` runs the same
+`changes` shell (Story 71.2), so it skips the same suites. A defect against CAP-159 (Story 71.2; spec-pyforge-core
+CAP-8 / CAP-10 as Kinship), so no CAP is minted; a new epic because Epic 71 is `done`. **HARD boundaries:**
+- The fix lives in `.github/workflows/pyforge-station-tests.yml` and steward's tests. `pr-preflight`'s code, its
+  command line, the `pre-push` hook and `PYFORGE_PREFLIGHT_SKIP` do not change; no other workflow changes.
+- No suite job loses a path it fires on today. The `changes` job keeps the shape pyforge-core's
+  `test_conformance_lane_wired.py` and the testing kit's `test_testing_kit_lane_wired.py` pin, and `on.pull_request`
+  and `on.push` paths stay identical (`test_workflow_path_filters_match.py`).
+- Which paths a job needs is derived from its tests by the new meta-test, and no read is exempt: by the operator's
+  rulings of 2026-10-12, "Trigger on planning too" (planning content fires every suite that reads it) and "In steward
+  (Recommended)" (the meta-test lives in steward's tests, not pyforge-core's).
+
+### Story 98.1: Station tests run when what they read changes
+
+As the operator whose `main` went red when herald changed a script and a portal package that only steward's tests read,
+I want each station suite to run in CI and in `pr-preflight` whenever a file its tests read changes,
+So that a change is tested by every suite it can break, in the PR that makes it.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Story 71.2); AD-1; spec-pyforge-core CAP-8 / CAP-10 and spec-pyforge-testing-charter CAP-3 as Kinship • Dream 2026-10-12 (station tests run when what they read changes) • operator ask 2026-10-12 "Do this task here: Make steward-test run when lint_types or django pkgs change" • operator rulings 2026-10-12 "Trigger on planning too" and "In steward (Recommended)"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `.github/workflows/pyforge-station-tests.yml` (`on.pull_request.paths` / `on.push.paths` about :27-:82, the `changes` job's filter step about :111-:172, and the header and `core-test` comments about :1-:25 and :174-:189), `src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py` (new), `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` (`test_testing_kit_branch_selects_only_the_kit_not_core_or_stations` about :330-:334, plus new fixture tests)
+**Spec:** `planning-artifacts/specs/spec-98-1-station-tests-run-when-what-they-read-changes.md`
+**Given** `5beef7c9eb`, where the `changes` job sets each station's output only from `src/shared/packages/pyforge-<station>` (plus herald's `presentations`/`docs-site` and atlas's inventory quartet) or the shared surface, and `on.paths` names no `scripts/lint_types.py`, no `.github/workflows/lint-types.yml` and no `django-*` package but `django-pyforge`. The workflow's own `changes` shell, run on one-path fixture diffs, fires nothing for `scripts/lint_types.py`, `src/shared/packages/django-herald/src/x.py`, `scripts/fleet_scan.py` or `scripts/cfe_rebuild_guard_check.py`, and only `testing_kit` for `django-pyforge` and `src/platform/config/flags.json`; a scan of the ten suites' tests finds outside reads uncovered in every job (the story spec's measured map)
+**When** a pull request changes a tracked path that a suite's tests read
+**Then** that suite's job runs: `on.pull_request.paths` fires for the path and the `changes` job sets the job's output `true`. `scripts/lint_types.py`, `scripts/target_version_check.py`, `.github/workflows/lint-types.yml` and every `src/shared/packages/django-*` package fire `steward`; each `django-<station>` package fires its station; `pr-preflight` selects the same lanes, a django-herald-only diff selecting `pyforge-steward-test` and `pyforge-herald-test`
+**And** a new steward meta-test derives each of the ten jobs' reads from their tests and the outside test paths their pixi tasks collect, declares (per job, with a reason) what the code under test reads when a test hands it the repo root, evaluates the workflow's own `changes` shell on a fixture diff of each read, and fails naming the job and the path a filter misses, or a root-handoff test with no declaration. No read is exempt: planning content (`_bmad-output/projects/*/planning-artifacts/**`, `archive/**`, `docs/dreams/**`, `recipes/**`, `.claude/memory/**`) fires the suites that read it, so doctor and marshal run on nearly every chain PR. Dropping `scripts/lint_types.py` from steward's filter, `docs/dreams/**` from doctor's or `_bmad-output/projects/*/planning-artifacts/**` from marshal's fails it (mutations); no job loses a path it fires on today; the workflow parses, its `changes` script passes `bash -n`, and pyforge-core's and the testing kit's lane meta-tests stay green; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
+**Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

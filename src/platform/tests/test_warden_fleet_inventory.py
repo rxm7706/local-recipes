@@ -98,14 +98,28 @@ _FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
 _PACKAGES = _SRC_ROOT / "shared" / "packages"
 _FABRIC_ROOT = _PACKAGES / "django-warden" / "src" / "django_warden_fabric"
 _TASKS_PATH = _FABRIC_ROOT / "tasks.py"
-# AC9: the tracked paths the fleet stories write.
+_PROJECTS = _REPO_ROOT / "_bmad-output" / "projects"
+_SPECS = "planning-artifacts/specs"
+# AC9: the tracked paths the fleet stories write (16.1, 16.5), including the shared
+# memory and the co-governor memlogs they append to. The live guard also scans every
+# file the current branch changes (``_story_changed_files``), so a path a later story
+# writes outside these roots is covered too.
 _LEAK_SCAN_ROOTS = (
-    _REPO_ROOT / "_bmad-output" / "projects" / "pyforge-warden",
+    _PROJECTS / "pyforge-warden",
     _PACKAGES / "django-warden",
     _PACKAGES / "pyforge-warden",
     _PLATFORM_DIR,
     _REPO_ROOT / "docs" / "dreams" / "pyforge-warden.md",
     _REPO_ROOT / ".gitignore",
+    _REPO_ROOT / ".claude" / "memory",
+    _PROJECTS / "pyforge-marshal" / _SPECS / "spec-pyforge-core" / ".memlog.md",
+    _PROJECTS / "pyforge-marshal" / _SPECS / "spec-pyforge-marshal" / ".memlog.md",
+    _PROJECTS
+    / "pyforge-steward"
+    / _SPECS
+    / "spec-pyforge-unifying-strategy"
+    / ".memlog.md",
+    _PACKAGES / "pyforge-core" / "tests" / "unit" / "test_flags.py",
 )
 _API = "https://api.github.com"
 _FIRST_PAGE = f"{_API}/orgs/{_EXAMPLE_ORG}/repos?type=all&per_page=100"
@@ -792,6 +806,8 @@ def _leak_guard_terms() -> tuple[list[str] | None, Path]:
 
 
 def _tracked_files(repo_root: Path, roots: Sequence[Path]) -> list[Path]:
+    if not roots:
+        return []  # no pathspec would list every tracked file
     relative = [str(root.relative_to(repo_root)) for root in roots]
     listed = subprocess.run(  # noqa: S603
         ["git", "ls-files", "-z", "--", *relative],  # noqa: S607
@@ -804,19 +820,57 @@ def _tracked_files(repo_root: Path, roots: Sequence[Path]) -> list[Path]:
     return [repo_root / name for name in names if name]
 
 
-def _leak_hits(repo_root: Path, roots: Sequence[Path], terms: list[str]) -> list[str]:
-    """Tracked files under ``roots`` naming any term (case-insensitive, fixed string).
+def _git_names(repo_root: Path, *argv: str) -> list[str]:
+    listed = subprocess.run(  # noqa: S603
+        ["git", *argv],  # noqa: S607
+        cwd=repo_root,
+        env=_git_env(),
+        check=False,
+        capture_output=True,
+    )
+    if listed.returncode != 0:
+        return []
+    return [n for n in listed.stdout.decode("utf-8", errors="replace").split("\0") if n]
 
-    Reports paths only, never the term, so a failure prints no target name.
+
+def _story_changed_files(repo_root: Path, base: str = "origin/main") -> list[Path]:
+    """Every file the branch changes against ``base``: committed, staged, unstaged, new.
+
+    ``.warden/`` is never read (it holds the target names; ``.gitignore`` excludes it
+    from the untracked list, and it is dropped here too). An unresolvable ``base`` (a
+    shallow CI checkout) leaves the working-tree changes only.
     """
-    hits: list[str] = []
-    for path in _tracked_files(repo_root, roots):
+    names = set(_git_names(repo_root, "diff", "--name-only", "-z", f"{base}...HEAD"))
+    names |= set(_git_names(repo_root, "diff", "--name-only", "-z", "HEAD"))
+    names |= set(
+        _git_names(repo_root, "ls-files", "-z", "--others", "--exclude-standard")
+    )
+    return sorted(
+        repo_root / name
+        for name in names
+        if not name.startswith(".warden/") and "/.warden/" not in f"/{name}"
+    )
+
+
+def _leak_hits(
+    repo_root: Path,
+    roots: Sequence[Path],
+    terms: list[str],
+    extra_files: Sequence[Path] = (),
+) -> list[str]:
+    """Tracked files under ``roots``, and ``extra_files``, naming any term.
+
+    Case-insensitive, fixed string. Reports paths only, never the term, so a failure
+    prints no target name.
+    """
+    hits: set[str] = set()
+    for path in {*_tracked_files(repo_root, roots), *extra_files}:
         if not path.is_file():
             continue
         text = path.read_bytes().decode("utf-8", errors="replace").lower()
         if any(term in text for term in terms):
-            hits.append(str(path.relative_to(repo_root)))
-    return hits
+            hits.add(str(path.relative_to(repo_root)))
+    return sorted(hits)
 
 
 def test_leak_guard_scan_roots_exist() -> None:
@@ -874,11 +928,46 @@ def test_leak_guard_finds_a_planted_term(tmp_path: Path) -> None:
     assert _leak_hits(tmp_path, [package], ["example-org"]) == ["pkg/hit.txt"]
 
 
+def test_leak_guard_scans_every_file_the_story_changes(tmp_path: Path) -> None:
+    """16.5 F5: changed files outside every root are scanned (committed since the
+    base, staged, unstaged and untracked); unchanged files and ``.warden/`` are not."""
+    (tmp_path / ".gitignore").write_text(".warden/\n", encoding="utf-8")
+    (tmp_path / "old.txt").write_text(
+        "example-org, before the story\n", encoding="utf-8"
+    )
+    (tmp_path / "edited.txt").write_text("clean\n", encoding="utf-8")
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+    git += ["-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false"]
+    steps = [
+        ["git", "init", "-q"],
+        ["git", "add", "-A"],
+        [*git, "commit", "-q", "-m", "base"],
+        ["git", "tag", "base"],
+    ]
+    for argv in steps:
+        subprocess.run(argv, cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
+    (tmp_path / "committed.txt").write_text("EXAMPLE-ORG\n", encoding="utf-8")
+    for argv in (["git", "add", "committed.txt"], [*git, "commit", "-q", "-m", "s"]):
+        subprocess.run(argv, cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
+    (tmp_path / "edited.txt").write_text("example-org\n", encoding="utf-8")
+    (tmp_path / "untracked.txt").write_text("example-org\n", encoding="utf-8")
+    (tmp_path / ".warden").mkdir()
+    (tmp_path / ".warden" / "fleet-target.toml").write_text("example-org", "utf-8")
+    changed = _story_changed_files(tmp_path, base="base")
+    assert [p.name for p in changed] == ["committed.txt", "edited.txt", "untracked.txt"]
+    assert _leak_hits(tmp_path, [], ["example-org"], changed) == [
+        "committed.txt",
+        "edited.txt",
+        "untracked.txt",
+    ]
+
+
 def test_leak_guard_no_operator_terms_in_tracked_tree() -> None:
     terms, config = _leak_guard_terms()
     if terms is None:
         pytest.skip(f"fleet target config absent at {config} (CI): nothing to guard")
-    assert _leak_hits(_REPO_ROOT, _LEAK_SCAN_ROOTS, terms) == []
+    changed = _story_changed_files(_REPO_ROOT)
+    assert _leak_hits(_REPO_ROOT, _LEAK_SCAN_ROOTS, terms, changed) == []
 
 
 # --- AC6, AC7: the real client path, GET only, no sentinel anywhere (F3, F4) ---

@@ -60,6 +60,7 @@ from . import (
     docs_map_hygiene,
     docs_shelf,
     factory,
+    frontmatter_duplicate_keys,
     frozen_path,
     general_docs_consistency,
     hygiene,
@@ -170,6 +171,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # `detectors-ci`. `--dreams` keeps working and keeps calling the same
     # gather; it is now a second door onto this entry, not the only one.
     Source.DREAMS_HYGIENE.value: chain.gather_dreams_hygiene,
+    # Story 42.1 (CAP-81 / CAP-86) -- duplicate frontmatter keys in tracked
+    # story specs; same shape as DOCS_MAP_HYGIENE above.
+    Source.FRONTMATTER_DUPLICATE_KEYS.value: frontmatter_duplicate_keys.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

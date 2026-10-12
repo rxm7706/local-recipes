@@ -292,6 +292,9 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # same warn-only shape Story 38.3 used to wire the hygiene sweep beside
     # its siblings without a live-volume red. Offline, deterministic.
     ("dreams-hygiene", "dreams-hygiene-check"),
+    # Story 42.1 (CAP-81 / CAP-86): duplicate frontmatter keys in tracked
+    # story specs -- offline, deterministic, beside dreams-hygiene above.
+    ("frontmatter-duplicate-keys", "frontmatter-duplicate-keys-check"),
 )
 
 

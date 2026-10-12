@@ -33,4 +33,20 @@
     <p>Fleet inventory is disabled (flag off).</p>
   {% endif %}
   <div id="warden-fleet-inventory-panel"></div>
+  <form
+    id="warden-fleet-project-items-start"
+    method="post"
+    hx-post="/stations/warden/fleet/project-items/start/"
+    hx-target="#warden-fleet-project-items-panel"
+    hx-swap="innerHTML"
+  >
+    {% csrf_token %}
+    <button type="submit" {% if not fleet_project_items_enabled %}disabled{% endif %}>
+      Refresh fleet project items
+    </button>
+  </form>
+  {% if not fleet_project_items_enabled %}
+    <p>Fleet project items are disabled (flag off).</p>
+  {% endif %}
+  <div id="warden-fleet-project-items-panel"></div>
 {% endblock content %}

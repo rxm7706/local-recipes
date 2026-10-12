@@ -13,15 +13,13 @@ from typing import Any
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpRequest
-
-from django_doctor_portal.pulse_document import present_pulse
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.crypto import verify_assertion
 from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.assertion.schema import audience_for
-from django_pyforge.roles import claims_from_request
-from django_pyforge.roles import roles_from_request
+from django_pyforge.assertion.schema import CLAIM_SUB, audience_for
+from django_pyforge.roles import claims_from_request, roles_from_request
+
+from django_doctor_portal.pulse_document import present_pulse
 
 STATION = "doctor"
 CACHE_KEY = "django_doctor_portal:last_fleet_pulse"
@@ -55,7 +53,7 @@ def _read_surface_document() -> dict[str, Any] | None:
         return None
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return None
     if not isinstance(loaded, dict):
         return None

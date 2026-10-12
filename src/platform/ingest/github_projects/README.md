@@ -9,7 +9,7 @@ Read-only dlt ingest kin to [`spec-jira-github-projects-sync`](../../../../_bmad
 | Classic GitHub PAT | Scope `read:project`. **Fine-grained PATs cannot reach user-owned projects** — record as `github-pat-read-project` in `.steward/keys-inventory.yaml` (metadata only). |
 | GitHub Projects board | Create with `gh project create`, link to this repo with `gh project link <number> --owner <user\|org> --repo rxm7706/local-recipes`. |
 | Cluster Postgres | Port-forward the chart postgres Service, e.g. `oc port-forward -n platform svc/platform-postgresql 5432:5432`. |
-| Pixi env | `python-agent-platform` (Python 3.12 — dlt is blocked on the repo-default 3.14 env). |
+| Pixi env | `python-agent-platform`. |
 
 ## Environment variables
 

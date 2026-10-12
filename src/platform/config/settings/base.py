@@ -5,13 +5,12 @@ import importlib.util
 import json
 import os
 import sys
-from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from urllib.parse import quote
 
 import environ
-from django.http import HttpRequest
 from django.urls import reverse_lazy
 
 from config.authorization.claims import load_claims_contract
@@ -64,6 +63,11 @@ from django_pyforge.queues import ALL_QUEUES  # noqa: E402
 from django_pyforge.queues import DEFAULT_QUEUE  # noqa: E402
 from django_pyforge.queues import SWEEP_LOST_RUNS_TASK  # noqa: E402
 from django_pyforge.queues import route_task  # noqa: E402
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from django.http import HttpRequest
 
 # platformapp/
 APPS_DIR = BASE_DIR / "platformapp"

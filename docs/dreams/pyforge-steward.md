@@ -1544,6 +1544,41 @@ Drift — orphaned between stations.
   the story spec as out of scope. Authority: the operator's standing direction, "keep going, merge and dispatch when
   green", with failures fixed at once; the fix restores 93.1's stated design, so it needs no new ruling. Owner
   `spec-pyforge-steward`. → Epic 97 / Story 97.1, specced 2026-10-12.
+- **2026-10-12 (station tests run when what they read changes) — Found: `pyforge-station-tests.yml` decides which suites
+  run from each suite's own package and a short shared list, while the suites read files far outside both, so a
+  change to one of those files never runs the suite that reads it.** The workflow's `changes` job sets `steward=true`
+  only when `src/shared/packages/pyforge-steward` or the shared surface (`pyforge-core`, the testing kit, `pixi.toml`,
+  `pixi.lock`, the workflow itself) moves, and its `on.paths` names no `scripts/lint_types.py`, no
+  `.github/workflows/lint-types.yml` and no `django-*` package but `django-pyforge`. Steward's meta-test
+  `tests/meta/test_lint_types_django_tables.py` loads `scripts/lint_types.py`, reads all nine `django-*/pyproject.toml`
+  and `lint-types.yml`. Herald Story 38.1 (merge `e0b8ceae0c`, 2026-10-11) moved `scripts/lint_types.py` and
+  `src/shared/packages/django-herald/**`, CI ran herald's suite and never steward's, and the meta-test went red on
+  `main` unnoticed (fixed separately by Story 97.1). Measured 2026-10-12 on `5beef7c9eb`, by running the workflow's own
+  `changes` shell against one-path fixture diffs: `scripts/lint_types.py`, `src/shared/packages/django-herald/src/x.py`,
+  `.github/workflows/lint-types.yml`, `scripts/fleet_scan.py` and `scripts/cfe_rebuild_guard_check.py` each fire no
+  workflow and no suite; `src/platform/config/flags.json` and `django-pyforge` fire only `testing_kit`, though steward,
+  doctor, atlas, marshal and core read them. A scan of every suite's tests for repo-anchored reads found the same gap
+  in all ten jobs: every station reads its own `django-<station>` portal package except scribe; atlas reads doctor's
+  and scribe's `src`; herald reads steward's `src` and `docsite/`; steward reads every workflow, `scripts/lint_types.py`,
+  `scripts/detectors.py`, `scripts/platform-ci-local.sh` and marshal's `cli/dispatch.py`; doctor and marshal read
+  repo scripts (`fleet_scan.py`, `spec_surface_check.py`, `coverage_gate.py`, `fleet_picture.py`, ...); mason reads
+  `scripts/cfe_rebuild_guard_check.py` and runs a CFE meta-test; scribe reads `src/platform/` and `AGENTS.md`; core
+  scans all of `src/` and `scripts/`. `pr-preflight` (Story 71.2) runs the same `changes` shell, so it skips the same
+  suites. The operator's ask, verbatim: "Do this task here: Make steward-test run when lint_types or django pkgs
+  change". **What it looks like when fixed:** each suite job in the workflow runs when any tracked path its tests read
+  changes, and `on.paths` fires for every such path; a steward meta-test derives each job's reads from the tests
+  themselves and the pixi task that runs them, evaluates the workflow's own `changes` shell against each, and fails
+  naming the job and the path a filter misses; a short, reasoned, shrink-only exemption list keeps planning content
+  (`_bmad-output/projects/*/planning-artifacts/**`, `archive/**`, `docs/dreams/**`, `recipes/**`,
+  `.claude/memory/**`) from firing the doctor and marshal suites on every chain PR; `scripts/lint_types.py` and every
+  `django-*` package fire `steward-test`; `pr-preflight` follows unchanged, because it reads the workflow.
+  **Constraints:** a fix under CAP-159 (Story 71.2 reads lanes from the workflows; Epic 71 is done, so a new epic), no
+  CAP, no flag; no station loses a path it fires on today; the `changes` job keeps the shape pyforge-core's
+  `test_conformance_lane_wired.py` and the testing kit's `test_testing_kit_lane_wired.py` pin; `coverage-gates.yml`
+  and the other workflows do not change. Owner `spec-pyforge-steward`. → Epic 98 / Story 98.1, specced 2026-10-12.
+  The operator ruled the same day, before dispatch, "Trigger on planning too" (no exemption list: planning content
+  fires every suite that reads it, doctor and marshal on nearly every chain PR) and "In steward (Recommended)" (the
+  meta-test stays in steward's tests, not pyforge-core's), superseding the exemption sketched above.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

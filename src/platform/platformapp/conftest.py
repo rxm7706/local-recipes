@@ -1,7 +1,11 @@
+from typing import TYPE_CHECKING
+
 import pytest
 
-from platformapp.users.models import User
 from platformapp.users.tests.factories import UserFactory
+
+if TYPE_CHECKING:
+    from platformapp.users.models import User
 
 
 @pytest.fixture(autouse=True)
