@@ -17,8 +17,7 @@ import tomllib
 import traceback
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
-from typing import Protocol
+from typing import Any, NoReturn, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +53,7 @@ class GhBinaryMissingError(FleetInventoryError):
 
 class GhLoginMissingError(FleetInventoryError):
     def __init__(self) -> None:
-        super().__init__(
-            "no github.com login in gh (gh auth login --hostname github.com)"
-        )
+        super().__init__("no github.com login in gh (gh auth login --hostname github.com)")
 
 
 class GhTimeoutError(FleetInventoryError):
@@ -115,9 +112,7 @@ def _parse_target_toml(raw: bytes, config_path: Path) -> dict[str, Any]:
 
 
 def load_organisation_from_config(config_path: Path | None = None) -> str:
-    path = (
-        config_path if config_path is not None else resolve_fleet_target_config_path()
-    )
+    path = config_path if config_path is not None else resolve_fleet_target_config_path()
     if not path.is_file():
         msg = "missing config; expected [github] organisation key"
         raise FleetTargetConfigError(path, msg)
@@ -133,24 +128,45 @@ def load_organisation_from_config(config_path: Path | None = None) -> str:
     return organisation.strip()
 
 
+def _allow_empty_leak_guard_terms(github: dict[str, Any], config_path: Path) -> bool:
+    if "allow_empty_leak_guard_terms" not in github:
+        return False
+    value = github["allow_empty_leak_guard_terms"]
+    if not isinstance(value, bool):
+        msg = "allow_empty_leak_guard_terms under [github] must be a boolean"
+        raise FleetTargetConfigError(config_path, msg)
+    return value
+
+
+def _refuse_missing_leak_guard_terms(config_path: Path) -> NoReturn:
+    msg = "leak_guard_terms under [github] must be a non-empty list of strings"
+    raise FleetTargetConfigError(config_path, msg)
+
+
 def load_leak_guard_terms(config_path: Path | None = None) -> list[str]:
-    path = (
-        config_path if config_path is not None else resolve_fleet_target_config_path()
-    )
+    path = config_path if config_path is not None else resolve_fleet_target_config_path()
     if not path.is_file():
         return []
     document = _parse_target_toml(path.read_bytes(), path)
     github = document.get("github")
     if not isinstance(github, dict):
-        return []
+        _refuse_missing_leak_guard_terms(path)
+    allow_empty = _allow_empty_leak_guard_terms(github, path)
     terms = github.get("leak_guard_terms")
     if terms is None:
-        return []
+        if allow_empty:
+            return []
+        _refuse_missing_leak_guard_terms(path)
     if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
         # A bare string would otherwise be ignored and the guard would run without it.
         msg = "leak_guard_terms under [github] must be a list of strings"
         raise FleetTargetConfigError(path, msg)
-    return [item for item in terms if item.strip()]
+    stripped = [item.strip() for item in terms if item.strip()]
+    if not stripped:
+        if allow_empty:
+            return []
+        _refuse_missing_leak_guard_terms(path)
+    return stripped
 
 
 class CredentialProvider(Protocol):
@@ -158,9 +174,7 @@ class CredentialProvider(Protocol):
 
 
 class GhRunner(Protocol):
-    def __call__(
-        self, argv: list[str], *, timeout: float
-    ) -> subprocess.CompletedProcess[str]: ...
+    def __call__(self, argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]: ...
 
 
 def _run_gh(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
@@ -281,9 +295,7 @@ def atomic_write_json(path: Path, document: dict[str, Any]) -> None:
     """Write ``document`` through a uniquely named temp file beside ``path``, then rename."""
     path.parent.mkdir(parents=True, exist_ok=True)
     data = json.dumps(document, indent=2, sort_keys=True) + "\n"
-    descriptor, name = tempfile.mkstemp(
-        dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
-    )
+    descriptor, name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     tmp = Path(name)
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
@@ -294,9 +306,7 @@ def atomic_write_json(path: Path, document: dict[str, Any]) -> None:
         raise
 
 
-def persist_fleet_repos(
-    *, organisation: str, repos: Sequence[ListedRepoFields]
-) -> None:
+def persist_fleet_repos(*, organisation: str, repos: Sequence[ListedRepoFields]) -> None:
     from django_warden_fabric.models import FleetRepo  # noqa: PLC0415
 
     for repo in repos:
@@ -330,10 +340,6 @@ def run_fleet_inventory_sync(
             "fleet inventory skipped %d incomplete listing entries (see the export)",
             len(listing.skipped),
         )
-    destination = (
-        export_path
-        if export_path is not None
-        else resolve_fleet_inventory_export_path()
-    )
+    destination = export_path if export_path is not None else resolve_fleet_inventory_export_path()
     atomic_write_json(destination, document)
     return document
