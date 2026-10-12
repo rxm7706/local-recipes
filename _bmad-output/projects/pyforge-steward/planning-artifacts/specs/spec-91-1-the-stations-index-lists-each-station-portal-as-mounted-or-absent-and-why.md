@@ -2,11 +2,11 @@
 title: '91.1: The stations index lists each station portal as mounted or absent, and why'
 type: 'feature'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'e4ab638bb6276c27466ec0e7c85d55745dec08d7'
 followup_review_recommended: false
 review_loop_iteration: 1
-landing_review: 'required'
+landing_review: 'passed'
 flag:
   key: pyforge.steward.stations_index
   provider: openfeature-file
@@ -338,6 +338,10 @@ Type / Effort / Deps: feature / S / — (cross-station gate: herald 37.1, held a
   pattern name. No production path moves.
 
 ## Review Triage Log
+
+### 2026-10-11 — Orchestrator delta verification of the iteration-2 lows: passed
+
+The orchestrator (not the implementer, not either reviewer) read the L1-L4 delta at 7c9393c941 and re-ran one mutation through the full platform gate: `evaluate_boolean(STATIONS_INDEX_FLAG, default=True)` in `config/stations_index.py` reds `test_flag_provider_not_ready_reads_as_off[anonymous]` and `[admin]` (`platform-ci-local -- --test`: 2 failed, 1286 passed); restored byte-identical. The implementer's gates after the last edit: `pyforge-steward-test` 0 (2366 passed), `lint-types` 0, `platform-ci-local -- --test` 0 (1288 passed, 14 skipped), `spec-surface-check` 0, flag gate `--spec` pass. Story done; landing review passed; landing proceeds.
 
 ### 2026-10-11 — Fix pass for landing review iteration 2 lows (implementer)
 
