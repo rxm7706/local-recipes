@@ -2,8 +2,8 @@
 title: "44.1: The doctor check speed budget is judged on the CPU the check spends"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -143,6 +143,40 @@ the numbers.
   measurements at `c447946b3f`: `os.times()`, a `subprocess.run` trace, cProfile, per-file scan timing, and the same
   code run on the 2026-10-04 tree.
 
+- 2026-10-12: implemented in `cc47c15cfa` (`src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py`
+  only). The helper `_wall_and_cpu` and its three tests (AC3), the CPU-judged median and the cpu/wall failure message
+  (AC1, AC2). `ruff check` and `ruff format --check` exit 0.
+- 2026-10-12, AC4: with 16 busy loops (one per CPU) beside it, the test file passed 3 of 3 runs (28.5-31.3 s each,
+  against 15 s alone). With 32 busy loops it still passed. Each run then spent 3.60-3.76 s of CPU against 2.75 s idle:
+  contention inflates CPU time too, by about a third, but stays under 5 s. Wall time read 4.83-9.72 s.
+- 2026-10-12, AC6 mutations, each restored afterwards:
+  - the helper returning wall time as its CPU figure failed `test_wall_and_cpu_does_not_count_a_sleep`;
+  - dropping the children's CPU failed `test_wall_and_cpu_counts_a_waited_child_process`;
+  - judging the median wall time again, under 32 busy loops, failed the budget test with a 7.05 s median.
+- 2026-10-12: corrected after review. The test file is on a governed surface: `scripts/.spec-surface-baseline.json`
+  lists it under `pyforge-doctor/spec-pyforge-doctor`. `spec-surface-check` read no drift only because the memlog
+  already named the path. It is reconciled on that memlog and stamped scoped (`--spec
+  pyforge-doctor/spec-pyforge-doctor`).
+- 2026-10-12: review fixes in the test file. The docstring now says CPU stretches less than wall time rather than not
+  at all, and it gives the under-load margin. The stale "Doctor's whole NFR-4 claim is about actual wall-clock"
+  sentence and the "~2.1-2.5s, ~2x headroom" comment are corrected. The child-CPU test is skipped on Windows, where
+  `os.times()` reports no child CPU. `DW-doctor-44-1` now gives the under-load margin (about 1.25x) and severity
+  `medium`.
+
 ## Review Triage Log
 
-- No review has run yet.
+- **Iteration 1 (2026-10-12), independent reviewer, verdict PASS, no blockers.** Triage:
+  1. should-fix, `test_check_speed_budget.py`: the docstring claimed CPU does not stretch under load. It does,
+     about 1.6x on this host (2.42-2.44 s idle, 3.89-3.99 s beside 16 busy loops). **Fixed**: the docstring states it
+     and gives the margin.
+  2. should-fix, `deferred-work-ledger.md`: `DW-doctor-44-1` gave only the idle margin (1.8x). **Fixed**: it gives the
+     under-load margin (about 1.25x), the growth rate, and severity `medium`.
+  3. should-fix, this spec: the change log said the test is not on a governed surface. It is. **Fixed**: the path is
+     reconciled on the `spec-pyforge-doctor` memlog and stamped scoped.
+  4. nit, the module docstring's "whole NFR-4 claim is about actual wall-clock". **Fixed.**
+  5. nit, the stale "~2.1-2.5s, ~2x headroom" comment. **Fixed.**
+  6. nit, `os.times()` reports no child CPU on Windows. **Fixed**: the child test is skipped there with that reason,
+     and the docstring names the undercount.
+  7. nit, the list-append capture of `main`'s exit code. **Kept**: AC3 pins the helper's `(wall, cpu)` return.
+  The reviewer's own mutants (wall as CPU, children dropped, `process_time` in place of `os.times()`, system time
+  dropped) each failed a named test. The helper tests passed 6 of 6 runs beside 32 busy loops.

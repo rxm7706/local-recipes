@@ -2,7 +2,7 @@
 "five-second pre-flight promise"). A REAL, UNMOCKED end-to-end run against
 this monorepo's own root -- unlike ``pyforge-warden``'s orchestration-only
 ``test_perf_overhead.py`` (which stubs real engines to isolate code-level
-regressions), Doctor's whole NFR-4 claim is about actual wall-clock, so
+regressions), Doctor's NFR-4 claim is about the real work of a real run, so
 nothing here is mocked.
 
 Repo-root resolution mirrors ``test_checks_env_hygiene.py``'s own
@@ -26,14 +26,18 @@ The budget is judged on the CPU each run spends, not its wall time (Story
 2026-10-12 at ``c447946b3f``, one run spends 2.75s of CPU against 2.73s of
 wall time on an idle machine, about 95% of it in its own ``env_hygiene``
 scan, with only about 0.4s in child processes. CPU time therefore equals
-the idle wall time the five-second promise is about, but it does not
-stretch when other processes share the cores. In local ``pr-preflight``
-about twenty lanes on sixteen cores stretched the same work's wall time to
-medians of 5.19s-7.26s. CPU here is ``os.times()`` user plus system, for
-this process and for the child processes it waited on. Time a run spends
-blocked (a network wait, a sleep) is not CPU, so this measure would not see
-it; ``doctor check`` is offline by design (NFR-1). Each run's wall time is
-still reported beside its CPU when the budget fails.
+the idle wall time the five-second promise is about, and it stretches far
+less than wall time when other processes share the cores. In local
+``pr-preflight`` about twenty lanes on sixteen cores stretched the same
+work's wall time to medians of 5.19s-7.26s. CPU does rise under load (shared
+SMT cores, a lower clock): with 16-32 busy loops beside it a run spent
+3.6-4.0s of CPU, so the margin under load is about 1.25x, not the idle 1.8x
+(DW-doctor-44-1 tracks it). CPU here is ``os.times()`` user plus system, for
+this process and for the child processes it waited on; on Windows
+``os.times()`` reports no child CPU, so there the measure undercounts. Time a
+run spends blocked (a network wait, a sleep) is not CPU, so this measure
+would not see it; ``doctor check`` is offline by design (NFR-1). Each run's
+wall time is still reported beside its CPU when the budget fails.
 """
 
 from __future__ import annotations
@@ -60,9 +64,9 @@ try:
 except IndexError:
     _REPO_ROOT = None
 
-# PRD SM-C1's own number, adopted verbatim (not a newly-invented budget) --
-# see the story spec's Design Notes for the live measurement this carries
-# forward (~2.1-2.5s combined against this same monorepo, ~2x headroom).
+# PRD SM-C1's own number, adopted verbatim (not a newly-invented budget).
+# Measured 2026-10-12 (Story 44.1): about 2.75s of CPU a run idle, 3.6-4.0s
+# under heavy load -- about 1.8x headroom idle, 1.25x loaded.
 _BUDGET_SECONDS = 5.0
 _WARMUP_ITERATIONS = 1
 _ITERATIONS = 5
@@ -103,6 +107,7 @@ def test_wall_and_cpu_does_not_count_a_sleep():
     assert cpu < 0.1, f"a 0.3s sleep read as {cpu:.3f}s of CPU"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="os.times() reports no child-process CPU on Windows")
 def test_wall_and_cpu_counts_a_waited_child_process():
     child = "import time\nstart = time.process_time()\nwhile time.process_time() - start < 0.3:\n    pass\n"
     _, cpu = _wall_and_cpu(lambda: subprocess.run([sys.executable, "-c", child], check=True))

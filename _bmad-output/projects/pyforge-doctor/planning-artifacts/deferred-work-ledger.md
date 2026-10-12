@@ -3007,7 +3007,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: One `doctor check` on the repo root spends 2.75 s of CPU at `c447946b3f` against the five-second budget (NFR-4), and about 95% of it is `env_hygiene`: discovery 0.33 s over 2720 `.py` files, then 2.24 s reading them, parsing the 178 that mention `environ` or `getenv`, and walking their ASTs. The same code spends 2.31 s on the 2026-10-04 tree (`26a298ed12`, 2562 tracked `.py` files) and 2.75 s on today's (2801). Story 44.1 stops the test failing under load; it does not slow the growth.
   evidence: Measured 2026-10-12 with `os.times()` over five runs after a warm-up, cProfile of one run, and per-file `_scan_file` timing (spread across files; the largest, `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py`, 0.15 s). Under cProfile `_resolve_os_aliases` (`src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py:298`) is about a third of the scan, a full `ast.walk` per parsed file beside the visitor's own walk.
   location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py:866
-  origin: story-44-1 mint (2026-10-12)
-  severity: low
+  origin: story-44-1 mint (2026-10-12); margin corrected by its independent review, iteration 1
+  severity: medium
   status: open
-  reason: Not chosen in a test-only fix. Two options, each needing its own story: resolve `os` aliases in the visitor's single pass instead of a second `ast.walk`, or scan only files git tracks. Re-measure before choosing; the budget is about 1.8x the current cost.
+  reason: Not chosen in a test-only fix. Two options, each needing its own story: resolve `os` aliases in the visitor's single pass instead of a second `ast.walk`, or scan only files git tracks. Re-measure before choosing. The budget is about 1.8x the idle cost (2.75 s) but only about 1.25x the cost under heavy load: CPU time also rises when cores are shared, to 3.6-4.0 s with 16-32 busy loops beside the run (measured 2026-10-12). At the 2026-10-04..12 growth rate (19% in 8 days) the under-load margin is gone within weeks, so the test can red under preflight again.
