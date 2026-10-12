@@ -825,7 +825,7 @@ def _is_external_memlog(rel: str) -> bool:
 
 
 def _all_tracked_files(repo_root: Path) -> list[Path]:
-    listed = subprocess.run(  # noqa: S603
+    listed = subprocess.run(
         ["git", "ls-files", "-z"],  # noqa: S607
         cwd=repo_root,
         env=_git_env(),
@@ -965,8 +965,26 @@ def _init_git_repo(tmp_path: Path) -> list[str]:
 
 
 def _git_add_all(repo_root: Path) -> None:
-    subprocess.run(  # noqa: S603
+    subprocess.run(
         ["git", "add", "-A"],  # noqa: S607
+        cwd=repo_root,
+        env=_git_env(),
+        check=True,
+    )
+
+
+def _git_run(repo_root: Path, *argv: str) -> None:
+    subprocess.run(  # noqa: S603
+        ["git", *argv],  # noqa: S607
+        cwd=repo_root,
+        env=_git_env(),
+        check=True,
+    )
+
+
+def _git_commit(repo_root: Path, git: list[str], message: str) -> None:
+    subprocess.run(  # noqa: S603
+        [*git, "commit", "-q", "-m", message],
         cwd=repo_root,
         env=_git_env(),
         check=True,
@@ -1063,9 +1081,13 @@ def test_leak_guard_ac1_org_in_non_warden_files_passes(tmp_path: Path) -> None:
     """AC1: the organisation may appear outside warden-scoped places."""
     _init_git_repo(tmp_path)
     (tmp_path / "docs/dreams").mkdir(parents=True)
-    (tmp_path / "docs/dreams/other.md").write_text("Example-Org public link\n", encoding="utf-8")
+    (tmp_path / "docs/dreams/other.md").write_text(
+        "Example-Org public link\n", encoding="utf-8"
+    )
     (tmp_path / "src/platform/tests").mkdir(parents=True)
-    (tmp_path / "src/platform/tests/test_other.py").write_text("# Example-Org\n", encoding="utf-8")
+    (tmp_path / "src/platform/tests/test_other.py").write_text(
+        "# Example-Org\n", encoding="utf-8"
+    )
     (tmp_path / ".claude/memory/project").mkdir(parents=True)
     (tmp_path / ".claude/memory/project/old-note.md").write_text(
         "Example-Org note\n", encoding="utf-8"
@@ -1073,16 +1095,13 @@ def test_leak_guard_ac1_org_in_non_warden_files_passes(tmp_path: Path) -> None:
     (tmp_path / ".claude/memory/MEMORY.md").write_text(
         "- Example-Org index line\n", encoding="utf-8"
     )
-    (tmp_path / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-x").mkdir(
-        parents=True
-    )
-    (tmp_path / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-x/.memlog.md").write_text(
-        "- Example-Org reconcile\n", encoding="utf-8"
-    )
+    spec_x = tmp_path / _STEWARD_SPEC_X_DIR
+    spec_x.mkdir(parents=True)
+    (spec_x / ".memlog.md").write_text("- Example-Org reconcile\n", encoding="utf-8")
     (tmp_path / "split.txt").write_text(
         "pyforge-warden owns this\nExample-Org on another line\n", encoding="utf-8"
     )
-    subprocess.run(["git", "add", "-A"], cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
+    _git_add_all(tmp_path)
     assert _guard_scan(tmp_path) == []
 
 
@@ -1113,16 +1132,14 @@ def test_leak_guard_ac2_org_in_warden_files_fails(tmp_path: Path) -> None:
         "- pyforge-warden and Example-Org\n", encoding="utf-8"
     )
     hits.append(".claude/memory/MEMORY.md")
-    (tmp_path / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-x").mkdir(
-        parents=True
-    )
-    (tmp_path / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-x/.memlog.md").write_text(
+    spec_x = tmp_path / _STEWARD_SPEC_X_DIR
+    spec_x.mkdir(parents=True)
+    memlog_rel = f"{_STEWARD_SPEC_X_DIR}/.memlog.md"
+    (spec_x / ".memlog.md").write_text(
         "- pyforge-warden Example-Org\n", encoding="utf-8"
     )
-    hits.append(
-        "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-x/.memlog.md"
-    )
-    subprocess.run(["git", "add", "-A"], cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
+    hits.append(memlog_rel)
+    _git_add_all(tmp_path)
     reported = _guard_scan(tmp_path)
     assert reported == sorted(hits)
     joined = "\n".join(reported)
@@ -1140,7 +1157,7 @@ def test_leak_guard_ac3_listed_terms_fail_anywhere(tmp_path: Path) -> None:
     )
     (tmp_path / "recipes/x").mkdir(parents=True)
     (tmp_path / "recipes/x/recipe.yaml").write_text("example-repo\n", encoding="utf-8")
-    subprocess.run(["git", "add", "-A"], cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
+    _git_add_all(tmp_path)
     assert _guard_scan(tmp_path) == sorted(
         [
             "docs/other.md",
@@ -1151,30 +1168,30 @@ def test_leak_guard_ac3_listed_terms_fail_anywhere(tmp_path: Path) -> None:
 
 
 def test_leak_guard_ac4_changed_files_carry_both_rules(tmp_path: Path) -> None:
-    """AC4: changed files get Rule T and line-scoped Rule O; ``.warden/`` is never read."""
+    """AC4: changed files get both rules; ``.warden/`` is never read."""
     (tmp_path / ".gitignore").write_text(".warden/\n", encoding="utf-8")
     git = _init_git_repo(tmp_path)
-    subprocess.run(["git", "add", "-A"], cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
-    subprocess.run([*git, "commit", "-q", "-m", "base"], cwd=tmp_path, check=True)  # noqa: S603
-    subprocess.run(["git", "tag", "base"], cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
+    _git_add_all(tmp_path)
+    _git_commit(tmp_path, git, "base")
+    _git_run(tmp_path, "tag", "base")
     (tmp_path / "committed.txt").write_text("example-repo\n", encoding="utf-8")
-    subprocess.run(["git", "add", "committed.txt"], cwd=tmp_path, check=True)  # noqa: S603
-    subprocess.run([*git, "commit", "-q", "-m", "s"], cwd=tmp_path, check=True)  # noqa: S603
+    _git_run(tmp_path, "add", "committed.txt")
+    _git_commit(tmp_path, git, "s")
     (tmp_path / "src/shared/packages/pyforge-warden/new.txt").parent.mkdir(parents=True)
     (tmp_path / "src/shared/packages/pyforge-warden/new.txt").write_text(
         "example-org\n", encoding="utf-8"
     )
-    (tmp_path / "edited.txt").write_text("pyforge-warden example-org\n", encoding="utf-8")
-    subprocess.run(["git", "add", "edited.txt"], cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
-    subprocess.run([*git, "commit", "-q", "-m", "track"], cwd=tmp_path, check=True)  # noqa: S603
-    (tmp_path / "edited.txt").write_text("pyforge-warden example-org\n", encoding="utf-8")
+    edited = "pyforge-warden example-org\n"
+    (tmp_path / "edited.txt").write_text(edited, encoding="utf-8")
+    _git_run(tmp_path, "add", "edited.txt")
+    _git_commit(tmp_path, git, "track")
+    (tmp_path / "edited.txt").write_text(edited, encoding="utf-8")
     (tmp_path / "plain.txt").write_text("example-org only\n", encoding="utf-8")
-    (tmp_path / "split.txt").write_text(
-        "pyforge-warden\nexample-org\n", encoding="utf-8"
-    )
-    subprocess.run(["git", "add", "split.txt"], cwd=tmp_path, env=_git_env(), check=True)  # noqa: S603
-    subprocess.run([*git, "commit", "-q", "-m", "split"], cwd=tmp_path, check=True)  # noqa: S603
-    (tmp_path / "split.txt").write_text("pyforge-warden\nexample-org\n", encoding="utf-8")
+    split_lines = "pyforge-warden\nexample-org\n"
+    (tmp_path / "split.txt").write_text(split_lines, encoding="utf-8")
+    _git_run(tmp_path, "add", "split.txt")
+    _git_commit(tmp_path, git, "split")
+    (tmp_path / "split.txt").write_text(split_lines, encoding="utf-8")
     (tmp_path / ".warden").mkdir()
     (tmp_path / ".warden/fleet-target.toml").write_text(
         "example-org\nexample-repo\n", encoding="utf-8"
@@ -1216,7 +1233,7 @@ def test_leak_guard_ac5_empty_terms_refused(
     (tmp_path / "src/shared/packages/pyforge-warden/hit.txt").write_text(
         "example-org\n", encoding="utf-8"
     )
-    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)  # noqa: S603
+    _git_add_all(tmp_path)
     assert _leak_guard_violations(
         tmp_path,
         _leak_scan_file_set(tmp_path),
