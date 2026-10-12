@@ -2091,6 +2091,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 83.24 (spec-83-24): MRS-GATE-021 -- an unsanctioned CFE commit is
         # already on the story branch (terminal; no fix turn).
         "MRS-GATE-021",
+        # Story 96.1 (spec-96-1): MRS-GATE-022 -- a story-changed spec repeats a
+        # top-level frontmatter key and the collapse step cannot pick a single
+        # occurrence (ambiguous blame or YAML trial edit failed).
+        "MRS-GATE-022",
         # Story 34.2 shipped `marshal factory checkpoint` building these three findings
         # without registering them, so every failure path of that command raised
         # `UnregisteredFindingCodeError` out of `Finding(...)` instead of exiting non-zero

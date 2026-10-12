@@ -58,6 +58,8 @@ KIND_DISPATCH_RUFF_FORMAT = "dispatch-ruff-format"
 #: Story 91.1: ``environment.yaml`` regenerated from the pixi exporter stdout
 #: immediately before independent verification runs.
 KIND_DISPATCH_ENVIRONMENT_YAML = "dispatch-environment-yaml"
+#: Story 96.1: collapse repeated top-level keys in story specs before verify.
+KIND_DISPATCH_SPEC_FRONTMATTER = "dispatch-spec-frontmatter"
 #: Story 28.16 (parallel dispatch fan-out, CAP-3): one wave's membership,
 #: cap, refused candidates, and per-member terminal outcomes.
 KIND_DISPATCH_WAVE = "dispatch-wave"

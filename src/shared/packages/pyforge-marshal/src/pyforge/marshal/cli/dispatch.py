@@ -153,8 +153,10 @@ from ..dispatch_verification_journal import build_dispatch_verification_journal_
 from ..dispatch_verify import (
     _verify_commands_with_surface_guard,
     evaluate_dispatch_verification,
+    findings_for_spec_frontmatter_refusals,
     run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
+    run_dispatch_spec_frontmatter_before_verify,
 )
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
@@ -1204,6 +1206,20 @@ def _verification_verdict_for_cap4(
             vcs=vcs,  # CommittingVcs duck type
             process=process,
         )
+        fm_result = run_dispatch_spec_frontmatter_before_verify(
+            worktree=worktree,
+            repo_root=repo_root,
+            vcs=vcs,
+            blame_vcs=vcs,
+        )
+        if fm_result.refusals:
+            fm_findings = findings_for_spec_frontmatter_refusals(fm_result.refusals)
+            return Cap4VerificationResult(
+                verdict=DispatchVerificationVerdict.REFUSED,
+                findings=fm_findings,
+                gate_envelope_verdict="gate-failed",
+                verify_data={"spec_frontmatter_collapse": {"ok": False}},
+            )
     try:
         envelope = evaluate_dispatch_verification(
             project_slug=slug,

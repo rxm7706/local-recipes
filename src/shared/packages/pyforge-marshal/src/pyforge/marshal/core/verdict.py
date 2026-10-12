@@ -1330,6 +1330,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # Story 83.19 (spec-83-19): CFE surface commits outside retro(cfe): or Rule 2.
     "MRS-GATE-020": Verdict.GATE_FAILED,
     "MRS-GATE-021": Verdict.GATE_FAILED,
+    "MRS-GATE-022": Verdict.GATE_FAILED,
     # Story 82.9 (found registering the touched-module coverage of `cli/checkpoint.py`):
     # `marshal factory checkpoint`'s three precondition failures -- no dispatch worktree in
     # the journal (001), not inside a git repository (002), no loop home (003). ERROR, the

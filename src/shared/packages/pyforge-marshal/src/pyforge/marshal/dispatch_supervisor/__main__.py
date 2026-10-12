@@ -125,6 +125,7 @@ from ..dispatch_verify import (
     resolve_spec_text_for_story,
     run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
+    run_dispatch_spec_frontmatter_before_verify,
     terminate_process_group,
     verify_fix_loop_enabled,
     wait_for_process,
@@ -2460,6 +2461,64 @@ def _run_and_journal_environment_yaml(
     return counter
 
 
+def _run_and_journal_spec_frontmatter(
+    *,
+    fs: FsPort,
+    vcs: CommittingVcs,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    story_key: str,
+    worktree: Path,
+) -> tuple[int, object | None]:
+    """Story 96.1: collapse repeated story-spec frontmatter keys and journal."""
+    from pyforge.marshal.core.dispatch_spec_frontmatter import (
+        DispatchSpecFrontmatterResult,
+        dispatch_spec_frontmatter_journal_payload,
+        dispatch_spec_frontmatter_should_journal,
+    )
+
+    result = run_dispatch_spec_frontmatter_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        blame_vcs=vcs,
+    )
+    if not dispatch_spec_frontmatter_should_journal(result):
+        return counter, result
+    payload = dispatch_spec_frontmatter_journal_payload(result)
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_SPEC_FRONTMATTER,
+        phase=Phase.INTENT,
+        payload={"story_key": story_key, **payload},
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_SPEC_FRONTMATTER,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={"story_key": story_key, **payload},
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal spec frontmatter collapse for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter, result
+
+
 def _run_and_journal_verification(
     *,
     fs: FsPort,
@@ -2501,6 +2560,53 @@ def _run_and_journal_verification(
             story_key=story_key,
             worktree=worktree,
         )
+        counter, fm_result = _run_and_journal_spec_frontmatter(
+            fs=fs,
+            vcs=vcs,  # CommittingVcs duck type
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            story_key=story_key,
+            worktree=worktree,
+        )
+        if fm_result is not None and fm_result.refusals:
+            from pyforge.marshal.core.dispatch_spec_frontmatter import findings_for_spec_frontmatter_refusals
+            from pyforge.marshal.core.model import build_envelope
+            from pyforge.marshal.core.verdict import compute_verdict
+
+            fm_findings = findings_for_spec_frontmatter_refusals(fm_result.refusals)
+            envelope = build_envelope(
+                command="dispatch verify",
+                verdict=compute_verdict(list(fm_findings)),
+                data={"spec_frontmatter_collapse": {"ok": False}},
+                findings=fm_findings,
+            )
+            built = build_dispatch_verification_journal_entries_from_envelope(
+                envelope=envelope,
+                repo_root=repo_root,
+                effective=compose_dispatch_policy(slug, repo_root),
+                run_id=run_id,
+                writer_id=writer_id,
+                counter=counter,
+                ts=_format_entry_ts(_now_utc()),
+            )
+            try:
+                _append_entry(fs, run_dir, built.intent_entry, fsync=True)
+                _append_entry(
+                    fs,
+                    run_dir,
+                    built.outcome_entry,
+                    fsync=False,
+                    offload_fields=built.offload_fields,
+                )
+            except FsError as exc:
+                print(
+                    f"dispatch supervisor: cannot journal verification for {run_id!r}: {exc}",
+                    file=sys.stderr,
+                )
+            return built.next_counter
     effective = compose_dispatch_policy(slug, repo_root)
     resolution = resolve_feed([story_key])
     if not resolution.resolved:

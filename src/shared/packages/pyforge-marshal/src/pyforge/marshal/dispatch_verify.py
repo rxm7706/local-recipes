@@ -43,6 +43,11 @@ from .core.dispatch_ruff_format import (
     DispatchRuffFormatResult,
     apply_dispatch_ruff_format_before_verify,
 )
+from .core.dispatch_spec_frontmatter import (
+    DispatchSpecFrontmatterResult,
+    apply_dispatch_spec_frontmatter_before_verify,
+    findings_for_spec_frontmatter_refusals,
+)
 from .core.dispatch_verification import (
     BranchCommitAttribution,
     findings_for_commit_attribution_violations,
@@ -1074,6 +1079,22 @@ def run_dispatch_environment_yaml_before_verify(
         repo_root=repo_root,
         vcs=vcs,
         process=process,
+    )
+
+
+def run_dispatch_spec_frontmatter_before_verify(
+    *,
+    worktree: Path,
+    repo_root: Path,
+    vcs: CommittingVcs,
+    blame_vcs: VcsPort,
+) -> DispatchSpecFrontmatterResult:
+    """Story 96.1 entry: collapse repeated story-spec frontmatter keys before verify."""
+    return apply_dispatch_spec_frontmatter_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        blame_vcs=blame_vcs,
     )
 
 
