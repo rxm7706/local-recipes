@@ -2,7 +2,8 @@
 title: "16.5: Warden inventories the items of the operator-designated GitHub Projects"
 type: 'feature'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
+landing_review: 'passed'
 review_loop_iteration: 1
 followup_review_recommended: false
 context:
@@ -184,6 +185,10 @@ Deps: S-16.1.
   chose "Whole org + 2 projects". Bound to CAP-26 (FR-43). The flag is `pyforge.warden.fleet_project_items`.
 
 ## Review Triage Log
+
+### 2026-10-11 — Orchestrator delta verification of the iteration-1 minors: passed
+
+The orchestrator (not the implementer, not the reviewer) read the F1-F5 delta at dc5def79f7 and re-ran one mutation: dropping the placeholder-body refusal in `_ApiConnection.endheaders` reds `test_a_login_equal_to_the_placeholder_is_refused_before_it_is_sent` and the three `test_a_body_carrying_the_placeholder_is_refused_before_a_socket_opens` cases (5 failed); restored byte-identical. AC9 against the operator's real terms, from a configuration kept outside the repository: the branch diff (`git diff origin/main...HEAD`) and its 15 commit messages carry none of the target's repository names or the organisation name; the repository names appear nowhere in the tracked tree. The implementer's gates after the last edit: `pyforge-warden-test` 0 (2440 passed), `lint-types` 0, `platform-ci-local -- --test` 0 (1303 passed, 14 skipped), `spec-surface-check` 0, `detectors-ci` 0, flag gate `--spec` pass. Story done; landing review passed; landing proceeds.
 
 ### 2026-10-11 — Fix pass for iteration 1 minors (implementer)
 
