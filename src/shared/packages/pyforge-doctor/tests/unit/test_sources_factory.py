@@ -1783,3 +1783,193 @@ def test_env_count_reads_the_live_manifest_like_tomllib() -> None:
     with (repo / "pixi.toml").open("rb") as fh:
         declared = len(tomllib.load(fh)["environments"])
     assert factory._env_count(repo) == declared
+
+
+# --- Story 43.1: marshal dispatch Tier-3 run artifacts ---------------------------------
+
+
+#: One file of each AC3 shape, with the class ``classify()`` must give it.
+_TIER3_DISPATCH_SHAPES: dict[str, str] = {
+    "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06.md": "local:recall-feedback",
+    "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06.md.query-ran": "local:recall-feedback",
+    "epic-97-continuity.md": "local:sprint-feed",
+    "session-advisories/run-1/journal.jsonl": "local:run-journal",
+    "dispatch-runs-quarantine/run-1/journal.jsonl": "local:run-journal",
+    "dispatch-runs-quarantine/README.md": "local:run-journal",
+    "token-economy-benchmark-2026-10-12T103206Z.json": "local:benchmark",
+    "token-economy-benchmark-per-layer-2026-10-12T103206Z.json": "local:benchmark",
+    "bmad-build-auto-result-97-2-some-story.md": "local:run-result",
+    "97-2-x-attempted-change.patch": "local:attempted-change",
+    "sessions/pyforge-marshal-20261012T103206150Z-210a0f06/gate-records/97-2/gate-record.json": "local:run-journal",
+    "dispatch-runs/pyforge-marshal-20260901T032300000Z-0a1b2c3d/failed/28.9/changes.patch": "local:failed-attempt",
+    "fleet-drain-runs/campaign.lock": "local:run-journal",
+}
+
+
+def _plant_tier3_dispatch_shapes(repo: Path) -> dict[Path, str]:
+    """Plant one file of each AC3 shape; return each planted path with its class."""
+    impl = factory._impl(repo)
+    planted: dict[Path, str] = {}
+    for name, cls in _TIER3_DISPATCH_SHAPES.items():
+        path = impl / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("x\n", encoding="utf-8")
+        planted[path] = cls
+    return planted
+
+
+def test_recall_feedback_pair_is_classified_and_gather_stays_clean(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    stem = "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06"
+    md = impl / f"{stem}.md"
+    marker = impl / f"{stem}.md.query-ran"
+    md.write_text("x\n", encoding="utf-8")
+    marker.write_text("", encoding="utf-8")
+    assert factory.classify(md, repo) == "local:recall-feedback"
+    assert factory.classify(marker, repo) == "local:recall-feedback"
+    findings = factory.gather(repo)
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "recall-feedback.md",
+        "recall-feedback__97.2.md",
+        "recall-feedback__a__b.txt",
+        "notes.query-ran",
+        "session-advisories.md",
+        "token-economy-benchmark.json",
+        "epic-x-continuity.md",
+        "bmad-build-auto-result.md",
+        "randomfile.txt",
+    ],
+)
+def test_tier3_look_alikes_still_uncovered(tmp_path: Path, name: str) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    path = factory._impl(repo) / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("x\n", encoding="utf-8")
+    assert factory.classify(path, repo) == "UNKNOWN"
+    findings = [f for f in factory.gather(repo) if f.check == "uncovered"]
+    assert len(findings) == 1
+    assert findings[0].evidence["subject"] == f"implementation-artifacts/{name}"
+
+
+def test_every_marshal_dispatch_tier3_shape_in_intent_table(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    planted = _plant_tier3_dispatch_shapes(repo)
+    (factory._impl(repo) / "scratch.bak").write_text("x\n", encoding="utf-8")
+    (factory._impl(repo) / "review-diff.patch").write_text("diff\n", encoding="utf-8")
+    findings = factory.gather(repo)
+    assert not [f for f in findings if f.check == "uncovered"]
+    stray = {(f.check, f.evidence["subject"]) for f in findings if f.check == "stray-file"}
+    assert stray == {
+        ("stray-file", "implementation-artifacts/scratch.bak"),
+        ("stray-file", "implementation-artifacts/review-diff.patch"),
+    }
+    tier3_classes = {r.classification for r in factory.TIER3_RUN_ARTIFACTS}
+    for path, expected in planted.items():
+        got = factory.classify(path, repo)
+        assert got == expected, (factory._rel(path, repo), got)
+        assert got in tier3_classes, (factory._rel(path, repo), got)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "bmad-build-auto-result-2026-10-12T103206Z.md",
+        "bmad-build-auto-result-97.2-Some_Story.md",
+    ],
+)
+def test_bmad_build_auto_result_takes_the_writers_slug_or_timestamp(tmp_path: Path, name: str) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    path = factory._impl(repo) / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("x\n", encoding="utf-8")
+    assert factory.classify(path, repo) == "local:run-result"
+    findings = factory.gather(repo)
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+def test_failed_attempt_patch_is_kept_and_its_look_alikes_are_not(tmp_path: Path) -> None:
+    """A failed attempt's preserved diff (``dispatch-runs/<run>/failed/<story>/changes.patch``,
+    the only copy) is not a ``stray-file``; any other patch in a run record still is."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    run = factory._impl(repo) / "dispatch-runs" / "pyforge-marshal-20260901T032300000Z-0a1b2c3d"
+    kept = run / "failed" / "28.9" / "changes.patch"
+    look_alikes = (
+        run / "failed" / "28.9" / "other.patch",
+        run / "changes.patch",
+        run / "failed" / "changes.patch",
+        factory._impl(repo) / "runs" / "run-1" / "failed" / "28.9" / "changes.patch",
+    )
+    for path in (kept, *look_alikes):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("diff\n", encoding="utf-8")
+    assert factory.classify(kept, repo) == "local:failed-attempt"
+    assert factory._is_kept_tier3_artifact(factory._rel(kept, repo))
+    findings = factory.gather(repo)
+    assert not [f for f in findings if f.check == "uncovered"]
+    stray = {f.evidence["subject"] for f in findings if f.check == "stray-file"}
+    assert stray == {factory._rel(p, repo) for p in look_alikes}
+
+
+def test_kept_exemption_follows_the_table_class(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The keep-exemption is derived from ``TIER3_RUN_ARTIFACTS``: a row that no longer
+    claims the attempted-change patch leaves it a ``stray-file`` (review iteration 2)."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    patch = factory._impl(repo) / "97-2-x-attempted-change.patch"
+    patch.parent.mkdir(parents=True, exist_ok=True)
+    patch.write_text("diff\n", encoding="utf-8")
+    assert not [f for f in factory.gather(repo) if f.check == "stray-file"]
+    narrowed = tuple(
+        factory._tier3_run_rule(
+            r"^implementation-artifacts/never-attempted-change\.patch$", rule.classification, rule.writer
+        )
+        if rule.classification == "local:attempted-change"
+        else rule
+        for rule in factory.TIER3_RUN_ARTIFACTS
+    )
+    monkeypatch.setattr(factory, "TIER3_RUN_ARTIFACTS", narrowed)
+    stray = [f.evidence["subject"] for f in factory.gather(repo) if f.check == "stray-file"]
+    assert stray == ["implementation-artifacts/97-2-x-attempted-change.patch"]
+
+
+@pytest.mark.parametrize("name", ["fleet-drain-runs/other.lock", "fleet-drain-runs/campaign"])
+def test_fleet_cycle_lock_look_alikes_still_uncovered(tmp_path: Path, name: str) -> None:
+    """Only ``fleet-drain-runs/campaign.lock`` itself (``fleet_cycle_lock_path`` plus the
+    advisory lock's ``.lock`` suffix) is covered at that directory's root (review iteration 3)."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    path = factory._impl(repo) / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("x\n", encoding="utf-8")
+    assert factory.classify(path, repo) == "UNKNOWN"
+    findings = [f for f in factory.gather(repo) if f.check == "uncovered"]
+    assert [f.evidence["subject"] for f in findings] == [f"implementation-artifacts/{name}"]
+
+
+def test_fleet_cycle_lock_is_covered_and_a_stray_copy_is_not(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    runs = factory._impl(repo) / "fleet-drain-runs"
+    runs.mkdir(parents=True)
+    (runs / "campaign.lock").write_text("", encoding="utf-8")
+    assert factory.classify(runs / "campaign.lock", repo) == "local:run-journal"
+    findings = factory.gather(repo)
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    (runs / "campaign.lock.bak").write_text("", encoding="utf-8")
+    stray = [f.evidence["subject"] for f in factory.gather(repo) if f.check == "stray-file"]
+    assert stray == ["implementation-artifacts/fleet-drain-runs/campaign.lock.bak"]
