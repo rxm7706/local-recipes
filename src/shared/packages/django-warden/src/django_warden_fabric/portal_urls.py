@@ -13,6 +13,11 @@ urlpatterns = [
         name="warden-fleet-inventory-start",
     ),
     path(
+        "fleet/project-items/start/",
+        views.start_fleet_project_items,
+        name="warden-fleet-project-items-start",
+    ),
+    path(
         "fleet/proposals/",
         views.fleet_proposal_queue,
         name="warden-fleet-proposals",

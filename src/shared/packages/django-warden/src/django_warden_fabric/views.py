@@ -32,8 +32,10 @@ from django_pyforge.supervisor import bound_refusal_payload
 
 from .fleet import FLEET_FIX_PROPOSALS_FLAG
 from .fleet import FLEET_INVENTORY_FLAG
+from .fleet import FLEET_PROJECT_ITEMS_FLAG
 from .fleet_inventory import FleetInventoryError
 from .fleet_inventory import load_organisation_from_config
+from .fleet_project_items import load_project_numbers_from_config
 from .mcp_asgi import RUN_AUDIT_TOOL
 from .mcp_asgi import WARDEN_STATION
 from .models import ComplianceJob
@@ -45,6 +47,7 @@ from .proposals import dismiss_proposal
 from .tasks import SUPPORTED_SUFFIXES
 from .tasks import run_compliance_job
 from .tasks import run_fleet_inventory
+from .tasks import run_fleet_project_items
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +55,11 @@ logger = logging.getLogger(__name__)
 # (the config's absolute path and what is wrong with it) goes to the server log only.
 FLEET_INVENTORY_CONFIG_REFUSAL = (
     "fleet inventory target config is missing or invalid; see the server log"
+)
+
+# Story 16.5: the same fixed message for the project-items action's unusable config.
+FLEET_PROJECT_ITEMS_CONFIG_REFUSAL = (
+    "fleet project-items target config is missing or invalid; see the server log"
 )
 
 _WELL_KNOWN_MANIFEST_NAMES = frozenset(
@@ -87,7 +95,10 @@ def chrome_home(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "warden_fabric/chrome.html",
-        {"fleet_inventory_enabled": _fleet_inventory_enabled()},
+        {
+            "fleet_inventory_enabled": _fleet_inventory_enabled(),
+            "fleet_project_items_enabled": _fleet_project_items_enabled(),
+        },
     )
 
 
@@ -227,6 +238,31 @@ def start_fleet_inventory(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "warden_fabric/fleet_inventory_started.html",
+        {"run_id": run_id},
+    )
+
+
+def _fleet_project_items_enabled() -> bool:
+    return evaluate_from_source(key=FLEET_PROJECT_ITEMS_FLAG)
+
+
+@require_POST
+@require_station_role("warden")
+def start_fleet_project_items(request: HttpRequest) -> HttpResponse:
+    """HTMX: enqueue the project-items inventory when the flag is on."""
+    if not _fleet_project_items_enabled():
+        return HttpResponse("fleet project items disabled (flag off)", status=403)
+    try:
+        organisation = load_organisation_from_config()
+        load_project_numbers_from_config()
+    except FleetInventoryError as exc:
+        logger.warning("fleet project items refused: %s", exc)
+        return HttpResponse(FLEET_PROJECT_ITEMS_CONFIG_REFUSAL, status=400)
+    run_id = uuid.uuid4()
+    run_fleet_project_items.delay(str(run_id), organisation)
+    return render(
+        request,
+        "warden_fabric/fleet_project_items_started.html",
         {"run_id": run_id},
     )
 
