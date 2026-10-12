@@ -241,11 +241,60 @@ run_platform_ci_local() {
     echo "FAIL — last 25 lines of $log:"; tail -25 "$log"; return 1
   }
 
-  ensure_envs() {
-    local e
-    for e in platform-ci-test platform-dev pyforge-warden; do
-      [ -x "$ROOT/.pixi/envs/$e/bin/python" ] || pixi install --frozen -e "$e" 9>&- >/dev/null
+  _pixi_env_lock_hash() {
+    local env="$1" record="$ROOT/.pixi/envs/$env/conda-meta/pixi"
+    if [ ! -f "$record" ]; then
+      echo ""
+      return 0
+    fi
+    python3 -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p,encoding="utf-8")); print(d.get("environment_lock_file_hash","") if isinstance(d,dict) else "")' "$record" 2>/dev/null || echo ""
+  }
+
+  _envs_for_stages() {
+    local need=() s e ordered=(platform-ci-test platform-dev pyforge-warden)
+    for s in "${STAGES[@]}"; do
+      case "$s" in
+        test) need+=(platform-ci-test platform-dev) ;;
+        container) need+=(platform-dev) ;;
+        promotion) need+=(platform-ci-test pyforge-warden) ;;
+        images) ;;
+      esac
     done
+    for e in "${ordered[@]}"; do
+      local n found=0
+      for n in "${need[@]}"; do
+        [ "$n" = "$e" ] && found=1 && break
+      done
+      [ "$found" = 1 ] && echo "$e"
+    done
+  }
+
+  ensure_envs() {
+    local e before after state sync_log rc
+    while IFS= read -r e; do
+      [ -n "$e" ] || continue
+      sync_log="$WORK/env-sync-$e.log"
+      before="$(_pixi_env_lock_hash "$e")"
+      if ! pixi install --frozen --manifest-path "$ROOT/pixi.toml" -e "$e" 9>&- >"$sync_log" 2>&1; then
+        rc=$?
+        echo "platform-ci-local: pixi install --frozen failed for ${e} (exit ${rc})" >&2
+        echo "last 25 lines of ${sync_log}:" >&2
+        tail -25 "$sync_log" >&2
+        exit 2
+      fi
+      after="$(_pixi_env_lock_hash "$e")"
+      if [ -z "$before" ]; then
+        state=installed
+      elif [ -z "$after" ]; then
+        state=checked
+      elif [ "$before" != "$after" ]; then
+        state=synced
+      else
+        state=current
+      fi
+      echo "env ${e}: ${state}"
+      printf 'INFO\tenv\t%s: %s\n' "$e" "$state" >>"$RESULTS"
+    done < <(_envs_for_stages)
     command -v "$ENGINE" >/dev/null 2>&1 || { echo "$ENGINE is not on PATH" >&2; exit 2; }
   }
 
