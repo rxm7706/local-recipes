@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b2b4188a72edd19d
-story_count: 354
-test_file_count: 115
+source_fingerprint: 1b189cd595d588ab
+story_count: 355
+test_file_count: 117
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 354
-- **Epics parsed:** 97
-- **Test files inventoried:** 115 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 355
+- **Epics parsed:** 98
+- **Test files inventoried:** 117 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b2b4188a72edd19d`
+- **Source fingerprint:** `1b189cd595d588ab`
 
 ## Risk Assessment
 
@@ -125,6 +125,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 95: The portal packages and the platform target Python 3.14 (feature under CAP-153)
 - Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
 - Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
+- Epic 98: Station tests run when what they read changes (fix under CAP-159)
 
 ### Low-risk epics
 
@@ -205,6 +206,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
@@ -238,6 +240,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_reconcile_propagation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_retry.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_track.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py` | unit | none observed |
@@ -612,6 +615,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 95.1 | The portal packages and the platform target Python 3.14 | none observed |
 | 96.1 | `platform-ci-local` never runs a stage on a stale env | none observed |
 | 97.1 | The not-yet-clean ceiling may shrink but never grow | none observed |
+| 98.1 | Station tests run when what they read changes | none observed |
 
 ## Quality Gates
 
