@@ -1470,6 +1470,30 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   steward through the CLI's JSON, never by import; depends on steward's `ci status` landing first; changes no landing
   verdict and waits on no CI. Operator ruling 2026-10-12: the plan's recommended answers Q1–Q8 stand. Owner
   `spec-pyforge-marshal`.
+- **2026-10-12 (the marshal suite under load)** — **Found: the local preflight marshal lane goes red on tests that pass
+  alone, so a green branch has to be pushed past its own gate.** Team memory recorded it the same day
+  (`.claude/memory/feedback/the-local-pr-preflight-marshal-lane-pyforge-marshal-test-can.md`), and it recurred on
+  `hygiene-memory-index-prune`, a diff that touched only `.claude/memory/` and `archive/`. Three tests failed:
+  - two NFR-P1 budget tests, at 5.78 s and 10.85 s against 5 s;
+  - `test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns`, which read `refused` where it expects
+    `verified`.
+  All three pass alone. The push went out under `PYFORGE_PREFLIGHT_SKIP=1`, journaled. **Measured at `c447946b3f`:**
+  `run_check` on the budget fixture takes 2.65-2.95 s alone. 0.05 s of that is in-process; about 2.6 s is child
+  processes. `copier --version` takes 1.78 s and `bmad-loop --version` 1.07 s, and `seed/detect/referenced_deps.py`
+  runs them one after the other. So about 95% of the "walk cost" the tests time is two Python start-ups, and under
+  load they cross 5 s. The same code maps a probe's 5 s timeout to "referenced dependency is not installed", so on a
+  busy machine `marshal seed check` reports an installed `copier` as missing. The dispatch-verification test reads the
+  live checkout as `repo_root`, as 30 calls in its module do, and its failure prints only the verdict. Rerun alone, and
+  again beside the steward, doctor and detectors lanes, it did not fail, so its cause is not yet known. **What it looks
+  like when fixed:** `seed check` probes its tools at the same time and says "timed out" when a probe times out. The
+  default-lane budget tests time the tree with the probes stubbed, and one `slow` test times the real probes in the
+  serial lane. The dispatch-verification tests run against a fixture root, never the live checkout. A verdict
+  assertion that fails names every finding, so the next red explains itself. **Constraints:** fix stories under CAP-13
+  and the dispatch-verification gates, no CAP, no flag. No budget is raised, and no test is skipped or moved out of its
+  lane. Epic 98 stays reserved for the ci-pauses-at-merge feature (`docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`
+  § 5). Doctor's own 5 s budget test (`test_check_speed_budget.py`) failed the same way in both preflight runs. It is
+  doctor's to fix, on doctor's chain. Owner `spec-pyforge-marshal`. → Epic 99 / Stories 99.1 and 99.2, specced
+  2026-10-12.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
