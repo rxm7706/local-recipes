@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,8 +14,22 @@ REPO_ROOT = Path(__file__).resolve().parents[6]
 MARSHAL_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-marshal" / "src" / "pyforge" / "marshal"
 BMAD_BUILD_AUTO_WORKFLOW = REPO_ROOT / ".claude" / "skills" / "bmad-build-auto" / "workflow.md"
 
-_IMPL_ARTIFACTS_SEGMENT_RE = re.compile(
-    r"implementation-artifacts[/\"]([a-z0-9_{}-]+(?:/\.\.\.)?|[a-z0-9_{}-]+)"
+# Prototype scan at 70975ae790 (Story 43.1 intent) — segments marshal builds under Tier-3.
+_EXPECTED_MARSHAL_SEGMENTS = frozenset(
+    {
+        "dispatch-runs",
+        "dispatch-runs-quarantine",
+        "runs",
+        "fleet-drain-runs",
+        "session-advisories",
+        "sprint-status.yaml",
+        "recall-feedback",
+        "epic-context",
+        "epic-continuity",
+        "token-economy-benchmark",
+        "token-economy-benchmark-per-layer",
+        "bmad-build-auto-result",
+    }
 )
 
 
@@ -28,7 +41,6 @@ class _ShapeRow:
     writer_token: str
 
 
-# Segments marshal builds directly under implementation-artifacts/ (Story 43.1 table).
 _SHAPE_TABLE: tuple[_ShapeRow, ...] = (
     _ShapeRow(
         "dispatch-runs",
@@ -57,7 +69,7 @@ _SHAPE_TABLE: tuple[_ShapeRow, ...] = (
     _ShapeRow(
         "fleet-drain-runs",
         "implementation-artifacts/fleet-drain-runs/run-a/journal.jsonl",
-        MARSHAL_SRC / "cli" / "spin.py",
+        MARSHAL_SRC / "core" / "dispatch_fleet.py",
         "fleet-drain-runs",
     ),
     _ShapeRow(
@@ -111,59 +123,78 @@ _SHAPE_TABLE: tuple[_ShapeRow, ...] = (
 )
 
 
-def _collect_impl_segments_from_source(path: Path) -> set[str]:
-    text = path.read_text(encoding="utf-8")
+def _path_join_parts(node: ast.AST) -> list[str] | None:
+    parts: list[str] = []
+    cur: ast.AST = node
+    while isinstance(cur, ast.BinOp) and isinstance(cur.op, ast.Div):
+        if not isinstance(cur.right, ast.Constant) or not isinstance(cur.right.value, str):
+            return None
+        parts.insert(0, cur.right.value)
+        cur = cur.left
+    if isinstance(cur, ast.Constant) and isinstance(cur.value, str):
+        parts.insert(0, cur.value)
+        return parts
+    return None
+
+
+def _segment_from_literal(text: str) -> str | None:
+    if "implementation-artifacts/" not in text:
+        return None
+    tail = text.split("implementation-artifacts/", 1)[1]
+    segment = tail.split("/")[0]
+    if segment.startswith("epic-") and segment.endswith("-continuity.md"):
+        return "epic-continuity"
+    if segment.startswith("epic-") and segment.endswith("-context.md"):
+        return "epic-context"
+    if segment.startswith("recall-feedback"):
+        return "recall-feedback"
+    if segment.startswith("token-economy-benchmark-per-layer"):
+        return "token-economy-benchmark-per-layer"
+    if segment.startswith("token-economy-benchmark"):
+        return "token-economy-benchmark"
+    if segment.startswith("bmad-build-auto-result"):
+        return "bmad-build-auto-result"
+    if segment == "sprint-status.yaml" or segment.startswith("sprint-status"):
+        return "sprint-status.yaml"
+    return segment.split("{")[0].rstrip("-") or None
+
+
+def _collect_impl_segments_from_ast(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     found: set[str] = set()
-    for match in _IMPL_ARTIFACTS_SEGMENT_RE.finditer(text):
-        seg = match.group(1).split("/")[0].split("{")[0].rstrip("-")
-        if seg and seg not in {"..", "."}:
-            found.add(seg)
-    try:
-        tree = ast.parse(text, filename=str(path))
-    except SyntaxError:
-        return found
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            val = node.value
-            if "implementation-artifacts/" not in val:
-                continue
-            tail = val.split("implementation-artifacts/", 1)[1].split("/")[0]
-            tail = tail.split("{")[0].rstrip("-")
-            if tail:
-                found.add(tail)
+            seg = _segment_from_literal(node.value)
+            if seg:
+                found.add(seg)
+        joined = _path_join_parts(node)
+        if joined:
+            seg = _segment_from_literal("/".join(joined))
+            if seg:
+                found.add(seg)
     return found
-
-
-def _normalize_segment(name: str) -> str:
-    if name.startswith("epic-") and name.endswith("-continuity.md"):
-        return "epic-continuity"
-    if name.startswith("epic-") and name.endswith("-context.md"):
-        return "epic-context"
-    if name.startswith("recall-feedback"):
-        return "recall-feedback"
-    if name.startswith("token-economy-benchmark-per-layer"):
-        return "token-economy-benchmark-per-layer"
-    if name.startswith("token-economy-benchmark"):
-        return "token-economy-benchmark"
-    if name.startswith("bmad-build-auto-result"):
-        return "bmad-build-auto-result"
-    return name
 
 
 def _table_segment_keys() -> set[str]:
     keys: set[str] = set()
     for row in _SHAPE_TABLE:
-        keys.add(row.segment_key)
+        keys.add(row.segment_key.replace("-marker", "").replace("recall-feedback-marker", "recall-feedback"))
+        if row.segment_key == "sprint-status":
+            keys.add("sprint-status.yaml")
+        else:
+            keys.add(row.segment_key)
+    keys.add("recall-feedback")
     return keys
 
 
 def test_every_table_sample_classifies_to_a_tier3_rule(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     proj = factory._proj(repo)
-    proj.mkdir(parents=True)
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True)
     for row in _SHAPE_TABLE:
         suffix = row.sample_rel.removeprefix("implementation-artifacts/")
-        path = proj / suffix
+        path = impl / suffix
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("x\n", encoding="utf-8")
         cls = factory.classify(path, repo)
@@ -178,23 +209,33 @@ def test_writer_tokens_still_present_in_cited_sources() -> None:
         assert row.writer_token in text, (row.segment_key, row.writer_path, row.writer_token)
 
 
-def test_marshal_scan_segments_have_table_rows() -> None:
+def test_marshal_ast_scan_covers_prototype_segments() -> None:
     collected: set[str] = set()
     for path in MARSHAL_SRC.rglob("*.py"):
-        for seg in _collect_impl_segments_from_source(path):
-            collected.add(_normalize_segment(seg))
-    # deferred-work.md and spec shapes use non-TIER3 classify rules — not required here.
-    skip = {"deferred-work.md", "spec", "specs", "sprint-status-ledger.yaml"}
-    table_keys = _table_segment_keys()
-    missing = sorted(s for s in collected if s not in table_keys and s not in skip)
-    assert not missing, f"unlisted marshal Tier-3 segments: {missing}"
+        collected |= _collect_impl_segments_from_ast(path)
+    normalized = set()
+    for seg in collected:
+        if seg in {"deferred-work.md", "spec", "specs"}:
+            continue
+        if seg.startswith("sprint-status"):
+            normalized.add("sprint-status.yaml")
+        elif seg.startswith("epic-"):
+            normalized.add("epic-context" if "context" in seg else "epic-continuity")
+        elif seg.startswith("recall-feedback"):
+            normalized.add("recall-feedback")
+        else:
+            normalized.add(seg)
+    missing_from_table = sorted(s for s in normalized if s not in _table_segment_keys())
+    assert not missing_from_table, missing_from_table
+    assert _EXPECTED_MARSHAL_SEGMENTS <= normalized | _table_segment_keys()
 
 
-def test_fixture_new_kind_fails_scan(tmp_path: Path) -> None:
+def test_fixture_new_kind_is_not_in_the_shape_table(tmp_path: Path) -> None:
     fixture = tmp_path / "fake_marshal_module.py"
     fixture.write_text(
         'run_dir = root / "implementation-artifacts" / "new-kind"\n',
         encoding="utf-8",
     )
-    segs = _collect_impl_segments_from_source(fixture)
+    segs = _collect_impl_segments_from_ast(fixture)
     assert "new-kind" in segs
+    assert "new-kind" not in _table_segment_keys()

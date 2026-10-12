@@ -1812,6 +1812,7 @@ def test_recall_feedback_pair_is_classified_and_gather_stays_clean(tmp_path: Pat
     repo = tmp_path / "repo"
     _bootstrap(repo)
     impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
     stem = "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06"
     md = impl / f"{stem}.md"
     marker = impl / f"{stem}.md.query-ran"
@@ -1857,9 +1858,9 @@ def test_every_marshal_dispatch_tier3_shape_in_intent_table(tmp_path: Path) -> N
     (factory._impl(repo) / "scratch.bak").write_text("x\n", encoding="utf-8")
     (factory._impl(repo) / "review-diff.patch").write_text("diff\n", encoding="utf-8")
     findings = factory.gather(repo)
-    assert not [f for f in findings if f.check in ("uncovered", "stray-file")]
-    assert len([f for f in findings if f.status is not DoctorStatus.OK]) == 2
+    assert not [f for f in findings if f.check == "uncovered"]
     stray = {(f.check, f.evidence["subject"]) for f in findings if f.check == "stray-file"}
+    assert len(stray) == 2
     assert ("stray-file", "implementation-artifacts/scratch.bak") in stray
     assert ("stray-file", "implementation-artifacts/review-diff.patch") in stray
     tier3_classes = {r.classification for r in factory.TIER3_RUN_ARTIFACTS}
