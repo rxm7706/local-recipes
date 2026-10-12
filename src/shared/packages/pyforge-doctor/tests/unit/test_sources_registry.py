@@ -316,6 +316,7 @@ _DEGRADE_CALL_SITES = {
     "docs_shelf": 1,
     "factory": 1,
     "frozen_path": 1,
+    "frontmatter_duplicate_keys": 1,
     "general_docs_consistency": 1,
     "live_proof_surfaces": 1,
     "one_chain": 3,

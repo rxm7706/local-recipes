@@ -228,6 +228,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         # Story 30.2 (spec-pyforge-doctor CAP-84): docs/map.yaml vs its
         # render (docs/MAP.md), authored-page staleness, skill-dir hygiene.
         "docs-currency",
+        # Story 42.1 (CAP-81 / CAP-86): duplicate frontmatter keys in tracked
+        # story specs.
+        "frontmatter-duplicate-keys",
     }
 
 

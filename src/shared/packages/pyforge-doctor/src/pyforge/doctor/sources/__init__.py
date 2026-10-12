@@ -548,6 +548,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # map-render / authored-page-stale / skill-dir-hygiene, beside
     # DOCS_MAP_HYGIENE above; fleet subject (the general docs layer, same
     # rationale as GENERAL_DOCS_CONSISTENCY/DOCS_SHELF_OCCUPANCY). Never FAIL.
+    SourceRegistration(
+        source=Source.FRONTMATTER_DUPLICATE_KEYS,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 42.1 -- sources/frontmatter_duplicate_keys.py. Tracked story
+    # specs only; duplicate frontmatter key FAIL, unreadable block WARN.
+    # Fleet subject (every station's planning-artifacts/specs/). CAN FAIL.
 )
 
 
@@ -606,9 +614,10 @@ def degrade_on_exception(
     cannot drift): ``bmad_config``, ``bmad_method``, ``board``,
     ``capability_effect``, ``capability_ledger``, ``chain``, ``docs_currency``,
     ``docs_map_hygiene``, ``docs_shelf``, ``factory``, ``frozen_path``,
-    ``general_docs_consistency``, ``live_proof_surfaces``, ``one_chain``,
-    ``pixi_currency``, ``sibling_dreams`` and ``status_body_consistency`` (all
-    in ``sources/``). Any other source module does not call it; an exception
+    ``frontmatter_duplicate_keys``, ``general_docs_consistency``,
+    ``live_proof_surfaces``, ``one_chain``, ``pixi_currency``, ``sibling_dreams``
+    and ``status_body_consistency`` (all in ``sources/``). Any other source module
+    does not call it; an exception
     escaping such a ``gather()`` is a real bug in a module that promises never
     to raise, and keeps propagating to ``main()``'s top-level exception net
     (exit 2), never silently reclassified as WARN.

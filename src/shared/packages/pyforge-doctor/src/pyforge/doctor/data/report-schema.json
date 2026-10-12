@@ -95,7 +95,8 @@
             "docs-map-hygiene",
             "docs-shelf-occupancy",
             "live-proof-surface",
-            "docs-currency"
+            "docs-currency",
+            "frontmatter-duplicate-keys"
           ]
         },
         "check": { "type": "string" },
