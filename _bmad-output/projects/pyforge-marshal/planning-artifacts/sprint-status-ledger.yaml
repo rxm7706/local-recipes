@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 631
+# stories: 634
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -461,6 +461,7 @@ development_status:
   93-1-every-live-session-gets-the-recall-its-layer-promises-and-the-run-records-the-outcome: done
   94-1-the-review-gate-orders-review-entries-by-their-real-commit-times: done
   94-2-a-held-pr-is-marked-ready-when-its-landing-review-passes: done
+  96-1-a-story-spec-carries-each-frontmatter-key-once: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -645,3 +646,5 @@ development_status:
   epic-93-retrospective: optional
   epic-94: done
   epic-94-retrospective: optional
+  epic-96: backlog
+  epic-96-retrospective: optional
