@@ -42,7 +42,6 @@ def _violations(tree: ast.Module) -> list[str]:
                 if alias.name == "yaml" or alias.name.startswith("yaml."):
                     yaml_aliases.add(alias.asname or "yaml")
         elif isinstance(node, ast.ImportFrom) and node.module and node.module.split(".")[0] == "yaml":
-            bound = node.module.split(".")[0]
             for alias in node.names:
                 yaml_aliases.add(alias.asname or alias.name)
                 if alias.name in _FORBIDDEN_YAML_DUMP:

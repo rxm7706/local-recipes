@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-import sys
-
 from django.core.management.base import BaseCommand
-from pyforge.core.flags import FlagOff
-from pyforge.core.flags import disabled_help
-from pyforge.core.flags import require
+from pyforge.core.flags import FlagOff, disabled_help, require
 
 from django_warden_fabric.fleet import FLEET_SCAN_FLAG
-from django_warden_fabric.models import FleetRun
-from django_warden_fabric.models import JobStatus
+from django_warden_fabric.models import FleetRun, JobStatus
 from django_warden_fabric.tasks import run_fleet_run
 
 
