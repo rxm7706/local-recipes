@@ -1802,7 +1802,7 @@ recorded; the two RUF012 stay in the generated migration, which the gate exclude
 **And** no blanket ignore, new `noqa` or table change is added; with herald installed, `pyforge-herald-test` (Story
 37.1's guard and import-boundary meta-tests, Story 30.2's tests unedited) and `platform-ci-local -- --test` pass; every
 Spec `spec-surface-check` names is reconciled and stamped scoped
-**Status:** backlog (steward 93.1 landed on `main` 2026-10-11, PR #2141; flipped from `blocked` under the operator's 2026-10-11 pre-authorization "authorized - flip 38.1 once 93.1 lands")
+**Status:** done (steward 93.1 landed on `main` 2026-10-11, PR #2141; flipped from `blocked` under the operator's 2026-10-11 pre-authorization "authorized - flip 38.1 once 93.1 lands")
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

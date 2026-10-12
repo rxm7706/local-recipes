@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from django_herald_portal.models import DeckExport
@@ -31,7 +30,7 @@ def sync_slug_exports(slug: str, payload: str, *, published_at: datetime | None 
     for row in records:
         sha = str(row["sha256"])
         seen_sha.add(sha)
-        export_day = datetime.strptime(str(row["date"]), "%Y-%m-%d").date()
+        export_day = datetime.strptime(str(row["date"]), "%Y-%m-%d").replace(tzinfo=UTC).date()
         DeckExport.objects.update_or_create(
             sha256=sha,
             defaults={

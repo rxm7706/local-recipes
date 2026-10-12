@@ -11,8 +11,8 @@ from django_pyforge.flags import evaluate_boolean
 from django_pyforge.roles import prefixed_station
 
 from django_herald_portal.deck_export_sync import sync_slug_exports
-from django_herald_portal.portal_runner import InvokeRunner
-from django_herald_portal.portal_runner import deck_exports_json_runner
+from django_herald_portal.portal_runner import InvokeRunner, deck_exports_json_runner
+
 DECK_PUBLISH_FLAG = "pyforge.herald.deck_publish"
 
 _REFRESH_SUB = "deck-export-refresh"
@@ -23,11 +23,7 @@ def _presentation_slugs(root: Path) -> list[str]:
     presentations = root / "presentations"
     if not presentations.is_dir():
         return []
-    return sorted(
-        path.name
-        for path in presentations.iterdir()
-        if path.is_dir() and not path.name.startswith(".")
-    )
+    return sorted(path.name for path in presentations.iterdir() if path.is_dir() and not path.name.startswith("."))
 
 
 class Command(BaseCommand):

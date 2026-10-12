@@ -2,8 +2,9 @@
 title: '38.1: django-herald is lint-clean and leaves the not-yet-clean list'
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
+baseline_revision: f91a7123ea57c1d93988d38c14e50bd8e39f0e12
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -193,3 +194,39 @@ Type / Effort / Deps: fix / S / cross-station gate on steward 93.1 (a ledger `bl
 
 - 2026-10-11: minted from the operator's ruling "Gate all, clean herald (Recommended)". `type: fix`, no flag, no CAP;
   bound to `spec-pyforge-herald` CAP-55 with CAP-54. Its ledger key is minted `blocked` on steward 93.1.
+
+## Review Triage Log
+
+### 2026-10-11 — Review pass
+
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — lint-only diff matches AC7; meta-test allowlist extended for apps.py/mcp_asgi.py per Story 38.1 inventory)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Cleared django-herald under steward 93.1's `[tool.ruff]` table (import order, format, stale `noqa` removal, DTZ007 zone-explicit date parse) and removed `django-herald` from `NOT_YET_CLEAN_CEILING` in `scripts/lint_types.py`. Extended `test_skf_skill_and_persona.py` Wave B guard so lint-only edits to `apps.py` and `mcp_asgi.py` are allowed.
+
+**TRY004 (kept `ValueError`):** `parse_export_records` rejects a non-list JSON payload with `ValueError`; `json.loads` raises `ValueError` (`JSONDecodeError` subclass) for other malformed cases, so one type covers malformed payloads. The only caller (`sync_slug_exports` → `refresh_deck_exports.handle`) catches neither, and no test pins the exception type.
+
+**Files changed:**
+
+- `src/shared/packages/django-herald/src/django_herald_portal/*.py` — lint-only per inventory (a) and (b)
+- `scripts/lint_types.py` — drop `django-herald` from `NOT_YET_CLEAN_CEILING`
+- `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` — Story 38.1 allowlist for `apps.py` / `mcp_asgi.py`
+- Spec memlogs: `spec-pyforge-unifying-strategy`, `spec-pyforge-steward`, `spec-pyforge-herald`
+
+**Verification:**
+
+- `ruff check src` / `ruff format --check src` from `django-herald`: exit 0
+- `ruff check --isolated --line-length 120 src`: exactly TRY004 + two RUF012 in migrations (exit 1, three findings)
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0; django-herald `ok` on ruff and ruff-format
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test`: 1801 passed, 5 skipped
+- `pixi run -e pyforge-guild platform-ci-local -- --test`: PASS (1256 passed, 14 skipped)
+- `python scripts/spec_surface_reconcile.py`: exit 0
+- `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 (drift-presumed warnings cleared after memlogs; baseline stamp deferred per producer rule — operator scopes `--write-baseline` for affected specs)
+
+**Follow-up review recommendation:** false
+
+**Residual risk:** Once off `NOT_YET_CLEAN`, new django-herald lint findings fail `lint-types`; marshal pre-verify ruff passes cover `pyforge-*` only (story spec residual risk).

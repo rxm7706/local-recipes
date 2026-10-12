@@ -11,8 +11,8 @@ class HeraldPortalConfig(PortalConfig):
     default = True
 
     station_name = "herald"
-    mount_token = "/stations/herald/"  # noqa: S105
-    mcp_token = "mcp:herald"  # noqa: S105
+    mount_token = "/stations/herald/"
+    mcp_token = "mcp:herald"
     chrome_hooks = ("layout",)
     owner_slug = "herald"
     backup = "pyforge-steward"
@@ -21,11 +21,11 @@ class HeraldPortalConfig(PortalConfig):
     urlconf = "django_herald_portal.urls"
 
     def ready(self) -> None:
-        from django_herald_portal.mcp_asgi import ensure_herald_runner  # noqa: PLC0415
+        from django_herald_portal.mcp_asgi import ensure_herald_runner
 
         ensure_herald_runner()
 
     def mcp_asgi_app(self):
-        from django_herald_portal.mcp_asgi import build_herald_mcp_asgi  # noqa: PLC0415
+        from django_herald_portal.mcp_asgi import build_herald_mcp_asgi
 
         return build_herald_mcp_asgi()
