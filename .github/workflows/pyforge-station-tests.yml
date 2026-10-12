@@ -23,6 +23,23 @@ name: PyForge station tests
 # those meta-tests scan every station's tree. Story 19.5 added a tenth:
 # `testing-kit-test` (the testing kit's own suite), gated on the shared
 # surface OR the two non-station inputs its tests read.
+#
+# Story 98.1 (spec-pyforge-steward CAP-159): every job runs when a tracked
+# path ITS TESTS READ changes, not only when its own package does. Herald
+# Story 38.1 changed scripts/lint_types.py and django-herald and steward's
+# test_lint_types_django_tables.py went red on main with no job to catch it:
+# the suites read far outside their own package (scripts, the django-*
+# portal packages, other stations' src, .github/workflows, the planning
+# artifacts the doctor and marshal gatherers walk). The rule, as built: one
+# pathspec array per job in the `changes` step, and `on.*.paths` (identical)
+# carrying the union as GitHub globs. The arrays are not remembered, they
+# are derived -- steward's tests/meta/test_station_tests_trigger_map.py reads
+# each suite's tests (and the root-handoff declarations for the tests that
+# give the bare repo root to the code under test), and proves a one-path diff
+# of every read fires its job's output AND the on.pull_request.paths filter.
+# Planning content triggers like any other read (operator ruling 2026-10-12,
+# "Trigger on planning too"); the cost is more runs on planning-only PRs.
+# Local twin: pr-preflight picks its lanes by running this `changes` step.
 
 on:
   pull_request:
@@ -42,7 +59,14 @@ on:
       - 'AGENTS.md'
       - 'CLAUDE.md'
       - 'GEMINI.md'
-      - '_bmad-output/**'
+      - '_bmad-output/PROJECTS.md'
+      - '_bmad-output/harness-profiles/*.toml'
+      - '_bmad-output/harness-profiles/cursor.toml'
+      - '_bmad-output/projects/*/README.md'
+      - '_bmad-output/projects/*/planning-artifacts/**'
+      - '_bmad-output/projects/pyforge-doctor/README.md'
+      - '_bmad-output/projects/pyforge-marshal/**'
+      - '_bmad-output/projects/pyforge-warden/**'
       - '_bmad/**'
       - 'archive/**'
       - 'docs-site/**'
@@ -56,9 +80,9 @@ on:
       - 'src/platform/config/flags.json'
       - 'src/prototype/**'
       - 'src/sentinel/**'
-      - 'src/shared/packages/**'
       - 'src/shared/packages/django-*/**'
       - 'src/shared/packages/django-pyforge/**'
+      - 'src/shared/packages/pyforge-*/tests/**'
       - 'src/shared/packages/pyforge-atlas/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-doctor/**'
@@ -88,7 +112,14 @@ on:
       - 'AGENTS.md'
       - 'CLAUDE.md'
       - 'GEMINI.md'
-      - '_bmad-output/**'
+      - '_bmad-output/PROJECTS.md'
+      - '_bmad-output/harness-profiles/*.toml'
+      - '_bmad-output/harness-profiles/cursor.toml'
+      - '_bmad-output/projects/*/README.md'
+      - '_bmad-output/projects/*/planning-artifacts/**'
+      - '_bmad-output/projects/pyforge-doctor/README.md'
+      - '_bmad-output/projects/pyforge-marshal/**'
+      - '_bmad-output/projects/pyforge-warden/**'
       - '_bmad/**'
       - 'archive/**'
       - 'docs-site/**'
@@ -102,9 +133,9 @@ on:
       - 'src/platform/config/flags.json'
       - 'src/prototype/**'
       - 'src/sentinel/**'
-      - 'src/shared/packages/**'
       - 'src/shared/packages/django-*/**'
       - 'src/shared/packages/django-pyforge/**'
+      - 'src/shared/packages/pyforge-*/tests/**'
       - 'src/shared/packages/pyforge-atlas/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-doctor/**'
@@ -182,7 +213,7 @@ jobs:
             .gitignore
             AGENTS.md
             CLAUDE.md
-            _bmad-output
+            _bmad-output/projects/pyforge-atlas/planning-artifacts
             _bmad/core/config.yaml
             _bmad/custom/bmad-cis-design-thinking.toml
             _bmad/scripts/resolve_customization.py
@@ -195,12 +226,15 @@ jobs:
             tests/packaging/test_openteams_handoffs.py
           )
           doctor_paths=(
-            .claude
+            .claude/scripts
+            .claude/skills
             .github/workflows/detectors.yml
             AGENTS.md
             CLAUDE.md
             _bmad
-            _bmad-output
+            '_bmad-output/projects/*/README.md'
+            '_bmad-output/projects/*/planning-artifacts/*'
+            _bmad-output/projects/pyforge-doctor/README.md
             archive
             docs/MAP.md
             docs/dashboard
@@ -259,7 +293,6 @@ jobs:
             docs/governance/preserve-purge-list.json
             docs/how-to/troubleshoot-bmad-agent-loops.md
             docs/reference/story-spec-flag-block.md
-            recipes
             scripts/.spec-surface-baseline.json
             scripts/bmad-loop-worktree
             scripts/bmad-switch
@@ -300,7 +333,11 @@ jobs:
             .claude/memory/MEMORY.md
             .claude/memory/feedback
             .claude/settings.json
-            .claude/skills
+            .claude/skills/bmad-agent-scribe
+            .claude/skills/conda-forge-expert/SKILL.md
+            .claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md
+            .claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md
+            .claude/skills/pyforge-scribe/skill-brief.yaml
             '.cursor/rules/*.mdc'
             .cursor/rules/scribe-recall.mdc
             .cursor/rules/specs.mdc
@@ -336,8 +373,11 @@ jobs:
             AGENTS.md
             CLAUDE.md
             _bmad
-            _bmad-output
-            docs
+            '_bmad-output/projects/*/README.md'
+            '_bmad-output/projects/*/planning-artifacts/*'
+            docs/dreams
+            docs/foundry
+            docs/governance
             recipes/bmad-suite
             recipes/click-help-colors
             scripts/bmad-loop-worktree
@@ -352,7 +392,6 @@ jobs:
             'src/shared/packages/pyforge-*/tests/*'
             src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
             src/shared/packages/pyforge-mason
-            src/shared/packages/pyforge-scribe
             tests/packaging/test_openteams_handoffs.py
           )
           warden_paths=(
@@ -372,7 +411,6 @@ jobs:
           # preserve-refs grammar test), the django-* portal packages included, so core_paths names
           # those roots; the atlas quartet's test file stays a core input as it was.
           core_paths=(
-            .claude
             _bmad-output/projects/pyforge-steward/planning-artifacts/specs
             docs/governance/guild-roster.json
             scripts
@@ -418,11 +456,13 @@ jobs:
   # the pixi TASK (the whole `tests/` tree, meta included), never a file list
   # -- enumeration is how the meta-tests were lost. A peer of the station
   # jobs, gated on `core` (shared surface OR any station), not a gate on them.
-  # The `django-*` packages are deliberately not `core` inputs (django-pyforge
-  # is a path trigger since Story 19.5, for testing-kit-test only): the
-  # sole-ownership scan (pyforge-core's
-  # `tests/meta/conftest.py::sibling_station_dirs`) covers `pyforge-*`
-  # directories only, so a django-* edit cannot change this job's verdict.
+  # Story 98.1: core reads all of `src/` and `scripts/` (the
+  # `test_preserve_refs_sole_grammar.py` scan roots), the `django-*` portal
+  # packages included, so `core_paths` names those roots and the
+  # `on.*.paths` list enumerates `src/` instead of one `src/**` glob (each
+  # package family is its own trigger). Before 98.1 this comment called the
+  # `django-*` packages "deliberately not `core` inputs"; that was wrong.
+  # (django-pyforge is also a path trigger for testing-kit-test.)
   # Pinned by pyforge-core's `tests/meta/test_conformance_lane_wired.py`.
   core-test:
     needs: changes
