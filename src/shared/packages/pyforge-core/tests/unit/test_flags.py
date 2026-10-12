@@ -877,6 +877,13 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.sync_github_only_marker": ("steward", "84-4-", "2026-10-03", "", ""),
     "pyforge.steward.workspace_preserve_tag": ("steward", "85-5-", "2026-10-04", "", ""),
     "pyforge.steward.herald_webhook_sidecar": ("steward", "87-3-", "2026-10-10", "", ""),
+    "pyforge.steward.stations_index": (
+        "steward",
+        "91-1-",
+        "2026-10-11",
+        "",
+        "",
+    ),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
     # Stories 87.3/87.7/87.15 share this key (default off in every environment).
     "pyforge.marshal.preserve_refs": ("marshal", "87-3-", "2026-10-04", "", ""),
@@ -1040,6 +1047,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.workspace_preserve_tag": {"dev": False, "staging": False, "production": False},
         "pyforge.steward.herald_webhook_sidecar": {"dev": True, "staging": False, "production": False},
+        "pyforge.steward.stations_index": {"dev": True, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history": {"dev": True, "staging": True, "production": False},
