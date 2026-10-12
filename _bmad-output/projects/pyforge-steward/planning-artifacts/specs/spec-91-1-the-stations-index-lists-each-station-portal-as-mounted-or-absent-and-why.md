@@ -339,6 +339,18 @@ Type / Effort / Deps: feature / S / — (cross-station gate: herald 37.1, held a
 
 ## Review Triage Log
 
+### 2026-10-11 — Independent landing review, iteration 2: passed (4 low, 1 reject)
+
+Fresh separate agent, review at 3fb365112c against merge-base a21524e9d6. Production code unchanged since iteration 1 (`git diff 548b976af3..HEAD -- src/platform/ ':!src/platform/tests'` empty); F1-F8 and F10 closed: 17 platform, 8 meta and 5 detector mutations all caught (bare `Http404` when OFF; the three module-scope `config.station_api` load forms in both fresh-interpreter cases and the meta-test; portal submodule imports; role/method/flag order; `|safe`; the `is_switcher_tile` filter; the child given the environment `DATABASE_URL`). `test_stations_index.py` 26/26 three times and reversed; the AST detector over 360 files in `src/platform`, pyforge-steward and django-pyforge found no false positive. Frontmatter valid, no duplicate keys. Gates: `pyforge-steward-test` 0 (2366 passed), `lint-types` 0, `spec-surface-check` 0, flag gate `--spec` pass, `docs-currency-check` 0, `platform-ci-local -- --test` 0 (1282 passed, 14 skipped); `detectors-ci` 1 only on `ledger-direction` for marshal 95-1 (main moved; clears on merging main).
+
+- `[low]` `[patch]` L1 `src/platform/tests/_urls_without_stations_index.py:5` the filter silently removes nothing if the route's name changes, so AC2 compares the index with itself (renaming `name="stations-index"` leaves all tests green). Fix: assert exactly one pattern is dropped, or that `/stations/` resolves to `stations-index`.
+- `[low]` `[patch]` L2 `test_stations_index.py:85-92` the in-process `configure_file_provider` sets `FLAGD_OFFLINE_FLAG_SOURCE_PATH` (and `PYFORGE_FLAGS_PATH` when unset) in the pytest process and never restores them; later child processes inherit them. Fix: `monkeypatch.setenv` both keys.
+- `[low]` `[patch]` L3 `test_stations_index.py:443` AC2's published-page bullet is tested for anonymous GET only; parametrize admin and OPTIONS like `:425`. (Reviewer marked defer; patched here as the fix is one parametrize.)
+- `[low]` `[patch]` L4 the I/O-matrix row "provider not ready, read as OFF" has no test; add one. (Reviewer marked defer; patched here.)
+- `[low]` `[reject]` L5 the harness-written Auto Run Result section is historical and stale by design.
+
+L1-L4 are fixed in a follow-on pass; the orchestrator re-verifies that delta (mutations and gates) before setting `landing_review: 'passed'` and landing.
+
 ### 2026-10-11 — Fix pass for landing review iteration 1 (implementer)
 
 Implementer session on 548b976af3. F1–F8 and F10 are fixed; F9 stays rejected. The view, template and URLconf are unchanged, because no test showed a defect in them. Changed:
