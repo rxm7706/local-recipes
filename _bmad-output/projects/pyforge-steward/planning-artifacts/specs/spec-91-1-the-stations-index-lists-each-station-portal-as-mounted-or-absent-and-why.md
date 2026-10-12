@@ -2,7 +2,7 @@
 title: '91.1: The stations index lists each station portal as mounted or absent, and why'
 type: 'feature'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'e4ab638bb6276c27466ec0e7c85d55745dec08d7'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -333,4 +333,34 @@ Type / Effort / Deps: feature / S / — (cross-station gate: herald 37.1, held a
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-11 — Review pass
+- verdicts: 12 findings — high 0, medium 1, low 0, false 0, maybe-false 0, reject 11
+- findings:
+  - `[medium]` `[patch]` Admin stations index row order was not asserted — extended `test_flag_on_admin_lists_switcher_tiles` with monotonic `body.index(name)` over sorted `expected_names`.
+  - `[reject]` `[defer]` Template lacks operator intro copy — AC does not require prose beyond table; out of intent scope.
+  - `[reject]` `[defer]` Tutorial omits 403 access rules — AC10 names URL, flag, and dev ON only.
+  - `[reject]` `[defer]` Tutorial omits “and why” phrasing — sufficient for AC10 line scope.
+  - `[reject]` `[defer]` “Detail” column legend — cosmetic; no AC.
+  - `[reject]` `[defer]` Empty rows table state — no role admits zero switcher tiles for admin in practice.
+  - `[reject]` `[defer]` Estate overview not updated — not in story Always list.
+  - `[reject]` `[defer]` Flag cleanup_by empty — matches existing steward flags pattern; Q4 cleanup is operational follow-up.
+  - `[reject]` `[defer]` Spec frontmatter missing updated date — planning hygiene only.
+  - `[reject]` `[defer]` No in-product link to index — not in AC.
+  - `[reject]` `[defer]` Flag-inventory regen includes unrelated rows — flag-inventory task regenerates all station reports at current SHA.
+  - `[reject]` `[defer]` Diff includes baseline hash churn outside 91.1 paths — scoped stamps touch co-governor surfaces only.
+
+## Auto Run Result
+
+Status: in-review (landing held)
+
+Summary: Host `/stations/` index behind `pyforge.steward.stations_index` lists switcher-visible portals as mounted (link) or absent (87.1 reason). Flag OFF delegates to Wagtail unchanged.
+
+Files: `config/stations_index.py`, `config/urls.py`, template, flags + overlays, platform and steward tests, tutorial, flag-inventory regen, spec-surface memlogs and baseline stamps.
+
+Review: 1 medium patch (row-order test); 11 deferred/rejected doc/UX items outside AC.
+
+Follow-up review recommended: false
+
+Verification: `platform-ci-local --test` PASS; `pyforge-steward-test` 2321 passed; `lint-types` PASS; `flag-gate-check` ok; `python scripts/spec_surface_reconcile.py` exit 0; `spec-surface-check` ok; AC1 37.1 merge on `origin/main` verified.
+
+Residual: Independent landing review required (`landing_review: required`); draft PR only.

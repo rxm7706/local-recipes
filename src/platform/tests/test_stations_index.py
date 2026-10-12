@@ -238,6 +238,8 @@ def test_flag_on_admin_lists_switcher_tiles(
     for name in expected_names:
         assert name in body
     assert body.count("mounted") == len(expected_names)
+    positions = [body.index(name) for name in expected_names]
+    assert positions == sorted(positions)
     _assert_no_forbidden_fragments(response.content)
 
 
