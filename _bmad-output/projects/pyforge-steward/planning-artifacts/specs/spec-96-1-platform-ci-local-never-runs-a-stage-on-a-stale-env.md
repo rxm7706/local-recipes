@@ -2,7 +2,7 @@
 title: "96.1: `platform-ci-local` never runs a stage on a stale env"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'b4722aeba9e0f476c129d057c150fb0c4fd25294'
 review_loop_iteration: 0
 followup_review_recommended: false

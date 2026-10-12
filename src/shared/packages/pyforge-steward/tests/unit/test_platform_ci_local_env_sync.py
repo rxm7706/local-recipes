@@ -26,14 +26,6 @@ pytestmark = pytest.mark.skipif(
     reason="scripts/platform-ci-local.sh required",
 )
 
-_FORBIDDEN_PIXI = re.compile(
-    r"pixi\s+(update|add|lock|upgrade|remove|reinstall)|"
-    r"pixi\s+install[^\\n]*--locked|"
-    r"pixi\s+install(?![^\\n]*--frozen)",
-    re.MULTILINE,
-)
-
-
 def _run_script(
     root: Path,
     bin_dir: Path,
@@ -96,6 +88,10 @@ def test_ac1_test_syncs_two_envs_in_order_under_lock(tmp_path: Path) -> None:
     assert len(install_lines) == 2
     assert "platform-ci-test" in install_lines[0]
     assert "platform-dev" in install_lines[1]
+    for ln in install_lines:
+        assert "--frozen" in ln
+        assert "--manifest-path" in ln
+        assert "pixi.toml" in ln
     assert "pyforge-warden" not in log
     initdb_pos = log.find("initdb")
     first_pixi = log.find("pixi ")
@@ -147,6 +143,7 @@ def test_ac2_stale_env_reports_synced(tmp_path: Path) -> None:
         extra_env={"PLATFORM_CI_STUB_PIXI_WRITE_HASH": "fresh"},
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "RESULT: PASS" in proc.stdout
     assert "env platform-ci-test: synced" in proc.stdout
     test_header = proc.stdout.find("== [test]")
     synced_line = proc.stdout.find("env platform-ci-test: synced")
@@ -243,6 +240,17 @@ def test_ac3_failed_sync_exits_two_without_services(tmp_path: Path) -> None:
     assert log.count(" install ") == 1
     assert "platform-dev" not in log.split("platform-ci-test")[-1]
     assert "RESULT: PASS" not in proc.stdout
+
+
+def test_matrix_container_syncs_dev_only(tmp_path: Path) -> None:
+    bin_dir = _prepare_stub_root(tmp_path)
+    stub_log = tmp_path / "stub.log"
+    proc = _run_script(tmp_path, bin_dir, stub_log=stub_log, args=["--container"])
+    log = stub_log.read_text()
+    dev_lines = [ln for ln in log.splitlines() if "platform-dev" in ln and "install" in ln]
+    assert len(dev_lines) == 1
+    assert not any("platform-ci-test" in ln and "install" in ln for ln in log.splitlines())
+    assert "env platform-dev:" in proc.stdout
 
 
 def test_matrix_promotion_syncs_cit_and_warden(tmp_path: Path) -> None:
