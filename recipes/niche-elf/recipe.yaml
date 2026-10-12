@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.6"
+  python_min: "3.10"
+
+package:
+  name: niche-elf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/niche-elf/niche_elf-${{ version }}.tar.gz
+  sha256: a4f6e68b5e6bc069a14f087bcc199411a598353d6ca050248551f112bb5565e5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - niche_elf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Minimal ELF writer used by pwndbg for symbol syncing
+  homepage: https://github.com/k4lizen/niche-elf
+  license: GPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

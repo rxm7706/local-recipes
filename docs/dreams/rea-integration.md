@@ -37,8 +37,14 @@ ask their agent "trace how X works in this app".
   they exist (checked with the anaconda.org API on 2026-10-12):
   - Available: `openjdk` (25.0.2), `wabt` (1.0.41), `pwntools` (4.15.0),
     `binwalk` (3.1.0), `mitmproxy` (12.2.3).
-  - Not on conda-forge: `ghidra`, `jadx`, `pwndbg`. Each needs its own
-    onboarding ticket or stays operator-installed.
+  - Not on conda-forge, so they are now **local recipes** in this repo:
+    `recipes/ghidra` (12.1.4, official NSA release with `analyzeHeadless`,
+    `ghidraRun` and `pyghidraRun` wrappers on `openjdk >=21`),
+    `recipes/jadx` (1.5.6, official release on `openjdk >=11`), and
+    `recipes/pwndbg` (2026.09.15, on conda-forge `gdb`). pwndbg also needs
+    three recipes of its own: `capstone6pwndbg` 8.0.0, `niche-elf` 0.3.6, and
+    `gdb-pt-dump` 1.0.0 (the pinned commit). Like `rea-agents`, they go to
+    SelfExplainML first and then to staged-recipes.
 - **Commercial providers stay operator-supplied.** Hopper, IDA, and JEB are
   never packaged. They are reached only through REA's own environment
   variables, for example `REA_JEB_MCP_URL`.
@@ -54,7 +60,7 @@ ask their agent "trace how X works in this app".
 ## Open questions
 
 1. Should registration live in Marshal's MCP surface, or be a pixi task only?
-2. Should ghidra and jadx be onboarded to conda-forge, or documented as
-   operator installs?
+2. Will staged-recipes accept the binary repackaging of ghidra and jadx, or
+   does conda-forge require builds from source (Gradle)?
 3. Is the osx-64/osx-arm64 native `node-pty` build covered by the recipe as
    written? So far it has only been verified on linux-64.
