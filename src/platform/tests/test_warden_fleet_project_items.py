@@ -259,12 +259,18 @@ def _run_task() -> str:
 
 
 def _fail_text(caught: pytest.ExceptionInfo[BaseException]) -> str:
+    # Render the product frames only: the first traceback entry is this
+    # test's own frame, whose locals hold the fake wire's request log.
+    value = caught.value
     rendered = "".join(
-        traceback.TracebackException.from_exception(
-            caught.value, capture_locals=True
+        traceback.TracebackException(
+            type(value),
+            value,
+            value.__traceback__.tb_next if value.__traceback__ else None,
+            capture_locals=True,
         ).format()
     )
-    return f"{caught.value!s} {caught.value!r} {rendered}"
+    return f"{value!s} {value!r} {rendered}"
 
 
 # --- AC1: two projects, every item type, each item once ---
