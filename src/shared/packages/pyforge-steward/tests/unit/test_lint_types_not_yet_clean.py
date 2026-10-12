@@ -53,14 +53,25 @@ def _minimal_django(name: str, root: Path, *, with_ruff: bool = True) -> None:
     (pkg / "pyproject.toml").write_text(body, encoding="utf-8")
 
 
+_PYFORGE_TEN = (
+    "pyforge-atlas",
+    "pyforge-core",
+    "pyforge-doctor",
+    "pyforge-herald",
+    "pyforge-marshal",
+    "pyforge-mason",
+    "pyforge-scribe",
+    "pyforge-steward",
+    "pyforge-testing-kit",
+    "pyforge-warden",
+)
+
+
 def _seed_tree(tmp_path: Path) -> Path:
     packages = tmp_path / "packages"
     packages.mkdir()
-    for i, station in enumerate(
-        ("atlas", "doctor", "herald", "marshal", "mason", "pyforge", "scribe", "steward", "warden", "core"),
-        start=1,
-    ):
-        _minimal_pyforge(f"pyforge-{station}" if station != "core" else "pyforge-core", packages)
+    for name in _PYFORGE_TEN:
+        _minimal_pyforge(name, packages)
     for station in ("atlas", "doctor", "herald", "marshal", "mason", "pyforge", "scribe", "steward", "warden"):
         _minimal_django(f"django-{station}", packages)
     return packages
