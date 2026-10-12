@@ -514,6 +514,40 @@ def _managed_divergences(
     return divergences
 
 
+def check_git_rungs(repo_root: Path, *, dry_run: bool = False, process: ProcessPort | None = None) -> None:
+    """Rungs 1 and 2 of the ladder, on their own (Story 97.1): refuse a target
+    that is not a git repo, and -- unless `dry_run` -- one whose worktree is
+    dirty. `check_preconditions` calls this first, so the two rungs are the same
+    code for a verb that climbs only them (`marshal seed accept`, which has no
+    plan, no never-write targets and a rung 6 of its own).
+
+    Rung 1 runs even under `dry_run`: whether git exists is not a claim about
+    whether reading is safe, and every later rung's remedy assumes a history to
+    fall back on. Rung 2 is the ONLY rung `dry_run` bypasses: a read-only run
+    cannot make an uncommitted change harder to recover, so demanding a clean
+    worktree before merely looking would be a refusal with no risk behind it."""
+    probe = process if process is not None else PosixProcess()
+    # --- rung 1: is this a git repo at all -------------------------------
+    if not _is_git_repo(probe, repo_root):
+        raise PreconditionFailure(
+            f"not-a-git-repo: {repo_root} is not inside a git working tree",
+            remedy=(
+                "run 'git init' in the target repo, or re-run from inside the repo"
+                " you meant to seed -- seed will not write where git cannot undo it"
+            ),
+        )
+
+    # --- rung 2: is the worktree clean -----------------------------------
+    if not dry_run and _is_dirty(probe, repo_root):
+        raise PreconditionFailure(
+            f"dirty-worktree: {repo_root} has uncommitted changes",
+            remedy=(
+                "commit or stash your changes first -- seed relies on a clean"
+                " worktree so 'git checkout .' remains a complete undo of this run"
+            ),
+        )
+
+
 def check_preconditions(
     plan: Plan,
     *,
@@ -567,31 +601,7 @@ def check_preconditions(
     without uninstalling git."""
     probe = process if process is not None else PosixProcess()
 
-    # --- rung 1: is this a git repo at all -------------------------------
-    # Runs even under `dry_run`: whether git exists is not a claim about
-    # whether reading is safe, and every later rung's remedy assumes a
-    # history to fall back on.
-    if not _is_git_repo(probe, repo_root):
-        raise PreconditionFailure(
-            f"not-a-git-repo: {repo_root} is not inside a git working tree",
-            remedy=(
-                "run 'git init' in the target repo, or re-run from inside the repo"
-                " you meant to seed -- seed will not write where git cannot undo it"
-            ),
-        )
-
-    # --- rung 2: is the worktree clean -----------------------------------
-    # The ONLY rung `dry_run` bypasses: a read-only run cannot make an
-    # uncommitted change harder to recover, so demanding a clean worktree
-    # before merely looking would be a refusal with no risk behind it.
-    if not dry_run and _is_dirty(probe, repo_root):
-        raise PreconditionFailure(
-            f"dirty-worktree: {repo_root} has uncommitted changes",
-            remedy=(
-                "commit or stash your changes first -- seed relies on a clean"
-                " worktree so 'git checkout .' remains a complete undo of this run"
-            ),
-        )
+    check_git_rungs(repo_root, dry_run=dry_run, process=probe)
 
     # --- rungs 3-5: per-action structural checks -------------------------
     # THREE separate passes over `plan.actions`, one per rung -- never one
@@ -732,7 +742,9 @@ def check_preconditions(
             f" {artifact_count} managed artifact(s) -- {detail}",
             remedy=(
                 "revert the hand-edits (git checkout the listed paths), move your"
-                " changes outside the managed regions, or re-run with --force to"
-                " discard them deliberately"
+                " changes outside the managed regions, record an intended edit as"
+                " the new baseline with `marshal seed accept <artifact-id>"
+                " --apply --reason \"...\"` (commit it first), or re-run with"
+                " --force to discard the edits deliberately"
             ),
         )

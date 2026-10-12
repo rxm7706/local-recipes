@@ -154,7 +154,9 @@ def test_schema_is_closed_at_every_object_level():
 def test_schema_requires_exactly_the_eleven_top_level_keys():
     schema = store._load_schema()
     assert tuple(schema["required"]) == STATE_KEYS
-    assert tuple(schema["properties"]) == STATE_KEYS
+    # Story 97.1: `acceptances` is the one OPTIONAL property -- declared, never required.
+    assert tuple(schema["properties"]) == (*STATE_KEYS, "acceptances")
+    assert "acceptances" not in schema["required"]
     assert len(STATE_KEYS) == 11
 
 

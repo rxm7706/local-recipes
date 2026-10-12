@@ -53,10 +53,16 @@ from pyforge.marshal.seed.state import (
 # AD-35, not a repo-owned seed; Story 11.2 later moves `projects-index` OUT
 # to hybrid-managed-region -- see below), 5 hybrid-managed-region,
 # 3 unclassified-deferred -- 43 entries total.
+#
+# Story 97.1 (operator ruling 2026-10-12) moves `detector-registry`,
+# `dreams-readme` and `detectors-ci-workflow` from copied-managed to
+# copied-seeded: the repo owns those three files and hand-edits them, so no
+# hash guard may refuse them. Counts become 2 copied-managed (`bmad-switch`,
+# `bmad-loop-worktree`) and 8 copied-seeded; the total stays 43.
 EXPECTED_CLASS_COUNTS = {
     ArtifactClass.REFERENCED: 16,
-    ArtifactClass.COPIED_MANAGED: 5,
-    ArtifactClass.COPIED_SEEDED: 5,
+    ArtifactClass.COPIED_MANAGED: 2,
+    ArtifactClass.COPIED_SEEDED: 8,
     ArtifactClass.GENERATED_DERIVED: 9,
     ArtifactClass.HYBRID_MANAGED_REGION: 5,
     ArtifactClass.UNCLASSIFIED_DEFERRED: 3,

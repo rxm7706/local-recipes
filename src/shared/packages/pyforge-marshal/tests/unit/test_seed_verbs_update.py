@@ -1615,8 +1615,10 @@ def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clea
     directory entry is create-if-missing: update leaves it alone, and the
     files beneath it follow their own entries -- the seeded starter dream and
     project config are never touched, the never-write planning subtree is
-    never written, and the managed `dreams-readme` beneath `docs/dreams/` is
-    still regenerated as its own class says."""
+    never written, and `dreams-readme` beneath `docs/dreams/` follows its own
+    class -- copied-seeded since Story 97.1 (the repo owns the file), so a
+    record left over from when it was copied-managed neither refuses the run at
+    rung 6 nor gets the readme regenerated."""
     never_write, entries = _shipped_entries_for_slug(
         "demo", "dreams-dir", "project-subtree", "starter-dream", "project-config", "dreams-readme"
     )
@@ -1627,7 +1629,7 @@ def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clea
     planning = clean_repo / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "epics.md"
     for path, text in (
         (starter, "# the repo's own starter dream\n"),
-        (readme, "packaged readme\n"),
+        (readme, "the repo's own readme\n"),
         (config, "slug = 'demo'\n"),
         (planning, "# tier-2 planning, never written\n"),
     ):
@@ -1651,7 +1653,7 @@ def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clea
                 ManagedArtifact(
                     id="dreams-readme",
                     path="docs/dreams/README.md",
-                    artifact_class="copied-managed",
+                    artifact_class="copied-managed",  # stale: the pre-97.1 record of an entry now seeded
                     body_sha=hash_content("packaged readme\n"),
                     inserted_region_spans=(),
                 ),
@@ -1668,7 +1670,7 @@ def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clea
         never_write=_NO_NEVER_WRITE,
     )
     _commit_all(clean_repo)
-    untouched = {path: path.read_bytes() for path in (starter, config, planning)}
+    untouched = {path: path.read_bytes() for path in (starter, readme, config, planning)}
     calls: list[str] = []
 
     result = run_update(
@@ -1680,9 +1682,8 @@ def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clea
         commit=_fake_commit(manifest, clean_repo, calls),
     )
 
-    assert [action.artifact_id for action in result.plan.actions] == ["dreams-readme"]
-    assert calls == ["dreams-readme"]
-    assert readme.read_text(encoding="utf-8") == "content for dreams-readme\n"
+    assert result.plan.actions == ()
+    assert calls == []
     assert {path: path.read_bytes() for path in untouched} == untouched
     state_after = read_state(clean_repo)
     assert state_after is not None

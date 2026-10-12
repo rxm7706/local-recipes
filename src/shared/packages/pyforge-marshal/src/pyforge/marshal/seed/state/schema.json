@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-marshal:seed-state.v1",
   "title": "MarshalSeedState",
-  "description": "The shape of `.marshal/seed-state.yml` (Story 10.2, FR-102/FR-104): the tool-owned record of what Genesis established in a target repo. Exactly eleven top-level keys, all required, additionalProperties false -- FR-102's ten plus `opted_out`, which the epics AC adds. Unlike every other schema this package ships (schemas/*.json, validated in tests only), this one is validated at RUNTIME on every `state.store.read_state` call: state is the artifact whose corruption must degrade to a StateInvalid finding rather than a traceback (FR-104), so its wire contract is checked before any field is consumed. The document is written as YAML and read as YAML, but its value space is strict JSON (strings, integers, nulls, arrays, objects) -- no YAML tags, no dates, no anchors are ever emitted by `write_state`.",
+  "description": "The shape of `.marshal/seed-state.yml` (Story 10.2, FR-102/FR-104): the tool-owned record of what Genesis established in a target repo. Eleven required top-level keys, additionalProperties false -- FR-102's ten plus `opted_out`, which the epics AC adds -- and ONE optional twelfth, `acceptances` (Story 97.1), which only `marshal seed accept` ever introduces: absent reads as an empty list and is never written empty, so a repo that has accepted nothing keeps a byte-identical file. Unlike every other schema this package ships (schemas/*.json, validated in tests only), this one is validated at RUNTIME on every `state.store.read_state` call: state is the artifact whose corruption must degrade to a StateInvalid finding rather than a traceback (FR-104), so its wire contract is checked before any field is consumed. The document is written as YAML and read as YAML, but its value space is strict JSON (strings, integers, nulls, arrays, objects) -- no YAML tags, no dates, no anchors are ever emitted by `write_state`.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -77,6 +77,11 @@
         "type": "string",
         "pattern": "^[^\\s#]+#[a-z0-9][a-z0-9-]*(?![\\s\\S])"
       }
+    },
+    "acceptances": {
+      "type": "array",
+      "description": "OPTIONAL (Story 97.1): the append-only journal of `marshal seed accept` re-records -- one entry per re-recorded file or region, written in the SAME atomic replace as the new hash so the record and its journal cannot disagree. Absent reads as an empty list; the writer emits the key only when the list is non-empty, so a state that never accepted is byte-identical to one written before this key existed. An older pyforge-marshal reading a state that holds this key refuses it as state-invalid (additionalProperties false) -- only a repo that has accepted something is affected.",
+      "items": { "$ref": "#/$defs/acceptance" }
     }
   },
   "$defs": {
@@ -206,6 +211,31 @@
             "end": { "$ref": "#/$defs/byteOffset" }
           }
         }
+      }
+    },
+    "gitObjectId": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})(?![\\s\\S])",
+      "description": "A full git object id (SHA-1 or SHA-256), as `git rev-parse HEAD` prints it."
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "region", "path", "previous_sha", "accepted_sha", "accepted_at", "accepted_by", "head", "reason"],
+      "description": "One `marshal seed accept` re-record (Story 97.1): the artifact (and region, null for a whole file) whose recorded hash moved from `previous_sha` to `accepted_sha`, when, by whom (the git committer identity without its timestamp), at which commit, and why.",
+      "properties": {
+        "id": { "$ref": "#/$defs/artifactId" },
+        "region": {
+          "oneOf": [{ "$ref": "#/$defs/regionName" }, { "type": "null" }],
+          "description": "The region name for a hybrid-managed-region re-record, null for a whole file."
+        },
+        "path": { "$ref": "#/$defs/nonBlankString" },
+        "previous_sha": { "$ref": "#/$defs/bodySha" },
+        "accepted_sha": { "$ref": "#/$defs/bodySha" },
+        "accepted_at": { "$ref": "#/$defs/timestamp" },
+        "accepted_by": { "$ref": "#/$defs/nonBlankString" },
+        "head": { "$ref": "#/$defs/gitObjectId" },
+        "reason": { "$ref": "#/$defs/nonBlankString" }
       }
     },
     "legacyArtifact": {

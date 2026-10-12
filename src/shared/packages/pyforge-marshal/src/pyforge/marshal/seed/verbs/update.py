@@ -445,7 +445,8 @@ def _managed_records(
     is never read -- for a state in the pre-82.13 one-span shape too, where
     every sibling of the one recorded region is such a region. A record whose
     entry is a DIRECTORY is dropped as well (Story 86.1, see
-    ``ManifestEntry.is_directory``)."""
+    ``ManifestEntry.is_directory``), and so is one whose CURRENT entry is
+    ``copied-seeded`` (Story 97.1): repo-owned, never hash-guarded."""
     if state is None:
         return ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
@@ -457,6 +458,10 @@ def _managed_records(
         if entry is not None and entry.is_directory:
             # No content of its own to attest (Story 86.1): the entries beneath
             # it carry their own records. Rung 6 read it as an unreadable file.
+            continue
+        if entry is not None and entry.artifact_class is ArtifactClass.COPIED_SEEDED:
+            # Repo-owned (Story 97.1): the guard follows the manifest's CURRENT
+            # class, not the class the record stored when it was claimed.
             continue
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
@@ -1200,6 +1205,8 @@ def _build_state_after_apply(
         legacy=legacy,
         migrations_applied=migrations_applied,
         opted_out=state.opted_out,
+        # Append-only (Story 97.1): carried over unchanged.
+        acceptances=state.acceptances,
     )
 
 

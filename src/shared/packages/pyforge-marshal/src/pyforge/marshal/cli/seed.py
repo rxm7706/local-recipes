@@ -1,7 +1,8 @@
 """``marshal seed`` (Story 7.1, AD-70) -- the seed-installer noun group's CLI
 scaffold. Registers ``seed`` on the SAME ``subparsers`` object every other
-noun group uses, with six nested verb actions (``init``/``adopt``/``check``/
-``update``/``explain``/``version`` -- the same six verb names architecture
+noun group uses, with eight nested verb actions (``init``/``adopt``/``check``/
+``update``/``explain``/``version``/``kit``/``accept``; the first six are the
+verb names architecture
 § 4 assigns one file each under ``seed/verbs/`` in a later story; here they
 are stub functions in THIS module, not yet split into that package),
 mirroring ``cli/gate.py``'s ``add_gate_subparser`` nested-``evaluate``-action
@@ -65,6 +66,14 @@ rather than a second parser. It is resolved against the ``--repo-root`` the
 operator named, NOT against ``cli/config.repo_root()`` (which derives from
 this module's install location and would read the main checkout's policy for
 every loop home).
+
+Story 97.1 adds the EIGHTH verb, ``accept`` (``run_accept`` ->
+``seed.verbs.accept.run_accept``): the sanctioned, journaled re-record of an
+intended edit to a tool-owned file or region (``marshal seed accept
+<artifact-id>[#<region>]``). It follows every convention above -- thin
+plumbing, a ``manifest=`` injection seam, dry-run by default with ``--apply``
+(which needs ``--reason``), ``--json``/``--quiet`` -- and it writes
+``.marshal/seed-state.yml`` and nothing else (not even ``.marshal/plan.json``).
 """
 
 from __future__ import annotations
@@ -91,6 +100,8 @@ from ..seed.migrate import registry as migrate_registry
 from ..seed.model.manifest import Manifest, ManifestError, load_manifest, render_slug_paths
 from ..seed.model.version import ModelVersion
 from ..seed.plan.types import Plan
+from ..seed.verbs.accept import AcceptResult, render_accept_text
+from ..seed.verbs.accept import run_accept as _run_accept_verb
 from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
 from ..seed.verbs.adopt import run_adopt as _run_adopt_verb
 from ..seed.verbs.check import CheckReport
@@ -1088,6 +1099,62 @@ def run_kit(
     return EXIT_OK
 
 
+def run_accept(args: argparse.Namespace, *, manifest: Manifest | None = None) -> int:
+    """``marshal seed accept`` (Story 97.1): thin CLI plumbing over
+    ``seed.verbs.accept.run_accept`` -- this function performs no hash/region/
+    state logic of its own. Dry run by default; ``--apply`` records the edit and
+    needs ``--reason``."""
+    try:
+        if _flag(args, "dry_run") and _flag(args, "apply"):
+            raise UsageError(
+                "--dry-run and --apply are mutually exclusive",
+                remedy="pass exactly one of --dry-run (default) or --apply",
+            )
+        repo_root = _resolve_repo_root(args.repo_root)
+        if manifest is None:
+            manifest = _load_packaged_manifest()
+        result: AcceptResult = _run_accept_verb(
+            repo_root,
+            manifest,
+            args.artifact,
+            apply=_flag(args, "apply"),
+            reason=getattr(args, "reason", None),
+        )
+    except ManifestError as exc:
+        wrapped = InternalError(
+            f"the packaged seed manifest could not be loaded: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- the packaged manifest.yaml ships inside"
+                " the distribution and its absence or corruption is a broken"
+                " installation, not a problem with the repository"
+            ),
+        )
+        _print_seed_error(wrapped, verb="accept", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
+        return wrapped.exit_code
+    except SeedError as exc:
+        _print_seed_error(exc, verb="accept", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
+        return exc.exit_code
+    except Exception as exc:  # noqa: BLE001 -- the CLI backstop; see run_check's docstring.
+        wrapped = InternalError(
+            f"an unanticipated internal failure occurred: {exc}",
+            remedy=(
+                "this is unexpected -- please file a bug report against"
+                " pyforge-marshal with the full command and output"
+            ),
+        )
+        _print_seed_error(wrapped, verb="accept", as_json=_flag(args, "json"), quiet=_flag(args, "quiet"))
+        return wrapped.exit_code
+
+    _emit_success(
+        verb="accept",
+        as_json=_flag(args, "json"),
+        quiet=_flag(args, "quiet"),
+        result=result.to_json_dict(),
+        text=render_accept_text(result),
+    )
+    return EXIT_OK
+
+
 def run_explain(args: argparse.Namespace, *, manifest: Manifest | None = None) -> int:
     """``marshal seed explain`` (Story 11.6): thin CLI plumbing over
     ``seed.verbs.explain.run_explain`` -- read-only manifest lookup."""
@@ -1175,12 +1242,13 @@ def run_version(args: argparse.Namespace, *, manifest: Manifest | None = None) -
 
 def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
     """Register the ``seed`` subcommand on ``main.py``'s subparser tree, with
-    seven nested verb actions -- mirrors ``cli/gate.py::add_gate_subparser``'s
-    identical nested-subparsers shape, one level down (seven verbs instead of
+    eight nested verb actions -- mirrors ``cli/gate.py::add_gate_subparser``'s
+    identical nested-subparsers shape, one level down (eight verbs instead of
     one ``evaluate`` action). Story 12.5 wires ``--json``/``--quiet`` on every
     verb and ``--dry-run`` on the mutating ones (FR-123/FR-124); Story 28.3
     adds the seventh verb, ``kit``, plus ``--project`` on ``check``/``kit``
-    (the two verbs that read a ``[context]`` declaration)."""
+    (the two verbs that read a ``[context]`` declaration); Story 97.1 adds the
+    eighth, ``accept``."""
     parser = subparsers.add_parser(
         "seed",
         help="Scaffold/adopt/check/update a project from Marshal's seed templates (AD-70).",
@@ -1188,7 +1256,8 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
             "The seed-installer noun group. `check` (Story 10.5), `adopt` "
             "(Story 10.6), `init` (Story 10.7), `update` (Story 11.4), `explain`, and"
             " `version` (Story 11.6) are real, as is `kit` (Story 28.3, the"
-            " per-loop-home token-economy kit)."
+            " per-loop-home token-economy kit) and `accept` (Story 97.1, records an"
+            " intended edit to a tool-owned file or region as the new baseline)."
         ),
     )
     seed_subparsers = parser.add_subparsers(dest="seed_command", required=True)
@@ -1400,6 +1469,47 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
     _add_dry_run_flag(update_parser)
     _add_json_quiet_flags(update_parser)
     update_parser.set_defaults(handler=run_update)
+
+    accept_parser = seed_subparsers.add_parser(
+        "accept",
+        help="Record an intended edit to a tool-owned file or region as the new baseline (Story 97.1).",
+        description=(
+            "Story 97.1: re-record the content hash state holds for a `copied-managed`"
+            " file or a `hybrid-managed-region` region you edited on purpose, so"
+            " `adopt`/`update` stop refusing it. Dry run by default -- prints"
+            " `<recorded> -> <current>` and writes nothing; --apply (which needs"
+            " --reason and a clean worktree) writes .marshal/seed-state.yml, and only"
+            " that, with one journal entry per re-recorded file or region."
+            " `update --force` discards an edit; it never accepts one."
+        ),
+    )
+    accept_parser.add_argument(
+        "artifact",
+        metavar="ARTIFACT",
+        help="Manifest artifact id, or <id>#<region> for one region of a hybrid file (e.g. bmad-switch, gitignore#model-ignores).",
+    )
+    accept_parser.add_argument(
+        "--repo-root",
+        dest="repo_root",
+        default=None,
+        metavar="PATH",
+        help="The repo whose state to re-record (default: the current working directory).",
+    )
+    accept_parser.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="Record the edit (default: dry-run -- print the re-record and write nothing).",
+    )
+    accept_parser.add_argument(
+        "--reason",
+        default=None,
+        metavar="TEXT",
+        help="Why this edit is intended; required with --apply and journaled.",
+    )
+    _add_dry_run_flag(accept_parser)
+    _add_json_quiet_flags(accept_parser)
+    accept_parser.set_defaults(handler=run_accept)
 
     explain_parser = seed_subparsers.add_parser(
         "explain",

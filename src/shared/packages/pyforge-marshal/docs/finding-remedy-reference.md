@@ -15,8 +15,8 @@ Severity ladder (AD-54, borrowed from `bmad_drift_check.py`):
 | Finding | Severity | Remedy |
 |---|---|---|
 | `artifact-missing` | HARD | Run `marshal seed adopt` (or `init`, for a first-ever install) to materialize it. |
-| `managed-file-modified` | HARD | The file is tool-owned -- revert the local edit, or run `marshal seed update --force` to accept it as the new baseline. |
-| `managed-region-modified` | HARD | Revert edits inside the managed region, or run `marshal seed update --force` to overwrite it; content outside the markers is untouched. |
+| `managed-file-modified` | HARD | The file is tool-owned -- revert the local edit, run `marshal seed accept <artifact-id> --apply --reason "..."` to record an intended edit as the new baseline, or run `marshal seed update --force` to discard the edit. |
+| `managed-region-modified` | HARD | Revert edits inside the managed region, run `marshal seed accept <artifact-id>#<region> --apply --reason "..."` to record an intended edit as the new baseline, or run `marshal seed update --force` to discard the edit and overwrite the region; content outside the markers is untouched. |
 | `managed-region-missing` | DRIFT | Run `marshal seed update` to re-insert the region at its declared anchor. |
 | `derived-stale` | DRIFT | Run `marshal seed update` to recompute it; this class is always safe to regenerate. |
 | `model-behind` | DRIFT | Run `marshal seed update` to upgrade the repo to the currently installed model version. |

@@ -463,7 +463,7 @@ development_status:
   94-2-a-held-pr-is-marked-ready-when-its-landing-review-passes: done
   95-1-dispatch-applies-ruff-to-a-story-s-files-under-each-tree-s-own-config: done
   96-1-a-story-spec-carries-each-frontmatter-key-once: done
-  97-1-seed-accept-records-an-intended-edit-and-repo-owned-files-leave-the-guard: backlog
+  97-1-seed-accept-records-an-intended-edit-and-repo-owned-files-leave-the-guard: done
   97-2-a-seed-update-dry-run-on-an-adopted-repo-plans-only-real-changes: backlog
   epic-1: done
   epic-1-retrospective: optional
@@ -653,5 +653,5 @@ development_status:
   epic-95-retrospective: optional
   epic-96: done
   epic-96-retrospective: optional
-  epic-97: backlog
+  epic-97: in-progress
   epic-97-retrospective: optional

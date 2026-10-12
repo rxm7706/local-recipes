@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from .store import (
     STATE_KEYS,
+    Acceptance,
     LegacyArtifact,
     ManagedArtifact,
     RegionSpanRecord,
@@ -48,6 +49,7 @@ from .store import (
 
 __all__ = [
     "STATE_KEYS",
+    "Acceptance",
     "LegacyArtifact",
     "ManagedArtifact",
     "RegionSpanRecord",

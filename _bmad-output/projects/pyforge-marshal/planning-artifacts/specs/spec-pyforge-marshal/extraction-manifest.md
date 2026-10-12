@@ -60,9 +60,6 @@ Genesis **verifies presence and floor** for these and never installs them.
 |---|---|
 | `scripts/bmad-switch` | executable model machinery with a known production incident (the marker/symlink desync); bug fixes **must** propagate to installed repos |
 | `scripts/bmad-loop-worktree` | concurrent loop homes; same reasoning |
-| **The detector set** — resolved through `scripts/detectors.py`, *not* enumerated here | must run locally and offline in the adopting repo's CI; the conformance engine evolves with the model. **Changed 2026-07-31:** this row named one file (`bmad_drift_check.py`) while the repo had grown to **ten** detectors, so an adopting repo inherited a tenth of the conformance surface. The registry discovers them from the filesystem and fails on its own gaps, which is exactly why the row must resolve through it — a hand-written list omits the newest thing, which is the defect the registry exists to prevent, reproduced one tier up in the artifact that installs it. |
-| `docs/dreams/README.md` | the Tier-0 contract itself — Dream frontmatter schema, flow, conventions |
-| CI workflow running `genesis check` + the detector | mechanical; no reason for a repo to own it |
 | The `.gitignore` model block | the tier rules made executable — delivered as a managed **region** inside a repo-owned `.gitignore` (see HYBRID) |
 | The model's own rule text (tier tables, portability contract) | delivered *into* hybrid files, not as standalone files (see HYBRID) |
 
@@ -76,6 +73,9 @@ Genesis **verifies presence and floor** for these and never installs them.
 | `.bmad-loop/policy.toml` | per-project verify gates and worktree seeds — necessarily repo-specific |
 | `planning-artifacts/specs/README.md` | the durable-specs convention explainer; the repo extends it with its own provenance table |
 | Deck-family scaffolding under `presentations/<slug>/` | Herald's surface; Genesis lays the directory, Herald owns the content |
+| `scripts/detectors.py` (`detector-registry`) | **Story 97.1 (operator ruling 2026-10-12):** repo-owned from the day it is laid down — the registry and Doctor source lists evolve with every local detector; no hash guard may refuse the repo's own edits |
+| `docs/dreams/README.md` (`dreams-readme`) | **Story 97.1 (operator ruling 2026-10-12):** repo-owned — the Tier-0 Dream table grows with every new Dream |
+| `.github/workflows/detectors.yml` (`detectors-ci-workflow`) | **Story 97.1 (operator ruling 2026-10-12):** repo-owned CI wiring the adopting repo extends with its own lanes |
 
 ## GENERATED · DERIVED
 

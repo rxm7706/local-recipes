@@ -24,7 +24,7 @@ machinery; Marshal operates it.**
 Planning artifacts:
 [`_bmad-output/projects/pyforge-marshal/planning-artifacts/`](../../../../_bmad-output/projects/pyforge-marshal/planning-artifacts/)
 
-## Genesis — four verbs
+## Genesis — seed verbs
 
 | Verb | Purpose | Typical use |
 |---|---|---|
@@ -32,9 +32,12 @@ Planning artifacts:
 | **`adopt`** | Brownfield layer onto an existing repo (dry-run by default) | `marshal seed adopt --repo-root . --agents claude,cursor` then `--apply --yes` |
 | **`check`** | Read-only conformance report (CI gate) | `marshal seed check --repo-root . --strict` |
 | **`update`** | Upgrade to a newer bundled `model_version` | `marshal seed update --repo-root . --yes` |
+| **`accept`** | Record an intended edit to a tool-owned file or region as the new baseline (dry run by default; journaled) | `marshal seed accept bmad-switch --apply --reason "…"` |
 
-Helper verbs (read-only): `marshal seed explain <artifact-id>`,
-`marshal seed version`.
+Helper verbs: `marshal seed explain <artifact-id>` and `marshal seed version`
+(read-only), and `marshal seed kit` (per-loop-home token-economy kit). `accept` is
+the sanctioned writer for a hash re-record: `update --force` *discards* a local
+edit, it never accepts one.
 
 ### Worked examples
 
@@ -67,7 +70,7 @@ Every manifest entry is classified (see [adoption guide](docs/adoption-guide.md)
 | Class | Reader takeaway |
 |---|---|
 | **referenced** | Verified upstream dependency — not copied into the repo |
-| **copied-managed** | Tool-owned whole file — do not hand-edit |
+| **copied-managed** | Tool-owned whole file — do not hand-edit; to keep an intended edit, `marshal seed accept` it |
 | **copied-seeded** | Installed once as a starter — repo-owned forever after |
 | **generated-derived** | Recomputed from contract/state — safe to regenerate |
 | **hybrid-managed-region** | Repo-owned file, tool-owned marker span — see [managed region contract](docs/managed-region-contract.md) |

@@ -35,8 +35,8 @@ _VERSION = ModelVersion.parse("1.0.0")
 # Story 28.3 adds the seventh verb, `kit`. Enrolled here (not exempted)
 # so FR-123/124/126 -- `--json`/`--quiet` acceptance, `--dry-run` on a
 # mutating verb, envelope-key parity -- cover it like every sibling.
-_SEED_VERBS = ("init", "adopt", "check", "update", "explain", "version", "kit")
-_MUTATING_VERBS = ("init", "adopt", "update", "kit")
+_SEED_VERBS = ("init", "adopt", "check", "update", "explain", "version", "kit", "accept")
+_MUTATING_VERBS = ("init", "adopt", "update", "kit", "accept")
 _ENVELOPE_OK_KEYS = ("verb", "ok", "result")
 _ENVELOPE_ERR_KEYS = ("verb", "ok", "error")
 _ERROR_KEYS = ("type", "message", "remedy")
@@ -87,6 +87,8 @@ def test_every_verb_accepts_json_and_quiet(verb: str):
         argv.append("/tmp/unused-path")
     elif verb == "explain":
         argv.append("agents-md")
+    elif verb == "accept":
+        argv.append("whole")
     args = parser.parse_args([*argv, "--json", "--quiet"])
     assert args.json is True
     assert args.quiet is True
@@ -98,6 +100,8 @@ def test_mutating_verbs_accept_dry_run(verb: str):
     argv = ["seed", verb, "--dry-run"]
     if verb == "init":
         argv.insert(2, "/tmp/unused-path")
+    elif verb == "accept":
+        argv.insert(2, "whole")
     args = parser.parse_args(argv)
     assert args.dry_run is True
 
