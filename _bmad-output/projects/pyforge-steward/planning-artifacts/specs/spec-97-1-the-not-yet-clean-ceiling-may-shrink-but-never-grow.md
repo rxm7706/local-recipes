@@ -2,7 +2,7 @@
 title: '97.1: The not-yet-clean ceiling may shrink but never grow'
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -175,7 +175,75 @@ Type / Effort / Deps: fix / S / none.
 - `python3 scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC6).
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
 
+## Review Triage Log
+
+### 2026-10-12 — Orchestrator verification (separate from the implementer): passed
+
+Read the one-file diff of `test_lint_types_django_tables.py` against the ACs. Re-ran a mutation myself: `django-doctor` given `ruff-format` in `NOT_YET_CLEAN_CEILING` reds `test_not_yet_clean_ceiling_only_shrinks_from_seed` ("django-doctor gains ['ruff-format'] beyond the 93.1 seed; the ceiling never grows"); restored byte-identical (cmp), 3 passed on main's maps. The implementer's gates: `pyforge-steward-test` 0 with ruff absent (2382 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0. A one-assertion test fix restoring a stated design; hand-landed because dispatch refused on MRS-DISP-034 against in-flight 96.1. Story done.
+
+### 2026-10-12 — Implementation (implementer, hand-built)
+- change (one code path, AC4): `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py`.
+  `test_not_yet_clean_within_ceiling_and_seeded_map` becomes `test_not_yet_clean_ceiling_only_shrinks_from_seed`. The
+  `NOT_YET_CLEAN_CEILING == SEEDED_NOT_YET_CLEAN` equality is replaced by a loop: each ceiling package must be in
+  `SEEDED_NOT_YET_CLEAN` ("<pkg> is not in the 93.1 seed"), and its verbs must not exceed the seed's ("<pkg> gains
+  [<verbs>] beyond the 93.1 seed"). The `NOT_YET_CLEAN` ⊆ ceiling loop and the live-django check are kept; the loop now
+  has failure messages. The docstring names the three mutations. `SEEDED_NOT_YET_CLEAN` (nine entries), the other two
+  tests and `scripts/lint_types.py` are unchanged.
+- mutations (AC3): each was applied to a scratch copy of the tree (`scripts/lint_types.py` mutated, the test file copied,
+  and the `django-*` dirs symlinked), so the worktree's `scripts/lint_types.py` was never edited (its sha256 was checked
+  before and after). The verdicts are in the Auto Run Result: M1/M2/M2b/M3 each fail the renamed test with the package
+  named, P1–P4 pass, and main's eight-entry maps pass 3 of 3 (AC2).
+- gates (exit codes read from files, never through a pipe):
+  - `pixi run --frozen -e pyforge-steward pyforge-steward-test` with every PATH dir holding `ruff` removed (`command -v
+    ruff` rc=1 inside the env): exit 0, 2382 passed, 3 skipped (AC5).
+  - The same task with the normal PATH: exit 0, 2382 passed, 3 skipped. This shell's normal PATH also has no `ruff`, so
+    the two lint-types test files were also run in `-e pyforge-guild`, where `ruff` is present: exit 0, 16 passed.
+  - `pixi run -e pyforge-guild lint-types`: exit 0.
+  - `pixi run -e pyforge-guild spec-surface-check`: exit 0, no drift; only pre-existing `stale-surface` warnings.
+  - `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py`: exit 0. The Verification line's bare
+    `python3` is 3.12 on this host and fails with a `SyntaxError` on doctor's py3.14 `except A, B:` syntax, so run it
+    in a 3.14 env.
+  - `pixi run -e pyforge-guild detectors-ci`: exit 0, 45 of 45 pass. Its warnings (`docs-currency`
+    station-cheat-sheet stale, `dreams-hygiene` wagtail-corporate-brain row, `bmad-drift` env matrix, among others) are
+    on paths this story does not touch, and AC4 keeps it from touching them.
+- surface (AC6): the only Spec governing the test file is `spec-pyforge-steward`, through
+  `src/shared/packages/pyforge-steward/**`. `spec-surface-check` names no drift, because that memlog moved after its last
+  stamp and 93.1's entry already names the path. A 97.1 surface-reconcile entry naming the path was appended anyway
+  (`memlog.py append`). No scoped stamp was written: the check names no Spec. A steward stamp would also absorb the
+  unstamped, memlog-named reconciles 93.1 and 91.1 left (`lint-types.yml`, `scripts/lint_types.py`,
+  `test_lint_types_not_yet_clean.py`, `test_stations_index_boundaries.py`). It would also put a baseline conflict in
+  front of in-flight 96.1. The landing can stamp `--spec pyforge-steward/spec-pyforge-steward` if it chooses.
+
+## Auto Run Result
+
+Status: in-review (hand-built; the orchestrator verifies and sets done)
+
+**Summary:** the ceiling meta-test asserts the 93.1 AC4 ratchet (subset, never equality), so herald 38.1's removal of
+`django-herald` from both maps passes and `steward-test` is green again.
+
+**Files changed:** `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py`; the
+`spec-pyforge-steward` memlog (one surface-reconcile entry); this story spec.
+
+**Mutations (AC3), each run against a scratch copy of `scripts/lint_types.py`:**
+
+| # | Mutation | Expected | Verdict |
+|---|---|---|---|
+| M0 | none (main: eight entries, herald gone) | pass | pass, 3 passed |
+| M1 | ceiling gains `"django-extra": frozenset({"ruff"})` | fail | fail: "django-extra is not in the 93.1 seed" |
+| M2 | `django-doctor` gains `"ruff-format"` | fail | fail: "django-doctor gains ['ruff-format'] beyond the 93.1 seed" |
+| M2b | `django-herald` re-added as `{"ruff", "ruff-format", "mypy"}` | fail | fail: "django-herald gains ['mypy'] beyond the 93.1 seed" |
+| M3 | `NOT_YET_CLEAN` adds `django-herald`, which the ceiling lacks | fail | fail: "django-herald is in NOT_YET_CLEAN but not the ceiling" |
+| P1 | ceiling drops `django-atlas` | pass | pass |
+| P2 | `django-steward` drops `"ruff-format"` | pass | pass |
+| P3 | `django-herald` re-added exactly as the seed (ceiling == seed) | pass | pass |
+| P4 | `NOT_YET_CLEAN` drops `django-marshal` alone | pass | pass |
+
+**Verification:** the gate exit codes are in the Review Triage Log entry above. All pass.
+
 ## Spec Change Log
 
 - 2026-10-12: minted under the operator's standing direction "keep going, merge and dispatch when green". `type: fix`,
   no flag, no CAP; bound to `spec-pyforge-steward` CAP-153 through Stories 66.1 and 93.1.
+- 2026-10-12: deviation: built by hand in `dispatch/pyforge-steward/97.1`, not by `marshal factory dispatch`. Dispatch
+  refused on MRS-DISP-034 (surface overlap) against in-flight steward 96.1, and 96.1 cannot land until this fix is on
+  `main`. Status moved to `in-review` for the orchestrator's verification.
