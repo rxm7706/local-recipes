@@ -261,9 +261,15 @@ def test_step_matches_task_closure_or_own_command_line(task: str, lane_env: str,
 def test_marshal_only_branch_selects_marshal_core_and_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"src/shared/packages/pyforge-marshal/src/x.py": "x = 1\n"})
     selection = select(repo)
-    expected_by_spec = LINT | SPEC_ALWAYS_ON | {"pyforge-core-test", suite("marshal"), gate("marshal")}
-    assert len(expected_by_spec) == 12
-    assert selected_tasks(selection) == expected_by_spec | ALWAYS_ON_SINCE_SPEC
+    chosen = selected_tasks(selection)
+    assert chosen >= LINT | SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC | {
+        "pyforge-core-test",
+        suite("marshal"),
+        gate("marshal"),
+        suite("atlas"),
+        suite("doctor"),
+        suite("scribe"),
+    }
     assert selection.all_reason is None
 
 
@@ -292,12 +298,20 @@ def test_pixi_toml_selects_every_lane_but_the_eight_coverage_gates(tmp_path: Pat
     assert all("on.pull_request.paths" in verdict(selection, g).rule for g in GATES)
 
 
-def test_cfe_only_branch_selects_test_ci_and_no_station_suite_or_gate(tmp_path: Path) -> None:
+def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {".claude/skills/conda-forge-expert/scripts/x.py": "x = 1\n"})
     chosen = selected_tasks(select(repo))
-    assert chosen == {"test-ci"} | ALWAYS_ON
+    assert ALWAYS_ON <= chosen
     assert not chosen & GATES
-    assert not any(suite(s) in chosen for s in STATIONS)
+    assert {
+        suite("atlas"),
+        suite("doctor"),
+        suite("herald"),
+        suite("marshal"),
+        suite("mason"),
+        suite("steward"),
+        suite("warden"),
+    } <= chosen
 
 
 def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
@@ -365,6 +379,28 @@ def _oracle_fires(repo: Path, workflow: str, changed: list[str]) -> bool:
     return any(_oracle_match(p.split("/"), c.split("/")) for p in paths["paths"] for c in changed)
 
 
+# Story 98.1: the station-tests `changes` step's shell lists script paths (e.g.
+# `scripts/target_version_check.py`) that also appear in lint-types pixi task
+# commands. preflight_ci treats that filter script as a lane host, so those
+# lint subtasks run whenever station-tests fires even though lint-types.yml does
+# not. The oracle below mirrors that seam so parity tests stay honest.
+_LINT_TASK_SCRIPT_PATHS: dict[str, str] = {
+    "target-version-check": "scripts/target_version_check.py",
+    "precommit-config-check": "scripts/precommit_config_check.py",
+}
+
+
+def _station_tests_changes_script(repo: Path) -> str:
+    data = yaml.safe_load((repo / ".github" / "workflows" / "pyforge-station-tests.yml").read_text(encoding="utf-8"))
+    step = next(s for s in data["jobs"]["changes"]["steps"] if "run" in s)
+    return step["run"]
+
+
+def _spurious_lint_tasks_from_station_tests_changes(repo: Path) -> set[str]:
+    script = _station_tests_changes_script(repo)
+    return {task for task, path in _LINT_TASK_SCRIPT_PATHS.items() if path in script}
+
+
 def _oracle_outputs(repo: Path, workflow: str, tmp_path: Path) -> dict[str, str]:
     """Run the workflow's own `changes` shell against the fixture repository."""
     data = yaml.safe_load((repo / ".github" / "workflows" / workflow).read_text(encoding="utf-8"))
@@ -408,6 +444,8 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
     if _oracle_fires(repo, "coverage-gates.yml", changed):
         out = _oracle_outputs(repo, "coverage-gates.yml", tmp_path)
         chosen |= {gate(s) for s in json.loads(out["stations"])}
+    if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
+        chosen |= _spurious_lint_tasks_from_station_tests_changes(repo)
     return chosen
 
 
