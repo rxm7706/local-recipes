@@ -1408,6 +1408,51 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   The detector is doctor's, minted the same day as doctor Story 42.1 and gated on this story (operator ask 2026-10-11:
   "Do this task here: Stop story specs gaining duplicate frontmatter keys"). Owner `spec-pyforge-marshal`. → Epic 96 /
   Story 96.1, specced 2026-10-11.
+- **2026-10-12 (seed accept and repo-owned managed artifacts)** — **Found: once this repo was genesis-adopted, a PR
+  that edits one of the files the seed claims fails CI, and no seed verb can record the edit.** Doctor Story 42.1
+  (PR #2150) adds one row to `scripts/detectors.py`'s `_DOCTOR_SOURCE_TASKS`. That changes the file's hash
+  (`3ea83244` to `20bf7374`), and CI's `oracle` check (`marshal-local-recipes-seed-oracle`, the SC-02 adopt dry run in
+  `tests/integration/test_local_recipes_empty_plan.py`) fails with `PreconditionFailure: managed-content-modified`:
+  rung 6 (`seed/verbs/preconditions.py`) compares every claimed file with the hash `.marshal/seed-state.yml` recorded.
+  Nothing sanctioned can move that hash. `adopt` first-claims only ids state does not record yet
+  (`seed/verbs/adopt.py:560`) and writes state only when its plan has actions (`:1360`), and this repo's plan is empty.
+  `--force` skips rung 6 and records nothing (`cli/seed.py:1280`-`:1285`, `preconditions.py:45`-`:60` and `:720`).
+  The published remedy for `managed-file-modified`, "run `marshal seed update --force` to accept it as the new
+  baseline" (`seed/detect/findings.py:117`-`:120`, `docs/finding-remedy-reference.md:18`, `docs/adoption-guide.md:71`),
+  is wrong: `update --force` recopies the file from the packaged template (FR-101: discard local edits;
+  `seed/verbs/update.py:821`-`:931`), and the template ships no payload for any `copied-managed` file. On a fixture of
+  this repo's claimed files, `update --run --yes --force` exits 2 ("copier recopy failed"); where staging succeeds,
+  `_staged_bytes_for` raises `InternalError` (`update.py:704`-`:728`). Story 86.2 claimed five `copied-managed` files
+  by recording this repo's own content (its brownfield bootstrap, `adopt.py:882`-`:890`). Three of them are this
+  repo's own files and change all the time. From 2026-09-12 to 2026-10-12, `scripts/detectors.py` changed in 11
+  commits; its 28-row `_DOCTOR_SOURCE_TASKS` is the hand list the manifest's rationale says the registry does not need
+  (`seed/templates/manifest.yaml:188`-`:192`). `docs/dreams/README.md` changed in 65; its 109-row Dream table gains a
+  row with every new Dream (AGENTS.md pre-PR item 8). `.github/workflows/detectors.yml` changed in 4. It is this
+  repo's own 238-line CI and does not run `marshal seed check`, which the manifest's rationale says it does. The two
+  scripts that are model machinery, `scripts/bmad-switch` and `scripts/bmad-loop-worktree`, changed in 2 and 1.
+  The Spec companion's own watch metric (`extraction-manifest.md` § *Watch metrics*) says a class assigned wrong is
+  fixed in the manifest, not in the engine. Story 86.2's AC6 does not hold either. Its landing left the check as a
+  manual residual. Run at `f478cfbc5a`, `marshal seed update --repo-root .` (dry run) plans 12 actions: wholesale
+  regenerations of the five `copied-managed` files and the two hybrid regions, `.bmad-loop/policy.toml` (owed only in
+  a loop home), `.claude/skills/**` (`unclassified-deferred`) and three literal `{{ slug }}` paths. `update`'s
+  `_manifest_for_update` (`update.py:339`-`:347`) filters `applies_to` only, while `adopt`'s `_manifest_for_adopt`
+  (`adopt.py:486`-`:513`) has dropped those entries since Story 86.2. **What it looks like when fixed:** an operator
+  who means an edit to a claimed file runs `marshal seed accept <artifact-id>`. It hashes the file on disk (or each
+  recorded region of a hybrid file) with the hash rung 6 uses, writes the new hash only through the state store's
+  atomic writer, and keeps who, when, the old and new hash and the reason in the state file itself. It refuses an
+  unknown id, an unclaimed artifact, and a class nothing guards. The three repo-owned files become `copied-seeded`
+  (repo-owned after the first write), so a new Doctor source or a new Dream never trips the oracle. Every remedy that
+  promised `update --force` would accept an edit names `seed accept` instead. And a `seed update` dry run on an
+  adopted repo plans only what would really change: zero actions here. **Constraints:** fix stories under the
+  capabilities that shipped the seed verbs (CAP-10, CAP-11, CAP-12, CAP-13, CAP-15, CAP-17, CAP-279), no CAP, no flag.
+  `SPEC.md`'s do-not-hand-edit rule for the state file (`SPEC.md:287`) stays true: the new verb is the sanctioned
+  writer. The oracle's exclusion set and skip table do not widen (K-02). The operator's ruling, verbatim (2026-10-12,
+  "Sign off + fix story (Recommended)"): "Authorize this one recorded hash re-record for 42.1, noted in 42.1's triage
+  log and the marshal memlog as an operator-authorized exception, then land 42.1. Also mint a marshal fix story: a
+  journaled `marshal seed accept <id>` re-record verb, reclassify the repo-owned artifacts (detectors.py, dreams
+  README, detectors.yml) so routine edits don't trip it, and correct the wrong `update --force` remedy text." Two
+  stories, not one: the update planning fix is a separate defect in a separate path (`update.py`), found while
+  checking the remedy. Owner `spec-pyforge-marshal`. → Epic 97 / Stories 97.1 and 97.2, specced 2026-10-12.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

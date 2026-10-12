@@ -585,6 +585,32 @@ verify_commands = [
   "_bmad/custom/bmad-build.toml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"97" = [  # a seed-adopted repo edits its own files and keeps an empty plan (fix stories under CAP-10, CAP-11, CAP-12,
+  # CAP-13, CAP-15, CAP-17 and CAP-279, no CAP; Stories 97.1 and 97.2), added 2026-10-12. The default surface, restated
+  # because a declared entry replaces it outright; its package glob already covers the seed package (seed/verbs/,
+  # seed/state/ and its schema.json, seed/detect/findings.py, seed/templates/manifest.yaml), its tests and the package
+  # docs (docs/finding-remedy-reference.md, docs/adoption-guide.md, README.md). Plus: the tracked seed state (written
+  # only by a seed verb such as `marshal seed accept --apply`, never by hand), the station skill's verb list, the PRD's
+  # Extraction Manifest tables and the chain-currency re-stamps they cascade to (spine, epics.md, test-architecture.md),
+  # and every Spec memlog (marshal's src/ is co-governed by spec-pyforge-core). scripts/detectors.py,
+  # docs/dreams/README.md and .github/workflows/detectors.yml are deliberately not admitted: the reclassification
+  # changes the manifest's class, never those files.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".marshal/seed-state.yml",
+  ".claude/skills/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/prds/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 0f19d0c1c3ffcbd9
-story_count: 449
-test_file_count: 259
+source_fingerprint: b80fcccb30f2195d
+story_count: 451
+test_file_count: 261
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 449
-- **Epics parsed:** 94
-- **Test files inventoried:** 259 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 451
+- **Epics parsed:** 95
+- **Test files inventoried:** 261 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `0f19d0c1c3ffcbd9`
+- **Source fingerprint:** `b80fcccb30f2195d`
 
 ## Risk Assessment
 
@@ -116,6 +116,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 94: A review entry is as new as the commit that wrote it
 - Epic 95: Pre-verify ruff covers the platform and the portal packages
 - Epic 96: A story spec says each frontmatter fact once
+- Epic 97: A seed-adopted repo edits its own files and keeps an empty plan
 
 ### Low-risk epics
 
@@ -243,7 +244,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry_83_10.py` | unit | 83.10 |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format_trees.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_session_alive.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_spec_frontmatter.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_stale_worktree.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_stop_retry.py` | unit | none observed |
@@ -848,6 +851,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 94.2 | A held PR is marked ready when its landing review passes | none observed |
 | 95.1 | Dispatch applies ruff to a story's files under each tree's own config | none observed |
 | 96.1 | A story spec carries each frontmatter key once | none observed |
+| 97.1 | Seed accept records an intended edit, and repo-owned files leave the guard | none observed |
+| 97.2 | A seed update dry run on an adopted repo plans only real changes | none observed |
 
 ## Quality Gates
 
