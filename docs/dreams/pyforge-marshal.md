@@ -1453,6 +1453,23 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   README, detectors.yml) so routine edits don't trip it, and correct the wrong `update --force` remedy text." Two
   stories, not one: the update planning fix is a separate defect in a separate path (`update.py`), found while
   checking the remedy. Owner `spec-pyforge-marshal`. → Epic 97 / Stories 97.1 and 97.2, specced 2026-10-12.
+- **2026-10-12 (ci pauses at merge)** — **Found: a landing records its checks but never that a gate was paused.** With
+  `PAUSE_PLATFORM_CONTAINER_BUILDS=true` since 2026-10-09 every platform-touching story landed with `container`,
+  `container-dbgpt` and `golden-path-promotion` skipped, and with `PAUSE_CONTAINER_BUILDS=true` since 2026-10-04 every
+  station story landed without `guild-container`; the landing journal, the PR body and the promotion record say
+  nothing of it, so a reader of `landing_evidence` sees a green merge and cannot tell a skipped gate from a passed
+  one. `main` has no required checks (this log, 2026-10-01 later), so a pause is invisible to the merge too. Steward's
+  same-day append mints the registry (`docs/governance/ci-surfaces.yaml`) and `pyforge steward ci status --json`; the
+  plan is `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`. **What it looks like when fixed:** `dispatch_land`
+  reads `steward ci status --json` at landing time and writes `ci_pauses_at_merge: [<surface ids>]` into the landing
+  journal; the PR body gains one line ("CI paused at merge: container, container-dbgpt, guild-container");
+  `landing_evidence` and `promotion.py` carry the list into the promotion record; an empty list is written explicitly,
+  never omitted, and a `steward ci status` that cannot read live state (no `gh`, a rate limit) is recorded as
+  `unknown`, not as empty. **Constraints:** a feature under CAP-4 (landing with a durable paper trail) and the
+  landing-evidence grammar (CAP-126–CAP-129); behind a flag (`pyforge.marshal.landing_ci_pauses` proposed); reads
+  steward through the CLI's JSON, never by import; depends on steward's `ci status` landing first; changes no landing
+  verdict and waits on no CI. Operator ruling 2026-10-12: the plan's recommended answers Q1–Q8 stand. Owner
+  `spec-pyforge-marshal`.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

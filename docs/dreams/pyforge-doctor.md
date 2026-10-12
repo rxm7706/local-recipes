@@ -86,6 +86,29 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-12 (ci pause drift)** — **Found: a surface can be off for days with no switch flipped, and no Doctor
+  source notices.** `dashboard.yml` run 37447093993 (2026-10-06 10:02) parked its `deploy` job in `waiting` on the
+  `github-pages` environment (zero reviewers, wait timer 0, `current_user_can_approve=false`); `concurrency: { group:
+  pages, cancel-in-progress: false }` then cancelled every later run — 199 of the last 200 — and Pages served a
+  six-day-old build until the operator cancelled the run on 2026-10-12 (run 38244315305 then deployed green). The same
+  blindness covers the switches that exist: two `PAUSE_*` repository variables set 2026-10-04 and 2026-10-09 with no
+  review date, six workflows `disabled_manually` since 2026-08-24 with no recorded reason, and
+  `ACTIONS_ENABLED=false`, dead since it was set, cited as evidence in three planning docs until deleted 2026-10-12.
+  `fleet-picture` and `doctor monitor --fleet` have no CI axis. Steward's same-day append mints the registry
+  (`docs/governance/ci-surfaces.yaml`), the switch convention and `pyforge steward ci status --json`; the plan is
+  `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`. **What it looks like when fixed:** a new Doctor source,
+  `ci_pause_drift`, advisory, reads the registry and the same live surfaces `steward ci status` reads (`gh variable
+  list`, the Actions API's workflow state and recent runs, pending deployments) and raises one finding per rule:
+  declared state ≠ live value; `review_by` elapsed; a deployment `waiting` longer than 24 h; five or more consecutive
+  `cancelled` runs on one workflow; a `disabled_manually` workflow without a `paused-manually` or `retired` row; a
+  paused `cost: high` row whose canary has no green run in 14 days. It appears in `fleet-picture` as its own section
+  and in `monitor --fleet` as a `ci` axis; a `warn` never changes the exit code, and an unauthenticated probe is
+  refused, not read as green. The 2026-10-06 incident, replayed from a recorded `gh` fixture, yields `stuck` within
+  one run. **Constraints:** a feature under CAP-54 (a new Doctor source, not an extension), beside CAP-2 and CAP-6
+  (the fleet view); advisory, never a second PR gate; behind a flag (`pyforge.doctor.ci_pause_drift` proposed) unless
+  `bmad-spec` rules it `detector-or-gate`; depends on steward's registry and `steward ci status --json` landing first;
+  reads `pyforge.steward` through the CLI's JSON, never by import. Operator ruling 2026-10-12: the plan's recommended
+  answers Q1–Q8 stand; Epic 43 went to Story 43.1 the same day, so this is a new epic. Owner `spec-pyforge-doctor`.
 - **2026-10-12 (bmad-drift knows dispatch run artifacts)** — **Found: bmad-drift fails the files marshal dispatch
   writes into its own Tier-3 store.** Marshal Story 47.1 (with 47.2 and 93.1) writes a recall-feedback pair into the
   dispatch worktree's gitignored `implementation-artifacts/`: `recall-feedback__<story>__<run>.md` and a sibling

@@ -1579,6 +1579,61 @@ Drift — orphaned between stations.
   The operator ruled the same day, before dispatch, "Trigger on planning too" (no exemption list: planning content
   fires every suite that reads it, doctor and marshal on nearly every chain PR) and "In steward (Recommended)" (the
   meta-test stays in steward's tests, not pyforge-core's), superseding the exemption sketched above.
+- **2026-10-12 (ci pause control plane)** — **Found: three jobs have a pause switch, twenty-five do not, and nothing
+  reads, lists or judges the switches that exist.** Live audit 2026-10-12 (`gh variable list`, the Actions API, every
+  file under `.github/workflows/`): `PAUSE_CONTAINER_BUILDS=true` (2026-10-04) skips `guild-container` in
+  `pyforge-station-tests.yml`; `PAUSE_PLATFORM_CONTAINER_BUILDS=true` (2026-10-09) skips `container` and
+  `container-dbgpt` in `platform-ci.yml`, and `golden-path-promotion` with them (`needs: container`), so
+  `platform-deploy.yml` has had no fresh promotion artifact since. Four opt-ins (`PLATFORM_CI_AIR_GAP_PARITY`,
+  `PLATFORM_CI_GKE_PORTABILITY_SMOKE`, `PLATFORM_CI_OCP_PORTABILITY_SMOKE`, `PLATFORM_CI_PUSH_REGISTRY`) are unset, so
+  `build-platform-image` and the three smokes never run. `ACTIONS_ENABLED=false` (2026-08-24) was read by nothing; the
+  operator deleted it 2026-10-12. Six workflows sit `disabled_manually` since 2026-08-24 12:06 with no recorded reason
+  (`test-all`, `kedro-viz-publish`, `staged-recipes-linter`, `linter_issue_comment`, the two reusable linter files);
+  `test-all` is the sole caller of `test-linux.yml` and `test-macos.yml`, so recipe builds on GitHub runners are off
+  by structure. Every other active job (`detectors`, `lint-types`, the ten station suites, `coverage-gates`,
+  `cfe-regression-net`, `docsite-check`, `pyforge-pip-install`, `marshal-local-recipes-seed-oracle`,
+  `substrate-nightly`, `dashboard`) has no switch at all. The switches are documented only in comments beside their
+  `if:`; `preflight_ci.py` cannot resolve `vars.*` (its own rule: anything the reader cannot evaluate runs the lane
+  and says so); `platform-ci-local` runs the container stage whatever the variables say; no CLI, dossier tile,
+  `fleet-picture` section or Doctor source reports what is paused, since when, why or until when; a pause carries no
+  review date; and a paused Containerfile rots unseen until resume day (the mcp-host image, this log 2026-10-10).
+  Latest runs prove the shape: `platform-ci` run 38234908526 ran `test` and skipped seven jobs;
+  `pyforge-station-tests` run 38244315277 skipped `guild-container`. `main` has no branch protection and the one
+  ruleset requires no status checks, so a pause never blocks a merge — and nothing says a story merged with its gates
+  paused. Analysis, gap list and solution: `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`. **What it looks
+  like when fixed:** one tracked registry, `docs/governance/ci-surfaces.yaml` (the `guild-roster.json` /
+  `rulesets/protected-refs.json` shape: governance declares, code renders and checks), names every pausable surface —
+  workflow, job, scheduled run, local stage — with its switch, owner, cost class, `state`, `paused_since`, `reason`,
+  `review_by`, local twin and canary; a convention — `PAUSE_<WORKFLOW>` on every push/PR/schedule job,
+  `PAUSE_<WORKFLOW>_<JOB>` where a `cost: high` row exists, `ENABLE_*` for opt-ins, `PAUSE_ALL_CI` as the master,
+  `workflow_dispatch` always exempt, the six existing names grandfathered and mapped — rendered into each job's `if:`
+  by `scripts/ci_surface_gates.py --render` and judged by `--check` in `detectors-ci` (a `vars.X` no row names, a row
+  whose job carries no fragment, a naming violation, a `disabled_manually` workflow without a `paused-manually` or
+  `retired` row: each a finding); `pyforge steward ci status` reads the registry, `gh variable list`, the Actions API
+  and pending deployments and prints one row per surface with a verdict (`live`, `paused`, `opt-in-off`,
+  `paused-manually`, `retired`, `drift`, `stuck`, `overdue`), refusing an unauthenticated `ok` at a 0/60 rate limit;
+  `pyforge steward ci pause|resume --reason --review-by` is a dry run until `--yes`, then sets the variable (outward,
+  operator-only), updates the row, journals `.steward/ci-pauses.log`, captures to team memory, and refuses to pause a
+  `gate: true` row without `--i-am-removing-a-merge-gate`; `preflight_ci.py` resolves `vars.*` from a
+  `.steward/ci-vars.json` snapshot (`steward ci vars --refresh`; stale after 24 h, else the registry's declared state,
+  else today's unknown-runs rule) and journals `skipped: paused in CI (PAUSE_X since DATE, review_by DATE)`;
+  `pr-preflight` banners the paused lanes and honors them (`--ignore-ci-pauses` runs them); `platform-ci-local` and
+  `pyforge-steward-guild-image-build` banner and run; a weekly `ci-canary.yml` builds every paused `cost: high`
+  surface once; `docs/how-to/pause-ci.md` plus one pointer line in `AGENTS.md`; the four staged-recipes-linter
+  workflows retire, `test-all` and `kedro-viz-publish` get `paused-manually` rows with a reason and `review_by`, and
+  the planning lines that still cite `ACTIONS_ENABLED` as evidence are struck. **Constraints:** a feature; the
+  registry check and the gate sweep are `detector-or-gate` exempt, the how-to `docs-only`, the duties, the snapshot
+  and the preflight parity behind one flag (`pyforge.steward.ci_pause_control` proposed); works under CAP-159
+  (preflight lanes read from the workflows, so `pr-preflight` follows the gates unchanged), CAP-131 (the image proves
+  itself at build time — the canary is where it does so while paused) and CAP-154 (the pre-push hook shows the
+  banner); no job loses its existing condition, no required check is added here (a separate decision), and no outward
+  write runs without `--yes`. Operator rulings 2026-10-12, all the plan's recommended answers: per-surface variables
+  with rendered fragments, not a JSON `CI_PAUSES` gate job (Q1); workflow-level switches everywhere plus job-level for
+  `cost: high` rows (Q2); `pr-preflight` honors CI pauses with an override (Q3); retire the four staged-recipes-linter
+  workflows, park `test-all` and `kedro-viz-publish` (Q4); `PAUSE_ALL_CI` covers the merge gates too, behind the
+  warning (Q5); required status checks stay a separate decision (Q6); the six existing names are grandfathered (Q7);
+  `review_by` 2026-11-01 for both live pauses (Q8). The doctor drift source, the herald dossier tile and the marshal
+  landing line are each their own station's append of the same date. Owner `spec-pyforge-steward`.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
