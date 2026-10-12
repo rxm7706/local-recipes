@@ -285,8 +285,8 @@ class Scanner:
             value = self.ev(value_node, env, mod)
             if value is not None and len(targets) == 1 and isinstance(targets[0], ast.Name):
                 env[targets[0].id] = value
-                if record:
-                    self._record_container(value, mod)
+                if record and isinstance(value, (list, tuple)):
+                    self._record_container(value, mod)  # a table of paths is built to be read
                 return
             if (
                 isinstance(value_node, (ast.Tuple, ast.List))
