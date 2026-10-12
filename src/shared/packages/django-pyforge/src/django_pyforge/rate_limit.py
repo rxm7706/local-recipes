@@ -148,7 +148,7 @@ def int_setting(name: str, default: int) -> int:
     raw = _django_setting(name, default)
     try:
         value = int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         logger.error(
             "ratelimit.bad_setting",
             extra={"event": "ratelimit.bad_setting", "setting": name},
@@ -272,7 +272,7 @@ def _restore(state: Any, bucket: Bucket, now: float) -> tuple[float, float]:
     try:
         tokens = float(state[_TOKENS_KEY])
         updated_at = float(state[_AT_KEY])
-    except (KeyError, TypeError, ValueError):
+    except KeyError, TypeError, ValueError:
         return float(bucket.burst), now
     if not math.isfinite(tokens) or not math.isfinite(updated_at):
         return float(bucket.burst), now

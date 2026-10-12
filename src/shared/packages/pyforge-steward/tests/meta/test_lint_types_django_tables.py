@@ -12,7 +12,7 @@ PACKAGES = ROOT / "src" / "shared" / "packages"
 SCRIPTS = ROOT / "scripts"
 
 EXPECTED_RUFF = {
-    "target-version": "py312",
+    "target-version": "py314",
     "line-length": 120,
     "extend-exclude": ["*/migrations/*.py"],
 }

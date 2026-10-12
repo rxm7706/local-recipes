@@ -2,10 +2,11 @@
 title: '95.1: The portal packages and the platform target Python 3.14'
 type: 'feature'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: 'b4722aeba9e0f476c129d057c150fb0c4fd25294'
 flag-exempt: detector-or-gate   # the story changes target-version-check; a gated gate reports a silent green
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -306,6 +307,83 @@ Type / Effort / Deps: feature / M / S-93.1.
 - `pixi run --frozen -e pyforge-guild pyforge-station-tests` — expected: pass (AC6).
 - `python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC8).
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
+
+## Review Triage Log
+
+### 2026-10-12 — CI fix (implementer)
+- PR #2154 went red on `marshal-test`, `named-module-gates (marshal)` and `scripts-suite`. Both tests pass on
+  `origin/main` (`5beef7c9eb`) and fail on this branch, so this story's diff causes both. Neither was pre-existing.
+- **Root cause 1, marshal** (`test_dispatch_ruff_format_trees.py::test_ac2_portal_uses_py314_table`):
+  - This story moved the `django-fixture` table in marshal Story 95.1's test from `py312` to `py314` and renamed the test.
+  - At `py314`, `ruff format` rewrites the fixture's `except (ValueError, TypeError):` to `except ValueError,
+    TypeError:` (PEP 758), so marshal 95.1's AC2 assertion failed.
+  - The fixture is not a live portal table. Marshal 95.1 AC2 keeps it at `py312` so it differs from the
+    `pyforge-marshal` table (`py314`), and AC9 relies on that difference.
+  - This story's AC5 covers only 93.1's tests and the real tables, so it never required this change.
+  - Fix: restored the fixture to `py312` and the name to `test_ac2_portal_uses_py312_table`, as on `main`. Added a
+    two-line comment saying why the fixture stays `py312`.
+- **Root cause 2, scripts** (`tests/scripts/test_lint_types_gate.py::test_target_version_findings_name_the_drift`):
+  - `findings_for` is now an alias of `findings_for_pyforge`, which adds the AC3 `requires-python` check.
+  - The test's `bare.toml` has a `[project]` table without `requires-python`, so it now returns a third finding,
+    `missing [project] requires-python`, as AC3 requires.
+  - Fix: the expected list now includes that finding.
+- Surface:
+  - `test_dispatch_ruff_format_trees.py` is governed by `pyforge-marshal/spec-pyforge-marshal`. It got a memlog entry
+    (2026-10-12), `git add`, then one scoped stamp (`--write-baseline --spec pyforge-marshal/spec-pyforge-marshal`).
+  - That stamp also took in `pixi.toml` and `pyforge-core/tests/unit/test_flags.py`, which the memlog already names
+    (93.1 and 91.1).
+  - `tests/scripts/test_lint_types_gate.py` is allowlisted and has no governing Spec.
+- Gates (exit codes read from files):
+  - `pyforge-marshal-test` 0 (12468 passed);
+  - `coverage_gates_ci.py` (marshal, `--suites unit`) 0;
+  - `pyforge-doctor-scripts-test` (`pyforge-ci`) 0 (1446 passed);
+  - `pyforge-steward-test` 0 (2396 passed; the not-yet-clean ceiling failure on `main` did not occur on this base);
+  - `lint-types` 0; `target-version-check` 0; `spec-surface-check` 0; `platform-ci-local -- --test` 0 (all steps PASS).
+- `detectors-ci` exits 1 on one finding: `ledger-direction` says herald `38-1-…` is landed-but-unpromoted.
+  - Cause: the branch predates `main`'s promotion commit (`f1be3236b9`). The source is ok on `origin/main` (exit 0) and
+    reads the branch's stale herald ledger row (`backlog`).
+  - Not this story's diff. Merging `main` into the branch clears it.
+  - A `git merge-tree` preview shows conflicts only in the `spec-pyforge-steward` and `spec-pyforge-unifying-strategy`
+    memlogs, which can be resolved by union. `django-herald` is ruff-clean and format-clean at `py314` on `main`.
+
+### 2026-10-11 — Review pass
+- verdicts: 9 findings — high 0, medium 1, low 0, false 5, maybe-false 0, reject 3
+- findings:
+  - `[false]` `[reject]` Extra `mcp_dual_era.py` format beyond PEP 758 — reverted the collapsed `any(...)` line; portal diff is except-only again.
+  - `[false]` `[reject]` Missing `environment.yaml` in diff — verified export: no diff vs tracked file (exit 0).
+  - `[false]` `[reject]` AC8 scoped stamps missing — dispatch contract: reconcile via memlogs + `spec_surface_reconcile.py` only; no producer `--write-baseline`.
+  - `[false]` `[reject]` Ledger not updated in diff — ledger sync is operator/harness after merge; story key unchanged at mint.
+  - `[false]` `[reject]` `requires-python >=3.14` vs pin patch floor — AC3 requires minor match; patch segment is interpreter runtime, not package metadata floor.
+  - `[medium]` `[patch]` Ingest README too terse — kept AC5 wording (`python-agent-platform` without stale 3.12 claim); dlt note removed per AC5.
+  - `[false]` `[defer]` RTD yaml still present — AC5 only retargets to 3.14; deletion explicitly rejected in story.
+  - `[false]` `[reject]` TYPE_CHECKING pytest risk — `platform-ci-local --test` passed (1256 tests).
+  - `[false]` `[reject]` Live-tree gate test not extended — `test_live_tree_targets_match_the_interpreter` still calls `main()` on live tree; expanded checker covered by new unit tests.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Raised nine django-* and `src/platform` lint/type targets to Python 3.14, extended `target_version_check.py` to three surfaces (including `requires-python` floors), applied thirteen portal PEP 758 rewrites and platform py314 ruff fixes, refreshed stale 3.12 config/docs, and added AC7 surface tests.
+
+Files changed (high level): `scripts/target_version_check.py`, `scripts/lint_types.py`, `pixi.toml`, `AGENTS.md`, nine django `pyproject.toml`, thirteen portal source sites, `src/platform/*` (pyproject, residue config, ruff-driven code), steward/marshal tests, generated `docs/how-to/pixi-tasks.md` and `docs/map.yaml`, spec memlogs on six governors.
+
+Review: one medium finding (README) accepted as AC5-compliant; one patch reverted non-PEP758 format in `mcp_dual_era.py`; remainder rejected/false.
+
+Follow-up review recommendation: false
+
+Verification:
+- `python scripts/target_version_check.py` — exit 0
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2350 passed
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — PASS (ruff, format, mypy, 1256 pytest)
+- `python scripts/spec_surface_reconcile.py` — exit 0
+- `pixi run --frozen -e pyforge-guild docs-pixi-tasks -- --check` — exit 0
+- `environment.yaml` export — no diff
+- AC5 grep on portal/platform paths — no matches
+
+Memlogs (Story 95.1 surface reconcile 2026-10-11): `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`, `spec-pyforge-scribe`, `spec-pyforge-doctor`, `spec-pyforge-marshal`, `spec-pyforge-core` — paths named in each `.memlog.md` event entry.
+
+Residual risk: `requires-python = ">=3.14"` documents minor-only floor; runtime is 3.14.7 via pixi. TYPE_CHECKING import moves rely on 3.14 lazy annotations (platform suite is the proof).
 
 ## Spec Change Log
 
