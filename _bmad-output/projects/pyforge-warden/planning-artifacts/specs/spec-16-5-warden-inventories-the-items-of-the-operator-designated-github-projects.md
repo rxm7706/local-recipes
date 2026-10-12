@@ -2,8 +2,8 @@
 title: "16.5: Warden inventories the items of the operator-designated GitHub Projects"
 type: 'feature'
 created: '2026-10-11'
-status: 'in-review'
-review_loop_iteration: 0
+status: 'in-progress'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
@@ -184,5 +184,17 @@ Deps: S-16.1.
   chose "Whole org + 2 projects". Bound to CAP-26 (FR-43). The flag is `pyforge.warden.fleet_project_items`.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent review, iteration 1: passed (5 minor)
+
+Separate agent, review of `git diff a21524e9d6...HEAD` at e5e89ef0f4. Token safety holds: the GraphQL path reuses Story 16.1's construction unchanged (credential fragments, pinned handler and connection with the placeholder splice, every failure typed `from None` after `clear_frames`, the 240 s / 300 s task limits with a 30 s per-request timeout, `_NoRedirectHandler`, the query-only guard before any request is built). Offline with a sentinel token through `run_fleet_project_items.apply()`, django_structlog's `CeleryReceiver` connected and the production JSON renderer: connect, every send, getresponse and read with `SoftTimeLimitExceeded` and `RuntimeError`, an HTTP 500, a GraphQL `errors` array echoing the sentinel, invalid JSON holding it, and a 302 off-origin — the sentinel absent from rendered logs, result, traceback, DEBUG page and a live-stack walk. The query-only guard was fuzzed against graphql-core 3.2.12 (300k random and 26k accepted structured documents): no mutation, subscription or extra definition passed. 22 of 24 mutations caught. Confidentiality: only fictional identifiers across 23 files, 15 commit messages and every checkpoint diff; nothing under `.warden/` tracked or read. Gates: `pyforge-warden-test` 0 (2417 passed), `lint-types` 0, `spec-surface-check` 0, flag gate `--spec` pass, `platform-ci-local -- --test` 0 (1296 passed, 14 skipped); `detectors-ci` 1 only on `ledger-direction` (main moved).
+
+- `[minor]` `[patch]` F1 `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_graphql.py:443-445` the tests cannot catch a return of 16.1's leak: `_fail_text` passes `capture_locals=True` to `traceback.format_exception`, which Python 3.14 swallows silently, so no frame local is rendered; and neither fake walks the live stack as 16.1's `_stack_leaks` does. Putting the token back on the urllib Request survives all 73 unit and 40 platform tests. Fix: render through `TracebackException(..., capture_locals=True)` and port 16.1's stack walk into both fakes.
+- `[minor]` `[patch]` F2 `test_fleet_github_graphql.py:417-425` "never follow a redirect" is unpinned: the one test uses 307, which stock urllib already refuses for POST; swapping in the default `HTTPRedirectHandler` survives (a 302 is then followed as `GET https://evil.example/...`). Fix: parametrize 301/302/303/307/308 off-origin; assert one exchange and the HTTP code.
+- `[minor]` `[patch]` F3 `fleet_github_rest.py:211-219` (reused by `fleet_github_graphql.py:312-318`) the splicing socket swaps the placeholder in every write, and 16.5 is the first request with a body carrying a server-supplied `endCursor` and the configured login: a body equal to the placeholder puts the token into the JSON body (proven; Content-Length mismatch). Defence in depth (TLS to the API host only). Fix: refuse a body containing the placeholder bytes, or splice only in the header block, once per request.
+- `[minor]` `[patch]` F4 `fleet_github_graphql.py:394-406`, `tasks.py:182-196` the operator's project item titles reach logs (never the token): on a typed failure of a later project the executing frame still holds `collected`, and a soft time limit landing outside `_send` (parse, export write) escapes untyped, so the per-run log line, `task_failed` and the DEBUG page print earlier items' titles. Fix: drop `collected` and raise outside the loop; the task catches `Exception`, clears frames, re-raises typed `from None`.
+- `[minor]` `[patch]` F5 `src/platform/tests/test_warden_fleet_inventory.py:102-109` AC9 partly met: the leak-guard roots miss files this story writes (`.claude/memory/MEMORY.md` and the 16.5 memory entry, the co-governor memlogs, `pyforge-core/tests/unit/test_flags.py`); scan the story's changed files instead of fixed roots. The guard skips without the config, so the orchestrator runs it against the operator's real terms before landing.
+
+Send-back of the minors before landing: F1-F5 in one pass; the orchestrator re-verifies that delta and runs the leak guard against the real target terms before setting `landing_review: 'passed'`.
 
 - No review yet (minted 2026-10-11). Implementation and review stay separate.
