@@ -42,9 +42,7 @@ def herald_is_installed() -> bool:
     except ModuleNotFoundError as exc:
         if not _is_provided_by_absent(exc.name, _HERALD_MODULE):
             raise
-        _absent_reason = (
-            f"{_COMPONENT} is not installed on this host: No module named '{exc.name}'"
-        )
+        _absent_reason = f"{_COMPONENT} is not installed on this host: No module named '{exc.name}'"
         _herald_installed = False
         _decided = True
         if not _logged_absent:

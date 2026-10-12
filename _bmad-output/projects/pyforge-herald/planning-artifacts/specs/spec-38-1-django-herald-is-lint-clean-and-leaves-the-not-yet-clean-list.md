@@ -2,8 +2,9 @@
 title: '38.1: django-herald is lint-clean and leaves the not-yet-clean list'
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
+baseline_revision: f91a7123ea57c1d93988d38c14e50bd8e39f0e12
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
