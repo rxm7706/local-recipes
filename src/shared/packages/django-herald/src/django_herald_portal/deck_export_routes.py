@@ -17,10 +17,9 @@ from django_pyforge.roles import (
     roles_from_request,
     station_roles_from_parsed,
 )
+from pyforge.herald.deck_exports import ExportRow, attach_deck_export_routes
 
 from django_herald_portal.models import DeckExport
-from pyforge.herald.deck_exports import ExportRow
-from pyforge.herald.deck_exports import attach_deck_export_routes
 
 
 class AuthError(Exception):
@@ -90,7 +89,7 @@ def list_deck_export_rows() -> list[ExportRow]:
 
 
 def open_deck_export_stream(sha256: str) -> tuple[ExportRow, Iterator[bytes]]:
-    from pyforge.herald.deck_store import open_deck_store  # noqa: PLC0415
+    from pyforge.herald.deck_store import open_deck_store
 
     try:
         item = DeckExport.objects.get(sha256=sha256)

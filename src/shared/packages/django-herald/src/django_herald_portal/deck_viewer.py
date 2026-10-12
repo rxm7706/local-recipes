@@ -37,9 +37,7 @@ def viewer_context(slug: str) -> DeckViewerContext | None:
 
     from django_herald_portal.deck_twin_routes import load_deck_twins_manifest
 
-    topic_row = (
-        DeckExport.objects.filter(slug=slug).order_by("-export_date").values("topic").first()
-    )
+    topic_row = DeckExport.objects.filter(slug=slug).order_by("-export_date").values("topic").first()
     if topic_row is None:
         return None
     topic = str(topic_row["topic"])
@@ -54,12 +52,7 @@ def viewer_context(slug: str) -> DeckViewerContext | None:
         twin_iframe_path = f"/stations/herald/api/v1/deck-twins/{slug}"
     else:
         twin_iframe_path = f"/stations/herald/api/v1/deck-twins/{slug}/{rel}"
-    pptx = (
-        DeckExport.objects.filter(slug=slug, kind="pptx")
-        .order_by("-export_date")
-        .values("sha256")
-        .first()
-    )
+    pptx = DeckExport.objects.filter(slug=slug, kind="pptx").order_by("-export_date").values("sha256").first()
     pptx_path = None
     if pptx is not None:
         sha = str(pptx["sha256"])

@@ -123,7 +123,7 @@ development_status:
   35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence: done
   36-1-the-ci-live-demo-workflow-moves-to-the-archive-and-its-readers-follow: done
   37-1-the-herald-portal-loads-without-herald-and-says-why: done
-  38-1-django-herald-is-lint-clean-and-leaves-the-not-yet-clean-list: backlog
+  38-1-django-herald-is-lint-clean-and-leaves-the-not-yet-clean-list: done
   4-1-poll-loop-with-quiescence-debounce: done
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
@@ -207,7 +207,7 @@ development_status:
   epic-36-retrospective: optional
   epic-37: done
   epic-37-retrospective: optional
-  epic-38: backlog
+  epic-38: done
   epic-38-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional

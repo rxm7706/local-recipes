@@ -375,6 +375,9 @@ _DJANGO_HERALD_DECK_EXPORT_MARKERS = (
     "django_herald_portal/views.py",
     "django_herald_portal/urls.py",
     "django_herald_portal/herald_guard.py",
+    # Story 38.1 (lint clean): stale noqa removal only — not Wave B / CMS.
+    "django_herald_portal/apps.py",
+    "django_herald_portal/mcp_asgi.py",
 )
 
 
