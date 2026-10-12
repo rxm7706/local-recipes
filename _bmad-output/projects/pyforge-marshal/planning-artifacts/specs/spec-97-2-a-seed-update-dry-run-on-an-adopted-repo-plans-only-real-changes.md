@@ -2,7 +2,8 @@
 title: "97.2: A seed update dry run on an adopted repo plans only real changes"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'bd92843ef255a6daa94e0ed6d14cc46abe575396'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -203,4 +204,46 @@ Type / Effort / Deps: fix / M / S-97.1.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-12 — CI fix: environment-dependent skips in the update oracle (implementer)
+- **Failure:** the `oracle` check of PR #2163 (`marshal-local-recipes-seed-oracle`) red at `e340455e07`:
+  `test_local_recipes_update_dry_run_yields_empty_plan_with_documented_skips` reported
+  `extra=['implementation-artifacts-symlink', 'planning-artifacts-symlink']`. It passed in the dispatch worktree.
+- **Cause (reproduced):** `_bmad-output/planning-artifacts` and `_bmad-output/implementation-artifacts` are per-checkout
+  symlinks (gitignored; `scripts/bmad-switch` or `steward workspace start` creates them). A fresh clone has neither, so
+  `classify` reads both `absent`, `build_plan` plans their creation, and the genesis-recorded `state.skips` patterns move
+  both actions into `plan.skipped`. In a developer checkout both are `present-conformant` and `update` plans nothing for
+  them. The adopt leg is unaffected because its first-claim pass plans a present, unmanaged entry too, so the recorded
+  skip matches in both shapes. A `git clone --no-local --depth 1` of the branch reproduced the exact CI assertion (exit
+  1); the worktree passed (exit 0). The product behaviour is correct in both shapes; the oracle's expectation was not.
+- **Change (test-only):** `test_local_recipes_empty_plan.py` gains `LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT` (the two
+  ids and their recorded patterns) and `expected_update_dry_run_skipped(repo_root)`, which adds each id exactly when
+  `(repo_root / path).exists()` is false (`classify`'s own presence test, symlinks followed). The update leg asserts
+  that exact set; `LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED` is not widened (K-02). New non-slow tests: the two ids are
+  manifest-backed, genesis-recorded and disjoint from the repo-wide constant; a fixture repo run through the real
+  `run_update` pins three shapes (fresh clone: both skipped; developer checkout: none; dangling implementation link:
+  that one), and checks that the helper predicts each.
+- **Mutation (on a scratch-clone copy, never the worktree):** M1, condition dropped so both ids are always expected: the
+  `developer-checkout` and `dangling-implementation-link` fixture cases fail, and the oracle fails on a developer-shaped
+  clone (`missing=[both]`). M2, never expected (the pre-fix shape): the `fresh-clone` and `dangling-implementation-link`
+  cases fail, and the oracle fails on the fresh clone with the CI assertion. Restored; the worktree file never held a
+  mutation.
+- **Gates (exit codes read from files):** oracle in the worktree 0; oracle in the fresh clone 0 (the task's pytest
+  command run from the clone's root in the worktree's `pyforge-marshal` env, no network; also 0 on a developer-shaped
+  clone); `pyforge-marshal-test` 0 (12569 passed, 20 skipped); `lint-types` 0; `spec-surface-check` 2
+  (drift on this file only), then memlog event on `spec-pyforge-marshal`, `git add`, `--write-baseline --spec
+  pyforge-marshal/spec-pyforge-marshal`, re-run 0; `detectors-ci` 1, from one detector only: `bmad-drift` `uncovered`
+  (HARD) on two gitignored Tier-3 files the 97.2 dispatch run wrote into this worktree
+  (`implementation-artifacts/recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06.md` and its
+  `.query-ran` marker). Neither is tracked or touched by this change, and `bmad-drift` exits 0 on the fresh clone; every
+  other repo-scope detector, `spec-surface` included, passes.
+
+### 2026-10-12 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (implementation verified against AC1–AC7 locally; formal multi-layer review deferred to PR)
+
+## Auto Run Result
+
+- **Summary:** Shared `manifest_for_adopt_scope` for adopt/update; `seed update` gains `--project` and loop-home scoping; wholesale regenerate plans only when packaged content differs; no-payload entries land in `plan.skipped` without bypassing rung 6; local-recipes oracle update leg documents skips.
+- **Verification:** `pyforge-marshal-test` and `pyforge-deps-test` green; `marshal-local-recipes-seed-oracle` (slow adopt + update legs) green; `marshal seed update --repo-root .` zero actions; `python scripts/spec_surface_reconcile.py` and `spec-surface-check` green.
+- **Follow-up review:** false
+- **Residual risk:** Repos that relied on unconditional wholesale refresh now see empty plans when content matches — intended per FR-94 / Story 86.2 AC6.

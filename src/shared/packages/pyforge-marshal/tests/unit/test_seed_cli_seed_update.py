@@ -456,8 +456,22 @@ def _hand_edited_managed_repo(repo: Path) -> Manifest:
     return _manifest(_copied_managed("whole", "WHOLE.md"))
 
 
-def test_update_skip_through_argv_keeps_a_hand_edit_and_lists_the_skipped_artifact(clean_repo, capsys):
+def _inject_wholesale_template(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
+    template = repo.parent / f"{repo.name}-seed-template"
+    template.mkdir(exist_ok=True)
+    (template / "WHOLE.md").write_text("packaged whole-file\n", encoding="utf-8")
+    original = seed_cli._run_update_verb
+
+    def _wrapped(*args, **kwargs):
+        kwargs.setdefault("template_path", template)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(seed_cli, "_run_update_verb", _wrapped)
+
+
+def test_update_skip_through_argv_keeps_a_hand_edit_and_lists_the_skipped_artifact(clean_repo, capsys, monkeypatch):
     manifest = _hand_edited_managed_repo(clean_repo)
+    _inject_wholesale_template(monkeypatch, clean_repo)
 
     refused = _build_parser().parse_args(["seed", "update", "--repo-root", str(clean_repo)])
     assert refused.handler(refused, manifest=manifest) == PreconditionFailure.exit_code == 3
@@ -473,11 +487,12 @@ def test_update_skip_through_argv_keeps_a_hand_edit_and_lists_the_skipped_artifa
     assert (clean_repo / "WHOLE.md").read_text(encoding="utf-8") == "hand-edited\n"
 
 
-def test_update_run_skip_through_argv_applies_nothing_and_keeps_the_edit(clean_repo, capsys):
+def test_update_run_skip_through_argv_applies_nothing_and_keeps_the_edit(clean_repo, capsys, monkeypatch):
     """`--run --yes` with the skip: no `--force`, nothing written over the edit.
     The real (non-injected) commit would materialize `WHOLE.md` if its action
     survived; it is skipped, so the file is byte-for-byte what the operator left."""
     manifest = _hand_edited_managed_repo(clean_repo)
+    _inject_wholesale_template(monkeypatch, clean_repo)
     args = _build_parser().parse_args(
         ["seed", "update", "--repo-root", str(clean_repo), "--run", "--yes", "--skip", "WHOLE.md"]
     )

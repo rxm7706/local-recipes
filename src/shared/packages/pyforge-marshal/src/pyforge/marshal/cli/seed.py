@@ -100,6 +100,7 @@ from ..seed.migrate import registry as migrate_registry
 from ..seed.model.manifest import Manifest, ManifestError, load_manifest, render_slug_paths
 from ..seed.model.version import ModelVersion
 from ..seed.plan.types import Plan
+from ..seed.verbs import update as update_module
 from ..seed.verbs.accept import AcceptResult, render_accept_text
 from ..seed.verbs.accept import run_accept as _run_accept_verb
 from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
@@ -872,6 +873,8 @@ def _render_update_plan_text(plan: Plan) -> str:
                     f"  {skipped.artifact_id} ({skipped.target_path}):"
                     " offered by a migration; not applied without --include-seeded"
                 )
+            elif skipped.pattern == update_module.NO_PACKAGED_PAYLOAD_SKIP_PATTERN:
+                lines.append(f"  {skipped.artifact_id} ({skipped.target_path}): {skipped.pattern}")
             else:
                 lines.append(f"  {skipped.artifact_id} ({skipped.target_path}): matched --skip {skipped.pattern!r}")
     return "\n".join(lines)
@@ -924,6 +927,8 @@ def run_update(
         repo_root = _resolve_repo_root(args.repo_root)
         if manifest is None:
             manifest = _load_packaged_manifest()
+        slug = _resolve_project_slug(repo_root, getattr(args, "project", None))
+        in_loop_home = _target_in_loop_home(repo_root, GitVcs())
         result: UpdateResult = _run_update_verb(
             repo_root,
             manifest,
@@ -933,6 +938,8 @@ def run_update(
             skip=tuple(args.skip) if args.skip else (),
             yes=args.yes,
             confirm=confirm if confirm is not None else _real_confirm,
+            slug=slug or None,
+            in_loop_home=in_loop_home,
         )
     except ManifestError as exc:
         wrapped = InternalError(
@@ -1466,6 +1473,7 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Skip the confirmation prompt when applying (unattended/CI use).",
     )
+    _add_project_flag(update_parser)
     _add_dry_run_flag(update_parser)
     _add_json_quiet_flags(update_parser)
     update_parser.set_defaults(handler=run_update)

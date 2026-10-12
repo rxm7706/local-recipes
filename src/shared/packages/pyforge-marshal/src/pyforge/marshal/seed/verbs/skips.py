@@ -325,8 +325,10 @@ def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Seque
     checks every record it is handed, which is what lets a caller decide the
     question ("did the operator ask to leave this alone?") in the one place
     that actually knows the answer."""
+    from ..plan.types import NO_PACKAGED_PAYLOAD_SKIP_PATTERN
+
     normalized = _require_patterns(patterns)
-    skipped_ids = {entry.artifact_id for entry in plan.skipped}
+    skipped_ids = {entry.artifact_id for entry in plan.skipped if entry.pattern != NO_PACKAGED_PAYLOAD_SKIP_PATTERN}
     return tuple(
         record
         for record in managed
