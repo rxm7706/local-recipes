@@ -142,9 +142,7 @@ def _is_initialize(body: bytes) -> bool:
     if isinstance(payload, dict):
         return payload.get("method") == "initialize"
     if isinstance(payload, list):
-        return any(
-            isinstance(item, dict) and item.get("method") == "initialize" for item in payload
-        )
+        return any(isinstance(item, dict) and item.get("method") == "initialize" for item in payload)
     return False
 
 

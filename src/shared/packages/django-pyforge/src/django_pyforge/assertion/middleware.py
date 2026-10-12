@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING
 
 import jwt
 from django.conf import settings
-from django.http import HttpRequest
-from django.http import HttpResponse
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from jwt.exceptions import PyJWTError
 
 from django_pyforge.assertion.crypto import verify_assertion
