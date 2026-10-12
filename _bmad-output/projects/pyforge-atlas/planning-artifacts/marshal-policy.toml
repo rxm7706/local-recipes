@@ -217,6 +217,23 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"28" = [  # the live-attach fixture Postgres starts under any basetemp (fix under spec-pyforge-atlas CAP-6; Story 28.1),
+  # added 2026-10-11. The default surface, restated because a declared entry replaces it outright (the package glob
+  # covers tests/unit/test_read_only_live_attach.py, the one code path the fix changes), plus the ledger and every Spec
+  # memlog: spec-pyforge-unifying-strategy co-governs the test file, so its memlog takes a surface reconcile too.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
 

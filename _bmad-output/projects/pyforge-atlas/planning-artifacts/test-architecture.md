@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: dfb62ae6ae89fdce
-story_count: 103
-test_file_count: 144
+source_fingerprint: 2d182c315c06662c
+story_count: 104
+test_file_count: 146
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 103
-- **Epics parsed:** 27
-- **Test files inventoried:** 144 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 104
+- **Epics parsed:** 28
+- **Test files inventoried:** 146 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `dfb62ae6ae89fdce`
+- **Source fingerprint:** `2d182c315c06662c`
 
 ## Risk Assessment
 
@@ -60,6 +60,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 24: Turn on what is built — atlas's realization-gate effect stories
 - Epic 25: Atlas keeps each scanned repo's dependency history (spec-pyforge-atlas CAP-61)
 - Epic 27: Phase 4+5 of the deferral burn-down — atlas's open medium and low deferrals, fixed
+- Epic 28: The live-attach fixture Postgres starts under any basetemp (fix under spec-pyforge-atlas CAP-6)
 
 ### Low-risk epics
 
@@ -100,6 +101,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_bigquery_cost_gate.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_core_sources.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_dependency_history.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_identity_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_incremental_parquet.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_migration_status.py` | unit | none observed |
@@ -129,6 +131,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/nl/test_query_vizro_ai_dryrun.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/observability/test_observability_fixtures.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/orchestration/test_definitions_dryrun.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/orchestration/test_fleet_inventory_sensor.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/orchestration/test_viz_loadable.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/parity/test_capture_tooling.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/parity/test_evidence_and_retirement_gate.py` | unit | none observed |
@@ -321,6 +324,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.3 | The read surfaces render what DESIGN.md specifies, and prove it on fixture data | none observed |
 | 27.4 | The planning record matches the tree and the cross-station seams hold | none observed |
 | 27.5 | The distribution-breakdown facet filter builds its control | none observed |
+| 28.1 | The live-attach fixture Postgres starts under any basetemp | none observed |
 
 ## Quality Gates
 

@@ -293,6 +293,34 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   - The root cause is pinned by a test that needs no browser; waits and retries are not a fix.
   - NFR-1 holds: the proof stays fixture-based.
   Owner `spec-pyforge-atlas`. → Story 27.5, specced 2026-10-04.
+- **2026-10-11 (live-attach fixture socket path) — Found: the live-attach fixture Postgres cannot start under a long
+  pytest basetemp.** `fixture_postgres` in `tests/unit/test_read_only_live_attach.py` (:88-:209) starts a throwaway
+  PostgreSQL with `-k '<tmp_path>/pgsock'`. PostgreSQL refuses a Unix socket path over 107 bytes (the AF_UNIX limit);
+  with no socket it exits `FATAL: could not create any Unix-domain sockets`, so `pg_ctl start` fails and the two
+  fixture-backed tests (`test_federated_read_across_two_schemas`, `test_write_through_attach_is_refused`) error at
+  setup. pr-preflight runs each lane under its own long `--basetemp`, which crosses the limit.
+  **Evidence:**
+  - Warden 16.1's fix pass ran `pixi run -e pyforge-guild pr-preflight -- --keep-going` on 2026-10-11, and the
+    `pyforge-atlas-test` lane went red with these two setup errors.
+  - Reproduced on `2b5e0d649b` with a 214-byte basetemp and platform-dev's PostgreSQL 17.11: "5 passed, 2 errors".
+    The server log reads `Unix-domain socket path ".../pgsock/.s.PGSQL.<port>" is too long (maximum 107 bytes)`. With
+    a short basetemp the file passes 7 of 7.
+  - It surfaced only now because the fixture skips in a fresh worktree, which has no `initdb`/`pg_ctl` until an env
+    carrying PostgreSQL is installed there.
+  - The fixture talks to Postgres only over TCP: the DSN, `pg_isready` and `psql` all use `127.0.0.1`. A scratch
+    copy that starts the server with `-c unix_socket_directories=''` in place of `-k` passed 7 of 7 under the same
+    basetemp, and its server log shows only the IPv4 listener.
+  **What it looks like when fixed:** the fixture opens no Unix socket. Both tests pass under any basetemp when
+  PostgreSQL binaries are present, and still skip cleanly when they are not.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). Test-only: one file changes, and no
+    skip or `xfail` is added.
+  - A new epic. No atlas epic owns the test: steward Story 34.1 shipped it under `spec-pyforge-unifying-strategy`
+    CAP-19 (canopy:FR-46, read-only live attach), and atlas deliberately mints none of that CAP's stories.
+  - NFR-1 holds: the fixture stays local and non-credentialed.
+  The operator asked for it directly in session: "Do this task here: Fix atlas live-attach test socket path
+  overflow". **Kinships:** [[pyforge-steward]] (Story 34.1 shipped the test; pr-preflight's per-lane basetemp).
+  Owner `spec-pyforge-atlas` (CAP-6, the one engine the attach joins). → Epic 28 / Story 28.1, specced 2026-10-11.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
