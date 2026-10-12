@@ -55,7 +55,7 @@ def _read_surface_document() -> dict[str, Any] | None:
         return None
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return None
     if not isinstance(loaded, dict):
         return None

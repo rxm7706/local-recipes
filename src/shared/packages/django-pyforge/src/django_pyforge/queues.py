@@ -156,7 +156,7 @@ def _int_setting(name: str, default: int) -> int:
     raw = getattr(settings, name, default)
     try:
         value = int(raw)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return default
     return value if value > 0 else default
 

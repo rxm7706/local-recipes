@@ -50,7 +50,7 @@ def _assertion_is_valid(token: str) -> bool:
         if not isinstance(aud, str) or not aud.startswith(AUDIENCE_PREFIX) or aud == AUDIENCE_PREFIX:
             return False
         verify_assertion(token, audience=aud, public_pem=public_pem)
-    except (AssertionRefusedError, PyJWTError, TypeError, ValueError):
+    except AssertionRefusedError, PyJWTError, TypeError, ValueError:
         return False
     return True
 

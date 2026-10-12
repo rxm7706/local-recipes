@@ -34,7 +34,7 @@ class MasonPortalConfig(PortalConfig):
 
         try:
             run_mason_boot_reconcile()
-        except (OperationalError, ProgrammingError):
+        except OperationalError, ProgrammingError:
             # Boot reconcile needs PostgreSQL (collectstatic, early test
             # collection, or a not-yet-ready socket). Production pods start
             # after migrate + DB readiness.

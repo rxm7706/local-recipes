@@ -39,7 +39,7 @@ def mint(request: HttpRequest) -> HttpResponse:
     try:
         payload = json.loads(request.body.decode("utf-8"))
         station = payload["station"]
-    except (json.JSONDecodeError, KeyError, UnicodeDecodeError, TypeError):
+    except json.JSONDecodeError, KeyError, UnicodeDecodeError, TypeError:
         return JsonResponse({"error": "invalid body"}, status=400)
     if not isinstance(station, str) or not station:
         return JsonResponse({"error": "invalid station"}, status=400)

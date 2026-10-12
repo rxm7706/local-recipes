@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 import dlt
 from pyforge.steward.keys import HostScopedCredential
