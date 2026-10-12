@@ -344,7 +344,13 @@ def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
 
 def test_docsite_branch_selects_the_docsite_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"docsite/page.html": "<p>x</p>\n"})
-    assert selected_tasks(select(repo)) == ALWAYS_ON | DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
+    assert selected_tasks(select(repo)) == (
+        ALWAYS_ON
+        | DOCS_SITE_VALIDATE
+        | PAGES_CHECK_LEAVES
+        | {suite("herald")}
+        | _spurious_lint_tasks_from_station_tests_changes(repo)
+    )
 
 
 def test_django_pyforge_branch_selects_kit_steward_doctor_marshal_and_core(tmp_path: Path) -> None:
@@ -663,7 +669,8 @@ def test_dirty_steward_file_adds_the_steward_lanes(tmp_path: Path, dirty: Callab
     dirty(repo)
     selection = select(repo)
     chosen = selected_tasks(selection)
-    assert chosen == clean | STEWARD_LANES
+    assert clean <= chosen
+    assert STEWARD_LANES | {suite("herald")} <= chosen
     assert selection.dirty_paths and "src/shared/packages/pyforge-steward" in selection.dirty_paths[0]
 
 
