@@ -1,10 +1,12 @@
-"""Story 16.5 — fleet project-item inventory from github.com Projects (fixture organisation only).
+"""Story 16.5 — fleet project-item inventory from github.com Projects.
+
+Fixture organisation only.
 
 No test reaches GitHub or runs ``gh``: the real GraphQL client runs against a stub
 transport (``github_wire``: ``http.client``'s ``connect`` is patched by dotted name, as
 Story 16.1's tests do, because this tree adds no raw-HTTP import), and the root
-conftest's autouse ``real_gh_attempts`` guard fails any test that reaches the real ``gh``
-runner. The platform host never imports ``pyforge.*``, so the query-only guard itself is
+conftest's autouse ``real_gh_attempts`` guard fails any test that reaches the real
+``gh`` runner. The platform host never imports ``pyforge.*``, so the query-only guard itself is
 driven in ``pyforge-warden``'s own unit tests; here the real task, client and urllib run
 end to end. Every identifier is fictional: ``example-org``, invented project numbers,
 titles and repositories.
@@ -46,7 +48,9 @@ from django_warden_fabric.fleet_project_items import DEFAULT_FLEET_PROJECT_ITEMS
 from django_warden_fabric.fleet_project_items import ENV_FLEET_PROJECT_ITEMS_PATH
 from django_warden_fabric.fleet_project_items import export_document
 from django_warden_fabric.fleet_project_items import load_project_numbers_from_config
-from django_warden_fabric.fleet_project_items import resolve_fleet_project_items_export_path
+from django_warden_fabric.fleet_project_items import (
+    resolve_fleet_project_items_export_path,
+)
 from django_warden_fabric.fleet_project_items import run_fleet_project_items_sync
 from django_warden_fabric.tasks import run_fleet_project_items
 from django_warden_fabric.views import FLEET_PROJECT_ITEMS_CONFIG_REFUSAL
@@ -62,13 +66,15 @@ _REPO_ROOT = _SRC_ROOT.parent
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
 _OVERLAYS_JSON = _PLATFORM_DIR / "config" / "flag-overlays.json"
-_FABRIC_ROOT = _SRC_ROOT / "shared" / "packages" / "django-warden" / "src" / "django_warden_fabric"
+_FABRIC_ROOT = (
+    _SRC_ROOT / "shared" / "packages" / "django-warden" / "src" / "django_warden_fabric"
+)
 _TASKS_PATH = _FABRIC_ROOT / "tasks.py"
 _PORTAL_START = "/stations/warden/fleet/project-items/start/"
 _GRAPHQL = "https://api.github.com/graphql"
 
 
-# --- a fake GitHub at the socket: the real client, urllib and http.client all run ---------------
+# --- a fake GitHub at the socket: the real client, urllib and http.client all run ---
 
 
 @dataclass(frozen=True)
@@ -81,7 +87,8 @@ class _Exchange:
 
 
 def _http_response(status: int, *, body: bytes = b"") -> bytes:
-    head = f"HTTP/1.1 {status} {HTTPStatus(status).phrase}\r\nContent-Length: {len(body)}\r\n\r\n"
+    phrase = HTTPStatus(status).phrase
+    head = f"HTTP/1.1 {status} {phrase}\r\nContent-Length: {len(body)}\r\n\r\n"
     return head.encode("latin-1") + body
 
 
@@ -101,7 +108,9 @@ class _GitHubWire:
         for index, nodes in enumerate(pages):
             cursor = f"cursor-{index}" if index else None
             following = f"cursor-{index + 1}" if index + 1 < len(pages) else None
-            self.replies[(number, cursor)] = _json_reply(_page(nodes, next_cursor=following))
+            self.replies[(number, cursor)] = _json_reply(
+                _page(nodes, next_cursor=following)
+            )
 
     def answer(self, body: dict[str, Any]) -> bytes:
         variables = body["variables"]
@@ -126,7 +135,10 @@ class _WireSocket:
         head, _, raw = bytes(self._sent).partition(b"\r\n\r\n")
         lines = head.decode("latin-1").split("\r\n")
         method, target, _version = lines[0].split(" ", 2)
-        headers = {n.strip().lower(): v.strip() for n, _, v in (line.partition(":") for line in lines[1:])}
+        headers = {
+            n.strip().lower(): v.strip()
+            for n, _, v in (line.partition(":") for line in lines[1:])
+        }
         body = json.loads(raw.decode("utf-8")) if raw else {}
         self._wire.exchanges.append(
             _Exchange(
@@ -155,16 +167,22 @@ def github_wire(monkeypatch: pytest.MonkeyPatch) -> _GitHubWire:
     return wire
 
 
-# --- fixture project data ---------------------------------------------------------------------
+# --- fixture project data ---
 
 
-def _issue(item_id: str, *, state: str = "OPEN", status: str | None = "Todo") -> dict[str, Any]:
+def _issue(
+    item_id: str, *, state: str = "OPEN", status: str | None = "Todo"
+) -> dict[str, Any]:
     return {
         "id": item_id,
         "type": "ISSUE",
         "updatedAt": "2026-10-01T10:00:00Z",
         "fieldValueByName": {"name": status} if status else None,
-        "content": {"title": f"Issue {item_id}", "state": state, "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/alpha"}},
+        "content": {
+            "title": f"Issue {item_id}",
+            "state": state,
+            "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/alpha"},
+        },
     }
 
 
@@ -174,7 +192,11 @@ def _pull_request(item_id: str) -> dict[str, Any]:
         "type": "PULL_REQUEST",
         "updatedAt": "2026-10-02T10:00:00Z",
         "fieldValueByName": {"name": "In review"},
-        "content": {"title": f"PR {item_id}", "state": "MERGED", "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/beta"}},
+        "content": {
+            "title": f"PR {item_id}",
+            "state": "MERGED",
+            "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/beta"},
+        },
     }
 
 
@@ -189,12 +211,24 @@ def _draft(item_id: str) -> dict[str, Any]:
 
 
 def _redacted(item_id: str) -> dict[str, Any]:
-    return {"id": item_id, "type": "REDACTED", "updatedAt": "2026-10-04T10:00:00Z", "fieldValueByName": None, "content": None}
+    return {
+        "id": item_id,
+        "type": "REDACTED",
+        "updatedAt": "2026-10-04T10:00:00Z",
+        "fieldValueByName": None,
+        "content": None,
+    }
 
 
 def _page(nodes: list[dict[str, Any]], *, next_cursor: str | None) -> dict[str, Any]:
     page_info = {"hasNextPage": next_cursor is not None, "endCursor": next_cursor}
-    return {"data": {"organization": {"projectV2": {"items": {"pageInfo": page_info, "nodes": nodes}}}}}
+    return {
+        "data": {
+            "organization": {
+                "projectV2": {"items": {"pageInfo": page_info, "nodes": nodes}}
+            }
+        }
+    }
 
 
 class _SentinelProvider:
@@ -203,7 +237,9 @@ class _SentinelProvider:
 
 
 def _write_config(path: Path, body: str) -> None:
-    path.write_text(f'[github]\norganisation = "{_EXAMPLE_ORG}"\n{body}', encoding="utf-8")
+    path.write_text(
+        f'[github]\norganisation = "{_EXAMPLE_ORG}"\n{body}', encoding="utf-8"
+    )
 
 
 @pytest.fixture
@@ -226,13 +262,20 @@ def _fail_text(caught: pytest.ExceptionInfo[BaseException]) -> str:
     return f"{caught.value!s} {caught.value!r} {rendered}"
 
 
-# --- AC1: two projects, every item type, each item once -----------------------------------------
+# --- AC1: two projects, every item type, each item once ---
 
 
-def test_export_lists_each_item_once(project_paths: tuple[Path, Path], github_wire: _GitHubWire) -> None:
+def test_export_lists_each_item_once(
+    project_paths: tuple[Path, Path], github_wire: _GitHubWire
+) -> None:
     _config, export = project_paths
-    github_wire.serve(_PROJECT_A, [[_issue("i-1"), _pull_request("p-1"), _issue("i-1")]])
-    github_wire.serve(_PROJECT_B, [[_draft("d-1"), _redacted("r-1"), _issue("i-2", state="CLOSED", status=None)]])
+    github_wire.serve(
+        _PROJECT_A, [[_issue("i-1"), _pull_request("p-1"), _issue("i-1")]]
+    )
+    github_wire.serve(
+        _PROJECT_B,
+        [[_draft("d-1"), _redacted("r-1"), _issue("i-2", state="CLOSED", status=None)]],
+    )
     assert _run_task() == "run-id"
     payload = json.loads(export.read_text(encoding="utf-8"))
     assert list(payload) == ["items"]
@@ -249,9 +292,19 @@ def test_export_lists_each_item_once(project_paths: tuple[Path, Path], github_wi
         "updated_at": "2026-10-01T10:00:00Z",
     }
     pull_request = by_key[(_PROJECT_A, "p-1")]
-    assert (pull_request["content_type"], pull_request["state"], pull_request["status"]) == ("PULL_REQUEST", "MERGED", "In review")
+    assert (
+        pull_request["content_type"],
+        pull_request["state"],
+        pull_request["status"],
+    ) == ("PULL_REQUEST", "MERGED", "In review")
     draft = by_key[(_PROJECT_B, "d-1")]
-    assert (draft["content_type"], draft["title"], draft["state"], draft["repository"], draft["status"]) == (
+    assert (
+        draft["content_type"],
+        draft["title"],
+        draft["state"],
+        draft["repository"],
+        draft["status"],
+    ) == (
         "DRAFT_ISSUE",
         "Draft d-1",
         None,
@@ -284,29 +337,48 @@ def test_export_document_lists_a_repeated_item_once() -> None:
         updated_at: str | None = None
 
     document = export_document([_Item(1, "a"), _Item(1, "a"), _Item(2, "a")])
-    assert [(e["project_number"], e["id"]) for e in document["items"]] == [(1, "a"), (2, "a")]
+    assert [(e["project_number"], e["id"]) for e in document["items"]] == [
+        (1, "a"),
+        (2, "a"),
+    ]
 
 
-# --- AC2: pagination ----------------------------------------------------------------------------
+# --- AC2: pagination ---
 
 
-def test_every_page_is_read(project_paths: tuple[Path, Path], github_wire: _GitHubWire) -> None:
+def test_every_page_is_read(
+    project_paths: tuple[Path, Path], github_wire: _GitHubWire
+) -> None:
     _config, export = project_paths
-    github_wire.serve(_PROJECT_A, [[_issue("i-1")], [_pull_request("p-1")], [_draft("d-1")]])
+    github_wire.serve(
+        _PROJECT_A, [[_issue("i-1")], [_pull_request("p-1")], [_draft("d-1")]]
+    )
     github_wire.serve(_PROJECT_B, [[_issue("i-2")]])
     _run_task()
-    afters = [(e.body["variables"]["number"], e.body["variables"]["after"]) for e in github_wire.exchanges]
-    assert afters == [(_PROJECT_A, None), (_PROJECT_A, "cursor-1"), (_PROJECT_A, "cursor-2"), (_PROJECT_B, None)]
+    afters = [
+        (e.body["variables"]["number"], e.body["variables"]["after"])
+        for e in github_wire.exchanges
+    ]
+    assert afters == [
+        (_PROJECT_A, None),
+        (_PROJECT_A, "cursor-1"),
+        (_PROJECT_A, "cursor-2"),
+        (_PROJECT_B, None),
+    ]
     ids = [e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]]
     assert ids == ["i-1", "p-1", "d-1", "i-2"]
 
 
-# --- AC3: re-run rewrites whole -----------------------------------------------------------------
+# --- AC3: re-run rewrites whole ---
 
 
-def test_rerun_rewrites_the_export_whole(project_paths: tuple[Path, Path], github_wire: _GitHubWire) -> None:
+def test_rerun_rewrites_the_export_whole(
+    project_paths: tuple[Path, Path], github_wire: _GitHubWire
+) -> None:
     config, export = project_paths
-    _write_config(config, f"projects = [{_PROJECT_A}, {_PROJECT_A}]\n")  # the same project listed twice
+    _write_config(
+        config, f"projects = [{_PROJECT_A}, {_PROJECT_A}]\n"
+    )  # the same project listed twice
     github_wire.serve(_PROJECT_A, [[_issue("i-1"), _issue("i-2")]])
     _run_task()
     first = json.loads(export.read_text(encoding="utf-8"))
@@ -316,14 +388,18 @@ def test_rerun_rewrites_the_export_whole(project_paths: tuple[Path, Path], githu
     assert json.loads(export.read_text(encoding="utf-8")) == first
     github_wire.serve(_PROJECT_A, [[_issue("i-3")]])
     _run_task()
-    assert [e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]] == ["i-3"]
+    assert [
+        e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]
+    ] == ["i-3"]
 
 
-# --- AC4: POST /graphql, one query, nothing edited ------------------------------------------------
+# --- AC4: POST /graphql, one query, nothing edited ---
 
 
 def test_every_request_is_a_post_to_graphql_with_one_query(
-    project_paths: tuple[Path, Path], github_wire: _GitHubWire, caplog: pytest.LogCaptureFixture
+    project_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     caplog.set_level(logging.DEBUG)
     github_wire.serve(_PROJECT_A, [[_issue("i-1")], [_draft("d-1")]])
@@ -342,13 +418,21 @@ def test_every_request_is_a_post_to_graphql_with_one_query(
         assert exchange.body["variables"]["login"] == _EXAMPLE_ORG
 
 
-# --- AC5: typed errors, no partial export ----------------------------------------------------------
+# --- AC5: typed errors, no partial export ---
 
 
 @pytest.mark.parametrize(
     "case",
     [
-        ("errors", _json_reply({"errors": [{"type": "NOT_FOUND", "message": "secret-detail"}], "data": None})),
+        (
+            "errors",
+            _json_reply(
+                {
+                    "errors": [{"type": "NOT_FOUND", "message": "secret-detail"}],
+                    "data": None,
+                }
+            ),
+        ),
         ("project-null", _json_reply({"data": {"organization": {"projectV2": None}}})),
         ("http-503", _http_response(HTTPStatus.SERVICE_UNAVAILABLE, body=b"{}")),
         ("rate-limit", _http_response(HTTPStatus.TOO_MANY_REQUESTS, body=b"{}")),
@@ -367,7 +451,7 @@ def test_a_failing_entry_is_typed_and_leaves_no_export(
     caplog.set_level(logging.DEBUG)
     github_wire.serve(_PROJECT_A, [[_issue("i-1")]])
     github_wire.replies[(_PROJECT_B, None)] = reply
-    with pytest.raises(Exception, match="config key projects, entry 2 of 2") as caught:  # noqa: PT011, B017
+    with pytest.raises(Exception, match="config key projects, entry 2 of 2") as caught:
         _run_task()
     assert type(caught.value).__name__ == "ProjectEntryError"
     assert not export.exists()
@@ -377,7 +461,9 @@ def test_a_failing_entry_is_typed_and_leaves_no_export(
         assert secret not in caplog.text
 
 
-def test_task_missing_gh_binary_leaves_no_export(project_paths: tuple[Path, Path]) -> None:
+def test_task_missing_gh_binary_leaves_no_export(
+    project_paths: tuple[Path, Path],
+) -> None:
     _config, export = project_paths
     with (
         patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=None),
@@ -387,10 +473,14 @@ def test_task_missing_gh_binary_leaves_no_export(project_paths: tuple[Path, Path
     assert not export.exists()
 
 
-def test_task_without_a_gh_login_leaves_no_export(project_paths: tuple[Path, Path]) -> None:
+def test_task_without_a_gh_login_leaves_no_export(
+    project_paths: tuple[Path, Path],
+) -> None:
     _config, export = project_paths
 
-    def _no_login(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+    def _no_login(
+        argv: list[str], *, timeout: float
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(argv, 1, stdout="", stderr="not logged in")
 
     with (
@@ -428,7 +518,9 @@ def test_a_config_without_usable_projects_is_a_typed_error(
     assert not export.exists()
 
 
-def test_missing_config_names_the_path_and_the_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_config_names_the_path_and_the_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     missing = tmp_path / "absent.toml"
     monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(missing))
     with pytest.raises(FleetTargetConfigError, match="projects") as caught:
@@ -450,11 +542,13 @@ def test_projects_load_in_config_order(project_paths: tuple[Path, Path]) -> None
     assert load_project_numbers_from_config() == [_PROJECT_A, _PROJECT_B]
 
 
-# --- AC6: the token is nowhere ------------------------------------------------------------------------
+# --- AC6: the token is nowhere ---
 
 
 def test_the_token_is_in_no_log_message_or_export_on_success(
-    project_paths: tuple[Path, Path], github_wire: _GitHubWire, caplog: pytest.LogCaptureFixture
+    project_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     _config, export = project_paths
     caplog.set_level(logging.DEBUG)
@@ -466,16 +560,24 @@ def test_the_token_is_in_no_log_message_or_export_on_success(
     assert {e.authorization for e in github_wire.exchanges} == {f"Bearer {_SENTINEL}"}
 
 
-# --- AC7: keys-not-blobs --------------------------------------------------------------------------------
+# --- AC7: keys-not-blobs ---
 
 
 def test_celery_message_keys_not_blobs() -> None:
     tree = ast.parse(_TASKS_PATH.read_text(encoding="utf-8"))
     fn = next(
-        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "run_fleet_project_items"
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "run_fleet_project_items"
     )
-    assert [a.arg for a in fn.args.args] == ["self", "project_items_run_id", "organisation"]
-    signature = run_fleet_project_items.s("00000000-0000-0000-0000-000000000001", _EXAMPLE_ORG)
+    assert [a.arg for a in fn.args.args] == [
+        "self",
+        "project_items_run_id",
+        "organisation",
+    ]
+    signature = run_fleet_project_items.s(
+        "00000000-0000-0000-0000-000000000001", _EXAMPLE_ORG
+    )
     serialized = json.dumps(signature.args).lower()
     assert "token" not in serialized
     assert "authorization" not in serialized
@@ -483,7 +585,10 @@ def test_celery_message_keys_not_blobs() -> None:
 
 
 def test_task_limits_bound_full_pagination(settings) -> None:
-    assert run_fleet_project_items.soft_time_limit == FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
+    assert (
+        run_fleet_project_items.soft_time_limit
+        == FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
+    )
     assert run_fleet_project_items.time_limit == FLEET_INVENTORY_TIME_LIMIT_SECONDS
     assert (
         FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS
@@ -493,7 +598,7 @@ def test_task_limits_bound_full_pagination(settings) -> None:
     )
 
 
-# --- AC8: the default export path is gitignored and anchored to the checkout ----------------------------
+# --- AC8: the default export path is gitignored and anchored to the checkout ---
 
 
 def _git_env() -> dict[str, str]:
@@ -502,8 +607,11 @@ def _git_env() -> dict[str, str]:
 
 
 def test_gitignore_pins_the_default_export_path() -> None:
-    assert DEFAULT_FLEET_PROJECT_ITEMS_PATH == Path(".warden/fleet-project-items.json")
-    for path in (DEFAULT_FLEET_PROJECT_ITEMS_PATH, Path(".warden/.fleet-project-items.json.example.tmp")):
+    assert Path(".warden/fleet-project-items.json") == DEFAULT_FLEET_PROJECT_ITEMS_PATH
+    for path in (
+        DEFAULT_FLEET_PROJECT_ITEMS_PATH,
+        Path(".warden/.fleet-project-items.json.example.tmp"),
+    ):
         result = subprocess.run(  # noqa: S603
             ["git", "check-ignore", "-q", str(path)],  # noqa: S607
             cwd=_REPO_ROOT,
@@ -513,41 +621,60 @@ def test_gitignore_pins_the_default_export_path() -> None:
         assert result.returncode == 0, path
 
 
-def test_default_export_path_anchors_to_the_checkout_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_default_export_path_anchors_to_the_checkout_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv(ENV_FLEET_PROJECT_ITEMS_PATH, raising=False)
     monkeypatch.chdir(tmp_path)
-    assert resolve_fleet_project_items_export_path() == fleet_checkout_root() / DEFAULT_FLEET_PROJECT_ITEMS_PATH
+    assert (
+        resolve_fleet_project_items_export_path()
+        == fleet_checkout_root() / DEFAULT_FLEET_PROJECT_ITEMS_PATH
+    )
 
 
-def test_the_export_path_env_overrides_the_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_export_path_env_overrides_the_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     override = tmp_path / "elsewhere.json"
     monkeypatch.setenv(ENV_FLEET_PROJECT_ITEMS_PATH, str(override))
     assert resolve_fleet_project_items_export_path() == override
 
 
-def test_the_export_is_its_own_file_not_the_repo_inventory(project_paths: tuple[Path, Path], monkeypatch) -> None:
+def test_the_export_is_its_own_file_not_the_repo_inventory(
+    project_paths: tuple[Path, Path], monkeypatch
+) -> None:
     """Story 16.1's export path does not move this one (and the other way round)."""
     _config, export = project_paths
-    monkeypatch.setenv(ENV_FLEET_INVENTORY_PATH, str(export.parent / "fleet-inventory.json"))
+    monkeypatch.setenv(
+        ENV_FLEET_INVENTORY_PATH, str(export.parent / "fleet-inventory.json")
+    )
     assert resolve_fleet_project_items_export_path() == export
 
 
-def test_a_failed_write_leaves_no_partial_export(project_paths: tuple[Path, Path]) -> None:
+def test_a_failed_write_leaves_no_partial_export(
+    project_paths: tuple[Path, Path],
+) -> None:
     _config, export = project_paths
 
     @dataclass(frozen=True)
     class _Client:
-        def list_projects_items(self, organisation: str, project_numbers: list[int]) -> list[object]:
-            raise RuntimeError("listing failed")
+        def list_projects_items(
+            self, organisation: str, project_numbers: list[int]
+        ) -> list[object]:
+            msg = "listing failed"
+            raise RuntimeError(msg)
 
     with pytest.raises(RuntimeError, match="listing failed"):
         run_fleet_project_items_sync(
-            organisation=_EXAMPLE_ORG, project_numbers=[_PROJECT_A], listing_client=_Client(), export_path=export
+            organisation=_EXAMPLE_ORG,
+            project_numbers=[_PROJECT_A],
+            listing_client=_Client(),
+            export_path=export,
         )
     assert not export.exists()
 
 
-# --- AC10: the flag --------------------------------------------------------------------------------------
+# --- AC10: the flag ---
 
 
 def _flag_tree(*, on: bool) -> dict:
@@ -575,7 +702,9 @@ def flags_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def test_the_flag_ships_off_by_default_and_on_in_dev_and_staging() -> None:
-    entry = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))["flags"][FLEET_PROJECT_ITEMS_FLAG]
+    entry = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))["flags"][
+        FLEET_PROJECT_ITEMS_FLAG
+    ]
     assert entry["defaultVariant"] == "off"
     assert entry["metadata"]["owner"] == "warden"
     assert entry["metadata"]["story"].startswith("16-5-")
@@ -588,7 +717,9 @@ def test_the_flag_ships_off_by_default_and_on_in_dev_and_staging() -> None:
 
 
 @pytest.mark.django_db
-def test_flag_off_refuses_exit_2(flags_off: Path, project_paths: tuple[Path, Path]) -> None:
+def test_flag_off_refuses_exit_2(
+    flags_off: Path, project_paths: tuple[Path, Path]
+) -> None:
     stderr = StringIO()
     with pytest.raises(SystemExit) as exc:
         call_command("warden_fleet_project_items", stderr=stderr)
@@ -599,7 +730,9 @@ def test_flag_off_refuses_exit_2(flags_off: Path, project_paths: tuple[Path, Pat
 
 @pytest.mark.django_db
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
-def test_flag_on_runs_the_inventory(flags_on: Path, project_paths: tuple[Path, Path], github_wire: _GitHubWire) -> None:
+def test_flag_on_runs_the_inventory(
+    flags_on: Path, project_paths: tuple[Path, Path], github_wire: _GitHubWire
+) -> None:
     _config, export = project_paths
     github_wire.serve(_PROJECT_A, [[_issue("i-1")]])
     github_wire.serve(_PROJECT_B, [[_draft("d-1")]])
@@ -607,11 +740,15 @@ def test_flag_on_runs_the_inventory(flags_on: Path, project_paths: tuple[Path, P
     with patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider):
         call_command("warden_fleet_project_items", stdout=stdout)
     assert stdout.getvalue().strip()
-    assert [e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]] == ["i-1", "d-1"]
+    assert [
+        e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]
+    ] == ["i-1", "d-1"]
 
 
 @pytest.mark.django_db
-def test_flag_on_with_a_bad_config_exits_1(flags_on: Path, project_paths: tuple[Path, Path]) -> None:
+def test_flag_on_with_a_bad_config_exits_1(
+    flags_on: Path, project_paths: tuple[Path, Path]
+) -> None:
     config, export = project_paths
     _write_config(config, "")
     stderr = StringIO()
@@ -640,7 +777,9 @@ def test_portal_refuses_when_flag_off(client, settings, flags_off: Path) -> None
 
 
 @pytest.mark.django_db
-def test_portal_chrome_lists_the_action_disabled_when_flag_off(client, settings, flags_off: Path) -> None:
+def test_portal_chrome_lists_the_action_disabled_when_flag_off(
+    client, settings, flags_off: Path
+) -> None:
     _authed(client, settings)
     home = client.get("/stations/warden/")
     assert home.status_code == HTTPStatus.OK
@@ -650,7 +789,9 @@ def test_portal_chrome_lists_the_action_disabled_when_flag_off(client, settings,
 
 
 @pytest.mark.django_db
-def test_portal_chrome_enables_the_action_when_flag_on(client, settings, flags_on: Path) -> None:
+def test_portal_chrome_enables_the_action_when_flag_on(
+    client, settings, flags_on: Path
+) -> None:
     _authed(client, settings)
     body = client.get("/stations/warden/").content.decode()
     assert "warden-fleet-project-items-start" in body
@@ -659,7 +800,12 @@ def test_portal_chrome_enables_the_action_when_flag_on(client, settings, flags_o
 
 @pytest.mark.django_db
 def test_portal_config_refusal_names_no_path(
-    client, settings, flags_on: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    client,
+    settings,
+    flags_on: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     missing = tmp_path / "absent" / "fleet-target.toml"
     monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(missing))
@@ -675,7 +821,11 @@ def test_portal_config_refusal_names_no_path(
 @pytest.mark.django_db
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
 def test_portal_runs_the_inventory_when_flag_on(
-    client, settings, flags_on: Path, project_paths: tuple[Path, Path], github_wire: _GitHubWire
+    client,
+    settings,
+    flags_on: Path,
+    project_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
 ) -> None:
     _config, export = project_paths
     github_wire.serve(_PROJECT_A, [[_issue("i-1")]])
@@ -685,4 +835,6 @@ def test_portal_runs_the_inventory_when_flag_on(
         response = client.post(_PORTAL_START)
     assert response.status_code == HTTPStatus.OK
     assert b"warden-fleet-project-items-started" in response.content
-    assert [e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]] == ["i-1", "r-1"]
+    assert [
+        e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]
+    ] == ["i-1", "r-1"]
