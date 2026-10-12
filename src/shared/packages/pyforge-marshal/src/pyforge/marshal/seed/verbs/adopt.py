@@ -302,7 +302,7 @@ from ..model.manifest import (
     Manifest,
     ManifestEntry,
     RequiredIn,
-    render_slug_paths,
+    manifest_for_adopt_scope,
 )
 from ..model.version import ModelVersion
 from ..plan.build import build_plan, default_plan_path, write_plan
@@ -481,36 +481,6 @@ def _unexpected_dirt_since_plan_write(repo_root: Path) -> None:
             " another process modified it while adopt was awaiting confirmation",
             remedy="re-run marshal seed adopt and review the fresh plan before applying it",
         )
-
-
-def _manifest_for_adopt(
-    manifest: Manifest,
-    slug: str | None = None,
-    *,
-    in_loop_home: bool | None = None,
-) -> Manifest:
-    """``manifest``, scoped to the entries this verb ever touches: ``applies_
-    to in (ADOPT, BOTH)``, with Story 70.1's slug rendering and loop-home
-    scope (Story 86.2) applied before ``classify``/``build_plan`` see it."""
-    kept: list[ManifestEntry] = []
-    for entry in manifest.entries:
-        if entry.applies_to not in (AppliesTo.ADOPT, AppliesTo.BOTH):
-            continue
-        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED:
-            continue
-        if entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False:
-            continue
-        if slug is None and entry.is_slug_templated:
-            continue
-        kept.append(entry)
-    filtered = Manifest(
-        model_version=manifest.model_version,
-        never_write=manifest.never_write,
-        entries=tuple(kept),
-    )
-    if slug:
-        return render_slug_paths(filtered, slug)
-    return filtered
 
 
 def _read_text_or_blank(target: Path) -> str:
@@ -1266,7 +1236,7 @@ def run_adopt(
     silently treating corrupted state as absent would let this run overwrite
     hand-edited managed content state itself could no longer attest to --
     exactly the class of risk SC-04 exists to prevent."""
-    filtered_manifest = _manifest_for_adopt(manifest, slug, in_loop_home=in_loop_home)
+    filtered_manifest = manifest_for_adopt_scope(manifest, slug, in_loop_home=in_loop_home)
     state = read_state(repo_root)
     # The state exactly as read: the post-apply state takes the records it
     # REPLACES from here, after `state` below has had derived opt-outs recorded

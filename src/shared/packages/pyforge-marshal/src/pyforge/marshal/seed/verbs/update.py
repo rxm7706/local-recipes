@@ -212,7 +212,7 @@ from ..apply.run import ApplyResult, CommitAction, run_apply
 from ..derive import adapters as derive_adapters
 from ..derive import projects_index as derive_projects_index
 from ..detect.findings import Finding
-from ..detect.hashes import hash_content, region_body_text
+from ..detect.hashes import hash_content, normalize_line_endings, region_body_text
 from ..detect.inventory import (
     ArtifactState,
     Inventory,
@@ -226,10 +226,10 @@ from ..detect.referenced_deps import referenced_dep_findings
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..migrate import registry as migrate_registry
-from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
+from ..model.manifest import ArtifactClass, Manifest, ManifestEntry, manifest_for_adopt_scope
 from ..model.version import ModelVersion
 from ..plan.build import build_plan, default_plan_path, write_plan
-from ..plan.types import Action, Plan, RepoFingerprint
+from ..plan.types import Action, Plan, RepoFingerprint, SkippedArtifact
 from ..regions.apply import insert_region, substitute_region
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, RegionSpan, parse_regions
@@ -257,6 +257,11 @@ from .skips import apply_skips, managed_after_skips, with_recorded_skips
 _WHOLESALE_CLASSES = frozenset(
     {ArtifactClass.COPIED_MANAGED, ArtifactClass.GENERATED_DERIVED, ArtifactClass.HYBRID_MANAGED_REGION}
 )
+
+#: ``Plan.skipped`` pattern for a managed entry whose template ships no
+#: whole-file payload -- distinct from ``--skip`` globs and migration offers
+#: (Story 97.2, AC4).
+NO_PACKAGED_PAYLOAD_PATTERN = "* (no packaged whole-file payload; update cannot regenerate this entry)"
 
 # Query-style git call (never a checkout/push) -- the identical value
 # `verbs/adopt.py::_GIT_TIMEOUT_S`/`plan/build.py::_GIT_TIMEOUT_S`/
@@ -334,17 +339,6 @@ def _unexpected_dirt_since_plan_write(repo_root: Path) -> None:
             " another process modified it while update was awaiting confirmation",
             remedy="re-run marshal seed update and review the fresh plan before applying it",
         )
-
-
-def _manifest_for_update(manifest: Manifest) -> Manifest:
-    """``manifest``, scoped to ``applies_to in (ADOPT, BOTH)`` -- mirrors
-    ``verbs/adopt.py::_manifest_for_adopt`` verbatim (see the module
-    docstring's own paragraph on why: an ``init``-only entry's
-    ``{{ slug }}``-templated path has no target ``update`` could ever
-    materialize correctly, and ``update`` -- like ``adopt`` -- has no
-    ``--slug`` flag to resolve it with)."""
-    entries = tuple(entry for entry in manifest.entries if entry.applies_to in (AppliesTo.ADOPT, AppliesTo.BOTH))
-    return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
 
 
 def _read_text_or_blank(target: Path) -> str:
@@ -502,12 +496,39 @@ def _state_with_opt_outs(
     return state, opted_out_regions(hybrids, state)
 
 
+def _packaged_whole_file_bytes(entry: ManifestEntry, template_path: Path | str | None) -> bytes | None:
+    """Bytes ``--run`` would write for a whole-file class, or ``None`` when
+    the template tree ships no payload at ``entry.path`` (Story 97.2). Never
+    invokes ``materialize()``."""
+    if (
+        entry.id in derive_adapters.ADAPTER_COMPOSITION
+        and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+    ):
+        return derive_adapters.render_adapter(entry.id, template_path=template_path).encode("utf-8")
+
+    def _lookup(root: Path) -> bytes | None:
+        candidate = root / entry.path
+        return candidate.read_bytes() if candidate.is_file() else None
+
+    if template_path is not None:
+        return _lookup(Path(template_path))
+    template_root = resources.files("pyforge.marshal.seed.templates")
+    with resources.as_file(template_root) as real_path:
+        return _lookup(real_path)
+
+
+def _texts_equal_on_disk(current: str, target: str) -> bool:
+    return hash_content(current) == hash_content(target)
+
+
 def _wholesale_regenerate_actions(
     state: SeedState | None,
     manifest: Manifest,
     inventory: Inventory,
     opted_out: frozenset[tuple[str, str]] = frozenset(),
-) -> tuple[tuple[Action, ...], tuple[tuple[str, str], ...]]:
+    *,
+    template_path: Path | str | None = None,
+) -> tuple[tuple[Action, ...], tuple[tuple[str, str], ...], tuple[SkippedArtifact, ...]]:
     """FR-98/FR-99's own new pass (see the module docstring's opening
     section): one ``Action`` per ``state.managed[]`` record whose CURRENT
     manifest entry's class is ``copied-managed``/``generated-derived``/
@@ -558,50 +579,81 @@ def _wholesale_regenerate_actions(
     86.1, ``DW-FU-7-5-2``): it is create-if-missing, and the entries beneath it
     keep their own classes -- see ``ManifestEntry.is_directory``.
 
-    Returns ``((), ())`` when ``state is None`` (nothing has been adopted,
+    Returns ``((), (), ())`` when ``state is None`` (nothing has been adopted,
     so ``state.managed`` is empty) or when no record qualifies -- the
-    overwhelmingly common "nothing to regenerate against yet" case."""
+    overwhelmingly common "nothing to regenerate against yet" case.
+
+    Story 97.2: an action is planned only when packaged content differs from
+    what is on disk; entries with no whole-file payload are listed in the
+    third return tuple instead."""
     if state is None:
-        return (), ()
+        return (), (), ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     escaping_ids = {escape.entry_id for escape in inventory.escaping}
+    repo_root = inventory.repo_root
     actions: list[Action] = []
     hashes: list[tuple[str, str]] = []
+    skipped: list[SkippedArtifact] = []
     for record in state.managed:
         entry = entries_by_id.get(record.id)
         if entry is None or entry.artifact_class not in _WHOLESALE_CLASSES:
             continue
         if entry.is_directory:
-            # Story 86.1 (DW-FU-7-5-2): a directory entry is create-if-missing,
-            # never recomputed -- what sits beneath it belongs to the entries
-            # that name it (a seeded starter file, a never-write subtree), each
-            # governed by its own class. An action here would ask to rewrite
-            # the directory itself, which rung 5 refuses as `directory-target`.
             continue
         if entry.id in escaping_ids:
-            # Story 82.11: a previously managed entry whose path has since
-            # become a symlink pointing outside the repo. No action, and its
-            # escaped target is never read or hashed below -- the entry is
-            # reported through `escape_findings` instead of refusing the whole
-            # plan at rung 3.
             continue
-        chosen_anchor: tuple[tuple[str, str | None], ...] = ()
+        target_path = repo_root / entry.path
+        on_disk = _read_text_or_blank(target_path)
         is_hybrid = entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
         if is_hybrid:
+            assert entry.format is not None
             wanted = tuple(region for region in entry.regions if (entry.id, region.name) not in opted_out)
             if not wanted:
-                # Every declared region is opted out: nothing to regenerate, and
-                # the record stays exactly as it is. Reached only for a state
-                # holding both the opt-out key and the record's spans; in a real
-                # run recording a derived opt-out has already dropped the record
-                # (see this function's docstring).
                 continue
-            chosen_anchor = tuple((region.name, region.anchor[0] if region.anchor else None) for region in wanted)
-        # FR-99 (only the marked span is replaced, never the whole file) is
-        # a claim about a REGION -- it does not apply to a whole-file class
-        # (review finding), so the rationale cites it only for the hybrid
-        # case rather than unconditionally for every wholesale action.
-        fr_tag = "FR-98/FR-99" if is_hybrid else "FR-98"
+            parsed = parse_regions(on_disk, entry.format) if on_disk else ()
+            spans_by_name = {span.name: span for span in parsed}
+            differing: list[tuple[str, str | None]] = []
+            for region in wanted:
+                expected_body = _region_body_for(template_path, repo_root, entry.id, region.name)
+                span = spans_by_name.get(region.name)
+                if span is None:
+                    differing.append((region.name, region.anchor[0] if region.anchor else None))
+                    continue
+                actual_body = region_body_text(on_disk, span)
+                if not _texts_equal_on_disk(actual_body, expected_body):
+                    differing.append((region.name, region.anchor[0] if region.anchor else None))
+            if not differing:
+                continue
+            chosen_anchor = tuple(differing)
+            fr_tag = "FR-98/FR-99"
+        elif (
+            entry.id in derive_adapters.ADAPTER_COMPOSITION
+            and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+        ):
+            expected = derive_adapters.render_adapter(entry.id, template_path=template_path)
+            if _texts_equal_on_disk(on_disk, expected):
+                continue
+            chosen_anchor = ()
+            fr_tag = "FR-98"
+        else:
+            payload = _packaged_whole_file_bytes(entry, template_path)
+            if payload is None:
+                skipped.append(
+                    SkippedArtifact(
+                        artifact_id=entry.id,
+                        target_path=entry.path,
+                        pattern=NO_PACKAGED_PAYLOAD_PATTERN,
+                    )
+                )
+                continue
+            try:
+                target_text = payload.decode("utf-8")
+            except UnicodeDecodeError:
+                target_text = normalize_line_endings(payload.decode("utf-8", errors="replace"))
+            if _texts_equal_on_disk(on_disk, target_text):
+                continue
+            chosen_anchor = ()
+            fr_tag = "FR-98"
         actions.append(
             Action(
                 artifact_id=entry.id,
@@ -616,8 +668,8 @@ def _wholesale_regenerate_actions(
                 ),
             )
         )
-        hashes.append((entry.id, hash_content(_read_text_or_blank(inventory.repo_root / entry.path))))
-    return tuple(actions), tuple(hashes)
+        hashes.append((entry.id, hash_content(on_disk)))
+    return tuple(actions), tuple(hashes), tuple(skipped)
 
 
 def _migration_action_hashes(repo_root: Path, migration_actions: tuple[Action, ...]) -> tuple[tuple[str, str], ...]:
@@ -642,6 +694,7 @@ def _merge_plan_sources(
     migration_hashes: tuple[tuple[str, str], ...],
     wholesale_actions: tuple[Action, ...],
     wholesale_hashes: tuple[tuple[str, str], ...],
+    wholesale_skipped: tuple[SkippedArtifact, ...],
     repo_fingerprint: RepoFingerprint,
 ) -> Plan:
     """Merge the three action sources into one ``Plan`` sharing
@@ -691,7 +744,12 @@ def _merge_plan_sources(
         _claim(skipped.artifact_id, "migrate.compose's skipped entries")
     for action in wholesale_actions:
         _claim(action.artifact_id, "the wholesale-regenerate pass")
+    for skipped in wholesale_skipped:
+        _claim(skipped.artifact_id, "the wholesale-regenerate pass (no payload)")
 
+    merged_skipped = tuple(
+        sorted((*migration_plan.skipped, *wholesale_skipped), key=lambda entry: entry.artifact_id)
+    )
     return Plan(
         actions=tuple(
             sorted((*build_actions, *migration_plan.actions, *wholesale_actions), key=lambda a: a.artifact_id)
@@ -702,7 +760,7 @@ def _merge_plan_sources(
                 sorted((*build_hashes, *migration_hashes, *wholesale_hashes), key=lambda pair: pair[0])
             ),
         ),
-        skipped=migration_plan.skipped,
+        skipped=merged_skipped,
     )
 
 
@@ -1222,6 +1280,8 @@ def run_update(
     confirm: Callable[[], bool],
     template_path: Path | str | None = None,
     commit: CommitAction | None = None,
+    slug: str | None = None,
+    in_loop_home: bool | None = None,
 ) -> UpdateResult:
     """Compose ``resolve -> detect -> plan -> confirm -> apply -> state-write``
     against ``repo_root``, writing ``.marshal/plan.json`` unconditionally and
@@ -1266,7 +1326,7 @@ def run_update(
     genuinely collide on an ``artifact_id`` despite the disjointness this
     function otherwise enforces before merging (see the module docstring's
     own "Making the three sources ACTUALLY disjoint" Design Note)."""
-    filtered_manifest = _manifest_for_update(manifest)
+    filtered_manifest = manifest_for_adopt_scope(manifest, slug, in_loop_home=in_loop_home)
     ref_findings = referenced_dep_findings(filtered_manifest, repo_root)
     state = read_state(repo_root)
     # The state exactly as read: the post-apply state takes the records it
@@ -1331,8 +1391,12 @@ def run_update(
     )
     migration_hashes = _migration_action_hashes(repo_root, migration_plan.actions)
 
-    wholesale_actions_raw, wholesale_hashes_raw = _wholesale_regenerate_actions(
-        state, filtered_manifest, inventory, opted_out_pairs
+    wholesale_actions_raw, wholesale_hashes_raw, wholesale_skipped = _wholesale_regenerate_actions(
+        state,
+        filtered_manifest,
+        inventory,
+        opted_out_pairs,
+        template_path=template_path,
     )
     # Symmetric exclusion: a migration this run ALREADY claims an id (in its
     # own actions or its own `copied-seeded` offers) supersedes the generic
@@ -1355,6 +1419,7 @@ def run_update(
         migration_hashes=migration_hashes,
         wholesale_actions=wholesale_actions,
         wholesale_hashes=wholesale_hashes,
+        wholesale_skipped=wholesale_skipped,
         repo_fingerprint=base_plan.repo_fingerprint,
     )
     # The operator's skips -- every pattern `state.skips` recorded on an

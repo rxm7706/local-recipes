@@ -764,6 +764,38 @@ def load_manifest(path: Path) -> Manifest:
     return Manifest(model_version=model_version, never_write=never_write, entries=filtered_entries)
 
 
+def manifest_for_adopt_scope(
+    manifest: Manifest,
+    slug: str | None = None,
+    *,
+    in_loop_home: bool | None = None,
+) -> Manifest:
+    """``manifest``, scoped to the entries ``seed adopt`` and ``seed update``
+    ever touch: ``applies_to in (ADOPT, BOTH)``, with Story 70.1's slug
+    rendering and loop-home scope (Story 86.2) applied before ``classify``/
+    ``build_plan`` see it. The one scoping function both verbs share (Story
+    97.2, AC1)."""
+    kept: list[ManifestEntry] = []
+    for entry in manifest.entries:
+        if entry.applies_to not in (AppliesTo.ADOPT, AppliesTo.BOTH):
+            continue
+        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED:
+            continue
+        if entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False:
+            continue
+        if slug is None and entry.is_slug_templated:
+            continue
+        kept.append(entry)
+    filtered = Manifest(
+        model_version=manifest.model_version,
+        never_write=manifest.never_write,
+        entries=tuple(kept),
+    )
+    if slug:
+        return render_slug_paths(filtered, slug)
+    return filtered
+
+
 def render_slug_paths(manifest: Manifest, slug: str) -> Manifest:
     """``manifest`` with ``slug`` substituted for every ``{{ slug }}`` in an
     entry's ``path`` (Story 70.1, AD-55) -- the one renderer ``seed init`` and

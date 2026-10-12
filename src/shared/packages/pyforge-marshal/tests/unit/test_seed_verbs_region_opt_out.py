@@ -714,10 +714,10 @@ def test_a_hybrid_artifact_with_every_region_opted_out_gets_no_wholesale_action(
     inventory = classify(manifest, clean_repo)
 
     # The control: with no opt-out set the pass names both deleted regions.
-    (action,), _hashes = update_module._wholesale_regenerate_actions(standing, manifest, inventory)
+    (action,), _hashes, _skipped = update_module._wholesale_regenerate_actions(standing, manifest, inventory)
     assert [name for name, _anchor in action.chosen_anchor] == ["tiers", "model-badge"]
     pairs = frozenset({("hybrid", "tiers"), ("hybrid", "model-badge")})
-    assert update_module._wholesale_regenerate_actions(standing, manifest, inventory, pairs) == ((), ())
+    assert update_module._wholesale_regenerate_actions(standing, manifest, inventory, pairs) == ((), (), ())
 
     dry = run_update(clean_repo, manifest, confirm=_unreachable_confirm)
     assert [action.artifact_id for action in dry.plan.actions] == ["extra"]
