@@ -788,6 +788,8 @@ class Scanner:
     def _record(self, value: V, mod: Module, parent: ast.AST | None) -> None:
         if not value.rooted or _is_plumbing(parent):
             return
+        if isinstance(parent, ast.Attribute) and parent.attr == "is_dir":
+            return  # a directory's existence is a root-finding probe, not a read of what is under it
         parts = list(value.parts)
         if not parts:
             if self._is_handoff(parent):
