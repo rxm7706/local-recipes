@@ -116,6 +116,21 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-12 (ci surfaces on the dossier) — Wanted: the dossier says which CI surfaces are paused or stuck, from the
+  same JSON the steward CLI prints.** Today the dossier (`docsite/content/dossier.yml`) shows the A→B cutover and
+  nothing about the pipeline that lands it: two container-build pauses live since 2026-10-04 and 2026-10-09, six
+  workflows disabled by hand since 2026-08-24, and this station's own `dashboard.yml` deploy stuck in `waiting` from
+  2026-10-06 to 2026-10-12 (199 cancelled runs, a six-day-old Pages build) were visible nowhere a reader looks.
+  Steward's same-day append mints the registry (`docs/governance/ci-surfaces.yaml`) and `pyforge steward ci status
+  --json`; doctor's mints the drift source; the plan is `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`.
+  **What it looks like when fixed:** one dossier tile, "CI surfaces", rendered from `steward ci status --json` at
+  build time: one line per surface whose verdict is not `live` — switch, `paused_since`, `review_by`, owner, verdict —
+  and a single "all live" line otherwise; the tile is data-driven (a fixture JSON renders it in the docsite check),
+  never hand-edited; and `dashboard.deploy` carries its registry row with the `stuck_rules` that would have caught
+  2026-10-06. **Constraints:** a feature under CAP-11 (the progress visibility surface); behind a flag
+  (`pyforge.herald.ci_surfaces_tile` proposed); reads steward through the CLI's JSON, never by import; depends on
+  steward's `ci status` landing first; `docsite-check.yml` stays the gate. Operator ruling 2026-10-12: the plan's
+  recommended answers Q1–Q8 stand. Owner `spec-pyforge-herald`.
 - **2026-10-11 (django-herald lint clean) — Ruled: the django-herald portal passes the lint gate and is the first
   package off its not-yet-clean list.** Story 37.1's review found that no gate lints the `django-*` portal packages:
   `lint-types` globs only `pyforge-*`, and `platform-ci-local` lints only `src/platform`. django-herald's

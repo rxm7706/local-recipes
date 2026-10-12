@@ -7,6 +7,11 @@ companion dir of its Dream) · a how-things-work description → `docs/reference
 · superseded/out-of-scope → `/archive/docs/` (structure-preserving) · a build
 contract → never here (BMAD planning-artifacts).
 
+- `ci-pause-control-plane/` — **dropped 2026-10-12** (`PLAN-2026-10-12.md`): planning, analysis and
+  solution for operator-controlled pause switches and visibility across every GitHub Actions surface
+  and its local twin, from the 2026-10-12 live audit. Pre-triage. Routes to dated appends on the
+  steward (primary), doctor, herald and marshal station Dreams once the operator answers its § 7
+  decisions; archive the drop when the appends land.
 - ~~`gists/`~~ — **archived 2026-09-19** to `archive/docs/intake/gists/`
   (structure-preserving, per this doc's own routing rule; moved unmodified —
   no Dream YAML added). 2026-07-23 snapshot (see `INDEX.md`); 14 of 30 were
