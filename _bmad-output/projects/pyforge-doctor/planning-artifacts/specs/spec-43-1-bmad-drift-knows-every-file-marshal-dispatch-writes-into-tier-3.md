@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-12'
 status: 'in-progress'
 baseline_revision: '70975ae790'
-review_loop_iteration: 3
+review_loop_iteration: 4
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -256,6 +256,18 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
   found on marshal Story 97.2's dispatch worktree.
 
 ## Review Triage Log
+
+### 2026-10-12 — Independent review, iteration 3: sent back (1 medium, 2 low patch; 1 low defer)
+
+Fresh separate agent, review at 9554d68795. N1, N2, N5, N6 closed and N3 partly (27 mutations; resolver give-up restored → `sessions` lost; sessions/failed-attempt rows and kept classes removed or reordered → red; wrong writer symbols → red; tightened kept rows → exemption follows). Live scan: 16 segments; cross-checked against every Tier-3-returning helper and every `implementation-artifacts` grep hit — the only writers outside the scan are `.query-ran` (covered), `fleet-drain-runs/campaign.lock` (F3) and transient atomic-write temp files. `--fix` touches only root-level files and skips kept classes. AC7 by hand (13 planted files incl. a sessions gate record and a failed-attempt patch): `bmad-drift-check` 0, `detectors-ci` 46/46; root `review-diff.patch`, `failed/97.2/other.patch` and `randomfile.txt` controls each exit 2. AC8 on the primary checkout's 3020 marshal files: only 145 quarantine files (UNKNOWN → `local:run-journal`) and 57 failed patches (`local:run-journal` → `local:failed-attempt`, their `stray-file` findings gone) change. Gates all 0.
+
+- `[medium]` `[patch]` F1 `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:328`, meta-test `tests/meta/test_bmad_drift_tier3_marshal_shapes.py:217` cite `supervisor/intent_gap_preserve.py::_write_failed_patch`, which writes the loop home's `.bmad-loop/runs/<id>/failed/<story>/changes.patch`, not Tier-3; the Tier-3 `dispatch-runs/<run>/failed/<story>/changes.patch` is written by `core/dispatch_preserve.py::failed_patch_path` (`:47-49`, called from `dispatch_supervisor/__main__.py::_journal_dispatch_preserve` `:349`). Renaming `"changes.patch"` in the real writer leaves every test green. Fix: cite `core/dispatch_preserve.py::failed_patch_path` (token `"changes.patch"`) in both places; correct the record with a memlog entry (the iteration-2 entry and `spec-pyforge-doctor/.memlog.md:715` name the wrong writer).
+- `[low]` `[patch]` F3 `fleet-drain-runs/campaign.lock` (marshal `cli/dispatch.py:6427` via `core/dispatch_fleet.py::fleet_cycle_lock_path` `:442-450`, `.lock` from `adapters/fs_local.py:469`) is `uncovered`: the moved row needs a subdirectory. Fix: a `^implementation-artifacts/fleet-drain-runs/campaign\.lock$` → `local:run-journal` row (writer `fleet_cycle_lock_path`) in both copies, with a look-alike test.
+- `[low]` `[patch]` F4 the spec's Intent table, Approach and I/O matrix do not record the two iteration-2 shapes (`sessions/<id>/…`, the failed-attempt patch and its new class `local:failed-attempt`). Fix: a Spec Change Log entry (and the table/matrix rows).
+- `[low]` `[defer]` F2 three writer tokens are generic (`'"runs"'` in 30 marshal symbols, `'"sprint-status.yaml"'` in 6, `'"sessions"'` in 2), so a wrong symbol holding the same literal passes; append to DW-doctor-43-1-2.
+- Nit: the Auto Run Result still calls the iteration-2 pass uncommitted (refreshed at landing).
+
+Send-back: F1, F3, F4 in one pass; F2 appended to DW-doctor-43-1-2. The iteration-3 reviewer named the decisive check: renaming `"changes.patch"` in `core/dispatch_preserve.py::failed_patch_path` must go red — the orchestrator re-runs it on the delta before landing.
 
 ### 2026-10-12 — Fix pass for iteration 2 (implementer)
 
