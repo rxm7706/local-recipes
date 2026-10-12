@@ -2,9 +2,9 @@
 title: "43.1: bmad-drift knows every file marshal dispatch writes into Tier-3"
 type: 'fix'
 created: '2026-10-12'
-status: 'done'
+status: 'in-progress'
 baseline_revision: '70975ae790'
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -250,10 +250,31 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
 
 ## Spec Change Log
 
+- 2026-10-12 — Scope confirmed by the operator: asked whether to keep the wider scope (all seven dispatch-written kinds plus the attempted-change patch exemption) or narrow to the recall-feedback pair, the operator answered "keep the wider scope, keep going".
+
 - 2026-10-12: minted from the operator's ask "Do this task here: Teach bmad-drift about dispatch recall-feedback files",
   found on marshal Story 97.2's dispatch worktree.
 
 ## Review Triage Log
+
+### 2026-10-12 — Independent review, iteration 1: sent back (4 high, 2 medium, 4 low patch; 2 low defer)
+
+Separate agent, review of `git diff origin/main...HEAD` (merge-base 6bbfff6dd6, HEAD 1997f1344e). The classifier change is sound: rows correct, moved rules' class strings unchanged (no reader besides tests/docs), `--fix` keeps the attempted-change patch, an unknown file and every look-alike stay failing; AC7 by hand: a real `implementation-artifacts/` holding every AC1/AC3 shape gives `bmad-drift-check` 0, and a stray `review-diff.patch` control turns it red. But the AC4/AC5 guards pass vacuously and `lint-types` is red, so the earlier "AC1-AC8 verified" line did not hold. 14 mutations, 8 caught.
+
+- `[high]` `[patch]` R1 `tests/scripts/test_bmad_drift_check_tier3_classify.py:67` plants samples at the project root, not under `implementation-artifacts/`, so both classifiers return UNKNOWN for all 20 and the AC5 agreement test checks nothing (breaking the script's reference `classify()` survives). Fix: plant under `factory._impl(repo_root)`; add the meta-test table's samples.
+- `[high]` `[patch]` R2 `src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py:126-140, 221-239` the ast scan is near-blind: `_path_join_string` stops at the first non-constant operand, so marshal's usual `root / ... / slug / "implementation-artifacts" / X` is never collected; module constants and the `implementation_artifacts_relpath(...)` f-string tail are not resolved (3 segments found live vs 12 in the prototype); the final assertion `_EXPECTED_MARSHAL_SEGMENTS <= normalized | _table_segment_keys()` always holds. Fix: flatten the Div chain, take the operand after `"implementation-artifacts"`, resolve Names through module-level str assignments, handle the `JoinedStr` tail, assert `_EXPECTED_MARSHAL_SEGMENTS <= normalized` without the union.
+- `[high]` `[patch]` R3 same file `:170-184, 238` failures never name `file:line` (AC4, AC6 bullet 4). Fix: collect `(segment, path, lineno)`; put `path:lineno` in the message.
+- `[high]` `[patch]` R4 `lint-types` red: F401 unused `pytest` (`:10`), F841 unused `proj` (`:201`) in the meta-test; `ruff format` on `sources/factory.py` (~:394).
+- `[medium]` `[patch]` R5 `tests/unit/test_sources_factory.py:1866-1872` the AC3 loop cannot fail (removing the attempted-change row passes everything). Fix: assert each planted file's class is in the TIER3 classes, stray controls excluded.
+- `[medium]` `[patch]` R6 meta-test `:242-250` the AC4 fixture test never runs the coverage assertion. Fix: factor scan-and-assert into a helper, run it on the fixture under `pytest.raises` matching `fake_marshal_module.py:1`.
+- `[low]` `[patch]` R7 `factory.py:305-375` several `writer` values are prose, not `file::symbol`/skill paths; the attempted-change and worktree-verdicts rows have no writer-token row in the meta-test. Fix: real `file::symbol` values and the two missing rows.
+- `[low]` `[patch]` R8 `factory.py:1431-1442` an orphaned sweep-verdicts comment; a stray blank line inside the benchmark comment; the moved rules' incident comments deleted although `classify()`'s docstring calls them load-bearing. Fix: restore them beside the rows.
+- `[low]` `[patch]` R9 `factory.py:369`, `scripts/bmad_drift_check.py:135` `bmad-build-auto-result-[a-z0-9-]+` misses the writer's `<slug-or-timestamp>` form (uppercase T/Z, dots; `.claude/skills/bmad-build-auto/workflow.md:32`). Fix: `[A-Za-z0-9._-]+`.
+- `[low]` `[patch]` R12 `_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md` the `uncovered` row lost that the script holds only an unused reference copy of `classify()`. Fix: reword.
+- `[low]` `[defer]` R10 the plain benchmark row shadows the per-layer row and accepts any suffix; `dispatch-runs-quarantine/.*` accepts any depth (neither hides a stray-suffix file) — optional tightening.
+- `[low]` `[defer]` R11 some writer tokens are formatting-fragile or name a reader (`cli/status.py`'s literal token; `dispatch-runs` cited from `layer_savings_sources.py`, writer `core/dispatch.py`).
+
+Send-back: R1-R9 and R12 in one pass; R10/R11 as doctor deferred-work rows; a fresh independent review (iteration 2) gates the landing.
 
 - 2026-10-12 iteration 1: AC1–AC8 verified locally (`pyforge-doctor-test` 3579 passed; `pyforge-doctor-scripts-test` 1475 passed + 21 new tier3 classify tests; AC7 `bmad-drift-check` exit 0 with planted Tier-3 tree; `spec_surface_reconcile.py` and `spec-surface-check` exit 0 after memlogs and scoped stamps on `spec-pyforge-doctor` and `spec-pyforge-core`). No blocking findings.
 
