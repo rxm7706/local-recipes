@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import tempfile
 import uuid
 from pathlib import Path
@@ -19,6 +20,7 @@ from django.views.decorators.http import require_POST
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.schema import CLAIM_SUB
+from django_pyforge.flags import evaluate_from_source
 from django_pyforge.non_atomic import non_atomic_view
 from django_pyforge.roles import claims_from_request
 from django_pyforge.roles import roles_from_request
@@ -27,19 +29,30 @@ from django_pyforge.supervisor import HandleNotFoundError
 from django_pyforge.supervisor import HandleRefusedError
 from django_pyforge.supervisor import RunBoundExceeded
 from django_pyforge.supervisor import bound_refusal_payload
-from django_pyforge.flags import evaluate_from_source
 
 from .fleet import FLEET_FIX_PROPOSALS_FLAG
+from .fleet import FLEET_INVENTORY_FLAG
+from .fleet_inventory import FleetInventoryError
+from .fleet_inventory import load_organisation_from_config
 from .mcp_asgi import RUN_AUDIT_TOOL
+from .mcp_asgi import WARDEN_STATION
+from .models import ComplianceJob
 from .models import FixProposal
+from .phases import current_progress
 from .proposals import ProposalRefusedError
 from .proposals import approve_proposal
 from .proposals import dismiss_proposal
-from .mcp_asgi import WARDEN_STATION
-from .models import ComplianceJob
-from .phases import current_progress
 from .tasks import SUPPORTED_SUFFIXES
 from .tasks import run_compliance_job
+from .tasks import run_fleet_inventory
+
+logger = logging.getLogger(__name__)
+
+# Story 16.1: what a portal user sees when the target config is unusable. The detail
+# (the config's absolute path and what is wrong with it) goes to the server log only.
+FLEET_INVENTORY_CONFIG_REFUSAL = (
+    "fleet inventory target config is missing or invalid; see the server log"
+)
 
 _WELL_KNOWN_MANIFEST_NAMES = frozenset(
     {
@@ -71,7 +84,11 @@ def _portal_identity(request: HttpRequest) -> tuple[str, list[str]] | None:
 @require_station_role("warden")
 def chrome_home(request: HttpRequest) -> HttpResponse:
     """HTML face that extends django-pyforge chrome (Story 18.1)."""
-    return render(request, "warden_fabric/chrome.html")
+    return render(
+        request,
+        "warden_fabric/chrome.html",
+        {"fleet_inventory_enabled": _fleet_inventory_enabled()},
+    )
 
 
 @require_POST
@@ -188,6 +205,30 @@ def job_status(request: HttpRequest, job_id: str) -> HttpResponse:
 
 def _fleet_fix_proposals_enabled() -> bool:
     return evaluate_from_source(key=FLEET_FIX_PROPOSALS_FLAG)
+
+
+def _fleet_inventory_enabled() -> bool:
+    return evaluate_from_source(key=FLEET_INVENTORY_FLAG)
+
+
+@require_POST
+@require_station_role("warden")
+def start_fleet_inventory(request: HttpRequest) -> HttpResponse:
+    """HTMX: enqueue fleet inventory when the flag is on."""
+    if not _fleet_inventory_enabled():
+        return HttpResponse("fleet inventory disabled (flag off)", status=403)
+    try:
+        organisation = load_organisation_from_config()
+    except FleetInventoryError as exc:
+        logger.warning("fleet inventory refused: %s", exc)
+        return HttpResponse(FLEET_INVENTORY_CONFIG_REFUSAL, status=400)
+    run_id = uuid.uuid4()
+    run_fleet_inventory.delay(str(run_id), organisation)
+    return render(
+        request,
+        "warden_fabric/fleet_inventory_started.html",
+        {"run_id": run_id},
+    )
 
 
 @require_GET
