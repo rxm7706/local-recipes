@@ -1,0 +1,8 @@
+---
+name: "the-local-pr-preflight-marshal-lane-pyforge-marshal-test-can"
+description: "The local pr-preflight marshal lane (pyforge-marshal-test) can red on two order- and load-dependent tests while CI is g…"
+metadata:
+  type: feedback
+---
+
+The local pr-preflight marshal lane (pyforge-marshal-test) can red on two order- and load-dependent tests while CI is green on the same tree: tests/integration/test_performance_gates.py::test_check_under_nfr_p1_budget (a 5 s wall-clock budget; 7.36 s measured on 2026-10-12 with eleven preflight lanes and a parallel dispatch sharing the machine) and tests/unit/test_dispatch_verification.py::test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns (verdict 'refused' instead of 'verified'; it reads the live repo_root=_REPO_ROOT and dispatch_verify.py keeps a module-level _COMMIT_MSG_HOOK_CACHE keyed on (worktree, repo_root), so an xdist worker's earlier tests can poison it). Evidence 2026-10-12: both failed twice in the full preflight lane on branch chain-ci-pause-control-plane-2026-10-12 (a docs-only diff), both pass alone and as a pair under preflight's TMPDIR/--basetemp env, the full lane passes on the primary main tree (12569 passed), and CI marshal-test is green on main 6bbfff6dd6. How to apply: when only these two red the marshal lane on a diff that touches no marshal code, rerun the two tests alone to prove it, then push with PYFORGE_PREFLIGHT_SKIP=1 and PYFORGE_PREFLIGHT_SKIP_REASON naming them (journaled to .steward/preflight-skips.log); the fix is marshal's (isolate the cache per test, give the budget test a load guard or a marker), to be minted on the marshal chain, not folded into another station's PR.
