@@ -244,8 +244,19 @@ def test_ac3_failed_sync_exits_two_without_services(tmp_path: Path) -> None:
 
 def test_matrix_container_syncs_dev_only(tmp_path: Path) -> None:
     bin_dir = _prepare_stub_root(tmp_path)
+    _write_executable(
+        bin_dir / "curl",
+        textwrap.dedent(
+            """\
+            #!/usr/bin/env bash
+            if [[ "$*" == *"/ht/"* ]]; then echo "200"; elif [[ "$*" == *"-w"* ]]; then echo "200"; else echo "200"; fi
+            exit 0
+            """
+        ),
+    )
     stub_log = tmp_path / "stub.log"
     proc = _run_script(tmp_path, bin_dir, stub_log=stub_log, args=["--container"])
+    assert proc.returncode == 0, proc.stdout + proc.stderr
     log = stub_log.read_text()
     dev_lines = [ln for ln in log.splitlines() if "platform-dev" in ln and "install" in ln]
     assert len(dev_lines) == 1
