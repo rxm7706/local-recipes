@@ -2,7 +2,8 @@
 title: '94.1: No platform test leaves structlog configured differently'
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'b2a5463598d82f5468738ec6f8cc45bcb3aaa92e'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
