@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 1b189cd595d588ab
-story_count: 355
-test_file_count: 117
+source_fingerprint: 7842b6ae5abf7b2b
+story_count: 362
+test_file_count: 118
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 355
-- **Epics parsed:** 98
-- **Test files inventoried:** 117 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 362
+- **Epics parsed:** 99
+- **Test files inventoried:** 118 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1b189cd595d588ab`
+- **Source fingerprint:** `7842b6ae5abf7b2b`
 
 ## Risk Assessment
 
@@ -134,6 +134,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9 fnd:CAP-10)
 - Epic 57: One pixi env for the platform image (spec-platform-image-one-pixi-env)
 - Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
+- Epic 99: Every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged (spec-pyforge-steward CAP-166)
 
 ## Test Inventory
 
@@ -152,6 +153,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py` | meta | none observed |
@@ -616,6 +618,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 96.1 | `platform-ci-local` never runs a stage on a stale env | none observed |
 | 97.1 | The not-yet-clean ceiling may shrink but never grow | none observed |
 | 98.1 | Station tests run when what they read changes | none observed |
+| 99.1 | The CI surfaces are declared once and the workflows are judged against them | none observed |
+| 99.2 | Every CI job carries its pause switch | none observed |
+| 99.3 | The operator sees the pause state of every CI surface in one command | none observed |
+| 99.4 | The operator pauses and resumes a CI surface through one journaled path | none observed |
+| 99.5 | The preflight honors what CI will skip, and says so | none observed |
+| 99.6 | A paused expensive build still runs once a week | none observed |
+| 99.7 | The hand-disabled workflows are retired or parked, and the convention is docu... | none observed |
 
 ## Quality Gates
 
