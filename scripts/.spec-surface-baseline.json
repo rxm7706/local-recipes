@@ -793,15 +793,15 @@
  },
  "pyforge-herald/spec-deck-family-currency": {
   "files": {
-   "pixi.toml": "cb9208e8e37304f021014441c7740f6516d564a4"
+   "pixi.toml": "669e61e6a26fbe8d2fee3befa02edd2cedd55fbd"
   },
-  "memlog": "b142177fe5c311b2d0b95626a103c2f8d2534509"
+  "memlog": "c8cbf43c13f923123d956e36c36b33f6e3618dc7"
  },
  "pyforge-herald/spec-deck-family-lockstep": {
   "files": {
-   "pixi.toml": "cb9208e8e37304f021014441c7740f6516d564a4"
+   "pixi.toml": "669e61e6a26fbe8d2fee3befa02edd2cedd55fbd"
   },
-  "memlog": "906db935bc3726988d546a85d0f78a635e89698a"
+  "memlog": "5c3709e495ca3fccae9ab437f3ffe1fc304c8c6c"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
@@ -2699,9 +2699,9 @@
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
    ".gitignore": "5c22309b480bab8aef74a35f9a762bfb706c4135",
-   "pixi.toml": "cb9208e8e37304f021014441c7740f6516d564a4"
+   "pixi.toml": "669e61e6a26fbe8d2fee3befa02edd2cedd55fbd"
   },
-  "memlog": "5544cd85ac7794940c6035f795f23d276204fdcc"
+  "memlog": "84398f55f3a6e792a97507867c19e2974e85e650"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {},
@@ -2915,7 +2915,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "cb9208e8e37304f021014441c7740f6516d564a4",
+   "pixi.toml": "669e61e6a26fbe8d2fee3befa02edd2cedd55fbd",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "f634eebb7d280de9667527361cb160b786242fd0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "52923d5b2ec955c7f91f434f710d7d166bcd8398",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3559,7 +3559,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "d4f1a2b8fe9169a44413a1d70c011be44f5aaad8"
+  "memlog": "72a61e95707d740cca1e70012f0f56bab1d4d32b"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3833,7 +3833,7 @@
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "c0d57bb761ead038a292bc0dcf56be36dee1e58f",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "cb9208e8e37304f021014441c7740f6516d564a4",
+   "pixi.toml": "669e61e6a26fbe8d2fee3befa02edd2cedd55fbd",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -4372,7 +4372,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "716564e6772d81b26f3095065123d5a08f20cedb"
+  "memlog": "a853e800faa8b78bdb1626d3e79a61a806a9874e"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -6111,7 +6111,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "cb9208e8e37304f021014441c7740f6516d564a4",
+   "pixi.toml": "669e61e6a26fbe8d2fee3befa02edd2cedd55fbd",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -6509,7 +6509,7 @@
    "src/platform/utility/requirements-stretch.apt": "a529e96d14284e2d285bf318ec017c18575488d4",
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5",
-   "src/shared/packages/django-atlas/pyproject.toml": "d39f5b4b82d7067e16fbbb5e3159a9313ad2e6fe",
+   "src/shared/packages/django-atlas/pyproject.toml": "f9d0ad56da6bab093cab139ea905894a6a3353e2",
    "src/shared/packages/django-atlas/src/django_atlas_portal/__init__.py": "b31385702eca1ea8369943f47119726ae0681503",
    "src/shared/packages/django-atlas/src/django_atlas_portal/apps.py": "e48717102372de3824f1289dcebf11058dae9279",
    "src/shared/packages/django-atlas/src/django_atlas_portal/board.py": "a7d8f085ddb68c03f39201c4c4638a7279b9fddf",
@@ -6517,7 +6517,7 @@
    "src/shared/packages/django-atlas/src/django_atlas_portal/templates/atlas_portal/home.html": "c389f3fafe2e50769c6106c21b0b23501cdde966",
    "src/shared/packages/django-atlas/src/django_atlas_portal/urls.py": "8e6e3a523f14220164a1c2570e1780d7f7b0d347",
    "src/shared/packages/django-atlas/src/django_atlas_portal/views.py": "b33cd81653d065211bc7abbf5af9f7417bdbbedb",
-   "src/shared/packages/django-doctor/pyproject.toml": "80c68772be222ed29f9927fecbf62b6455b55152",
+   "src/shared/packages/django-doctor/pyproject.toml": "d1bb84091b4c26ce5e7700a8c9e8a3ca2bf3c44c",
    "src/shared/packages/django-doctor/src/django_doctor_portal/__init__.py": "c1942076d64d317beb111245f52531e57a2412aa",
    "src/shared/packages/django-doctor/src/django_doctor_portal/apps.py": "054b7e2d64f135d54dca97081436877095638165",
    "src/shared/packages/django-doctor/src/django_doctor_portal/mcp_asgi.py": "2e226b662b2c2ffc1c003fb6aec5c496b48bc7bd",
@@ -6526,7 +6526,7 @@
    "src/shared/packages/django-doctor/src/django_doctor_portal/templates/doctor_portal/home.html": "e2ee3c3847c800aed4aea3249cfa64b5ed1ca659",
    "src/shared/packages/django-doctor/src/django_doctor_portal/urls.py": "19e2504bdfe5a6c517f0da241bad1e7a1618f5c9",
    "src/shared/packages/django-doctor/src/django_doctor_portal/views.py": "9af933787efa33d781ee94c1b3ecac779a3b4986",
-   "src/shared/packages/django-herald/pyproject.toml": "1485456ae63838f021b0a6a0c68033243f243180",
+   "src/shared/packages/django-herald/pyproject.toml": "e58311ae865b90b08e7582638f1cf7b6b0195d55",
    "src/shared/packages/django-herald/src/django_herald_portal/__init__.py": "250dc1b8e465c6d722269d883f86fb8846e60ffc",
    "src/shared/packages/django-herald/src/django_herald_portal/apps.py": "8b489ca10bf41ac7ab566e482325cc206d4aec16",
    "src/shared/packages/django-herald/src/django_herald_portal/deck_export_routes.py": "d3e193960eebb4f1491f311a8531795d48a50588",
@@ -6547,7 +6547,7 @@
    "src/shared/packages/django-herald/src/django_herald_portal/templates/herald_portal/home.html": "02b0c412e663511ff4e377bf5214030df4e34101",
    "src/shared/packages/django-herald/src/django_herald_portal/urls.py": "8a87e33d2698c18ee3ecfdbeebba484ea24bc4c2",
    "src/shared/packages/django-herald/src/django_herald_portal/views.py": "ecf636e138b0eb8786e34f441122df076067685c",
-   "src/shared/packages/django-marshal/pyproject.toml": "ed243df755958057f3637139d77d586b1c891681",
+   "src/shared/packages/django-marshal/pyproject.toml": "8e8ad48f72ea48cb8d41db0e1ddfa1ff6b721332",
    "src/shared/packages/django-marshal/src/django_marshal_portal/__init__.py": "c2563090dbb10844b181fea7b079a374e0114ccc",
    "src/shared/packages/django-marshal/src/django_marshal_portal/apps.py": "de803a2170fea8bd43b6fbbf4ae59de0df6b0b63",
    "src/shared/packages/django-marshal/src/django_marshal_portal/mcp_asgi.py": "647de4a95bc15e2d90be8519b15b56ab66dc9ead",
@@ -6555,7 +6555,7 @@
    "src/shared/packages/django-marshal/src/django_marshal_portal/templates/marshal_portal/watch.html": "2381e3712ac98b47a42427e6a808fb3ca7933a87",
    "src/shared/packages/django-marshal/src/django_marshal_portal/urls.py": "a32e26a2d5a68c47ddbc1127cd8d14f4552c0aaa",
    "src/shared/packages/django-marshal/src/django_marshal_portal/views.py": "83d07d6fec93c8971fce3de85a1610910dbe1264",
-   "src/shared/packages/django-mason/pyproject.toml": "71ccdb20e63c346c0afb778cfe33b8fb784b3333",
+   "src/shared/packages/django-mason/pyproject.toml": "44d8443ad312916551f7f3eaaaf5d06f98b6e2bb",
    "src/shared/packages/django-mason/src/django_mason_portal/__init__.py": "f81f3e7316bb685bbb7b36f43f9dcaa284b2cf1b",
    "src/shared/packages/django-mason/src/django_mason_portal/apps.py": "cf2edfb7591476856b765c64e1294c9b129049bd",
    "src/shared/packages/django-mason/src/django_mason_portal/boot_reconcile.py": "7f1af8197ac5ca3ffef0d890a465e38da1ba7987",
@@ -6564,7 +6564,7 @@
    "src/shared/packages/django-mason/src/django_mason_portal/templates/mason_portal/home.html": "c4f7d63cc41ab3bd9941aca07b4fa23e3770029d",
    "src/shared/packages/django-mason/src/django_mason_portal/urls.py": "db15b7b05f1ce6803489c7ab8ba510a4c68db08a",
    "src/shared/packages/django-mason/src/django_mason_portal/views.py": "7aabf38846692bf8c79f1880a7cc0c818982ee7f",
-   "src/shared/packages/django-pyforge/pyproject.toml": "9d7f2aa21ff117309ac429fd8a3534c313ce43a5",
+   "src/shared/packages/django-pyforge/pyproject.toml": "f511fa3c0d3b37a80f351fb793a7ee8f70fb0d88",
    "src/shared/packages/django-pyforge/src/django_pyforge/__init__.py": "e9e645156860b4028875d8c5e17504ff50ef8145",
    "src/shared/packages/django-pyforge/src/django_pyforge/access.py": "89463afa35d25481b1339589411ba9a43eefc912",
    "src/shared/packages/django-pyforge/src/django_pyforge/apps.py": "7365a50210d618c535fd5452d7e86416112eaa4b",
@@ -6645,7 +6645,7 @@
    "src/shared/packages/django-pyforge/src/django_pyforge/workclass_probe/templates/workclass_probe/home.html": "815f9a94392582a15efc35c2463e6cff5a101e9c",
    "src/shared/packages/django-pyforge/src/django_pyforge/workclass_probe/urls.py": "41a68ba890c88e92949fc14191a91fdb92e3d387",
    "src/shared/packages/django-pyforge/src/django_pyforge/workclass_probe/views.py": "b1a73493066d653567c9ba8d8d110fedd7b9a162",
-   "src/shared/packages/django-scribe/pyproject.toml": "f97b2448daa6fce842de0da922791c4ca68e4b6f",
+   "src/shared/packages/django-scribe/pyproject.toml": "90d9a765454d240b977ebb75605bbadb8debb602",
    "src/shared/packages/django-scribe/src/django_scribe_portal/__init__.py": "bdd38ca2153aa077f5c9b26d77f799836e62be1c",
    "src/shared/packages/django-scribe/src/django_scribe_portal/apps.py": "7071b9de2b720b64abf97a764502d4631d282d5c",
    "src/shared/packages/django-scribe/src/django_scribe_portal/mcp_asgi.py": "3569ab2925d05b410e1e8098b279d91270d9cc13",
@@ -6654,14 +6654,14 @@
    "src/shared/packages/django-scribe/src/django_scribe_portal/templates/scribe_portal/results.html": "cf77830e540949e69be1202115e2a5d943dbd384",
    "src/shared/packages/django-scribe/src/django_scribe_portal/urls.py": "be3f3b7bc694c26c45990bda62002787ce2a26dd",
    "src/shared/packages/django-scribe/src/django_scribe_portal/views.py": "0901b0b6b4180a8c8c191f00b6761a40a5d79b11",
-   "src/shared/packages/django-steward/pyproject.toml": "5c67ba8296587a1de8ecb50a55a006ace4eb7575",
+   "src/shared/packages/django-steward/pyproject.toml": "63919449053bae184fd1303a44c84d39717e94ac",
    "src/shared/packages/django-steward/src/django_steward_portal/__init__.py": "d311565a554d4b1d73f7cb7c330f4aeaf3d08f42",
    "src/shared/packages/django-steward/src/django_steward_portal/apps.py": "02808de27e3a74db281f9ed3c093140efcffe6b7",
    "src/shared/packages/django-steward/src/django_steward_portal/mcp_asgi.py": "2cb0fefc507e70927717b59e3b48fb5376ed0865",
    "src/shared/packages/django-steward/src/django_steward_portal/templates/steward_portal/home.html": "617eac1d86b977c37a8957996d1eee8cd64e6c05",
    "src/shared/packages/django-steward/src/django_steward_portal/urls.py": "08204ebfab94c3725a55056f1278326a2a55bd4e",
    "src/shared/packages/django-steward/src/django_steward_portal/views.py": "8a55cad80e3493f6c630921dd4e82da0d12a9bf3",
-   "src/shared/packages/django-warden/pyproject.toml": "ef77690691c59fe80ccd3b46e69eae4e7fe865bf",
+   "src/shared/packages/django-warden/pyproject.toml": "ef992139f30b6331b7d4bad6a2f5e6ca3d91440c",
    "src/shared/packages/django-warden/src/django_warden_fabric/__init__.py": "b4d8df297364ffaa5f678441ed467d816372161d",
    "src/shared/packages/django-warden/src/django_warden_fabric/apps.py": "9ffa60cfdee748ff567aef297baeda025566edbe",
    "src/shared/packages/django-warden/src/django_warden_fabric/fleet.py": "69799ef8fea286996194e3ced78322047959ad52",
@@ -7175,7 +7175,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "738e622ea7063b57593eed841479b52a5e491a3b"
+  "memlog": "426bdafa15c5478fa468023ae1161ebdbaf7577d"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
