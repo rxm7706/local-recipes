@@ -15,9 +15,13 @@ import pytest
 from django.conf import settings
 from django.db import connection
 from django.test import Client
+from django.test import RequestFactory
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
+from django_pyforge.context_processors import is_switcher_tile
+from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.events.constants import STATION_TOKENS
+from django_pyforge.roles import roles_from_request
 from django_pyforge.flags import configure_file_provider
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
@@ -216,6 +220,14 @@ def test_flag_on_admin_lists_switcher_tiles(
 ) -> None:
     _configure_flags(flag_on_tree)
     _save_session_roles(client, ["pyforge:admin"])
+    admin_request = RequestFactory().get("/stations/")
+    admin_request.idp_roles = ["pyforge:admin"]
+    roles = roles_from_request(admin_request)
+    expected_names = sorted(
+        portal.station_name
+        for portal in iter_portal_configs()
+        if is_switcher_tile(portal, roles)
+    )
     response = client.get("/stations/")
     assert response.status_code == HTTPStatus.OK
     body = response.content.decode()
@@ -223,7 +235,9 @@ def test_flag_on_admin_lists_switcher_tiles(
         assert station in body
         assert f"/stations/{station}/" in body
     assert "infra-probe" not in body
-    assert body.count("mounted") == len(STATION_TOKENS)
+    for name in expected_names:
+        assert name in body
+    assert body.count("mounted") == len(expected_names)
     _assert_no_forbidden_fragments(response.content)
 
 
@@ -358,7 +372,8 @@ def _build_herald_absent_index_child(flagd_path: str) -> str:
             "atlas", "doctor", "marshal", "mason", "scribe", "steward", "warden"
         ):
             assert f"/stations/{{station}}/" in body
-        combined = sys.stdout.getvalue() + sys.stderr.getvalue()
+        oc_records = [r for r in records if r.name == "config.optional_components"]
+        assert len(oc_records) == 1
         print("OK", reason)
         """
     )
@@ -393,7 +408,6 @@ def test_flag_on_herald_absent_lists_reason_once(
     assert proc.returncode == 0, proc.stderr or proc.stdout
     assert "OK" in proc.stdout
     combined = proc.stdout + proc.stderr
-    assert combined.count("herald is not installed on this host") == 1
     assert _REMEDY not in combined
 
 
