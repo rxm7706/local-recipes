@@ -2,7 +2,8 @@
 title: '28.1: The live-attach fixture Postgres starts under any basetemp'
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: bc9cad54103b784381fc1579251b22a52e487f96
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -185,4 +186,40 @@ Type / Effort / Deps: fix / S / none.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-11 — Review pass
+- verdicts: 10 findings — high 0, medium 0, low 0, false 6, reject 4
+- findings:
+  - `[false]` `[reject]` Intent-contract line numbers still describe `-k` / `sock_dir` — mint-time snapshot inside read-only `<intent-contract>`; post-fix behavior is covered by ACs and Auto Run Result, not editable here.
+  - `[false]` `[reject]` Story spec frontmatter still `ready-for-dev` / missing Auto Run Result at review start — addressed in this finalize pass, not a code defect.
+  - `[false]` `[reject]` No automated AC2 assertion for `.s.PGSQL.*` — spec AC5 limits changes to `fixture_postgres` only; AC2 verified manually in this run (0 sockets, 2 IPv4 pg.log lines).
+  - `[false]` `[reject]` AC6 mutation not in diff — executed in-session: MUT_EXIT 1, pg.log `too long (maximum 107 bytes)`; file restored before commit.
+  - `[false]` `[reject]` No meta-test forbidding `-k` in fixture — out of intent scope (AC4 forbids weakening; AC6 mutation is the oracle).
+  - `[false]` `[reject]` Memlog lacks verbatim pytest output — reconcile entries name the path; verification recorded under Auto Run Result.
+  - `[false]` `[reject]` Baseline diff includes herald paths — co-governor scoped stamp for `spec-pyforge-unifying-strategy`, not atlas behavior change.
+  - `[false]` `[reject]` Epic 28 mint artifacts absent from diff — landed in prior chain commit `bc9cad5410` on branch, not this fix hunk.
+  - `[false]` `[reject]` Fixture docstring omits TCP-only rationale — inline comment at `pg_ctl` options satisfies spec approach; docstring change not required.
+  - `[false]` `[reject]` I/O matrix “Today” column still mentions socket under `tmp_path` — historical “before” column by design; “After” row already says TCP only.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `fixture_postgres` starts PostgreSQL with TCP only (`-c unix_socket_directories=''`), removing `pgsock` and `-k` so long pr-preflight `--basetemp` paths no longer hit the 107-byte AF_UNIX limit.
+
+**Files changed:**
+- `src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py` — TCP-only `pg_ctl` options and comment.
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md` — Story 28.1 surface reconcile.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` — co-governor surface reconcile (CAP-19 test origin).
+- `scripts/.spec-surface-baseline.json` — scoped stamps for both specs.
+
+**Review:** 0 patches applied; 10 findings rejected as false/out-of-scope; follow-up review not recommended.
+
+**Verification:**
+- AC1/AC2: 7 passed, long basetemp (~120 x), `PYFORGE_PG_BINDIR=.pixi/envs/pyforge-scribe-pg/bin`; 0 `.s.PGSQL.*`; 2/2 pg.log IPv4 listen, 0 Unix-socket errors.
+- AC3: 5 passed, 2 skipped (fixture skip text unchanged).
+- AC6: mutation restored `-k` → exit 1, 5 passed 2 errors, pg.log `too long (maximum 107 bytes)`; restored fix.
+- AC7: `kedro-test` 103 passed; `kedro-catalog-check` 69 passed.
+- AC4/AC5: 0 new skip/xfail/rerun lines; code diff only test file outside memlogs/baseline.
+- `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0; `spec-surface-check` exit 0; `detectors-ci` exit 0.
+
+**Residual risk:** `_free_port` race unchanged (spec out of scope). PostgreSQL must accept empty `unix_socket_directories` (verified on estate PostgreSQL 17.x via scribe-pg env).
