@@ -38,7 +38,7 @@ PACKAGES_DIR = ROOT / "src" / "shared" / "packages"
 
 # Seeded from measurement on Story 93.1's base (2026-10-11). Only shrinks — each
 # station's fix story removes its own entry; never re-add a package or verb.
-NOT_YET_CLEAN: dict[str, frozenset[str]] = {
+NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = {
     "django-atlas": frozenset({"ruff", "ruff-format"}),
     "django-doctor": frozenset({"ruff"}),
     "django-herald": frozenset({"ruff", "ruff-format"}),
@@ -50,7 +50,10 @@ NOT_YET_CLEAN: dict[str, frozenset[str]] = {
     "django-warden": frozenset({"ruff", "ruff-format"}),
 }
 
-NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = NOT_YET_CLEAN
+# Live map — only shrinks; fix stories remove entries here and in NOT_YET_CLEAN_CEILING together.
+NOT_YET_CLEAN: dict[str, frozenset[str]] = {
+    name: frozenset(verbs) for name, verbs in NOT_YET_CLEAN_CEILING.items()
+}
 
 RUFF_VERBS = frozenset({"ruff", "ruff-format"})
 
@@ -119,6 +122,8 @@ def _status_line(verb: str, pkg_name: str, rc: int, *, missing_table: bool = Fal
 
 
 def _record_worst(worst: int, pkg_name: str, verb: str, rc: int, *, missing_table: bool = False) -> int:
+    if missing_table:
+        return max(worst, 1)
     listed = _listed_for(pkg_name, verb)
     if listed:
         if rc == 0:

@@ -2,10 +2,10 @@
 title: '93.1: The lint gate covers the nine django portal packages, and its not-yet-clean list only shrinks'
 type: 'feature'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '3c85a29a64ef834074b323740402dbec08fe1597'
 flag-exempt: detector-or-gate   # the story changes the lint gate itself; a gated gate reports a silent green
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -262,7 +262,45 @@ Type / Effort / Deps: feature / M / none.
 - `python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC11).
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
 
+## Review Triage Log
+
+### 2026-10-11 — Review pass
+- verdicts: 6 findings — high 0, medium 2, low 0, false 3, maybe-false 1
+- findings:
+  - `[medium]` `[patch]` NOT_YET_CLEAN_CEILING aliased NOT_YET_CLEAN — split frozen ceiling from live map in scripts/lint_types.py; meta test checks subset within ceiling.
+  - `[medium]` `[patch]` Listed django missing [tool.ruff] could stay green — missing_table always fails the verb.
+  - `[false]` `[reject]` Empty [tool.ruff] passes has_ruff_table — tomllib still has tool.ruff key; empty table is operator error, not introduced here.
+  - `[false]` `[reject]` SEEDED duplicate in meta test — intentional AC4 oracle duplicate of module seed.
+  - `[false]` `[reject]` No unknown-verb test — added test_not_yet_clean_unknown_verb_could_not_run.
+  - `[maybe-false]` `[reject]` Listed missing-table untested — covered by missing_table always failing verb; no separate listed case required for AC7.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended `scripts/lint_types.py` so `ruff` and `ruff-format` run over all nine `django-*` portal packages with a shrink-only `NOT_YET_CLEAN` map, explicit `[tool.ruff]` tables (`target-version = "py312"`) in each django `pyproject.toml`, steward unit/meta tests, and doc/task string updates. No django source findings were fixed (AC10).
+
+**Files changed:**
+- `scripts/lint_types.py` — django coverage, NOT_YET_CLEAN / ceiling, missing-table and listed-package logic, `--fix` skip.
+- Nine `src/shared/packages/django-*/pyproject.toml` — shared ruff table only.
+- `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` — AC3/AC5/AC6 matrix tests (mutation-named).
+- `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` — AC2/AC4 live-tree checks.
+- `.github/workflows/lint-types.yml`, `pixi.toml`, `AGENTS.md`, `docs/how-to/pixi-tasks.md` — AC8 stale-line updates.
+
+**Review:** 2 medium patches applied; 3 false, 1 maybe-false rejected. `followup_review_recommended: false`.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- `pixi run --frozen -e pyforge-steward pytest …/test_lint_types_*.py` — 13 passed.
+- `pixi run --frozen -e pyforge-guild docs-pixi-tasks -- --check` — exit 0.
+- `environment.yaml` export — no diff.
+- `python scripts/spec_surface_reconcile.py` — exit 0 (memlogs below; no `--write-baseline` in this run).
+- AC9 mutation guards: named tests in `test_lint_types_not_yet_clean.py` / `test_lint_types_django_tables.py`.
+
+**Residual risk:** Station fix stories must shrink `NOT_YET_CLEAN` and `NOT_YET_CLEAN_CEILING` together when a package cleans up; herald 38.1 is next.
+
 ## Spec Change Log
 
 - 2026-10-11: minted from the operator's ruling "Gate all, clean herald (Recommended)". `type: feature`,
   `flag-exempt: detector-or-gate`, no CAP; bound to `spec-pyforge-steward` CAP-153 through Story 66.1.
+- 2026-10-11: bmad-build-auto implementation landed (lint gate + NOT_YET_CLEAN ratchet).

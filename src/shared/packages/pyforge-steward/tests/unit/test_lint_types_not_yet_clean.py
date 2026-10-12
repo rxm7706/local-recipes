@@ -39,7 +39,7 @@ def _minimal_pyforge(name: str, root: Path) -> None:
     pkg = root / name
     (pkg / "src" / "pyforge" / name.removeprefix("pyforge-")).mkdir(parents=True)
     (pkg / "pyproject.toml").write_text(
-        f"[project]\nname = \"{name}\"\n\n[tool.ruff]\ntarget-version = \"py314\"\n\n[tool.mypy]\npython_version = \"3.14\"\n",
+        f'[project]\nname = "{name}"\n\n[tool.ruff]\ntarget-version = "py314"\n\n[tool.mypy]\npython_version = "3.14"\n',
         encoding="utf-8",
     )
 
@@ -47,7 +47,7 @@ def _minimal_pyforge(name: str, root: Path) -> None:
 def _minimal_django(name: str, root: Path, *, with_ruff: bool = True) -> None:
     pkg = root / name
     (pkg / "src").mkdir(parents=True)
-    body = "[project]\nname = \"x\"\n"
+    body = '[project]\nname = "x"\n'
     if with_ruff:
         body += RUFF_TABLE
     (pkg / "pyproject.toml").write_text(body, encoding="utf-8")
@@ -85,7 +85,9 @@ def lt(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     return mod
 
 
-def test_not_yet_clean_listed_exit_one_does_not_fail_ruff(lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_not_yet_clean_listed_exit_one_does_not_fail_ruff(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: treat listed exit 1 like unlisted — this test fails."""
     monkeypatch.setattr(
         lt,
@@ -113,13 +115,16 @@ def test_not_yet_clean_unlisted_exit_one_fails_ruff(lt, monkeypatch: pytest.Monk
     assert lt.main(["ruff"]) == 1
 
 
-def test_not_yet_clean_listed_clean_fails_ratchet(lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_not_yet_clean_listed_clean_fails_ratchet(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: allow listed package to stay clean — this test fails."""
     monkeypatch.setattr(
         lt,
         "NOT_YET_CLEAN",
         {"django-herald": frozenset({"ruff"})},
     )
+
     def always_zero(_argv: list[str], *, cwd: Path) -> int:
         return 0
 
@@ -149,13 +154,20 @@ def test_not_yet_clean_invalid_entry_could_not_run(lt, monkeypatch: pytest.Monke
     assert lt.main(["ruff"]) == 2
 
 
+def test_not_yet_clean_unknown_verb_could_not_run(lt, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mutation: accept unknown verb in NOT_YET_CLEAN — this test fails."""
+    monkeypatch.setattr(lt, "NOT_YET_CLEAN", {"django-herald": frozenset({"mypy"})})
+    assert lt.main(["ruff"]) == 2
+
+
 def test_missing_ruff_table_is_a_finding(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Mutation: skip missing-table packages — this test fails."""
     mod = _load_lint_types()
     packages_dir = _seed_tree(tmp_path / "missing-table")
-    (packages_dir / "django-herald" / "pyproject.toml").write_text("[project]\nname = \"x\"\n", encoding="utf-8")
+    (packages_dir / "django-herald" / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
     monkeypatch.setattr(mod, "NOT_YET_CLEAN", {})
+
     def always_zero(_argv: list[str], *, cwd: Path) -> int:
         return 0
 
@@ -188,7 +200,9 @@ def test_fewer_than_nine_django_packages_could_not_run(monkeypatch: pytest.Monke
     assert mod.main(["ruff"]) == 2
 
 
-def test_ruff_format_fix_skips_listed_package(lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_ruff_format_fix_skips_listed_package(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: let --fix rewrite a listed package — this test fails."""
     monkeypatch.setattr(
         lt,

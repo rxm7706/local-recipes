@@ -64,11 +64,13 @@ def test_django_pyproject_ruff_tables_match_ac2() -> None:
         assert lint["per-file-ignores"] == EXPECTED_PER_FILE
 
 
-def test_not_yet_clean_matches_ceiling_and_seeded_map() -> None:
+def test_not_yet_clean_within_ceiling_and_seeded_map() -> None:
     """Mutation: re-add a NOT_YET_CLEAN package or verb — this test fails."""
     mod = _load_lint_types()
-    assert mod.NOT_YET_CLEAN == mod.NOT_YET_CLEAN_CEILING
-    assert mod.NOT_YET_CLEAN == SEEDED_NOT_YET_CLEAN
+    assert mod.NOT_YET_CLEAN_CEILING == SEEDED_NOT_YET_CLEAN
+    for name, verbs in mod.NOT_YET_CLEAN.items():
+        assert name in mod.NOT_YET_CLEAN_CEILING
+        assert verbs <= mod.NOT_YET_CLEAN_CEILING[name]
     live_django = {p.name for p in PACKAGES.glob("django-*") if (p / "pyproject.toml").is_file()}
     assert set(mod.NOT_YET_CLEAN) <= live_django
 
