@@ -264,6 +264,30 @@ Type / Effort / Deps: feature / M / none.
 
 ## Review Triage Log
 
+### 2026-10-11 — CI fix: hermetic tool lookup in the not-yet-clean tests (implementer)
+- trigger: PR #2141 (head `8dcb5e2dc7`) red on `steward-test` and `named-module-gates (steward)` — six tests in
+  `tests/unit/test_lint_types_not_yet_clean.py` got exit 2 from `lint_types.main()` where they expected 0 or 1.
+- root cause (confirmed): `main()` checks `shutil.which(tool)` before any package runs, and the tests stubbed only
+  `_run`. The `pyforge-steward` env ships no ruff (CI's lane), so `main()` printed "could-not-run -- `ruff` is not on
+  PATH" and returned 2 before the stubbed runner was reached. Locally the dispatch inherited the guild env's ruff on
+  PATH, which hid it; AC9's "the steward env needs no ruff" was not actually true. Reproduced with ruff stripped from
+  PATH in `-e pyforge-steward`: 6 failed, 4 passed. The four could-not-run tests (invalid entry, unknown verb, the two
+  count checks) passed in CI for the wrong reason (missing ruff), not the check they name.
+- change (tests only; `scripts/lint_types.py` unchanged — a missing tool in a real run is still could-not-run):
+  `_stub_tool_lookup()` replaces the module's `shutil` with a recording `which`; a `load_lt` fixture loads the script
+  with the tool reported present, and `lt` and every test that loaded the module directly now go through it. The four
+  could-not-run tests and the missing-table test now also assert the reason they print. New
+  `test_tool_not_on_path_could_not_run[ruff|ruff-format|mypy]` pins the real behaviour: lookup returns None → exit 2,
+  the right tool is looked up, the runner never runs. Mutation (drop the `which` check) fails all three cases; reverted.
+- gates (exit codes read from files): test file with ruff stripped from PATH — 16 passed, exit 0; same file in
+  `-e pyforge-guild` (ruff on PATH) — exit 0; `pixi run --frozen -e pyforge-steward pyforge-steward-test` with ruff
+  stripped — 2335 passed, 3 skipped, exit 0, and with the normal PATH — exit 0;
+  `pixi run --frozen -e pyforge-steward pyforge-steward-coverage-gate` (the `named-module-gates (steward)` twin) with
+  ruff stripped — exit 0 (no touched source modules); `pixi run -e pyforge-guild lint-types` — exit 0;
+  `pixi run -e pyforge-guild spec-surface-check` — exit 0, no drift; `pixi run -e pyforge-guild detectors-ci` —
+  exit 1 on `ledger-direction` only (marshal 95-1, 96-1 and warden 16-1 landed on `main` after this branch's base;
+  not this story's), 44 other detectors pass.
+
 ### 2026-10-11 — Review pass
 - verdicts: 6 findings — high 0, medium 2, low 0, false 3, maybe-false 1
 - findings:

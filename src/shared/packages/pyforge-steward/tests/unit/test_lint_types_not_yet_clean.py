@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -77,12 +78,63 @@ def _seed_tree(tmp_path: Path) -> Path:
     return packages
 
 
+def _stub_tool_lookup(monkeypatch: pytest.MonkeyPatch, mod, *, found: bool) -> list[str]:
+    """Replace the module's ``shutil`` so ``main()``'s tool-presence check never reads PATH.
+
+    The steward env ships no ruff (CI's ``steward-test`` lane), so an unstubbed lookup reports
+    could-not-run before the stubbed runner is reached. Returns the tool names looked up.
+    """
+    looked_up: list[str] = []
+
+    def which(tool: str) -> str | None:
+        looked_up.append(tool)
+        return f"/stub/bin/{tool}" if found else None
+
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=which))
+    return looked_up
+
+
 @pytest.fixture
-def lt(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    mod = _load_lint_types()
+def load_lt(monkeypatch: pytest.MonkeyPatch):
+    """Load ``scripts/lint_types.py`` with its tool lookup reporting the tool present."""
+
+    def _load():
+        mod = _load_lint_types()
+        _stub_tool_lookup(monkeypatch, mod, found=True)
+        return mod
+
+    return _load
+
+
+@pytest.fixture
+def lt(load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    mod = load_lt()
     packages_dir = _seed_tree(tmp_path)
     monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
     return mod
+
+
+@pytest.mark.parametrize(("verb", "tool"), [("ruff", "ruff"), ("ruff-format", "ruff"), ("mypy", "mypy")])
+def test_tool_not_on_path_could_not_run(
+    verb: str,
+    tool: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Mutation: run (or pass) when the tool lookup finds nothing — this test fails."""
+    mod = _load_lint_types()
+    looked_up = _stub_tool_lookup(monkeypatch, mod, found=False)
+    monkeypatch.setattr(mod, "PACKAGES_DIR", _seed_tree(tmp_path))
+    monkeypatch.setattr(mod, "NOT_YET_CLEAN", {})
+
+    def must_not_run(argv: list[str], *, cwd: Path) -> int:
+        raise AssertionError(f"tool ran despite could-not-run: {argv} in {cwd}")
+
+    monkeypatch.setattr(mod, "_run", must_not_run)
+    assert mod.main([verb]) == 2
+    assert looked_up == [tool]
+    assert f"could-not-run -- `{tool}` is not on PATH" in capsys.readouterr().out
 
 
 def test_not_yet_clean_listed_exit_one_does_not_fail_ruff(
@@ -148,21 +200,29 @@ def test_not_yet_clean_listed_exit_two_fails(lt, monkeypatch: pytest.MonkeyPatch
     assert lt.main(["ruff"]) == 1
 
 
-def test_not_yet_clean_invalid_entry_could_not_run(lt, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_not_yet_clean_invalid_entry_could_not_run(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: run tools despite bad NOT_YET_CLEAN — this test fails."""
     monkeypatch.setattr(lt, "NOT_YET_CLEAN", {"pyforge-herald": frozenset({"ruff"})})
     assert lt.main(["ruff"]) == 2
+    assert "NOT_YET_CLEAN entry `pyforge-herald` is not a django-* package name" in capsys.readouterr().out
 
 
-def test_not_yet_clean_unknown_verb_could_not_run(lt, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_not_yet_clean_unknown_verb_could_not_run(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: accept unknown verb in NOT_YET_CLEAN — this test fails."""
     monkeypatch.setattr(lt, "NOT_YET_CLEAN", {"django-herald": frozenset({"mypy"})})
     assert lt.main(["ruff"]) == 2
+    assert "NOT_YET_CLEAN entry `django-herald` names unknown verb `mypy`" in capsys.readouterr().out
 
 
-def test_missing_ruff_table_is_a_finding(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_missing_ruff_table_is_a_finding(
+    load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: skip missing-table packages — this test fails."""
-    mod = _load_lint_types()
+    mod = load_lt()
     packages_dir = _seed_tree(tmp_path / "missing-table")
     (packages_dir / "django-herald" / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
@@ -173,11 +233,15 @@ def test_missing_ruff_table_is_a_finding(monkeypatch: pytest.MonkeyPatch, tmp_pa
 
     monkeypatch.setattr(mod, "_run", always_zero)
     assert mod.main(["ruff"]) == 1
+    out = capsys.readouterr().out
+    assert "django-herald" in out and "missing [tool.ruff] table" in out
 
 
-def test_pyforge_count_does_not_include_django(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_pyforge_count_does_not_include_django(
+    load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: count django-* toward the ten pyforge packages — this test fails."""
-    mod = _load_lint_types()
+    mod = load_lt()
     packages_dir = tmp_path / "pyforge-count"
     packages_dir.mkdir()
     for i in range(9):
@@ -186,11 +250,14 @@ def test_pyforge_count_does_not_include_django(monkeypatch: pytest.MonkeyPatch, 
         _minimal_django(f"django-{station}", packages_dir)
     monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
     assert mod.main(["ruff"]) == 2
+    assert "expected ten pyforge-* packages" in capsys.readouterr().out
 
 
-def test_fewer_than_nine_django_packages_could_not_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_fewer_than_nine_django_packages_could_not_run(
+    load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Mutation: drop django-* from the glob — this test fails."""
-    mod = _load_lint_types()
+    mod = load_lt()
     packages_dir = tmp_path / "django-count"
     packages_dir.mkdir()
     for name in _PYFORGE_TEN:
@@ -198,6 +265,7 @@ def test_fewer_than_nine_django_packages_could_not_run(monkeypatch: pytest.Monke
     _minimal_django("django-herald", packages_dir)
     monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
     assert mod.main(["ruff"]) == 2
+    assert "expected nine django-* packages" in capsys.readouterr().out
 
 
 def test_ruff_format_fix_skips_listed_package(
