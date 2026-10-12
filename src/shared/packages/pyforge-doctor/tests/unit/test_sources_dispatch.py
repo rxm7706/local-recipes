@@ -39,6 +39,7 @@ from pyforge.doctor.sources import (
     docs_shelf,
     factory,
     frozen_path,
+    frontmatter_duplicate_keys,
     general_docs_consistency,
     hygiene,
     ledger,
@@ -100,6 +101,8 @@ _EXPECTED_DISPATCH = {
     # why `scripts/detectors.py` (which threads DISPATCH names, not flags)
     # could never run it.
     "dreams-hygiene": chain.gather_dreams_hygiene,
+    # Story 42.1 -- duplicate frontmatter keys in tracked story specs.
+    "frontmatter-duplicate-keys": frontmatter_duplicate_keys.gather,
 }
 
 

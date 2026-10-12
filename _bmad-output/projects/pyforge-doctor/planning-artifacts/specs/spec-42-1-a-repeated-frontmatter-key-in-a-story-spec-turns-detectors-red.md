@@ -2,7 +2,8 @@
 title: "42.1: A repeated frontmatter key in a story spec turns Detectors red"
 type: 'feature'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '55906ac5ffd5065a324640aa86cb86466f5b6215'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
