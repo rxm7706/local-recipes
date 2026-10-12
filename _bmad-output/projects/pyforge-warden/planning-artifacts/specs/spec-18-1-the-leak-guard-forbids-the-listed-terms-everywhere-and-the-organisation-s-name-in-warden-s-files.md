@@ -295,6 +295,18 @@ test.
 
 ## Review Triage Log
 
+### 2026-10-12 — Independent review, iteration 2: passed (4 low)
+
+Fresh separate agent, review at 97c2af17d6. F1-F7 closed, each confirmed by the reviewer's own mutation (unstaged/untracked/committed legs, the warden-owned constant's entries, the fixture config routed through `WARDEN_FLEET_TARGET_CONFIG`, `_guard_scan` composition, the boundary regex, `NoReturn`); the AC6 mutations caught. F6 confirmed under `pytest -l -rA -vv --tb=long` with fictional configs: terms present, empty terms and an undecodable config each fail with paths or a type name only, 0 output lines carrying a term. `PurePosixPath.full_match` on Python 3.14.7 matches `/**` nested and dot-files, `test_warden_*.py` within one segment. 31 mutations, 20 caught; the survivors below or unreachable. Confidentiality clean across the diff, every history-only line of the branch's 10 commits, the commit messages and PR #2158. Gates: `pyforge-warden-test` 0 (2440 passed), `lint-types` 0, `spec-surface-check` 0, flag gate `--spec` pass, `deferred-work-check` 0, `platform-ci-local -- --test` 0 (1345 passed, 14 skipped); `detectors-ci` 1 only on `ledger-direction` (branch behind main).
+
+- `[low]` `[patch]` N1 `src/platform/tests/test_warden_fleet_inventory.py:1010-1023, 1311-1321` nothing exercises the live test's fail path (the wrapper always returning None, swallowing errors, dropping `pytest.fail`, scanning with `base="HEAD"` all survive). Fix: a test pointing the module's `_REPO_ROOT` at a `leak_repo` fixture with an `origin/main` ref at the base, asserting `pytest.fail.Exception` with exactly the expected paths and no term, and a pass on a clean repo.
+- `[low]` `[patch]` N2 `:1143-1152` AC2's samples all sit one level below their entry; swapping `full_match` for `match` survives. Fix: one nested, hidden sample (a warden spec memlog).
+- `[low]` `[patch]` N3 `fleet_inventory.py:165`, test `:1057-1067` nothing pins the stripping of listed terms (dropping `.strip()` survives). Fix: a padded term in the configured-target test.
+- `[low]` `[patch]` N4 `:911-920`, `:829-838` AC4's fixture ignores `.warden/` in `.gitignore`, so the explicit `.warden/` filter is never exercised; `_all_tracked_files` excludes nothing, so a force-added `.warden/` file would be opened. Fix: an AC4 variant without the ignore line, and exclude `.warden/` from the scan set.
+- Info: N5 dropping the regex lookahead only makes Rule O stricter (reject); N6 the harness-written Auto Run Result is stale; N7 a path whose name holds a listed term prints it only when its content holds a term too (beside the recorded residual risk; defer).
+
+N1-N4 are fixed in a follow-on pass before landing; the orchestrator re-verifies that delta and runs AC8 (the live guard against the operator's real configuration, kept outside the repository) before setting `landing_review: 'passed'`.
+
 ### 2026-10-12 — Fix pass for iteration 1 (implementer)
 
 Implementer pass on F1-F8, uncommitted on `dispatch/pyforge-warden/18.1` at e11b82c989. Only `example-*` identifiers
