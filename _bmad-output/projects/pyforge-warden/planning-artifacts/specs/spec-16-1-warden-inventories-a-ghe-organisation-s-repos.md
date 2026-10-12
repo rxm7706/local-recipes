@@ -2,7 +2,8 @@
 title: "16.1: Warden inventories an operator-designated GitHub organisation's repos"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
+landing_review: 'passed'
 baseline_revision: 'e0d12c1d4ec1d22ec49fd0d6f72e12025462900f'
 review_loop_iteration: 3
 followup_review_recommended: false
@@ -292,6 +293,10 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
     `TimeoutError` instead of `SoftTimeLimitExceeded` raised inside urllib. `gh auth token` keeps its own 30 s.
 
 ## Review Triage Log
+
+### 2026-10-11 — Orchestrator delta verification of the iteration-4 minors: passed
+
+The orchestrator (not the implementer, not the iteration-4 reviewer) read the N4-1/N4-2/N4-3/M5b delta at b47f297e5a: `GhTokenUnavailableError` is raised after the `except` block, so no `__context__` keeps the failure; the client's request timeout is a required argument fed only by the task constant. Re-ran the N4-2 mutation (`_FRAGMENT_BYTES = 4096`): `test_credential_and_fragments_never_show_the_token[short]` and `[long]` red, restored byte-identical. The implementer's gate codes after the last edit: `pyforge-warden-test` 0 (2340 passed), `lint-types` 0, `platform-ci-local -- --test` 0 (1256 passed, 14 skipped), `spec-surface-check` 0, `detectors-ci` 0. Confidentiality re-checked on the delta: fictional identifiers only. Story done; landing review passed; landing proceeds.
 
 ### 2026-10-11 — Fix pass for iteration 4 minors (implementer)
 
