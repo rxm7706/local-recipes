@@ -1223,8 +1223,7 @@ def test_leak_guard_ac5_empty_terms_refused(
 
     allow = tmp_path / "allow-empty.toml"
     allow.write_text(
-        '[github]\norganisation = "example-org"\n'
-        "allow_empty_leak_guard_terms = true\n",
+        '[github]\norganisation = "example-org"\nallow_empty_leak_guard_terms = true\n',
         encoding="utf-8",
     )
     assert load_leak_guard_terms(allow) == []
