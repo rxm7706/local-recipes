@@ -90,13 +90,17 @@ def _tracked_dirs() -> frozenset[str]:
     return frozenset(dirs)
 
 
+def _has_glob(segment: str) -> bool:
+    return any(c in segment for c in "*?[")
+
+
 def _segment_match(pattern: str, segment: str) -> bool:
     return pattern == WILD or fnmatch.fnmatchcase(segment, pattern)
 
 
 def representative(parts: Sequence[str]) -> str | None:
     """The first tracked file at or under ``parts`` (a ``*`` segment matches any one segment)."""
-    if not any(p == WILD for p in parts):
+    if not any(_has_glob(p) for p in parts):
         joined = "/".join(parts)
         if joined in _tracked_set():
             return joined
@@ -228,7 +232,7 @@ class Scanner:
             if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 mod.funcs[stmt.name] = stmt
         self._bind_statements(mod.tree.body, mod.env, mod, record=False)
-        for name, func in mod.funcs.items():
+        for name, func in list(mod.funcs.items()):
             if _is_fixture(func):
                 value = self._call_function(func, mod, {})
                 if value is not None:
@@ -306,7 +310,12 @@ class Scanner:
                     env.pop(t.id, None)
             self.visit(value_node, env, mod, stmt)
             return
-        if isinstance(stmt, ast.For) or isinstance(stmt, ast.AsyncFor):
+        if isinstance(stmt, (ast.For, ast.AsyncFor)):
+            if isinstance(stmt.target, ast.Name) and self._walks_up_to_root(stmt.iter, env, mod):
+                # `for candidate in here.parents: if (candidate / "pixi.toml").is_file(): return candidate`
+                env[stmt.target.id] = V(())
+                self._bind_statements(stmt.body, env, mod, record=record)
+                return
             self.visit(stmt.iter, env, mod, stmt)
             for bound in self._iterations(stmt.target, stmt.iter, env, mod):
                 scope = {**env, **bound}
@@ -336,6 +345,13 @@ class Scanner:
         for child in ast.iter_child_nodes(stmt):
             if isinstance(child, ast.expr):
                 self.visit(child, env, mod, stmt)
+
+    def _walks_up_to_root(self, node: ast.expr, env: Mapping[str, object], mod: Module) -> bool:
+        """A loop over ``<file path>.parents`` is the repo-root search idiom: its variable is the root."""
+        for sub in ast.walk(node):
+            if isinstance(sub, ast.Attribute) and sub.attr == "parents" and isinstance(self.ev(sub.value, env, mod), V):
+                return True
+        return False
 
     def _import_from(self, stmt: ast.ImportFrom, env: dict[str, object], mod: Module) -> None:
         module = stmt.module or ""
@@ -441,15 +457,7 @@ class Scanner:
             scope = dict(mod.env)
             for name in self._param_names(func):
                 scope.pop(name, None)
-            for stmt in func.body:
-                if isinstance(stmt, ast.Return):
-                    return self.ev(stmt.value, scope, mod) if stmt.value is not None else None
-                if isinstance(stmt, (ast.Assign, ast.AnnAssign)):
-                    self._statement(stmt, scope, mod, record=False)
-                elif isinstance(stmt, (ast.Expr, ast.Pass)):
-                    continue
-                elif isinstance(stmt, (ast.Import, ast.ImportFrom)):
-                    self._statement(stmt, scope, mod, record=False)
+            self._bind_statements(func.body, scope, mod, record=False)
             for node in ast.walk(func):
                 if isinstance(node, ast.Return) and node.value is not None:
                     value = self.ev(node.value, scope, mod)
@@ -652,10 +660,34 @@ class Scanner:
             if isinstance(value, V):
                 self._record(value, mod, parent)
                 return
+            if isinstance(node, ast.Call) and self._record_glob(node, env, mod):
+                return
             if isinstance(value, (list, tuple)):
                 self._record_container(value, mod)
         for child in ast.iter_child_nodes(node):
             self.visit(child, env, mod, node)
+
+    def _record_glob(self, node: ast.Call, env: dict[str, object], mod: Module) -> bool:
+        """``base.glob("a/*/b.md")`` reads ``base/a/*/b.md``; ``rglob`` and ``**`` read ``base`` itself."""
+        func = node.func
+        if not (isinstance(func, ast.Attribute) and func.attr in ("glob", "rglob") and node.args):
+            return False
+        base = self.ev(func.value, env, mod)
+        pattern = self.ev(node.args[0], env, mod)
+        if not (isinstance(base, V) and base.rooted and isinstance(pattern, str)):
+            return False
+        segments: list[str] = []
+        if func.attr == "glob":
+            for seg in _split_segments(pattern):
+                if seg == "**":
+                    break
+                segments.append(seg)
+            segments = segments if segments and segments[-1] != "**" else segments
+        extended = V((*base.parts, *segments), True)
+        if not base.parts:
+            self.handoffs.add(mod.rel)
+        self._record(extended, mod, None)
+        return True
 
     def _comprehension(self, node: ast.AST, env: dict[str, object], mod: Module) -> None:
         generators: list[ast.comprehension] = getattr(node, "generators", [])
