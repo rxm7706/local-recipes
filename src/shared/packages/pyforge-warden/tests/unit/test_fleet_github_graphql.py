@@ -14,6 +14,7 @@ import http.client
 import io
 import json
 import logging
+import re
 import traceback
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -506,8 +507,9 @@ def test_a_failing_entry_is_typed_and_named_by_position(
     assert isinstance(caught.value, FleetInventoryApiError)
     assert caught.value.__cause__ is None
     assert caught.value.__suppress_context__
-    for secret in (_SENTINEL, "secret-name", str(_PROJECT_B)):
+    for secret in (_SENTINEL, "secret-name"):
         assert secret not in _fail_text(caught)
+    assert not re.search(rf"\b{_PROJECT_B}\b", message)  # named by position, not by number
 
 
 def test_the_graphql_error_text_is_never_echoed(monkeypatch: pytest.MonkeyPatch) -> None:

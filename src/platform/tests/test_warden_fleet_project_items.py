@@ -19,6 +19,7 @@ import io
 import json
 import logging
 import os
+import re
 import subprocess
 import traceback
 from dataclasses import dataclass
@@ -460,9 +461,11 @@ def test_a_failing_entry_is_typed_and_leaves_no_export(
     assert type(caught.value).__name__ == "ProjectEntryError"
     assert not export.exists()
     assert list(export.parent.glob(".fleet-project-items.json.*")) == []
-    for secret in (_SENTINEL, "secret-detail", str(_PROJECT_B)):
+    for secret in (_SENTINEL, "secret-detail"):
         assert secret not in _fail_text(caught)
         assert secret not in caplog.text
+    # The failing entry is named by position, never by its project number.
+    assert not re.search(rf"\b{_PROJECT_B}\b", str(caught.value))
 
 
 def test_task_missing_gh_binary_leaves_no_export(
