@@ -112,6 +112,48 @@ IGNORE_PARTS = {"__pycache__"}
 
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
 
+# Hand-synced with ``pyforge.doctor.sources.factory.TIER3_RUN_ARTIFACTS`` (Story 43.1).
+_TIER3_RUN_ARTIFACT_PATTERNS: tuple[tuple[str, str], ...] = (
+    (r"^implementation-artifacts/runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    (r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    (r"^implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    (r"^implementation-artifacts/epic-\d+-context\.md", "local:sprint-feed"),
+    (r"^implementation-artifacts/epic-\d+-continuity\.md", "local:sprint-feed"),
+    (r"^implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", "local:sprint-feed"),
+    (r"^implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json", "local:sweep-verdicts"),
+    (
+        r"^implementation-artifacts/recall-feedback__[^/]+__[^/]+\.md(\.query-ran)?$",
+        "local:recall-feedback",
+    ),
+    (r"^implementation-artifacts/session-advisories/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    (r"^implementation-artifacts/dispatch-runs-quarantine/.*", "local:run-journal"),
+    (r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json", "local:benchmark"),
+    (
+        r"^implementation-artifacts/token-economy-benchmark-per-layer-[A-Za-z0-9._-]+\.json",
+        "local:benchmark",
+    ),
+    (r"^implementation-artifacts/bmad-build-auto-result-[a-z0-9-]+\.md", "local:run-result"),
+    (r"^implementation-artifacts/[^/]*attempted-change[^/]*\.patch$", "local:attempted-change"),
+)
+_TIER3_RUN_ARTIFACT_RULES = tuple((re.compile(p), c) for p, c in _TIER3_RUN_ARTIFACT_PATTERNS)
+
+
+def _classify_tier3_run_artifact(rel: str) -> str | None:
+    for pattern, classification in _TIER3_RUN_ARTIFACT_RULES:
+        if pattern.fullmatch(rel):
+            return classification
+    return None
+
+
+def _is_attempted_change_patch_rel(rel: str) -> bool:
+    if not rel.startswith("implementation-artifacts/"):
+        return False
+    rest = rel.removeprefix("implementation-artifacts/")
+    if "/" in rest:
+        return False
+    return rest.endswith(".patch") and "attempted-change" in rest
+
+
 _VER_RE = re.compile(r"\*\*v(\d+)\.(\d+)\.(\d+)\*\*")
 
 
@@ -311,12 +353,6 @@ def classify(path: Path) -> str:
         # Dated per-epic retros written at the implementation-artifacts ROOT. The
         # pre-existing rule only matched the retros/ subdir, so these fell through.
         return "archive:retros"
-    if re.fullmatch(r"implementation-artifacts/runs/[A-Za-z0-9._-]+/.*", rel):
-        # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
-        # the engine per run. Never hand-edited and never pin-gated.
-        return "local:run-journal"
-    if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
-        return "local:sprint-feed"  # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
         # PRFAQ kill-test records + distillates (bmad-prfaq): frozen stress-test
         # outputs — no pin gating.
@@ -371,10 +407,6 @@ def classify(path: Path) -> str:
         # deliberately a copy whose curation lags — a version pin would report drift on
         # every skill bump for a document that tracks stories, not the skill surface.
         return "tracked:deferred"
-    if re.fullmatch(r"implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", rel):
-        # Tier-3 sprint feed (gitignored, local-only) — the program console's
-        # dashboard-gen reads it; no pin gating.
-        return "local:sprint-feed"
     if rel == "planning-artifacts/marshal-policy.toml":
         # Marshal's PROJECT-POLICY layer -- the middle tier of AD-16's
         # defaults -> project -> flags chain, added 2026-07-30. Tracked on
@@ -408,6 +440,9 @@ def classify(path: Path) -> str:
         return "tracked:sprint-ledger"
     if re.fullmatch(r"implementation-artifacts/spec-.*\.md", rel):
         return "tracked:spec"
+    tier3_cls = _classify_tier3_run_artifact(rel)
+    if tier3_cls is not None:
+        return tier3_cls
     return "UNKNOWN"
 
 
@@ -445,6 +480,9 @@ def do_fix() -> list[str]:
                 actions.append(f"moved {p.name} -> retros/")
         for p in list(IMPL.iterdir()):
             if p.is_file() and p.suffix in STRAY_SUFFIXES:
+                rel = _rel(p)
+                if _is_attempted_change_patch_rel(rel):
+                    continue
                 p.unlink()
                 actions.append(f"removed stray {p.name}")
     return actions

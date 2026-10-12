@@ -80,7 +80,7 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml
 
 | Detector finding | Doc(s) | Reconciler |
 |---|---|---|
-| `archive-misplaced`, `stray-file` | planning / impl | `python scripts/bmad_drift_check.py --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch`) |
+| `archive-misplaced`, `stray-file` | planning / impl | `python scripts/bmad_drift_check.py --fix` (auto: moves SCPs→`change-history/`, retros→`retros/`, deletes stray `.patch` **except** a Tier-3-root `*attempted-change*.patch` from a blocked dispatch — that shape is listed in `sources/factory.py` `TIER3_RUN_ARTIFACTS` and is kept) |
 | `tracked-impl-artifact` | impl-artifacts | A git-tracked file under `implementation-artifacts/` (gitignored/local-only) is misfiled. If it's a durable **story spec**, `git mv` it to the project's `planning-artifacts/specs/` (Tier 2); if it's a Tier-3 output, `git rm --cached` it. (This is the tier model — see `AGENTS.md` § *The tiers*.) |
 | `pin-missing`, `baseline-corrupt` | any | restore the frontmatter `source_pin`/`last_synced_skill_version`. (Neither this covers nor `factory.py`/`bmad_drift_check.py` track the AGENTS.md `bmad:context` block — that surface carries no `source_pin`, and its own freshness proof is `bmad-project-context`'s "Verified `<date>` against `<commit>`" stamp, checked by `bmad-project-context audit`, not by this detector.) |
 | **Derived pin (Story 33.10)** | all tracked | The **currency verdict** reads live CFE version from `.claude/skills/conda-forge-expert/SKILL.md` frontmatter `version:` — never from a stamped literal in a doc. **`source_pin`** on living/plan docs records *which skill version the doc was last re-grounded against* (a fact about a past act); it is **not** compared for `pin-behind`. Snapshot docs still get informational `pin-behind` when their stamped pin predates live `SKILL.md`. |
@@ -91,7 +91,7 @@ git diff --stat "$BASE"..HEAD -- recipes .claude pixi.toml
 | `spec-status-stale` | `implementation-artifacts/spec-*.md` | flip the spec's `status:` to its terminal value (it shipped — a matching retro exists) |
 | `deferred-stale` | `implementation-artifacts/deferred-work.md` | reconcile each item vs the CHANGELOG / live code, then refresh the `**Last reconciled:** … vX.Y.Z` stamp |
 | `index.md` after any move/refresh | `index.md` | hand-edit — **6.11 removed `bmad-index-docs` with no replacement** |
-| `uncovered` | a new file | add a classification rule in `sources/factory.py` (`TRACKED` or `classify()` — the ported verdict's own copy; `scripts/bmad_drift_check.py` keeps an unused reference copy of `classify()` only, documented there as the extension pointer for anyone editing the script directly) so coverage stays complete |
+| `uncovered` | a new file | add a row to `TIER3_RUN_ARTIFACTS` in `sources/factory.py` when marshal writes a new Tier-3 run shape (and mirror it in `scripts/bmad_drift_check.py`'s hand-synced reference copy); otherwise extend `TRACKED` or `classify()` — the ported verdict's extension pointer for anyone editing the script directly — so coverage stays complete |
 
 The index (`index.md`) is refreshed **last**, after all moves and refreshes — by hand since 6.11 removed `bmad-index-docs`.
 

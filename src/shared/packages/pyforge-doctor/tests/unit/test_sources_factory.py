@@ -1783,3 +1783,89 @@ def test_env_count_reads_the_live_manifest_like_tomllib() -> None:
     with (repo / "pixi.toml").open("rb") as fh:
         declared = len(tomllib.load(fh)["environments"])
     assert factory._env_count(repo) == declared
+
+
+# --- Story 43.1: marshal dispatch Tier-3 run artifacts ---------------------------------
+
+
+def _plant_tier3_dispatch_shapes(repo: Path) -> None:
+    impl = factory._impl(repo)
+    impl.mkdir(parents=True, exist_ok=True)
+    stem = "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06"
+    (impl / f"{stem}.md").write_text("hit\n", encoding="utf-8")
+    (impl / f"{stem}.md.query-ran").write_text("", encoding="utf-8")
+    (impl / "epic-97-continuity.md").write_text("x\n", encoding="utf-8")
+    adv = impl / "session-advisories" / "run-1"
+    adv.mkdir(parents=True)
+    (adv / "journal.jsonl").write_text("{}\n", encoding="utf-8")
+    q = impl / "dispatch-runs-quarantine" / "run-1"
+    q.mkdir(parents=True)
+    (q / "journal.jsonl").write_text("{}\n", encoding="utf-8")
+    (impl / "dispatch-runs-quarantine" / "README.md").write_text("x\n", encoding="utf-8")
+    (impl / "token-economy-benchmark-2026-10-12T103206Z.json").write_text("{}\n", encoding="utf-8")
+    (impl / "token-economy-benchmark-per-layer-2026-10-12T103206Z.json").write_text("{}\n", encoding="utf-8")
+    (impl / "bmad-build-auto-result-97-2-some-story.md").write_text("x\n", encoding="utf-8")
+    (impl / "97-2-x-attempted-change.patch").write_text("diff\n", encoding="utf-8")
+
+
+def test_recall_feedback_pair_is_classified_and_gather_stays_clean(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    impl = factory._impl(repo)
+    stem = "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06"
+    md = impl / f"{stem}.md"
+    marker = impl / f"{stem}.md.query-ran"
+    md.write_text("x\n", encoding="utf-8")
+    marker.write_text("", encoding="utf-8")
+    assert factory.classify(md, repo) == "local:recall-feedback"
+    assert factory.classify(marker, repo) == "local:recall-feedback"
+    findings = factory.gather(repo)
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "recall-feedback.md",
+        "recall-feedback__97.2.md",
+        "recall-feedback__a__b.txt",
+        "notes.query-ran",
+        "session-advisories.md",
+        "token-economy-benchmark.json",
+        "epic-x-continuity.md",
+        "bmad-build-auto-result.md",
+        "randomfile.txt",
+    ],
+)
+def test_tier3_look_alikes_still_uncovered(tmp_path: Path, name: str) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    path = factory._impl(repo) / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("x\n", encoding="utf-8")
+    assert factory.classify(path, repo) == "UNKNOWN"
+    findings = [f for f in factory.gather(repo) if f.check == "uncovered"]
+    assert len(findings) == 1
+    assert findings[0].evidence["subject"] == f"implementation-artifacts/{name}"
+
+
+def test_every_marshal_dispatch_tier3_shape_in_intent_table(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    _plant_tier3_dispatch_shapes(repo)
+    (factory._impl(repo) / "scratch.bak").write_text("x\n", encoding="utf-8")
+    (factory._impl(repo) / "review-diff.patch").write_text("diff\n", encoding="utf-8")
+    findings = factory.gather(repo)
+    assert not [f for f in findings if f.check in ("uncovered", "stray-file")]
+    assert len([f for f in findings if f.status is not DoctorStatus.OK]) == 2
+    stray = {(f.check, f.evidence["subject"]) for f in findings if f.check == "stray-file"}
+    assert ("stray-file", "implementation-artifacts/scratch.bak") in stray
+    assert ("stray-file", "implementation-artifacts/review-diff.patch") in stray
+    tier3_classes = {r.classification for r in factory.TIER3_RUN_ARTIFACTS}
+    for path in factory._walk(factory._impl(repo)):
+        if not path.is_file():
+            continue
+        cls = factory.classify(path, repo)
+        if cls in tier3_classes:
+            assert cls != "UNKNOWN"
