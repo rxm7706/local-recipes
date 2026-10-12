@@ -2475,7 +2475,6 @@ def _run_and_journal_spec_frontmatter(
 ) -> tuple[int, object | None]:
     """Story 96.1: collapse repeated story-spec frontmatter keys and journal."""
     from pyforge.marshal.core.dispatch_spec_frontmatter import (
-        DispatchSpecFrontmatterResult,
         dispatch_spec_frontmatter_journal_payload,
         dispatch_spec_frontmatter_should_journal,
     )

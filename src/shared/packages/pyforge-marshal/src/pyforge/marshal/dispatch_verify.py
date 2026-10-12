@@ -46,7 +46,6 @@ from .core.dispatch_ruff_format import (
 from .core.dispatch_spec_frontmatter import (
     DispatchSpecFrontmatterResult,
     apply_dispatch_spec_frontmatter_before_verify,
-    findings_for_spec_frontmatter_refusals,
 )
 from .core.dispatch_verification import (
     BranchCommitAttribution,

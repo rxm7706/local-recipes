@@ -321,10 +321,7 @@ def findings_for_spec_frontmatter_refusals(
             Finding(
                 code=SPEC_FRONTMATTER_GATE_CODE,
                 severity=Severity.ERROR,
-                message=(
-                    f"story spec {refusal.spec_path!r} repeats frontmatter key {refusal.key!r}: "
-                    f"{refusal.reason}"
-                ),
+                message=(f"story spec {refusal.spec_path!r} repeats frontmatter key {refusal.key!r}: {refusal.reason}"),
             )
         )
     return tuple(out)
@@ -340,9 +337,7 @@ def dispatch_spec_frontmatter_journal_payload(
     return {
         "collapsed": [{"spec": spec, "key": key} for spec, key in result.collapsed],
         "committed_paths": list(result.committed_paths),
-        "refusals": [
-            {"spec": r.spec_path, "key": r.key, "reason": r.reason} for r in result.refusals
-        ],
+        "refusals": [{"spec": r.spec_path, "key": r.key, "reason": r.reason} for r in result.refusals],
         "ok": not result.refusals,
     }
 

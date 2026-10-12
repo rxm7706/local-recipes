@@ -9,7 +9,6 @@ import pytest
 import yaml
 
 from pyforge.marshal.adapters.vcs_git import GitVcs
-from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_spec_frontmatter import (
     SPEC_FRONTMATTER_GATE_CODE,
     DispatchSpecFrontmatterResult,
@@ -26,9 +25,7 @@ from pyforge.marshal.core.dispatch_verification import (
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
-from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
-from pyforge.marshal.dispatch_verify import run_dispatch_spec_frontmatter_before_verify
 
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 
@@ -186,8 +183,7 @@ def test_ambiguous_same_commit_refuses(tmp_path: Path) -> None:
     )
     assert findings[0].code == SPEC_FRONTMATTER_GATE_CODE
     assert (
-        judge_dispatch_verification(DispatchVerificationInput(findings=findings))
-        == DispatchVerificationVerdict.REFUSED
+        judge_dispatch_verification(DispatchVerificationInput(findings=findings)) == DispatchVerificationVerdict.REFUSED
     )
 
 
@@ -273,9 +269,7 @@ def test_apply_skips_when_no_story_spec_in_diff(tmp_path: Path) -> None:
     assert result == DispatchSpecFrontmatterResult((), (), (), False)
 
 
-def test_verification_journals_spec_frontmatter_when_collapsed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verification_journals_spec_frontmatter_when_collapsed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import importlib
 
     loop_tests = importlib.import_module("test_dispatch_supervisor_main_loop")
@@ -301,10 +295,7 @@ def test_mutation_without_pre_verify_call_fails_ac2(tmp_path: Path) -> None:
     spec_dir.mkdir(parents=True)
     spec_path = spec_dir / "spec-test.md"
     spec_path.write_text(
-        "---\n"
-        "followup_review_recommended: true\n"
-        "followup_review_recommended: false\n"
-        "---\n",
+        "---\nfollowup_review_recommended: true\nfollowup_review_recommended: false\n---\n",
         encoding="utf-8",
     )
     assert len(_story_spec_frontmatter_dup_keys(spec_path.read_text(encoding="utf-8"))) == 1
