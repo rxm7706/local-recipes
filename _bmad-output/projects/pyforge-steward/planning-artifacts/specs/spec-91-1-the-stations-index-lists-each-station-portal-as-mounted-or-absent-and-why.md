@@ -339,6 +339,39 @@ Type / Effort / Deps: feature / S / — (cross-station gate: herald 37.1, held a
 
 ## Review Triage Log
 
+### 2026-10-11 — Fix pass for landing review iteration 2 lows (implementer)
+
+Implementer session on c325d31ced. L1–L4 are fixed; L5 stays rejected. The view, template and URLconf are unchanged. Only `src/platform/tests/_urls_without_stations_index.py` and `src/platform/tests/test_stations_index.py` changed, plus this entry. Each mutation was applied, run against the whole test file, then restored byte-identical (sha256 checked) with HEAD unchanged at c325d31ced.
+
+- **L1 — the comparison URLconf.**
+  - `_urls_without_stations_index.py:12` raises `RuntimeError` unless filtering `config.urls` drops exactly one pattern, so a renamed route can no longer make AC2 compare the index with itself.
+  - `test_comparison_urlconf_drops_exactly_the_index_route` (`:515`) pins it directly: `/stations/` resolves to `stations_index` named `stations-index`, and resolves elsewhere under the comparison URLconf.
+  - Mutation, `name="stations-index"` renamed in `config/urls.py`: 11 tests fail. These are the 4 AC2 GET/OPTIONS cases, the 4 published-page cases and the 2 not-ready cases (each through the `RuntimeError`), plus the resolve test.
+  - With the guard also removed, the resolve test alone still fails: `'stations-home' == 'stations-index'`.
+- **L2 — the flag environment.**
+  - Tests now configure flags through the `configure_flags` fixture (`:123`). It calls `monkeypatch.setenv` for `FLAGD_OFFLINE_FLAG_SOURCE_PATH` and `PYFORGE_FLAGS_PATH` before `configure_file_provider`, so both keys are restored after every test.
+  - The module-scoped autouse `_flag_env_unchanged` (`:109`) asserts that both keys end the module as they began.
+  - It is module-scoped because the platform conftest's autouse `real_gh_attempts` takes `monkeypatch` first. A per-test check would run before monkeypatch's undo; a leak in any test persists to the module's end.
+  - Mutation, both `setenv` lines removed: the module teardown fails on the changed `FLAGD_OFFLINE_FLAG_SOURCE_PATH`.
+- **L3 — the published-page bullet.**
+  - `test_flag_off_with_wagtail_page_at_slug_stations` (`:491`) is parametrized over anonymous and admin × GET and OPTIONS. It asserts status 200 both ways, an equal `Content-Type`, and byte-identical bodies; the title is checked on GET only, because Wagtail answers OPTIONS with an empty body.
+  - Mutation, a bare `Http404` when the flag is OFF: all 4 cases fail, `404 == 200`.
+- **L4 — "provider not ready, read as OFF".**
+  - `test_flag_provider_not_ready_reads_as_off` (`:581`, anonymous and admin) registers `_NotReadyProvider` (`:525`). That provider answers every boolean True, but its `initialize` blocks until released, so the SDK holds it at `NOT_READY`.
+  - The test asserts `NOT_READY` before and after the requests, and that `/stations/` answers the comparison URLconf's 404 with the same status, `Content-Type` and body.
+  - After release it waits until the provider is ready and asserts the same provider reads the flag ON, so the OFF answer is due only to the not-ready state.
+  - Mutation, `evaluate_boolean(..., default=True)` in the view: both cases fail (`403 == 404` for anonymous).
+- **Gates, after `pixi install --frozen -e platform-ci-test`:**
+  - `pyforge-steward-test`: 0 (2366 passed, 3 skipped);
+  - `lint-types`: 0;
+  - `platform-ci-local -- --test`: 0 (7 of 7 steps; full suite 1288 passed, 14 skipped);
+  - `spec-surface-check`: 0, no drift named, so no memlog entry and no stamp; re-run after this entry;
+  - flag gate `--spec`: 0, verdict `pass`;
+  - `detectors-ci`: 1, only `ledger-direction` on `pyforge-marshal/95-1` (landed but unpromoted: main moved), which clears on merging main;
+  - the test file alone, against a private PostgreSQL: 32 passed.
+
+Status stays `in-progress`, and `landing_review` is unchanged. The orchestrator re-verifies this delta before landing.
+
 ### 2026-10-11 — Independent landing review, iteration 2: passed (4 low, 1 reject)
 
 Fresh separate agent, review at 3fb365112c against merge-base a21524e9d6. Production code unchanged since iteration 1 (`git diff 548b976af3..HEAD -- src/platform/ ':!src/platform/tests'` empty); F1-F8 and F10 closed: 17 platform, 8 meta and 5 detector mutations all caught (bare `Http404` when OFF; the three module-scope `config.station_api` load forms in both fresh-interpreter cases and the meta-test; portal submodule imports; role/method/flag order; `|safe`; the `is_switcher_tile` filter; the child given the environment `DATABASE_URL`). `test_stations_index.py` 26/26 three times and reversed; the AST detector over 360 files in `src/platform`, pyforge-steward and django-pyforge found no false positive. Frontmatter valid, no duplicate keys. Gates: `pyforge-steward-test` 0 (2366 passed), `lint-types` 0, `spec-surface-check` 0, flag gate `--spec` pass, `docs-currency-check` 0, `platform-ci-local -- --test` 0 (1282 passed, 14 skipped); `detectors-ci` 1 only on `ledger-direction` for marshal 95-1 (main moved; clears on merging main).

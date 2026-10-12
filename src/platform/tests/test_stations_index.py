@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import textwrap
+import threading
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from http import HTTPStatus
@@ -24,24 +25,37 @@ from django.test import Client
 from django.test import RequestFactory
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
+from django.urls import resolve
 from django_pyforge.context_processors import is_switcher_tile
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.events.constants import STATION_TOKENS
+from django_pyforge.flags import ENV_FLAGD_PATH
+from django_pyforge.flags import ENV_FLAGS_PATH
 from django_pyforge.flags import configure_file_provider
+from django_pyforge.flags import wait_until_ready
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 from django_pyforge.roles import prefixed_station
 from django_pyforge.roles import prefixed_tenant
 from django_pyforge.roles import roles_from_request
 from openfeature import api
+from openfeature.flag_evaluation import FlagResolutionDetails
+from openfeature.flag_evaluation import Reason
+from openfeature.provider import AbstractProvider
+from openfeature.provider import Metadata
+from openfeature.provider import ProviderStatus
 from wagtail.models import Page
 from wagtail.models import Site
 
 from config import optional_components
 from config.stations_index import STATIONS_INDEX_FLAG
+from config.stations_index import stations_index
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from collections.abc import Mapping
+
+    from openfeature.evaluation_context import EvaluationContext
 
 _PLATFORM_ROOT = Path(__file__).resolve().parents[1]
 _REMEDY = "Install pyforge-herald on this host to enable herald routes."
@@ -88,8 +102,39 @@ def _clear_flag_providers():
     api.clear_providers()
 
 
-def _configure_flags(path: Path) -> None:
-    configure_file_provider(path)
+_FLAG_ENV_KEYS = (ENV_FLAGD_PATH, ENV_FLAGS_PATH)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _flag_env_unchanged():
+    """L2: this module leaves configure_file_provider's two keys as it found them.
+
+    Module scope, so the check runs after every test's monkeypatch is undone (the
+    platform conftest's autouse ``real_gh_attempts`` takes ``monkeypatch`` before
+    any fixture here could); a leak in any test persists to here, since a later
+    test's monkeypatch restores to the leaked value.
+    """
+    before = {key: os.environ.get(key) for key in _FLAG_ENV_KEYS}
+    yield
+    assert {key: os.environ.get(key) for key in _FLAG_ENV_KEYS} == before
+
+
+@pytest.fixture
+def configure_flags(monkeypatch: pytest.MonkeyPatch) -> Callable[[Path], None]:
+    """Point the FILE provider at *path*, the env keys it writes undone afterwards.
+
+    ``configure_file_provider`` writes ``FLAGD_OFFLINE_FLAG_SOURCE_PATH`` and, when
+    unset, ``PYFORGE_FLAGS_PATH`` into ``os.environ``; setting both through
+    monkeypatch first gives the pytest process (and every later child) its own
+    environment back after the test.
+    """
+
+    def _configure(path: Path) -> None:
+        monkeypatch.setenv(ENV_FLAGD_PATH, str(path))
+        monkeypatch.setenv(ENV_FLAGS_PATH, os.environ.get(ENV_FLAGS_PATH, str(path)))
+        configure_file_provider(path)
+
+    return _configure
 
 
 def _save_session_roles(client: Client, groups: list[str]) -> None:
@@ -427,8 +472,9 @@ def test_flag_off_matches_urlconf_without_index(
     flag_off_tree: Path,
     role: str,
     method: str,
+    configure_flags: Callable[[Path], None],
 ) -> None:
-    _configure_flags(flag_off_tree)
+    configure_flags(flag_off_tree)
     _apply_role(client, role)
     send = getattr(client, method)
     with_index = send("/stations/")
@@ -440,22 +486,121 @@ def test_flag_off_matches_urlconf_without_index(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("method", ["get", "options"])
+@pytest.mark.parametrize("role", list(_ROLE_CASES))
 def test_flag_off_with_wagtail_page_at_slug_stations(
     client: Client,
     flag_off_tree: Path,
+    configure_flags: Callable[[Path], None],
+    role: str,
+    method: str,
 ) -> None:
     site_root = Site.objects.get(is_default_site=True).root_page
     page = Page(title="Stations landing", slug="stations")
     site_root.add_child(instance=page)
     page.save_revision().publish()
-    _configure_flags(flag_off_tree)
-    with_index = client.get("/stations/")
+    configure_flags(flag_off_tree)
+    _apply_role(client, role)
+    send = getattr(client, method)
+    with_index = send("/stations/")
     with override_settings(ROOT_URLCONF=_URLCONF_WITHOUT_INDEX):
-        without_index = client.get("/stations/")
+        without_index = send("/stations/")
     assert with_index.status_code == without_index.status_code == HTTPStatus.OK
-    assert "Stations landing" in with_index.content.decode()
+    if method == "get":
+        assert "Stations landing" in with_index.content.decode()
     assert with_index["Content-Type"] == without_index["Content-Type"]
     assert with_index.content == without_index.content
+
+
+def test_comparison_urlconf_drops_exactly_the_index_route() -> None:
+    """L1: AC2's comparison URLconf is config.urls minus the index route alone."""
+    with_index = resolve("/stations/")
+    assert with_index.func is stations_index
+    assert with_index.url_name == "stations-index"
+    assert (
+        resolve("/stations/", urlconf=_URLCONF_WITHOUT_INDEX).func is not stations_index
+    )
+
+
+class _NotReadyProvider(AbstractProvider):
+    """Answers every boolean True, but stays NOT_READY until ``release`` is set."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.release = threading.Event()
+
+    def get_metadata(self) -> Metadata:
+        return Metadata(name="stations-index-not-ready")
+
+    def initialize(self, evaluation_context: EvaluationContext) -> None:
+        self.release.wait(timeout=60)
+
+    def resolve_boolean_details(
+        self,
+        flag_key: str,
+        default_value: bool,  # noqa: FBT001
+        evaluation_context: EvaluationContext | None = None,
+    ) -> FlagResolutionDetails[bool]:
+        return FlagResolutionDetails(value=True, reason=Reason.STATIC)
+
+    def resolve_string_details(
+        self,
+        flag_key: str,
+        default_value: str,
+        evaluation_context: EvaluationContext | None = None,
+    ) -> FlagResolutionDetails[str]:
+        return FlagResolutionDetails(value=default_value)
+
+    def resolve_integer_details(
+        self,
+        flag_key: str,
+        default_value: int,
+        evaluation_context: EvaluationContext | None = None,
+    ) -> FlagResolutionDetails[int]:
+        return FlagResolutionDetails(value=default_value)
+
+    def resolve_float_details(
+        self,
+        flag_key: str,
+        default_value: float,
+        evaluation_context: EvaluationContext | None = None,
+    ) -> FlagResolutionDetails[float]:
+        return FlagResolutionDetails(value=default_value)
+
+    def resolve_object_details(
+        self,
+        flag_key: str,
+        default_value: Any,
+        evaluation_context: EvaluationContext | None = None,
+    ) -> FlagResolutionDetails[Any]:
+        return FlagResolutionDetails(value=default_value)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("role", list(_ROLE_CASES))
+def test_flag_provider_not_ready_reads_as_off(client: Client, role: str) -> None:
+    """L4, I/O matrix: a provider that is not ready reads as OFF (default=False).
+
+    The provider would answer the flag ON, so only the not-ready state keeps the
+    index dark; once released, the same provider reads ON.
+    """
+    provider = _NotReadyProvider()
+    api.set_provider(provider)
+    try:
+        assert api.get_client().get_provider_status() == ProviderStatus.NOT_READY
+        _apply_role(client, role)
+        with_index = client.get("/stations/")
+        with override_settings(ROOT_URLCONF=_URLCONF_WITHOUT_INDEX):
+            without_index = client.get("/stations/")
+        assert api.get_client().get_provider_status() == ProviderStatus.NOT_READY
+        assert with_index.status_code == without_index.status_code
+        assert with_index.status_code == HTTPStatus.NOT_FOUND
+        assert with_index["Content-Type"] == without_index["Content-Type"]
+        assert with_index.content == without_index.content
+    finally:
+        provider.release.set()
+    wait_until_ready()
+    assert api.get_client().get_boolean_value(STATIONS_INDEX_FLAG, default_value=False)
 
 
 @pytest.mark.django_db
@@ -482,8 +627,9 @@ def test_flag_off_fresh_interpreter_loads_no_station_api(
 def test_flag_on_anonymous_get_forbidden_empty_body(
     client: Client,
     flag_on_tree: Path,
+    configure_flags: Callable[[Path], None],
 ) -> None:
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     index = client.get("/stations/")
     warden = client.get("/stations/warden/")
     assert index.status_code == HTTPStatus.FORBIDDEN
@@ -496,8 +642,9 @@ def test_flag_on_anonymous_get_forbidden_empty_body(
 def test_flag_on_tenant_only_role_forbidden(
     client: Client,
     flag_on_tree: Path,
+    configure_flags: Callable[[Path], None],
 ) -> None:
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     _save_session_roles(client, [prefixed_tenant("t1")])
     response = client.get("/stations/")
     assert response.status_code == HTTPStatus.FORBIDDEN
@@ -508,8 +655,9 @@ def test_flag_on_tenant_only_role_forbidden(
 def test_flag_on_herald_only_one_mounted_row(
     client: Client,
     flag_on_tree: Path,
+    configure_flags: Callable[[Path], None],
 ) -> None:
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     _save_session_roles(client, [prefixed_station("herald")])
     response = client.get("/stations/")
     assert response.status_code == HTTPStatus.OK
@@ -523,8 +671,9 @@ def test_flag_on_herald_only_one_mounted_row(
 def test_flag_on_admin_lists_switcher_tiles(
     client: Client,
     flag_on_tree: Path,
+    configure_flags: Callable[[Path], None],
 ) -> None:
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     _save_session_roles(client, ["pyforge:admin"])
     admin_request = RequestFactory().get("/stations/")
     admin_request.idp_roles = ["pyforge:admin"]  # type: ignore[attr-defined]
@@ -554,9 +703,10 @@ def test_flag_on_post_answers_what_warden_answers(
     client: Client,
     flag_on_tree: Path,
     role: str,
+    configure_flags: Callable[[Path], None],
 ) -> None:
     """I/O matrix: POST, any role, gets what POST /stations/warden/ gets (405)."""
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     _apply_role(client, role)
     index = client.post("/stations/")
     warden = client.post("/stations/warden/")
@@ -567,8 +717,9 @@ def test_flag_on_post_answers_what_warden_answers(
 def test_flag_on_admin_read_only_queries(
     client: Client,
     flag_on_tree: Path,
+    configure_flags: Callable[[Path], None],
 ) -> None:
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     _save_session_roles(client, ["pyforge:admin"])
     with CaptureQueriesContext(connection) as captured:
         client.get("/stations/")
@@ -583,8 +734,9 @@ def test_flag_on_admin_read_only_queries(
 def test_flag_on_herald_present_no_absent_rows(
     client: Client,
     flag_on_tree: Path,
+    configure_flags: Callable[[Path], None],
 ) -> None:
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     _save_session_roles(client, ["pyforge:admin"])
     response = client.get("/stations/")
     assert response.status_code == HTTPStatus.OK
@@ -647,6 +799,7 @@ def test_flag_on_absent_reason_renders_escaped(
     client: Client,
     flag_on_tree: Path,
     monkeypatch: pytest.MonkeyPatch,
+    configure_flags: Callable[[Path], None],
 ) -> None:
     """AC5 regression: the reason is page text, never markup."""
     hostile = "herald is not installed on this host: <script>alert('index')</script>"
@@ -656,7 +809,7 @@ def test_flag_on_absent_reason_renders_escaped(
         return hostile if component == "herald" else recorded(component)
 
     monkeypatch.setattr(optional_components, "absent_reason", _absent_reason)
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     _save_session_roles(client, ["pyforge:admin"])
     response = client.get("/stations/")
     assert response.status_code == HTTPStatus.OK
@@ -675,12 +828,13 @@ def test_pyforge_steward_stations_index_flag_two_states(
     client: Client,
     flag_on_tree: Path,
     flag_off_tree: Path,
+    configure_flags: Callable[[Path], None],
 ) -> None:
     """AC8: one flagd tree on, one off — index 200 vs legacy 404 on fresh DB."""
     _save_session_roles(client, ["pyforge:admin"])
-    _configure_flags(flag_on_tree)
+    configure_flags(flag_on_tree)
     on = client.get("/stations/")
     assert on.status_code == HTTPStatus.OK
-    _configure_flags(flag_off_tree)
+    configure_flags(flag_off_tree)
     off = client.get("/stations/")
     assert off.status_code == HTTPStatus.NOT_FOUND
