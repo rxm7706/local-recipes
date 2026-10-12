@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import ParamSpec
 from typing import TypeVar
 
 from django.utils import timezone
@@ -11,7 +12,6 @@ from django_tasks.base import TaskResult
 from django_tasks.base import TaskResultStatus
 from django_tasks.signals import task_enqueued
 from django_tasks.utils import get_random_id
-from typing import ParamSpec
 
 T = TypeVar("T")
 P = ParamSpec("P")

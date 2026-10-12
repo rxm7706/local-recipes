@@ -29,7 +29,7 @@ _PORTAL_PYPROJECT = """\
 name = "django-fixture"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 120
 extend-exclude = ["*/migrations/*.py"]
 
@@ -153,7 +153,7 @@ class _DiskDirtyVcs:
         return "abc123"
 
 
-def test_ac2_portal_uses_py312_table(tmp_path: Path, ruff_from_test_env: None) -> None:
+def test_ac2_portal_uses_py314_table(tmp_path: Path, ruff_from_test_env: None) -> None:
     worktree = tmp_path / "wt"
     _seed_platform_ac1(worktree)
     portal_root = worktree / _PORTAL_FIXTURE_ROOT
