@@ -55,6 +55,9 @@ declared_low_risk: false
 | `token-economy-benchmark-<stamp>.json`, `token-economy-benchmark-per-layer-<stamp>.json` | marshal `cli/benchmark.py::default_artifact_path`, `_default_per_layer_artifact_path` | `uncovered` |
 | `bmad-build-auto-result-<slug>.md` | the `bmad-build-auto` session marshal dispatch launches (`.claude/skills/bmad-build-auto/workflow.md`, when there is no spec file to write to) | `uncovered` |
 | `<…>attempted-change<…>.patch` at the Tier-3 root | the dispatched session's blocked-halt patch. Marshal's supervisor leaves the Tier-3 copy in place (`dispatch_supervisor/__main__.py::_attempted_change_patch_paths`) | `stray-file` HARD, with the remedy "already in git history — remove". That is untrue: it is the only copy. `scripts/bmad_drift_check.py --fix` deletes it |
+| `sessions/<id>/gate-records/<story>/gate-record.json` (added by review iteration 2) | marshal `cli/gate.py::_write_gate_record` (`marshal gate evaluate` without `--run-id`), through the twice-defined `_tier3_path` | `uncovered` |
+| `dispatch-runs/<run>/failed/<story>/changes.patch` (added by review iteration 2) | the dispatch supervisor's `dispatch_supervisor/__main__.py::_journal_dispatch_preserve`, at the path `core/dispatch_preserve.py::failed_patch_path` builds: a failed dispatch's only copy of its uncommitted work | `stray-file` HARD, with the same untrue remedy (57 files on the primary checkout) |
+| `fleet-drain-runs/campaign.lock` (added by review iteration 3) | marshal `core/dispatch_fleet.py::fleet_cycle_lock_path`; the advisory lock adds `.lock` (`adapters/fs_local.py`) | `uncovered` |
 | `dispatch-runs/`, `runs/`, `fleet-drain-runs/`, `sprint-status*.yaml`, `epic-<N>-context.md`, `worktree-verdicts-<date>.json`, `deferred-work.md`, `spec-*.md`, `retros/` | marshal and the BMAD skills | covered |
 
 **Approach:**
@@ -64,17 +67,23 @@ declared_low_risk: false
   - The existing Tier-3 run rules move into it unchanged, with the same class strings: `runs/`, `dispatch-runs/`,
     `fleet-drain-runs/`, `epic-<N>-context.md`, `sprint-status*.yaml` and `worktree-verdicts-<date>.json`.
   - `classify()` reads the list at the point where those rules sat. The `coverage-summary` buckets for today's files
-    do not change.
+    do not change, except that a failed attempt's `changes.patch` moves from `local:run-journal` to
+    `local:failed-attempt` (review iteration 2).
 - **The new rows:**
   - the recall-feedback pair, `local:recall-feedback`;
   - `epic-<N>-continuity.md`, `local:sprint-feed` (the class `epic-<N>-context.md` has);
   - `session-advisories/<run>/…` and `dispatch-runs-quarantine/…`, `local:run-journal`;
   - both benchmark defaults, `local:benchmark`;
   - `bmad-build-auto-result-<slug>.md`, `local:run-result`;
-  - the Tier-3-root attempted-change patch, `local:attempted-change`.
+  - the Tier-3-root attempted-change patch, `local:attempted-change`;
+  - `sessions/<id>/…` gate records, `local:run-journal` (review iteration 2);
+  - a failed attempt's `dispatch-runs/<run>/failed/<story>/changes.patch`, a new class `local:failed-attempt`, listed
+    before the `dispatch-runs/` row (review iteration 2);
+  - `fleet-drain-runs/campaign.lock`, `local:run-journal` (review iteration 3).
 - **The patch is kept.** `check_archive_hygiene` does not report the attempted-change patch as a `stray-file`, and
   `scripts/bmad_drift_check.py`'s `do_fix` does not delete it. Every other stray suffix (`.patch`, `.diff`, `.bak`,
-  `.orig`, `.tmp`, `.rej`) is reported and removed as today.
+  `.orig`, `.tmp`, `.rej`) is reported and removed as today. Since review iteration 2 the failed-attempt patch is kept
+  too, and the keep is derived from the row's class (`TIER3_KEPT_CLASSES`), never from a second hand-coded shape.
 - **The reference copy agrees.** `scripts/bmad_drift_check.py` keeps an unused reference `classify()` copy, documented
   as hand-synced. It gains the same rows, and a test fails if the two copies disagree on any sample path.
 - **A meta-test keeps the list in step with marshal.** A new doctor meta-test reads
@@ -207,6 +216,12 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
 | `review-diff.patch`, `scratch.bak` at the root | `UNKNOWN` (stray suffix) | `stray-file` FAIL; `--fix` removes it |
 | `randomfile.txt` | `UNKNOWN` | `uncovered` FAIL |
 | `dispatch-runs/<run>/journal.jsonl` | `local:run-journal` | none (unchanged) |
+| `sessions/<id>/gate-records/97-2/gate-record.json` | `local:run-journal` | none |
+| `dispatch-runs/<run>/failed/<story>/changes.patch` | `local:failed-attempt` | none; kept, never `stray-file` |
+| `dispatch-runs/<run>/failed/<story>/other.patch`, `runs/<run>/failed/<story>/changes.patch` | `local:run-journal` (stray suffix) | `stray-file` FAIL |
+| `fleet-drain-runs/campaign.lock` | `local:run-journal` | none |
+| `fleet-drain-runs/other.lock`, `fleet-drain-runs/campaign` | `UNKNOWN` | `uncovered` FAIL |
+| `fleet-drain-runs/campaign.lock.bak` | `UNKNOWN` (stray suffix) | `stray-file` FAIL |
 
 </intent-contract>
 
@@ -250,12 +265,73 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
 
 ## Spec Change Log
 
+- 2026-10-12 — The independent reviews widened the declared shapes, within the operator's "keep the wider scope".
+  Iteration 2 added `sessions/<id>/…` gate records (`local:run-journal`) and a failed attempt's
+  `dispatch-runs/<run>/failed/<story>/changes.patch` under a new class, `local:failed-attempt`, kept like the
+  attempted-change patch; the keep is now derived from the class (`TIER3_KEPT_CLASSES`). Iteration 3 added
+  `fleet-drain-runs/campaign.lock` (`local:run-journal`) and corrected the failed-attempt writer to
+  `core/dispatch_preserve.py::failed_patch_path`; the iteration-2 record named `supervisor/intent_gap_preserve.py`,
+  which writes only the loop home's `.bmad-loop/runs/`. The Intent table, the Approach's new rows and the I/O matrix
+  now carry these shapes.
+
 - 2026-10-12 — Scope confirmed by the operator: asked whether to keep the wider scope (all seven dispatch-written kinds plus the attempted-change patch exemption) or narrow to the recall-feedback pair, the operator answered "keep the wider scope, keep going".
 
 - 2026-10-12: minted from the operator's ask "Do this task here: Teach bmad-drift about dispatch recall-feedback files",
   found on marshal Story 97.2's dispatch worktree.
 
 ## Review Triage Log
+
+### 2026-10-12 — Fix pass for iteration 3 (implementer)
+
+Separate implementer session on `dispatch/pyforge-doctor/43.1` at `691611ffd0`, uncommitted. F1, F3, F4 and the nit are fixed; F2 is appended to `DW-doctor-43-1-2`, and its cheap cases are fixed now. Mutations ran in the scratch repo copy, restored from the worktree after each run; the worktree's `git status` and `git diff` were identical before and after. Line numbers are at this pass's working tree.
+
+- F1 — the failed-attempt row now cites `core/dispatch_preserve.py::failed_patch_path` (`factory.py:332`). Its comment names the real caller, `dispatch_supervisor/__main__.py::_journal_dispatch_preserve`, and says why the look-alike `supervisor/intent_gap_preserve.py::_write_failed_patch` (loop home only) is not the writer.
+  - The meta table row (`test_bmad_drift_tier3_marshal_shapes.py:218`, token `"changes.patch"`) and `_WRITER_TOKENS` both cite it. `_WRITER_TOKENS` now accepts several required literals per row (`:236`, checked at `:711`). This row needs `"changes.patch"` plus `return run_dir / "failed"`: `"changes.patch"` alone also sits in `_write_failed_patch`, so the iteration-2 mis-cite would have passed on it.
+  - Memlog: a correction event on `spec-pyforge-doctor` (`.memlog.md:716`) names the iteration-2 entry and the story's iteration-2 fix-pass entry as wrong, and states the real writer.
+  - Mutations:
+    - Decisive: rename `"changes.patch"` in `failed_patch_path` in a scratch marshal copy → red (`test_every_tier3_rule_names_a_real_writer`, `test_writer_tokens_still_present_in_cited_sources`).
+    - The same rename in `supervisor/intent_gap_preserve.py` → green, as it should be now that the file isn't cited.
+    - Point the row back at `_write_failed_patch` → red, because `return run_dir / "failed"` is missing there.
+- F3 — a new row, `^implementation-artifacts/fleet-drain-runs/campaign\.lock$` → `local:run-journal`, with writer `core/dispatch_fleet.py::fleet_cycle_lock_path` (`factory.py:359-361`, script `:137`).
+  - Its comment notes the `.lock` suffix comes from the advisory lock (`adapters/fs_local.py`). The token is `/ "campaign"`, in 1 marshal symbol.
+  - Meta table row: `:225`. AC3 plant: `test_sources_factory.py:1805`.
+  - Look-alikes: `fleet-drain-runs/other.lock` and `fleet-drain-runs/campaign` stay `uncovered` (`:1950`), and `campaign.lock.bak` is `stray-file` (`:1963`). Script agreement samples cover all three (`tests/scripts/…:70-72`).
+  - Mutations:
+    - Remove factory's row → 4 tests red.
+    - Remove the script's row → the equality and agreement tests red.
+    - Widen the row to any root `.lock` → the `other.lock` look-alike test red, and the writer test red (its pattern key changed).
+    - Rename `"campaign"` in `fleet_cycle_lock_path` in a marshal copy → the writer and token tests red.
+- F4 — the spec now records the iteration-2 and iteration-3 shapes:
+  - a new Spec Change Log entry, which also notes the writer correction;
+  - three Intent-table rows (`sessions/<id>/…`, the failed-attempt patch, `campaign.lock`), each marked with the review iteration that added it;
+  - the Approach's new-rows list gains the three shapes and the class `local:failed-attempt`. The moved-rules bullet now says the failed patches change bucket, and "The patch is kept" now covers the failed-attempt patch and the derived exemption;
+  - six I/O-matrix rows, covering the shapes and their look-alikes.
+- F2 — appended to `DW-doctor-43-1-2`, with fresh cited `verified:` lines. The cheap cases are fixed now:
+  - the `sessions/` token is `/ "sessions" / session_id` (1 symbol, was `"sessions"` in 2). Mutation: pointing the row at `core/layer_savings_sources.py::read_dispatch_idle_timing`, which also holds `"sessions"`, → red;
+  - the failed-attempt pair (F1) is the other.
+  - Still generic and deferred: `"runs"` (30 symbols) and `"sprint-status.yaml"` (6). No single literal pins their writers, and the tuple form now makes a second literal possible.
+  - `DW-doctor-43-1-1`'s location and `verified:` line are refreshed for the moved rows.
+- Nit — the Auto Run Result now says the iteration-2 pass is committed (`9554d68795`) and this pass is uncommitted.
+
+AC8, with the primary checkout's 3020 `pyforge-marshal` files: HEAD's factory and this pass's give identical classes (0 changed; the checkout holds no `campaign.lock` today). `main`'s factory against this pass's changes exactly 202 files: 145 quarantine files go from `UNKNOWN` to `local:run-journal`, and 57 failed patches go from `local:run-journal` to `local:failed-attempt`. That matches the iteration-3 review's count.
+
+8 mutations this pass, all as expected: 7 red, and the `intent_gap_preserve.py` rename green.
+
+AC7: a real `implementation-artifacts/` (not a symlink) holding the AC1 pair, every AC3 shape, a `sessions/<id>/…` gate record, a failed-attempt `changes.patch` and `fleet-drain-runs/campaign.lock` (15 files) gives `bmad-drift-check` 0, with no `uncovered` and no `stray-file`. Adding `fleet-drain-runs/other.lock` gives 2 (`uncovered`). `detectors-ci` gives 0 (46 of 46). The directory was removed.
+
+Gates, exit codes read from files:
+
+| Gate | Exit | Notes |
+|---|---|---|
+| `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` | 0 | 3596 passed, 1 skipped; the speed-budget test 1 passed |
+| `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` | 0 | 1494 passed, 31 skipped |
+| `pixi run -e pyforge-guild lint-types` | 0 | pyforge-doctor ruff, ruff-format and mypy ok |
+| `spec-surface-check` | 0 | after memlog reconciles and scoped stamps on `pyforge-doctor/spec-pyforge-doctor` and `pyforge-marshal/spec-pyforge-core` |
+| `scripts/spec_surface_reconcile.py` | 0 | |
+| `bmad-drift-check` | 0 | |
+| `deferred-work-check` | 0 | |
+| `frontmatter-duplicate-keys-check` | 0 | |
+| `detectors-ci` | 0 | 46 of 46, re-run after this entry and the Auto Run Result were written |
 
 ### 2026-10-12 — Independent review, iteration 3: sent back (1 medium, 2 low patch; 1 low defer)
 
@@ -388,11 +464,16 @@ Send-back: R1-R9 and R12 in one pass; R10/R11 as doctor deferred-work rows; a fr
 
 Status: in-progress
 
-The independent review sent the story back twice (iteration 1: R1-R12; iteration 2: N1-N6). Both fix passes are on `dispatch/pyforge-doctor/43.1`: iteration 1's committed as `c7759791e9`, iteration 2's uncommitted at the time of writing. A fresh independent review, iteration 3, gates the landing; this block is refreshed again at landing.
+The independent review sent the story back three times (iteration 1: R1-R12; iteration 2: N1-N6; iteration 3: F1-F4). Fix passes 1 and 2 are committed on `dispatch/pyforge-doctor/43.1` (`c7759791e9`, `9554d68795`); the iteration-3 fix pass is uncommitted at the time of writing. A fresh independent review, iteration 4, gates the landing; this block is refreshed again at landing.
 
-- Change: `sources/factory.py` declares `TIER3_RUN_ARTIFACTS` (pattern, class, writer `file::symbol`), one row per Tier-3 shape marshal or its dispatched session writes, including `sessions/<id>/…` gate records and a failed attempt's `dispatch-runs/<run>/failed/<story>/changes.patch`. The keep-exemption in `check_archive_hygiene` and in `scripts/bmad_drift_check.py --fix` is derived from the row's class (`TIER3_KEPT_CLASSES`). The script keeps a hand-synced, test-checked reference copy.
-- Guards: the doctor meta-test reads marshal with `ast` (never imported), resolving `/` chains, names, imported and twice-defined helpers, and fails naming `path:lineno` for a segment with no row. Every row's writer carries a row-specific token inside the cited symbol.
-- Deferred: `DW-doctor-43-1-1` (R10) and `DW-doctor-43-1-2` (R11, with N4 appended) in the doctor deferred-work ledger.
-- Follow-up review: required. The iteration-3 independent review has not run.
+- Change: `sources/factory.py` declares `TIER3_RUN_ARTIFACTS` (pattern, class, writer `file::symbol`), one row per Tier-3 shape marshal or its dispatched session writes. The rows include:
+  - `sessions/<id>/…` gate records;
+  - a failed attempt's `dispatch-runs/<run>/failed/<story>/changes.patch` (`local:failed-attempt`, writer `core/dispatch_preserve.py::failed_patch_path`);
+  - `fleet-drain-runs/campaign.lock`.
+
+  The keep-exemption in `check_archive_hygiene` and in `scripts/bmad_drift_check.py --fix` is derived from the row's class (`TIER3_KEPT_CLASSES`). The script keeps a hand-synced, test-checked reference copy.
+- Guards: the doctor meta-test reads marshal with `ast` (never imported), resolving `/` chains, names, and imported or twice-defined helpers. It fails naming `path:lineno` for a segment with no row. Every row's writer must carry its literal(s) inside the cited symbol.
+- Deferred: `DW-doctor-43-1-1` (R10) and `DW-doctor-43-1-2` (R11, with N4 and F2 appended) in the doctor deferred-work ledger.
+- Follow-up review: required. The iteration-4 independent review has not run.
 
 Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test`; `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`; `pixi run -e pyforge-guild lint-types`; `pixi run -e pyforge-guild spec-surface-check` after memlog reconciles and scoped stamps on `pyforge-doctor/spec-pyforge-doctor` and `pyforge-marshal/spec-pyforge-core` (never a bare global stamp); `bmad-drift-check` and `detectors-ci` with the AC7 Tier-3 tree planted; `deferred-work-check`; `frontmatter-duplicate-keys-check`. Exit codes per pass are in the Review Triage Log's fix-pass entries.

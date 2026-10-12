@@ -133,6 +133,8 @@ _TIER3_RUN_ARTIFACT_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
     # Marshal `factory drain` campaign records — a third sibling.
     (r"^implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    # The fleet-wide `factory drain` cycle lock, `fleet-drain-runs/campaign.lock`.
+    (r"^implementation-artifacts/fleet-drain-runs/campaign\.lock$", "local:run-journal"),
     # Tier-3 story context, gitignored.
     (r"^implementation-artifacts/epic-\d+-context\.md", "local:sprint-feed"),
     # Tier-3 sprint feed (gitignored, local-only) — the program console's

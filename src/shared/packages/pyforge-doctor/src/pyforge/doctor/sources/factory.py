@@ -321,11 +321,15 @@ TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
     # A failed attempt's preserved uncommitted diff inside its dispatch run record,
     # `dispatch-runs/<run>/failed/<story>/changes.patch` (Story 43.1, review iteration 2):
     # the only copy of that attempt, so it is kept like the attempted-change patch below.
-    # Listed before the `dispatch-runs/` row, which would otherwise claim it.
+    # The dispatch supervisor writes it (`dispatch_supervisor/__main__.py`
+    # `_journal_dispatch_preserve`) at the path `failed_patch_path` builds; the
+    # look-alike `supervisor/intent_gap_preserve.py::_write_failed_patch` writes the loop
+    # home's `.bmad-loop/runs/`, never Tier-3. Listed before the `dispatch-runs/` row,
+    # which would otherwise claim it.
     _tier3_run_rule(
         r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch",
         "local:failed-attempt",
-        f"{_MARSHAL_SRC_REL}/supervisor/intent_gap_preserve.py::_write_failed_patch",
+        f"{_MARSHAL_SRC_REL}/core/dispatch_preserve.py::failed_patch_path",
     ),
     # Marshal single-story dispatch run records (session.log,
     # dispatch-supervisor.log, journal.jsonl) — Story 22.x's sibling to the
@@ -346,6 +350,15 @@ TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
         r"^implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*",
         "local:run-journal",
         f"{_MARSHAL_SRC_REL}/core/dispatch_fleet.py::fleet_runs_dir",
+    ),
+    # The fleet-wide `factory drain` cycle lock beside those records (Story 43.1, review
+    # iteration 3): `fleet_cycle_lock_path` names `fleet-drain-runs/campaign`, and
+    # `FsPort.acquire_advisory_lock` (`adapters/fs_local.py`) locks its `.lock` sibling.
+    # Exactly that one file at the directory's root; the row above needs a subdirectory.
+    _tier3_run_rule(
+        r"^implementation-artifacts/fleet-drain-runs/campaign\.lock$",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/core/dispatch_fleet.py::fleet_cycle_lock_path",
     ),
     # Tier-3 story context, gitignored.
     _tier3_run_rule(

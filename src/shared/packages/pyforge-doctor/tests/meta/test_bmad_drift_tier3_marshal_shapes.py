@@ -206,28 +206,44 @@ _SHAPE_TABLE: tuple[_ShapeRow, ...] = (
         "implementation-artifacts/sessions/pyforge-marshal-20261012T103206150Z-210a0f06/gate-records/97-2/gate-record.json",
         "local:run-journal",
         MARSHAL_SRC / "cli" / "gate.py",
-        '"sessions"',
+        '/ "sessions" / session_id',
     ),
     _ShapeRow(
         # Inside `dispatch-runs/<run>/`, deeper than the scan reads; the row and its
-        # writer token keep it.
+        # writer token keep it. The Tier-3 writer is `core/dispatch_preserve.py`'s
+        # `failed_patch_path`, not `supervisor/intent_gap_preserve.py` (loop home only).
         (),
         "implementation-artifacts/dispatch-runs/run-a/failed/97.2/changes.patch",
         "local:failed-attempt",
-        MARSHAL_SRC / "supervisor" / "intent_gap_preserve.py",
+        MARSHAL_SRC / "core" / "dispatch_preserve.py",
         '"changes.patch"',
+    ),
+    _ShapeRow(
+        # `fleet_cycle_lock_path` names `fleet-drain-runs/campaign`; the advisory lock
+        # adds the `.lock` suffix (`adapters/fs_local.py`), beyond what the scan reads.
+        (),
+        "implementation-artifacts/fleet-drain-runs/campaign.lock",
+        "local:run-journal",
+        MARSHAL_SRC / "core" / "dispatch_fleet.py",
+        '/ "campaign"',
     ),
 )
 
-#: For each ``TIER3_RUN_ARTIFACTS`` row, keyed by its pattern: a literal the row's cited
-#: writer must carry inside the cited symbol's own source (the module docstring for
-#: ``::__doc__``, the whole file for a skill file), so a row pointed at a wrong but existing
-#: symbol or file fails, and a new row cannot land without one.
-_WRITER_TOKENS: dict[str, str] = {
+#: For each ``TIER3_RUN_ARTIFACTS`` row, keyed by its pattern: the literal (or literals, all
+#: required) the row's cited writer must carry inside the cited symbol's own source (the
+#: module docstring for ``::__doc__``, the whole file for a skill file), so a row pointed at
+#: a wrong but existing symbol or file fails, and a new row cannot land without one.
+_WRITER_TOKENS: dict[str, str | tuple[str, ...]] = {
     r"^implementation-artifacts/runs/[A-Za-z0-9._-]+/.*": '"runs"',
-    r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch": '"changes.patch"',
+    # `"changes.patch"` also sits in `supervisor/intent_gap_preserve.py::_write_failed_patch`
+    # (the loop home's copy); the second literal is `failed_patch_path`'s alone.
+    r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch": (
+        '"changes.patch"',
+        'return run_dir / "failed"',
+    ),
     r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*": "_DISPATCH_RUNS_DIRNAME",
     r"^implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*": "_FLEET_RUNS_DIRNAME",
+    r"^implementation-artifacts/fleet-drain-runs/campaign\.lock$": '/ "campaign"',
     r"^implementation-artifacts/epic-\d+-context\.md": "-context.md",
     r"^implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml": '"sprint-status.yaml"',
     r"^implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json": "implementation-artifacts/worktree-verdicts-",
@@ -235,7 +251,7 @@ _WRITER_TOKENS: dict[str, str] = {
     r"^implementation-artifacts/recall-feedback__[^/]+__[^/]+\.md\.query-ran": '.query-ran"',
     r"^implementation-artifacts/epic-\d+-continuity\.md": "-continuity.md",
     r"^implementation-artifacts/session-advisories/[A-Za-z0-9._-]+/.*": "_SESSION_ADVISORIES_DIRNAME",
-    r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*": '"sessions"',
+    r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*": '/ "sessions" / session_id',
     r"^implementation-artifacts/dispatch-runs-quarantine/.*": "implementation-artifacts/dispatch-runs-quarantine/",
     r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json": "token-economy-benchmark-{stamp}",
     r"^implementation-artifacts/token-economy-benchmark-per-layer-[A-Za-z0-9._-]+\.json": (
@@ -690,7 +706,10 @@ def test_every_tier3_rule_names_a_real_writer() -> None:
         assert path.is_file(), (pattern, rule.writer)
         if not symbol:
             assert path.suffix == ".md", (pattern, rule.writer)
-        assert _WRITER_TOKENS[pattern] in _symbol_source(path, symbol), (pattern, rule.writer, _WRITER_TOKENS[pattern])
+        tokens = _WRITER_TOKENS[pattern]
+        source = _symbol_source(path, symbol)
+        for token in (tokens,) if isinstance(tokens, str) else tokens:
+            assert token in source, (pattern, rule.writer, token)
 
 
 def test_marshal_ast_scan_covers_expected_segments(tmp_path: Path) -> None:

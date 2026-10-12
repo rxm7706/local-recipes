@@ -1802,6 +1802,7 @@ _TIER3_DISPATCH_SHAPES: dict[str, str] = {
     "97-2-x-attempted-change.patch": "local:attempted-change",
     "sessions/pyforge-marshal-20261012T103206150Z-210a0f06/gate-records/97-2/gate-record.json": "local:run-journal",
     "dispatch-runs/pyforge-marshal-20260901T032300000Z-0a1b2c3d/failed/28.9/changes.patch": "local:failed-attempt",
+    "fleet-drain-runs/campaign.lock": "local:run-journal",
 }
 
 
@@ -1943,3 +1944,32 @@ def test_kept_exemption_follows_the_table_class(tmp_path: Path, monkeypatch: pyt
     monkeypatch.setattr(factory, "TIER3_RUN_ARTIFACTS", narrowed)
     stray = [f.evidence["subject"] for f in factory.gather(repo) if f.check == "stray-file"]
     assert stray == ["implementation-artifacts/97-2-x-attempted-change.patch"]
+
+
+@pytest.mark.parametrize("name", ["fleet-drain-runs/other.lock", "fleet-drain-runs/campaign"])
+def test_fleet_cycle_lock_look_alikes_still_uncovered(tmp_path: Path, name: str) -> None:
+    """Only ``fleet-drain-runs/campaign.lock`` itself (``fleet_cycle_lock_path`` plus the
+    advisory lock's ``.lock`` suffix) is covered at that directory's root (review iteration 3)."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    path = factory._impl(repo) / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("x\n", encoding="utf-8")
+    assert factory.classify(path, repo) == "UNKNOWN"
+    findings = [f for f in factory.gather(repo) if f.check == "uncovered"]
+    assert [f.evidence["subject"] for f in findings] == [f"implementation-artifacts/{name}"]
+
+
+def test_fleet_cycle_lock_is_covered_and_a_stray_copy_is_not(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    runs = factory._impl(repo) / "fleet-drain-runs"
+    runs.mkdir(parents=True)
+    (runs / "campaign.lock").write_text("", encoding="utf-8")
+    assert factory.classify(runs / "campaign.lock", repo) == "local:run-journal"
+    findings = factory.gather(repo)
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK
+    (runs / "campaign.lock.bak").write_text("", encoding="utf-8")
+    stray = [f.evidence["subject"] for f in factory.gather(repo) if f.check == "stray-file"]
+    assert stray == ["implementation-artifacts/fleet-drain-runs/campaign.lock.bak"]
