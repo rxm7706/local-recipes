@@ -7,7 +7,6 @@ baseline_revision: '381c90f99cb7e47f09f3e8decb0cd2d92086e9af'
 followup_review_recommended: false
 difficulty: 'easy'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-27-2-one-pages-artifact-carries-the-docs-site-the-dossier-and-the-dashboard.md

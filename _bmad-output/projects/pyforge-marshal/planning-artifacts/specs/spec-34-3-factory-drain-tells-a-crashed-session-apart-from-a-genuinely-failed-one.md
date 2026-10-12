@@ -6,7 +6,6 @@ status: 'done'
 baseline_revision: '64ea7659d022c4d2c97938c6ac39e936d65c27c4'
 review_loop_iteration: 1
 followup_review_recommended: false
-followup_review_recommended: false
 context: []
 warnings: []
 deferred: []

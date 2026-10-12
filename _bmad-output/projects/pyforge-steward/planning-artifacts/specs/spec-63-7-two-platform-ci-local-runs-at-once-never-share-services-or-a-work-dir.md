@@ -4,7 +4,6 @@ type: 'fix'
 created: '2026-10-07'
 status: 'done'
 baseline_revision: 'adea658e758cf460f11e78e484ed3ce80a51df18'
-review_loop_iteration: 0
 followup_review_recommended: false
 review_loop_iteration: 0
 context:
