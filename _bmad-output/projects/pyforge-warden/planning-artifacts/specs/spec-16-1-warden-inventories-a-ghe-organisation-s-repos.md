@@ -293,6 +293,40 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
 
 ## Review Triage Log
 
+### 2026-10-11 — Fix pass for iteration 4 minors (implementer)
+
+Implementer pass on the three iteration-4 minors and the M5b note. Not a review verdict: the orchestrator re-verifies
+this delta. Same rules as before: fictional identifiers only, no network, no `gh`, no `.warden/` read. The scratch
+cluster had its own uniquely named directory and ports and was stopped by exact PID. Each mutation was restored
+byte-identical (`cmp`), and the tests went green again. Below, `R` is `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`, `U` is `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py`, `P` is `src/platform/tests/test_warden_fleet_inventory.py` and `F` is
+`src/shared/packages/django-warden/src/django_warden_fabric/fleet_inventory.py`.
+
+- N4-1: `test_gh_timeout_is_typed_and_drops_partial_output` (`P:562`) feeds a `TimeoutExpired` whose output and
+  stderr hold the sentinel. It asserts the suppressed `TimeoutExpired` has `output`, `stdout` and `stderr` all
+  `None`. Mutation: `exc.output = exc.stderr = None` deleted (`F:203`) -> red.
+- N4-2: `test_credential_and_fragments_never_show_the_token` (`U:316`) runs on a short token and on a 100+ character
+  one (`U:312`). It asserts `all(len(f) <= 32 for f in fragments)` and that the fragments join back to
+  `Bearer <token>`. Mutation: `_FRAGMENT_BYTES = 4096` (`R:49`) -> 2 red.
+- N4-3: `GhTokenUnavailableError` is now raised after the `except` block (`F:199`, `F:215`), so it has no
+  `__context__` (and no `__cause__`).
+  - `test_gh_output_that_will_not_decode_leaves_no_trace` (`P:639`) runs the real `_run_gh` against a fake `gh`
+    that prints the sentinel and an invalid UTF-8 byte. `UnicodeDecodeError` is typed with
+    `__context__ is None`, and no link in the chain holds the sentinel in its `str`, `repr` or attributes.
+  - `test_gh_provider_types_any_runner_failure_and_clears_its_frames` (`P:610`) now asserts
+    `__context__ is None`.
+  - Mutation: the raise moved back inside the `except` -> 3 red.
+- M5b: the 30 s request timeout has one source. `GitHubRestOrgReposClient`'s `timeout` is now required, with no
+  default (`R:291`), and the client's `REQUEST_TIMEOUT_SECONDS` is gone. The task passes
+  `FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS` (`tasks.py:153`). The unit tests pass their own value (`U:51`) and
+  `U:268` proves it reaches the socket. Mutation: the task passes `timeout=60` -> `P:888` red (it asserts the
+  constant reached the socket).
+- Spec surface: memlog events on `spec-pyforge-warden`, `spec-pyforge-core` and `spec-pyforge-unifying-strategy`
+  name the moved paths. `spec-surface-check` named no Spec as drifted, so no stamp was taken.
+- Gates (exit codes read from files):
+  - `pixi run -e pyforge-warden pyforge-warden-test` 0 (2340 passed); `pixi run -e pyforge-guild lint-types` 0.
+  - `pixi run -e pyforge-guild platform-ci-local -- --test` 0 (seven steps PASS; 1256 passed, 14 skipped).
+  - `pixi run -e pyforge-guild spec-surface-check` 0; `pixi run -e pyforge-guild detectors-ci` 0 (45 pass).
+
 ### 2026-10-11 — Independent review, iteration 4: passed (3 minor)
 
 Fresh separate agent, review of `git diff origin/main...HEAD` at 5866c5c70c, attacking the iteration-3 construction offline with a sentinel token. Neither the bare token nor any 8-character piece of it appeared in any frame local, log line, exception, audit event, `http.client` debug print, proxy-visible byte, export or DB row. Probes: a local TLS server playing `api.github.com` received `Authorization: Bearer <sentinel>` and `Host: api.github.com` on both pages (the credential does authenticate); a stack walk at every real `ssl.SSLSocket.send` found only redacted fragments and memoryviews; a local CONNECT proxy saw only `CONNECT api.github.com:443` and ciphertext; stall, soft time limit mid-fragment and broken pipe mid-fragment are all typed and render clean; redirects to `API.GITHUB.COM` and `:443` keep the credential, and trailing-dot, `//evil.example`, backslash-userinfo and `%2e` hosts are refused; the `gh` provider's failure paths are typed. 19 of 22 mutations caught (M5b is an equivalent mutant). Confidentiality: only fictional identifiers in 3369 added lines, 35 commit messages and the branch history; nothing under `.warden/` read or committed. Gates: `pyforge-warden-test` 0 (2339 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0, `deferred-work-check` 0, `platform-ci-local -- --test` 0 (1255 passed, 14 skipped).

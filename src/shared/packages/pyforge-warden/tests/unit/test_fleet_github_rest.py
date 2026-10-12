@@ -34,7 +34,6 @@ import pytest
 from pyforge.core.errors import PyforgeError
 
 from pyforge.warden.fleet_github_rest import (
-    REQUEST_TIMEOUT_SECONDS,
     FleetInventoryApiError,
     GitHubRestOrgReposClient,
     HttpMethodRefusedError,
@@ -49,6 +48,7 @@ from pyforge.warden.fleet_github_rest import (
 )
 
 _EXAMPLE_ORG = "example-org"
+_REQUEST_TIMEOUT = 12.5  # any value: the test proves the caller's timeout reaches the socket
 _SENTINEL = "sentinel-token-must-not-leak-16-1"
 _BEARER = f"Bearer {_SENTINEL}"
 _API = "https://api.github.com"
@@ -178,7 +178,7 @@ class _FakeGitHub:
         self.routes[url] = lambda fake: _ScriptedReader(head, then, fake)
 
     def client(self, token: str = _SENTINEL) -> GitHubRestOrgReposClient:
-        return GitHubRestOrgReposClient(token=token)
+        return GitHubRestOrgReposClient(token=token, timeout=_REQUEST_TIMEOUT)
 
 
 class _ServerSocket:
@@ -268,7 +268,7 @@ def test_every_outgoing_request_is_a_get(fake: _FakeGitHub) -> None:
 def test_each_request_uses_the_request_timeout(fake: _FakeGitHub) -> None:
     _serve_two_pages(fake)
     fake.client().list_org_repos(_EXAMPLE_ORG)
-    assert {exchange.timeout for exchange in fake.exchanges} == {REQUEST_TIMEOUT_SECONDS}
+    assert {exchange.timeout for exchange in fake.exchanges} == {_REQUEST_TIMEOUT}
 
 
 def test_http_client_refuses_non_get_before_a_socket_opens(fake: _FakeGitHub) -> None:
@@ -309,11 +309,18 @@ def test_the_pinned_handler_sends_the_credential_only_to_the_api_origin(fake: _F
     assert fake.stack_leaks == []
 
 
-def test_credential_and_fragments_never_show_the_token() -> None:
-    credential = _Credential(_SENTINEL)
+_LONG_TOKEN = f"{_SENTINEL}-{'x' * 90}"  # over 100 characters, as a fine-grained PAT is
+
+
+@pytest.mark.parametrize("token", [_SENTINEL, _LONG_TOKEN], ids=["short", "long"])
+def test_credential_and_fragments_never_show_the_token(token: str) -> None:
+    """N4-2: no fragment exceeds 32 bytes, so a renderer that slices values over 80
+    characters never shows a plain slice of a long token."""
+    credential = _Credential(token)
     assert _SENTINEL not in repr(credential)
     assert _SENTINEL not in str(credential)
-    assert b"".join(credential.fragments) == _BEARER.encode()
+    assert b"".join(credential.fragments) == f"Bearer {token}".encode()
+    assert all(len(fragment) <= 32 for fragment in credential.fragments)
     for fragment in credential.fragments:
         assert isinstance(fragment, RedactedBytes)
         assert repr(fragment) == str(fragment) == "<credential bytes redacted>"
@@ -547,7 +554,7 @@ def test_a_base_exception_propagates_with_its_frames_cleared(monkeypatch: pytest
 def test_a_malformed_token_is_refused_before_any_request(fake: _FakeGitHub, caplog: pytest.LogCaptureFixture) -> None:
     """A token that could inject a header is refused; no frame on the refusal path keeps it."""
     with pytest.raises(FleetInventoryApiError, match="not one printable token") as caught:
-        GitHubRestOrgReposClient(token=f"{_SENTINEL}\r\nX-Injected: 1")
+        GitHubRestOrgReposClient(token=f"{_SENTINEL}\r\nX-Injected: 1", timeout=_REQUEST_TIMEOUT)
     _assert_sentinel_absent(caught.value, caplog)
     assert fake.exchanges == []
 
@@ -572,7 +579,7 @@ def test_pagination_rejects_repeated_link_url(fake: _FakeGitHub) -> None:
 
 
 def test_client_repr_redacts_the_token() -> None:
-    client = GitHubRestOrgReposClient(token=_SENTINEL)
+    client = GitHubRestOrgReposClient(token=_SENTINEL, timeout=_REQUEST_TIMEOUT)
     assert _SENTINEL not in repr(client)
     assert "redacted" in repr(client)
     assert all(not _holds_sentinel(value) for value in vars(client).values())

@@ -42,9 +42,6 @@ GITHUB_API_HOST = "api.github.com"
 _ORG_REPOS_PATH = "/orgs/{organisation}/repos"
 _LINK_NEXT = re.compile(r'<([^>]+)>;\s*rel="next"')
 _HTTPS_DEFAULT_PORT = 443
-# Per socket operation. Below the inventory task's soft time limit, so a stalled
-# response ends here as a typed TimeoutError, not in Celery's SoftTimeLimitExceeded.
-REQUEST_TIMEOUT_SECONDS = 30.0
 _AUTHORIZATION_PLACEHOLDER = "Bearer pyforge-warden-credential-placeholder"
 _AUTHORIZATION_PLACEHOLDER_BYTES = _AUTHORIZATION_PLACEHOLDER.encode("ascii")
 # At most this many bytes per fragment: log renderers that truncate long values
@@ -291,9 +288,12 @@ class GitHubRestOrgReposClient:
         self,
         *,
         token: str,
+        timeout: float,
         api_host: str = GITHUB_API_HOST,
-        timeout: float = REQUEST_TIMEOUT_SECONDS,
     ) -> None:
+        """``timeout`` is per socket operation, and has no default here: its one source is
+        the caller's (the inventory task's ``FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS``,
+        kept below the task's soft time limit), so the two can never drift apart."""
         try:
             credential = _Credential(token)
         finally:

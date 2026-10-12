@@ -194,8 +194,9 @@ class GhAuthTokenProvider:
             raise GhBinaryMissingError
         argv = [gh, "auth", "token", "--hostname", self._hostname]
         run = self._runner if self._runner is not None else _run_gh
-        # Every failure is typed ``from None`` with its frames' locals cleared: the
-        # subprocess frames may hold partial stdout (a token) when they fail.
+        # Every failure is typed with its frames' locals cleared: the subprocess frames
+        # may hold partial stdout (a token) when they fail.
+        failure: str | None = None
         try:
             completed = run(argv, timeout=self._timeout)
         except subprocess.TimeoutExpired as exc:
@@ -205,10 +206,13 @@ class GhAuthTokenProvider:
         except Exception as exc:
             failure = type(exc).__name__
             traceback.clear_frames(exc.__traceback__)
-            raise GhTokenUnavailableError(failure) from None
         except BaseException as exc:
             traceback.clear_frames(exc.__traceback__)
             raise
+        if failure is not None:
+            # Raised outside the handler, so no ``__context__`` keeps the failure (a
+            # ``UnicodeDecodeError`` holds the raw stdout it could not decode).
+            raise GhTokenUnavailableError(failure)
         value = completed.stdout.strip() if completed.returncode == 0 else ""
         # Drop the process result before any raise: a logged traceback renders locals.
         del completed

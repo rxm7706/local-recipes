@@ -561,7 +561,9 @@ def test_gh_token_is_read_with_a_timeout() -> None:
 
 def test_gh_timeout_is_typed_and_drops_partial_output() -> None:
     calls: list[tuple[list[str], float]] = []
-    expired = subprocess.TimeoutExpired(cmd=[_GH], timeout=7.5, output=_SENTINEL)
+    expired = subprocess.TimeoutExpired(
+        cmd=[_GH], timeout=7.5, output=_SENTINEL, stderr=_SENTINEL
+    )
     provider = GhAuthTokenProvider(runner=_fake_runner(expired, calls), timeout=7.5)
     with (
         patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=_GH),
@@ -572,6 +574,12 @@ def test_gh_timeout_is_typed_and_drops_partial_output() -> None:
     assert caught.value.__suppress_context__ is True
     assert _SENTINEL not in str(caught.value)
     assert _SENTINEL not in repr(caught.value)
+    # N4-1: the suppressed TimeoutExpired keeps no partial output.
+    suppressed = caught.value.__context__
+    assert isinstance(suppressed, subprocess.TimeoutExpired)
+    assert suppressed.output is None
+    assert suppressed.stdout is None
+    assert suppressed.stderr is None
 
 
 def _leaky_runner(error: BaseException) -> Any:
@@ -609,10 +617,48 @@ def test_gh_provider_types_any_runner_failure_and_clears_its_frames(
         pytest.raises(GhTokenUnavailableError, match=type(error).__name__) as caught,
     ):
         provider.token()
-    assert caught.value.__suppress_context__ is True
-    assert caught.value.__context__ is error
+    assert caught.value.__context__ is None
+    assert caught.value.__cause__ is None
     assert _runner_frame_locals(error) == [{}]
     assert _SENTINEL not in str(caught.value)
+
+
+def _chain(exc: BaseException) -> list[BaseException]:
+    """Every exception linked from ``exc``, suppressed context included."""
+    found: list[BaseException] = []
+    pending: list[BaseException] = [exc]
+    while pending:
+        current = pending.pop()
+        if any(current is seen for seen in found):
+            continue
+        found.append(current)
+        pending.extend(e for e in (current.__cause__, current.__context__) if e)
+    return found
+
+
+def test_gh_output_that_will_not_decode_leaves_no_trace(tmp_path: Path) -> None:
+    """N4-3: the real runner fails to decode gh's stdout; nothing in the chain keeps it.
+
+    A ``UnicodeDecodeError`` holds the raw bytes it could not decode, so the typed
+    error is raised outside the handler and has no ``__context__`` at all.
+    """
+    gh = tmp_path / "gh"
+    gh.write_text(f"#!/bin/sh\nexec printf '{_SENTINEL}\\377\\n'\n", encoding="utf-8")
+    gh.chmod(0o755)
+    provider = GhAuthTokenProvider(runner=real_run_gh, timeout=5)
+    with (
+        patch(
+            "django_warden_fabric.fleet_inventory.shutil.which", return_value=str(gh)
+        ),
+        pytest.raises(GhTokenUnavailableError, match="UnicodeDecodeError") as caught,
+    ):
+        provider.token()
+    assert caught.value.__context__ is None
+    assert caught.value.__cause__ is None
+    for link in _chain(caught.value):
+        assert _SENTINEL not in str(link)
+        assert _SENTINEL not in repr(link)
+        assert _SENTINEL.encode() not in repr(vars(link)).encode()
 
 
 def test_gh_provider_clears_frames_of_a_base_exception() -> None:
