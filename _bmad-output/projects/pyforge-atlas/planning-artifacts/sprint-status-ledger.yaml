@@ -89,7 +89,7 @@ development_status:
   27-3-the-read-surfaces-render-what-design-specifies-on-real-data: done
   27-4-the-planning-record-matches-the-tree-and-owed-reviews-run: done
   27-5-the-distribution-breakdown-facet-filter-builds-its-control: done
-  28-1-the-live-attach-fixture-postgres-starts-under-any-basetemp: backlog
+  28-1-the-live-attach-fixture-postgres-starts-under-any-basetemp: done
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-vulnerability-pipelines: done
@@ -158,7 +158,7 @@ development_status:
   epic-26-retrospective: optional
   epic-27: done
   epic-27-retrospective: optional
-  epic-28: backlog
+  epic-28: done
   epic-28-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
