@@ -6,6 +6,7 @@ status: 'in-review'
 baseline_revision: 'e4ab638bb6276c27466ec0e7c85d55745dec08d7'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 1
 landing_review: 'required'
 flag:
   key: pyforge.steward.stations_index
