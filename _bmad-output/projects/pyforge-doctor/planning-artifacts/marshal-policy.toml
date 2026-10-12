@@ -331,6 +331,25 @@ verify_commands = [
   "docs/MAP.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"43" = [  # bmad-drift knows every file marshal dispatch writes into Tier-3 (a fix under CAP-12 with CAP-11, no CAP;
+  # Story 43.1), added 2026-10-12. The default surface, restated because a declared entry replaces it outright, plus
+  # the script that carries bmad-drift's --fix and its reference classify() copy, its tests, marshal's SYNC-RUNBOOK
+  # rows that name the rules, the ledger row it closes, and every Spec memlog a reconcile names (spec-pyforge-core
+  # co-governs station src/).
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/bmad_drift_check.py",
+  "tests/scripts/**",
+  "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "41" = [  # Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals (fix stories, no new CAP), added 2026-10-03
   # The default surface, restated because a declared entry replaces it outright, plus what the four stories touch
   # outside the package: the spec-surface, verdict-writer and baseline scripts and their tests (41.1), the detectors

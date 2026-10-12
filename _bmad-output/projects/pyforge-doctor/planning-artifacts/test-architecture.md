@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 877e11c7e2bffcc9
-story_count: 149
-test_file_count: 94
+source_fingerprint: bccaa6b9163f2655
+story_count: 150
+test_file_count: 95
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 149
-- **Epics parsed:** 42
-- **Test files inventoried:** 94 under `src/shared/packages/pyforge-doctor/tests/`
+- **Stories parsed:** 150
+- **Epics parsed:** 43
+- **Test files inventoried:** 95 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `877e11c7e2bffcc9`
+- **Source fingerprint:** `bccaa6b9163f2655`
 
 ## Risk Assessment
 
@@ -78,6 +78,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 39: `pr-preflight` runs every step of the Detectors scripts lane (spec-pyforge-doctor CAP-42, CAP-43)
 - Epic 40: Phase 2 of the deferral burn-down: doctor's high deferrals
 - Epic 42: A repeated frontmatter key in a story spec turns Detectors red (spec-pyforge-doctor CAP-81, CAP-86)
+- Epic 43: bmad-drift knows the files marshal dispatch writes into Tier-3 (spec-pyforge-doctor CAP-11, CAP-12)
 
 ## Test Inventory
 
@@ -156,6 +157,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_map_hygiene.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_shelf.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_frontmatter_duplicate_keys.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_frozen_path.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_general_docs_consistency.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_honest_reads_41_2.py` | unit | 41.2 |
@@ -331,6 +333,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 41.5 | A new story reopens its done epic without reading as a ledger regression | none observed |
 | 41.6 | Chain-completeness counts the one-chain fold's citation window again | none observed |
 | 42.1 | A repeated frontmatter key in a story spec turns Detectors red | none observed |
+| 43.1 | bmad-drift knows every file marshal dispatch writes into Tier-3 | none observed |
 
 ## Quality Gates
 

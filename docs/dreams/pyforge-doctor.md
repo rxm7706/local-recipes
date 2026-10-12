@@ -86,6 +86,27 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-12 (bmad-drift knows dispatch run artifacts)** — **Found: bmad-drift fails the files marshal dispatch
+  writes into its own Tier-3 store.** Marshal Story 47.1 (with 47.2 and 93.1) writes a recall-feedback pair into the
+  dispatch worktree's gitignored `implementation-artifacts/`: `recall-feedback__<story>__<run>.md` and a sibling
+  `….md.query-ran` (`core/recall_feedback.py`, `adapters/harness_bmadloop.py`). `classify()` has no rule for either,
+  so `check_coverage` fails both as `uncovered` (HARD), and `detectors-ci` exits 1 in that worktree while CI's fresh
+  clone, which has no Tier-3 files, stays green. Found on 2026-10-12 on marshal Story 97.2, whose dispatch worktree
+  holds exactly those two files. Reproduced at `70975ae790` with the factory tests' own clean fixture: one OK row, then
+  one `uncovered` FAIL per planted file. Marshal writes more Tier-3 shapes that no rule covers:
+  `epic-<N>-continuity.md`, `session-advisories/<run>/` (`marshal context advisory`, the session-close ritual),
+  `dispatch-runs-quarantine/` (where marshal's stale-run remedy tells the operator to move a run; 145 files on the
+  primary checkout fail today), the `token-economy-benchmark-*.json` defaults, and the session's
+  `bmad-build-auto-result-<slug>.md`. A blocked session's `*attempted-change*.patch` is the one copy of the attempt, yet
+  bmad-drift calls it a `stray-file` "already in git history", and `scripts/bmad_drift_check.py --fix` deletes it.
+  Every earlier new shape went the same way (`classify()`'s dated comments list them): red after it landed, then one
+  more rule. **What it looks like when fixed:** one declared list in `sources/factory.py` names every Tier-3 shape
+  marshal, or the session it dispatches, writes, with the writer it came from. `classify()` reads it, and a test that
+  reads marshal's source without importing it fails when marshal starts writing a shape the list lacks. A file no rule names still fails as `uncovered`. **Constraints:** a
+  fix, no new CAP, no flag. It works under CAP-12 (one classification rule set, fail-closed for anything else), with
+  CAP-11, and keeps the classifier's independence: it never imports `pyforge.marshal`. Operator ask, 2026-10-12: "Do
+  this task here: Teach bmad-drift about dispatch recall-feedback files". Owner `spec-pyforge-doctor`. → Epic 43 /
+  Story 43.1, specced 2026-10-12.
 - **2026-10-11 (duplicate frontmatter keys in story specs)** — **Found: 37 tracked story specs repeat a frontmatter
   key, and no detector says so.** Measured on `main` at `a21524e9d6` with a duplicate-key-detecting YAML loader: 37 of
   the 1,407 tracked story specs with frontmatter carry 40 repeated keys, `followup_review_recommended` 29 times and
