@@ -1,4 +1,4 @@
-"""Fleet inventory and scan helpers (Stories 16.1 / 16.2)."""
+"""Fleet inventory and scan helpers (Stories 16.1 / 16.2 / 16.5)."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 FLEET_SCAN_FLAG = "pyforge.warden.fleet_scan"
 FLEET_FIX_PROPOSALS_FLAG = "pyforge.warden.fleet_fix_proposals"
 FLEET_INVENTORY_FLAG = "pyforge.warden.fleet_inventory"
+FLEET_PROJECT_ITEMS_FLAG = "pyforge.warden.fleet_project_items"
 
 # Steward-provisioned credential names — passed via subprocess env only, never URLs/logs.
 _GIT_CREDENTIAL_ENV_KEYS = (

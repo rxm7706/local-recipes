@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[6]
 SCRIPTS = ROOT / "scripts"
 RUFF_TABLE = """
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 120
 extend-exclude = ["*/migrations/*.py"]
 

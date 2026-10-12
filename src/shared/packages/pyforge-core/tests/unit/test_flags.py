@@ -929,6 +929,13 @@ _SHIPPED_CLOCKS = {
         "",
         "",
     ),
+    "pyforge.warden.fleet_project_items": (
+        "warden",
+        "16-5-",
+        "2026-10-11",
+        "",
+        "",
+    ),
     "pyforge.warden.non_python_ecosystems": (
         "warden",
         "16-4-",
@@ -1061,6 +1068,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.warden.fleet_inventory": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fleet_scan": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fleet_fix_proposals": {"dev": True, "staging": True, "production": False},
+        "pyforge.warden.fleet_project_items": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.non_python_ecosystems": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.sast_opengrep": {"dev": True, "staging": True, "production": False},
     }

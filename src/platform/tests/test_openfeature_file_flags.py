@@ -140,7 +140,7 @@ def _flagd_tree(default_variant: str) -> bytes:
 def _looks_like_flagd(path: Path) -> bool:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+    except OSError, json.JSONDecodeError, UnicodeDecodeError:
         return False
     flags = payload.get("flags") if isinstance(payload, dict) else None
     if not isinstance(flags, dict) or not flags:
@@ -665,6 +665,11 @@ _SHIPPED_BOOLEANS = {
         "production": False,
     },
     "pyforge.warden.fleet_fix_proposals": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
+    "pyforge.warden.fleet_project_items": {
         "dev": True,
         "staging": True,
         "production": False,

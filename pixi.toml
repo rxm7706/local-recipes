@@ -1384,7 +1384,7 @@ description = "Story 66.1 (spec-pyforge-steward CAP-153): `mypy -p pyforge.<stat
 
 [feature.guild-tasks.tasks.target-version-check]
 cmd = "python scripts/target_version_check.py"
-description = "Story 66.1 (spec-pyforge-steward CAP-153): every pyforge-* package's [tool.ruff] target-version and [tool.mypy] python_version match the interpreter pinned in pixi.toml (the registry shape of pixi-version-check). Exit 0 clean, 1 drift, 2 could-not-run."
+description = "Stories 66.1 / 93.1 / 95.1 (spec-pyforge-steward CAP-153): every pyforge-* and django-* package's [tool.ruff] target-version and requires-python floor, plus src/platform's ruff target and mypy python_version, match the interpreter pinned in pixi.toml (the registry shape of pixi-version-check). Exit 0 clean, 1 drift, 2 could-not-run."
 
 [feature.guild-tasks.tasks.precommit-config-check]
 cmd = "python scripts/precommit_config_check.py"
