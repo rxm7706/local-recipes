@@ -76,9 +76,23 @@ Story 71.2 runs the workflow's own `changes` shell. Line numbers below are at `5
   | core | all of `src/` and `scripts/` (`test_preserve_refs_sole_grammar.py`'s scan roots); `src/platform/config/flags.json` (`test_flags.py`) |
   | testing_kit | none |
 
-  Planning content is read too and is held out by design (Approach): doctor reads every station's deferred-work ledger,
-  its own epics and sprint ledger, and `archive/**`; marshal reads every station's `marshal-policy.toml`, story specs and
-  `test-architecture.md`; herald reads a steward spec companion; atlas reads `recipes/`.
+  Planning content is read too, and by the operator's ruling of 2026-10-12 it triggers like any other read (Approach).
+  Read directly by the tests: doctor reads every station's `deferred-work-ledger.md`, its own `epics.md`,
+  `sprint-status-ledger.yaml` and project `README.md`, herald's and marshal's planning files, a steward spec companion
+  (`specs/spec-foundry-regenerate-not-fold/case-list.md`), `archive/_bmad-output/**` and `recipes/*/recipe.yaml`;
+  marshal reads every station's `marshal-policy.toml`, story specs (`specs/spec-*.md`) and `test-architecture.md`, its
+  own `epics.md`, `deferred-work-ledger.md` and `upstream-register.json`, and `.claude/memory/MEMORY.md`; herald reads
+  the same steward spec companion (`test_dossier_structure.py`); atlas reads `recipes/` (`test_identity_gist_markdown.py`).
+- **Reads through the code under test.** 32 test files hand the bare repository root to the code they test (a gatherer,
+  a generator, or `subprocess.run`/`monkeypatch.chdir` at the root), which then reads the tree; a scan of the test file
+  cannot see what it reads. Measured on `5beef7c9eb` (call arguments that resolve to the root): doctor 19 (the chain,
+  board, one-chain, dreams-hygiene, deferred-work, docs-shelf, general-docs, hygiene, status-body and factory
+  gatherers, e.g. `test_sources_chain_dreams_hygiene.py::test_live_tree_dream_readme_missing_count`, which counts the
+  live `docs/dreams/` rows), herald 5 (deck versions, pptx-native decks, twins, the docsite build), marshal 5 (the
+  test-architecture generator, which reads every station's `epics.md` and tests; `verify_code_linkage`; the harness
+  profiles; a compose run), steward 2 (preflight scratch and suite reduction), atlas 1 (the identity gist, over
+  `recipes/`). These are where most planning reads happen: a Dream added without a `README.md` row changes doctor's
+  live count and reds `doctor-test`, and no filter fires it today.
 - **Not a suite read.** `scripts/target_version_check.py` is read by `tests/scripts/test_lint_types_gate.py`, which
   `detectors.yml`'s `pyforge-doctor-scripts-test` runs on every PR; no suite test reads it.
 - **The local twin follows.** `preflight_ci` runs the workflow's `changes` job to choose lanes (Story 71.2), so it
@@ -117,12 +131,25 @@ paths from the tests and proves the workflow fires for each.
     `refs/remotes/origin/main`; the `changes` step's `run:` script runs as the selection oracle runs it; the job's
     output must be `true`, and `on.pull_request.paths` must match the path under GitHub's glob rules
     (`preflight_ci.filter_matches`). One fixture per distinct representative path, reused across jobs.
-  - *Exemptions.* A map of glob to reason, in the test. Its seed holds planning content only:
-    `_bmad-output/projects/*/planning-artifacts/**`, `archive/**`, `docs/dreams/**`, `recipes/**`, `.claude/memory/**`
-    — Tier 2 planning artifacts, archives, Dreams, the recipe factory and team memory, edited on nearly every chain or
-    recipe PR and checked on every PR by `detectors-ci`'s chain detectors; firing doctor, marshal and atlas on all of
-    them is the cost this exemption avoids. The live map must stay a subset of the seed (Story 97.1's rule): an entry
-    may leave, none may be added.
+  - *Planning content triggers too (operator ruling 2026-10-12, "Trigger on planning too").* Reads under
+    `_bmad-output/projects/*/planning-artifacts/**`, `_bmad-output/projects/*/README.md`, `archive/**`,
+    `docs/dreams/**`, `recipes/**` and `.claude/memory/**` are treated like any other read: each job whose tests read
+    them, directly or through the code under test, carries them in its list. At minimum: doctor carries
+    `_bmad-output/projects/*/planning-artifacts/**`, `_bmad-output/projects/*/README.md`, `archive/**`,
+    `docs/dreams/**` and `recipes/*/recipe.yaml`; marshal carries `_bmad-output/projects/*/planning-artifacts/**` and
+    `.claude/memory/MEMORY.md`; herald carries
+    `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md`;
+    atlas carries `recipes/**`.
+  - *Reads through the code under test.* The derivation records every test file that hands the bare repository root to
+    a call (a gatherer, a generator, `subprocess.run` or `monkeypatch.chdir` at the root). The test declares, per job, a
+    map from each such file to the globs the code under test reads from that root, each with a reason
+    (`ROOT_HANDOFF_INPUTS`); the derived set of handoff files must equal the declared keys, so a new live-tree test fails
+    until its inputs are declared and a stale declaration fails too. Every declared glob goes through the same fire
+    check as a derived read. The declaration only adds inputs; it never removes one.
+  - *No exemption list.* No read is exempt, planning content included. The measurement found no tracked read that its
+    test does not depend on (untracked paths are already out by rule), so the shrink-only exemption list of the first
+    draft is dropped rather than kept empty: a read the filter should not carry is removed from the test that makes it,
+    and any exemption would need a new operator ruling and a spec change.
   - *Its own reads.* The meta-test reads every suite's tests, so steward's list carries
     `src/shared/packages/pyforge-*/tests/**`: a station PR that adds a new outside read runs `steward-test` and is
     caught in that PR.
@@ -132,9 +159,10 @@ paths from the tests and proves the workflow fires for each.
 - **Rejected:** adding only `scripts/lint_types.py` and the `django-*` packages to steward (closes the reported case,
   leaves the rest of the measured map and the next one unseen); a scanner run inside the CI `changes` job (a scanner bug
   would silently skip suites, where committed lists checked by a test fail loudly); widening every job to every path
-  (all ten suites on every PR); hosting the derivation in pyforge-core's tests, where `core-test` already fires on any
-  station change (cheaper, but the file would be `spec-pyforge-core`'s chain, not this station's — the alternative if
-  `steward-test`'s wider trigger proves too costly).
+  (all ten suites on every PR); an exemption list for planning content (overruled 2026-10-12, "Trigger on planning
+  too"); hosting the derivation in pyforge-core's tests, where `core-test` already fires on any station change (cheaper
+  in CI, but the file would be `spec-pyforge-core`'s chain, not this station's; the operator ruled 2026-10-12 "In
+  steward (Recommended)").
 
 Ledger key: `98-1-station-tests-run-when-what-they-read-changes`.
 Type / Effort / Deps: fix / M / none.
@@ -151,7 +179,9 @@ Type / Effort / Deps: fix / M / none.
 - **No flag.** Under `spec-feature-flag-governance` Q1, a `fix` needs no flag; this one changes which CI jobs run.
 - **Origin.** `docs/dreams/pyforge-steward.md` Realization log, 2026-10-12 (station tests run when what they read
   changes). Authority: the operator's ask "Do this task here: Make steward-test run when lint_types or django pkgs
-  change", recorded verbatim in the `spec-pyforge-steward` memlog.
+  change", and the operator's two rulings of 2026-10-12, "Trigger on planning too" (planning content triggers its
+  suites; no exemption) and "In steward (Recommended)" (the meta-test lives in steward's tests, not pyforge-core's),
+  all recorded verbatim in the `spec-pyforge-steward` memlog.
 
 ## Acceptance Criteria
 
@@ -168,17 +198,28 @@ Type / Effort / Deps: fix / M / none.
   `src/shared/packages/pyforge-scribe/src`; doctor `scripts/fleet_scan.py`, `src/shared/packages/django-pyforge/src`;
   marshal `scripts/fleet_picture.py`; mason `scripts/cfe_rebuild_guard_check.py`; scribe
   `src/platform/db/changelog/changes`; warden `src/shared/packages/django-warden`; core a path under `scripts/`;
-  testing_kit `src/platform/config/flags.json`.
-- **AC3 — Every derived read fires its job.** For each derived read not exempt, the fixture diff of its representative
-  path sets the job's output `true` and matches `on.pull_request.paths`. A failure names the job, the read, the
-  representative path and which half failed. On the fixed tree the test passes.
-- **AC4 — Exemptions only shrink.** The exemption map is a subset of its five-glob seed, each entry with a reason;
-  adding a glob outside the seed fails the test.
+  testing_kit `src/platform/config/flags.json`. Planning rows: doctor
+  `_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md` and a `deferred-work-ledger.md`; marshal
+  `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml` and `.claude/memory/MEMORY.md`; herald
+  `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md`; atlas
+  `recipes`. The derived root-handoff set contains at least doctor's
+  `tests/unit/test_sources_chain_dreams_hygiene.py` and `tests/unit/test_sources_board.py`, and marshal's
+  `tests/meta/test_tea_architecture_generator.py` (its live-tree smoke reads every station's `epics.md` and tests).
+- **AC3 — Every read fires its job.** For each derived read and each declared root-handoff glob, the fixture diff of its
+  representative path sets the job's output `true` and matches `on.pull_request.paths`. A failure names the job, the
+  read, the representative path and which half failed. On the fixed tree the test passes. No read is exempt.
+- **AC4 — Root handoffs are declared.** The derived set of root-handoff test files equals the keys of each job's
+  `ROOT_HANDOFF_INPUTS`, every entry with at least one glob and a reason. Doctor's declaration covers at least
+  `docs/dreams/**`, `_bmad-output/projects/*/planning-artifacts/**` and `archive/**`; marshal's covers at least
+  `_bmad-output/projects/*/planning-artifacts/epics.md` and every station's `tests/**` (the test-architecture
+  generator). The test holds no exemption list.
 - **AC5 — Mutations, each on a scratch copy, never the real workflow.** Each of these fails the meta-test, naming what
   it names: `scripts/lint_types.py` dropped from steward's list (steward, `scripts/lint_types.py`); the
   `django-herald` entry dropped from herald's list (herald); `src/shared/packages/django-*/**` dropped from
-  `on.pull_request.paths` (the paths half); an exemption glob added outside the seed. They are committed as tests that
-  rewrite a temporary copy of the workflow, as `test_preflight_selection.py`'s `edits` do.
+  `on.pull_request.paths` (the paths half); `docs/dreams/**` dropped from doctor's list (doctor, `docs/dreams/**`);
+  `_bmad-output/projects/*/planning-artifacts/**` dropped from marshal's list (marshal, that glob); a root-handoff test
+  file removed from its job's `ROOT_HANDOFF_INPUTS` (the job and the file). They are committed as tests that rewrite a
+  temporary copy of the workflow (or of the declaration, in memory), as `test_preflight_selection.py`'s `edits` do.
 - **AC6 — No job loses a path.** For each trigger the workflow has at `5beef7c9eb` (the shared surface's five paths,
   each station's package, herald's `presentations/` and `docs-site/`, atlas's four quartet inputs, `testing_kit`'s
   `django-pyforge` and `flags.json`, `core`'s station packages), a one-path fixture diff sets at least the outputs it
@@ -214,21 +255,28 @@ Type / Effort / Deps: fix / M / none.
 - Never change `preflight_ci.py`, `preflight.py`, `coverage-gates.yml`, `pyforge-pip-install.yml` or any other
   workflow; never add `actionlint` or any package to `pixi.toml`.
 - Never skip, `xfail` or loosen pyforge-core's or the testing kit's lane meta-tests, or `test_workflow_path_filters_match.py`.
-- Never widen a job to `**` or to a whole top-level tree its tests do not read, and never add an exemption to pass a
-  read the filter should carry.
+- Never widen a job to `**` or to a whole top-level tree its tests do not read. Never add an exemption list or exempt
+  a read, planning content included (operator ruling 2026-10-12); a read the filter should not carry is removed from
+  the test that makes it.
 
 **Consequences, recorded:**
-- `steward-test` now runs on any PR that edits a station's tests (the meta-test reads them), on any workflow change,
-  and on every `django-*` change; `core-test` runs on any `src/` or `scripts/` change; `atlas-test` (Chromium, WASM)
-  runs on any workflow change; `scribe-test` (PostgreSQL) runs on an `AGENTS.md` change. The story records the job
-  counts its fixtures select for a station-only, a `django-*`-only, a `scripts/`-only and a workflow-only diff.
+- Planning content triggers its suites, by the operator's ruling 2026-10-12, "Trigger on planning too", chosen over
+  an option whose text read: "Doctor and marshal (and atlas/herald where they read it) run on almost every chain PR. No
+  blind spot; much more CI time per planning PR." Every chain PR touches a station's `epics.md`, ledger, specs and
+  `marshal-policy.toml`, and most touch `docs/dreams/`, so `doctor-test` and `marshal-test` run on nearly every one;
+  a recipe PR runs `doctor-test` and `atlas-test` (Chromium, WASM).
+- `steward-test` also runs on any PR that edits a station's tests (the meta-test reads them; the operator ruled 2026-10-12
+  "In steward (Recommended)" over hosting it in pyforge-core), on any workflow change and on every `django-*` change;
+  `marshal-test` runs on any station's tests too (its test-architecture generator reads them); `core-test` runs on any
+  `src/` or `scripts/` change; `atlas-test` runs on any workflow change; `scribe-test` (PostgreSQL) runs on an
+  `AGENTS.md` change. The story records the job counts its fixtures select for a station-only, a `django-*`-only, a
+  `scripts/`-only, a workflow-only, a Dream-only and a chain-only (`epics.md` + ledger + `marshal-policy.toml`) diff.
 
 **Residual risk:**
-- The exemption keeps planning content out of every filter: a planning edit that breaks a live-tree test (for example
-  a malformed `marshal-policy.toml`, which marshal's tests load) still lands unseen until the next PR that runs that
-  suite. Removing the exemption runs doctor and marshal on almost every chain PR; that is the operator's call.
-- The derivation is static. A read built from a value it cannot resolve (a path from an environment variable or a
-  subprocess) is not derived; the non-vacuity rows (AC2) fail if the derivation goes blind, not if one read slips.
+- The derivation is static. A read built from a value it cannot resolve (an environment variable, a subprocess's own
+  reads, the code under test's reads beyond what `ROOT_HANDOFF_INPUTS` declares) is not derived. The non-vacuity rows
+  (AC2) fail if the derivation goes blind, and a new root handoff fails until declared (AC4), but a declared glob
+  narrower than what the code reads can still slip; the declaration's reasons are what review checks.
 
 ## I/O & Edge-Case Matrix
 
@@ -241,8 +289,11 @@ Type / Effort / Deps: fix / M / none.
 | `scripts/cfe_rebuild_guard_check.py` only | no workflow run | `mason`, `core` |
 | a station's own package | that station, `core` | unchanged, plus every job that reads it (steward's `src` also fires herald; doctor's and scribe's `src` fire atlas) and `steward` when the diff touches `tests/` |
 | `pixi.toml` | every job | every job |
-| `docs/dreams/*.md` or `_bmad-output/projects/*/planning-artifacts/**` only | no workflow run | no workflow run (exempt) |
-| `recipes/<name>/**` only | no workflow run | no workflow run (exempt) |
+| `docs/dreams/*.md` only | no workflow run | `doctor` |
+| `_bmad-output/projects/*/planning-artifacts/epics.md` only | no workflow run | `doctor`, `marshal` |
+| `_bmad-output/projects/*/planning-artifacts/marshal-policy.toml` only | no workflow run | `marshal` at least |
+| `recipes/<name>/recipe.yaml` only | no workflow run | `doctor`, `atlas` |
+| `.claude/memory/MEMORY.md` only | no workflow run | `marshal` |
 
 </intent-contract>
 
@@ -260,7 +311,7 @@ Type / Effort / Deps: fix / M / none.
 - Deps: none. Story 97.1 (the ceiling test) is independent; once both land, a station that cleans its portal package
   runs `steward-test` in its own PR and passes it.
 - Spec: the `spec-pyforge-steward` memlog records the operator's ask, the evidence, the measured map and the design,
-  and this mint.
+  this mint, and the operator's two rulings of 2026-10-12 with how they were applied.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."98"` (added with this mint) covers the station default, which holds
   the meta-test and the preflight test, plus `.github/workflows/pyforge-station-tests.yml` and every Spec memlog.
 - Minted 2026-10-12 in one chain commit.
@@ -285,3 +336,8 @@ Type / Effort / Deps: fix / M / none.
 
 - 2026-10-12: minted from the operator's ask "Do this task here: Make steward-test run when lint_types or django pkgs
   change". `type: fix`, no flag, no CAP; bound to `spec-pyforge-steward` CAP-159 through Story 71.2.
+- 2026-10-12 (amended before dispatch): the operator's rulings "Trigger on planning too" and "In steward
+  (Recommended)". The planning-content exemption and its AC are dropped; planning reads trigger their suites; root
+  handoffs (tests that hand the repo root to the code under test) are derived and declared (AC4); AC2's floor gains
+  planning rows; AC5 gains the doctor `docs/dreams/**`, marshal planning-glob and undeclared-handoff mutations; the CI
+  cost is recorded with the operator's option text.

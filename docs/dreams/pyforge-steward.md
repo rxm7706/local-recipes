@@ -1576,6 +1576,9 @@ Drift — orphaned between stations.
   CAP, no flag; no station loses a path it fires on today; the `changes` job keeps the shape pyforge-core's
   `test_conformance_lane_wired.py` and the testing kit's `test_testing_kit_lane_wired.py` pin; `coverage-gates.yml`
   and the other workflows do not change. Owner `spec-pyforge-steward`. → Epic 98 / Story 98.1, specced 2026-10-12.
+  The operator ruled the same day, before dispatch, "Trigger on planning too" (no exemption list: planning content
+  fires every suite that reads it, doctor and marshal on nearly every chain PR) and "In steward (Recommended)" (the
+  meta-test stays in steward's tests, not pyforge-core's), superseding the exemption sketched above.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
