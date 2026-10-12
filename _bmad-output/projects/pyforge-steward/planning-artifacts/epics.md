@@ -6005,6 +6005,38 @@ So that it passes on every run while still proving the split survival test is no
 **And** the guard passes 20 of 20 consecutive runs of its node id, and the whole module 20 of 20; with the eviction pressure removed the guard fails 5 of 5 runs (mutation); the split test, its helpers and the module constants keep every line they have and the split test passes every run; the diff adds no skip, `xfail` or rerun; only the test file changes; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-unifying-strategy` memlog reconciles the test file before one scoped stamp
 **Status:** done
 
+## Epic 93: The lint gate covers the django portal packages, and its not-yet-clean list only shrinks (feature under CAP-153)
+
+Minted 2026-10-11 from the station Dream's entry of that date (django portal packages under lint-types) and the
+operator's ruling "Gate all, clean herald (Recommended)". Herald Story 37.1's review found that no gate lints the nine
+`src/shared/packages/django-*` portal packages: `lint-types` globs only `pyforge-*`, and `platform-ci-local` lints only
+`src/platform`. None of the nine declares a `[tool.ruff]` table, so a hand run falls back to ruff's own default rule
+set (215 findings on `2b5e0d649b`), and that verdict would move with any ruff release. The same tasks, CI lane and
+`pr-preflight` leg now cover more packages, which is `spec-pyforge-steward` CAP-153 as built (Story 66.1), so no CAP is
+minted; a new epic because Epic 66 is `done`. **HARD boundaries:**
+- ruff and ruff format only. `mypy` stays over the ten `pyforge-*` packages; mypy over the django packages is out of
+  scope for this effort.
+- No finding is fixed here and no django-* source line changes. Each station's own fix story cleans its package and
+  removes its entry, herald's Story 38.1 first (minted `blocked` on this story in herald's ledger).
+- The ten `pyforge-*` tables, `target-version-check`, `src/platform` and its `platform-ci` lane do not change, and no
+  task, CI lane or `pr-preflight` leg is added.
+
+### Story 93.1: The lint gate covers the nine django portal packages, and its not-yet-clean list only shrinks
+
+As the operator whose lint gate is green while nine portal packages go unlinted,
+I want `lint-types` to check and format-check every django portal package under a table it declares, with an explicit list of the packages not yet clean,
+So that a new finding anywhere fails the gate, and the list only shrinks as each station cleans its package.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-153 (Story 66.1); AD-1 • Dream 2026-10-11 (django portal packages under lint-types) • operator ruling 2026-10-11 "Gate all, clean herald (Recommended)"
+**Flag:** exempt, `detector-or-gate` (the story changes the lint gate; a gated gate reports a silent green)
+**Surface:** `scripts/lint_types.py` (`packages()` about :36-:37, the count check about :55-:58, the per-package loop about :60-:76, the docstring), the nine `src/shared/packages/django-*/pyproject.toml` (a `[tool.ruff]` table only), `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` (new), `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` (new), `.github/workflows/lint-types.yml` (the header comment only), `pixi.toml` (the `ruff`, `ruff-format` and `ruff-format-fix` descriptions and their comment block), `docs/how-to/pixi-tasks.md` and `docs/map.yaml` (through `docs-pixi-tasks`), `environment.yaml` (regenerated, expected unchanged), `AGENTS.md` (the *Lint and types* line)
+**Spec:** `planning-artifacts/specs/spec-93-1-the-lint-gate-covers-the-nine-django-portal-packages-and-its-not-yet-clean-list-only-shrinks.md`
+**Given** `2b5e0d649b`, where `lint_types.py`'s `packages()` globs only `pyforge-*` and no django-* `pyproject.toml` has a `[tool.ruff]` table; under ruff 0.16.9's own defaults the nine report 215 findings, and under the ten packages' shared table at target `py312` they report 64 (61 I001, 3 F401) and 19 files to reformat, with doctor, mason and scribe already format-clean
+**When** `pixi run -e pyforge-guild lint-types` runs
+**Then** its `ruff` and `ruff-format` verbs cover the ten `pyforge-*` packages and the nine `django-*` packages, each from its own directory and its own `[tool.ruff]` table: the ten packages' shared table with `target-version = "py312"`, the floor of the django packages' `requires-python` (at `py314`, `ruff format` writes the 3.14-only `except A, B:`). A django-* package without a table is a finding. `NOT_YET_CLEAN` in `lint_types.py` maps each package to the verbs it is not yet clean for, seeded from the measurement. A listed package's findings are reported and do not fail the verb; any unlisted package fails on any finding; a listed package that is clean fails the verb and names the entry to remove; a listed package whose tool exits other than 0 or 1 still fails; a bad entry is could-not-run
+**And** a test pins the seeded map as a ceiling, so an entry can leave and never return; the ten-package count check counts `pyforge-*` alone; `ruff-format --fix` skips listed packages; `mypy` is unchanged; `lint-types` exits 0 on the story's tree; the lines that say "the ten `pyforge-*` packages" for ruff are corrected; removing the stale-entry check, failing a listed package's findings, letting a listed package's exit 2 pass, dropping `django-*` from the glob or counting it toward the ten each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

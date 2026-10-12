@@ -116,6 +116,28 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-11 (django-herald lint clean) — Ruled: the django-herald portal passes the lint gate and is the first
+  package off its not-yet-clean list.** Story 37.1's review found that no gate lints the `django-*` portal packages:
+  `lint-types` globs only `pyforge-*`, and `platform-ci-local` lints only `src/platform`. django-herald's
+  `pyproject.toml` has no `[tool.ruff]` table, so a hand run of the guild ruff (0.16.9) falls back to its own default
+  rule set and reports 17 findings on `2b5e0d649b`: eight unused `noqa` directives (RUF100), four unsorted import
+  blocks (I001), one unused import (F401, `deck_twin_routes.py:8`), one TRY004 and one DTZ007
+  (`deck_export_sync.py:18`, `:34`) and two RUF012 in the generated migration. The operator's request, verbatim: "Do
+  this task here: Lint django-herald package and add it to a gate". Asked how wide to go, the operator chose, verbatim
+  label "Gate all, clean herald (Recommended)": "Two stories. Steward's story extends lint-types to every django-*
+  package and adds an explicit 'not yet clean' list that can only shrink. Herald's story clears django-herald's 17
+  findings and takes it off that list. The other stations follow later as their own fix stories." **What it looks like
+  when real:** once steward Story 93.1 has put the nine portal packages under `lint-types`, each with its own
+  `[tool.ruff]` table, django-herald checks and format-checks clean under that table and leaves the not-yet-clean
+  list, so any new finding in it fails the gate. Under that table its inventory is five check findings (the four I001
+  and the F401) and three files to reformat (`deck_viewer.py`, `herald_guard.py`,
+  `management/commands/refresh_deck_exports.py`). The other twelve of the 17 are each cleared or recorded with a
+  reason. With herald installed the portal behaves exactly as before. **Constraints:** lint-only edits inside
+  django-herald and the one list entry; no blanket ignore; the route files Story 37.1 kept unedited may now change for
+  lint only; the generated migration is never hand-edited. One `fix` story, no CAP, no flag. Its ledger key is
+  minted `blocked` on steward 93.1 (a cross-station gate, which marshal's station-local `Deps:` parser cannot see);
+  the operator flips it once 93.1 is `done` on `main`. Owner `spec-pyforge-herald` (CAP-55, the capability that names
+  the django-herald portal, with CAP-54 for the deck-export files). → Epic 38 / Story 38.1, specced 2026-10-11.
 - **2026-10-11 (portal without herald) — Ruled: the herald portal stops taking the host's Django pages down when
   herald is absent.** Story 19.2's landing review found a high defect outside its scope (`DW-herald-19-2-1`, recorded
   when 19.2 landed as PR #2123, merge `ba613abab3`). The django-herald portal imports `pyforge.herald` at module load:
