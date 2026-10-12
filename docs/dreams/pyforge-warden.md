@@ -191,6 +191,37 @@ the host or the source.
 
   Owner: warden; `spec-pyforge-warden` CAP-26 (FR-43). → Story 16.1 re-scoped (key kept) and Story 16.5 minted,
   specced 2026-10-11.
+- **2026-10-11 (leak guard terms) — Ruled: the leak guard forbids the listed repository and project names
+  everywhere, and the organisation's name only in warden's own files.** Story 16.1's leak guard (its AC9, in
+  `src/platform/tests/test_warden_fleet_inventory.py`: `_leak_guard_terms()` and
+  `test_leak_guard_no_operator_terms_in_tracked_tree`) always adds the configured organisation's name to its forbidden
+  terms, beside the `leak_guard_terms` listed in the gitignored `.warden/fleet-target.toml`. Story 16.5, landing as
+  PR #2146, widens the scan to every file the branch changes. On 2026-10-11 the orchestrator checked, against the
+  operator's real configuration kept outside the repository, that the organisation's name appears in 31
+  operator-authored tracked files that predate warden: Dreams, research notes, links to public repositories under that
+  organisation, and a `gh` inventory note. The organisation is public. What must stay private is that warden
+  inventories it, and which of its repositories and projects. With the real configuration present, the guard fails on
+  each of those files it scans, so it cannot widen to the whole tree, and any story that edits one of them goes red.
+  **Operator ruling 2026-10-11** (AskUserQuestion; the chosen option's label and text, verbatim): "Drop org from terms
+  (Recommended)", "The org is already public in your own docs; what must stay private is that warden inventories it,
+  and which repos and projects. The guard forbids only the leak_guard_terms you list (repo and project names) plus the
+  org name in warden's own files (pyforge-warden, django-warden, warden specs and memlogs). A small warden fix story."
+  **What it looks like when fixed:**
+  - Each listed term is forbidden in every tracked file and in every file the branch changes.
+  - The organisation's name is forbidden in warden's own files, and in any entry of a shared log (team memory, or
+    another Spec's memlog) that names warden.
+  - The organisation's name anywhere else passes.
+  - A configuration with no listed terms is refused unless the operator opts in, so the guard never passes on nothing.
+
+  **Constraints:**
+  - A `fix`: no CAP, no flag. The guard's test and the config reader change; the inventory does not.
+  - Fixtures stay fictional (`example-org`), and no tracked file, commit message or PR body names the target.
+  - The live guard runs only where the operator's configuration is. The orchestrator runs it against the real
+    configuration before landing.
+
+  Kinships: Story 16.1 (AC9) and Story 16.5 (the changed-files scan); the guard's file is also on steward's
+  `spec-pyforge-unifying-strategy` surface. Owner: warden; a defect against `spec-pyforge-warden` CAP-26 (FR-43).
+  → Epic 18 / Story 18.1, specced 2026-10-11.
 
 ## Folded Dreams (2026-09-17)
 
