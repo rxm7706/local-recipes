@@ -477,6 +477,19 @@ verify_commands = [
   "docs/how-to/run-herald-live-backend-locally.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"38" = [  # django-herald passes the lint gate (fix, no CAP), added 2026-10-11 with Story 38.1 (operator ruling "Gate all, clean herald (Recommended)"; a cross-station gate on steward 93.1, held by the ledger row).
+  # The default surface, restated because a declared entry replaces it outright, plus what 38.1 reaches outside the
+  # herald package: the django-herald portal (lint-only edits), the django-herald entry in scripts/lint_types.py's
+  # NOT_YET_CLEAN (steward's runner; that entry only), and every Spec memlog (spec-pyforge-unifying-strategy governs
+  # django_herald_portal/, spec-pyforge-steward governs lint_types.py).
+  "src/shared/packages/pyforge-herald/**",
+  "src/shared/packages/django-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/lint_types.py",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
