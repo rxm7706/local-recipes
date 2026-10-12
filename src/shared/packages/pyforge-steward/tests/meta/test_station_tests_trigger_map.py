@@ -208,6 +208,9 @@ class Scanner:
         self.reads: dict[tuple[str, ...], set[str]] = defaultdict(set)
         self.handoffs: set[str] = set()
         self._loading: set[str] = set()
+        self._returns: dict[tuple, object] = {}
+        self._inlined: set[tuple] = set()
+        self._inline_depth = 0
 
     # -- module loading ---------------------------------------------------
 
@@ -447,25 +450,85 @@ class Scanner:
         self,
         func: ast.FunctionDef | ast.AsyncFunctionDef,
         mod: Module,
-        _args: Mapping[str, object],
+        bound: Mapping[str, object],
     ) -> object | None:
-        """The value a zero-argument helper or a fixture returns, when it is a path or string."""
+        """The path or string a helper (or fixture) returns for these argument values, when it is one."""
+        key = (mod.rel, func.lineno, tuple(sorted((k, repr(v)) for k, v in bound.items())))
+        if key in self._returns:
+            return self._returns[key]
         if mod._depth > 4:
             return None
+        self._returns[key] = None
         mod._depth += 1
         try:
             scope = dict(mod.env)
             for name in self._param_names(func):
                 scope.pop(name, None)
+            scope.update(bound)
             self._bind_statements(func.body, scope, mod, record=False)
+            result = None
             for node in ast.walk(func):
                 if isinstance(node, ast.Return) and node.value is not None:
                     value = self.ev(node.value, scope, mod)
                     if value is not None:
-                        return value
-            return None
+                        result = value
+                        break
+            self._returns[key] = result
+            return result
         finally:
             mod._depth -= 1
+
+    def _resolve_function(
+        self, func: ast.expr, env: Mapping[str, object], mod: Module
+    ) -> tuple[Module, ast.FunctionDef | ast.AsyncFunctionDef] | None:
+        if not isinstance(func, ast.Name):
+            return None
+        bound = env.get(func.id)
+        if isinstance(bound, tuple) and len(bound) == 2 and isinstance(bound[1], (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return bound[0], bound[1]
+        if bound is None or bound is _UNBOUND:
+            local = mod.funcs.get(func.id)
+            if local is not None and not _is_fixture(local):
+                return mod, local
+        return None
+
+    def _bind_arguments(
+        self, func: ast.FunctionDef | ast.AsyncFunctionDef, call: ast.Call, env: Mapping[str, object], mod: Module
+    ) -> dict[str, object]:
+        params = self._param_names(func)
+        out: dict[str, object] = {}
+        for name, arg in zip(params, call.args, strict=False):
+            value = self.ev(arg, env, mod)
+            if value is not None:
+                out[name] = value
+        for kw in call.keywords:
+            if kw.arg in params:
+                value = self.ev(kw.value, env, mod)
+                if value is not None and kw.arg is not None:
+                    out[kw.arg] = value
+        return out
+
+    def _inline_call(self, node: ast.Call, env: dict[str, object], mod: Module) -> bool:
+        """Follow a call into a helper the test module owns, so the reads inside it are seen."""
+        target = self._resolve_function(node.func, env, mod)
+        if target is None:
+            return False
+        owner, func = target
+        bound = self._bind_arguments(func, node, env, mod)
+        key = (owner.rel, func.lineno, tuple(sorted((k, repr(v)) for k, v in bound.items())))
+        if key in self._inlined or self._inline_depth >= 3:
+            return True
+        self._inlined.add(key)
+        self._inline_depth += 1
+        try:
+            scope = dict(owner.env)
+            for name in self._param_names(func):
+                scope.pop(name, None)
+            scope.update(bound)
+            self._bind_statements(func.body, scope, owner, record=True)
+        finally:
+            self._inline_depth -= 1
+        return True
 
     # -- loops ------------------------------------------------------------
 
@@ -588,17 +651,10 @@ class Scanner:
                 return self._path_ctor(node, args)
             if func.id in ("str", "fspath") and len(args) == 1 and isinstance(args[0], (V, str)):
                 return args[0]
-            bound = env.get(func.id)
-            if isinstance(bound, tuple) and len(bound) == 2 and isinstance(bound[1], ast.FunctionDef):
-                owner, target = bound
-                if not node.args and not node.keywords:
-                    return self._call_function(target, owner, {})
-                return None
-            local = mod.funcs.get(func.id)
-            if local is not None and not node.args and not node.keywords and func.id not in env:
-                return self._call_function(local, mod, {})
-            if local is not None and func.id in env and not node.args and not node.keywords:
-                return self._call_function(local, mod, {})
+            target = self._resolve_function(func, env, mod)
+            if target is not None:
+                owner, helper = target
+                return self._call_function(helper, owner, self._bind_arguments(helper, node, env, mod))
             return None
         if isinstance(func, ast.Attribute):
             owner_node = func.value
@@ -661,6 +717,12 @@ class Scanner:
                 self._record(value, mod, parent)
                 return
             if isinstance(node, ast.Call) and self._record_glob(node, env, mod):
+                return
+            if isinstance(node, ast.Call) and self._inline_call(node, env, mod):
+                for arg in node.args:
+                    self.visit(arg, env, mod, None)  # the helper's own body decides what the argument reaches
+                for kw in node.keywords:
+                    self.visit(kw.value, env, mod, None)
                 return
             if isinstance(value, (list, tuple)):
                 self._record_container(value, mod)
