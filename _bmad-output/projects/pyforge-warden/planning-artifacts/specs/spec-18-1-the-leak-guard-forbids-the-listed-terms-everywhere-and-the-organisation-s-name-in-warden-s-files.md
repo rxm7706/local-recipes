@@ -2,9 +2,9 @@
 title: "18.1: The leak guard forbids the listed terms everywhere and the organisation's name in warden's files"
 type: 'fix'
 created: '2026-10-11'
-status: 'done'
+status: 'in-progress'
 baseline_revision: 'e872476980ee67672170f68477e6f080b865a2ce'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
@@ -294,6 +294,22 @@ test.
   bound to `spec-pyforge-warden` CAP-26 through Stories 16.1 and 16.5.
 
 ## Review Triage Log
+
+### 2026-10-12 — Independent review, iteration 1: sent back (2 medium, 5 low patch; 1 low defer)
+
+Separate agent, review at 7faa149aec against the merge-base. The production logic is correct: every AC6 mutation the spec names is caught (organisation back in the global terms, Rule O removed, the empty-terms refusal removed, Rule T removed, each changed-file leg but one, team-memory/MEMORY.md/external-memlog units removed, a case-sensitive scan, a non-boolean opt-in, the `test_warden_*.py` glob removed). The live guard over the full tracked tree took about 3.9 s. Confidentiality: only `example-*` identifiers in the diff, spec, commit messages and PR; nothing under `.warden/` read. Gates: `pyforge-warden-test` 0 (2440 passed), `lint-types` 0, `spec-surface-check` 0, flag gate `--spec` pass, `platform-ci-local -- --test` 0 (1341 passed, 14 skipped); `detectors-ci` 1 only on `ledger-direction` (branch behind main).
+
+- `[medium]` `[patch]` F1 `src/platform/tests/test_warden_fleet_inventory.py:1188-1198` AC4's "unstaged edit to a tracked non-warden file" is never exercised: the test commits `edited.txt`/`split.txt` after the base and rewrites them with the same bytes, so deleting the `diff --name-only HEAD` leg survives (a regression against 16.5's test). Fix: base-commit both files, add the new lines unstaged, assert the changed-file list.
+- `[medium]` `[patch]` F2 `:936-1026` vs `:105-113` the scan-roots existence test checks a second hand-kept list, not the guard's constants (`_LEAK_WARDEN_OWNED_DIR_PREFIXES`, `_LEAK_WARDEN_OWNED_FILES`, the inline `test_warden_` string); its file branch is tautological; a typo'd `bmad-agent-warden/` prefix survives. Fix: one constant used by both, `git ls-files --error-unmatch` for file entries.
+- `[low]` `[patch]` F3 `:949` `_fixture_leak_config` is dead; AC1-AC4 never route the fixture config through `WARDEN_FLEET_TARGET_CONFIG` as the spec says. Fix: route `_guard_scan` through the env var and `_leak_guard_target()`, or delete the helper and amend the spec.
+- `[low]` `[patch]` F4 `:1263-1279` the live test repeats `_guard_scan`'s composition inline (dropping `changed_rel` survives). Fix: the live test calls `_guard_scan`.
+- `[low]` `[patch]` F5 `:114` no test pins the `warden` boundary rule (a bare `warden` regex survives). Fix: a parametrised test (`pyforge-warden`, `django_warden_fabric`, `Warden` match; `vaultwarden` does not).
+- `[low]` `[patch]` F6 the live test's failure output prints the `organisation` and `terms` locals under `pytest -l`. Fix: `pytest.fail("\n".join(paths), pytrace=False)` with no term-bearing locals in the failing frame.
+- `[low]` `[patch]` F7 `fleet_inventory.py:141` `_refuse_missing_leak_guard_terms` always raises; annotate `NoReturn`.
+- `[low]` `[defer]` F8 Rule T compares fixed strings: a multi-word listed term wrapped across a line, or zero-width / full-width variants, pass. Not required by the spec (paragraph splits already a recorded residual risk); a warden deferred-work row.
+- Info: AC8 (the live run against the operator's real configuration) is the orchestrator's, run before landing.
+
+Send-back: F1-F7 in one pass, F8 as a deferred-work row; a fresh independent review (iteration 2) gates the landing.
 
 ### 2026-10-12 — Review pass
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
