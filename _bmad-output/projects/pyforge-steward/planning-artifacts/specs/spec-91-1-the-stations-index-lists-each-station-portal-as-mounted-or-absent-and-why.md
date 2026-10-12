@@ -2,9 +2,8 @@
 title: '91.1: The stations index lists each station portal as mounted or absent, and why'
 type: 'feature'
 created: '2026-10-11'
-status: 'in-review'
+status: 'in-progress'
 baseline_revision: 'e4ab638bb6276c27466ec0e7c85d55745dec08d7'
-review_loop_iteration: 0
 followup_review_recommended: false
 review_loop_iteration: 1
 landing_review: 'required'
@@ -333,6 +332,25 @@ Type / Effort / Deps: feature / S / — (cross-station gate: herald 37.1, held a
   ON; staging and production OFF). Minted `blocked` on herald Story 37.1, with `landing_review: 'required'`.
 
 ## Review Triage Log
+
+### 2026-10-11 — Independent landing review, iteration 1: sent back (3 medium, 3 low patch; 2 low defer)
+
+Separate agent, review of the story against merge-base 3c85a29a64 at ef261b671c. The production code holds: the flag is read first and OFF hands the request to Wagtail's serve (a fresh-interpreter child answers 404 with no `config.station_api` load and no `config.optional_components` record); a published Wagtail page at `/stations/` is byte-identical with and without the index (checked with a corrected test); anonymous and tenant-only sessions get an empty 403; rows go through `is_switcher_tile`; POST is 405, method before roles; a `<script>` reason renders escaped; the herald-absent child meets AC4/AC5; Boundaries hold (no `pyforge` import under `src/platform`, no settings/asgi/station_api change, no migration); the flag is registered in all four places. The tests do not meet AC9.
+
+- `[medium]` `[patch]` F1 `src/platform/tests/test_stations_index.py:217-221` the published-page test puts the page under the tree root (pk 1), not the default site's root page, so `/stations/` answers 404 with and without the index and the test cannot fail; AC2's second bullet is untested and the "bare `Http404` instead of the catch-all" mutation survives. Fix: `Site.objects.get(is_default_site=True).root_page`; assert 200 and the page title.
+- `[medium]` `[patch]` F2 `test_stations_index.py:188-209` AC2's `sys.modules` check runs in-process after `config.urls` is already imported, so a module-scope `config.station_api` load is never seen (three module-scope mutations survive). Fix: a fresh-interpreter child (flag OFF, one GET, then `sys.modules` and the logger), as AC2 says.
+- `[medium]` `[patch]` F3 `src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py:30-35, :42-44` the AC7 meta-test misses `from config import station_api`, portal submodule imports (`import django_herald_portal.views`, `from django_warden_fabric.views import ...`; it matches names exactly, not by prefix) and a module-scope `importlib.import_module("config.station_api")`.
+- `[low]` `[patch]` F4 frontmatter carries `review_loop_iteration` twice (0, then 1); remove the first.
+- `[low]` `[patch]` F5 `test_stations_index.py:193` pops `sys.modules["config.station_api"]` and never restores it (order-dependence); `monkeypatch.delitem` or F2's child.
+- `[low]` `[patch]` F6 AC2 / I/O-matrix gaps: admin `OPTIONS` untested; admin GET and published-page tests compare body only (add status and Content-Type); anonymous POST to 405 untested (swapping the role and method checks survives); the herald-only test counts "mounted" over the whole body instead of `_index_rows`.
+- `[low]` `[patch]` F7 no regression test that the reason stays escaped (a `|safe` mutation survives). Patched rather than deferred: one test.
+- `[low]` `[patch]` F8 `test_stations_index.py:342-361` off PostgreSQL the AC4 child falls back to the environment's `DATABASE_URL` and could write a session row to a non-test database; the child must use only the test database or refuse.
+- `[low]` `[reject]` F9 `/stations/`'s 405 carries `Allow: GET, HEAD` where warden's carries `Allow: GET`; the spec allows HEAD and compares status only.
+- `[low]` `[patch]` F10 `src/platform/tests/_urls_without_stations_index.py` is outside Boundaries' path list (AC2's `override_settings` needs a URLconf): record the deviation in the Spec Change Log; the team-memory entry says "landed draft PR #2137" while the landing is held: correct its wording.
+
+Gates: `pyforge-steward-test` 0 (2320 passed), `lint-types` 0, `spec-surface-check` 0, `platform-ci-local -- --test` 0 (1222 passed), flag gate `--spec` pass, `docs-currency-check` 0, `makemigrations --check` 0; `detectors-ci` 1 only on `ledger-direction` for warden 16-1 (main moved; clears on merging main).
+
+Send-back: F1-F8 and F10 in one pass; a fresh independent landing review (iteration 2) gates the landing.
 
 ### 2026-10-11 — Verify-fix completion (implementer)
 
