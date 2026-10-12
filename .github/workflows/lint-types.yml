@@ -1,5 +1,6 @@
-# The ten pyforge-* packages' lint / type gate (steward Story 66.1, spec-pyforge-steward
-# CAP-153) and the pre-commit set's existence check (Story 66.2, CAP-154).
+# The ten pyforge-* and nine django-* portal packages' ruff gate, pyforge-* mypy, and the
+# pre-commit set's existence check (steward Stories 66.1–66.2 / 93.1, CAP-153 / CAP-154).
+# Django packages on NOT_YET_CLEAN in scripts/lint_types.py only shrink per-station fix stories.
 #
 # ONE invocation, shared with the local twin: this job runs `pixi run --frozen -e pyforge-guild
 # lint-types`, the same task `pr-preflight` runs as its first leg, so what the runner measures is
