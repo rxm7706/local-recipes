@@ -21,20 +21,35 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import traceback
 from dataclasses import dataclass
 from dataclasses import field
 from http import HTTPStatus
 from io import StringIO
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from unittest.mock import patch
 
 import pytest
+import structlog
+from celery.exceptions import SoftTimeLimitExceeded
+from celery.signals import after_task_publish
+from celery.signals import before_task_publish
+from celery.signals import task_failure
+from celery.signals import task_prerun
+from celery.signals import task_rejected
+from celery.signals import task_retry
+from celery.signals import task_revoked
+from celery.signals import task_success
+from celery.signals import task_unknown
 from django.core.management import call_command
+from django.test import Client
 from django.test.utils import override_settings
 from django_pyforge.flags import evaluate_from_source
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
+from django_structlog.celery.receivers import CeleryReceiver
 from django_warden_fabric.fleet import FLEET_PROJECT_ITEMS_FLAG
 from django_warden_fabric.fleet_inventory import ENV_FLEET_INVENTORY_PATH
 from django_warden_fabric.fleet_inventory import ENV_FLEET_TARGET_CONFIG
@@ -56,6 +71,14 @@ from django_warden_fabric.fleet_project_items import run_fleet_project_items_syn
 from django_warden_fabric.tasks import run_fleet_project_items
 from django_warden_fabric.views import FLEET_PROJECT_ITEMS_CONFIG_REFUSAL
 
+from config.observability.logging import JSON
+from config.observability.logging import build_logging_config
+from config.observability.logging import configure_structlog
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from types import FrameType
+
 _EXAMPLE_ORG = "example-org"
 _PROJECT_A = 11  # invented project numbers
 _PROJECT_B = 22
@@ -73,6 +96,38 @@ _FABRIC_ROOT = (
 _TASKS_PATH = _FABRIC_ROOT / "tasks.py"
 _PORTAL_START = "/stations/warden/fleet/project-items/start/"
 _GRAPHQL = "https://api.github.com/graphql"
+_TITLE = "confidential-title-16-5"  # an operator item title: never in a log or a frame
+
+
+def _holds_sentinel(value: object) -> bool:
+    header_items = getattr(value, "header_items", None)
+    if callable(header_items) and any(_SENTINEL in str(v) for _, v in header_items()):
+        return True  # a urllib Request carrying the token as a header
+    try:
+        text = repr(value)
+    except Exception:  # noqa: BLE001 -- an object whose repr fails shows nothing
+        return False
+    return _SENTINEL in text
+
+
+def _stack_leaks(where: str) -> list[str]:
+    """Locals holding the token in the library frames between the fake and this test.
+
+    Story 16.1's walk, ported (16.5 F1): urllib, http.client and the client's frames
+    must never hold the token, failure or not.
+    """
+    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001 -- the stack is under test
+    while frame is not None and frame.f_code.co_filename == __file__:
+        frame = frame.f_back
+    leaks: list[str] = []
+    while frame is not None and frame.f_code.co_filename != __file__:
+        leaks.extend(
+            f"{where}: {frame.f_code.co_qualname} local {name!r}"
+            for name, value in frame.f_locals.items()
+            if _holds_sentinel(value)
+        )
+        frame = frame.f_back
+    return leaks
 
 
 # --- a fake GitHub at the socket: the real client, urllib and http.client all run ---
@@ -103,6 +158,8 @@ class _GitHubWire:
 
     replies: dict[tuple[int, str | None], bytes] = field(default_factory=dict)
     exchanges: list[_Exchange] = field(default_factory=list)
+    # Checked at the fixture's teardown: every connect, send and read walks the stack.
+    stack_leaks: list[str] = field(default_factory=list)
 
     def serve(self, number: int, pages: list[list[dict[str, Any]]]) -> None:
         """``pages[n]`` answers the cursor ``cursor-n`` (page 0 answers no cursor)."""
@@ -119,6 +176,7 @@ class _GitHubWire:
         return self.replies.get((variables["number"], variables["after"]), fallback)
 
     def connect(self, connection: Any) -> None:
+        self.stack_leaks.extend(_stack_leaks("connect"))
         connection.sock = _WireSocket(self, connection)
 
 
@@ -130,9 +188,11 @@ class _WireSocket:
         self._sent = bytearray()
 
     def sendall(self, data: bytes, *args: object) -> None:
+        self._wire.stack_leaks.extend(_stack_leaks("send"))
         self._sent += bytes(data)
 
     def makefile(self, mode: str, *args: object, **kwargs: object) -> io.BytesIO:
+        self._wire.stack_leaks.extend(_stack_leaks("getresponse"))
         head, _, raw = bytes(self._sent).partition(b"\r\n\r\n")
         lines = head.decode("latin-1").split("\r\n")
         method, target, _version = lines[0].split(" ", 2)
@@ -157,7 +217,7 @@ class _WireSocket:
 
 
 @pytest.fixture
-def github_wire(monkeypatch: pytest.MonkeyPatch) -> _GitHubWire:
+def github_wire(monkeypatch: pytest.MonkeyPatch) -> Iterator[_GitHubWire]:
     wire = _GitHubWire()
 
     def _connect(connection: Any) -> None:
@@ -165,7 +225,8 @@ def github_wire(monkeypatch: pytest.MonkeyPatch) -> _GitHubWire:
 
     monkeypatch.setattr("http.client.HTTPSConnection.connect", _connect)
     monkeypatch.setattr("http.client.HTTPConnection.connect", _connect)
-    return wire
+    yield wire
+    assert wire.stack_leaks == []
 
 
 # --- fixture project data ---
@@ -851,3 +912,161 @@ def test_portal_runs_the_inventory_when_flag_on(
     assert [
         e["id"] for e in json.loads(export.read_text(encoding="utf-8"))["items"]
     ] == ["i-1", "r-1"]
+
+
+# --- 16.5 F4: no item title in the worker's logs, task_failed or the DEBUG page ---
+
+
+def _platform_json_log_handler(stream: StringIO) -> logging.Handler:
+    """A handler rendering exactly as a deployed platform does (JSON, frame locals)."""
+    structured = build_logging_config(debug=False, log_format=JSON)["formatters"][
+        "structured"
+    ]
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(
+        structlog.stdlib.ProcessorFormatter(
+            processors=structured["processors"],
+            foreign_pre_chain=structured["foreign_pre_chain"],
+        )
+    )
+    return handler
+
+
+@pytest.fixture
+def structlog_celery_receiver() -> Iterator[CeleryReceiver]:
+    """django_structlog's worker receivers, connected as the worker bootstep does.
+
+    structlog is pinned to the platform's own configuration for the test (another
+    test may leave a print-logger configuration behind), then restored.
+    """
+    previous = structlog.get_config()
+    configure_structlog()
+    receiver = CeleryReceiver()
+    receiver.connect_worker_signals()
+    yield receiver
+    for signal, handler in (
+        (before_task_publish, receiver.receiver_before_task_publish),
+        (after_task_publish, receiver.receiver_after_task_publish),
+        (task_prerun, receiver.receiver_task_prerun),
+        (task_retry, receiver.receiver_task_retry),
+        (task_success, receiver.receiver_task_success),
+        (task_failure, receiver.receiver_task_failure),
+        (task_revoked, receiver.receiver_task_revoked),
+        (task_unknown, receiver.receiver_task_unknown),
+        (task_rejected, receiver.receiver_task_rejected),
+    ):
+        signal.disconnect(handler)
+    structlog.configure(**previous)
+
+
+def _titled_issue(item_id: str) -> dict[str, Any]:
+    node = _issue(item_id)
+    node["content"]["title"] = f"{_TITLE} {item_id}"
+    return node
+
+
+_PARSE_STALL = "parse-stall"  # a node id the patched JSON decoder stalls on
+
+
+def _fail_in(
+    fault: str, wire: _GitHubWire, monkeypatch: pytest.MonkeyPatch
+) -> tuple[str, str]:
+    """Arm one fault; returns (the typed error's name, its message fragment)."""
+    wire.serve(_PROJECT_A, [[_titled_issue("i-1"), _titled_issue("i-2")]])
+    if fault == "http-502":
+        wire.replies[(_PROJECT_B, None)] = _http_response(
+            HTTPStatus.BAD_GATEWAY, body=b"{}"
+        )
+        return "ProjectEntryError", "entry 2 of 2: GitHub API HTTP 502"
+    if fault == "soft-limit-in-parse":
+        wire.serve(_PROJECT_B, [[_titled_issue(_PARSE_STALL)]])
+        real_loads = json.loads
+
+        def _stalling_loads(text: Any, *args: Any, **kwargs: Any) -> Any:
+            # Celery's soft limit lands while project 2's reply is parsed, after
+            # project 1's items (and titles) are already collected.
+            if isinstance(text, str) and _PARSE_STALL in text:
+                raise SoftTimeLimitExceeded
+            return real_loads(text, *args, **kwargs)
+
+        monkeypatch.setattr("json.loads", _stalling_loads)
+        return "FleetProjectItemsRunError", "run failed: SoftTimeLimitExceeded"
+    wire.serve(_PROJECT_B, [[_titled_issue("i-3")]])
+
+    def _stalling_write(path: Path, document: dict[str, Any]) -> None:
+        raise SoftTimeLimitExceeded
+
+    monkeypatch.setattr(
+        "django_warden_fabric.fleet_project_items.atomic_write_json", _stalling_write
+    )
+    return "FleetProjectItemsRunError", "run failed: SoftTimeLimitExceeded"
+
+
+@pytest.mark.django_db
+@pytest.mark.usefixtures("structlog_celery_receiver")
+@pytest.mark.parametrize(
+    "fault", ["http-502", "soft-limit-in-parse", "soft-limit-in-export"]
+)
+def test_a_failed_run_never_logs_an_item_title(
+    project_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
+    monkeypatch: pytest.MonkeyPatch,
+    fault: str,
+) -> None:
+    """F4, worker path: ``run_fleet_project_items.apply()`` with django_structlog's
+    receiver and the production JSON renderer (frame locals on)."""
+    _config, export = project_paths
+    kind, fragment = _fail_in(fault, github_wire, monkeypatch)
+    stream = StringIO()
+    handler = _platform_json_log_handler(stream)
+    root = logging.getLogger()
+    root.addHandler(handler)
+    try:
+        with patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider):
+            result = run_fleet_project_items.apply(
+                args=("run-1", _EXAMPLE_ORG), throw=False
+            )
+    finally:
+        root.removeHandler(handler)
+    rendered = stream.getvalue()
+    events = [
+        json.loads(line) for line in rendered.splitlines() if line.startswith("{")
+    ]
+    assert any(event.get("event") == "task_failed" for event in events)
+    assert '"locals"' in rendered
+    for secret in (_TITLE, _SENTINEL):
+        assert secret not in rendered
+        assert secret not in repr(result.result)
+        assert secret not in str(result.traceback)
+    assert type(result.result).__name__ == kind
+    assert fragment in str(result.result)
+    assert "fleet project items run-1 failed" in rendered
+    assert not export.exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.usefixtures("flags_on")
+@pytest.mark.parametrize(
+    "fault", ["http-502", "soft-limit-in-parse", "soft-limit-in-export"]
+)
+def test_a_failed_run_never_shows_an_item_title_on_the_debug_page(
+    project_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
+    monkeypatch: pytest.MonkeyPatch,
+    settings,
+    fault: str,
+) -> None:
+    """F4, portal path: eager Celery with DEBUG on renders the failure as a 500 page."""
+    kind, _fragment = _fail_in(fault, github_wire, monkeypatch)
+    portal = Client(raise_request_exception=False)
+    _authed(portal, settings)
+    with (
+        patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider),
+        override_settings(DEBUG=True, CELERY_TASK_ALWAYS_EAGER=True),
+    ):
+        response = portal.post(_PORTAL_START)
+    body = response.content.decode("utf-8", errors="replace")
+    assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert f"{kind} at {_PORTAL_START}" in body
+    for secret in (_TITLE, _SENTINEL):
+        assert secret not in body

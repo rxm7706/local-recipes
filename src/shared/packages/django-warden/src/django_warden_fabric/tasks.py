@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import tempfile
+import traceback
 from pathlib import Path
 
 from celery import chord
@@ -23,6 +24,7 @@ from .fleet_inventory import FLEET_INVENTORY_TIME_LIMIT_SECONDS
 from .fleet_inventory import FleetInventoryError
 from .fleet_inventory import GhAuthTokenProvider
 from .fleet_inventory import run_fleet_inventory_sync
+from .fleet_project_items import FleetProjectItemsRunError
 from .fleet_project_items import load_project_numbers_from_config
 from .fleet_project_items import run_fleet_project_items_sync
 from .models import ComplianceJob
@@ -179,6 +181,7 @@ def run_fleet_project_items(self, project_items_run_id: str, organisation: str) 
     )
     from pyforge.warden.fleet_github_rest import FleetInventoryApiError  # noqa: PLC0415
 
+    failure: str | None = None
     try:
         project_numbers = load_project_numbers_from_config()
         # No ``token`` local: a logged traceback renders frame locals.
@@ -191,11 +194,23 @@ def run_fleet_project_items(self, project_items_run_id: str, organisation: str) 
             project_numbers=project_numbers,
             listing_client=client,
         )
-    except (FleetInventoryError, FleetInventoryApiError):
+    except (FleetInventoryError, FleetInventoryApiError) as exc:
+        # Typed, and its text holds no item title; the frames it passed through
+        # (the listing, the export) may hold titles, so their locals are cleared.
+        traceback.clear_frames(exc.__traceback__)
         logger.exception("fleet project items %s failed", project_items_run_id)
         raise
-    else:
-        return project_items_run_id
+    except Exception as exc:
+        # Anything else (a soft time limit during parse or the export write, an I/O
+        # error): typed by name only, its frames cleared.
+        failure = type(exc).__name__
+        traceback.clear_frames(exc.__traceback__)
+    if failure is not None:
+        # Raised outside the handler, so no ``__context__`` keeps the original (its
+        # text, like its frames, may carry item titles); the log line names the type.
+        logger.error("fleet project items %s failed: %s", project_items_run_id, failure)
+        raise FleetProjectItemsRunError(failure)
+    return project_items_run_id
 
 
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")

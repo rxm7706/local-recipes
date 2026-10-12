@@ -89,7 +89,12 @@ class ProjectEntryError(FleetInventoryApiError):
 
     def __init__(self, position: int, total: int, reason: str) -> None:
         self.position = position
+        self._parts = (position, total, reason)
         super().__init__(f"config key projects, entry {position} of {total}: {reason}")
+
+    def __reduce__(self) -> tuple[type[ProjectEntryError], tuple[int, int, str]]:
+        # Celery stores a task's exception by pickling it: rebuild it from its own parts.
+        return type(self), self._parts
 
 
 @dataclass(frozen=True)
@@ -394,6 +399,7 @@ class GitHubGraphQLProjectItemsClient:
         collected: list[ListedProjectItem] = []
         read: set[int] = set()
         total = len(project_numbers)
+        failure: tuple[int, str] | None = None
         for position, number in enumerate(project_numbers, start=1):
             if number in read:
                 continue
@@ -401,7 +407,13 @@ class GitHubGraphQLProjectItemsClient:
             try:
                 collected.extend(self.list_project_items(organisation, number))
             except FleetInventoryApiError as exc:
-                reason = str(exc)
+                failure = (position, str(exc))
                 traceback.clear_frames(exc.__traceback__)
-                raise ProjectEntryError(position, total, reason) from None
+                break
+        if failure is not None:
+            # Raised outside the loop and the handler, with the earlier projects' items
+            # dropped first: this frame is on the traceback, and a renderer of frame
+            # locals must not print the operator's item titles.
+            del collected
+            raise ProjectEntryError(failure[0], total, failure[1])
         return tuple(collected)

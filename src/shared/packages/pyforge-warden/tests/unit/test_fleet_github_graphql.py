@@ -15,9 +15,12 @@ import io
 import json
 import logging
 import re
+import sys
 import traceback
-from collections.abc import Callable
+import urllib.request
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from types import FrameType
 from typing import Any
 
 import pytest
@@ -41,6 +44,9 @@ _GRAPHQL = "https://api.github.com/graphql"
 _PROJECT_A = 11  # invented project numbers
 _PROJECT_B = 22
 _THREE_PAGES = 3
+_TITLE = "confidential-title-16-5"  # an item title that must never reach a log or a frame
+# The client's own Authorization marker, written out: a body may never carry it to the wire.
+_PLACEHOLDER = "Bearer pyforge-warden-credential-placeholder"
 
 
 @pytest.fixture(autouse=True)
@@ -51,6 +57,48 @@ def _no_socket(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(http.client.HTTPConnection, "connect", _refuse)
     monkeypatch.setattr(http.client.HTTPSConnection, "connect", _refuse)
+
+
+_FAKES: list[_FakeGitHub] = []
+
+
+@pytest.fixture(autouse=True)
+def _no_token_in_any_library_frame() -> Iterator[None]:
+    """Every fake walks the live stack at connect, send and read (F1, Story 16.1's
+    ``_stack_leaks``) and checks each request's framing; any finding fails the test."""
+    _FAKES.clear()
+    yield
+    leaks = [leak for fake in _FAKES for leak in fake.stack_leaks]
+    framing = [error for fake in _FAKES for error in fake.framing_errors]
+    _FAKES.clear()
+    assert leaks == []
+    assert framing == []
+
+
+def _holds_sentinel(value: object) -> bool:
+    if isinstance(value, urllib.request.Request) and any(_SENTINEL in str(v) for _, v in value.header_items()):
+        return True
+    try:
+        text = repr(value)
+    except Exception:  # noqa: BLE001 -- an object whose repr fails shows nothing
+        return False
+    return _SENTINEL in text
+
+
+def _stack_leaks(where: str) -> list[str]:
+    """Locals holding the token in the library frames between this fake and the test."""
+    frame: FrameType | None = sys._getframe(1)
+    while frame is not None and frame.f_code.co_filename == __file__:
+        frame = frame.f_back
+    leaks: list[str] = []
+    while frame is not None and frame.f_code.co_filename != __file__:
+        leaks.extend(
+            f"{where}: {frame.f_code.co_qualname} local {name!r}"
+            for name, value in frame.f_locals.items()
+            if _holds_sentinel(value)
+        )
+        frame = frame.f_back
+    return leaks
 
 
 # --- the fake GitHub at the socket -------------------------------------------------------------
@@ -83,14 +131,17 @@ _Answer = Callable[[dict[str, Any]], "bytes | BaseException"]
 class _RaisingReader(io.BytesIO):
     """The response stream of a connection that fails while the status line is read."""
 
-    def __init__(self, error: BaseException) -> None:
+    def __init__(self, error: BaseException, fake: _FakeGitHub) -> None:
         super().__init__()
         self._error = error
+        self._fake = fake
 
     def readline(self, size: int | None = -1) -> bytes:
+        self._fake.stack_leaks.extend(_stack_leaks("read"))
         raise self._error
 
     def read(self, size: int | None = -1) -> bytes:
+        self._fake.stack_leaks.extend(_stack_leaks("read"))
         raise self._error
 
 
@@ -100,9 +151,14 @@ class _FakeGitHub:
 
     answer: _Answer
     exchanges: list[_Exchange] = field(default_factory=list)
+    stack_leaks: list[str] = field(default_factory=list)
+    framing_errors: list[str] = field(default_factory=list)
 
     def install(self, monkeypatch: pytest.MonkeyPatch) -> _FakeGitHub:
+        _FAKES.append(self)
+
         def _connect(connection: http.client.HTTPConnection) -> None:
+            self.stack_leaks.extend(_stack_leaks("connect"))
             connection.sock = _ServerSocket(self, connection)  # type: ignore[assignment]
 
         monkeypatch.setattr(http.client.HTTPConnection, "connect", _connect)
@@ -125,15 +181,21 @@ class _ServerSocket:
         self._sent = bytearray()
 
     def sendall(self, data: bytes, *args: object) -> None:
+        self._fake.stack_leaks.extend(_stack_leaks("send"))
         self._sent += bytes(data)
 
     def makefile(self, mode: str, *args: object, **kwargs: object) -> io.BytesIO:
+        self._fake.stack_leaks.extend(_stack_leaks("getresponse"))
         head, _, raw = bytes(self._sent).partition(b"\r\n\r\n")
         lines = head.decode("latin-1").split("\r\n")
         method, target, _version = lines[0].split(" ", 2)
         headers = {
             name.strip().lower(): value.strip() for name, _, value in (line.partition(":") for line in lines[1:])
         }
+        if raw and headers.get("content-length") != str(len(raw)):
+            self._fake.framing_errors.append(f"Content-Length {headers.get('content-length')} != {len(raw)} sent")
+        if _SENTINEL.encode() in raw:
+            self._fake.framing_errors.append("the credential reached a request body")
         body = json.loads(raw.decode("utf-8")) if raw else None
         self._fake.exchanges.append(
             _Exchange(
@@ -146,7 +208,7 @@ class _ServerSocket:
             )
         )
         answer = self._fake.answer(body or {})
-        return _RaisingReader(answer) if isinstance(answer, BaseException) else io.BytesIO(answer)
+        return _RaisingReader(answer, self._fake) if isinstance(answer, BaseException) else io.BytesIO(answer)
 
     def close(self) -> None:
         pass
@@ -414,15 +476,19 @@ def test_every_request_is_a_post_to_graphql_with_one_query(monkeypatch: pytest.M
     assert all("mutation" not in query and "subscription" not in query for query in fake.queries)
 
 
-def test_a_redirect_is_never_followed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A redirected POST would not be the reviewed query: a 3xx is an error, and nothing is re-sent."""
-    fake = _install(
-        monkeypatch,
-        lambda _body: _http_response(307, headers={"Location": "https://api.github.com/elsewhere"}),
-    )
-    with pytest.raises(FleetInventoryApiError, match="HTTP 307"):
+@pytest.mark.parametrize("code", [301, 302, 303, 307, 308])
+@pytest.mark.parametrize(
+    "location",
+    ["https://evil.example/collect", "https://api.github.com/elsewhere"],
+    ids=["off-origin", "same-origin"],
+)
+def test_a_redirect_is_never_followed(monkeypatch: pytest.MonkeyPatch, code: int, location: str) -> None:
+    """F2: a redirected POST would not be the reviewed query (urllib re-sends a 301/302/303
+    as a GET): every 3xx is an error carrying its code, and nothing is re-sent anywhere."""
+    fake = _install(monkeypatch, lambda _body: _http_response(code, headers={"Location": location}))
+    with pytest.raises(FleetInventoryApiError, match=f"HTTP {code}$"):
         fake.client().execute(PROJECT_ITEMS_QUERY, {"login": _EXAMPLE_ORG, "number": 1, "after": None})
-    assert len(fake.exchanges) == 1
+    assert [(e.method, e.url) for e in fake.exchanges] == [("POST", _GRAPHQL)]
 
 
 def test_the_client_repr_hides_the_token() -> None:
@@ -441,8 +507,32 @@ def test_a_malformed_token_is_refused_before_any_request() -> None:
 
 
 def _fail_text(caught: pytest.ExceptionInfo[BaseException]) -> str:
-    rendered = "".join(traceback.format_exception(caught.value, capture_locals=True))
-    return f"{caught.value!s} {caught.value!r} {rendered}"
+    """The error and every chained one (suppressed included), with every library frame's
+    locals as a locals-printing renderer shows them (F1).
+
+    ``traceback.format_exception`` ignores ``capture_locals`` on Python 3.14, so this
+    builds ``TracebackException(..., capture_locals=True)`` itself. This module's own
+    frames are left out: the fake records what reached the wire, on purpose.
+    """
+    value = caught.value
+    parts = [str(value), repr(value)]
+    pending: list[traceback.TracebackException] = [
+        traceback.TracebackException(type(value), value, value.__traceback__, capture_locals=True)
+    ]
+    seen: set[int] = set()
+    while pending:
+        rendered = pending.pop()
+        if id(rendered) in seen:
+            continue
+        seen.add(id(rendered))
+        parts.extend(
+            f"{frame.filename}:{frame.lineno} {frame.name} {frame.locals!r}"
+            for frame in rendered.stack
+            if frame.filename != __file__
+        )
+        parts.append("".join(rendered.format_exception_only()))
+        pending.extend(link for link in (rendered.__cause__, rendered.__context__) if link is not None)
+    return "\n".join(parts)
 
 
 @pytest.mark.parametrize(
@@ -506,7 +596,7 @@ def test_a_failing_entry_is_typed_and_named_by_position(
     assert caught.value.position == 2  # noqa: PLR2004
     assert isinstance(caught.value, FleetInventoryApiError)
     assert caught.value.__cause__ is None
-    assert caught.value.__suppress_context__
+    assert caught.value.__context__ is None  # raised outside the handler (F4)
     for secret in (_SENTINEL, "secret-name"):
         assert secret not in _fail_text(caught)
     assert not re.search(rf"\b{_PROJECT_B}\b", message)  # named by position, not by number
@@ -606,3 +696,63 @@ def test_the_token_reaches_the_wire_and_no_log_or_item(
     assert [e.authorization for e in fake.exchanges] == [_BEARER]
     assert _SENTINEL not in caplog.text
     assert _SENTINEL not in repr(items)
+
+
+# --- F3: the credential never rides in a body ------------------------------------------------------
+
+
+def test_a_cursor_equal_to_the_placeholder_is_refused_before_it_is_sent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A server-supplied ``endCursor`` that is the placeholder text: the next request is
+    refused before a byte leaves, so the credential cannot ride in its body."""
+
+    def _answer(body: dict[str, Any]) -> bytes:
+        if body["variables"]["after"] is None:
+            return _json_reply(_page([_issue("i-1")], next_cursor=_PLACEHOLDER))
+        return _json_reply(_page([]))
+
+    fake = _install(monkeypatch, _answer)
+    with pytest.raises(ProjectEntryError, match="credential placeholder") as caught:
+        fake.client().list_projects_items(_EXAMPLE_ORG, [_PROJECT_A])
+    assert len(fake.exchanges) == 1  # the second request never left
+    assert _SENTINEL not in _fail_text(caught)
+
+
+def test_a_login_equal_to_the_placeholder_is_refused_before_it_is_sent(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = _install(monkeypatch, _by_project({_PROJECT_A: [_page([_issue("i-1")])]}))
+    with pytest.raises(ProjectEntryError, match="credential placeholder") as caught:
+        fake.client().list_projects_items(_PLACEHOLDER, [_PROJECT_A])
+    assert fake.exchanges == []
+    assert _SENTINEL not in _fail_text(caught)
+
+
+# --- F4: the operator's item titles never reach a frame on the failure path ------------------------
+
+
+def test_a_later_project_failure_keeps_no_earlier_title_in_any_frame(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 502 on project 2 of 2: project 1's items are dropped before the raise."""
+
+    def _answer(body: dict[str, Any]) -> bytes:
+        if body["variables"]["number"] == _PROJECT_A:
+            node = _issue("i-1")
+            node["content"]["title"] = _TITLE
+            return _json_reply(_page([node]))
+        return _json_reply({}, status=502)
+
+    fake = _install(monkeypatch, _answer)
+    with pytest.raises(ProjectEntryError, match="entry 2 of 2: GitHub API HTTP 502") as caught:
+        fake.client().list_projects_items(_EXAMPLE_ORG, [_PROJECT_A, _PROJECT_B])
+    assert caught.value.__context__ is None
+    text = _fail_text(caught)
+    assert "list_projects_items" in text  # the raising frame was rendered with its locals
+    assert _TITLE not in text
+
+
+def test_a_project_entry_error_survives_celerys_pickling() -> None:
+    """Celery stores a task's exception by pickling it; the typed error must come back whole."""
+    import pickle  # noqa: PLC0415 -- this test only
+
+    error = ProjectEntryError(2, 2, "GitHub API HTTP 502")
+    restored = pickle.loads(pickle.dumps(error))  # noqa: S301 -- our own object
+    assert type(restored) is ProjectEntryError
+    assert str(restored) == str(error)
+    assert restored.position == 2  # noqa: PLR2004

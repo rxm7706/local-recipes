@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 from typing import Protocol
 
+from .fleet_inventory import FleetInventoryError
 from .fleet_inventory import FleetTargetConfigError
 from .fleet_inventory import _parse_target_toml
 from .fleet_inventory import atomic_write_json
@@ -30,6 +31,22 @@ ENV_FLEET_PROJECT_ITEMS_PATH = "WARDEN_FLEET_PROJECT_ITEMS_PATH"
 DEFAULT_FLEET_PROJECT_ITEMS_PATH = Path(".warden/fleet-project-items.json")
 
 PROJECTS_CONFIG_KEY = "projects"
+
+
+class FleetProjectItemsRunError(FleetInventoryError):
+    """A project-items run failed outside the typed paths (a soft time limit, an I/O error).
+
+    Names only the failure's type: its text, and the frames it passed through, may
+    carry the operator's item titles.
+    """
+
+    def __init__(self, failure: str) -> None:
+        self.failure = failure
+        super().__init__(f"fleet project items run failed: {failure}")
+
+    def __reduce__(self) -> tuple[type[FleetProjectItemsRunError], tuple[str]]:
+        # Celery stores a task's exception by pickling it: rebuild it from its own part.
+        return type(self), (self.failure,)
 
 
 def resolve_fleet_project_items_export_path() -> Path:

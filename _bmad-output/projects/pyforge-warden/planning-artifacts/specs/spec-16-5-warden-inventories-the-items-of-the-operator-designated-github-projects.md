@@ -185,6 +185,68 @@ Deps: S-16.1.
 
 ## Review Triage Log
 
+### 2026-10-11 — Fix pass for iteration 1 minors (implementer)
+
+Implementer pass on the five iteration-1 minors; not a review verdict (the orchestrator re-verifies the delta and runs
+the leak guard against the real terms). Same rules as Story 16.1: fictional identifiers only, no network, no `gh`, no
+`.warden/` read (the live leak guard skipped here: no config). The scratch cluster was uniquely named, on ports
+25465/26465, and stopped by exact PID. Each mutation was restored byte-identical (`cmp`), and the tests went green
+again. Below, `R` is `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`, `G` is `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_graphql.py`, `U` is `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_graphql.py`, `UR` is `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py`, `P` is `src/platform/tests/test_warden_fleet_project_items.py` and `P1` is `src/platform/tests/test_warden_fleet_inventory.py`.
+
+- F1: the tests now catch a return of 16.1's leak.
+  - `_fail_text` (`U:509`) builds `TracebackException(type(v), v, v.__traceback__, capture_locals=True)` and
+    renders every library frame's locals, named, across the whole chain, suppressed context included. This
+    module's own frames are left out.
+  - Story 16.1's `_stack_leaks` is ported into both fakes (`U:88`, `P:113`). They walk the live stack at
+    connect, send and read, and check every local's `repr` and every urllib `Request` header for the token.
+  - The unit fakes are checked by an autouse teardown (`U:66`, which also checks each request's
+    Content-Length); the platform wire by its fixture's teardown (`P:220`).
+  - Mutation: the token back on the urllib `Request` (the reviewer's M14). Unit: 50 tests red (stack-walk
+    teardown). Platform: 18 red.
+- F2: `test_a_redirect_is_never_followed` (`U:485`) runs 301, 302, 303, 307 and 308, each with an off-origin and
+  a same-origin `Location`. Each must be an error with its HTTP code and exactly one exchange. Mutation: the
+  default `HTTPRedirectHandler` swapped in -> 6 red (301, 302 and 303, re-sent as a GET).
+- F3 (16.1's `R`, all 16.1 tests green):
+  - `_CredentialSplicingSocket` (`R:202`) splices only inside the header block, once per request (`R:241`). From
+    the first CRLF CRLF on, even when that is split across writes, the bytes pass through untouched.
+  - `_ApiConnection.endheaders` (`R:268-278`) refuses, before any byte is sent or any socket opens, a credentialed
+    request whose body carries the placeholder bytes or is not bytes.
+  - Tests: a server `endCursor` equal to the placeholder (`U:704`) and a configured login equal to it (`U:720`)
+    are refused, never sent. Every request's Content-Length must match the bytes sent, and the token must never
+    reach a body (checked by the `U:66` teardown). The splicer is driven directly over four write shapes
+    (`UR:660`, `UR:678`). The refusal is tested for bytes, bytearray, memoryview and non-bytes bodies
+    (`UR:692`). An unpinned connection sends a body as-is (`UR:700`).
+  - Mutations: splice-everywhere restored -> 3 red. Body refusal dropped -> 6 red (2 client, 4 refusal).
+- F4:
+  - `list_projects_items` (`G:402-418`) records the failure, leaves the loop, deletes `collected`, and raises
+    `ProjectEntryError` outside the handler, so it has no `__context__`.
+  - `run_fleet_project_items` clears the frames of a typed failure before its per-run log. Every other
+    `Exception` (`tasks.py:203`) is cleared and raised outside the handler as `FleetProjectItemsRunError`, which
+    names the type only (`fleet_project_items.py:36`). Its log line names the type only.
+  - Both errors pickle whole for Celery's result store (`G:95`, `fleet_project_items.py:47`).
+  - Tests: unit `U:731` (a 502 on project 2 of 2, no project-1 title in any rendered frame), `U:750` (pickling).
+    Platform `P:1010` drives `run_fleet_project_items.apply()` with django_structlog's `CeleryReceiver` and the
+    production JSON renderer, and `P:1052` drives the portal 500 with DEBUG on. Each covers a 502 on project 2
+    of 2, a soft time limit during parse and one during the export write; no item title or token appears in
+    rendered lines, `task_failed`, the result, its traceback or the DEBUG body.
+  - Mutations: `collected` kept -> unit 1 red (platform stays green: the task clears frames, by design). The
+    task's `except Exception` dropped -> platform 4 red.
+- F5: the leak guard (`P1:107`) also scans `.claude/memory/`, the co-governor memlogs (`spec-pyforge-core`,
+  `spec-pyforge-marshal`, `spec-pyforge-unifying-strategy`) and `pyforge-core/tests/unit/test_flags.py`.
+  - The live guard (`P1:965`) adds every file the branch changes (`_story_changed_files`, `P1:836`):
+    `git diff origin/main...HEAD`, the staged and unstaged diff, and untracked files, never `.warden/`.
+  - The self-test `P1:931` (a temporary repository) proves committed, edited and untracked files are scanned,
+    and that unchanged files and `.warden/` are not. The planted-term self-test is kept.
+  - Mutation: the committed diff dropped -> red.
+- Spec surface: memlog events on `spec-pyforge-warden`, `spec-pyforge-core` and `spec-pyforge-unifying-strategy`
+  name every moved path. `spec-surface-check` named no Spec as drifted, so no stamp was taken.
+- Gates (exit codes read from files):
+  - `pixi install --frozen -e platform-ci-test` 0.
+  - `pixi run -e pyforge-warden pyforge-warden-test` 0 (2440 passed); `pixi run -e pyforge-guild lint-types` 0.
+  - `pixi run -e pyforge-guild platform-ci-local -- --test` 0 (seven steps PASS; 1303 passed, 14 skipped).
+  - `pixi run -e pyforge-guild spec-surface-check` 0; flag gate `--spec` 0;
+    `pixi run -e pyforge-guild detectors-ci` 0 (45 pass).
+
 ### 2026-10-11 — Independent review, iteration 1: passed (5 minor)
 
 Separate agent, review of `git diff a21524e9d6...HEAD` at e5e89ef0f4. Token safety holds: the GraphQL path reuses Story 16.1's construction unchanged (credential fragments, pinned handler and connection with the placeholder splice, every failure typed `from None` after `clear_frames`, the 240 s / 300 s task limits with a 30 s per-request timeout, `_NoRedirectHandler`, the query-only guard before any request is built). Offline with a sentinel token through `run_fleet_project_items.apply()`, django_structlog's `CeleryReceiver` connected and the production JSON renderer: connect, every send, getresponse and read with `SoftTimeLimitExceeded` and `RuntimeError`, an HTTP 500, a GraphQL `errors` array echoing the sentinel, invalid JSON holding it, and a 302 off-origin — the sentinel absent from rendered logs, result, traceback, DEBUG page and a live-stack walk. The query-only guard was fuzzed against graphql-core 3.2.12 (300k random and 26k accepted structured documents): no mutation, subscription or extra definition passed. 22 of 24 mutations caught. Confidentiality: only fictional identifiers across 23 files, 15 commit messages and every checkpoint diff; nothing under `.warden/` tracked or read. Gates: `pyforge-warden-test` 0 (2417 passed), `lint-types` 0, `spec-surface-check` 0, flag gate `--spec` pass, `platform-ci-local -- --test` 0 (1296 passed, 14 skipped); `detectors-ci` 1 only on `ledger-direction` (main moved).
