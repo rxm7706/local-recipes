@@ -23,63 +23,130 @@ name: PyForge station tests
 # those meta-tests scan every station's tree. Story 19.5 added a tenth:
 # `testing-kit-test` (the testing kit's own suite), gated on the shared
 # surface OR the two non-station inputs its tests read.
+#
+# Story 98.1 (spec-pyforge-steward CAP-159): every job runs when a tracked
+# path ITS TESTS READ changes, not only when its own package does. Herald
+# Story 38.1 changed scripts/lint_types.py and django-herald and steward's
+# test_lint_types_django_tables.py went red on main with no job to catch it:
+# the suites read far outside their own package (scripts, the django-*
+# portal packages, other stations' src, .github/workflows, the planning
+# artifacts the doctor and marshal gatherers walk). The rule, as built: one
+# pathspec array per job in the `changes` step, and `on.*.paths` (identical)
+# carrying the union as GitHub globs. The arrays are not remembered, they
+# are derived -- steward's tests/meta/test_station_tests_trigger_map.py reads
+# each suite's tests (and the root-handoff declarations for the tests that
+# give the bare repo root to the code under test), and proves a one-path diff
+# of every read fires its job's output AND the on.pull_request.paths filter.
+# Planning content triggers like any other read (operator ruling 2026-10-12,
+# "Trigger on planning too"); the cost is more runs on planning-only PRs.
+# Local twin: pr-preflight picks its lanes by running this `changes` step.
 
 on:
   pull_request:
     paths:
+      - '.github/workflows/pyforge-station-tests.yml'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.claude/**'
+      - '.cursor/**'
+      - '.gemini/**'
+      - '.github/copilot-instructions.md'
+      - '.github/workflows/**'
+      - '.gitignore'
+      - '.marshal/**'
+      - '.pre-commit-config.yaml'
+      - '.vscode/settings.json'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'GEMINI.md'
+      - '_bmad-output/PROJECTS.md'
+      - '_bmad-output/harness-profiles/*.toml'
+      - '_bmad-output/harness-profiles/cursor.toml'
+      - '_bmad-output/projects/*/README.md'
+      - '_bmad-output/projects/*/planning-artifacts/**'
+      - '_bmad-output/projects/pyforge-doctor/README.md'
+      - '_bmad-output/projects/pyforge-marshal/**'
+      - '_bmad-output/projects/pyforge-warden/**'
+      - '_bmad/**'
+      - 'archive/**'
+      - 'docs-site/**'
+      - 'docs/**'
+      - 'docsite/**'
+      - 'presentations/**'
+      - 'recipes/**'
+      - 'scripts/**'
+      - 'scripts/tests/**'
+      - 'src/platform/**'
+      - 'src/platform/config/flags.json'
+      - 'src/prototype/**'
+      - 'src/sentinel/**'
+      - 'src/shared/packages/django-*/**'
+      - 'src/shared/packages/django-pyforge/**'
+      - 'src/shared/packages/pyforge-*/tests/**'
       - 'src/shared/packages/pyforge-atlas/**'
+      - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-doctor/**'
       - 'src/shared/packages/pyforge-herald/**'
-      - 'presentations/**'
-      - 'docs-site/**'
       - 'src/shared/packages/pyforge-marshal/**'
       - 'src/shared/packages/pyforge-mason/**'
       - 'src/shared/packages/pyforge-scribe/**'
       - 'src/shared/packages/pyforge-steward/**'
-      - 'src/shared/packages/pyforge-warden/**'
-      - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-testing-kit/**'
-      - 'src/shared/packages/django-pyforge/**'
-      - 'src/platform/config/flags.json'
-      - 'scripts/conda-forge-packaging-inventory-operations_*.py'
-      - 'scripts/openteams_identity_dashboards.py'
-      - 'scripts/tests/**'
+      - 'src/shared/packages/pyforge-warden/**'
       - 'tests/packaging/test_openteams_handoffs.py'
-      - 'pixi.toml'
-      - 'pixi.lock'
-      - 'Containerfile'
-      - '.dockerignore'
-      - 'scripts/container-gates'
-      - 'scripts/guild_image_ci.sh'
-      - '.github/workflows/pyforge-station-tests.yml'
   push:
     branches: [main]
     paths:
+      - '.github/workflows/pyforge-station-tests.yml'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.claude/**'
+      - '.cursor/**'
+      - '.gemini/**'
+      - '.github/copilot-instructions.md'
+      - '.github/workflows/**'
+      - '.gitignore'
+      - '.marshal/**'
+      - '.pre-commit-config.yaml'
+      - '.vscode/settings.json'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'GEMINI.md'
+      - '_bmad-output/PROJECTS.md'
+      - '_bmad-output/harness-profiles/*.toml'
+      - '_bmad-output/harness-profiles/cursor.toml'
+      - '_bmad-output/projects/*/README.md'
+      - '_bmad-output/projects/*/planning-artifacts/**'
+      - '_bmad-output/projects/pyforge-doctor/README.md'
+      - '_bmad-output/projects/pyforge-marshal/**'
+      - '_bmad-output/projects/pyforge-warden/**'
+      - '_bmad/**'
+      - 'archive/**'
+      - 'docs-site/**'
+      - 'docs/**'
+      - 'docsite/**'
+      - 'presentations/**'
+      - 'recipes/**'
+      - 'scripts/**'
+      - 'scripts/tests/**'
+      - 'src/platform/**'
+      - 'src/platform/config/flags.json'
+      - 'src/prototype/**'
+      - 'src/sentinel/**'
+      - 'src/shared/packages/django-*/**'
+      - 'src/shared/packages/django-pyforge/**'
+      - 'src/shared/packages/pyforge-*/tests/**'
       - 'src/shared/packages/pyforge-atlas/**'
+      - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-doctor/**'
       - 'src/shared/packages/pyforge-herald/**'
-      - 'presentations/**'
-      - 'docs-site/**'
       - 'src/shared/packages/pyforge-marshal/**'
       - 'src/shared/packages/pyforge-mason/**'
       - 'src/shared/packages/pyforge-scribe/**'
       - 'src/shared/packages/pyforge-steward/**'
-      - 'src/shared/packages/pyforge-warden/**'
-      - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-testing-kit/**'
-      - 'src/shared/packages/django-pyforge/**'
-      - 'src/platform/config/flags.json'
-      - 'scripts/conda-forge-packaging-inventory-operations_*.py'
-      - 'scripts/openteams_identity_dashboards.py'
-      - 'scripts/tests/**'
+      - 'src/shared/packages/pyforge-warden/**'
       - 'tests/packaging/test_openteams_handoffs.py'
-      - 'pixi.toml'
-      - 'pixi.lock'
-      - 'Containerfile'
-      - '.dockerignore'
-      - 'scripts/container-gates'
-      - 'scripts/guild_image_ci.sh'
-      - '.github/workflows/pyforge-station-tests.yml'
   workflow_dispatch:
 
 permissions:
@@ -133,32 +200,241 @@ jobs:
               .github/workflows/pyforge-station-tests.yml 2>/dev/null; then
             SHARED_CHANGED=true
           fi
-          # Story 52.2 (spec-pyforge-core CAP-8): pyforge-core's own suite runs
-          # whenever the shared surface OR any single station moved -- its
-          # sole-ownership meta-tests scan every sibling station's src tree, so
-          # a station-only diff can introduce a violation just as easily as a
-          # core edit can.
-          # Story 27.1: atlas's job runs pyforge-atlas-test, which also runs the inventory
-          # quartet's tests (tests/packaging/test_openteams_handoffs.py, scripts/tests/), so the
-          # quartet scripts and those tests flip atlas too. The pathspecs stay quoted so git,
-          # not the shell, matches the glob -- a deleted quartet script still counts.
-          ATLAS_EXTRA=(scripts/tests tests/packaging/test_openteams_handoffs.py scripts/openteams_identity_dashboards.py 'scripts/conda-forge-packaging-inventory-operations_*.py')
+          # Story 98.1 (spec-pyforge-steward CAP-159): each job runs when a tracked path its tests
+          # read changes. One array per job, below, carries those paths as git pathspecs; the
+          # pathspecs stay quoted so git, not the shell, matches a glob -- a deleted file still
+          # counts. `on.pull_request.paths` / `on.push.paths` carry the same paths as GitHub globs
+          # and steward's tests/meta/test_station_tests_trigger_map.py derives them from the tests
+          # themselves and proves every one fires its job. The shared surface above stays: it runs
+          # every job.
+          atlas_paths=(
+            .claude/skills
+            .github/workflows
+            .gitignore
+            AGENTS.md
+            CLAUDE.md
+            _bmad-output/projects/pyforge-atlas/planning-artifacts
+            _bmad/core/config.yaml
+            _bmad/custom/bmad-cis-design-thinking.toml
+            _bmad/scripts/resolve_customization.py
+            _bmad/skf
+            docs/reference
+            recipes
+            scripts
+            src/platform
+            src/shared/packages
+            tests/packaging/test_openteams_handoffs.py
+          )
+          doctor_paths=(
+            .claude/scripts
+            .claude/skills
+            .github/workflows/detectors.yml
+            AGENTS.md
+            CLAUDE.md
+            _bmad
+            '_bmad-output/projects/*/README.md'
+            '_bmad-output/projects/*/planning-artifacts/*'
+            _bmad-output/projects/pyforge-doctor/README.md
+            archive
+            docs/MAP.md
+            docs/dashboard
+            docs/dreams
+            docs/explanation
+            docs/foundry/frames/pyforge.frame.md
+            docs/governance
+            docs/how-to
+            docs/reference
+            docsite/build.py
+            'recipes/*/recipe.yaml'
+            recipes/bmad-suite/suite-members.yaml
+            recipes/docker/recipe.yaml
+            scripts
+            src
+          )
+          herald_paths=(
+            src/shared/packages/pyforge-herald
+            .claude/skills
+            .github/workflows
+            .gitignore
+            AGENTS.md
+            CLAUDE.md
+            _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
+            _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md
+            _bmad/scripts/resolve_customization.py
+            _bmad/skf
+            docs
+            docs-site
+            docsite
+            presentations
+            src/platform
+            src/shared/packages/django-herald
+            src/shared/packages/pyforge-steward/src
+            src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py
+          )
+          marshal_paths=(
+            src/shared/packages/pyforge-marshal
+            .claude
+            .cursor
+            .gemini
+            .github/copilot-instructions.md
+            .github/workflows/detectors.yml
+            .gitignore
+            .marshal
+            AGENTS.md
+            CLAUDE.md
+            _bmad
+            _bmad-output/PROJECTS.md
+            '_bmad-output/harness-profiles/*.toml'
+            _bmad-output/harness-profiles/cursor.toml
+            '_bmad-output/projects/*/README.md'
+            '_bmad-output/projects/*/planning-artifacts/*'
+            _bmad-output/projects/pyforge-marshal
+            docs/dreams
+            docs/governance/preserve-purge-list.json
+            docs/how-to/troubleshoot-bmad-agent-loops.md
+            docs/reference/story-spec-flag-block.md
+            scripts/.spec-surface-baseline.json
+            scripts/bmad-loop-worktree
+            scripts/bmad-switch
+            scripts/bmad_loop_baseline_drift_check.py
+            scripts/coverage_gate.py
+            scripts/detectors.py
+            scripts/flag_gate_check.py
+            scripts/fleet_picture.py
+            scripts/index_freshness_check.py
+            scripts/missing_preserve_check.py
+            scripts/promote_sprint_status.py
+            scripts/spec_surface_check.py
+            scripts/spec_surface_reconcile.py
+            src/platform
+            src/shared/packages/django-marshal
+            src/shared/packages/django-pyforge/src
+            'src/shared/packages/pyforge-*/tests/*'
+            src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py
+            src/shared/packages/pyforge-atlas/tools/bootstrap.py
+            src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
+            src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py
+          )
+          mason_paths=(
+            src/shared/packages/pyforge-mason
+            .claude/scripts/conda-forge-expert
+            .claude/skills
+            AGENTS.md
+            CLAUDE.md
+            _bmad/scripts/resolve_customization.py
+            _bmad/skf
+            recipes/click-help-colors
+            scripts/cfe_rebuild_guard_check.py
+            src/platform
+            src/shared/packages/django-mason
+            src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html
+          )
+          scribe_paths=(
+            .claude/memory/MEMORY.md
+            .claude/memory/feedback
+            .claude/settings.json
+            .claude/skills/bmad-agent-scribe
+            .claude/skills/conda-forge-expert/SKILL.md
+            .claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md
+            .claude/skills/pyforge-scribe/0.1.0/pyforge-scribe/SKILL.md
+            .claude/skills/pyforge-scribe/skill-brief.yaml
+            '.cursor/rules/*.mdc'
+            .cursor/rules/scribe-recall.mdc
+            .cursor/rules/specs.mdc
+            .cursor/rules/trunk-worktree-pr.mdc
+            .gemini/settings.json
+            .github/copilot-instructions.md
+            .vscode/settings.json
+            AGENTS.md
+            CLAUDE.md
+            GEMINI.md
+            _bmad-output/projects/pyforge-warden
+            _bmad/scripts/resolve_customization.py
+            docs/dreams/README.md
+            docs/how-to/README.md
+            docs/how-to/pixi-tasks.md
+            docs/reference/library-llms-full.md
+            docs/tutorials/getting-started.md
+            presentations/pyforge-scribe/facts.yaml
+            presentations/pyforge-warden/facts.yaml
+            scripts/claude_instruction_mode_check.py
+            src/platform
+            src/shared/packages
+          )
+          steward_paths=(
+            src/shared/packages/pyforge-steward
+            .claude/hooks/session-start.sh
+            .claude/memory/MEMORY.md
+            .claude/settings.json
+            .claude/skills
+            .cursor/environment.json
+            .github/workflows
+            .pre-commit-config.yaml
+            AGENTS.md
+            CLAUDE.md
+            _bmad
+            '_bmad-output/projects/*/README.md'
+            '_bmad-output/projects/*/planning-artifacts/*'
+            docs/dreams
+            docs/foundry
+            docs/governance
+            recipes/bmad-suite
+            recipes/click-help-colors
+            scripts/bmad-loop-worktree
+            scripts/coverage_gates_ci.py
+            scripts/detectors.py
+            scripts/lint_types.py
+            scripts/platform-ci-local.sh
+            scripts/precommit_config_check.py
+            scripts/target_version_check.py
+            scripts/tests
+            src/platform
+            'src/shared/packages/django-*/*'
+            'src/shared/packages/pyforge-*/tests/*'
+            src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+            src/shared/packages/pyforge-mason
+            tests/packaging/test_openteams_handoffs.py
+          )
+          warden_paths=(
+            src/shared/packages/pyforge-warden
+            .claude/skills
+            AGENTS.md
+            CLAUDE.md
+            _bmad/scripts/resolve_customization.py
+            _bmad/skf
+            src/platform
+            src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py
+            src/shared/packages/django-warden
+          )
+          # Story 52.2 (spec-pyforge-core CAP-8): pyforge-core's own suite runs whenever the shared
+          # surface OR any single station moved -- its sole-ownership meta-tests scan every sibling
+          # station's src tree. Story 98.1: it also scans all of src/ and scripts/ (the
+          # preserve-refs grammar test), the django-* portal packages included, so core_paths names
+          # those roots; the atlas quartet's test file stays a core input as it was.
+          core_paths=(
+            _bmad-output/projects/pyforge-steward/planning-artifacts/specs
+            docs/governance/guild-roster.json
+            scripts
+            src
+            tests/packaging/test_openteams_handoffs.py
+          )
           CORE_CHANGED="$SHARED_CHANGED"
           for s in atlas doctor herald marshal mason scribe steward warden; do
-            extra=()
-            if [ "$s" = "atlas" ]; then extra=("${ATLAS_EXTRA[@]}"); fi
+            unset -n job_paths 2>/dev/null || true
+            declare -n job_paths="${s}_paths"
             station_path="src/shared/packages/pyforge-$s"
-            job_paths=("$station_path")
-            if [ "$s" = "herald" ]; then job_paths=("$station_path" presentations docs-site); fi
-            if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "${job_paths[@]}" "${extra[@]}" 2>/dev/null; then
+            if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "${job_paths[@]}" 2>/dev/null; then
               echo "$s=true" >> "$GITHUB_OUTPUT"
-              if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "$station_path" "${extra[@]}" 2>/dev/null; then
-                CORE_CHANGED=true
-              fi
             else
               echo "$s=false" >> "$GITHUB_OUTPUT"
             fi
+            if ! git diff --quiet "$BASE"...HEAD -- "$station_path" 2>/dev/null; then
+              CORE_CHANGED=true
+            fi
           done
+          if ! git diff --quiet "$BASE"...HEAD -- "${core_paths[@]}" 2>/dev/null; then
+            CORE_CHANGED=true
+          fi
           echo "core=$CORE_CHANGED" >> "$GITHUB_OUTPUT"
           # Story 19.5: the testing kit's own suite reads two inputs outside the
           # shared surface -- django-pyforge (its station API contract test) and
@@ -181,11 +457,13 @@ jobs:
   # the pixi TASK (the whole `tests/` tree, meta included), never a file list
   # -- enumeration is how the meta-tests were lost. A peer of the station
   # jobs, gated on `core` (shared surface OR any station), not a gate on them.
-  # The `django-*` packages are deliberately not `core` inputs (django-pyforge
-  # is a path trigger since Story 19.5, for testing-kit-test only): the
-  # sole-ownership scan (pyforge-core's
-  # `tests/meta/conftest.py::sibling_station_dirs`) covers `pyforge-*`
-  # directories only, so a django-* edit cannot change this job's verdict.
+  # Story 98.1: core reads all of `src/` and `scripts/` (the
+  # `test_preserve_refs_sole_grammar.py` scan roots), the `django-*` portal
+  # packages included, so `core_paths` names those roots and the
+  # `on.*.paths` list enumerates `src/` instead of one `src/**` glob (each
+  # package family is its own trigger). Before 98.1 this comment called the
+  # `django-*` packages "deliberately not `core` inputs"; that was wrong.
+  # (django-pyforge is also a path trigger for testing-kit-test.)
   # Pinned by pyforge-core's `tests/meta/test_conformance_lane_wired.py`.
   core-test:
     needs: changes
