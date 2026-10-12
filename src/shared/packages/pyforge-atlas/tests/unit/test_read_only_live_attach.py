@@ -95,6 +95,8 @@ def fixture_postgres(tmp_path: Path) -> Iterator[str]:
             "install pixi env platform-dev) -- absent in a fresh worktree's isolated env"
         )
     data_dir = tmp_path / "pgdata"
+    sock_dir = tmp_path / "pgsock"
+    sock_dir.mkdir()
     log_path = tmp_path / "pg.log"
     _run_pg(
         bindir,
@@ -108,11 +110,7 @@ def fixture_postgres(tmp_path: Path) -> Iterator[str]:
         "--no-sync",
     )
     port = _free_port()
-    # TCP only: a Unix socket under tmp_path exceeds AF_UNIX sun_path (107 bytes) under long basetemp.
-    options = (
-        f"-p {port} -h 127.0.0.1 -c unix_socket_directories='' "
-        f"-c fsync=off -c synchronous_commit=off -c full_page_writes=off"
-    )
+    options = f"-p {port} -h 127.0.0.1 -k '{sock_dir}' -c fsync=off -c synchronous_commit=off -c full_page_writes=off"
     try:
         _run_pg(
             bindir,
