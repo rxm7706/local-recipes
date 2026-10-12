@@ -229,7 +229,13 @@ from ..migrate import registry as migrate_registry
 from ..model.manifest import ArtifactClass, Manifest, ManifestEntry, manifest_for_adopt_scope
 from ..model.version import ModelVersion
 from ..plan.build import build_plan, default_plan_path, write_plan
-from ..plan.types import Action, Plan, RepoFingerprint, SkippedArtifact
+from ..plan.types import (
+    NO_PACKAGED_PAYLOAD_SKIP_PATTERN,
+    Action,
+    Plan,
+    RepoFingerprint,
+    SkippedArtifact,
+)
 from ..regions.apply import insert_region, substitute_region
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, RegionSpan, parse_regions
@@ -258,10 +264,9 @@ _WHOLESALE_CLASSES = frozenset(
     {ArtifactClass.COPIED_MANAGED, ArtifactClass.GENERATED_DERIVED, ArtifactClass.HYBRID_MANAGED_REGION}
 )
 
-#: ``Plan.skipped`` pattern for a managed entry whose template ships no
-#: whole-file payload -- distinct from ``--skip`` globs and migration offers
-#: (Story 97.2, AC4).
-NO_PACKAGED_PAYLOAD_PATTERN = "* (no packaged whole-file payload; update cannot regenerate this entry)"
+# Backward-compatible alias for callers/tests that imported this name from
+# ``update`` (Story 97.2); the canonical string lives on ``plan.types``.
+NO_PACKAGED_PAYLOAD_PATTERN = NO_PACKAGED_PAYLOAD_SKIP_PATTERN  # noqa: F822 — re-export
 
 # Query-style git call (never a checkout/push) -- the identical value
 # `verbs/adopt.py::_GIT_TIMEOUT_S`/`plan/build.py::_GIT_TIMEOUT_S`/
@@ -613,8 +618,22 @@ def _wholesale_regenerate_actions(
             parsed = parse_regions(on_disk, entry.format) if on_disk else ()
             spans_by_name = {span.name: span for span in parsed}
             differing: list[tuple[str, str | None]] = []
+            try:
+                region_bodies = {
+                    region.name: _region_body_for(template_path, repo_root, entry.id, region.name)
+                    for region in wanted
+                }
+            except InternalError:
+                skipped.append(
+                    SkippedArtifact(
+                        artifact_id=entry.id,
+                        target_path=entry.path,
+                        pattern=NO_PACKAGED_PAYLOAD_PATTERN,
+                    )
+                )
+                continue
             for region in wanted:
-                expected_body = _region_body_for(template_path, repo_root, entry.id, region.name)
+                expected_body = region_bodies[region.name]
                 span = spans_by_name.get(region.name)
                 if span is None:
                     differing.append((region.name, region.anchor[0] if region.anchor else None))
@@ -1411,6 +1430,9 @@ def run_update(
         action for action in wholesale_actions_raw if action.artifact_id not in migration_claimed_ids
     )
     wholesale_hashes = tuple(pair for pair in wholesale_hashes_raw if pair[0] not in migration_claimed_ids)
+    wholesale_skipped = tuple(
+        skipped for skipped in wholesale_skipped if skipped.artifact_id not in migration_claimed_ids
+    )
 
     plan = _merge_plan_sources(
         build_actions=build_actions,

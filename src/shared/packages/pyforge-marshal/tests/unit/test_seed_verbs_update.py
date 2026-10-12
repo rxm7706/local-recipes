@@ -71,6 +71,17 @@ _V2 = ModelVersion.parse("2.0.0")
 _NO_NEVER_WRITE = NeverWrite(patterns=())
 
 
+def _template_root(repo: Path, files: dict[str, str]) -> Path:
+    """Synthetic template tree with whole-file payloads for ``copied-managed`` tests."""
+    root = repo / ".marshal-seed-template-fixture"
+    root.mkdir(exist_ok=True)
+    for rel_path, content in files.items():
+        target = root / rel_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return root
+
+
 # --- manifest builders (mirrors test_seed_verbs_adopt.py) -------------------
 
 
@@ -315,7 +326,8 @@ def test_a_previously_managed_entry_that_became_an_escaping_symlink_is_left_out_
 
     monkeypatch.setattr(update_module, "_read_text_or_blank", spy)
 
-    result = run_update(clean_repo, manifest, confirm=_unreachable_confirm)
+    template = _template_root(clean_repo, {"GOOD.md": "packaged good\n"})
+    result = run_update(clean_repo, manifest, confirm=_unreachable_confirm, template_path=template)
 
     assert [action.artifact_id for action in result.plan.actions] == ["good"]
     assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
@@ -583,7 +595,10 @@ def test_three_source_merge_appears_correctly_merged_and_sorted(clean_repo, monk
         model_version=_V2,
     )
 
-    result = run_update(clean_repo, manifest_v2, confirm=_unreachable_confirm)
+    template = _template_root(clean_repo, {"A_WHOLESALE.md": "template content\n"})
+    result = run_update(
+        clean_repo, manifest_v2, confirm=_unreachable_confirm, template_path=template
+    )
 
     assert [a.artifact_id for a in result.plan.actions] == ["a-wholesale", "m-migrated", "z-absent"]
 
@@ -1010,6 +1025,7 @@ def test_skip_keeps_a_hand_edited_managed_file_without_force(clean_repo):
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
     _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
     before = (clean_repo / "WHOLE.md").read_bytes()
+    template = _template_root(clean_repo, {"WHOLE.md": "packaged whole-file\n"})
 
     result = run_update(
         clean_repo,
@@ -1019,6 +1035,7 @@ def test_skip_keeps_a_hand_edited_managed_file_without_force(clean_repo):
         skip=("WHOLE.md",),
         confirm=_unreachable_confirm,
         commit=_unreachable_commit,
+        template_path=template,
     )
 
     assert result.plan.actions == ()
@@ -1032,9 +1049,18 @@ def test_without_skip_the_same_hand_edit_is_refused(clean_repo):
     a refusal, and `--force` is not involved."""
     manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
     _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+    template = _template_root(clean_repo, {"WHOLE.md": "packaged whole-file\n"})
 
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
-        run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+        run_update(
+            clean_repo,
+            manifest,
+            run=True,
+            yes=True,
+            confirm=_unreachable_confirm,
+            commit=_unreachable_commit,
+            template_path=template,
+        )
 
 
 def test_skip_does_not_excuse_a_hand_edit_it_does_not_name(clean_repo):

@@ -873,7 +873,7 @@ def _render_update_plan_text(plan: Plan) -> str:
                     f"  {skipped.artifact_id} ({skipped.target_path}):"
                     " offered by a migration; not applied without --include-seeded"
                 )
-            elif skipped.pattern == update_module.NO_PACKAGED_PAYLOAD_PATTERN:
+            elif skipped.pattern == update_module.NO_PACKAGED_PAYLOAD_SKIP_PATTERN:
                 lines.append(f"  {skipped.artifact_id} ({skipped.target_path}): {skipped.pattern}")
             else:
                 lines.append(f"  {skipped.artifact_id} ({skipped.target_path}): matched --skip {skipped.pattern!r}")
