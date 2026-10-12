@@ -364,6 +364,12 @@ class Source(StrEnum):
     # degrades to one WARN via degrade_on_exception). See
     # sources/docs_currency.py for the independence rationale.
     DOCS_CURRENCY = "docs-currency"
+    # Story 42.1 (spec-pyforge-doctor CAP-81 / CAP-86): a tracked story spec
+    # must not repeat a frontmatter key -- PyYAML last-wins and marshal's
+    # scalar reader first-wins disagree, so the source refuses the block.
+    # Reads only ``planning-artifacts/specs/spec-*.md`` paths from
+    # ``git ls-files``; duplicate key FAIL, unreadable block WARN.
+    FRONTMATTER_DUPLICATE_KEYS = "frontmatter-duplicate-keys"
 
 
 class Partition(StrEnum):

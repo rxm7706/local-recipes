@@ -137,21 +137,19 @@ def _header_protocol_version(scope: dict[str, Any]) -> str | None:
 def _is_initialize(body: bytes) -> bool:
     try:
         payload = json.loads(body.decode("utf-8") or "null")
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except UnicodeDecodeError, json.JSONDecodeError:
         return False
     if isinstance(payload, dict):
         return payload.get("method") == "initialize"
     if isinstance(payload, list):
-        return any(
-            isinstance(item, dict) and item.get("method") == "initialize" for item in payload
-        )
+        return any(isinstance(item, dict) and item.get("method") == "initialize" for item in payload)
     return False
 
 
 def _initialize_revision(body: bytes) -> str | None:
     try:
         payload = json.loads(body.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except UnicodeDecodeError, json.JSONDecodeError:
         return None
     message = payload
     if isinstance(payload, list):
@@ -171,7 +169,7 @@ def _initialize_revision(body: bytes) -> str | None:
 def _jsonrpc_id(body: bytes) -> Any:
     try:
         payload = json.loads(body.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except UnicodeDecodeError, json.JSONDecodeError:
         return None
     if isinstance(payload, dict):
         return payload.get("id")

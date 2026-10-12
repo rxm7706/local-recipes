@@ -2,7 +2,8 @@
 title: "42.1: A repeated frontmatter key in a story spec turns Detectors red"
 type: 'feature'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '55906ac5ffd5065a324640aa86cb86466f5b6215'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
@@ -187,4 +188,43 @@ The source tests build real temporary git repositories with tracked specs, as
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-12 — Operator sign-off on the seed-state re-record
+
+The operator ruled (AskUserQuestion, 2026-10-12, verbatim label "Sign off + fix story (Recommended)") to authorize the one `.marshal/seed-state.yml` `body_sha` re-record for `detector-registry` (3ea83244 -> 20bf7374) as an operator-authorized exception to marshal's do-not-hand-edit rule, recorded on `spec-pyforge-marshal`'s memlog, and to mint a marshal fix story for a journaled re-record verb, reclassification of the repo-owned artifacts and the corrected `update --force` remedy text. 42.1 lands with the re-record.
+
+### 2026-10-12 — Landing fix: managed detector registry hash (implementer)
+
+- cause: PR #2150's `oracle` check (`marshal-local-recipes-seed-oracle`, marshal Story 86.2 SC-02) failed with
+  `PreconditionFailure: managed-content-modified` on `scripts/detectors.py` (content hash `20bf7374`, recorded
+  `3ea83244`). Story 86.2 recorded `scripts/detectors.py` as the `copied-managed` artifact `detector-registry` in
+  `.marshal/seed-state.yml` at `origin/main`'s content. AC5's `_DOCTOR_SOURCE_TASKS` row is the first change to the
+  file since then, so rung 6 (`seed/verbs/preconditions.py`) refuses the adopt dry run even with no write planned.
+- sanctioned path: none. No seed verb re-records a claimed artifact. `adopt` first-claims only unrecorded ids
+  (`seed/verbs/adopt.py:556-562`) and writes state only for a non-empty plan (`adopt.py:1360`). `--force` bypasses
+  rung 6 only. `update --force` recopies from the template (`seed/verbs/update.py:856-931`), which ships no
+  `scripts/detectors.py` payload, so `_staged_bytes_for` would raise `InternalError`. Even with a payload it would
+  discard this row, so the remedy text "accept it as the new baseline" (`seed/detect/findings.py:117-120`) is wrong.
+  A `--skip` would widen the oracle's recorded-skip set (K-02). Not run: `update --force`.
+- resolution: one field of `.marshal/seed-state.yml` changed, `managed[detector-registry].body_sha` `3ea83244` →
+  `20bf7374`. The hash comes from marshal's own `seed.detect.hashes.hash_content`. The file is byte-identical to
+  `seed.state.write_state`'s serialization of the re-recorded state. That is a hand re-record, which
+  `spec-pyforge-marshal`'s do-not-hand-edit state rule and Story 86.2's AC6 forbid, so it needs operator sign-off
+  at landing. The `spec-pyforge-marshal` memlog names the path and reason. `scripts/detectors.py` is unchanged
+  from the implementation. The design gap (every detector registration hits this) goes to a marshal fix story.
+- gates: `marshal-local-recipes-seed-oracle` 0 (was 1); `marshal seed check --repo-root .` 0 (was 1, one HARD;
+  7 DRIFT rows are 86.2's recorded skips, unchanged); `pyforge-doctor-test` 0 (3560 passed, 1 skipped);
+  `detectors-ci` 0; `spec-surface-check` 0 (no drift; no stamp needed); `spec_surface_reconcile.py` 0;
+  `lint-types` 0.
+
+### 2026-10-11 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches AC1–AC8; matrix tests green; live tree clean after marshal 96.1)
+
+## Auto Run Result
+
+- **Summary:** Added repo-scope Doctor source `frontmatter-duplicate-keys` that scans flat tracked story specs (`specs/spec-<slug>.md` via `git ls-files`), detects repeated YAML mapping keys at any depth (FAIL), and warns on unreadable fences; wired through `DISPATCH`, `REGISTRY`, `_DOCTOR_SOURCE_TASKS`, pixi `frontmatter-duplicate-keys-check`, and regenerated docs pages.
+- **Files changed:** `frontmatter_duplicate_keys.py` (new gather); `models.py` / `report-schema.json` (Source enum); `sources/__init__.py`, `__main__.py`, `scripts/detectors.py`, `pixi.toml`; unit/meta/dispatch tests; `docs/reference/detectors.md`, `docs/how-to/pixi-tasks.md`, `docs/map.yaml`; spec-pyforge-doctor and spec-pyforge-core memlogs.
+- **Review:** 0 patches; 0 deferred.
+- **Follow-up review recommended:** false
+- **Verification:** `test_sources_frontmatter_duplicate_keys.py` (10 passed); targeted meta/registry/dispatch tests green; `frontmatter-duplicate-keys-check` exit 0 on worktree; `python scripts/spec_surface_reconcile.py` exit 0; full `pyforge-doctor-test` 3553 passed (after taxonomy/schema fixes).
+- **Residual risk:** Tier-3 story drafts are invisible until promoted into `planning-artifacts/specs/`.

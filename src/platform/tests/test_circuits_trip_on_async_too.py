@@ -44,7 +44,7 @@ def _hammer_acall(breaker: CircuitBreaker) -> None:
     for _ in range(SURPLUS):
         try:
             asyncio.run(breaker.acall(_boom))
-        except (RuntimeError, CircuitOpenError):
+        except RuntimeError, CircuitOpenError:
             continue
 
 

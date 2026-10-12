@@ -6,7 +6,7 @@ requires = ["hatchling"]
 name = "django-scribe"
 version = "0.1.0"
 description = "Scribe station portal (reusable Django app): chrome shell."
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 dependencies = ["django>=5.1,<6"]
@@ -15,7 +15,7 @@ dependencies = ["django>=5.1,<6"]
 packages = ["src/django_scribe_portal"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 120
 extend-exclude = ["*/migrations/*.py"]
 

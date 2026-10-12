@@ -9,7 +9,7 @@
 
 Why a runner and not three shell lines: each package carries its OWN
 ``[tool.ruff]`` / ``[tool.mypy]`` in its ``pyproject.toml`` (py314 targets for
-``pyforge-*``; ``py312`` for ``django-*``; mypy strict for ``pyforge-core``; the
+``pyforge-*``; ``py314`` for ``django-*``; mypy strict for ``pyforge-core``; the
 2026-09-20 mypy baseline disabled per module, per error code -- never
 ``ignore_errors``), and ruff/mypy only read the config nearest the files they
 are given when run from inside that package. The CI lane
