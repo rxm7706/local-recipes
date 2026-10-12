@@ -2210,7 +2210,7 @@ bodies and their assertions do not change; no skip, `xfail` or rerun is added (A
 **When** the fixture starts its server
 **Then** it opens no Unix socket (`-c unix_socket_directories=''` in place of `-k`, with no socket directory under `tmp_path`), and `test_federated_read_across_two_schemas` and `test_write_through_attach_is_refused` pass, not skip, under that basetemp when PostgreSQL binaries are present
 **And** with no PostgreSQL binaries both tests still skip with the fixture's existing reason; the diff adds no skip or `xfail`; only the test file changes; restoring `-k '<tmp_path>/pgsock'` reds both tests under the long basetemp (mutation); `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
