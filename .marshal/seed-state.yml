@@ -33,7 +33,7 @@ managed:
 - id: detector-registry
   path: scripts/detectors.py
   class: copied-managed
-  body_sha: 3ea83244
+  body_sha: 20bf7374
   inserted_region_spans: []
 - id: detectors-ci-workflow
   path: .github/workflows/detectors.yml
