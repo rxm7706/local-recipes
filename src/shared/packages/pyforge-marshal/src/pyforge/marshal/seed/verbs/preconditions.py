@@ -744,7 +744,7 @@ def check_preconditions(
                 "revert the hand-edits (git checkout the listed paths), move your"
                 " changes outside the managed regions, record an intended edit as"
                 " the new baseline with `marshal seed accept <artifact-id>"
-                " --apply --reason \"...\"` (commit it first), or re-run with"
+                ' --apply --reason "..."` (commit it first), or re-run with'
                 " --force to discard the edits deliberately"
             ),
         )

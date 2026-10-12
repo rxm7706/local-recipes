@@ -312,7 +312,9 @@ def test_acceptances_accumulate_and_survive_a_later_adopt(adopted):
     manifest = dataclasses.replace(
         manifest, entries=(*manifest.entries, _entry("extra", ArtifactClass.COPIED_MANAGED, "scripts/extra"))
     )
-    run_adopt(adopted, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(manifest, adopted))
+    run_adopt(
+        adopted, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(manifest, adopted)
+    )
     after = read_state(adopted)
     assert after is not None
     assert after.acceptances == state.acceptances

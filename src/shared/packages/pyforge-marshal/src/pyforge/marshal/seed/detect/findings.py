@@ -116,13 +116,13 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType(
         ),
         FindingType.MANAGED_FILE_MODIFIED: (
             "The file is tool-owned -- revert the local edit, run `marshal seed "
-            "accept <artifact-id> --apply --reason \"...\"` to record an intended "
+            'accept <artifact-id> --apply --reason "..."` to record an intended '
             "edit as the new baseline, or run `marshal seed update --force` to "
             "discard the edit."
         ),
         FindingType.MANAGED_REGION_MODIFIED: (
             "Revert edits inside the managed region, run `marshal seed accept "
-            "<artifact-id>#<region> --apply --reason \"...\"` to record an intended "
+            '<artifact-id>#<region> --apply --reason "..."` to record an intended '
             "edit as the new baseline, or run `marshal seed update --force` to "
             "discard the edit and overwrite the region; content outside the "
             "markers is untouched."

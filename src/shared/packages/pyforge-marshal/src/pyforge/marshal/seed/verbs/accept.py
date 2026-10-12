@@ -208,7 +208,11 @@ def _managed_record(state: SeedState | None, entry: ManifestEntry) -> ManagedArt
             "accept applies to `copied-managed` files and `hybrid-managed-region` regions; "
             "`marshal seed update` recomputes a derived artifact",
         )
-    record = next((candidate for candidate in state.managed if candidate.id == artifact_id), None) if state is not None else None
+    record = (
+        next((candidate for candidate in state.managed if candidate.id == artifact_id), None)
+        if state is not None
+        else None
+    )
     if record is None:
         raise _refuse(
             "not-claimed",
@@ -469,9 +473,7 @@ def run_accept(
         for change in changes
     )
     new_state = _state_after(state, record, replacements, changes[0].accepted_sha)
-    new_state = dataclasses.replace(
-        new_state, acceptances=(*new_state.acceptances, *journal), last_update=now
-    )
+    new_state = dataclasses.replace(new_state, acceptances=(*new_state.acceptances, *journal), last_update=now)
     write_state(
         new_state,
         repo_root=repo_root,
