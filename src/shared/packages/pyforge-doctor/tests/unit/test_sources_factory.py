@@ -1788,24 +1788,31 @@ def test_env_count_reads_the_live_manifest_like_tomllib() -> None:
 # --- Story 43.1: marshal dispatch Tier-3 run artifacts ---------------------------------
 
 
-def _plant_tier3_dispatch_shapes(repo: Path) -> None:
+#: One file of each AC3 shape, with the class ``classify()`` must give it.
+_TIER3_DISPATCH_SHAPES: dict[str, str] = {
+    "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06.md": "local:recall-feedback",
+    "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06.md.query-ran": "local:recall-feedback",
+    "epic-97-continuity.md": "local:sprint-feed",
+    "session-advisories/run-1/journal.jsonl": "local:run-journal",
+    "dispatch-runs-quarantine/run-1/journal.jsonl": "local:run-journal",
+    "dispatch-runs-quarantine/README.md": "local:run-journal",
+    "token-economy-benchmark-2026-10-12T103206Z.json": "local:benchmark",
+    "token-economy-benchmark-per-layer-2026-10-12T103206Z.json": "local:benchmark",
+    "bmad-build-auto-result-97-2-some-story.md": "local:run-result",
+    "97-2-x-attempted-change.patch": "local:attempted-change",
+}
+
+
+def _plant_tier3_dispatch_shapes(repo: Path) -> dict[Path, str]:
+    """Plant one file of each AC3 shape; return each planted path with its class."""
     impl = factory._impl(repo)
-    impl.mkdir(parents=True, exist_ok=True)
-    stem = "recall-feedback__97.2__pyforge-marshal-20261012T103206150Z-210a0f06"
-    (impl / f"{stem}.md").write_text("hit\n", encoding="utf-8")
-    (impl / f"{stem}.md.query-ran").write_text("", encoding="utf-8")
-    (impl / "epic-97-continuity.md").write_text("x\n", encoding="utf-8")
-    adv = impl / "session-advisories" / "run-1"
-    adv.mkdir(parents=True)
-    (adv / "journal.jsonl").write_text("{}\n", encoding="utf-8")
-    q = impl / "dispatch-runs-quarantine" / "run-1"
-    q.mkdir(parents=True)
-    (q / "journal.jsonl").write_text("{}\n", encoding="utf-8")
-    (impl / "dispatch-runs-quarantine" / "README.md").write_text("x\n", encoding="utf-8")
-    (impl / "token-economy-benchmark-2026-10-12T103206Z.json").write_text("{}\n", encoding="utf-8")
-    (impl / "token-economy-benchmark-per-layer-2026-10-12T103206Z.json").write_text("{}\n", encoding="utf-8")
-    (impl / "bmad-build-auto-result-97-2-some-story.md").write_text("x\n", encoding="utf-8")
-    (impl / "97-2-x-attempted-change.patch").write_text("diff\n", encoding="utf-8")
+    planted: dict[Path, str] = {}
+    for name, cls in _TIER3_DISPATCH_SHAPES.items():
+        path = impl / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("x\n", encoding="utf-8")
+        planted[path] = cls
+    return planted
 
 
 def test_recall_feedback_pair_is_classified_and_gather_stays_clean(tmp_path: Path) -> None:
@@ -1854,19 +1861,37 @@ def test_tier3_look_alikes_still_uncovered(tmp_path: Path, name: str) -> None:
 def test_every_marshal_dispatch_tier3_shape_in_intent_table(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap(repo)
-    _plant_tier3_dispatch_shapes(repo)
+    planted = _plant_tier3_dispatch_shapes(repo)
     (factory._impl(repo) / "scratch.bak").write_text("x\n", encoding="utf-8")
     (factory._impl(repo) / "review-diff.patch").write_text("diff\n", encoding="utf-8")
     findings = factory.gather(repo)
     assert not [f for f in findings if f.check == "uncovered"]
     stray = {(f.check, f.evidence["subject"]) for f in findings if f.check == "stray-file"}
-    assert len(stray) == 2
-    assert ("stray-file", "implementation-artifacts/scratch.bak") in stray
-    assert ("stray-file", "implementation-artifacts/review-diff.patch") in stray
+    assert stray == {
+        ("stray-file", "implementation-artifacts/scratch.bak"),
+        ("stray-file", "implementation-artifacts/review-diff.patch"),
+    }
     tier3_classes = {r.classification for r in factory.TIER3_RUN_ARTIFACTS}
-    for path in factory._walk(factory._impl(repo)):
-        if not path.is_file():
-            continue
-        cls = factory.classify(path, repo)
-        if cls in tier3_classes:
-            assert cls != "UNKNOWN"
+    for path, expected in planted.items():
+        got = factory.classify(path, repo)
+        assert got == expected, (factory._rel(path, repo), got)
+        assert got in tier3_classes, (factory._rel(path, repo), got)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "bmad-build-auto-result-2026-10-12T103206Z.md",
+        "bmad-build-auto-result-97.2-Some_Story.md",
+    ],
+)
+def test_bmad_build_auto_result_takes_the_writers_slug_or_timestamp(tmp_path: Path, name: str) -> None:
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    path = factory._impl(repo) / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("x\n", encoding="utf-8")
+    assert factory.classify(path, repo) == "local:run-result"
+    findings = factory.gather(repo)
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.OK

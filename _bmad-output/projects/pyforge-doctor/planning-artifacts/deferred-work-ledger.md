@@ -2972,3 +2972,27 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-10-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-doctor-43-1-1: Two `TIER3_RUN_ARTIFACTS` patterns are wider than their writers: the plain benchmark row also matches the per-layer name, and the quarantine row accepts any depth
+
+- source_spec: `planning-artifacts/specs/spec-43-1-bmad-drift-knows-every-file-marshal-dispatch-writes-into-tier-3.md`
+  summary: `token-economy-benchmark-[A-Za-z0-9._-]+\.json` also matches every `token-economy-benchmark-per-layer-<stamp>.json`, so the per-layer row is shadowed (same class, so nothing misclassifies) and the plain row accepts any suffix rather than the writer's `%Y-%m-%dT%H%M%SZ` stamp. `dispatch-runs-quarantine/.*` accepts any depth and any file name rather than `<run>/…` plus the `README.md` marshal's stale-run remedy names. Neither hides a stray-suffix file: `check_archive_hygiene` still reports a root `.patch`/`.bak` and `check_coverage` judges only `UNKNOWN`.
+  evidence: Independent review of Story 43.1, iteration 1 (R10, 2026-10-12), triaged `defer`. The writer's stamp format is `cli/benchmark.py::default_artifact_path` (`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/benchmark.py:197`); the quarantine location is `core/dispatch_stale.py::_dispatch_stale_quarantine_remedy` (`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_stale.py:24`). Tightening means anchoring the plain row to the stamp (or excluding `per-layer-`) and the quarantine row to `<run>/…` or `README*`, mirrored in `scripts/bmad_drift_check.py` with look-alike tests.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:402
+  origin: story-43-1 independent review, iteration 1 (R10)
+  severity: low
+  status: open
+  reason: Optional tightening; both rows classify their writers' files correctly and neither can hide a stray-suffix file.
+  verified: 2026-10-12 — STANDS — the plain benchmark row is at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:402`, the per-layer row at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:407`, the quarantine row at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:396`; the script mirror at `scripts/bmad_drift_check.py:142`.
+
+### DW-doctor-43-1-2: Two meta-test writer tokens are fragile or cite a reader: the `runs` row's literal source fragment and the `dispatch-runs` row's reader module
+
+- source_spec: `planning-artifacts/specs/spec-43-1-bmad-drift-knows-every-file-marshal-dispatch-writes-into-tier-3.md`
+  summary: In `src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py`'s shape table, the `runs` row's token is the literal fragment `'implementation-artifacts" / "runs"'` in `cli/status.py`, which a reformat (a wrapped `/` chain) breaks without any change of writer; and the `dispatch-runs` row cites `core/layer_savings_sources.py`, a reader of `dispatch-runs/`, not its writer `core/dispatch.py::dispatch_runs_dir` (whose token would be `_DISPATCH_RUNS_DIRNAME = "dispatch-runs"`). A renamed writer can then leave the row green while the reader keeps the old name.
+  evidence: Independent review of Story 43.1, iteration 1 (R11, 2026-10-12), triaged `defer`. The scan itself still collects both segments from their real writers (`runs` at 38 sites, `dispatch-runs` at 12), so coverage does not depend on these two tokens; only the rename guard is weaker. The `TIER3_RUN_ARTIFACTS` writer column already names the real writers (`core/dispatch.py::dispatch_runs_dir`, `cli/init.py::_journal_abandonments`).
+  location: src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py:84
+  origin: story-43-1 independent review, iteration 1 (R11)
+  severity: low
+  status: open
+  reason: Optional hardening of the rename guard; the scan, not the token, is what keeps these two segments covered.
+  verified: 2026-10-12 — STANDS — the reader cite is at `src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py:84` and the literal fragment at `src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py:134`; the writer is `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py:175`.
