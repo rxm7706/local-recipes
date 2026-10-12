@@ -257,6 +257,61 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
 
 ## Review Triage Log
 
+### 2026-10-12 — Fix pass for iteration 2 (implementer)
+
+Separate implementer session on `dispatch/pyforge-doctor/43.1` at `a17efcc91e`, uncommitted. N1, N2, N3, N5, N6 and the nit are fixed; N4 is appended to `DW-doctor-43-1-2`. Mutations ran in a scratch copy of the repo's relevant files (doctor package, marshal `src/`, the script, `tests/scripts/`, the two skill files), restored from the worktree after each run. The worktree's `git status` and `git diff` were identical before and after. Line numbers are at this pass's working tree.
+
+- N1 — meta-test `test_bmad_drift_tier3_marshal_shapes.py`:
+  - The index records each module's `from … import` (relative, or absolute under `pyforge.marshal`; `_import_base` `:322`, `_build_index` `:340`) and its top-level functions.
+  - A call resolves to its definition in this order: the calling module's own function; then the function its import names, followed through re-exports (`_function` `:463`); then `module.helper(...)` through an imported submodule (`_resolve_call` `:486`).
+  - Failing those, it accepts several same-named definitions only when they all render the same template (`:509`); `_tier3_path` is duplicated verbatim in `cli/spin.py:1039` and `supervisor/__main__.py:722`.
+  - Imported module constants resolve too (`_resolve_name` `:449`).
+  - Live marshal now gives 16 segments: the 15 from iteration 1 plus `sessions` (`cli/gate.py:1222`). `"sessions"` is in `_EXPECTED_MARSHAL_SEGMENTS` (`:43`), with a `_SHAPE_TABLE` row (`:205`).
+  - `factory.py:412` and `scripts/bmad_drift_check.py:150` carry `^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*` → `local:run-journal`. Its writer is `cli/gate.py::_write_gate_record` (verified at `cli/gate.py:1162`); the class is the same as `runs/<run>/gate-records/`.
+  - New `test_fixture_helper_defined_twice_still_resolves` (`:774`) covers three cases, each red naming `c.py:<line>`: imported-one-of-two-different-definitions, two-identical-definitions-not-imported, and a submodule attribute call.
+  - Mutations:
+    - The old give-up resolution → meta-test red, "scan no longer sees: ['sessions']", and all 3 fixture cases red.
+    - Import following off → 2 fixture cases red.
+    - Render-same acceptance off → 1 fixture case red.
+    - Remove factory's sessions row → AC3 and the meta-test red, naming `cli/gate.py:1222`.
+    - Remove the script's sessions row → the agreement tests red.
+    - A new kind built through `gate.py`'s `_tier3_path` in a marshal copy → red, naming `cli/gate.py:1419`.
+- N2 — new row `^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch` → `local:failed-attempt`, writer `supervisor/intent_gap_preserve.py::_write_failed_patch` (`factory.py:326`, script `:128`).
+  - It is listed before the `dispatch-runs/` row, which would otherwise claim it.
+  - Its class is kept (N5), so `check_archive_hygiene` no longer reports it. All 57 such files on the primary checkout sit under `dispatch-runs/<run>/failed/<story>/`.
+  - Tests:
+    - `test_failed_attempt_patch_is_kept_and_its_look_alikes_are_not` (`test_sources_factory.py:1902`) keeps it, and four look-alikes (`failed/<story>/other.patch`, a run-root `changes.patch`, `failed/changes.patch`, the same shape under `runs/`) stay `stray-file`.
+    - The AC3 plant includes it (`:1804`).
+    - Agreement samples cover it, plus three `local:run-journal` look-alikes (`tests/scripts/…:67`).
+  - `--fix`: `do_fix` removes root-level strays only (`IMPL.iterdir()`), so it never reached this nested file. Its keep is derived all the same, and `test_do_fix_never_reaches_a_failed_attempt_patch` (`tests/scripts/…:161`) asserts `_is_kept_tier3_artifact` holds and the file survives.
+  - Mutations, each red in the hygiene test and AC3: drop `local:failed-attempt` from `TIER3_KEPT_CLASSES`; remove the row; move it after `dispatch-runs/`. Dropping it from the script's kept classes reds the equality test and the do_fix test.
+- N3 — `_WRITER_TOKENS` (`:226`) gives each `TIER3_RUN_ARTIFACTS` row, keyed by pattern, a token that must sit inside the cited symbol's own source (`_symbol_source` `:662`: `ast.get_source_segment`; the module docstring for `::__doc__`; the whole file for a skill file).
+  - The token set must equal the row set (`test_every_tier3_rule_names_a_real_writer` `:677`). The attempted-change token is the code's `rglob("*attempted-change*.patch")`, not the docstring copy.
+  - The worktree-verdicts writer is now `scripts/worktree_sweep.py::__doc__` (`factory.py:377`), the documented `--format json` redirect; `main` never names the file.
+  - Mutations, each red:
+    - Recall `.md` row pointed at `format_recall_feedback_for_injection`.
+    - Session-advisories row pointed at `core/derived_context.py::continuity_output_relpath`.
+    - Attempted-change row pointed at its caller `_commit_and_journal_blocked_halt` (same file).
+    - Sessions row pointed at `cli/gate.py::run_evaluate`.
+    - In marshal copies: the `rglob` glob renamed in code only; `"changes.patch"` renamed in `_write_failed_patch`.
+- N5 — `TIER3_KEPT_CLASSES = {local:attempted-change, local:failed-attempt}` and `_is_kept_tier3_artifact(rel)` = `_classify_tier3_run_artifact(rel) in TIER3_KEPT_CLASSES` (`factory.py:463-467`, used at `:1026`; script `:174-178`, used in `do_fix` at `:508`). The hand-coded `_is_attempted_change_patch_rel` is gone from both.
+  - `test_kept_exemption_follows_the_table_class` (`test_sources_factory.py:1926`) narrows the row and sees the patch go `stray-file`.
+  - `test_reference_rows_and_kept_classes_equal_factorys` (`tests/scripts/…:108`) pins the script's rows (order included) and kept classes to factory's.
+  - `test_do_fix_keep_follows_the_reference_table` (`:147`) narrows the script row and sees `--fix` remove the patch.
+  - Mutations: tighten factory's attempted-change row with the derivation untouched → AC3 red (the patch is `stray-file`); tighten the script's row → `test_do_fix_keeps_attempted_change_patch` red, plus the equality and agreement tests.
+- N6 — the Auto Run Result block now reads `Status: in-progress` and states the send-back history, the open iteration-3 review and the current change. The stale iteration-1 line is marked superseded. Frontmatter `status: 'in-progress'` and `review_loop_iteration` are untouched.
+- Nit — the `# noqa: E402` at `tests/scripts/test_bmad_drift_check_tier3_classify.py:34` is removed (`ruff check --isolated` clean).
+- N4 — appended to `DW-doctor-43-1-2` (`planning-artifacts/deferred-work-ledger.md:2989`), with a fresh cited `verified:` line. Since N3, a code-only rename of the glob already reds the factory-side writer test; what remains is the meta table's file-wide token. `DW-doctor-43-1-1`'s location and verified line are refreshed for the moved rows.
+- Also updated: `SYNC-RUNBOOK.md:83` (`stray-file` / `--fix`) now names `TIER3_KEPT_CLASSES` and both kept shapes. A comment on the `TIER3_RUN_ARTIFACTS` docstring now records first-match ordering.
+
+AC8 note: the 57 `dispatch-runs/<run>/failed/<story>/changes.patch` files on the primary checkout move from `local:run-journal` to `local:failed-attempt`, and their `stray-file` findings go away; this is the N2 fix. No other existing file changes class.
+
+18 mutations this pass, all red as expected. In the scratch copy's baseline, the mutated nodes were green; three unrelated `test_sources_factory.py` tests failed there because they read `pixi.toml` and `scripts/pixi_env_matrix.py`, which the copy omits.
+
+AC7: a real `implementation-artifacts/` (not a symlink) holding the AC1 pair, every AC3 shape, a `sessions/<id>/gate-records/97-2/gate-record.json` and a `dispatch-runs/<run>/failed/28.9/changes.patch` (14 files) gives `bmad-drift-check` 0 with no `uncovered` and no `stray-file`. Adding `dispatch-runs/<run>/failed/28.9/other.patch` gives 2 (`stray-file`). `detectors-ci` gives 0 (46 of 46). The directory was removed.
+
+Gates, exit codes read from files: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` 0 (3593 passed, 1 skipped; the speed-budget test 1 passed); `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` 0 (1490 passed, 31 skipped); `pixi run -e pyforge-guild lint-types` 0 (pyforge-doctor ruff, ruff-format and mypy ok); `spec-surface-check` 0 after memlog reconciles and scoped stamps on `pyforge-doctor/spec-pyforge-doctor` and `pyforge-marshal/spec-pyforge-core`; `scripts/spec_surface_reconcile.py` 0; `bmad-drift-check` 0; `deferred-work-check` 0; `frontmatter-duplicate-keys-check` 0; `detectors-ci` 0 (46 of 46, re-run after this entry and the Auto Run Result were written). The AC8 comparison of HEAD's factory and this pass's over all 3020 files of the primary checkout's `pyforge-marshal` tree differs in exactly those 57 files.
+
 ### 2026-10-12 — Independent review, iteration 2: sent back (2 medium, 3 low patch; 1 low defer)
 
 Fresh separate agent, review at c7759791e9. AC1-AC8 hold and R1-R9/R12 are closed (38 mutations caught: the script's reference classify, every factory row, the five marshal idioms naming path:lineno, nine blinding mutations). AC7 by hand: every AC1/AC3 shape gives `bmad-drift-check` 0 and `detectors-ci` 46/46; a `review-diff.patch` or `randomfile.txt` control reds it. AC8: classifying all 3727 files of the primary and worktree `pyforge-marshal` trees with main's factory and HEAD's differs only in 145 quarantine files moving UNKNOWN -> `local:run-journal`. Gates all 0 (`pyforge-doctor-test` 3588 passed, scripts 1482, lint-types, spec-surface, bmad-drift, deferred-work, frontmatter-duplicate-keys, detectors-ci 46/46, coverage-gate).
@@ -315,10 +370,17 @@ Separate agent, review of `git diff origin/main...HEAD` (merge-base 6bbfff6dd6, 
 
 Send-back: R1-R9 and R12 in one pass; R10/R11 as doctor deferred-work rows; a fresh independent review (iteration 2) gates the landing.
 
-- 2026-10-12 iteration 1: AC1–AC8 verified locally (`pyforge-doctor-test` 3579 passed; `pyforge-doctor-scripts-test` 1475 passed + 21 new tier3 classify tests; AC7 `bmad-drift-check` exit 0 with planted Tier-3 tree; `spec_surface_reconcile.py` and `spec-surface-check` exit 0 after memlogs and scoped stamps on `spec-pyforge-doctor` and `spec-pyforge-core`). No blocking findings.
+- 2026-10-12 iteration 1 (superseded): the first implementation pass recorded "AC1–AC8 verified locally, no blocking findings" here. The independent review above found that claim did not hold (the AC4/AC5 guards passed vacuously and `lint-types` was red). The current state is the newest fix-pass entry at the top of this log.
 
 ## Auto Run Result
 
-Status: done
+Status: in-progress
 
-Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test`; `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`; `pixi run -e pyforge-guild bmad-drift-check` with AC7 fixtures; `python scripts/spec_surface_reconcile.py`; scoped `spec_surface_check.py --write-baseline` for `pyforge-doctor/spec-pyforge-doctor` and `pyforge-marshal/spec-pyforge-core` (not a bare global stamp).
+The independent review sent the story back twice (iteration 1: R1-R12; iteration 2: N1-N6). Both fix passes are on `dispatch/pyforge-doctor/43.1`: iteration 1's committed as `c7759791e9`, iteration 2's uncommitted at the time of writing. A fresh independent review, iteration 3, gates the landing; this block is refreshed again at landing.
+
+- Change: `sources/factory.py` declares `TIER3_RUN_ARTIFACTS` (pattern, class, writer `file::symbol`), one row per Tier-3 shape marshal or its dispatched session writes, including `sessions/<id>/…` gate records and a failed attempt's `dispatch-runs/<run>/failed/<story>/changes.patch`. The keep-exemption in `check_archive_hygiene` and in `scripts/bmad_drift_check.py --fix` is derived from the row's class (`TIER3_KEPT_CLASSES`). The script keeps a hand-synced, test-checked reference copy.
+- Guards: the doctor meta-test reads marshal with `ast` (never imported), resolving `/` chains, names, imported and twice-defined helpers, and fails naming `path:lineno` for a segment with no row. Every row's writer carries a row-specific token inside the cited symbol.
+- Deferred: `DW-doctor-43-1-1` (R10) and `DW-doctor-43-1-2` (R11, with N4 appended) in the doctor deferred-work ledger.
+- Follow-up review: required. The iteration-3 independent review has not run.
+
+Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test`; `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`; `pixi run -e pyforge-guild lint-types`; `pixi run -e pyforge-guild spec-surface-check` after memlog reconciles and scoped stamps on `pyforge-doctor/spec-pyforge-doctor` and `pyforge-marshal/spec-pyforge-core` (never a bare global stamp); `bmad-drift-check` and `detectors-ci` with the AC7 Tier-3 tree planted; `deferred-work-check`; `frontmatter-duplicate-keys-check`. Exit codes per pass are in the Review Triage Log's fix-pass entries.

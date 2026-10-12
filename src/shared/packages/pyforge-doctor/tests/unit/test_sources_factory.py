@@ -1800,6 +1800,8 @@ _TIER3_DISPATCH_SHAPES: dict[str, str] = {
     "token-economy-benchmark-per-layer-2026-10-12T103206Z.json": "local:benchmark",
     "bmad-build-auto-result-97-2-some-story.md": "local:run-result",
     "97-2-x-attempted-change.patch": "local:attempted-change",
+    "sessions/pyforge-marshal-20261012T103206150Z-210a0f06/gate-records/97-2/gate-record.json": "local:run-journal",
+    "dispatch-runs/pyforge-marshal-20260901T032300000Z-0a1b2c3d/failed/28.9/changes.patch": "local:failed-attempt",
 }
 
 
@@ -1895,3 +1897,49 @@ def test_bmad_build_auto_result_takes_the_writers_slug_or_timestamp(tmp_path: Pa
     findings = factory.gather(repo)
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.OK
+
+
+def test_failed_attempt_patch_is_kept_and_its_look_alikes_are_not(tmp_path: Path) -> None:
+    """A failed attempt's preserved diff (``dispatch-runs/<run>/failed/<story>/changes.patch``,
+    the only copy) is not a ``stray-file``; any other patch in a run record still is."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    run = factory._impl(repo) / "dispatch-runs" / "pyforge-marshal-20260901T032300000Z-0a1b2c3d"
+    kept = run / "failed" / "28.9" / "changes.patch"
+    look_alikes = (
+        run / "failed" / "28.9" / "other.patch",
+        run / "changes.patch",
+        run / "failed" / "changes.patch",
+        factory._impl(repo) / "runs" / "run-1" / "failed" / "28.9" / "changes.patch",
+    )
+    for path in (kept, *look_alikes):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("diff\n", encoding="utf-8")
+    assert factory.classify(kept, repo) == "local:failed-attempt"
+    assert factory._is_kept_tier3_artifact(factory._rel(kept, repo))
+    findings = factory.gather(repo)
+    assert not [f for f in findings if f.check == "uncovered"]
+    stray = {f.evidence["subject"] for f in findings if f.check == "stray-file"}
+    assert stray == {factory._rel(p, repo) for p in look_alikes}
+
+
+def test_kept_exemption_follows_the_table_class(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The keep-exemption is derived from ``TIER3_RUN_ARTIFACTS``: a row that no longer
+    claims the attempted-change patch leaves it a ``stray-file`` (review iteration 2)."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    patch = factory._impl(repo) / "97-2-x-attempted-change.patch"
+    patch.parent.mkdir(parents=True, exist_ok=True)
+    patch.write_text("diff\n", encoding="utf-8")
+    assert not [f for f in factory.gather(repo) if f.check == "stray-file"]
+    narrowed = tuple(
+        factory._tier3_run_rule(
+            r"^implementation-artifacts/never-attempted-change\.patch$", rule.classification, rule.writer
+        )
+        if rule.classification == "local:attempted-change"
+        else rule
+        for rule in factory.TIER3_RUN_ARTIFACTS
+    )
+    monkeypatch.setattr(factory, "TIER3_RUN_ARTIFACTS", narrowed)
+    stray = [f.evidence["subject"] for f in factory.gather(repo) if f.check == "stray-file"]
+    assert stray == ["implementation-artifacts/97-2-x-attempted-change.patch"]

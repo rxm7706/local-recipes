@@ -114,13 +114,20 @@ IGNORE_PARTS = {"__pycache__"}
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
 
 # Hand-synced with ``pyforge.doctor.sources.factory.TIER3_RUN_ARTIFACTS`` (Story 43.1),
-# same rows in the same order; the writer column lives there only.
-# tests/scripts/test_bmad_drift_check_tier3_classify.py checks the two classifiers agree
-# on every sample path of the doctor meta-test's shape table and on the look-alikes.
+# same rows in the same order (first match wins); the writer column lives there only.
+# tests/scripts/test_bmad_drift_check_tier3_classify.py checks the two lists are equal and
+# that the two classifiers agree on every sample path of the doctor meta-test's shape table
+# and on the look-alikes.
 _TIER3_RUN_ARTIFACT_PATTERNS: tuple[tuple[str, str], ...] = (
     # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
     # the engine per run. Never hand-edited and never pin-gated.
     (r"^implementation-artifacts/runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    # A failed attempt's preserved uncommitted diff inside its dispatch run record: the
+    # only copy, kept like the attempted-change patch. Before the `dispatch-runs/` row.
+    (
+        r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch",
+        "local:failed-attempt",
+    ),
     # Marshal single-story dispatch run records (session.log, dispatch-supervisor.log,
     # journal.jsonl) — the `dispatch-runs/` sibling of `runs/`.
     (r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
@@ -139,6 +146,8 @@ _TIER3_RUN_ARTIFACT_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"^implementation-artifacts/recall-feedback__[^/]+__[^/]+\.md\.query-ran", "local:recall-feedback"),
     (r"^implementation-artifacts/epic-\d+-continuity\.md", "local:sprint-feed"),
     (r"^implementation-artifacts/session-advisories/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    # `marshal gate evaluate` without `--run-id`: sessions/<id>/gate-records/<story>/.
+    (r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*", "local:run-journal"),
     (r"^implementation-artifacts/dispatch-runs-quarantine/.*", "local:run-journal"),
     (r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json", "local:benchmark"),
     (
@@ -160,13 +169,13 @@ def _classify_tier3_run_artifact(rel: str) -> str | None:
     return None
 
 
-def _is_attempted_change_patch_rel(rel: str) -> bool:
-    if not rel.startswith("implementation-artifacts/"):
-        return False
-    rest = rel.removeprefix("implementation-artifacts/")
-    if "/" in rest:
-        return False
-    return rest.endswith(".patch") and "attempted-change" in rest
+# Hand-synced with ``factory.TIER3_KEPT_CLASSES``: a stray suffix on a file of one of
+# these classes is the only copy of a session's work, so --fix keeps it.
+_TIER3_KEPT_CLASSES = frozenset({"local:attempted-change", "local:failed-attempt"})
+
+
+def _is_kept_tier3_artifact(rel: str) -> bool:
+    return _classify_tier3_run_artifact(rel) in _TIER3_KEPT_CLASSES
 
 
 _VER_RE = re.compile(r"\*\*v(\d+)\.(\d+)\.(\d+)\*\*")
@@ -496,7 +505,7 @@ def do_fix() -> list[str]:
         for p in list(IMPL.iterdir()):
             if p.is_file() and p.suffix in STRAY_SUFFIXES:
                 rel = _rel(p)
-                if _is_attempted_change_patch_rel(rel):
+                if _is_kept_tier3_artifact(rel):
                     continue
                 p.unlink()
                 actions.append(f"removed stray {p.name}")

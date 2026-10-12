@@ -304,9 +304,12 @@ _MARSHAL_SRC_REL = "src/shared/packages/pyforge-marshal/src/pyforge/marshal"
 #: Declared Tier-3 run-artifact shapes marshal (or its dispatched session) writes, one row
 #: per shape: ``(pattern, classification, writer)``. ``writer`` is the repo-relative
 #: ``file::symbol`` (or skill file) that writes -- or, for a session-written file, names --
-#: the shape. ``classify()`` consults this list; the meta-test in ``tests/meta/`` keeps it
-#: aligned with marshal's own path builders (read as text/ast, never imported). The first
-#: six rows moved here from ``classify()`` unchanged, comments included (Story 43.1).
+#: the shape. ``classify()`` consults this list, first match wins; the meta-test in
+#: ``tests/meta/`` keeps it aligned with marshal's own path builders (read as text/ast,
+#: never imported). Six rows moved here from ``classify()`` unchanged, comments included
+#: (Story 43.1): ``runs/``, ``dispatch-runs/``, ``fleet-drain-runs/``, epic context,
+#: sprint feed and sweep verdicts. A row for a file inside another row's directory is
+#: listed before that row.
 TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
     # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
     # the engine per run. Never hand-edited and never pin-gated.
@@ -314,6 +317,15 @@ TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
         r"^implementation-artifacts/runs/[A-Za-z0-9._-]+/.*",
         "local:run-journal",
         f"{_MARSHAL_SRC_REL}/cli/init.py::_journal_abandonments",
+    ),
+    # A failed attempt's preserved uncommitted diff inside its dispatch run record,
+    # `dispatch-runs/<run>/failed/<story>/changes.patch` (Story 43.1, review iteration 2):
+    # the only copy of that attempt, so it is kept like the attempted-change patch below.
+    # Listed before the `dispatch-runs/` row, which would otherwise claim it.
+    _tier3_run_rule(
+        r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch",
+        "local:failed-attempt",
+        f"{_MARSHAL_SRC_REL}/supervisor/intent_gap_preserve.py::_write_failed_patch",
     ),
     # Marshal single-story dispatch run records (session.log,
     # dispatch-supervisor.log, journal.jsonl) — Story 22.x's sibling to the
@@ -360,7 +372,9 @@ TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
     _tier3_run_rule(
         r"^implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json",
         "local:sweep-verdicts",
-        "scripts/worktree_sweep.py::main",
+        # The writer is the operator's redirect of `--format json` that the module
+        # docstring prescribes; no code names the file.
+        "scripts/worktree_sweep.py::__doc__",
     ),
     # --- added by Story 43.1 (2026-10-12): shapes a marshal dispatch worktree's Tier-3
     # store holds that fell through to UNKNOWN and tripped `uncovered` there, while CI's
@@ -391,6 +405,14 @@ TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
         "local:run-journal",
         f"{_MARSHAL_SRC_REL}/cli/context.py::_session_advisory_runs_dir",
     ),
+    # `marshal gate evaluate` without `--run-id`: the gate record lands in a freshly minted
+    # session namespace, `sessions/<id>/gate-records/<story>/gate-record.json`, the
+    # run-less sibling of `runs/<run>/gate-records/` (Story 43.1, review iteration 2).
+    _tier3_run_rule(
+        r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/cli/gate.py::_write_gate_record",
+    ),
     # Stale dispatch runs the operator moves aside, as marshal's stale-run remedy names.
     _tier3_run_rule(
         r"^implementation-artifacts/dispatch-runs-quarantine/.*",
@@ -417,7 +439,8 @@ TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
     ),
     # A blocked session's attempted-change patch at the Tier-3 root: the only copy,
     # which the dispatch supervisor deliberately leaves there (it commits only the
-    # copies outside Tier-3). Kept by `check_archive_hygiene` and by `--fix`.
+    # copies outside Tier-3). Kept by `check_archive_hygiene` and by `--fix`
+    # (``TIER3_KEPT_CLASSES``).
     _tier3_run_rule(
         r"^implementation-artifacts/[^/]*attempted-change[^/]*\.patch$",
         "local:attempted-change",
@@ -433,14 +456,15 @@ def _classify_tier3_run_artifact(rel: str) -> str | None:
     return None
 
 
-def _is_attempted_change_patch_rel(rel: str) -> bool:
-    """Tier-3-root blocked-halt patch — kept, not a stray (Story 43.1)."""
-    if not rel.startswith("implementation-artifacts/"):
-        return False
-    rest = rel.removeprefix("implementation-artifacts/")
-    if "/" in rest:
-        return False
-    return rest.endswith(".patch") and "attempted-change" in rest
+#: Tier-3 classes whose files are the only copy of a session's work: a stray suffix
+#: (``.patch``) on one of them is kept, never reported ``stray-file`` and never removed by
+#: ``scripts/bmad_drift_check.py --fix``. The exemption follows the table rows: a file is
+#: kept exactly when ``TIER3_RUN_ARTIFACTS`` gives it one of these classes (Story 43.1).
+TIER3_KEPT_CLASSES = frozenset({"local:attempted-change", "local:failed-attempt"})
+
+
+def _is_kept_tier3_artifact(rel: str) -> bool:
+    return _classify_tier3_run_artifact(rel) in TIER3_KEPT_CLASSES
 
 
 NONTERMINAL_STATUS = re.compile(r"\b(in[-\s]?flight|in[-\s]?progress|wip|pending|draft)\b", re.I)
@@ -999,7 +1023,7 @@ def check_archive_hygiene(target: Path) -> list[Finding]:
                     continue
                 rel = _rel(p, target)
                 if p.suffix in STRAY_SUFFIXES:
-                    if _is_attempted_change_patch_rel(rel):
+                    if _is_kept_tier3_artifact(rel):
                         continue
                     out.append(
                         _finding(
