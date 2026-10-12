@@ -6,7 +6,6 @@ status: 'done'
 followup_review_recommended: false
 baseline_revision: 'de5005d2e9e5feabc5fded2faac129b6c6c80603'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

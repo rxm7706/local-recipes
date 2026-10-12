@@ -459,6 +459,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-GATE-019",
             "MRS-GATE-020",
             "MRS-GATE-021",
+            "MRS-GATE-022",
             # Story 82.9: `marshal factory checkpoint`'s three precondition findings (Story 34.2 never registered them).
             "MRS-CHK-001",
             "MRS-CHK-002",

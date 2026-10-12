@@ -6,7 +6,6 @@ status: 'done'
 followup_review_recommended: false
 baseline_revision: 30a18afa3a
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md

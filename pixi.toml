@@ -712,6 +712,7 @@ import-linter = ">=2.15"          # enforces the AD-3 seam + AD-4 purity contrac
 packaging = ">=26.3"              # seed/engine/copier.py, seed/detect/referenced_deps.py
 jsonschema = ">=4.26.0"           # seed/state/store.py
 psutil = ">=7.2.2"                # process introspection
+ruff = ">=0.16.9"                 # Story 95.1: real-ruff dispatch pre-verify oracles in pyforge-marshal-test
 
 [feature.pyforge-marshal.target.linux-64.dependencies]
 # tmux: bmad-loop's session multiplexer backend for `marshal factory spin`

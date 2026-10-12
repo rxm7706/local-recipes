@@ -6,8 +6,6 @@ status: 'done'
 baseline_revision: '634fe8d660497572264a33c020e811ca80a8965b'
 followup_review_recommended: false
 review_loop_iteration: 0
-review_loop_iteration: 0
-followup_review_recommended: false
 flag:
   key: pyforge.marshal.preserve_refs
   provider: openfeature-file

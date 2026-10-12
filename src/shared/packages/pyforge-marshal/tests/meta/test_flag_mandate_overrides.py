@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[6]
 
 _CUSTOM = REPO_ROOT / "_bmad" / "custom"
 _BUILDER_SNIPPET = "Feature-flag governance (Builder)"
+_STORY96_SNIPPET = "Story spec frontmatter (Story 96.1)"
 _ARCHITECT_SNIPPET = "Feature-flag governance (Architect)"
 _TEA_SNIPPET = "Feature-flag governance (TEA)"
 

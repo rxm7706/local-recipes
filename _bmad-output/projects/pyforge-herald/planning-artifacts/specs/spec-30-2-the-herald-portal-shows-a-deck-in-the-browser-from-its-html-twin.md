@@ -7,7 +7,6 @@ baseline_revision: '7b8d08144bd5fa5edff952a6f5382ffdbd490970'
 followup_review_recommended: false
 difficulty: 'medium'
 review_loop_iteration: 0
-followup_review_recommended: false
 flag:
   key: pyforge.herald.deck_viewer
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
