@@ -293,6 +293,17 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
 
 ## Review Triage Log
 
+### 2026-10-11 — Independent review, iteration 4: passed (3 minor)
+
+Fresh separate agent, review of `git diff origin/main...HEAD` at 5866c5c70c, attacking the iteration-3 construction offline with a sentinel token. Neither the bare token nor any 8-character piece of it appeared in any frame local, log line, exception, audit event, `http.client` debug print, proxy-visible byte, export or DB row. Probes: a local TLS server playing `api.github.com` received `Authorization: Bearer <sentinel>` and `Host: api.github.com` on both pages (the credential does authenticate); a stack walk at every real `ssl.SSLSocket.send` found only redacted fragments and memoryviews; a local CONNECT proxy saw only `CONNECT api.github.com:443` and ciphertext; stall, soft time limit mid-fragment and broken pipe mid-fragment are all typed and render clean; redirects to `API.GITHUB.COM` and `:443` keep the credential, and trailing-dot, `//evil.example`, backslash-userinfo and `%2e` hosts are refused; the `gh` provider's failure paths are typed. 19 of 22 mutations caught (M5b is an equivalent mutant). Confidentiality: only fictional identifiers in 3369 added lines, 35 commit messages and the branch history; nothing under `.warden/` read or committed. Gates: `pyforge-warden-test` 0 (2339 passed), `lint-types` 0, `spec-surface-check` 0, `detectors-ci` 0, `deferred-work-check` 0, `platform-ci-local -- --test` 0 (1255 passed, 14 skipped).
+
+- `[minor]` `[patch]` N4-1 `src/platform/tests/test_warden_fleet_inventory.py:562-575` the `gh` timeout test never checks the partial output is dropped; deleting `exc.output = exc.stderr = None` (`fleet_inventory.py:202`) survives. Fix: assert the suppressed `TimeoutExpired` carries no output or stderr.
+- `[minor]` `[patch]` N4-2 `fleet_github_rest.py:52` nothing pins the 32-byte fragment cap the spec relies on (a renderer slicing values over 80 characters would otherwise show a plain slice of a fine-grained PAT); `_FRAGMENT_BYTES = 4096` survives. Fix: a 100+ character token in the credential test and `all(len(f) <= 32 for f in fragments)`.
+- `[minor]` `[patch]` N4-3 `fleet_inventory.py:205-208` `GhTokenUnavailableError` is raised `from None` inside the `except` block, so the original exception stays on `__context__` (suppressed); with `gh` printing the token plus invalid UTF-8 the suppressed `UnicodeDecodeError` holds the raw stdout. In memory only (every renderer here honours `__suppress_context__`), practically unreachable. Fix: raise after the `except` block, as the `TimeoutExpired` path already does.
+- Info: M5b is equivalent because the task's request timeout and the client default are both 30.0 (two sources of one value; keep one).
+
+The minors are fixed in a follow-on pass before landing; the orchestrator re-verifies that delta (mutations and gates) before setting this story done and landing it.
+
 ### 2026-10-11 — Fix pass for iteration 3 (implementer)
 
 Implementer pass on the iteration-3 send-back below; not a review verdict (iteration 4 judges it). Same rules as
