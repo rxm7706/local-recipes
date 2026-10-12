@@ -775,6 +775,33 @@ def flags_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tree
 
 
+def _story_flagd_tree(tmp_path: Path, variant: str) -> Path:
+    """A minimal OpenFeature tree holding only this story's flag (flag gate)."""
+    tree = {
+        "flags": {
+            "pyforge.warden.fleet_project_items": {
+                "state": "ENABLED",
+                "variants": {"on": True, "off": False},
+                "defaultVariant": variant,
+            }
+        }
+    }
+    path = tmp_path / f"flags-{variant}.json"
+    path.write_text(json.dumps(tree, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def test_fleet_project_items_flagd_tree_on(tmp_path: Path) -> None:
+    assert FLEET_PROJECT_ITEMS_FLAG == "pyforge.warden.fleet_project_items"
+    source = _story_flagd_tree(tmp_path, "on")
+    assert evaluate_from_source(key=FLEET_PROJECT_ITEMS_FLAG, source=source) is True
+
+
+def test_fleet_project_items_flagd_tree_off(tmp_path: Path) -> None:
+    source = _story_flagd_tree(tmp_path, "off")
+    assert evaluate_from_source(key=FLEET_PROJECT_ITEMS_FLAG, source=source) is False
+
+
 def test_the_flag_ships_off_by_default_and_on_in_dev_and_staging() -> None:
     entry = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))["flags"][
         FLEET_PROJECT_ITEMS_FLAG
