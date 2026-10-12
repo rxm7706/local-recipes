@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 384e59c09bcdb50a
-story_count: 349
+source_fingerprint: 7a673b1f38e855a0
+story_count: 350
 test_file_count: 112
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 349
-- **Epics parsed:** 92
+- **Stories parsed:** 350
+- **Epics parsed:** 93
 - **Test files inventoried:** 112 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `384e59c09bcdb50a`
+- **Source fingerprint:** `7a673b1f38e855a0`
 
 ## Risk Assessment
 
@@ -120,6 +120,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 90: A pytest the preflight starts never inherits another run's basetemp (fix under CAP-159)
 - Epic 91: The host lists its station portals at `/stations/` (feature under unifying CAP-3)
 - Epic 92: The unsplit-Redis eviction guard proves broker loss on every run (fix under unifying CAP-11)
+- Epic 93: The lint gate covers the django portal packages, and its not-yet-clean list only shrinks (feature under CAP-153)
 
 ### Low-risk epics
 
@@ -599,6 +600,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 90.1 | A pytest the preflight starts never inherits another run's basetemp | none observed |
 | 91.1 | The stations index lists each station portal as mounted or absent, and why | none observed |
 | 92.1 | The unsplit-Redis eviction guard proves broker loss on every run | none observed |
+| 93.1 | The lint gate covers the nine django portal packages, and its not-yet-clean l... | none observed |
 
 ## Quality Gates
 
