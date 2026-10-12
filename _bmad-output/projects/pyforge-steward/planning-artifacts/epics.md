@@ -6063,7 +6063,7 @@ So that a leak is reported in the test that causes it, instead of breaking which
 **When** the platform suite runs
 **Then** a fixture in the test module saves `structlog.get_config()` (its processors list copied) before that test and calls `structlog.configure(**saved)` after it, pass or fail, so a probe run after the module sees the platform's configuration; and an autouse guard in `src/platform/conftest.py` records the configuration once per session before the first test, compares it after every test and, on a difference, restores the baseline and fails that test at teardown, naming its node id and the keys that differ
 **And** with the fixture removed the OIDC test errors at teardown, and a deliberately leaking probe test errors while the test after it sees the baseline (mutations, reverted); the guard passes the whole suite as it stands (a full-suite survey found this test the only one that changes structlog's configuration); no skip, `xfail` or rerun; only the two files change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-unifying-strategy` memlog reconciles both files before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 95: The portal packages and the platform target Python 3.14 (feature under CAP-153)
 
