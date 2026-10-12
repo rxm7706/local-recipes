@@ -29,17 +29,18 @@ import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Mapping
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import IO, Any
 
-from pyforge.warden.fleet_github_rest import GITHUB_API_HOST
-from pyforge.warden.fleet_github_rest import FleetInventoryApiError
-from pyforge.warden.fleet_github_rest import _ApiHTTPSHandler
-from pyforge.warden.fleet_github_rest import _Credential
-from pyforge.warden.fleet_github_rest import _transport_failure
-from pyforge.warden.fleet_github_rest import is_api_url
+from pyforge.warden.fleet_github_rest import (
+    GITHUB_API_HOST,
+    FleetInventoryApiError,
+    _ApiHTTPSHandler,
+    _Credential,
+    _transport_failure,
+    is_api_url,
+)
 
 GRAPHQL_PATH = "/graphql"
 PROJECT_ITEMS_PAGE_SIZE = 100
@@ -185,9 +186,7 @@ def _graphql_failure(payload: Mapping[str, Any]) -> str | None:
         {
             entry["type"]
             for entry in entries
-            if isinstance(entry, dict)
-            and isinstance(entry.get("type"), str)
-            and _ERROR_TYPE.fullmatch(entry["type"])
+            if isinstance(entry, dict) and isinstance(entry.get("type"), str) and _ERROR_TYPE.fullmatch(entry["type"])
         }
     )[:_MAX_ERROR_TYPES]
     suffix = f" ({', '.join(codes)})" if codes else ""
@@ -386,9 +385,7 @@ class GitHubGraphQLProjectItemsClient:
                 raise FleetInventoryApiError(msg)
             seen_cursors.add(cursor)
 
-    def list_projects_items(
-        self, organisation: str, project_numbers: Sequence[int]
-    ) -> tuple[ListedProjectItem, ...]:
+    def list_projects_items(self, organisation: str, project_numbers: Sequence[int]) -> tuple[ListedProjectItem, ...]:
         """The items of each designated project, in config order, each project read once.
 
         Every failure names the config key ``projects`` and the failing entry's

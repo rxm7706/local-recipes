@@ -130,7 +130,9 @@ class _ServerSocket:
         head, _, raw = bytes(self._sent).partition(b"\r\n\r\n")
         lines = head.decode("latin-1").split("\r\n")
         method, target, _version = lines[0].split(" ", 2)
-        headers = {name.strip().lower(): value.strip() for name, _, value in (line.partition(":") for line in lines[1:])}
+        headers = {
+            name.strip().lower(): value.strip() for name, _, value in (line.partition(":") for line in lines[1:])
+        }
         body = json.loads(raw.decode("utf-8")) if raw else None
         self._fake.exchanges.append(
             _Exchange(
@@ -162,7 +164,11 @@ def _issue(item_id: str, *, state: str = "OPEN", status: str | None = "Todo") ->
         "type": "ISSUE",
         "updatedAt": "2026-10-01T10:00:00Z",
         "fieldValueByName": {"name": status} if status else None,
-        "content": {"title": f"Issue {item_id}", "state": state, "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/alpha"}},
+        "content": {
+            "title": f"Issue {item_id}",
+            "state": state,
+            "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/alpha"},
+        },
     }
 
 
@@ -172,7 +178,11 @@ def _pull_request(item_id: str) -> dict[str, Any]:
         "type": "PULL_REQUEST",
         "updatedAt": "2026-10-02T10:00:00Z",
         "fieldValueByName": {"name": "In review"},
-        "content": {"title": f"PR {item_id}", "state": "MERGED", "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/beta"}},
+        "content": {
+            "title": f"PR {item_id}",
+            "state": "MERGED",
+            "repository": {"nameWithOwner": f"{_EXAMPLE_ORG}/beta"},
+        },
     }
 
 
@@ -187,7 +197,13 @@ def _draft(item_id: str) -> dict[str, Any]:
 
 
 def _redacted(item_id: str) -> dict[str, Any]:
-    return {"id": item_id, "type": "REDACTED", "updatedAt": "2026-10-04T10:00:00Z", "fieldValueByName": None, "content": None}
+    return {
+        "id": item_id,
+        "type": "REDACTED",
+        "updatedAt": "2026-10-04T10:00:00Z",
+        "fieldValueByName": None,
+        "content": None,
+    }
 
 
 def _page(nodes: list[dict[str, Any]], *, next_cursor: str | None = None) -> dict[str, Any]:
@@ -295,9 +311,18 @@ def test_two_projects_list_each_item_once_with_its_fields(monkeypatch: pytest.Mo
     )
     items = fake.client().list_projects_items(_EXAMPLE_ORG, [_PROJECT_A, _PROJECT_B])
     assert items == (
-        ListedProjectItem(_PROJECT_A, "i-1", "ISSUE", "Issue i-1", "OPEN", f"{_EXAMPLE_ORG}/alpha", "Todo", "2026-10-01T10:00:00Z"),
         ListedProjectItem(
-            _PROJECT_A, "p-1", "PULL_REQUEST", "PR p-1", "MERGED", f"{_EXAMPLE_ORG}/beta", "In review", "2026-10-02T10:00:00Z"
+            _PROJECT_A, "i-1", "ISSUE", "Issue i-1", "OPEN", f"{_EXAMPLE_ORG}/alpha", "Todo", "2026-10-01T10:00:00Z"
+        ),
+        ListedProjectItem(
+            _PROJECT_A,
+            "p-1",
+            "PULL_REQUEST",
+            "PR p-1",
+            "MERGED",
+            f"{_EXAMPLE_ORG}/beta",
+            "In review",
+            "2026-10-02T10:00:00Z",
         ),
         ListedProjectItem(_PROJECT_B, "d-1", "DRAFT_ISSUE", "Draft d-1", None, None, "Backlog", "2026-10-03T10:00:00Z"),
         ListedProjectItem(_PROJECT_B, "r-1", "REDACTED", None, None, None, None, None),
@@ -424,11 +449,17 @@ def _fail_text(caught: pytest.ExceptionInfo[BaseException]) -> str:
     [
         (
             lambda _b: _json_reply(
-                {"errors": [{"type": "NOT_FOUND", "message": "Could not resolve to a ProjectV2 secret-name"}], "data": None}
+                {
+                    "errors": [{"type": "NOT_FOUND", "message": "Could not resolve to a ProjectV2 secret-name"}],
+                    "data": None,
+                }
             ),
             "errors array of 1 (NOT_FOUND)",
         ),
-        (lambda _b: _json_reply({"data": {"organization": {"projectV2": None}}}), "not found, or this login cannot read it"),
+        (
+            lambda _b: _json_reply({"data": {"organization": {"projectV2": None}}}),
+            "not found, or this login cannot read it",
+        ),
         (lambda _b: _json_reply({"data": {"organization": None}}), "not found, or this login cannot read it"),
         (lambda _b: _json_reply({"data": None}), "not found, or this login cannot read it"),
         (lambda _b: _json_reply({"data": {"organization": {"projectV2": {"items": None}}}}), "no items connection"),
@@ -548,7 +579,9 @@ def test_a_connect_failure_is_typed(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(http.client.HTTPSConnection, "connect", _connect)
     with pytest.raises(ProjectEntryError, match="request failed") as caught:
-        GitHubGraphQLProjectItemsClient(token=_SENTINEL, timeout=_REQUEST_TIMEOUT).list_projects_items(_EXAMPLE_ORG, [_PROJECT_A])
+        GitHubGraphQLProjectItemsClient(token=_SENTINEL, timeout=_REQUEST_TIMEOUT).list_projects_items(
+            _EXAMPLE_ORG, [_PROJECT_A]
+        )
     assert _SENTINEL not in _fail_text(caught)
 
 
