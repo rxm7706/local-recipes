@@ -826,7 +826,13 @@ def _is_external_memlog(rel: str) -> bool:
     return not rel.startswith(_WARDEN_PROJECT_MEMLOG_PREFIX)
 
 
+def _in_warden_target_dir(rel: str) -> bool:
+    """A path under a ``.warden/`` directory: the target's names live there."""
+    return "/.warden/" in f"/{rel}"
+
+
 def _all_tracked_files(repo_root: Path) -> list[Path]:
+    """Every tracked file except under ``.warden/``, which is never opened (N4)."""
     listed = subprocess.run(
         ["git", "ls-files", "-z"],  # noqa: S607
         cwd=repo_root,
@@ -835,7 +841,9 @@ def _all_tracked_files(repo_root: Path) -> list[Path]:
         capture_output=True,
     )
     names = listed.stdout.decode("utf-8", errors="replace").split("\0")
-    return [repo_root / name for name in names if name]
+    return [
+        repo_root / name for name in names if name and not _in_warden_target_dir(name)
+    ]
 
 
 def _leak_guard_violations(
@@ -913,11 +921,7 @@ def _story_changed_files(repo_root: Path, base: str = "origin/main") -> list[Pat
     names |= set(
         _git_names(repo_root, "ls-files", "-z", "--others", "--exclude-standard")
     )
-    return sorted(
-        repo_root / name
-        for name in names
-        if not name.startswith(".warden/") and "/.warden/" not in f"/{name}"
-    )
+    return sorted(repo_root / name for name in names if not _in_warden_target_dir(name))
 
 
 def _tracked_owned_matches(repo_root: Path, entry: str) -> list[str]:
@@ -998,13 +1002,18 @@ def _guard_scan(repo_root: Path, *, base: str = "origin/main") -> list[str]:
         raise FileNotFoundError(msg)
     changed = _story_changed_files(repo_root, base=base)
     changed_rel = frozenset(_repo_relative_posix(p, repo_root) for p in changed)
-    return _leak_guard_violations(
+    violations = _leak_guard_violations(
         repo_root,
         _leak_scan_file_set(repo_root, changed),
         organisation=organisation,
         terms=terms or [],
         changed_rel=changed_rel,
     )
+    # A tracked ``.warden/`` file publishes the target: named, never opened (N4).
+    tracked_targets = _git_names(
+        repo_root, "ls-files", "-z", "--", ":(glob)**/.warden/**"
+    )
+    return sorted({*violations, *tracked_targets})
 
 
 def _live_guard_failure() -> str | None:
@@ -1060,10 +1069,11 @@ def test_leak_guard_reads_the_configured_target(
     config = tmp_path / "fleet-target.toml"
     config.write_text(
         '[github]\norganisation = "Example-Org"\n'
-        'leak_guard_terms = ["Example-Project"]\n',
+        'leak_guard_terms = ["  Example-Project\\t"]\n',
         encoding="utf-8",
     )
     monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(config))
+    # N3: a listed term is stripped, so padding never hides it from Rule T.
     assert _leak_guard_target() == ("example-org", ["example-project"], config)
 
 
@@ -1143,7 +1153,11 @@ def test_leak_guard_ac2_org_in_warden_files_fails(leak_repo: Path) -> None:
     owned_samples = (
         "src/shared/packages/pyforge-warden/pkg.txt",
         "src/shared/packages/django-warden/pkg.txt",
-        "_bmad-output/projects/pyforge-warden/note.txt",
+        # N2: nested and hidden, so a one-segment ``**`` (``match``) misses it.
+        (
+            "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/"
+            "spec-pyforge-warden/.memlog.md"
+        ),
         "docs/dreams/pyforge-warden.md",
         "src/platform/tests/test_warden_sample.py",
         ".claude/skills/pyforge-warden/note.txt",
@@ -1205,15 +1219,24 @@ def test_leak_guard_ac3_listed_terms_fail_anywhere(leak_repo: Path) -> None:
     )
 
 
-def test_leak_guard_ac4_changed_files_carry_both_rules(leak_repo: Path) -> None:
+@pytest.mark.parametrize(
+    "gitignore",
+    [".warden/\n", "*.pyc\n"],
+    ids=["warden-ignored", "warden-not-ignored"],
+)
+def test_leak_guard_ac4_changed_files_carry_both_rules(
+    leak_repo: Path, gitignore: str
+) -> None:
     """AC4: changed files get both rules; ``.warden/`` is never read.
 
     ``edited.txt`` and ``split.txt`` are in the base commit; their new lines are
-    unstaged edits, so only the ``git diff HEAD`` leg names them.
+    unstaged edits, so only the ``git diff HEAD`` leg names them. Without the
+    ``.warden/`` ignore line (N4) the untracked leg lists the target file, and only
+    the guard's own ``.warden/`` filter keeps it out.
     """
     repo = leak_repo
     base_text = "a line from the base commit\n"
-    (repo / ".gitignore").write_text(".warden/\n", encoding="utf-8")
+    (repo / ".gitignore").write_text(gitignore, encoding="utf-8")
     (repo / "edited.txt").write_text(base_text, encoding="utf-8")
     (repo / "split.txt").write_text(base_text, encoding="utf-8")
     git = _init_git_repo(repo)
@@ -1306,6 +1329,108 @@ def test_leak_guard_ac5_empty_terms_refused(
             FleetTargetConfigError, match="allow_empty_leak_guard_terms"
         ):
             load_leak_guard_terms(bad)
+
+
+def test_leak_guard_never_opens_a_tracked_warden_file(
+    leak_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """N4: a force-added ``.warden/`` file is reported by name and never opened."""
+    repo = leak_repo
+    (repo / ".gitignore").write_text(".warden/\n", encoding="utf-8")
+    (repo / ".warden").mkdir()
+    (repo / ".warden/fleet-target.toml").write_text(
+        "example-org\nexample-repo\n", encoding="utf-8"
+    )
+    git = _init_git_repo(repo)
+    _git_add_all(repo)
+    _git_run(repo, "add", "-f", ".warden/fleet-target.toml")
+    _git_commit(repo, git, "base")
+    opened: list[Path] = []
+    real_read_bytes = Path.read_bytes
+
+    def spy_read_bytes(self: Path) -> bytes:
+        opened.append(self)
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", spy_read_bytes)
+    assert _guard_scan(repo) == [".warden/fleet-target.toml"]
+    assert opened
+    assert not [path for path in opened if ".warden" in path.parts]
+
+
+def _live_fixture_repo(repo: Path) -> list[str]:
+    """A base commit with ``refs/remotes/origin/main`` at it, as the live scan reads."""
+    (repo / "README.md").write_text("base\n", encoding="utf-8")
+    git = _init_git_repo(repo)
+    _git_add_all(repo)
+    _git_commit(repo, git, "base")
+    _git_run(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    return git
+
+
+def test_leak_guard_live_test_fails_with_paths_only(
+    leak_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """N1: the live test fails, naming exactly the paths and no term.
+
+    ``committed.txt`` names warden and the organisation on one line; it is reported
+    only because the scan compares against ``origin/main``.
+    """
+    git = _live_fixture_repo(leak_repo)
+    (leak_repo / "committed.txt").write_text(
+        "pyforge-warden example-org\n", encoding="utf-8"
+    )
+    (leak_repo / "docs").mkdir()
+    (leak_repo / "docs/term.md").write_text("EXAMPLE-PROJECT\n", encoding="utf-8")
+    _git_add_all(leak_repo)
+    _git_commit(leak_repo, git, "after the base")
+    monkeypatch.setattr(sys.modules[__name__], "_REPO_ROOT", leak_repo)
+    with pytest.raises(pytest.fail.Exception) as failed:
+        test_leak_guard_no_operator_terms_in_tracked_tree()
+    message = str(failed.value)
+    assert message == "committed.txt\ndocs/term.md"
+    for secret in ("example-org", "example-repo", "example-project"):
+        assert secret not in message.lower()
+
+
+def test_leak_guard_live_test_passes_on_a_clean_repo(
+    leak_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """N1: the live test passes when no rule fires (the organisation, no warden)."""
+    git = _live_fixture_repo(leak_repo)
+    (leak_repo / "other.md").write_text("example-org only\n", encoding="utf-8")
+    _git_add_all(leak_repo)
+    _git_commit(leak_repo, git, "after the base")
+    monkeypatch.setattr(sys.modules[__name__], "_REPO_ROOT", leak_repo)
+    test_leak_guard_no_operator_terms_in_tracked_tree()
+
+
+def test_leak_guard_live_test_reports_errors_without_values(
+    leak_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """N1: a scan error fails by type alone; a config refusal names key and path."""
+    _live_fixture_repo(leak_repo)
+    module = sys.modules[__name__]
+    monkeypatch.setattr(module, "_REPO_ROOT", leak_repo)
+
+    def raising_scan(repo_root: Path, *, base: str = "origin/main") -> list[str]:
+        msg = f"example-repo under {repo_root} at {base}"
+        raise RuntimeError(msg)
+
+    with monkeypatch.context() as patched:
+        patched.setattr(module, "_guard_scan", raising_scan)
+        with pytest.raises(pytest.fail.Exception) as failed:
+            test_leak_guard_no_operator_terms_in_tracked_tree()
+    assert str(failed.value) == "RuntimeError during the leak-guard scan"
+
+    no_terms = leak_repo.parent / "no-terms.toml"
+    no_terms.write_text('[github]\norganisation = "example-org"\n', encoding="utf-8")
+    monkeypatch.setenv(ENV_FLEET_TARGET_CONFIG, str(no_terms))
+    with pytest.raises(pytest.fail.Exception) as refused:
+        test_leak_guard_no_operator_terms_in_tracked_tree()
+    assert str(no_terms) in str(refused.value)
+    assert "leak_guard_terms" in str(refused.value)
+    assert "example-org" not in str(refused.value)
 
 
 def test_leak_guard_no_operator_terms_in_tracked_tree() -> None:
