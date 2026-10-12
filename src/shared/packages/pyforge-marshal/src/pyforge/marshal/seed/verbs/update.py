@@ -505,10 +505,7 @@ def _packaged_whole_file_bytes(entry: ManifestEntry, template_path: Path | str |
     """Bytes ``--run`` would write for a whole-file class, or ``None`` when
     the template tree ships no payload at ``entry.path`` (Story 97.2). Never
     invokes ``materialize()``."""
-    if (
-        entry.id in derive_adapters.ADAPTER_COMPOSITION
-        and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
-    ):
+    if entry.id in derive_adapters.ADAPTER_COMPOSITION and entry.artifact_class is ArtifactClass.GENERATED_DERIVED:
         return derive_adapters.render_adapter(entry.id, template_path=template_path).encode("utf-8")
 
     def _lookup(root: Path) -> bytes | None:
@@ -620,8 +617,7 @@ def _wholesale_regenerate_actions(
             differing: list[tuple[str, str | None]] = []
             try:
                 region_bodies = {
-                    region.name: _region_body_for(template_path, repo_root, entry.id, region.name)
-                    for region in wanted
+                    region.name: _region_body_for(template_path, repo_root, entry.id, region.name) for region in wanted
                 }
             except InternalError:
                 skipped.append(
@@ -646,8 +642,7 @@ def _wholesale_regenerate_actions(
             chosen_anchor = tuple(differing)
             fr_tag = "FR-98/FR-99"
         elif (
-            entry.id in derive_adapters.ADAPTER_COMPOSITION
-            and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
+            entry.id in derive_adapters.ADAPTER_COMPOSITION and entry.artifact_class is ArtifactClass.GENERATED_DERIVED
         ):
             expected = derive_adapters.render_adapter(entry.id, template_path=template_path)
             if _texts_equal_on_disk(on_disk, expected):
@@ -766,9 +761,7 @@ def _merge_plan_sources(
     for skipped in wholesale_skipped:
         _claim(skipped.artifact_id, "the wholesale-regenerate pass (no payload)")
 
-    merged_skipped = tuple(
-        sorted((*migration_plan.skipped, *wholesale_skipped), key=lambda entry: entry.artifact_id)
-    )
+    merged_skipped = tuple(sorted((*migration_plan.skipped, *wholesale_skipped), key=lambda entry: entry.artifact_id))
     return Plan(
         actions=tuple(
             sorted((*build_actions, *migration_plan.actions, *wholesale_actions), key=lambda a: a.artifact_id)

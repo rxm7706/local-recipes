@@ -297,11 +297,9 @@ from ..detect.optout import classify_regions, opt_outs_to_record, opted_out_regi
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..model.manifest import (
-    AppliesTo,
     ArtifactClass,
     Manifest,
     ManifestEntry,
-    RequiredIn,
     manifest_for_adopt_scope,
 )
 from ..model.version import ModelVersion

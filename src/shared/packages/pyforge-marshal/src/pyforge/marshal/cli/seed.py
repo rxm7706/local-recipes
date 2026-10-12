@@ -100,6 +100,7 @@ from ..seed.migrate import registry as migrate_registry
 from ..seed.model.manifest import Manifest, ManifestError, load_manifest, render_slug_paths
 from ..seed.model.version import ModelVersion
 from ..seed.plan.types import Plan
+from ..seed.verbs import update as update_module
 from ..seed.verbs.accept import AcceptResult, render_accept_text
 from ..seed.verbs.accept import run_accept as _run_accept_verb
 from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
@@ -112,7 +113,6 @@ from ..seed.verbs.init import InitResult
 from ..seed.verbs.init import run_init as _run_init_verb
 from ..seed.verbs.kit import KitAction, KitResult, timeout_note
 from ..seed.verbs.kit import run_kit as _run_kit_verb
-from ..seed.verbs import update as update_module
 from ..seed.verbs.update import UpdateResult
 from ..seed.verbs.update import run_update as _run_update_verb
 from ..seed.verbs.version import render_version_text

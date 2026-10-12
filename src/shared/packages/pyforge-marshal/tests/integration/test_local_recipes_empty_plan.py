@@ -31,8 +31,7 @@ from pyforge.marshal.seed.model.manifest import (
     Manifest,
     load_manifest,
 )
-from pyforge.marshal.seed.plan.types import Action, SkippedArtifact
-from pyforge.marshal.seed.plan.types import NO_PACKAGED_PAYLOAD_SKIP_PATTERN
+from pyforge.marshal.seed.plan.types import NO_PACKAGED_PAYLOAD_SKIP_PATTERN, Action, SkippedArtifact
 from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.update import run_update
 

@@ -600,9 +600,7 @@ def test_three_source_merge_appears_correctly_merged_and_sorted(clean_repo, monk
     )
 
     template = _template_root(clean_repo, {"A_WHOLESALE.md": "template content\n"})
-    result = run_update(
-        clean_repo, manifest_v2, confirm=_unreachable_confirm, template_path=template
-    )
+    result = run_update(clean_repo, manifest_v2, confirm=_unreachable_confirm, template_path=template)
 
     assert [a.artifact_id for a in result.plan.actions] == ["a-wholesale", "m-migrated", "z-absent"]
 

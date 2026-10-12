@@ -70,6 +70,7 @@ from pyforge.marshal.seed.model.manifest import (
     ManifestEntry,
     Region,
     load_manifest,
+    manifest_for_adopt_scope,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.build import _GIT_TIMEOUT_S as _BUILD_GIT_TIMEOUT_S
@@ -82,7 +83,6 @@ from pyforge.marshal.seed.state import (
     read_state,
     write_state,
 )
-from pyforge.marshal.seed.model.manifest import manifest_for_adopt_scope
 from pyforge.marshal.seed.verbs.adopt import _GIT_TIMEOUT_S, run_adopt
 
 _VERSION = ModelVersion.parse("1.0.0")

@@ -328,11 +328,7 @@ def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Seque
     from ..plan.types import NO_PACKAGED_PAYLOAD_SKIP_PATTERN
 
     normalized = _require_patterns(patterns)
-    skipped_ids = {
-        entry.artifact_id
-        for entry in plan.skipped
-        if entry.pattern != NO_PACKAGED_PAYLOAD_SKIP_PATTERN
-    }
+    skipped_ids = {entry.artifact_id for entry in plan.skipped if entry.pattern != NO_PACKAGED_PAYLOAD_SKIP_PATTERN}
     return tuple(
         record
         for record in managed

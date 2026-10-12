@@ -333,9 +333,7 @@ class RepoFingerprint:
 #: ``Plan.skipped`` pattern when ``update`` cannot regenerate a whole-file
 #: entry because the template ships no payload (Story 97.2, AC4). Not a
 #: ``--skip`` glob -- ``managed_after_skips`` must not treat it as one.
-NO_PACKAGED_PAYLOAD_SKIP_PATTERN = (
-    "* (no packaged whole-file payload; update cannot regenerate this entry)"
-)
+NO_PACKAGED_PAYLOAD_SKIP_PATTERN = "* (no packaged whole-file payload; update cannot regenerate this entry)"
 
 
 @dataclass(frozen=True)
