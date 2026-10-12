@@ -1055,6 +1055,39 @@ verify_commands = [
   ".github/workflows/pyforge-station-tests.yml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"99" = [  # every CI surface the operator can pause is declared once, switched by one convention, visible in one place
+  # and judged (spec-pyforge-steward CAP-166 / FR-39; Stories 99.1-99.7), added 2026-10-12. The default surface, restated
+  # because a declared entry replaces it outright, plus: the registry and its schema (99.1), the checker and renderer
+  # with its tests and the detector wiring and its generated reference (99.1, 99.2, 99.6), every workflow file (the
+  # gate sweep in 99.2, the canary in 99.6, the retirements in 99.7) and the scripts only the retired linters use,
+  # the preflight hook and the two manual twins' scripts (99.5), the flagd tree and the flag inventory (99.3), the
+  # how-to, the docs map and AGENTS.md (99.7), and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docs/governance/ci-surfaces.yaml",
+  "docs/governance/ci-surfaces.schema.json",
+  "scripts/ci_surface_gates.py",
+  "scripts/detectors.py",
+  "tests/scripts/**",
+  "docs/reference/detectors.md",
+  ".github/workflows/**",
+  "scripts/pre_push_preflight.sh",
+  "scripts/platform-ci-local.sh",
+  "scripts/guild_image_ci.sh",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-steward.md",
+  "docs/how-to/pause-ci.md",
+  "docs/map.yaml",
+  "AGENTS.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts

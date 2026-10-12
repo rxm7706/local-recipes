@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-10"   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2606,3 +2606,50 @@ days after this PRD's 2026-10-07 re-stamp. `SPEC.md` is unchanged. No CAP is add
 **ONE kernel FR space still FR-1..FR-38** (FR-39 = next free id).
 
 **Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-12
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-166 on 2026-10-12 from the
+Realization-log entry of that date (ci pause control plane) and its plan,
+`docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`, with the operator's rulings Q1–Q8 (all the plan's recommended
+answers). Same-day reconcile; the FR is derived from its CAP.*
+
+### The FR space: FR-39 registered
+
+#### FR-39: Every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged ← CAP-166
+
+Two repository variables paused three jobs, about twenty-five jobs had no switch, six workflows sat disabled in the
+GitHub UI with no recorded reason, and nothing listed or judged any of it; a Pages deploy stayed stuck for six days
+unseen. One tracked registry now names every surface and its switch, one convention gates every job, one command shows
+the state, and one detector keeps the workflows honest to the registry.
+**Consequences (testable):**
+- `docs/governance/ci-surfaces.yaml` (with a JSON Schema) has a row for every workflow, every `cost: high` job and
+  every local twin: switch, owner, cost, `gate`, `state`, `paused_since`, `reason`, `review_by`, canary.
+- Every push/PR/schedule job carries a rendered fragment: `PAUSE_ALL_CI`, then `PAUSE_<WORKFLOW>`, then
+  `PAUSE_<WORKFLOW>_<JOB>` where a `cost: high` row exists, in front of its existing condition; `workflow_dispatch`
+  ignores every pause; the six existing variable names stay, mapped. A repo-scope detector in `detectors-ci` reds an
+  unregistered `vars.X`, a missing fragment, a naming violation, a non-`'true'` comparison; its `--live` mode
+  (authenticated, exit 2 when it cannot observe, never green) also reds an unregistered `disabled_manually` workflow.
+- `steward ci status` prints one row per surface with a verdict (`live`, `paused`, `opt-in-off`, `paused-manually`,
+  `retired`, `drift`, `stuck`, `overdue`) from the registry and live `gh` reads, refusing an unauthenticated read; its
+  `--json` is what Doctor, Herald and Marshal consume. A recorded fixture of the 2026-10-06 waiting deploy yields
+  `stuck`.
+- `steward ci pause|resume --reason --review-by` makes no `gh` call without `--yes`; with it, it sets the variable,
+  updates the row, journals `.steward/ci-pauses.log` and captures to team memory, and a `gate: true` row also needs
+  `--i-am-removing-a-merge-gate`.
+- `pr-preflight` resolves `vars.*` from `.steward/ci-vars.json` (`steward ci vars --refresh`; stale after 24 h, then
+  the registry), journals a paused lane as skipped and runs it under `--ignore-ci-pauses`; `platform-ci-local` and the
+  guild image build banner and run.
+- A weekly canary workflow builds each paused `cost: high` surface once and has one green run.
+- The four staged-recipes-linter workflows retire, `test-all` and `kedro-viz-publish` become `paused-manually` rows, a
+  how-to and one `AGENTS.md` pointer document the convention, and no tracked doc cites `ACTIONS_ENABLED` as live
+  evidence.
+
+Flag classes: the detector and the gate sweep are `detector-or-gate` exempt, the how-to `docs-only`; the duties, the
+snapshot and the preflight parity sit behind one proposed flag, `pyforge.steward.ci_pause_control`. A required-checks
+ruleset stays a separate decision (Q6). Decomposes into **Epic 99**, minted next by `bmad-create-epics-and-stories`;
+the Doctor, Herald and Marshal consumers decompose on their own station chains.
+
+**ONE kernel FR space now FR-1..FR-39** (FR-40 = next free id).
+
+**Content changed:** this section added (FR-39 registered). No FR renumbered or removed. `updated:` bumped.

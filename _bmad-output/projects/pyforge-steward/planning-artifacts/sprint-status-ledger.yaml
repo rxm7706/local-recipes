@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 551
+# stories: 560
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -369,6 +369,13 @@ development_status:
   96-1-platform-ci-local-never-runs-a-stage-on-a-stale-env: done
   97-1-the-not-yet-clean-ceiling-may-shrink-but-never-grow: done
   98-1-station-tests-run-when-what-they-read-changes: done
+  99-1-the-ci-surfaces-are-declared-once-and-the-workflows-are-judged-against-them: backlog
+  99-2-every-ci-job-carries-its-pause-switch: backlog
+  99-3-the-operator-sees-the-pause-state-of-every-ci-surface-in-one-command: backlog
+  99-4-the-operator-pauses-and-resumes-a-ci-surface-through-one-journaled-path: backlog
+  99-5-the-preflight-honors-what-ci-will-skip-and-says-so: backlog
+  99-6-a-paused-expensive-build-still-runs-once-a-week: backlog
+  99-7-the-hand-disabled-workflows-are-retired-or-parked-and-the-convention-is-documented: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -565,3 +572,5 @@ development_status:
   epic-97-retrospective: optional
   epic-98: done
   epic-98-retrospective: optional
+  epic-99: backlog
+  epic-99-retrospective: optional

@@ -4402,6 +4402,12 @@ capabilities:
     heading: "the protected refs are declared once, the live rulesets are proven to match, and no session deletes what would orphan commits"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-166
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1
