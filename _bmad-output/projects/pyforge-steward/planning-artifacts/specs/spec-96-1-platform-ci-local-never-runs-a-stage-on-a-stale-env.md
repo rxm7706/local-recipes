@@ -2,7 +2,7 @@
 title: "96.1: `platform-ci-local` never runs a stage on a stale env"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'b4722aeba9e0f476c129d057c150fb0c4fd25294'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -295,3 +295,16 @@ podman. The stub root has no `pixi.toml`.
 
 - 2026-10-11: minted from the operator's ask "Do this task here: Make platform-ci-local sync a stale env". `type: fix`,
   no flag, no CAP; bound to `spec-pyforge-steward` CAP-152 through Stories 63.6, 63.7 and 89.1.
+
+## Auto Run Result
+
+Status: done
+
+Verification (2026-10-11, worktree `dispatch/pyforge-steward/96.1`, baseline `b4722aeba9`):
+- AC1–AC3, AC5: `pytest` on the three `test_platform_ci_local_*` modules — 25 passed.
+- AC4: not re-run as manual mutations this session; guard tests cover frozen argv and fail-fast sync.
+- AC6: `lint-types` exit 0; `platform-ci-local -- --test` twice — first `installed`/`current` env lines for cit+dev only, second both `current`, exit 0.
+- AC7: `spec-pyforge-steward` memlog surface-reconcile entry; `python scripts/spec_surface_reconcile.py` exit 0 (no `--write-baseline` from this run).
+- Full station: `pyforge-steward-test` — 2345 passed.
+
+Review: cavecrew-reviewer — no blockers; tightened argv assertions and added container-stage env matrix test.

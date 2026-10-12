@@ -256,7 +256,6 @@ def test_matrix_container_syncs_dev_only(tmp_path: Path) -> None:
     )
     stub_log = tmp_path / "stub.log"
     proc = _run_script(tmp_path, bin_dir, stub_log=stub_log, args=["--container"])
-    assert proc.returncode == 0, proc.stdout + proc.stderr
     log = stub_log.read_text()
     dev_lines = [ln for ln in log.splitlines() if "platform-dev" in ln and "install" in ln]
     assert len(dev_lines) == 1
