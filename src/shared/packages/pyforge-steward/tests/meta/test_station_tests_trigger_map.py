@@ -99,6 +99,11 @@ def _segment_match(pattern: str, segment: str) -> bool:
 
 
 def representative(parts: Sequence[str]) -> str | None:
+    return _representative(tuple(parts))
+
+
+@functools.cache
+def _representative(parts: tuple[str, ...]) -> str | None:
     """The first tracked file at or under ``parts`` (a ``*`` segment matches any one segment)."""
     if not any(_has_glob(p) for p in parts):
         joined = "/".join(parts)
@@ -1270,3 +1275,119 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
     },
 }
 
+
+# ---------------------------------------------------------------------------
+# Reads -> workflow entries, and the workflow's own arrays
+# ---------------------------------------------------------------------------
+
+# The shared surface fires every job; it is not in any job's array.
+SHARED_ENTRIES = (
+    "src/shared/packages/pyforge-core",
+    "src/shared/packages/pyforge-testing-kit",
+    "pixi.toml",
+    "pixi.lock",
+    WORKFLOW_REL,
+)
+
+HANDOFF_SOURCE = "ROOT_HANDOFF_INPUTS"
+
+
+def glob_parts(glob: str) -> tuple[str, ...]:
+    """``a/*/b/**`` -> ``('a', '*', 'b')``: a trailing ``**`` names the directory itself."""
+    parts = glob.split("/")
+    if parts[-1] == "**":
+        parts = parts[:-1]
+    return tuple(parts)
+
+
+def is_file_pattern(parts: Sequence[str]) -> bool:
+    """The pattern names tracked files (not directories)."""
+    if not any(_has_glob(p) for p in parts):
+        return "/".join(parts) in _tracked_set()
+    n = len(parts)
+    return any(
+        len(segs := path.split("/")) == n and all(_segment_match(p, s) for p, s in zip(parts, segs, strict=True))
+        for path in tracked_files()
+    )
+
+
+def to_pathspec(parts: Sequence[str]) -> str:
+    """The git pathspec the ``changes`` script carries for a read: a wildcard directory needs ``/*``."""
+    path = "/".join(parts)
+    if any(_has_glob(p) for p in parts) and not is_file_pattern(parts):
+        return path + "/*"
+    return path
+
+
+def to_trigger_glob(entry: str) -> str:
+    """The ``on.pull_request.paths`` glob for an array entry (GitHub's ``*`` stops at ``/``)."""
+    if entry.endswith("/*"):
+        return entry[:-1] + "**"
+    parts = tuple(entry.split("/"))
+    if is_file_pattern(parts):
+        return entry
+    return entry + "/**"
+
+
+def job_reads_with_handoffs(output: str) -> dict[tuple[str, ...], set[str]]:
+    """Derived reads plus the declared root-handoff globs, minus the job's own package."""
+    derivation = real_derivation()[output]
+    reads = {k: set(v) for k, v in derivation.reads.items()}
+    package = next(j.package for j in load_jobs(WORKFLOW.read_text(encoding="utf-8")) if j.output == output)
+    for file, (globs, _reason) in ROOT_HANDOFF_INPUTS.get(output, {}).items():
+        for glob in globs:
+            parts = glob_parts(glob)
+            if not _within("/".join(parts), package):
+                reads.setdefault(parts, set()).add(f"{HANDOFF_SOURCE}[{file}]")
+    return reads
+
+
+def _covers(broad: Sequence[str], narrow: Sequence[str]) -> bool:
+    return len(broad) <= len(narrow) and all(_segment_match(b, n) for b, n in zip(broad, narrow, strict=False))
+
+
+def minimal_entries(reads: Iterable[Sequence[str]], pinned: Iterable[Sequence[str]] = ()) -> list[tuple[str, ...]]:
+    """Drop a read another read already covers as a directory; keep every pinned read."""
+    items = sorted({tuple(r) for r in reads} | {tuple(p) for p in pinned}, key=lambda t: (len(t), t))
+    keep: list[tuple[str, ...]] = []
+    for item in items:
+        if any(_covers(k, item) and not is_file_pattern(k) for k in keep):
+            continue
+        keep.append(item)
+    return keep
+
+
+_ARRAY = re.compile(r"^[ \t]*(\w+)_paths=\(\n(.*?)^[ \t]*\)[ \t]*$", re.MULTILINE | re.DOTALL)
+_SHARED_BLOCK = re.compile(r'git diff --quiet "\$BASE"\.\.\.HEAD -- \\\n(.*?)2>/dev/null; then', re.DOTALL)
+
+
+def workflow_arrays(workflow_text: str) -> dict[str, list[str]]:
+    """The per-job pathspec arrays in the ``changes`` script, by job output name."""
+    return {m.group(1): shlex.split(m.group(2), comments=True) for m in _ARRAY.finditer(workflow_text)}
+
+
+def trigger_paths(workflow_text: str, event: str = "pull_request") -> list[str]:
+    triggers = workflow_document(workflow_text)[True]
+    return list(triggers[event]["paths"])
+
+
+def without_array_entry(workflow_text: str, output: str, entry: str) -> str:
+    """A copy of the workflow with one entry removed from one job's array."""
+    match = next(m for m in _ARRAY.finditer(workflow_text) if m.group(1) == output)
+    kept: list[str] = []
+    removed = 0
+    for line in match.group(2).splitlines(keepends=True):
+        if shlex.split(line, comments=True) == [entry]:
+            removed += 1
+        else:
+            kept.append(line)
+    assert removed == 1, f"mutation premise: {entry!r} is one line of the {output} array (found {removed})"
+    return workflow_text[: match.start(2)] + "".join(kept) + workflow_text[match.end(2) :]
+
+
+def without_trigger(workflow_text: str, glob: str) -> str:
+    """A copy of the workflow with one glob removed from ``on.pull_request.paths`` only."""
+    head, sep, tail = workflow_text.partition("  push:\n")
+    needle = f"      - '{glob}'\n"
+    assert needle in head, f"mutation premise: {glob!r} is a pull_request path"
+    return head.replace(needle, "", 1) + sep + tail
