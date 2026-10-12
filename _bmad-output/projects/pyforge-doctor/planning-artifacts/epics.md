@@ -3211,7 +3211,7 @@ So that other lanes' load cannot fail the budget, and a real regression in docto
 **When** the test runs beside preflight's other lanes, or alone
 **Then** it judges the median CPU of the five runs (`os.times()` user plus system, self plus reaped children) against the unchanged 5.0 s budget. Its failure message shows each run's CPU and wall seconds. One `(wall, cpu)` helper is pinned by three tests: a CPU burn reads as CPU, a sleep does not, a waited child's CPU counts. `DW-doctor-44-1` records the scan's growth with its numbers
 **And** the test passes 3 of 3 runs with one busy loop per CPU beside it. Each of these fails a named test or command (mutation): wall time returned as CPU, children dropped, wall time judged again
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
