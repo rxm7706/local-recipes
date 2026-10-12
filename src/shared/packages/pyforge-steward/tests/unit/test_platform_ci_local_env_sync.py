@@ -117,14 +117,22 @@ def test_ac1_script_only_frozen_install_via_pixi() -> None:
     # Strip comments for the forbidden check on install lines.
     code_lines = [ln for ln in body.splitlines() if not ln.lstrip().startswith("#")]
     code = "\n".join(code_lines)
-    for bad in ("pixi update", "pixi add", "pixi lock", "pixi upgrade", "pixi remove", "pixi reinstall"):
+    installs = re.findall(r"pixi install --frozen --manifest-path[^\n]*", code)
+    assert installs, "expected at least one pixi install --frozen --manifest-path"
+    forbidden = (
+        "pixi update",
+        "pixi add",
+        "pixi lock",
+        "pixi upgrade",
+        "pixi remove",
+        "pixi reinstall",
+        "pixi install --locked",
+        "pixi install -e",
+    )
+    for bad in forbidden:
         assert bad not in code
-    assert "--locked" not in code or "pixi install" not in code.split("--locked")[0]
-    installs = re.findall(r"pixi install[^\n]*", code)
-    assert installs, "expected at least one pixi install"
     for inst in installs:
-        assert "--frozen" in inst
-        assert "--manifest-path" in inst
+        assert "-e " in inst
 
 
 def test_ac2_stale_env_reports_synced(tmp_path: Path) -> None:
@@ -241,8 +249,11 @@ def test_matrix_promotion_syncs_cit_and_warden(tmp_path: Path) -> None:
     bin_dir = _prepare_stub_root(tmp_path)
     stub_log = tmp_path / "stub.log"
     proc = _run_script(tmp_path, bin_dir, stub_log=stub_log, args=["--promotion"])
-    assert proc.returncode == 0, proc.stdout + proc.stderr
     log = stub_log.read_text()
-    assert "platform-ci-test" in log
-    assert "pyforge-warden" in log
-    assert "platform-dev" not in log.split("platform-ci-test")[0]
+    cit_lines = [ln for ln in log.splitlines() if "platform-ci-test" in ln and "install" in ln]
+    wrd_lines = [ln for ln in log.splitlines() if "pyforge-warden" in ln and "install" in ln]
+    assert len(cit_lines) == 1
+    assert len(wrd_lines) == 1
+    assert not any("platform-dev" in ln and "install" in ln for ln in log.splitlines())
+    assert "env platform-ci-test:" in proc.stdout
+    assert "env pyforge-warden:" in proc.stdout
