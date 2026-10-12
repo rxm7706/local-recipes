@@ -32,7 +32,9 @@ from pyforge.marshal.seed.model.manifest import (
     load_manifest,
 )
 from pyforge.marshal.seed.plan.types import Action, SkippedArtifact
+from pyforge.marshal.seed.plan.types import NO_PACKAGED_PAYLOAD_SKIP_PATTERN
 from pyforge.marshal.seed.verbs.adopt import run_adopt
+from pyforge.marshal.seed.verbs.update import run_update
 
 # Explicit exclusion (Story 12.2 AC): the three ``unclassified-deferred`` ids
 # from ``seed/templates/manifest.yaml`` — deferral is enumerated, not a gap.
@@ -47,6 +49,17 @@ UNCLASSIFIED_DEFERRED_ARTIFACT_IDS: frozenset[str] = frozenset(
 # Story 86.2: genesis bootstrap records explicit seed skips in
 # ``.marshal/seed-state.yml``; reasons live here because skip patterns carry
 # no reason field (K-02 — not a silent widening of the deferred-id filter).
+# Story 97.2 (AC6): ``update`` dry-run skips on this repo — genesis-recorded
+# ``state.skips`` patterns plus ``copied-managed`` entries with no packaged
+# payload. Not a widened adopt oracle (K-02).
+LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED: dict[str, str] = {
+    "agents-md": "AGENTS.md",
+    "claude-md": "CLAUDE.md",
+    "projects-index": "_bmad-output/PROJECTS.md",
+    "bmad-switch": NO_PACKAGED_PAYLOAD_SKIP_PATTERN,
+    "bmad-loop-worktree": NO_PACKAGED_PAYLOAD_SKIP_PATTERN,
+}
+
 LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS: dict[str, str] = {
     "agents-md": "AGENTS.md already carries instruction-surface content (scribe CAP-27, point-don't-copy)",
     "claude-md": "CLAUDE.md already carries instruction-surface content (scribe CAP-27, point-don't-copy)",
@@ -112,6 +125,27 @@ def assertable_adopt_actions(
             f"unclassified-deferred in the packaged manifest: {sorted(unknown_deferred)}"
         )
     return tuple(action for action in actions if action.artifact_id not in deferred_ids)
+
+
+def assertable_update_skipped(
+    skipped: tuple[SkippedArtifact, ...],
+    *,
+    expected: dict[str, str] = LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED,
+) -> None:
+    """Every skip ``update`` emits on this repo, with the expected pattern."""
+    actual = {item.artifact_id: item.pattern for item in skipped}
+    if actual != expected:
+        missing = set(expected) - set(actual)
+        extra = set(actual) - set(expected)
+        wrong = {
+            artifact_id: (expected[artifact_id], actual[artifact_id])
+            for artifact_id in set(expected) & set(actual)
+            if actual[artifact_id] != expected[artifact_id]
+        }
+        raise AssertionError(
+            "update dry-run skip set drifted — reconcile LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED."
+            f" missing={sorted(missing)!r} extra={sorted(extra)!r} wrong_pattern={wrong!r}"
+        )
 
 
 def assertable_skipped_artifact_ids(
@@ -235,6 +269,42 @@ def test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred():
         filtered = assertable_adopt_actions(result.plan.actions)
         assert filtered == (), format_plan_diff(filtered)
         assertable_skipped_artifact_ids(result.plan.skipped)
+    finally:
+        if had_plan:
+            plan_path.write_bytes(prior_plan_bytes)  # type: ignore[arg-type]
+        elif plan_path.is_file():
+            plan_path.unlink()
+            marshal_dir = plan_path.parent
+            if marshal_dir.is_dir() and not any(marshal_dir.iterdir()):
+                marshal_dir.rmdir()
+
+
+@pytest.mark.slow
+def test_local_recipes_update_dry_run_yields_empty_plan_with_documented_skips():
+    repo_root = _local_recipes_root()
+    if repo_root is None:
+        pytest.skip("not running inside the local-recipes monorepo checkout")
+
+    manifest = _load_packaged_manifest()
+    plan_path = repo_root / ".marshal" / "plan.json"
+    had_plan = plan_path.is_file()
+    prior_plan_bytes = plan_path.read_bytes() if had_plan else None
+
+    try:
+
+        def _unreachable_confirm() -> bool:
+            raise AssertionError("dry-run must not confirm")
+
+        slug = _resolve_project_slug(repo_root)
+        result = run_update(
+            repo_root,
+            manifest,
+            confirm=_unreachable_confirm,
+            slug=slug or None,
+            in_loop_home=False,
+        )
+        assert result.plan.actions == (), format_plan_diff(result.plan.actions)
+        assertable_update_skipped(result.plan.skipped)
     finally:
         if had_plan:
             plan_path.write_bytes(prior_plan_bytes)  # type: ignore[arg-type]
