@@ -196,23 +196,54 @@ class _Credential:
         return self._fragments
 
 
-class _CredentialSplicingSocket:
-    """Swap the Authorization placeholder for the credential's fragments on the way out."""
+_HEADER_END = b"\r\n\r\n"
 
-    __slots__ = ("_credential", "_sock")
+
+class _CredentialSplicingSocket:
+    """Swap the Authorization placeholder for the credential's fragments on the way out.
+
+    Only inside the header block, and once per request (a connection carries one
+    request: urllib sends ``Connection: close``). From the first CRLF CRLF on, bytes
+    pass through untouched, so a body never receives the credential even if it holds
+    the placeholder text (``_ApiConnection`` refuses such a body before sending).
+    """
+
+    __slots__ = ("_credential", "_head_tail", "_headers_done", "_sock", "_spliced")
 
     def __init__(self, sock: Any, credential: _Credential) -> None:
         self._sock = sock
         self._credential = credential
+        self._head_tail = b""
+        self._headers_done = False
+        self._spliced = False
 
     def __repr__(self) -> str:
         return "<credential-splicing socket>"
 
     def sendall(self, data: Any, *args: Any) -> None:
-        before, marker, after = bytes(data).partition(_AUTHORIZATION_PLACEHOLDER_BYTES)
-        if not marker:
+        if self._headers_done:
             self._sock.sendall(data, *args)
             return
+        raw = bytes(data)
+        window = self._head_tail + raw
+        end = window.find(_HEADER_END)
+        if end < 0:
+            head, body = raw, b""
+            self._head_tail = window[-(len(_HEADER_END) - 1) :]
+        else:
+            cut = end + len(_HEADER_END) - len(self._head_tail)
+            head, body = raw[:cut], raw[cut:]
+            self._headers_done = True
+        self._send_head(head, *args)
+        if body:
+            self._sock.sendall(body, *args)
+
+    def _send_head(self, head: bytes, *args: Any) -> None:
+        before, marker, after = head.partition(_AUTHORIZATION_PLACEHOLDER_BYTES)
+        if not marker or self._spliced:
+            self._sock.sendall(head, *args)
+            return
+        self._spliced = True
         self._sock.sendall(before, *args)
         for fragment in self._credential.fragments:
             self._sock.sendall(fragment, *args)
@@ -236,6 +267,15 @@ class _ApiConnection(http.client.HTTPSConnection):
 
     def endheaders(self, message_body: Any = None, *, encode_chunked: bool = False) -> None:
         if self._credential is not None:
+            if message_body is not None and (
+                not isinstance(message_body, (bytes, bytearray, memoryview))
+                or _AUTHORIZATION_PLACEHOLDER_BYTES in bytes(message_body)
+            ):
+                # Refused before any byte is sent: a body is never spliced, and one that
+                # holds the placeholder text (a server-supplied cursor, a configured
+                # login) would otherwise sit beside the credential on the wire.
+                msg = "refused a request body that carries the credential placeholder (or is not bytes)"
+                raise FleetInventoryApiError(msg)
             self.putheader("Authorization", _AUTHORIZATION_PLACEHOLDER)
         super().endheaders(message_body, encode_chunked=encode_chunked)
 

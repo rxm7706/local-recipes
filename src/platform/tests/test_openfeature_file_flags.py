@@ -669,6 +669,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.warden.fleet_project_items": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     "pyforge.steward.sync_github_only_marker": {
         "dev": True,
         "staging": True,

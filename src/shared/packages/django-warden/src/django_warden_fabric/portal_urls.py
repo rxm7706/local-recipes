@@ -1,5 +1,4 @@
-from django.urls import include
-from django.urls import path
+from django.urls import include, path
 
 from . import views
 
@@ -11,6 +10,11 @@ urlpatterns = [
         "fleet/inventory/start/",
         views.start_fleet_inventory,
         name="warden-fleet-inventory-start",
+    ),
+    path(
+        "fleet/project-items/start/",
+        views.start_fleet_project_items,
+        name="warden-fleet-project-items-start",
     ),
     path(
         "fleet/proposals/",

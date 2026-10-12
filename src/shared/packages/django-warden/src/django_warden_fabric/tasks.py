@@ -8,29 +8,28 @@ import json
 import logging
 import os
 import tempfile
+import traceback
 from pathlib import Path
 
-from celery import chord
-from celery import shared_task
+from celery import chord, shared_task
 from django.conf import settings
 
-from .fleet import mkdtemp_clone_dir
-from .fleet import remove_clone_dir
-from .fleet import shallow_clone
-from .fleet_inventory import FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS
-from .fleet_inventory import FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
-from .fleet_inventory import FLEET_INVENTORY_TIME_LIMIT_SECONDS
-from .fleet_inventory import FleetInventoryError
-from .fleet_inventory import GhAuthTokenProvider
-from .fleet_inventory import run_fleet_inventory_sync
-from .models import ComplianceJob
-from .models import FixProposal
-from .models import FleetRepo
-from .models import FleetRepoScan
-from .models import FleetRun
-from .models import JobStatus
-from .phases import PHASES
-from .phases import advance
+from .fleet import mkdtemp_clone_dir, remove_clone_dir, shallow_clone
+from .fleet_inventory import (
+    FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS,
+    FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
+    FLEET_INVENTORY_TIME_LIMIT_SECONDS,
+    FleetInventoryError,
+    GhAuthTokenProvider,
+    run_fleet_inventory_sync,
+)
+from .fleet_project_items import (
+    FleetProjectItemsRunError,
+    load_project_numbers_from_config,
+    run_fleet_project_items_sync,
+)
+from .models import ComplianceJob, FixProposal, FleetRepo, FleetRepoScan, FleetRun, JobStatus
+from .phases import PHASES, advance
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +69,7 @@ def _validate_manifest_blob(path: Path, storage_key: str) -> None:
     if not path.is_file():
         msg = f"missing blob for key {storage_key}"
         raise FileNotFoundError(msg)
-    if path.suffix.lower() not in SUPPORTED_SUFFIXES and path.name not in (
-        _WELL_KNOWN_MANIFEST_NAMES
-    ):
+    if path.suffix.lower() not in SUPPORTED_SUFFIXES and path.name not in (_WELL_KNOWN_MANIFEST_NAMES):
         msg = f"unsupported manifest: {path.name}"
         raise ValueError(msg)
 
@@ -143,8 +140,10 @@ def _run_warden_engines(
 )
 def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
     """List github.com org repos — Celery message carries ids and org name only."""
-    from pyforge.warden.fleet_github_rest import FleetInventoryApiError  # noqa: PLC0415
-    from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient  # noqa: PLC0415
+    from pyforge.warden.fleet_github_rest import (
+        FleetInventoryApiError,  # noqa: PLC0415
+        GitHubRestOrgReposClient,  # noqa: PLC0415
+    )
 
     try:
         # No ``token`` local: a logged traceback renders frame locals.
@@ -158,6 +157,55 @@ def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
         raise
     else:
         return inventory_run_id
+
+
+@shared_task(
+    bind=True,
+    name="warden_fabric.run_fleet_project_items",
+    soft_time_limit=FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
+    time_limit=FLEET_INVENTORY_TIME_LIMIT_SECONDS,
+)
+def run_fleet_project_items(self, project_items_run_id: str, organisation: str) -> str:
+    """List the items of the designated github.com Projects — ids and org name only.
+
+    The project numbers are read from the gitignored config in the worker, never
+    carried in the message; the credential is Story 16.1's provider, once per run.
+    """
+    from pyforge.warden.fleet_github_graphql import (  # noqa: PLC0415
+        GitHubGraphQLProjectItemsClient,
+    )
+    from pyforge.warden.fleet_github_rest import FleetInventoryApiError  # noqa: PLC0415
+
+    failure: str | None = None
+    try:
+        project_numbers = load_project_numbers_from_config()
+        # No ``token`` local: a logged traceback renders frame locals.
+        client = GitHubGraphQLProjectItemsClient(
+            token=GhAuthTokenProvider().token(),
+            timeout=FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS,
+        )
+        run_fleet_project_items_sync(
+            organisation=organisation,
+            project_numbers=project_numbers,
+            listing_client=client,
+        )
+    except (FleetInventoryError, FleetInventoryApiError) as exc:
+        # Typed, and its text holds no item title; the frames it passed through
+        # (the listing, the export) may hold titles, so their locals are cleared.
+        traceback.clear_frames(exc.__traceback__)
+        logger.exception("fleet project items %s failed", project_items_run_id)
+        raise
+    except Exception as exc:
+        # Anything else (a soft time limit during parse or the export write, an I/O
+        # error): typed by name only, its frames cleared.
+        failure = type(exc).__name__
+        traceback.clear_frames(exc.__traceback__)
+    if failure is not None:
+        # Raised outside the handler, so no ``__context__`` keeps the original (its
+        # text, like its frames, may carry item titles); the log line names the type.
+        logger.error("fleet project items %s failed: %s", project_items_run_id, failure)
+        raise FleetProjectItemsRunError(failure)
+    return project_items_run_id
 
 
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")
@@ -179,9 +227,7 @@ def run_fleet_run(self, fleet_run_id: str) -> str:
     run = FleetRun.objects.get(pk=fleet_run_id)
     run.status = JobStatus.RUNNING
     run.save(update_fields=["status", "updated_at"])
-    repos = FleetRepo.objects.filter(organisation=run.organisation).order_by(
-        "full_name"
-    )
+    repos = FleetRepo.objects.filter(organisation=run.organisation).order_by("full_name")
     try:
         signatures = []
         for repo in repos:
@@ -262,27 +308,23 @@ def scan_fleet_repo(self, fleet_run_id: str, fleet_repo_id: str) -> str:
 
 
 def _finding_from_report_dict(data: dict[str, object]):
-    from pyforge.warden.models import Finding  # noqa: PLC0415
-    from pyforge.warden.models import Severity  # noqa: PLC0415
-    from pyforge.warden.models import SeverityTier  # noqa: PLC0415
+    from pyforge.warden.models import (
+        Finding,  # noqa: PLC0415
+        Severity,  # noqa: PLC0415
+        SeverityTier,  # noqa: PLC0415
+    )
 
     finding_id = data["id"]
     axis = data["axis"]
     message = data["message"]
-    if (
-        not isinstance(finding_id, str)
-        or not isinstance(axis, str)
-        or not isinstance(message, str)
-    ):
+    if not isinstance(finding_id, str) or not isinstance(axis, str) or not isinstance(message, str):
         msg = "invalid finding entry in report"
         raise ValueError(msg)
     subject = data.get("subject")
     severity_raw = data.get("severity")
     severity = None
     if isinstance(severity_raw, dict) and isinstance(severity_raw.get("tier"), str):
-        severity = Severity(
-            tier=SeverityTier(severity_raw["tier"]), raw=severity_raw.get("raw")
-        )
+        severity = Severity(tier=SeverityTier(severity_raw["tier"]), raw=severity_raw.get("raw"))
     return Finding(
         id=finding_id,
         axis=axis,
@@ -342,11 +384,7 @@ def open_fix_proposal(self, proposal_id: str) -> str:
             dest=clone_dir,
         )
         actuation = _run_fix_actuator(scan, proposal.finding_id, clone_dir=clone_dir)
-        matching = [
-            outcome
-            for outcome in actuation.outcomes
-            if outcome.finding_id == proposal.finding_id
-        ]
+        matching = [outcome for outcome in actuation.outcomes if outcome.finding_id == proposal.finding_id]
         if not matching:
             proposal.state = FixProposal.State.FAILED
             proposal.error = "actuator produced no outcome for finding"
