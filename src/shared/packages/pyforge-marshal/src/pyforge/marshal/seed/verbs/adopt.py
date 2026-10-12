@@ -615,7 +615,9 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
     this module detects nothing and repairs nothing either, it only must
     not crash building rung 6's input. A record whose entry is a DIRECTORY
     (``ManifestEntry.is_directory``) is excluded too: a directory carries no
-    content of its own to compare (Story 86.1)."""
+    content of its own to compare (Story 86.1). So is a record whose CURRENT
+    entry is ``copied-seeded`` (Story 97.1): the file is repo-owned, and the
+    class the record stored when it was claimed does not bring the guard back."""
     if state is None:
         return ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
@@ -631,6 +633,12 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
         if artifact.id in _WRITABLE_EXEMPTION_IDS:
             # BMAD artifact symlinks are attested by ``ensure_symlinks`` /
             # ``detect_symlink_desync``, not rung 6 file-body hash (Story 86.2).
+            continue
+        if entry is not None and entry.artifact_class is ArtifactClass.COPIED_SEEDED:
+            # Repo-owned (Story 97.1): the guard follows the manifest's CURRENT
+            # class, never the class string the record kept from when it was
+            # claimed. A `copied-seeded` file is "hand-edit: expected and fine"
+            # (`CLASS_BEHAVIOR`), so no hash of it is compared at rung 6.
             continue
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
@@ -1211,6 +1219,9 @@ def _build_state_after_apply(
         legacy=legacy,
         migrations_applied=state.migrations_applied if state is not None else (),
         opted_out=state.opted_out if state is not None else (),
+        # Append-only (Story 97.1): a verb that writes state carries the
+        # `marshal seed accept` journal over unchanged.
+        acceptances=state.acceptances if state is not None else (),
     )
 
 

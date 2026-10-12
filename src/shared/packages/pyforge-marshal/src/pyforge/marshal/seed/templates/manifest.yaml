@@ -8,8 +8,17 @@
 # (FR-66..FR-71) and architecture AD-55 are the normative contracts this
 # file is judged against.
 #
-# 43 entries: 16 referenced, 5 copied-managed, 5 copied-seeded,
+# 43 entries: 16 referenced, 2 copied-managed, 8 copied-seeded,
 # 9 generated-derived, 5 hybrid-managed-region, 3 unclassified-deferred.
+#
+# Story 97.1 (operator ruling 2026-10-12) moves `detector-registry`,
+# `dreams-readme` and `detectors-ci-workflow` from copied-managed to
+# copied-seeded: a class assigned wrong is fixed here, in the manifest, not in
+# the engine. `copied-managed` promises "regenerated wholesale", which no
+# packaged payload can deliver for these three files (the template ships none),
+# so all the class added was a hash guard against the repo's own maintainers.
+# `model_version` stays 1.0.0: no installed repo has to write anything, a
+# migration can only emit file actions, and the change is to the guard.
 #
 # Story 11.2 reclassifies `projects-index` from generated-derived to
 # hybrid-managed-region: `_bmad-output/PROJECTS.md`'s Projects table is a
@@ -168,7 +177,7 @@ artifacts:
     rationale: installed but barely exercised; same triage-open status as bmad-manticore
     pin: ">=0.1.0"
 
-  # --- COPIED-MANAGED (5): materialized, tool-owned, regenerated wholesale.
+  # --- COPIED-MANAGED (2): materialized, tool-owned, regenerated wholesale.
   - id: bmad-switch
     class: copied-managed
     path: "scripts/bmad-switch"
@@ -181,29 +190,8 @@ artifacts:
     path: "scripts/bmad-loop-worktree"
     applies_to: both
     rationale: concurrent loop homes; same reasoning as bmad-switch
-  - id: detector-registry
-    class: copied-managed
-    path: "scripts/detectors.py"
-    applies_to: both
-    rationale: >-
-      must run locally and offline in the adopting repo's CI; the registry
-      discovers detectors from the filesystem rather than naming one by
-      hand, because a hand-written list omits the newest detector -- the
-      exact defect this registry exists to prevent.
-  - id: dreams-readme
-    class: copied-managed
-    path: "docs/dreams/README.md"
-    applies_to: both
-    rationale: the Tier-0 contract itself -- Dream frontmatter schema, flow, conventions
-  - id: detectors-ci-workflow
-    class: copied-managed
-    path: ".github/workflows/detectors.yml"
-    applies_to: both
-    rationale: >-
-      mechanical CI wiring that runs `marshal seed check` plus the detector
-      registry; no reason for a repo to hand-own it.
 
-  # --- COPIED-SEEDED (5): materialized once, then repo-owned forever.
+  # --- COPIED-SEEDED (8): materialized once, then repo-owned forever.
   - id: starter-dream
     class: copied-seeded
     path: "docs/dreams/{{ slug }}.md"
@@ -231,6 +219,35 @@ artifacts:
     path: "presentations/{{ slug }}/"
     applies_to: both
     rationale: Herald's surface; Genesis lays the directory, Herald owns the content
+  - id: detector-registry
+    class: copied-seeded
+    path: "scripts/detectors.py"
+    applies_to: both
+    rationale: >-
+      repo-owned from the day it is laid down (Story 97.1, operator ruling
+      2026-10-12): it must run locally and offline in the adopting repo's CI,
+      and every new local detector or Doctor source adds a row to its own
+      hand-kept lists, so a hash guard against the repo's own edits refused
+      routine work. The registry discovers detectors from the filesystem
+      rather than naming one by hand; no packaged payload regenerates it.
+  - id: dreams-readme
+    class: copied-seeded
+    path: "docs/dreams/README.md"
+    applies_to: both
+    rationale: >-
+      repo-owned from the day it is laid down (Story 97.1, operator ruling
+      2026-10-12): the Tier-0 contract (Dream frontmatter schema, flow,
+      conventions) is where the repo's own Dream table lives, and every new
+      Dream adds a row to it; the repo owns its content.
+  - id: detectors-ci-workflow
+    class: copied-seeded
+    path: ".github/workflows/detectors.yml"
+    applies_to: both
+    rationale: >-
+      repo-owned from the day it is laid down (Story 97.1, operator ruling
+      2026-10-12): the repo's own CI wiring, which a repo extends with its
+      own lanes; no packaged payload regenerates it, and a repo that hand-owns
+      its workflow is not one the guard should refuse.
 
   # --- GENERATED-DERIVED (10): computed from the neutral contract and/or
   # repo state, recomputed every run.

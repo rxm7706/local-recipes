@@ -53,8 +53,16 @@ lists every discovered `loop/<slug>` worktree and verifies isolation. Read-only.
 routes to `scripts/detectors.py` (`--scope repo|runtime|all`, default `all`).
 
 **Seed check** (`marshal seed check`) [SRC:src/pyforge/marshal/cli/seed.py:L413]:
-read-only Genesis conformance report. Seven verbs total:
-`init`/`adopt`/`check`/`update`/`explain`/`version`/`kit`.
+read-only Genesis conformance report. Eight verbs total:
+`init`/`adopt`/`check`/`update`/`explain`/`version`/`kit`/`accept`.
+
+**Seed accept** (`marshal seed accept <artifact-id>[#<region>]`): records an
+intended edit to a tool-owned file or region as the new baseline, the way
+`update --force` cannot (that one *discards* the edit). Dry run by default;
+`--apply --reason "..."` re-records the hash and appends one `acceptances`
+journal entry to `.marshal/seed-state.yml` in the same atomic replace, on a
+clean worktree. It writes nothing else. A `copied-seeded` (repo-owned) file
+needs no accept: the guard follows the manifest's current class.
 
 **Seed kit** (`marshal seed kit`) [SRC:src/pyforge/marshal/cli/seed.py:L945]:
 provisions a LOOP HOME's token-economy kit (caveman skill + articulate
@@ -81,7 +89,8 @@ after `add_homes_subparser` [SRC:src/pyforge/marshal/cli/init.py:L287].
 with `--scope` mirrored from `scripts/detectors.py`.
 
 **Genesis conformance:** `marshal seed check --repo-root .` then optional
-`marshal seed adopt` / `marshal seed update` [SRC:README.md:L25-L35].
+`marshal seed adopt` / `marshal seed update` [SRC:README.md:L25-L35]; an
+intended edit to a tool-owned file is recorded with `marshal seed accept`.
 
 **Loop-home kit:** `marshal seed kit --repo-root <home> --apply` (or let
 `marshal preflight` do it) -- Story 28.3's per-home token-economy kit.
@@ -143,6 +152,7 @@ marshal check [--scope repo|runtime|all] [--project SLUG]
 marshal seed check --repo-root .
 marshal seed init <PATH> --slug <SLUG>
 marshal seed adopt --repo-root . [--apply --yes]
+marshal seed accept <ARTIFACT-ID>[#<REGION>] --repo-root . [--apply --reason TEXT]
 marshal seed kit --repo-root <LOOP-HOME> [--apply]
 ```
 

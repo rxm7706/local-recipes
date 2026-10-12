@@ -590,7 +590,10 @@ def run_check(
                         finding = check_managed_region(entry.path, text, span, recorded.body_sha)
                         if finding is not None:
                             findings.append(finding)
-        elif record is not None:
+        elif record is not None and entry.artifact_class is not ArtifactClass.COPIED_SEEDED:
+            # A `copied-seeded` entry is repo-owned (Story 97.1): the guard
+            # follows the manifest's CURRENT class, so a record that kept its
+            # old `copied-managed` class string is not hash-checked either.
             finding = check_managed_file(entry.path, text, record.body_sha)
             if finding is not None:
                 findings.append(finding)

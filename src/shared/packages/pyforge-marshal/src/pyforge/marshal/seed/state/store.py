@@ -11,7 +11,7 @@ file, the repo and Genesis's belief about it can silently disagree -- the
 exact failure class AR-6/P-08 are written against, and one this repo has
 already lived through once with the ``bmad-switch`` marker.
 
-**Eleven keys, no twelfth.** ``model_version``, ``seed_model_version``,
+**Eleven required keys, and one optional twelfth.** ``model_version``, ``seed_model_version``,
 ``adopted_at``, ``last_update``, ``mode``, ``agents``, ``managed``,
 ``skips``, ``legacy``, ``migrations_applied``, ``opted_out`` (FR-102's ten
 plus ``opted_out``, which the epics AC adds). ``schema.json`` ``require``s
@@ -20,6 +20,13 @@ a field invented in code but not in the schema fails its own write. A
 genuinely new field needs a PRD/architecture amendment first -- notably
 there is no ``slug`` and no free-form ``answers`` map here (see
 ``copier_data`` below).
+
+The one optional key is ``acceptances`` (Story 97.1): the append-only journal
+``marshal seed accept`` writes in the same atomic replace as the re-recorded
+hash. It is not in ``STATE_KEYS`` and not ``require``d; absent reads as ``()``
+and ``to_json_dict`` emits it only when non-empty, so a state that never
+accepted anything is byte-identical to one written before the key existed.
+Every verb that builds a new ``SeedState`` carries it over unchanged.
 
 **Every READ validates; every read failure is a finding, not a crash.**
 ``read_state`` validates the parsed document against the packaged
@@ -602,6 +609,69 @@ class LegacyArtifact:
 
 
 @dataclass(frozen=True)
+class Acceptance:
+    """One ``marshal seed accept`` re-record (Story 97.1), the persisted
+    journal entry: the artifact ``id`` (and ``region``, ``None`` for a whole
+    file) whose recorded hash moved from ``previous_sha`` to ``accepted_sha``,
+    its repo-relative ``path``, when (``accepted_at``, ``utc_timestamp()``'s
+    shape), by whom (``accepted_by``, the git committer identity without its
+    timestamp), at which commit (``head``) and why (``reason``).
+
+    All nine fields are required on the wire and the schema refuses an extra
+    one. Hash and timestamp SHAPE is the schema's to police, exactly as it is
+    for ``ManagedArtifact.body_sha``."""
+
+    id: str
+    region: str | None
+    path: str
+    previous_sha: str
+    accepted_sha: str
+    accepted_at: str
+    accepted_by: str
+    head: str
+    reason: str
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "region": self.region,
+            "path": self.path,
+            "previous_sha": self.previous_sha,
+            "accepted_sha": self.accepted_sha,
+            "accepted_at": self.accepted_at,
+            "accepted_by": self.accepted_by,
+            "head": self.head,
+            "reason": self.reason,
+        }
+
+    @classmethod
+    def from_json_dict(cls, data: dict[str, Any]) -> Acceptance:
+        if not isinstance(data, dict):
+            raise ValueError(f"Acceptance: expected a JSON object, got {_abbreviate(data)}")
+        raw_region = _require_key(data, "region", context="Acceptance")
+        region = None if raw_region is None else _require_str(raw_region, context="Acceptance.region")
+        return cls(
+            id=_require_str(_require_key(data, "id", context="Acceptance"), context="Acceptance.id"),
+            region=region,
+            path=_require_str(_require_key(data, "path", context="Acceptance"), context="Acceptance.path"),
+            previous_sha=_require_str(
+                _require_key(data, "previous_sha", context="Acceptance"), context="Acceptance.previous_sha"
+            ),
+            accepted_sha=_require_str(
+                _require_key(data, "accepted_sha", context="Acceptance"), context="Acceptance.accepted_sha"
+            ),
+            accepted_at=_require_str(
+                _require_key(data, "accepted_at", context="Acceptance"), context="Acceptance.accepted_at"
+            ),
+            accepted_by=_require_str(
+                _require_key(data, "accepted_by", context="Acceptance"), context="Acceptance.accepted_by"
+            ),
+            head=_require_str(_require_key(data, "head", context="Acceptance"), context="Acceptance.head"),
+            reason=_require_str(_require_key(data, "reason", context="Acceptance"), context="Acceptance.reason"),
+        )
+
+
+@dataclass(frozen=True)
 class SeedState:
     """The whole state document, in memory -- the eleven fields FR-102 and
     the epics AC name, and nothing else.
@@ -653,6 +723,9 @@ class SeedState:
     legacy: tuple[LegacyArtifact, ...]
     migrations_applied: tuple[str, ...]
     opted_out: tuple[str, ...]
+    #: The optional journal (Story 97.1). ``()`` is "never accepted": the key
+    #: is then absent on the wire, in both directions.
+    acceptances: tuple[Acceptance, ...] = ()
 
     def __post_init__(self) -> None:
         for name, item_type in (
@@ -662,6 +735,7 @@ class SeedState:
             ("legacy", LegacyArtifact),
             ("migrations_applied", str),
             ("opted_out", str),
+            ("acceptances", Acceptance),
         ):
             self._coerce_sequence(name, item_type)
 
@@ -717,7 +791,7 @@ class SeedState:
         """Fixed key order -- ``STATE_KEYS``, which is also the order
         ``schema.json`` requires them in, so a human diffing two state
         files never sees a reordering that means nothing."""
-        return {
+        document: dict[str, Any] = {
             "model_version": str(self.model_version),
             "seed_model_version": self.seed_model_version,
             "adopted_at": self.adopted_at,
@@ -730,6 +804,11 @@ class SeedState:
             "migrations_applied": list(self.migrations_applied),
             "opted_out": list(self.opted_out),
         }
+        # The optional twelfth key is emitted only when non-empty, so a state
+        # that never accepted anything stays byte-identical (Story 97.1).
+        if self.acceptances:
+            document["acceptances"] = [acceptance.to_json_dict() for acceptance in self.acceptances]
+        return document
 
     @classmethod
     def from_json_dict(cls, data: dict[str, Any]) -> SeedState:
@@ -746,6 +825,8 @@ class SeedState:
             _require_key(data, "managed", context="SeedState"), context="SeedState.managed"
         )
         raw_legacy = _require_object_list(_require_key(data, "legacy", context="SeedState"), context="SeedState.legacy")
+        # Optional: absent reads as an empty journal (Story 97.1).
+        raw_acceptances = _require_object_list(data.get("acceptances", []), context="SeedState.acceptances")
         raw_model_version = _require_str(
             _require_key(data, "model_version", context="SeedState"),
             context="SeedState.model_version",
@@ -780,6 +861,7 @@ class SeedState:
                 _require_key(data, "opted_out", context="SeedState"),
                 context="SeedState.opted_out",
             ),
+            acceptances=tuple(Acceptance.from_json_dict(item) for item in raw_acceptances),
         )
 
 

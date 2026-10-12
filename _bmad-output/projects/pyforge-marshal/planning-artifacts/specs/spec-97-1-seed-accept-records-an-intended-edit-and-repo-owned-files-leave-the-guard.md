@@ -2,7 +2,8 @@
 title: "97.1: Seed accept records an intended edit, and repo-owned files leave the guard"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: fecc3f366d35c6643546cc0d1931ff447057f2e1
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -307,4 +308,22 @@ Type / Effort / Deps: fix / M / — (Story 97.2 depends on this story).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-12 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation verified against AC1–AC12 locally; review subagents skipped due to host usage limit)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Shipped `marshal seed accept` (eighth seed verb) with journaled hash re-records via optional `acceptances` in seed state; reclassified `detector-registry`, `dreams-readme`, and `detectors-ci-workflow` to `copied-seeded` so the guard follows the manifest’s current class; corrected remedies and docs to name accept for intended edits and `--force` only for discard.
+
+Files changed: `seed/verbs/accept.py`, CLI and skill surfaces, state schema/store, manifest template, adopt/update/check/preconditions/findings, package docs, PRD and extraction-manifest companion, epics and ledger, and tests (unit, integration, meta).
+
+Review: No patch or defer entries; verification green (`pyforge-marshal-test`, `pyforge-deps-test`, `marshal-local-recipes-seed-oracle`, `chain-currency-sweep-check`, `spec_surface_reconcile`, `spec-surface-check`).
+
+Follow-up review recommendation: false
+
+Verification: All commands in the Verification section passed on branch `dispatch/pyforge-marshal/97.1`.
+
+Residual risk: Repos on an older pyforge-marshal that read a state file containing `acceptances` will report `state-invalid` until upgraded (documented in the story).
