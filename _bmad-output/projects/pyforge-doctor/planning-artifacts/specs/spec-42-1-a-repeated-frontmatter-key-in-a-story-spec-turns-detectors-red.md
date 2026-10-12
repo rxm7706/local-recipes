@@ -2,7 +2,7 @@
 title: "42.1: A repeated frontmatter key in a story spec turns Detectors red"
 type: 'feature'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '55906ac5ffd5065a324640aa86cb86466f5b6215'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -188,4 +188,15 @@ The source tests build real temporary git repositories with tracked specs, as
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-11 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches AC1–AC8; matrix tests green; live tree clean after marshal 96.1)
+
+## Auto Run Result
+
+- **Summary:** Added repo-scope Doctor source `frontmatter-duplicate-keys` that scans flat tracked story specs (`specs/spec-<slug>.md` via `git ls-files`), detects repeated YAML mapping keys at any depth (FAIL), and warns on unreadable fences; wired through `DISPATCH`, `REGISTRY`, `_DOCTOR_SOURCE_TASKS`, pixi `frontmatter-duplicate-keys-check`, and regenerated docs pages.
+- **Files changed:** `frontmatter_duplicate_keys.py` (new gather); `models.py` / `report-schema.json` (Source enum); `sources/__init__.py`, `__main__.py`, `scripts/detectors.py`, `pixi.toml`; unit/meta/dispatch tests; `docs/reference/detectors.md`, `docs/how-to/pixi-tasks.md`, `docs/map.yaml`; spec-pyforge-doctor and spec-pyforge-core memlogs.
+- **Review:** 0 patches; 0 deferred.
+- **Follow-up review recommended:** false
+- **Verification:** `test_sources_frontmatter_duplicate_keys.py` (10 passed); targeted meta/registry/dispatch tests green; `frontmatter-duplicate-keys-check` exit 0 on worktree; `python scripts/spec_surface_reconcile.py` exit 0; full `pyforge-doctor-test` 3553 passed (after taxonomy/schema fixes).
+- **Residual risk:** Tier-3 story drafts are invisible until promoted into `planning-artifacts/specs/`.
