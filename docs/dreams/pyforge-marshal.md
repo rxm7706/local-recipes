@@ -1470,6 +1470,30 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   steward through the CLI's JSON, never by import; depends on steward's `ci status` landing first; changes no landing
   verdict and waits on no CI. Operator ruling 2026-10-12: the plan's recommended answers Q1–Q8 stand. Owner
   `spec-pyforge-marshal`.
+- **2026-10-12 (two tests red the local preflight)** — **Found: two marshal tests fail every local `pr-preflight` run
+  while CI's `marshal-test` stays green, so every push needs a journaled skip.** On 2026-10-12 the pre-push preflight
+  refused four pushes, from two planning-only branches, on the same tests. (1) The NFR-P1 budget tests
+  (`tests/integration/test_performance_gates.py::test_check_under_nfr_p1_budget` and
+  `tests/unit/test_seed_verbs_check.py::test_run_check_completes_within_the_nfr_p1_budget`) read 5.10 s to 8.93 s
+  against 5 s. Measured: the walk and classification take about 0.3 s; `seed/detect/referenced_deps.py` spawns
+  `bmad-loop --version` (1.4 s) and `copier --version` (2.6 s), and first a Doctor subprocess whenever `doctor` is on
+  PATH, as it is in every preflight lane. That fixed probe cost stretches under the preflight's parallel load. (2)
+  `tests/unit/test_dispatch_verification.py::test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns`
+  reads `refused`: its fake process failed any command whose joined argv contained `pyforge-marshal-test`, and the
+  preflight names each lane's scratch directory after the lane, so `tmp_path` sits under
+  `…/pyforge-marshal-test/pytest-basetemp/…`. The commit-attribution `git` read of `refs/remotes/origin/main...HEAD`
+  carries the worktree path, so the fake failed it (MRS-GATE-009). Reproduced in 1.2 s with `--basetemp` under a
+  directory named `pyforge-marshal-test`; the same test under any other name passes. The first diagnosis, a
+  module-level cache poisoned by an earlier test on the same xdist worker (captured to team memory the same day), was
+  wrong. **What it looks like when fixed:** the NFR-P1 tests stub the machine-readiness probe and keep their
+  wall-clock 5 s budget on the walk they were written to measure; the fake matches a pixi task as an exact argv token,
+  and the packaging-gate test also runs with its worktree under a directory named like the lane, so the verdict cannot
+  depend on the path; the full marshal lane passes three times under the preflight's conditions and `pr-preflight`
+  passes; the team-memory entry says what really happened. **Constraints:** a fix under CAP-13 (NFR-P1, `seed check`)
+  and CAP-139 (verify blast radius, `pre-existing-gate`), no CAP, no flag; tests only, no product code. The probe cost
+  itself, about 4 s of NFR-P1's 5 s for `marshal seed check` end to end and more when Doctor is on PATH, is a product
+  question recorded as the story's deferral. Operator ask, 2026-10-12: "Do this task here: “Fix two marshal tests that
+  red local pr-preflight”". Owner `spec-pyforge-marshal`. → Epic 98 / Story 98.1, specced 2026-10-12.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

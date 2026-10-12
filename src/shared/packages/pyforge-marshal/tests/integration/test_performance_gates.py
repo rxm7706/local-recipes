@@ -78,8 +78,16 @@ def real_manifest() -> Manifest:
         return load_manifest(manifest_path)
 
 
-def test_check_under_nfr_p1_budget(real_manifest, tmp_path):
+def test_check_under_nfr_p1_budget(real_manifest, tmp_path, monkeypatch):
     repo = _local_recipes_sized_tree(tmp_path / "sized")
+    # The budget measures the walk and classification cost on a large tree, so
+    # the machine-readiness probe is stubbed: ``referenced_dep_findings`` spawns
+    # ``bmad-loop --version`` (1.4 s) and ``copier --version`` (2.6 s), and first
+    # a Doctor subprocess whenever ``doctor`` is on PATH, as it is in every
+    # ``pr-preflight`` lane. That probe is a fixed cost independent of the tree,
+    # and under the preflight's parallel load it alone pushed this test to 5.9 s
+    # and 7.4 s on 2026-10-12 (the walk itself takes about 0.3 s).
+    monkeypatch.setattr("pyforge.marshal.seed.verbs.check.referenced_dep_findings", lambda *_a, **_k: ())
     started = time.perf_counter()
     run_check(repo, real_manifest)
     elapsed = time.perf_counter() - started

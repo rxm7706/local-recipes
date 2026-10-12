@@ -1,8 +1,25 @@
 ---
 name: "the-local-pr-preflight-marshal-lane-pyforge-marshal-test-can"
-description: "The local pr-preflight marshal lane (pyforge-marshal-test) can red on two order- and load-dependent tests while CI is g…"
+description: "A test that passes everywhere but the local pr-preflight lane is usually reading the lane: preflight names each lane'…"
 metadata:
   type: feedback
 ---
 
-The local pr-preflight marshal lane (pyforge-marshal-test) can red on two order- and load-dependent tests while CI is green on the same tree: tests/integration/test_performance_gates.py::test_check_under_nfr_p1_budget (a 5 s wall-clock budget; 7.36 s measured on 2026-10-12 with eleven preflight lanes and a parallel dispatch sharing the machine) and tests/unit/test_dispatch_verification.py::test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns (verdict 'refused' instead of 'verified'; it reads the live repo_root=_REPO_ROOT and dispatch_verify.py keeps a module-level _COMMIT_MSG_HOOK_CACHE keyed on (worktree, repo_root), so an xdist worker's earlier tests can poison it). Evidence 2026-10-12: both failed twice in the full preflight lane on branch chain-ci-pause-control-plane-2026-10-12 (a docs-only diff), both pass alone and as a pair under preflight's TMPDIR/--basetemp env, the full lane passes on the primary main tree (12569 passed), and CI marshal-test is green on main 6bbfff6dd6. How to apply: when only these two red the marshal lane on a diff that touches no marshal code, rerun the two tests alone to prove it, then push with PYFORGE_PREFLIGHT_SKIP=1 and PYFORGE_PREFLIGHT_SKIP_REASON naming them (journaled to .steward/preflight-skips.log); the fix is marshal's (isolate the cache per test, give the budget test a load guard or a marker), to be minted on the marshal chain, not folded into another station's PR.
+A test that passes in CI and in a bare local run but fails in every local `pr-preflight` run is usually reading
+something the preflight lane changes. Two things differ there: `pr-preflight` names each lane's scratch directory
+after the lane (`TMPDIR` and `--basetemp` under `…/<lane-task>/…`, so `tmp_path` contains the lane name, e.g.
+`pyforge-marshal-test`), and every lane runs from the Guild environment, so Guild tools (`doctor`, `codegraph`) are
+on PATH, beside about twenty parallel lanes on a few xdist workers each.
+
+Found 2026-10-12 (marshal Story 98.1): (1) `test_dispatch_verification.py`'s `PackagingFailProcess` failed any
+argv whose joined text contained `pyforge-marshal-test`; under the preflight that matched the worktree path in a
+`git` call, and the verdict read `refused`. (2) The two NFR-P1 tests timed `marshal seed check` end to end, about 4 s
+of it `bmad-loop --version` and `copier --version` probes (plus a Doctor subprocess when `doctor` is on PATH), which
+parallel load stretched past 5 s. The first diagnosis, an xdist-order cache leak, was wrong: bare, `-n auto`,
+two-worker and Guild-PATH runs all passed.
+
+**How to apply:** reproduce with `--basetemp=<dir>/<lane-task>/bt` and the Guild bin on PATH before blaming order or
+load; make fakes match argv tokens exactly, never substrings of the joined command; in a timing test, stub any probe
+that is not what the test claims to measure. Until such a fix lands, push with `PYFORGE_PREFLIGHT_SKIP=1` and a
+`PYFORGE_PREFLIGHT_SKIP_REASON` naming the tests and the proof (journaled to `.steward/preflight-skips.log`), after
+running every lane the red one cancelled.
