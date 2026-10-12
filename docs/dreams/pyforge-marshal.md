@@ -1374,7 +1374,10 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   group is journaled without stopping the others. What ruff cannot fix safely still reaches verify. **Constraints:**
   a fix story under CAP-161 (Story 22.3's verification, under which Stories 83.9 and 83.15 run their pre-verify step),
   no CAP, no flag. Never `--unsafe-fixes`, and never a file outside the story's change set. The operator's ask,
-  verbatim: "Do this task here: Extend marshal pre-verify ruff to platform and portals". Owner `spec-pyforge-marshal`.
+  verbatim: "Do this task here: Extend marshal pre-verify ruff to platform and portals". The `pyforge-marshal`
+  environment had no ruff, so the tests that run the real ruff skipped outside a dispatch. On the operator's ruling
+  "Fold into 95.1 (Recommended)", the same story adds ruff to that pixi feature, re-locks, regenerates
+  `environment.yaml`, and makes those tests fail instead of skip when ruff is missing. Owner `spec-pyforge-marshal`.
   → Epic 95 / Story 95.1, specced 2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns

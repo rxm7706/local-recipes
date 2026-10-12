@@ -19,6 +19,8 @@ context:
   - src/platform/pyproject.toml
   - scripts/lint_types.py
   - scripts/platform-ci-local.sh
+  - pixi.toml
+  - scripts/.spec-surface-baseline.json
 declared_low_risk: false
 ---
 
@@ -146,6 +148,44 @@ group, from that tree's directory.
   - RET504, whose fix is unsafe;
   - PLC0415, which has no fix.
 
+**The test environment (operator ruling 2026-10-11).** The real-ruff oracle cannot be allowed to skip itself.
+- **The defect.** The `pyforge-marshal` pixi environment has no ruff. At `3c85a29a64`, `pixi.lock` locks no ruff
+  package for `pyforge-marshal` on linux-64, osx-arm64 or win-64. `pyforge-guild`, `platform-ci-test`,
+  `local-recipes` and `pyforge-foundry-full` all lock ruff 0.16.9.
+- **The effect.** `pixi run --frozen -e pyforge-marshal pytest -rs .../test_dispatch_ruff_format.py` from a clean
+  shell reports `SKIPPED [1] ...test_dispatch_ruff_format.py:155: ruff not on PATH`. 83.15's mutation oracle therefore
+  never runs in the station's own suite or in CI's `pyforge-station-tests.yml` marshal job. It runs only where an outer
+  `PATH` happens to carry another environment's ruff, as a dispatch's does.
+- **The ruling.** Asked whether to fold the environment change into this story, the operator chose "Fold into 95.1
+  (Recommended)", verbatim: "95.1 also adds ruff to the pyforge-marshal feature in pixi.toml, re-locks, regenerates
+  environment.yaml, and makes the real-ruff tests fail instead of skip when ruff is missing. pixi.toml is
+  steward-governed, so it needs a co-governor memlog and a scoped stamp."
+- **The pin.** `ruff = ">=0.16.9"` in `[feature.pyforge-marshal.dependencies]`, the floor the other three sites
+  declare (`[feature.pyforge-guild.dependencies]`, `[feature.platform-ci-test.dependencies]`,
+  `[feature.local-recipes.dependencies]`). ruff has no single-version registry: `pixi-version-check` covers pixi's own
+  version only (`scripts/pixi_version_registry.py`). `llms-full-check` checks each site's spec against the catalog's
+  floor (`docs/reference/library-llms-full.md`, ruff `>=0.16.9`), so a fourth site with the same floor keeps it green.
+  The feature is a test environment; the package's own `[package.run-dependencies]` and `pyproject.toml` do not change.
+- **The lock.** `pixi.lock` is regenerated with `pixi lock`, never `pixi add` or `pixi update`, which the session hook
+  denies.
+- **`environment.yaml`.** It is regenerated in the same change with `pixi project export conda-environment -e build
+  2>/dev/null > environment.yaml`, stderr discarded (Story 91.1's trap). The `build` environment composes only the
+  `python` and `build` features, so the file is expected byte-identical, and the regeneration proves that.
+- **The tests resolve ruff from their own environment.** They take ruff from the test interpreter's environment
+  (`sysconfig.get_path("scripts")`) and put that directory first on `PATH` for the test, so that `PosixProcess` runs
+  that ruff. When it is absent, they fail with a message naming the missing dependency. An outer `PATH` that carries
+  another environment's ruff (a dispatch inherits `pyforge-guild`'s) can no longer hide its removal.
+- **Governed files.** `pixi.toml`, `pixi.lock` and `environment.yaml` are governed paths (`scripts/.spec-surface-baseline.json`
+  at `3c85a29a64`):
+  - `pixi.toml`: `pyforge-doctor/spec-pixi-candidate-currency`, `pyforge-herald/spec-deck-family-currency`,
+    `pyforge-herald/spec-deck-family-lockstep`, `pyforge-herald/spec-pyforge-pages`, `pyforge-marshal/spec-pyforge-core`,
+    `pyforge-marshal/spec-pyforge-marshal` and `pyforge-steward/spec-pyforge-unifying-strategy`;
+  - `pixi.lock`: `pyforge-doctor/spec-pixi-candidate-currency`;
+  - `environment.yaml`: `pyforge-marshal/spec-pyforge-marshal` and `pyforge-steward/spec-pyforge-unifying-strategy`.
+
+  Each of them gets a surface-reconcile memlog entry naming the path and this story, and one scoped stamp, as does
+  every further Spec `spec-surface-check` names when the story runs.
+
 Ledger key: `95-1-dispatch-applies-ruff-to-a-story-s-files-under-each-tree-s-own-config`.
 Type / Effort / Deps: fix / M / —.
 
@@ -159,19 +199,19 @@ Type / Effort / Deps: fix / M / —.
 - **No flag.** Under `spec-feature-flag-governance` Q1 a `fix` needs no flag. A flag would keep the refusals reachable.
 - **Origin.** `docs/dreams/pyforge-marshal.md` Realization log, 2026-10-11 (pre-verify ruff covers the platform and
   the portal packages). The operator's ask, verbatim: "Do this task here: Extend marshal pre-verify ruff to platform
-  and portals".
+  and portals". The environment change is the operator's ruling "Fold into 95.1 (Recommended)", quoted above.
 
 ## Acceptance Criteria
 
-New tests go in a new module, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format_trees.py`, so
-that no existing test module changes (AC6). Each fixture is a temporary worktree built in the test:
+New tests go in a new module, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format_trees.py`.
+The only change to an existing test module is AC12's change to 83.15's precondition (AC6). Each fixture is a
+temporary worktree built in the test:
 - **Fake-process tests** drive `apply_dispatch_ruff_format_before_verify` with a VCS fake that reports the story's
   change set against `origin/main` and the dirty set against `HEAD` (the shape of `_FormatVcs` and `_DiskDirtyVcs` in
   `test_dispatch_ruff_format.py`), and a process fake that records `(tokens, cwd)`. They never skip.
-- **Real-ruff tests** use the `ruff` on `PATH` (`PosixProcess`) and skip only when there is none, as 83.15's
-  `test_apply_ruff_check_fix_removes_safe_violations` does. Under the dispatch verify they run, because the supervisor
-  shells to that same `ruff` for the pass itself. Each real-ruff assertion runs `ruff` from the fixture's group root,
-  as the gate does.
+- **Real-ruff tests** (`PosixProcess`) take ruff from the test interpreter's own environment, as AC12 states, and
+  fail, never skip, when it is absent. Each real-ruff assertion runs that `ruff` from the fixture's group root, as the
+  gate does.
 
 - **AC1 — A platform file is fixed under the platform table.**
   - **Given** a fixture worktree that carries a copy of the live `src/platform/pyproject.toml` (and
@@ -223,13 +263,15 @@ that no existing test module changes (AC6). Each fixture is a temporary worktree
     - a result whose only news is a failed group (no path changed) journals a pair with `committed: false` and that
       group;
     - a result with nothing changed and no failure journals nothing.
-- **AC6 — The existing tests pass unedited.** These pass, and `git diff origin/main --` on each of them is empty:
-  - `tests/unit/test_dispatch_ruff_format.py`;
-  - `tests/unit/test_dispatch_cfe_commit.py` (`test_ruff_format_commit_never_carries_the_cfe_surface`);
-  - `tests/unit/test_dispatch_supervisor_verify_fix.py` (the two ruff-format fix-turn tests);
-  - `tests/unit/test_dispatch_environment_yaml.py`.
-  The pyforge-package token lists and call count that 83.9's test pins (a root whose table declares no exclude key)
-  do not change.
+- **AC6 — The existing tests pass, edited only where the ruling says.**
+  - These pass, and `git diff origin/main --` on each is empty:
+    - `tests/unit/test_dispatch_cfe_commit.py` (`test_ruff_format_commit_never_carries_the_cfe_surface`);
+    - `tests/unit/test_dispatch_supervisor_verify_fix.py` (the two ruff-format fix-turn tests);
+    - `tests/unit/test_dispatch_environment_yaml.py`.
+  - `tests/unit/test_dispatch_ruff_format.py` passes. Its diff touches only
+    `test_apply_ruff_check_fix_removes_safe_violations`'s ruff precondition (the `shutil.which` / `pytest.skip` lines,
+    :154-:155), which AC12 turns from a skip into a failure. Every other line is unchanged, so the pyforge-package
+    token lists and the call count that 83.9's test pins (a root whose table declares no exclude key) do not change.
 - **AC7 — What ruff cannot fix safely still reaches verify.**
   - **Given** AC1's fixture with a platform story file that holds three findings:
     - a function-local `import` (PLC0415);
@@ -253,7 +295,34 @@ that no existing test module changes (AC6). Each fixture is a temporary worktree
   - running ruff on `.` or on a group directory: AC4;
   - stopping at the first failed group, or dropping `groups` from the journal payload: AC5;
   - adding `--unsafe-fixes`: AC7 (RET504 is cleared);
-  - dropping `--force-exclude`: AC8 (the migration is rewritten).
+  - dropping `--force-exclude`: AC8 (the migration is rewritten);
+  - removing `ruff` from `[feature.pyforge-marshal.dependencies]`, then `pixi lock` and `pixi install -e
+    pyforge-marshal`: AC12. Every real-ruff test, 83.15's included, fails with the missing-dependency message, even
+    with `pyforge-guild`'s bin directory on the outer `PATH`;
+  - restoring the skip in 83.15's test, or resolving ruff from `PATH` instead of the interpreter's environment: AC12.
+- **AC10 — ruff is a dependency of the `pyforge-marshal` feature.**
+  - `[feature.pyforge-marshal.dependencies]` in `pixi.toml` declares `ruff = ">=0.16.9"`, the floor the other three
+    ruff sites declare, with a comment naming Story 95.1. No other ruff site, feature or environment changes.
+  - `pixi.lock` is regenerated with `pixi lock` (never `pixi add` or `pixi update`). It locks a ruff package for
+    `pyforge-marshal` on every platform the environment targets (linux-64, osx-arm64, win-64 at `3c85a29a64`).
+  - `pixi run --frozen -e pyforge-marshal ruff --version` exits 0 from a clean shell.
+  - The Auto Run Result records the version locked for `pyforge-marshal` beside the version `pyforge-guild` locks
+    (0.16.9 at `3c85a29a64`).
+  - `pixi run --frozen -e pyforge-guild llms-full-check` exits 0.
+- **AC11 — `environment.yaml` is regenerated in the same change.**
+  - `pixi project export conda-environment -e build 2>/dev/null > environment.yaml` is run after the lock, and the
+    file is committed with `pixi.toml` and `pixi.lock`.
+  - `yaml.safe_load` reads it.
+  - Its diff against `origin/main` is what the export wrote. Empty is expected, because `build` does not compose the
+    `pyforge-marshal` feature. Any other diff is recorded in the Spec Change Log.
+- **AC12 — The real-ruff tests fail, never skip, without ruff.**
+  - 83.15's `test_apply_ruff_check_fix_removes_safe_violations` and every real-ruff test of this story resolve ruff
+    through one helper: a `tests/unit/conftest.py` fixture, or a function both modules use.
+  - The helper takes the executable from `sysconfig.get_path("scripts")` of the running interpreter and puts that
+    directory first on `PATH` for the test (`monkeypatch.setenv`), so `PosixProcess` runs that ruff.
+  - When it is absent, the test fails through `pytest.fail` with a message naming `[feature.pyforge-marshal.dependencies]`
+    and `pixi install -e pyforge-marshal`.
+  - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` from a clean shell reports no skipped real-ruff test.
 
 ## Boundaries & Constraints
 
@@ -263,8 +332,13 @@ that no existing test module changes (AC6). Each fixture is a temporary worktree
 - Record a group whose ruff could not run, or exited outside its success codes, as failed (AD-8), and go on to the
   next group.
 - Reconcile every governed path the change touches on the memlogs of the Specs that govern it, then stamp those Specs
-  scoped: `spec-pyforge-marshal`, plus every co-governor `spec-surface-check` names (`spec-pyforge-core` co-governs
-  station `src/`) (AGENTS.md pre-PR item 5).
+  scoped, one `--spec` each, after `git add` and from a clean tree (AGENTS.md pre-PR item 5):
+  - `spec-pyforge-marshal`, and every co-governor `spec-surface-check` names (`spec-pyforge-core` co-governs station
+    `src/`);
+  - for `pixi.toml`, `pixi.lock` and `environment.yaml`, the seven Specs named under *The test environment*, whose
+    memlogs carry this story's co-governor note from its chain.
+- Change `pixi.toml` by hand in `[feature.pyforge-marshal.dependencies]` only, re-lock with `pixi lock`, and
+  regenerate `environment.yaml` from the export's stdout alone.
 
 **Never:**
 - Never pass `--unsafe-fixes`, and never name a file outside the story's change set, a directory or `.`.
@@ -272,6 +346,9 @@ that no existing test module changes (AC6). Each fixture is a temporary worktree
 - Never stage or commit a CFE-surface path from this pass.
 - Never edit `src/platform/pyproject.toml`, a `django-*` or `pyforge-*` table, `scripts/lint_types.py`,
   `scripts/platform-ci-local.sh` or any gate from this story. Steward owns those (Stories 93.1 and 95.1).
+- Never run `pixi add` or `pixi update`, never hand-edit `pixi.lock` or `environment.yaml`, and never change another
+  ruff site, feature or environment in `pixi.toml`. The one `pixi.toml` change is the ruling's.
+- Never let a real-ruff test skip on a missing ruff.
 - Never change a verify command, `MRS-GATE-015`'s rule, a finding code or the order of the pass and verify.
 
 ## I/O & Edge-Case Matrix
@@ -299,9 +376,12 @@ that no existing test module changes (AC6). Each fixture is a temporary worktree
 - Ledger key: `95-1-dispatch-applies-ruff-to-a-story-s-files-under-each-tree-s-own-config`.
 - Ledger status at mint: `backlog`.
 - Deps: none. AC2 uses a fixture table, so steward Story 93.1 need not have landed.
-- Surface: `[epic_surfaces]` `"95"` in `marshal-policy.toml` (the default surface and every Spec memlog).
+- Surface: `[epic_surfaces]` `"95"` in `marshal-policy.toml`. It holds the default surface (including `pixi.toml`,
+  `pixi.lock` and `environment.yaml`, which the ruling's environment change needs), `scripts/.spec-surface-baseline.json`
+  and every Spec memlog.
 - Related: steward Story 93.1 (the `django-*` tables and the `lint-types` gate over them), steward Story 95.1 (the
   `py314` targets), herald Story 37.1 and steward Story 91.1 (the refusals above).
+- Operator ruling 2026-10-11 "Fold into 95.1 (Recommended)": the environment change (AC10-AC12).
 
 ## Verification
 
@@ -313,25 +393,37 @@ that no existing test module changes (AC6). Each fixture is a temporary worktree
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `python scripts/spec_surface_reconcile.py` — expected: exit 0 after the memlog reconciles.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamps.
-- `PATH="$PWD/.pixi/envs/pyforge-guild/bin:$PATH" pixi run --frozen -e pyforge-marshal pytest
-  src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format_trees.py -q -rs` — expected: pass, with no
-  skipped test (the real-ruff tests ran).
-- The seven mutations of AC9 — expected: each fails its named test. Restore each.
-- `git diff origin/main -- src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py
-  src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit.py
+- `pixi run -e pyforge-guild pyforge-station-tests` — expected: exit 0. A `pixi.toml` or `pixi.lock` change fires
+  pyforge-core's suite, the testing kit's and every station's in CI (AGENTS.md pre-PR item 7).
+- `pixi run --frozen -e pyforge-marshal ruff --version` — expected: exit 0 from a clean shell (AC10).
+- `pixi run --frozen -e pyforge-marshal pytest src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py
+  src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format_trees.py -q -rs` — expected: pass from a
+  clean shell, with no skipped test (AC12).
+- `pixi project export conda-environment -e build 2>/dev/null > environment.yaml && git diff --exit-code
+  environment.yaml` — expected: exit 0 once the regenerated file is committed (AC11).
+- `pixi run --frozen -e pyforge-guild llms-full-check` — expected: exit 0 (AC10).
+- The nine mutations of AC9 — expected: each fails its named test. Restore each, re-lock and re-install after the
+  feature mutation.
+- `git diff origin/main -- src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit.py
   src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py
-  src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py` — expected: empty (AC6).
+  src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_environment_yaml.py` — expected: empty; and
+  `git diff origin/main -- src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py` — expected:
+  only 83.15's ruff precondition (AC6).
 
 ## Named, not fixed here
 
-- **ruff is not a dependency of the `pyforge-marshal` environment.** `pixi run --frozen -e pyforge-marshal bash -c
-  'command -v ruff'` prints nothing (checked 2026-10-11), so the station suite run from a clean shell, and CI's
-  `pyforge-station-tests.yml` marshal job, skip every real-ruff test, 83.15's included. The dispatch verify and
-  `pr-preflight` inherit the `pyforge-guild` environment's ruff. Declaring ruff in `[feature.pyforge-marshal.dependencies]`
-  changes `pixi.toml` and `pixi.lock`, and is a decision of its own.
-- **Two ruff binaries.** The pass runs the ruff on the supervisor's `PATH` (`pyforge-guild`), while
-  `platform-ci-local` runs `platform-ci-test`'s. Both resolve to 0.16.9 in `pixi.lock` today. A lock that moves one and
-  not the other could make the pass's format disagree with the gate's `--check`.
+- **Three ruff binaries.** Each one is used in a different place:
+  - the pass runs the ruff on the supervisor's `PATH` (`pyforge-guild`);
+  - `platform-ci-local` runs `platform-ci-test`'s;
+  - after AC10, the station's tests run `pyforge-marshal`'s.
+
+  The first two resolve to 0.16.9 in `pixi.lock` at `3c85a29a64`. The three sites share a floor, not a version, so a
+  lock that moves one and not the others could make the pass's format disagree with a gate's `--check`. AC10 records
+  the version `pyforge-marshal` locks; a registry that holds one ruff version is not this story's.
+- **The marshal package does not declare ruff.** The pass shells to `ruff`, but `[package.run-dependencies]` in
+  `src/shared/packages/pyforge-marshal/pixi.toml` and `pyproject.toml` do not change; the ruling names the feature.
+  An install of the package alone, with no ruff on `PATH`, gets a `ProcessError` for every group. Each group is then
+  journaled as failed (AD-8), and verify judges the story's files as written.
 - **`ruff.toml` and `.ruff.toml`.** No tracked tree uses one. A tree that adopts one instead of a `pyproject.toml`
   table is not a group root, so its files stay untouched until a story widens the walk.
 - **Findings with no safe fix still cost a verify-fix turn.** That covers E501 the formatter cannot shorten, RET504
