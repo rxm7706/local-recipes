@@ -23,6 +23,8 @@ from .fleet_inventory import FLEET_INVENTORY_TIME_LIMIT_SECONDS
 from .fleet_inventory import FleetInventoryError
 from .fleet_inventory import GhAuthTokenProvider
 from .fleet_inventory import run_fleet_inventory_sync
+from .fleet_project_items import load_project_numbers_from_config
+from .fleet_project_items import run_fleet_project_items_sync
 from .models import ComplianceJob
 from .models import FixProposal
 from .models import FleetRepo
@@ -158,6 +160,42 @@ def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
         raise
     else:
         return inventory_run_id
+
+
+@shared_task(
+    bind=True,
+    name="warden_fabric.run_fleet_project_items",
+    soft_time_limit=FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
+    time_limit=FLEET_INVENTORY_TIME_LIMIT_SECONDS,
+)
+def run_fleet_project_items(self, project_items_run_id: str, organisation: str) -> str:
+    """List the items of the designated github.com Projects — ids and org name only.
+
+    The project numbers are read from the gitignored config in the worker, never
+    carried in the message; the credential is Story 16.1's provider, once per run.
+    """
+    from pyforge.warden.fleet_github_graphql import (  # noqa: PLC0415
+        GitHubGraphQLProjectItemsClient,
+    )
+    from pyforge.warden.fleet_github_rest import FleetInventoryApiError  # noqa: PLC0415
+
+    try:
+        project_numbers = load_project_numbers_from_config()
+        # No ``token`` local: a logged traceback renders frame locals.
+        client = GitHubGraphQLProjectItemsClient(
+            token=GhAuthTokenProvider().token(),
+            timeout=FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS,
+        )
+        run_fleet_project_items_sync(
+            organisation=organisation,
+            project_numbers=project_numbers,
+            listing_client=client,
+        )
+    except (FleetInventoryError, FleetInventoryApiError):
+        logger.exception("fleet project items %s failed", project_items_run_id)
+        raise
+    else:
+        return project_items_run_id
 
 
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")
