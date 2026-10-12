@@ -310,6 +310,42 @@ Type / Effort / Deps: feature / M / S-93.1.
 
 ## Review Triage Log
 
+### 2026-10-12 — CI fix (implementer)
+- PR #2154 went red on `marshal-test`, `named-module-gates (marshal)` and `scripts-suite`. Both tests pass on
+  `origin/main` (`5beef7c9eb`) and fail on this branch, so this story's diff causes both. Neither was pre-existing.
+- **Root cause 1, marshal** (`test_dispatch_ruff_format_trees.py::test_ac2_portal_uses_py314_table`):
+  - This story moved the `django-fixture` table in marshal Story 95.1's test from `py312` to `py314` and renamed the test.
+  - At `py314`, `ruff format` rewrites the fixture's `except (ValueError, TypeError):` to `except ValueError,
+    TypeError:` (PEP 758), so marshal 95.1's AC2 assertion failed.
+  - The fixture is not a live portal table. Marshal 95.1 AC2 keeps it at `py312` so it differs from the
+    `pyforge-marshal` table (`py314`), and AC9 relies on that difference.
+  - This story's AC5 covers only 93.1's tests and the real tables, so it never required this change.
+  - Fix: restored the fixture to `py312` and the name to `test_ac2_portal_uses_py312_table`, as on `main`. Added a
+    two-line comment saying why the fixture stays `py312`.
+- **Root cause 2, scripts** (`tests/scripts/test_lint_types_gate.py::test_target_version_findings_name_the_drift`):
+  - `findings_for` is now an alias of `findings_for_pyforge`, which adds the AC3 `requires-python` check.
+  - The test's `bare.toml` has a `[project]` table without `requires-python`, so it now returns a third finding,
+    `missing [project] requires-python`, as AC3 requires.
+  - Fix: the expected list now includes that finding.
+- Surface:
+  - `test_dispatch_ruff_format_trees.py` is governed by `pyforge-marshal/spec-pyforge-marshal`. It got a memlog entry
+    (2026-10-12), `git add`, then one scoped stamp (`--write-baseline --spec pyforge-marshal/spec-pyforge-marshal`).
+  - That stamp also took in `pixi.toml` and `pyforge-core/tests/unit/test_flags.py`, which the memlog already names
+    (93.1 and 91.1).
+  - `tests/scripts/test_lint_types_gate.py` is allowlisted and has no governing Spec.
+- Gates (exit codes read from files):
+  - `pyforge-marshal-test` 0 (12468 passed);
+  - `coverage_gates_ci.py` (marshal, `--suites unit`) 0;
+  - `pyforge-doctor-scripts-test` (`pyforge-ci`) 0 (1446 passed);
+  - `pyforge-steward-test` 0 (2396 passed; the not-yet-clean ceiling failure on `main` did not occur on this base);
+  - `lint-types` 0; `target-version-check` 0; `spec-surface-check` 0; `platform-ci-local -- --test` 0 (all steps PASS).
+- `detectors-ci` exits 1 on one finding: `ledger-direction` says herald `38-1-…` is landed-but-unpromoted.
+  - Cause: the branch predates `main`'s promotion commit (`f1be3236b9`). The source is ok on `origin/main` (exit 0) and
+    reads the branch's stale herald ledger row (`backlog`).
+  - Not this story's diff. Merging `main` into the branch clears it.
+  - A `git merge-tree` preview shows conflicts only in the `spec-pyforge-steward` and `spec-pyforge-unifying-strategy`
+    memlogs, which can be resolved by union. `django-herald` is ruff-clean and format-clean at `py314` on `main`.
+
 ### 2026-10-11 — Review pass
 - verdicts: 9 findings — high 0, medium 1, low 0, false 5, maybe-false 0, reject 3
 - findings:

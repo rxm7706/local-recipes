@@ -42,7 +42,11 @@ def test_target_version_findings_name_the_drift(tmp_path: Path) -> None:
     assert len(out) == 2 and "py312" in out[0] and "3.12" in out[1]
     bare = tmp_path / "bare.toml"
     bare.write_text('[project]\nname = "x"\n', encoding="utf-8")
-    assert mod.findings_for(bare, (3, 14)) == ["no [tool.ruff] section", "no [tool.mypy] section"]
+    assert mod.findings_for(bare, (3, 14)) == [
+        "no [tool.ruff] section",
+        "no [tool.mypy] section",
+        "missing [project] requires-python",
+    ]
 
 
 def test_live_tree_targets_match_the_interpreter() -> None:
