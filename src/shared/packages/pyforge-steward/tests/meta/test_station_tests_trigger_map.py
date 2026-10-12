@@ -36,7 +36,9 @@ import functools
 import os
 import re
 import shlex
+import shutil
 import subprocess
+import tempfile
 import tomllib
 from collections import defaultdict
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -1092,7 +1094,7 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
         "the bmad-method source reads the suite roster and the pixi floor from the root",
     ),
     "DOCTOR_BOARD": (
-        (*_PLAN, "docs/dreams/**", "docs/governance/**", "docs/dashboard/**", "scripts/dashboard_watch.py"),
+        (*_PLAN, "docs/dreams/**", "docs/governance/**", "docs/dashboard/**"),
         "the board gatherers read every spec, PRD and dream and the dashboard generator under the root",
     ),
     "DOCTOR_CALLER_REACH": (
@@ -1393,3 +1395,408 @@ def without_trigger(workflow_text: str, glob: str) -> str:
     needle = f"      - '{glob}'\n"
     assert needle in head, f"mutation premise: {glob!r} is a pull_request path"
     return head.replace(needle, "", 1) + sep + tail
+
+# ---------------------------------------------------------------------------
+# Does the workflow fire? A fixture repository per representative path
+# ---------------------------------------------------------------------------
+
+OUTPUTS = ("core", "testing_kit", "atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
+STATIONS = OUTPUTS[2:]
+_WORKERS = 8
+
+
+def expand_roots(parts: tuple[str, ...]) -> list[tuple[str, ...]]:
+    """``src`` and ``src/shared/packages`` are enumerated, never one glob: each package is a trigger."""
+    if parts not in {("src",), ("src", "shared", "packages")}:
+        return [parts]
+    depth = len(parts) + 1
+    prefixes = sorted(
+        {
+            tuple(segs[:depth])
+            for path in tracked_files()
+            if (segs := path.split("/"))[: len(parts)] == list(parts) and len(segs) > depth
+        }
+    )
+    out: list[tuple[str, ...]] = []
+    for prefix in prefixes:
+        out.extend(expand_roots(("src", "shared", "packages")) if prefix == ("src", "shared") else [prefix])
+    return out
+
+
+@dataclass(frozen=True)
+class Target:
+    job: str
+    parts: tuple[str, ...]
+    sources: tuple[str, ...]
+    rep: str
+
+    @property
+    def read(self) -> str:
+        return "/".join(self.parts)
+
+
+@functools.cache
+def real_targets() -> tuple[Target, ...]:
+    out: list[Target] = []
+    for output in OUTPUTS:
+        for parts, sources in sorted(job_reads_with_handoffs(output).items()):
+            for expanded in expand_roots(parts):
+                rep = representative(expanded)
+                if rep is not None:
+                    out.append(Target(output, expanded, tuple(sorted(sources))[:2], rep))
+    return tuple(out)
+
+
+def _changes_script(workflow_text: str) -> str:
+    steps = workflow_document(workflow_text)["jobs"]["changes"]["steps"]
+    script = next(s["run"] for s in steps if "run" in s)
+    return script.replace("${{ github.event_name }}", "pull_request")
+
+
+def _git(cwd: Path, *args: str, stdin: bytes | None = None) -> str:
+    done = subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=cwd,
+        input=stdin,
+        check=True,
+        capture_output=True,
+    )
+    return done.stdout.decode().strip()
+
+
+def _quote(path: str) -> str:
+    return '"' + path.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def run_changes(workflow_text: str, paths: Iterable[str]) -> dict[str, dict[str, str]]:
+    """The ``changes`` step's own shell, run against one fixture diff per path.
+
+    The base is ``refs/remotes/origin/main`` (an empty commit); each path is a one-file commit on
+    top of it, selected by pointing ``HEAD`` at it, so a thousand diffs cost a thousand diffs and
+    not a thousand clones."""
+    ordered = sorted(set(paths))
+    script = _changes_script(workflow_text)
+    results: dict[str, dict[str, str]] = {}
+    with tempfile.TemporaryDirectory(prefix="station-trigger-map-") as tmp:
+        template = Path(tmp) / "template"
+        template.mkdir()
+        _git(template, "init", "-q")
+        base = _git(template, "commit-tree", _git(template, "hash-object", "-t", "tree", "/dev/null"), "-m", "base")
+        _git(template, "update-ref", BASE_REF, base)
+        stream = ["blob", "mark :1", "data 2", "x", ""]
+        for i, path in enumerate(ordered):
+            stream += [f"commit refs/heads/p{i}", "committer t <t@t> 0 +0000", "data 2", "c", f"from {base}"]
+            stream += [f"M 100644 :1 {_quote(path)}", ""]
+        _git(template, "fast-import", "--quiet", stdin=("\n".join(stream) + "\n").encode())
+        chunks = [list(enumerate(ordered))[k::_WORKERS] for k in range(_WORKERS)]
+
+        def work(k: int) -> dict[str, dict[str, str]]:
+            repo = Path(tmp) / f"w{k}"
+            shutil.copytree(template, repo)
+            out_file = repo / "gh-output"
+            env = {**os.environ, "GITHUB_BASE_REF": "main", "GITHUB_OUTPUT": str(out_file)}
+            done: dict[str, dict[str, str]] = {}
+            for i, path in chunks[k]:
+                _git(repo, "symbolic-ref", "HEAD", f"refs/heads/p{i}")
+                out_file.write_text("", encoding="utf-8")
+                subprocess.run(["bash", "-e", "-c", script], cwd=repo, env=env, check=True, capture_output=True)
+                lines = out_file.read_text(encoding="utf-8").splitlines()
+                done[path] = dict(line.split("=", 1) for line in lines if "=" in line)
+            return done
+
+        with ThreadPoolExecutor(max_workers=_WORKERS) as pool:
+            for part in pool.map(work, range(_WORKERS)):
+                results.update(part)
+    return results
+
+
+def fire_failures(workflow_text: str, targets: Sequence[Target]) -> list[str]:
+    """One message per (job, read) whose representative path does not fire the job, naming the half."""
+    outputs = run_changes(workflow_text, {t.rep for t in targets})
+    patterns = trigger_paths(workflow_text)
+    failures: list[str] = []
+    for t in targets:
+        who = f"{t.job}: read `{t.read}` (from {', '.join(t.sources)}); representative path `{t.rep}`"
+        if outputs[t.rep].get(t.job) != "true":
+            failures.append(f"{who}: the `changes` step left output `{t.job}` false")
+        if not preflight_ci.filter_matches(patterns, t.rep):
+            failures.append(f"{who}: on.pull_request.paths does not match it")
+    return failures
+
+
+def handoff_problems(
+    derived: Mapping[str, set[str]], declared: Mapping[str, Mapping[str, tuple[tuple[str, ...], str]]]
+) -> list[str]:
+    problems: list[str] = []
+    for job in sorted(set(derived) | set(declared)):
+        have, want = derived.get(job, set()), set(declared.get(job, {}))
+        problems.extend(
+            f"{job}: `{f}` hands the repo root to the code under test and is not in ROOT_HANDOFF_INPUTS"
+            for f in sorted(have - want)
+        )
+        problems.extend(
+            f"{job}: ROOT_HANDOFF_INPUTS names `{f}`, which hands no repo root to anything" for f in sorted(want - have)
+        )
+        for f, (globs, reason) in sorted(declared.get(job, {}).items()):
+            if not globs or not reason.strip():
+                problems.append(f"{job}: ROOT_HANDOFF_INPUTS[`{f}`] needs at least one glob and a reason")
+    return problems
+
+
+def derived_handoffs() -> dict[str, set[str]]:
+    return {output: set(r.handoffs) for output, r in real_derivation().items()}
+
+
+# ---------------------------------------------------------------------------
+# The tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def workflow_text() -> str:
+    return WORKFLOW.read_text(encoding="utf-8")
+
+
+def test_the_ten_jobs_are_read_from_the_workflow_not_listed(workflow_text: str) -> None:
+    jobs = load_jobs(workflow_text)
+    assert sorted(j.output for j in jobs) == sorted(OUTPUTS)
+    pixi = tomllib.loads(PIXI_TOML.read_text(encoding="utf-8"))
+    by_output = {j.output: j for j in jobs}
+    assert any(p.endswith("test_openteams_handoffs.py") for p in task_paths(pixi, by_output["atlas"]))
+    assert any(p.endswith("test_cli_tool_parity.py") for p in task_paths(pixi, by_output["mason"]))
+    assert "scripts/tests" in task_paths(pixi, by_output["atlas"])
+
+
+def test_every_job_but_the_kit_has_a_path_array(workflow_text: str) -> None:
+    assert sorted(workflow_arrays(workflow_text)) == sorted(set(OUTPUTS) - {"testing_kit"})
+    for output, entries in workflow_arrays(workflow_text).items():
+        assert entries, f"{output}_paths is empty"
+        assert len(entries) == len(set(entries)), f"{output}_paths repeats an entry"
+
+
+def test_the_pull_request_and_push_path_lists_are_identical(workflow_text: str) -> None:
+    assert trigger_paths(workflow_text, "pull_request") == trigger_paths(workflow_text, "push")
+
+
+def test_the_changes_script_is_valid_bash_and_the_workflow_is_valid_yaml(workflow_text: str, tmp_path: Path) -> None:
+    assert isinstance(workflow_document(workflow_text), dict)
+    script = tmp_path / "changes.sh"
+    script.write_text(_changes_script(workflow_text), encoding="utf-8")
+    done = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True, check=False)
+    assert done.returncode == 0, done.stderr
+
+
+# --- AC2: the derivation is not blind ---------------------------------------
+
+DERIVED_ROWS = {
+    "steward": [
+        "scripts/lint_types.py",
+        ".github/workflows/lint-types.yml",
+        "src/shared/packages/django-herald/pyproject.toml",
+        "src/shared/packages/django-steward",
+    ],
+    "herald": ["src/shared/packages/django-herald", "src/shared/packages/pyforge-steward/src"],
+    "atlas": ["src/platform/config/flags.json", "src/shared/packages/pyforge-scribe/src"],
+    "doctor": ["scripts/fleet_scan.py", "src/shared/packages/django-pyforge/src"],
+    "marshal": ["scripts/fleet_picture.py"],
+    "mason": ["scripts/cfe_rebuild_guard_check.py"],
+    "scribe": ["src/platform/db/changelog/changes"],
+    "warden": ["src/shared/packages/django-warden"],
+    "testing_kit": ["src/platform/config/flags.json"],
+}
+PLANNING_ROWS = {
+    "doctor": [
+        "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+    ],
+    "marshal": [
+        "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
+        ".claude/memory/MEMORY.md",
+    ],
+    "herald": ["_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md"],
+    "atlas": ["recipes"],
+}
+
+
+def _derived_covers(output: str, row: str, *, declared: bool) -> bool:
+    reads = job_reads_with_handoffs(output) if declared else real_derivation()[output].reads
+    want = tuple(row.split("/"))
+    return any(_covers(read, want) or _covers(want, read) for read in reads)
+
+
+@pytest.mark.parametrize(("output", "row"), [(o, r) for o, rows in DERIVED_ROWS.items() for r in rows])
+def test_the_derivation_finds_each_known_read(output: str, row: str) -> None:
+    assert _derived_covers(output, row, declared=False), f"{output}: the derivation lost the read of `{row}`"
+
+
+def test_the_derivation_finds_a_core_read_under_scripts() -> None:
+    assert any(read[0] == "scripts" for read in real_derivation()["core"].reads)
+
+
+@pytest.mark.parametrize(("output", "row"), [(o, r) for o, rows in PLANNING_ROWS.items() for r in rows])
+def test_planning_reads_are_derived_or_declared(output: str, row: str) -> None:
+    assert _derived_covers(output, row, declared=True), f"{output}: nothing reads or declares `{row}`"
+
+
+def test_the_steward_job_reads_every_suites_tests() -> None:
+    assert any(
+        read[-2:] == ("pyforge-*", "tests") for read in real_derivation()["steward"].reads
+    ), "steward's own reads lost src/shared/packages/pyforge-*/tests"
+
+
+# --- AC3: every read fires its job ------------------------------------------
+
+
+def test_every_read_and_declared_glob_fires_its_job(workflow_text: str) -> None:
+    targets = real_targets()
+    assert len(targets) > 300, f"only {len(targets)} targets: the derivation went blind"
+    failures = fire_failures(workflow_text, targets)
+    assert not failures, f"{len(failures)} reads do not fire their job:\n" + "\n".join(failures)
+
+
+# --- AC1: the portal packages -----------------------------------------------
+
+
+def test_every_django_package_fires_steward_and_its_own_station(workflow_text: str) -> None:
+    packages = sorted({p.split("/")[3] for p in tracked_files() if p.startswith(f"{PACKAGES}/django-")})
+    assert {f"django-{s}" for s in STATIONS} <= set(packages)
+    reps = {pkg: next(p for p in tracked_files() if p.startswith(f"{PACKAGES}/{pkg}/")) for pkg in packages}
+    outputs = run_changes(workflow_text, reps.values())
+    patterns = trigger_paths(workflow_text)
+    for pkg, rep in reps.items():
+        assert outputs[rep]["steward"] == "true", f"{rep} does not fire steward"
+        assert preflight_ci.filter_matches(patterns, rep), f"on.pull_request.paths does not match {rep}"
+        station = pkg.removeprefix("django-")
+        if station in STATIONS:
+            assert outputs[rep][station] == "true", f"{rep} does not fire {station}"
+
+
+# --- AC4: root handoffs are declared -----------------------------------------
+
+
+def test_root_handoffs_are_declared_exactly() -> None:
+    assert handoff_problems(derived_handoffs(), ROOT_HANDOFF_INPUTS) == []
+
+
+def test_the_handoff_floor() -> None:
+    derived = derived_handoffs()
+    pkg = f"{PACKAGES}/pyforge-doctor/tests/unit"
+    assert {f"{pkg}/test_sources_chain_dreams_hygiene.py", f"{pkg}/test_sources_board.py"} <= derived["doctor"]
+    assert f"{PACKAGES}/pyforge-marshal/tests/meta/test_tea_architecture_generator.py" in derived["marshal"]
+
+
+def _declared_globs(job: str) -> list[str]:
+    return [g for globs, _ in ROOT_HANDOFF_INPUTS[job].values() for g in globs]
+
+
+@pytest.mark.parametrize(
+    ("job", "sample"),
+    [
+        ("doctor", "docs/dreams/a-dream.md"),
+        ("doctor", "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md"),
+        ("doctor", "archive/_bmad-output/x.md"),
+        ("marshal", "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md"),
+        ("marshal", f"{PACKAGES}/pyforge-atlas/tests/unit/test_x.py"),
+    ],
+)
+def test_the_minimum_declarations_are_present(job: str, sample: str) -> None:
+    assert preflight_ci.filter_matches(_declared_globs(job), sample), f"{job} declares nothing that matches {sample}"
+
+
+def test_every_declared_glob_has_a_tracked_representative() -> None:
+    for job, files in ROOT_HANDOFF_INPUTS.items():
+        for file, (globs, _reason) in files.items():
+            for glob in globs:
+                assert representative(glob_parts(glob)) is not None, f"{job}: `{file}` declares `{glob}`, which matches nothing tracked"
+
+
+# --- AC5: mutations, each on a scratch copy ----------------------------------
+
+
+def _targets(job: str, read: str) -> list[Target]:
+    found = [t for t in real_targets() if t.job == job and t.read == read]
+    assert found, f"mutation premise: {job} reads `{read}`"
+    return found
+
+
+def test_dropping_lint_types_from_steward_fails_the_meta_test(workflow_text: str) -> None:
+    mutant = without_array_entry(workflow_text, "steward", "scripts/lint_types.py")
+    failures = fire_failures(mutant, _targets("steward", "scripts/lint_types.py"))
+    assert failures and all(f.startswith("steward: read `scripts/lint_types.py`") for f in failures)
+    assert "left output `steward` false" in failures[0]
+
+
+def test_dropping_django_herald_from_heralds_list_fails_the_meta_test(workflow_text: str) -> None:
+    mutant = without_array_entry(workflow_text, "herald", "src/shared/packages/django-herald")
+    failures = fire_failures(mutant, _targets("herald", "src/shared/packages/django-herald"))
+    assert failures and all(f.startswith("herald: read `src/shared/packages/django-herald`") for f in failures)
+
+
+def test_dropping_the_django_glob_from_the_trigger_paths_fails_the_paths_half(workflow_text: str) -> None:
+    mutant = without_trigger(workflow_text, "src/shared/packages/django-*/**")
+    failures = fire_failures(mutant, _targets("steward", "src/shared/packages/django-*"))
+    assert failures and all("on.pull_request.paths does not match it" in f for f in failures)
+    assert failures[0].startswith("steward: read `src/shared/packages/django-*`")
+
+
+def test_dropping_docs_dreams_from_doctors_list_fails_the_meta_test(workflow_text: str) -> None:
+    mutant = without_array_entry(workflow_text, "doctor", "docs/dreams")
+    failures = fire_failures(mutant, _targets("doctor", "docs/dreams"))
+    assert failures and all(f.startswith("doctor: read `docs/dreams`") for f in failures)
+
+
+def test_dropping_the_planning_glob_from_marshals_list_fails_the_meta_test(workflow_text: str) -> None:
+    glob = "_bmad-output/projects/*/planning-artifacts/**"
+    mutant = without_array_entry(workflow_text, "marshal", to_pathspec(glob_parts(glob)))
+    failures = fire_failures(mutant, _targets("marshal", "_bmad-output/projects/*/planning-artifacts"))
+    assert failures and all(f.startswith("marshal: read `_bmad-output/projects/*/planning-artifacts`") for f in failures)
+
+
+def test_removing_a_handoff_file_from_its_declaration_fails_the_meta_test() -> None:
+    victim = f"{PACKAGES}/pyforge-marshal/tests/meta/test_tea_architecture_generator.py"
+    declared = {job: dict(files) for job, files in ROOT_HANDOFF_INPUTS.items()}
+    del declared["marshal"][victim]
+    assert handoff_problems(derived_handoffs(), declared) == [
+        f"marshal: `{victim}` hands the repo root to the code under test and is not in ROOT_HANDOFF_INPUTS"
+    ]
+
+
+def test_a_stale_handoff_declaration_fails_the_meta_test() -> None:
+    declared = {job: dict(files) for job, files in ROOT_HANDOFF_INPUTS.items()}
+    declared["warden"]["src/shared/packages/pyforge-warden/tests/unit/test_gone.py"] = (("docs/**",), "stale")
+    problems = handoff_problems(derived_handoffs(), declared)
+    assert problems == [
+        "warden: ROOT_HANDOFF_INPUTS names `src/shared/packages/pyforge-warden/tests/unit/test_gone.py`, "
+        "which hands no repo root to anything"
+    ]
+
+
+# --- AC6: no job loses a path -------------------------------------------------
+
+ALL_JOBS = set(OUTPUTS)
+PRESERVED: dict[str, set[str]] = {
+    "src/shared/packages/pyforge-core/src/x.py": ALL_JOBS,
+    "src/shared/packages/pyforge-testing-kit/src/x.py": ALL_JOBS,
+    "pixi.toml": ALL_JOBS,
+    "pixi.lock": ALL_JOBS,
+    WORKFLOW_REL: ALL_JOBS,
+    "presentations/deck/x.md": {"herald"},
+    "docs-site/x.md": {"herald"},
+    "scripts/tests/test_x.py": {"atlas", "core"},
+    "tests/packaging/test_openteams_handoffs.py": {"atlas", "core"},
+    "scripts/openteams_identity_dashboards.py": {"atlas", "core"},
+    "scripts/conda-forge-packaging-inventory-operations_x.py": {"atlas", "core"},
+    "src/shared/packages/django-pyforge/src/x.py": {"testing_kit"},
+    "src/platform/config/flags.json": {"testing_kit"},
+    **{f"src/shared/packages/pyforge-{s}/src/x.py": {s, "core"} for s in STATIONS},
+}
+
+
+def test_no_trigger_the_workflow_had_before_is_lost(workflow_text: str) -> None:
+    outputs = run_changes(workflow_text, PRESERVED)
+    patterns = trigger_paths(workflow_text)
+    lost = [
+        f"{path}: lost output `{job}`" for path, jobs in PRESERVED.items() for job in sorted(jobs) if outputs[path].get(job) != "true"
+    ]
+    lost += [f"{path}: no longer matches on.pull_request.paths" for path in PRESERVED if not preflight_ci.filter_matches(patterns, path)]
+    assert not lost, "\n".join(lost)
