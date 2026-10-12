@@ -3151,7 +3151,7 @@ So that a repeat never lands again, whoever wrote it.
 **When** `detectors-ci` runs on a tree with a tracked story spec that repeats a frontmatter key, at any depth or in either quoting
 **Then** the new `frontmatter-duplicate-keys` source fails once per repeat, naming the file, the key (a dotted path when nested), both lines and both values, with marshal Story 96.1's remedy; `detectors-ci` exits 1; a block it cannot bound or load is one WARN naming the file; a clean tree gives the OK row
 **And** an untracked spec, a `SPEC.md` and a file outside `planning-artifacts/specs/` are not read; after marshal 96.1 the live tree, `detectors-ci` and `docs-currency-check` exit 0; every existing source's verdict is unchanged; removing the check, dropping the registry row, or reporting a repeat as WARN each fails a test (mutation)
-**Status:** backlog (marshal 96.1 landed on `main` 2026-10-11; flipped from `blocked` under the operator's 2026-10-11 pre-authorization "authorized - flip 42.1 once 96.1 lands")
+**Status:** done (marshal 96.1 landed on `main` 2026-10-11; flipped from `blocked` under the operator's 2026-10-11 pre-authorization "authorized - flip 42.1 once 96.1 lands")
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
