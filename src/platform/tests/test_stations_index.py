@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -21,12 +22,12 @@ from django.test.utils import CaptureQueriesContext
 from django_pyforge.context_processors import is_switcher_tile
 from django_pyforge.discovery import iter_portal_configs
 from django_pyforge.events.constants import STATION_TOKENS
-from django_pyforge.roles import roles_from_request
 from django_pyforge.flags import configure_file_provider
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import IDP_TOKEN_ROLES_SESSION_KEY
 from django_pyforge.roles import prefixed_station
 from django_pyforge.roles import prefixed_tenant
+from django_pyforge.roles import roles_from_request
 from openfeature import api
 from wagtail.models import Page
 
@@ -221,7 +222,7 @@ def test_flag_on_admin_lists_switcher_tiles(
     _configure_flags(flag_on_tree)
     _save_session_roles(client, ["pyforge:admin"])
     admin_request = RequestFactory().get("/stations/")
-    admin_request.idp_roles = ["pyforge:admin"]
+    admin_request.idp_roles = ["pyforge:admin"]  # type: ignore[attr-defined]
     roles = roles_from_request(admin_request)
     expected_names = sorted(
         portal.station_name
@@ -238,8 +239,10 @@ def test_flag_on_admin_lists_switcher_tiles(
     for name in expected_names:
         assert name in body
     assert body.count("mounted") == len(expected_names)
-    positions = [body.index(name) for name in expected_names]
-    assert positions == sorted(positions)
+    tbody_match = re.search(r"<tbody>(.*?)</tbody>", body, re.DOTALL)
+    assert tbody_match is not None
+    listed = re.findall(r"<tr>\s*<td>([^<]+)</td>", tbody_match.group(1))
+    assert listed == expected_names
     _assert_no_forbidden_fragments(response.content)
 
 
@@ -310,8 +313,10 @@ def _build_herald_absent_index_child(flagd_path: str) -> str:
     return textwrap.dedent(
         f"""
         import django
+        import html
         import json
         import logging
+        import re
         import sys
         from pathlib import Path
         from django.test import Client
@@ -366,10 +371,13 @@ def _build_herald_absent_index_child(flagd_path: str) -> str:
         body = first.content.decode()
         reason = optional_components.absent_reason("herald")
         assert reason is not None
-        assert reason in body
-        assert "absent" in body
-        assert '<a href="/stations/herald/">' not in body
-        assert "herald" in body
+        assert reason in html.unescape(body)
+        tbody_match = re.search(r"<tbody>(.*?)</tbody>", body, re.DOTALL)
+        assert tbody_match is not None
+        tbody = tbody_match.group(1)
+        assert "absent" in tbody
+        assert '<a href="/stations/herald/">' not in tbody
+        assert "herald" in tbody
         for station in (
             "atlas", "doctor", "marshal", "mason", "scribe", "steward", "warden"
         ):
