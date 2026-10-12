@@ -17,4 +17,20 @@
     <button type="submit">Start audit</button>
   </form>
   <div id="warden-audit-panel"></div>
+  <form
+    id="warden-fleet-inventory-start"
+    method="post"
+    hx-post="/stations/warden/fleet/inventory/start/"
+    hx-target="#warden-fleet-inventory-panel"
+    hx-swap="innerHTML"
+  >
+    {% csrf_token %}
+    <button type="submit" {% if not fleet_inventory_enabled %}disabled{% endif %}>
+      Refresh fleet inventory
+    </button>
+  </form>
+  {% if not fleet_inventory_enabled %}
+    <p>Fleet inventory is disabled (flag off).</p>
+  {% endif %}
+  <div id="warden-fleet-inventory-panel"></div>
 {% endblock content %}

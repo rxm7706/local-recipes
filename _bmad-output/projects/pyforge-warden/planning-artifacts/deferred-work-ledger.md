@@ -867,3 +867,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium (unverified)
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-warden-16-1: Fleet inventory never retires FleetRepo rows for repos deleted or renamed upstream; Story 16.2 still clones them.
+
+- source_spec: `planning-artifacts/specs/spec-16-1-warden-inventories-a-ghe-organisation-s-repos.md`
+  summary: Fleet inventory never retires FleetRepo rows for repos deleted or renamed upstream; Story 16.2 still clones them.
+  evidence: persist_fleet_repos only upserts each listed repo (update_or_create on organisation + full_name); a row whose repo left the listing keeps its last values, and Story 16.2's fleet run iterates every FleetRepo row of the organisation. Retiring or flagging stale rows changes 16.2's fleet-run behaviour, so it needs its own story.
+  location: src/shared/packages/django-warden/src/django_warden_fabric/fleet_inventory.py:266
+  origin: review send-back — independent review iteration 2, finding N6b (`[minor]` `[defer]`), hand-recorded by the iteration-2 fix pass
+  severity: medium
+  promoted: 2026-10-11 — recorded by hand from the story spec's Review Triage Log
+  status: open
