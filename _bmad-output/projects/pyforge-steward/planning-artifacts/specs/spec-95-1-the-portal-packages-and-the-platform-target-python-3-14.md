@@ -2,7 +2,8 @@
 title: '95.1: The portal packages and the platform target Python 3.14'
 type: 'feature'
 created: '2026-10-11'
-status: 'in-review'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'b4722aeba9e0f476c129d057c150fb0c4fd25294'
 flag-exempt: detector-or-gate   # the story changes target-version-check; a gated gate reports a silent green
 review_loop_iteration: 0
@@ -307,6 +308,47 @@ Type / Effort / Deps: feature / M / S-93.1.
 - `pixi run --frozen -e pyforge-guild pyforge-station-tests` — expected: pass (AC6).
 - `python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC8).
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
+
+## Review Triage Log
+
+### 2026-10-11 — Review pass
+- verdicts: 9 findings — high 0, medium 1, low 0, false 5, maybe-false 0, reject 3
+- findings:
+  - `[false]` `[reject]` Extra `mcp_dual_era.py` format beyond PEP 758 — reverted the collapsed `any(...)` line; portal diff is except-only again.
+  - `[false]` `[reject]` Missing `environment.yaml` in diff — verified export: no diff vs tracked file (exit 0).
+  - `[false]` `[reject]` AC8 scoped stamps missing — dispatch contract: reconcile via memlogs + `spec_surface_reconcile.py` only; no producer `--write-baseline`.
+  - `[false]` `[reject]` Ledger not updated in diff — ledger sync is operator/harness after merge; story key unchanged at mint.
+  - `[false]` `[reject]` `requires-python >=3.14` vs pin patch floor — AC3 requires minor match; patch segment is interpreter runtime, not package metadata floor.
+  - `[medium]` `[patch]` Ingest README too terse — kept AC5 wording (`python-agent-platform` without stale 3.12 claim); dlt note removed per AC5.
+  - `[false]` `[defer]` RTD yaml still present — AC5 only retargets to 3.14; deletion explicitly rejected in story.
+  - `[false]` `[reject]` TYPE_CHECKING pytest risk — `platform-ci-local --test` passed (1256 tests).
+  - `[false]` `[reject]` Live-tree gate test not extended — `test_live_tree_targets_match_the_interpreter` still calls `main()` on live tree; expanded checker covered by new unit tests.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Raised nine django-* and `src/platform` lint/type targets to Python 3.14, extended `target_version_check.py` to three surfaces (including `requires-python` floors), applied thirteen portal PEP 758 rewrites and platform py314 ruff fixes, refreshed stale 3.12 config/docs, and added AC7 surface tests.
+
+Files changed (high level): `scripts/target_version_check.py`, `scripts/lint_types.py`, `pixi.toml`, `AGENTS.md`, nine django `pyproject.toml`, thirteen portal source sites, `src/platform/*` (pyproject, residue config, ruff-driven code), steward/marshal tests, generated `docs/how-to/pixi-tasks.md` and `docs/map.yaml`, spec memlogs on six governors.
+
+Review: one medium finding (README) accepted as AC5-compliant; one patch reverted non-PEP758 format in `mcp_dual_era.py`; remainder rejected/false.
+
+Follow-up review recommendation: false
+
+Verification:
+- `python scripts/target_version_check.py` — exit 0
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2350 passed
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — PASS (ruff, format, mypy, 1256 pytest)
+- `python scripts/spec_surface_reconcile.py` — exit 0
+- `pixi run --frozen -e pyforge-guild docs-pixi-tasks -- --check` — exit 0
+- `environment.yaml` export — no diff
+- AC5 grep on portal/platform paths — no matches
+
+Memlogs (Story 95.1 surface reconcile 2026-10-11): `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`, `spec-pyforge-scribe`, `spec-pyforge-doctor`, `spec-pyforge-marshal`, `spec-pyforge-core` — paths named in each `.memlog.md` event entry.
+
+Residual risk: `requires-python = ">=3.14"` documents minor-only floor; runtime is 3.14.7 via pixi. TYPE_CHECKING import moves rely on 3.14 lazy annotations (platform suite is the proof).
 
 ## Spec Change Log
 
