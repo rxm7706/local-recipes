@@ -55,12 +55,18 @@ NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = NOT_YET_CLEAN
 RUFF_VERBS = frozenset({"ruff", "ruff-format"})
 
 
-def pyforge_packages(packages_dir: Path = PACKAGES_DIR) -> list[Path]:
-    return sorted(p for p in packages_dir.glob("pyforge-*") if (p / "pyproject.toml").is_file())
+def _packages_dir(packages_dir: Path | None) -> Path:
+    return PACKAGES_DIR if packages_dir is None else packages_dir
 
 
-def django_packages(packages_dir: Path = PACKAGES_DIR) -> list[Path]:
-    return sorted(p for p in packages_dir.glob("django-*") if (p / "pyproject.toml").is_file())
+def pyforge_packages(packages_dir: Path | None = None) -> list[Path]:
+    root = _packages_dir(packages_dir)
+    return sorted(p for p in root.glob("pyforge-*") if (p / "pyproject.toml").is_file())
+
+
+def django_packages(packages_dir: Path | None = None) -> list[Path]:
+    root = _packages_dir(packages_dir)
+    return sorted(p for p in root.glob("django-*") if (p / "pyproject.toml").is_file())
 
 
 def packages() -> list[Path]:

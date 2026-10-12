@@ -7,7 +7,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[5]
+ROOT = Path(__file__).resolve().parents[6]
 PACKAGES = ROOT / "src" / "shared" / "packages"
 SCRIPTS = ROOT / "scripts"
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[5]
+ROOT = Path(__file__).resolve().parents[6]
 SCRIPTS = ROOT / "scripts"
 RUFF_TABLE = """
 [tool.ruff]
@@ -69,7 +69,7 @@ _PYFORGE_TEN = (
 
 def _seed_tree(tmp_path: Path) -> Path:
     packages = tmp_path / "packages"
-    packages.mkdir()
+    packages.mkdir(parents=True, exist_ok=True)
     for name in _PYFORGE_TEN:
         _minimal_pyforge(name, packages)
     for station in ("atlas", "doctor", "herald", "marshal", "mason", "pyforge", "scribe", "steward", "warden"):
@@ -120,7 +120,7 @@ def test_not_yet_clean_listed_clean_fails_ratchet(lt, monkeypatch: pytest.Monkey
         "NOT_YET_CLEAN",
         {"django-herald": frozenset({"ruff"})},
     )
-    monkeypatch.setattr(lt, "_run", lambda _a, _c: 0)
+    monkeypatch.setattr(lt, "_run", lambda _argv, _cwd: 0)
     assert lt.main(["ruff"]) == 1
     assert "remove NOT_YET_CLEAN entry" in capsys.readouterr().out
 
@@ -146,37 +146,40 @@ def test_not_yet_clean_invalid_entry_could_not_run(lt, monkeypatch: pytest.Monke
     assert lt.main(["ruff"]) == 2
 
 
-def test_missing_ruff_table_is_a_finding(lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_missing_ruff_table_is_a_finding(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Mutation: skip missing-table packages — this test fails."""
-    packages_dir = _seed_tree(tmp_path)
-    _minimal_django("django-herald", packages_dir, with_ruff=False)
-    monkeypatch.setattr(lt, "PACKAGES_DIR", packages_dir)
-    monkeypatch.setattr(lt, "NOT_YET_CLEAN", {})
-    monkeypatch.setattr(lt, "_run", lambda _a, _c: 0)
-    assert lt.main(["ruff"]) == 1
+    mod = _load_lint_types()
+    packages_dir = _seed_tree(tmp_path / "missing-table")
+    (packages_dir / "django-herald" / "pyproject.toml").write_text("[project]\nname = \"x\"\n", encoding="utf-8")
+    monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
+    monkeypatch.setattr(mod, "NOT_YET_CLEAN", {})
+    monkeypatch.setattr(mod, "_run", lambda _argv, _cwd: 0)
+    assert mod.main(["ruff"]) == 1
 
 
-def test_pyforge_count_does_not_include_django(lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_pyforge_count_does_not_include_django(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Mutation: count django-* toward the ten pyforge packages — this test fails."""
-    packages_dir = tmp_path / "packages"
+    mod = _load_lint_types()
+    packages_dir = tmp_path / "pyforge-count"
     packages_dir.mkdir()
     for i in range(9):
         _minimal_pyforge(f"pyforge-st{i}", packages_dir)
     for station in ("atlas", "doctor", "herald", "marshal", "mason", "pyforge", "scribe", "steward", "warden"):
         _minimal_django(f"django-{station}", packages_dir)
-    monkeypatch.setattr(lt, "PACKAGES_DIR", packages_dir)
-    assert lt.main(["ruff"]) == 2
+    monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
+    assert mod.main(["ruff"]) == 2
 
 
-def test_fewer_than_nine_django_packages_could_not_run(lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_fewer_than_nine_django_packages_could_not_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Mutation: drop django-* from the glob — this test fails."""
-    packages_dir = tmp_path / "packages"
+    mod = _load_lint_types()
+    packages_dir = tmp_path / "django-count"
     packages_dir.mkdir()
-    for station in ("atlas", "doctor", "herald", "marshal", "mason", "pyforge", "scribe", "steward", "warden", "core"):
-        _minimal_pyforge(f"pyforge-{station}" if station != "core" else "pyforge-core", packages_dir)
+    for name in _PYFORGE_TEN:
+        _minimal_pyforge(name, packages_dir)
     _minimal_django("django-herald", packages_dir)
-    monkeypatch.setattr(lt, "PACKAGES_DIR", packages_dir)
-    assert lt.main(["ruff"]) == 2
+    monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
+    assert mod.main(["ruff"]) == 2
 
 
 def test_ruff_format_fix_skips_listed_package(lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
