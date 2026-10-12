@@ -6125,7 +6125,7 @@ So that a verdict is never about an env the lock has left behind.
 **When** a run starts, with any set of stages
 **Then** after it takes the lock and before any service or stage starts, it runs `pixi install --frozen --manifest-path "$ROOT/pixi.toml" -e <env>` once for each env its stages use (`test`: `platform-ci-test`, `platform-dev`; `images`: none; `container`: `platform-dev`; `promotion`: `platform-ci-test`, `pyforge-warden`), with the lock's descriptor closed and each install's output in a log under the work dir. For each env it prints `env <name>: installed`, `synced` or `current`, judged from pixi's own `conda-meta/pixi` record before and after, and adds the same as an `INFO` row to the summary
 **And** a failed install exits 2, naming the env and pixi's exit code and showing the tail of its log, before any service starts or stage runs. The script calls `pixi` only as `pixi install --frozen`, and a test reads it to prove that. A new Docker-free test runs the real script with a recording `pixi` stand-in and proves each of these, and it fails when the old `-x ... ||` guard is restored (mutation). Stories 63.7's and 89.1's tests pass, with only their shared helper gaining that stand-in. `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-steward` memlog reconciles every changed governed path before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
 
