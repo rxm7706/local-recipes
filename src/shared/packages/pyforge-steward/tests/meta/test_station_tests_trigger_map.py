@@ -1,0 +1,780 @@
+"""Story 98.1 (spec-pyforge-steward CAP-159): station tests run when what they read changes.
+
+``.github/workflows/pyforge-station-tests.yml`` gates each of its ten suite jobs on a
+literal list of paths (one array per job in the ``changes`` step, plus the identical
+``on.pull_request.paths`` / ``on.push.paths`` lists). Before this story the lists named each
+suite's own package and a short shared surface, while the suites read files far outside
+both -- a change to one of those files ran no suite that reads it, and a break landed on
+``main`` unseen (herald Story 38.1 changed ``scripts/lint_types.py`` and ``django-herald``;
+steward's ``test_lint_types_django_tables.py`` went red on ``main`` with no job to catch it).
+
+This meta-test makes the lists derived, not remembered:
+
+* it reads the ten jobs from the workflow's ``jobs:`` and their pixi tasks from ``pixi.toml``
+  (never a hand list), and derives what each job's tests read by static analysis of the
+  tests themselves (``derive_reads``): ``Path(__file__)``-anchored expressions resolved
+  to repository paths, and string literals that name a git-tracked path;
+* a test that hands the bare repository root to the code under test reads whatever that code
+  reads, which a scan of the test cannot see; those files are derived too and each one's
+  inputs are declared in ``ROOT_HANDOFF_INPUTS`` (the derived set must equal the declared
+  keys, so a new live-tree test fails until it is declared and a stale declaration fails too);
+* for every read, a fixture repository changes one tracked representative path and the
+  workflow's own ``changes`` script must set the job's output ``true``, and
+  ``on.pull_request.paths`` must match the path under GitHub's glob rules.
+
+No read is exempt (operator ruling 2026-10-12, "Trigger on planning too"): a read the filter
+should not carry is removed from the test that makes it. The derivation is static, so a read
+built from a value it cannot resolve is not derived; the non-vacuity rows below fail if the
+derivation goes blind, and the mutation tests prove each half of the check fires.
+"""
+
+from __future__ import annotations
+
+import ast
+import fnmatch
+import functools
+import os
+import re
+import shlex
+import subprocess
+import tomllib
+from collections import defaultdict
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import pytest
+import yaml
+
+from pyforge.steward import preflight_ci
+
+# tests/meta -> tests -> pyforge-steward -> packages -> shared -> src -> repo root
+REPO_ROOT = Path(__file__).resolve().parents[6]
+WORKFLOW_REL = ".github/workflows/pyforge-station-tests.yml"
+WORKFLOW = REPO_ROOT / WORKFLOW_REL
+PIXI_TOML = REPO_ROOT / "pixi.toml"
+PACKAGES = "src/shared/packages"
+BASE_REF = "refs/remotes/origin/main"
+WILD = "*"
+
+_GATE = re.compile(r"needs\.changes\.outputs\.(\w+)\s*==\s*'true'")
+_PIXI_RUN = re.compile(r"pixi run --frozen -e (\S+) (\S+)")
+
+# ---------------------------------------------------------------------------
+# The tracked tree
+# ---------------------------------------------------------------------------
+
+
+@functools.cache
+def tracked_files() -> tuple[str, ...]:
+    out = subprocess.run(
+        ["git", "ls-files", "-z"], cwd=REPO_ROOT, check=True, capture_output=True, text=True
+    ).stdout
+    return tuple(sorted(p for p in out.split("\0") if p and (REPO_ROOT / p).exists()))
+
+
+@functools.cache
+def _tracked_set() -> frozenset[str]:
+    return frozenset(tracked_files())
+
+
+@functools.cache
+def _tracked_dirs() -> frozenset[str]:
+    dirs: set[str] = set()
+    for path in tracked_files():
+        parts = path.split("/")
+        for i in range(1, len(parts)):
+            dirs.add("/".join(parts[:i]))
+    return frozenset(dirs)
+
+
+def _segment_match(pattern: str, segment: str) -> bool:
+    return pattern == WILD or fnmatch.fnmatchcase(segment, pattern)
+
+
+def representative(parts: Sequence[str]) -> str | None:
+    """The first tracked file at or under ``parts`` (a ``*`` segment matches any one segment)."""
+    if not any(p == WILD for p in parts):
+        joined = "/".join(parts)
+        if joined in _tracked_set():
+            return joined
+        if joined in _tracked_dirs():
+            prefix = joined + "/"
+            return next(p for p in tracked_files() if p.startswith(prefix))
+        return None
+    n = len(parts)
+    for path in tracked_files():
+        segs = path.split("/")
+        if len(segs) >= n and all(_segment_match(p, s) for p, s in zip(parts, segs, strict=False)):
+            return path
+    return None
+
+
+# ---------------------------------------------------------------------------
+# What a test reads: a small static evaluator over the test's AST
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class V:
+    """A path. ``rooted``: repo-relative, resolved from ``__file__``; else a relative literal."""
+
+    parts: tuple[str, ...]
+    rooted: bool = True
+
+
+@dataclass(frozen=True)
+class Modref:
+    dotted: str
+
+
+@functools.cache
+def _module_index() -> Mapping[str, str]:
+    """dotted module name -> repo-relative file, for every ``src/shared/packages/*/src`` module."""
+    index: dict[str, str] = {}
+    pattern = re.compile(rf"^{re.escape(PACKAGES)}/[^/]+/src/(.+)\.py$")
+    for path in tracked_files():
+        m = pattern.match(path)
+        if not m:
+            continue
+        dotted = m.group(1).replace("/", ".")
+        dotted = dotted.removesuffix(".__init__")
+        index.setdefault(dotted, path)
+    return index
+
+
+@functools.cache
+def _module_prefixes() -> frozenset[str]:
+    prefixes: set[str] = set()
+    for dotted in _module_index():
+        parts = dotted.split(".")
+        for i in range(1, len(parts) + 1):
+            prefixes.add(".".join(parts[:i]))
+    return frozenset(prefixes)
+
+
+def _is_fixture(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    for dec in node.decorator_list:
+        target = dec.func if isinstance(dec, ast.Call) else dec
+        name = target.attr if isinstance(target, ast.Attribute) else getattr(target, "id", "")
+        if name == "fixture":
+            return True
+    return False
+
+
+def _split_segments(text: str) -> list[str]:
+    return [s for s in text.split("/") if s not in ("", ".")]
+
+
+def _extend(base: V, segments: Iterable[str]) -> V | None:
+    parts = list(base.parts)
+    for seg in segments:
+        if seg == "..":
+            if not parts:
+                return None
+            parts.pop()
+        else:
+            parts.append(seg)
+    return V(tuple(parts), base.rooted)
+
+
+class Module:
+    """One scanned Python file: its module-level environment, fixtures and zero-argument helpers."""
+
+    def __init__(self, scanner: Scanner, rel: str, tree: ast.Module) -> None:
+        self.scanner = scanner
+        self.rel = rel
+        self.parts = tuple(rel.split("/"))
+        self.tree = tree
+        self.env: dict[str, object] = {}
+        self.funcs: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
+        self.path_names: set[str] = {"Path", "PurePath", "PosixPath"}
+        self.fixtures: dict[str, object] = {}
+        self._depth = 0
+
+
+class Scanner:
+    """Collects the reads of every Python file handed to ``scan``."""
+
+    def __init__(self, package_dir: str | None) -> None:
+        self.package_dir = package_dir
+        self.modules: dict[str, Module] = {}
+        self.reads: dict[tuple[str, ...], set[str]] = defaultdict(set)
+        self.handoffs: set[str] = set()
+        self._loading: set[str] = set()
+
+    # -- module loading ---------------------------------------------------
+
+    def module(self, rel: str) -> Module | None:
+        if rel in self.modules:
+            return self.modules[rel]
+        if rel in self._loading or rel not in _tracked_set():
+            return None
+        try:
+            tree = ast.parse((REPO_ROOT / rel).read_text(encoding="utf-8"))
+        except (SyntaxError, UnicodeDecodeError, ValueError):
+            return None
+        self._loading.add(rel)
+        mod = Module(self, rel, tree)
+        self.modules[rel] = mod
+        self._prepare(mod)
+        self._loading.discard(rel)
+        return mod
+
+    def _prepare(self, mod: Module) -> None:
+        for stmt in mod.tree.body:
+            if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                mod.funcs[stmt.name] = stmt
+        self._bind_statements(mod.tree.body, mod.env, mod, record=False)
+        for name, func in mod.funcs.items():
+            if _is_fixture(func):
+                value = self._call_function(func, mod, {})
+                if value is not None:
+                    mod.fixtures[name] = value
+
+    def _local_module(self, mod: Module, name: str, level: int) -> Module | None:
+        """A sibling test-support module (``from conftest import X``, ``from .helpers import X``)."""
+        leaf = name.split(".")[-1] if name else ""
+        directory = list(mod.parts[:-1])
+        if level > 1:
+            directory = directory[: len(directory) - (level - 1)]
+        search = [directory] if level else [directory[:i] for i in range(len(directory), 0, -1)]
+        for d in search:
+            for candidate in (f"{leaf}.py", f"{leaf}/__init__.py"):
+                rel = "/".join([*d, candidate])
+                if rel in _tracked_set():
+                    return self.module(rel)
+        return None
+
+    # -- statements -------------------------------------------------------
+
+    def _bind_statements(self, body: Sequence[ast.stmt], env: dict[str, object], mod: Module, *, record: bool) -> None:
+        for stmt in body:
+            self._statement(stmt, env, mod, record=record)
+
+    def _statement(self, stmt: ast.stmt, env: dict[str, object], mod: Module, *, record: bool) -> None:
+        if isinstance(stmt, ast.Import):
+            for alias in stmt.names:
+                dotted = alias.name
+                if alias.asname:
+                    if dotted in _module_prefixes():
+                        env[alias.asname] = Modref(dotted)
+                else:
+                    head = dotted.split(".")[0]
+                    if head in _module_prefixes():
+                        env[head] = Modref(head)
+            return
+        if isinstance(stmt, ast.ImportFrom):
+            self._import_from(stmt, env, mod)
+            return
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            mod.funcs.setdefault(stmt.name, stmt)
+            if record:
+                self._function(stmt, env, mod)
+            return
+        if isinstance(stmt, ast.ClassDef):
+            class_env = dict(env)
+            self._bind_statements(stmt.body, class_env, mod, record=record)
+            return
+        if isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+            value_node = stmt.value
+            targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+            if value_node is None:
+                return
+            value = self.ev(value_node, env, mod)
+            if value is not None and len(targets) == 1 and isinstance(targets[0], ast.Name):
+                env[targets[0].id] = value
+                if record:
+                    self._record_container(value, mod)
+                return
+            if (
+                isinstance(value_node, (ast.Tuple, ast.List))
+                and len(targets) == 1
+                and isinstance(targets[0], ast.Tuple)
+                and len(targets[0].elts) == len(value_node.elts)
+            ):
+                for t, v in zip(targets[0].elts, value_node.elts, strict=True):
+                    item = self.ev(v, env, mod)
+                    if isinstance(t, ast.Name) and item is not None:
+                        env[t.id] = item
+                return
+            for t in targets:
+                if isinstance(t, ast.Name):
+                    env.pop(t.id, None)
+            self.visit(value_node, env, mod, stmt)
+            return
+        if isinstance(stmt, ast.For) or isinstance(stmt, ast.AsyncFor):
+            self.visit(stmt.iter, env, mod, stmt)
+            for bound in self._iterations(stmt.target, stmt.iter, env, mod):
+                scope = {**env, **bound}
+                self._bind_statements(stmt.body, scope, mod, record=record)
+            self._bind_statements(stmt.orelse, dict(env), mod, record=record)
+            return
+        if isinstance(stmt, (ast.If, ast.While)):
+            self.visit(stmt.test, env, mod, stmt)
+            self._bind_statements(stmt.body, env, mod, record=record)
+            self._bind_statements(stmt.orelse, env, mod, record=record)
+            return
+        if isinstance(stmt, (ast.With, ast.AsyncWith)):
+            for item in stmt.items:
+                self.visit(item.context_expr, env, mod, stmt)
+            self._bind_statements(stmt.body, env, mod, record=record)
+            return
+        if isinstance(stmt, ast.Try):
+            for part in (stmt.body, stmt.orelse, stmt.finalbody):
+                self._bind_statements(part, env, mod, record=record)
+            for handler in stmt.handlers:
+                self._bind_statements(handler.body, env, mod, record=record)
+            return
+        if isinstance(stmt, ast.Return):
+            if stmt.value is not None:
+                self.visit(stmt.value, env, mod, stmt)
+            return
+        for child in ast.iter_child_nodes(stmt):
+            if isinstance(child, ast.expr):
+                self.visit(child, env, mod, stmt)
+
+    def _import_from(self, stmt: ast.ImportFrom, env: dict[str, object], mod: Module) -> None:
+        module = stmt.module or ""
+        if stmt.level == 0 and module == "pathlib":
+            for alias in stmt.names:
+                if alias.name in ("Path", "PurePath", "PosixPath"):
+                    mod.path_names.add(alias.asname or alias.name)
+            return
+        for alias in stmt.names:
+            bound = alias.asname or alias.name
+            dotted = f"{module}.{alias.name}" if module else alias.name
+            if stmt.level == 0 and dotted in _module_prefixes():
+                env[bound] = Modref(dotted)
+                continue
+            if stmt.level == 0 and module in _module_prefixes():
+                continue  # code under test, not a path
+            other = self._local_module(mod, module, stmt.level)
+            if other is None:
+                continue
+            if alias.name in other.env:
+                env[bound] = other.env[alias.name]
+            elif alias.name in other.fixtures:
+                env[bound] = other.fixtures[alias.name]
+            elif alias.name in other.funcs:
+                env[bound] = (other, other.funcs[alias.name])
+
+    # -- functions --------------------------------------------------------
+
+    def _param_names(self, func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
+        a = func.args
+        return [x.arg for x in [*a.posonlyargs, *a.args, *a.kwonlyargs]]
+
+    def _fixture_chain(self, mod: Module) -> list[Module]:
+        chain = [mod]
+        directory = list(mod.parts[:-1])
+        while directory:
+            rel = "/".join([*directory, "conftest.py"])
+            if rel != mod.rel and rel in _tracked_set():
+                other = self.module(rel)
+                if other is not None:
+                    chain.append(other)
+            directory.pop()
+        return chain
+
+    def _function(self, func: ast.FunctionDef | ast.AsyncFunctionDef, env: dict[str, object], mod: Module) -> None:
+        for dec in func.decorator_list:
+            self.visit(dec, env, mod, func)
+        scope = dict(env)
+        params = self._param_names(func)
+        bound: dict[str, list[object]] = {}
+        for name in params:
+            scope.pop(name, None)
+            if name in ("self", "cls"):
+                continue
+            for owner in self._fixture_chain(mod):
+                if name in owner.fixtures:
+                    bound[name] = [owner.fixtures[name]]
+                    break
+        for name, values in self._parametrized(func, env, mod).items():
+            if name in params:
+                bound[name] = values
+        names = list(bound)
+        combos = [{}]
+        for name in names:
+            combos = [{**c, name: v} for c in combos for v in bound[name][:12]][:48]
+        for combo in combos:
+            local = {**scope, **combo}
+            self._bind_statements(func.body, local, mod, record=True)
+
+    def _parametrized(
+        self, func: ast.FunctionDef | ast.AsyncFunctionDef, env: dict[str, object], mod: Module
+    ) -> dict[str, list[object]]:
+        out: dict[str, list[object]] = {}
+        for dec in func.decorator_list:
+            if not (isinstance(dec, ast.Call) and getattr(dec.func, "attr", "") == "parametrize" and len(dec.args) >= 2):
+                continue
+            names_node = dec.args[0]
+            if not (isinstance(names_node, ast.Constant) and isinstance(names_node.value, str)):
+                continue
+            names = [n.strip() for n in names_node.value.split(",")]
+            values = self.ev(dec.args[1], env, mod)
+            if not isinstance(values, (list, tuple)):
+                continue
+            if len(names) == 1:
+                out[names[0]] = [v for v in values if isinstance(v, (str, V))]
+            else:
+                for i, name in enumerate(names):
+                    column = [v[i] for v in values if isinstance(v, tuple) and len(v) == len(names)]
+                    out[name] = [c for c in column if isinstance(c, (str, V))]
+        return {k: v for k, v in out.items() if v}
+
+    def _call_function(
+        self,
+        func: ast.FunctionDef | ast.AsyncFunctionDef,
+        mod: Module,
+        _args: Mapping[str, object],
+    ) -> object | None:
+        """The value a zero-argument helper or a fixture returns, when it is a path or string."""
+        if mod._depth > 4:
+            return None
+        mod._depth += 1
+        try:
+            scope = dict(mod.env)
+            for name in self._param_names(func):
+                scope.pop(name, None)
+            for stmt in func.body:
+                if isinstance(stmt, ast.Return):
+                    return self.ev(stmt.value, scope, mod) if stmt.value is not None else None
+                if isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+                    self._statement(stmt, scope, mod, record=False)
+                elif isinstance(stmt, (ast.Expr, ast.Pass)):
+                    continue
+                elif isinstance(stmt, (ast.Import, ast.ImportFrom)):
+                    self._statement(stmt, scope, mod, record=False)
+            for node in ast.walk(func):
+                if isinstance(node, ast.Return) and node.value is not None:
+                    value = self.ev(node.value, scope, mod)
+                    if value is not None:
+                        return value
+            return None
+        finally:
+            mod._depth -= 1
+
+    # -- loops ------------------------------------------------------------
+
+    def _iterations(
+        self, target: ast.expr, iterable: ast.expr, env: dict[str, object], mod: Module
+    ) -> list[dict[str, object]]:
+        values = self.ev(iterable, env, mod)
+        if not isinstance(values, (list, tuple)) or not values:
+            return [{} if not isinstance(target, ast.Name) else {target.id: _UNBOUND}]
+        out: list[dict[str, object]] = []
+        for item in values[:40]:
+            if isinstance(target, ast.Name):
+                out.append({target.id: item})
+            elif isinstance(target, ast.Tuple) and isinstance(item, tuple) and len(item) == len(target.elts):
+                out.append({t.id: v for t, v in zip(target.elts, item, strict=True) if isinstance(t, ast.Name)})
+            else:
+                out.append({})
+        return out or [{}]
+
+    # -- evaluation -------------------------------------------------------
+
+    def ev(self, node: ast.expr | None, env: Mapping[str, object], mod: Module) -> object | None:
+        value = self._ev(node, env, mod)
+        return None if value is _UNBOUND else value
+
+    def _ev(self, node: ast.expr | None, env: Mapping[str, object], mod: Module) -> object | None:
+        if node is None:
+            return None
+        if isinstance(node, ast.Constant):
+            return node.value if isinstance(node.value, str) else None
+        if isinstance(node, ast.Name):
+            if node.id == "__file__":
+                return V(mod.parts)
+            return env.get(node.id)
+        if isinstance(node, ast.JoinedStr):
+            pieces: list[str] = []
+            for part in node.values:
+                if isinstance(part, ast.Constant):
+                    pieces.append(str(part.value))
+                elif isinstance(part, ast.FormattedValue):
+                    inner = self.ev(part.value, env, mod)
+                    if not isinstance(inner, str):
+                        return None
+                    pieces.append(inner)
+            return "".join(pieces)
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            items = [self.ev(e, env, mod) for e in node.elts]
+            if any(i is None for i in items):
+                return None
+            return tuple(items) if isinstance(node, ast.Tuple) else list(items)
+        if isinstance(node, ast.BinOp):
+            if isinstance(node.op, ast.Div):
+                left = self.ev(node.left, env, mod)
+                if isinstance(left, V):
+                    right = self._ev(node.right, env, mod)
+                    if isinstance(right, str):
+                        return _extend(left, _split_segments(right))
+                    if isinstance(right, V) and not right.rooted:
+                        return _extend(left, right.parts)
+                    return V((*left.parts, WILD), left.rooted)
+                return None
+            if isinstance(node.op, ast.Add):
+                a, b = self.ev(node.left, env, mod), self.ev(node.right, env, mod)
+                if isinstance(a, str) and isinstance(b, str):
+                    return a + b
+                if isinstance(a, list) and isinstance(b, list):
+                    return a + b
+                return None
+            return None
+        if isinstance(node, ast.Attribute):
+            return self._attribute(node, env, mod)
+        if isinstance(node, ast.Subscript):
+            base = node.value
+            index = node.slice
+            if (
+                isinstance(base, ast.Attribute)
+                and base.attr == "parents"
+                and isinstance(index, ast.Constant)
+                and isinstance(index.value, int)
+                and index.value >= 0
+            ):
+                path = self.ev(base.value, env, mod)
+                if isinstance(path, V) and index.value + 1 <= len(path.parts):
+                    return V(path.parts[: len(path.parts) - index.value - 1], path.rooted)
+                return None
+            seq = self.ev(base, env, mod)
+            if isinstance(seq, list) and isinstance(index, ast.Constant) and isinstance(index.value, int):
+                try:
+                    return seq[index.value]
+                except IndexError:
+                    return None
+            return None
+        if isinstance(node, ast.Call):
+            return self._call(node, env, mod)
+        return None
+
+    def _attribute(self, node: ast.Attribute, env: Mapping[str, object], mod: Module) -> object | None:
+        base = self.ev(node.value, env, mod)
+        if isinstance(base, V):
+            if node.attr == "parent":
+                if base.parts:
+                    return V(base.parts[:-1], base.rooted)
+                return None
+            if node.attr == "name" and base.parts and WILD not in base.parts[-1:]:
+                return base.parts[-1]
+            return None
+        if isinstance(base, Modref):
+            if node.attr == "__file__":
+                file = _module_index().get(base.dotted)
+                return V(tuple(file.split("/"))) if file else None
+            dotted = f"{base.dotted}.{node.attr}"
+            return Modref(dotted) if dotted in _module_prefixes() else None
+        return None
+
+    def _call(self, node: ast.Call, env: Mapping[str, object], mod: Module) -> object | None:
+        func = node.func
+        args = [self.ev(a, env, mod) for a in node.args]
+        if isinstance(func, ast.Name):
+            if func.id in mod.path_names:
+                return self._path_ctor(node, args)
+            if func.id in ("str", "fspath") and len(args) == 1 and isinstance(args[0], (V, str)):
+                return args[0]
+            bound = env.get(func.id)
+            if isinstance(bound, tuple) and len(bound) == 2 and isinstance(bound[1], ast.FunctionDef):
+                owner, target = bound
+                if not node.args and not node.keywords:
+                    return self._call_function(target, owner, {})
+                return None
+            local = mod.funcs.get(func.id)
+            if local is not None and not node.args and not node.keywords and func.id not in env:
+                return self._call_function(local, mod, {})
+            if local is not None and func.id in env and not node.args and not node.keywords:
+                return self._call_function(local, mod, {})
+            return None
+        if isinstance(func, ast.Attribute):
+            owner_node = func.value
+            attr = func.attr
+            dotted = _dotted_name(func)
+            if dotted in ("os.fspath", "os.path.abspath", "os.path.realpath", "os.path.normpath", "os.path.expanduser"):
+                return args[0] if len(args) == 1 and isinstance(args[0], (V, str)) else None
+            if dotted == "os.path.dirname" and len(args) == 1 and isinstance(args[0], V):
+                a0 = args[0]
+                return V(a0.parts[:-1], a0.rooted) if a0.parts else None
+            if dotted == "os.path.join" and args and all(isinstance(a, (V, str)) for a in args):
+                head = args[0]
+                base = head if isinstance(head, V) else V(tuple(_split_segments(str(head))), False)
+                return _extend(base, [s for a in args[1:] if isinstance(a, str) for s in _split_segments(a)])
+            if dotted == "importlib.import_module" and node.args and isinstance(args[0], str):
+                return Modref(args[0]) if args[0] in _module_prefixes() else None
+            if dotted in ("pathlib.Path", "pathlib.PurePath"):
+                return self._path_ctor(node, args)
+            base = self.ev(owner_node, env, mod)
+            if isinstance(base, V):
+                if attr in ("resolve", "absolute", "expanduser", "as_posix"):
+                    return base
+                if attr == "joinpath":
+                    out: V | None = base
+                    for a in args:
+                        if out is None:
+                            return None
+                        out = _extend(out, _split_segments(a)) if isinstance(a, str) else V((*out.parts, WILD), out.rooted)
+                    return out
+            return None
+        return None
+
+    def _path_ctor(self, node: ast.Call, args: list[object]) -> V | None:
+        if not args:
+            return None
+        head = args[0]
+        if isinstance(head, V):
+            out: V | None = head
+        elif isinstance(head, str):
+            if head.startswith("/") or head.startswith("~"):
+                return None
+            out = V(tuple(_split_segments(head)), False)
+        else:
+            return None
+        for a in args[1:]:
+            if out is None:
+                return None
+            out = _extend(out, _split_segments(a)) if isinstance(a, str) else V((*out.parts, WILD), out.rooted)
+        return out
+
+    # -- visiting ---------------------------------------------------------
+
+    def visit(self, node: ast.AST, env: dict[str, object], mod: Module, parent: ast.AST | None) -> None:
+        if isinstance(node, ast.expr) and not isinstance(node, (ast.Constant, ast.Lambda)):
+            if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+                self._comprehension(node, env, mod)
+                return
+            value = self.ev(node, env, mod)
+            if isinstance(value, V):
+                self._record(value, mod, parent)
+                return
+            if isinstance(value, (list, tuple)):
+                self._record_container(value, mod)
+        for child in ast.iter_child_nodes(node):
+            self.visit(child, env, mod, node)
+
+    def _comprehension(self, node: ast.AST, env: dict[str, object], mod: Module) -> None:
+        generators: list[ast.comprehension] = getattr(node, "generators", [])
+
+        def walk(i: int, scope: dict[str, object]) -> None:
+            if i == len(generators):
+                elts = [node.key, node.value] if isinstance(node, ast.DictComp) else [getattr(node, "elt")]
+                for e in elts:
+                    self.visit(e, scope, mod, node)
+                return
+            gen = generators[i]
+            self.visit(gen.iter, scope, mod, node)
+            for bound in self._iterations(gen.target, gen.iter, scope, mod):
+                inner = {**scope, **bound}
+                for cond in gen.ifs:
+                    self.visit(cond, inner, mod, node)
+                walk(i + 1, inner)
+
+        walk(0, dict(env))
+
+    def _record_container(self, value: object, mod: Module) -> None:
+        if isinstance(value, V):
+            if value.parts:
+                self._record(value, mod, None)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                self._record_container(item, mod)
+
+    # -- recording --------------------------------------------------------
+
+    def _record(self, value: V, mod: Module, parent: ast.AST | None) -> None:
+        if not value.rooted:
+            return
+        parts = list(value.parts)
+        if not parts:
+            if self._is_handoff(parent):
+                self.handoffs.add(mod.rel)
+            return
+        while parts and parts[-1] == WILD:
+            parts.pop()
+        if not parts or parts[0] == WILD:
+            return
+        self._add_read(tuple(parts), mod.rel)
+
+    @staticmethod
+    def _is_handoff(parent: ast.AST | None) -> bool:
+        if parent is None:
+            return False
+        if isinstance(parent, ast.Attribute):
+            return parent.attr in ("glob", "rglob", "iterdir")
+        return isinstance(parent, (ast.Call, ast.keyword, ast.List, ast.Tuple, ast.Dict, ast.Starred))
+
+    def _add_read(self, parts: tuple[str, ...], source: str) -> None:
+        joined = "/".join(parts)
+        if self.package_dir and (joined == self.package_dir or joined.startswith(self.package_dir + "/")):
+            return
+        src_parts = tuple(source.split("/"))
+        if parts == src_parts[: len(parts)]:
+            return  # the test's own file or one of its ancestors: sys.path / tree-walk plumbing
+        if representative(parts) is None:
+            return
+        self.reads[parts].add(source)
+
+    # -- strings ----------------------------------------------------------
+
+    def scan_strings(self, mod: Module) -> None:
+        docstrings: set[int] = set()
+        for node in ast.walk(mod.tree):
+            if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+                body = node.body
+                if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
+                    docstrings.add(id(body[0].value))
+        for node in ast.walk(mod.tree):
+            if not (isinstance(node, ast.Constant) and isinstance(node.value, str)) or id(node) in docstrings:
+                continue
+            text = node.value.strip()
+            if not text or any(c in text for c in " \t\n*?[]{}$:\"'`<>|=,;") or text.startswith(("/", "~", "..")):
+                continue
+            segments = _split_segments(text)
+            if len(segments) < 2 or ".." in segments:
+                continue
+            if representative(tuple(segments)) is not None:
+                self._add_read(tuple(segments), mod.rel)
+
+    def scan(self, rel: str) -> None:
+        mod = self.module(rel)
+        if mod is None:
+            return
+        for stmt in mod.tree.body:
+            self._scan_top(stmt, mod)
+        self.scan_strings(mod)
+
+    def _scan_top(self, stmt: ast.stmt, mod: Module) -> None:
+        env = dict(mod.env)
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            self._function(stmt, env, mod)
+        elif isinstance(stmt, ast.ClassDef):
+            class_env = dict(env)
+            for inner in stmt.body:
+                if isinstance(inner, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    self._function(inner, class_env, mod)
+                elif isinstance(inner, (ast.Assign, ast.AnnAssign)):
+                    self._statement(inner, class_env, mod, record=True)
+        else:
+            self._statement(stmt, env, mod, record=True)
+
+
+class _Unbound:
+    def __repr__(self) -> str:  # pragma: no cover
+        return "<unbound>"
+
+
+_UNBOUND = _Unbound()
+
+
+def _dotted_name(node: ast.AST) -> str:
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+        return ".".join(reversed(parts))
+    return ""
