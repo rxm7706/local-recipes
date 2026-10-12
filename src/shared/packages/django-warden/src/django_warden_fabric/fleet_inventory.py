@@ -17,7 +17,7 @@ import tomllib
 import traceback
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, NoReturn, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ def _allow_empty_leak_guard_terms(github: dict[str, Any], config_path: Path) -> 
     return value
 
 
-def _refuse_missing_leak_guard_terms(config_path: Path) -> None:
+def _refuse_missing_leak_guard_terms(config_path: Path) -> NoReturn:
     msg = "leak_guard_terms under [github] must be a non-empty list of strings"
     raise FleetTargetConfigError(config_path, msg)
 

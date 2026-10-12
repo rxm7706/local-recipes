@@ -878,3 +878,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium
   promoted: 2026-10-11 — recorded by hand from the story spec's Review Triage Log
   status: open
+
+### DW-warden-18-1: Leak guard Rule T compares fixed strings, so a listed term wrapped across lines or written with zero-width or full-width characters passes.
+
+- source_spec: `planning-artifacts/specs/spec-18-1-the-leak-guard-forbids-the-listed-terms-everywhere-and-the-organisation-s-name-in-warden-s-files.md`
+  summary: Leak guard Rule T compares fixed strings, so a listed term wrapped across lines or written with zero-width or full-width characters passes.
+  evidence: _leak_guard_violations lowercases each scanned file and tests `term in lower` for each listed term. A multi-word term split by a line break, a term with a zero-width character inside it, or a term in full-width forms matches no listed string. Story 18.1 does not require these cases; a paragraph split is already a recorded residual risk of the spec.
+  location: src/platform/tests/test_warden_fleet_inventory.py:859
+  origin: review send-back — independent review iteration 1, finding F8 (`[low]` `[defer]`), hand-recorded by the iteration-1 fix pass
+  severity: low
+  promoted: 2026-10-12 — recorded by hand from the story spec's Review Triage Log
+  status: open
