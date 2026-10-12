@@ -6095,6 +6095,38 @@ So that the tools hold the code to the interpreter it runs on, and a target that
 **And** the 3.12 residue in `src/platform` and the lines that call the targets `py312` are corrected; removing the portal glob, removing the platform check, hard-coding `py314` or dropping the `requires-python` floor each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types`, `pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-guild pyforge-station-tests` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
 **Status:** backlog
 
+## Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
+
+Minted 2026-10-11 from the station Dream's entry of that date (platform-ci-local syncs a stale env) and the operator's
+ask "Do this task here: Make platform-ci-local sync a stale env". `scripts/platform-ci-local.sh` takes its tools from the
+checkout's `platform-ci-test`, `platform-dev` and `pyforge-warden` envs, and installs one only when its `bin/python` is
+missing. A worktree whose envs predate a `pixi.lock` change merged from `main` therefore runs its stages, and marshal's
+cross-surface check, on the old envs; steward 91.1's verification failed 15 platform tests that way on 2026-10-11. A
+defect against CAP-152 (Stories 63.6, 63.7, 89.1), so no CAP is minted; a new epic because Epics 63 and 89 are `done`.
+**HARD boundaries:**
+- The fix lives in `scripts/platform-ci-local.sh` and steward's tests. Marshal's command, `pixi.toml` and `pixi.lock` do
+  not change.
+- `pixi install --frozen` only: never `pixi update`, `pixi add`, `pixi lock`, `--locked` or an install that may write
+  `pixi.lock`.
+- Stories 63.7's and 89.1's lock, reclaim, port refusal, stage flags, step names, overrides and exit codes stay. Their
+  tests keep every test function and assertion; only the shared stub-root helper gains a `pixi` stand-in.
+
+### Story 96.1: `platform-ci-local` never runs a stage on a stale env
+
+As the operator whose story verifications run `platform-ci-local` in worktrees that merge `main` while the story is in flight,
+I want every run to sync each env its stages use to the checkout's `pixi.lock` before anything starts,
+So that a verdict is never about an env the lock has left behind.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-152 (Stories 63.6, 63.7, 89.1); AD-1; AD-5 • Dream 2026-10-11 (platform-ci-local syncs a stale env) • operator ask 2026-10-11 "Do this task here: Make platform-ci-local sync a stale env"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `scripts/platform-ci-local.sh` (`ensure_envs` about :244-:250, the main body about :382-:386, the header's tools sentence about :30-:32), `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` (only `_prepare_stub_root`: a recording `pixi` stand-in in the stub `bin/`), `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py` (new)
+**Spec:** `planning-artifacts/specs/spec-96-1-platform-ci-local-never-runs-a-stage-on-a-stale-env.md`
+**Given** `485d325d56`, where `ensure_envs` runs `pixi install --frozen -e <env>` for `platform-ci-test`, `platform-dev` and `pyforge-warden` only when `.pixi/envs/<env>/bin/python` is missing, whatever stages run, and `pixi run -e pyforge-guild` syncs only the Guild's env. On 2026-10-11 steward 91.1's worktree created `platform-ci-test` at 18:53 and merged `main` at 20:22 (`548b976af3`, carrying warden 16.1's `pyforge-warden` dependency for that env). Its next `platform-ci-local -- --test` failed 15 tests in `test_warden_fleet_inventory.py` with "No module named 'pyforge.warden'" until a hand-run `pixi install --frozen -e platform-ci-test`
+**When** a run starts, with any set of stages
+**Then** after it takes the lock and before any service or stage starts, it runs `pixi install --frozen --manifest-path "$ROOT/pixi.toml" -e <env>` once for each env its stages use (`test`: `platform-ci-test`, `platform-dev`; `images`: none; `container`: `platform-dev`; `promotion`: `platform-ci-test`, `pyforge-warden`), with the lock's descriptor closed and each install's output in a log under the work dir. For each env it prints `env <name>: installed`, `synced` or `current`, judged from pixi's own `conda-meta/pixi` record before and after, and adds the same as an `INFO` row to the summary
+**And** a failed install exits 2, naming the env and pixi's exit code and showing the tail of its log, before any service starts or stage runs. The script calls `pixi` only as `pixi install --frozen`, and a test reads it to prove that. A new Docker-free test runs the real script with a recording `pixi` stand-in and proves each of these, and it fails when the old `-x ... ||` guard is restored (mutation). Stories 63.7's and 89.1's tests pass, with only their shared helper gaining that stand-in. `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-steward` memlog reconciles every changed governed path before one scoped stamp
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

@@ -659,6 +659,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.warden.fleet_inventory": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     "pyforge.warden.fleet_fix_proposals": {
         "dev": True,
         "staging": True,

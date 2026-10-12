@@ -413,6 +413,7 @@ platforms = ["linux-64"]
 
 [feature.platform-ci-test.dependencies]
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # the host imports pyforge.steward.keys / .sync (src/platform/ingest/github_projects -- the live pap:AD-2 breach) and, through steward's run-deps, pyforge.core; without it `manage.py check` dies ModuleNotFoundError: pyforge (Platform CI test job, 2026-09-04)
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 16.1 / 48.11: django_warden_fabric/tasks.py lazy-imports pyforge.warden (cli + fleet_github_rest); platform-ci-test must ship the engine the Celery task calls (mirrors platform-dev edge)
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # herald Epic 19.1: station_api mounts webhook_host on the herald v1 seam
 python = "3.14.*"
 # formerly requirements/base.txt (now pixi-owned)
@@ -711,6 +712,7 @@ import-linter = ">=2.15"          # enforces the AD-3 seam + AD-4 purity contrac
 packaging = ">=26.3"              # seed/engine/copier.py, seed/detect/referenced_deps.py
 jsonschema = ">=4.26.0"           # seed/state/store.py
 psutil = ">=7.2.2"                # process introspection
+ruff = ">=0.16.9"                 # Story 95.1: real-ruff dispatch pre-verify oracles in pyforge-marshal-test
 
 [feature.pyforge-marshal.target.linux-64.dependencies]
 # tmux: bmad-loop's session multiplexer backend for `marshal factory spin`

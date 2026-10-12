@@ -6,7 +6,6 @@ status: 'done'
 baseline_revision: 'dcbddeb4e3'
 followup_review_recommended: false
 review_loop_iteration: 0
-followup_review_recommended: false
 context: 
 deferred: []
 declared_low_risk: false
