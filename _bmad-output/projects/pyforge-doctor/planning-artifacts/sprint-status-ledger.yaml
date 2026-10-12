@@ -133,7 +133,7 @@ development_status:
   41-5-a-new-story-reopens-its-done-epic-without-reading-as-a-ledger-regression: done
   41-6-chain-completeness-counts-the-fold-provenance-window-again: done
   42-1-a-repeated-frontmatter-key-in-a-story-spec-turns-detectors-red: done
-  43-1-bmad-drift-knows-every-file-marshal-dispatch-writes-into-tier-3: backlog
+  43-1-bmad-drift-knows-every-file-marshal-dispatch-writes-into-tier-3: done
   5-1-marshal-durability-source-independent-by-construction: done
   5-2-render-the-verdict-through-a-doctor-verb: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
@@ -238,7 +238,7 @@ development_status:
   epic-41-retrospective: done
   epic-42: done
   epic-42-retrospective: optional
-  epic-43: backlog
+  epic-43: done
   epic-43-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
