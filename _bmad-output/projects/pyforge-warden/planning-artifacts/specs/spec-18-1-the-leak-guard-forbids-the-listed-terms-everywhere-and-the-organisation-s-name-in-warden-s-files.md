@@ -2,7 +2,7 @@
 title: "18.1: The leak guard forbids the listed terms everywhere and the organisation's name in warden's files"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'e872476980ee67672170f68477e6f080b865a2ce'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -292,3 +292,35 @@ test.
 
 - 2026-10-11: minted from the operator's ruling "Drop org from terms (Recommended)". `type: fix`, no flag, no CAP;
   bound to `spec-pyforge-warden` CAP-26 through Stories 16.1 and 16.5.
+
+## Review Triage Log
+
+### 2026-10-12 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (Bugbot review of branch diff; no defects filed.)
+- AC8: orchestrator-only live run with operator configuration not performed in this dispatch (config absent in worktree).
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Split the leak guard into Rule T (`leak_guard_terms` anywhere in the scan set) and Rule O (organisation name only in warden-owned paths, warden-named memory entries, and line-scoped co-governor/changed files). The scan set is all tracked files plus branch changed files (`.warden/` still excluded). `load_leak_guard_terms` now refuses missing/empty term lists unless `allow_empty_leak_guard_terms = true` (boolean).
+
+**Files changed:**
+- `src/platform/tests/test_warden_fleet_inventory.py` — guard helpers, warden-owned constants, AC1–AC5 fixture tests, live test uses whole tree.
+- `src/shared/packages/django-warden/src/django_warden_fabric/fleet_inventory.py` — empty-term refusal and opt-in boolean validation.
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` — surface reconcile for both code paths (Story 18.1).
+
+**Review:** 0 patch / defer / intent_gap items. Bugbot reported no bugs.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — exit 0 (2440 passed).
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — exit 0 (leak_guard tests: 10 passed, 1 skipped live).
+- `python scripts/spec_surface_reconcile.py` — exit 0.
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — ok (no `--write-baseline` in this run).
+- `pixi run -e pyforge-guild python scripts/flag_gate_check.py --spec …/spec-18-1-….md` — pass.
+- AC6 mutations: org-in-global-terms → AC1 failed; drop Rule O whole-file → AC2 failed; drop empty-term refusal → AC5 failed; files restored, `git diff HEAD --stat` empty for both code files after restore.
+
+**Residual risks:** AC8 live guard against operator config remains for orchestrator before merge. Whole-tree scan cost unchanged order-of-magnitude per spec.
