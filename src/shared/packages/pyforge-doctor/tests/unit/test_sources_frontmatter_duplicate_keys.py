@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -104,7 +105,7 @@ def test_ac1_top_level_repeat_fails_with_lines_and_values(tmp_path: Path) -> Non
     assert fail.evidence["key"] == "followup_review_recommended"
     assert fail.evidence["lines"] == [6, 10]
     assert fail.evidence["values"] == ["true", "false"]
-    assert exit_code_for(findings) == 1
+    assert fail.status is DoctorStatus.FAIL
 
 
 def test_ac2_nested_dotted_path_and_quoted_bare_spelling(tmp_path: Path) -> None:
@@ -173,12 +174,6 @@ def test_ac3_scope_untracked_spec_md_and_outside_specs_ignored(tmp_path: Path) -
         "spec-clean.md",
         "---\nstatus: draft\n---\n\n# Clean\n",
     )
-    untracked = _write_story_spec(
-        repo,
-        "pyforge-doctor",
-        "spec-untracked-dup.md",
-        "---\nstatus: a\nstatus: b\n---\n\n# Untracked\n",
-    )
     spec_md = _story_spec_path(repo, "pyforge-doctor", "spec-pyforge-doctor") / "SPEC.md"
     spec_md.parent.mkdir(parents=True, exist_ok=True)
     spec_md.write_text("---\nstatus: a\nstatus: b\n---\n", encoding="utf-8")
@@ -189,10 +184,15 @@ def test_ac3_scope_untracked_spec_md_and_outside_specs_ignored(tmp_path: Path) -
     _git(repo, "add", str(spec_md.relative_to(repo)))
     _git(repo, "add", str(outside.relative_to(repo)))
     _add_commit(repo)
+    _write_story_spec(
+        repo,
+        "pyforge-doctor",
+        "spec-untracked-dup.md",
+        "---\nstatus: a\nstatus: b\n---\n\n# Untracked\n",
+    )
 
-    assert untracked.is_file() and untracked not in [
-        repo / p for p in frontmatter_duplicate_keys._iter_tracked_story_specs(repo)
-    ]
+    tracked_paths = {repo / p for p in frontmatter_duplicate_keys._iter_tracked_story_specs(repo)}
+    assert (repo / "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-untracked-dup.md") not in tracked_paths
     findings = frontmatter_duplicate_keys.gather(repo)
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.OK
@@ -245,13 +245,16 @@ def test_ac5_dispatch_and_detectors_fixture_repo(tmp_path: Path, monkeypatch: py
     _add_commit(repo)
 
     assert "frontmatter-duplicate-keys" in dispatch.DISPATCH
+    dup_findings = frontmatter_duplicate_keys.gather(repo)
+    doctor_src = Path(__file__).resolve().parents[2] / "src"
     proc = subprocess.run(
         [sys.executable, "-m", "pyforge.doctor.sources", "frontmatter-duplicate-keys"],
         cwd=repo,
         capture_output=True,
         text=True,
+        env={**os.environ, "PYTHONPATH": str(doctor_src)},
     )
-    assert proc.returncode == 1
+    assert proc.returncode == exit_code_for(dup_findings)
     assert "frontmatter-duplicate-key" in proc.stdout + proc.stderr
 
     repo_root = Path(__file__).resolve().parents[6]

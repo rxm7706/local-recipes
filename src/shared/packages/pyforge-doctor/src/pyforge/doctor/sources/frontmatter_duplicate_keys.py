@@ -28,8 +28,10 @@ __all__ = ("gather",)
 
 _CHECK_DUPLICATE = "frontmatter-duplicate-key"
 _CHECK_UNREADABLE = "frontmatter-unreadable"
+# Story specs are flat files: ``specs/spec-<slug>.md`` — never a folder's
+# ``SPEC.md`` or ``.memlog.md`` (``spec-.*`` would swallow ``/`` via ``.``).
 _STORY_SPEC_RE = re.compile(
-    r"^_bmad-output/projects/[^/]+/planning-artifacts/specs/spec-.*\.md$"
+    r"^_bmad-output/projects/[^/]+/planning-artifacts/specs/spec-[^/]+\.md$"
 )
 
 
