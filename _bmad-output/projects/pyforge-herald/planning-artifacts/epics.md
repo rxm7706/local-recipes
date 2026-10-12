@@ -1751,7 +1751,7 @@ once per process.
 **And** with herald installed the Story 30.2 tests pass unedited. A herald meta-test in `pyforge-herald-test` pins the
 import boundary. The how-to's `--skip-checks` note goes, `DW-herald-19-2-1` closes, every Spec `spec-surface-check`
 names is reconciled and stamped scoped, and `platform-ci-local -- --test` passes.
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

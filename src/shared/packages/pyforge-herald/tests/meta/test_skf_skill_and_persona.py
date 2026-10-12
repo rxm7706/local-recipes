@@ -374,6 +374,7 @@ _DJANGO_HERALD_DECK_EXPORT_MARKERS = (
     "herald_portal/home.html",
     "django_herald_portal/views.py",
     "django_herald_portal/urls.py",
+    "django_herald_portal/herald_guard.py",
 )
 
 

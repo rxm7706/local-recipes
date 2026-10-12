@@ -28,11 +28,6 @@ worktree is swept, and the store, the secret and the logs must outlive it.
   [local platform development](../tutorials/local-platform-development.md), Step 2 (`initdb`,
   `pg_ctl start`, `DATABASE_URL`, `manage.py migrate`). PostgreSQL holds the host's Django
   database only; herald's records stay in SQLite.
-  - Known issue (2026-10-11): under `platform-dev`, `manage.py migrate` stops in Django's URL
-    system check with `ModuleNotFoundError: No module named 'pyforge.herald'`, raised at
-    `django_herald_portal/deck_viewer.py:9`, because that portal imports herald at module level
-    and `platform-dev` carries no herald. Until that is fixed, run
-    `pixi run --frozen -e platform-dev python manage.py migrate --skip-checks` from `src/platform/`.
 - `git fetch origin`, so the newest landing on `origin/main` is the one you deliver.
 
 ## 1. Generate the webhook secret
@@ -136,8 +131,13 @@ ss -ltnH '( sport = :8001 or sport = :8090 )' | tee "$LOG/ss-1.txt"   # 127.0.0.
 pixi run --frozen -e platform-dev python -c "import pyforge.herald"   # must fail: ModuleNotFoundError
 ```
 
-The host's log carries one expected warning, `herald is not installed on this host` (steward
-Story 87.1). With the forward on, herald's two webhook paths never reach that skip.
+Once daphne has imported `config.asgi`, the host's log carries one expected warning,
+`herald is not installed on this host`, from steward Story 87.1's station-API skip
+(`config.optional_components`). Herald Story 37.1's portal skip logs the same reason on
+`django_herald_portal`, once per process, but only when Django first loads its URLconf: at the
+first Django-routed page request, or under `manage.py check`, never at import. This how-to's
+webhook flow makes no Django request, so the portal skip never logs there. With the forward on,
+herald's two webhook paths never reach the station-API skip.
 
 ## 4. Deliver one real landing
 
