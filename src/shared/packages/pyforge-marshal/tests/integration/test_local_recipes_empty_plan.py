@@ -13,25 +13,34 @@ reviews in ``cli/seed.py``'s plan renderer.
 ``unclassified-deferred``, this test is the escalation surface — do not widen
 the exclusion set to greenwash drift.
 
-The live-repo integration test is ``@pytest.mark.slow`` (real detect/plan
+Story 97.2 adds an ``update`` leg beside it: ``run_update`` in dry-run mode
+plans zero actions, and its ``plan.skipped`` equals
+``expected_update_dry_run_skipped`` -- the repo-wide skips plus the two
+per-checkout symlink skips, each expected only where the checkout lacks its
+target (a fresh clone, as CI runs it).
+
+The live-repo integration tests is ``@pytest.mark.slow`` (real detect/plan
 over the full tree); unit tests below pin the exclusion and diff helpers so
 ``pyforge-marshal-test`` still exercises the oracle contract without the cost.
 """
 
 from __future__ import annotations
 
+import subprocess
 from importlib import resources
 from pathlib import Path
 
 import pytest
 
 from pyforge.marshal.seed.detect.inventory import ArtifactState
+from pyforge.marshal.seed.fs import NeverWrite
 from pyforge.marshal.seed.model.manifest import (
     ArtifactClass,
     Manifest,
     load_manifest,
 )
 from pyforge.marshal.seed.plan.types import NO_PACKAGED_PAYLOAD_SKIP_PATTERN, Action, SkippedArtifact
+from pyforge.marshal.seed.state import SeedState, write_state
 from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.update import run_update
 
@@ -57,6 +66,25 @@ LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED: dict[str, str] = {
     "projects-index": "_bmad-output/PROJECTS.md",
     "bmad-switch": NO_PACKAGED_PAYLOAD_SKIP_PATTERN,
     "bmad-loop-worktree": NO_PACKAGED_PAYLOAD_SKIP_PATTERN,
+}
+
+# Story 97.2 CI fix (2026-10-12): the update skips that depend on the checkout,
+# not on the repo. Both paths are per-checkout BMAD symlinks (gitignored;
+# ``scripts/bmad-switch`` or ``steward workspace start`` creates them), so a
+# fresh clone -- the ``marshal-local-recipes-seed-oracle`` CI lane -- has
+# neither. There ``classify`` reads each ``absent``, ``build_plan`` plans its
+# creation, and the genesis-recorded ``state.skips`` pattern (the path itself)
+# moves that action into ``plan.skipped``. In a developer checkout both are
+# ``present-conformant``, ``update`` plans nothing for them, and nothing is
+# skipped. ``adopt`` needs no such split: its first-claim pass plans a present,
+# unmanaged entry too, so the recorded skip catches both shapes. Each id here is
+# expected exactly when its target is absent, by ``classify``'s own test (the
+# path, symlinks followed, does not exist) -- one exact expectation per shape,
+# never the union of both (K-02). The reasons are in
+# ``LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS``.
+LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT: dict[str, str] = {
+    "planning-artifacts-symlink": "_bmad-output/planning-artifacts",
+    "implementation-artifacts-symlink": "_bmad-output/implementation-artifacts",
 }
 
 LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS: dict[str, str] = {
@@ -126,6 +154,18 @@ def assertable_adopt_actions(
     return tuple(action for action in actions if action.artifact_id not in deferred_ids)
 
 
+def expected_update_dry_run_skipped(repo_root: Path) -> dict[str, str]:
+    """The exact skip set ``update`` emits on ``repo_root``: the repo-wide
+    ``LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED`` plus each
+    ``LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT`` id whose target this checkout
+    does not hold (its recorded pattern is its path)."""
+    expected = dict(LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED)
+    for artifact_id, path in LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT.items():
+        if not (repo_root / path).exists():
+            expected[artifact_id] = path
+    return expected
+
+
 def assertable_update_skipped(
     skipped: tuple[SkippedArtifact, ...],
     *,
@@ -142,7 +182,8 @@ def assertable_update_skipped(
             if actual[artifact_id] != expected[artifact_id]
         }
         raise AssertionError(
-            "update dry-run skip set drifted — reconcile LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED."
+            "update dry-run skip set drifted — reconcile LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED"
+            " or LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT."
             f" missing={sorted(missing)!r} extra={sorted(extra)!r} wrong_pattern={wrong!r}"
         )
 
@@ -221,6 +262,93 @@ def test_genesis_recorded_skip_artifact_ids_are_manifest_backed():
     for artifact_id, reason in LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS.items():
         assert artifact_id in by_id, reason
         assert reason.strip()
+
+
+def test_checkout_dependent_update_skips_are_manifest_backed_and_genesis_recorded():
+    by_id = {entry.id: entry for entry in _load_packaged_manifest().entries}
+    for artifact_id, path in LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT.items():
+        assert by_id[artifact_id].path == path
+        assert artifact_id in LOCAL_RECIPES_GENESIS_RECORDED_SKIP_ARTIFACTS
+    assert not set(LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT) & set(LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED)
+
+
+_PLANNING = LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT["planning-artifacts-symlink"]
+_IMPLEMENTATION = LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT["implementation-artifacts-symlink"]
+
+
+def _link_bmad_artifacts(repo_root: Path, *, dangling: frozenset[str] = frozenset()) -> None:
+    """Both per-checkout symlinks, as ``scripts/bmad-switch`` makes them; a
+    link named in ``dangling`` points at a project directory that is missing."""
+    for link_path in (_PLANNING, _IMPLEMENTATION):
+        link = repo_root / link_path
+        target = Path("projects") / "demo" / link.name
+        if link_path not in dangling:
+            (link.parent / target).mkdir(parents=True)
+        link.parent.mkdir(parents=True, exist_ok=True)
+        link.symlink_to(target, target_is_directory=True)
+
+
+@pytest.mark.parametrize(
+    ("shape", "expected_skipped"),
+    [
+        # A fresh clone (the CI lane): neither symlink exists.
+        ("fresh-clone", {"planning-artifacts-symlink": _PLANNING, "implementation-artifacts-symlink": _IMPLEMENTATION}),
+        # A developer checkout or dispatch worktree: both resolve.
+        ("developer-checkout", {}),
+        # A link whose project directory is gone reads absent, as `classify` reads it.
+        ("dangling-implementation-link", {"implementation-artifacts-symlink": _IMPLEMENTATION}),
+    ],
+)
+def test_update_skips_a_checkout_dependent_entry_exactly_when_its_target_is_absent(
+    tmp_path: Path, shape: str, expected_skipped: dict[str, str]
+):
+    """Pins both checkout shapes against the real ``run_update``: a recorded
+    skip reaches ``plan.skipped`` only for an entry the plan would create, and
+    ``expected_update_dry_run_skipped`` predicts exactly that set."""
+    # Rung 1 needs a git repo even for a dry run; rung 2 (a clean tree) does not.
+    subprocess.run(["git", "-C", str(tmp_path), "init", "-q", "-b", "main"], check=True, capture_output=True)
+    if shape == "developer-checkout":
+        _link_bmad_artifacts(tmp_path)
+    elif shape == "dangling-implementation-link":
+        _link_bmad_artifacts(tmp_path, dangling=frozenset({_IMPLEMENTATION}))
+    packaged = _load_packaged_manifest()
+    manifest = Manifest(
+        model_version=packaged.model_version,
+        never_write=packaged.never_write,
+        entries=tuple(entry for entry in packaged.entries if entry.id in LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT),
+    )
+    write_state(
+        SeedState(
+            model_version=packaged.model_version,
+            seed_model_version="0.1.0",
+            adopted_at="2026-10-11T08:57:57Z",
+            last_update="2026-10-11T08:57:57Z",
+            mode="adopt",
+            agents=(),
+            managed=(),
+            skips=tuple(LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT.values()),
+            legacy=(),
+            migrations_applied=(),
+            opted_out=(),
+        ),
+        repo_root=tmp_path,
+        never_write=NeverWrite(patterns=()),
+    )
+
+    def _unreachable_confirm() -> bool:
+        raise AssertionError("dry-run must not confirm")
+
+    result = run_update(tmp_path, manifest, confirm=_unreachable_confirm, in_loop_home=False)
+
+    assert result.plan.actions == (), format_plan_diff(result.plan.actions)
+    assert {item.artifact_id: item.pattern for item in result.plan.skipped} == expected_skipped
+    predicted = expected_update_dry_run_skipped(tmp_path)
+    assert {key: predicted[key] for key in predicted if key in LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT} == (
+        expected_skipped
+    )
+    assert {key: predicted[key] for key in predicted if key not in LOCAL_RECIPES_UPDATE_SKIPPED_WHEN_ABSENT} == (
+        LOCAL_RECIPES_UPDATE_DRY_RUN_SKIPPED
+    )
 
 
 def test_format_plan_diff_names_diverged_artifacts():
@@ -303,7 +431,7 @@ def test_local_recipes_update_dry_run_yields_empty_plan_with_documented_skips():
             in_loop_home=False,
         )
         assert result.plan.actions == (), format_plan_diff(result.plan.actions)
-        assertable_update_skipped(result.plan.skipped)
+        assertable_update_skipped(result.plan.skipped, expected=expected_update_dry_run_skipped(repo_root))
     finally:
         if had_plan:
             plan_path.write_bytes(prior_plan_bytes)  # type: ignore[arg-type]

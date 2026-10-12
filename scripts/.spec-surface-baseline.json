@@ -4124,7 +4124,7 @@
    "src/shared/packages/pyforge-marshal/tests/integration/test_dispatch_structure_graph_real.py": "6dd5bbcc93b9c3e7dc48dacd34d6dd726d3bc5dd",
    "src/shared/packages/pyforge-marshal/tests/integration/test_idempotence_harness.py": "1088c7a7c19d8f3ba38428ac17c5f51e5a7a6fee",
    "src/shared/packages/pyforge-marshal/tests/integration/test_init_worktree.py": "8ca07da503f20af88d3d677246cf8a3aac33bbba",
-   "src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py": "5a9594d0e2db9c570a8e8d1c1f090c73d2918de4",
+   "src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py": "4132797de8a84b02af8feab9814b713d3d8e91fc",
    "src/shared/packages/pyforge-marshal/tests/integration/test_login_pkce_live_keycloak.py": "429229a2620f45ffa589d409b143e30658885648",
    "src/shared/packages/pyforge-marshal/tests/integration/test_performance_gates.py": "9bd9346aa4e77074ff51edc54b5f1d40d895907d",
    "src/shared/packages/pyforge-marshal/tests/integration/test_seed_egress_counter.py": "94e7fa0e7e9b69e642a5ee16914f72dff481c595",
@@ -4386,7 +4386,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "f1d6f857590a3fe6018875164a91b0211ba2d0f3"
+  "memlog": "05b39765b4dd0074a6916f6c25c484b79939d38b"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
