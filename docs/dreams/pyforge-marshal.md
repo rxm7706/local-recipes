@@ -1494,6 +1494,29 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   itself, about 4 s of NFR-P1's 5 s for `marshal seed check` end to end and more when Doctor is on PATH, is a product
   question recorded as the story's deferral. Operator ask, 2026-10-12: "Do this task here: “Fix two marshal tests that
   red local pr-preflight”". Owner `spec-pyforge-marshal`. → Epic 98 / Story 98.1, specced 2026-10-12.
+- **2026-10-12 (seed check waits on its probes one at a time)** — **Found: `marshal seed check` spends most of NFR-P1's
+  five seconds starting other programs one after another, and calls a slow one missing.** This is Story 98.1's
+  deferral, `DW-marshal-98-1`. `seed/detect/referenced_deps.py` verifies each `referenced` manifest entry before it
+  judges anything.
+  - **Doctor delegation first.** When `doctor` is on PATH, as it is in every Guild lane, it first runs `python -m
+    pyforge.doctor.sources genesis-referenced-deps --json`. Doctor ships no such source, so this always exits 2 and
+    costs 0.32 s.
+  - **Then the CLI probes, one by one.** `copier --version` (1.78 s here, 2.6 s in 98.1's measurement),
+    `bmad-loop --version` (1.07 s; 1.4 s), `pixi --version` and `tmux -V`.
+
+  Measured at `c447946b3f` on the NFR-P1 fixture, `run_check` takes 2.65-2.95 s. Only 0.05 s of that is its own work;
+  the rest is child processes, and under load the sum passes 5 s. Each probe has a 5 s timeout, and a timeout maps to
+  the same "referenced dependency is not installed" DRIFT finding as a missing tool. So a busy machine reports an
+  installed `copier` as missing. Story 98.1 stubbed the probe in the two NFR-P1 tests, which now time the walk. Since
+  then nothing times the real check against its budget. **What it looks like when fixed:** the delegation and the
+  CLI probes start together, so the wall time is the slowest one rather than the sum, and a successful delegation
+  still wins. Findings keep manifest order. A probe that times out says it timed out, naming the command and the
+  limit. One `slow` test times the real `run_check`, with real probes, against the 5 s budget in the serial slow lane.
+  **Constraints:** a fix under CAP-13 (NFR-P1) and FR-95 (Story 11.5), no CAP, no flag. No finding's severity or type
+  changes, the budget stays 5 s, and the probes still test the tool on PATH, never an in-process import. Operator
+  asks, 2026-10-12: "start the flaky marshal tests fix", then "merge 2171 and rescope 2172". This chain was first
+  minted on PR #2172 as two stories. 98.1 fixed the test half, so it is now the product half only. Owner
+  `spec-pyforge-marshal`. → Epic 99 / Story 99.1, specced 2026-10-12.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
