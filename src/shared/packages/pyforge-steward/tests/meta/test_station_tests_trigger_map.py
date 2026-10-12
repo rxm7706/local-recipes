@@ -726,6 +726,9 @@ class Scanner:
                 body = node.body
                 if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
                     docstrings.add(id(body[0].value))
+            if isinstance(node, ast.Call) and _dotted_name(node.func).endswith("parametrize"):
+                # a parametrize table holds case labels handed to the code under test, not reads
+                docstrings.update(id(n) for n in ast.walk(node))
         for node in ast.walk(mod.tree):
             if not (isinstance(node, ast.Constant) and isinstance(node.value, str)) or id(node) in docstrings:
                 continue
