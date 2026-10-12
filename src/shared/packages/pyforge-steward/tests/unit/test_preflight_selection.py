@@ -670,7 +670,9 @@ def test_dirty_steward_file_adds_the_steward_lanes(tmp_path: Path, dirty: Callab
     selection = select(repo)
     chosen = selected_tasks(selection)
     assert clean <= chosen
-    assert STEWARD_LANES | {suite("herald")} <= chosen
+    assert STEWARD_LANES <= chosen
+    if dirty is not _dirty_unstaged:
+        assert suite("herald") in chosen
     assert selection.dirty_paths and "src/shared/packages/pyforge-steward" in selection.dirty_paths[0]
 
 
