@@ -2,7 +2,7 @@
 title: "43.1: bmad-drift knows every file marshal dispatch writes into Tier-3"
 type: 'fix'
 created: '2026-10-12'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '70975ae790'
 review_loop_iteration: 4
 followup_review_recommended: false
@@ -280,6 +280,10 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
   found on marshal Story 97.2's dispatch worktree.
 
 ## Review Triage Log
+
+### 2026-10-12 — Orchestrator verification of the iteration-3 delta: passed
+
+The orchestrator (not the implementer, not any reviewer) ran the iteration-3 reviewer's decisive check on 91a56d426e: renaming `"changes.patch"` in marshal's `core/dispatch_preserve.py::failed_patch_path` reds `test_writer_tokens_still_present_in_cited_sources` and `test_every_tier3_rule_names_a_real_writer` (2 failed, 12 passed); restored byte-identical (cmp). F3 (`fleet-drain-runs/campaign.lock` row with look-alikes) and F4 (spec Intent/Approach/I-O rows and Change Log) read against the entry. The implementer's gates after the last edit: `pyforge-doctor-test` 0 (3596 passed), `pyforge-doctor-scripts-test` 0 (1494 passed), `lint-types` 0, `spec-surface-check` 0, `bmad-drift-check` 0, `deferred-work-check` 0, `frontmatter-duplicate-keys-check` 0, `detectors-ci` 0 (46/46); AC8 against `main` moves exactly 202 files (145 quarantine, 57 failed patches). Story done; landing proceeds.
 
 ### 2026-10-12 — Fix pass for iteration 3 (implementer)
 
