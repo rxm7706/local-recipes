@@ -1,0 +1,289 @@
+"""Story 93.1 — NOT_YET_CLEAN behaviour in scripts/lint_types.py (AC3, AC5, AC6)."""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[6]
+SCRIPTS = ROOT / "scripts"
+RUFF_TABLE = """
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = ["*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"**/tests/**" = ["E402"]
+"""
+
+
+def _load_lint_types():
+    name = "_lint_types_under_test"
+    spec = importlib.util.spec_from_file_location(name, SCRIPTS / "lint_types.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    return mod
+
+
+def _minimal_pyforge(name: str, root: Path) -> None:
+    pkg = root / name
+    (pkg / "src" / "pyforge" / name.removeprefix("pyforge-")).mkdir(parents=True)
+    (pkg / "pyproject.toml").write_text(
+        f'[project]\nname = "{name}"\n\n[tool.ruff]\ntarget-version = "py314"\n\n[tool.mypy]\npython_version = "3.14"\n',
+        encoding="utf-8",
+    )
+
+
+def _minimal_django(name: str, root: Path, *, with_ruff: bool = True) -> None:
+    pkg = root / name
+    (pkg / "src").mkdir(parents=True)
+    body = '[project]\nname = "x"\n'
+    if with_ruff:
+        body += RUFF_TABLE
+    (pkg / "pyproject.toml").write_text(body, encoding="utf-8")
+
+
+_PYFORGE_TEN = (
+    "pyforge-atlas",
+    "pyforge-core",
+    "pyforge-doctor",
+    "pyforge-herald",
+    "pyforge-marshal",
+    "pyforge-mason",
+    "pyforge-scribe",
+    "pyforge-steward",
+    "pyforge-testing-kit",
+    "pyforge-warden",
+)
+
+
+def _seed_tree(tmp_path: Path) -> Path:
+    packages = tmp_path / "packages"
+    packages.mkdir(parents=True, exist_ok=True)
+    for name in _PYFORGE_TEN:
+        _minimal_pyforge(name, packages)
+    for station in ("atlas", "doctor", "herald", "marshal", "mason", "pyforge", "scribe", "steward", "warden"):
+        _minimal_django(f"django-{station}", packages)
+    return packages
+
+
+def _stub_tool_lookup(monkeypatch: pytest.MonkeyPatch, mod, *, found: bool) -> list[str]:
+    """Replace the module's ``shutil`` so ``main()``'s tool-presence check never reads PATH.
+
+    The steward env ships no ruff (CI's ``steward-test`` lane), so an unstubbed lookup reports
+    could-not-run before the stubbed runner is reached. Returns the tool names looked up.
+    """
+    looked_up: list[str] = []
+
+    def which(tool: str) -> str | None:
+        looked_up.append(tool)
+        return f"/stub/bin/{tool}" if found else None
+
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=which))
+    return looked_up
+
+
+@pytest.fixture
+def load_lt(monkeypatch: pytest.MonkeyPatch):
+    """Load ``scripts/lint_types.py`` with its tool lookup reporting the tool present."""
+
+    def _load():
+        mod = _load_lint_types()
+        _stub_tool_lookup(monkeypatch, mod, found=True)
+        return mod
+
+    return _load
+
+
+@pytest.fixture
+def lt(load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    mod = load_lt()
+    packages_dir = _seed_tree(tmp_path)
+    monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
+    return mod
+
+
+@pytest.mark.parametrize(("verb", "tool"), [("ruff", "ruff"), ("ruff-format", "ruff"), ("mypy", "mypy")])
+def test_tool_not_on_path_could_not_run(
+    verb: str,
+    tool: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Mutation: run (or pass) when the tool lookup finds nothing — this test fails."""
+    mod = _load_lint_types()
+    looked_up = _stub_tool_lookup(monkeypatch, mod, found=False)
+    monkeypatch.setattr(mod, "PACKAGES_DIR", _seed_tree(tmp_path))
+    monkeypatch.setattr(mod, "NOT_YET_CLEAN", {})
+
+    def must_not_run(argv: list[str], *, cwd: Path) -> int:
+        raise AssertionError(f"tool ran despite could-not-run: {argv} in {cwd}")
+
+    monkeypatch.setattr(mod, "_run", must_not_run)
+    assert mod.main([verb]) == 2
+    assert looked_up == [tool]
+    assert f"could-not-run -- `{tool}` is not on PATH" in capsys.readouterr().out
+
+
+def test_not_yet_clean_listed_exit_one_does_not_fail_ruff(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: treat listed exit 1 like unlisted — this test fails."""
+    monkeypatch.setattr(
+        lt,
+        "NOT_YET_CLEAN",
+        {"django-herald": frozenset({"ruff"})},
+    )
+
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
+        return 1 if cwd.name == "django-herald" else 0
+
+    monkeypatch.setattr(lt, "_run", fake_run)
+    assert lt.main(["ruff"]) == 0
+    out = capsys.readouterr().out
+    assert "django-herald" in out and "not yet clean (listed)" in out
+
+
+def test_not_yet_clean_unlisted_exit_one_fails_ruff(lt, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mutation: swallow unlisted exit 1 — this test fails."""
+    monkeypatch.setattr(lt, "NOT_YET_CLEAN", {})
+
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
+        return 1 if cwd.name == "django-herald" else 0
+
+    monkeypatch.setattr(lt, "_run", fake_run)
+    assert lt.main(["ruff"]) == 1
+
+
+def test_not_yet_clean_listed_clean_fails_ratchet(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: allow listed package to stay clean — this test fails."""
+    monkeypatch.setattr(
+        lt,
+        "NOT_YET_CLEAN",
+        {"django-herald": frozenset({"ruff"})},
+    )
+
+    def always_zero(_argv: list[str], *, cwd: Path) -> int:
+        return 0
+
+    monkeypatch.setattr(lt, "_run", always_zero)
+    assert lt.main(["ruff"]) == 1
+    assert "remove NOT_YET_CLEAN entry" in capsys.readouterr().out
+
+
+def test_not_yet_clean_listed_exit_two_fails(lt, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mutation: pass listed exit 2 — this test fails."""
+    monkeypatch.setattr(
+        lt,
+        "NOT_YET_CLEAN",
+        {"django-herald": frozenset({"ruff"})},
+    )
+
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
+        return 2 if cwd.name == "django-herald" else 0
+
+    monkeypatch.setattr(lt, "_run", fake_run)
+    assert lt.main(["ruff"]) == 1
+
+
+def test_not_yet_clean_invalid_entry_could_not_run(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: run tools despite bad NOT_YET_CLEAN — this test fails."""
+    monkeypatch.setattr(lt, "NOT_YET_CLEAN", {"pyforge-herald": frozenset({"ruff"})})
+    assert lt.main(["ruff"]) == 2
+    assert "NOT_YET_CLEAN entry `pyforge-herald` is not a django-* package name" in capsys.readouterr().out
+
+
+def test_not_yet_clean_unknown_verb_could_not_run(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: accept unknown verb in NOT_YET_CLEAN — this test fails."""
+    monkeypatch.setattr(lt, "NOT_YET_CLEAN", {"django-herald": frozenset({"mypy"})})
+    assert lt.main(["ruff"]) == 2
+    assert "NOT_YET_CLEAN entry `django-herald` names unknown verb `mypy`" in capsys.readouterr().out
+
+
+def test_missing_ruff_table_is_a_finding(
+    load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: skip missing-table packages — this test fails."""
+    mod = load_lt()
+    packages_dir = _seed_tree(tmp_path / "missing-table")
+    (packages_dir / "django-herald" / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
+    monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
+    monkeypatch.setattr(mod, "NOT_YET_CLEAN", {})
+
+    def always_zero(_argv: list[str], *, cwd: Path) -> int:
+        return 0
+
+    monkeypatch.setattr(mod, "_run", always_zero)
+    assert mod.main(["ruff"]) == 1
+    out = capsys.readouterr().out
+    assert "django-herald" in out and "missing [tool.ruff] table" in out
+
+
+def test_pyforge_count_does_not_include_django(
+    load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: count django-* toward the ten pyforge packages — this test fails."""
+    mod = load_lt()
+    packages_dir = tmp_path / "pyforge-count"
+    packages_dir.mkdir()
+    for i in range(9):
+        _minimal_pyforge(f"pyforge-st{i}", packages_dir)
+    for station in ("atlas", "doctor", "herald", "marshal", "mason", "pyforge", "scribe", "steward", "warden"):
+        _minimal_django(f"django-{station}", packages_dir)
+    monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
+    assert mod.main(["ruff"]) == 2
+    assert "expected ten pyforge-* packages" in capsys.readouterr().out
+
+
+def test_fewer_than_nine_django_packages_could_not_run(
+    load_lt, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: drop django-* from the glob — this test fails."""
+    mod = load_lt()
+    packages_dir = tmp_path / "django-count"
+    packages_dir.mkdir()
+    for name in _PYFORGE_TEN:
+        _minimal_pyforge(name, packages_dir)
+    _minimal_django("django-herald", packages_dir)
+    monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
+    assert mod.main(["ruff"]) == 2
+    assert "expected nine django-* packages" in capsys.readouterr().out
+
+
+def test_ruff_format_fix_skips_listed_package(
+    lt, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Mutation: let --fix rewrite a listed package — this test fails."""
+    monkeypatch.setattr(
+        lt,
+        "NOT_YET_CLEAN",
+        {"django-herald": frozenset({"ruff-format"})},
+    )
+    calls: list[Path] = []
+
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
+        calls.append(cwd)
+        return 0
+
+    monkeypatch.setattr(lt, "_run", fake_run)
+    assert lt.main(["ruff-format", "--fix"]) == 0
+    assert all(p.name != "django-herald" for p in calls)
+    assert "skipped (listed for ruff-format)" in capsys.readouterr().out

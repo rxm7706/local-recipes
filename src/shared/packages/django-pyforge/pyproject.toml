@@ -17,3 +17,16 @@ dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/django_pyforge"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+extend-exclude = ["*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"**/tests/**" = ["E402"]
