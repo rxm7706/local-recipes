@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 10daf13e13b9ed21
-story_count: 148
+source_fingerprint: 877e11c7e2bffcc9
+story_count: 149
 test_file_count: 94
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 148
-- **Epics parsed:** 41
+- **Stories parsed:** 149
+- **Epics parsed:** 42
 - **Test files inventoried:** 94 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `10daf13e13b9ed21`
+- **Source fingerprint:** `877e11c7e2bffcc9`
 
 ## Risk Assessment
 
@@ -77,6 +77,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 38: Doctor stops letting deferrals and dead checks pile up (spec-pyforge-doctor CAP-29, CAP-88, CAP-42, CAP-1)
 - Epic 39: `pr-preflight` runs every step of the Detectors scripts lane (spec-pyforge-doctor CAP-42, CAP-43)
 - Epic 40: Phase 2 of the deferral burn-down: doctor's high deferrals
+- Epic 42: A repeated frontmatter key in a story spec turns Detectors red (spec-pyforge-doctor CAP-81, CAP-86)
 
 ## Test Inventory
 
@@ -329,6 +330,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 41.4 | The check CLI, the env and engines checks, the score and the bmad-method sour... | none observed |
 | 41.5 | A new story reopens its done epic without reading as a ledger regression | none observed |
 | 41.6 | Chain-completeness counts the one-chain fold's citation window again | none observed |
+| 42.1 | A repeated frontmatter key in a story spec turns Detectors red | none observed |
 
 ## Quality Gates
 

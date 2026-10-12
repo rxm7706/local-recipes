@@ -1351,6 +1351,63 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and its predicates do not change (operator ruling 2026-10-11: "Fold into 94.1 (Recommended)"; Story 94.1 had
   already been dispatched, so the fold is a second story in the same epic). Owner `spec-pyforge-marshal`. → Epic 94 /
   Story 94.2, specced 2026-10-11.
+- **2026-10-11 (pre-verify ruff covers the platform and the portal packages)** — **Found: dispatch applies ruff's
+  safe fixes and format only to a story's files under `src/shared/packages/pyforge-*`, so a platform file is refused
+  on a fix ruff could have made.** Stories 83.9 and 83.15 run `ruff check --fix` (safe fixes only) and `ruff format`
+  before verification, but only on changed `.py` files under the ten `pyforge-*` packages, from each package's own
+  directory. A story's files under `src/platform` (its own ruff table: target `py312`, line length 88,
+  `force-single-line` imports, migrations excluded) get no pass, and `platform-ci-local -- --test` then refuses them
+  under `MRS-GATE-015`. The nine `django-*` portal packages get no pass either; they have no ruff table today, and
+  steward Story 93.1 (dispatched now) gives each one its own table and puts them under `lint-types`. Steward 91.1's run
+  (`pyforge-steward-20261011T235216324Z-30fdeec5`) was refused at 00:29:48Z (UTC, 2026-10-12) on one I001 in
+  `src/platform/tests/test_stations_index.py`, an import order `ruff check --fix` sorts, and its verify-fix turn was
+  killed after 900 s (`MRS-DISP-059`), so the run failed. Herald 37.1's run (`pyforge-herald-20261011T190323017Z-deb8f4a9`)
+  journaled a pre-verify pass at 19:10:46Z for one `pyforge-herald` file and none for its platform test. It was then
+  refused under `MRS-GATE-015` on E501, RET504 and PLC0415 in `src/platform/tests/test_herald_portal_without_herald.py`,
+  and the session cleared them by hand (`e62682df15`). None of those three has a safe fix, so a wider pre-verify would
+  still not have cleared them. **What it looks like when fixed:** before verify, marshal groups the story's changed
+  `.py` files by the nearest parent directory whose `pyproject.toml` declares a `[tool.ruff]` table: a `pyforge-*`
+  package, a `django-*` package once its table lands, or `src/platform`. It runs the same safe fixes and format for
+  each group from that directory, so each tree's own target, line length, import style and excludes apply (a
+  `py314` table would write `except A, B:` into a `py312` tree). A file with no such parent is left alone, as is any
+  file the story did not change. The journal names each group and the files it changed, and a ruff failure in one
+  group is journaled without stopping the others. What ruff cannot fix safely still reaches verify. **Constraints:**
+  a fix story under CAP-161 (Story 22.3's verification, under which Stories 83.9 and 83.15 run their pre-verify step),
+  no CAP, no flag. Never `--unsafe-fixes`, and never a file outside the story's change set. The operator's ask,
+  verbatim: "Do this task here: Extend marshal pre-verify ruff to platform and portals". The `pyforge-marshal`
+  environment had no ruff, so the tests that run the real ruff skipped outside a dispatch. On the operator's ruling
+  "Fold into 95.1 (Recommended)", the same story adds ruff to that pixi feature, re-locks, regenerates
+  `environment.yaml`, and makes those tests fail instead of skip when ruff is missing. Owner `spec-pyforge-marshal`.
+  → Epic 95 / Story 95.1, specced 2026-10-11.
+- **2026-10-11 (duplicate frontmatter keys in story specs)** — **Found: dispatched sessions write a story spec's
+  frontmatter key a second time instead of replacing it, and marshal reads the first copy while every other reader
+  reads the last.** Measured on `main` at `a21524e9d6`: 37 of the 1,407 tracked story specs with frontmatter carry 40
+  repeated keys, `followup_review_recommended` 29 times and `review_loop_iteration` 11 times, in six projects (marshal
+  15, steward 7, herald 6, doctor 5, mason 4, warden 3). None of the other 900 tracked frontmatter files under
+  `_bmad-output/` and `docs/` (Dreams, `SPEC.md`s, PRDs, spines, `epics.md`, memlogs) repeats a key. All 40 were
+  written on `dispatch/pyforge-*` branches and committed by marshal's `supervisor finalize` (18), its `wip: <key>
+  (auto-checkpoint)` commits (16) or the session's own step-04 commit (6). The writer is the `bmad-build-auto` session:
+  its installed step files tell it to "write `followup_review_recommended: false`", to set `review_loop_iteration` and
+  to "increment it by 1, and write it back" (`step-01-clarify-and-route.md:31`, `step-04-review.md:70` and `:107`), and
+  the session adds a line where one already exists. The same step file already guards the `deferred` list ("never add
+  a second `deferred:` key", `:84`, then a full YAML parse, `:95`), and no spec repeats `deferred`. Herald 37.1 was
+  fixed by hand on 2026-10-11, and steward 91.1's dispatch branch has the defect again (`review_loop_iteration` 0, then
+  1). The repeat is not harmless: PyYAML keeps the last value (bmad-loop, doctor's `deferred-work`), and marshal's
+  `_frontmatter_scalar` (`core/dispatch_harness_done.py:83`) returns the first. Four specs hold two different values.
+  Herald 29.2 reads `followup_review_recommended: true`, then `false`: marshal reads `true` and `DW-FRR-29-2` carries
+  the follow-up review in herald's ledger, while bmad-loop and doctor read `false`. Which copy is right is a fact of history, not of line order: `git blame` shows the session put its write above the
+  old line in 32 of the 40 repeats, so herald 29.2's `true` is the review pass's write and the trailing `false` is
+  the stale line it meant to replace. **What it looks like when fixed:** a dispatched story's spec reaches
+  verification with each frontmatter key once. Before it verifies, marshal collapses a repeated key to the occurrence
+  git wrote last, and refuses when history cannot say (AD-8). The build skills are told to replace a key rather than
+  add one, and the specs already on `main` are cleaned the same way. Doctor's detector then holds the line on every
+  PR. **Constraints:** a fix story under CAP-161 (the
+  pre-verify step of Story 22.3's verification, where Stories 83.9, 83.15 and 91.1 already run) with CAP-169 and
+  CAP-275 (the readers of `followup_review_recommended`); no CAP, no flag. The installed step files are never edited:
+  the instruction goes in `_bmad/custom/bmad-build-auto.toml` and `bmad-build.toml` (Stories 74.3 and 87.11's layer).
+  The detector is doctor's, minted the same day as doctor Story 42.1 and gated on this story (operator ask 2026-10-11:
+  "Do this task here: Stop story specs gaining duplicate frontmatter keys"). Owner `spec-pyforge-marshal`. → Epic 96 /
+  Story 96.1, specced 2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

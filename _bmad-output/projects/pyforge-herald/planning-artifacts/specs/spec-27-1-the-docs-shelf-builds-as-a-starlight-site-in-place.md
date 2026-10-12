@@ -7,7 +7,6 @@ followup_review_recommended: false
 difficulty: 'medium'
 baseline_revision: '0ad6873d2fa3776d51e20c55ad9b67d345ef9884'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - docs/dreams/pyforge-herald.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

@@ -3,7 +3,6 @@ title: '83.3: The landing heal unions appended deferred-work rows the way it uni
 type: 'fix'
 created: '2026-10-02'
 status: 'done'
-review_loop_iteration: 0
 followup_review_recommended: false
 review_loop_iteration: 0
 context:

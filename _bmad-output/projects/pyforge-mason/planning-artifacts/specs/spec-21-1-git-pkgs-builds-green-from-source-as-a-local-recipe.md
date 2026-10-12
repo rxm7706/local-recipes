@@ -7,7 +7,6 @@ baseline_revision: '4698aee11b33774892315bf5606ff560ec158af2'
 followup_review_recommended: false
 flag-exempt: recipe-build
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
   - docs/dreams/pyforge-mason.md

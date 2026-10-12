@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 FLEET_SCAN_FLAG = "pyforge.warden.fleet_scan"
 FLEET_FIX_PROPOSALS_FLAG = "pyforge.warden.fleet_fix_proposals"
+FLEET_INVENTORY_FLAG = "pyforge.warden.fleet_inventory"
 
 # Steward-provisioned credential names — passed via subprocess env only, never URLs/logs.
 _GIT_CREDENTIAL_ENV_KEYS = (

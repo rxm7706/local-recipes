@@ -17,6 +17,12 @@ from django.conf import settings
 from .fleet import mkdtemp_clone_dir
 from .fleet import remove_clone_dir
 from .fleet import shallow_clone
+from .fleet_inventory import FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS
+from .fleet_inventory import FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
+from .fleet_inventory import FLEET_INVENTORY_TIME_LIMIT_SECONDS
+from .fleet_inventory import FleetInventoryError
+from .fleet_inventory import GhAuthTokenProvider
+from .fleet_inventory import run_fleet_inventory_sync
 from .models import ComplianceJob
 from .models import FixProposal
 from .models import FleetRepo
@@ -129,6 +135,31 @@ def _run_warden_engines(
     return report_json, "{}", int(code)
 
 
+@shared_task(
+    bind=True,
+    name="warden_fabric.run_fleet_inventory",
+    soft_time_limit=FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
+    time_limit=FLEET_INVENTORY_TIME_LIMIT_SECONDS,
+)
+def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
+    """List github.com org repos — Celery message carries ids and org name only."""
+    from pyforge.warden.fleet_github_rest import FleetInventoryApiError  # noqa: PLC0415
+    from pyforge.warden.fleet_github_rest import GitHubRestOrgReposClient  # noqa: PLC0415
+
+    try:
+        # No ``token`` local: a logged traceback renders frame locals.
+        client = GitHubRestOrgReposClient(
+            token=GhAuthTokenProvider().token(),
+            timeout=FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS,
+        )
+        run_fleet_inventory_sync(organisation=organisation, listing_client=client)
+    except (FleetInventoryError, FleetInventoryApiError):
+        logger.exception("fleet inventory %s failed", inventory_run_id)
+        raise
+    else:
+        return inventory_run_id
+
+
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")
 def finalize_fleet_run(self, scan_results: list[object], fleet_run_id: str) -> str:
     """Mark the fleet run complete after all repo sub-tasks finish."""
@@ -148,7 +179,9 @@ def run_fleet_run(self, fleet_run_id: str) -> str:
     run = FleetRun.objects.get(pk=fleet_run_id)
     run.status = JobStatus.RUNNING
     run.save(update_fields=["status", "updated_at"])
-    repos = FleetRepo.objects.filter(organisation=run.organisation).order_by("full_name")
+    repos = FleetRepo.objects.filter(organisation=run.organisation).order_by(
+        "full_name"
+    )
     try:
         signatures = []
         for repo in repos:
@@ -236,14 +269,20 @@ def _finding_from_report_dict(data: dict[str, object]):
     finding_id = data["id"]
     axis = data["axis"]
     message = data["message"]
-    if not isinstance(finding_id, str) or not isinstance(axis, str) or not isinstance(message, str):
+    if (
+        not isinstance(finding_id, str)
+        or not isinstance(axis, str)
+        or not isinstance(message, str)
+    ):
         msg = "invalid finding entry in report"
         raise ValueError(msg)
     subject = data.get("subject")
     severity_raw = data.get("severity")
     severity = None
     if isinstance(severity_raw, dict) and isinstance(severity_raw.get("tier"), str):
-        severity = Severity(tier=SeverityTier(severity_raw["tier"]), raw=severity_raw.get("raw"))
+        severity = Severity(
+            tier=SeverityTier(severity_raw["tier"]), raw=severity_raw.get("raw")
+        )
     return Finding(
         id=finding_id,
         axis=axis,

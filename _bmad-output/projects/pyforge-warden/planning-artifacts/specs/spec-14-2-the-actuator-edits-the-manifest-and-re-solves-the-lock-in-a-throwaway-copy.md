@@ -6,7 +6,6 @@ status: 'done'
 followup_review_recommended: false
 baseline_revision: 'a16ab7f7e2a65d81814987c7698ace76d65ad16e'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
   - docs/dreams/pyforge-warden.md

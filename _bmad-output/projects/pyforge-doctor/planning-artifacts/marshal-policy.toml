@@ -311,6 +311,26 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"42" = [  # a repeated frontmatter key in a story spec turns Detectors red (a new source under CAP-81 with CAP-86, no
+  # CAP; Story 42.1), added 2026-10-11. The default surface, restated because a declared entry replaces it outright,
+  # plus the detector registry and its tests, the pixi task's generated reference pages and their map stamps, and
+  # every Spec memlog a reconcile names (spec-pyforge-core co-governs station src/; pixi.toml has several governors).
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/detectors.py",
+  "tests/scripts/**",
+  "docs/reference/detectors.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/map.yaml",
+  "docs/MAP.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "41" = [  # Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals (fix stories, no new CAP), added 2026-10-03
   # The default surface, restated because a declared entry replaces it outright, plus what the four stories touch
   # outside the package: the spec-surface, verdict-writer and baseline scripts and their tests (41.1), the detectors

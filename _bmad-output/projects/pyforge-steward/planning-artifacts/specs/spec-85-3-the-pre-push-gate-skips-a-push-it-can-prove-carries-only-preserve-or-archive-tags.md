@@ -5,7 +5,6 @@ created: '2026-10-04'
 status: 'done'
 baseline_revision: '7722e81e77cf7813d425b2f901633458f6414809'
 flag-exempt: detector-or-gate   # the pre-push preflight is a gate; a gated gate reports a silent green
-review_loop_iteration: 0
 followup_review_recommended: false
 review_loop_iteration: 0
 context:
