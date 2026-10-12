@@ -13,6 +13,8 @@ from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_spec_frontmatter import (
     SPEC_FRONTMATTER_GATE_CODE,
     DispatchSpecFrontmatterResult,
+    _split_story_spec,
+    _top_level_key_line_map,
     apply_dispatch_spec_frontmatter_before_verify,
     collapse_story_spec_frontmatter_text,
     findings_for_spec_frontmatter_refusals,
@@ -85,53 +87,41 @@ def test_story_spec_paths_in_changed_scopes_to_story_specs() -> None:
     assert paths == ("_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-a.md",)
 
 
-def test_tracked_story_specs_carry_each_frontmatter_key_once() -> None:
+def test_tracked_story_specs_carry_each_top_level_frontmatter_key_once() -> None:
     files = [
         p
         for p in subprocess.check_output(["git", "-C", str(_REPO_ROOT), "ls-files"], text=True).splitlines()
         if "/planning-artifacts/specs/spec-" in p and p.endswith(".md")
     ]
-    offenders: list[tuple[str, set[str]]] = []
+    offenders: list[tuple[str, list[str]]] = []
     for rel in files:
         text = (_REPO_ROOT / rel).read_text(encoding="utf-8")
-        dup = _story_spec_frontmatter_dup_keys(text)
-        if dup:
-            offenders.append((rel, dup))
-    assert not offenders, offenders[:3]
+        split = _split_story_spec(text)
+        if split is None:
+            continue
+        _o, close_idx, _body = split
+        fm = text.splitlines(keepends=True)[1:close_idx]
+        repeats = [k for k, v in _top_level_key_line_map(fm).items() if len(v) > 1]
+        if repeats:
+            offenders.append((rel, repeats))
+    assert not offenders, offenders[:5]
 
 
-def test_herald_shape_keeps_newer_true(tmp_path: Path) -> None:
-    spec_dir = tmp_path / "_bmad-output/projects/pyforge-herald/planning-artifacts/specs"
-    spec_dir.mkdir(parents=True)
-    rel = "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-test.md"
-    spec_path = spec_dir / "spec-test.md"
-    base = (
-        "---\n"
-        "title: t\n"
-        "followup_review_recommended: false\n"
-        "status: done\n"
-        "---\n\nbody\n"
-    )
-    spec_path.write_text(base, encoding="utf-8")
-    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "base"], cwd=tmp_path, check=True, capture_output=True)
-    spec_path.write_text(
+def test_herald_shape_keeps_newer_true() -> None:
+    text = (
         "---\n"
         "title: t\n"
         "followup_review_recommended: true\n"
         "followup_review_recommended: false\n"
         "status: done\n"
-        "---\n\nbody\n",
-        encoding="utf-8",
+        "---\n\nbody\n"
     )
-    subprocess.run(["git", "add", spec_path], cwd=tmp_path, check=True, capture_output=True)
-    env = {"GIT_AUTHOR_DATE": "2026-01-02T00:00:00", "GIT_COMMITTER_DATE": "2026-01-02T00:00:00"}
-    subprocess.run(["git", "commit", "-m", "insert true"], cwd=tmp_path, check=True, capture_output=True, env=env)
-    vcs = GitVcs()
-    blame = vcs.line_blame_facts(repo_root=tmp_path, path=rel, worktree=tmp_path)
+    blame = {
+        3: ("b" * 40, 200),
+        4: ("a" * 40, 100),
+    }
     new_text, refusals, keys = collapse_story_spec_frontmatter_text(
-        spec_path.read_text(encoding="utf-8"),
+        text,
         blame=blame,
         tiebreak_same_commit="refuse",
     )
