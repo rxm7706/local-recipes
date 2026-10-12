@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jadx
+  version: "1.5.6"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/skylot/jadx/releases/download/v${{ version }}/jadx-${{ version }}.zip
+  sha256: 545ea2be9c242511bc145755cf4bda2485ade42966e096f8b4d3da2a230e8974
+
+build:
+  number: 0
+  noarch: generic
+  skip:
+    - win
+  script:
+    - mkdir -p $PREFIX/share/jadx $PREFIX/bin
+    - cp -r bin lib $PREFIX/share/jadx/
+    - rm -f $PREFIX/share/jadx/bin/*.bat
+    - chmod +x $PREFIX/share/jadx/bin/jadx $PREFIX/share/jadx/bin/jadx-gui
+    - for t in jadx jadx-gui; do printf '#!/bin/sh\nexec "$(dirname "$0")/../share/jadx/bin/%s" "$@"\n' "$t" > $PREFIX/bin/$t; chmod +x $PREFIX/bin/$t; done
+
+requirements:
+  run:
+    - openjdk >=11
+
+tests:
+  - script:
+      - jadx --version
+      - jadx --help
+  - script:
+      - test -f $PREFIX/share/jadx/lib/jadx-${{ version }}-all.jar
+
+about:
+  summary: Dex to Java decompiler (CLI and GUI)
+  homepage: https://github.com/skylot/jadx
+  repository: https://github.com/skylot/jadx
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

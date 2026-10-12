@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: capstone6pwndbg
+  version: "8.0.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/capstone6pwndbg/capstone6pwndbg-${{ version }}.tar.gz
+  sha256: 8ba12480ba09562bd1cec5e714d851ce5490c2559939df7717622c9a6f4756de
+
+build:
+  number: 0
+  skip:
+    - win
+  # The bundled capstone C library is built with cmake by setup.py and loaded
+  # through ctypes, so the Python layer is version-independent but the
+  # package is per-platform.
+  script:
+    - export THREADS=${CPU_COUNT:-4}
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - make
+  host:
+    - python
+    - pip
+    - setuptools >=68
+    - wheel
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - capstone6pwndbg
+      pip_check: true
+  - script:
+      - python -c "import capstone6pwndbg as C; md = C.Cs(C.CS_ARCH_X86, C.CS_MODE_64); print([(i.mnemonic, i.op_str) for i in md.disasm(b'\x55\x48\x8b\x05\xb8\x13\x00\x00', 0x1000)])"
+
+about:
+  summary: Capstone disassembly engine (pwndbg-pinned v6 fork, renamed module)
+  homepage: https://www.capstone-engine.org
+  repository: https://github.com/pwndbg/capstone
+  license: BSD-3-Clause
+  license_file: LICENSE.TXT
+
+extra:
+  recipe-maintainers:
+    - rxm7706
