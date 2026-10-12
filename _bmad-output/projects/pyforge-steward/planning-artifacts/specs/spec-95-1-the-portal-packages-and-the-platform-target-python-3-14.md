@@ -2,7 +2,7 @@
 title: '95.1: The portal packages and the platform target Python 3.14'
 type: 'feature'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'b4722aeba9e0f476c129d057c150fb0c4fd25294'
 flag-exempt: detector-or-gate   # the story changes target-version-check; a gated gate reports a silent green
 review_loop_iteration: 0
