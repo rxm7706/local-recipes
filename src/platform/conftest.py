@@ -8,8 +8,47 @@ so deployed-only startup refusals do not fire under ``--ds=config.settings.test`
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
+from typing import Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 import pytest
+import structlog
+
+_STRUCTLOG_CONFIG_KEYS = (
+    "processors",
+    "wrapper_class",
+    "context_class",
+    "logger_factory",
+    "cache_logger_on_first_use",
+)
+
+
+def _copy_structlog_config() -> dict[str, Any]:
+    cfg = structlog.get_config()
+    return {**cfg, "processors": list(cfg["processors"])}
+
+
+def _structlog_config_diff_keys(
+    baseline: dict[str, Any],
+    current: dict[str, Any],
+) -> list[str]:
+    differing: list[str] = []
+    for key in _STRUCTLOG_CONFIG_KEYS:
+        if key not in baseline or key not in current:
+            differing.append(key)
+            continue
+        if key == "processors":
+            if list(baseline[key]) != list(current[key]):
+                differing.append(key)
+        elif baseline[key] != current[key]:
+            differing.append(key)
+    return differing
+
+
+_structlog_session_baseline: dict[str, Any] | None = None
 
 os.environ.setdefault("COMPONENT_RUNTIME", "local")
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")
@@ -59,6 +98,25 @@ def _isolate_caches():
     for mod in _cache_mods:
         mod._CACHE.clear()  # noqa: SLF001
     supervisor._runners.clear()  # noqa: SLF001
+
+
+@pytest.fixture(autouse=True)
+def _guard_structlog_configuration(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Fail tests that leave structlog configured differently from session baseline."""
+    global _structlog_session_baseline  # noqa: PLW0603
+    if _structlog_session_baseline is None:
+        _structlog_session_baseline = _copy_structlog_config()
+    yield
+    current = structlog.get_config()
+    differing = _structlog_config_diff_keys(_structlog_session_baseline, current)
+    if not differing:
+        return
+    baseline = _structlog_session_baseline
+    structlog.configure(**{**baseline, "processors": list(baseline["processors"])})
+    pytest.fail(
+        f"structlog configuration leak in {request.node.nodeid}; "
+        f"differing keys: {', '.join(differing)}"
+    )
 
 
 @pytest.fixture(autouse=True)
