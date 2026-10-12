@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,7 +29,6 @@ _EXPECTED_MARSHAL_SEGMENTS = frozenset(
         "epic-continuity",
         "token-economy-benchmark",
         "token-economy-benchmark-per-layer",
-        "bmad-build-auto-result",
     }
 )
 
@@ -123,7 +123,7 @@ _SHAPE_TABLE: tuple[_ShapeRow, ...] = (
 )
 
 
-def _path_join_parts(node: ast.AST) -> list[str] | None:
+def _path_join_string(node: ast.AST) -> str | None:
     parts: list[str] = []
     cur: ast.AST = node
     while isinstance(cur, ast.BinOp) and isinstance(cur.op, ast.Div):
@@ -133,15 +133,23 @@ def _path_join_parts(node: ast.AST) -> list[str] | None:
         cur = cur.left
     if isinstance(cur, ast.Constant) and isinstance(cur.value, str):
         parts.insert(0, cur.value)
-        return parts
-    return None
+    elif parts:
+        pass
+    else:
+        return None
+    return "/".join(parts)
 
 
 def _segment_from_literal(text: str) -> str | None:
-    if "implementation-artifacts/" not in text:
+    if "implementation-artifacts/" not in text or "\n" in text or len(text) > 240:
         return None
     tail = text.split("implementation-artifacts/", 1)[1]
-    segment = tail.split("/")[0]
+    segment = tail.split("/")[0].split("`")[0]
+    if segment in {"deferred-work.md", "spec", "specs"}:
+        return None
+    base = segment.split("{")[0]
+    if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", base):
+        return None
     if segment.startswith("epic-") and segment.endswith("-continuity.md"):
         return "epic-continuity"
     if segment.startswith("epic-") and segment.endswith("-context.md"):
@@ -167,11 +175,12 @@ def _collect_impl_segments_from_ast(path: Path) -> set[str]:
             seg = _segment_from_literal(node.value)
             if seg:
                 found.add(seg)
-        joined = _path_join_parts(node)
-        if joined:
-            seg = _segment_from_literal("/".join(joined))
-            if seg:
-                found.add(seg)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            joined = _path_join_string(node)
+            if joined:
+                seg = _segment_from_literal(joined)
+                if seg:
+                    found.add(seg)
     return found
 
 
