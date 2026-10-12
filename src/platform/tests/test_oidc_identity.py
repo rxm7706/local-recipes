@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+from typing import Any
+
 import pytest
 import structlog
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.models import SocialLogin
@@ -43,6 +49,14 @@ def _provision_groups() -> None:
     provision_designated_groups()
 
 
+@pytest.fixture
+def _restore_structlog_after_test() -> Iterator[None]:
+    saved: dict[str, Any] = structlog.get_config()
+    saved = {**saved, "processors": list(saved["processors"])}
+    yield
+    structlog.configure(**saved)
+
+
 def test_idp_subject_is_unique_nullable() -> None:
     user_model = get_user_model()
     field = user_model._meta.get_field("idp_subject")  # noqa: SLF001
@@ -74,6 +88,7 @@ def test_sync_sets_staff_from_group_claim() -> None:
     assert outcome.ignored == ()
 
 
+@pytest.mark.usefixtures("_restore_structlog_after_test")
 def test_sync_ignores_unmatched_groups_and_logs(
     caplog: pytest.LogCaptureFixture,
 ) -> None:

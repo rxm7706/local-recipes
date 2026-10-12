@@ -1360,22 +1360,23 @@ cmd = "bash scripts/platform-ci-local.sh"
 description = "Advisory host check (scribe Story 19.3, spec-pyforge-scribe CAP-29): is this machine's Claude Code >= 2.1.277 (the built-in agents-md mod) and is the mod pinned to instructionFiles=claude-md-and-agents-md in ~/.claude/settings.json? The mod's DEFAULT mode stays out of any project that has a CLAUDE.md, so without the pin AGENTS.md still arrives only through CLAUDE.md's @AGENTS.md import (the floor on every runtime) and nested AGENTS.md files (src/shared/packages/pyforge-atlas/AGENTS.md) never load in interactive sessions. Warn-only, never gating; silent when no claude binary is on the host; runtime scope (reads the host, never joins detectors-ci). Dispatched sessions are pinned by marshal's claude harness profile (Story 46.11, --settings), so this is about the operator's own sessions. Override the settings path with -- --settings <file>."
 cmd = "python scripts/claude_instruction_mode_check.py"
 
-# Story 66.1 (spec-pyforge-steward CAP-153): the ten pyforge-* packages' lint / type gate. ONE set of tasks,
-# called verbatim by `.github/workflows/lint-types.yml` and by the `pr-preflight` leg below, so local and
-# runner cannot diverge. Each package's own `[tool.ruff]` / `[tool.mypy]` (py314 targets; mypy strict for
-# pyforge-core; the 2026-09-20 baseline disabled PER MODULE, PER ERROR CODE -- never `ignore_errors`) is
-# what ruff/mypy read; these tasks only name the trees. `src/platform` keeps its own platform-ci lane.
+# Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): pyforge-* and django-* ruff gate plus pyforge-* mypy.
+# ONE set of tasks, called verbatim by `.github/workflows/lint-types.yml` and by the `pr-preflight` leg below,
+# so local and runner cannot diverge. Each package's own `[tool.ruff]` / `[tool.mypy]` (py314 for pyforge-*;
+# py312 for django-*; mypy strict for pyforge-core; the 2026-09-20 baseline disabled PER MODULE, PER ERROR
+# CODE -- never `ignore_errors`) is what ruff/mypy read. NOT_YET_CLEAN django entries in scripts/lint_types.py
+# only shrink. `src/platform` keeps its own platform-ci lane.
 [feature.guild-tasks.tasks.ruff]
 cmd = "python scripts/lint_types.py ruff"
-description = "Story 66.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten src/shared/packages/pyforge-*/ packages (src + tests), each read with its own [tool.ruff]. The CI lane and pr-preflight call this task verbatim."
+description = "Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten pyforge-* and nine django-* packages under src/shared/packages/ (src + tests), each read with its own [tool.ruff]. NOT_YET_CLEAN django entries only shrink. The CI lane and pr-preflight call this task verbatim."
 
 [feature.guild-tasks.tasks.ruff-format]
 cmd = "python scripts/lint_types.py ruff-format"
-description = "Story 66.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* packages. Fix with `pixi run -e pyforge-guild ruff-format-fix`."
+description = "Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* and nine django-* packages; NOT_YET_CLEAN django entries only shrink. Fix with `pixi run -e pyforge-guild ruff-format-fix`."
 
 [feature.guild-tasks.tasks.ruff-format-fix]
 cmd = "python scripts/lint_types.py ruff-format --fix"
-description = "Story 66.1: mutator twin of `ruff-format` -- rewrites files in place. Never in CI."
+description = "Stories 66.1 / 93.1: mutator twin of `ruff-format` -- rewrites unlisted packages in place; skips django packages listed for ruff-format. Never in CI."
 
 [feature.guild-tasks.tasks.mypy]
 cmd = "python scripts/lint_types.py mypy"

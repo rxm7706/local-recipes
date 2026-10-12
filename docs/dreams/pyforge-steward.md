@@ -1501,6 +1501,26 @@ Drift — orphaned between stations.
   after Story 93.1; the portal packages' other ruff findings stay with each station's own fix story, so the
   not-yet-clean list does not change. Owner `spec-pyforge-steward`; the portal packages and `src/platform` sit on
   `spec-pyforge-unifying-strategy`'s surface. → Epic 95 / Story 95.1, specced 2026-10-11.
+- **2026-10-11 (platform-ci-local syncs a stale env) — Found: `platform-ci-local` runs its stages on whatever platform
+  envs the checkout already has, even after `pixi.lock` has moved past them.** The script takes its tools straight from
+  `.pixi/envs/platform-ci-test`, `platform-dev` and `pyforge-warden`, and installs an env only when its `bin/python` is
+  missing (`[ -x "$ROOT/.pixi/envs/$e/bin/python" ] || pixi install --frozen -e "$e"`). `pixi run -e pyforge-guild`
+  syncs only the Guild's own env. So a worktree that installed its platform envs before a merge of `main` changed
+  `pixi.lock` keeps running the old ones, and marshal's cross-surface check (MRS-GATE-015, `pixi run -e pyforge-guild
+  platform-ci-local -- --test`) judges the story on them. On 2026-10-11 steward 91.1's worktree created
+  `platform-ci-test` at 18:53. At 20:22 it merged `main` (`548b976af3`), which brought warden Story 16.1's
+  `pyforge-warden` dependency for that env (`dae6101829`). Its next `platform-ci-local -- --test` failed 15 tests in
+  `src/platform/tests/test_warden_fleet_inventory.py` with "No module named 'pyforge.warden'". A hand-run
+  `pixi install --frozen -e platform-ci-test` (20:43) fixed it. Measured on `485d325d56`: the install takes 0.2-0.3 s
+  per env when the env is current, and about 2 s for `platform-ci-test` into an empty prefix from a warm package cache.
+  The operator asked, verbatim: "Do this task here: Make platform-ci-local sync a stale env". **What it looks like when
+  fixed:** every run runs `pixi install --frozen` against its own manifest for each env its stages use. It does so under
+  the run's lock, before any service or stage starts, and says for each env whether it installed it, synced it or
+  found it current. A sync that fails stops the run with exit 2 and names the env; the run never falls back to the
+  stale env. **Constraints:** a fix under CAP-152 (Epic 63; Story 89.1 is the last fix there), no CAP, no flag;
+  `--frozen` only, never `pixi update`, `pixi add` or `pixi lock`; Stories 63.7's and 89.1's lock, reclaim, step names
+  and exit codes stay, and so do their tests, except that the shared stub helper gains a `pixi` stand-in; marshal's
+  command does not change. Owner `spec-pyforge-steward`. → Epic 96 / Story 96.1, specced 2026-10-11.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

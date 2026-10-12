@@ -6,7 +6,6 @@ status: 'done'
 followup_review_recommended: false
 baseline_revision: '1bf6c5a138cb55ad4da80598789eaf5ef917e056'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - docs/governance/spec-one-chain-per-station/SPEC.md
   - docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md

@@ -9818,7 +9818,7 @@ So that every reader of a story spec reads the value its writer meant.
 **When** dispatch verifies a story whose tracked story spec repeats a frontmatter key, or a build skill sets a frontmatter key
 **Then** before any verify command runs, marshal keeps the occurrence git wrote last, removes the others in place, checks the result with a YAML parse, commits the changed specs and journals a `dispatch-spec-frontmatter` pair; a repeat whose values differ but share the newest commit time, or an edit the parse rejects, leaves the spec unchanged and refuses under a new `MRS-GATE-0nn` naming the spec and the key; both build-skill customizations tell the session to replace a key in place and parse the block afterwards; and the 37 specs on `main` are collapsed by the same rule (herald 29.2 keeps `true`, doctor 21.7 and 41.6 keep `1`, steward 43.7, whose two lines arrived in one commit, keeps its last line), each recorded on its governing Spec's memlog
 **And** a real-repository test reproduces herald 29.2's and doctor 21.7's shapes and a three-write repeat, the ambiguous shape refuses, a story with no repeat commits nothing, both callers run the step, the meta-test pins both facts, and after the story marshal's `followup_review_recommended()` and `yaml.safe_load` agree on every tracked story spec; removing the step, keeping the last line instead of the newest write, dropping a fact, or collapsing an ambiguous repeat each fails a test (mutation)
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
