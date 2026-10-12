@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 769db1c4e2fb771d
-story_count: 353
-test_file_count: 112
+source_fingerprint: b2b4188a72edd19d
+story_count: 354
+test_file_count: 115
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 353
-- **Epics parsed:** 96
-- **Test files inventoried:** 112 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 354
+- **Epics parsed:** 97
+- **Test files inventoried:** 115 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `769db1c4e2fb771d`
+- **Source fingerprint:** `b2b4188a72edd19d`
 
 ## Risk Assessment
 
@@ -124,6 +124,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 94: No platform test leaks its structlog configuration into the next (fix under CAP-87)
 - Epic 95: The portal packages and the platform target Python 3.14 (feature under CAP-153)
 - Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
+- Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
 
 ### Low-risk epics
 
@@ -142,6 +143,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
@@ -149,6 +151,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py` | meta | none observed |
@@ -198,6 +201,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_plaintext_secret_scan.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_revoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
@@ -607,6 +611,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 94.1 | No platform test leaves structlog configured differently | none observed |
 | 95.1 | The portal packages and the platform target Python 3.14 | none observed |
 | 96.1 | `platform-ci-local` never runs a stage on a stale env | none observed |
+| 97.1 | The not-yet-clean ceiling may shrink but never grow | none observed |
 
 ## Quality Gates
 
