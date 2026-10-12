@@ -2,9 +2,9 @@
 title: "43.1: bmad-drift knows every file marshal dispatch writes into Tier-3"
 type: 'fix'
 created: '2026-10-12'
-status: 'in-review'
+status: 'done'
 baseline_revision: '70975ae790'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -255,4 +255,10 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-12 iteration 1: AC1–AC8 verified locally (`pyforge-doctor-test` 3579 passed; `pyforge-doctor-scripts-test` 1475 passed + 21 new tier3 classify tests; AC7 `bmad-drift-check` exit 0 with planted Tier-3 tree; `spec_surface_reconcile.py` and `spec-surface-check` exit 0 after memlogs and scoped stamps on `spec-pyforge-doctor` and `spec-pyforge-core`). No blocking findings.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test`; `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`; `pixi run -e pyforge-guild bmad-drift-check` with AC7 fixtures; `python scripts/spec_surface_reconcile.py`; scoped `spec_surface_check.py --write-baseline` for `pyforge-doctor/spec-pyforge-doctor` and `pyforge-marshal/spec-pyforge-core` (not a bare global stamp).
