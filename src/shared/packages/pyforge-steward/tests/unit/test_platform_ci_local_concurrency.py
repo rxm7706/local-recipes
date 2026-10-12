@@ -170,6 +170,59 @@ def _prepare_stub_root(root: Path) -> Path:
     )
     _write_executable(bin_dir / "docker", docker_stub)
 
+    pixi_stub = textwrap.dedent(
+        """\
+        #!/usr/bin/env bash
+        log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
+        lock="${PLATFORM_CI_LOCAL_LOCK:-}"
+        held=""
+        if [ -n "$lock" ]; then
+          for fd in /proc/self/fd/*; do
+            target="$(readlink "$fd" 2>/dev/null || true)"
+            [ "$target" = "$lock" ] && held=yes
+          done
+        fi
+        echo "pixi $* pid=$$ lock_fd=${held:-no}" >> "$log"
+        if [[ " $* " == *" install "* ]]; then
+          if flock -n "$lock" true 2>/dev/null; then
+            echo "pixi flock_n=held" >> "$log"
+          else
+            echo "pixi flock_n=blocked" >> "$log"
+          fi
+          env_name=""
+          prev=""
+          for arg in "$@"; do
+            if [ "$prev" = "-e" ]; then env_name="$arg"; fi
+            prev="$arg"
+          done
+          exit_code=0
+          case "$env_name" in
+            platform-ci-test) exit_code="${PLATFORM_CI_STUB_PIXI_EXIT_CIT:-0}" ;;
+            platform-dev) exit_code="${PLATFORM_CI_STUB_PIXI_EXIT_DEV:-0}" ;;
+            pyforge-warden) exit_code="${PLATFORM_CI_STUB_PIXI_EXIT_WRD:-0}" ;;
+          esac
+          if [ "$exit_code" != 0 ]; then exit "$exit_code"; fi
+          root="${PIXI_PROJECT_ROOT:-}"
+          if [ -n "$root" ] && [ -n "$env_name" ]; then
+            meta="$root/.pixi/envs/$env_name/conda-meta"
+            mkdir -p "$meta"
+            write_hash="${PLATFORM_CI_STUB_PIXI_WRITE_HASH:-}"
+            if [ -n "$write_hash" ]; then
+              printf '{"environment_lock_file_hash":"%s"}\\n' "$write_hash" > "$meta/pixi"
+            elif [ "${PLATFORM_CI_STUB_PIXI_LEAVE_HASH:-0}" != 1 ]; then
+              if [ -f "$meta/pixi" ]; then
+                :
+              else
+                printf '{"environment_lock_file_hash":"new"}\\n' > "$meta/pixi"
+              fi
+            fi
+          fi
+        fi
+        exit 0
+        """
+    )
+    _write_executable(bin_dir / "pixi", pixi_stub)
+
     plat = root / "src" / "platform"
     plat.mkdir(parents=True, exist_ok=True)
     _write_executable(plat / "manage.py", "#!/usr/bin/env bash\nexit 0\n")

@@ -1521,6 +1521,29 @@ Drift — orphaned between stations.
   `--frozen` only, never `pixi update`, `pixi add` or `pixi lock`; Stories 63.7's and 89.1's lock, reclaim, step names
   and exit codes stay, and so do their tests, except that the shared stub helper gains a `pixi` stand-in; marshal's
   command does not change. Owner `spec-pyforge-steward`. → Epic 96 / Story 96.1, specced 2026-10-11.
+- **2026-10-12 (the not-yet-clean ceiling may shrink) — Found: steward's ceiling test pins the lint gate's
+  not-yet-clean list to its seed by equality, so the first station to clean its package turned `steward-test` red on
+  `main`.** Story 93.1 (PR #2141, landed 2026-10-11) put the nine django portal packages under `lint-types` with
+  `NOT_YET_CLEAN_CEILING` and `NOT_YET_CLEAN` in `scripts/lint_types.py` (:41-:54). The file's comments say the ceiling
+  "Only shrinks — each station's fix story removes its own entry; never re-add a package or verb", and 93.1's AC4 says
+  "Adding a package or a verb back fails the test. Removing an entry passes it." Its meta-test
+  `tests/meta/test_lint_types_django_tables.py::test_not_yet_clean_within_ceiling_and_seeded_map` (:67-:70) instead
+  asserts `mod.NOT_YET_CLEAN_CEILING == SEEDED_NOT_YET_CLEAN`, equality with the frozen nine-entry seed at :30-:40.
+  Herald Story 38.1 (merge `e0b8ceae0c`, 2026-10-11) lint-cleaned django-herald and removed its entry from both maps,
+  as 93.1 designed. On `f1be3236b9` the meta-test fails with "Right contains 1 more item: {'django-herald':
+  frozenset({'ruff-format', 'ruff'})}" (1 failed, 2 passed, reproduced 2026-10-12), so every PR whose CI runs
+  `steward-test` is red; warden 16.5's PR #2146 is blocked by it. Herald 38.1's own CI never ran `steward-test`:
+  `pyforge-station-tests.yml` runs the steward job only when `src/shared/packages/pyforge-steward` or the shared surface
+  (pyforge-core, the testing kit, `pixi.toml`, `pixi.lock`, the workflow itself) moves, and 38.1 moved
+  `scripts/lint_types.py` and `src/shared/packages/django-herald/**`, neither of which is on it. **What it looks like
+  when fixed:** the meta-test holds the ceiling to the seed as a subset (no package the seed lacks, no verb the seed
+  lacks for that package) and `NOT_YET_CLEAN` within the ceiling, so an entry can leave and never return, as 93.1
+  specified; `main`'s tree, with herald's entry gone, passes. **Constraints:** a fix under CAP-153 (Story 93.1; Epic 93
+  is done, so a new epic), no CAP, no flag; only the meta-test changes, and `scripts/lint_types.py` and the seed keep
+  every line. The steward job's missing trigger on `scripts/lint_types.py` and the `django-*` packages is recorded on
+  the story spec as out of scope. Authority: the operator's standing direction, "keep going, merge and dispatch when
+  green", with failures fixed at once; the fix restores 93.1's stated design, so it needs no new ruling. Owner
+  `spec-pyforge-steward`. → Epic 97 / Story 97.1, specced 2026-10-12.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
