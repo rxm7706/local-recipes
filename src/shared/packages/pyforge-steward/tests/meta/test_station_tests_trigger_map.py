@@ -843,6 +843,9 @@ class Scanner:
             segments = _split_segments(text)
             if len(segments) < 2 or ".." in segments:
                 continue
+            joined = "/".join(segments)
+            if len(segments) < 3 and joined not in _tracked_set():
+                continue  # a one- or two-segment directory name is a label (``docs/dreams``), not a read
             if representative(tuple(segments)) is not None:
                 self._add_read(tuple(segments), mod.rel)
 
@@ -1013,7 +1016,257 @@ def derive_reads(job: Job, pixi: Mapping) -> JobReads:
     return JobReads(reads, set(scanner.handoffs))
 
 
+STEWARD_OWN = "steward-test (this meta-test reads every suite's tests)"
+
+
 @functools.cache
 def real_derivation() -> dict[str, JobReads]:
     pixi = tomllib.loads(PIXI_TOML.read_text(encoding="utf-8"))
-    return {job.output: derive_reads(job, pixi) for job in load_jobs(WORKFLOW.read_text(encoding="utf-8"))}
+    jobs = load_jobs(WORKFLOW.read_text(encoding="utf-8"))
+    derived = {job.output: derive_reads(job, pixi) for job in jobs}
+    # Its own reads: this meta-test reads every suite's tests, so steward's list carries them -- a
+    # station PR that adds an outside read runs steward-test and is caught in that PR.
+    own = derived["steward"].reads
+    own.setdefault((*PACKAGES.split("/"), "pyforge-*", "tests"), set()).add(STEWARD_OWN)
+    for job in jobs:
+        for path in task_paths(pixi, job):
+            if not _within(path, job.package):
+                own.setdefault(tuple(path.split("/")), set()).add(STEWARD_OWN)
+    for rel in (WORKFLOW_REL, "pixi.toml"):
+        own.setdefault(tuple(rel.split("/")), set()).add(STEWARD_OWN)
+    return derived
+
+# ---------------------------------------------------------------------------
+# Root handoffs: tests that give the bare repository root to the code under test
+# ---------------------------------------------------------------------------
+# A test that passes the repo root to a gatherer, a generator, ``subprocess.run`` or
+# ``monkeypatch.chdir`` reads whatever that code reads, and a scan of the test cannot see it.
+# Each such file is declared per job with the globs the code reads from the root and why. The
+# derived set of handoff files must equal the declared keys (so a new live-tree test fails until
+# it is declared, and a stale declaration fails too); every declared glob goes through the same
+# fire check as a derived read. A declaration only adds inputs.
+
+_PLAN = ("_bmad-output/projects/*/planning-artifacts/**", "_bmad-output/projects/*/README.md")
+_PYTHON_TREES = ("src/**", "scripts/**", ".claude/scripts/**")
+
+# group -> (globs the code under test reads from the root, why)
+_H: dict[str, tuple[tuple[str, ...], str]] = {
+    "GIT_PLATFORM_DIFF": (
+        ("src/platform/**",),
+        "changed_paths_since + pyforge_import_offenders diff src/platform against origin/main and read the changed files",
+    ),
+    "SKF_SKILL_TREE": (
+        ("src/platform/**", ".claude/skills/**", "_bmad/skf/**"),
+        "the required-skill-file check, unsanctioned_commits history and the platform import diff",
+    ),
+    "ATLAS_PACKAGING_DOCS": (
+        ("docs/reference/**",),
+        "the metrics CLI run from the root resolved its retired default output to the tracked prompt doc",
+    ),
+    "GITIGNORE_STATE": (
+        (".gitignore",),
+        "`git check-ignore` answers from the root's ignore rules",
+    ),
+    "GITIGNORE_SKILLS": (
+        (".gitignore", ".claude/skills/**"),
+        "`git check-ignore` / `git ls-files` over the skill tree answer from the root's ignore rules",
+    ),
+    "ATLAS_GIST_RECIPES": (
+        ("recipes/**",),
+        "the identity gist export classifies every recipe directory under repo_root/recipes",
+    ),
+    "DOCTOR_WHOLE_CHECK": (
+        ("docs/dreams/**", "docs/governance/**", "archive/**", "pixi.toml", ".claude/skills/**", *_PLAN),
+        "`doctor check <root>` runs every registered source over the live tree",
+    ),
+    "PYTHON_SOURCES": (_PYTHON_TREES, "env_hygiene discovers every python file under the root"),
+    "BMAD_SUITE_PINS": (
+        ("recipes/bmad-suite/suite-members.yaml", "pixi.toml", "_bmad/**"),
+        "the bmad-method source reads the suite roster and the pixi floor from the root",
+    ),
+    "DOCTOR_BOARD": (
+        (*_PLAN, "docs/dreams/**", "docs/governance/**", "docs/dashboard/**", "scripts/dashboard_watch.py"),
+        "the board gatherers read every spec, PRD and dream and the dashboard generator under the root",
+    ),
+    "DOCTOR_CALLER_REACH": (
+        (*_PLAN, ".claude/skills/**", "docs/dreams/**"),
+        "gather_caller_reach walks the planning artifacts and skills for capability callers",
+    ),
+    "DOCS_DIATAXIS": (
+        ("docs/explanation/**", "docs/how-to/**"),
+        "docs_shelf checks the named explanation and how-to pages under the root",
+    ),
+    "DOCTOR_FACTORY": (
+        (*_PLAN, "pixi.toml"),
+        "the factory source reads the marshal planning files and counts environments in pixi.toml",
+    ),
+    "DOCS_ALL": (
+        ("docs/dreams/**", "docs/governance/**", "docs/how-to/**", "docs/reference/**", "docs/explanation/**"),
+        "general_docs_consistency reads the documentation tree under the root",
+    ),
+    "DOCTOR_PLANNING_AND_DOCS": (
+        (*_PLAN, "docs/dreams/**", "docs/governance/**", "archive/**", "recipes/*/recipe.yaml"),
+        "the hygiene gatherer reads the sprint ledgers, dreams and recipes under the root",
+    ),
+    "DOCTOR_CHAIN": (
+        (*_PLAN, "docs/dreams/**", "docs/governance/**", "archive/**", "recipes/*/recipe.yaml"),
+        "the chain, one-chain and status-body gatherers read every dream, spec, ledger and recipe under the root",
+    ),
+    "PLANNING": (_PLAN, "the gatherer reads the planning artifacts of every project under the root"),
+    "PRESENTATIONS": (
+        ("presentations/**",),
+        "the deck helpers read presentations/ (exports, Marp sources, the Modernist design system)",
+    ),
+    "DOCS_SITE": (
+        ("docs-site/**", "docsite/**"),
+        "the docs-site and docsite checks list and read their trees from the root",
+    ),
+    "MARSHAL_CODE_LINKAGE": (
+        (*_PLAN, "docs/dreams/**", "src/shared/packages/pyforge-marshal/**"),
+        "verify_code_linkage reads marshal's epics, spec and code",
+    ),
+    "PLANNING_SPECS_TRACKED": (
+        ("_bmad-output/projects/*/planning-artifacts/specs/**",),
+        "`git ls-files` at the root, then the tracked story specs' frontmatter",
+    ),
+    "HARNESS_PROFILES": (
+        ("_bmad-output/harness-profiles/*.toml",),
+        "load_profiles overlays <root>/_bmad-output/harness-profiles/*.toml",
+    ),
+    "ADOPT_MANIFEST_TREE": (
+        ("AGENTS.md", "CLAUDE.md", ".claude/**", ".cursor/**", ".gemini/**", ".github/copilot-instructions.md"),
+        "run_adopt plans the instruction-surface files it would write into the root",
+    ),
+    "LIVE_KEYCLOAK": (
+        ("src/platform/**",),
+        "the live Keycloak login proof runs the platform stack from the root (skipped without the server)",
+    ),
+    "TEA_GENERATOR": (
+        (*_PLAN, "src/shared/packages/pyforge-*/tests/**", "_bmad/**"),
+        "the test-architecture generator's live-tree smoke reads every station's epics.md and tests",
+    ),
+    "ADOPTION_PIPELINE": (
+        (*_PLAN, "recipes/bmad-suite/**", ".claude/skills/**", "_bmad/**", "pixi.toml"),
+        "build_pipeline_truth_report walks the suite roster, installed skills and planning records",
+    ),
+    "BOOTSTRAP_INPUTS": (
+        ("pixi.toml", ".pre-commit-config.yaml", ".github/workflows/*.yml"),
+        "the bootstrap prerequisites and setup steps read the pixi floor, hooks and workflows from the root",
+    ),
+    "FIVE_TIER": (
+        ("docs/dreams/**", "docs/governance/**", "AGENTS.md", *_PLAN),
+        "the five-tier check reads dreams, governance and the planning tiers",
+    ),
+    "FRAMES": (
+        ("docs/foundry/**", "docs/dreams/**", *_PLAN),
+        "preflight_frames reads the foundry frames, dreams and specs",
+    ),
+    "CLASS_PATH": (
+        ("pixi.toml", ".claude/skills/**", "_bmad/**", "recipes/bmad-suite/**", ".claude/settings.json"),
+        "probe_wired inspects the suite members' install class on the root",
+    ),
+    "PIXI_AND_WORKFLOWS": (
+        ("pixi.toml", ".github/workflows/*.yml", ".pre-commit-config.yaml"),
+        "the preflight scratch and suite-reduction code read pixi tasks and workflows from the root",
+    ),
+    "STEWARD_SESSION": (
+        ("pixi.toml", "_bmad/**", ".claude/skills/**", "recipes/bmad-suite/**", ".pre-commit-config.yaml"),
+        "the session start gatherers read the bmad estate and hooks from the root",
+    ),
+}
+
+ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
+    "atlas": {
+        "scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py": _H["ATLAS_PACKAGING_DOCS"],
+        "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py": _H["ATLAS_GIST_RECIPES"],
+        "src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],
+        "src/shared/packages/pyforge-atlas/tests/unit/catalog/test_credential_scoping.py": _H["GITIGNORE_STATE"],
+    },
+    "doctor": {
+        "src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-doctor/tests/meta/test_skf_domain_skill.py": _H["SKF_SKILL_TREE"],
+        "src/shared/packages/pyforge-doctor/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py": _H["DOCTOR_WHOLE_CHECK"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_checks_env_hygiene.py": _H["PYTHON_SOURCES"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py": _H["BMAD_SUITE_PINS"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board.py": _H["DOCTOR_BOARD"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py": _H["DOCTOR_BOARD"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_caller_reach.py": _H["DOCTOR_CALLER_REACH"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dreams_hygiene.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_shelf.py": _H["DOCS_DIATAXIS"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py": _H["DOCTOR_FACTORY"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_general_docs_consistency.py": _H["DOCS_ALL"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py": _H["DOCTOR_PLANNING_AND_DOCS"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py": _H["PLANNING"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fold_complete.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_consistency.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_open_questions.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_promissory.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_status_body_status_comment.py": _H["DOCTOR_CHAIN"],
+    },
+    "herald": {
+        "src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py": _H["PRESENTATIONS"],
+        "src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py": _H["DOCS_SITE"],
+        "src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py": _H["DOCS_SITE"],
+        "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py": _H["PRESENTATIONS"],
+        "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],
+        "src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py": _H["PRESENTATIONS"],
+        "src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py": _H["PRESENTATIONS"],
+    },
+    "marshal": {
+        "src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py": _H["ADOPT_MANIFEST_TREE"],
+        "src/shared/packages/pyforge-marshal/tests/integration/test_login_pkce_live_keycloak.py": _H["LIVE_KEYCLOAK"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_27_2_portal_loop_homes.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_kit_artifacts_ignored_not_the_tracked_skills.py": _H["GITIGNORE_SKILLS"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_rendered_policy_untracked.py": _H["GITIGNORE_STATE"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py": _H["SKF_SKILL_TREE"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py": _H["GITIGNORE_SKILLS"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_drift.py": _H["TEA_GENERATOR"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py": _H["TEA_GENERATOR"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py": _H["GITIGNORE_STATE"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py": _H["MARSHAL_CODE_LINKAGE"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_spec_frontmatter.py": _H["PLANNING_SPECS_TRACKED"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py": _H["HARNESS_PROFILES"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py": _H["HARNESS_PROFILES"],
+    },
+    "mason": {
+        "src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py": _H["SKF_SKILL_TREE"],
+    },
+    "scribe": {
+        "src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-scribe/tests/meta/test_skf_skill_ownership.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-scribe/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
+    },
+    "steward": {
+        "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py": _H["ADOPTION_PIPELINE"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py": _H["FIVE_TIER"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py": _H["SKF_SKILL_TREE"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py": _H["BOOTSTRAP_INPUTS"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py": _H["BOOTSTRAP_INPUTS"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup_flow.py": _H["BOOTSTRAP_INPUTS"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py": _H["FRAMES"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": _H["CLASS_PATH"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": _H["PIXI_AND_WORKFLOWS"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": _H["PIXI_AND_WORKFLOWS"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_session.py": _H["STEWARD_SESSION"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py": _H["PLANNING"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": _H["CLASS_PATH"],
+    },
+    "warden": {
+        "src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-warden/tests/meta/test_skf_domain_skill.py": _H["SKF_SKILL_TREE"],
+        "src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
+    },
+}
+
