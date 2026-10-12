@@ -2,7 +2,7 @@
 title: "96.1: A story spec carries each frontmatter key once"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'ceca8770438a8ff72ad3cfd711c0c5c8e9cd1d22'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -234,6 +234,7 @@ Type / Effort / Deps: fix / M / — (doctor Story 42.1 waits on this story throu
 
 ## Spec Change Log
 
+- 2026-10-11: implementation — `dispatch_spec_frontmatter` pre-verify step (MRS-GATE-022), build-skill persistent facts, 37 story specs collapsed on main; verified with `pyforge-marshal-test`, `pyforge-deps-test`, `spec_surface_reconcile.py`, `spec-surface-check`.
 - 2026-10-11: minted from the operator's ask "Do this task here: Stop story specs gaining duplicate frontmatter keys".
   The repeat is collapsed to the occurrence git wrote last, not to the last line: the session put its write above the
   old line in 32 of 40 repeats, and herald 29.2's last line is the stale `false` its review pass meant to replace
