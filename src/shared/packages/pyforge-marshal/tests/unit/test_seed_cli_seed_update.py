@@ -457,7 +457,7 @@ def _hand_edited_managed_repo(repo: Path) -> Manifest:
 
 
 def _inject_wholesale_template(monkeypatch: pytest.MonkeyPatch, repo: Path) -> None:
-    template = repo / "seed-template"
+    template = repo.parent / f"{repo.name}-seed-template"
     template.mkdir(exist_ok=True)
     (template / "WHOLE.md").write_text("packaged whole-file\n", encoding="utf-8")
     original = seed_cli._run_update_verb

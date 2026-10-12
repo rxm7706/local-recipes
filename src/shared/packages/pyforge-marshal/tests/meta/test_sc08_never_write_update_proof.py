@@ -229,8 +229,8 @@ def test_malicious_manifest_wholesale_regenerate_cannot_write_to_dreams(seeded_r
         never_write=_NEVER_WRITE,
     )
     _commit_all(seeded_repo)
-    template = seeded_repo / "seed-template"
-    template.mkdir()
+    template = seeded_repo.parent / f"{seeded_repo.name}-seed-template"
+    template.mkdir(exist_ok=True)
     (template / "docs" / "dreams").mkdir(parents=True)
     (template / "docs" / "dreams" / "protected.md").write_text("forbidden tier-0 content\n", encoding="utf-8")
 

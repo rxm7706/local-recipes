@@ -73,8 +73,12 @@ _NO_NEVER_WRITE = NeverWrite(patterns=())
 
 def _template_root(repo: Path, files: dict[str, str]) -> Path:
     """Synthetic template tree with whole-file payloads for ``copied-managed`` tests."""
-    root = repo / ".marshal-seed-template-fixture"
-    root.mkdir(exist_ok=True)
+    root = repo.parent / f"{repo.name}-seed-template"
+    if root.exists():
+        import shutil
+
+        shutil.rmtree(root)
+    root.mkdir()
     for rel_path, content in files.items():
         target = root / rel_path
         target.parent.mkdir(parents=True, exist_ok=True)
