@@ -2,7 +2,7 @@
 title: "97.2: A seed update dry run on an adopted repo plans only real changes"
 type: 'fix'
 created: '2026-10-12'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'bd92843ef255a6daa94e0ed6d14cc46abe575396'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -204,4 +204,13 @@ Type / Effort / Deps: fix / M / S-97.1.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-12 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (implementation verified against AC1–AC7 locally; formal multi-layer review deferred to PR)
+
+## Auto Run Result
+
+- **Summary:** Shared `manifest_for_adopt_scope` for adopt/update; `seed update` gains `--project` and loop-home scoping; wholesale regenerate plans only when packaged content differs; no-payload entries land in `plan.skipped` without bypassing rung 6; local-recipes oracle update leg documents skips.
+- **Verification:** `pyforge-marshal-test` and `pyforge-deps-test` green; `marshal-local-recipes-seed-oracle` (slow adopt + update legs) green; `marshal seed update --repo-root .` zero actions; `python scripts/spec_surface_reconcile.py` and `spec-surface-check` green.
+- **Follow-up review:** false
+- **Residual risk:** Repos that relied on unconditional wholesale refresh now see empty plans when content matches — intended per FR-94 / Story 86.2 AC6.
