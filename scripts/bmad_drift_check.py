@@ -36,8 +36,9 @@ doc-category table are also carried over verbatim, even though nothing in
 THIS reduced file still calls them: `sources/factory.py` ported an
 identical copy for its own coverage/pin checks, and SYNC-RUNBOOK.md's
 extension pointers (a new artifact shape needs a new `classify()` rule)
-name this file as the reference copy. Kept in sync by hand; there is no
-mechanism enforcing the two agree.
+name this file as the reference copy. Kept in sync by hand; the one check
+that the two agree is tests/scripts/test_bmad_drift_check_tier3_classify.py
+(Story 43.1), and it compares a sample set of paths, not every rule.
 
 Usage (plain `python`, no pixi task -- the `bmad-drift-check`/`bmad-groundtruth`
 pixi tasks invoke the dispatcher below instead, which does not understand any of
@@ -111,6 +112,73 @@ CONFIG_FILES = {
 IGNORE_PARTS = {"__pycache__"}
 
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
+
+# Hand-synced with ``pyforge.doctor.sources.factory.TIER3_RUN_ARTIFACTS`` (Story 43.1),
+# same rows in the same order (first match wins); the writer column lives there only.
+# tests/scripts/test_bmad_drift_check_tier3_classify.py checks the two lists are equal and
+# that the two classifiers agree on every sample path of the doctor meta-test's shape table
+# and on the look-alikes.
+_TIER3_RUN_ARTIFACT_PATTERNS: tuple[tuple[str, str], ...] = (
+    # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
+    # the engine per run. Never hand-edited and never pin-gated.
+    (r"^implementation-artifacts/runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    # A failed attempt's preserved uncommitted diff inside its dispatch run record: the
+    # only copy, kept like the attempted-change patch. Before the `dispatch-runs/` row.
+    (
+        r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch",
+        "local:failed-attempt",
+    ),
+    # Marshal single-story dispatch run records (session.log, dispatch-supervisor.log,
+    # journal.jsonl) — the `dispatch-runs/` sibling of `runs/`.
+    (r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    # Marshal `factory drain` campaign records — a third sibling.
+    (r"^implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    # The fleet-wide `factory drain` cycle lock, `fleet-drain-runs/campaign.lock`.
+    (r"^implementation-artifacts/fleet-drain-runs/campaign\.lock$", "local:run-journal"),
+    # Tier-3 story context, gitignored.
+    (r"^implementation-artifacts/epic-\d+-context\.md", "local:sprint-feed"),
+    # Tier-3 sprint feed (gitignored, local-only) — the program console's
+    # dashboard-gen reads it; no pin gating.
+    (r"^implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", "local:sprint-feed"),
+    # The dated `scripts/worktree_sweep.py --format json` record the operator saves
+    # (2026-09-05, the sweep-verdicts shape).
+    (r"^implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json", "local:sweep-verdicts"),
+    # --- added by Story 43.1: what a marshal dispatch worktree's Tier-3 store holds.
+    (r"^implementation-artifacts/recall-feedback__[^/]+__[^/]+\.md", "local:recall-feedback"),
+    (r"^implementation-artifacts/recall-feedback__[^/]+__[^/]+\.md\.query-ran", "local:recall-feedback"),
+    (r"^implementation-artifacts/epic-\d+-continuity\.md", "local:sprint-feed"),
+    (r"^implementation-artifacts/session-advisories/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    # `marshal gate evaluate` without `--run-id`: sessions/<id>/gate-records/<story>/.
+    (r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*", "local:run-journal"),
+    (r"^implementation-artifacts/dispatch-runs-quarantine/.*", "local:run-journal"),
+    (r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json", "local:benchmark"),
+    (
+        r"^implementation-artifacts/token-economy-benchmark-per-layer-[A-Za-z0-9._-]+\.json",
+        "local:benchmark",
+    ),
+    # `bmad-build-auto-result-<slug-or-timestamp>.md` (a timestamp carries `T`/`Z`).
+    (r"^implementation-artifacts/bmad-build-auto-result-[A-Za-z0-9._-]+\.md", "local:run-result"),
+    # A blocked session's Tier-3-root attempted-change patch: the only copy, kept by --fix.
+    (r"^implementation-artifacts/[^/]*attempted-change[^/]*\.patch$", "local:attempted-change"),
+)
+_TIER3_RUN_ARTIFACT_RULES = tuple((re.compile(p), c) for p, c in _TIER3_RUN_ARTIFACT_PATTERNS)
+
+
+def _classify_tier3_run_artifact(rel: str) -> str | None:
+    for pattern, classification in _TIER3_RUN_ARTIFACT_RULES:
+        if pattern.fullmatch(rel):
+            return classification
+    return None
+
+
+# Hand-synced with ``factory.TIER3_KEPT_CLASSES``: a stray suffix on a file of one of
+# these classes is the only copy of a session's work, so --fix keeps it.
+_TIER3_KEPT_CLASSES = frozenset({"local:attempted-change", "local:failed-attempt"})
+
+
+def _is_kept_tier3_artifact(rel: str) -> bool:
+    return _classify_tier3_run_artifact(rel) in _TIER3_KEPT_CLASSES
+
 
 _VER_RE = re.compile(r"\*\*v(\d+)\.(\d+)\.(\d+)\*\*")
 
@@ -311,12 +379,6 @@ def classify(path: Path) -> str:
         # Dated per-epic retros written at the implementation-artifacts ROOT. The
         # pre-existing rule only matched the retros/ subdir, so these fell through.
         return "archive:retros"
-    if re.fullmatch(r"implementation-artifacts/runs/[A-Za-z0-9._-]+/.*", rel):
-        # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
-        # the engine per run. Never hand-edited and never pin-gated.
-        return "local:run-journal"
-    if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
-        return "local:sprint-feed"  # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
         # PRFAQ kill-test records + distillates (bmad-prfaq): frozen stress-test
         # outputs — no pin gating.
@@ -371,10 +433,6 @@ def classify(path: Path) -> str:
         # deliberately a copy whose curation lags — a version pin would report drift on
         # every skill bump for a document that tracks stories, not the skill surface.
         return "tracked:deferred"
-    if re.fullmatch(r"implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", rel):
-        # Tier-3 sprint feed (gitignored, local-only) — the program console's
-        # dashboard-gen reads it; no pin gating.
-        return "local:sprint-feed"
     if rel == "planning-artifacts/marshal-policy.toml":
         # Marshal's PROJECT-POLICY layer -- the middle tier of AD-16's
         # defaults -> project -> flags chain, added 2026-07-30. Tracked on
@@ -408,6 +466,9 @@ def classify(path: Path) -> str:
         return "tracked:sprint-ledger"
     if re.fullmatch(r"implementation-artifacts/spec-.*\.md", rel):
         return "tracked:spec"
+    tier3_cls = _classify_tier3_run_artifact(rel)
+    if tier3_cls is not None:
+        return tier3_cls
     return "UNKNOWN"
 
 
@@ -445,6 +506,9 @@ def do_fix() -> list[str]:
                 actions.append(f"moved {p.name} -> retros/")
         for p in list(IMPL.iterdir()):
             if p.is_file() and p.suffix in STRAY_SUFFIXES:
+                rel = _rel(p)
+                if _is_kept_tier3_artifact(rel):
+                    continue
                 p.unlink()
                 actions.append(f"removed stray {p.name}")
     return actions

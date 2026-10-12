@@ -285,6 +285,201 @@ STALE_RULE_PATTERNS: list[tuple[str, str]] = [
 
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
 
+
+@dataclass(frozen=True)
+class Tier3RunArtifactRule:
+    """One marshal-written shape under ``implementation-artifacts/`` (Story 43.1)."""
+
+    pattern: re.Pattern[str]
+    classification: str
+    writer: str
+
+
+def _tier3_run_rule(pattern: str, classification: str, writer: str) -> Tier3RunArtifactRule:
+    return Tier3RunArtifactRule(re.compile(pattern), classification, writer)
+
+
+_MARSHAL_SRC_REL = "src/shared/packages/pyforge-marshal/src/pyforge/marshal"
+
+#: Declared Tier-3 run-artifact shapes marshal (or its dispatched session) writes, one row
+#: per shape: ``(pattern, classification, writer)``. ``writer`` is the repo-relative
+#: ``file::symbol`` (or skill file) that writes -- or, for a session-written file, names --
+#: the shape. ``classify()`` consults this list, first match wins; the meta-test in
+#: ``tests/meta/`` keeps it aligned with marshal's own path builders (read as text/ast,
+#: never imported). Six rows moved here from ``classify()`` unchanged, comments included
+#: (Story 43.1): ``runs/``, ``dispatch-runs/``, ``fleet-drain-runs/``, epic context,
+#: sprint feed and sweep verdicts. A row for a file inside another row's directory is
+#: listed before that row.
+TIER3_RUN_ARTIFACTS: tuple[Tier3RunArtifactRule, ...] = (
+    # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
+    # the engine per run. Never hand-edited and never pin-gated.
+    _tier3_run_rule(
+        r"^implementation-artifacts/runs/[A-Za-z0-9._-]+/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/cli/init.py::_journal_abandonments",
+    ),
+    # A failed attempt's preserved uncommitted diff inside its dispatch run record,
+    # `dispatch-runs/<run>/failed/<story>/changes.patch` (Story 43.1, review iteration 2):
+    # the only copy of that attempt, so it is kept like the attempted-change patch below.
+    # The dispatch supervisor writes it (`dispatch_supervisor/__main__.py`
+    # `_journal_dispatch_preserve`) at the path `failed_patch_path` builds; the
+    # look-alike `supervisor/intent_gap_preserve.py::_write_failed_patch` writes the loop
+    # home's `.bmad-loop/runs/`, never Tier-3. Listed before the `dispatch-runs/` row,
+    # which would otherwise claim it.
+    _tier3_run_rule(
+        r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/failed/[A-Za-z0-9._-]+/changes\.patch",
+        "local:failed-attempt",
+        f"{_MARSHAL_SRC_REL}/core/dispatch_preserve.py::failed_patch_path",
+    ),
+    # Marshal single-story dispatch run records (session.log,
+    # dispatch-supervisor.log, journal.jsonl) — Story 22.x's sibling to the
+    # bmad-loop `runs/` shape above, at a different directory name
+    # (`dispatch-runs/`) the existing rule doesn't match. Same Tier-3,
+    # gitignored, engine-written, never hand-edited, never pin-gated shape.
+    _tier3_run_rule(
+        r"^implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/core/dispatch.py::dispatch_runs_dir",
+    ),
+    # Marshal `factory drain` campaign records (fleet-drain-supervisor.log,
+    # journal.jsonl) — a third sibling of the `runs/`/`dispatch-runs/` shapes
+    # above, at yet another directory name the existing rules don't match.
+    # Same Tier-3, gitignored, engine-written, never hand-edited, never
+    # pin-gated shape.
+    _tier3_run_rule(
+        r"^implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/core/dispatch_fleet.py::fleet_runs_dir",
+    ),
+    # The fleet-wide `factory drain` cycle lock beside those records (Story 43.1, review
+    # iteration 3): `fleet_cycle_lock_path` names `fleet-drain-runs/campaign`, and
+    # `FsPort.acquire_advisory_lock` (`adapters/fs_local.py`) locks its `.lock` sibling.
+    # Exactly that one file at the directory's root; the row above needs a subdirectory.
+    _tier3_run_rule(
+        r"^implementation-artifacts/fleet-drain-runs/campaign\.lock$",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/core/dispatch_fleet.py::fleet_cycle_lock_path",
+    ),
+    # Tier-3 story context, gitignored.
+    _tier3_run_rule(
+        r"^implementation-artifacts/epic-\d+-context\.md",
+        "local:sprint-feed",
+        f"{_MARSHAL_SRC_REL}/core/derived_context.py::epic_context_output_relpath",
+    ),
+    # Tier-3 sprint feed (gitignored, local-only) — the program console's
+    # dashboard-gen reads it; no pin gating.
+    _tier3_run_rule(
+        r"^implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml",
+        "local:sprint-feed",
+        f"{_MARSHAL_SRC_REL}/dispatch_land_finalize/__main__.py::_promote_tier3_feed_row",
+    ),
+    # The sweep-verdicts shape (2026-09-05): the fifth instance of the spike-report
+    # lesson. `scripts/worktree_sweep.py --format json` is the repeatable worktree-
+    # hygiene tool (settled in the 2026-09-05 shutdown sweep; marshal-native home
+    # `marshal retire`, tracked ledger DW-HYGIENE-2026-09-05-1); the operator saves
+    # its per-worktree verdict table as a dated JSON record at marshal's
+    # implementation-artifacts root (`worktree-verdicts-<date>.json`), and the first
+    # such file fell through to UNKNOWN and tripped `uncovered`. Generalized over the
+    # date so every later sweep's record stays covered. Tier-3, gitignored,
+    # machine-written, never hand-edited, never pin-gated.
+    _tier3_run_rule(
+        r"^implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json",
+        "local:sweep-verdicts",
+        # The writer is the operator's redirect of `--format json` that the module
+        # docstring prescribes; no code names the file.
+        "scripts/worktree_sweep.py::__doc__",
+    ),
+    # --- added by Story 43.1 (2026-10-12): shapes a marshal dispatch worktree's Tier-3
+    # store holds that fell through to UNKNOWN and tripped `uncovered` there, while CI's
+    # fresh clone (no Tier-3 files) stayed green. Same Tier-3, gitignored,
+    # machine-written, never hand-edited, never pin-gated shape as the rows above.
+    # The recall-feedback cache a dispatch writes (Stories 47.1/47.2/93.1) ...
+    _tier3_run_rule(
+        r"^implementation-artifacts/recall-feedback__[^/]+__[^/]+\.md",
+        "local:recall-feedback",
+        f"{_MARSHAL_SRC_REL}/core/recall_feedback.py::recall_feedback_output_relpath",
+    ),
+    # ... and its sibling marker proving the recall query already ran.
+    _tier3_run_rule(
+        r"^implementation-artifacts/recall-feedback__[^/]+__[^/]+\.md\.query-ran",
+        "local:recall-feedback",
+        f"{_MARSHAL_SRC_REL}/adapters/harness_bmadloop.py::_recall_query_marker_path",
+    ),
+    # The previous-story continuity extract, beside the epic-context distill (written
+    # only while the continuity layer is on).
+    _tier3_run_rule(
+        r"^implementation-artifacts/epic-\d+-continuity\.md",
+        "local:sprint-feed",
+        f"{_MARSHAL_SRC_REL}/core/derived_context.py::continuity_output_relpath",
+    ),
+    # `marshal context advisory` run records (the session-close ritual).
+    _tier3_run_rule(
+        r"^implementation-artifacts/session-advisories/[A-Za-z0-9._-]+/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/cli/context.py::_session_advisory_runs_dir",
+    ),
+    # `marshal gate evaluate` without `--run-id`: the gate record lands in a freshly minted
+    # session namespace, `sessions/<id>/gate-records/<story>/gate-record.json`, the
+    # run-less sibling of `runs/<run>/gate-records/` (Story 43.1, review iteration 2).
+    _tier3_run_rule(
+        r"^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/cli/gate.py::_write_gate_record",
+    ),
+    # Stale dispatch runs the operator moves aside, as marshal's stale-run remedy names.
+    _tier3_run_rule(
+        r"^implementation-artifacts/dispatch-runs-quarantine/.*",
+        "local:run-journal",
+        f"{_MARSHAL_SRC_REL}/core/dispatch_stale.py::_dispatch_stale_quarantine_remedy",
+    ),
+    # `marshal benchmark` default artifact paths.
+    _tier3_run_rule(
+        r"^implementation-artifacts/token-economy-benchmark-[A-Za-z0-9._-]+\.json",
+        "local:benchmark",
+        f"{_MARSHAL_SRC_REL}/cli/benchmark.py::default_artifact_path",
+    ),
+    _tier3_run_rule(
+        r"^implementation-artifacts/token-economy-benchmark-per-layer-[A-Za-z0-9._-]+\.json",
+        "local:benchmark",
+        f"{_MARSHAL_SRC_REL}/cli/benchmark.py::_default_per_layer_artifact_path",
+    ),
+    # The dispatched bmad-build-auto session's result when it has no spec file to write
+    # to: `bmad-build-auto-result-<slug-or-timestamp>.md` (a timestamp carries `T`/`Z`).
+    _tier3_run_rule(
+        r"^implementation-artifacts/bmad-build-auto-result-[A-Za-z0-9._-]+\.md",
+        "local:run-result",
+        ".claude/skills/bmad-build-auto/workflow.md",
+    ),
+    # A blocked session's attempted-change patch at the Tier-3 root: the only copy,
+    # which the dispatch supervisor deliberately leaves there (it commits only the
+    # copies outside Tier-3). Kept by `check_archive_hygiene` and by `--fix`
+    # (``TIER3_KEPT_CLASSES``).
+    _tier3_run_rule(
+        r"^implementation-artifacts/[^/]*attempted-change[^/]*\.patch$",
+        "local:attempted-change",
+        f"{_MARSHAL_SRC_REL}/dispatch_supervisor/__main__.py::_attempted_change_patch_paths",
+    ),
+)
+
+
+def _classify_tier3_run_artifact(rel: str) -> str | None:
+    for rule in TIER3_RUN_ARTIFACTS:
+        if rule.pattern.fullmatch(rel):
+            return rule.classification
+    return None
+
+
+#: Tier-3 classes whose files are the only copy of a session's work: a stray suffix
+#: (``.patch``) on one of them is kept, never reported ``stray-file`` and never removed by
+#: ``scripts/bmad_drift_check.py --fix``. The exemption follows the table rows: a file is
+#: kept exactly when ``TIER3_RUN_ARTIFACTS`` gives it one of these classes (Story 43.1).
+TIER3_KEPT_CLASSES = frozenset({"local:attempted-change", "local:failed-attempt"})
+
+
+def _is_kept_tier3_artifact(rel: str) -> bool:
+    return _classify_tier3_run_artifact(rel) in TIER3_KEPT_CLASSES
+
+
 NONTERMINAL_STATUS = re.compile(r"\b(in[-\s]?flight|in[-\s]?progress|wip|pending|draft)\b", re.I)
 TERMINAL_STATUS = re.compile(r"\b(done|shipped|complete|completed|cancelled|canceled|merged)\b", re.I)
 
@@ -841,6 +1036,8 @@ def check_archive_hygiene(target: Path) -> list[Finding]:
                     continue
                 rel = _rel(p, target)
                 if p.suffix in STRAY_SUFFIXES:
+                    if _is_kept_tier3_artifact(rel):
+                        continue
                     out.append(
                         _finding(
                             HARD,
@@ -1191,26 +1388,6 @@ def classify(path: Path, target: Path) -> str:
         # Dated per-epic retros written at the implementation-artifacts ROOT. The
         # pre-existing rule only matched the retros/ subdir, so these fell through.
         return "archive:retros"
-    if re.fullmatch(r"implementation-artifacts/runs/[A-Za-z0-9._-]+/.*", rel):
-        # bmad-loop run records (journal.jsonl et al) — Tier-3, gitignored, written by
-        # the engine per run. Never hand-edited and never pin-gated.
-        return "local:run-journal"
-    if re.fullmatch(r"implementation-artifacts/dispatch-runs/[A-Za-z0-9._-]+/.*", rel):
-        # Marshal single-story dispatch run records (session.log,
-        # dispatch-supervisor.log, journal.jsonl) — Story 22.x's sibling to the
-        # bmad-loop `runs/` shape above, at a different directory name
-        # (`dispatch-runs/`) the existing rule doesn't match. Same Tier-3,
-        # gitignored, engine-written, never hand-edited, never pin-gated shape.
-        return "local:run-journal"
-    if re.fullmatch(r"implementation-artifacts/fleet-drain-runs/[A-Za-z0-9._-]+/.*", rel):
-        # Marshal `factory drain` campaign records (fleet-drain-supervisor.log,
-        # journal.jsonl) — a third sibling of the `runs/`/`dispatch-runs/` shapes
-        # above, at yet another directory name the existing rules don't match.
-        # Same Tier-3, gitignored, engine-written, never hand-edited, never
-        # pin-gated shape.
-        return "local:run-journal"
-    if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
-        return "local:sprint-feed"  # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
         # PRFAQ kill-test records + distillates (bmad-prfaq): frozen stress-test
         # outputs — no pin gating.
@@ -1282,10 +1459,6 @@ def classify(path: Path, target: Path) -> str:
         # curation lags — a version pin would report drift on every skill bump for a
         # document that tracks stories, not the skill surface.
         return "tracked:deferred"
-    if re.fullmatch(r"implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", rel):
-        # Tier-3 sprint feed (gitignored, local-only) — the program console's
-        # dashboard-gen reads it; no pin gating.
-        return "local:sprint-feed"
     if rel == "planning-artifacts/marshal-policy.toml":
         # Marshal's PROJECT-POLICY layer -- the middle tier of AD-16's
         # defaults -> project -> flags chain, added 2026-07-30. Tracked on
@@ -1319,6 +1492,13 @@ def classify(path: Path, target: Path) -> str:
         return "tracked:sprint-ledger"
     if re.fullmatch(r"implementation-artifacts/spec-.*\.md", rel):
         return "tracked:spec"
+    # --- the Tier-3 run-artifact shapes (Story 43.1) ----------------------------
+    # One declared list, ``TIER3_RUN_ARTIFACTS`` above, each row with its writer and
+    # its incident comment. No rule above this point matches any of its patterns, so
+    # reading it here classifies exactly as the six moved rules did.
+    tier3_cls = _classify_tier3_run_artifact(rel)
+    if tier3_cls is not None:
+        return tier3_cls
     # --- the spike-report shape (Story 6.11, added 2026-08-11) ----------------
     # Same lesson a third time: on 2026-08-11 (PR #427, Marshal Story 7.6) a
     # design-spike's PASS/FAIL verdict landed at a project's `planning-artifacts/`
@@ -1340,17 +1520,8 @@ def classify(path: Path, target: Path) -> str:
     # stays covered. A dated one-off record, so it archives (no pin gating).
     if re.fullmatch(r"planning-artifacts/[a-z0-9-]+-readiness-assessment\.md", rel):
         return "archive:readiness-assessment"
-    # The sweep-verdicts shape (2026-09-05): the fifth instance of the spike-report
-    # lesson. `scripts/worktree_sweep.py --format json` is the repeatable worktree-
-    # hygiene tool (settled in the 2026-09-05 shutdown sweep; marshal-native home
-    # `marshal retire`, tracked ledger DW-HYGIENE-2026-09-05-1); the operator saves
-    # its per-worktree verdict table as a dated JSON record at marshal's
-    # implementation-artifacts root (`worktree-verdicts-<date>.json`), and the first
-    # such file fell through to UNKNOWN and tripped `uncovered`. Generalized over the
-    # date so every later sweep's record stays covered. Tier-3, gitignored,
-    # machine-written, never hand-edited, never pin-gated.
-    if re.fullmatch(r"implementation-artifacts/worktree-verdicts-\d{4}-\d{2}-\d{2}\.json", rel):
-        return "local:sweep-verdicts"
+    # The sweep-verdicts shape (2026-09-05, the fifth instance of the spike-report
+    # lesson) now lives in ``TIER3_RUN_ARTIFACTS`` with its comment (Story 43.1).
     # The benchmark-artifact shape (Story 28.31, 2026-09-12 recovery pass): the
     # sixth instance of the spike-report lesson. Marshal's structure-graph
     # dispatch benchmark landed its measured comparison as a committed JSON

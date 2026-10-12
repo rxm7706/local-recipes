@@ -3181,7 +3181,7 @@ So that a dispatch worktree reads as clean as CI's fresh clone, and a new marsha
 **When** bmad-drift runs on a `pyforge-marshal` tree holding one file of each shape
 **Then** none is `uncovered` and the attempted-change patch is not a `stray-file`; a file no rule names, and each look-alike, still fails `uncovered`; `detectors-ci` exits 0 in a worktree holding them
 **And** a meta-test that reads marshal's `src/` with `ast`, never importing it, fails naming `file:line` when marshal builds a Tier-3 path segment the list lacks; the script's reference `classify()` agrees on every sample; removing the recall-feedback row, the patch exemption, or a row the scan needs each fails a test (mutation)
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
