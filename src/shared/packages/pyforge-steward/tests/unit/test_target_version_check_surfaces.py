@@ -170,9 +170,7 @@ def test_mutation_dropping_django_glob_could_not_run(tmp_path: Path, monkeypatch
     assert _run_main(mod, tmp_path) == 2
 
 
-def test_mutation_dropping_platform_check_would_hide_drift(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_mutation_dropping_platform_check_would_hide_drift(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     mod = _load()
     _seed_tree(tmp_path)
     _write_platform(tmp_path, ruff="py312")
