@@ -26,6 +26,7 @@ pytestmark = pytest.mark.skipif(
     reason="scripts/platform-ci-local.sh required",
 )
 
+
 def _run_script(
     root: Path,
     bin_dir: Path,
@@ -79,9 +80,7 @@ def _write_env_hash(root: Path, env: str, hash_value: str) -> None:
 def test_ac1_test_syncs_two_envs_in_order_under_lock(tmp_path: Path) -> None:
     bin_dir = _prepare_stub_root(tmp_path)
     stub_log = tmp_path / "stub.log"
-    proc = _run_script(
-        tmp_path, bin_dir, stub_log=stub_log, args=["--test"], use_run_lock=True
-    )
+    proc = _run_script(tmp_path, bin_dir, stub_log=stub_log, args=["--test"], use_run_lock=True)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     log = stub_log.read_text()
     install_lines = [ln for ln in log.splitlines() if " install " in ln and ln.startswith("pixi ")]
