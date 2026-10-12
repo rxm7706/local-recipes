@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
-from django.core.management.base import BaseCommand, CommandError
-from pyforge.core.flags import FlagOff, disabled_help, require
+import sys
+
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
+from pyforge.core.flags import FlagOff
+from pyforge.core.flags import disabled_help
+from pyforge.core.flags import require
 
 from django_warden_fabric.fleet import FLEET_FIX_PROPOSALS_FLAG
-from django_warden_fabric.proposals import ProposalRefusedError, approve_proposal
+from django_warden_fabric.proposals import ProposalRefusedError
+from django_warden_fabric.proposals import approve_proposal
 
 
 class Command(BaseCommand):
