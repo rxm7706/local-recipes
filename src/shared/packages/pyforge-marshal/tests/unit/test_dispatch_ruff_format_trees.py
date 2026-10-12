@@ -92,7 +92,7 @@ def test_ac1_platform_fixed_and_fake_call_order(tmp_path: Path, ruff_from_test_e
 
     vcs = _FormatVcs(scope=scope, head=())
     process = _RecordingProcess(vcs)
-    result = apply_dispatch_ruff_format_before_verify(
+    apply_dispatch_ruff_format_before_verify(
         worktree=worktree,
         repo_root=tmp_path,
         vcs=vcs,
@@ -107,7 +107,6 @@ def test_ac1_platform_fixed_and_fake_call_order(tmp_path: Path, ruff_from_test_e
     assert process.calls[2][1] == marshal_cwd
     assert process.calls[3][1] == marshal_cwd
 
-    vcs2 = _FormatVcs(scope=(_PLATFORM_PROBE,), head=())
     result = apply_dispatch_ruff_format_before_verify(
         worktree=worktree,
         repo_root=tmp_path,
@@ -116,7 +115,6 @@ def test_ac1_platform_fixed_and_fake_call_order(tmp_path: Path, ruff_from_test_e
     )
     assert _PLATFORM_PROBE in result.reformatted_paths
     assert result.committed is True
-    probe = worktree / _PLATFORM_PROBE
     check = PosixProcess().run(
         ["ruff", "check", "--select", "I001", "tests/test_probe.py"],
         cwd=worktree / "src/platform",
@@ -142,8 +140,7 @@ class _DiskDirtyVcs:
             dirty = [
                 p
                 for p in self._scope
-                if (worktree_path / p).is_file()
-                and (worktree_path / p).read_bytes() != self._baseline.get(p, b"")
+                if (worktree_path / p).is_file() and (worktree_path / p).read_bytes() != self._baseline.get(p, b"")
             ]
             return tuple(sorted(dirty))
         return self._scope
@@ -337,7 +334,9 @@ def test_ac7_unsafe_findings_remain(tmp_path: Path, ruff_from_test_env: None) ->
     _seed_platform_ac1(worktree)
     bad = worktree / _PLATFORM_PROBE
     bad.write_text(
-        'LONG = "' + ("x" * 90) + '"\n\n\ndef compute():\n    return 1\n\n\ndef g():\n    value = compute()\n    return value\n\n\ndef h():\n    import sys\n    return sys\n',
+        'LONG = "'
+        + ("x" * 90)
+        + '"\n\n\ndef compute():\n    return 1\n\n\ndef g():\n    value = compute()\n    return value\n\n\ndef h():\n    import sys\n    return sys\n',
         encoding="utf-8",
     )
     vcs = _FormatVcs(scope=(_PLATFORM_PROBE,), head=())
@@ -376,8 +375,7 @@ def test_ac8_migration_excluded_with_force_exclude(tmp_path: Path, ruff_from_tes
     assert str(mig.relative_to(worktree)) not in result.reformatted_paths
 
     marshal_mig = (
-        worktree
-        / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dashboard/migrations/0001_initial.py"
+        worktree / "src/shared/packages/pyforge-marshal/src/pyforge/marshal/dashboard/migrations/0001_initial.py"
     )
     marshal_mig.parent.mkdir(parents=True, exist_ok=True)
     marshal_mig.write_text(original, encoding="utf-8")
