@@ -1351,6 +1351,31 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   and its predicates do not change (operator ruling 2026-10-11: "Fold into 94.1 (Recommended)"; Story 94.1 had
   already been dispatched, so the fold is a second story in the same epic). Owner `spec-pyforge-marshal`. → Epic 94 /
   Story 94.2, specced 2026-10-11.
+- **2026-10-11 (pre-verify ruff covers the platform and the portal packages)** — **Found: dispatch applies ruff's
+  safe fixes and format only to a story's files under `src/shared/packages/pyforge-*`, so a platform file is refused
+  on a fix ruff could have made.** Stories 83.9 and 83.15 run `ruff check --fix` (safe fixes only) and `ruff format`
+  before verification, but only on changed `.py` files under the ten `pyforge-*` packages, from each package's own
+  directory. A story's files under `src/platform` (its own ruff table: target `py312`, line length 88,
+  `force-single-line` imports, migrations excluded) get no pass, and `platform-ci-local -- --test` then refuses them
+  under `MRS-GATE-015`. The nine `django-*` portal packages get no pass either; they have no ruff table today, and
+  steward Story 93.1 (dispatched now) gives each one its own table and puts them under `lint-types`. Steward 91.1's run
+  (`pyforge-steward-20261011T235216324Z-30fdeec5`) was refused at 00:29:48Z (UTC, 2026-10-12) on one I001 in
+  `src/platform/tests/test_stations_index.py`, an import order `ruff check --fix` sorts, and its verify-fix turn was
+  killed after 900 s (`MRS-DISP-059`), so the run failed. Herald 37.1's run (`pyforge-herald-20261011T190323017Z-deb8f4a9`)
+  journaled a pre-verify pass at 19:10:46Z for one `pyforge-herald` file and none for its platform test. It was then
+  refused under `MRS-GATE-015` on E501, RET504 and PLC0415 in `src/platform/tests/test_herald_portal_without_herald.py`,
+  and the session cleared them by hand (`e62682df15`). None of those three has a safe fix, so a wider pre-verify would
+  still not have cleared them. **What it looks like when fixed:** before verify, marshal groups the story's changed
+  `.py` files by the nearest parent directory whose `pyproject.toml` declares a `[tool.ruff]` table: a `pyforge-*`
+  package, a `django-*` package once its table lands, or `src/platform`. It runs the same safe fixes and format for
+  each group from that directory, so each tree's own target, line length, import style and excludes apply (a
+  `py314` table would write `except A, B:` into a `py312` tree). A file with no such parent is left alone, as is any
+  file the story did not change. The journal names each group and the files it changed, and a ruff failure in one
+  group is journaled without stopping the others. What ruff cannot fix safely still reaches verify. **Constraints:**
+  a fix story under CAP-161 (Story 22.3's verification, under which Stories 83.9 and 83.15 run their pre-verify step),
+  no CAP, no flag. Never `--unsafe-fixes`, and never a file outside the story's change set. The operator's ask,
+  verbatim: "Do this task here: Extend marshal pre-verify ruff to platform and portals". Owner `spec-pyforge-marshal`.
+  → Epic 95 / Story 95.1, specced 2026-10-11.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
