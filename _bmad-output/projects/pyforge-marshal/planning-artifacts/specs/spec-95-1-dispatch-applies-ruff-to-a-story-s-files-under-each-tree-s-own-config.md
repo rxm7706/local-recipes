@@ -2,7 +2,8 @@
 title: "95.1: Dispatch applies ruff to a story's files under each tree's own config"
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'c8f274ef27fec91e296fc7f8d47a30d999c7ea92'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -434,3 +435,38 @@ temporary worktree built in the test:
 ## Spec Change Log
 
 ## Review Triage Log
+
+### 2026-10-11 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 1, false 0, maybe-false 0
+- findings:
+  - `[low]` `[patch]` Unused assignment in `test_dispatch_ruff_format_trees.py` — removed during verify lint-types leg.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Dispatch pre-verify ruff now groups each story `.py` file under the nearest `[tool.ruff]` tree (platform, portal packages, pyforge packages), honors `--force-exclude` when the table declares excludes, skips deleted/CFE/non-table paths, records per-group outcomes, and journals failures without paths changing. Added `ruff >=0.16.9` to `[feature.pyforge-marshal.dependencies]` with lock/export refresh.
+
+Files changed:
+- `dispatch_ruff_format.py` — tree grouping, group results, CFE/deleted filtering, force-exclude.
+- `dispatch_supervisor/__main__.py` — journal when any group fails or paths change; payload `groups`.
+- `tests/unit/conftest.py` — `ruff_from_test_env` / `require_ruff_from_test_env` (AC12).
+- `tests/unit/test_dispatch_ruff_format.py` — real-ruff oracle uses test env ruff, never skips.
+- `tests/unit/test_dispatch_ruff_format_trees.py` — AC1–AC8, AC5 journal coverage.
+- `pixi.toml`, `pixi.lock`, `environment.yaml` — marshal feature ruff pin (AC10–AC11).
+- Co-governor `.memlog.md` entries on spec-pyforge-marshal, spec-pyforge-core, spec-pixi-candidate-currency, spec-pyforge-unifying-strategy, herald pixi co-governors.
+
+Review: 1 low patch applied (unused variable); nothing deferred.
+
+Follow-up review recommended: false (0 high/medium patches).
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 12436 passed, 20 skipped.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed.
+- `pixi run --frozen -e pyforge-marshal pytest … test_dispatch_ruff_format*.py -q -rs` — 16 passed, 0 skipped.
+- `pixi run -e pyforge-guild lint-types` — exit 0.
+- `pixi run --frozen -e pyforge-guild llms-full-check` — clean.
+- `python scripts/spec_surface_reconcile.py` — OK.
+- `pyforge-marshal` locks ruff **0.17.0** (`.pixi/envs/pyforge-marshal/bin/ruff --version`); guild env not installed in this worktree for a side-by-side 0.16.9 read.
+
+Residual: Scoped `spec-surface` baseline stamps for co-governors remain for the PR author (`--write-baseline --spec …` after memlog); this run did not stamp per dispatch guard.
