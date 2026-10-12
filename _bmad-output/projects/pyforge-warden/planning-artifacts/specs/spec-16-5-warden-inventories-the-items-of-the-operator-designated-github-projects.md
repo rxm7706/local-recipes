@@ -2,7 +2,7 @@
 title: "16.5: Warden inventories the items of the operator-designated GitHub Projects"
 type: 'feature'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
