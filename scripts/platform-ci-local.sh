@@ -242,7 +242,8 @@ run_platform_ci_local() {
   }
 
   _pixi_env_lock_hash() {
-    local pixi_env="$1" record="$ROOT/.pixi/envs/$pixi_env/conda-meta/pixi"
+    local pixi_env="$1"
+    local record="$ROOT/.pixi/envs/$pixi_env/conda-meta/pixi"
     if [ ! -f "$record" ]; then
       echo ""
       return 0
