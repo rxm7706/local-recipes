@@ -300,6 +300,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.warden.fleet_project_items": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "16-5-warden-inventories-the-items-of-the-operator-designated-github-projects",
+        "created": "2026-10-11",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.fleet_fix_proposals": {
       "state": "ENABLED",
       "variants": {

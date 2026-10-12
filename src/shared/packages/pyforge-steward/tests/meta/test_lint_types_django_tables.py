@@ -64,13 +64,22 @@ def test_django_pyproject_ruff_tables_match_ac2() -> None:
         assert lint["per-file-ignores"] == EXPECTED_PER_FILE
 
 
-def test_not_yet_clean_within_ceiling_and_seeded_map() -> None:
-    """Mutation: re-add a NOT_YET_CLEAN package or verb — this test fails."""
+def test_not_yet_clean_ceiling_only_shrinks_from_seed() -> None:
+    """The ceiling may shrink from the 93.1 seed but never grow (Story 93.1 AC4, Story 97.1).
+
+    Each of these fails the test: a ceiling package the seed lacks; a ceiling verb beyond the
+    seed's for that package (re-adding ``django-herald`` with more verbs than the seed included);
+    a ``NOT_YET_CLEAN`` package absent from the ceiling. Removing a ceiling entry, or a verb from
+    one, passes — that is a station's fix story landing.
+    """
     mod = _load_lint_types()
-    assert mod.NOT_YET_CLEAN_CEILING == SEEDED_NOT_YET_CLEAN
+    for name, verbs in mod.NOT_YET_CLEAN_CEILING.items():
+        assert name in SEEDED_NOT_YET_CLEAN, f"{name} is not in the 93.1 seed; the ceiling never grows"
+        extra = verbs - SEEDED_NOT_YET_CLEAN[name]
+        assert not extra, f"{name} gains {sorted(extra)} beyond the 93.1 seed; the ceiling never grows"
     for name, verbs in mod.NOT_YET_CLEAN.items():
-        assert name in mod.NOT_YET_CLEAN_CEILING
-        assert verbs <= mod.NOT_YET_CLEAN_CEILING[name]
+        assert name in mod.NOT_YET_CLEAN_CEILING, f"{name} is in NOT_YET_CLEAN but not the ceiling"
+        assert verbs <= mod.NOT_YET_CLEAN_CEILING[name], f"{name} has verbs beyond the ceiling's"
     live_django = {p.name for p in PACKAGES.glob("django-*") if (p / "pyproject.toml").is_file()}
     assert set(mod.NOT_YET_CLEAN) <= live_django
 

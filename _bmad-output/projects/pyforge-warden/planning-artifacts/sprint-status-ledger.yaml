@@ -43,7 +43,7 @@ development_status:
   16-2-a-fleet-run-scans-each-inventoried-repo-one-verdict-per-repo: done
   16-3-each-fleet-fix-waits-in-a-proposal-queue-for-operator-approval: done
   16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers: done
-  16-5-warden-inventories-the-items-of-the-operator-designated-github-projects: backlog
+  16-5-warden-inventories-the-items-of-the-operator-designated-github-projects: done
   17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close: done
   18-1-the-leak-guard-forbids-the-listed-terms-everywhere-and-the-organisation-s-name-in-warden-s-files: backlog
   2-1-conda-pypi-map-the-ecosystem-identity-predicate: done
@@ -90,7 +90,7 @@ development_status:
   epic-14-retrospective: optional
   epic-15: done
   epic-15-retrospective: optional
-  epic-16: in-progress
+  epic-16: done
   epic-16-retrospective: optional
   epic-17: done
   epic-17-retrospective: optional

@@ -41,7 +41,6 @@ PACKAGES_DIR = ROOT / "src" / "shared" / "packages"
 NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = {
     "django-atlas": frozenset({"ruff", "ruff-format"}),
     "django-doctor": frozenset({"ruff"}),
-    "django-herald": frozenset({"ruff", "ruff-format"}),
     "django-marshal": frozenset({"ruff", "ruff-format"}),
     "django-mason": frozenset({"ruff"}),
     "django-pyforge": frozenset({"ruff", "ruff-format"}),
