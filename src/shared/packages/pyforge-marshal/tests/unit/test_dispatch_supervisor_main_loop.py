@@ -539,6 +539,13 @@ def _advisory_envelope():
 
 
 def _patch_verification(monkeypatch: pytest.MonkeyPatch, envelope_factory) -> None:
+    from pyforge.marshal.core.dispatch_spec_frontmatter import DispatchSpecFrontmatterResult
+
+    monkeypatch.setattr(
+        supervisor_main,
+        "run_dispatch_spec_frontmatter_before_verify",
+        lambda **_kwargs: DispatchSpecFrontmatterResult((), (), (), False),
+    )
     monkeypatch.setattr(
         supervisor_main,
         "evaluate_dispatch_verification",

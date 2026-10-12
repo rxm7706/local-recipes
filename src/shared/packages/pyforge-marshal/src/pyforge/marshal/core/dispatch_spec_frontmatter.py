@@ -21,10 +21,8 @@ _STORY_SPEC_PREFIX = "_bmad-output/projects/"
 _STORY_SPEC_SUFFIX = "/planning-artifacts/specs/spec-"
 _FRONTMATTER_FENCE = "---"
 _TOP_LEVEL_KEY_RE = re.compile(r"^([A-Za-z0-9_-]+):\s*(.*)$")
-_COLLAPSE_COMMIT_SUBJECT = to_redacted_text(
-    "marshal: collapse repeated story-spec frontmatter keys (Story 96.1)"
-)
 SPEC_FRONTMATTER_GATE_CODE = "MRS-GATE-022"
+_COLLAPSE_COMMIT_SUBJECT_TEXT = "marshal: collapse repeated story-spec frontmatter keys (Story 96.1)"
 _UNCOMMITTED_SHA = "0" * 40
 
 SameCommitTiebreak = Literal["refuse", "last_line"]
@@ -418,7 +416,7 @@ def apply_dispatch_spec_frontmatter_before_verify(
             vcs.commit_paths(
                 worktree,
                 tuple(paths_to_commit),
-                _COLLAPSE_COMMIT_SUBJECT,
+                to_redacted_text(_COLLAPSE_COMMIT_SUBJECT_TEXT),
             )
             committed = True
         except Exception:
