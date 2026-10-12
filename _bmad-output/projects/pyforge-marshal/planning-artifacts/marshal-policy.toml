@@ -567,6 +567,24 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"96" = [  # a story spec says each frontmatter fact once (a fix story under CAP-161 with CAP-169 and CAP-275, no CAP;
+  # Story 96.1), added 2026-10-11. The default surface, restated because a declared entry replaces it outright, plus:
+  # every tracked story spec in every project (the 37 that repeat a key on main are cleaned here), the two build-skill
+  # customization files that carry the new persistent fact (installed step files are never edited), and every Spec
+  # memlog (each cleaned spec is recorded on its governing Spec's memlog; spec-pyforge-core co-governs station src/).
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-[0-9]*.md",
+  "_bmad/custom/bmad-build-auto.toml",
+  "_bmad/custom/bmad-build.toml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts
