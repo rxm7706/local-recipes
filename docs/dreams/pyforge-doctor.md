@@ -86,6 +86,25 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-11 (duplicate frontmatter keys in story specs)** — **Found: 37 tracked story specs repeat a frontmatter
+  key, and no detector says so.** Measured on `main` at `a21524e9d6` with a duplicate-key-detecting YAML loader: 37 of
+  the 1,407 tracked story specs with frontmatter carry 40 repeated keys, `followup_review_recommended` 29 times and
+  `review_loop_iteration` 11 times, across marshal, steward, herald, doctor, mason and warden. The other 900 tracked
+  frontmatter files under `_bmad-output/` and `docs/` repeat nothing. The writer is the `bmad-build-auto` session under
+  marshal dispatch, which adds a line where it was told to set one (marshal's Dream, same date). Readers disagree on
+  such a block: PyYAML, and so Doctor's own `_frontmatter_parse_text` (CAP-81), keeps the last value, while marshal's
+  scalar reader keeps the first. Four specs hold two different values. Herald 29.2 reads `followup_review_recommended:
+  true`, then `false`, so Doctor's `deferred-work` (CAP-86) reads the flag as `false` and marshal reads it as `true`;
+  `git blame` shows the `true` is the review pass's write and the `false` the stale line it meant to replace.
+  Steward 91.1's dispatch branch repeats `review_loop_iteration` again today, and herald 37.1 was cleaned by hand on
+  2026-10-11. **What it looks like when fixed:** a Doctor source reads every tracked story spec's frontmatter with a
+  loader that records a repeated key at any depth, and fails each one by file, key, both lines and both values; it runs
+  in `detectors-ci`, so a PR that adds a repeat goes red. A block that does not parse is reported, never passed.
+  **Constraints:** `type: feature`, `flag-exempt: detector-or-gate`, under CAP-81 (a frontmatter block is read one way)
+  with CAP-86 (the follow-up flag it reads); no new CAP. `_frontmatter_parse_text` and every existing source's verdict
+  do not change. It lands after marshal Story 96.1 cleans the 37 specs and stops the writer, or it reds `main`; that is
+  a cross-station gate, so its ledger key is minted `blocked` (operator ask 2026-10-11: "Do this task here: Stop story
+  specs gaining duplicate frontmatter keys"). Owner `spec-pyforge-doctor`. → Epic 42 / Story 42.1, specced 2026-10-11.
 - **2026-10-07 (detector gaps)** — **Found: two detectors red a landing when no requirement and no flag changed.**
   (1) `chain-currency` dates a station Spec by its `SPEC.md` and its `.memlog.md` (`scripts/fleet_scan.py`
   `_stage_globs`), and the `spec → prd` feeds edge fires once that date is more than 2 days past the PRD's
