@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b2b4188a72edd19d
-story_count: 354
+source_fingerprint: 16d1dc061f472912
+story_count: 355
 test_file_count: 115
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 354
-- **Epics parsed:** 97
+- **Stories parsed:** 355
+- **Epics parsed:** 98
 - **Test files inventoried:** 115 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b2b4188a72edd19d`
+- **Source fingerprint:** `16d1dc061f472912`
 
 ## Risk Assessment
 
@@ -125,6 +125,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 95: The portal packages and the platform target Python 3.14 (feature under CAP-153)
 - Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
 - Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
+- Epic 98: Station tests run when what they read changes (fix under CAP-159)
 
 ### Low-risk epics
 
@@ -612,6 +613,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 95.1 | The portal packages and the platform target Python 3.14 | none observed |
 | 96.1 | `platform-ci-local` never runs a stage on a stale env | none observed |
 | 97.1 | The not-yet-clean ceiling may shrink but never grow | none observed |
+| 98.1 | Station tests run when what they read changes | none observed |
 
 ## Quality Gates
 
