@@ -334,6 +334,58 @@ Type / Effort / Deps: feature / S / — (cross-station gate: herald 37.1, held a
 
 ## Review Triage Log
 
+### 2026-10-11 — Verify-fix completion (implementer)
+
+Implementer session on 850a1fda6c: 00281fa91b, which holds the killed verify-fix turn's edits, merged with origin/main. One file changed, `src/platform/tests/test_stations_index.py`. The view, template, URLconf, flag files and every other path are untouched.
+
+- **Root cause.** `test_flag_on_herald_absent_lists_reason_once` asserted that 87.1's remedy text is absent from the child's whole combined stdout and stderr. The host log carries that text by design, on two records:
+  - 87.1's own WARNING on `config.optional_components`, since `import_optional` logs `"%s %s", reason, remedy`;
+  - herald 37.1's WARNING on `django_herald_portal`.
+
+  AC5 forbids the remedy in response bodies only, and Boundaries forbid changing 87.1's record or log. So the assertion contradicted the spec, and the implementation was right. The child also never checked AC5 on any response body.
+- **Why it surfaced now.** Herald 37.1 was already in this story's base (e4ab638bb6), and the origin/main merge brought nothing under `src/platform/`. The test never passed in this form: the dispatch's verify stopped at the Ruff step (I001) before the full suite ran.
+- **AC4 and AC5: `test_flag_on_herald_absent_lists_reason_once` (`:451`).**
+  - The child (`_build_herald_absent_index_child`, `:368`) now only gathers facts. It makes two admin GETs, then prints one marker line holding both statuses, both bodies, `absent_reason("herald")`, and whether `config.asgi` was imported.
+  - The fix turn's half-done edits are gone: the `html` and `re` imports, the regex over `<tbody>`, the in-process log handler, and an unused `json` import. Every child import is now used.
+  - The parent asserts each of these:
+    - `config.asgi` was never imported (AC4's precondition);
+    - the statuses are `[200, 200]`;
+    - the reason names `herald` and `pyforge.herald`;
+    - AC5 holds on both bodies (`:495`): no remedy, no `Traceback`, no `sys.prefix`, no `BASE_DIR`;
+    - herald's row is exactly herald / absent / the reason / no link (`:500`);
+    - every other row reads mounted with its own link, and the seven other `STATION_TOKENS` are among them;
+    - the combined output carries exactly one JSON record on logger `config.optional_components` whose event holds the reason (`:515`).
+  - That last count is 87.1's record, counted by logger name. Herald's portal record is neither counted nor forbidden.
+  - The child env pins the existing settings `DJANGO_LOG_FORMAT=json` and `DJANGO_LOG_LEVEL=WARNING`, so each record is one parseable line whatever the caller's env.
+- **AC3: row order (`test_flag_on_admin_lists_switcher_tiles`, `:273`).**
+  - The fix turn's `re.findall(r"<tr>\s*<td>([^<]+)</td>", …)` read only the first cell and checked no state or link. It broke on a `<tr>` attribute, and on a reformatted cell because it captured the whitespace.
+  - Rows now come from `_index_rows` (`:136`), a stdlib `HTMLParser` over `<tbody>`. It returns each cell's text with entities decoded and the edges stripped, plus the row's link targets.
+  - The test asserts `listed == expected_names` (`:292`): exactly the rows `is_switcher_tile` admits for the admin's `roles_from_request`, in sorted `station_name` order. It also asserts that `STATION_TOKENS` is a subset of `listed`, that `infra-probe` is not in it, and that every row is `mounted` with exactly `(/stations/<name>/,)`.
+  - These row checks replace the body-wide `count("mounted")` and `in body` checks.
+- **Mutations.** Each was applied to `config/stations_index.py` or `templates/stations/index.html`, then restored byte-identical (sha256 checked) with HEAD still at 850a1fda6c:
+
+  | Mutation | Test that fails |
+  |---|---|
+  | reason rendered twice | `test_flag_on_herald_absent_lists_reason_once`, the herald-row check (`:500`) |
+  | reason omitted (`<td></td>`) | same test, `:500` |
+  | remedy rendered after the reason | same test, the AC5 check (`:495`) |
+  | `importlib.import_module("config.station_api")` removed | same test (the reason is `None`) |
+  | the view logs the reason on `config.optional_components` on every request | same test, the record count (`:515`) |
+  | rows sorted in reverse | `test_flag_on_admin_lists_switcher_tiles` (`:292`) |
+- **Not changed.**
+  - `spec-surface-check` named no drift: both governing memlogs have already moved and name this file. So there is no memlog entry and no stamp.
+  - The frontmatter's duplicate `review_loop_iteration` key is the harness's shape across the estate and is left as written.
+- **Gates, all run after the last source edit:**
+  - `pyforge-steward-test`: 0 (2320 passed, 3 skipped);
+  - `lint-types`: 0;
+  - `platform-ci-local -- --test`: 0 (7 of 7 steps; full suite 1222 passed, 13 skipped);
+  - `spec-surface-check`: 0, also re-run after this entry;
+  - `detectors-ci`: 0;
+  - `flag-gate-check`: 0, and `flag-gate-check -- --spec <this spec>` returns `pass`;
+  - the test file alone, against a private PostgreSQL: 14 passed.
+
+Status stays `in-review`, and the landing stays held for the independent review.
+
 ### 2026-10-11 — Review pass
 - verdicts: 12 findings — high 0, medium 1, low 0, false 0, maybe-false 0, reject 11
 - findings:
