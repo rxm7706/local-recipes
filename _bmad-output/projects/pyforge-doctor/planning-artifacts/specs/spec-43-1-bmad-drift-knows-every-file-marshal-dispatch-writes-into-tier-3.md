@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-12'
 status: 'in-progress'
 baseline_revision: '70975ae790'
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -256,6 +256,20 @@ gives one OK row. Planted Tier-3 files stay uncommitted, as that helper's docstr
   found on marshal Story 97.2's dispatch worktree.
 
 ## Review Triage Log
+
+### 2026-10-12 — Independent review, iteration 2: sent back (2 medium, 3 low patch; 1 low defer)
+
+Fresh separate agent, review at c7759791e9. AC1-AC8 hold and R1-R9/R12 are closed (38 mutations caught: the script's reference classify, every factory row, the five marshal idioms naming path:lineno, nine blinding mutations). AC7 by hand: every AC1/AC3 shape gives `bmad-drift-check` 0 and `detectors-ci` 46/46; a `review-diff.patch` or `randomfile.txt` control reds it. AC8: classifying all 3727 files of the primary and worktree `pyforge-marshal` trees with main's factory and HEAD's differs only in 145 quarantine files moving UNKNOWN -> `local:run-journal`. Gates all 0 (`pyforge-doctor-test` 3588 passed, scripts 1482, lint-types, spec-surface, bmad-drift, deferred-work, frontmatter-duplicate-keys, detectors-ci 46/46, coverage-gate).
+
+- `[medium]` `[patch]` N1 `src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py:378-388` `_resolve_call` gives up on a helper defined in more than one module: `_tier3_path` (`cli/spin.py:1039`, `supervisor/__main__.py:722`) never resolves at `cli/gate.py:1222`, which writes `implementation-artifacts/sessions/<id>/gate-records/<story>/gate-record.json` (`marshal gate evaluate` without `--run-id`); neither the scan nor `TIER3_RUN_ARTIFACTS` knows `sessions/` (planting it makes `bmad-drift-check` exit 2 `uncovered`). In scope under the operator's "keep the wider scope" (every dispatch-written kind). Fix: follow the module's `from .spin import _tier3_path` (or accept several definitions that render the same); a `^implementation-artifacts/sessions/[A-Za-z0-9._-]+/.*` row in `factory.py` and `scripts/bmad_drift_check.py` (writer `cli/gate.py::_write_gate_record`); a `_SHAPE_TABLE` row; `"sessions"` in `_EXPECTED_MARSHAL_SEGMENTS`; a fixture case for a twice-defined helper.
+- `[medium]` `[patch]` N2 `factory.py` `check_archive_hygiene` reports `dispatch-runs/<run>/failed/<story>/changes.patch` — the preserved failed attempt written by `supervisor/intent_gap_preserve.py:178` — as `stray-file` HARD with the false remedy "already in git history — remove" (57 on the primary checkout). Same defect class as the attempted-change patch, so in scope. Fix: extend the keep-exemption (and `--fix`) to it, with a test and a writer reference.
+- `[low]` `[patch]` N3 meta-test `:536` `test_every_tier3_rule_names_a_real_writer` only checks the cited symbol exists; a wrong but existing symbol or file passes. Fix: require a row-specific token inside that symbol's source.
+- `[low]` `[patch]` N5 `factory.py` `_is_attempted_change_patch_rel` and its script copy hand-code the shape a second time. Fix: derive the exemption from the table class (`_classify_tier3_run_artifact(rel)` in the exempt set).
+- `[low]` `[patch]` N6 the spec's Auto Run Result "Status: done" and the stale iteration-1 line contradict the send-back. Fix: refresh at landing.
+- `[low]` `[defer]` N4 the attempted-change writer token also appears in a docstring (`dispatch_supervisor/__main__.py:892`), so renaming the real glob (`:903`) stays green; append to DW-doctor-43-1-2.
+- Nit: unused `# noqa: E402` at `tests/scripts/test_bmad_drift_check_tier3_classify.py:34`.
+
+Send-back: N1, N2, N3, N5, N6 and the nit in one pass; N4 appended to DW-doctor-43-1-2; a fresh independent review (iteration 3) gates the landing.
 
 ### 2026-10-12 — Fix pass for iteration 1 (implementer)
 
