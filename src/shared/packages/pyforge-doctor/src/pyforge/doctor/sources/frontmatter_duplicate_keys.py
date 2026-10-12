@@ -30,9 +30,7 @@ _CHECK_DUPLICATE = "frontmatter-duplicate-key"
 _CHECK_UNREADABLE = "frontmatter-unreadable"
 # Story specs are flat files: ``specs/spec-<slug>.md`` — never a folder's
 # ``SPEC.md`` or ``.memlog.md`` (``spec-.*`` would swallow ``/`` via ``.``).
-_STORY_SPEC_RE = re.compile(
-    r"^_bmad-output/projects/[^/]+/planning-artifacts/specs/spec-[^/]+\.md$"
-)
+_STORY_SPEC_RE = re.compile(r"^_bmad-output/projects/[^/]+/planning-artifacts/specs/spec-[^/]+\.md$")
 
 
 @dataclass(frozen=True)
@@ -139,13 +137,13 @@ def _blame_commit_time(target: Path, rel: str, line: int) -> int | None:
                 rel,
             ],
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     for row in out.splitlines():
         if row.startswith("author-time "):
             try:
                 return int(row.split()[1])
-            except (IndexError, ValueError):
+            except IndexError, ValueError:
                 return None
     return None
 
@@ -165,16 +163,11 @@ def _duplicate_message(
     *,
     keep_line: int,
 ) -> str:
-    parts = [
-        f"{rel}: frontmatter key {dup.dotted_path!r} appears "
-        f"{len(dup.occurrences)} times"
-    ]
+    parts = [f"{rel}: frontmatter key {dup.dotted_path!r} appears {len(dup.occurrences)} times"]
     for occ in dup.occurrences:
         parts.append(f"line {occ.line}={occ.value!r}")
     delete_lines = [str(occ.line) for occ in dup.occurrences if occ.line != keep_line]
-    parts.append(
-        f"keep line {keep_line} (last in git blame) and delete line(s) {', '.join(delete_lines)}"
-    )
+    parts.append(f"keep line {keep_line} (last in git blame) and delete line(s) {', '.join(delete_lines)}")
     return "; ".join(parts)
 
 

@@ -5,13 +5,12 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from dataclasses import replace
-
-from pyforge.doctor.models import DoctorStatus, Finding, Source
+from pyforge.doctor.models import DoctorStatus
 from pyforge.doctor.sources import __main__ as dispatch
 from pyforge.doctor.sources import frontmatter_duplicate_keys
 from pyforge.doctor.verdict import exit_code_for
@@ -58,15 +57,7 @@ def _add_commit(repo: Path, message: str = "commit") -> None:
 
 
 def _story_spec_path(repo: Path, project: str, filename: str) -> Path:
-    return (
-        repo
-        / "_bmad-output"
-        / "projects"
-        / project
-        / "planning-artifacts"
-        / "specs"
-        / filename
-    )
+    return repo / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / filename
 
 
 def _write_story_spec(repo: Path, project: str, filename: str, body: str) -> Path:
@@ -115,11 +106,7 @@ def test_ac2_nested_dotted_path_and_quoted_bare_spelling(tmp_path: Path) -> None
         repo,
         "pyforge-doctor",
         "spec-nested.md",
-        "---\n"
-        "flag:\n"
-        "  key: first\n"
-        "  key: second\n"
-        "---\n\n# Body\n",
+        "---\nflag:\n  key: first\n  key: second\n---\n\n# Body\n",
     )
     _add_commit(repo, "nested")
 
@@ -131,17 +118,12 @@ def test_ac2_nested_dotted_path_and_quoted_bare_spelling(tmp_path: Path) -> None
         repo,
         "pyforge-doctor",
         "spec-quoted.md",
-        "---\n"
-        '"status": draft\n'
-        "status: ready\n"
-        "---\n\n# Body\n",
+        '---\n"status": draft\nstatus: ready\n---\n\n# Body\n',
     )
     _add_commit(repo, "quoted")
 
     quoted = [
-        f
-        for f in frontmatter_duplicate_keys.gather(repo)
-        if f.evidence.get("path", "").endswith("spec-quoted.md")
+        f for f in frontmatter_duplicate_keys.gather(repo) if f.evidence.get("path", "").endswith("spec-quoted.md")
     ][0]
     assert quoted.evidence["key"] == "status"
 
@@ -153,11 +135,7 @@ def test_ac2_banner_topped_block_is_read(tmp_path: Path) -> None:
         repo,
         "pyforge-steward",
         "spec-banner.md",
-        "<!-- provenance -->\n"
-        "---\n"
-        "status: draft\n"
-        "status: ready\n"
-        "---\n\n# Body\n",
+        "<!-- provenance -->\n---\nstatus: draft\nstatus: ready\n---\n\n# Body\n",
     )
     _add_commit(repo)
 
@@ -192,7 +170,9 @@ def test_ac3_scope_untracked_spec_md_and_outside_specs_ignored(tmp_path: Path) -
     )
 
     tracked_paths = {repo / p for p in frontmatter_duplicate_keys._iter_tracked_story_specs(repo)}
-    assert (repo / "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-untracked-dup.md") not in tracked_paths
+    assert (
+        repo / "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-untracked-dup.md"
+    ) not in tracked_paths
     findings = frontmatter_duplicate_keys.gather(repo)
     assert len(findings) == 1
     assert findings[0].status is DoctorStatus.OK
