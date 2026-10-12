@@ -93,7 +93,7 @@ def test_not_yet_clean_listed_exit_one_does_not_fail_ruff(lt, monkeypatch: pytes
         {"django-herald": frozenset({"ruff"})},
     )
 
-    def fake_run(argv: list[str], cwd: Path) -> int:
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
         return 1 if cwd.name == "django-herald" else 0
 
     monkeypatch.setattr(lt, "_run", fake_run)
@@ -106,7 +106,7 @@ def test_not_yet_clean_unlisted_exit_one_fails_ruff(lt, monkeypatch: pytest.Monk
     """Mutation: swallow unlisted exit 1 — this test fails."""
     monkeypatch.setattr(lt, "NOT_YET_CLEAN", {})
 
-    def fake_run(argv: list[str], cwd: Path) -> int:
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
         return 1 if cwd.name == "django-herald" else 0
 
     monkeypatch.setattr(lt, "_run", fake_run)
@@ -120,7 +120,10 @@ def test_not_yet_clean_listed_clean_fails_ratchet(lt, monkeypatch: pytest.Monkey
         "NOT_YET_CLEAN",
         {"django-herald": frozenset({"ruff"})},
     )
-    monkeypatch.setattr(lt, "_run", lambda _argv, _cwd: 0)
+    def always_zero(_argv: list[str], *, cwd: Path) -> int:
+        return 0
+
+    monkeypatch.setattr(lt, "_run", always_zero)
     assert lt.main(["ruff"]) == 1
     assert "remove NOT_YET_CLEAN entry" in capsys.readouterr().out
 
@@ -133,7 +136,7 @@ def test_not_yet_clean_listed_exit_two_fails(lt, monkeypatch: pytest.MonkeyPatch
         {"django-herald": frozenset({"ruff"})},
     )
 
-    def fake_run(argv: list[str], cwd: Path) -> int:
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
         return 2 if cwd.name == "django-herald" else 0
 
     monkeypatch.setattr(lt, "_run", fake_run)
@@ -153,7 +156,10 @@ def test_missing_ruff_table_is_a_finding(monkeypatch: pytest.MonkeyPatch, tmp_pa
     (packages_dir / "django-herald" / "pyproject.toml").write_text("[project]\nname = \"x\"\n", encoding="utf-8")
     monkeypatch.setattr(mod, "PACKAGES_DIR", packages_dir)
     monkeypatch.setattr(mod, "NOT_YET_CLEAN", {})
-    monkeypatch.setattr(mod, "_run", lambda _argv, _cwd: 0)
+    def always_zero(_argv: list[str], *, cwd: Path) -> int:
+        return 0
+
+    monkeypatch.setattr(mod, "_run", always_zero)
     assert mod.main(["ruff"]) == 1
 
 
@@ -191,7 +197,7 @@ def test_ruff_format_fix_skips_listed_package(lt, monkeypatch: pytest.MonkeyPatc
     )
     calls: list[Path] = []
 
-    def fake_run(argv: list[str], cwd: Path) -> int:
+    def fake_run(argv: list[str], *, cwd: Path) -> int:
         calls.append(cwd)
         return 0
 

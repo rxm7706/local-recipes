@@ -94,7 +94,7 @@ def _validate_not_yet_clean(django: list[Path]) -> str | None:
     return None
 
 
-def _run(argv: list[str], cwd: Path) -> int:
+def _run(argv: list[str], *, cwd: Path) -> int:
     proc = subprocess.run(argv, cwd=cwd)
     return proc.returncode
 
