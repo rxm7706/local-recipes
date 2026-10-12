@@ -6,10 +6,10 @@ No test reaches GitHub or runs ``gh``: the real GraphQL client runs against a st
 transport (``github_wire``: ``http.client``'s ``connect`` is patched by dotted name, as
 Story 16.1's tests do, because this tree adds no raw-HTTP import), and the root
 conftest's autouse ``real_gh_attempts`` guard fails any test that reaches the real
-``gh`` runner. The platform host never imports ``pyforge.*``, so the query-only guard itself is
-driven in ``pyforge-warden``'s own unit tests; here the real task, client and urllib run
-end to end. Every identifier is fictional: ``example-org``, invented project numbers,
-titles and repositories.
+``gh`` runner. The platform host reaches no pyforge package, so the query-only guard
+itself is driven in pyforge-warden's own unit tests; here the real task, client and
+urllib run end to end. Every identifier is fictional: ``example-org``, invented
+project numbers, titles and repositories.
 """
 
 from __future__ import annotations
@@ -258,7 +258,11 @@ def _run_task() -> str:
 
 
 def _fail_text(caught: pytest.ExceptionInfo[BaseException]) -> str:
-    rendered = "".join(traceback.format_exception(caught.value, capture_locals=True))
+    rendered = "".join(
+        traceback.TracebackException.from_exception(
+            caught.value, capture_locals=True
+        ).format()
+    )
     return f"{caught.value!s} {caught.value!r} {rendered}"
 
 
@@ -799,10 +803,10 @@ def test_portal_chrome_enables_the_action_when_flag_on(
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("flags_on")
 def test_portal_config_refusal_names_no_path(
     client,
     settings,
-    flags_on: Path,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
