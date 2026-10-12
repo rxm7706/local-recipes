@@ -7,7 +7,6 @@ followup_review_recommended: false
 baseline_revision: 'b4722aeba9e0f476c129d057c150fb0c4fd25294'
 flag-exempt: detector-or-gate   # the story changes target-version-check; a gated gate reports a silent green
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
