@@ -330,8 +330,97 @@ Type / Effort / Deps: feature / S / — (cross-station gate: herald 37.1, held a
 - 2026-10-11: minted from the operator's ruling "Keep 37.1; mint steward index (Recommended)" and the confirming text
   that asks for a flag, a Dream entry and its own review. `type: feature` behind `pyforge.steward.stations_index` (dev
   ON; staging and production OFF). Minted `blocked` on herald Story 37.1, with `landing_review: 'required'`.
+- 2026-10-11: deviation from Boundaries' path list, recorded on landing review iteration 1 (F10).
+  `src/platform/tests/_urls_without_stations_index.py` (new, test-only) is not in the Always list. AC2 compares
+  against "a URLconf equal to `config.urls.urlpatterns` minus the `stations-index` pattern" through
+  `override_settings(ROOT_URLCONF=…)`, and that setting takes an importable module path, so the comparison needs this
+  module. It holds no station list and imports nothing from `pyforge`: it filters `config.urls.urlpatterns` by the
+  pattern name. No production path moves.
 
 ## Review Triage Log
+
+### 2026-10-11 — Fix pass for landing review iteration 1 (implementer)
+
+Implementer session on 548b976af3. F1–F8 and F10 are fixed; F9 stays rejected. The view, template and URLconf are unchanged, because no test showed a defect in them. Changed:
+
+- `src/platform/tests/test_stations_index.py`;
+- `src/shared/packages/pyforge-steward/tests/meta/test_stations_index_boundaries.py`;
+- this spec (the Spec Change Log and this entry);
+- the 91.1 team-memory entry and its `MEMORY.md` line.
+
+Each mutation was applied to `config/stations_index.py`, `templates/stations/index.html` or the named test file, then restored byte-identical (sha256 checked) with HEAD unchanged at 548b976af3.
+
+- **F1 — AC2, published page (`test_flag_off_with_wagtail_page_at_slug_stations`, `:443`).**
+  - The page is now a child of `Site.objects.get(is_default_site=True).root_page`, so `/stations/` resolves to it.
+  - The test asserts 200 with and without the index, the title "Stations landing" in the body, an equal `Content-Type`, and byte-identical bodies.
+  - Mutation, a bare `raise Http404` when the flag is OFF: the test fails, `404 == 200`.
+- **F2 and F5 — AC2, `sys.modules` (`test_flag_off_fresh_interpreter_loads_no_station_api`, `:463`).**
+  - The check now runs in a fresh-interpreter child (`_FLAG_OFF_CHILD`, `:222`): `django.setup()`, flag OFF, one anonymous GET. The child reports the status, whether `config.station_api` is in `sys.modules`, and every record on `config.optional_components`, captured from before setup at every level.
+  - It runs twice: once with herald present and once herald-absent behind 87.1's finder. In the herald-absent case, a load of `config.station_api` would also log 87.1's record.
+  - Each case asserts 404, no `config.station_api`, and no record.
+  - The in-process test that popped `sys.modules["config.station_api"]` and never restored it is gone, which closes F5.
+  - Mutations, each failing both cases on `station_api_loaded`:
+    - a module-scope `import config.station_api`;
+    - a module-scope `from config import station_api`;
+    - a module-scope `importlib.import_module("config.station_api")` in the view module.
+  - With the `sys.modules` assertion removed as well, `import config.station_api` still fails the herald-absent case on the record list, which holds 87.1's record.
+- **F3 — AC7 meta-test (`test_stations_index_boundaries.py`).**
+  - `_ModuleScopeImports` (`:66`) collects every module a guarded file imports while it is being imported. That covers top level, module-level `if`/`else`, `try`/`except`/`finally` and `with`, class bodies, decorators and default values; function and lambda bodies are skipped.
+  - `from X import a` also yields `X.a`, so `from config import station_api` reads as `config.station_api`. Relative imports resolve against the file's package.
+  - A dynamic import with a literal name counts: `importlib.import_module`, bare `import_module`, `__import__`.
+  - `_forbidden_module` (`:40`) matches `pyforge`, `config.station_api` and every `_STATION_PORTAL_PACKAGES` module by package prefix on a dotted boundary.
+  - New direct cases: 31 must-flag (`test_detector_flags_module_scope_import`) and 14 must-not-flag (`test_detector_ignores_call_time_and_unrelated_imports`). The must-not-flag cases include the view's own function-body load and name-prefix lookalikes (`config.station_api_helpers`, `django_herald_portal_extra`, `pyforgery`).
+  - Mutations to `stations_index.py`, each failing `test_stations_index_files_import_nothing_forbidden_at_module_scope`:
+    - `from config import station_api`;
+    - `import django_herald_portal.views`;
+    - `from django_warden_fabric.views import chrome_home`;
+    - a module-scope `importlib.import_module("config.station_api")`.
+  - Detector mutations, each turning its direct cases red:
+
+    | Detector mutation | Direct cases that fail |
+    |---|---|
+    | exact-name matching | 6 |
+    | no `from`-alias expansion | 6 |
+    | no dynamic-call scan | 9 |
+    | walking function bodies | 4 cases, plus the real-file test |
+- **F4.** The duplicate `review_loop_iteration` was already removed in the send-back commit. Nothing changed here.
+- **F6 — AC2 and I/O-matrix gaps.**
+  - `test_flag_off_matches_urlconf_without_index` (`:425`) is parametrized over anonymous and admin × GET and OPTIONS. It asserts the same status (404), `Content-Type` and body with and without the index. This replaces the three body-only tests and adds admin OPTIONS.
+    - Mutation, the method check before the flag: `[anonymous-options]` and `[admin-options]` fail, `405 == 404`.
+  - `test_flag_on_post_answers_what_warden_answers` (`:553`) covers anonymous and admin POST: 405, as `POST /stations/warden/` gets.
+    - Mutation, the role check before the method check: `[anonymous]` fails, `403 == 405`.
+  - The herald-only test (`:508`) now asserts `_index_rows(...) == [herald / mounted / /stations/herald/ / (/stations/herald/,)]`.
+    - Mutation, dropping the `is_switcher_tile` filter: the test fails.
+- **F7 — escaping (`test_flag_on_absent_reason_renders_escaped`, `:646`).**
+  - `absent_reason` is monkeypatched to return a reason carrying `<script>alert('index')</script>`.
+  - The test asserts no raw `<script>alert(` in the body, the escaped `&lt;script&gt;alert(` present, and herald's row text equal to the reason.
+  - Mutation, `{{ row.reason|safe }}`: the test fails.
+- **F8 — the child's database (`_test_database_url`, `:278`; `_run_child`, `:329`).**
+  - The URL is derived only from this run's test-database settings: PostgreSQL, with a name starting `test_` or equal to `TEST.NAME`. Credentials and the database name are percent-quoted, and a socket host goes in `?host=`.
+  - Anything else calls `pytest.fail`; there is no fallback to the environment's `DATABASE_URL`.
+  - Every child payload reports the database it used, and the parent asserts it equals its own test database (`:347`).
+  - New direct tests:
+    - `test_child_database_url_refuses_anything_but_the_test_database` (`:379`): not PostgreSQL, not a test name, no name, not the `TEST.NAME`;
+    - `test_child_database_url_round_trips_the_test_database` (`:403`) and `test_child_database_url_keeps_a_socket_host` (`:410`), both through `environ.Env.db_url_config`.
+  - Mutations:
+    - dropping the test-database check: three refusal cases fail;
+    - an unquoted password: `[tcp-with-credentials]` fails;
+    - the child given `os.environ["DATABASE_URL"]`: all three child tests fail.
+- **F10.**
+  - The Spec Change Log records `src/platform/tests/_urls_without_stations_index.py` as a deviation, with its reason.
+  - The team-memory entry is renamed with `git mv` to `story-91-1-stations-index-is-held-for-its-independent-landin.md` and reworded: it is held for review as draft PR #2137, not landed, and iteration 1 sent it back. Its `MEMORY.md` line was rewritten to match.
+- **Surface.** `spec-surface-check` and `spec_surface_reconcile.py` named no drift: the governing memlogs have already moved and name these paths. So there is no memlog entry and no stamp.
+- **Environment.** The origin/main merge added `pyforge-warden` to `platform-ci-test` (warden 16.1). This worktree's installed env predated it, and `platform-ci-local` only installs a missing env, so its first run failed 15 `test_warden_fleet_inventory.py` tests with `No module named 'pyforge.warden'`. After `pixi install --frozen -e platform-ci-test` from the committed lock, they pass. No repo file changed for this.
+- **Gates, all run after the last source edit:**
+  - `pyforge-steward-test`: 0 (2366 passed, 3 skipped; 46 new meta cases);
+  - `lint-types`: 0;
+  - `platform-ci-local -- --test`: 0 after the env sync (7 of 7 steps; full suite 1282 passed, 14 skipped);
+  - `spec-surface-check`: 0, re-run after this entry;
+  - `detectors-ci`: 0;
+  - flag gate `--spec`: 0, verdict `pass`;
+  - the test file alone against a private PostgreSQL: 26 passed.
+
+Status stays `in-progress`, and `landing_review` is unchanged. A fresh independent landing review (iteration 2) gates the landing.
 
 ### 2026-10-11 — Independent landing review, iteration 1: sent back (3 medium, 3 low patch; 2 low defer)
 
