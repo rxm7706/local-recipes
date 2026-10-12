@@ -112,9 +112,7 @@ def _guard_structlog_configuration(request: pytest.FixtureRequest) -> Iterator[N
     if not differing:
         return
     baseline = _structlog_session_baseline
-    structlog.configure(
-        **{**baseline, "processors": list(baseline["processors"])}
-    )
+    structlog.configure(**{**baseline, "processors": list(baseline["processors"])})
     pytest.fail(
         f"structlog configuration leak in {request.node.nodeid}; "
         f"differing keys: {', '.join(differing)}"
