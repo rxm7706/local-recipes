@@ -114,6 +114,7 @@ from ..core.worktree_checkpoint import (
 from ..dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
 from ..dispatch_verification_journal import build_dispatch_verification_journal_entries_from_envelope
 from ..dispatch_verify import (
+    DispatchSpecFrontmatterResult,
     ProcessWaitResult,
     TerminateProcessGroupResult,
     assess_dispatch_session_liveness,
@@ -2472,7 +2473,7 @@ def _run_and_journal_spec_frontmatter(
     repo_root: Path,
     story_key: str,
     worktree: Path,
-) -> tuple[int, object | None]:
+) -> tuple[int, DispatchSpecFrontmatterResult | None]:
     """Story 96.1: collapse repeated story-spec frontmatter keys and journal."""
     from pyforge.marshal.core.dispatch_spec_frontmatter import (
         dispatch_spec_frontmatter_journal_payload,

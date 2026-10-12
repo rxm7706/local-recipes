@@ -46,6 +46,7 @@ from .core.dispatch_ruff_format import (
 from .core.dispatch_spec_frontmatter import (
     DispatchSpecFrontmatterResult,
     apply_dispatch_spec_frontmatter_before_verify,
+    findings_for_spec_frontmatter_refusals,  # noqa: F401 — re-export for cli.dispatch
 )
 from .core.dispatch_verification import (
     BranchCommitAttribution,

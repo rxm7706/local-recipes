@@ -12,10 +12,14 @@ from pyforge.marshal.adapters.vcs_git import GitVcs
 from pyforge.marshal.core.dispatch_spec_frontmatter import (
     SPEC_FRONTMATTER_GATE_CODE,
     DispatchSpecFrontmatterResult,
+    FrontmatterCollapseRefusal,
+    _RepeatRecordingLoader,
     _split_story_spec,
     _top_level_key_line_map,
     apply_dispatch_spec_frontmatter_before_verify,
     collapse_story_spec_frontmatter_text,
+    dispatch_spec_frontmatter_journal_payload,
+    dispatch_spec_frontmatter_should_journal,
     findings_for_spec_frontmatter_refusals,
     is_tracked_story_spec_path,
     story_spec_paths_in_changed,
@@ -299,3 +303,96 @@ def test_mutation_without_pre_verify_call_fails_ac2(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert len(_story_spec_frontmatter_dup_keys(spec_path.read_text(encoding="utf-8"))) == 1
+
+
+def test_repeat_recording_loader_records_duplicate_top_level_keys() -> None:
+    loader = _RepeatRecordingLoader("title: t\nstatus: a\nstatus: b\n")
+    loader.get_single_data()
+    assert loader.repeated_keys == {"status"}
+
+
+def test_split_story_spec_rejects_missing_fence() -> None:
+    assert _split_story_spec("no frontmatter\n") is None
+
+
+def test_journal_payload_and_should_journal_for_refusals() -> None:
+    result = DispatchSpecFrontmatterResult(
+        (("spec.md", "review_loop_iteration"),),
+        ("spec.md",),
+        (FrontmatterCollapseRefusal(spec_path="spec.md", key="review_loop_iteration", reason="ambiguous"),),
+        False,
+    )
+    assert dispatch_spec_frontmatter_should_journal(result)
+    payload = dispatch_spec_frontmatter_journal_payload(result)
+    assert payload["ok"] is False
+    assert payload["refusals"] == [
+        {"spec": "spec.md", "key": "review_loop_iteration", "reason": "ambiguous"},
+    ]
+
+
+def test_apply_returns_empty_when_changed_files_raises(tmp_path: Path) -> None:
+    class _ChangeFailVcs(_CollapseVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
+            del repo_root, worktree_path, base
+            raise RuntimeError("diff failed")
+
+    result = apply_dispatch_spec_frontmatter_before_verify(
+        worktree=tmp_path,
+        repo_root=tmp_path,
+        vcs=_ChangeFailVcs(scope=()),
+        blame_vcs=_ChangeFailVcs(scope=()),
+    )
+    assert result == DispatchSpecFrontmatterResult((), (), (), False)
+
+
+def test_apply_records_blame_failure(tmp_path: Path) -> None:
+    rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-x.md"
+    spec_path = tmp_path / rel
+    spec_path.parent.mkdir(parents=True)
+    spec_path.write_text(
+        "---\ntitle: t\nreview_loop_iteration: 0\nreview_loop_iteration: 1\nstatus: done\n---\n\n",
+        encoding="utf-8",
+    )
+
+    class _BlameFailVcs(_CollapseVcs):
+        def line_blame_facts(self, **kwargs: object) -> dict[int, tuple[str, int]]:
+            del kwargs
+            raise RuntimeError("blame failed")
+
+    vcs = _BlameFailVcs(scope=(rel,))
+    result = apply_dispatch_spec_frontmatter_before_verify(
+        worktree=tmp_path,
+        repo_root=tmp_path,
+        vcs=vcs,
+        blame_vcs=vcs,
+    )
+    assert result.refusals and result.refusals[0].reason == "git blame failed"
+
+
+def test_apply_leaves_uncommitted_when_commit_raises(tmp_path: Path) -> None:
+    rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-x.md"
+    spec_path = tmp_path / rel
+    spec_path.parent.mkdir(parents=True)
+    spec_path.write_text(
+        "---\ntitle: t\nreview_loop_iteration: 0\nreview_loop_iteration: 1\nstatus: done\n---\n\n",
+        encoding="utf-8",
+    )
+
+    class _CommitFailVcs(_CollapseVcs):
+        def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: object) -> str:
+            del repo_root, paths, message
+            raise RuntimeError("commit failed")
+
+    vcs = _CommitFailVcs(
+        scope=(rel,),
+        blame={3: ("a" * 40, 1), 4: ("b" * 40, 2)},
+    )
+    result = apply_dispatch_spec_frontmatter_before_verify(
+        worktree=tmp_path,
+        repo_root=tmp_path,
+        vcs=vcs,
+        blame_vcs=vcs,
+    )
+    assert not result.committed
+    assert not result.committed_paths
+    assert result.collapsed

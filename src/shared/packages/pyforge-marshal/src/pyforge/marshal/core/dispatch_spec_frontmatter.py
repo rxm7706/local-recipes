@@ -216,7 +216,7 @@ def _validate_collapsed_block(
         new_data = loader.get_single_data()
     except yaml.YAMLError:
         return False
-    repeats = getattr(loader, "repeated_keys", set())
+    repeats: set[str] = getattr(loader, "repeated_keys", set())
     if repeats:
         return False
     if not isinstance(new_data, dict):
