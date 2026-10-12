@@ -2,7 +2,7 @@
 title: '98.1: Two marshal tests stop failing every local preflight'
 type: 'fix'
 created: '2026-10-12'
-status: 'in-review'
+status: 'done'
 baseline_revision: '6b5029f362885d615748f004fd3a8849532bc9cd'
 review_loop_iteration: 0
 followup_review_recommended: false

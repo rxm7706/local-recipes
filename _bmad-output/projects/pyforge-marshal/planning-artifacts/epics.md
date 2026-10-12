@@ -9893,7 +9893,7 @@ So that the local gate fails a branch only for what the branch broke.
 **When** the marshal lane runs under `pr-preflight`, with the Guild environment on PATH, two xdist workers, parallel lanes, and `tmp_path` under `…/pyforge-marshal-test/pytest-basetemp/…`
 **Then** both NFR-P1 tests stub `seed.verbs.check.referenced_dep_findings` and still assert a wall-clock budget under 5 s on the 1,200-file tree; `PackagingFailProcess` matches a pixi task as an exact argv token; the packaging-gate test is parametrized over a worktree parent `""` and `"pyforge-marshal-test"`, and its verdict assertion names every finding when it fails
 **And** restoring the substring match fails the `pyforge-marshal-test` case (mutation); the full marshal lane passes three times in a worktree under the preflight's conditions; `pr-preflight` passes; the team-memory entry that blamed a poisoned cache is corrected; the probe's own cost is recorded as this story's deferral.
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
