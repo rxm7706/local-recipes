@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rea-agents
+  version: "6.4.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: 59eb1604b8db75f522d4a975c36ce6b4a2ad465e43bad165f9a8f728391db9b8
+
+build:
+  number: 0
+  # Not noarch: the dependency tree pulls @lydell/node-pty, whose prebuilt
+  # native binary is resolved per platform at npm-install time.
+  skip:
+    - win
+  script: build.sh
+
+requirements:
+  build:
+    - nodejs >=22.19
+  run:
+    - nodejs >=22.19
+
+tests:
+  - script:
+      - rea --help
+      - rea-agents --help
+      - test -f $PREFIX/bin/rea
+  # The local stdio MCP server must answer an MCP `initialize` request.
+  - files:
+      recipe:
+        - mcp_initialize.sh
+    script:
+      - bash mcp_initialize.sh
+
+about:
+  summary: REA - one local stdio MCP server for reverse engineering binaries, applications and runtime behaviour
+  description: |
+    REA (rea-agents) gives coding agents a single local stdio MCP server and
+    CLI (`rea`) for reverse engineering: JavaScript/Electron applications,
+    native binaries, Android, WebAssembly and runtime capture. Optional
+    analysis backends (Ghidra, pwntools, binwalk, jadx, ...) are discovered at
+    runtime; commercial providers (Hopper, IDA, JEB) are operator-supplied.
+    Use only on software you are authorised to analyse.
+  homepage: https://github.com/morluto/rea
+  repository: https://github.com/morluto/rea
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
