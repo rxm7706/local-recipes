@@ -6154,7 +6154,7 @@ So that each station's lint-clean fix story lands green and the list can only sh
 **When** `pixi run --frozen -e pyforge-steward pyforge-steward-test` runs
 **Then** the meta-test asserts every ceiling package is in the seed and every ceiling verb set is a subset of the seed's for that package, and every `NOT_YET_CLEAN` package is in the ceiling with its verbs a subset of the ceiling's; the seed keeps its nine entries, and main's eight-entry ceiling passes
 **And** adding a package the seed lacks to the ceiling, adding a verb to a ceiling entry, and a `NOT_YET_CLEAN` entry absent from the ceiling each fail the test (mutations, reverted); only the meta-test file changes outside `_bmad-output/` and the spec-surface baseline; `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green with `ruff` absent from `PATH` (CI's shape), and the memlog of every Spec `spec-surface-check` names reconciles the file before one scoped stamp each
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
