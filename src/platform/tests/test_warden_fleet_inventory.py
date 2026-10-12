@@ -1020,7 +1020,8 @@ def test_leak_guard_scan_roots_exist() -> None:
             assert _tracked_files_under(_REPO_ROOT, [root])
         elif root.is_file():
             assert root.is_file()
-    warden_tests = sorted(_PLATFORM_DIR.glob("test_warden_*.py"))
+    warden_test_dir = Path(__file__).resolve().parent
+    warden_tests = sorted(warden_test_dir.glob("test_warden_*.py"))
     assert warden_tests
     assert _tracked_files_under(_REPO_ROOT, warden_tests)
 
@@ -1124,7 +1125,9 @@ def test_leak_guard_ac2_org_in_warden_files_fails(tmp_path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("Example-Org\n", encoding="utf-8")
         hits.append(rel)
-    (tmp_path / ".claude/memory/project/warden-note.md").write_text(
+    warden_mem = tmp_path / ".claude/memory/project"
+    warden_mem.mkdir(parents=True, exist_ok=True)
+    (warden_mem / "warden-note.md").write_text(
         "pyforge-warden\nExample-Org\n", encoding="utf-8"
     )
     hits.append(".claude/memory/project/warden-note.md")
@@ -1150,6 +1153,7 @@ def test_leak_guard_ac2_org_in_warden_files_fails(tmp_path: Path) -> None:
 def test_leak_guard_ac3_listed_terms_fail_anywhere(tmp_path: Path) -> None:
     """AC3: Rule T applies in every scanned file."""
     _init_git_repo(tmp_path)
+    (tmp_path / "docs").mkdir()
     (tmp_path / "docs/other.md").write_text("EXAMPLE-REPO\n", encoding="utf-8")
     (tmp_path / "src/shared/packages/pyforge-warden/w.txt").parent.mkdir(parents=True)
     (tmp_path / "src/shared/packages/pyforge-warden/w.txt").write_text(
