@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: a1036d825854f80f
-story_count: 130
-test_file_count: 85
+source_fingerprint: 5e3ada1ab5231f60
+story_count: 131
+test_file_count: 87
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 130
-- **Epics parsed:** 37
-- **Test files inventoried:** 85 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 131
+- **Epics parsed:** 38
+- **Test files inventoried:** 87 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a1036d825854f80f`
+- **Source fingerprint:** `5e3ada1ab5231f60`
 
 ## Risk Assessment
 
@@ -65,6 +65,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 34: Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11)
 - Epic 36: The CI live demo retires to the archive once a ship records itself locally
 - Epic 37: The host's Django pages load without herald installed
+- Epic 38: django-herald passes the lint gate
 
 ### Low-risk epics
 
@@ -91,6 +92,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pages_second_host.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_portal_herald_guard.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_portal_import_boundary.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_preflight_pages_lane.py` | meta | none observed |
@@ -298,6 +301,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 35.2 | The docs-site checks and the sync-proof row close on real evidence | none observed |
 | 36.1 | The CI live-demo workflow moves to the archive and its readers follow | none observed |
 | 37.1 | The herald portal loads without herald and says why | none observed |
+| 38.1 | django-herald is lint-clean and leaves the not-yet-clean list | none observed |
 
 ## Quality Gates
 

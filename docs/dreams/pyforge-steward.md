@@ -1438,6 +1438,27 @@ Drift — orphaned between stations.
   split, its eviction policies and the platform's Redis settings do not change; never a skip, an xfail or a rerun.
   Owner `spec-pyforge-unifying-strategy`. → Epic 92 / Story 92.1, specced 2026-10-11, to be dispatched ahead of the
   next platform-touching landings.
+- **2026-10-11 (django portal packages under lint-types) — Ruled: the lint gate covers every django portal package,
+  and a list of packages not yet clean can only shrink.** Herald Story 37.1's review found that nothing lints the nine
+  `src/shared/packages/django-*` portal packages. `lint-types` runs `scripts/lint_types.py`, whose `packages()` globs
+  only `pyforge-*` (Story 66.1, CAP-153), and `platform-ci-local` lints only `src/platform`. None of the nine
+  `pyproject.toml` files has a `[tool.ruff]` table, and no ruff config sits above them, so a hand run falls back to the
+  guild ruff's (0.16.9) own default rule set, 413 rules at line length 88. Measured on `2b5e0d649b` that way:
+  atlas 14 findings, doctor 7, herald 17, marshal 7, mason 10, pyforge 106, scribe 6, steward 8, warden 40 (215), and
+  `ruff format --check` would reformat 26 files in herald, marshal, pyforge and warden. The operator's request,
+  verbatim: "Do this task here: Lint django-herald package and add it to a gate". Asked how wide to go, the operator
+  chose, verbatim label "Gate all, clean herald (Recommended)": "Two stories. Steward's story extends lint-types to
+  every django-* package and adds an explicit 'not yet clean' list that can only shrink. Herald's story clears
+  django-herald's 17 findings and takes it off that list. The other stations follow later as their own fix stories."
+  **What it looks like when real:** `pixi run -e pyforge-guild lint-types` checks and format-checks the nine django
+  portal packages beside the ten `pyforge-*` ones, each under a `[tool.ruff]` table it declares, so the verdict never
+  depends on a ruff release's defaults. A package on the not-yet-clean list is reported and does not fail the gate;
+  any other package fails on any finding; a listed package that has become clean fails the gate until its entry is
+  removed, so the list only shrinks. Herald's package leaves the list first (herald Story 38.1); each other station's
+  leaves with its own fix story. **Constraints:** a feature under CAP-153 (the same tasks, CI lane and `pr-preflight`
+  leg), no new CAP, `flag-exempt: detector-or-gate`; ruff and ruff format only (mypy over the django packages is out
+  of scope for this effort); no finding is fixed in this story; `src/platform` and its own lane do not change. Owner
+  `spec-pyforge-steward`. → Epic 93 / Story 93.1, specced 2026-10-11; herald Story 38.1 is minted `blocked` on it.
 - **2026-10-11 (structlog configuration leak) — Found: one OIDC test reconfigures structlog and never puts it back, so
   every later test in the platform run logs through a print logger.**
   `src/platform/tests/test_oidc_identity.py::test_sync_ignores_unmatched_groups_and_logs` calls `structlog.configure()`

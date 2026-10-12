@@ -946,6 +946,27 @@ verify_commands = [
   "src/platform/tests/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"93" = [  # the lint gate covers the nine django portal packages, and its not-yet-clean list only shrinks (feature under
+  # spec-pyforge-steward CAP-153; Story 93.1), added 2026-10-11. The default surface, restated because a declared entry
+  # replaces it outright, plus: the gate's runner and its workflow (the header comment), the nine portal packages'
+  # pyproject.toml files (a [tool.ruff] table each, no source line), AGENTS.md (the Lint and types line), the generated
+  # pixi-tasks page and its docs/map.yaml stamp, and every Spec memlog (pixi.toml has seven governing Specs).
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/lint_types.py",
+  ".github/workflows/lint-types.yml",
+  "src/shared/packages/django-*/pyproject.toml",
+  "AGENTS.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/map.yaml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "94" = [  # no platform test leaves structlog configured differently (fix under spec-pyforge-steward CAP-87; Story 94.1),
   # added 2026-10-11. The default surface, restated because a declared entry replaces it outright, plus the host's tests
   # (the OIDC test's restoring fixture), the platform-root conftest (the session guard) and every Spec memlog (both files
