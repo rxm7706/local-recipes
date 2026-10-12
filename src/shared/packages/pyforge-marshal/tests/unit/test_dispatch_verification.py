@@ -1687,11 +1687,16 @@ def test_pre_existing_gate_is_terminal_for_dispatch_retry() -> None:
 
 class PackagingFailProcess:
     def run(self, tokens, *, cwd: Path):
-        git_log = _fake_git_log_empty(list(tokens))
+        argv = list(tokens)
+        git_log = _fake_git_log_empty(argv)
         if git_log is not None:
             return git_log
-        command = " ".join(tokens)
-        if "pyforge-deps-test" in command:
+        # Match a pixi task as an exact argv token, never as a substring of the joined argv.
+        # Under pr-preflight a lane's scratch dir is named after the lane, so tmp_path sits
+        # under ``.../pyforge-marshal-test/pytest-basetemp/...``; a substring match then
+        # failed the commit-attribution ``git`` read, whose argv carries the worktree path,
+        # and the verdict read ``refused`` (MRS-GATE-009) on every preflight run.
+        if "pyforge-deps-test" in argv:
             return ProcessResult(
                 returncode=1,
                 stdout="",
@@ -1700,7 +1705,7 @@ class PackagingFailProcess:
                     "ModuleNotFoundError: No module named 'pandas'\n"
                 ),
             )
-        if "pyforge-marshal-test" in command:
+        if "pyforge-marshal-test" in argv:
             return ProcessResult(
                 returncode=1,
                 stdout="",
@@ -1709,11 +1714,15 @@ class PackagingFailProcess:
         return ProcessResult(returncode=0, stdout="ok", stderr="")
 
 
+@pytest.mark.parametrize("worktree_parent", ["", "pyforge-marshal-test"])
 def test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns(
     tmp_path: Path,
+    worktree_parent: str,
 ) -> None:
-    worktree = tmp_path / "wt"
-    worktree.mkdir()
+    # The second case puts the worktree under a directory named like the preflight lane, the
+    # path every pr-preflight run gives tmp_path; the verdict must not depend on it.
+    worktree = tmp_path / worktree_parent / "wt"
+    worktree.mkdir(parents=True)
     story_key = normalize("28-22-verify-blast-radius-pre-existing-gate")
     effective, _ = policy.compose(
         project_slug="pyforge-marshal",
@@ -1741,7 +1750,7 @@ def test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns(
     assert (
         judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
         == DispatchVerificationVerdict.VERIFIED
-    )
+    ), [(f.code, str(f.severity), f.message[:300]) for f in envelope.findings]
 
 
 def test_evaluate_dispatch_verification_marshal_test_failure_still_refuses(

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+  # Upstream has no releases; this is the commit pwndbg 2026.09.15 pins.
+  commit: 50227bda0b6332e94027f811a15879588de6d5cb
+  python_min: "3.10"
+
+package:
+  name: gdb-pt-dump
+  version: ${{ version }}
+
+source:
+  url: https://github.com/martinradev/gdb-pt-dump/archive/${{ commit }}.tar.gz
+  sha256: 319ab5ef8608cbafdb6561cf68d1922596abe7f86436361f851ad845e585a781
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pt
+        - pt.machine
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Examine the page tables / address space of QEMU-based VMs from gdb (Python module `pt`)
+  homepage: https://github.com/martinradev/gdb-pt-dump
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

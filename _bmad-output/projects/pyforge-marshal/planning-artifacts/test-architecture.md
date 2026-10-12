@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 195cc7f441f6bb34
-story_count: 453
+source_fingerprint: 1666b2f8f01445fe
+story_count: 452
 test_file_count: 266
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 453
+- **Stories parsed:** 452
 - **Epics parsed:** 96
 - **Test files inventoried:** 266 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `195cc7f441f6bb34`
+- **Source fingerprint:** `1666b2f8f01445fe`
 
 ## Risk Assessment
 
@@ -117,7 +117,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 95: Pre-verify ruff covers the platform and the portal packages
 - Epic 96: A story spec says each frontmatter fact once
 - Epic 97: A seed-adopted repo edits its own files and keeps an empty plan
-- Epic 99: The marshal suite holds under load
+- Epic 98: The local preflight judges marshal's tests the way CI does
 
 ### Low-risk epics
 
@@ -859,8 +859,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 96.1 | A story spec carries each frontmatter key once | none observed |
 | 97.1 | Seed accept records an intended edit, and repo-owned files leave the guard | none observed |
 | 97.2 | A seed update dry run on an adopted repo plans only real changes | none observed |
-| 99.1 | Seed check probes its tools at once, and its budget tests hold under load | none observed |
-| 99.2 | Dispatch-verification tests run on a fixture root and name their findings whe... | none observed |
+| 98.1 | Two marshal tests stop failing every local preflight | none observed |
 
 ## Quality Gates
 

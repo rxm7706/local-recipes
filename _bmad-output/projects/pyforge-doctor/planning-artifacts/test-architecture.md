@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: bccaa6b9163f2655
-story_count: 150
-test_file_count: 95
+source_fingerprint: e104f593055babeb
+story_count: 151
+test_file_count: 96
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 150
-- **Epics parsed:** 43
-- **Test files inventoried:** 95 under `src/shared/packages/pyforge-doctor/tests/`
+- **Stories parsed:** 151
+- **Epics parsed:** 44
+- **Test files inventoried:** 96 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `bccaa6b9163f2655`
+- **Source fingerprint:** `e104f593055babeb`
 
 ## Risk Assessment
 
@@ -79,12 +79,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 40: Phase 2 of the deferral burn-down: doctor's high deferrals
 - Epic 42: A repeated frontmatter key in a story spec turns Detectors red (spec-pyforge-doctor CAP-81, CAP-86)
 - Epic 43: bmad-drift knows the files marshal dispatch writes into Tier-3 (spec-pyforge-doctor CAP-11, CAP-12)
+- Epic 44: The doctor check speed budget holds under preflight load (spec-pyforge-doctor CAP-1, NFR-4)
 
 ## Test Inventory
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
 | `src/shared/packages/pyforge-doctor/tests/meta/test_atlas_sole_mcp_import.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_bmad_drift_tier3_marshal_shapes.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_docs_currency_generator_trust.py` | meta | none observed |
@@ -334,6 +336,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 41.6 | Chain-completeness counts the one-chain fold's citation window again | none observed |
 | 42.1 | A repeated frontmatter key in a story spec turns Detectors red | none observed |
 | 43.1 | bmad-drift knows every file marshal dispatch writes into Tier-3 | none observed |
+| 44.1 | The doctor check speed budget is judged on the CPU the check spends | none observed |
 
 ## Quality Gates
 

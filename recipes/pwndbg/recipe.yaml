@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pwndbg
+  version: "2026.09.15"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pwndbg/pwndbg/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 40fbc8857cc4b7547babb60355b49672add10cb153185f04f55a293a82915018
+
+build:
+  number: 0
+  noarch: python
+  script: build.sh
+  python:
+    entry_points:
+      - pwndbg = pwndbginit.pwndbg_gdb:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - gdb
+    - capstone6pwndbg ==8.0.0
+    - unicorn >=2.1.4,<3
+    - pwntools >=4.14.1,<5
+    - sortedcontainers >=2.4.0,<3
+    - tabulate >=0.10.0,<0.11
+    - typing-extensions >=4.16.0,<5
+    - pycparser >=3.0,<4
+    - pyelftools >=0.33,<1
+    - pygments >=2.19.2,<3
+    - psutil >=7.0.0,<8
+    - ipython >=8.39.0
+    - ropgadget >=7.6
+    - requests >=2.34.2,<3
+    - rich >=15.0.0,<16
+    - niche-elf ==0.3.6
+    - gdb-pt-dump ==1.0.0
+
+tests:
+  - python:
+      imports:
+        - pwndbginit
+      # pip_check off: pwntools 4.15.0 declares unicorn !=2.1.4 while pwndbg needs
+      # unicorn >=2.1.4 and conda-forge tops out at 2.1.4 (upstream pin clash).
+      pip_check: false
+      python_version:
+        - "*"
+  # Load pwndbg inside gdb (gdb's own embedded python) and run its `version` command.
+  - requirements:
+      run:
+        - gdb
+    script:
+      - pwndbg -batch -ex version > pwndbg.log 2>&1 || true
+      - cat pwndbg.log
+      - if grep -q Traceback pwndbg.log; then exit 1; fi
+      - grep -q "Pwndbg:" pwndbg.log
+      - grep -q "GDB:" pwndbg.log
+      - grep -q "loaded [0-9]* pwndbg commands" pwndbg.log
+
+about:
+  summary: Exploit development and reverse engineering with GDB made easy
+  homepage: https://pwndbg.re
+  repository: https://github.com/pwndbg/pwndbg
+  license: MIT
+  license_file: LICENSE.md
+  description: |
+    pwndbg is a GDB plug-in. Run it with `pwndbg <binary>` (wraps the conda
+    gdb). Dropped upstream-optional deps not on conda-forge: decomp2dbg/jpype1
+    (decompiler integration), ziglang (cymbol), uv. gdb-pt-dump comes from
+    the local gdb-pt-dump recipe.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

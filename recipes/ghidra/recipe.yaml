@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ghidra
+  version: "12.1.4"
+  build_date: "20260921"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_${{ version }}_build/ghidra_${{ version }}_PUBLIC_${{ build_date }}.zip
+  sha256: ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db
+
+build:
+  number: 0
+  # The official release ships prebuilt decompiler/sleigh natives for
+  # linux, macOS and Windows side by side, so one archive serves all unix.
+  noarch: generic
+  skip:
+    - win
+  prefix_detection:
+    ignore: true
+  dynamic_linking:
+    binary_relocation: false
+  script: build.sh
+
+requirements:
+  run:
+    - openjdk >=21
+
+tests:
+  - script:
+      - test -x $PREFIX/bin/analyzeHeadless
+      - test -x $PREFIX/bin/ghidraRun
+      - test -f $PREFIX/share/ghidra/Ghidra/application.properties
+      - grep -q "application.version=${{ version }}" $PREFIX/share/ghidra/Ghidra/application.properties
+  # Real headless run: create a project and import a small ELF without analysis.
+  - script:
+      - mkdir -p ghidra_proj
+      - analyzeHeadless "$PWD/ghidra_proj" smoke -import /bin/true -noanalysis -deleteProject 2>&1 | tee headless.log
+      - grep -q "Import succeeded" headless.log
+
+about:
+  summary: Ghidra software reverse engineering framework (NSA official release)
+  homepage: https://ghidra-sre.org
+  repository: https://github.com/NationalSecurityAgency/ghidra
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    Ghidra is a software reverse engineering (SRE) framework. This package
+    repackages the official public release under $PREFIX/share/ghidra and
+    exposes `ghidraRun`, `analyzeHeadless` and `pyghidraRun` wrappers that
+    point JAVA_HOME at the conda openjdk. Bundled third-party components keep
+    their own LICENSE files under share/ghidra (GPL/ and licenses/).
+
+extra:
+  recipe-maintainers:
+    - rxm7706

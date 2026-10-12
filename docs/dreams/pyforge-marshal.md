@@ -1470,30 +1470,30 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   steward through the CLI's JSON, never by import; depends on steward's `ci status` landing first; changes no landing
   verdict and waits on no CI. Operator ruling 2026-10-12: the plan's recommended answers Q1–Q8 stand. Owner
   `spec-pyforge-marshal`.
-- **2026-10-12 (the marshal suite under load)** — **Found: the local preflight marshal lane goes red on tests that pass
-  alone, so a green branch has to be pushed past its own gate.** Team memory recorded it the same day
-  (`.claude/memory/feedback/the-local-pr-preflight-marshal-lane-pyforge-marshal-test-can.md`), and it recurred on
-  `hygiene-memory-index-prune`, a diff that touched only `.claude/memory/` and `archive/`. Three tests failed:
-  - two NFR-P1 budget tests, at 5.78 s and 10.85 s against 5 s;
-  - `test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns`, which read `refused` where it expects
-    `verified`.
-  All three pass alone. The push went out under `PYFORGE_PREFLIGHT_SKIP=1`, journaled. **Measured at `c447946b3f`:**
-  `run_check` on the budget fixture takes 2.65-2.95 s alone. 0.05 s of that is in-process; about 2.6 s is child
-  processes. `copier --version` takes 1.78 s and `bmad-loop --version` 1.07 s, and `seed/detect/referenced_deps.py`
-  runs them one after the other. So about 95% of the "walk cost" the tests time is two Python start-ups, and under
-  load they cross 5 s. The same code maps a probe's 5 s timeout to "referenced dependency is not installed", so on a
-  busy machine `marshal seed check` reports an installed `copier` as missing. The dispatch-verification test reads the
-  live checkout as `repo_root`, as 30 calls in its module do, and its failure prints only the verdict. Rerun alone, and
-  again beside the steward, doctor and detectors lanes, it did not fail, so its cause is not yet known. **What it looks
-  like when fixed:** `seed check` probes its tools at the same time and says "timed out" when a probe times out. The
-  default-lane budget tests time the tree with the probes stubbed, and one `slow` test times the real probes in the
-  serial lane. The dispatch-verification tests run against a fixture root, never the live checkout. A verdict
-  assertion that fails names every finding, so the next red explains itself. **Constraints:** fix stories under CAP-13
-  and the dispatch-verification gates, no CAP, no flag. No budget is raised, and no test is skipped or moved out of its
-  lane. Epic 98 stays reserved for the ci-pauses-at-merge feature (`docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`
-  § 5). Doctor's own 5 s budget test (`test_check_speed_budget.py`) failed the same way in both preflight runs. It is
-  doctor's to fix, on doctor's chain. Owner `spec-pyforge-marshal`. → Epic 99 / Stories 99.1 and 99.2, specced
-  2026-10-12.
+- **2026-10-12 (two tests red the local preflight)** — **Found: two marshal tests fail every local `pr-preflight` run
+  while CI's `marshal-test` stays green, so every push needs a journaled skip.** On 2026-10-12 the pre-push preflight
+  refused four pushes, from two planning-only branches, on the same tests. (1) The NFR-P1 budget tests
+  (`tests/integration/test_performance_gates.py::test_check_under_nfr_p1_budget` and
+  `tests/unit/test_seed_verbs_check.py::test_run_check_completes_within_the_nfr_p1_budget`) read 5.10 s to 8.93 s
+  against 5 s. Measured: the walk and classification take about 0.3 s; `seed/detect/referenced_deps.py` spawns
+  `bmad-loop --version` (1.4 s) and `copier --version` (2.6 s), and first a Doctor subprocess whenever `doctor` is on
+  PATH, as it is in every preflight lane. That fixed probe cost stretches under the preflight's parallel load. (2)
+  `tests/unit/test_dispatch_verification.py::test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns`
+  reads `refused`: its fake process failed any command whose joined argv contained `pyforge-marshal-test`, and the
+  preflight names each lane's scratch directory after the lane, so `tmp_path` sits under
+  `…/pyforge-marshal-test/pytest-basetemp/…`. The commit-attribution `git` read of `refs/remotes/origin/main...HEAD`
+  carries the worktree path, so the fake failed it (MRS-GATE-009). Reproduced in 1.2 s with `--basetemp` under a
+  directory named `pyforge-marshal-test`; the same test under any other name passes. The first diagnosis, a
+  module-level cache poisoned by an earlier test on the same xdist worker (captured to team memory the same day), was
+  wrong. **What it looks like when fixed:** the NFR-P1 tests stub the machine-readiness probe and keep their
+  wall-clock 5 s budget on the walk they were written to measure; the fake matches a pixi task as an exact argv token,
+  and the packaging-gate test also runs with its worktree under a directory named like the lane, so the verdict cannot
+  depend on the path; the full marshal lane passes three times under the preflight's conditions and `pr-preflight`
+  passes; the team-memory entry says what really happened. **Constraints:** a fix under CAP-13 (NFR-P1, `seed check`)
+  and CAP-139 (verify blast radius, `pre-existing-gate`), no CAP, no flag; tests only, no product code. The probe cost
+  itself, about 4 s of NFR-P1's 5 s for `marshal seed check` end to end and more when Doctor is on PATH, is a product
+  question recorded as the story's deferral. Operator ask, 2026-10-12: "Do this task here: “Fix two marshal tests that
+  red local pr-preflight”". Owner `spec-pyforge-marshal`. → Epic 98 / Story 98.1, specced 2026-10-12.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
@@ -6060,3 +6060,71 @@ about it").
 
 [[pyforge-marshal]] · [[pyforge-scribe]] · [[marshal-token-economy]] ·
 [[scribe-marshal-fact-visibility]]
+
+## 2026-10-12 — REA is one pixi install away — reverse engineering as a local stdio tool
+
+*Appended 2026-10-12 with PR #2168 (recipe `rea-agents` and its REA backends). It was drafted as a standalone
+`docs/dreams/rea-integration.md` (`owner: marshal`, `status: dreamt`); under one chain per station (AGENTS.md
+pre-PR item 6, `spec-one-chain-per-station`) a marshal-owned aspiration enters as a dated section of the station
+Dream instead, so the standalone file never reached main. The body below is that draft, verbatim, with its
+headings demoted one level. Status: dreamt; no Spec capability, epic or story is minted yet.*
+
+## REA is one pixi install away — reverse engineering as a local stdio tool
+
+### The Dream
+
+An operator runs `pixi install -e pyforge-foundry-full` in local-recipes and the
+`rea` CLI from [REA](https://github.com/morluto/rea) (`rea-agents` on npm, MIT)
+is already on PATH. It does not need `npx`, a global npm, or a Node they picked
+by hand. One Marshal registration task wires REA's MCP server into the harness
+they use (Claude Code, Cursor, Codex, Grok Build), and after a restart they can
+ask their agent "trace how X works in this app".
+
+### Shape
+
+- **No sidecar.** REA is a *local stdio MCP server* (`rea mcp`) that the agent
+  starts on demand as a short-lived Node process. There is no long-running
+  service, port, or database, unlike the DB-GPT or Langflow sidecars. The only
+  child processes are the analysis engines it launches locally (for example,
+  Ghidra). A container is worth considering later only as a sandbox for runtime
+  capture of untrusted targets, and that is Warden's call.
+- **Mason: recipe first.** `recipes/rea-agents` repackages the npm tarball
+  together with its production `node_modules` and collected third-party
+  licenses. It runs on `nodejs >=22.19`. The recipe is per-platform rather than
+  noarch because `@lydell/node-pty` ships a native binary that is resolved per
+  platform. It goes to SelfExplainML first, then to staged-recipes for
+  conda-forge.
+- **Opt-in `rea` pixi feature.** This is a small feature that is composed into
+  `pyforge-foundry-full` only after the recipe is published. It is not part of
+  this Dream's first PR, and pixi.toml/pixi.lock stay untouched until then.
+- **Optional backends, also opt-in.** These are pulled from conda-forge where
+  they exist (checked with the anaconda.org API on 2026-10-12):
+  - Available: `openjdk` (25.0.2), `wabt` (1.0.41), `pwntools` (4.15.0),
+    `binwalk` (3.1.0), `mitmproxy` (12.2.3).
+  - Not on conda-forge, so they are now **local recipes** in this repo:
+    `recipes/ghidra` (12.1.4, official NSA release with `analyzeHeadless`,
+    `ghidraRun` and `pyghidraRun` wrappers on `openjdk >=21`),
+    `recipes/jadx` (1.5.6, official release on `openjdk >=11`), and
+    `recipes/pwndbg` (2026.09.15, on conda-forge `gdb`). pwndbg also needs
+    three recipes of its own: `capstone6pwndbg` 8.0.0, `niche-elf` 0.3.6, and
+    `gdb-pt-dump` 1.0.0 (the pinned commit). Like `rea-agents`, they go to
+    SelfExplainML first and then to staged-recipes.
+- **Commercial providers stay operator-supplied.** Hopper, IDA, and JEB are
+  never packaged. They are reached only through REA's own environment
+  variables, for example `REA_JEB_MCP_URL`.
+- **Marshal owns registration.** A task (name to be decided; `guild-register
+  rea` is a *proposal*) writes the MCP entry for each harness and copies the
+  REA skill. It does not let `rea setup` rewrite agent configs. CI runs a
+  readiness smoke check: `rea --help` plus an MCP `initialize` handshake.
+- **Warden review before default-on.** Runtime capture executes the target, so
+  Warden reviews the capability before the feature is enabled by default.
+- **Lawful use.** REA is for software the operator owns or is authorised to
+  analyse. The feature docs say so.
+
+### Open questions
+
+1. Should registration live in Marshal's MCP surface, or be a pixi task only?
+2. Will staged-recipes accept the binary repackaging of ghidra and jadx, or
+   does conda-forge require builds from source (Gradle)?
+3. Is the osx-64/osx-arm64 native `node-pty` build covered by the recipe as
+   written? So far it has only been verified on linux-64.
