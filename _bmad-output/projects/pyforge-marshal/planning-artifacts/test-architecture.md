@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 922972588d4dcb65
-story_count: 448
+source_fingerprint: 0f19d0c1c3ffcbd9
+story_count: 449
 test_file_count: 259
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 448
-- **Epics parsed:** 93
+- **Stories parsed:** 449
+- **Epics parsed:** 94
 - **Test files inventoried:** 259 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `922972588d4dcb65`
+- **Source fingerprint:** `0f19d0c1c3ffcbd9`
 
 ## Risk Assessment
 
@@ -114,6 +114,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 92: A dispatch run is live only while its session really runs in its worktree
 - Epic 93: Recall reaches every live session (spec-pyforge-marshal CAP-288..CAP-291 ← spec-marshal-recall-in-the-loop CAP-1..4)
 - Epic 94: A review entry is as new as the commit that wrote it
+- Epic 95: Pre-verify ruff covers the platform and the portal packages
 - Epic 96: A story spec says each frontmatter fact once
 
 ### Low-risk epics
@@ -845,6 +846,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 93.1 | Every live session gets the recall its layer promises, and the run records th... | none observed |
 | 94.1 | The review gate orders review entries by their real commit times | none observed |
 | 94.2 | A held PR is marked ready when its landing review passes | none observed |
+| 95.1 | Dispatch applies ruff to a story's files under each tree's own config | none observed |
 | 96.1 | A story spec carries each frontmatter key once | none observed |
 
 ## Quality Gates
