@@ -1049,7 +1049,7 @@ So that the guard can scan the whole tree without failing on my own earlier, pub
 **When** the leak guard runs with a configuration present
 **Then** each `leak_guard_terms` entry is forbidden in every tracked file and in every file the branch changes; the organisation's name is forbidden only in warden's own files (the declared warden-owned paths, a team-memory entry that names warden, and a line that names warden in the memory index, in another Spec's memlog or in another changed file); a failure prints paths only
 **And** a fixture organisation named in a non-warden file passes while the same name in a warden file fails; an empty `leak_guard_terms` is refused unless `allow_empty_leak_guard_terms = true`; re-adding the organisation to the global terms, or dropping the warden-scoped check, turns a test red (mutations, reverted); `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `platform-ci-local -- --test` are green, the orchestrator's live run against the real configuration passes, and the `spec-pyforge-unifying-strategy` memlog reconciles both files before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Currency validation — 2026-08-26
 
