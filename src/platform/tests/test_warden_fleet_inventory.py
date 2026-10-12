@@ -15,39 +15,51 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import time
 import traceback
-import urllib.error
-import urllib.response
 from dataclasses import dataclass
 from dataclasses import field
-from email.message import Message
 from http import HTTPStatus
 from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Protocol
 from unittest.mock import patch
 
 import pytest
 import structlog
+from celery.exceptions import SoftTimeLimitExceeded
+from celery.signals import after_task_publish
+from celery.signals import before_task_publish
+from celery.signals import task_failure
+from celery.signals import task_prerun
+from celery.signals import task_rejected
+from celery.signals import task_retry
+from celery.signals import task_revoked
+from celery.signals import task_success
+from celery.signals import task_unknown
 from django.core.management import call_command
 from django.test import Client
 from django.test.utils import override_settings
 from django_pyforge.flags import evaluate_from_source
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
+from django_structlog.celery.receivers import CeleryReceiver
 from django_warden_fabric.fleet import FLEET_INVENTORY_FLAG
 from django_warden_fabric.fleet_inventory import DEFAULT_FLEET_INVENTORY_PATH
 from django_warden_fabric.fleet_inventory import DEFAULT_FLEET_TARGET_CONFIG
 from django_warden_fabric.fleet_inventory import ENV_FLEET_INVENTORY_PATH
 from django_warden_fabric.fleet_inventory import ENV_FLEET_TARGET_CONFIG
+from django_warden_fabric.fleet_inventory import FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS
+from django_warden_fabric.fleet_inventory import FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
+from django_warden_fabric.fleet_inventory import FLEET_INVENTORY_TIME_LIMIT_SECONDS
 from django_warden_fabric.fleet_inventory import GH_AUTH_TOKEN_TIMEOUT_SECONDS
 from django_warden_fabric.fleet_inventory import FleetTargetConfigError
 from django_warden_fabric.fleet_inventory import GhAuthTokenProvider
 from django_warden_fabric.fleet_inventory import GhBinaryMissingError
 from django_warden_fabric.fleet_inventory import GhLoginMissingError
 from django_warden_fabric.fleet_inventory import GhTimeoutError
+from django_warden_fabric.fleet_inventory import GhTokenUnavailableError
 from django_warden_fabric.fleet_inventory import _run_gh as real_run_gh
 from django_warden_fabric.fleet_inventory import atomic_write_json
 from django_warden_fabric.fleet_inventory import fleet_checkout_root
@@ -62,11 +74,14 @@ from django_warden_fabric.views import FLEET_INVENTORY_CONFIG_REFUSAL
 
 from config.observability.logging import JSON
 from config.observability.logging import build_logging_config
+from config.observability.logging import configure_structlog
 from tests.gh_guard import refuse_real_gh
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from collections.abc import Iterator
     from collections.abc import Sequence
+    from types import FrameType
 
 _EXAMPLE_ORG = "example-org"
 _FIXTURE_REPO_COUNT = 3
@@ -74,6 +89,7 @@ _EXIT_REFUSED = 2
 _SENTINEL = "sentinel-token-must-not-leak-16-1"
 _GH = "/opt/example/bin/gh"
 _TWO_WRITES = 2
+_HTTPS_PORT = 443
 _SLEEPER_SECONDS = 5
 _SRC_ROOT = Path(__file__).resolve().parents[2]
 _REPO_ROOT = _SRC_ROOT.parent
@@ -158,34 +174,16 @@ def _fixture_client() -> _FixtureListingClient:
     return _FixtureListingClient(repos_by_org={_EXAMPLE_ORG: _fixture_repos()})
 
 
-# --- stub GitHub transport for the real client (stdlib handlers patched) ---
+# --- a fake GitHub at the socket: the real client, urllib and http.client all run ---
 
 
-class _OutgoingRequest(Protocol):
-    """What the stub transport reads off urllib's request object."""
-
-    full_url: str
-
-    def get_method(self) -> str: ...
-
-    def get_header(self, header_name: str) -> str | None: ...
-
-
-class _StubResponse(urllib.response.addinfourl):
-    msg = "stub"  # urllib's HTTP handlers set .msg on a response; addinfourl has none
-
-
-def _reply(
-    req: _OutgoingRequest,
-    status: int,
-    *,
-    body: bytes = b"",
-    headers: dict[str, str] | None = None,
-) -> _StubResponse:
-    message = Message()
-    for key, value in (headers or {}).items():
-        message[key] = value
-    return _StubResponse(io.BytesIO(body), message, req.full_url, status)
+def _http_response(
+    status: int, *, body: bytes = b"", headers: dict[str, str] | None = None
+) -> bytes:
+    lines = [f"HTTP/1.1 {status} {HTTPStatus(status).phrase}"]
+    lines.extend(f"{key}: {value}" for key, value in (headers or {}).items())
+    lines.append(f"Content-Length: {len(body)}")
+    return ("\r\n".join(lines) + "\r\n\r\n").encode("latin-1") + body
 
 
 def _api_repo(name: str, *, branch: str = "main", archived: bool = False) -> dict:
@@ -197,13 +195,64 @@ def _api_repo(name: str, *, branch: str = "main", archived: bool = False) -> dic
     }
 
 
-def _page(
-    req: _OutgoingRequest, repos: list[dict], *, next_url: str | None = None
-) -> _StubResponse:
+def _page(repos: list[dict], *, next_url: str | None = None) -> bytes:
     headers = {"Content-Type": "application/json"}
     if next_url is not None:
         headers["Link"] = f'<{next_url}>; rel="next"'
-    return _reply(req, HTTPStatus.OK, body=json.dumps(repos).encode(), headers=headers)
+    return _http_response(
+        HTTPStatus.OK, body=json.dumps(repos).encode(), headers=headers
+    )
+
+
+class _ScriptedReader(io.BytesIO):
+    """Serves ``head``, then raises ``then`` (or reports EOF) once it runs dry."""
+
+    def __init__(
+        self, head: bytes, then: BaseException | None, wire: _GitHubWire | None = None
+    ) -> None:
+        super().__init__(head)
+        self._then = then
+        self._wire = wire
+
+    def _dry(self, data: bytes) -> bytes:
+        if not data and self._then is not None:
+            if self._wire is not None:
+                self._wire.stack_leaks.extend(_stack_leaks("read"))
+            raise self._then
+        return data
+
+    def readline(self, size: int | None = -1) -> bytes:
+        return self._dry(super().readline(size))
+
+    def read(self, size: int | None = -1) -> bytes:
+        return self._dry(super().read(size))
+
+
+def _holds_sentinel(value: object) -> bool:
+    header_items = getattr(value, "header_items", None)
+    if callable(header_items) and any(_SENTINEL in str(v) for _, v in header_items()):
+        return True  # a urllib Request carrying the token as a header
+    try:
+        text = repr(value)
+    except Exception:  # noqa: BLE001 -- an object whose repr fails shows nothing
+        return False
+    return _SENTINEL in text
+
+
+def _stack_leaks(where: str) -> list[str]:
+    """Locals holding the token in the library frames between the fake and this test."""
+    frame: FrameType | None = sys._getframe(1)  # noqa: SLF001 -- the stack is under test
+    while frame is not None and frame.f_code.co_filename == __file__:
+        frame = frame.f_back
+    leaks: list[str] = []
+    while frame is not None and frame.f_code.co_filename != __file__:
+        leaks.extend(
+            f"{where}: {frame.f_code.co_qualname} local {name!r}"
+            for name, value in frame.f_locals.items()
+            if _holds_sentinel(value)
+        )
+        frame = frame.f_back
+    return leaks
 
 
 @dataclass(frozen=True)
@@ -211,52 +260,102 @@ class _Exchange:
     method: str
     url: str
     authorization: str | None
+    timeout: float | None
 
 
 @dataclass
 class _GitHubWire:
-    """Answers the real client by URL and records each request it really sends."""
+    """Answers the real client by URL from what really reached the wire.
 
-    routes: dict[str, Callable[[_OutgoingRequest], _StubResponse]] = field(
-        default_factory=dict
-    )
+    ``connect`` on http.client's connections is replaced (by dotted name: this
+    module adds no raw-HTTP import under src/platform) with one that hands the
+    connection a scripted socket, so urllib, http.client and the client's own
+    pinned connection and credential splice all run for real.
+    """
+
+    routes: dict[str, bytes | Callable[[], io.BytesIO]] = field(default_factory=dict)
+    connect_error: BaseException | None = None
+    send_error: BaseException | None = None
+    send_error_call: int = 1
     exchanges: list[_Exchange] = field(default_factory=list)
-
-    def answer(self, req: _OutgoingRequest) -> _StubResponse:
-        self.exchanges.append(
-            _Exchange(
-                method=req.get_method(),
-                url=req.full_url,
-                authorization=req.get_header("Authorization"),
-            )
-        )
-        responder = self.routes.get(req.full_url)
-        if responder is None:
-            return _reply(req, HTTPStatus.NOT_FOUND, body=b"{}")
-        return responder(req)
+    # Every connect, send and response read walks the live stack: no library frame
+    # (urllib, http.client, the client) may hold the token, failure or not.
+    stack_leaks: list[str] = field(default_factory=list)
 
     def serve_fixture_org(self) -> None:
-        self.routes[_FIRST_PAGE] = lambda req: _page(
-            req,
+        self.routes[_FIRST_PAGE] = _page(
             [_api_repo("alpha"), _api_repo("beta", branch="develop")],
             next_url=_SECOND_PAGE,
         )
-        self.routes[_SECOND_PAGE] = lambda req: _page(
-            req, [_api_repo("archived-one", archived=True)]
+        self.routes[_SECOND_PAGE] = _page([_api_repo("archived-one", archived=True)])
+
+    def script(self, url: str, head: bytes, then: BaseException | None) -> None:
+        self.routes[url] = lambda: _ScriptedReader(head, then, self)
+
+    def connect(self, connection: Any) -> None:
+        self.stack_leaks.extend(_stack_leaks("connect"))
+        if self.connect_error is not None:
+            raise self.connect_error
+        connection.sock = _WireSocket(self, connection)
+
+
+class _WireSocket:
+    def __init__(self, wire: _GitHubWire, connection: Any) -> None:
+        self._wire = wire
+        scheme = "https" if connection.default_port == _HTTPS_PORT else "http"
+        port = (
+            "" if connection.port == connection.default_port else f":{connection.port}"
         )
+        self._origin = f"{scheme}://{connection.host}{port}"
+        self._timeout = connection.timeout
+        self._sent = bytearray()
+        self._calls = 0
+
+    def sendall(self, data: bytes, *args: object) -> None:
+        self._calls += 1
+        self._wire.stack_leaks.extend(_stack_leaks("send"))
+        error = self._wire.send_error
+        if error is not None and self._calls == self._wire.send_error_call:
+            raise error
+        self._sent += bytes(data)
+
+    def makefile(self, mode: str, *args: object, **kwargs: object) -> io.BytesIO:
+        self._wire.stack_leaks.extend(_stack_leaks("getresponse"))
+        head = bytes(self._sent).split(b"\r\n\r\n", 1)[0].decode("latin-1")
+        lines = head.split("\r\n")
+        method, target, _version = lines[0].split(" ", 2)
+        auth = [
+            value.strip()
+            for name, _, value in (line.partition(":") for line in lines[1:])
+            if name.strip().lower() == "authorization"
+        ]
+        url = f"{self._origin}{target}"
+        self._wire.exchanges.append(
+            _Exchange(
+                method=method,
+                url=url,
+                authorization=auth[0] if auth else None,
+                timeout=self._timeout,
+            )
+        )
+        route = self._wire.routes.get(
+            url, _http_response(HTTPStatus.NOT_FOUND, body=b"{}")
+        )
+        return io.BytesIO(route) if isinstance(route, bytes) else route()
+
+    def close(self) -> None:
+        pass
 
 
 @pytest.fixture
 def github_wire(monkeypatch: pytest.MonkeyPatch) -> _GitHubWire:
     wire = _GitHubWire()
 
-    def _open(_handler: object, req: _OutgoingRequest) -> _StubResponse:
-        return wire.answer(req)
+    def _connect(connection: Any) -> None:
+        wire.connect(connection)
 
-    # By dotted name: this module adds no raw-HTTP import under src/platform
-    # (doctor's test_story_does_not_add_pyforge_under_src_platform).
-    monkeypatch.setattr("urllib.request.HTTPSHandler.https_open", _open)
-    monkeypatch.setattr("urllib.request.HTTPHandler.http_open", _open)
+    monkeypatch.setattr("http.client.HTTPSConnection.connect", _connect)
+    monkeypatch.setattr("http.client.HTTPConnection.connect", _connect)
     return wire
 
 
@@ -475,11 +574,64 @@ def test_gh_timeout_is_typed_and_drops_partial_output() -> None:
     assert _SENTINEL not in repr(caught.value)
 
 
+def _leaky_runner(error: BaseException) -> Any:
+    """A runner that fails while a local holds stdout, as a failing communicate does."""
+
+    def _run(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess[str]:
+        partial_stdout = _SENTINEL  # noqa: F841 -- held by the frame when the run fails
+        raise error
+
+    return _run
+
+
+def _runner_frame_locals(exc: BaseException) -> list[dict[str, object]]:
+    found = []
+    tb = exc.__traceback__
+    while tb is not None:
+        if tb.tb_frame.f_code.co_name == "_run":
+            found.append(dict(tb.tb_frame.f_locals))
+        tb = tb.tb_next
+    return found
+
+
+@pytest.mark.parametrize(
+    "error",
+    [SoftTimeLimitExceeded(), RuntimeError("runner failed")],
+    ids=["soft-time-limit", "runtime-error"],
+)
+def test_gh_provider_types_any_runner_failure_and_clears_its_frames(
+    error: Exception,
+) -> None:
+    """The provider types any failure ``from None`` and clears the failed frames."""
+    provider = GhAuthTokenProvider(runner=_leaky_runner(error))
+    with (
+        patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=_GH),
+        pytest.raises(GhTokenUnavailableError, match=type(error).__name__) as caught,
+    ):
+        provider.token()
+    assert caught.value.__suppress_context__ is True
+    assert caught.value.__context__ is error
+    assert _runner_frame_locals(error) == [{}]
+    assert _SENTINEL not in str(caught.value)
+
+
+def test_gh_provider_clears_frames_of_a_base_exception() -> None:
+    interrupt = KeyboardInterrupt()
+    provider = GhAuthTokenProvider(runner=_leaky_runner(interrupt))
+    with (
+        patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=_GH),
+        pytest.raises(KeyboardInterrupt) as caught,
+    ):
+        provider.token()
+    assert caught.value is interrupt
+    assert _runner_frame_locals(interrupt) == [{}]
+
+
 def test_guard_refuses_the_real_gh_runner(real_gh_attempts: list[list[str]]) -> None:
     """M7: the root conftest's autouse guard stands between every test and ``gh``."""
     with (
         patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=_GH),
-        pytest.raises(AssertionError, match="real gh token provider"),
+        pytest.raises(GhTokenUnavailableError, match="RealGhInvokedError"),
     ):
         GhAuthTokenProvider().token()
     assert real_gh_attempts == [["auth", "token", "--hostname", "github.com"]]
@@ -494,7 +646,7 @@ def test_gh_guard_still_fails_a_test_that_swallowed_the_refusal(
     attempts = next(guard)
     with (
         patch("django_warden_fabric.fleet_inventory.shutil.which", return_value=_GH),
-        contextlib.suppress(AssertionError),
+        contextlib.suppress(Exception),
     ):
         GhAuthTokenProvider().token()
     assert attempts == [["auth", "token", "--hostname", "github.com"]]
@@ -700,6 +852,10 @@ def test_real_client_run_is_get_only_and_never_persists_the_token(
     assert [e.url for e in github_wire.exchanges] == [_FIRST_PAGE, _SECOND_PAGE]
     assert {e.method for e in github_wire.exchanges} == {"GET"}
     assert {e.authorization for e in github_wire.exchanges} == {f"Bearer {_SENTINEL}"}
+    assert {e.timeout for e in github_wire.exchanges} == {
+        FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS
+    }
+    assert github_wire.stack_leaks == []
     payload = json.loads(export.read_text(encoding="utf-8"))
     assert len(payload["repos"]) == _FIXTURE_REPO_COUNT
     assert _SENTINEL not in export.read_text(encoding="utf-8")
@@ -709,38 +865,34 @@ def test_real_client_run_is_get_only_and_never_persists_the_token(
         assert _SENTINEL not in blob
 
 
-def _service_unavailable(req: _OutgoingRequest) -> _StubResponse:
-    return _reply(req, HTTPStatus.SERVICE_UNAVAILABLE, body=b'{"message": "down"}')
-
-
-def _connection_reset(req: _OutgoingRequest) -> _StubResponse:
-    reason = "connection reset"
-    raise urllib.error.URLError(reason)
-
-
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("responder", "message"),
-    [(_service_unavailable, "HTTP 503"), (_connection_reset, "request failed")],
+    "case",
+    [("http-503", "HTTP 503", 1), ("connect-refused", "request failed", 0)],
     ids=["http-error", "url-error"],
 )
 def test_real_client_failure_never_carries_the_token(
     inventory_paths: tuple[Path, Path],
     github_wire: _GitHubWire,
     caplog: pytest.LogCaptureFixture,
-    responder: Callable[[_OutgoingRequest], _StubResponse],
-    message: str,
+    case: tuple[str, str, int],
 ) -> None:
+    fault, message, requests = case
     _config, export = inventory_paths
     caplog.set_level(logging.DEBUG)
-    github_wire.routes[_FIRST_PAGE] = responder
+    if fault == "http-503":
+        github_wire.routes[_FIRST_PAGE] = _http_response(
+            HTTPStatus.SERVICE_UNAVAILABLE, body=b'{"message": "down"}'
+        )
+    else:
+        github_wire.connect_error = ConnectionRefusedError(111, "Connection refused")
     with (
         patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider),
         pytest.raises(Exception, match=message) as caught,
     ):
         run_fleet_inventory("run-id", _EXAMPLE_ORG)
     assert type(caught.value).__name__ == "FleetInventoryApiError"
-    assert [e.method for e in github_wire.exchanges] == ["GET"]
+    assert [e.method for e in github_wire.exchanges] == ["GET"] * requests
     assert not export.exists()
     assert "fleet inventory run-id failed" in caplog.text
     assert _SENTINEL not in caplog.text
@@ -810,41 +962,6 @@ _PARTIAL_BODY = (
 )
 
 
-class _ScriptedReader(io.BytesIO):
-    """Serves ``head``, then raises ``then`` (or reports EOF) once it runs dry."""
-
-    def __init__(self, head: bytes, then: BaseException | None) -> None:
-        super().__init__(head)
-        self._then = then
-
-    def _dry(self, data: bytes) -> bytes:
-        if not data and self._then is not None:
-            raise self._then
-        return data
-
-    def readline(self, size: int | None = -1) -> bytes:
-        return self._dry(super().readline(size))
-
-    def read(self, size: int | None = -1) -> bytes:
-        return self._dry(super().read(size))
-
-
-class _FakeSocket:
-    """Takes the request bytes and answers from a script; never touches the network."""
-
-    def __init__(self, reader: _ScriptedReader) -> None:
-        self._reader = reader
-
-    def sendall(self, data: bytes) -> None:
-        del data
-
-    def makefile(self, mode: str, *args: object, **kwargs: object) -> _ScriptedReader:
-        return self._reader
-
-    def close(self) -> None:
-        pass
-
-
 @pytest.mark.django_db
 @pytest.mark.usefixtures("inventory_flags_on")
 @pytest.mark.parametrize(
@@ -858,7 +975,7 @@ class _FakeSocket:
 )
 def test_unwrapped_transport_error_never_reaches_logs_or_the_debug_page(
     inventory_paths: tuple[Path, Path],
-    monkeypatch: pytest.MonkeyPatch,
+    github_wire: _GitHubWire,
     settings,
     case: tuple[bytes, BaseException | None, str],
 ) -> None:
@@ -870,11 +987,7 @@ def test_unwrapped_transport_error_never_reaches_logs_or_the_debug_page(
     """
     head, then, kind = case
     _config, export = inventory_paths
-
-    def _connect(connection: Any) -> None:
-        connection.sock = _FakeSocket(_ScriptedReader(head, then))
-
-    monkeypatch.setattr("http.client.HTTPSConnection.connect", _connect)
+    github_wire.script(_FIRST_PAGE, head, then)
     portal = Client(raise_request_exception=False)
     _authed(portal, settings)
     stream = StringIO()
@@ -900,6 +1013,103 @@ def test_unwrapped_transport_error_never_reaches_logs_or_the_debug_page(
     assert f"transport failed: {kind}" in body
     assert re.search(r"fleet inventory [0-9a-f-]{36} failed", rendered)
     assert not export.exists()
+
+
+@pytest.fixture
+def structlog_celery_receiver() -> Iterator[CeleryReceiver]:
+    """django_structlog's worker receivers, connected as the worker bootstep does.
+
+    structlog is put back on the platform's own configuration for the test (another
+    test may have left a print-logger configuration behind), then restored.
+    """
+    previous = structlog.get_config()
+    configure_structlog()
+    receiver = CeleryReceiver()
+    receiver.connect_worker_signals()
+    yield receiver
+    for signal, handler in (
+        (before_task_publish, receiver.receiver_before_task_publish),
+        (after_task_publish, receiver.receiver_after_task_publish),
+        (task_prerun, receiver.receiver_task_prerun),
+        (task_retry, receiver.receiver_task_retry),
+        (task_success, receiver.receiver_task_success),
+        (task_failure, receiver.receiver_task_failure),
+        (task_revoked, receiver.receiver_task_revoked),
+        (task_unknown, receiver.receiver_task_unknown),
+        (task_rejected, receiver.receiver_task_rejected),
+    ):
+        signal.disconnect(handler)
+    structlog.configure(**previous)
+
+
+@pytest.mark.django_db
+@pytest.mark.usefixtures("structlog_celery_receiver")
+@pytest.mark.parametrize("phase", ["connect", "send", "getresponse"])
+@pytest.mark.parametrize(
+    "error",
+    [SoftTimeLimitExceeded(), RuntimeError("an untyped error inside urllib")],
+    ids=["soft-time-limit", "runtime-error"],
+)
+def test_worker_task_failed_line_never_carries_the_token(
+    inventory_paths: tuple[Path, Path],
+    github_wire: _GitHubWire,
+    phase: str,
+    error: Exception,
+) -> None:
+    """P1: an error raised inside urllib, rendered by the worker's ``task_failed`` line.
+
+    ``run_fleet_inventory.apply()`` with django_structlog's Celery receiver connected
+    and the production JSON renderer (frame locals on). Before the fix, the token
+    sat in urllib ``do_open``'s ``headers`` local, which ``task_failed`` printed.
+    """
+    _config, export = inventory_paths
+    if phase == "connect":
+        github_wire.connect_error = error
+    elif phase == "send":
+        # The second write is the first credential fragment, spliced in by the client.
+        github_wire.send_error, github_wire.send_error_call = error, 2
+    else:
+        github_wire.script(_FIRST_PAGE, b"", error)
+    stream = StringIO()
+    handler = _platform_json_log_handler(stream)
+    root = logging.getLogger()
+    root.addHandler(handler)
+    try:
+        with patch("django_warden_fabric.tasks.GhAuthTokenProvider", _SentinelProvider):
+            result = run_fleet_inventory.apply(
+                args=("run-1", _EXAMPLE_ORG), throw=False
+            )
+    finally:
+        root.removeHandler(handler)
+    rendered = stream.getvalue()
+    events = [
+        json.loads(line) for line in rendered.splitlines() if line.startswith("{")
+    ]
+    assert any(event.get("event") == "task_failed" for event in events)
+    assert '"locals"' in rendered
+    assert _SENTINEL not in rendered
+    assert _SENTINEL not in repr(result.result)
+    assert _SENTINEL not in str(result.traceback)
+    # Typed: the client's own error, and the task's per-run log fired.
+    assert type(result.result).__name__ == "FleetInventoryApiError"
+    assert f"transport failed: {type(error).__name__}" in str(result.result)
+    assert "fleet inventory run-1 failed" in rendered
+    assert github_wire.stack_leaks == []
+    assert not export.exists()
+
+
+def test_inventory_task_limits_bound_full_pagination(settings) -> None:
+    """P1: request timeout < soft limit < hard limit <= the general pool's limit."""
+    assert (
+        run_fleet_inventory.soft_time_limit == FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
+    )
+    assert run_fleet_inventory.time_limit == FLEET_INVENTORY_TIME_LIMIT_SECONDS
+    assert (
+        FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS
+        < FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
+        < FLEET_INVENTORY_TIME_LIMIT_SECONDS
+        <= settings.CELERY_TASK_TIME_LIMIT
+    )
 
 
 @pytest.mark.django_db

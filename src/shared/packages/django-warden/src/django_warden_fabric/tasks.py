@@ -17,6 +17,9 @@ from django.conf import settings
 from .fleet import mkdtemp_clone_dir
 from .fleet import remove_clone_dir
 from .fleet import shallow_clone
+from .fleet_inventory import FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS
+from .fleet_inventory import FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS
+from .fleet_inventory import FLEET_INVENTORY_TIME_LIMIT_SECONDS
 from .fleet_inventory import FleetInventoryError
 from .fleet_inventory import GhAuthTokenProvider
 from .fleet_inventory import run_fleet_inventory_sync
@@ -132,7 +135,12 @@ def _run_warden_engines(
     return report_json, "{}", int(code)
 
 
-@shared_task(bind=True, name="warden_fabric.run_fleet_inventory")
+@shared_task(
+    bind=True,
+    name="warden_fabric.run_fleet_inventory",
+    soft_time_limit=FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS,
+    time_limit=FLEET_INVENTORY_TIME_LIMIT_SECONDS,
+)
 def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
     """List github.com org repos — Celery message carries ids and org name only."""
     from pyforge.warden.fleet_github_rest import FleetInventoryApiError  # noqa: PLC0415
@@ -140,7 +148,10 @@ def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
 
     try:
         # No ``token`` local: a logged traceback renders frame locals.
-        client = GitHubRestOrgReposClient(token=GhAuthTokenProvider().token())
+        client = GitHubRestOrgReposClient(
+            token=GhAuthTokenProvider().token(),
+            timeout=FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS,
+        )
         run_fleet_inventory_sync(organisation=organisation, listing_client=client)
     except (FleetInventoryError, FleetInventoryApiError):
         logger.exception("fleet inventory %s failed", inventory_run_id)

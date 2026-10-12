@@ -3,10 +3,24 @@
 Lives in pyforge-warden so django_warden_fabric stays free of raw HTTP imports
 (platform ``test_portal_raw_http_to_a_service_is_review_blocking``).
 
-The bearer token never leaves ``https://<api_host>``: it rides as an
-unredirected header, a redirect off that origin is refused before it is
-followed (a redirect on it carries the token again), and a ``Link: rel="next"``
-URL off that origin is refused before it is requested.
+The bearer token never leaves ``https://<api_host>``, and no urllib,
+http.client or client frame local ever holds it:
+
+- The client keeps it only as a ``_Credential``: redacted ``bytes`` fragments of
+  ``Bearer <token>`` whose ``repr``/``str`` never show their content.
+- urllib's ``Request`` never carries an Authorization header. ``_ApiHTTPSHandler``
+  opens an ``_ApiConnection`` holding the credential only when the request URL is
+  ``https://<api_host>`` on the default port. That connection adds an Authorization
+  *placeholder*; its socket wrapper swaps the placeholder for the fragments as the
+  header bytes leave, so http.client's own frames (``putheader``, ``_send_output``,
+  ``send``) and urllib's ``do_open`` only ever see the placeholder.
+- A redirect off that origin is refused before it is followed, and a
+  ``Link: rel="next"`` URL off it is refused before it is requested. A same-origin
+  redirect opens a new pinned connection, so it carries the credential again.
+- Defence in depth: every failure around open and read is re-raised as the typed
+  ``FleetInventoryApiError`` ``from None`` after ``traceback.clear_frames``, and
+  anything that must propagate as-is (a ``BaseException``) has its frames cleared
+  first.
 """
 
 from __future__ import annotations
@@ -14,10 +28,11 @@ from __future__ import annotations
 import http.client
 import json
 import re
+import ssl
+import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import IO, Any
 
@@ -27,6 +42,15 @@ GITHUB_API_HOST = "api.github.com"
 _ORG_REPOS_PATH = "/orgs/{organisation}/repos"
 _LINK_NEXT = re.compile(r'<([^>]+)>;\s*rel="next"')
 _HTTPS_DEFAULT_PORT = 443
+# Per socket operation. Below the inventory task's soft time limit, so a stalled
+# response ends here as a typed TimeoutError, not in Celery's SoftTimeLimitExceeded.
+REQUEST_TIMEOUT_SECONDS = 30.0
+_AUTHORIZATION_PLACEHOLDER = "Bearer pyforge-warden-credential-placeholder"
+_AUTHORIZATION_PLACEHOLDER_BYTES = _AUTHORIZATION_PLACEHOLDER.encode("ascii")
+# At most this many bytes per fragment: log renderers that truncate long values
+# slice them (a plain-bytes slice would show its content); a short one stays whole.
+_FRAGMENT_BYTES = 32
+_TOKEN_SHAPE = re.compile(r"[\x21-\x7e]+")
 _REQUIRED_TEXT_FIELDS = ("full_name", "default_branch", "clone_url")
 
 
@@ -123,19 +147,122 @@ def _listed_repo_from_api(entry: object) -> ListedRepo | str:
 
 
 def _transport_failure(exc: BaseException) -> str:
-    """A message for a transport error that never echoes a request header.
+    """A message for a transport error that never echoes request state.
 
-    Only an ``OSError``'s text is kept (a timeout, a reset, an SSL reason). A
-    ``ValueError`` can quote a header value (``http.client`` refuses an illegal
-    Authorization value by printing it), so it, and ``HTTPException``, give only
-    their type.
+    Only an ``OSError``'s text is kept (a timeout, a reset, an SSL reason); any
+    other error gives only its type, since its text is not under this client's
+    control (``http.client`` quotes an illegal header value, for one).
     """
     detail = f": {exc}" if isinstance(exc, OSError) else ""
     return f"GitHub API transport failed: {type(exc).__name__}{detail}"
 
 
+class RedactedBytes(bytes):
+    """A credential fragment: ``repr`` and ``str`` never show its content."""
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "<credential bytes redacted>"
+
+    __str__ = __repr__
+
+
+def _fragments(token: str) -> tuple[RedactedBytes, ...]:
+    return tuple(
+        RedactedBytes(f"Bearer {token}".encode("ascii")[start : start + _FRAGMENT_BYTES])
+        for start in range(0, len(token) + len("Bearer "), _FRAGMENT_BYTES)
+    )
+
+
+class _Credential:
+    """The bearer credential, held only as redacted fragments of ``Bearer <token>``."""
+
+    __slots__ = ("_fragments",)
+
+    def __init__(self, token: str) -> None:
+        well_formed = _TOKEN_SHAPE.fullmatch(token) is not None
+        self._fragments = _fragments(token) if well_formed else ()
+        # Drop the token before any raise: a logged traceback renders frame locals.
+        del token
+        if not well_formed:
+            msg = "the GitHub credential is not one printable token (refused before any request)"
+            raise FleetInventoryApiError(msg)
+
+    def __repr__(self) -> str:
+        return "<credential redacted>"
+
+    __str__ = __repr__
+
+    @property
+    def fragments(self) -> tuple[RedactedBytes, ...]:
+        return self._fragments
+
+
+class _CredentialSplicingSocket:
+    """Swap the Authorization placeholder for the credential's fragments on the way out."""
+
+    __slots__ = ("_credential", "_sock")
+
+    def __init__(self, sock: Any, credential: _Credential) -> None:
+        self._sock = sock
+        self._credential = credential
+
+    def __repr__(self) -> str:
+        return "<credential-splicing socket>"
+
+    def sendall(self, data: Any, *args: Any) -> None:
+        before, marker, after = bytes(data).partition(_AUTHORIZATION_PLACEHOLDER_BYTES)
+        if not marker:
+            self._sock.sendall(data, *args)
+            return
+        self._sock.sendall(before, *args)
+        for fragment in self._credential.fragments:
+            self._sock.sendall(fragment, *args)
+        self._sock.sendall(after, *args)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._sock, name)
+
+
+class _ApiConnection(http.client.HTTPSConnection):
+    """HTTPS to the pinned API origin; Authorization exists only as a placeholder here."""
+
+    def __init__(self, host: str, *, credential: _Credential | None, **kwargs: Any) -> None:
+        super().__init__(host, **kwargs)
+        self._credential = credential
+
+    def connect(self) -> None:
+        super().connect()
+        if self._credential is not None:
+            self.sock = _CredentialSplicingSocket(self.sock, self._credential)
+
+    def endheaders(self, message_body: Any = None, *, encode_chunked: bool = False) -> None:
+        if self._credential is not None:
+            self.putheader("Authorization", _AUTHORIZATION_PLACEHOLDER)
+        super().endheaders(message_body, encode_chunked=encode_chunked)
+
+
+class _ApiHTTPSHandler(urllib.request.HTTPSHandler):
+    """Open HTTPS through ``_ApiConnection``; the credential goes only to the pinned origin."""
+
+    def __init__(self, credential: _Credential, api_host: str) -> None:
+        self._ssl_context = ssl.create_default_context()
+        super().__init__(context=self._ssl_context)
+        self._credential = credential
+        self._api_host = api_host
+
+    def https_open(self, req: urllib.request.Request) -> http.client.HTTPResponse:
+        credential = self._credential if is_api_url(req.full_url, self._api_host) else None
+
+        def _connection(host: str, /, **kwargs: Any) -> http.client.HTTPConnection:
+            return _ApiConnection(host, credential=credential, **kwargs)
+
+        return self.do_open(_connection, req, context=self._ssl_context)
+
+
 class _ApiHostRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Follow a redirect only within ``https://<api_host>``, carrying the token there."""
+    """Follow a redirect only within ``https://<api_host>``; refuse any other before following it."""
 
     def __init__(self, api_host: str) -> None:
         super().__init__()
@@ -153,33 +280,31 @@ class _ApiHostRedirectHandler(urllib.request.HTTPRedirectHandler):
         if not is_api_url(newurl, self._api_host):
             fp.close()
             raise OffApiHostRefusedError("a redirect", newurl, self._api_host)
-        new = super().redirect_request(req, fp, code, msg, headers, newurl)
-        authorization = req.unredirected_hdrs.get("Authorization")
-        if new is not None and authorization is not None:
-            new.add_unredirected_header("Authorization", authorization)
-        return new
+        # No Authorization to carry: a same-origin redirect opens a new pinned connection.
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 class GitHubRestOrgReposClient:
-    """GET-only GitHub REST client for ``/orgs/{org}/repos`` pagination.
-
-    ``handlers`` are extra urllib transport handlers (tests pass stubs); the
-    client always installs its own redirect policy and refuses another.
-    """
+    """GET-only GitHub REST client for ``/orgs/{org}/repos`` pagination."""
 
     def __init__(
         self,
         *,
         token: str,
         api_host: str = GITHUB_API_HOST,
-        handlers: Sequence[urllib.request.BaseHandler] = (),
+        timeout: float = REQUEST_TIMEOUT_SECONDS,
     ) -> None:
-        if any(isinstance(handler, urllib.request.HTTPRedirectHandler) for handler in handlers):
-            msg = "the client owns its redirect policy; pass no HTTPRedirectHandler"
-            raise ValueError(msg)
-        self._token = token
+        try:
+            credential = _Credential(token)
+        finally:
+            # The token never stays a local here, even when the credential refuses it.
+            del token
         self._api_host = api_host
-        self._opener = urllib.request.build_opener(_ApiHostRedirectHandler(api_host), *handlers)
+        self._timeout = timeout
+        self._opener = urllib.request.build_opener(
+            _ApiHostRedirectHandler(api_host),
+            _ApiHTTPSHandler(credential, api_host),
+        )
 
     def __repr__(self) -> str:
         return f"GitHubRestOrgReposClient(api_host={self._api_host!r}, token=<redacted>)"
@@ -225,29 +350,41 @@ class GitHubRestOrgReposClient:
     def _get_json(self, url: str) -> tuple[Any, str | None]:
         if not is_api_url(url, self._api_host):
             raise OffApiHostRefusedError("a request", url, self._api_host)
+        # No Authorization on the Request: the pinned connection adds it (module docstring).
         request = urllib.request.Request(url, method="GET")  # noqa: S310
-        request.add_unredirected_header("Authorization", f"Bearer {self._token}")
         request.add_header("Accept", "application/vnd.github+json")
         request.add_header("User-Agent", "pyforge-warden-fleet-inventory")
+        # Defence in depth (the token is in no urllib frame to begin with): every failure
+        # is typed ``from None`` with its frames' locals cleared, so nothing a renderer
+        # that prints frame locals (structlog's ``dict_tracebacks``, Django's DEBUG 500
+        # page, django_structlog's Celery ``task_failed``) can reach holds request state.
         try:
-            with self._opener.open(request, timeout=120) as response:
+            with self._opener.open(request, timeout=self._timeout) as response:
                 body = response.read()
                 link = response.headers.get("Link")
-        # ``from None`` throughout: urllib's own frames (``do_open`` holds the request
-        # headers, Authorization included, as a local) must not ride along on the chain
-        # into a log renderer that prints frame locals (the platform's
-        # ``dict_tracebacks``, Django's DEBUG 500 page).
+        except FleetInventoryApiError as exc:
+            # The client's own refusal (a redirect off the API origin): already typed.
+            traceback.clear_frames(exc.__traceback__)
+            raise
         except urllib.error.HTTPError as exc:
             msg = f"GitHub API HTTP {exc.code}"
+            traceback.clear_frames(exc.__traceback__)
             raise FleetInventoryApiError(msg) from None
         except urllib.error.URLError as exc:
             msg = f"GitHub API request failed: {exc.reason}"
+            traceback.clear_frames(exc.__traceback__)
             raise FleetInventoryApiError(msg) from None
-        # urllib wraps only ``h.request()``: a read timeout, a reset or an SSL error in
-        # ``getresponse()``, or ``IncompleteRead`` in ``read()``, escapes unwrapped.
-        except (OSError, http.client.HTTPException, ValueError) as exc:
+        except Exception as exc:
+            # urllib wraps only ``h.request()``'s OSError: a read timeout, a reset, an SSL
+            # error, ``IncompleteRead``, Celery's ``SoftTimeLimitExceeded`` (an Exception)
+            # or any other error from connect, send, ``getresponse()`` or ``read()``.
             msg = _transport_failure(exc)
+            traceback.clear_frames(exc.__traceback__)
             raise FleetInventoryApiError(msg) from None
+        except BaseException as exc:
+            # Must propagate as-is (KeyboardInterrupt, SystemExit): clear its frames first.
+            traceback.clear_frames(exc.__traceback__)
+            raise
         try:
             parsed = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:

@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import tempfile
 import tomllib
+import traceback
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,17 @@ DEFAULT_FLEET_TARGET_CONFIG = Path(".warden/fleet-target.toml")
 DEFAULT_FLEET_INVENTORY_PATH = Path(".warden/fleet-inventory.json")
 
 GH_AUTH_TOKEN_TIMEOUT_SECONDS = 30.0
+
+# Story 16.1 (iteration 3, P1): the inventory task's own limits, sized for a whole
+# organisation's pagination inside the warden queue's general pool (hard limit 300 s,
+# ``CELERY_TASK_TIME_LIMIT``; the global soft limit, 60 s, is too short for pagination).
+# Every socket operation times out first, so a stalled response fails as a typed
+# ``TimeoutError`` long before Celery's ``SoftTimeLimitExceeded`` could fire inside
+# urllib: per request 30 s < soft 240 s < hard 300 s. At 1-2 s a page, 240 s covers
+# well over 100 pages (10,000+ repos at 100 a page); ``gh auth token`` has its own 30 s.
+FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS = 30.0
+FLEET_INVENTORY_SOFT_TIME_LIMIT_SECONDS = 240
+FLEET_INVENTORY_TIME_LIMIT_SECONDS = 300
 
 
 class FleetInventoryError(Exception):
@@ -50,6 +62,11 @@ class GhLoginMissingError(FleetInventoryError):
 class GhTimeoutError(FleetInventoryError):
     def __init__(self, timeout: float) -> None:
         super().__init__(f"gh auth token did not finish within {timeout:g}s")
+
+
+class GhTokenUnavailableError(FleetInventoryError):
+    def __init__(self, failure: str) -> None:
+        super().__init__(f"gh auth token failed: {failure}")
 
 
 class FleetTargetConfigError(FleetInventoryError):
@@ -177,11 +194,21 @@ class GhAuthTokenProvider:
             raise GhBinaryMissingError
         argv = [gh, "auth", "token", "--hostname", self._hostname]
         run = self._runner if self._runner is not None else _run_gh
+        # Every failure is typed ``from None`` with its frames' locals cleared: the
+        # subprocess frames may hold partial stdout (a token) when they fail.
         try:
             completed = run(argv, timeout=self._timeout)
-        except subprocess.TimeoutExpired:
-            # ``from None``: the expired call may hold partial stdout (a token).
+        except subprocess.TimeoutExpired as exc:
+            exc.output = exc.stderr = None
+            traceback.clear_frames(exc.__traceback__)
             raise GhTimeoutError(self._timeout) from None
+        except Exception as exc:
+            failure = type(exc).__name__
+            traceback.clear_frames(exc.__traceback__)
+            raise GhTokenUnavailableError(failure) from None
+        except BaseException as exc:
+            traceback.clear_frames(exc.__traceback__)
+            raise
         value = completed.stdout.strip() if completed.returncode == 0 else ""
         # Drop the process result before any raise: a logged traceback renders locals.
         del completed

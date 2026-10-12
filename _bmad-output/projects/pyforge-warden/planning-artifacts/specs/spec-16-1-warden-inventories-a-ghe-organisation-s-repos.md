@@ -275,8 +275,106 @@ Deps: — (steward Story 75.1 no longer required, 2026-10-11).
   structurally, so the portal still imports without `pyforge`. The export gains an additive `skipped` list (each
   listing entry not inventoried, with its reason); atlas reads only `repos`. Default `.warden/` paths resolve from the
   checkout root, not the cwd. No AC changed.
+- 2026-10-11: transport and time limits recorded (review iteration 3, P1). No AC changed.
+  - The token no longer travels in urllib's `Request`. The client keeps it as a `_Credential` of redacted
+    `bytes` fragments. `_ApiHTTPSHandler` opens an `_ApiConnection` that carries the credential only when the
+    request URL is `https://api.github.com` on 443. That connection writes an Authorization placeholder, and its
+    socket wrapper swaps the placeholder for the fragments as the bytes leave. So urllib's `do_open`,
+    http.client's `putheader`/`_send_output`/`send`, and the client's own frames never hold the token.
+  - Every failure around open and read is typed `from None` with `traceback.clear_frames`. A `BaseException` is
+    re-raised after its frames are cleared. The `gh` token provider does the same.
+  - Limits: `run_fleet_inventory` takes `soft_time_limit=240` and `time_limit=300` (s), and each request has a
+    30 s socket timeout (`FLEET_INVENTORY_*` in `django_warden_fabric.fleet_inventory`).
+  - Reasoning: the warden queue runs on the general pool, whose hard limit is 300 s (`CELERY_TASK_TIME_LIMIT`,
+    Story 42.4: hours-scale work has its own pool), so the hard limit stays at 300. The global soft limit (60 s)
+    is too short for a whole organisation's pagination; 240 s covers well over 100 pages (10,000+ repos at 100 a
+    page, 1-2 s a page). A request timeout of 30 s, below the soft limit, makes a stalled response fail as a typed
+    `TimeoutError` instead of `SoftTimeLimitExceeded` raised inside urllib. `gh auth token` keeps its own 30 s.
 
 ## Review Triage Log
+
+### 2026-10-11 — Fix pass for iteration 3 (implementer)
+
+Implementer pass on the iteration-3 send-back below; not a review verdict (iteration 4 judges it). Same rules as
+before: fictional identifiers only, no network, no `gh`, no `.warden/` read, and a uniquely named scratch cluster
+stopped by exact PID. Each mutation was applied in place, the named tests went red, the file was restored
+byte-identical (`cmp`), and the tests went green again. Below, `R` is `src/shared/packages/pyforge-warden/src/pyforge/warden/fleet_github_rest.py`, `U` is `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py`, `P` is `src/platform/tests/test_warden_fleet_inventory.py` and `F` is
+`src/shared/packages/django-warden/src/django_warden_fabric/fleet_inventory.py`.
+
+- P1, primary (structural): the token is no longer in any urllib or http.client frame, failure or not.
+  - urllib's `Request` carries no Authorization (`R:350-355`). The client holds the token only as a `_Credential`
+    (`R:178`): redacted `RedactedBytes` fragments of `Bearer <token>`, at most 32 bytes each (`R:160`, `R:52`), so
+    a renderer that slices long values never slices one.
+  - `_ApiHTTPSHandler` (`R:246`) opens an `_ApiConnection` (`R:228`) and hands it the credential only when the
+    request URL is `https://api.github.com` on 443 (`R:256`). That connection writes an Authorization placeholder
+    (`R:48`). `_CredentialSplicingSocket` (`R:202`) swaps it for the fragments as the header bytes leave, so
+    `do_open`, `putheader`, `_send_output` and `send` only ever see the placeholder.
+  - A malformed token (anything but one printable non-space ASCII run) is refused before any request, so the
+    splice cannot inject a header. The token is deleted from both constructor frames before any raise
+    (`R:187`, `R:301`).
+  - F1 re-checked: the off-origin redirect and next-link refusals are unchanged. A same-origin redirect opens a
+    new pinned connection and carries the credential again, so the old re-attach code is gone (`R:264`).
+- Residual frames that can hold the bare token:
+  - The two constructors and `_fragments` (no I/O, never on a request path; deleted before any raise).
+  - `GhAuthTokenProvider.token()`'s `value` between the runner's return and its own return (no I/O there).
+  - In production, ssl.py's `sendall`/`send` frames hold one `RedactedBytes` fragment or a memoryview slice,
+    never a plain `str` or `bytes`.
+- How the property is enforced, not just observed:
+  - The unit fake GitHub (`U:93`) and the platform wire (`P:241`) walk the live stack at every connect, send and
+    response read, from the library frame up to the test. They record any local whose `repr`, or whose urllib
+    `Request` header, holds the sentinel; every test asserts the record is empty.
+  - `_traceback_leaks` (`U:405`) walks every library frame's locals in the raised and the suppressed tracebacks.
+- P1, defence in depth:
+  - `_get_json` types every `Exception` around open and read `from None` after `traceback.clear_frames`
+    (`R:377`). Its own refusal re-raises with its frames cleared (`R:365`); a `BaseException` re-raises after
+    clearing (`R:384`).
+  - Celery's `SoftTimeLimitExceeded` subclasses `Exception` (billiard), so it is typed.
+  - The `gh` provider does the same: `GhTokenUnavailableError` (`F:67`) is raised `from None` with frames
+    cleared (`F:205`), a `BaseException` is cleared and re-raised (`F:209`), and a `TimeoutExpired` loses its
+    partial output (`F:202`).
+- P1, time limits: `run_fleet_inventory` takes `soft_time_limit=240` and `time_limit=300` (`tasks.py:141-142`;
+  `F:41-43`), and the client gets a 30 s per-request timeout (`tasks.py:153`; `R:47`). The reasoning is in the
+  Spec Change Log.
+- Tests:
+  - Unit `U:517`, P1: `SoftTimeLimitExceeded` (a stand-in with billiard's base) and `RuntimeError` at connect,
+    send (the write carrying the first credential fragment) and `getresponse`. Each is typed, with no token in
+    any frame, cleared frames below `_get_json`, and an empty live-stack record.
+  - Unit `U:535`: a `KeyboardInterrupt` in the same three phases propagates with its frames cleared.
+  - Unit `U:300`: the pinned handler sends no Authorization to `evil.example` or to port 8443.
+  - Unit `U:292`, `U:342`: the real credential reaches the wire, including on a same-origin redirect.
+  - Unit `U:547`: a malformed token is refused.
+  - Platform `P:1045`, P1: `run_fleet_inventory.apply()` with django_structlog's `CeleryReceiver` connected as
+    the worker bootstep does (`P:1018`), and the production JSON renderer with frame locals. The six
+    phase/error cases each emit `task_failed`, with no sentinel in any rendered line, the result or its
+    traceback. Each error is typed, the per-run log fires, and the live-stack record is empty.
+  - Platform `P:1093`: request timeout < soft < hard <= the general pool's limit. `P:841` asserts the 30 s
+    timeout reached the socket.
+  - Platform `P:601`, `P:617`: the provider's defence.
+  - The receiver fixture pins the platform's structlog configuration for its tests and restores it.
+    `test_oidc_identity.py` leaves a print-logger configuration behind, which hid `task_failed` in the full suite.
+- Mutations:
+  - The Authorization header re-added on the urllib `Request` (the token kept on the client): unit 24 red
+    (live-stack, traceback-locals and client-attribute walks); platform 7 red (`stack_leaks`).
+  - The `except Exception` catch-all dropped: unit 11 red; platform 6 red (P1 untyped, no per-run log), plus the
+    3 DEBUG-page tests.
+  - The header re-added on the `Request` with both catch-all clauses dropped (the iteration-2 design):
+    platform 6 of 6 red on `_SENTINEL not in rendered`, reproducing the reviewer's `task_failed` leak.
+  - Catch-all without `clear_frames`: unit 11 red. `BaseException` clause without `clear_frames`: unit 3 red.
+  - Handler unpinned (credential on every HTTPS connection): unit 1 red.
+  - Provider without `clear_frames`: platform 2 red. Provider without its catch-all: platform 3 red, 1 error.
+  - Task limits removed: platform 1 red. Request timeout hard-coded to 120: unit 1 red, platform 1 red.
+- Spec surface: memlog events appended to `spec-pyforge-warden`, `spec-pyforge-core` and
+  `spec-pyforge-unifying-strategy`, naming every moved path. `spec-surface-check` named no Spec as drifted, so no
+  stamp was taken.
+- Gates (exit codes read from files):
+  - `pixi run -e pyforge-warden pyforge-warden-test` 0 (2339 passed); `pixi run -e pyforge-guild lint-types` 0.
+  - `pixi run -e pyforge-guild platform-ci-local -- --test` 0 (seven steps PASS; 1253 passed, 14 skipped). The
+    first run was 1, because of the structlog pollution above.
+  - `pixi run -e pyforge-guild spec-surface-check` 0; `pixi run -e pyforge-guild deferred-work-check` 0.
+  - `pixi run -e pyforge-guild detectors-ci` 1: 44 pass, and only `ledger-direction` is red. It reports
+    "pyforge-herald/37-1 landed-but-unpromoted", because `origin/main` moved during this pass: herald 37.1 merged,
+    with its ledger promotion. This branch's herald ledger still reads `backlog`; merging `origin/main` clears it.
+    The finding comes from the branch being behind `origin/main`, not from this diff.
 
 ### 2026-10-11 — Independent review, iteration 3: sent back (1 major)
 
@@ -476,11 +574,14 @@ Send-back: F1-F5 required; M1-M9 in the same pass. A fresh independent review (i
 
 - **Summary:** Fleet inventory of an operator-designated github.com organisation, behind `pyforge.warden.fleet_inventory`.
   - The target organisation is read from the gitignored `.warden/fleet-target.toml`, anchored to the checkout root.
-  - The credential is read once per run through `gh auth token`, in the Celery worker only. It runs through one
-    time-bounded seam and is never written anywhere.
-  - Listing is GET-only via `pyforge.warden.fleet_github_rest`. The token rides only to `https://api.github.com`:
-    an unredirected header, redirects and `Link` next URLs pinned, every transport error typed and cut from its
-    chain.
+  - The credential is read once per run through `gh auth token` in the Celery worker, via one time-bounded,
+    fully typed seam. It is never written anywhere.
+  - Listing is GET-only via `pyforge.warden.fleet_github_rest`. The token is in no urllib or http.client frame:
+    there is no Authorization on the `Request`; a pinned HTTPS connection to `https://api.github.com` writes a
+    placeholder, which its socket wrapper swaps for redacted credential fragments.
+  - Redirects and `Link` next URLs are pinned to that origin. Every transport failure is typed `from None` with
+    its frames cleared.
+  - The task has its own soft and hard limits (240 s / 300 s) above a 30 s per-request timeout.
   - Rows are upserted into `FleetRepo`. Entries the listing cannot inventory are named under `skipped`.
   - The gitignored JSON export is written atomically.
   - The portal button and the `warden_fleet_inventory` command share one code path; OFF, both refuse.
@@ -492,17 +593,17 @@ Send-back: F1-F5 required; M1-M9 in the same pass. A fresh independent review (i
   - Platform: `config/flags.json` and overlays, `conftest.py`, `tests/gh_guard.py`, `tests/test_warden_fleet_inventory.py`.
   - `.gitignore` (`.warden/`) and `pixi.toml` (`platform-ci-test` gains `pyforge-warden`).
   - Memlogs on the governing Specs, and the warden deferred-work row `DW-warden-16-1`.
-- **Review:** three review passes so far, each followed by a fix pass.
+- **Review:** four review passes so far, each followed by a fix pass.
   - The build-time pass applied 8 patches.
-  - Independent iteration 1 sent back 5 major and 9 minor; all were fixed, plus X1-X3.
-  - Independent iteration 2 sent back 1 major and 5 minor (N1-N6a fixed, N6b deferred, N7 refreshed).
-  - Every fix is proven by mutation. Iteration 3 gates the landing.
-- **Follow-up review recommended:** `false` (an independent iteration-3 review is required instead)
-- **Verification (iteration-2 fix pass):**
-  - `pyforge-warden-test` 0 (2329 passed); `lint-types` 0.
-  - `platform-ci-local -- --test` 0 (1243 passed, 14 skipped).
-  - `spec-surface-check` 0, after a scoped stamp of `spec-pyforge-unifying-strategy`.
-  - `detectors-ci` 0 (45 pass); `deferred-work-check` 0; flag gate `--spec` 0.
+  - Independent iteration 1 sent back 5 major and 9 minor; iteration 2 sent back 1 major and 5 minor.
+  - Independent iteration 3 sent back 1 major (P1). It is fixed structurally with defence in depth.
+  - Every fix is proven by mutation. Iteration 4 gates the landing.
+- **Follow-up review recommended:** `false` (an independent iteration-4 review is required instead)
+- **Verification (iteration-3 fix pass):**
+  - `pyforge-warden-test` 0 (2339 passed); `lint-types` 0.
+  - `platform-ci-local -- --test` 0 (1253 passed, 14 skipped).
+  - `spec-surface-check` 0; `deferred-work-check` 0; flag gate `--spec` 0.
+  - `detectors-ci` 1, on `ledger-direction` only (the branch is behind `origin/main` after herald 37.1 landed).
   - Each `git check-ignore -q` on the default `.warden/` paths: 0.
   - The live inventory with the operator's `gh` login has not been run (operator-owned).
 - **Residual risks:**
@@ -510,4 +611,5 @@ Send-back: F1-F5 required; M1-M9 in the same pass. A fresh independent review (i
     `spec-pyforge-atlas:CAP-61`.
   - The live leak guard runs only where the gitignored config exists.
   - Stale `FleetRepo` rows are not retired (`DW-warden-16-1`).
+  - The task does not re-check the flag (the portal and the command do).
   - A live run needs the operator's config and github.com `gh` login.
