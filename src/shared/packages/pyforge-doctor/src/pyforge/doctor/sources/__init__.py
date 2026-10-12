@@ -616,8 +616,8 @@ def degrade_on_exception(
     ``docs_map_hygiene``, ``docs_shelf``, ``factory``, ``frozen_path``,
     ``frontmatter_duplicate_keys``, ``general_docs_consistency``,
     ``live_proof_surfaces``, ``one_chain``, ``pixi_currency``, ``sibling_dreams``
-    and ``status_body_consistency`` (all in ``sources/``). Any other source
-    module does not call it; an exception
+    and ``status_body_consistency`` (all in ``sources/``). Any other source module
+    does not call it; an exception
     escaping such a ``gather()`` is a real bug in a module that promises never
     to raise, and keeps propagating to ``main()``'s top-level exception net
     (exit 2), never silently reclassified as WARN.
