@@ -1438,6 +1438,48 @@ Drift — orphaned between stations.
   split, its eviction policies and the platform's Redis settings do not change; never a skip, an xfail or a rerun.
   Owner `spec-pyforge-unifying-strategy`. → Epic 92 / Story 92.1, specced 2026-10-11, to be dispatched ahead of the
   next platform-touching landings.
+- **2026-10-11 (structlog configuration leak) — Found: one OIDC test reconfigures structlog and never puts it back, so
+  every later test in the platform run logs through a print logger.**
+  `src/platform/tests/test_oidc_identity.py::test_sync_ignores_unmatched_groups_and_logs` calls `structlog.configure()`
+  with a key-value renderer, a filtering bound logger and a print-logger factory, and never restores it. The platform
+  configures structlog once, when its settings load (`configure_structlog()` in
+  `src/platform/config/observability/logging.py`: the standard-library logger factory and bound logger, and a processor
+  chain that hands each event to the logging pipeline). `platform-ci-local -- --test` runs the whole suite in one
+  pytest process. After this test, a structlog logger that a later test uses for the first time prints a key-value line
+  to stdout instead of reaching the logging pipeline, so a test that reads the event from `caplog`, or through the JSON
+  renderer, sees nothing. Warden Story 16.1's fix pass found it on 2026-10-11: a new platform test that asserted a
+  `task_failed` event rendered by the production JSON renderer failed only in the full suite. Reproduced on
+  `e4ab638bb6` with a scratch probe test. Run alone, the probe sees the platform's configuration and its event reaches
+  `caplog`. Run after the OIDC file, or after that one test, it sees the print-logger configuration and its event goes
+  to stdout. Run after the file with that test deselected, it sees the platform's configuration again. A survey of the
+  full suite, putting the configuration back after each change, passed (1208 passed, 13 skipped) and found no other
+  test that changes structlog's configuration. The operator asked, verbatim: "Do this task here: Stop test_oidc_identity
+  leaking structlog config". **What it looks like when fixed:** the OIDC test puts structlog back the way it found it.
+  A guard in the platform's conftest fails any test that leaves structlog configured differently, naming that test, so
+  the next leak is caught in the test that causes it, not in whichever test runs after it. **Constraints:** a fix under
+  `spec-pyforge-steward` CAP-87 (telemetry; Story 16.3 built the configuration), no CAP, no flag; test-only: the
+  platform's logging configuration does not change; never a skip, an xfail or a rerun. Owner `spec-pyforge-steward`;
+  the two test files sit on `spec-pyforge-unifying-strategy`'s surface. → Epic 94 / Story 94.1, specced 2026-10-11.
+- **2026-10-11 (Python 3.14 floor for the portal packages and the platform) — Ruled: the nine django portal packages
+  and `src/platform` declare and target Python 3.14, the interpreter everything already runs.** Every environment in
+  `pixi.lock` resolves Python 3.14.7, on every platform it lists. The three images build from those environments and
+  start through their shell hooks, `platform-ci` runs on `platform-ci-test`, and no recipe ships portal or platform
+  code. Yet the nine `src/shared/packages/django-*` packages declare `requires-python = ">=3.12"`, and
+  `src/platform/pyproject.toml` keeps ruff `target-version = "py312"` and mypy `python_version = "3.12"`. Those values
+  date from 2026-08-14 (Story 10.1 rendered `src/platform`) and 2026-08-24 (the portal packages), when the platform
+  environment was pinned to `python = "3.12.*"`. pap:AD-8 kept it there, "py3.12 env-scoped now, 3.14 as a release
+  gate", until langflow-base's `bcrypt ==4.0.1` prerequisite cleared. Story 43.6 moved the platform image to Python
+  3.14 on 2026-09-03, and nobody raised the targets. Story 93.1 (chained 2026-10-11) gives each portal package a ruff
+  table at `py312`, to match its `requires-python`: at `py314`, `ruff format` writes `except A, B:` (PEP 758), a syntax
+  error before 3.14. The operator asked, verbatim: "can we add a story to update to python 3.14 - configuration targets
+  Python 3.12 on purpose: targeting 3.14 makes ruff". **What it looks like when done:** the portal packages require
+  3.14; their ruff tables and the platform's ruff and mypy target 3.14; `target-version-check` reads all of them from
+  the one pixi pin; the code carries what ruff writes at 3.14 (13 `except` rewrites in the portal packages; in the
+  platform, four rewrites, one `typing` import and ten imports moved under `TYPE_CHECKING`); and no gate goes red.
+  **Constraints:** a feature under `spec-pyforge-steward` CAP-153, no new CAP, flag-exempt as a gate change; it lands
+  after Story 93.1; the portal packages' other ruff findings stay with each station's own fix story, so the
+  not-yet-clean list does not change. Owner `spec-pyforge-steward`; the portal packages and `src/platform` sit on
+  `spec-pyforge-unifying-strategy`'s surface. → Epic 95 / Story 95.1, specced 2026-10-11.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 533
+# stories: 539
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -363,6 +363,8 @@ development_status:
   90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp: done
   91-1-the-stations-index-lists-each-station-portal-as-mounted-or-absent-and-why: backlog
   92-1-the-unsplit-redis-eviction-guard-proves-broker-loss-on-every-run: done
+  94-1-no-platform-test-leaves-structlog-configured-differently: backlog
+  95-1-the-portal-packages-and-the-platform-target-python-3-14: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -547,3 +549,7 @@ development_status:
   epic-91-retrospective: optional
   epic-92: done
   epic-92-retrospective: optional
+  epic-94: backlog
+  epic-94-retrospective: optional
+  epic-95: backlog
+  epic-95-retrospective: optional

@@ -6005,6 +6005,64 @@ So that it passes on every run while still proving the split survival test is no
 **And** the guard passes 20 of 20 consecutive runs of its node id, and the whole module 20 of 20; with the eviction pressure removed the guard fails 5 of 5 runs (mutation); the split test, its helpers and the module constants keep every line they have and the split test passes every run; the diff adds no skip, `xfail` or rerun; only the test file changes; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-unifying-strategy` memlog reconciles the test file before one scoped stamp
 **Status:** done
 
+## Epic 94: No platform test leaks its structlog configuration into the next (fix under CAP-87)
+
+Minted 2026-10-11 from the station Dream's entry of that date (structlog configuration leak) and the operator's ask
+"Do this task here: Stop test_oidc_identity leaking structlog config". `test_oidc_identity.py`'s
+`test_sync_ignores_unmatched_groups_and_logs` reconfigures structlog with a print logger and never restores it, so every
+later test in the one-process platform run logs to stdout instead of through the platform's logging pipeline. Warden
+Story 16.1's fix pass found it when a test of the production JSON renderer failed only in the full suite. A defect
+against `spec-pyforge-steward` CAP-87 (telemetry; Story 16.3 built the configuration), so no CAP is minted; a new epic
+because Epic 16 is `done`. **HARD boundaries:** test-only, in `src/platform/tests/test_oidc_identity.py` and
+`src/platform/conftest.py`; the platform's logging configuration (`config/observability/logging.py`, the settings) does
+not change; the OIDC test's assertions do not change; nothing is skipped, marked `xfail` or rerun.
+
+### Story 94.1: No platform test leaves structlog configured differently
+
+As the operator whose platform tests can only trust a log assertion if no earlier test has rewired structlog,
+I want the OIDC sync test to put structlog's configuration back, and a guard that fails any platform test that does not,
+So that a leak is reported in the test that causes it, instead of breaking whichever test happens to run after it.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-steward` CAP-87 (Story 16.3; Story 16.5's OIDC tests) • Dream 2026-10-11 (structlog configuration leak) • operator ask 2026-10-11 "Do this task here: Stop test_oidc_identity leaking structlog config"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/platform/tests/test_oidc_identity.py` (a restoring fixture, requested by `test_sync_ignores_unmatched_groups_and_logs` about :77-:92), `src/platform/conftest.py` (an autouse guard beside `_isolate_caches` about :23-:61)
+**Spec:** `planning-artifacts/specs/spec-94-1-no-platform-test-leaves-structlog-configured-differently.md`
+**Given** `e4ab638bb6`, where `test_sync_ignores_unmatched_groups_and_logs` calls `structlog.configure(processors=[KeyValueRenderer()], wrapper_class=make_filtering_bound_logger(0), logger_factory=PrintLoggerFactory(), cache_logger_on_first_use=False)` (:80-:85) and never restores it; a probe test run after it sees that configuration and its event goes to stdout, not `caplog` (1 failed, 18 passed), while run alone, or after the file with that test deselected, it sees the platform's configuration from `configure_structlog()`
+**When** the platform suite runs
+**Then** a fixture in the test module saves `structlog.get_config()` (its processors list copied) before that test and calls `structlog.configure(**saved)` after it, pass or fail, so a probe run after the module sees the platform's configuration; and an autouse guard in `src/platform/conftest.py` records the configuration once per session before the first test, compares it after every test and, on a difference, restores the baseline and fails that test at teardown, naming its node id and the keys that differ
+**And** with the fixture removed the OIDC test errors at teardown, and a deliberately leaking probe test errors while the test after it sees the baseline (mutations, reverted); the guard passes the whole suite as it stands (a full-suite survey found this test the only one that changes structlog's configuration); no skip, `xfail` or rerun; only the two files change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-unifying-strategy` memlog reconciles both files before one scoped stamp
+**Status:** backlog
+
+## Epic 95: The portal packages and the platform target Python 3.14 (feature under CAP-153)
+
+Minted 2026-10-11 from the station Dream's entry of that date (Python 3.14 floor for the portal packages and the
+platform) and the operator's ask "can we add a story to update to python 3.14 - configuration targets Python 3.12 on
+purpose: targeting 3.14 makes ruff". Every pixi environment resolves Python 3.14.7 and nothing runs the portal packages
+or `src/platform` below it, yet the nine `django-*` packages declare `requires-python = ">=3.12"` and `src/platform`
+keeps ruff `py312` and mypy `3.12`, values from the weeks when pap:AD-8 pinned the platform environment to
+`python = "3.12.*"` (until Story 43.6, 2026-09-03). `target-version-check` is `spec-pyforge-steward` CAP-153's registry
+check, so this is a feature under it and no CAP is minted; a new epic because Epic 66 is `done`. **HARD boundaries:**
+- After Story 93.1, which gives each portal package its `[tool.ruff]` table and the not-yet-clean list.
+- In the portal packages only the 13 PEP 758 rewrites change source; their other findings stay with each station's fix
+  story, and `NOT_YET_CLEAN` does not change.
+- `mypy` scope, the `platform-ci` workflow, `platform-ci-local`, the platform environments, pins and images do not change.
+
+### Story 95.1: The portal packages and the platform target Python 3.14
+
+As the operator whose estate runs one interpreter, Python 3.14,
+I want the portal packages to require 3.14 and the portal packages and the platform to lint and type-check as 3.14, read from the one pixi pin,
+So that the tools hold the code to the interpreter it runs on, and a target that drifts from the pin fails the gate.
+
+**Type:** feature • **Effort:** M • **Deps:** S-93.1 • **FR/AD:** `spec-pyforge-steward` CAP-153 (Story 66.1's `target-version-check`; Story 93.1's tables); pap:CAP-5, pap:AD-8 (the 3.12 era it retires) • Dream 2026-10-11 (Python 3.14 floor for the portal packages and the platform) • operator ask 2026-10-11 "can we add a story to update to python 3.14 - configuration targets Python 3.12 on purpose: targeting 3.14 makes ruff"
+**Flag:** exempt, `detector-or-gate` (the story changes `target-version-check`)
+**Surface:** the nine `src/shared/packages/django-*/pyproject.toml` (`requires-python`, `[tool.ruff] target-version`), nine `django-*` source files (13 `except` rewrites), `src/platform/pyproject.toml` (ruff and mypy targets), the `src/platform` files ruff changes at `py314` (four tests, `platformapp/front_door/celery_task_backend.py`, ten annotation-only imports), `src/platform/.python-version`, `src/platform/.pre-commit-config.yaml`, `src/platform/.readthedocs.yml`, `src/platform/ingest/github_projects/README.md`, `scripts/target_version_check.py`, `scripts/lint_types.py` (its py312 comment, if 93.1 wrote one), steward's tests, `pixi.toml` (the `target-version-check` description), `docs/how-to/pixi-tasks.md` and `docs/map.yaml` (through `docs-pixi-tasks`), `environment.yaml` (regenerated, expected unchanged), `AGENTS.md` (the *Lint and types* line)
+**Spec:** `planning-artifacts/specs/spec-95-1-the-portal-packages-and-the-platform-target-python-3-14.md`
+**Given** `e4ab638bb6` plus Story 93.1, where all 36 environments in `pixi.lock` resolve Python 3.14.7, the nine portal packages declare `requires-python = ">=3.12"` and carry 93.1's ruff tables at `py312`, `src/platform` targets ruff `py312` and mypy `3.12`, and `target_version_check.py` reads only the ten `pyforge-*` packages
+**When** `pixi run -e pyforge-guild lint-types` and `platform-ci-local -- --test` run
+**Then** the nine portal packages require `>=3.14` and their tables target `py314`; `src/platform` targets ruff `py314` and mypy `3.14`; `target-version-check` derives `py314` / `3.14` from the pixi pin and checks the ten `pyforge-*` packages as today plus every `requires-python` floor, the nine portal packages' ruff target and `src/platform`'s ruff and mypy targets, with too few packages or no `src/platform/pyproject.toml` as could-not-run; `src/platform` carries what ruff writes at `py314` (four PEP 758 rewrites, one UP035 fix, ten TC001-TC003 imports moved under `TYPE_CHECKING`); the portal packages carry only their 13 PEP 758 rewrites, and `NOT_YET_CLEAN` is unchanged
+**And** the 3.12 residue in `src/platform` and the lines that call the targets `py312` are corrected; removing the portal glob, removing the platform check, hard-coding `py314` or dropping the `requires-python` floor each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types`, `pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-guild pyforge-station-tests` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
