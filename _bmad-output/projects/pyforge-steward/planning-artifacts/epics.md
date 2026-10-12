@@ -6093,7 +6093,7 @@ So that the tools hold the code to the interpreter it runs on, and a target that
 **When** `pixi run -e pyforge-guild lint-types` and `platform-ci-local -- --test` run
 **Then** the nine portal packages require `>=3.14` and their tables target `py314`; `src/platform` targets ruff `py314` and mypy `3.14`; `target-version-check` derives `py314` / `3.14` from the pixi pin and checks the ten `pyforge-*` packages as today plus every `requires-python` floor, the nine portal packages' ruff target and `src/platform`'s ruff and mypy targets, with too few packages or no `src/platform/pyproject.toml` as could-not-run; `src/platform` carries what ruff writes at `py314` (four PEP 758 rewrites, one UP035 fix, ten TC001-TC003 imports moved under `TYPE_CHECKING`); the portal packages carry only their 13 PEP 758 rewrites, and `NOT_YET_CLEAN` is unchanged
 **And** the 3.12 residue in `src/platform` and the lines that call the targets `py312` are corrected; removing the portal glob, removing the platform check, hard-coding `py314` or dropping the `requires-python` floor each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types`, `pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-guild pyforge-station-tests` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
 
