@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 7a673b1f38e855a0
-story_count: 350
+source_fingerprint: 0cb429cc1068e3b3
+story_count: 352
 test_file_count: 112
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 350
-- **Epics parsed:** 93
+- **Stories parsed:** 352
+- **Epics parsed:** 95
 - **Test files inventoried:** 112 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7a673b1f38e855a0`
+- **Source fingerprint:** `0cb429cc1068e3b3`
 
 ## Risk Assessment
 
@@ -121,6 +121,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 91: The host lists its station portals at `/stations/` (feature under unifying CAP-3)
 - Epic 92: The unsplit-Redis eviction guard proves broker loss on every run (fix under unifying CAP-11)
 - Epic 93: The lint gate covers the django portal packages, and its not-yet-clean list only shrinks (feature under CAP-153)
+- Epic 94: No platform test leaks its structlog configuration into the next (fix under CAP-87)
+- Epic 95: The portal packages and the platform target Python 3.14 (feature under CAP-153)
 
 ### Low-risk epics
 
@@ -601,6 +603,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 91.1 | The stations index lists each station portal as mounted or absent, and why | none observed |
 | 92.1 | The unsplit-Redis eviction guard proves broker loss on every run | none observed |
 | 93.1 | The lint gate covers the nine django portal packages, and its not-yet-clean l... | none observed |
+| 94.1 | No platform test leaves structlog configured differently | none observed |
+| 95.1 | The portal packages and the platform target Python 3.14 | none observed |
 
 ## Quality Gates
 

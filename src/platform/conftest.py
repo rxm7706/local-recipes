@@ -59,3 +59,11 @@ def _isolate_caches():
     for mod in _cache_mods:
         mod._CACHE.clear()  # noqa: SLF001
     supervisor._runners.clear()  # noqa: SLF001
+
+
+@pytest.fixture(autouse=True)
+def real_gh_attempts(monkeypatch):
+    """No test may run the operator's ``gh`` (Story 16.1); see ``tests/gh_guard.py``."""
+    from tests.gh_guard import refuse_real_gh  # noqa: PLC0415
+
+    yield from refuse_real_gh(monkeypatch)
