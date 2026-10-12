@@ -2,7 +2,8 @@
 title: "18.1: The leak guard forbids the listed terms everywhere and the organisation's name in warden's files"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
+landing_review: 'passed'
 baseline_revision: 'e872476980ee67672170f68477e6f080b865a2ce'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -294,6 +295,10 @@ test.
   bound to `spec-pyforge-warden` CAP-26 through Stories 16.1 and 16.5.
 
 ## Review Triage Log
+
+### 2026-10-12 — Orchestrator verification and AC8 live run: passed
+
+The orchestrator (not the implementer, not either reviewer) read the N1-N4 delta at 12223003af and re-ran one mutation: dropping the `.warden/` filter from `_all_tracked_files` reds `test_leak_guard_never_opens_a_tracked_warden_file` (1 failed, 18 passed); restored byte-identical. AC8: the live test `test_leak_guard_no_operator_terms_in_tracked_tree` ran against the operator's real configuration (organisation plus the two listed repository names, kept outside the repository and pointed at through `WARDEN_FLEET_TARGET_CONFIG`) and PASSED (1 passed, not skipped, 3.08 s); its output carried none of the real terms. The implementer's gates after the last edit: `pyforge-warden-test` 0 (2440 passed), `lint-types` 0, `platform-ci-local -- --test` 0 (1350 passed, 14 skipped), `spec-surface-check` 0, flag gate `--spec` pass, `deferred-work-check` 0. Story done; landing review passed; landing proceeds.
 
 ### 2026-10-12 — Fix pass for iteration 2 lows (implementer)
 
