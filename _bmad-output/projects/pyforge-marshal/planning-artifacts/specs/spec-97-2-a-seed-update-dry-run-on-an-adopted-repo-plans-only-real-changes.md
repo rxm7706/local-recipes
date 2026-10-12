@@ -2,7 +2,8 @@
 title: "97.2: A seed update dry run on an adopted repo plans only real changes"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: 'bd92843ef255a6daa94e0ed6d14cc46abe575396'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
