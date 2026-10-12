@@ -5975,7 +5975,7 @@ So that one page says what the host is running and why something is missing.
 **When** a request reaches `/stations/` with `pyforge.steward.stations_index` ON
 **Then** a request with no station role, anonymous included, gets the 403 `require_station_role` gives. Any other request gets 200 and one row per discovered portal that `is_switcher_tile` admits for its roles, by station name. Each row is mounted, with a link to `/stations/<name>/`, or absent, with exactly 87.1's recorded reason and no link. The view loads `config.station_api` by module name on its first ON request, so the record exists whatever the entry point. On a host without herald, once herald 37.1 has landed, the herald row reads absent and the page answers 200
 **And** with the flag OFF, `GET` and `OPTIONS /stations/` answer byte-identically to a URLconf without the index route, a Wagtail page published at that slug included, and nothing new is imported or logged. No response carries 87.1's remedy, a traceback or a path. The request writes nothing, and the diff adds no dependency or migration. A steward meta-test reads `stations_index.py` and `urls.py` with `ast` and reds a module-scope import of `pyforge.*`, a station portal package or `config.station_api`. The flag is registered in its four places, a two-state test covers it, and `flag-gate-check` passes. The local-platform tutorial names the page and its flag. Moving the flag check after the role check, answering OFF with a bare 404, answering 200 with no role, skipping the `config.station_api` load or rendering the remedy each fails a test (mutation). `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green. Every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp, and the landing stops at a draft PR until an independent review passes
-**Status:** backlog (herald 37.1 landed on `main` 2026-10-11, PR #2134; flipped from `blocked` under the operator's 2026-10-11 pre-authorization "Queued after 37.1")
+**Status:** done (herald 37.1 landed on `main` 2026-10-11, PR #2134; flipped from `blocked` under the operator's 2026-10-11 pre-authorization "Queued after 37.1")
 
 ## Epic 92: The unsplit-Redis eviction guard proves broker loss on every run (fix under unifying CAP-11)
 
@@ -6035,7 +6035,7 @@ So that a new finding anywhere fails the gate, and the list only shrinks as each
 **When** `pixi run -e pyforge-guild lint-types` runs
 **Then** its `ruff` and `ruff-format` verbs cover the ten `pyforge-*` packages and the nine `django-*` packages, each from its own directory and its own `[tool.ruff]` table: the ten packages' shared table with `target-version = "py312"`, the floor of the django packages' `requires-python` (at `py314`, `ruff format` writes the 3.14-only `except A, B:`). A django-* package without a table is a finding. `NOT_YET_CLEAN` in `lint_types.py` maps each package to the verbs it is not yet clean for, seeded from the measurement. A listed package's findings are reported and do not fail the verb; any unlisted package fails on any finding; a listed package that is clean fails the verb and names the entry to remove; a listed package whose tool exits other than 0 or 1 still fails; a bad entry is could-not-run
 **And** a test pins the seeded map as a ceiling, so an entry can leave and never return; the ten-package count check counts `pyforge-*` alone; `ruff-format --fix` skips listed packages; `mypy` is unchanged; `lint-types` exits 0 on the story's tree; the lines that say "the ten `pyforge-*` packages" for ruff are corrected; removing the stale-entry check, failing a listed package's findings, letting a listed package's exit 2 pass, dropping `django-*` from the glob or counting it toward the ten each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 94: No platform test leaks its structlog configuration into the next (fix under CAP-87)
 
@@ -6063,7 +6063,7 @@ So that a leak is reported in the test that causes it, instead of breaking which
 **When** the platform suite runs
 **Then** a fixture in the test module saves `structlog.get_config()` (its processors list copied) before that test and calls `structlog.configure(**saved)` after it, pass or fail, so a probe run after the module sees the platform's configuration; and an autouse guard in `src/platform/conftest.py` records the configuration once per session before the first test, compares it after every test and, on a difference, restores the baseline and fails that test at teardown, naming its node id and the keys that differ
 **And** with the fixture removed the OIDC test errors at teardown, and a deliberately leaking probe test errors while the test after it sees the baseline (mutations, reverted); the guard passes the whole suite as it stands (a full-suite survey found this test the only one that changes structlog's configuration); no skip, `xfail` or rerun; only the two files change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-unifying-strategy` memlog reconciles both files before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 95: The portal packages and the platform target Python 3.14 (feature under CAP-153)
 
@@ -6125,7 +6125,36 @@ So that a verdict is never about an env the lock has left behind.
 **When** a run starts, with any set of stages
 **Then** after it takes the lock and before any service or stage starts, it runs `pixi install --frozen --manifest-path "$ROOT/pixi.toml" -e <env>` once for each env its stages use (`test`: `platform-ci-test`, `platform-dev`; `images`: none; `container`: `platform-dev`; `promotion`: `platform-ci-test`, `pyforge-warden`), with the lock's descriptor closed and each install's output in a log under the work dir. For each env it prints `env <name>: installed`, `synced` or `current`, judged from pixi's own `conda-meta/pixi` record before and after, and adds the same as an `INFO` row to the summary
 **And** a failed install exits 2, naming the env and pixi's exit code and showing the tail of its log, before any service starts or stage runs. The script calls `pixi` only as `pixi install --frozen`, and a test reads it to prove that. A new Docker-free test runs the real script with a recording `pixi` stand-in and proves each of these, and it fails when the old `-x ... ||` guard is restored (mutation). Stories 63.7's and 89.1's tests pass, with only their shared helper gaining that stand-in. `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-steward` memlog reconciles every changed governed path before one scoped stamp
-**Status:** backlog
+**Status:** done
+
+## Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
+
+Minted 2026-10-12 from the station Dream's entry of that date (the not-yet-clean ceiling may shrink) under the
+operator's standing direction "keep going, merge and dispatch when green", with failures fixed at once; the fix restores
+Story 93.1's stated design, so no new ruling. 93.1's meta-test asserts `NOT_YET_CLEAN_CEILING` equals its frozen seed,
+which contradicts 93.1's own AC4 ("Removing an entry passes it"). Herald Story 38.1 (merge `e0b8ceae0c`) cleaned
+django-herald and removed its entry as designed, and `steward-test` has been red on `main` since (`f1be3236b9`),
+blocking every PR whose CI runs it (warden 16.5's PR #2146). A defect against `spec-pyforge-steward` CAP-153 (Story
+93.1, Epic 93), so no CAP is minted; a new epic because Epic 93 is `done`. **HARD boundaries:** test-only, in
+`src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py`; `scripts/lint_types.py`, its two maps,
+the seed's nine entries, the nine `django-*` packages and the CI workflows do not change; the test is never skipped,
+marked `xfail` or loosened beyond the subset rule.
+
+### Story 97.1: The not-yet-clean ceiling may shrink but never grow
+
+As the operator whose `main` went red the moment herald cleaned its portal package exactly as Story 93.1 designed,
+I want steward's ceiling test to accept an entry leaving the not-yet-clean list and still refuse any package or verb coming back,
+So that each station's lint-clean fix story lands green and the list can only shrink.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** `spec-pyforge-steward` CAP-153 (Story 93.1's AC4; Story 66.1) • Dream 2026-10-12 (the not-yet-clean ceiling may shrink) • operator standing direction "keep going, merge and dispatch when green"
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` (`test_not_yet_clean_within_ceiling_and_seeded_map` about :67-:76; `SEEDED_NOT_YET_CLEAN` about :30-:40 keeps every line)
+**Spec:** `planning-artifacts/specs/spec-97-1-the-not-yet-clean-ceiling-may-shrink-but-never-grow.md`
+**Given** `f1be3236b9`, where `scripts/lint_types.py` holds `NOT_YET_CLEAN_CEILING` with eight entries (herald 38.1 removed `django-herald`) and `NOT_YET_CLEAN` derived from it, and the meta-test asserts `mod.NOT_YET_CLEAN_CEILING == SEEDED_NOT_YET_CLEAN` against the nine-entry seed, failing with "Right contains 1 more item: {'django-herald': frozenset({'ruff-format', 'ruff'})}"
+**When** `pixi run --frozen -e pyforge-steward pyforge-steward-test` runs
+**Then** the meta-test asserts every ceiling package is in the seed and every ceiling verb set is a subset of the seed's for that package, and every `NOT_YET_CLEAN` package is in the ceiling with its verbs a subset of the ceiling's; the seed keeps its nine entries, and main's eight-entry ceiling passes
+**And** adding a package the seed lacks to the ceiling, adding a verb to a ceiling entry, and a `NOT_YET_CLEAN` entry absent from the ceiling each fail the test (mutations, reverted); only the meta-test file changes outside `_bmad-output/` and the spec-surface baseline; `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green with `ruff` absent from `PATH` (CI's shape), and the memlog of every Spec `spec-surface-check` names reconciles the file before one scoped stamp each
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

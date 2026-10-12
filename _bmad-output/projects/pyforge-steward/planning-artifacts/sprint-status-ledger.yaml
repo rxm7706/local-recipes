@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 545
+# stories: 548
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -361,12 +361,13 @@ development_status:
   9-6-isolation-proven-by-tests-that-cannot-pass-vacuously: done
   9-7-hosted-or-static-no-fork: done
   90-1-a-pytest-the-preflight-starts-never-inherits-another-run-s-basetemp: done
-  91-1-the-stations-index-lists-each-station-portal-as-mounted-or-absent-and-why: backlog
+  91-1-the-stations-index-lists-each-station-portal-as-mounted-or-absent-and-why: done
   92-1-the-unsplit-redis-eviction-guard-proves-broker-loss-on-every-run: done
-  93-1-the-lint-gate-covers-the-nine-django-portal-packages-and-its-not-yet-clean-list-only-shrinks: backlog
-  94-1-no-platform-test-leaves-structlog-configured-differently: backlog
+  93-1-the-lint-gate-covers-the-nine-django-portal-packages-and-its-not-yet-clean-list-only-shrinks: done
+  94-1-no-platform-test-leaves-structlog-configured-differently: done
   95-1-the-portal-packages-and-the-platform-target-python-3-14: backlog
-  96-1-platform-ci-local-never-runs-a-stage-on-a-stale-env: backlog
+  96-1-platform-ci-local-never-runs-a-stage-on-a-stale-env: done
+  97-1-the-not-yet-clean-ceiling-may-shrink-but-never-grow: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -547,15 +548,17 @@ development_status:
   epic-9-retrospective: optional
   epic-90: done
   epic-90-retrospective: optional
-  epic-91: backlog
+  epic-91: done
   epic-91-retrospective: optional
   epic-92: done
   epic-92-retrospective: optional
-  epic-93: backlog
+  epic-93: done
   epic-93-retrospective: optional
-  epic-94: backlog
+  epic-94: done
   epic-94-retrospective: optional
   epic-95: backlog
   epic-95-retrospective: optional
-  epic-96: backlog
+  epic-96: done
   epic-96-retrospective: optional
+  epic-97: done
+  epic-97-retrospective: optional

@@ -56,7 +56,7 @@ You can now access:
 - The Wagtail front door (Lane 1) at `http://localhost:8000/`
 - The Wagtail admin at `http://localhost:8000/cms/`
 - The Django admin at `http://localhost:8000/admin/`
-- Station portals under `http://localhost:8000/stations/<name>/`
+- Station portals under `http://localhost:8000/stations/<name>/`, and the stations index at `http://localhost:8000/stations/` when flag `pyforge.steward.stations_index` is ON (dev has it ON; staging and production stay OFF until rollout)
 
 ## Step 5: Run the Platform Tests
 The Platform CI `test` job runs from `src/platform/` in the slim `platform-ci-test` environment (the sole authority for that job's dependencies): `manage.py check`, Ruff, mypy, the policy suite, the sqlmigrate extraction, and then the full suite. Mirror it locally:

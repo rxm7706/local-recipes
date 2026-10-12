@@ -26,7 +26,7 @@ def run_notice(payload: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def ensure_herald_runner() -> None:
-    from django_pyforge.supervisor import register_runner  # noqa: PLC0415
+    from django_pyforge.supervisor import register_runner
 
     register_runner(HERALD_STATION, RUN_NOTICE_TOOL, run_notice)
 

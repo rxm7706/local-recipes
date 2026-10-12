@@ -6190,7 +6190,7 @@
    "src/platform/config/urls.py": "36b8d27311521d9f03ec01d4e9ce10b9458fbe93",
    "src/platform/config/websocket.py": "e22e66aa9ef7f84a56a66c279c236667bf8e10fe",
    "src/platform/config/wsgi.py": "6c9e32294463b056068d476f8ae5fbf7b6a89100",
-   "src/platform/conftest.py": "e6490c9d25fa696f46e2f0e89320928a6153ab1d",
+   "src/platform/conftest.py": "6a30ebdd1e0e779ac804f2a5f2631ee2e9199c13",
    "src/platform/db/README.md": "c860b0199633dce135c1306ca0ec46ffe65f4eec",
    "src/platform/db/__init__.py": "57455cf6b0f62e5b0fdfce1ba10134ecc326aa9d",
    "src/platform/db/changelog/changes/django-herald-1-herald-portal-0001-initial.sql": "f881c69eec6c7370769b55773e28b0f2db4ad7d4",
@@ -6473,7 +6473,7 @@
    "src/platform/tests/test_object_storage_client.py": "01db596e01d23387ed55a4419476c873a044b286",
    "src/platform/tests/test_object_store_seam.py": "d74068199f1d0cfd8db7f81018154aeda68a66e2",
    "src/platform/tests/test_observability_contract.py": "c07d564e98effc905a6d59c4889dc99263085adb",
-   "src/platform/tests/test_oidc_identity.py": "4081eec86dc0dee9b70b952776f4a0030fb53ae2",
+   "src/platform/tests/test_oidc_identity.py": "fb3c7cc461270441acb767e6135f418e84f0b726",
    "src/platform/tests/test_one_duckdb_writer.py": "a568e50035338660989b3d751540d8d214231fe7",
    "src/platform/tests/test_openfeature_file_flags.py": "761ad18de2ba5fea2c68d0f119580dff9ccc6096",
    "src/platform/tests/test_postgres_backup.py": "709603ae00c655363c736a86de3be1d523d22b98",
@@ -6514,6 +6514,7 @@
    "src/platform/utility/requirements-stretch.apt": "a529e96d14284e2d285bf318ec017c18575488d4",
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5",
+   "src/platform/uv.lock": "b39681e0eea2ac617d1ca03f5f8ce6946beedcbc",
    "src/shared/packages/django-atlas/pyproject.toml": "d39f5b4b82d7067e16fbbb5e3159a9313ad2e6fe",
    "src/shared/packages/django-atlas/src/django_atlas_portal/__init__.py": "b31385702eca1ea8369943f47119726ae0681503",
    "src/shared/packages/django-atlas/src/django_atlas_portal/apps.py": "e48717102372de3824f1289dcebf11058dae9279",
@@ -7180,7 +7181,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "738e622ea7063b57593eed841479b52a5e491a3b"
+  "memlog": "152250a971e6dabd280a92375083e98233b63eea"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},

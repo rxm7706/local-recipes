@@ -92,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-11T22:38:18-05:00'
-      tree: c853b6c7814ed1d89375d6b20bf18afee90fc952-dirty
+      derived_at: '2026-10-11T23:02:01-05:00'
+      tree: 507fca33bd226d31d14295848f7730c07933e24e-dirty
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -175,8 +175,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-10-11T22:38:18-05:00'
-      tree: c853b6c7814ed1d89375d6b20bf18afee90fc952
+      derived_at: '2026-10-10T05:52:00-05:00'
+      tree: c9b4f03b8f2b705798203b710f6f0bb4273afab9-dirty
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
