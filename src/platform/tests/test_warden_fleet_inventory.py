@@ -100,27 +100,20 @@ _FABRIC_ROOT = _PACKAGES / "django-warden" / "src" / "django_warden_fabric"
 _TASKS_PATH = _FABRIC_ROOT / "tasks.py"
 _PROJECTS = _REPO_ROOT / "_bmad-output" / "projects"
 _SPECS = "planning-artifacts/specs"
-# AC9: the tracked paths the fleet stories write (16.1, 16.5), including the shared
-# memory and the co-governor memlogs they append to. The live guard also scans every
-# file the current branch changes (``_story_changed_files``), so a path a later story
-# writes outside these roots is covered too.
-_LEAK_SCAN_ROOTS = (
-    _PROJECTS / "pyforge-warden",
-    _PACKAGES / "django-warden",
-    _PACKAGES / "pyforge-warden",
-    _PLATFORM_DIR,
-    _REPO_ROOT / "docs" / "dreams" / "pyforge-warden.md",
-    _REPO_ROOT / ".gitignore",
-    _REPO_ROOT / ".claude" / "memory",
-    _PROJECTS / "pyforge-marshal" / _SPECS / "spec-pyforge-core" / ".memlog.md",
-    _PROJECTS / "pyforge-marshal" / _SPECS / "spec-pyforge-marshal" / ".memlog.md",
-    _PROJECTS
-    / "pyforge-steward"
-    / _SPECS
-    / "spec-pyforge-unifying-strategy"
-    / ".memlog.md",
-    _PACKAGES / "pyforge-core" / "tests" / "unit" / "test_flags.py",
+# Story 18.1: warden-owned paths (Rule O whole-file unit). Listed terms (Rule T) apply
+# everywhere in the scan set (all tracked files plus branch changed files).
+_LEAK_WARDEN_OWNED_DIR_PREFIXES = (
+    "src/shared/packages/pyforge-warden/",
+    "src/shared/packages/django-warden/",
+    "_bmad-output/projects/pyforge-warden/",
+    ".claude/skills/pyforge-warden/",
+    ".claude/skills/bmad-agent-warden/",
+    "presentations/pyforge-warden/",
 )
+_LEAK_WARDEN_OWNED_FILES = ("docs/dreams/pyforge-warden.md",)
+_WARDEN_NAME = re.compile(r"(?<![a-z])warden(?![a-z])")
+_TEAM_MEMORY_ENTRY = re.compile(r"^\.claude/memory/[^/]+/[^/]+\.md$")
+_WARDEN_PROJECT_MEMLOG_PREFIX = "_bmad-output/projects/pyforge-warden/"
 _API = "https://api.github.com"
 _FIRST_PAGE = f"{_API}/orgs/{_EXAMPLE_ORG}/repos?type=all&per_page=100"
 _SECOND_PAGE = f"{_FIRST_PAGE}&page=2"
@@ -792,22 +785,54 @@ def test_default_paths_anchor_to_the_checkout_root(
     )
 
 
-# --- AC9: the leak guard ---
+# --- AC9 / Story 18.1: the leak guard ---
 
 
-def _leak_guard_terms() -> tuple[list[str] | None, Path]:
-    """The forbidden terms from the configured target, or None when it is absent."""
+def _leak_guard_target() -> tuple[str | None, list[str] | None, Path]:
+    """Organisation and listed terms from the configured target, or None when absent."""
     config = resolve_fleet_target_config_path()
     if not config.is_file():
-        return None, config
-    organisation = load_organisation_from_config(config)
-    extra = [term.lower() for term in load_leak_guard_terms(config)]
-    return [organisation.lower(), *extra], config
+        return None, None, config
+    organisation = load_organisation_from_config(config).lower()
+    terms = [term.lower() for term in load_leak_guard_terms(config)]
+    return organisation, terms, config
 
 
-def _tracked_files(repo_root: Path, roots: Sequence[Path]) -> list[Path]:
+def _repo_relative_posix(path: Path, repo_root: Path) -> str:
+    return path.relative_to(repo_root).as_posix()
+
+
+def _names_warden(text: str) -> bool:
+    return _WARDEN_NAME.search(text.lower()) is not None
+
+
+def _is_warden_owned_whole_file(rel: str) -> bool:
+    if rel in _LEAK_WARDEN_OWNED_FILES:
+        return True
+    if rel.startswith("src/platform/tests/test_warden_") and rel.endswith(".py"):
+        return True
+    return any(rel.startswith(prefix) for prefix in _LEAK_WARDEN_OWNED_DIR_PREFIXES)
+
+
+def _is_external_memlog(rel: str) -> bool:
+    return rel.endswith(".memlog.md") and not rel.startswith(_WARDEN_PROJECT_MEMLOG_PREFIX)
+
+
+def _all_tracked_files(repo_root: Path) -> list[Path]:
+    listed = subprocess.run(  # noqa: S603
+        ["git", "ls-files", "-z"],  # noqa: S607
+        cwd=repo_root,
+        env=_git_env(),
+        check=True,
+        capture_output=True,
+    )
+    names = listed.stdout.decode("utf-8", errors="replace").split("\0")
+    return [repo_root / name for name in names if name]
+
+
+def _tracked_files_under(repo_root: Path, roots: Sequence[Path]) -> list[Path]:
     if not roots:
-        return []  # no pathspec would list every tracked file
+        return []
     relative = [str(root.relative_to(repo_root)) for root in roots]
     listed = subprocess.run(  # noqa: S603
         ["git", "ls-files", "-z", "--", *relative],  # noqa: S607
@@ -818,6 +843,56 @@ def _tracked_files(repo_root: Path, roots: Sequence[Path]) -> list[Path]:
     )
     names = listed.stdout.decode("utf-8", errors="replace").split("\0")
     return [repo_root / name for name in names if name]
+
+
+def _leak_guard_violations(
+    repo_root: Path,
+    files: Sequence[Path],
+    *,
+    organisation: str,
+    terms: Sequence[str],
+    changed_rel: frozenset[str] = frozenset(),
+) -> list[str]:
+    """Rule T everywhere; Rule O for the organisation in warden-scoped places only."""
+    org = organisation.lower()
+    term_list = [term.lower() for term in terms]
+    hits: set[str] = set()
+    for path in files:
+        if not path.is_file():
+            continue
+        rel = _repo_relative_posix(path, repo_root)
+        text = path.read_bytes().decode("utf-8", errors="replace")
+        lower = text.lower()
+        if term_list and any(term in lower for term in term_list):
+            hits.add(rel)
+            continue
+        if org not in lower:
+            continue
+        if _is_warden_owned_whole_file(rel):
+            hits.add(rel)
+            continue
+        if _TEAM_MEMORY_ENTRY.match(rel) and _names_warden(text):
+            hits.add(rel)
+            continue
+        line_scoped = (
+            rel == ".claude/memory/MEMORY.md"
+            or _is_external_memlog(rel)
+            or rel in changed_rel
+        )
+        if line_scoped:
+            for line in text.splitlines():
+                if _names_warden(line) and org in line.lower():
+                    hits.add(rel)
+                    break
+    return sorted(hits)
+
+
+def _leak_scan_file_set(
+    repo_root: Path, extra_files: Sequence[Path] = ()
+) -> list[Path]:
+    seen: set[Path] = set(_all_tracked_files(repo_root))
+    seen.update(extra_files)
+    return sorted(seen)
 
 
 def _git_names(repo_root: Path, *argv: str) -> list[str]:

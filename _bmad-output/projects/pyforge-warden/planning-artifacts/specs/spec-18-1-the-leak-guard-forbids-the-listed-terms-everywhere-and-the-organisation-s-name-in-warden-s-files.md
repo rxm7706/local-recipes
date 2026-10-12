@@ -2,7 +2,8 @@
 title: "18.1: The leak guard forbids the listed terms everywhere and the organisation's name in warden's files"
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e872476980ee67672170f68477e6f080b865a2ce'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

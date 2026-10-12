@@ -133,6 +133,21 @@ def load_organisation_from_config(config_path: Path | None = None) -> str:
     return organisation.strip()
 
 
+def _allow_empty_leak_guard_terms(github: dict[str, Any], config_path: Path) -> bool:
+    if "allow_empty_leak_guard_terms" not in github:
+        return False
+    value = github["allow_empty_leak_guard_terms"]
+    if not isinstance(value, bool):
+        msg = "allow_empty_leak_guard_terms under [github] must be a boolean"
+        raise FleetTargetConfigError(config_path, msg)
+    return value
+
+
+def _refuse_missing_leak_guard_terms(config_path: Path) -> None:
+    msg = "leak_guard_terms under [github] must be a non-empty list of strings"
+    raise FleetTargetConfigError(config_path, msg)
+
+
 def load_leak_guard_terms(config_path: Path | None = None) -> list[str]:
     path = (
         config_path if config_path is not None else resolve_fleet_target_config_path()
@@ -142,15 +157,23 @@ def load_leak_guard_terms(config_path: Path | None = None) -> list[str]:
     document = _parse_target_toml(path.read_bytes(), path)
     github = document.get("github")
     if not isinstance(github, dict):
-        return []
+        _refuse_missing_leak_guard_terms(path)
+    allow_empty = _allow_empty_leak_guard_terms(github, path)
     terms = github.get("leak_guard_terms")
     if terms is None:
-        return []
+        if allow_empty:
+            return []
+        _refuse_missing_leak_guard_terms(path)
     if not isinstance(terms, list) or not all(isinstance(item, str) for item in terms):
         # A bare string would otherwise be ignored and the guard would run without it.
         msg = "leak_guard_terms under [github] must be a list of strings"
         raise FleetTargetConfigError(path, msg)
-    return [item for item in terms if item.strip()]
+    stripped = [item.strip() for item in terms if item.strip()]
+    if not stripped:
+        if allow_empty:
+            return []
+        _refuse_missing_leak_guard_terms(path)
+    return stripped
 
 
 class CredentialProvider(Protocol):
