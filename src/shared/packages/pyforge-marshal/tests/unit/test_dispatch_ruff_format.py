@@ -145,14 +145,11 @@ class _DiskDirtyVcs:
         return "abc123"
 
 
-def test_apply_ruff_check_fix_removes_safe_violations(tmp_path: Path) -> None:
+def test_apply_ruff_check_fix_removes_safe_violations(tmp_path: Path, ruff_from_test_env: None) -> None:
     """Story 83.15: unused import and import sort are fixed before commit (mutation oracle)."""
     import shutil
 
     from pyforge.core.process import PosixProcess
-
-    if shutil.which("ruff") is None:
-        pytest.skip("ruff not on PATH")
 
     worktree = tmp_path / "wt"
     repo_root = tmp_path

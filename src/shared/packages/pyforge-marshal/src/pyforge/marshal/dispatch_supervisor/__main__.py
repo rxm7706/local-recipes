@@ -2345,22 +2345,32 @@ def _run_and_journal_ruff_format(
     story_key: str,
     worktree: Path,
 ) -> int:
-    """Story 83.9: format story-scoped ``.py`` files and journal when anything changed."""
+    """Story 83.9 / 95.1: format story-scoped ``.py`` files and journal when anything changed or a group failed."""
+    from pyforge.marshal.core.dispatch_ruff_format import (
+        dispatch_ruff_format_groups_payload,
+        dispatch_ruff_format_should_journal,
+    )
+
     result = run_dispatch_ruff_format_before_verify(
         worktree=worktree,
         repo_root=repo_root,
         vcs=vcs,
         process=process,
     )
-    if not result.reformatted_paths:
+    if not dispatch_ruff_format_should_journal(result):
         return counter
+    groups_payload = dispatch_ruff_format_groups_payload(result.groups)
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
         run_id=run_id,
         kind=dispatch_core.KIND_DISPATCH_RUFF_FORMAT,
         phase=Phase.INTENT,
-        payload={"story_key": story_key, "paths": list(result.reformatted_paths)},
+        payload={
+            "story_key": story_key,
+            "paths": list(result.reformatted_paths),
+            "groups": groups_payload,
+        },
     )
     counter += 1
     outcome_entry = build_entry(
@@ -2375,6 +2385,7 @@ def _run_and_journal_ruff_format(
             "paths": list(result.reformatted_paths),
             "committed": result.committed,
             "ok": result.committed,
+            "groups": groups_payload,
         },
     )
     counter += 1

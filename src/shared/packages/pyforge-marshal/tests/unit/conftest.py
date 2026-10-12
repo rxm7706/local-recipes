@@ -12,6 +12,9 @@ overrides this after it runs.
 
 from __future__ import annotations
 
+import sysconfig
+from pathlib import Path
+
 import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
@@ -19,6 +22,27 @@ from pyforge.marshal import dispatch_verify
 from pyforge.marshal.cli.init import ENV_LOOP_HOME_ROOT
 
 flag_provider = make_flag_provider_fixture()
+
+
+def require_ruff_from_test_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 95.1: run real-ruff oracles against ``pyforge-marshal``'s ruff only."""
+    scripts = Path(sysconfig.get_path("scripts"))
+    ruff_exe = scripts / "ruff"
+    if not ruff_exe.is_file():
+        win_ruff = scripts / "ruff.exe"
+        if not win_ruff.is_file():
+            pytest.fail(
+                "ruff not found under the test interpreter's scripts directory "
+                "([feature.pyforge-marshal.dependencies]); run: pixi install -e pyforge-marshal"
+            )
+        ruff_exe = win_ruff
+    monkeypatch.setenv("PATH", str(scripts))
+
+
+@pytest.fixture
+def ruff_from_test_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Put the test interpreter's ``ruff`` first on ``PATH`` (Story 95.1)."""
+    require_ruff_from_test_env(monkeypatch)
 
 
 class _EmptySessionGroup:
