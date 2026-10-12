@@ -53,6 +53,7 @@ from pyforge.steward import preflight_ci
 REPO_ROOT = Path(__file__).resolve().parents[6]
 WORKFLOW_REL = ".github/workflows/pyforge-station-tests.yml"
 WORKFLOW = REPO_ROOT / WORKFLOW_REL
+THIS_FILE_REL = Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
 PIXI_TOML = REPO_ROOT / "pixi.toml"
 PACKAGES = "src/shared/packages"
 BASE_REF = "refs/remotes/origin/main"
@@ -299,8 +300,9 @@ class Scanner:
                     if isinstance(t, ast.Name) and item is not None:
                         env[t.id] = item
                 return
+            keep = isinstance(value_node, ast.Constant) and value_node.value is None  # `except: ROOT = None`
             for t in targets:
-                if isinstance(t, ast.Name):
+                if isinstance(t, ast.Name) and not keep:
                     env.pop(t.id, None)
             self.visit(value_node, env, mod, stmt)
             return
@@ -685,7 +687,7 @@ class Scanner:
     # -- recording --------------------------------------------------------
 
     def _record(self, value: V, mod: Module, parent: ast.AST | None) -> None:
-        if not value.rooted:
+        if not value.rooted or _is_plumbing(parent):
             return
         parts = list(value.parts)
         if not parts:
@@ -711,8 +713,8 @@ class Scanner:
         if self.package_dir and (joined == self.package_dir or joined.startswith(self.package_dir + "/")):
             return
         src_parts = tuple(source.split("/"))
-        if parts == src_parts[: len(parts)]:
-            return  # the test's own file or one of its ancestors: sys.path / tree-walk plumbing
+        if self.package_dir and not _within(source, self.package_dir) and parts == src_parts[: len(parts)]:
+            return  # an outside test's own directory chain: import-path plumbing, not a read
         if representative(parts) is None:
             return
         self.reads[parts].add(source)
@@ -762,6 +764,20 @@ class Scanner:
                     self._statement(inner, class_env, mod, record=True)
         else:
             self._statement(stmt, env, mod, record=True)
+
+
+_PATH_MATH = frozenset({"relative_to", "is_relative_to", "samefile"})
+_IMPORT_PATH_CALLS = frozenset({"sys.path.insert", "sys.path.append", "sys.path.extend", "monkeypatch.syspath_prepend"})
+
+
+def _is_plumbing(parent: ast.AST | None) -> bool:
+    """A path used only to do path arithmetic or to extend the import path is no read of its content."""
+    if isinstance(parent, ast.Call):
+        func = parent.func
+        if isinstance(func, ast.Attribute) and func.attr in _PATH_MATH:
+            return True
+        return _dotted_name(func) in _IMPORT_PATH_CALLS
+    return False
 
 
 class _Unbound:
@@ -885,7 +901,8 @@ def derive_reads(job: Job, pixi: Mapping) -> JobReads:
     paths = task_paths(pixi, job)
     scanner = Scanner(job.package)
     for rel in job_test_files(job, paths):
-        scanner.scan(rel)
+        if rel != THIS_FILE_REL:  # its own literals are declarations and mutations, not reads
+            scanner.scan(rel)
     reads: dict[tuple[str, ...], set[str]] = {k: set(v) for k, v in scanner.reads.items()}
     for path in paths:
         if not _within(path, job.package):
