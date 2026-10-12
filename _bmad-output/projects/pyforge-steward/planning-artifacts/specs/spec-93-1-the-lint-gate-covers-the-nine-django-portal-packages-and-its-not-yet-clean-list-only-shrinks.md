@@ -2,7 +2,8 @@
 title: '93.1: The lint gate covers the nine django portal packages, and its not-yet-clean list only shrinks'
 type: 'feature'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '3c85a29a64ef834074b323740402dbec08fe1597'
 flag-exempt: detector-or-gate   # the story changes the lint gate itself; a gated gate reports a silent green
 review_loop_iteration: 0
 followup_review_recommended: false
