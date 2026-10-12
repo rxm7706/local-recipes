@@ -8,7 +8,7 @@ no reconcile writes, no Jira calls.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from collections.abc import Callable, Iterator
+from typing import Callable, Iterator
 
 from pyforge.steward.keys import HostScopedCredential
 from pyforge.steward.sync import TransportFn, github_graphql_request
