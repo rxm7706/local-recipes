@@ -16,6 +16,7 @@ from wagtail.images import urls as wagtailimages_urls
 
 from config.legacy_compliance import redirect_to_warden
 from config.observability.views import metrics_view
+from config.stations_index import stations_index
 
 urlpatterns = [
     path(
@@ -35,6 +36,8 @@ urlpatterns = [
     path("assertion/", include("django_pyforge.assertion.urls")),
     path("flags.json", tree_view, name="flags-tree"),
     path("flags/<str:key>/", eval_view, name="flags-eval"),
+    # Story 91.1: optional index at the prefix (before portal includes).
+    path("stations/", stations_index, name="stations-index"),
     # Story 18.1: pattern include, not a station roster. Portals mount
     # themselves from AppConfig discovery inside django_pyforge.urls.
     path("stations/", include("django_pyforge.urls")),

@@ -1,0 +1,32 @@
+{% extends "django_pyforge/base.html" %}
+{% block title %}
+  Station portals
+{% endblock title %}
+{% block content %}
+  <h1>Station portals</h1>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Station</th>
+        <th scope="col">State</th>
+        <th scope="col">Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.station_name }}</td>
+          {% if row.absent %}
+            <td>absent</td>
+            <td>{{ row.reason }}</td>
+          {% else %}
+            <td>mounted</td>
+            <td>
+              <a href="{{ row.mount_path }}">{{ row.mount_path }}</a>
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock content %}
