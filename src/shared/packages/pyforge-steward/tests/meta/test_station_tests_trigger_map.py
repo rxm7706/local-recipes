@@ -822,6 +822,15 @@ class Scanner:
                 body = node.body
                 if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
                     docstrings.add(id(body[0].value))
+            if (
+                isinstance(node, ast.BinOp)
+                and isinstance(node.op, ast.Div)
+                and isinstance(node.right, ast.Constant)
+                and not (isinstance(node.left, ast.Constant) and isinstance(node.left.value, str))
+            ):
+                # ``base / "a/b"`` joins onto some other root (a tmp_path, a fixture repo); the
+                # evaluator already resolves the ones that join onto the repository root
+                docstrings.add(id(node.right))
             if isinstance(node, ast.Call) and _dotted_name(node.func).endswith("parametrize"):
                 # a parametrize table holds case labels handed to the code under test, not reads
                 docstrings.update(id(n) for n in ast.walk(node))
