@@ -2,7 +2,7 @@
 title: "96.1: A story spec carries each frontmatter key once"
 type: 'fix'
 created: '2026-10-11'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'ceca8770438a8ff72ad3cfd711c0c5c8e9cd1d22'
 review_loop_iteration: 0
 followup_review_recommended: false
