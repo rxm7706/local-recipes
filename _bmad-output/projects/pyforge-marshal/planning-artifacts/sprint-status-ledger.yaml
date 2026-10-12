@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 641
+# stories: 644
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -465,6 +465,7 @@ development_status:
   96-1-a-story-spec-carries-each-frontmatter-key-once: done
   97-1-seed-accept-records-an-intended-edit-and-repo-owned-files-leave-the-guard: done
   97-2-a-seed-update-dry-run-on-an-adopted-repo-plans-only-real-changes: done
+  98-1-two-marshal-tests-stop-failing-every-local-preflight: backlog
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -655,3 +656,5 @@ development_status:
   epic-96-retrospective: optional
   epic-97: done
   epic-97-retrospective: optional
+  epic-98: backlog
+  epic-98-retrospective: optional

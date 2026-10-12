@@ -9103,3 +9103,14 @@ status: open
   severity: medium (unverified)
   promoted: 2026-10-11 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-98-1: `marshal seed check` spends about 4 s of NFR-P1's 5 s budget in machine-readiness probes, more when `doctor` is on PATH.
+
+- source_spec: `planning-artifacts/specs/spec-98-1-two-marshal-tests-stop-failing-every-local-preflight.md`
+  summary: `marshal seed check` spends about 4 s of NFR-P1's 5 s budget in machine-readiness probes, more when `doctor` is on PATH.
+  evidence: Measured 2026-10-12 on the 1,200-file NFR-P1 fixture: run_check's own CPU 0.32 s, child CPU 3.74 s. referenced_dep_findings spawns `bmad-loop --version` (1.4 s wall) and `copier --version` (2.6 s wall), and first tries `python -m pyforge.doctor.sources genesis-referenced-deps --json` whenever `doctor` is on PATH. Story 98.1 stubs the probe in the two NFR-P1 tests, which measure the walk; nothing now times the real end-to-end command against NFR-P1.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/referenced_deps.py:104
+  origin: spec-deferred 6c6e72612186 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

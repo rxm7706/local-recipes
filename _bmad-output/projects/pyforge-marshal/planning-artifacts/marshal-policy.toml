@@ -611,6 +611,21 @@ verify_commands = [
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/test-architecture.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"98" = [  # the local preflight judges marshal's tests the way CI does (a fix under CAP-13 and CAP-139, no CAP;
+  # Story 98.1), added 2026-10-12. The default surface, restated because a declared entry replaces it outright (its
+  # package glob already covers the three test files), plus every Spec memlog and the team-memory entry the story
+  # corrects.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".claude/memory/feedback/the-local-pr-preflight-marshal-lane-pyforge-marshal-test-can.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts
