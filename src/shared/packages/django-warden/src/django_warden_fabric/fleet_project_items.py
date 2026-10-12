@@ -15,15 +15,16 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
-from typing import Protocol
+from typing import Any, Protocol
 
-from .fleet_inventory import FleetInventoryError
-from .fleet_inventory import FleetTargetConfigError
-from .fleet_inventory import _parse_target_toml
-from .fleet_inventory import atomic_write_json
-from .fleet_inventory import fleet_checkout_root
-from .fleet_inventory import resolve_fleet_target_config_path
+from .fleet_inventory import (
+    FleetInventoryError,
+    FleetTargetConfigError,
+    _parse_target_toml,
+    atomic_write_json,
+    fleet_checkout_root,
+    resolve_fleet_target_config_path,
+)
 
 ENV_FLEET_PROJECT_ITEMS_PATH = "WARDEN_FLEET_PROJECT_ITEMS_PATH"
 
