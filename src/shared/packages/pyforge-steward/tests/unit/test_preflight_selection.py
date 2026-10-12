@@ -319,9 +319,15 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     chosen = selected_tasks(select(repo))
     assert SPEC_ALWAYS_ON <= chosen
     # `docs/**` is a docsite-check.yml trigger path, so its three validators run too.
-    assert chosen == ALWAYS_ON | DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
-    assert not chosen & LINT and "test-ci" not in chosen and not chosen & GATES
-    assert not any(suite(s) in chosen for s in (*STATIONS, "core", "testing-kit"))
+    assert chosen == (
+        ALWAYS_ON
+        | DOCS_SITE_VALIDATE
+        | PAGES_CHECK_LEAVES
+        | {suite("doctor"), suite("herald"), suite("marshal"), suite("steward")}
+        | _spurious_lint_tasks_from_station_tests_changes(repo)
+    )
+    assert not (chosen & LINT - _spurious_lint_tasks_from_station_tests_changes(repo))
+    assert "test-ci" not in chosen and not chosen & GATES
 
 
 def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
@@ -341,11 +347,30 @@ def test_docsite_branch_selects_the_docsite_validators_and_the_always_on_lanes(t
     assert selected_tasks(select(repo)) == ALWAYS_ON | DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
 
 
-def test_testing_kit_branch_selects_only_the_kit_not_core_or_stations(tmp_path: Path) -> None:
+def test_django_pyforge_branch_selects_kit_steward_doctor_marshal_and_core(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"src/shared/packages/django-pyforge/src/x.py": "x = 1\n"})
+    selection = select(repo)
+    chosen = selected_tasks(selection)
+    assert {
+        "pyforge-testing-kit-test",
+        "pyforge-steward-test",
+        "pyforge-doctor-test",
+        "pyforge-marshal-test",
+        "pyforge-core-test",
+    } <= chosen
+    assert chosen - NO_CI_COUNTERPART == oracle_selection(repo, tmp_path)
+
+
+def test_django_herald_branch_selects_steward_and_herald(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path, {"src/shared/packages/django-herald/src/x.py": "x = 1\n"})
     chosen = selected_tasks(select(repo))
-    assert "pyforge-testing-kit-test" in chosen
-    assert "pyforge-core-test" not in chosen and not any(suite(s) in chosen for s in STATIONS)
+    assert {suite("steward"), suite("herald")} <= chosen
+
+
+def test_lint_types_only_branch_selects_steward(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path, {"scripts/lint_types.py": "# touched\n"})
+    chosen = selected_tasks(select(repo))
+    assert suite("steward") in chosen
 
 
 # ---------------------------------------------------------------------------
@@ -461,8 +486,24 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         {"presentations/deck/a.md": "x\n"},
         {"scripts/tests/test_x.py": "x\n"},
         {"README.md": "x\n"},
+        {"src/shared/packages/django-pyforge/src/x.py": "x\n"},
+        {"src/shared/packages/django-herald/src/x.py": "x\n"},
+        {"scripts/lint_types.py": "# touched\n"},
     ],
-    ids=["marshal", "pixi", "cfe", "dream", "docsite", "core+herald", "presentations", "atlas-extra", "readme-only"],
+    ids=[
+        "marshal",
+        "pixi",
+        "cfe",
+        "dream",
+        "docsite",
+        "core+herald",
+        "presentations",
+        "atlas-extra",
+        "readme-only",
+        "django-pyforge",
+        "django-herald",
+        "lint-types",
+    ],
 )
 def test_selection_equals_the_lanes_the_workflows_own_rules_select(tmp_path: Path, files: dict[str, str]) -> None:
     repo = make_repo(tmp_path, files)
@@ -509,7 +550,7 @@ def test_unrecognised_paths_ignore_runs_that_workflows_lane_and_names_the_rule(t
 def test_unrecognised_job_if_runs_that_job_s_lane_and_names_the_rule(tmp_path: Path) -> None:
     repo = make_repo(
         tmp_path,
-        {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        {"src/shared/packages/pyforge-marshal/src/x.py": "x\n"},
         edits=[
             (
                 "pyforge-station-tests.yml",
@@ -520,8 +561,8 @@ def test_unrecognised_job_if_runs_that_job_s_lane_and_names_the_rule(tmp_path: P
     )
     selection = select(repo)
     chosen = selected_tasks(selection)
-    assert suite("marshal") in chosen and suite("warden") in chosen
-    assert suite("doctor") not in chosen  # its own `if:` is still read
+    assert suite("marshal") in chosen
+    assert suite("warden") not in chosen  # warden did not change; its own `if:` is still read
     assert "github.actor" in verdict(selection, suite("marshal")).reason
 
 
@@ -668,7 +709,7 @@ def test_run_preflight_runs_selected_lanes_in_order_and_journals_the_selection(t
 
     code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=fake_run, **_SERIAL)
     assert code == preflight.EXIT_OK
-    expected = LINT | SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC | {"pyforge-core-test", suite("marshal"), gate("marshal")}
+    expected = selected_tasks(select(repo))
     assert set(ran) == expected
     assert ran == [lane.task for lane in lanes if lane.task in expected]  # declaration order kept
 
