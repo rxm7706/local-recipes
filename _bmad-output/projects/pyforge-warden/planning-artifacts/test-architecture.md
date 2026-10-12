@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: f7c83dba3434a63e
-story_count: 61
-test_file_count: 78
+source_fingerprint: 028c338d29459390
+story_count: 62
+test_file_count: 79
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 61
-- **Epics parsed:** 17
-- **Test files inventoried:** 78 under `src/shared/packages/pyforge-warden/tests/`
+- **Stories parsed:** 62
+- **Epics parsed:** 18
+- **Test files inventoried:** 79 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f7c83dba3434a63e`
+- **Source fingerprint:** `028c338d29459390`
 
 ## Risk Assessment
 
@@ -51,6 +51,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 15: SAST joins as an optional plugin: opengrep with estate-owned rules (spec-pyforge-warden CAP-25)
 - Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
 - Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
+- Epic 18: The leak guard keeps the fleet target private, not the organisation's public name (fix under spec-pyforge-warden CAP-26)
 
 ### Low-risk epics
 
@@ -109,6 +110,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_feeds.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_fix_solver_seam.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_fix_target_resolution.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_hooks.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_hygiene.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_identity.py` | unit | none observed |
@@ -204,6 +206,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 16.4 | Non-Python lockfiles scan through osv-scanner's own parsers | none observed |
 | 16.5 | Warden inventories the items of the operator-designated GitHub Projects | none observed |
 | 17.1 | Eligibility records its policy, and warden's other open deferrals close | none observed |
+| 18.1 | The leak guard forbids the listed terms everywhere and the organisation's nam... | none observed |
 
 ## Quality Gates
 
