@@ -2,7 +2,7 @@
 title: '91.1: The stations index lists each station portal as mounted or absent, and why'
 type: 'feature'
 created: '2026-10-11'
-status: 'blocked'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 landing_review: 'required'
@@ -71,7 +71,7 @@ declared_low_risk: false
   - The chrome's switcher lists only the portals `is_switcher_tile` admits (`context_processors.py:19`-`:23`): the
     request reaches the station, and its work class is not 01 or 02.
 - **The herald gate.** Herald Story 37.1 (`37-1-the-herald-portal-loads-without-herald-and-says-why`, minted
-  2026-10-11, not yet on `main`) keeps every Django page from answering 500 on a host without `pyforge-herald`. Until
+  2026-10-11, landed on `main` 2026-10-11 as PR #2134) keeps every Django page from answering 500 on a host without `pyforge-herald`. Until
   it lands, every Django page on such a host is a 500, this one included.
 
 **The ruling (2026-10-11).**
