@@ -2,7 +2,8 @@
 title: "95.1: Dispatch applies ruff to a story's files under each tree's own config"
 type: 'fix'
 created: '2026-10-11'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'c8f274ef27fec91e296fc7f8d47a30d999c7ea92'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
