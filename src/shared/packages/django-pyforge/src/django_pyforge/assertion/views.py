@@ -5,19 +5,19 @@ from __future__ import annotations
 import json
 import logging
 
-from django.http import HttpRequest
-from django.http import HttpResponse
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from jwt.exceptions import PyJWTError
 
 from django_pyforge.assertion.crypto import mint_assertion
-from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.exceptions import StationNotInRolesError
-from django_pyforge.roles import station_granted
-from django_pyforge.assertion.exceptions import VerifierNotConfiguredError
+from django_pyforge.assertion.exceptions import (
+    AssertionRefusedError,
+    StationNotInRolesError,
+    VerifierNotConfiguredError,
+)
 from django_pyforge.assertion.identity import verify_idp_bearer
+from django_pyforge.roles import station_granted
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def mint(request: HttpRequest) -> HttpResponse:
     try:
         payload = json.loads(request.body.decode("utf-8"))
         station = payload["station"]
-    except (json.JSONDecodeError, KeyError, UnicodeDecodeError, TypeError):
+    except json.JSONDecodeError, KeyError, UnicodeDecodeError, TypeError:
         return JsonResponse({"error": "invalid body"}, status=400)
     if not isinstance(station, str) or not station:
         return JsonResponse({"error": "invalid station"}, status=400)

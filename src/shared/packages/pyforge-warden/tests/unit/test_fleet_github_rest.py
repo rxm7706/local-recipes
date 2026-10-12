@@ -20,6 +20,7 @@ import http.client
 import io
 import json
 import logging
+import re
 import ssl
 import sys
 import traceback
@@ -40,8 +41,10 @@ from pyforge.warden.fleet_github_rest import (
     ListedRepo,
     OffApiHostRefusedError,
     RedactedBytes,
+    _ApiConnection,
     _ApiHTTPSHandler,
     _Credential,
+    _CredentialSplicingSocket,
     _listed_repo_from_api,
     _parse_link_next,
     is_api_url,
@@ -623,3 +626,81 @@ def test_parse_link_next() -> None:
 def test_fleet_inventory_api_error_is_pyforge_error() -> None:
     assert issubclass(FleetInventoryApiError, PyforgeError)
     assert issubclass(OffApiHostRefusedError, FleetInventoryApiError)
+
+
+# --- Story 16.5 F3: the splice touches only the header block, once; a body never carries it ------
+
+_PLACEHOLDER = b"Bearer pyforge-warden-credential-placeholder"  # the client's own marker, written out
+
+
+class _Recorder:
+    def __init__(self) -> None:
+        self.writes: list[bytes] = []
+
+    def sendall(self, data: bytes, *args: object) -> None:
+        self.writes.append(bytes(data))
+
+
+def _request_bytes(body: bytes, *, authorizations: int = 1) -> tuple[bytes, bytes]:
+    lines = [b"POST /graphql HTTP/1.1", b"Host: api.github.com", b"Content-Length: " + str(len(body)).encode()]
+    lines += [b"Authorization: " + _PLACEHOLDER] * authorizations
+    return b"\r\n".join(lines) + b"\r\n\r\n", body
+
+
+@pytest.mark.parametrize(
+    "writes",
+    [
+        lambda head, body: [head + body],
+        lambda head, body: [head, body],
+        lambda head, body: [head[:-2], head[-2:] + body],
+        lambda head, body: [head[:-3], head[-3:], body[:5], body[5:]],
+    ],
+    ids=["one-write", "header-then-body", "terminator-split", "many-writes"],
+)
+def test_the_splice_touches_only_the_header_block(writes: Callable[[bytes, bytes], list[bytes]]) -> None:
+    """A body holding the placeholder text keeps it, byte for byte; Content-Length still holds."""
+    body = json.dumps({"variables": {"after": _PLACEHOLDER.decode()}}).encode()
+    head, body = _request_bytes(body)
+    recorder = _Recorder()
+    splicer = _CredentialSplicingSocket(recorder, _Credential(_SENTINEL))
+    for chunk in writes(head, body):
+        splicer.sendall(chunk)
+    sent_head, _, sent_body = b"".join(recorder.writes).partition(b"\r\n\r\n")
+    assert sent_head.count(_BEARER.encode()) == 1
+    assert _PLACEHOLDER not in sent_head
+    assert sent_body == body
+    assert _SENTINEL.encode() not in sent_body
+    declared = re.search(rb"Content-Length: (\d+)", sent_head)
+    assert declared is not None
+    assert int(declared.group(1)) == len(sent_body)
+
+
+def test_the_splice_happens_once_per_request() -> None:
+    head, body = _request_bytes(b"{}", authorizations=2)
+    recorder = _Recorder()
+    _CredentialSplicingSocket(recorder, _Credential(_SENTINEL)).sendall(head + body)
+    sent = b"".join(recorder.writes)
+    assert sent.count(_BEARER.encode()) == 1
+    assert sent.count(_PLACEHOLDER) == 1
+
+
+@pytest.mark.parametrize(
+    "body",
+    [b'{"after": "' + _PLACEHOLDER + b'"}', bytearray(_PLACEHOLDER), memoryview(_PLACEHOLDER), iter([b"{}"])],
+    ids=["bytes", "bytearray", "memoryview", "not-bytes"],
+)
+def test_a_body_carrying_the_placeholder_is_refused_before_a_socket_opens(body: object) -> None:
+    connection = _ApiConnection("api.github.com", credential=_Credential(_SENTINEL), timeout=5)
+    connection.putrequest("POST", "/graphql")
+    with pytest.raises(FleetInventoryApiError, match="credential placeholder"):
+        connection.endheaders(body)
+    assert connection.sock is None  # nothing connected, nothing sent
+
+
+def test_an_unpinned_connection_sends_a_body_as_is(fake: _FakeGitHub) -> None:
+    """Without a credential (another origin), nothing is spliced or refused."""
+    connection = _ApiConnection("evil.example", credential=None, timeout=5)
+    connection.putrequest("POST", "/x")
+    connection.putheader("Content-Length", str(len(_PLACEHOLDER)))
+    connection.endheaders(_PLACEHOLDER)
+    assert connection.sock is not None

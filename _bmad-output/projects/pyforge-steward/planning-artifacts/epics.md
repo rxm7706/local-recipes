@@ -6093,7 +6093,7 @@ So that the tools hold the code to the interpreter it runs on, and a target that
 **When** `pixi run -e pyforge-guild lint-types` and `platform-ci-local -- --test` run
 **Then** the nine portal packages require `>=3.14` and their tables target `py314`; `src/platform` targets ruff `py314` and mypy `3.14`; `target-version-check` derives `py314` / `3.14` from the pixi pin and checks the ten `pyforge-*` packages as today plus every `requires-python` floor, the nine portal packages' ruff target and `src/platform`'s ruff and mypy targets, with too few packages or no `src/platform/pyproject.toml` as could-not-run; `src/platform` carries what ruff writes at `py314` (four PEP 758 rewrites, one UP035 fix, ten TC001-TC003 imports moved under `TYPE_CHECKING`); the portal packages carry only their 13 PEP 758 rewrites, and `NOT_YET_CLEAN` is unchanged
 **And** the 3.12 residue in `src/platform` and the lines that call the targets `py312` are corrected; removing the portal glob, removing the platform check, hard-coding `py314` or dropping the `requires-python` floor each fails a named test (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types`, `pixi run -e pyforge-guild platform-ci-local -- --test` and `pixi run --frozen -e pyforge-guild pyforge-station-tests` are green, and every Spec `spec-surface-check` names gets a memlog entry and one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
 
@@ -6125,7 +6125,7 @@ So that a verdict is never about an env the lock has left behind.
 **When** a run starts, with any set of stages
 **Then** after it takes the lock and before any service or stage starts, it runs `pixi install --frozen --manifest-path "$ROOT/pixi.toml" -e <env>` once for each env its stages use (`test`: `platform-ci-test`, `platform-dev`; `images`: none; `container`: `platform-dev`; `promotion`: `platform-ci-test`, `pyforge-warden`), with the lock's descriptor closed and each install's output in a log under the work dir. For each env it prints `env <name>: installed`, `synced` or `current`, judged from pixi's own `conda-meta/pixi` record before and after, and adds the same as an `INFO` row to the summary
 **And** a failed install exits 2, naming the env and pixi's exit code and showing the tail of its log, before any service starts or stage runs. The script calls `pixi` only as `pixi install --frozen`, and a test reads it to prove that. A new Docker-free test runs the real script with a recording `pixi` stand-in and proves each of these, and it fails when the old `-x ... ||` guard is restored (mutation). Stories 63.7's and 89.1's tests pass, with only their shared helper gaining that stand-in. `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi run --frozen -e pyforge-guild lint-types` and `pixi run -e pyforge-guild platform-ci-local -- --test` are green, and the `spec-pyforge-steward` memlog reconciles every changed governed path before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
 
@@ -6154,7 +6154,7 @@ So that each station's lint-clean fix story lands green and the list can only sh
 **When** `pixi run --frozen -e pyforge-steward pyforge-steward-test` runs
 **Then** the meta-test asserts every ceiling package is in the seed and every ceiling verb set is a subset of the seed's for that package, and every `NOT_YET_CLEAN` package is in the ceiling with its verbs a subset of the ceiling's; the seed keeps its nine entries, and main's eight-entry ceiling passes
 **And** adding a package the seed lacks to the ceiling, adding a verb to a ceiling entry, and a `NOT_YET_CLEAN` entry absent from the ceiling each fail the test (mutations, reverted); only the meta-test file changes outside `_bmad-output/` and the spec-surface baseline; `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green with `ruff` absent from `PATH` (CI's shape), and the memlog of every Spec `spec-surface-check` names reconciles the file before one scoped stamp each
-**Status:** backlog
+**Status:** done
 
 ## Epic 98: Station tests run when what they read changes (fix under CAP-159)
 

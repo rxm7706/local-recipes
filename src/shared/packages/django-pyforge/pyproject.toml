@@ -6,7 +6,7 @@ requires = ["hatchling"]
 name = "django-pyforge"
 version = "0.1.0"
 description = "Estate chrome for PyForge station portals: layout, switcher, theme, AppConfig registration."
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
 dependencies = [
@@ -19,7 +19,7 @@ dependencies = [
 packages = ["src/django_pyforge"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 120
 extend-exclude = ["*/migrations/*.py"]
 

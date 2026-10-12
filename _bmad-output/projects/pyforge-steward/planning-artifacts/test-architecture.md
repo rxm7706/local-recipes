@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 84c76628da6f069b
+source_fingerprint: 1b189cd595d588ab
 story_count: 355
-test_file_count: 115
+test_file_count: 117
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-steward`
 - **Stories parsed:** 355
 - **Epics parsed:** 98
-- **Test files inventoried:** 115 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 117 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `84c76628da6f069b`
+- **Source fingerprint:** `1b189cd595d588ab`
 
 ## Risk Assessment
 
@@ -206,6 +206,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
@@ -239,6 +240,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_reconcile_propagation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_retry.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_target_version_check_surfaces.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_track.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py` | unit | none observed |

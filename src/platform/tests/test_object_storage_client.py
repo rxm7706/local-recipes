@@ -49,7 +49,7 @@ def _health_ok(url: str) -> bool:
     try:
         with urllib.request.urlopen(url, timeout=1) as resp:  # noqa: S310
             return resp.status == _HTTP_OK
-    except (urllib.error.URLError, OSError, TimeoutError):
+    except urllib.error.URLError, OSError, TimeoutError:
         return False
 
 

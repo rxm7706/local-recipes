@@ -24,6 +24,8 @@ _PLATFORM_PROBE = "src/platform/tests/test_probe.py"
 _PORTAL_FIXTURE_ROOT = "src/shared/packages/django-fixture"
 _PORTAL_STORY_PY = f"{_PORTAL_FIXTURE_ROOT}/src/django_fixture/views.py"
 
+# A fixture table, not the live portal target: it stays py312 so it differs from the
+# pyforge-marshal table (py314) and AC2 can tell the two apart (marshal 95.1 AC2/AC9).
 _PORTAL_PYPROJECT = """\
 [project]
 name = "django-fixture"

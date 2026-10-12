@@ -33,7 +33,7 @@ def _task_message_age_seconds(payload: bytes | str) -> float:
     try:
         raw = payload.decode() if isinstance(payload, bytes) else payload
         message = json.loads(raw)
-    except (UnicodeDecodeError, json.JSONDecodeError, TypeError):
+    except UnicodeDecodeError, json.JSONDecodeError, TypeError:
         return 0.0
     headers = message.get("headers") if isinstance(message, dict) else None
     if not isinstance(headers, dict):
@@ -43,6 +43,6 @@ def _task_message_age_seconds(payload: bytes | str) -> float:
         return 0.0
     try:
         published_at = float(published)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 0.0
     return max(0.0, time.time() - published_at)

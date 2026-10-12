@@ -8,51 +8,41 @@ import uuid
 from pathlib import Path
 
 from django.conf import settings
-from django.http import HttpRequest
-from django.http import HttpResponse
-from django.http import HttpResponseForbidden
-from django.http import HttpResponseNotFound
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.schema import CLAIM_SUB
 from django_pyforge.flags import evaluate_from_source
 from django_pyforge.non_atomic import non_atomic_view
-from django_pyforge.roles import claims_from_request
-from django_pyforge.roles import roles_from_request
-from django_pyforge.supervisor import HandleExpiredError
-from django_pyforge.supervisor import HandleNotFoundError
-from django_pyforge.supervisor import HandleRefusedError
-from django_pyforge.supervisor import RunBoundExceeded
-from django_pyforge.supervisor import bound_refusal_payload
+from django_pyforge.roles import claims_from_request, roles_from_request
+from django_pyforge.supervisor import (
+    HandleExpiredError,
+    HandleNotFoundError,
+    HandleRefusedError,
+    RunBoundExceeded,
+    bound_refusal_payload,
+)
 
-from .fleet import FLEET_FIX_PROPOSALS_FLAG
-from .fleet import FLEET_INVENTORY_FLAG
-from .fleet_inventory import FleetInventoryError
-from .fleet_inventory import load_organisation_from_config
-from .mcp_asgi import RUN_AUDIT_TOOL
-from .mcp_asgi import WARDEN_STATION
-from .models import ComplianceJob
-from .models import FixProposal
+from .fleet import FLEET_FIX_PROPOSALS_FLAG, FLEET_INVENTORY_FLAG, FLEET_PROJECT_ITEMS_FLAG
+from .fleet_inventory import FleetInventoryError, load_organisation_from_config
+from .fleet_project_items import load_project_numbers_from_config
+from .mcp_asgi import RUN_AUDIT_TOOL, WARDEN_STATION
+from .models import ComplianceJob, FixProposal
 from .phases import current_progress
-from .proposals import ProposalRefusedError
-from .proposals import approve_proposal
-from .proposals import dismiss_proposal
-from .tasks import SUPPORTED_SUFFIXES
-from .tasks import run_compliance_job
-from .tasks import run_fleet_inventory
+from .proposals import ProposalRefusedError, approve_proposal, dismiss_proposal
+from .tasks import SUPPORTED_SUFFIXES, run_compliance_job, run_fleet_inventory, run_fleet_project_items
 
 logger = logging.getLogger(__name__)
 
 # Story 16.1: what a portal user sees when the target config is unusable. The detail
 # (the config's absolute path and what is wrong with it) goes to the server log only.
-FLEET_INVENTORY_CONFIG_REFUSAL = (
-    "fleet inventory target config is missing or invalid; see the server log"
-)
+FLEET_INVENTORY_CONFIG_REFUSAL = "fleet inventory target config is missing or invalid; see the server log"
+
+# Story 16.5: the same fixed message for the project-items action's unusable config.
+FLEET_PROJECT_ITEMS_CONFIG_REFUSAL = "fleet project-items target config is missing or invalid; see the server log"
 
 _WELL_KNOWN_MANIFEST_NAMES = frozenset(
     {
@@ -87,7 +77,10 @@ def chrome_home(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "warden_fabric/chrome.html",
-        {"fleet_inventory_enabled": _fleet_inventory_enabled()},
+        {
+            "fleet_inventory_enabled": _fleet_inventory_enabled(),
+            "fleet_project_items_enabled": _fleet_project_items_enabled(),
+        },
     )
 
 
@@ -227,6 +220,31 @@ def start_fleet_inventory(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "warden_fabric/fleet_inventory_started.html",
+        {"run_id": run_id},
+    )
+
+
+def _fleet_project_items_enabled() -> bool:
+    return evaluate_from_source(key=FLEET_PROJECT_ITEMS_FLAG)
+
+
+@require_POST
+@require_station_role("warden")
+def start_fleet_project_items(request: HttpRequest) -> HttpResponse:
+    """HTMX: enqueue the project-items inventory when the flag is on."""
+    if not _fleet_project_items_enabled():
+        return HttpResponse("fleet project items disabled (flag off)", status=403)
+    try:
+        organisation = load_organisation_from_config()
+        load_project_numbers_from_config()
+    except FleetInventoryError as exc:
+        logger.warning("fleet project items refused: %s", exc)
+        return HttpResponse(FLEET_PROJECT_ITEMS_CONFIG_REFUSAL, status=400)
+    run_id = uuid.uuid4()
+    run_fleet_project_items.delay(str(run_id), organisation)
+    return render(
+        request,
+        "warden_fabric/fleet_project_items_started.html",
         {"run_id": run_id},
     )
 
