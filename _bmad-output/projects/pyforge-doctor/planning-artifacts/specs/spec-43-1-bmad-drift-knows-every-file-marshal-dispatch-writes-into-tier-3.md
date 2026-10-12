@@ -2,7 +2,8 @@
 title: "43.1: bmad-drift knows every file marshal dispatch writes into Tier-3"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: '70975ae790'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
