@@ -368,7 +368,7 @@ development_status:
   95-1-the-portal-packages-and-the-platform-target-python-3-14: done
   96-1-platform-ci-local-never-runs-a-stage-on-a-stale-env: done
   97-1-the-not-yet-clean-ceiling-may-shrink-but-never-grow: done
-  98-1-station-tests-run-when-what-they-read-changes: backlog
+  98-1-station-tests-run-when-what-they-read-changes: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -563,5 +563,5 @@ development_status:
   epic-96-retrospective: optional
   epic-97: done
   epic-97-retrospective: optional
-  epic-98: backlog
+  epic-98: done
   epic-98-retrospective: optional

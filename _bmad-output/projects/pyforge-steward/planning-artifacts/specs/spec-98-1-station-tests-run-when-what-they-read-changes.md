@@ -2,7 +2,8 @@
 title: '98.1: Station tests run when what they read changes'
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '91a53ee886115a335c33227cac1634d5c7d5b127'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
