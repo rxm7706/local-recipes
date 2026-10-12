@@ -9866,7 +9866,7 @@ So that an update dry run on an adopted repo is empty when nothing would change,
 **When** `marshal seed update` plans against an adopted repository
 **Then** it scopes the manifest through the same function `adopt` uses, and `seed update --project` resolves the slug and loop-home placement the way `adopt` does. The wholesale pass plans an action only when the regenerated content differs from what is on disk. An artifact with no packaged payload gets no action and is named in `plan.skipped` with that reason. A dry run on this repo and on a fresh clone of it plans zero actions
 **And** the oracle gains an update leg that asserts zero actions, so Story 86.2's AC6 is checked in CI. Each of these fails a named test (mutation): update's `applies_to`-only filter restored, the unconditional wholesale pass restored, an action planned for an artifact with no payload, or `{{ slug }}` reaching a planned path
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
