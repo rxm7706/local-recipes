@@ -41,7 +41,7 @@ import subprocess
 import tempfile
 import tomllib
 from collections import defaultdict
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -71,9 +71,7 @@ _PIXI_RUN = re.compile(r"pixi run --frozen -e (\S+) (\S+)")
 
 @functools.cache
 def tracked_files() -> tuple[str, ...]:
-    out = subprocess.run(
-        ["git", "ls-files", "-z"], cwd=REPO_ROOT, check=True, capture_output=True, text=True
-    ).stdout
+    out = subprocess.run(["git", "ls-files", "-z"], cwd=REPO_ROOT, check=True, capture_output=True, text=True).stdout
     return tuple(sorted(p for p in out.split("\0") if p and (REPO_ROOT / p).exists()))
 
 
@@ -228,7 +226,7 @@ class Scanner:
             return None
         try:
             tree = ast.parse((REPO_ROOT / rel).read_text(encoding="utf-8"))
-        except (SyntaxError, UnicodeDecodeError, ValueError):
+        except SyntaxError, UnicodeDecodeError, ValueError:
             return None
         self._loading.add(rel)
         mod = Module(self, rel, tree)
@@ -436,7 +434,9 @@ class Scanner:
     ) -> dict[str, list[object]]:
         out: dict[str, list[object]] = {}
         for dec in func.decorator_list:
-            if not (isinstance(dec, ast.Call) and getattr(dec.func, "attr", "") == "parametrize" and len(dec.args) >= 2):
+            if not (
+                isinstance(dec, ast.Call) and getattr(dec.func, "attr", "") == "parametrize" and len(dec.args) >= 2
+            ):
                 continue
             names_node = dec.args[0]
             if not (isinstance(names_node, ast.Constant) and isinstance(names_node.value, str)):
@@ -491,7 +491,11 @@ class Scanner:
         if not isinstance(func, ast.Name):
             return None
         bound = env.get(func.id)
-        if isinstance(bound, tuple) and len(bound) == 2 and isinstance(bound[1], (ast.FunctionDef, ast.AsyncFunctionDef)):
+        if (
+            isinstance(bound, tuple)
+            and len(bound) == 2
+            and isinstance(bound[1], (ast.FunctionDef, ast.AsyncFunctionDef))
+        ):
             return bound[0], bound[1]
         if bound is None or bound is _UNBOUND:
             local = mod.funcs.get(func.id)
@@ -689,7 +693,11 @@ class Scanner:
                     for a in args:
                         if out is None:
                             return None
-                        out = _extend(out, _split_segments(a)) if isinstance(a, str) else V((*out.parts, WILD), out.rooted)
+                        out = (
+                            _extend(out, _split_segments(a))
+                            if isinstance(a, str)
+                            else V((*out.parts, WILD), out.rooted)
+                        )
                     return out
             return None
         return None
@@ -1045,6 +1053,7 @@ def real_derivation() -> dict[str, JobReads]:
         own.setdefault(tuple(rel.split("/")), set()).add(STEWARD_OWN)
     return derived
 
+
 # ---------------------------------------------------------------------------
 # Root handoffs: tests that give the bare repository root to the code under test
 # ---------------------------------------------------------------------------
@@ -1187,7 +1196,9 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
 ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
     "atlas": {
         "scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py": _H["ATLAS_PACKAGING_DOCS"],
-        "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py": _H["ATLAS_GIST_RECIPES"],
+        "src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py": _H[
+            "ATLAS_GIST_RECIPES"
+        ],
         "src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-atlas/tests/unit/catalog/test_credential_scoping.py": _H["GITIGNORE_STATE"],
     },
@@ -1200,11 +1211,15 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_bmad_method.py": _H["BMAD_SUITE_PINS"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board.py": _H["DOCTOR_BOARD"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_layers_audit.py": _H["DOCTOR_BOARD"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_caller_reach.py": _H["DOCTOR_CALLER_REACH"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_capability_effect_caller_reach.py": _H[
+            "DOCTOR_CALLER_REACH"
+        ],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": _H["DOCTOR_CHAIN"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dreams_hygiene.py": _H["DOCTOR_CHAIN"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": _H["DOCTOR_CHAIN"],
-        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py": _H["DOCTOR_CHAIN"],
+        "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py": _H[
+            "DOCTOR_CHAIN"
+        ],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_shelf.py": _H["DOCS_DIATAXIS"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py": _H["DOCTOR_FACTORY"],
         "src/shared/packages/pyforge-doctor/tests/unit/test_sources_general_docs_consistency.py": _H["DOCS_ALL"],
@@ -1227,19 +1242,29 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py": _H["PRESENTATIONS"],
     },
     "marshal": {
-        "src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py": _H["ADOPT_MANIFEST_TREE"],
+        "src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py": _H[
+            "ADOPT_MANIFEST_TREE"
+        ],
         "src/shared/packages/pyforge-marshal/tests/integration/test_login_pkce_live_keycloak.py": _H["LIVE_KEYCLOAK"],
         "src/shared/packages/pyforge-marshal/tests/meta/test_27_2_portal_loop_homes.py": _H["GIT_PLATFORM_DIFF"],
-        "src/shared/packages/pyforge-marshal/tests/meta/test_kit_artifacts_ignored_not_the_tracked_skills.py": _H["GITIGNORE_SKILLS"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_kit_artifacts_ignored_not_the_tracked_skills.py": _H[
+            "GITIGNORE_SKILLS"
+        ],
         "src/shared/packages/pyforge-marshal/tests/meta/test_rendered_policy_untracked.py": _H["GITIGNORE_STATE"],
         "src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py": _H["SKF_SKILL_TREE"],
-        "src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py": _H["GITIGNORE_SKILLS"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py": _H[
+            "GITIGNORE_SKILLS"
+        ],
         "src/shared/packages/pyforge-marshal/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_drift.py": _H["TEA_GENERATOR"],
         "src/shared/packages/pyforge-marshal/tests/meta/test_tea_architecture_generator.py": _H["TEA_GENERATOR"],
-        "src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py": _H["GITIGNORE_STATE"],
+        "src/shared/packages/pyforge-marshal/tests/meta/test_wire_store_ignored_not_the_seed_namespace.py": _H[
+            "GITIGNORE_STATE"
+        ],
         "src/shared/packages/pyforge-marshal/tests/unit/test_chain_regen.py": _H["MARSHAL_CODE_LINKAGE"],
-        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_spec_frontmatter.py": _H["PLANNING_SPECS_TRACKED"],
+        "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_spec_frontmatter.py": _H[
+            "PLANNING_SPECS_TRACKED"
+        ],
         "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py": _H["HARNESS_PROFILES"],
         "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py": _H["HARNESS_PROFILES"],
     },
@@ -1255,7 +1280,9 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
     },
     "steward": {
         "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py": _H["ADOPTION_PIPELINE"],
-        "src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py": _H[
+            "GIT_PLATFORM_DIFF"
+        ],
         "src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py": _H["FIVE_TIER"],
         "src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": _H["GIT_PLATFORM_DIFF"],
@@ -1395,6 +1422,7 @@ def without_trigger(workflow_text: str, glob: str) -> str:
     needle = f"      - '{glob}'\n"
     assert needle in head, f"mutation premise: {glob!r} is a pull_request path"
     return head.replace(needle, "", 1) + sep + tail
+
 
 # ---------------------------------------------------------------------------
 # Does the workflow fire? A fixture repository per representative path
@@ -1613,7 +1641,9 @@ PLANNING_ROWS = {
         "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml",
         ".claude/memory/MEMORY.md",
     ],
-    "herald": ["_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md"],
+    "herald": [
+        "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-foundry-regenerate-not-fold/case-list.md"
+    ],
     "atlas": ["recipes"],
 }
 
@@ -1639,9 +1669,9 @@ def test_planning_reads_are_derived_or_declared(output: str, row: str) -> None:
 
 
 def test_the_steward_job_reads_every_suites_tests() -> None:
-    assert any(
-        read[-2:] == ("pyforge-*", "tests") for read in real_derivation()["steward"].reads
-    ), "steward's own reads lost src/shared/packages/pyforge-*/tests"
+    assert any(read[-2:] == ("pyforge-*", "tests") for read in real_derivation()["steward"].reads), (
+        "steward's own reads lost src/shared/packages/pyforge-*/tests"
+    )
 
 
 # --- AC3: every read fires its job ------------------------------------------
@@ -1707,7 +1737,9 @@ def test_every_declared_glob_has_a_tracked_representative() -> None:
     for job, files in ROOT_HANDOFF_INPUTS.items():
         for file, (globs, _reason) in files.items():
             for glob in globs:
-                assert representative(glob_parts(glob)) is not None, f"{job}: `{file}` declares `{glob}`, which matches nothing tracked"
+                assert representative(glob_parts(glob)) is not None, (
+                    f"{job}: `{file}` declares `{glob}`, which matches nothing tracked"
+                )
 
 
 # --- AC5: mutations, each on a scratch copy ----------------------------------
@@ -1749,7 +1781,9 @@ def test_dropping_the_planning_glob_from_marshals_list_fails_the_meta_test(workf
     glob = "_bmad-output/projects/*/planning-artifacts/**"
     mutant = without_array_entry(workflow_text, "marshal", to_pathspec(glob_parts(glob)))
     failures = fire_failures(mutant, _targets("marshal", "_bmad-output/projects/*/planning-artifacts"))
-    assert failures and all(f.startswith("marshal: read `_bmad-output/projects/*/planning-artifacts`") for f in failures)
+    assert failures and all(
+        f.startswith("marshal: read `_bmad-output/projects/*/planning-artifacts`") for f in failures
+    )
 
 
 def test_removing_a_handoff_file_from_its_declaration_fails_the_meta_test() -> None:
@@ -1796,7 +1830,14 @@ def test_no_trigger_the_workflow_had_before_is_lost(workflow_text: str) -> None:
     outputs = run_changes(workflow_text, PRESERVED)
     patterns = trigger_paths(workflow_text)
     lost = [
-        f"{path}: lost output `{job}`" for path, jobs in PRESERVED.items() for job in sorted(jobs) if outputs[path].get(job) != "true"
+        f"{path}: lost output `{job}`"
+        for path, jobs in PRESERVED.items()
+        for job in sorted(jobs)
+        if outputs[path].get(job) != "true"
     ]
-    lost += [f"{path}: no longer matches on.pull_request.paths" for path in PRESERVED if not preflight_ci.filter_matches(patterns, path)]
+    lost += [
+        f"{path}: no longer matches on.pull_request.paths"
+        for path in PRESERVED
+        if not preflight_ci.filter_matches(patterns, path)
+    ]
     assert not lost, "\n".join(lost)
