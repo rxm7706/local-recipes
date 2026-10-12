@@ -365,7 +365,7 @@ development_status:
   92-1-the-unsplit-redis-eviction-guard-proves-broker-loss-on-every-run: done
   93-1-the-lint-gate-covers-the-nine-django-portal-packages-and-its-not-yet-clean-list-only-shrinks: done
   94-1-no-platform-test-leaves-structlog-configured-differently: done
-  95-1-the-portal-packages-and-the-platform-target-python-3-14: backlog
+  95-1-the-portal-packages-and-the-platform-target-python-3-14: done
   96-1-platform-ci-local-never-runs-a-stage-on-a-stale-env: done
   97-1-the-not-yet-clean-ceiling-may-shrink-but-never-grow: done
   epic-1: done
@@ -556,7 +556,7 @@ development_status:
   epic-93-retrospective: optional
   epic-94: done
   epic-94-retrospective: optional
-  epic-95: backlog
+  epic-95: done
   epic-95-retrospective: optional
   epic-96: done
   epic-96-retrospective: optional
