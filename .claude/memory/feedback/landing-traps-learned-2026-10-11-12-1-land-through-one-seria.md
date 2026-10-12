@@ -1,0 +1,8 @@
+---
+name: "landing-traps-learned-2026-10-11-12-1-land-through-one-seria"
+description: "Landing traps learned 2026-10-11/12: (1) Land through ONE serial lane: each landing re-verifies ~20 min while main move…"
+metadata:
+  type: feedback
+---
+
+Landing traps learned 2026-10-11/12: (1) Land through ONE serial lane: each landing re-verifies ~20 min while main moves, so concurrent landings race on append-only memlogs, generated docs (docs/how-to/pixi-tasks.md, docs/map.yaml) and ledgers and get refused (MRS-DISP-020/038/056). Merge main, push, wait green, land, wait for the ledger promotion, then the next. Regenerate generated docs on conflict (pixi run -e pyforge-guild docs-pixi-tasks), never hand-merge them. (2) MRS-DISP-034 can deadlock: a fix story that unblocks main cannot dispatch while an overlapping in-flight story waits on that fix; hand-build the fix story outside dispatch (implementer agent + orchestrator verification + land with the 'Merge <slug>/<key> into main' subject + dispatch_land_finalize). (3) CI-only failures that pass locally: a test that needs a tool on PATH (ruff) or a per-checkout symlink passes inside a dispatch and fails in CI's fresh clone - reproduce with ruff stripped from PATH and in a git clone --no-local. (4) A test that pins a ratchet must assert subset, not equality (steward 97.1). (5) Marshal 86.2 made scripts/detectors.py, docs/dreams/README.md and .github/workflows/detectors.yml seed-managed (any edit failed the SC-02 oracle); marshal 97.1 reclassified those three copied-seeded so routine edits pass, and added 'marshal seed accept <id>' to record a legitimate edit to any still-guarded artifact - never hand-edit .marshal/seed-state.yml.
