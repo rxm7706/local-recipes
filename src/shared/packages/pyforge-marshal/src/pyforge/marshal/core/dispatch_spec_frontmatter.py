@@ -9,7 +9,7 @@ from typing import Literal
 
 import yaml
 
-from pyforge.marshal.ports.vcs import VcsCommandError, VcsPort
+from pyforge.marshal.ports.vcs import VcsPort
 
 from . import dispatch as dispatch_core
 from .commit_vcs import CommittingVcs
@@ -211,30 +211,34 @@ def _validate_collapsed_block(
     original_fm: list[str],
     new_fm: list[str],
     kept_by_key: dict[str, int],
+    repeated_keys: set[str],
 ) -> bool:
     try:
         loader = _RepeatRecordingLoader("\n".join(new_fm))
-        data = loader.get_single_data()
+        new_data = loader.get_single_data()
     except yaml.YAMLError:
         return False
     repeats = getattr(loader, "repeated_keys", set())
     if repeats:
         return False
-    if not isinstance(data, dict):
+    if not isinstance(new_data, dict):
         return False
-    orig_keys = _top_level_key_line_map(original_fm)
-    for key, indices in orig_keys.items():
-        if len(indices) == 1:
-            expected = _scalar_value_from_line(original_fm[indices[0]])
-            if data.get(key) != expected:
-                return False
-        else:
+    try:
+        orig_data = yaml.safe_load("\n".join(original_fm))
+    except yaml.YAMLError:
+        return False
+    if not isinstance(orig_data, dict):
+        return False
+    for key, value in new_data.items():
+        if key in repeated_keys:
             kept = kept_by_key.get(key)
             if kept is None:
                 return False
             expected = _scalar_value_from_line(original_fm[kept])
-            if data.get(key) != expected:
+            if value != expected:
                 return False
+        elif orig_data.get(key) != value:
+            return False
     return True
 
 
@@ -290,6 +294,7 @@ def collapse_story_spec_frontmatter_text(
         original_fm=fm_lines,
         new_fm=new_fm,
         kept_by_key=kept_by_key,
+        repeated_keys=set(repeated.keys()),
     ):
         return (
             None,
@@ -373,7 +378,7 @@ def apply_dispatch_spec_frontmatter_before_verify(
         text = abs_path.read_text(encoding="utf-8")
         try:
             blame = blame_vcs.line_blame_facts(repo_root=git_repo, path=rel, worktree=worktree)
-        except VcsCommandError:
+        except Exception:
             refusals.append(
                 FrontmatterCollapseRefusal(
                     spec_path=rel,
