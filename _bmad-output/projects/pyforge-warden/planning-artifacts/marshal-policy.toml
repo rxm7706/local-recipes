@@ -259,6 +259,23 @@ verify_commands = [
   "src/platform/tests/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"18" = [  # The leak guard forbids the listed terms everywhere and the organisation's name in warden's files (fix under
+  # spec-pyforge-warden CAP-26; Story 18.1), added 2026-10-11. The default surface, restated because a declared entry
+  # replaces it outright, plus the guard's platform test file, the terms reader in django-warden, the warden ledger and
+  # every Spec memlog (both code files are on spec-pyforge-unifying-strategy's surface: the co-governor reconcile).
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/tests/test_warden_*.py",
+  "src/shared/packages/django-warden/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
