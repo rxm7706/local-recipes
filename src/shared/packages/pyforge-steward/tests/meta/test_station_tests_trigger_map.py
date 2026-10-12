@@ -778,3 +778,119 @@ def _dotted_name(node: ast.AST) -> str:
         parts.append(node.id)
         return ".".join(reversed(parts))
     return ""
+
+
+# ---------------------------------------------------------------------------
+# The jobs: read from the workflow's ``jobs:`` and ``pixi.toml``, never a hand list
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Job:
+    output: str  # the ``changes`` output name that gates it (``atlas``, ``testing_kit``)
+    key: str  # the job id (``atlas-test``)
+    package: str  # ``src/shared/packages/pyforge-<x>``: the job's own package
+    tasks: tuple[tuple[str, str], ...]  # (pixi environment, task) of its ``pixi run`` steps
+
+
+def workflow_document(workflow_text: str) -> dict:
+    return yaml.safe_load(workflow_text)
+
+
+def load_jobs(workflow_text: str) -> list[Job]:
+    jobs: list[Job] = []
+    for key, body in workflow_document(workflow_text)["jobs"].items():
+        gate = _GATE.search(str(body.get("if", "")))
+        if gate is None:
+            continue
+        tasks: list[tuple[str, str]] = []
+        for step in body.get("steps", []):
+            m = _PIXI_RUN.search(str(step.get("run", "")))
+            if m and m.group(2) != "python":
+                tasks.append((m.group(1), m.group(2)))
+        envs = {env for env, _ in tasks}
+        assert len(envs) == 1, f"{key} runs tasks in {envs}; expected exactly one pixi environment"
+        jobs.append(Job(gate.group(1), key, f"{PACKAGES}/{next(iter(envs))}", tuple(tasks)))
+    return jobs
+
+
+def _task_definition(pixi: Mapping, env: str, task: str) -> Mapping | None:
+    features = pixi.get("feature", {})
+    if task in features.get(env, {}).get("tasks", {}):
+        return features[env]["tasks"][task]
+    for feature in features.values():
+        if task in feature.get("tasks", {}):
+            return feature["tasks"][task]
+    return pixi.get("tasks", {}).get(task)
+
+
+def task_commands(pixi: Mapping, env: str, task: str, _seen: frozenset[str] = frozenset()) -> list[str]:
+    """The ``cmd`` text of a task and of everything it ``depends-on``."""
+    if task in _seen:
+        return []
+    definition = _task_definition(pixi, env, task) or {}
+    cmd = definition.get("cmd", "")
+    commands = [" ".join(cmd) if isinstance(cmd, list) else str(cmd)]
+    for dep in definition.get("depends-on", []):
+        name, dep_env = (dep, env) if isinstance(dep, str) else (dep["task"], dep.get("environment", env))
+        commands.extend(task_commands(pixi, dep_env, name, _seen | {task}))
+    return commands
+
+
+def task_paths(pixi: Mapping, job: Job) -> list[str]:
+    """Every tracked path named on a job's task command lines (pytest targets, the recipe a smoke builds)."""
+    found: list[str] = []
+    for env, task in job.tasks:
+        for command in task_commands(pixi, env, task):
+            for segment in re.split(r"&&|\|\||;", command):
+                try:
+                    tokens = shlex.split(segment)
+                except ValueError:
+                    continue
+                for token in tokens:
+                    if token.startswith("-") or "/" not in token:
+                        continue
+                    token = token.rstrip("/")
+                    if token in _tracked_set() or token in _tracked_dirs():
+                        found.append(token)
+    return sorted(set(found))
+
+
+def job_test_files(job: Job, paths: Iterable[str]) -> list[str]:
+    files: set[str] = set()
+    for path in [f"{job.package}/tests", *paths]:
+        if path.endswith(".py") and path in _tracked_set():
+            files.add(path)
+        else:
+            prefix = path.rstrip("/") + "/"
+            files.update(p for p in tracked_files() if p.startswith(prefix) and p.endswith(".py"))
+    return sorted(files)
+
+
+@dataclass
+class JobReads:
+    reads: dict[tuple[str, ...], set[str]] = field(default_factory=dict)  # path pattern -> reading files
+    handoffs: set[str] = field(default_factory=set)  # test files handing the bare repo root to code
+
+
+def _within(path: str, package: str) -> bool:
+    return path == package or path.startswith(package + "/")
+
+
+def derive_reads(job: Job, pixi: Mapping) -> JobReads:
+    """What the job's tests (and its pixi task lines) read: the static derivation."""
+    paths = task_paths(pixi, job)
+    scanner = Scanner(job.package)
+    for rel in job_test_files(job, paths):
+        scanner.scan(rel)
+    reads: dict[tuple[str, ...], set[str]] = {k: set(v) for k, v in scanner.reads.items()}
+    for path in paths:
+        if not _within(path, job.package):
+            reads.setdefault(tuple(path.split("/")), set()).add(f"pixi task of {job.key}")
+    return JobReads(reads, set(scanner.handoffs))
+
+
+@functools.cache
+def real_derivation() -> dict[str, JobReads]:
+    pixi = tomllib.loads(PIXI_TOML.read_text(encoding="utf-8"))
+    return {job.output: derive_reads(job, pixi) for job in load_jobs(WORKFLOW.read_text(encoding="utf-8"))}
