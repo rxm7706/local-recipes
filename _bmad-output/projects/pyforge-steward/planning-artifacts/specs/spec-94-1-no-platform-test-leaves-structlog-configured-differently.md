@@ -2,7 +2,7 @@
 title: '94.1: No platform test leaves structlog configured differently'
 type: 'fix'
 created: '2026-10-11'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'b2a5463598d82f5468738ec6f8cc45bcb3aaa92e'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -214,3 +214,54 @@ Type / Effort / Deps: fix / S / none.
 
 - 2026-10-11: minted from the operator's ask "Do this task here: Stop test_oidc_identity leaking structlog config".
   `type: fix`, no flag, no CAP; bound to `spec-pyforge-steward` CAP-87 through Story 16.3.
+
+## Review Triage Log
+
+### 2026-10-11 — Review pass
+- verdicts: 18 findings — high 0, medium 0, low 0, false 8, reject 9, defer 1
+- findings:
+  - `[false]` `[reject]` Scoped baseline stamp missing in diff — memlog reconcile cleared `spec-surface-check` and `spec_surface_reconcile.py` without `--write-baseline` (dispatch guard S-13.7).
+  - `[false]` `[reject]` AC7 requires producer `--write-baseline` — operator dispatch forbids producer stamping; memlog-named reconcile is the sanctioned path here.
+  - `[false]` `[reject]` Missing processors key crashes guard — structlog `get_config()` always supplies processors on this pin.
+  - `[false]` `[reject]` Session baseline before Django settings — full suite and AC1 probe pass under platform-ci-test settings load order.
+  - `[false]` `[reject]` Fixture teardown order risk — OIDC restore fixture teardown runs before autouse guard (function-scoped dependency); AC3 mutation 1 guard caught leak at OIDC teardown.
+  - `[false]` `[reject]` Duplicate copy helpers — intentional minimal duplication across two allowed files; shared module would violate AC5 scope.
+  - `[false]` `[reject]` No Story 94.1 citation in guard docstring — style only; steward story tags are optional in conftest.
+  - `[false]` `[reject]` Intent line numbers stale — intent-contract is read-only historical evidence; not updated on fix stories.
+  - `[reject]` `[defer]` Add permanent in-tree AC3 guard regression test — AC5 limits code diff to two files; AC3 probes are explicit pre-push temporaries reverted after run.
+  - `[reject]` `[defer]` AC1 caplog probe in CI — spec Verification lists probe as pre-push-only, not a dispatch gate.
+  - `[reject]` `[reject]` Ledger still backlog — harness-owned ledger sync is out of scope for this build-auto pass.
+  - `[reject]` `[reject]` Auto Run Result missing at review time — filled in Finalize below.
+  - `[reject]` `[reject]` spec-pyforge-steward memlog lacks in-progress event — story spec frontmatter carries run state.
+  - `[reject]` `[reject]` Import grouping in test_oidc_identity — ruff/platform-ci-local green.
+  - `[reject]` `[reject]` Non-processor in-place mutation bypass — no platform test mutates config objects in place today; guard compares five keys element-wise for processors.
+  - `[reject]` `[reject]` Verification commands not in diff — outcomes recorded under Auto Run Result.
+  - `[reject]` `[reject]` Lazy baseline vs session-scoped fixture — matches spec rejected `configure_structlog()` re-baseline approach; lazy capture is session-constant.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Restored structlog after the OIDC sync test via a module fixture with a copied processors snapshot; added an autouse platform conftest guard that records the session baseline, compares five `get_config()` keys after every test, restores the baseline, then fails teardown naming the leaking test and differing keys.
+
+**Files changed:**
+- `src/platform/tests/test_oidc_identity.py` — `_restore_structlog_after_test` fixture; `@pytest.mark.usefixtures` on the leaking test.
+- `src/platform/conftest.py` — `_guard_structlog_configuration` autouse guard and comparison helpers.
+- `spec-pyforge-unifying-strategy/.memlog.md` — surface reconcile naming both platform paths (Story 94.1).
+
+**Review:** 0 patches applied; 1 deferred (permanent AC3 regression test conflicts with AC5 two-file scope); remaining findings rejected or false.
+
+**Follow-up review recommended:** false (no high/medium patches).
+
+**Verification:**
+- AC1 external probe after `tests/test_oidc_identity.py`: 19 passed, exit 0.
+- AC3 mutation 1 (fixture removed): ERROR at teardown of `test_sync_ignores_unmatched_groups_and_logs` naming structlog leak (pytest error, not assertion failure).
+- AC3 mutation 2 (temporary `tests/test_zz_ac3_structlog_leak_probe.py`): ERROR at teardown of leaking test naming node id; following test passed; file removed.
+- `pixi run -e pyforge-guild platform-ci-local -- --test`: exit 0.
+- `git diff origin/main...HEAD --stat` (code): only `src/platform/conftest.py` and `src/platform/tests/test_oidc_identity.py`.
+- `python scripts/spec_surface_reconcile.py`: exit 0.
+- `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 (memlog reconcile, no producer baseline stamp).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0 (2320 passed).
+- `pixi run --frozen -e pyforge-guild detectors-ci`: exit 0.
+
+**Residual risk:** Same as spec — per-logger cached chains before restore; root logger handler churn from `django.setup()` re-runs remains out of scope.
