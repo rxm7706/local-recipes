@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
 
-from pyforge.steward.estate import EXIT_ESTATE_REFUSAL
+from pyforge.steward.estate import ESTATE_FLAG_KEY, EXIT_ESTATE_REFUSAL
 from pyforge.steward.estate_reconcile import (
     EXIT_RECONCILE_CHECKS,
     ReconcileDeps,
@@ -17,6 +19,8 @@ from pyforge.steward.estate_reconcile import (
     run_reconcile,
     specs_for_moved_paths,
 )
+
+flag_provider = make_flag_provider_fixture()
 
 
 @dataclass
@@ -269,14 +273,15 @@ def test_io_matrix_no_moves_skips_memlog(tmp_path: Path) -> None:
     assert memlog_calls == []
 
 
-def test_flag_off_refuses(tmp_path: Path) -> None:
+@flag_states("pyforge.steward.estate_refresh")
+def test_reconcile_respects_flag_state(tmp_path: Path, flag_provider: dict[str, bool]) -> None:
     root = _root(tmp_path)
-    deps = ReconcileDeps(
-        root=root,
-        runner=RecordingRunner(),
-        flag_on=lambda: False,
-        enforce_require=False,
-    )
+    on = flag_provider["pyforge.steward.estate_refresh"]
+    deps = replace(_deps(root, RecordingRunner()), flag_on=lambda: on, enforce_require=False)
     result = run_reconcile(deps)
-    assert not result.ok
-    assert result.details["exit_code"] == EXIT_ESTATE_REFUSAL
+    if on:
+        assert result.ok
+    else:
+        assert not result.ok
+        assert result.details["exit_code"] == EXIT_ESTATE_REFUSAL
+        assert ESTATE_FLAG_KEY in result.summary
