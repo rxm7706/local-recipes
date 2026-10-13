@@ -305,7 +305,13 @@ def test_bmad_preflight_and_suite_advance_hint(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     module_payload = {
-        "packages": [{"name": "bmad-method-test-architecture-enterprise", "installed": {"value": "fail"}, "wired": {"value": "ok"}}]
+        "packages": [
+            {
+                "name": "bmad-method-test-architecture-enterprise",
+                "installed": {"value": "fail"},
+                "wired": {"value": "ok"},
+            }
+        ]
     }
     runner = RecordingRunner(
         responses={

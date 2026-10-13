@@ -22,8 +22,8 @@ from pyforge.steward.estate import (
     SCHEMA_RESOURCE,
     EstateDeps,
     EstateDuty,
-    _default_runner,
     _days_since_last_journal,
+    _default_runner,
     _held_by,
     _next_journal_path,
     _parse_pixi_moves,
@@ -453,7 +453,9 @@ def test_next_journal_path_and_days_since(tmp_path: Path) -> None:
     journal_dir = root / ".steward" / "estate-refresh"
     journal_dir.mkdir(parents=True)
     journal_dir.joinpath("2026-10-13.json").write_text("{}", encoding="utf-8")
-    assert _next_journal_path(root, today=datetime(2026, 10, 13, tzinfo=timezone.utc).date()).name == "2026-10-13-2.json"
+    assert (
+        _next_journal_path(root, today=datetime(2026, 10, 13, tzinfo=timezone.utc).date()).name == "2026-10-13-2.json"
+    )
     days = _days_since_last_journal(root, now=datetime(2026, 10, 15, tzinfo=timezone.utc))
     assert days == 2  # noqa: PLR2004
 
@@ -461,7 +463,9 @@ def test_next_journal_path_and_days_since(tmp_path: Path) -> None:
 def test_refresh_realize_due_and_fan_json_fallback(tmp_path: Path) -> None:
     root = _fixture_root(tmp_path)
     register = REPO_ROOT / "docs/governance/realization-register.yaml"
-    (root / "docs/governance/realization-register.yaml").write_text(register.read_text(encoding="utf-8"), encoding="utf-8")
+    (root / "docs/governance/realization-register.yaml").write_text(
+        register.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     runner = RecordingRunner()
     runner.responses["upgrade"] = FakeProc(
         [],
@@ -495,7 +499,9 @@ def test_status_json_out_and_show_all(tmp_path: Path) -> None:
 def test_estate_duty_reconcile_and_realize(tmp_path: Path) -> None:
     root = _fixture_root(tmp_path)
     register = REPO_ROOT / "docs/governance/realization-register.yaml"
-    (root / "docs/governance/realization-register.yaml").write_text(register.read_text(encoding="utf-8"), encoding="utf-8")
+    (root / "docs/governance/realization-register.yaml").write_text(
+        register.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     journal = tmp_path / "journal.json"
     journal.write_text(json.dumps({"moves": [{"package": "bmad-method", "from": "1", "to": "2"}]}), encoding="utf-8")
     duty = EstateDuty()
