@@ -15,6 +15,13 @@ if (!fs.existsSync(sidebarGenerated)) {
   );
 }
 const sidebar = JSON.parse(fs.readFileSync(sidebarGenerated, 'utf8'));
+// Story 40.1: the top menu (src/components/SiteTitle.astro) reads this file, written by the same generator.
+const topnavGenerated = path.join(__dirname, 'src', 'topnav.generated.json');
+if (!fs.existsSync(topnavGenerated)) {
+  throw new Error(
+    `Missing ${topnavGenerated}. Run pixi run -e site docs-site-sidebar before building.`,
+  );
+}
 
 const siteUrl = getSiteUrl();
 const urlParts = new URL(siteUrl);
@@ -44,6 +51,9 @@ export default defineConfig({
         },
       },
       sidebar,
+      components: {
+        SiteTitle: './src/components/SiteTitle.astro',
+      },
     }),
   ],
 });

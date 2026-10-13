@@ -99,12 +99,17 @@ def test_export_host_env_flag_on_off(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
 def _minimal_artifact(artifact: Path, site_url: str, *, herald_index_body: str) -> None:
     assemble_pages = _assemble_pages()
-    (artifact / "index.html").write_text("<html></html>", encoding="utf-8")
+    # Story 40.1 (FR-8.6): every artifact carries the shared menu on the docs root and the herald
+    # overview; pages-check refuses one without it.
+    base = assemble_pages._base_path(site_url)
+    (artifact / "index.html").write_text(
+        f'<html><a data-pf-menu-link href="{base}herald/">Overview</a></html>', encoding="utf-8"
+    )
     (artifact / "404.html").write_text("<html></html>", encoding="utf-8")
     herald = artifact / "herald"
     (herald / "dossier").mkdir(parents=True)
     (herald / "dossier" / "index.html").write_text("<html></html>", encoding="utf-8")
-    (herald / "index.html").write_text(herald_index_body, encoding="utf-8")
+    (herald / "index.html").write_text(herald_index_body + '<a data-pf-menu-link href="../">Docs</a>', encoding="utf-8")
     (artifact / "dossier").mkdir(parents=True, exist_ok=True)
     (artifact / "dossier" / "index.html").write_text(
         assemble_pages.redirect_html("herald/dossier/index.html"),

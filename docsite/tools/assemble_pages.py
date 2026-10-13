@@ -516,6 +516,73 @@ def _check_href_resolution(artifact_root: Path) -> None:
                 raise SystemExit(1)
 
 
+#: A menu link carries this attribute: the docs top menu (docs-site/src/components/SiteTitle.astro)
+#: and the herald shell (docsite/templates/shell_page.html.j2). Story 40.1, CAP-58.
+_MENU_LINK = re.compile(
+    r"""<a\b(?=[^>]*\bdata-pf-menu-link\b)[^>]*\bhref\s*=\s*["']([^"']+)["']""",
+    re.IGNORECASE,
+)
+
+
+def _base_path(site_url: str) -> str:
+    path = urlparse(site_url).path or "/"
+    return path if path.endswith("/") else f"{path}/"
+
+
+def _menu_target(page: Path, raw: str, artifact_root: Path, base_path: str) -> Path | None:
+    """Where a menu href lands inside the artifact; ``None`` when it does not.
+
+    A docs page's hrefs carry the host's base path (``/local-recipes/herald/``); a herald page's
+    are relative. Either way the target must be a file, or a directory with an ``index.html``."""
+    href = raw.strip().split("#", 1)[0]
+    if urlparse(href).scheme or href.startswith("//"):
+        return None
+    if href.startswith("/"):
+        if not href.startswith(base_path):
+            return None
+        candidate = (artifact_root / href[len(base_path) :]).resolve()
+    else:
+        candidate = (page.parent / href).resolve()
+    try:
+        candidate.relative_to(artifact_root.resolve())
+    except ValueError:
+        return None
+    if candidate.is_file():
+        return candidate
+    if (candidate / "index.html").is_file():
+        return candidate / "index.html"
+    return None
+
+
+def _check_menu_links(artifact_root: Path, site_url: str) -> None:
+    """Every shared-menu link on every docs and herald page resolves inside the artifact (FR-8.6)."""
+    base_path = _base_path(site_url)
+    pages_with_menu = 0
+    for page in sorted(artifact_root.rglob("*.html")):
+        rel_page = _artifact_path(page, artifact_root)
+        if rel_page.startswith(f"{DASHBOARD_PREFIX}/"):
+            continue
+        text = page.read_text(encoding="utf-8", errors="replace")
+        hrefs = _MENU_LINK.findall(text)
+        if not hrefs:
+            continue
+        pages_with_menu += 1
+        for raw in hrefs:
+            if _menu_target(page, raw, artifact_root, base_path) is None:
+                print(
+                    f"assemble_pages: menu link does not resolve: {rel_page} -> {raw!r} (base {base_path})",
+                    file=sys.stderr,
+                )
+                raise SystemExit(1)
+    for rel in ("index.html", ROOT_HERALD_INDEX):
+        if not _MENU_LINK.search((artifact_root / rel).read_text(encoding="utf-8", errors="replace")):
+            print(f"assemble_pages: shared menu missing on {rel}", file=sys.stderr)
+            raise SystemExit(1)
+    if pages_with_menu == 0:
+        print("assemble_pages: no page carries the shared menu", file=sys.stderr)
+        raise SystemExit(1)
+
+
 def _required_paths() -> list[str]:
     return [
         "index.html",
@@ -549,6 +616,7 @@ def check(artifact_root: Path, *, site_url: str | None = None) -> None:
             raise SystemExit(1)
 
     _check_href_resolution(artifact_root)
+    _check_menu_links(artifact_root, site_url)
     _check_cross_origin_and_hosts(artifact_root, site_url)
 
 

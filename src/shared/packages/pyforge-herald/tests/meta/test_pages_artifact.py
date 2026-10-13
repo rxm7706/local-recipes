@@ -64,13 +64,16 @@ def test_assemble_writes_redirect_per_herald_html(tmp_path: Path) -> None:
     assemble_pages = _load_assemble_pages()
     artifact = tmp_path / "site"
     artifact.mkdir()
-    (artifact / "index.html").write_text("<html></html>", encoding="utf-8")
+    # Story 40.1 (FR-8.6): the shared menu on the docs root and the herald overview.
+    (artifact / "index.html").write_text(
+        '<html><a data-pf-menu-link href="/local-recipes/herald/">Overview</a></html>', encoding="utf-8"
+    )
     (artifact / "404.html").write_text("<html></html>", encoding="utf-8")
 
     herald = artifact / "herald"
     (herald / "dossier").mkdir(parents=True)
     (herald / "dossier" / "index.html").write_text('<html><a href="../index.html">home</a></html>', encoding="utf-8")
-    (herald / "index.html").write_text("<html></html>", encoding="utf-8")
+    (herald / "index.html").write_text('<html><a data-pf-menu-link href="../">Docs</a></html>', encoding="utf-8")
 
     dashboard = artifact / "dashboard" / "kedro-viz"
     dashboard.mkdir(parents=True)
