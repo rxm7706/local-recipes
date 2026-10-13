@@ -1832,7 +1832,7 @@ So that I can reach the dossier, the infographics, the decks and the Kedro-Viz p
 **When** a reader opens any docs page or any herald page, on the public host or a second host
 **Then** the docs left menu lists Tutorials, How-to, Reference, Explanation, Herald, with Herald holding Overview, Dossier, Infographics, Decks and Kedro-Viz; every docs and herald page shows the top menu Docs, Overview, Dossier, Infographics, Decks, Kedro-Viz; every href resolves to a file in the artifact under the configured base path
 **And** a new entry in `site.yml`'s list appears in both menus with no other edit, and `pages-check` exits 1 when a menu link does not resolve (mutation: a broken href, the Herald group dropped, a hardcoded `/local-recipes/` base under a fixture second-host base)
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
