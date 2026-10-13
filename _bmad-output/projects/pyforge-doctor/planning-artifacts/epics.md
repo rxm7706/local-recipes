@@ -3237,7 +3237,7 @@ So that the check keeps its margin as the repo grows, and its findings are about
 **When** `doctor check` scans the repo root, or a fixture tree, or a fixtures directory directly
 **Then** each parsed tree is walked once, with aliases resolved in that walk; test code (`test_*.py`, `*_test.py`, `conftest.py`, `tests.py`, `tests/` or `test/` segments, relative to the target) is not scanned; the two conda-forge-expert findings remain unchanged; the median CPU of five runs falls by at least 25%
 **And** `DW-doctor-44-1` closes with the before and after numbers. Each of these fails a named test (mutation): the second walk restored, the test rule dropped, the rule judged on absolute paths, an alias form lost
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
