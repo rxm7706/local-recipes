@@ -606,7 +606,7 @@ class EstateDuty:
                 show_all=bool(getattr(ns, "all", False)),
             )
         if verb == "realize":
-            from .estate_realize import RealizeDeps, production_realize_deps, run_realize
+            from .estate_realize import production_realize_deps, run_realize
 
             rdeps = getattr(ns, "_realize_deps", None)
             if rdeps is None:

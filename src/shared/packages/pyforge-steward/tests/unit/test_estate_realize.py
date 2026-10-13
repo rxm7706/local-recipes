@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
-import yaml
 from pyforge.testing_kit import make_flag_provider_fixture
 
 from pyforge.steward.estate_realize import RealizeDeps, run_probe, run_realize

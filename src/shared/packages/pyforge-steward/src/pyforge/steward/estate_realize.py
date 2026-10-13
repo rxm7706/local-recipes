@@ -12,25 +12,16 @@ from typing import Any, Callable, Protocol
 import yaml
 
 from .estate import (
-    ESTATE_FLAG_KEY,
-    EXIT_ESTATE_REFUSAL,
     EstateDeps,
     SubprocessRunner,
     _ensure_flag,
-    _journal_dir,
     _list_journals,
     _load_journal,
-    _load_policy,
     _production_deps,
-    _read_manifest_version,
-    _refusal,
 )
 from .interfaces import DutyResult
 
 REGISTER_REL = Path("docs/governance/realization-register.yaml")
-_PROBE_WRITE_MARKERS = frozenset(
-    {"install", "update", "apply", "write", "seed", "kit", "provision", "upgrade", "bump"}
-)
 
 
 class _Completed(Protocol):
@@ -273,11 +264,6 @@ def _realize_steps_for_row(deps: RealizeDeps, row: dict[str, Any]) -> list[list[
         out.append([sys.executable, "scripts/pin_policy_check.py", "--fan-out", "--json"])
         return out
     return [list(s) for s in steps if s]
-
-
-def _argv_looks_like_write(argv: list[str]) -> bool:
-    joined = " ".join(argv).lower()
-    return any(marker in joined for marker in _PROBE_WRITE_MARKERS)
 
 
 def _run_bmad_preflight(deps: RealizeDeps) -> dict[str, Any]:
