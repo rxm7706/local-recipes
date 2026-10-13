@@ -1173,7 +1173,10 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 
 
 def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
-    estate_subs = estate_parser.add_subparsers(dest="estate_verb", metavar="{plan,refresh,reconcile,status}")
+    estate_subs = estate_parser.add_subparsers(
+        dest="estate_verb",
+        metavar="{plan,refresh,reconcile,realize,status}",
+    )
     plan = estate_subs.add_parser("plan", help="dry-run upgrade through the pin policy")
     plan.add_argument("--json", action="store_true", help="emit plan JSON (estate-journal-schema plan shape)")
     plan.add_argument(
@@ -1190,6 +1193,31 @@ def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
     estate_subs.add_parser(
         "reconcile",
         help="regenerate derived surfaces, run checks, reconcile spec-surface drift",
+    )
+    realize = estate_subs.add_parser(
+        "realize",
+        help="re-apply side-effect installs for moved register rows (agents: --plan only)",
+    )
+    realize.add_argument(
+        "--plan",
+        action="store_true",
+        help="print due rows only; write no realize, probe, or journal",
+    )
+    realize.add_argument(
+        "--yes",
+        action="store_true",
+        help="run operator-gated realize steps (session hook denies agents)",
+    )
+    realize.add_argument(
+        "--all",
+        action="store_true",
+        help="every register row (still honors operator gates unless --yes)",
+    )
+    realize.add_argument(
+        "--journal",
+        metavar="PATH",
+        default=None,
+        help="estate refresh journal (default: latest under .steward/estate-refresh/)",
     )
     status = estate_subs.add_parser("status", help="print the last estate refresh journal")
     status.add_argument("--json", action="store_true", help="emit JSON")

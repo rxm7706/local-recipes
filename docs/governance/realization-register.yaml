@@ -136,6 +136,21 @@ rows:
   owner: pyforge-steward
   authority: CAP-18
   class: module
+- package: bmad-suite
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-suite
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-21
+  notes: metapackage — realize none
+  class: module
 - package: bmad-eval-quality
   env: pyforge-guild
   realize:

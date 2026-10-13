@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:governance:realization-register",
+  "title": "Realization register",
+  "type": "object",
+  "required": ["version", "rows"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/row" },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "row": {
+      "type": "object",
+      "required": ["package", "env", "class", "realize", "probe", "test", "owner", "authority"],
+      "properties": {
+        "package": { "type": "string", "minLength": 1 },
+        "env": { "type": "string", "minLength": 1 },
+        "class": {
+          "type": "string",
+          "enum": [
+            "installer-tree",
+            "module",
+            "harness",
+            "kit",
+            "hooks",
+            "pin-sites",
+            "cli",
+            "service",
+            "import"
+          ]
+        },
+        "realize": {
+          "type": "object",
+          "required": ["steps"],
+          "properties": {
+            "steps": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "operator_gate": { "type": "boolean" },
+            "per_loop_home": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "probe": {
+          "type": "object",
+          "required": ["expect"],
+          "properties": {
+            "expect": {
+              "type": "string",
+              "enum": ["locked-version", "kit-ok", "stage-ok", "exit-0", "import-probe"]
+            },
+            "path": { "type": "string" },
+            "key": { "type": "string" },
+            "command": {
+              "oneOf": [
+                { "type": "array", "items": { "type": "string" } },
+                { "type": "string" }
+              ]
+            },
+            "stages": { "type": "array", "items": { "type": "string" } },
+            "member": { "type": "string" },
+            "item": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "test": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "owner": { "type": "string" },
+        "authority": { "type": "string" },
+        "notes": { "type": "string" },
+        "kit_item": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
