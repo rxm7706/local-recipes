@@ -5996,7 +5996,6 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": "55d283defca1adeefadeec99a4e6386e458dc08c",
    "src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py": "5d8d08af8b2208cfa79006a39233a49a91a090f6",
    "src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py": "588bbcfd3e521f8470911fe667031dc12f7a5b9c",
-   "src/shared/packages/pyforge-steward/tests/unit/conftest.py": "5eeaa8a21f196fd84ac51b1e2a1cc37f9b564cde",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py": "2233b4adde8229cc2b11040dab2c46a56cafccd3",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_remedies.py": "9e857ee76b661874d9a1510f560f6fc9d4fc09db",
    "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py": "2422273d3c54fd9f72205aab38b2a6b412d30a82",
@@ -6028,7 +6027,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py": "771ac403b9f1d871233a09c818bc3c850c6358fd",
    "src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py": "79dbb82993a7ad896319440b98602ad794cf33b1",
    "src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py": "28ad6ed8175da028e163ccb79dd974d724f990f6",
-   "src/shared/packages/pyforge-steward/tests/unit/test_estate.py": "577e836b505f70b05bc3ac9b4dc646c929800fbf",
+   "src/shared/packages/pyforge-steward/tests/unit/test_estate.py": "9e74efbb19f8acdea3d2f3e62cfbe8eec3d9b482",
    "src/shared/packages/pyforge-steward/tests/unit/test_events_stream_consumer.py": "cb2830c099111b716e537a127c1c1ad21cd7196e",
    "src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py": "5edb343ced43add446a86beef742ef207e3b24f9",
    "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "1517c0f4d64aa0867c90c5830d6e3c2de37a1f3a",
@@ -6107,7 +6106,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "07a8cf478825f5ad6efdd426afdd2dbc15c1a96c"
+  "memlog": "feb9783012968b59619bd7ed5669bcc43d66c4d2"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit import make_flag_provider_fixture
 from pyforge.testing_kit.flags import flag_states
 
 from pyforge.steward.cli import DUTIES, build_parser, resolve_duty
@@ -25,6 +26,12 @@ from pyforge.steward.estate import (
     run_refresh,
     run_status,
 )
+
+# The flag-provider fixture lives in this module, not in a conftest: the pip-only lane
+# (pyforge-pip-install.yml) installs pyforge-steward without the testing kit and collects
+# tests/meta and tests/unit/test_fresh_clone_class_path.py, so any conftest on those paths that
+# imports pyforge.testing_kit breaks its collection (PR #2189, twice).
+flag_provider = make_flag_provider_fixture()
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 HOOK = REPO_ROOT / ".claude" / "hooks" / "pre-shell.py"
