@@ -1980,3 +1980,25 @@ status: open
   severity: medium
   promoted: 2026-10-10 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-mason-30-1: Neither writer of pypi_conda_map.json (mapping_manager.update_mapping_cache, atlas's export_pypi_conda_map node) applies pypi_conda_mappings/custom.yaml, so mapping_gap.py and atlas still read playwright -> playwright (the Node CLI); only name_resolver's tier 0 honours the override. Blocked on scope: the second writer is atlas's, a cross-station change.
+
+- source_spec: `planning-artifacts/specs/spec-30-1-recipes-that-import-playwright-depend-on-playwright-python.md`
+  summary: Neither writer of pypi_conda_map.json (mapping_manager.update_mapping_cache, atlas's export_pypi_conda_map node) applies pypi_conda_mappings/custom.yaml, so mapping_gap.py and atlas still read playwright -> playwright (the Node CLI); only name_resolver's tier 0 honours the override. Blocked on scope: the second writer is atlas's, a cross-station change.
+  evidence: Neither writer of pypi_conda_map.json (mapping_manager.update_mapping_cache, atlas's export_pypi_conda_map node) applies pypi_conda_mappings/custom.yaml, so mapping_gap.py and atlas still read playwright -> playwright (the Node CLI); only name_resolver's tier 0 honours the override. Blocked on scope: the second writer is atlas's, a cross-station change.
+  location: .claude/skills/conda-forge-expert/scripts/mapping_manager.py:230
+  origin: spec-deferred 12213c32f934 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-13 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-mason-30-1-2: conda-forge playwright-python depends on an unpinned playwright, so an exact bindings pin (open-webui ==1.49.1, openhands-ai ==1.58.0) installs the newest driver; import and pip check never exercise the skew. Blocked on scope: this story never touches recipes/playwright-python, and the durable fix is a feedstock change (outward, operator-owned).
+
+- source_spec: `planning-artifacts/specs/spec-30-1-recipes-that-import-playwright-depend-on-playwright-python.md`
+  summary: conda-forge playwright-python depends on an unpinned playwright, so an exact bindings pin (open-webui ==1.49.1, openhands-ai ==1.58.0) installs the newest driver; import and pip check never exercise the skew. Blocked on scope: this story never touches recipes/playwright-python, and the durable fix is a feedstock change (outward, operator-owned).
+  evidence: conda-forge playwright-python depends on an unpinned playwright, so an exact bindings pin (open-webui ==1.49.1, openhands-ai ==1.58.0) installs the newest driver; import and pip check never exercise the skew. Blocked on scope: this story never touches recipes/playwright-python, and the durable fix is a feedstock change (outward, operator-owned).
+  location: recipes/playwright-python/recipe.yaml:41
+  origin: spec-deferred f868a264a6fe — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-13 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

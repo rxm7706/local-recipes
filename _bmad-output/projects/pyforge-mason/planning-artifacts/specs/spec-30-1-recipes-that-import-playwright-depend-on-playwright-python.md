@@ -2,7 +2,7 @@
 title: "30.1: Recipes that import playwright depend on playwright-python"
 type: 'fix'
 created: '2026-10-12'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -12,7 +12,15 @@ context:
   - .claude/skills/conda-forge-expert/pypi_conda_mappings/custom.yaml
   - .claude/skills/conda-forge-expert/tests/meta/test_split_distribution_run_deps.py
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-29-1-pwndbg-passes-pip-check-with-a-local-pwntools-that-carries-the-upstream-unicorn-fix.md
-deferred: []
+deferred:
+  - id: pypi-conda-map-cache-ignores-custom-overrides
+    summary: "Neither writer of pypi_conda_map.json (mapping_manager.update_mapping_cache, atlas's export_pypi_conda_map node) applies pypi_conda_mappings/custom.yaml, so mapping_gap.py and atlas still read playwright -> playwright (the Node CLI); only name_resolver's tier 0 honours the override. Blocked on scope: the second writer is atlas's, a cross-station change."
+    location: .claude/skills/conda-forge-expert/scripts/mapping_manager.py:230
+    severity: medium
+  - id: playwright-python-driver-unpinned
+    summary: "conda-forge playwright-python depends on an unpinned playwright, so an exact bindings pin (open-webui ==1.49.1, openhands-ai ==1.58.0) installs the newest driver; import and pip check never exercise the skew. Blocked on scope: this story never touches recipes/playwright-python, and the durable fix is a feedstock change (outward, operator-owned)."
+    location: recipes/playwright-python/recipe.yaml:41
+    severity: low
 declared_low_risk: false
 ---
 
@@ -29,10 +37,10 @@ on 2026-10-12:
 | Recipe | Upstream `requires_dist` for playwright | Recipe run dep today |
 |---|---|---|
 | botright 0.5.1 | `playwright >=1.40.0` | `playwright >=1.40.0` |
-| cuga 0.4.0 | `playwright>=1.59.0` | `playwright >=1.59.0` |
+| cuga 0.3.1 | `playwright>=1.59.0` | `playwright >=1.59.0` |
 | dataframe_image 0.2.7 | `playwright` | `playwright` |
 | install-playwright 1.0.2 | `playwright<2,>=1.49.1` | `playwright <2,>=1.49.1` |
-| markdown_convert 2.0.16 | `playwright>=1.57.0` | `playwright >=1.57.0` |
+| markdown_convert 2.0.13 | `playwright>=1.57.0` | `playwright >=1.57.0` |
 | mcp-docs 0.0.1 | `playwright>=1.40.0` | `playwright >=1.40.0` |
 | md2pdf-mermaid 1.4.3 | `playwright>=1.40.0` | `playwright >=1.40.0` |
 | mermaid-cli 0.1.3 | `playwright>=1.30.0` | `playwright >=1.30.0` |
@@ -40,7 +48,7 @@ on 2026-10-12:
 | openhands-ai 1.11.0 | `playwright==1.58.0` | `playwright ==1.58.0` |
 | playwright-mcp 0.1.0 | `playwright>=1.50.0` | `playwright >=1.50.0` |
 | playwright-mcp-server 0.1.0 | `playwright` | `playwright` |
-| pytest-playwright-asyncio 0.10.0 | `playwright>=1.18` | `playwright >=1.18` |
+| pytest-playwright-asyncio 0.9.0 | `playwright>=1.18` | `playwright >=1.18` |
 | universal-document-mcp 1.0.0 | `playwright>=1.40.0` | `playwright >=1.40.0` |
 | xync-client 0.0.237 | `playwright` | `playwright` |
 
@@ -146,14 +154,17 @@ Built on linux-64 with `recipe-build` (rattler-build, local channel), 2026-10-13
 | mcp-docs | build clean, test env blocked | `utils` is not on conda-forge |
 | markdown_convert | build clean, test env blocked | `argsdict`, `string-grab`, `yaml-to-schemdraw` |
 | botright | build clean, test env blocked | five deps not on conda-forge |
-| cuga | build clean, test env blocked | five deps not on conda-forge; `langfuse` is `langfuse-python` (G10) |
-| openhands-ai | build clean, test env blocked | six deps not on conda-forge; `zope-interface` is `zope.interface` (G10) |
+| cuga | build clean, test env blocked | four deps not on conda-forge; `langfuse` is `langfuse-python` and `sqlite-vec` is `sqlite-vec-python` (G10) |
+| openhands-ai | build clean, test env blocked (rebuilt with its `__unix` / `__win` guards) | six deps not on conda-forge; `memory-profiler` is `memory_profiler` and `zope-interface` is `zope.interface` (G10) |
 | playwright-mcp | failed | no license anywhere upstream (`REPLACE_LICENSE`) |
-| xync-client | failed | no license file; 11 deps not on conda-forge |
-| universal-document-mcp | failed | upstream setuptools flat-layout (four top-level packages) |
+| xync-client | failed | no license file, and `license: MIT` unverified; `REPLACE_SUMMARY` placeholders (G90); 11 deps not on conda-forge |
+| universal-document-mcp | failed | upstream setuptools flat-layout (four top-level packages); its upstream repo URL returns 404 |
 
 - AC1: all 15 list `playwright-python` with the upstream spec; `recipes/playwright-python` unchanged.
 - AC2: `test_split_distribution_run_deps.py` passes with the pair linted.
+- AC3: met for the five full successes. open-webui builds and imports, but its `pip check` stays waived
+  (`false:open-webui-trimmed-run-deps`): the recipe omits 13 upstream run deps, and adding them is outside this story's
+  boundary. The waiver names them; playwright is not among them.
 - AC4: `validate_recipe` passes on 14 of 15; playwright-mcp fails on its license, as on `main`.
 - AC5: `retro(cfe):` v8.100.1.
 - AC6:
@@ -161,6 +172,8 @@ Built on linux-64 with `recipe-build` (rattler-build, local channel), 2026-10-13
     `playwright-python`").
   - Without the exemption, the check fails on `recipes/playwright-python`.
   - Without the flag, the declared-pairs test fails.
+- Verification: `pyforge-mason-test` passes (1622 passed, 3 deselected; 12 passed). The planning gates and
+  `detectors-ci` exit 0.
 
 ## Spec Change Log
 
@@ -170,7 +183,30 @@ Built on linux-64 with `recipe-build` (rattler-build, local channel), 2026-10-13
   universal-document-mcp's build script names the source dir; openhands-ai's `conda-forge.yml` declares
   `noarch_platforms` for its `win` run selector (G111). AC4 names playwright-mcp's license lint as its blocker. The Epic
   30 boundary and Surface widened to match.
+- 2026-10-13 (review): openhands-ai's run deps gained the `__unix` / `__win` guards that make its `noarch_platforms`
+  fix complete (G111), and the recipe was rebuilt (same outcome). Blocker text, timestamps and counts were corrected.
 
 ## Review Triage Log
 
-- No review has run yet.
+Independent adversarial review, 2026-10-13: 2 medium, 8 low, no high.
+
+- **Fixed (medium):** openhands-ai had `noarch_platforms` but no `__unix` / `__win` guards, so a solver could not tell
+  its two noarch builds apart. Guards added and the recipe rebuilt. G111's rule now requires them.
+- **Fixed (medium):** two blocker lists broke G10. cuga's `sqlite-vec` is conda-forge `sqlite-vec-python`, and
+  openhands-ai's `memory-profiler` is `memory_profiler`. Both are now named as renames.
+- **Fixed (low):** counts. The CHANGELOG and Dream now say 14 of 15 were never built, the Dream's pin range is
+  corrected, and the Intent table names each recipe's own version (`requires_dist` re-read at those versions).
+- **Fixed (low):** every `cfe-last-checked` and new `cfe-generated-at-datetime` read a time after the commit. They now
+  read the validation run (04:46Z), and openhands-ai reads its rebuild.
+- **Fixed (low):** open-webui's `success` beside a waived pip check. SKILL's `success` definition now covers a recorded
+  waiver, and AC3's Run result names the gap.
+- **Fixed (low):** xync-client's unverified `license: MIT` and G90 placeholders, and universal-document-mcp's 404 repo URL,
+  are now in their blocker lists.
+- **Fixed and deferred (low):** the retro overstated its reach. The text now says the tier-0 lookup fixes the generator
+  only. The cache's two writers ignore `custom.yaml`; one is atlas's, so the fix is deferred
+  (`pypi-conda-map-cache-ignores-custom-overrides`).
+- **Fixed (low):** `pyforge-mason-test` evidence added to the Run results.
+- **Fixed (low):** md2pdf-mermaid's CFE note moved under `# Header:`.
+- **Deferred (low):** conda-forge `playwright-python` leaves its driver unpinned, so exact bindings pins get the newest
+  driver. Out of scope (never touch `recipes/playwright-python`; the durable fix is a feedstock change). Noted in
+  G107 and deferred (`playwright-python-driver-unpinned`).

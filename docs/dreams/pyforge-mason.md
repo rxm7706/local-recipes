@@ -701,9 +701,10 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
     bindings (`import playwright`, PyPI distribution `playwright`), and it depends on the CLI.
   - Fifteen of the 16 upstreams list PyPI `playwright` in `requires_dist`, so each imports the bindings. The sixteenth,
     `recipes/playwright-python`, is the bindings recipe itself, and its dependency on the CLI is correct.
-  - Every pin those 15 carry (`>=1.18` to `==1.60.0`) has a `playwright-python` build on conda-forge (1.44.0 to
+  - Every pin those 15 carry (`>=1.18` to `>=1.59.0`, plus `==1.49.1` and `==1.58.0`) has a `playwright-python` build on conda-forge (1.44.0 to
     1.62.0).
-  - Twelve of the 15 recipes have never been built locally (`cfe-local-build-status: not-attempted`, or no CFE block).
+  - Fourteen of the 15 recipes have never been built locally (12 `cfe-local-build-status: not-attempted`, 2 with no
+    CFE block).
 
   **What it looks like when real:** each of the 15 recipes lists `playwright-python` with its upstream spec in place of
   `playwright`. The G107 check lints the pair, exempting only the bindings' own recipe. Each recipe whose other
