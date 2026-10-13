@@ -188,7 +188,8 @@ _HELP = {
     ),
     "estate": (
         "policy-driven estate pin refresh — plan (dry-run), refresh (upgrade + restore + lock), "
-        "status (journal); behind pyforge.steward.estate_refresh (Story 100.2 / CAP-167)"
+        "reconcile (regenerate derived surfaces + spec-surface), status (journal); "
+        "behind pyforge.steward.estate_refresh (Story 100.2 / CAP-167)"
     ),
 }
 
@@ -1172,7 +1173,7 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 
 
 def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
-    estate_subs = estate_parser.add_subparsers(dest="estate_verb", metavar="{plan,refresh,status}")
+    estate_subs = estate_parser.add_subparsers(dest="estate_verb", metavar="{plan,refresh,reconcile,status}")
     plan = estate_subs.add_parser("plan", help="dry-run upgrade through the pin policy")
     plan.add_argument("--json", action="store_true", help="emit plan JSON (estate-journal-schema plan shape)")
     plan.add_argument(
@@ -1185,6 +1186,10 @@ def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
         "--transitive",
         action="store_true",
         help="also run pixi update after upgrade (operator-only; session hook denies agents)",
+    )
+    estate_subs.add_parser(
+        "reconcile",
+        help="regenerate derived surfaces, run checks, reconcile spec-surface drift",
     )
     status = estate_subs.add_parser("status", help="print the last estate refresh journal")
     status.add_argument("--json", action="store_true", help="emit JSON")

@@ -2,8 +2,8 @@
 title: '100.3: Every derived surface regenerates from the lock by its own generator'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: 'c17b91a9af8e3ae744187e20e29a33cc1d69a9dc'
 flag:
   key: pyforge.steward.estate_refresh          # Story 100.2's (one flag per CAP)
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
