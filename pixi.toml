@@ -42,10 +42,7 @@ pnpm = ">=12.4.1"                 # Fast disk-efficient Node package manager (mo
 bmad-method = ">=6.12.0"          # BMAD agent-driven dev framework (planning + dev skills)
 spec-kit = ">=1.0.12"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
-# pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
-# Canonical upgrade command (19 excludes). tomlkit / structlog / sqlglot / pyarrow / pandas
-# no longer need excluding: their ceilings came from upstream package metadata, not from us.
-# pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude nodejs --exclude python --exclude postgresql --exclude django --exclude channels --exclude daphne --exclude wagtail --exclude coderedcms
+# Estate pin holds: docs/governance/pin-policy.yaml — render upgrade: python scripts/pin_policy_check.py --render-command
 
 [feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
@@ -1242,6 +1239,10 @@ cmd = "python scripts/bmad_estate_check.py"
 [feature.guild-tasks.tasks.llms-full-check]
 description = "Detector: report drift between docs/reference/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
+
+[feature.guild-tasks.tasks.pin-policy-check]
+description = "Detector (Story 100.1 / CAP-167): docs/governance/pin-policy.yaml is the single estate pin registry — reds an undeclared cap/channel/exact hold, a dangling row, or a stale pixi.toml pointer; --diff and pin_policy_restore.py pair for upgrade loss detection and repair. Pass -- --json for machine output."
+cmd = "python scripts/pin_policy_check.py --check"
 
 [feature.guild-tasks.tasks.platform-ci-test-requirements-check]
 description = "Detector (Story 16.1 / CAP-5): src/platform/requirements/{base,local,production}.txt stay retired — pixi.toml is the sole platform dep authority. Exits non-zero if those files are resurrected. Pass -- --json for machine output."
