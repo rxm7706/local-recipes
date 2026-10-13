@@ -6432,7 +6432,7 @@ So that the next refresh is read from one page and run as one command.
 **When** the story lands
 **Then** `docs/how-to/refresh-the-estate.md`, registered in `docs/map.yaml`, documents the policy file and its hold classes, the realization register and its classes, the six verbs (`plan`, `refresh`, `realize`, `reconcile`, `verify`, `status`), the operator-only `--transitive` and `realize --yes`, the station pin fan-out, the verify tiers and the per-platform confirmation, the journal, the monthly cadence and the PR landing (`maintenance` label, the marshal merge subject); `AGENTS.md` § *Running and verifying* gains one pointer line and § *Policy*'s `pixi.toml` line names `estate reconcile` as the way `environment.yaml` regenerates (scribe's parity meta-test and `governance-currency` stay green); `docs/reference/agent-instruction-notes.md` § *PR CI gates* points at the how-to
 **And** no tracked doc outside a dated log entry carries the 28-exclude command; `docs-map-render-test` and `docs-gen-test` green.
-**Status:** backlog
+**Status:** done
 
 ### Story 100.7: The first refresh lands through the path
 
