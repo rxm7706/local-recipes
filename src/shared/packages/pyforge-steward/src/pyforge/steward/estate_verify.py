@@ -117,6 +117,21 @@ def _env_supported(document: dict[str, Any], env_name: str, platform: str) -> bo
     return platform in plats
 
 
+def _environment_holding_task(pixi_data: dict[str, Any], task: str, *, root: Path) -> str | None:
+    """Resolve which ``[environments]`` row composes the feature that owns ``task``."""
+    owning_features: set[str] = set()
+    for feat_name, feat in pixi_data.get("feature", {}).items():
+        tasks = feat.get("tasks") if isinstance(feat, dict) else None
+        if isinstance(tasks, dict) and task in tasks:
+            owning_features.add(str(feat_name))
+    if not owning_features:
+        return None
+    for env_name, env_feats in load_pixi_environments(cwd=root).items():
+        if owning_features.intersection(env_feats):
+            return env_name
+    return None
+
+
 def _tier_environments_from_root(root: Path, *, all_envs: bool) -> list[str]:
     all_names = sorted(load_pixi_environments(cwd=root))
     if all_envs:
@@ -457,23 +472,27 @@ def run_verify(
         )
 
     if run_full and (lane_filter is None or lane_filter == "verify-env"):
-        argv = ["pixi", "run", "--frozen", "-e", "local-recipes", "verify-env"]
-        proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
-        verdict_s = _row_verdict(proc.returncode, special=special)
-        if verdict_s != "ok":
-            any_red = True
-        rows.append(
-            {
-                "kind": "lane",
-                "name": "verify-env",
-                "environment": "local-recipes",
-                "platform": run_platform,
-                "verdict": verdict_s,
-                "exit": proc.returncode,
-                "seconds": round(seconds, 3),
-                "argv": argv,
-            }
-        )
+        verify_env = _environment_holding_task(pixi_data, "verify-env", root=deps.root)
+        if verify_env is not None:
+            argv = ["pixi", "run", "--frozen", "-e", verify_env, "verify-env"]
+            proc, seconds, special = _run_timed(
+                deps, argv, wt, budget_seconds=budget_seconds, started=install_started
+            )
+            verdict_s = _row_verdict(proc.returncode, special=special)
+            if verdict_s != "ok":
+                any_red = True
+            rows.append(
+                {
+                    "kind": "lane",
+                    "name": "verify-env",
+                    "environment": verify_env,
+                    "platform": run_platform,
+                    "verdict": verdict_s,
+                    "exit": proc.returncode,
+                    "seconds": round(seconds, 3),
+                    "argv": argv,
+                }
+            )
 
     if run_full and (lane_filter is None or lane_filter == "pin-fan-out"):
         argv = [sys.executable, "scripts/pin_policy_check.py", "--fan-out", "--json"]

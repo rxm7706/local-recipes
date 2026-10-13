@@ -41,6 +41,9 @@ dbgpt-sidecar = { features = ["sidecar"], platforms = ["linux-64"] }
 osx = { features = ["osx"], platforms = ["osx-arm64-min"] }
 local-recipes = ["recipes"]
 
+[feature.recipes.tasks.verify-env]
+cmd = "echo verify-env"
+
 [feature.guild-tasks.tasks.pr-preflight-lanes]
 depends-on = ["lint-types", "guild-container"]
 
