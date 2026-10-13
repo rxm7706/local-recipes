@@ -86,6 +86,24 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-12 (the env-hygiene scan stops growing with the test suite)** — **Found: Story 44.1 made the five-second
+  budget judge CPU, and `DW-doctor-44-1` showed the margin is thin and shrinking.** One `doctor check` on the repo root
+  spends 2.75 s of CPU at `c447946b3f`. Under load that is about 1.25x headroom, and the scan grew 19% in eight days.
+  Measured at `09fd904b02` with each phase of the real `_scan_file` timed, one scan of 2721 files costs:
+  - 0.67 s parsing the 178 files that pass both prefilters;
+  - 0.69 s in the visitor;
+  - 0.34 s in `_resolve_os_aliases`, a second full `ast.walk` of every parsed tree;
+  - 0.29 s reading and prefiltering.
+
+  Of the 178 parsed files, 72 are test code. They cost 0.71 s and yield two of today's four findings: a steward test
+  fixture that is ungated on purpose, and a Django `tests.py`. The other two findings are real code, in two
+  conda-forge-expert scripts. **What it looks like when fixed:** the scan resolves `os` aliases inside the visitor's
+  one walk, and it does not scan test code (`test_*.py`, `*_test.py`, `conftest.py`, `tests.py`, and anything under a
+  `tests/` or `test/` directory, judged relative to the scan target). That is about 1.0 s, 36% less CPU. The two real
+  findings stay. **Constraints:** a fix restoring NFR-4's margin under CAP-1, no CAP, no flag. The five-second budget
+  and Story 44.1's CPU measure stay. The detector's verdicts on non-test code do not change. A scan pointed directly at
+  a fixtures directory still scans it, because the rule is relative to the target. Operator ruling 2026-10-12:
+  "Single pass + skip tests (Recommended)". Owner `spec-pyforge-doctor`. → Epic 46 / Story 46.1, specced 2026-10-12.
 - **2026-10-12 (the speed budget under preflight load)** — **Found: `doctor check`'s five-second budget test fails
   only when other lanes share the machine.** `tests/unit/test_check_speed_budget.py` runs `doctor check` on the live
   repo root: one warm-up, then five timed runs judged by their median wall time. In local `pr-preflight` on 2026-10-12
