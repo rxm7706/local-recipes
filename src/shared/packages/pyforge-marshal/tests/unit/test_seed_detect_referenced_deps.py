@@ -193,7 +193,10 @@ def test_probes_run_in_parallel_with_doctor_on_path(tmp_path: Path, monkeypatch)
 
 
 def test_probes_run_in_parallel_without_doctor(tmp_path: Path, monkeypatch):
-    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    monkeypatch.setattr(
+        "pyforge.marshal.seed.detect.referenced_deps.shutil.which",
+        lambda name: None if name == "doctor" else f"/usr/bin/{name}",
+    )
     monkeypatch.setattr(
         "pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run",
         _sleeping_run_factory(1.0),

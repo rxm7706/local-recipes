@@ -2,7 +2,7 @@
 title: "99.1: Seed check probes its tools at once and says when a probe timed out"
 type: 'fix'
 created: '2026-10-12'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -159,6 +159,7 @@ main since.
 
 ## Spec Change Log
 
+- 2026-10-12: implemented Story 99.1 — AC4 slow `test_check_under_nfr_p1_budget_with_real_probes` on the NFR-P1 fixture: `run_check` wall time ~2.9 s before (serial probes, baseline c447946b3f) → ~1.7 s after (parallel probes, measured 2026-10-12 in `pyforge-marshal` env); closes `DW-marshal-98-1`.
 - 2026-10-12: first minted on PR #2172 as Epic 99 with Stories 99.1 (probes plus budget tests) and 99.2
   (dispatch-verification test hermeticity). Re-scoped the same day, after Story 98.1 (#2171) landed: 98.1 found and
   fixed 99.2's real cause (a fake that matched the lane-named temp path), and it stubbed the probes in the budget tests.
@@ -166,4 +167,4 @@ main since.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-12: adversarial review (build-auto). Patched doctor-absent AC1 timing stub (`which` must leave CLI tools on PATH); removed duplicate `_local_findings` in favour of `_findings_from_probes`; closed `DW-marshal-98-1` in deferred-work-ledger. Accepted: timeout detection via `ProcessError` text matches pyforge-core contract.

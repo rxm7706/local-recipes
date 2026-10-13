@@ -9113,4 +9113,7 @@ status: open
   origin: spec-deferred 6c6e72612186 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolved: 2026-10-12
+  resolution: Story 99.1 — referenced_dep_findings runs Doctor delegation and CLI probes concurrently; CLI timeouts report explicitly. NFR-P1 fixture run_check with real probes ~2.9 s before (serial, c447946b3f) → ~1.7 s after (parallel, measured 2026-10-12 pyforge-marshal env).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/referenced_deps.py

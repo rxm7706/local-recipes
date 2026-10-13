@@ -176,8 +176,7 @@ def _finding_for_entry(
         if cli_args is not None:
             invocation = " ".join((entry.id, *cli_args))
             message = (
-                f"{entry.id}: `{invocation}` did not answer within {_CLI_TIMEOUT_S} s "
-                f"(manifest pin {entry.pin!r})"
+                f"{entry.id}: `{invocation}` did not answer within {_CLI_TIMEOUT_S} s (manifest pin {entry.pin!r})"
             )
         else:
             message = f"{entry.id}: probe timed out after {_CLI_TIMEOUT_S} s (manifest pin {entry.pin!r})"
@@ -239,24 +238,17 @@ def _doctor_findings(repo_root: Path) -> tuple[Finding, ...] | None:
     return tuple(findings)
 
 
-def _local_findings(manifest: Manifest, repo_root: Path) -> tuple[Finding, ...]:
-    referenced = [entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.REFERENCED]
-    if not referenced:
-        return ()
-    max_workers = max(1, len(referenced))
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = [(entry, pool.submit(_probe_entry, repo_root, entry)) for entry in referenced]
-        findings: list[Finding] = []
-        for entry, future in futures:
-            probe = future.result()
-            finding = _finding_for_entry(
-                entry,
-                installed=probe.installed,
-                delegated=False,
-                timed_out=probe.timed_out,
-            )
-            if finding is not None:
-                findings.append(finding)
+def _findings_from_probes(referenced: list[ManifestEntry], probes: list[_ProbeResult]) -> tuple[Finding, ...]:
+    findings: list[Finding] = []
+    for entry, probe in zip(referenced, probes, strict=True):
+        finding = _finding_for_entry(
+            entry,
+            installed=probe.installed,
+            delegated=False,
+            timed_out=probe.timed_out,
+        )
+        if finding is not None:
+            findings.append(finding)
     return tuple(findings)
 
 
@@ -275,15 +267,5 @@ def referenced_dep_findings(manifest: Manifest, repo_root: Path) -> tuple[Findin
         if delegated is not None:
             return delegated
 
-        findings: list[Finding] = []
-        for entry, future in probe_futures:
-            probe = future.result()
-            finding = _finding_for_entry(
-                entry,
-                installed=probe.installed,
-                delegated=False,
-                timed_out=probe.timed_out,
-            )
-            if finding is not None:
-                findings.append(finding)
-        return tuple(findings)
+        probes = [future.result() for _entry, future in probe_futures]
+        return _findings_from_probes(referenced, probes)
