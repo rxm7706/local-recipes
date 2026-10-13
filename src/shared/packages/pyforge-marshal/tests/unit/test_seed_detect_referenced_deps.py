@@ -1,14 +1,19 @@
-"""Unit tests for ``seed.detect.referenced_deps`` (Story 11.5)."""
+"""Unit tests for ``seed.detect.referenced_deps`` (Story 11.5, Story 99.1)."""
 
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 import yaml
+from pyforge.core.process import ProcessError
 
 from pyforge.marshal.seed.detect.findings import FindingType, Severity
-from pyforge.marshal.seed.detect.referenced_deps import referenced_dep_findings
+from pyforge.marshal.seed.detect.referenced_deps import (
+    _CLI_TIMEOUT_S,
+    referenced_dep_findings,
+)
 from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
 
 
@@ -115,3 +120,149 @@ def test_doctor_delegation_when_json_returned(tmp_path: Path, monkeypatch):
     assert len(findings) == 1
     assert findings[0].message.startswith("[doctor]")
     assert findings[0].path == "pixi"
+
+
+def test_nonzero_cli_exit_emits_not_installed(tmp_path: Path, monkeypatch):
+    class _Result:
+        returncode = 1
+        stdout = ""
+        stderr = "error"
+
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "copier")
+    monkeypatch.setattr(
+        "pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run",
+        lambda *args, **kwargs: _Result(),
+    )
+    manifest = _manifest(_referenced("copier", ">=9.17,<10"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert "not installed" in findings[0].message
+
+
+def test_cli_probe_timeout_emits_timeout_message_not_not_installed(tmp_path: Path, monkeypatch):
+    def _timeout(*args, **kwargs):
+        raise ProcessError("command timed out after 5.0s: copier --version")
+
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "copier")
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run", _timeout)
+    manifest = _manifest(_referenced("copier", ">=9.4"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].type is FindingType.REFERENCED_DEP_MISSING
+    assert findings[0].severity is Severity.DRIFT
+    assert "did not answer within" in findings[0].message
+    assert str(_CLI_TIMEOUT_S) in findings[0].message
+    assert "not installed" not in findings[0].message
+    assert "`copier --version`" in findings[0].message
+
+
+def _sleeping_run_factory(sleep_s: float = 1.0):
+    def _run(*args, **kwargs):
+        time.sleep(sleep_s)
+        return type("_R", (), {"returncode": 0, "stdout": "copier 9.18.0", "stderr": ""})()
+
+    return _run
+
+
+def _four_cli_manifest() -> Manifest:
+    return _manifest(
+        _referenced("copier", ">=9.17,<10"),
+        _referenced("pixi", ">=0.76.1"),
+        _referenced("tmux", ">=3.0"),
+        _referenced("bmad-loop", ">=0.12.0"),
+    )
+
+
+def test_probes_run_in_parallel_with_doctor_on_path(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "doctor")
+    monkeypatch.setattr(
+        "pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run",
+        _sleeping_run_factory(1.0),
+    )
+    manifest = _four_cli_manifest()
+
+    started = time.perf_counter()
+    referenced_dep_findings(manifest, tmp_path)
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 2.0, f"expected parallel probes under 2.0 s, got {elapsed:.2f}s"
+
+
+def test_probes_run_in_parallel_without_doctor(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    monkeypatch.setattr(
+        "pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run",
+        _sleeping_run_factory(1.0),
+    )
+    manifest = _four_cli_manifest()
+
+    started = time.perf_counter()
+    referenced_dep_findings(manifest, tmp_path)
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 2.0, f"expected parallel probes under 2.0 s, got {elapsed:.2f}s"
+
+
+def test_doctor_findings_win_over_local_probes(tmp_path: Path, monkeypatch):
+    payload = [{"artifact_id": "pixi", "message": "installed pixi 0.1.0 is below floor >=0.76.1"}]
+
+    class _DoctorResult:
+        returncode = 1
+        stdout = json.dumps(payload)
+        stderr = ""
+
+    class _LocalWouldFail:
+        returncode = 0
+        stdout = "copier 9.18.0"
+        stderr = ""
+
+    def _run(argv, **kwargs):
+        if "pyforge.doctor.sources" in " ".join(str(a) for a in argv):
+            return _DoctorResult()
+        return _LocalWouldFail()
+
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "doctor")
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run", _run)
+    manifest = _four_cli_manifest()
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].path == "pixi"
+    assert findings[0].message.startswith("[doctor]")
+
+
+def test_local_findings_stay_in_manifest_order_when_probes_finish_out_of_order(tmp_path: Path, monkeypatch):
+    finish_order: list[str] = []
+    version_lines = {
+        "copier": "copier 9.0.0",
+        "pixi": "pixi 0.1.0",
+        "tmux": "tmux 2.0",
+        "bmad-loop": "bmad-loop 0.1.0",
+    }
+
+    def _run(argv, **kwargs):
+        cmd = argv[0] if argv else ""
+        if cmd in version_lines:
+            delays = {"bmad-loop": 0.05, "tmux": 0.04, "pixi": 0.03, "copier": 0.01}
+            time.sleep(delays[cmd])
+            finish_order.append(cmd)
+            stdout = version_lines[cmd]
+            return type("_R", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+        raise AssertionError(f"unexpected argv: {argv!r}")
+
+    monkeypatch.setattr(
+        "pyforge.marshal.seed.detect.referenced_deps.shutil.which",
+        lambda name: None if name == "doctor" else f"/usr/bin/{name}",
+    )
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run", _run)
+    manifest = _four_cli_manifest()
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert [f.path for f in findings] == ["copier", "pixi", "tmux", "bmad-loop"]
+    assert finish_order.index("copier") < finish_order.index("bmad-loop")

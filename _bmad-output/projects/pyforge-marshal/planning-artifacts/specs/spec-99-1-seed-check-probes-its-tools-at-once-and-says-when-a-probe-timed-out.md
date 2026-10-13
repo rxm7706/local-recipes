@@ -2,7 +2,7 @@
 title: "99.1: Seed check probes its tools at once and says when a probe timed out"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

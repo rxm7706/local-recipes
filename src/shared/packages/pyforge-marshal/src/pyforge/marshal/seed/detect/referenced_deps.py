@@ -31,6 +31,7 @@ import json
 import re
 import shutil
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -67,6 +68,7 @@ _VERSION_TOKEN_RE = re.compile(r"(\d+(?:\.\d+)*(?:[a-zA-Z][\w.]*)?(?:_\d+)?)")
 class _ProbeResult:
     installed: str | None
     delegated: bool
+    timed_out: bool = False
 
 
 def _satisfies_pin(installed: str, pin: str) -> bool:
@@ -101,17 +103,23 @@ def _read_bmad_core_version(repo_root: Path) -> str | None:
     return text or None
 
 
-def _cli_installed_version(repo_root: Path, command: str, args: tuple[str, ...]) -> str | None:
+def _cli_probe_timed_out(exc: ProcessError) -> bool:
+    return "timed out" in str(exc)
+
+
+def _cli_installed_version(repo_root: Path, command: str, args: tuple[str, ...]) -> _ProbeResult:
     if shutil.which(command) is None:
-        return None
+        return _ProbeResult(None, delegated=False)
     try:
         result = PosixProcess().run([command, *args], cwd=repo_root, timeout_s=_CLI_TIMEOUT_S)
-    except ProcessError:
-        return None
+    except ProcessError as exc:
+        if _cli_probe_timed_out(exc):
+            return _ProbeResult(None, delegated=False, timed_out=True)
+        return _ProbeResult(None, delegated=False)
     if result.returncode != 0:
-        return None
+        return _ProbeResult(None, delegated=False)
     combined = (result.stdout or "") + "\n" + (result.stderr or "")
-    return _first_version_token(combined)
+    return _ProbeResult(_first_version_token(combined), delegated=False)
 
 
 def _conda_installed_version(repo_root: Path, package: str) -> str | None:
@@ -152,12 +160,28 @@ def _probe_entry(repo_root: Path, entry: ManifestEntry) -> _ProbeResult:
         return _ProbeResult(_read_bmad_core_version(repo_root), delegated=False)
     cli_args = _CLI_PROBES.get(entry.id)
     if cli_args is not None:
-        return _ProbeResult(_cli_installed_version(repo_root, entry.id, cli_args), delegated=False)
+        return _cli_installed_version(repo_root, entry.id, cli_args)
     return _ProbeResult(_conda_installed_version(repo_root, entry.id), delegated=False)
 
 
-def _finding_for_entry(entry: ManifestEntry, *, installed: str | None, delegated: bool) -> Finding | None:
-    if installed is None:
+def _finding_for_entry(
+    entry: ManifestEntry,
+    *,
+    installed: str | None,
+    delegated: bool,
+    timed_out: bool = False,
+) -> Finding | None:
+    if timed_out:
+        cli_args = _CLI_PROBES.get(entry.id)
+        if cli_args is not None:
+            invocation = " ".join((entry.id, *cli_args))
+            message = (
+                f"{entry.id}: `{invocation}` did not answer within {_CLI_TIMEOUT_S} s "
+                f"(manifest pin {entry.pin!r})"
+            )
+        else:
+            message = f"{entry.id}: probe timed out after {_CLI_TIMEOUT_S} s (manifest pin {entry.pin!r})"
+    elif installed is None:
         message = f"{entry.id}: referenced dependency is not installed (manifest pin {entry.pin!r})"
     elif not _satisfies_pin(installed, entry.pin or ""):
         message = f"{entry.id}: installed version {installed!r} is below manifest floor {entry.pin!r}"
@@ -216,20 +240,50 @@ def _doctor_findings(repo_root: Path) -> tuple[Finding, ...] | None:
 
 
 def _local_findings(manifest: Manifest, repo_root: Path) -> tuple[Finding, ...]:
-    findings: list[Finding] = []
-    for entry in manifest.entries:
-        if entry.artifact_class is not ArtifactClass.REFERENCED:
-            continue
-        probe = _probe_entry(repo_root, entry)
-        finding = _finding_for_entry(entry, installed=probe.installed, delegated=False)
-        if finding is not None:
-            findings.append(finding)
+    referenced = [entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.REFERENCED]
+    if not referenced:
+        return ()
+    max_workers = max(1, len(referenced))
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = [(entry, pool.submit(_probe_entry, repo_root, entry)) for entry in referenced]
+        findings: list[Finding] = []
+        for entry, future in futures:
+            probe = future.result()
+            finding = _finding_for_entry(
+                entry,
+                installed=probe.installed,
+                delegated=False,
+                timed_out=probe.timed_out,
+            )
+            if finding is not None:
+                findings.append(finding)
     return tuple(findings)
 
 
 def referenced_dep_findings(manifest: Manifest, repo_root: Path) -> tuple[Finding, ...]:
     """Verify every ``referenced`` manifest entry; DRIFT ``referenced-dep-missing`` only."""
-    delegated = _doctor_findings(repo_root)
-    if delegated is not None:
-        return delegated
-    return _local_findings(manifest, repo_root)
+    referenced = [entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.REFERENCED]
+    doctor_on_path = shutil.which("doctor") is not None
+    max_workers = (1 if doctor_on_path else 0) + max(1, len(referenced))
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        doctor_future = pool.submit(_doctor_findings, repo_root) if doctor_on_path else None
+        probe_futures = [(entry, pool.submit(_probe_entry, repo_root, entry)) for entry in referenced]
+
+        delegated: tuple[Finding, ...] | None = None
+        if doctor_future is not None:
+            delegated = doctor_future.result()
+        if delegated is not None:
+            return delegated
+
+        findings: list[Finding] = []
+        for entry, future in probe_futures:
+            probe = future.result()
+            finding = _finding_for_entry(
+                entry,
+                installed=probe.installed,
+                delegated=False,
+                timed_out=probe.timed_out,
+            )
+            if finding is not None:
+                findings.append(finding)
+        return tuple(findings)

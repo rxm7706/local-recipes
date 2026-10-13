@@ -94,6 +94,16 @@ def test_check_under_nfr_p1_budget(real_manifest, tmp_path, monkeypatch):
     assert elapsed < 5.0, f"check took {elapsed:.2f}s, over NFR-P1 5s budget"
 
 
+@pytest.mark.slow
+def test_check_under_nfr_p1_budget_with_real_probes(real_manifest, tmp_path):
+    """Story 99.1 / AC4: end-to-end ``run_check`` with real referenced-dep probes."""
+    repo = _local_recipes_sized_tree(tmp_path / "sized-real-probes")
+    started = time.perf_counter()
+    run_check(repo, real_manifest)
+    elapsed = time.perf_counter() - started
+    assert elapsed < 5.0, f"check with real probes took {elapsed:.2f}s, over NFR-P1 5s budget"
+
+
 def test_adopt_dry_run_under_nfr_p2_budget(real_manifest, tmp_path):
     repo = _local_recipes_sized_tree(tmp_path / "sized")
     started = time.perf_counter()
