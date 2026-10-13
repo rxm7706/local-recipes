@@ -379,6 +379,10 @@ jobs:
             docs/dreams
             docs/foundry
             docs/governance
+            docs/how-to/pixi-tasks.md
+            docs/reference/bmad-estate-llms-full.md
+            docs/reference/environments.md
+            docs/reference/library-llms-full.md
             recipes/bmad-suite
             recipes/click-help-colors
             scripts/bmad-loop-worktree

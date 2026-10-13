@@ -131,6 +131,60 @@ def test_no_station_manifests_falls_back_to_root_only_behavior(tmp_path, monkeyp
     assert stats["manifest_deps"] == 1
 
 
+def test_ac2_fix_floors_clears_floor_drift_only(tmp_path, monkeypatch):
+    """AC2: --fix-floors clears every floor-drift row; prose and other kinds stay."""
+    _write(
+        tmp_path / "pixi.toml",
+        """
+        [feature.guild.dependencies]
+        alpha = ">=2.0.0"
+        beta = ">=3.1.0"
+        """,
+    )
+    _write(
+        tmp_path / "catalog.md",
+        """# Catalog
+
+> Source of truth: `pixi.toml`.
+
+## To regenerate (any session): ask Claude Code:
+
+> Regenerate the catalog from pixi.toml.
+
+**Staleness detector:** llms-full-check.
+
+- **alpha** (>=1.0.0) — first package.
+- **beta** (>=3.0.0, conda-forge channel) — inline note kept.
+""",
+    )
+    monkeypatch.setattr(lfc, "MANIFEST", tmp_path / "pixi.toml")
+    monkeypatch.setattr(lfc, "CATALOG", tmp_path / "catalog.md")
+    monkeypatch.setattr(lfc, "STATION_MANIFESTS", [])
+
+    before, _ = lfc.run()
+    assert sum(1 for f in before if f["kind"] == "floor-drift") == 2  # noqa: PLR2004
+    remaining = lfc.fix_floors(manifest_path=tmp_path / "pixi.toml", catalog_path=tmp_path / "catalog.md")
+    assert remaining == 0
+    after_text = (tmp_path / "catalog.md").read_text()
+    assert ">=2.0.0" in after_text
+    assert "conda-forge channel" in after_text
+    assert "## To regenerate" not in after_text
+    assert "--fix-floors" in after_text
+    assert "first package." in after_text
+
+
+def test_ac2_fix_floors_leaves_undocumented_red(tmp_path, monkeypatch):
+    _write(tmp_path / "pixi.toml", '[feature.python.dependencies]\nmystery = ">=1.0.0"\n')
+    _write(tmp_path / "catalog.md", "# Catalog\n\n- **python** (>=3.14) — ok.\n")
+    monkeypatch.setattr(lfc, "MANIFEST", tmp_path / "pixi.toml")
+    monkeypatch.setattr(lfc, "CATALOG", tmp_path / "catalog.md")
+    monkeypatch.setattr(lfc, "STATION_MANIFESTS", [])
+
+    lfc.fix_floors(manifest_path=tmp_path / "pixi.toml", catalog_path=tmp_path / "catalog.md")
+    findings, _ = lfc.run()
+    assert any(f["kind"] == "undocumented-dep" for f in findings)
+
+
 def test_real_repo_station_manifests_all_resolve(monkeypatch):
     """Sanity check against the real repo: every real
     src/shared/packages/pyforge-*/pixi.toml's [package.run-dependencies]
