@@ -5,7 +5,6 @@ context:
   version: "1.0.0"
   # Upstream has no releases; this is the commit pwndbg 2026.09.15 pins.
   commit: 50227bda0b6332e94027f811a15879588de6d5cb
-  python_min: "3.10"
 
 package:
   name: gdb-pt-dump

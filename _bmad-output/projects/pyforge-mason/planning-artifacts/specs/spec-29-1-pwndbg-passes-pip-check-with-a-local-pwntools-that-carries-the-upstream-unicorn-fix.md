@@ -2,7 +2,7 @@
 title: "29.1: pwndbg passes pip check with a local pwntools that carries the upstream unicorn fix"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -46,7 +46,9 @@ Rule 6 deletes it.
    - build number 1, above the feedstock's 0, so the patched build supersedes the published one in a local solve.
 2. In `recipes/pwndbg`: `unicorn` becomes `python-unicorn >=2.1.4,<3`, `pip_check` returns to `true`, and
    `context.python_min` is deleted.
-3. Build pwntools, then pwndbg against the local channel, on linux-64.
+3. In `recipes/niche-elf` and `recipes/gdb-pt-dump`, pwndbg's local prerequisites: delete `context.python_min: "3.10"`,
+   which is below the 3.11 floor (Rule 6). `test_no_redundant_python_min.py` reds both on `main` today.
+4. Build pwntools, the three prerequisites, then pwndbg against the local channel, on linux-64.
 
 ### Living CAP citations
 
@@ -62,14 +64,17 @@ Rule 6 deletes it.
   linux-64. The artifact is `pwntools-4.15.0-*_1.conda`. Its wheel metadata reads `Requires-Dist: unicorn>=2.0.1`, with
   no `!=2.1.3` or `!=2.1.4`. Its own tests pass, including `pip check` and every entry point's `--help`.
 - **AC2 — The MIPS guard is in the shipped code.** The packaged `pwnlib/elf/plt.py` raises `OSError` from
-  `prepare_unicorn_and_context` for a MIPS ELF when the installed unicorn is 2.1.3 or 2.1.4. A test exercises it with
-  unicorn 2.1.4 and a MIPS ELF built from pwntools' own `pwnlib` (no network, no cross toolchain).
+  `prepare_unicorn_and_context` for a MIPS ELF when the installed unicorn is 2.1.3 or 2.1.4. The recipe's
+  `test_mips_guard.py` calls it with a stand-in ELF whose `arch` is `mips` (the guard reads nothing else; no network, no
+  cross toolchain) and expects the `OSError` on unicorn 2.1.3 or 2.1.4, and no `OSError` on any other version.
 - **AC3 — pwndbg's dependencies are consistent.** `recipes/pwndbg` lists `python-unicorn >=2.1.4,<3` and no bare
   `unicorn`, has no `context.python_min`, and runs `pip_check: true`. Its build exits 0 on linux-64, its test
   environment resolves the local pwntools `_1` with `python-unicorn` 2.1.4, and `pip check` passes there. The existing
   gdb test (`pwndbg -batch -ex version`) still passes.
 - **AC4 — Mirror fidelity.** `recipes/pwntools/meta.yaml` is byte-identical to the feedstock's `recipe/meta.yaml` at
   the commit the CFE block names. Only `recipe.yaml` carries the patch and the build-number bump.
+- **AC4b — The prerequisites sit at the floor.** `recipes/niche-elf` and `recipes/gdb-pt-dump` carry no
+  `context.python_min`, build green on linux-64, and `test_no_redundant_python_min.py` passes.
 - **AC5 — Gates.** Both recipes pass `validate_recipe`, `optimize_recipe` (STD-002 is expected on the v0 mirror) and the
   CI-parity lint. Each CFE block records the real build. `recipes/pwntools`'s block names #2721 in
   `cfe-forge-recipe-updates-needed` with its revert trigger: drop the patch when a pwntools release carries #2721.
@@ -137,6 +142,9 @@ Rule 6 deletes it.
 ## Spec Change Log
 
 - 2026-10-12: minted at the operator's rulings "Fix the unicorn conflict" and "Backport #2721 locally (Recommended)".
+- 2026-10-12 (implementation): AC2 now names the stand-in ELF the test uses. Added approach item 3 and AC4b: the two
+  prerequisites' below-floor `python_min` reds `test_no_redundant_python_min.py` on `main`, so it is fixed here
+  (healed tissue); the Epic 29 boundary and `epic_surfaces."29"` widened to match.
 
 ## Review Triage Log
 

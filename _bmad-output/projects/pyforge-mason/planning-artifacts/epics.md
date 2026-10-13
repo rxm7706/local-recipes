@@ -3425,8 +3425,9 @@ Minted 2026-10-12 from the station Dream's entry of the same name, on the operat
 unicorn conflict"; "Backport #2721 locally (Recommended)"). `recipes/pwndbg` landed in PR #2168 with `pip_check: false`,
 because pwndbg 2026.09.15 needs `unicorn>=2.1.4` and pwntools 4.15.0 excludes 2.1.3 and 2.1.4. pwntools fixed that on
 its `stable` branch (Gallopsled/pwntools#2721) but has not released it. **HARD boundaries:**
-- 29.1 touches `recipes/pwntools/**` (new), `recipes/pwndbg/**`, and the CFE retro surface in its own `retro(cfe):`
-  commit.
+- 29.1 touches `recipes/pwntools/**` (new), `recipes/pwndbg/**`, the `context.python_min` line of `recipes/niche-elf`
+  and `recipes/gdb-pt-dump` (pwndbg's local prerequisites, both below conda-forge's 3.11 floor), and the CFE retro
+  surface in its own `retro(cfe):` commit.
 - Local only. A green local build on linux-64 ends the story. No feedstock, staged-recipes or upstream PR is opened
   without an explicit ask.
 - `recipes/pwntools/meta.yaml` stays a verbatim copy of the feedstock's. Only the v1 `recipe.yaml` carries the patch.
@@ -3442,8 +3443,9 @@ So that the environment is consistent and pwntools raises a clear error where it
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-18 and CAP-23 (no new CAP; a fix
 carries no flag, `spec-feature-flag-governance` Q1); AD-1; AD-15; CFE Rule 1 + Rule 2
-**Surface:** `recipes/pwntools/**` (new: `meta.yaml`, `recipe.yaml`, `patches/`), `recipes/pwndbg/recipe.yaml`, and
-the CFE retro surface (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml}`,
+**Surface:** `recipes/pwntools/**` (new: `meta.yaml`, `recipe.yaml`, `patches/`, `test_mips_guard.py`),
+`recipes/pwndbg/recipe.yaml`, `recipes/niche-elf/recipe.yaml` and `recipes/gdb-pt-dump/recipe.yaml` (their
+below-floor `context.python_min` only), and the CFE retro surface (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml}`,
 plus `config/failure-catalog.yaml` if a new gotcha regenerates it), committed alone as `retro(cfe): …`.
 **Spec:** `planning-artifacts/specs/spec-29-1-pwndbg-passes-pip-check-with-a-local-pwntools-that-carries-the-upstream-unicorn-fix.md`
 **Given** pwndbg 2026.09.15 requires `unicorn>=2.1.4,<3`, pwntools 4.15.0 requires `unicorn>=2.0.1, !=2.1.3, !=2.1.4`,

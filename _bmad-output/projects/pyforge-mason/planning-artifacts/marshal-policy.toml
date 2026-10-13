@@ -323,6 +323,8 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
   "recipes/pwntools/**",
   "recipes/pwndbg/**",
+  "recipes/niche-elf/**",
+  "recipes/gdb-pt-dump/**",
   ".claude/skills/conda-forge-expert/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]

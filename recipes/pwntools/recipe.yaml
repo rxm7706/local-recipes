@@ -1,0 +1,173 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.15.0"
+
+package:
+  name: pwntools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pwntools/pwntools-${{ version }}.tar.gz
+  sha256: d99a917298c1ca7241b51bba9ad2212f2af441ef66488059b2426508e9a2a776
+  patches:
+    - patches/0001-allow-unicorn-2.1.3-and-2.1.4-but-throw-when-emulating-mips.patch
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pwn=pwnlib.commandline.main:main
+      - version=pwnlib.commandline.common:main
+      - update=pwnlib.commandline.common:main
+      - unhex=pwnlib.commandline.common:main
+      - template=pwnlib.commandline.common:main
+      - shellcraft=pwnlib.commandline.common:main
+      - scramble=pwnlib.commandline.common:main
+      - pwnstrip=pwnlib.commandline.common:main
+      - phd=pwnlib.commandline.common:main
+      - main=pwnlib.commandline.common:main
+      - hex=pwnlib.commandline.common:main
+      - errno=pwnlib.commandline.common:main
+      - elfpatch=pwnlib.commandline.common:main
+      - elfdiff=pwnlib.commandline.common:main
+      - disasm=pwnlib.commandline.common:main
+      - disablenx=pwnlib.commandline.common:main
+      - debug=pwnlib.commandline.common:main
+      - cyclic=pwnlib.commandline.common:main
+      - constgrep=pwnlib.commandline.common:main
+      - common=pwnlib.commandline.common:main
+      - checksec=pwnlib.commandline.common:main
+      - asm=pwnlib.commandline.common:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=44.0
+  run:
+    - paramiko >=1.15.2
+    - mako >=1.0.0
+    - pyelftools >=0.29
+    - capstone >=3.0.5rc2
+    - ropgadget >=5.3
+    - pyserial >=2.7
+    - requests >=2.0
+    - pip >=6.0.8
+    - pygments >=2.0
+    - pysocks
+    - python-dateutil
+    - packaging
+    - psutil >=3.3.0
+    - intervaltree >=3.0
+    - sortedcontainers
+    - python-unicorn >=2.0.1
+    - six >=1.12.0
+    - rpyc
+    - colored-traceback
+    - unix-ar
+    - zstandard
+    - python >=${{ python_min }}
+
+# CFEP-25-justified: Can't use a regular imports test as due to the issue with the TERM variable
+tests:
+  - script:
+      env:
+        # Avoid errors like "Warning: _curses.error: setupterm: could not find terminfo database"
+        TERM: xterm
+      content:
+        - pip check
+        - python -c 'import pwn'
+        - python -c 'import pwnlib'
+        - pwn --help
+        - version --help
+        - update --help
+        - unhex --help
+        - template --help
+        - shellcraft --help
+        - scramble --help
+        - pwnstrip --help
+        - phd --help
+        - hex --help
+        - errno --help
+        - elfpatch --help
+        - elfdiff --help
+        - disasm --help
+        - disablenx --help
+        - debug --help
+        - cyclic --help
+        - constgrep --help
+        - checksec --help
+        - asm --help
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+  - script:
+      env:
+        TERM: xterm
+      content:
+        - python test_mips_guard.py
+    files:
+      recipe:
+        - test_mips_guard.py
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  homepage: https://pwntools.com
+  summary: Pwntools CTF framework and exploit development library.
+  license: MIT
+  license_file: LICENSE-pwntools.txt
+
+extra:
+  recipe-maintainers:
+    - chrisburr
+    - pavelzw
+    - '0xbe7a'
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pwntools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pwntools
+  cfe-purls:
+    - pkg:conda/pwntools@${{ version }}?channel=conda-forge
+    - pkg:pypi/pwntools@${{ version }}
+  cfe-upstream-repo: https://github.com/Gallopsled/pwntools
+  cfe-upstream-homepage: https://pwntools.com
+  cfe-import-names: [pwn, pwnlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pwntools-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - "backport Gallopsled/pwntools#2721 (unicorn 2.1.3/2.1.4 allowed, MIPS refused); drop the patch when a pwntools release carries it"
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-12T22:00:00Z
+  cfe-generated-by-version: 8.99.16
+  cfe-generated-at-datetime: 2026-10-12T22:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-13T02:58:49Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Mirror source: conda-forge/pwntools-feedstock @ 04c47d9c88fcf63baaac05770f5705d58e741e27 (2026-04-22).
+#    # v0 feedstock meta.yaml kept byte-identical; recipe.yaml is the local v1 and the only file carrying the patch.
+#    # Patch = upstream commit 7e5e79d00f (Gallopsled/pwntools#2721, on stable, unreleased as of 2026-10-12),
+#    # pyproject.toml and pwnlib/elf/plt.py hunks only. It exists so pwndbg (unicorn >=2.1.4) passes pip check.
+# build:
+#    # number 1 supersedes the feedstock's build 0 in any local-channel solve.
+#    # script adds --no-deps --no-build-isolation (the feedstock's v0 script has neither); host already has setuptools.
+# tests:
+#    # test_mips_guard.py checks the backported guard against whichever python-unicorn the test env resolves.
+####
