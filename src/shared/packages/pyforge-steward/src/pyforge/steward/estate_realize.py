@@ -96,9 +96,7 @@ def _yaml_dotted_get(doc: dict[str, Any], dotted: str) -> str | None:
     return str(cur) if cur is not None else None
 
 
-def _probe_locked_version_file(
-    root: Path, probe: dict[str, Any], env: str, platform: str, *, package: str
-) -> str:
+def _probe_locked_version_file(root: Path, probe: dict[str, Any], env: str, platform: str, *, package: str) -> str:
     rel = str(probe.get("path") or "")
     key = str(probe.get("key") or "")
     path = root / rel
@@ -117,9 +115,7 @@ def _probe_locked_version_file(
     return "live" if str(installed) == str(locked) else "stale"
 
 
-def _probe_locked_version_command(
-    deps: RealizeDeps, probe: dict[str, Any], env: str, package: str
-) -> str:
+def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env: str, package: str) -> str:
     cmd = probe.get("command")
     if isinstance(cmd, str):
         cmd = shlex_split(cmd)
@@ -230,17 +226,13 @@ def _probe_import(deps: RealizeDeps, probe: dict[str, Any]) -> str:
     return "live" if proc.returncode == 0 else "missing"
 
 
-def run_probe(
-    deps: RealizeDeps, row: dict[str, Any], *, package: str
-) -> str:
+def run_probe(deps: RealizeDeps, row: dict[str, Any], *, package: str) -> str:
     probe = row.get("probe") or {}
     expect = str(probe.get("expect") or "")
     env = str(row.get("env") or "pyforge-guild")
     if expect == "locked-version":
         if probe.get("path"):
-            return _probe_locked_version_file(
-                deps.root, probe, env, deps.platform(), package=package
-            )
+            return _probe_locked_version_file(deps.root, probe, env, deps.platform(), package=package)
         return _probe_locked_version_command(deps, probe, env, package)
     if expect == "kit-ok":
         return _probe_kit_ok(deps, probe)
@@ -374,7 +366,7 @@ def run_realize(
 def compute_realize_due_for_refresh(root: Path, moves: list[dict[str, Any]]) -> list[str]:
     try:
         register = _load_register(root)
-    except (OSError, ValueError, yaml.YAMLError, FileNotFoundError):
+    except OSError, ValueError, yaml.YAMLError, FileNotFoundError:
         return []
     journal = {"moves": moves}
     return realize_due_packages(journal, register, all_rows=False)

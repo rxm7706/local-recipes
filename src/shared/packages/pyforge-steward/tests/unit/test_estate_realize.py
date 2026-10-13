@@ -118,9 +118,7 @@ def test_probe_never_writes_on_realize_path(tmp_path: Path, flag_provider) -> No
 def test_manifest_stale_probe(tmp_path: Path) -> None:
     manifest_dir = tmp_path / "_bmad" / "_config"
     manifest_dir.mkdir(parents=True)
-    manifest_dir.joinpath("manifest.yaml").write_text(
-        "installation:\n  version: 6.12.0\n", encoding="utf-8"
-    )
+    manifest_dir.joinpath("manifest.yaml").write_text("installation:\n  version: 6.12.0\n", encoding="utf-8")
     row = {
         "env": "pyforge-guild",
         "probe": {
@@ -170,9 +168,7 @@ def test_pipeline_truth_stale_for_tea() -> None:
             }
         ]
     }
-    runner = RecordingRunner(
-        responses={"pipeline-truth": FakeProc([], 0, json.dumps(payload))}
-    )
+    runner = RecordingRunner(responses={"pipeline-truth": FakeProc([], 0, json.dumps(payload))})
     row = {
         "env": "pyforge-guild",
         "probe": {
@@ -187,9 +183,7 @@ def test_pipeline_truth_stale_for_tea() -> None:
 
 def test_bmad_loop_version_live(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = RecordingRunner(responses={"bmad-loop --version": FakeProc([], 0, "0.12.0\n")})
-    monkeypatch.setattr(
-        "pyforge.steward.estate_realize._locked_version", lambda *a, **k: "0.12.0"
-    )
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "0.12.0")
     row = {
         "env": "pyforge-marshal",
         "probe": {"expect": "locked-version", "command": ["bmad-loop", "--version"]},
