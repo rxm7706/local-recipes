@@ -2,7 +2,7 @@
 title: '100.5: A moved pin is realized, not just locked'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 baseline_revision: '850e7d9d9c9587b65b8aba849e1ee0cd995aadb1'
 flag:
   key: pyforge.steward.estate_refresh          # Story 100.2's (one flag per CAP)
