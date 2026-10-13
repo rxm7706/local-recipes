@@ -2,8 +2,8 @@
 title: '100.1: The pin policy is declared once and an upgrade is judged against it'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: '9fea58d6c7bf6e37d4c14c0d5de409ef3f2552a7'
 flag-exempt: detector-or-gate   # a registry and its check; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
