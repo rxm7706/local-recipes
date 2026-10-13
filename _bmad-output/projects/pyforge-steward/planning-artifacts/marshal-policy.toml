@@ -1118,6 +1118,7 @@ verify_commands = [
   ".claude/hooks/pre-shell.py",
   ".cursor/hooks.json",
   "scripts/pin_policy_check.py",
+  "scripts/pin_policy_lib.py",
   "scripts/pin_policy_restore.py",
   "scripts/llms_full_check.py",
   "scripts/detectors.py",
