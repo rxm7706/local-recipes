@@ -55,6 +55,7 @@ class EstateDeps:
     flag_on: Callable[[], bool] = field(default=lambda: True)
     bmad_latest: Callable[[str], str | None] = field(default=lambda _pkg: None)
     now: Callable[[], datetime] = field(default=lambda: datetime.now(timezone.utc))
+    enforce_require: bool = True
 
 
 def _default_runner(argv: list[str], cwd: Path) -> _Completed:
@@ -152,7 +153,8 @@ def _ensure_flag(deps: EstateDeps) -> DutyResult | None:
 
     if not deps.flag_on():
         return _refusal(f"estate: refused — flag {ESTATE_FLAG_KEY} is off")
-    require(ESTATE_FLAG_KEY)
+    if deps.enforce_require:
+        require(ESTATE_FLAG_KEY)
     return None
 
 

@@ -29,7 +29,8 @@
     "pyforge.steward.ledger_query_vizro_dataset": "off",
     "pyforge.steward.ledger_query_herald_facts": "off",
     "pyforge.steward.ledger_query_jira_github_matrix": "off",
-    "pyforge.steward.glass_export": "off"
+    "pyforge.steward.glass_export": "off",
+    "pyforge.steward.estate_refresh": "on"
   },
   "staging": {
     "pyforge.cutover_root": "local-recipes",
@@ -61,7 +62,8 @@
     "pyforge.steward.ledger_query_vizro_dataset": "off",
     "pyforge.steward.ledger_query_herald_facts": "off",
     "pyforge.steward.ledger_query_jira_github_matrix": "off",
-    "pyforge.steward.glass_export": "off"
+    "pyforge.steward.glass_export": "off",
+    "pyforge.steward.estate_refresh": "off"
   },
   "production": {
     "pyforge.cutover_root": "local-recipes",
@@ -93,6 +95,7 @@
     "pyforge.steward.ledger_query_vizro_dataset": "off",
     "pyforge.steward.ledger_query_herald_facts": "off",
     "pyforge.steward.ledger_query_jira_github_matrix": "off",
-    "pyforge.steward.glass_export": "off"
+    "pyforge.steward.glass_export": "off",
+    "pyforge.steward.estate_refresh": "off"
   }
 }
