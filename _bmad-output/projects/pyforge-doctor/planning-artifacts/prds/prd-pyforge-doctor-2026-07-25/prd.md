@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -1057,6 +1057,30 @@ after this PRD's 2026-10-07 re-stamp. `SPEC.md` is unchanged, and no CAP is adde
   landing records: co-governor regenerations of `docs/map.yaml`, `docs/how-to/pixi-tasks.md` and the reference pages;
   Story 38.1's follow-up review; `factory.py`'s preserve-manifest classification; and `test_cli_bridge.py`. They
   register no FR.
+
+**The FR space: no FR registered.** The FR space stays FR-1..FR-21 (FR-22 is the next free id).
+
+**Content changed:** this section only. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-13
+
+*Chain-currency cascade (spec → PRD). After the 2026-10-10 section, `spec-pyforge-doctor`'s memlog gained the entries of
+2026-10-10 to 2026-10-13, ending with Story 46.1's landing. `SPEC.md` is unchanged, and no CAP is added.*
+
+- **Story 42.1 (minted 2026-10-11, landed).** The `frontmatter-duplicate-keys` source reds a tracked story spec that
+  repeats a frontmatter key. It is a feature under CAP-81 with CAP-86, `flag-exempt: detector-or-gate`, and registers
+  no FR.
+- **Story 43.1 (minted and landed 2026-10-12).** `bmad-drift` classifies every Tier-3 shape marshal dispatch writes,
+  from one declared list. It is a fix under CAP-12 with CAP-11 (FR-15/FR-16).
+- **Story 44.1 (minted and landed 2026-10-12).** The five-second budget test judges the median CPU of five
+  `doctor check` runs instead of wall time, and records `DW-doctor-44-1`. It is a test-only fix under CAP-1 and NFR-4.
+- **Story 46.1 (minted 2026-10-12, landed 2026-10-13).** The env-hygiene scan walks each tree once and skips test code.
+  Median CPU went from 2.21 s to 1.44 s (35% lower), and `DW-doctor-44-1` closed. It is a fix under CAP-1 and NFR-4.
+  Epic 45 stays reserved by the ci-pause plan.
+- **Story 33.1 (landed 2026-10-10)** realizes FR-19 (CAP-86) as written. **Story 37.1 (landed)** relays the Guild's
+  `spec-one-chain-per-station` CAP-11.
+- **Everything else is bookkeeping.** These are surface reconciles from co-governed paths (Stories 85.7, 87.3, 19.2,
+  36.1, 37.1, 91.1, 93.1, 95.1 and 96.1) and Story 43.1's review fix passes. They register no FR.
 
 **The FR space: no FR registered.** The FR space stays FR-1..FR-21 (FR-22 is the next free id).
 
