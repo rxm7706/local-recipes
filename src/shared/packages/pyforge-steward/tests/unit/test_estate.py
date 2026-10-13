@@ -324,9 +324,7 @@ def test_steward_help_lists_estate(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 @flag_states("pyforge.steward.estate_refresh")
-def test_estate_verbs_respect_flag_state(
-    tmp_path: Path, flag_provider: dict[str, bool]
-) -> None:
+def test_estate_verbs_respect_flag_state(tmp_path: Path, flag_provider: dict[str, bool]) -> None:
     root = _fixture_root(tmp_path)
     runner = RecordingRunner()
     on = flag_provider["pyforge.steward.estate_refresh"]
