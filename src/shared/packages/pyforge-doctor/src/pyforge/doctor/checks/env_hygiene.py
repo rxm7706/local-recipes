@@ -237,6 +237,21 @@ def _git_ignored_dirs(target: Path) -> frozenset[str]:
     )
 
 
+def _is_skipped_test_relative_path(relative: Path) -> bool:
+    """True when ``relative`` names test-only code for a scan rooted at its parent.
+
+    The rule is judged on the path relative to the scan target (Story 46.1):
+    scanning ``tests/fixtures/`` directly still reports ``f.py`` there."""
+    name = relative.name
+    if name in {"conftest.py", "tests.py"}:
+        return True
+    if name.startswith("test_") and name.endswith(".py"):
+        return True
+    if name.endswith("_test.py"):
+        return True
+    return "tests" in relative.parts or "test" in relative.parts
+
+
 def _discover_python_files(target: Path) -> tuple[list[Path], bool]:
     """A bounded, ``.git``-etc-pruning ``os.walk`` collecting every ``*.py``
     file under ``target``, sorted (both dir traversal and file collection)
@@ -265,6 +280,7 @@ def _discover_python_files(target: Path) -> tuple[list[Path], bool]:
     if not target.is_dir():
         return [], False
 
+    scan_root = target.resolve()
     discovered: list[Path] = []
     entries_visited = 0
     incomplete = False
@@ -286,49 +302,19 @@ def _discover_python_files(target: Path) -> tuple[list[Path], bool]:
         for name in sorted(filenames):
             entries_visited += 1
             if name.endswith(".py"):
-                discovered.append(Path(dirpath) / name)
+                file_path = Path(dirpath) / name
+                try:
+                    relative = file_path.resolve().relative_to(scan_root)
+                except ValueError:
+                    relative = file_path
+                if not _is_skipped_test_relative_path(relative):
+                    discovered.append(file_path)
             if entries_visited >= _DISCOVERY_ENTRY_CAP:
                 incomplete = True
                 break
         if entries_visited >= _DISCOVERY_ENTRY_CAP:
             break
     return discovered, incomplete
-
-
-def _resolve_os_aliases(
-    tree: ast.Module,
-) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
-    """Returns ``(os_names, environ_names, getenv_names)`` -- the bound
-    names that refer to the ``os`` module, ``os.environ``, and
-    ``os.getenv`` respectively in THIS file, resolving ``import os as
-    X``/``from os import environ [as X]``/``from os import getenv [as
-    X]`` aliasing (mirrors ``test_sources_warden_no_subprocess.py``'s
-    ``os_aliases`` idiom) -- previously hard-coded to the literal names
-    ``"os"``/``"environ"``/``"getenv"``, which an aliased or ``from``-style
-    import silently evaded (review finding)."""
-    os_names = {"os"}
-    environ_names: set[str] = set()
-    getenv_names: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.name == "os" and alias.asname:
-                    os_names.add(alias.asname)
-        elif isinstance(node, ast.ImportFrom) and node.module == "os":
-            for alias in node.names:
-                if alias.name == "*":
-                    # `from os import *` binds environ AND getenv under
-                    # their own names (review finding: the star-import
-                    # variant previously evaded the scanner entirely).
-                    environ_names.add("environ")
-                    getenv_names.add("getenv")
-                    continue
-                bound = alias.asname or alias.name
-                if alias.name == "environ":
-                    environ_names.add(bound)
-                elif alias.name == "getenv":
-                    getenv_names.add(bound)
-    return frozenset(os_names), frozenset(environ_names), frozenset(getenv_names)
 
 
 def _is_os_environ_attribute(node: ast.expr, os_names: frozenset[str]) -> bool:
@@ -645,15 +631,10 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
     ``_auth_headers`` guard clause now suppresses it rather than producing
     the false positives that kept it out before."""
 
-    def __init__(
-        self,
-        os_names: frozenset[str],
-        environ_names: frozenset[str],
-        getenv_names: frozenset[str],
-    ) -> None:
-        self._os_names = os_names
-        self._environ_names = environ_names
-        self._getenv_names = getenv_names
+    def __init__(self) -> None:
+        self._os_names: set[str] = {"os"}
+        self._environ_names: set[str] = set()
+        self._getenv_names: set[str] = set()
         self._guards: list[ast.expr] = []
         self._credential_vars: dict[str, str | None] = {}
         self.matches: list[tuple[int, str, str | None]] = []

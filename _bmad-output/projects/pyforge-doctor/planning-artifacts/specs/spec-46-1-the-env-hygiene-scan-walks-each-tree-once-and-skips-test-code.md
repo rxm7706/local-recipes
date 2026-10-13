@@ -2,7 +2,8 @@
 title: "46.1: The env-hygiene scan walks each tree once and skips test code"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '7b6caaae2434c529ab2cf49e0e2749713c30ab81'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
