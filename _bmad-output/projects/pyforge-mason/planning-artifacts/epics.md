@@ -3464,7 +3464,7 @@ the local pwntools with `python-unicorn` 2.1.4, and `pip check` passes there
 - The story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry.
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
 
-**Status:** backlog
+**Status:** done
 
 ## Epic 30: Recipes that import playwright depend on playwright-python (fix under spec-pyforge-mason CAP-18 and CAP-23)
 
