@@ -2234,7 +2234,7 @@ gates are never weakened); the new test's delay seam defaults to 0 for every oth
 **When** a client reads from `_RangeServer`
 **Then** every branch (206, 200, 416) records the response before writing any of it, so the log is complete when the client can read the response; a new regression test delays each body write and asserts the request is in the log as soon as the query returns
 **And** every existing test and assertion in the file is unchanged and green; the diff adds no skip, `xfail`, retry or sleep to an existing test; only the test file changes; moving the appends back after the write reds the new test (mutation); `pixi run -e pyforge-atlas pyforge-atlas-test` green
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

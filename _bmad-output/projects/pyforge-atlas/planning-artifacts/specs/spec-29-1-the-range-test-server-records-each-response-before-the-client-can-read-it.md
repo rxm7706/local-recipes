@@ -2,7 +2,7 @@
 title: '29.1: The range test server records each response before the client can read it'
 type: 'fix'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 baseline_revision: '0d5702f516'
 review_loop_iteration: 0
 followup_review_recommended: false
