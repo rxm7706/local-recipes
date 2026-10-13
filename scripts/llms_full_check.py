@@ -37,6 +37,7 @@ import json
 import re
 import sys
 import tomllib
+from datetime import date
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -129,11 +130,18 @@ def mentioned(name: str, text: str) -> bool:
     ) is not None
 
 
-def run() -> tuple[list[dict], dict]:
-    deps = manifest_deps(tomllib.loads(MANIFEST.read_text()))
+def run(
+    *,
+    manifest_path: Path | None = None,
+    catalog_path: Path | None = None,
+    catalog_text: str | None = None,
+) -> tuple[list[dict], dict]:
+    manifest = manifest_path or MANIFEST
+    catalog = catalog_path or CATALOG
+    deps = manifest_deps(tomllib.loads(manifest.read_text()))
     for name, specs in station_run_deps().items():
         deps.setdefault(name, set()).update(specs)
-    text = CATALOG.read_text()
+    text = catalog_text if catalog_text is not None else catalog.read_text()
 
     findings: list[dict] = []
     for name in sorted(deps):
@@ -163,18 +171,121 @@ def run() -> tuple[list[dict], dict]:
     return findings, {"manifest_deps": len(deps), "catalog_entries": len(entries)}
 
 
+def _preferred_floor(specs: set[str]) -> str:
+    """Pick the manifest floor token to write into the catalog row."""
+    versions = sorted({first_version(s) for s in specs if first_version(s)}, key=lambda v: [int(x) for x in v.split(".")])
+    if not versions:
+        return "*"
+    return versions[-1]
+
+
+def _rewrite_catalog_floor(line: str, name: str, new_floor: str) -> str:
+    """Rewrite the version token for ``name`` on one bullet line, if present."""
+    if not line.lstrip().startswith("- "):
+        return line
+    for match in ENTRY_RE.finditer(line):
+        spec = match.group(2)
+        if not SPEC_OK_RE.match(spec):
+            continue
+        names = [n.strip() for n in match.group(1).split("/")]
+        if name not in names:
+            continue
+        old = match.group(0)
+        op = ">=" if spec.lstrip().startswith(">=") else ">="
+        new_spec = f"{op}{new_floor}"
+        if "," in spec or ";" in spec:
+            # keep trailing channel / inline notes after the first version token
+            tail = spec.split(",", 1)[1] if "," in spec else spec.split(";", 1)[1]
+            new_spec = f"{new_spec}, {tail.lstrip()}" if "," in spec else f"{new_spec}; {tail.lstrip()}"
+        new = old.replace(f"({spec})", f"({new_spec})", 1)
+        return line.replace(old, new, 1)
+    return line
+
+
+def _replace_header_floor_clause(text: str, *, today: date) -> str:
+    command = "`python scripts/llms_full_check.py --fix-floors`"
+    replacement = (
+        f"> Version-floor re-sync: run {command} (deterministic; {today.isoformat()}). "
+        "Prose stays hand-written; undocumenteds and ghosts still require a human."
+    )
+    lines = text.splitlines()
+    out: list[str] = []
+    skipping = False
+    for line in lines:
+        if line.startswith("## To regenerate"):
+            skipping = True
+            if not any(replacement in x for x in out):
+                out.append(replacement)
+            continue
+        if skipping:
+            if line.startswith("## ") or line.startswith("**Staleness detector:**"):
+                skipping = False
+            else:
+                continue
+        out.append(line)
+    if not any(replacement in x for x in out):
+        # insert before staleness block if present
+        inserted = False
+        final: list[str] = []
+        for line in out:
+            if not inserted and line.startswith("**Staleness detector:**"):
+                final.append(replacement)
+                inserted = True
+            final.append(line)
+        out = final if inserted else [replacement, *out]
+    return "\n".join(out) + ("\n" if text.endswith("\n") else "")
+
+
+def fix_floors(*, manifest_path: Path | None = None, catalog_path: Path | None = None, today: date | None = None) -> int:
+    """Rewrite floor-drift rows in the catalog; leave other finding kinds untouched."""
+    manifest = manifest_path or MANIFEST
+    catalog = catalog_path or CATALOG
+    today = today or date.today()
+    text = catalog.read_text(encoding="utf-8")
+    findings, _stats = run(manifest_path=manifest, catalog_path=catalog, catalog_text=text)
+    floor = [f for f in findings if f["kind"] == "floor-drift"]
+    if not floor:
+        return 0
+    deps = manifest_deps(tomllib.loads(manifest.read_text()))
+    for name, specs in station_run_deps().items():
+        deps.setdefault(name, set()).update(specs)
+    lines = text.splitlines()
+    for item in floor:
+        name = item["name"]
+        new_floor = _preferred_floor(deps[name])
+        lines = [_rewrite_catalog_floor(line, name, new_floor) for line in lines]
+    new_text = "\n".join(lines) + ("\n" if text.endswith("\n") else "")
+    new_text = _replace_header_floor_clause(new_text, today=today)
+    catalog.write_text(new_text, encoding="utf-8")
+    remaining, _ = run(manifest_path=manifest, catalog_path=catalog)
+    return len(remaining)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="llms-full-check",
         description="Detect drift between pixi.toml and docs/reference/library-llms-full.md "
                     "(the library catalog). Exits 1 on drift.")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument(
+        "--fix-floors",
+        action="store_true",
+        help="rewrite version floors for existing catalog rows from pixi.toml (Story 100.3)",
+    )
     args = parser.parse_args()
 
     for path in (MANIFEST, CATALOG):
         if not path.exists():
             print(f"missing {path}", file=sys.stderr)
             return 2
+
+    if args.fix_floors:
+        remaining = fix_floors()
+        if remaining:
+            print(f"llms-full-check --fix-floors: {remaining} finding(s) remain after floor sync", file=sys.stderr)
+            return 1
+        print("llms-full-check --fix-floors: floor drift cleared")
+        return 0
 
     findings, stats = run()
     if args.json:

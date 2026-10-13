@@ -2,8 +2,10 @@
 title: '100.3: Every derived surface regenerates from the lock by its own generator'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'done'
+followup_review_recommended: false
+review_loop_iteration: 1
+baseline_revision: 'c17b91a9af8e3ae744187e20e29a33cc1d69a9dc'
 flag:
   key: pyforge.steward.estate_refresh          # Story 100.2's (one flag per CAP)
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -11,8 +13,6 @@ flag:
   scope: global                                # v1 is global only
   fallback: the `estate reconcile` verb refuses naming the flag; `llms_full_check.py --fix-floors` is a script mode that needs no flag and changes nothing unless invoked
   cleanup: with Story 100.2's flag, 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -153,8 +153,26 @@ Type / Effort / Deps: feature / M / S-100.2.
 - `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py` and `spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps.
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
 
+## Review Triage Log
+
+### 2026-10-13 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[patch]` Post-stamp `spec-surface-check` was missing from reconcile — added journal row and refusal on non-zero.
+  - `[false]` `[reject]` Hard-coded spec list for reconcile — implementation reads `scripts/.spec-surface-baseline.json` file keys only.
+
+## Auto Run Result
+
+- Summary: Added `pyforge steward estate reconcile` (generators in policy order, eight gating checks, two warn-only rows, baseline-driven memlog + scoped stamps + spec-surface re-check) and `scripts/llms_full_check.py --fix-floors`.
+- Files: `estate_reconcile.py` (reconcile duty), `estate.py` / `cli.py` (verb wiring), `llms_full_check.py` (`--fix-floors`), unit tests for reconcile and catalog floors, spec-surface memlogs on `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-steward`.
+- Review: one low patch applied (spec-surface re-check); one false reject on spec-list concern.
+- Follow-up review: `false` (no high/medium patches).
+- Verification: `test_estate_reconcile.py` and extended `test_llms_full_check.py` green; `pyforge-steward-test` green; `pyforge-doctor-scripts-test` green; `llms-full-check` exit 0; `spec_surface_reconcile.py` exit 0; `detectors-ci` exit 0; `lint-types` exit 0 (steward package formatted).
+- Residual: live reconcile still requires pixi/scribe on PATH; `deck-drift` warn row uses a fixed slug/path and may exit non-zero without failing reconcile.
+
 ## Spec Change Log
 
 - 2026-10-13: minted with CAP-167 / FR-40 and Epic 100. `type: feature`, Story 100.2's flag. `--fix-floors` replaces
   the catalog header's LLM floor-re-sync prompt by ruling Q7 (recommended answer, adopted); prose stays
   hand-written.
+- 2026-10-13: Story 100.3 implemented — `estate reconcile` + `--fix-floors` (build-auto dispatch).

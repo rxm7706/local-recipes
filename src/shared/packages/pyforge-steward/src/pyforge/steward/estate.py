@@ -1,6 +1,6 @@
 """``steward estate`` — policy-driven pin refresh conductor (Story 100.2 / CAP-167).
 
-Three verbs in v1: ``plan``, ``refresh``, ``status``. Every mutating step is a
+Four verbs in v1: ``plan``, ``refresh``, ``reconcile``, ``status``. Every mutating step is a
 subprocess (AD-1); this module never edits ``pixi.toml`` (AD-5). Returns
 ``DutyResult`` only (AD-8).
 """
@@ -575,10 +575,29 @@ class EstateDuty:
             return run_plan(deps, json_out=bool(getattr(ns, "json", False)), due_only=bool(getattr(ns, "due", False)))
         if verb == "refresh":
             return run_refresh(deps, transitive=bool(getattr(ns, "transitive", False)))
+        if verb == "reconcile":
+            from .estate_reconcile import ReconcileDeps, run_reconcile
+
+            rdeps = getattr(ns, "_reconcile_deps", None)
+            if rdeps is None:
+                rdeps = ReconcileDeps(
+                    root=deps.root,
+                    runner=deps.runner,
+                    branch=deps.branch,
+                    dirty=deps.dirty,
+                    head_sha=deps.head_sha,
+                    platform=deps.platform,
+                    flag_on=deps.flag_on,
+                    bmad_latest=deps.bmad_latest,
+                    now=deps.now,
+                    enforce_require=deps.enforce_require,
+                )
+            journal_path = getattr(ns, "journal_path", None)
+            return run_reconcile(rdeps, journal_path=journal_path)
         if verb == "status":
             return run_status(
                 deps,
                 json_out=bool(getattr(ns, "json", False)),
                 show_all=bool(getattr(ns, "all", False)),
             )
-        return DutyResult(ok=False, summary="estate: need plan, refresh, or status")
+        return DutyResult(ok=False, summary="estate: need plan, refresh, reconcile, or status")
