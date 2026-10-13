@@ -5784,7 +5784,7 @@
    "docs/foundry/upstream-drafts/staged-recipes-lfx-bundles-superseded.md": "13f01aad093a1d8e3ae282785f679225289cac51",
    "docs/foundry/upstream-todos.yaml": "301d773c7d4f999d05749c0532e59f9fecaf4ffe",
    "docs/governance/pin-policy.schema.json": "83074dd072cd25ed665ec7b7e73178414a207186",
-   "docs/governance/pin-policy.yaml": "c475c146d3e07fa0769c2bd0d8f17fe36694f9bc",
+   "docs/governance/pin-policy.yaml": "6034d2f15b5420afd20b906f71be4dae2c3fc65d",
    "docs/governance/realization-register.schema.json": "9791a3578de566bc87c3f480d1cd15f56c28054f",
    "docs/governance/realization-register.yaml": "20ebdbb0fc9c441cf61c10a432a22025c2854d12",
    "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
@@ -6121,7 +6121,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "ce428c02b76ac2e13da0949d3cc3760111add598"
+  "memlog": "436279f844d4a4e18f038a60e44c78cc671fc275"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

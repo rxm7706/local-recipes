@@ -2,7 +2,7 @@
 title: '100.7: The first refresh lands through the path'
 type: 'chore'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'blocked'
 baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -119,3 +119,22 @@ Type / Effort / Deps: chore / S / S-100.6.
 
 - 2026-10-13: minted with CAP-167 / FR-40 and Epic 100. `type: chore`. Widened the same day: `realize --plan` in
   the run, the operator's `realize --yes` and `--transitive` on the branch, the per-platform confirmation.
+
+## Auto Run Result
+
+Status: blocked  
+Blocking condition: `pin_policy_restore` refuses after `estate refresh` — `pixi lock` cannot solve once policy losses are rewritten (cron-descriptor floor restore vs `django-celery-beat`; earlier openai 3.x vs litellm 1.105). Auto-checkpoint pixi state on the branch was reset to `origin/main` at commit `34a765839f`.
+
+**Agent half (done on `dispatch/pyforge-steward/100.7`):**
+
+- Fixed `scripts/pin_policy_check.py` / `pin_policy_restore.py` to insert `scripts/` on `sys.path` so `estate plan|refresh` can render and diff policy (`80bca4916b`).
+- Hardened restore: lowered-floor uses base declaration; channel-table cap loss uses base table; corrected `cap: "<42"` / `"<1.31"` YAML in `docs/governance/pin-policy.yaml`.
+- Added `never-move` holds for `openai` (`pyforge-guild`) and `cron-descriptor` (`python-agent-platform`) in pin-policy for solve conflicts found during refresh probes.
+- Partial `estate reconcile` output and memlog/scoped stamps live on the branch from checkpoint `9714b363f4` (derived docs + `environment.yaml`); journal stub at `.steward/estate-refresh/2026-10-13.json` is not a complete AC1 run.
+- `python scripts/spec_surface_reconcile.py` — OK after memlog entries on `spec-pyforge-steward`, `spec-pyforge-doctor`, `spec-pyforge-marshal`, `spec-pyforge-unifying-strategy`.
+
+**Operator on the branch (required before AC1–AC5):**
+
+1. From a clean tree at `origin/main` pixi (`34a765839f`), run `pixi run -e pyforge-steward pyforge steward estate refresh` (with updated pin-policy), then `realize --yes` for operator-gate rows, `estate reconcile`, `estate verify`.
+2. Confirm `pin_policy_check.py --diff origin/main` exit 0 and land one PR with `maintenance`, lock-solved ×3, and marshal merge subject per Q14.
+3. Scoped `--write-baseline --spec …` for any new governed paths after the real batch (never a bare global stamp).
