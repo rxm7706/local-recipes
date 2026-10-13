@@ -2,8 +2,8 @@
 title: '100.6: The hand sequence is retired by one how-to and one pointer'
 type: 'chore'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: '0b33f165633d7862267998de5e35f5de4ee46d83'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
