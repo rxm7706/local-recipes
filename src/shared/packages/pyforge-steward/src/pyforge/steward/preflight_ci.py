@@ -874,6 +874,61 @@ def _select(
     )
 
 
+def select_lanes_for_paths(
+    repo_root: Path,
+    lanes: Sequence[LaneLike],
+    pixi_data: Mapping[str, Any],
+    changed_paths: Sequence[str],
+    *,
+    process: PosixProcess | None = None,
+) -> Selection:
+    """Like :func:`select_lanes`, but evaluates workflow rules against explicit paths.
+
+    Used by ``estate verify`` to ask which lanes CI would run for a ``pixi.toml`` diff
+    without requiring that diff on the current branch (Story 100.4 / CAP-167).
+    """
+    repo_root = repo_root.resolve()
+    proc = process or PosixProcess()
+    changed = tuple(changed_paths)
+    try:
+        with tempfile.TemporaryDirectory(prefix="preflight-select-") as scratch_name:
+            scratch = Path(scratch_name)
+            env = _git_env()
+            probe = _git(proc, repo_root, ["rev-parse", "--verify", "--quiet", BASE_REF], env)
+            if probe.returncode != 0:
+                raise _SelectAll(f"{BASE_REF} does not exist")
+            workflows = load_workflows(repo_root)
+            states = [_State(repo_root, proc, workflows, pixi_data, changed, env, scratch)]
+            verdicts: list[LaneVerdict] = []
+            for lane in lanes:
+                outcomes = [_outcome(state.sites_for(lane)) for state in states]
+                chosen = next((o for o in outcomes if o[0]), None)
+                if chosen is not None:
+                    verdicts.append(LaneVerdict(lane.task, lane.environment, True, reason=chosen[1]))
+                    continue
+                skipped = outcomes[-1][2]
+                verdicts.append(
+                    LaneVerdict(
+                        lane.task,
+                        lane.environment,
+                        False,
+                        workflow="; ".join(dict.fromkeys(s.workflow for s in skipped)),
+                        rule="; ".join(f"{s.workflow} job {s.job!r}: {s.rule}" for s in skipped),
+                    )
+                )
+            return Selection(
+                base_ref=BASE_REF,
+                all_reason=None,
+                changed_paths=changed,
+                dirty_paths=(),
+                verdicts=tuple(verdicts),
+            )
+    except _SelectAll as exc:
+        return _select_all(lanes, str(exc), changed, ())
+    except Exception as exc:  # noqa: BLE001
+        return _select_all(lanes, f"selection failed ({type(exc).__name__}: {exc})", changed, ())
+
+
 def _evaluation_states(
     root: Path,
     pixi_data: Mapping[str, Any],

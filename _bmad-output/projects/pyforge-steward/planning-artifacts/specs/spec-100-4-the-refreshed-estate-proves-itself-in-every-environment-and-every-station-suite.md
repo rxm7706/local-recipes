@@ -2,8 +2,8 @@
 title: '100.4: The refreshed estate proves itself in every environment and every station suite'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: '2a0ef21461602cc1b0ef16d238d8d7cc10193887'
 flag:
   key: pyforge.steward.estate_refresh          # Story 100.2's (one flag per CAP)
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
