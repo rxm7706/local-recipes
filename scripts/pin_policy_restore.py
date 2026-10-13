@@ -9,6 +9,10 @@ import sys
 import tomllib
 from pathlib import Path
 
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
 import pin_policy_lib as lib
 from pin_policy_lib import REPO_ROOT, check_diff, check_static, load_policy
 
