@@ -200,7 +200,7 @@ def test_ac3_refresh_path_and_journal(tmp_path: Path) -> None:
     assert len(doc["steps"]) >= 4  # noqa: PLR2004
     jsonschema = pytest.importorskip("jsonschema")
     schema = json.loads(SCHEMA_RESOURCE.read_text(encoding="utf-8"))
-    jsonschema.validate(doc, schema["$defs"]["journal"], cls=jsonschema.Draft202012Validator)
+    jsonschema.validate(doc, schema, cls=jsonschema.Draft202012Validator)
 
 
 def test_ac3_bump_pixi_when_pixi_moves(tmp_path: Path) -> None:
