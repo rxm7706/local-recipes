@@ -90,8 +90,8 @@ Type / Effort / Deps: chore / S / S-100.3, S-100.4, S-100.5.
 - Epic: Epic 100, Stories 100.1–100.7.
 - Ledger key: `100-6-the-hand-sequence-is-retired-by-one-how-to-and-one-pointer`.
 - Ledger status at mint: `backlog`.
-- Deps: S-100.3, S-100.4, S-100.5. Re-base `baseline_revision` to the commit where the last of them landed before
-  dispatch.
+- Deps: S-100.3, S-100.4, S-100.5. `marshal factory dispatch` stamps `baseline_revision` with the launch commit (Story 100.1's run did), so no
+  hand re-base is needed.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."100"` (added with the mint).
 - Minted 2026-10-13 in one chain commit.
 
