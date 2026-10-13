@@ -9,13 +9,8 @@ import sys
 import tomllib
 from pathlib import Path
 
-from pin_policy_lib import (
-    REPO_ROOT,
-    check_diff,
-    check_static,
-    load_policy,
-    render_upgrade_command,
-)
+import pin_policy_lib as lib
+from pin_policy_lib import REPO_ROOT, check_diff, check_static, load_policy
 
 ROOT = REPO_ROOT
 
@@ -80,16 +75,36 @@ def main() -> int:
     if not findings:
         return 0
 
+    base_manifest, _ = lib._read_manifest_at_ref(args.base_ref, root=root)
+    base_index = (
+        {(d.feature, d.package): d for d in lib.iter_dependency_decls(base_manifest)}
+        if base_manifest
+        else {}
+    )
+
     original_bytes = manifest_path.read_bytes()
     text = manifest_text
     for f in findings:
         if f.kind not in {"lost-cap", "flattened-table", "lowered-floor", "moved-hold"}:
             continue
-        m = re.search(r">=\s*(\d+(?:\.\d+)*)", f.detail) or re.search(
-            r"-> (\d+(?:\.\d+)*)", f.detail
-        )
-        new_floor = m.group(1) if m else "0.0.0"
+        base_decl = base_index.get((f.feature, f.package))
+        base_spec = base_decl.spec if base_decl else ""
+        if f.kind in {"lowered-floor", "moved-hold"} and base_decl:
+            m = re.search(r">=\s*(\d+(?:\.\d+)*)", base_spec)
+            new_floor = m.group(1) if m else "0.0.0"
+            if f.kind == "moved-hold":
+                manifest_path.write_bytes(original_bytes)
+                print(
+                    f"REFUSE: never-move package {f.package} moved — restore manually from policy",
+                    file=sys.stderr,
+                )
+                return 1
+        else:
+            m = re.search(r">=\s*(\d+(?:\.\d+)*)", f.detail.split("->")[-1])
+            new_floor = m.group(1) if m else "0.0.0"
         clause = _restore_clause(policy, f.package, f.feature, new_floor, f.kind)
+        if f.kind == "flattened-table" and base_decl:
+            clause = base_spec
         if not clause:
             print(f"REFUSE: no policy clause for {f.package} @ {f.feature}", file=sys.stderr)
             return 1

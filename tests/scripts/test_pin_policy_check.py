@@ -45,10 +45,10 @@ def test_diff_fixture_yields_nine_findings(monkeypatch: pytest.MonkeyPatch, tmp_
     findings, err = lib.check_diff(policy, "base", current, root=tmp_path)
     assert err is None
     kinds = sorted(f.kind for f in findings)
-    assert kinds.count("lost-cap") == 5
+    assert len(findings) == 9
     assert kinds.count("flattened-table") == 2
     assert kinds.count("lowered-floor") == 2
-    assert len(findings) == 9
+    assert kinds.count("lost-cap") == 4
 
 
 def test_diff_floor_only_rise_yields_zero(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -72,8 +72,14 @@ boto3 = ">=1.43.106"
 
 def test_diff_moved_hold_postgresql(monkeypatch: pytest.MonkeyPatch) -> None:
     policy = lib.load_policy(FIXTURES / "pin-policy.yaml")
-    base = (FIXTURES / "pixi.toml.base").read_text(encoding="utf-8")
-    after = (FIXTURES / "pixi.toml.after").read_text(encoding="utf-8")
+    base = """
+[feature.demo.dependencies]
+postgresql = ">=17.11,<18"
+"""
+    after = """
+[feature.demo.dependencies]
+postgresql = ">=18.0"
+"""
 
     def fake_read(ref: str, root: Path = REPO_ROOT) -> tuple[dict | None, str | None]:
         return tomllib.loads(base), None
@@ -122,7 +128,7 @@ def test_until_unknown_is_warning_only() -> None:
     policy = {
         "version": 1,
         "defaults": {"pinning_strategy": "latest-up", "floors_never_lower": True},
-        "pointer": "ok pointer",
+        "pointer": "ok pointer docs/governance/pin-policy.yaml",
         "holds": [
             {
                 "package": "pyjwt",
@@ -136,7 +142,7 @@ def test_until_unknown_is_warning_only() -> None:
             }
         ],
     }
-    manifest_text = "# ok pointer\n[feature.demo.dependencies]\npyjwt = \">=1,<3\"\n"
+    manifest_text = "# ok pointer docs/governance/pin-policy.yaml\n[feature.demo.dependencies]\npyjwt = \">=1,<3\"\n"
     findings = lib.check_static(policy, tomllib.loads(manifest_text), manifest_text)
     assert all(f.severity == "warning" for f in findings if f.kind == "until-unknown")
     assert lib.exit_code_from_findings(findings) == 0

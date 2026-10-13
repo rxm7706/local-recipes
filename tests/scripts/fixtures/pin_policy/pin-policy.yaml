@@ -36,3 +36,41 @@ holds:
   authority: spec-100-1
   owner: pyforge-steward
   until: policy
+- package: git-pkgs
+  hold: cap
+  cap: <0.22
+  features: [demo]
+  reason: cap
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy
+- package: opengrep
+  hold: cap
+  cap: <1.31
+  features: [demo]
+  reason: cap
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy
+- package: transformers
+  hold: cap
+  cap: <6.0
+  features: [demo]
+  reason: cap
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy
+- package: cron-descriptor
+  hold: floor-only
+  features: [demo]
+  reason: floor
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy
+- package: openai
+  hold: floor-only
+  features: [demo]
+  reason: floor
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy

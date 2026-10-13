@@ -4,8 +4,12 @@ platforms = ["linux-64"]
 
 [feature.demo.dependencies]
 pyjwt = ">=2.15.1"
+git-pkgs = ">=0.21.0"
+opengrep = ">=1.30.2"
+transformers = ">=4.48.0"
 liquibase-postgresql = ">=5.0.4"
 pptxgenjs-plus = ">=4.3.4"
 cron-descriptor = ">=1.4.5"
+openai = ">=2.53.0"
 boto3 = ">=1.43.106"
 postgresql = ">=18.0"
