@@ -335,6 +335,12 @@
       "reason": "a dependency is a pixi.toml change in a PR, not a live `pixi add`/`pixi update` -- edit pixi.toml, run `pixi lock`, and open a PR (regenerate environment.yaml too)."
     },
     {
+      "id": "steward-estate-transitive",
+      "applies_to": "bash",
+      "trigger": "pyforge steward estate refresh --transitive (or pixi run … pyforge steward estate refresh --transitive)",
+      "reason": "`pixi update` is operator-only — run `pyforge steward estate refresh` without `--transitive` inside a worktree that lands through a PR, or have the operator run `--transitive` by hand."
+    },
+    {
       "id": "bmad-switch-unsafe",
       "applies_to": "bash",
       "trigger": "scripts/bmad-switch run from a worktree, or with BMAD_ACTIVE_PROJECT already set",

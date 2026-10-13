@@ -79,6 +79,7 @@ DUTIES: tuple[str, ...] = (
     "quarantine",
     "session",
     "deck-drift",
+    "estate",
 )
 
 _HELP = {
@@ -185,6 +186,10 @@ _HELP = {
         "the token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3 sprint-status "
         "feed, scribe reachability (Story 63.4 / spec-pyforge-steward CAP-5)"
     ),
+    "estate": (
+        "policy-driven estate pin refresh — plan (dry-run), refresh (upgrade + restore + lock), "
+        "status (journal); behind pyforge.steward.estate_refresh (Story 100.2 / CAP-167)"
+    ),
 }
 
 
@@ -258,6 +263,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_session_subparsers(duty_parser)
         elif name == "deck-drift":
             _add_deck_drift_arguments(duty_parser)
+        elif name == "estate":
+            _add_estate_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -1164,6 +1171,26 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     clean.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
 
+def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
+    estate_subs = estate_parser.add_subparsers(dest="estate_verb", metavar="{plan,refresh,status}")
+    plan = estate_subs.add_parser("plan", help="dry-run upgrade through the pin policy")
+    plan.add_argument("--json", action="store_true", help="emit plan JSON (estate-journal-schema plan shape)")
+    plan.add_argument(
+        "--due",
+        action="store_true",
+        help="exit non-zero when the last journal is older than 30 days or absent",
+    )
+    refresh = estate_subs.add_parser("refresh", help="run upgrade, restore losses, re-lock, journal")
+    refresh.add_argument(
+        "--transitive",
+        action="store_true",
+        help="also run pixi update after upgrade (operator-only; session hook denies agents)",
+    )
+    status = estate_subs.add_parser("status", help="print the last estate refresh journal")
+    status.add_argument("--json", action="store_true", help="emit JSON")
+    status.add_argument("--all", action="store_true", help="print every journal, not just the last")
+
+
 def _add_session_subparsers(session_parser: argparse.ArgumentParser) -> None:
     """Add ``check`` (Story 63.4 — one verdict for the session preconditions)."""
     session_subs = session_parser.add_subparsers(dest="session_verb", metavar="{check}")
@@ -1595,6 +1622,10 @@ def resolve_duty(name: str) -> Duty:
         from .deck_integrity import DeckDriftDuty
 
         return DeckDriftDuty()
+    if name == "estate":
+        from .estate import EstateDuty
+
+        return EstateDuty()
     return NullDuty(name)
 
 

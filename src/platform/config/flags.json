@@ -449,6 +449,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.steward.estate_refresh": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "100-2-one-command-moves-the-library-pins-on-the-policy-and-restores-what-the-upgrade-loses",
+        "created": "2026-10-13",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }

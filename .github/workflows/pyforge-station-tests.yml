@@ -363,6 +363,7 @@ jobs:
           )
           steward_paths=(
             src/shared/packages/pyforge-steward
+            .claude/hooks/pre-shell.py
             .claude/hooks/session-start.sh
             .claude/memory/MEMORY.md
             .claude/settings.json
