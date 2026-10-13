@@ -33,6 +33,8 @@ playwright:
 unicorn:
   conda_name: python-unicorn
   import_name: unicorn
+  # A noarch:python recipe has no use for the C library: test_split_distribution_run_deps.py lints it.
+  lint_wrong_half: true
   reason: "G107: conda-forge unicorn is the C library; the PyPI bindings (import unicorn) are the python-unicorn output of unicorn-feedstock (verified 2026-10-12)."
 playwright-python:
   conda_name: playwright-python

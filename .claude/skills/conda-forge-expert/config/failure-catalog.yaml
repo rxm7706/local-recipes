@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "2a3abccf8ebd43da2f05685733208ca391f1099c67f31581e900afd5d91bbfd5"
+source_sha256: "55f7af09f92938a81ef2dee8308009bca52cb45c07be2e4cbbd883d7aaf89b11"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"

@@ -44,6 +44,11 @@ MAPPING_CACHE_FILE = DATA_DIR / "pypi_conda_map.json"
 # Path to the local repodata cache (used as a fallback)
 REPODATA_DIR = DATA_DIR / "repodata"
 
+# Hand-verified overrides (G107): the one mapping file `scripts/sync_pypi_mappings.py`
+# never regenerates. Read before every other tier, so a split distribution's verified
+# answer (PyPI `unicorn` -> conda `python-unicorn`) beats the cache and the APIs.
+CUSTOM_MAPPINGS_FILE = Path(__file__).resolve().parent.parent / "pypi_conda_mappings" / "custom.yaml"
+
 def normalize_name(name: str) -> str:
     """Normalize a package name for consistent lookups."""
     return name.lower().replace("_", "-")
@@ -57,6 +62,28 @@ def search_local_cache(pypi_name: str) -> str | None:
         cache = json.load(f)
         
     return cache.get(normalize_name(pypi_name))
+
+def search_custom_overrides(pypi_name: str) -> str | None:
+    """Tier 0: the hand-verified overrides in ``pypi_conda_mappings/custom.yaml``."""
+    if not CUSTOM_MAPPINGS_FILE.exists():
+        return None
+    try:
+        import yaml
+    except ImportError:
+        print(f"warning: PyYAML is missing; {CUSTOM_MAPPINGS_FILE.name} overrides skipped", file=sys.stderr)
+        return None
+    try:
+        data = yaml.safe_load(CUSTOM_MAPPINGS_FILE.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError) as exc:
+        print(f"warning: {CUSTOM_MAPPINGS_FILE.name} unreadable ({exc}); overrides skipped", file=sys.stderr)
+        return None
+    if not isinstance(data, dict):
+        return None
+    wanted = normalize_name(pypi_name)
+    for key, info in data.items():
+        if normalize_name(str(key)) == wanted and isinstance(info, dict) and info.get("conda_name"):
+            return str(info["conda_name"])
+    return None
 
 def search_repodata_fallback(pypi_name: str) -> str | None:
     """Tier 2: Search the repodata.json files directly.
@@ -113,6 +140,16 @@ def resolve_name(pypi_name: str) -> dict:
     """
     Resolves a PyPI package name to a conda-forge name using a tiered strategy.
     """
+    # Tier 0: hand-verified overrides (G107)
+    conda_name = search_custom_overrides(pypi_name)
+    if conda_name:
+        return {
+            "pypi_name": pypi_name,
+            "conda_name": conda_name,
+            "source": "custom-override",
+            "success": True,
+        }
+
     # Tier 1: Local Cache
     conda_name = search_local_cache(pypi_name)
     if conda_name:

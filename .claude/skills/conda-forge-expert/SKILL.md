@@ -4189,8 +4189,19 @@ C library, and worked only because pwntools pulls in `python-unicorn`. The fix i
 
 **Fix a mapping in `custom.yaml`, not only in `different_names.json`.** `scripts/sync_pypi_mappings.py` regenerates
 `different_names.json` from parselmouth, cf-graph and grayskull. Only `pypi_conda_mappings/custom.yaml` survives a sync:
-it has the highest merge priority, and lookups read it first. The July playwright fix went into `different_names.json`
-alone, so the next sync would have reverted it. Both corrections now live in `custom.yaml` as well.
+it has the highest merge priority, and that script's `get_conda_name` reads it first. The July playwright fix went into
+`different_names.json` alone, so the next sync would have reverted it. Both corrections now live in `custom.yaml` as
+well. Two resolvers read mapping data, and both now honour it:
+
+- **`scripts/name_resolver.py`**, behind the MCP `get_conda_name` tool and the generator. It reads
+  `.claude/data/conda-forge-expert/pypi_conda_map.json`, a cache that also answered `unicorn → unicorn` and
+  `playwright → playwright`. Since v8.100.0 its tier 0 (`search_custom_overrides`) reads `custom.yaml` before the cache.
+- **`scripts/sync_pypi_mappings.py`**. Its YAML reader needs PyYAML: without it, the fallback parser turns nested
+  entries into `[]`, and every override drops silently. `name_resolver.py` warns on stderr instead.
+
+`tests/meta/test_split_distribution_run_deps.py` reds a `noarch: python` recipe that lists the wrong half of a pair
+marked `lint_wrong_half: true` in `custom.yaml` (unicorn). The playwright pair is declared but not linted: the Node
+CLI is a legitimate dependency for tools that shell out to it.
 
 ---
 
