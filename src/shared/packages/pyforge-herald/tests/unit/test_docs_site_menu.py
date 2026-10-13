@@ -154,30 +154,66 @@ def _render_shell(data: dict, *, rel: str, page_key: str) -> str:
     )
 
 
+def test_herald_shell_renders_docs_first_and_marks_the_current_page():
+    data = yaml.safe_load(_SITE_YML.read_text(encoding="utf-8"))
+    rendered = _render_shell(data, rel="../", page_key="dossier")
+    positions = [rendered.index(f">{label}</a>") for label in _LABELS]
+    assert positions == sorted(positions)
+    assert 'data-pf-menu-link href="../../">Docs</a>' in rendered
+    assert 'href="../dossier/index.html" aria-current="page">Dossier</a>' in rendered
+    assert rendered.count('aria-current="page"') == 1
+
+
 # --- the pages-check gate ---------------------------------------------------------------------
 
+_EXPECTED = list(
+    zip(
+        _LABELS,
+        [
+            "../",
+            "index.html",
+            "dossier/index.html",
+            "infographics/index.html",
+            "decks/index.html",
+            "../dashboard/kedro-viz/",
+        ],
+        strict=True,
+    )
+)
+_HERALD_PAGES = ("", "dossier/", "infographics/", "decks/")
 
-def _artifact(tmp_path: Path, base: str, docs_hrefs: list[str], herald_hrefs: list[str]) -> Path:
+
+def _artifact(tmp_path: Path, base: str) -> Path:
+    """A minimal artifact that passes the gate: docs root and 404 with the top menu and the Herald
+    sidebar links, herald's four shell pages with the relative menu, the Kedro-Viz export, a raw
+    infographic and a redirect stub (neither of which carries the menu)."""
     root = tmp_path / "site"
-    for rel in ("herald/dossier", "herald/infographics", "herald/decks", "dashboard/kedro-viz", "how-to"):
-        (root / rel).mkdir(parents=True, exist_ok=True)
-        (root / rel / "index.html").write_text("<html></html>", encoding="utf-8")
-    docs_menu = "".join(f'<a data-pf-menu-link href="{base}{h}">x</a>' for h in docs_hrefs)
-    (root / "index.html").write_text(f"<html>{docs_menu}</html>", encoding="utf-8")
-    (root / "how-to" / "index.html").write_text(f"<html>{docs_menu}</html>", encoding="utf-8")
-    herald_menu = "".join(f'<a class="nav-link" data-pf-menu-link href="{h}">x</a>' for h in herald_hrefs)
-    (root / "herald" / "index.html").write_text(f"<html>{herald_menu}</html>", encoding="utf-8")
+    top = "".join(
+        f'<a data-pf-menu-link href="{base}{path}">{label}</a>' for label, path in zip(_LABELS, _PATHS, strict=True)
+    )
+    sidebar = "".join(
+        f'<a href="{base}{path}">{label}</a>' for label, path in zip(_LABELS[1:], _PATHS[1:], strict=True)
+    )
+    root.mkdir(parents=True)
+    for rel in ("index.html", "404.html"):
+        (root / rel).write_text(f"<html>{top}{sidebar}</html>", encoding="utf-8")
+    for sub in _HERALD_PAGES:
+        rel = "../" if sub else ""
+        menu = "".join(f'<a data-pf-menu-link href="{rel}{href}">{label}</a>' for label, href in _EXPECTED)
+        (root / "herald" / sub).mkdir(parents=True, exist_ok=True)
+        (root / "herald" / sub / "index.html").write_text(f"<html>{menu}</html>", encoding="utf-8")
+    (root / "dashboard" / "kedro-viz").mkdir(parents=True)
+    (root / "dashboard" / "kedro-viz" / "index.html").write_text("<html></html>", encoding="utf-8")
+    (root / "herald" / "infographics" / "atlas.html").write_text("<html>raw export</html>", encoding="utf-8")
+    (root / "kedro-viz").mkdir()
+    (root / "kedro-viz" / "index.html").write_text(
+        '<meta http-equiv="refresh" content="0; url=../dashboard/kedro-viz/">', encoding="utf-8"
+    )
     return root
 
 
-_HERALD_HREFS = [
-    "../",
-    "index.html",
-    "dossier/index.html",
-    "infographics/index.html",
-    "decks/index.html",
-    "../dashboard/kedro-viz/",
-]
+def _gate(assemble, root: Path, site_url: str) -> None:
+    assemble._check_menu_links(root, site_url, _EXPECTED)
 
 
 @pytest.mark.parametrize(
@@ -185,36 +221,71 @@ _HERALD_HREFS = [
     [
         ("https://rxm7706.github.io/local-recipes", "/local-recipes/"),
         ("https://pages.example.com/pages/acme/docs", "/pages/acme/docs/"),
+        ("https://example.github.io", "/"),
     ],
 )
-def test_menu_gate_passes_when_every_link_resolves(assemble, tmp_path: Path, site_url, base):
-    root = _artifact(tmp_path, base, _PATHS, _HERALD_HREFS)
-    assemble._check_menu_links(root, site_url)
+def test_menu_gate_passes_when_every_page_carries_the_menu(assemble, tmp_path: Path, site_url, base):
+    _gate(assemble, _artifact(tmp_path, base), site_url)
+
+
+def test_menu_gate_reads_the_live_site_yml(assemble):
+    assert assemble._expected_menu() == _EXPECTED
+
+
+def _replace(page: Path, old: str, new: str) -> None:
+    text = page.read_text(encoding="utf-8")
+    assert old in text
+    page.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
 def test_menu_gate_fails_on_a_broken_docs_link(assemble, tmp_path: Path, capsys):
-    root = _artifact(tmp_path, "/local-recipes/", [*_PATHS, "herald/missing/"], _HERALD_HREFS)
+    root = _artifact(tmp_path, "/local-recipes/")
+    _replace(root / "404.html", 'href="/local-recipes/herald/decks/"', 'href="/local-recipes/herald/missing/"')
     with pytest.raises(SystemExit) as exc:
-        assemble._check_menu_links(root, "https://rxm7706.github.io/local-recipes")
+        _gate(assemble, root, "https://rxm7706.github.io/local-recipes")
     assert exc.value.code == 1
     assert "herald/missing/" in capsys.readouterr().err
 
 
 def test_menu_gate_fails_on_a_broken_herald_link(assemble, tmp_path: Path):
-    root = _artifact(tmp_path, "/local-recipes/", _PATHS, [*_HERALD_HREFS, "gone/index.html"])
+    root = _artifact(tmp_path, "/local-recipes/")
+    _replace(root / "herald" / "decks" / "index.html", 'href="../decks/index.html"', 'href="../gone/index.html"')
     with pytest.raises(SystemExit):
-        assemble._check_menu_links(root, "https://rxm7706.github.io/local-recipes")
+        _gate(assemble, root, "https://rxm7706.github.io/local-recipes")
 
 
 def test_menu_gate_fails_on_a_hardcoded_base_under_another_host(assemble, tmp_path: Path, capsys):
-    root = _artifact(tmp_path, "/local-recipes/", _PATHS, _HERALD_HREFS)
+    root = _artifact(tmp_path, "/local-recipes/")
     with pytest.raises(SystemExit):
-        assemble._check_menu_links(root, "https://pages.example.com/pages/acme/docs")
+        _gate(assemble, root, "https://pages.example.com/pages/acme/docs")
     assert "/pages/acme/docs/" in capsys.readouterr().err
 
 
-def test_menu_gate_fails_when_the_docs_root_has_no_menu(assemble, tmp_path: Path):
-    root = _artifact(tmp_path, "/local-recipes/", _PATHS, _HERALD_HREFS)
-    (root / "index.html").write_text("<html></html>", encoding="utf-8")
+def test_menu_gate_fails_when_a_shell_page_lost_its_menu(assemble, tmp_path: Path, capsys):
+    root = _artifact(tmp_path, "/local-recipes/")
+    (root / "herald" / "dossier" / "index.html").write_text("<html></html>", encoding="utf-8")
     with pytest.raises(SystemExit):
-        assemble._check_menu_links(root, "https://rxm7706.github.io/local-recipes")
+        _gate(assemble, root, "https://rxm7706.github.io/local-recipes")
+    assert "herald/dossier/index.html" in capsys.readouterr().err
+
+
+def test_menu_gate_fails_when_one_link_is_dropped(assemble, tmp_path: Path):
+    root = _artifact(tmp_path, "/local-recipes/")
+    _replace(root / "404.html", '<a data-pf-menu-link href="/local-recipes/herald/decks/">Decks</a>', "")
+    with pytest.raises(SystemExit):
+        _gate(assemble, root, "https://rxm7706.github.io/local-recipes")
+
+
+def test_menu_gate_fails_on_a_fragment_only_link(assemble, tmp_path: Path):
+    root = _artifact(tmp_path, "/local-recipes/")
+    _replace(root / "herald" / "index.html", 'href="decks/index.html"', 'href="#"')
+    with pytest.raises(SystemExit):
+        _gate(assemble, root, "https://rxm7706.github.io/local-recipes")
+
+
+def test_menu_gate_fails_without_the_herald_sidebar_links(assemble, tmp_path: Path, capsys):
+    root = _artifact(tmp_path, "/local-recipes/")
+    _replace(root / "index.html", '<a href="/local-recipes/herald/decks/">Decks</a>', "")
+    with pytest.raises(SystemExit):
+        _gate(assemble, root, "https://rxm7706.github.io/local-recipes")
+    assert "sidebar" in capsys.readouterr().err

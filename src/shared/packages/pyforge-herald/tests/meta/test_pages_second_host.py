@@ -97,24 +97,40 @@ def test_export_host_env_flag_on_off(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert off_env[psh.ENV_SITE_URL] == "https://rxm7706.github.io/local-recipes"
 
 
+# Story 40.1 (FR-8.6): pages-check requires herald's shared menu, exactly as docsite/content/site.yml
+# lists it, on every docs page and every herald shell page; the docs root also links every herald
+# target from its sidebar. (label, docs path from the site root, herald href from the /herald/ mount)
+_SHARED_MENU = [
+    ("Docs", "", "../"),
+    ("Overview", "herald/", "index.html"),
+    ("Dossier", "herald/dossier/", "dossier/index.html"),
+    ("Infographics", "herald/infographics/", "infographics/index.html"),
+    ("Decks", "herald/decks/", "decks/index.html"),
+    ("Kedro-Viz", "dashboard/kedro-viz/", "../dashboard/kedro-viz/"),
+]
+
+
+def _write_shared_menu(artifact: Path, base: str, *, herald_index_extra: str = "") -> None:
+    """The docs root and 404 with the top menu and Herald sidebar links, and herald's four shell
+    pages with the same menu as relative links."""
+    top = "".join(f'<a data-pf-menu-link href="{base}{path}">{label}</a>' for label, path, _ in _SHARED_MENU)
+    sidebar = "".join(f'<a href="{base}{path}">{label}</a>' for label, path, _ in _SHARED_MENU[1:])
+    for rel in ("index.html", "404.html"):
+        (artifact / rel).write_text(f"<html>{top}{sidebar}</html>", encoding="utf-8")
+    for sub in ("", "dossier/", "infographics/", "decks/"):
+        rel = "../" if sub else ""
+        menu = "".join(f'<a data-pf-menu-link href="{rel}{href}">{label}</a>' for label, _, href in _SHARED_MENU)
+        page = artifact / "herald" / sub / "index.html"
+        page.parent.mkdir(parents=True, exist_ok=True)
+        extra = herald_index_extra if not sub else ""
+        page.write_text(f"<html>{menu}{extra}</html>", encoding="utf-8")
+
+
 def _minimal_artifact(artifact: Path, site_url: str, *, herald_index_body: str) -> None:
     assemble_pages = _assemble_pages()
-    # Story 40.1 (FR-8.6): every artifact carries the shared menu on the docs root and the herald
-    # overview; pages-check refuses one without it.
-    base = assemble_pages._base_path(site_url)
-    (artifact / "index.html").write_text(
-        f'<html><a data-pf-menu-link href="{base}herald/">Overview</a></html>', encoding="utf-8"
-    )
-    (artifact / "404.html").write_text("<html></html>", encoding="utf-8")
-    herald = artifact / "herald"
-    (herald / "dossier").mkdir(parents=True)
-    (herald / "dossier" / "index.html").write_text("<html></html>", encoding="utf-8")
-    (herald / "index.html").write_text(herald_index_body + '<a data-pf-menu-link href="../">Docs</a>', encoding="utf-8")
-    (artifact / "dossier").mkdir(parents=True, exist_ok=True)
-    (artifact / "dossier" / "index.html").write_text(
-        assemble_pages.redirect_html("herald/dossier/index.html"),
-        encoding="utf-8",
-    )
+    _write_shared_menu(artifact, assemble_pages._base_path(site_url), herald_index_extra=herald_index_body)
+    # The former-root redirect stub for every herald page (CAP-52), as pages-build writes them.
+    assemble_pages._write_dossier_redirects(artifact)
     dashboard = artifact / "dashboard" / "kedro-viz"
     dashboard.mkdir(parents=True)
     (dashboard / "index.html").write_text("<html></html>", encoding="utf-8")

@@ -519,7 +519,7 @@ def _check_href_resolution(artifact_root: Path) -> None:
 #: A menu link carries this attribute: the docs top menu (docs-site/src/components/SiteTitle.astro)
 #: and the herald shell (docsite/templates/shell_page.html.j2). Story 40.1, CAP-58.
 _MENU_LINK = re.compile(
-    r"""<a\b(?=[^>]*\bdata-pf-menu-link\b)[^>]*\bhref\s*=\s*["']([^"']+)["']""",
+    r"""<a\b(?=[^>]*\bdata-pf-menu-link\b)[^>]*\bhref\s*=\s*["']([^"']*)["'][^>]*>\s*([^<]*?)\s*</a>""",
     re.IGNORECASE,
 )
 
@@ -529,13 +529,22 @@ def _base_path(site_url: str) -> str:
     return path if path.endswith("/") else f"{path}/"
 
 
+def _expected_menu() -> list[tuple[str, str]]:
+    """herald's one navigation list, ``docsite/content/site.yml``: (label, href) in menu order."""
+    import yaml  # the ``site`` env carries PyYAML (docsite/build.py reads the same file)
+
+    data = yaml.safe_load((_repo_root() / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
+    return [(item["label"], item["href"]) for item in [*data["nav"], *(data.get("neighbours") or [])]]
+
+
 def _menu_target(page: Path, raw: str, artifact_root: Path, base_path: str) -> Path | None:
     """Where a menu href lands inside the artifact; ``None`` when it does not.
 
     A docs page's hrefs carry the host's base path (``/local-recipes/herald/``); a herald page's
-    are relative. Either way the target must be a file, or a directory with an ``index.html``."""
+    are relative. Either way the target must be a file, or a directory with an ``index.html``. An
+    empty or fragment-only href points at nothing and is refused."""
     href = raw.strip().split("#", 1)[0]
-    if urlparse(href).scheme or href.startswith("//"):
+    if not href or urlparse(href).scheme or href.startswith("//"):
         return None
     if href.startswith("/"):
         if not href.startswith(base_path):
@@ -554,33 +563,47 @@ def _menu_target(page: Path, raw: str, artifact_root: Path, base_path: str) -> P
     return None
 
 
-def _check_menu_links(artifact_root: Path, site_url: str) -> None:
-    """Every shared-menu link on every docs and herald page resolves inside the artifact (FR-8.6)."""
+def _carries_the_menu(rel_page: str, text: str) -> bool:
+    """Every navigable page carries the shared menu: all docs pages and herald's shell pages.
+
+    Not the Kedro-Viz export, not a redirect stub, and not a raw infographic or deck export
+    (the pages ``_should_check_page_links`` already leaves out)."""
+    if rel_page.startswith(f"{DASHBOARD_PREFIX}/"):
+        return False
+    if 'http-equiv="refresh"' in text:
+        return False
+    return not (rel_page.startswith(f"{HERALD_PREFIX}/") and not _should_check_page_links(rel_page))
+
+
+def _menu_failure(message: str) -> None:
+    print(f"assemble_pages: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def _check_menu_links(artifact_root: Path, site_url: str, expected: list[tuple[str, str]] | None = None) -> None:
+    """The shared menu (FR-8.6) on every navigable page, exactly as site.yml lists it.
+
+    Each page that should carry it shows every label in order, each href resolves inside the
+    artifact under the host's base path, and the docs root links every herald target twice: once
+    in the top menu and once in its Herald sidebar group."""
+    expected = expected if expected is not None else _expected_menu()
+    labels = [label for label, _ in expected]
     base_path = _base_path(site_url)
-    pages_with_menu = 0
     for page in sorted(artifact_root.rglob("*.html")):
         rel_page = _artifact_path(page, artifact_root)
-        if rel_page.startswith(f"{DASHBOARD_PREFIX}/"):
-            continue
         text = page.read_text(encoding="utf-8", errors="replace")
-        hrefs = _MENU_LINK.findall(text)
-        if not hrefs:
+        if not _carries_the_menu(rel_page, text):
             continue
-        pages_with_menu += 1
-        for raw in hrefs:
+        found = _MENU_LINK.findall(text)
+        if [label for _, label in found] != labels:
+            _menu_failure(f"shared menu on {rel_page} reads {[label for _, label in found]}, expected {labels}")
+        for raw, _ in found:
             if _menu_target(page, raw, artifact_root, base_path) is None:
-                print(
-                    f"assemble_pages: menu link does not resolve: {rel_page} -> {raw!r} (base {base_path})",
-                    file=sys.stderr,
-                )
-                raise SystemExit(1)
-    for rel in ("index.html", ROOT_HERALD_INDEX):
-        if not _MENU_LINK.search((artifact_root / rel).read_text(encoding="utf-8", errors="replace")):
-            print(f"assemble_pages: shared menu missing on {rel}", file=sys.stderr)
-            raise SystemExit(1)
-    if pages_with_menu == 0:
-        print("assemble_pages: no page carries the shared menu", file=sys.stderr)
-        raise SystemExit(1)
+                _menu_failure(f"menu link does not resolve: {rel_page} -> {raw!r} (base {base_path})")
+    root_text = (artifact_root / "index.html").read_text(encoding="utf-8", errors="replace")
+    for raw, label in _MENU_LINK.findall(root_text)[1:]:
+        if root_text.count(f'href="{raw}"') < 2:
+            _menu_failure(f"docs root has no Herald sidebar link for {label} ({raw!r})")
 
 
 def _required_paths() -> list[str]:
@@ -616,8 +639,8 @@ def check(artifact_root: Path, *, site_url: str | None = None) -> None:
             raise SystemExit(1)
 
     _check_href_resolution(artifact_root)
-    _check_menu_links(artifact_root, site_url)
     _check_cross_origin_and_hosts(artifact_root, site_url)
+    _check_menu_links(artifact_root, site_url)
 
 
 def assemble(
