@@ -271,3 +271,165 @@ def test_local_findings_stay_in_manifest_order_when_probes_finish_out_of_order(t
 
     assert [f.path for f in findings] == ["copier", "pixi", "tmux", "bmad-loop"]
     assert finish_order.index("copier") < finish_order.index("bmad-loop")
+
+
+def _conda_meta(tmp_path: Path, package: str, version: str, env_name: str = "default") -> None:
+    meta_dir = tmp_path / ".pixi" / "envs" / env_name / "conda-meta"
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    (meta_dir / f"{package}-{version}-0.json").write_text("{}", encoding="utf-8")
+
+
+def test_conda_referenced_package_satisfied_pin(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    _conda_meta(tmp_path, "headroom", "0.5.0")
+    manifest = _manifest(_referenced("headroom", ">=0.5.0,<1"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert findings == ()
+
+
+def test_conda_referenced_package_picks_highest_version(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    _conda_meta(tmp_path, "headroom", "0.4.0", env_name="a")
+    _conda_meta(tmp_path, "headroom", "0.6.0", env_name="b")
+    manifest = _manifest(_referenced("headroom", ">=0.5.0,<1"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert findings == ()
+
+
+def test_conda_referenced_package_missing_emits_finding(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    manifest = _manifest(_referenced("headroom", ">=0.5.0"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].path == "headroom"
+    assert "not installed" in findings[0].message
+
+
+def test_bmad_method_missing_manifest_yaml(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    manifest = _manifest(_referenced("bmad-method", ">=6.0.0"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert "not installed" in findings[0].message
+
+
+def test_bmad_method_rejects_non_dict_manifest(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    config_dir = tmp_path / "_bmad" / "_config"
+    config_dir.mkdir(parents=True)
+    (config_dir / "manifest.yaml").write_text("just-a-scalar\n", encoding="utf-8")
+    manifest = _manifest(_referenced("bmad-method", ">=6.0.0"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert "not installed" in findings[0].message
+
+
+def test_bmad_method_invalid_version_treated_as_below_floor(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: None)
+    config_dir = tmp_path / "_bmad" / "_config"
+    config_dir.mkdir(parents=True)
+    (config_dir / "manifest.yaml").write_text(
+        yaml.safe_dump({"installation": {"version": "not-a-pep440-version"}}),
+        encoding="utf-8",
+    )
+    manifest = _manifest(_referenced("bmad-method", ">=6.0.0"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert "below manifest floor" in findings[0].message
+
+
+def test_cli_process_error_without_timeout_emits_not_installed(tmp_path: Path, monkeypatch):
+    def _fail(*args, **kwargs):
+        raise ProcessError("copier: command not found")
+
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "copier")
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run", _fail)
+    manifest = _manifest(_referenced("copier", ">=9.17,<10"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert "not installed" in findings[0].message
+
+
+def test_doctor_exit_two_falls_back_to_local_cli_probe(tmp_path: Path, monkeypatch):
+    class _DoctorUnknown:
+        returncode = 2
+        stdout = ""
+        stderr = ""
+
+    class _CopierOk:
+        returncode = 0
+        stdout = "copier 9.18.0"
+        stderr = ""
+
+    def _run(*args, **kwargs):
+        argv = args[1] if len(args) >= 2 else args[0]
+        if "pyforge.doctor.sources" in " ".join(str(a) for a in argv):
+            return _DoctorUnknown()
+        return _CopierOk()
+
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "doctor")
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run", _run)
+    manifest = _manifest(_referenced("copier", ">=9.17,<10"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert findings == ()
+
+
+def test_doctor_invalid_json_falls_back_to_local(tmp_path: Path, monkeypatch):
+    class _DoctorBadJson:
+        returncode = 0
+        stdout = "{not-json"
+        stderr = ""
+
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "doctor")
+    monkeypatch.setattr(
+        "pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run",
+        lambda *args, **kwargs: _DoctorBadJson(),
+    )
+    _conda_meta(tmp_path, "headroom", "0.5.0")
+    manifest = _manifest(_referenced("headroom", ">=0.5.0"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert findings == ()
+
+
+def test_doctor_payload_skips_malformed_items(tmp_path: Path, monkeypatch):
+    payload = [
+        "not-a-dict",
+        {"artifact_id": "", "message": "skip empty id"},
+        {"artifact_id": "pixi", "message": ""},
+        {"artifact_id": "pixi", "message": "installed pixi 0.1.0 is below floor >=0.76.1"},
+    ]
+
+    class _Result:
+        returncode = 1
+        stdout = json.dumps(payload)
+        stderr = ""
+
+    monkeypatch.setattr("pyforge.marshal.seed.detect.referenced_deps.shutil.which", lambda _name: "doctor")
+    monkeypatch.setattr(
+        "pyforge.marshal.seed.detect.referenced_deps.PosixProcess.run",
+        lambda *args, **kwargs: _Result(),
+    )
+    manifest = _manifest(_referenced("pixi", ">=0.76.1"))
+
+    findings = referenced_dep_findings(manifest, tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].path == "pixi"
