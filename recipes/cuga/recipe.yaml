@@ -113,8 +113,8 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - "run deps browsergym-core, cuga-oak-health, langchain-docling, sqlite-vec and toolguard are not on conda-forge; langfuse is conda-forge langfuse-python (G10)"
-  cfe-last-checked: 2026-10-13T05:30:00Z
+    - "run deps browsergym-core, cuga-oak-health, langchain-docling and toolguard are not on conda-forge; langfuse is conda-forge langfuse-python and sqlite-vec is conda-forge sqlite-vec-python (G10)"
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T23:03:27Z
   cfe-local-build-status: build-clean-test-blocked

@@ -89,9 +89,10 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
-    - "no license file copied: the sdist ships no LICENSE and PyPI carries no license metadata"
+    - "no license file copied, and license: MIT is unverified: the sdist ships no LICENSE and PyPI carries no license metadata or classifier"
+    - "summary and description are REPLACE_SUMMARY / REPLACE_DESCRIPTION placeholders (G90)"
     - "run deps asynchuobi, blackboxprotobuf, bybit-p2p, kurigram, payeer-api, pybit, pyrogram-client, python-okx, tgcrypto, xn-client and xync-schema are not on conda-forge"
-  cfe-last-checked: 2026-10-13T05:30:00Z
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T19:55:46Z
   cfe-local-build-status: failed

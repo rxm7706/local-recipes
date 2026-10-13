@@ -79,7 +79,7 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
     - "run dep utils is not on conda-forge"
-  cfe-last-checked: 2026-10-13T05:30:00Z
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T19:47:24Z
   cfe-local-build-status: build-clean-test-blocked

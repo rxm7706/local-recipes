@@ -84,10 +84,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
+    - "upstream repo github.com/augment-ai/universal-document-mcp (every PyPI project URL) returns 404"
     - "metadata generation fails: setuptools flat-layout auto-discovery finds four top-level packages (static, config, templates, universal_document_mcp); needs a source patch naming the package"
-  cfe-last-checked: 2026-10-13T05:30:00Z
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.100.0
-  cfe-generated-at-datetime: 2026-10-13T05:30:00Z
+  cfe-generated-at-datetime: 2026-10-13T04:46:00Z
   cfe-local-build-status: failed
   cfe-local-build-datetime: 2026-10-13T04:43:48Z
   cfe-local-build-platform: linux-64

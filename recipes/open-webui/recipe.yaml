@@ -171,9 +171,9 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
     - "pip check: upstream requires 13 packages this recipe omits (elasticsearch, faster-whisper, firecrawl-py, opencv-python-headless, opensearch-py, peewee-migrate, pinecone, pymilvus, qdrant-client, rapidocr-onnxruntime, soundfile, starlette-compress, tencentcloud-sdk-python), and ftfy/build pin skews remain"
-  cfe-last-checked: 2026-10-13T05:30:00Z
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.100.0
-  cfe-generated-at-datetime: 2026-10-13T05:30:00Z
+  cfe-generated-at-datetime: 2026-10-13T04:46:00Z
   cfe-local-build-status: success
   cfe-local-build-datetime: 2026-10-13T04:38:40Z
   cfe-local-build-platform: linux-64

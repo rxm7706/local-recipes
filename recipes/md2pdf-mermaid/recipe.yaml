@@ -70,7 +70,7 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-13T05:30:00Z
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T20:38:08Z
   cfe-local-build-status: success
@@ -79,8 +79,8 @@ extra:
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
-#    # LICENSE ships in the recipe dir (pattern 2): the 1.4.3 sdist omits it; copied from the v1.4.3 tag.
 # Header:
 #    # (agent rationale parks here, organized by recipe location — never
 #    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # LICENSE ships in the recipe dir (pattern 2): the 1.4.3 sdist omits it; copied from the v1.4.3 tag.
 ####

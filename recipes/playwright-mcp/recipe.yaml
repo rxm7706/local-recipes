@@ -67,7 +67,7 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list:
     - "about.license is the generator placeholder REPLACE_LICENSE (G90); the 0.1.0 sdist ships no license file and PyPI carries no license metadata"
-  cfe-last-checked: 2026-10-13T05:30:00Z
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T19:11:58Z
   cfe-local-build-status: failed
