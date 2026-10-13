@@ -2,8 +2,8 @@
 title: "29.1: pwndbg passes pip check with a local pwntools that carries the upstream unicorn fix"
 type: 'fix'
 created: '2026-10-12'
-status: 'in-progress'
-review_loop_iteration: 0
+status: 'done'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
@@ -62,11 +62,13 @@ Rule 6 deletes it.
 
 - **AC1 — pwntools builds with the backport.** `pixi run -e local-recipes recipe-build recipes/pwntools` exits 0 on
   linux-64. The artifact is `pwntools-4.15.0-*_1.conda`. Its wheel metadata reads `Requires-Dist: unicorn>=2.0.1`, with
-  no `!=2.1.3` or `!=2.1.4`. Its own tests pass, including `pip check` and every entry point's `--help`.
+  no `!=2.1.3` or `!=2.1.4`. Its own tests pass: `pip check`, both imports, and the 20 `--help` commands the feedstock tests (all entry points
+  but `main` and `common`).
 - **AC2 — The MIPS guard is in the shipped code.** The packaged `pwnlib/elf/plt.py` raises `OSError` from
   `prepare_unicorn_and_context` for a MIPS ELF when the installed unicorn is 2.1.3 or 2.1.4. The recipe's
   `test_mips_guard.py` calls it with a stand-in ELF whose `arch` is `mips` (the guard reads nothing else; no network, no
-  cross toolchain) and expects the `OSError` on unicorn 2.1.3 or 2.1.4, and no `OSError` on any other version.
+  cross toolchain) and expects the `OSError` on unicorn 2.1.3 or 2.1.4, and no `OSError` on any other version. An `amd64` stand-in never
+  gets the `OSError`.
 - **AC3 — pwndbg's dependencies are consistent.** `recipes/pwndbg` lists `python-unicorn >=2.1.4,<3` and no bare
   `unicorn`, has no `context.python_min`, and runs `pip_check: true`. Its build exits 0 on linux-64, its test
   environment resolves the local pwntools `_1` with `python-unicorn` 2.1.4, and `pip check` passes there. The existing
@@ -81,7 +83,8 @@ Rule 6 deletes it.
 - **AC6 — Rule 2.** The story closes with its own `retro(cfe):` commit, carrying a CFE `CHANGELOG.md` semver entry.
 - **AC7 — Mutation.** Each change below makes a named check fail:
   - restore the `!=2.1.3, !=2.1.4` exclusion in the patch: pwndbg's `pip check` (AC3);
-  - put bare `unicorn` back in pwndbg's run deps and drop `python-unicorn`: AC3's recipe assertion;
+  - put bare `unicorn` back in pwndbg's run deps and drop `python-unicorn`: the CFE meta-test
+    `test_split_distribution_run_deps.py`;
   - drop the `plt.py` hunk: AC2's test.
 
 ## Boundaries & Constraints
@@ -139,13 +142,53 @@ Rule 6 deletes it.
 - `python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected:
   exit 0 after the memlogs and scoped stamps.
 
+## Run results
+
+Built on linux-64 with `recipe-build` (rattler-build, local channel), 2026-10-12/13:
+
+| AC | Result |
+|---|---|
+| AC1 | `pwntools-4.15.0-pyhf3c603f_1.conda`: wheel `Requires-Dist: unicorn>=2.0.1`; `depends` keeps `python-unicorn >=2.0.1`; build number 1; tests pass: `pip check`, both imports, and the feedstock's 20 `--help` commands. |
+| AC2 | The shipped `pwnlib/elf/plt.py` carries the guard. `test_mips_guard.py` in the rebuilt package: mips and mips64 "guard raised on unicorn 2.1.4", amd64 "no guard". |
+| AC3 | `pwndbg-2026.09.15` green. The test env resolves pwntools `pyhf3c603f_1` with `python-unicorn` 2.1.4 on Python 3.11 and 3.14. `pip check` reports "No broken requirements found" on both. The gdb test loads 199 pwndbg commands. |
+| AC4 | `recipes/pwntools/meta.yaml` was fetched from the feedstock at `04c47d9c88` and is unmodified. |
+| AC4b | `niche-elf` and `gdb-pt-dump` rebuilt green without `context.python_min`. `test_no_redundant_python_min.py` passes. |
+| AC5 | `validate` passes for all four recipes. The CI-parity lint (`conda-smithy>=2026.6.14`) says "in fine form" for pwndbg and pwntools. `optimize`: pwntools STD-002 (v0 mirror, expected); pwndbg 3× PIN-001 (upstream's exact pins, which `pip check` enforces; already on `main`), and its SEL-004 is cleared. |
+| AC6 | `retro(cfe):` v8.100.0 (G122 new, G107 second case, G84 refinement, mapping overrides in `custom.yaml`, test fallback floor). |
+| AC7 | (1) conda-forge pwntools `_0`: `pip check` → "pwntools 4.15.0 has requirement unicorn!=2.1.3,!=2.1.4,>=2.0.1, but you have unicorn 2.1.4." (2) Bare `unicorn`: `test_split_distribution_run_deps.py` fails with "recipes/pwndbg/recipe.yaml: run lists `unicorn`, not `python-unicorn`". (3) Without the `plt.py` hunk, `test_mips_guard.py` fails: "guard did not fire on unicorn 2.1.4". |
+
+Gates: the planning checks, `spec-surface-check`, `flag-gate-check`, `mason-cfe-surface-check`, `failure-catalog-check`
+and `pyforge-mason-test` pass. The CFE suite: 9340 passed with one failure (`test_skill_md_consistency`, which flagged G122's cited
+`plt.py`/`test_mips_guard.py`), fixed in the retro and re-run green. `detectors-ci`'s two findings came from the branch
+predating doctor 46.1's landing and from the test-architecture matrix; `main` was merged and the matrix regenerated.
+
 ## Spec Change Log
 
 - 2026-10-12: minted at the operator's rulings "Fix the unicorn conflict" and "Backport #2721 locally (Recommended)".
 - 2026-10-12 (implementation): AC2 now names the stand-in ELF the test uses. Added approach item 3 and AC4b: the two
   prerequisites' below-floor `python_min` reds `test_no_redundant_python_min.py` on `main`, so it is fixed here
   (healed tissue); the Epic 29 boundary and `epic_surfaces."29"` widened to match.
+- 2026-10-12 (review): AC1 and AC7 reworded and AC2 extended to amd64, as the Review Triage Log records. The retro also
+  changed `name_resolver.py`, the mapping files and three tests; the Surface line in `epics.md` now lists them.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-12 — Independent review (adversarial, separate agent)
+- Verified clean: `meta.yaml` byte-identical to the feedstock; the v1 translation (22/22 run deps, 22/22 entry points,
+  host, sha256, tests); the patch is exactly 7e5e79d00f's two hunks and applies to 4.15.0; the guard test fails without
+  the `plt.py` hunk; `python-unicorn` is the bindings; the built artifacts; no attribution; CFE only in `retro(cfe):`.
+- `[medium]` `[fixed]` The retro said lookups read `custom.yaml` first, but the MCP `get_conda_name` tool runs
+  `name_resolver.py`, which read only its cache (still `unicorn → unicorn`). `name_resolver.py` gained a tier 0 that
+  reads `custom.yaml`, with three unit tests, and G107 / the CHANGELOG name both resolvers.
+- `[low-medium]` `[fixed]` AC7 mutation 2 had no machine check. New CFE meta-test
+  `test_split_distribution_run_deps.py`; bare `unicorn` in pwndbg now fails it. Unlinted, it flags 16 playwright
+  recipes; that pair is declared but not linted, and a separate audit task was raised.
+- `[low]` `[fixed]` The retro's files were missing from the Surface line: widened in `epics.md`.
+- `[low]` `[fixed]` AC1 over-promised (20 of 22 entry points are tested, as in the feedstock) and the amd64 matrix row
+  was untested: AC1 reworded; `test_mips_guard.py` checks mips, mips64 and amd64, rebuilt and green.
+- `[low]` `[fixed]` `sync_pypi_mappings.py` drops `custom.yaml` overrides silently without PyYAML: documented in G107;
+  `name_resolver.py` warns.
+- `[low]` `[reject]` The hand-edited `python-unicorn` row in `different_names.json` has a shape a sync never writes:
+  harmless, follows the July playwright alias, and `custom.yaml` now carries the durable answer.
+- `[low]` `[reject]` Ledger still `backlog`: the landing finalize promotes it (`dispatch_land_finalize`), as for
+  every hand-landed story.

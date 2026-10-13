@@ -3445,8 +3445,10 @@ So that the environment is consistent and pwntools raises a clear error where it
 carries no flag, `spec-feature-flag-governance` Q1); AD-1; AD-15; CFE Rule 1 + Rule 2
 **Surface:** `recipes/pwntools/**` (new: `meta.yaml`, `recipe.yaml`, `patches/`, `test_mips_guard.py`),
 `recipes/pwndbg/recipe.yaml`, `recipes/niche-elf/recipe.yaml` and `recipes/gdb-pt-dump/recipe.yaml` (their
-below-floor `context.python_min` only), and the CFE retro surface (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml}`,
-plus `config/failure-catalog.yaml` if a new gotcha regenerates it), committed alone as `retro(cfe): …`.
+below-floor `context.python_min` only), and the CFE retro surface (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml,config/failure-catalog.yaml}`,
+`pypi_conda_mappings/{custom.yaml,different_names.json}`, `scripts/name_resolver.py`, and the tests
+`tests/unit/test_name_resolver.py`, `tests/meta/{test_no_redundant_python_min.py,test_skill_md_consistency.py,test_split_distribution_run_deps.py}`),
+committed only in `retro(cfe): …` commits.
 **Spec:** `planning-artifacts/specs/spec-29-1-pwndbg-passes-pip-check-with-a-local-pwntools-that-carries-the-upstream-unicorn-fix.md`
 **Given** pwndbg 2026.09.15 requires `unicorn>=2.1.4,<3`, pwntools 4.15.0 requires `unicorn>=2.0.1, !=2.1.3, !=2.1.4`,
 conda-forge's newest `python-unicorn` is 2.1.4, and `recipes/pwndbg` lists `unicorn` (the C library) with
