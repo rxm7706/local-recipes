@@ -20,7 +20,7 @@ sequence (upgrade, update, install, then regenerate derived files and run suites
 path is retired: one policy file, one steward duty, and six verbs in order.
 
 This guide is the operator and agent entry point. For BMAD core releases after a refresh, continue
-with [release-cadence.md](../../_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/release-cadence.md)
+with `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/release-cadence.md`
 (steps 1–9); step 7 already hands pixi floor bumps to `estate refresh` and `estate realize`.
 
 ## When a refresh is due
