@@ -146,8 +146,8 @@ Type / Effort / Deps: feature / M / S-100.1.
 - Epic: Epic 100, Stories 100.1–100.7.
 - Ledger key: `100-2-one-command-moves-the-library-pins-on-the-policy-and-restores-what-the-upgrade-loses`.
 - Ledger status at mint: `backlog`.
-- Deps: S-100.1 (the policy, the check and the mutator). Re-base `baseline_revision` to the commit where 100.1 landed
-  before dispatch.
+- Deps: S-100.1 (the policy, the check and the mutator). `marshal factory dispatch` stamps `baseline_revision` with the launch commit (Story 100.1's run did), so no
+  hand re-base is needed.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."100"` (added with the mint).
 - Minted 2026-10-13 in one chain commit.
 
