@@ -1589,8 +1589,8 @@ Drift — orphaned between stations.
   `build-platform-image` and the three smokes never run. `ACTIONS_ENABLED=false` (2026-08-24) was read by nothing; the
   operator deleted it 2026-10-12. Six workflows sit `disabled_manually` since 2026-08-24 12:06 with no recorded reason
   (`test-all`, `kedro-viz-publish`, `staged-recipes-linter`, `linter_issue_comment`, the two reusable linter files);
-  `test-all` is the sole caller of `test-linux.yml` and `test-macos.yml`, so recipe builds on GitHub runners are off
-  by structure. Every other active job (`detectors`, `lint-types`, the ten station suites, `coverage-gates`,
+  `test-all` is the one caller of `test-linux.yml`, `test-macos.yml` and `test-windows.yml`, none of which has a push
+  or PR trigger, so a recipe build runs on GitHub runners only when dispatched by hand (corrected 2026-10-12). Every other active job (`detectors`, `lint-types`, the ten station suites, `coverage-gates`,
   `cfe-regression-net`, `docsite-check`, `pyforge-pip-install`, `marshal-local-recipes-seed-oracle`,
   `substrate-nightly`, `dashboard`) has no switch at all. The switches are documented only in comments beside their
   `if:`; `preflight_ci.py` cannot resolve `vars.*` (its own rule: anything the reader cannot evaluate runs the lane
@@ -1633,7 +1633,8 @@ Drift — orphaned between stations.
   workflows, park `test-all` and `kedro-viz-publish` (Q4); `PAUSE_ALL_CI` covers the merge gates too, behind the
   warning (Q5); required status checks stay a separate decision (Q6); the six existing names are grandfathered (Q7);
   `review_by` 2026-11-01 for both live pauses (Q8). The doctor drift source, the herald dossier tile and the marshal
-  landing line are each their own station's append of the same date. Owner `spec-pyforge-steward`.
+  landing line are each their own station's append of the same date. Owner `spec-pyforge-steward`. → CAP-166 / FR-39,
+  specced 2026-10-12; Epic 99 next.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

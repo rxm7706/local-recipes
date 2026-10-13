@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-04"
+updated: "2026-10-12"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -94,7 +94,6 @@ surface:
   - src/platform/Containerfile
   - scripts/platform_image_pip_layer.py
   - "[feature.python-agent-platform]"
-  - "[feature.python-agent-platform.dependencies] (host extras; retired pypi table)"
   - scripts/platform_object_storage.py
   - scripts/build-pixi-mirror.py
   - scripts/platform-golden-path-promotion.sh
@@ -114,7 +113,6 @@ surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md
   - recipes/mybmad-dashboard/wrapper/src/mybmad_dashboard/launcher.py
-  - src/shared/packages/django-pyforge
   - Containerfile
   - .dockerignore
   - scripts/container-gates
@@ -647,6 +645,40 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-165 — the protected refs are declared once, the live rulesets are proven to match, and no session deletes what would orphan commits** ← spec-pyforge-steward CAP-165 (ready 2026-10-04; extends CAP-5, CAP-156, CAP-157; co-governs spec-pyforge-marshal:CAP-287)
   - **intent:** `docs/governance/guild-roster.json` declares `protected_refs`: each entry a full-refname prefix with a `kind` (`operational-branch`, `preserve-tag`, `archive-tag`, `legacy`), a `scope` (`origin`, `local` or `both`) and the server rules it needs. Every consumer unions the list with its own code floor, so the roster can only add (marshal:AD-27): the session hook (Story 63.3's) and marshal's sweeper read it directly, and marshal's in-code deleters receive it through marshal's policy layer. A ruleset document under `docs/governance/rulesets/` is rendered from the roster, never hand-edited: tag rulesets for `preserve/**`, `archive/**` and `rescue/**` with deletion, update and force-push rules and no bypass actor; `non_fast_forward` added to `loop/**`; creation of `refs/heads/preserve/**` and `refs/heads/archive/**` restricted. A runtime detector compares that document with the live rulesets through an authenticated `gh api` and fails closed when unauthenticated, rate-limited or erroring; applying a ruleset is the operator's settings change, never a session's. The hook denies every deletion form for a listed ref on its scope: branch and tag deletion by push, refspec, `git branch -d/-D`, `git tag -d`, `gh api -X DELETE` or `update-ref -d`; `push --mirror`; a `push --prune` or `fetch --prune-tags` that covers a listed prefix; `rm` or `git worktree remove` of a `~/.bmad-loops/` home; and `gh pr merge --delete-branch` naming a `loop/` head. For every branch and tag the list does not name, it denies a deletion whose tip is not an ancestor of `refs/remotes/origin/main` and that no `preserve/` or `archive/` tag contains, naming `marshal preserve tag` and the sweeper's `--retire` as the sanctioned forms. Each rule is a `session_denials` entry, by the operator's governance rulings of 2026-10-04. The hook is defence in depth: a matcher is a denylist, a git config such as `fetch.pruneTags` bypasses any command matcher, and harnesses with no hook deny surface are guarded by the rulesets alone, so the server ruleset is the guarantee. The pre-push gate skips, and journals, a push it can prove carries only `preserve/` or `archive/` tags (CAP-156 as amended). `workspace clean` parks an unlanded worktree's commits as a `preserve/` tag before it removes the worktree (CAP-157 as amended), behind the flag `pyforge.steward.workspace_preserve_tag`. (Operator ask 2026-10-04 after a hand-rolled cleanup; research `preserved-work-refs-2026-10-04.md` and its review.)
   - **success:** with a roster fixture, the hook denies each listed form for a listed ref, still denies deleting `main` and a `loop/` branch when the roster omits them (the floor), allows deleting an unlisted ref whose tip is an ancestor of `origin/main`, and denies deleting an unlisted branch or tag whose commits no other ref reaches; the ruleset document regenerates byte-identical from the roster; the parity detector exits 0 on a matching fixture, 1 naming each missing or extra pattern, rule or bypass actor, and 2 when `gh api rate_limit` shows no authenticated quota or any call fails, never passing; a tag-only preserve push skips the preflight with a journal line naming the ref while a mixed push still runs it; `workspace clean` writes the tag before removal and keeps the worktree when it cannot; `pyforge-steward-test` and `detectors-ci` green.
+- **CAP-166 — every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged** ← spec-pyforge-steward CAP-166 (ready 2026-10-12; extends CAP-159, CAP-154; works with CAP-131)
+  - **intent:** `docs/governance/ci-surfaces.yaml`, with a JSON Schema beside it, declares every GitHub Actions
+    surface and its local twin (workflow, job, scheduled run, local stage) with its switch, switch class (`pause` |
+    `enable`), owner, cost class, `gate` flag, `state` (`live`, `paused`, `opt-in-off`, `paused-manually`, `retired`),
+    `paused_since`, `paused_by`, `reason`, `review_by`, local twin and canary. One convention: `PAUSE_<WORKFLOW>`
+    gates every push/PR/schedule job, `PAUSE_<WORKFLOW>_<JOB>` exists only where a `cost: high` row does, `ENABLE_*`
+    names an opt-in, `PAUSE_ALL_CI` is the master, `workflow_dispatch` ignores every pause, and the six existing names
+    (`PAUSE_CONTAINER_BUILDS`, `PAUSE_PLATFORM_CONTAINER_BUILDS`, the four `PLATFORM_CI_*` opt-ins) stay, mapped in
+    the registry. A script renders each job's `if:` fragment from the registry in front of the job's existing
+    condition; a repo-scope detector in `detectors-ci` reds a `vars.X` no row names, a row whose job lacks its
+    fragment, a naming violation, a comparison other than the literal `'true'`; its `--live` mode (authenticated `gh`,
+    exit 2 when it cannot observe) also reds a `disabled_manually` workflow without a `paused-manually` or `retired`
+    row. `steward ci status` reads the registry, `gh variable list`, the Actions API's workflow state and recent runs,
+    and pending deployments, and prints one row per surface with a verdict: `live`, `paused`, `opt-in-off`,
+    `paused-manually`, `retired`, `drift` (declared differs from live), `stuck` (a deployment waiting over 24 h, or
+    five or more consecutive cancelled runs), `overdue` (`review_by` passed). It refuses an unauthenticated read at a
+    0/60 rate limit, and its `--json` is the one shape the Doctor, Herald and Marshal consumers read. `steward ci vars
+    --refresh` writes `.steward/ci-vars.json`. `steward ci pause|resume <surface> --reason --review-by` is a dry run
+    until `--yes`, then sets the variable, updates the row, journals `.steward/ci-pauses.log` and captures to team
+    memory; a `gate: true` row also needs `--i-am-removing-a-merge-gate`. `preflight_ci` resolves `vars.*` from the
+    snapshot (stale after 24 h, then the registry's declared state, then today's unknown-runs rule) and journals each
+    lane it skips as paused in CI with its switch, since and review-by date; `pr-preflight` banners and honors paused
+    lanes (`--ignore-ci-pauses` runs them); `platform-ci-local` and the guild image build banner and run. A weekly
+    canary workflow builds each paused `cost: high` surface once. A how-to and one `AGENTS.md` pointer document it.
+    The four staged-recipes-linter workflows retire; `test-all` and `kedro-viz-publish` become `paused-manually` rows;
+    tracked docs stop citing the deleted `ACTIONS_ENABLED` as live evidence. Operator rulings Q1–Q8 of 2026-10-12
+    (memlog).
+  - **success:** after seeding, the detector exits 0 on `main` and reds each planted fixture above; `preflight_ci`
+    evaluates every workflow with no `unknown` site once the snapshot exists; a dispatch with `PAUSE_ALL_CI=true`
+    still runs; `ci status` on a recorded `gh` fixture yields the expected verdict per row, including `drift`,
+    `overdue`, and `stuck` for a replay of the 2026-10-06 waiting deploy; `ci pause` without `--yes` makes no `gh`
+    call, and with `--yes` the fixture asserts the `gh variable set` argv, the registry diff, the journal line and the
+    capture text; `pr-preflight` journals a paused lane as skipped and `--ignore-ci-pauses` runs it; the canary has
+    one green run; no tracked doc cites `ACTIONS_ENABLED` as live evidence.
 
 ## Constraints
 
@@ -667,6 +699,11 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **Credential values are never printed:** `steward keys list`/`audit` output never contains a raw secret value under any flag combination — enforced by a dedicated invariant test.
 - **Provision's pixi invocations are explicit, user-triggered CLI actions only** — never an import-time or build-time side effect.
 - **Config file location:** repo-root `.steward/` dotdir, tracked (not gitignored, not under `_bmad-output/`) — `budget.yaml`, `keys-inventory.yaml`, `*.age` payloads, and `sync-config.example.yaml` all live here, surviving a `bmad-switch` to a different active BMAD project, since a durable operational fact does not belong under a per-project planning-artifacts tree.
+- **CAP-166 (pauses are written by the operator, through one path):** `gh variable set|delete` and enabling or
+  disabling a workflow run only through `steward ci pause|resume --yes`, operator-invoked; agents read. The GitHub
+  UI's disable button is not a pause path: an unregistered `disabled_manually` workflow is drift. A rendered fragment
+  is a conjunction in front of a job's existing `if:`; no condition is lost. AD-4 binds the deploy duty only: the
+  weekly canary builds paused images and is not a deploy.
 
 ## Non-goals
 
@@ -678,6 +715,9 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - No `presenton-pixi-image` on OpenShift or air-gap bundle install support in v1 — `deploy`'s v1 scope is the Pages dashboard only.
 - No multi-operator / team features — single-operator dogfooded tooling.
 - No calendar-based automatic key rotation scheduler — rotation in v1 is on-demand/risk-triggered.
+- No required-status-checks ruleset on `main` in CAP-166 (operator ruling Q6, a separate decision), no rename of the
+  six existing CI variables (Q7), no runtime feature-flag change, no rebuild of the recipe-build workflows, no
+  python-foundry surface.
 
 ## Success signal
 
@@ -690,3 +730,11 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
 - The `1500usd/month` figure in the ceiling-declaration example is illustrative, carried from the Dream's own CLI cadence example — the actual ceiling value is a config input, not a Spec claim about real spend.
 - `age`-based at-rest encryption (constraint AD-3) is the PRD's own lowest-confidence decision (flagged for architecture confirmation) — assumed durable only while Steward's secret inventory stays a handful of API keys; revisit if it grows materially.
 - Direct-push deploy with no new GitHub Actions workflow (constraint AD-4) is a medium-confidence decision — assumed sufficient until scheduled/push-button deploy automation becomes a real want, at which point it should be revisited, not silently reversed.
+- GitHub reports a job skipped by its `if:` as passing for a required status check, so a paused job never blocks a
+  merge (CAP-166); GitHub's documented behaviour, not re-verified live on this repository.
+
+## Open Questions
+
+- Why were `test-all`, `kedro-viz-publish` and the four staged-recipes-linter workflows disabled on 2026-08-24,
+  12:06–12:07? Nothing records it; the operator records the reason when CAP-166 seeds their `paused-manually` and
+  `retired` rows.
