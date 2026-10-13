@@ -220,7 +220,8 @@ def test_doctor_findings_win_over_local_probes(tmp_path: Path, monkeypatch):
         stdout = "copier 9.18.0"
         stderr = ""
 
-    def _run(argv, **kwargs):
+    def _run(*args, **kwargs):
+        argv = args[1] if len(args) >= 2 else args[0]
         if "pyforge.doctor.sources" in " ".join(str(a) for a in argv):
             return _DoctorResult()
         return _LocalWouldFail()
@@ -245,7 +246,8 @@ def test_local_findings_stay_in_manifest_order_when_probes_finish_out_of_order(t
         "bmad-loop": "bmad-loop 0.1.0",
     }
 
-    def _run(argv, **kwargs):
+    def _run(*args, **kwargs):
+        argv = args[1] if len(args) >= 2 else args[0]
         cmd = argv[0] if argv else ""
         if cmd in version_lines:
             delays = {"bmad-loop": 0.05, "tmux": 0.04, "pixi": 0.03, "copier": 0.01}
