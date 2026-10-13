@@ -639,6 +639,26 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         self._credential_vars: dict[str, str | None] = {}
         self.matches: list[tuple[int, str, str | None]] = []
 
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            if alias.name == "os" and alias.asname:
+                self._os_names.add(alias.asname)
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if node.module == "os":
+            for alias in node.names:
+                if alias.name == "*":
+                    self._environ_names.add("environ")
+                    self._getenv_names.add("getenv")
+                    continue
+                bound = alias.asname or alias.name
+                if alias.name == "environ":
+                    self._environ_names.add(bound)
+                elif alias.name == "getenv":
+                    self._getenv_names.add(bound)
+        self.generic_visit(node)
+
     def visit_If(self, node: ast.If) -> None:
         # node.test is evaluated under the CURRENT (not-yet-extended) guard
         # stack. Only the branch that runs "gated on the host condition
@@ -718,9 +738,9 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
             return False
         env_var_name, found = _direct_env_read(
             value,
-            self._os_names,
-            self._environ_names,
-            self._getenv_names,
+            frozenset(self._os_names),
+            frozenset(self._environ_names),
+            frozenset(self._getenv_names),
             self._credential_vars,
         )
         if found and not any(_references_host_like(guard) for guard in self._guards):
@@ -748,9 +768,9 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         name = node.targets[0].id
         env_var_name, found = _direct_env_read(
             node.value,
-            self._os_names,
-            self._environ_names,
-            self._getenv_names,
+            frozenset(self._os_names),
+            frozenset(self._environ_names),
+            frozenset(self._getenv_names),
             self._credential_vars,
         )
         if found:
@@ -803,8 +823,7 @@ def _scan_file(file_path: Path) -> list[Finding]:
         if "environ" not in lower and "getenv" not in lower:
             return []
         tree = ast.parse(source, filename=str(file_path))
-        os_names, environ_names, getenv_names = _resolve_os_aliases(tree)
-        visitor = _CredentialInjectionVisitor(os_names, environ_names, getenv_names)
+        visitor = _CredentialInjectionVisitor()
         visitor.visit(tree)
     except SyntaxError, UnicodeDecodeError, OSError, RecursionError:
         # A file that fails to parse or analyze -- a syntax error, an
