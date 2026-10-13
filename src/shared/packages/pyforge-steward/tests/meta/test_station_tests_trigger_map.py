@@ -1308,6 +1308,10 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             ),
             "Story 100.5: estate realize and realization register",
         ),
+        "src/shared/packages/pyforge-steward/tests/unit/test_estate_verify.py": (
+            _H["PIXI_AND_WORKFLOWS"],
+            "Story 100.4: estate verify detached worktree, preflight lanes, realization probes",
+        ),
         "src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py": _H["PLANNING"],
         "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": _H["CLASS_PATH"],
     },
