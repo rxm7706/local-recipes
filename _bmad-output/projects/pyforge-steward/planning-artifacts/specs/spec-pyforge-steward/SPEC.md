@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-12"
+updated: "2026-10-13"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -679,6 +679,79 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     call, and with `--yes` the fixture asserts the `gh variable set` argv, the registry diff, the journal line and the
     capture text; `pr-preflight` journals a paused lane as skipped and `--ignore-ci-pauses` runs it; the canary has
     one green run; no tracked doc cites `ACTIONS_ENABLED` as live evidence.
+- **CAP-167 — the estate's library and BMAD pins move on one policy-driven, measured, repeatable path** ← spec-pyforge-steward CAP-167 (ready 2026-10-13; extends CAP-5, CAP-9..17, CAP-21..25, CAP-37; works with FR-14, FR-15 and spec-pyforge-doctor:CAP-66..:CAP-70)
+  - **intent:** `docs/governance/pin-policy.yaml`, with a JSON Schema beside it, declares every held package once —
+    `hold` (`never-move` | `cap` | `channel` | `exact` | `floor-only`), the clause to keep (`cap: "<3"`,
+    `channel: SelfExplainML`, `exact: "4.2.1.*"`), `features`, `reason`, `authority` (a Story, CAP, gotcha or
+    fnd:CAP-12) and `until` (the condition or date that retires the row) — and the canonical `pixi upgrade` command is
+    rendered from it (`never-move` rows become `--exclude`), so the three comment generations in `pixi.toml:45-48`
+    become one pointer line. `scripts/pin_policy_check.py` (repo scope, in `detectors-ci` and `pr-preflight`) reds an
+    undeclared hold (a cap, inline table or exact pin with no row), a row with no declaration, a stale pointer, and
+    under `--diff <base>` a lost cap, a flattened channel table, a lowered floor or a moved `never-move` package,
+    naming package, feature, before and after; under `--fan-out` it compares every station package-level range
+    (`src/shared/packages/*/pyproject.toml`, the package `pixi.toml`) with the locked version and reds one outside a
+    station's range, naming the station — the refresh refuses to land it and the move is that station's story
+    (CAP-12 generalized to every package; ruling Q13). `scripts/pin_policy_restore.py` rewrites each named declaration to its
+    policy clause at the newly resolved floor, keeps its comment, re-locks with `pixi lock`, re-checks, and refuses by
+    name when the lock cannot solve. `pyforge steward estate plan|refresh|reconcile|verify|status`, behind
+    `pyforge.steward.estate_refresh`: `plan` runs `pixi upgrade --dry-run --json` through the policy and prints the
+    moves (package, feature, from, to, held-by), the BMAD table (pinned floor, installed `_bmad/_config/manifest.yaml`,
+    upstream latest through doctor's reader, fail-open offline) and days since the last journal, `--due` red past 30
+    days; `refresh` refuses on a dirty tree or on `main`, renders the command, runs `pixi upgrade --pinning-strategy
+    latest-up --json`, the guard, the restore and `pixi lock`, journals, and runs `pixi update` only under
+    `--transitive`, operator-only; `reconcile` regenerates every derived surface by its own generator —
+    `environment.yaml` by the exporter, the library catalog's floors by a new deterministic `llms_full_check.py
+    --fix-floors`, the BMAD-estate catalog by `scribe catalog bmad-estate --write`, the env matrix by
+    `pixi_env_matrix.py --update`, the generated docs by `docs-environments` and `docs-pixi-tasks`, the pixi-version
+    sites by `bump-pixi-version` when the `pixi` floor moved, the `bmad-suite` metapackage by `generate-bmad-suite`
+    when a `bmad-*` floor moved — runs every check by exit code, then appends one memlog event line and one scoped
+    stamp per Spec the surface baseline names for the moved files (read from `scripts/.spec-surface-baseline.json`,
+    never a list); `verify` installs the default tier `--frozen` in a detached worktree, never the working tree —
+    the Guild, core, testing-kit, the eight station envs, `platform-ci-test`, `pyforge-foundry-full`; every
+    environment under `--all` (ruling Q12) — then runs the lanes CI would run for a `pixi.toml` change (read from
+    the workflows, CAP-159; CAP-166's pauses honored and named), the laptop SBOM gate, the recipe-factory import
+    smoke, every realization-register probe, each distinct register test once and the fan-out, one row per
+    environment, lane and probe carrying its platform; the atlas browser gate, herald's browser check and scribe's
+    Postgres lane are named manual rows, never silently green; other platforms are lock-solved and said so, `estate
+    status` names which platforms confirmed the current lock, and a refresh PR merges on lock-solved ×3 plus this
+    platform's verify (ruling Q14). `docs/governance/realization-register.yaml`, with a JSON Schema, declares one
+    row per library whose install has a side effect beyond the environment — `package`, `env`, `class`
+    (`installer-tree` | `module` | `harness` | `kit` | `hooks` | `pin-sites` | `cli` | `service` | `import`),
+    `realize` (argv or none; `operator_gate: true` where it rewrites installer-owned or settings files), `probe`
+    (argv and `expect`), `test`, `owner`, `authority` — generalizing the install-class playbook (CAP-27, CAP-28) to
+    `bmad-method` (realize `upgrade bmad-core --apply` then `prove-landed`; probe `_bmad/_config/manifest.yaml`),
+    `bmad-module-skill-forge` (its own `update`; probe `skf-manifest.yaml`), every suite module (`provision
+    --module`, CAP-18, CAP-23; probe `suite pipeline-truth`'s `installed` and `wired`, CAP-21, CAP-28), `bmad-loop`
+    (`marshal refresh` per loop home and the CAP-12 fan-out sites; probe `bmad-loop --version` and `bmad-loop
+    validate`), `caveman-installer` (`caveman-install --only claude --with-hooks`), `headroom-ai` and `codegraph`
+    (probe `marshal seed check --json` kit items, CAP-162's envelope), `pre-commit` (`pre-commit install`; probe
+    `precommit-config-check`), `pixi` (`bump-pixi-version`; probe `pixi-version-check`), the CLIs (`<bin> --version`
+    equals the locked version in its env), the services (version and a boot) and the import-probed platform
+    libraries (the laptop SBOM gate's probes, reused); `scripts/realization_register_check.py` (repo scope) reds a
+    row no feature declares and a `bmad-*` / `mybmad*` pin (scribe's `read_pins`) or a marshal seed-kit item with
+    no row (ruling Q11). `estate realize`: for each row whose package moved, or `--all`, run `realize` (an
+    `operator_gate` row only under `--yes`, else journaled `skipped-operator-gate`; ruling Q10) then `probe`, and
+    journal `{package, from, to, realize, probe: live | stale | missing}`; `--plan` writes nothing; `verify` reds
+    on `stale` or `missing`, so the estate is confirmed live at its pins, not just locked; a moved `bmad-method`
+    or `bmad-*` floor is handed to `upgrade bmad-core` pre-flight
+    (CAP-9) and `pin-fan-out` (CAP-12) always, to the deliberate apply (CAP-10, CAP-14, CAP-16) and `prove-landed`
+    (CAP-13) under `--apply-bmad`, and to `suite pipeline-truth` (CAP-21) with `suite advance` (CAP-22) named as the
+    next operator step; an installed core below the pinned floor reds `verify`. One tracked journal per run,
+    `.steward/estate-refresh/<date>.json`, validates against a shipped frozen schema. One how-to, one `AGENTS.md`
+    pointer, and the release-cadence runbook's step 7 pointing at `estate refresh`; the first refresh lands through
+    the path and supersedes the 2026-10-13 hand batch. Plan `docs/intake/estate-refresh/PLAN-2026-10-13.md`; its
+    recommended answers Q1–Q9 are this capability's assumptions until the operator overrides them (memlog).
+  - **success:** `pin_policy_check.py --diff` over the 2026-10-13 batch (a fixture pair) yields exactly nine
+    findings — five lost caps, two flattened tables, two lowered floors — and zero on a floor-only move; the restore
+    over that batch brings the check to 0 and `pixi lock` solves; `--fix-floors` over it brings `llms-full-check`
+    from 81 findings to 0 with the prose byte-identical; a fake-subprocess fixture asserts the rendered argv of
+    `plan` and `refresh` and that `--transitive` is the only path to `pixi update`; `verify` on a recorded fixture
+    yields one row per environment and lane and reds on a 6.12.2-pinned, 6.12.0-installed core; the journal
+    validates against the schema; the register check exits 0 on the seeded tree and 1 on a `bmad-*` pin or a
+    seed-kit item with no row; `--fan-out` over a fixture whose lock holds `bmad-loop` 0.13.0 against marshal's
+    `<0.13` range reds naming `pyforge-marshal`; a fake-subprocess fixture asserts `realize`'s argv per class, that
+    an `operator_gate` row runs only under `--yes`, and that a probe never writes; `pyforge-steward-test` and
+    `detectors-ci` green.
 
 ## Constraints
 
@@ -704,6 +777,19 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
   UI's disable button is not a pause path: an unregistered `disabled_manually` workflow is drift. A rendered fragment
   is a conjunction in front of a job's existing `if:`; no condition is lost. AD-4 binds the deploy duty only: the
   weekly canary builds paused images and is not a deploy.
+- **CAP-167 (the pins move on the policy, by subprocess, through a PR):** steward's own code never writes
+  `pixi.toml` — `pixi upgrade` and the repo mutator `scripts/pin_policy_restore.py` do, as subprocesses, the shape
+  `bump_pixi_version.py` already has (AD-1; AD-5 as read since Story 72.1). `pixi update` runs only under `estate
+  refresh --transitive`, operator-invoked; the session hook denies that form to agents (a `session_denials` row), who
+  run `estate plan`, and `refresh` without it inside a worktree that lands through a PR. A lost cap, table or floor is
+  restored from its policy clause, never from taste; an unsolvable restore is a refusal naming the row. Every
+  regeneration goes through the surface's own generator, never a regex over a derived file; `--fix-floors` moves only
+  existing rows' floors and leaves prose byte-identical. PostgreSQL stays 17 and the libpq caps stay (fnd:CAP-12, a
+  `never-move` row). No daemon, workflow or cron: the operator runs the refresh monthly and `plan --due` is the clock.
+  Installer-owned trees (`_bmad/**`, the bmad and skf skills, the caveman skill and hooks, `.claude/settings.json`)
+  are re-applied only through their own installers under `estate realize --yes`, operator-invoked (a
+  `session_denials` row denies the form to agents, as for `--transitive`); a probe never writes. No package-level station pin is rewritten by the refresh: a locked version outside a station's range is
+  refused and named. The capability is A-side, ledger mode `rebuild`; no B surface, `docs/foundry/PIN.md` untouched.
 
 ## Non-goals
 
@@ -718,6 +804,10 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - No required-status-checks ruleset on `main` in CAP-166 (operator ruling Q6, a separate decision), no rename of the
   six existing CI variables (Q7), no runtime feature-flag change, no rebuild of the recipe-build workflows, no
   python-foundry surface.
+- No Dependabot, Renovate or scheduled workflow for pixi pins (CAP-167); the policy records today's 28 holds with
+  their reasons and moves none of them; no new floor or cap on `pixi` itself; no `anaconda upload` or feedstock
+  submission from the refresh (`suite advance` stays the operator's); no recipe-build workflow rebuild; no
+  python-foundry surface; the 2026-10-13 hand batch is not committed as-is.
 
 ## Success signal
 
@@ -732,9 +822,19 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
 - Direct-push deploy with no new GitHub Actions workflow (constraint AD-4) is a medium-confidence decision — assumed sufficient until scheduled/push-button deploy automation becomes a real want, at which point it should be revisited, not silently reversed.
 - GitHub reports a job skipped by its `if:` as passing for a required status check, so a paused job never blocks a
   merge (CAP-166); GitHub's documented behaviour, not re-verified live on this repository.
+- The plan's recommended answers Q1–Q9 (`docs/intake/estate-refresh/PLAN-2026-10-13.md` § 6) hold for CAP-167 until
+  the operator overrides any of them; `pixi upgrade --dry-run --json` reports every manifest move as pixi 0.80's
+  `--help` documents (not re-verified against a live run); a detached worktree's `pixi install --frozen` reproduces
+  CI's fresh clone, and the 36 environments install on linux-64 within the session's disk budget (the Guild's 2 GB
+  bound is the only measured size).
 
 ## Open Questions
 
 - Why were `test-all`, `kedro-viz-publish` and the four staged-recipes-linter workflows disabled on 2026-08-24,
   12:06–12:07? Nothing records it; the operator records the reason when CAP-166 seeds their `paused-manually` and
   `retired` rows.
+- Which held packages retire their hold, and when (CAP-167)? Each policy row carries `until`, but today's reasons
+  are scattered: Story 67.1's libpq-17 caps wait on psycopg-c builds against libpq 17 past 3.2.10, the `bmad-loop`
+  SelfExplainML pins wait on the feedstock's `__win` build being served, and `cron-descriptor`'s and `openai`'s
+  higher floors have no recorded author. The operator answers per row when Story 100.1 seeds the registry; a row
+  with no `until` is a warning the check reports.

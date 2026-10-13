@@ -1088,6 +1088,60 @@ verify_commands = [
   "AGENTS.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"100" = [  # the estate's library and BMAD pins move on one policy-driven, measured, repeatable path
+  # (spec-pyforge-steward CAP-167 / FR-40; Stories 100.1-100.7), added 2026-10-13. The default surface, restated
+  # because a declared entry replaces it outright, plus: the pin policy and its schema, the check and the restore
+  # mutator with their tests and the detector wiring and its generated reference (100.1), the roster and the hook
+  # (100.2's --transitive denial row), the flagd tree and the flag inventory (100.2), the journals under .steward/
+  # (100.2, 100.4, 100.7), the catalog check's --fix-floors and every derived surface the reconcile regenerates --
+  # the library and BMAD-estate catalogs, the env-matrix block in the unifying-strategy Dream, the generated
+  # environments and pixi-tasks docs, the bmad-suite metapackage recipe (100.3, 100.7), the release-cadence runbook
+  # (100.5, under specs/**), the how-to, the docs map, AGENTS.md and the instruction notes (100.6), and every Spec
+  # memlog. Widened 2026-10-13 (same mint, operator direction): the realization register, its schema and check
+  # (100.5), and the installer-owned trees _bmad/**, .claude/skills/** and .claude/settings.json that the operator's
+  # realize --yes rewrites (100.5, 100.7). pixi.toml, pixi.lock and environment.yaml are the default surface; 100.7 is
+  # the one story that moves pins.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docs/governance/pin-policy.yaml",
+  "docs/governance/pin-policy.schema.json",
+  "docs/governance/realization-register.yaml",
+  "docs/governance/realization-register.schema.json",
+  "scripts/realization_register_check.py",
+  "docs/governance/guild-roster.json",
+  ".claude/hooks/pre-shell.py",
+  ".cursor/hooks.json",
+  "scripts/pin_policy_check.py",
+  "scripts/pin_policy_restore.py",
+  "scripts/llms_full_check.py",
+  "scripts/detectors.py",
+  "tests/scripts/**",
+  "docs/reference/detectors.md",
+  "docs/reference/library-llms-full.md",
+  "docs/reference/bmad-estate-llms-full.md",
+  "docs/reference/environments.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/how-to/refresh-the-estate.md",
+  "docs/map.yaml",
+  "docs/dreams/pyforge-unifying-strategy.md",
+  "recipes/bmad-suite/recipe.yaml",
+  ".steward/estate-refresh/**",
+  "_bmad/**",
+  ".claude/skills/**",
+  ".claude/settings.json",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-steward.md",
+  "docs/reference/agent-instruction-notes.md",
+  "AGENTS.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts

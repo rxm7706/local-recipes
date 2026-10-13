@@ -7,6 +7,11 @@ companion dir of its Dream) · a how-things-work description → `docs/reference
 · superseded/out-of-scope → `/archive/docs/` (structure-preserving) · a build
 contract → never here (BMAD planning-artifacts).
 
+- `estate-refresh/` — **dropped 2026-10-13** (`PLAN-2026-10-13.md`): the operator's six-step
+  pixi-upgrade hand sequence measured on the batch it left on `main` (nine pin losses, 81
+  catalog drifts, an unapplied BMAD core), the gap list and the solution — one policy-driven,
+  measured, repeatable estate refresh. Pre-triage. Routes to one dated append on the steward
+  station Dream (§ 7); archive the drop when the append lands.
 - `ci-pause-control-plane/` — **dropped 2026-10-12** (`PLAN-2026-10-12.md`): planning, analysis and
   solution for operator-controlled pause switches and visibility across every GitHub Actions surface
   and its local twin, from the 2026-10-12 live audit. Pre-triage. Routes to dated appends on the
