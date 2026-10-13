@@ -420,6 +420,14 @@ holds:
   authority: spec-100-7
   owner: pyforge-steward
   until: litellm on conda-forge supports openai >=3 with py314 in every env that pulls agno
+- package: cron-descriptor
+  hold: never-move
+  features:
+  - python-agent-platform
+  reason: restore to >=2.1.0 after upgrade fails pixi lock (django-celery-beat requires cron-descriptor <2.0)
+  authority: spec-100-7
+  owner: pyforge-steward
+  until: django-celery-beat on conda-forge accepts cron-descriptor 2.x or the platform pin band moves
 - package: wagtail
   hold: cap
   cap: <8.0
