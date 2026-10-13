@@ -4309,10 +4309,11 @@
     "source": "parselmouth"
   },
   "python-unicorn": {
-    "conda_name": "unicorn",
-    "import_name": "",
-    "pypi_name": "python-unicorn",
-    "source": "parselmouth"
+    "conda_name": "python-unicorn",
+    "import_name": "unicorn",
+    "pypi_name": "unicorn",
+    "source": "cfe-retro-2026-10-12-verified",
+    "note": "NOT a PyPI name: the PyPI distribution is unicorn. Kept as an alias so a lookup of the conda name resolves to the bindings, not to the C library. The prior parselmouth-sourced entry mapped it to conda unicorn, which ships no importable module (G107)."
   },
   "python-uv": {
     "conda_name": "uv",
@@ -6089,5 +6090,11 @@
     "import_name": "playwright",
     "pypi_name": "playwright",
     "source": "cfe-retro-2026-07-29-verified"
+  },
+  "unicorn": {
+    "conda_name": "python-unicorn",
+    "import_name": "unicorn",
+    "pypi_name": "unicorn",
+    "source": "cfe-retro-2026-10-12-verified"
   }
 }

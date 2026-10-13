@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-10-10'   # RE-STAMPED 2026-10-10: prd→arch cascade for the PRD's 2026-10-10 re-stamp (Stories 33.1 and 37.1 move blocked -> backlog; fix Stories 6.13 and 34.6 minted 2026-10-07); no AD amended; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 42.1, 43.1, 44.1 and 46.1 as landed; no AD change. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: prd→arch cascade for the PRD's 2026-10-10 re-stamp (Stories 33.1 and 37.1 move blocked -> backlog; fix Stories 6.13 and 34.6 minted 2026-10-07); no AD amended; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -652,5 +652,21 @@ source or station boundary moves. The two specs, as written, land on the ADs as 
 - 33.1 adds one finding kind inside `sources/chain.py`. It adds no `Source` member (AD-3), and it reads tracked files
   and imports no station (AD-11).
 - 37.1 removes `check_spec_indexed` and the `docs-specs-nonmd` branch from `sources/factory.py`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-13
+
+*The `prd→arch` cascade for the PRD's 2026-10-13 re-stamp: Stories 42.1, 43.1, 44.1 and 46.1 as landed, plus surface
+reconciles.*
+
+Checked against every AD. They land as written:
+- **42.1** adds one source module, `sources/frontmatter_duplicate_keys.py`, registered like every other source. It reads
+  tracked files and imports no station (AD-11).
+- **43.1** changes classification inside `sources/factory.py` and its hand-synced twin `scripts/bmad_drift_check.py`. No
+  port or boundary moves.
+- **44.1** changes a test only.
+- **46.1** changes `checks/env_hygiene.py` internally (one visitor walk, and test-code paths skipped relative to the scan
+  target). The check's name, finding shape and read-only, offline contract (NFR-1) are unchanged.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

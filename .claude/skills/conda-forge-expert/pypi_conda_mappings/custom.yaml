@@ -26,3 +26,21 @@
 
 # Known edge cases not in upstream sources:
 # (Add your custom mappings below)
+playwright:
+  conda_name: playwright-python
+  import_name: playwright
+  reason: "G107: conda-forge playwright is the Node CLI/driver with no Python module; the PyPI bindings are conda playwright-python (verified 2026-07-29)."
+unicorn:
+  conda_name: python-unicorn
+  import_name: unicorn
+  # A noarch:python recipe has no use for the C library: test_split_distribution_run_deps.py lints it.
+  lint_wrong_half: true
+  reason: "G107: conda-forge unicorn is the C library; the PyPI bindings (import unicorn) are the python-unicorn output of unicorn-feedstock (verified 2026-10-12)."
+playwright-python:
+  conda_name: playwright-python
+  import_name: playwright
+  reason: "G107 alias: not a PyPI name. Parselmouth maps it to conda playwright (the Node CLI); keep the conda name resolving to the bindings."
+python-unicorn:
+  conda_name: python-unicorn
+  import_name: unicorn
+  reason: "G107 alias: not a PyPI name. Parselmouth maps it to conda unicorn (the C library); keep the conda name resolving to the bindings."

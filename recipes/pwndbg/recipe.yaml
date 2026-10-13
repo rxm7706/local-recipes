@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: pwndbg
   version: "2026.09.15"
-  python_min: "3.10"
 
 package:
   name: ${{ name }}
@@ -31,7 +30,7 @@ requirements:
     - python >=${{ python_min }}
     - gdb
     - capstone6pwndbg ==8.0.0
-    - unicorn >=2.1.4,<3
+    - python-unicorn >=2.1.4,<3
     - pwntools >=4.14.1,<5
     - sortedcontainers >=2.4.0,<3
     - tabulate >=0.10.0,<0.11
@@ -51,10 +50,9 @@ tests:
   - python:
       imports:
         - pwndbginit
-      # pip_check off: pwntools 4.15.0 declares unicorn !=2.1.4 while pwndbg needs
-      # unicorn >=2.1.4 and conda-forge tops out at 2.1.4 (upstream pin clash).
-      pip_check: false
+      pip_check: true
       python_version:
+        - ${{ python_min }}.*
         - "*"
   # Load pwndbg inside gdb (gdb's own embedded python) and run its `version` command.
   - requirements:
@@ -83,3 +81,45 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pwndbg
+  cfe-upstream-registry: github
+  cfe-upstream-name: pwndbg/pwndbg
+  cfe-purls:
+    - pkg:conda/pwndbg@${{ version }}?channel=conda-forge
+    - pkg:github/pwndbg/pwndbg@${{ version }}
+  cfe-upstream-repo: https://github.com/pwndbg/pwndbg
+  cfe-upstream-homepage: https://pwndbg.re
+  cfe-import-names: [pwndbginit, pwndbg]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "capstone6pwndbg 8.0.0 not on conda-forge (local recipe)"
+    - "niche-elf 0.3.6 not on conda-forge (local recipe)"
+    - "gdb-pt-dump 1.0.0 not on conda-forge (local recipe)"
+    - "pip check needs a pwntools build with Gallopsled/pwntools#2721 (local recipes/pwntools build 1; conda-forge pwntools 4.15.0 build 0 excludes unicorn 2.1.4)"
+  cfe-last-checked: 2026-10-12T22:00:00Z
+  cfe-generated-by-version: 8.99.16
+  cfe-generated-at-datetime: 2026-10-12T22:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-13T03:01:29Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # python-unicorn is the Python binding (import unicorn); conda-forge unicorn is the C library it pins exactly.
+#    # pwndbg needs >=2.1.4; pwntools 4.15.0 excludes 2.1.3/2.1.4 unless built with #2721 (recipes/pwntools).
+#    # capstone6pwndbg, niche-elf and gdb-pt-dump keep upstream's exact pins (PIN-001): pip check enforces them.
+# context:
+#    # python_min dropped: upstream requires-python >=3.10 is below the conda-forge floor, so pinning supplies it (Rule 6).
+# tests:
+#    # python_min.* leg added (CFEP-25): conda-forge gdb 18.1 has builds for python 3.11 through 3.15.
+####

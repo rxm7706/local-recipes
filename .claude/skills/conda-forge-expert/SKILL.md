@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.99.16
+version: 8.100.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -3746,6 +3746,14 @@ The build host must be a **Mac** (native on Apple Silicon, or an Intel Mac cross
 - **Local-recipes mirror v0→v1** (you just need a `recipe.yaml` next to your `meta.yaml`): **hand-author** it from the meta.yaml, modeling on the nearest same-class recipe (`primp` for maturin/PyO3, `mailpit` for Go). `migrate_to_v1` won't help. Validate + build, then drop `meta.yaml`.
 - **Deployed feedstock v0→v1** (the migration PR): either `feedrattler <name>-feedstock <github-user>` against the remote, **or** (recommended — full control) hand-author the `recipe.yaml` on a fork branch + `conda-smithy rerender` locally (see [Feedstock Migration](guides/migration.md#feedstock-migration) and G87).
 
+**Hand-authoring the v1 from the `meta.yaml`: compare the lists as sets, and never filter one by prefix.** Mason Story
+29.1 generated `recipes/pwntools/recipe.yaml` with a script that copied the feedstock's run list but skipped every line
+starting with `- python`, so it could rewrite the `python >={{ python_min }}` pin itself. That filter also dropped
+`python-dateutil` and `python-unicorn`. The build passed and the artifact solved, because nothing at build time
+needs a run dep. Only the test's `pip check` caught it: `pwntools 4.15.0 requires python-dateutil, which is not
+installed`. After any hand conversion, compare the `meta.yaml` and `recipe.yaml` lists for `host`, `run`, the entry
+points and the test commands as sets, and expect equal counts (G90's count-check).
+
 ### G85. A native `trigger_build` reports "No build summary found — build may have crashed" even on SUCCESS — confirm from the `.conda` artifact + `rattler-build test --package-file`
 
 **Symptom**: after a `mode="native"` build, `get_build_summary` returns `{"status": "unknown", "message": "No build summary found — build may have crashed"}` (with a stale `build.pid`), although the build actually succeeded.
@@ -4173,6 +4181,28 @@ is the shared object while the bindings carry a `py`/`python` suffix. When the b
 package's description mentions a CLI, a binary, or a driver, assume it is the wrong half
 until an import says otherwise.
 
+**Second live case (2026-10-12): `unicorn`.** `conda-forge/unicorn-feedstock` builds two outputs: `unicorn`, the C
+library, and `python-unicorn`, the bindings (`import unicorn`; its dist-info name is `unicorn`). The mapping data held
+the same inversion as playwright's: a parselmouth row keyed `python-unicorn`, which is not a PyPI name, pointing at
+conda `unicorn`, and no row at all for the real PyPI name `unicorn`. `recipes/pwndbg` shipped `unicorn >=2.1.4,<3`, the
+C library, and worked only because pwntools pulls in `python-unicorn`. The fix is `python-unicorn >=2.1.4,<3`.
+
+**Fix a mapping in `custom.yaml`, not only in `different_names.json`.** `scripts/sync_pypi_mappings.py` regenerates
+`different_names.json` from parselmouth, cf-graph and grayskull. Only `pypi_conda_mappings/custom.yaml` survives a sync:
+it has the highest merge priority, and that script's `get_conda_name` reads it first. The July playwright fix went into
+`different_names.json` alone, so the next sync would have reverted it. Both corrections now live in `custom.yaml` as
+well. Two resolvers read mapping data, and both now honour it:
+
+- **`scripts/name_resolver.py`**, behind the MCP `get_conda_name` tool and the generator. It reads
+  `.claude/data/conda-forge-expert/pypi_conda_map.json`, a cache that also answered `unicorn → unicorn` and
+  `playwright → playwright`. Since v8.100.0 its tier 0 (`search_custom_overrides`) reads `custom.yaml` before the cache.
+- **`scripts/sync_pypi_mappings.py`**. Its YAML reader needs PyYAML: without it, the fallback parser turns nested
+  entries into `[]`, and every override drops silently. `name_resolver.py` warns on stderr instead.
+
+`tests/meta/test_split_distribution_run_deps.py` reds a `noarch: python` recipe that lists the wrong half of a pair
+marked `lint_wrong_half: true` in `custom.yaml` (unicorn). The playwright pair is declared but not linted: the Node
+CLI is a legitimate dependency for tools that shell out to it.
+
 ---
 
 ### G108. Autotick's internal `recipe_editor.py` subprocess call must resolve the interpreter the same way as its sibling — a bare `"python"` argv0 breaks on any environment without a `python` alias
@@ -4423,6 +4453,47 @@ Then render the file on a platform it builds (`rattler-build build --render-only
 
 ---
 
+### G122. Two dependencies pin disjoint versions of a shared package, and upstream has fixed it but not released the fix — backport it into a local mirror at the next build number; never loosen the other side, never waive pip check
+
+**Symptom**: `pip check` fails on a pair no version satisfies.
+`pwntools 4.15.0 has requirement unicorn!=2.1.3,!=2.1.4,>=2.0.1, but you have unicorn 2.1.4.` The other dependency
+(pwndbg 2026.09.15) requires `unicorn>=2.1.4`, and conda-forge's newest `python-unicorn` is 2.1.4. The usual response
+is `pip_check: false`, which hides the clash and keeps it.
+
+**Why**: conda solves because the feedstock's conda `depends` (`python-unicorn >=2.0.1`) never encoded the wheel's
+exclusion. That is G77's conda-versus-wheel mismatch, in the other direction. `pip check` reads the wheel metadata.
+
+**Fix — work through these steps in order:**
+1. Read why each side pins as it does: `git log -S'<pin>' -- pyproject.toml` on each upstream. A floor raised on
+   purpose stays. pwndbg raised unicorn's floor twice (2.1.3, then 2.1.4 in #3292), so loosening pwndbg was wrong.
+2. Read the excluding package's other branches for a relaxed pin:
+   `gh api "repos/<org>/<repo>/contents/pyproject.toml?ref=<branch>"` for the default branch, `stable` and `beta`,
+   then the branch's log for that file. pwntools relaxed it in `7e5e79d00f` (Gallopsled/pwntools#2721,
+   2026-04-27), replacing the exclusion with a runtime `OSError` for MIPS. Six months later, no release carried it.
+3. When the fix exists, mirror the feedstock: `meta.yaml` byte-identical, and a v1 `recipe.yaml` beside it that applies
+   the upstream commit as a source patch. Generate the patch against the released sdist, not the branch, and check it
+   with `patch -p1 --dry-run`. Set the build number one above the feedstock's, so a local solve prefers the patched
+   build. Record the revert trigger in `cfe-forge-recipe-updates-needed`.
+4. Verify the artifact, not the recipe:
+   - the wheel's `Requires-Dist` is relaxed;
+   - the shipped code carries the upstream change;
+   - the consumer's test env resolves the new build;
+   - `pip check` passes on every Python leg.
+5. Prove the mirror is load-bearing. Run the consumer against the feedstock's unpatched build, and expect the
+   original failure:
+   `pixi exec -c file://<local channel> -c conda-forge --spec <consumer> --spec '<pkg>==<ver>=*_0' -- pip check`.
+
+**Cost**: under strict channel priority the mirror shadows conda-forge's build in every solve that sees the local
+channel, or a channel fed from it (G104). That is the intent until the upstream release lands. Then drop the patch,
+and the mirror returns to a plain copy of the feedstock.
+
+**Case study**: mason Story 29.1 (2026-10-12). `recipes/pwntools` 4.15.0 build 1 carries #2721's two hunks
+(`pyproject.toml`, `pwnlib/elf/plt.py`). Its wheel reads `Requires-Dist: unicorn>=2.0.1`, and `test_mips_guard.py` saw the
+guard raise on unicorn 2.1.4. `recipes/pwndbg`'s test env resolved build 1 with `python-unicorn` 2.1.4 on Python 3.11
+and 3.14, and `pip check` passed on both. Against conda-forge's build 0 the same env fails with the original message.
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
@@ -4461,6 +4532,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.100.0** (Oct 12, 2026) — **mason Story 29.1 Rule-2 retro: G122 (backport an unreleased upstream fix into a local mirror when two pins are disjoint), a second G107 case (`unicorn` vs `python-unicorn`), a G84 refinement, mapping overrides moved to `custom.yaml`, and the python_min test's stale fallback floor (MINOR).** See `CHANGELOG.md`.
 - **v8.99.2** (Oct 10, 2026) — **mason Story 25.4 retro: hand-stamp CFE block then rerun `--repair`; 14/14 repaired; build record for leftovers (PATCH).** See `CHANGELOG.md`.
 - **v8.99.1** (Oct 9, 2026) — **mason Story 25.2 closing retro: reading a `refresh-wave` report, the no-CFE-block cause behind every Wave 0 leftover, and a G93 addendum (PATCH).** See `CHANGELOG.md`.
 - **v8.99.0** (Oct 9, 2026) — **mason Story 25.3: `refresh_wave.py`, a tracked bulk recipe-refresh driver with `--repair` for the Wave H damage (MINOR).** Dry-run by default, resumable, idempotent, local only; `recipe_updater` reads a recipe with no `context.name`. See `CHANGELOG.md`.

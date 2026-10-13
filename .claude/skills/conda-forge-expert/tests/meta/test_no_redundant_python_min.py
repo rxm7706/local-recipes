@@ -37,16 +37,22 @@ _CONTEXT_PYTHON_MIN_RE = re.compile(
 )
 
 
+# The floor conda-forge-pinning set on 2026-09-02. Used only when the pinning file is
+# absent (a worktree without the local-recipes env); keep it at the current floor, or the
+# test passes recipes that sit between the stale fallback and the real floor.
+_FALLBACK_FLOOR = "3.11"
+
+
 def _read_conda_forge_python_floor() -> str:
-    """Read floor dynamically; fall back to ``3.10`` if pinning file is missing."""
+    """Read floor dynamically; fall back to ``_FALLBACK_FLOOR`` if pinning file is missing."""
     if not _PINNING_CONFIG.exists():
-        return "3.10"
+        return _FALLBACK_FLOOR
     try:
         text = _PINNING_CONFIG.read_text(encoding="utf-8")
     except OSError:
-        return "3.10"
+        return _FALLBACK_FLOOR
     m = _PINNING_PYTHON_MIN_RE.search(text)
-    return m.group("value") if m else "3.10"
+    return m.group("value") if m else _FALLBACK_FLOOR
 
 
 # Temporary allowlist — Wave C of v8.13.0 sprint clears this. Each entry is the

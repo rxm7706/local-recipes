@@ -3419,6 +3419,53 @@ whenever the older retro's 10-character prefix is all digits and loads as an int
 
 **Status:** done
 
+## Epic 29: pwndbg's pip check holds: a local pwntools carries the upstream unicorn fix (fix under spec-pyforge-mason CAP-18 and CAP-23)
+
+Minted 2026-10-12 from the station Dream's entry of the same name, on the operator's rulings of that day ("Fix the
+unicorn conflict"; "Backport #2721 locally (Recommended)"). `recipes/pwndbg` landed in PR #2168 with `pip_check: false`,
+because pwndbg 2026.09.15 needs `unicorn>=2.1.4` and pwntools 4.15.0 excludes 2.1.3 and 2.1.4. pwntools fixed that on
+its `stable` branch (Gallopsled/pwntools#2721) but has not released it. **HARD boundaries:**
+- 29.1 touches `recipes/pwntools/**` (new), `recipes/pwndbg/**`, the `context.python_min` line of `recipes/niche-elf`
+  and `recipes/gdb-pt-dump` (pwndbg's local prerequisites, both below conda-forge's 3.11 floor), and the CFE retro
+  surface in its own `retro(cfe):` commit.
+- Local only. A green local build on linux-64 ends the story. No feedstock, staged-recipes or upstream PR is opened
+  without an explicit ask.
+- `recipes/pwntools/meta.yaml` stays a verbatim copy of the feedstock's. Only the v1 `recipe.yaml` carries the patch.
+- No `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock` file changes.
+- 29.1 is a fix and carries no flag (`spec-feature-flag-governance` CAP-1, Q1).
+
+### Story 29.1: pwndbg passes pip check with a local pwntools that carries the upstream unicorn fix
+
+As the operator who runs pwndbg and pwntools in one environment,
+I want a pwntools build that accepts unicorn 2.1.4 and refuses MIPS emulation on it, and a pwndbg recipe whose
+dependencies `pip check` accepts,
+So that the environment is consistent and pwntools raises a clear error where it used to segfault.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-18 and CAP-23 (no new CAP; a fix
+carries no flag, `spec-feature-flag-governance` Q1); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `recipes/pwntools/**` (new: `meta.yaml`, `recipe.yaml`, `patches/`, `test_mips_guard.py`),
+`recipes/pwndbg/recipe.yaml`, `recipes/niche-elf/recipe.yaml` and `recipes/gdb-pt-dump/recipe.yaml` (their
+below-floor `context.python_min` only), and the CFE retro surface (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml,config/failure-catalog.yaml}`,
+`pypi_conda_mappings/{custom.yaml,different_names.json}`, `scripts/name_resolver.py`, and the tests
+`tests/unit/test_name_resolver.py`, `tests/meta/{test_no_redundant_python_min.py,test_skill_md_consistency.py,test_split_distribution_run_deps.py}`),
+committed only in `retro(cfe): …` commits.
+**Spec:** `planning-artifacts/specs/spec-29-1-pwndbg-passes-pip-check-with-a-local-pwntools-that-carries-the-upstream-unicorn-fix.md`
+**Given** pwndbg 2026.09.15 requires `unicorn>=2.1.4,<3`, pwntools 4.15.0 requires `unicorn>=2.0.1, !=2.1.3, !=2.1.4`,
+conda-forge's newest `python-unicorn` is 2.1.4, and `recipes/pwndbg` lists `unicorn` (the C library) with
+`pip_check: false`
+**When** `recipes/pwntools` builds pwntools 4.15.0 from the PyPI sdist with Gallopsled/pwntools#2721 applied as a source
+patch at build number 1, and `recipes/pwndbg` depends on `python-unicorn >=2.1.4,<3` with `pip_check: true`
+**Then** both build green on linux-64 with `pixi run -e local-recipes recipe-build`, the pwndbg test environment resolves
+the local pwntools with `python-unicorn` 2.1.4, and `pip check` passes there
+**And:**
+- The built pwntools wheel metadata reads `Requires-Dist: unicorn>=2.0.1`, and its `pwnlib/elf/plt.py` raises
+  `OSError` for a MIPS ELF on unicorn 2.1.3 or 2.1.4.
+- Both recipes pass `validate_recipe`, `optimize_recipe` and the CI-parity lint. Each CFE block records the real build.
+- The story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry.
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
+
+**Status:** backlog
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency

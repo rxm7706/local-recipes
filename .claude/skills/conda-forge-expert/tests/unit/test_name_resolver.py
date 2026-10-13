@@ -54,3 +54,32 @@ class TestNameResolver:
         # The stub returns the input unchanged for unknown names
         assert result["success"] is True
         assert result["conda_name"] == "nonexistent-pkg"
+
+    def test_custom_override_beats_the_local_cache(self, load_module, monkeypatch, tmp_path):
+        """G107: a verified custom.yaml override wins over a cache that holds the wrong half."""
+        mod = load_module("name_resolver.py")
+        cache_file = tmp_path / "pypi_conda_map.json"
+        cache_file.write_text(json.dumps({"unicorn": "unicorn", "playwright": "playwright"}))
+        monkeypatch.setattr(mod, "MAPPING_CACHE_FILE", cache_file)
+        for pypi_name, conda_name in (("unicorn", "python-unicorn"), ("Playwright", "playwright-python")):
+            result = mod.resolve_name(pypi_name)
+            assert result["source"] == "custom-override", result
+            assert result["conda_name"] == conda_name, result
+
+    def test_custom_overrides_read_a_tmp_file(self, load_module, monkeypatch, tmp_path):
+        mod = load_module("name_resolver.py")
+        custom = tmp_path / "custom.yaml"
+        custom.write_text("Foo_Bar:\n  conda_name: foo-bar-conda\n  reason: test\nnot-a-mapping: 3\n")
+        monkeypatch.setattr(mod, "CUSTOM_MAPPINGS_FILE", custom)
+        assert mod.search_custom_overrides("foo-bar") == "foo-bar-conda"
+        assert mod.search_custom_overrides("not-a-mapping") is None
+        assert mod.search_custom_overrides("absent") is None
+
+    def test_missing_or_broken_custom_file_falls_through(self, load_module, monkeypatch, tmp_path):
+        mod = load_module("name_resolver.py")
+        monkeypatch.setattr(mod, "CUSTOM_MAPPINGS_FILE", tmp_path / "absent.yaml")
+        assert mod.search_custom_overrides("unicorn") is None
+        broken = tmp_path / "broken.yaml"
+        broken.write_text("unicorn: [unclosed\n")
+        monkeypatch.setattr(mod, "CUSTOM_MAPPINGS_FILE", broken)
+        assert mod.search_custom_overrides("unicorn") is None

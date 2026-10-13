@@ -262,3 +262,18 @@ Regenerating a board view is optional confirmation, not the measure.
   found what the finding did not name — three divergences in the benchmark code (a harness `state.json` read outside the
   AD-3 seam, clock reads in `core/`, an artifact that cannot show a leg's isolation) and a PRD defect (the FR-170..FR-195
   `← CAP-n` tags do not match the Spec's CAPs), recorded for fix stories, not repaired. Epics already sat at 2026-10-08.
+
+- **Run 2026-10-12 (mason) — 1 finding cleared, single station.** Entry: pyforge-mason `staleness`, `feeds spec→prd`
+  (the Spec's memlog moved to 2026-10-12 with Story 29.1's mint; the PRD sat at 2026-10-09). Exit:
+  `chain_currency_sweep_check.py --project pyforge-mason` current. Remedy: PRD and spine `## Currency reconciliation —
+  2026-10-12` fold the nine memlog entries since the 2026-10-09 (later) re-stamp (Track B and CFE-retro surface
+  reconciles, marshal 96.1's frontmatter collapse, Story 29.1's ruling, design and mint); no FR or AD change. Landed with
+  the story's chain on branch `mason-unicorn-pwntools-backport`.
+
+- **Run 2026-10-13 — 1 finding cleared, single station.** Entry: pyforge-doctor `staleness`, `feeds spec→prd` (the
+  Spec's memlog moved to 2026-10-13 with Story 46.1's landing; the PRD and spine sat at 2026-10-10). Exit:
+  `chain_currency_sweep_check.py --project pyforge-doctor` current. Remedy: PRD and spine `## Currency reconciliation —
+  2026-10-13` fold the entries since the 2026-10-10 re-stamp (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed,
+  33.1 and 37.1 landed, co-governor surface reconciles); no FR or AD change. Epics sat at 2026-10-12, inside the window.
+  Deviation: a dispatched landing (46.1) appended to the memlog and left `main` red on this check; the landing did not
+  run the reconciler.
