@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pyforge.testing_kit.flags import flag_states
 
 pytest.importorskip("jsonschema")
 
@@ -17,6 +18,12 @@ if str(SCRIPTS) not in sys.path:
 
 import realization_register_check as check_mod  # noqa: E402
 from realization_register_lib import load_register  # noqa: E402
+
+
+@flag_states("pyforge.steward.estate_refresh")
+def test_register_check_runs_under_estate_refresh_flag(flag_provider: dict[str, bool]) -> None:
+    """Realization register checks are gated by ``pyforge.steward.estate_refresh`` in production."""
+    assert "pyforge.steward.estate_refresh" in flag_provider
 
 
 def test_register_passes_on_tree() -> None:

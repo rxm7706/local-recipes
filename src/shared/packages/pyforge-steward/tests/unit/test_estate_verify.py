@@ -9,8 +9,12 @@ from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
 
-from pyforge.steward.estate import SCHEMA_RESOURCE
+flag_provider = make_flag_provider_fixture()
+
+from pyforge.steward.estate import ESTATE_FLAG_KEY, SCHEMA_RESOURCE
 from pyforge.steward.estate_verify import (
     DEFAULT_TIER,
     GUILD_SIZE_BOUND_MB,
@@ -134,15 +138,16 @@ def _fixture_root(tmp_path: Path) -> Path:
 
 
 def _deps(root: Path, runner: RecordingRunner, **kwargs: object) -> VerifyDeps:
-    return VerifyDeps(
-        root=root,
-        runner=runner,
-        head_sha=lambda: "abc123",
-        platform=lambda: "linux-64",
-        flag_on=lambda: True,
-        enforce_require=False,
-        **kwargs,
-    )
+    fields = {
+        "root": root,
+        "runner": runner,
+        "head_sha": lambda: "abc123",
+        "platform": lambda: "linux-64",
+        "flag_on": lambda: True,
+        "enforce_require": False,
+    }
+    fields.update(kwargs)
+    return VerifyDeps(**fields)  # type: ignore[arg-type]
 
 
 def _worktree(root: Path) -> Path:
@@ -152,6 +157,54 @@ def _worktree(root: Path) -> Path:
 def _install_envs(runner: RecordingRunner, root: Path) -> list[str]:
     wt = _worktree(root)
     return [argv[4] for argv, cwd in runner.calls if argv[:3] == ["pixi", "install", "--frozen"] and cwd == wt]
+
+
+@flag_states("pyforge.steward.estate_refresh")
+def test_verify_refuses_when_estate_refresh_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flag_provider: dict[str, bool]
+) -> None:
+    root = _fixture_root(tmp_path)
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    on = flag_provider["pyforge.steward.estate_refresh"]
+    runner = RecordingRunner(root=root)
+    result = run_verify(
+        _deps(root, runner, flag_on=lambda: on),
+        env_filter=None,
+        lane_filter=None,
+        probe_filter=None,
+        all_envs=False,
+        keep=False,
+        ignore_ci_pauses=False,
+        budget_minutes=None,
+    )
+    if on:
+        assert "refused" not in result.summary
+        assert runner.calls[0][0][:4] == ["git", "worktree", "add", "--detach"]
+    else:
+        assert not result.ok
+        assert ESTATE_FLAG_KEY in result.summary
+        assert not runner.calls
+
+
+def test_format_status_platforms_and_load_latest(tmp_path: Path) -> None:
+    from pyforge.steward.estate_verify import format_status_platforms, load_latest_verify_platforms
+
+    root = _fixture_root(tmp_path)
+    journal_dir = root / ".steward/estate-refresh"
+    journal_dir.mkdir(parents=True, exist_ok=True)
+    doc = {
+        "verify": {
+            "platforms": {
+                "linux-64": {"lock_sha": "abc", "verdict": "ok"},
+                "osx-arm64": {"lock_sha": "def", "verdict": "lock-solved"},
+            }
+        }
+    }
+    (journal_dir / "2026-10-13.json").write_text(json.dumps(doc), encoding="utf-8")
+    loaded = load_latest_verify_platforms(root)
+    assert loaded["linux-64"]["verdict"] == "ok"
+    lines = format_status_platforms(doc)
+    assert any("linux-64" in line and "abc" in line for line in lines)
 
 
 def test_worktree_first_then_default_tier_installs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -201,7 +201,7 @@ def _run_timed(
     *,
     budget_seconds: float | None,
     started: float,
-) -> tuple[_Completed, float, str | None]:
+) -> tuple[_Completed | _FakeCompleted, float, str | None]:
     if budget_seconds is not None and (time.monotonic() - started) >= budget_seconds:
         return _FakeCompleted(argv, 124), 0.0, "timed-out"
     t0 = time.monotonic()
@@ -403,10 +403,10 @@ def run_verify(
         selection = None
 
     if selection is not None:
-        for verdict in selection.verdicts:
-            if not verdict.selected:
+        for lane_verdict in selection.verdicts:
+            if not lane_verdict.selected:
                 continue
-            lane = Lane(verdict.task, verdict.environment, ())
+            lane = Lane(lane_verdict.task, lane_verdict.environment, ())
             if lane_filter and lane.task != lane_filter:
                 continue
             pause = pauses.get(lane.task)
@@ -679,5 +679,10 @@ def load_latest_verify_platforms(root: Path) -> dict[str, dict[str, str]]:
         verify = doc.get("verify") or {}
         plats = verify.get("platforms")
         if isinstance(plats, dict) and plats:
-            return plats  # type: ignore[return-value]
+            out: dict[str, dict[str, str]] = {}
+            for key, val in plats.items():
+                if isinstance(val, dict):
+                    out[str(key)] = {str(k): str(v) for k, v in val.items()}
+            if out:
+                return out
     return {}
