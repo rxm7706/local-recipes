@@ -1,0 +1,212 @@
+version: 1
+defaults:
+  pinning_strategy: latest-up
+  floors_never_lower: true
+pointer: 'Estate pin holds: docs/governance/pin-policy.yaml — render upgrade: python
+  scripts/pin_policy_check.py --render-command'
+holds:
+- package: conda-libmamba-solver
+  hold: never-move
+  features: '*'
+  reason: Recipe factory solver pin
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: conda-build
+  hold: never-move
+  features: '*'
+  reason: Recipe factory build engine
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: conda-index
+  hold: never-move
+  features: '*'
+  reason: Repodata index generator
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: conda-forge-ci-setup
+  hold: never-move
+  features: '*'
+  reason: CI fidelity bootstrap
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: conda-forge-pinning
+  hold: never-move
+  features: '*'
+  reason: Global conda-forge pinning manifest
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: frozendict
+  hold: never-move
+  features: '*'
+  reason: Immutable dict transitive build dep
+  authority: pixi.toml comment
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: networkx
+  hold: never-move
+  features: '*'
+  reason: build_all.py import networkx
+  authority: pixi.toml comment
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: rattler-build-conda-compat
+  hold: never-move
+  features: '*'
+  reason: Rattler build compat
+  authority: pixi.toml comment
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: grayskull
+  hold: never-move
+  features: '*'
+  reason: Recipe skeleton tool
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: conda-recipe-manager
+  hold: never-move
+  features: '*'
+  reason: Recipe manager
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: conda-smithy
+  hold: never-move
+  features: '*'
+  reason: Feedstock tooling
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: shellcheck
+  hold: never-move
+  features: '*'
+  reason: Shell lint for recipes
+  authority: conda-forge-expert
+  owner: pyforge-mason
+  until: estate refresh policy
+- package: nodejs
+  hold: never-move
+  features: '*'
+  reason: Node LTS line policy
+  authority: Story 67.1
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: python
+  hold: never-move
+  features: '*'
+  reason: Python 3.14 interpreter pin
+  authority: fnd:CAP-12
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: django
+  hold: never-move
+  features: '*'
+  reason: Platform Django family
+  authority: platform-dev
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: channels
+  hold: never-move
+  features: '*'
+  reason: Channels stack
+  authority: platform-dev
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: daphne
+  hold: never-move
+  features: '*'
+  reason: ASGI server
+  authority: platform-dev
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: asgiref
+  hold: never-move
+  features: '*'
+  reason: ASGI utilities
+  authority: platform-dev
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: channels_redis
+  hold: never-move
+  features: '*'
+  reason: Channels redis backend
+  authority: platform-dev
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: wagtail
+  hold: never-move
+  features: '*'
+  reason: CMS stack
+  authority: platform-dev
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: coderedcms
+  hold: never-move
+  features: '*'
+  reason: CodeRed CMS extension
+  authority: platform-dev
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: postgresql
+  hold: never-move
+  features: '*'
+  reason: PostgreSQL 17 estate hold
+  authority: fnd:CAP-12
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: psycopg
+  hold: never-move
+  features: '*'
+  reason: psycopg cap with PostgreSQL 17
+  authority: fnd:CAP-12
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: psycopg2
+  hold: never-move
+  features: '*'
+  reason: psycopg2 cap with PostgreSQL 17
+  authority: fnd:CAP-12
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: libpq
+  hold: never-move
+  features: '*'
+  reason: libpq cap with PostgreSQL 17
+  authority: fnd:CAP-12
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: pgvector
+  hold: never-move
+  features: '*'
+  reason: pgvector cap with PostgreSQL 17
+  authority: fnd:CAP-12
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: cachebox
+  hold: never-move
+  features: '*'
+  reason: Platform policy pin shape
+  authority: platform-ci-test
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: pixi
+  hold: never-move
+  features: '*'
+  reason: Workspace pixi floor registry
+  authority: CAP-5 pixi-version-check
+  owner: pyforge-steward
+  until: estate refresh policy
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - workspace
+  reason: Exact pin (workspace)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown

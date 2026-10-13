@@ -107,7 +107,7 @@ def iter_dependency_decls(manifest: dict[str, Any]) -> Iterator[DepDecl]:
             elif isinstance(value, dict):
                 walk(value, here)
 
-    walk(manifest, [])
+    yield from walk(manifest, [])
 
 
 def _spec_to_str(spec: object) -> str:
