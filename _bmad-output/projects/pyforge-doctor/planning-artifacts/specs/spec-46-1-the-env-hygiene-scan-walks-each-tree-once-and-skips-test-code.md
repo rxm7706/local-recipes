@@ -151,7 +151,7 @@ Nothing depends on the dropped findings: steward's keys audit uses its own `pyfo
 - 2026-10-12: minted at the operator's ruling "Single pass + skip tests (Recommended)". The evidence is the per-phase
   timing at `09fd904b02` above.
 - 2026-10-12: implemented (baseline `7b6caaae2434c529ab2cf49e0e2749713c30ab81`). AC4 median CPU of five repo-root
-  `doctor check` runs on this machine: before 2.21 s, after 1.52 s (31% lower; AC4 requires ≥25%).
+  `doctor check` runs on this machine: before 2.21 s, after 1.44 s (35% lower; AC4 requires ≥25%).
 
 ## Review Triage Log
 
