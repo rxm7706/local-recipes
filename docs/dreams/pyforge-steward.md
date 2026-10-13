@@ -1636,6 +1636,88 @@ Drift — orphaned between stations.
   landing line are each their own station's append of the same date. Owner `spec-pyforge-steward`. → CAP-166 / FR-39,
   specced 2026-10-12; Epic 99 next.
 
+- **2026-10-13 (estate refresh)** — **Found: moving the estate's library and BMAD pins is a six-step hand sequence
+  whose only policy is a comment, whose losses are found by eye, and whose derived surfaces, station proofs and BMAD
+  install follow only when remembered.** The operator ran it on 2026-10-13 (`cd` → `pixi shell -e local-recipes` →
+  `pixi upgrade --pinning-strategy latest-up` with 28 `--exclude` flags copied from `pixi.toml:48`, the third generation
+  of that comment → `pixi update` → `exit` → `pixi install -a`) and left the result uncommitted on `main`. Measured there
+  (`docs/intake/estate-refresh/PLAN-2026-10-13.md` § 2): 158 pin lines and about 21,000 lock lines changed, 367 package
+  names moved; **five caps lost** (`git-pkgs` `<0.22`, `liquibase-postgresql` `<42`, `opengrep` `<1.31`, `pyjwt` `<3`,
+  `transformers` `<6.0` — G117, each with its reason beside it), **two channel tables flattened** (`liquibase-postgresql`'s
+  `channel = "conda-forge"`, the G118 collision; `pptxgenjs-plus`'s `channel = "SelfExplainML"` with its exact `4.2.1.*`
+  pin from herald 32.1), **two floors lowered** (`cron-descriptor` 2.1.0 → 1.4.5, `openai` 3.19.2 → 2.53.0); before any
+  hand repair `llms-full-check` reports 81 drifts, `bmad-estate-check` reds `pins` and `suite` (green on clean `main`),
+  `test_liquibase_channel_policy.py:26` reds, `environment.yaml` is stale, and the `bmad-method` floor reads 6.12.2 while
+  `_bmad/_config/manifest.yaml` still reads 6.12.0 with nothing asking `steward upgrade bmad-core` (CAP-10) to follow — and
+  the same gap holds for every library whose install has a side effect beyond the environment: the skf module and its
+  skills, each suite module's wiring, `bmad-loop`'s range sites and loop homes, the caveman skill and hooks, the headroom
+  proxy and the codegraph index (marshal's seed kit, CAP-162), the pre-commit hooks, the pixi version sites, the CLIs
+  warden and steward shell to, the local services and the import-probed platform libraries (operator direction
+  2026-10-13: not just updated in `pixi.toml` but realized and implemented, installed and tested, confirmed). No
+  pixi task, workflow, Dependabot or Renovate config runs `pixi upgrade`, `pixi update` or `pixi lock`; the seven Specs
+  whose surface names `pixi.toml`, `pixi.lock` or `environment.yaml` are reconciled by hand; nothing proves a batch in
+  the 36 environments or the ten suites before the push; nothing says when a refresh is due or what the last one moved.
+  What exists is bound, not rebuilt (plan § 3): G117–G119, the pixi-version registry and its mutator, `llms-full-check`,
+  `scribe catalog bmad-estate`, `pixi_env_matrix.py`, the docs generators, the SBOM gates, the platform pin-policy
+  tests, `provision --list/--env/--verify` (FR-14/15), `upgrade bmad-core` (CAP-9..17), `suite pipeline-truth` /
+  `advance` (CAP-21..25), the release-cadence runbook's step 7 (CAP-37), doctor's currency ledgers and drift warnings
+  (spec-pyforge-doctor:CAP-66..:CAP-70 and :CAP-13..:CAP-16), marshal's `dispatch_environment_yaml.py`, and the session hook's `pixi-add-or-update`
+  denial. **What it looks like when fixed:** one tracked policy, `docs/governance/pin-policy.yaml` with a JSON Schema
+  (governance declares, code renders and checks), one row per held package — `hold` (`never-move` | `cap` | `channel` |
+  `exact` | `floor-only`), the clause to keep, `features`, `reason`, `authority`, `until` — from which the canonical
+  upgrade command is rendered and the three comment generations become one pointer; one detector,
+  `scripts/pin_policy_check.py` in `detectors-ci` and `pr-preflight`, that reds an undeclared hold, a row with no
+  declaration, a stale pointer, under `--diff <base>` a lost cap, a flattened table, a lowered floor or a moved
+  `never-move` package (the 2026-10-13 batch yields exactly nine), and under `--fan-out` a locked version outside a
+  station's package-level range (`src/shared/packages/*/pyproject.toml`, the package `pixi.toml`), naming the station —
+  the refresh refuses to land it and the move is that station's story, CAP-12 generalized to every package; one mutator, `scripts/pin_policy_restore.py`, that
+  restores each named declaration to its policy clause at the new floor, keeps the comment, re-locks, and refuses by
+  name when the restore cannot solve; one duty, `pyforge steward estate plan|refresh|reconcile|verify|status` behind
+  `pyforge.steward.estate_refresh` — `plan` is `pixi upgrade --dry-run --json` through the policy plus the BMAD table
+  and `--due` (30 days); `refresh` renders, upgrades, guards, restores, re-locks and journals, running `pixi update` only
+  under `--transitive`, operator-only; `reconcile` regenerates every derived surface by its own generator
+  (`environment.yaml`, the catalog floors through a new deterministic `llms_full_check.py --fix-floors`, the BMAD-estate
+  catalog, the env matrix, the pixi-version sites when the `pixi` floor moved, the generated docs, the `bmad-suite`
+  metapackage), runs every check, and appends the memlog event line and the scoped stamp to each Spec the baseline
+  names for the moved files; `verify` installs the default tier `--frozen` in a detached worktree (the Guild, core, testing-kit,
+  the eight station envs, `platform-ci-test`, `pyforge-foundry-full`; every environment under `--all`), then runs the
+  lanes CI would run for a `pixi.toml` change (read from the workflows, CAP-159; CAP-166's pauses honored and named),
+  the laptop SBOM gate, the recipe-factory import smoke and the station pin fan-out, one row per environment and lane
+  carrying its platform, the atlas browser gate, herald's browser check and scribe's Postgres lane named manual rows,
+  other platforms lock-solved and said so; a moved
+  `bmad-method` or `bmad-*` floor is handed to `upgrade bmad-core` pre-flight (always) and `--apply-bmad` (CAP-10/14/16)
+  and to `suite pipeline-truth` / `advance`, and an installed core below the pinned floor reds `verify`; one tracked
+  realization register, `docs/governance/realization-register.yaml` with a JSON Schema, one row per library with an
+  install side effect — `package`, `env`, `class` (`installer-tree` | `module` | `harness` | `kit` | `hooks` |
+  `pin-sites` | `cli` | `service` | `import`), `realize` (argv or none, `operator_gate` where it rewrites
+  installer-owned or settings files), `probe` (argv and `expect`), `test`, `owner`, `authority` — generalizing the
+  install-class playbook (CAP-27/28) to `bmad-method`, `bmad-module-skill-forge`, every suite module, `bmad-loop`,
+  `caveman-installer`, `headroom-ai`, `codegraph`, `pre-commit`, `pixi`, the CLIs, the services and the import probes,
+  with a repo-scope check that reds a row no feature declares and a `bmad-*` / `mybmad*` pin or seed-kit item with no
+  row (read from scribe's and marshal's readers, never a list); `estate realize`, which for each row whose package
+  moved runs its `realize` (an `operator_gate` row only under `--yes`, else journaled `skipped-operator-gate`) and its
+  `probe` and journals `live | stale | missing`, and `verify` running every row's probe and each distinct test once,
+  red on `stale` or `missing` — the estate confirmed live at its pins, not just locked; one tracked
+  journal per run under `.steward/estate-refresh/`; one how-to, `docs/how-to/refresh-the-estate.md`, one `AGENTS.md`
+  pointer, the runbook's step 7 pointing at `estate refresh`; and the first refresh landing through the path, superseding
+  the hand batch. **Constraints:** a feature; the policy check is `detector-or-gate` exempt, the how-to `docs-only`, the
+  duty and the mutator's wiring behind one flag; steward reaches `pixi`, `gh`, `git` and every generator by subprocess
+  (AD-1) and its own code never writes `pixi.toml` — `pixi upgrade` and the repo mutator do, as `bump_pixi_version.py`
+  does (AD-5 as read since Story 72.1); `main()` keeps every exit code (AD-8); no daemon, workflow or cron; PostgreSQL
+  stays 17 and the libpq caps stay (fnd:CAP-12, a `never-move` row with `authority: fnd:CAP-12`); nothing outward.
+  Recommended answers adopted as the Spec's assumptions until the operator overrides (plan § 6): steward owns it whole
+  (Q1); the policy is a tracked registry with a rendered command (Q2); `--transitive` is operator-only and gets a
+  `session_denials` row (Q3); a loss is restored from the policy clause, never from taste (Q4); an unapplied core after a
+  floor move is a red finding (Q5); every environment on this platform, the CI lanes, other platforms lock-solved (Q6);
+  catalog floors by a deterministic re-sync (Q7); monthly, `plan --due` (Q8); the hand batch is superseded (Q9);
+  installer-owned trees are re-applied only by the operator through `realize --yes`, agents `--plan` (Q10); register
+  coverage is judged from scribe's and marshal's readers, never a list (Q11). Operator rulings, asked and answered
+  2026-10-13: verify is tiered with `--all` opt-in (Q12); both gates stay operator-only (Q3 confirmed); a station range
+  that excludes the locked version is reported and refused, never rewritten (Q13); lock-solved on all three platforms,
+  installed-confirmed on the platform that ran, `estate status` naming which platforms confirmed the current lock,
+  merge does not wait, and B rebuilds the refresh from the Spec (ledger mode `rebuild`, no B surface) (Q14). Owner
+  `spec-pyforge-steward`. → CAP-167 / FR-40, specced 2026-10-13; Epic 100 next.
+
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
 Steward rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-steward]]` banners. Exempted chains (Guild unifying-strategy; foundry regenerate / capability-ledger / cutover) keep their folders with `fold-exemption`.

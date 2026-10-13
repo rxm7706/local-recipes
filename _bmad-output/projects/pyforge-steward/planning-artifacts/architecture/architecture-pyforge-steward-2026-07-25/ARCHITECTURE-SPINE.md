@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only; 85.5 and 72.2 unblocked; index 49.13 done; Story 86.1, a fix under CAP-114). Lands on AD-1, AD-8 and fnd:AD-23's local-evidence rule as written; no AD added, amended or removed. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and its flag values); lands on AD-1, AD-8, canopy:AD-11, canopy:AD-19 and CAP-94's exception as written, no AD amended. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: prd->arch cascade after the PRD's 2026-10-07 re-stamp (independent review of the free-threading Dream entry; no CAP, no FR); no AD added, amended or removed. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> spine) for FR-40 / CAP-167 (estate refresh, Epic 100). Lands on AD-1, AD-5 (as read since Story 72.1: steward code never writes pixi.toml; pixi upgrade and the repo mutator do, as subprocesses), AD-7 and AD-8 as written; AD-4's no-daemon posture holds; no AD added, amended or removed. See § Currency reconciliation — 2026-10-13 (estate refresh).. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only; 85.5 and 72.2 unblocked; index 49.13 done; Story 86.1, a fix under CAP-114). Lands on AD-1, AD-8 and fnd:AD-23's local-evidence rule as written; no AD added, amended or removed. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and its flag values); lands on AD-1, AD-8, canopy:AD-11, canopy:AD-19 and CAP-94's exception as written, no AD amended. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: prd->arch cascade after the PRD's 2026-10-07 re-stamp (independent review of the free-threading Dream entry; no CAP, no FR); no AD added, amended or removed. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2323,6 +2323,51 @@ Story 86.1 minted as a fix under CAP-114. No CAP or FR moved. Checked against th
   under CAP-5. Story 86.1 renders files and deploys nothing.
 - **fnd:AD-23 (CI evidence is a real local run)** is untouched: the new detector joins `detectors-ci`, the fresh-clone
   gate that AD names.
+
+No port, adapter or package boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-13 (estate refresh)
+
+`prd→arch` edge after the PRD's 2026-10-13 re-stamp (§ Currency reconciliation — 2026-10-13 (estate refresh) there):
+FR-40 / CAP-167, the estate refresh, decomposed as Epic 100 (Stories 100.1–100.7). Checked against the decisions as
+written:
+
+- **AD-1 (wrap, never reimplement).** Every step of the refresh is a subprocess into the tool that owns it: `pixi
+  upgrade`, `pixi lock`, `pixi install`, `pixi project export`, `git worktree`, the existing generators
+  (`llms_full_check.py`, `scribe catalog bmad-estate`, `pixi_env_matrix.py`, `docs_environments.py`,
+  `docs_pixi_tasks.py`, `bump_pixi_version.py`, `generate-bmad-suite`), `_bmad/scripts/memlog.py` and
+  `spec_surface_check.py`. The BMAD hand-off reuses `upgrade bmad-core`, `pin-fan-out`, `prove-landed` and `suite
+  pipeline-truth` / `advance`; the BMAD table reads doctor's `bmad_method` gather. No second resolver, exporter,
+  catalog or installer.
+- **AD-5 (provision wraps, never forks).** Steward's own code still never writes `pixi.toml`. The policy mutator
+  `scripts/pin_policy_restore.py` is a repo script in `bump_pixi_version.py`'s shape, and `pixi upgrade` is pixi's own
+  writer; the duty invokes both as subprocesses, the way Story 72.1's `pixi.toml` edit was the author's and never
+  steward code's. Steward reads `[environments]` for the verify matrix, as FR-14 already does.
+- **AD-7 (one Duty protocol).** `estate` is one duty module exposing `plan`, `refresh`, `reconcile`, `verify` and
+  `status` through the protocol; the duty-count assertions move with it.
+- **AD-8 (exit-code sole ownership).** Every verdict the refresh records is a child process's exit code, and `main()`
+  alone projects the duty's own. `pin_policy_check.py` is a `scripts/` detector with the 0 / 1 / 2 domain of
+  `docs/reference/judgement-vocabulary.md`.
+- **AD-4's posture holds.** No daemon, scheduler or workflow: the operator runs the refresh, `plan --due` is the only
+  clock, and the journal is a tracked file.
+- **Outward work stays the operator's.** `--transitive` (`pixi update`) and `realize --yes` (the installer-owned
+  trees: `_bmad/**`, the bmad and skf skills, the caveman skill and hooks) are operator gates; `suite advance` and
+  `anaconda upload` stay the operator's steps (CAP-22). No network write runs from the refresh.
+- **The realization register wraps each library's own installer (AD-1).** `steward upgrade bmad-core --apply`,
+  `bmad-module-skill-forge update`, `steward provision --module`, `marshal refresh`, `caveman-install`,
+  `pre-commit install` and `bump-pixi-version` are the realize commands, by subprocess; the probes are
+  `marshal seed check --json` (CAP-162's envelope), `suite pipeline-truth`, a manifest read or `<bin> --version`.
+  Steward imports nothing from `pyforge.marshal` or `pyforge.scribe`; it shells to their CLIs.
+- **Station pins are the station's (AD-5, Q13).** `--fan-out` reads every package-level range and refuses a
+  locked version outside it; no package-level pin is rewritten by the refresh.
+- **fnd:AD-23 (CI evidence is a real local run).** `verify` is that run: a detached worktree, the lanes CI selects,
+  CAP-166's pauses named, the atlas browser gate, herald's browser check and scribe's Postgres lane as manual rows,
+  never a silent green; platforms the run did not cover are `lock-solved`, said so per row.
+- **A/B.** The capability is A-side, `rebuild` in `docs/foundry/capability-ledger.yaml`; its governance files sit
+  beside `guild-roster.json` and `ci-surfaces.yaml`, its code in the steward package and `scripts/`, its journal
+  under `.steward/`; `docs/foundry/PIN.md` and B are untouched.
 
 No port, adapter or package boundary moves.
 

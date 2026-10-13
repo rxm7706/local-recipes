@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-13"   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2653,3 +2653,69 @@ the Doctor, Herald and Marshal consumers decompose on their own station chains.
 **ONE kernel FR space now FR-1..FR-39** (FR-40 = next free id).
 
 **Content changed:** this section added (FR-39 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-13 (estate refresh)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-167 on 2026-10-13 from the
+Realization-log entry of that date (estate refresh) and its plan, `docs/intake/estate-refresh/PLAN-2026-10-13.md`,
+whose recommended answers Q1–Q9 are adopted as the capability's assumptions until the operator overrides them.
+Same-day reconcile; the FR is derived from its CAP.*
+
+### The FR space: FR-40 registered
+
+#### FR-40: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path ← CAP-167
+
+Moving the estate's pins was a six-step hand sequence whose only policy was a 28-exclude comment in three
+generations, whose losses (five caps, two channel tables, two floors on the 2026-10-13 batch) were found by reading a
+21,000-line diff, whose derived surfaces regenerated by hand or not at all, whose station proofs ran after the push,
+and whose BMAD install never followed the pin (floor 6.12.2, installed 6.12.0). One tracked policy now declares every
+hold with its reason and retirement condition, one check judges every change against it, one duty moves the pins,
+restores what the tool loses, regenerates every derived surface by its own generator, proves the result in every
+environment and lane, hands a moved BMAD floor to the existing core apply and suite advance, and leaves a journal.
+**Consequences (testable):**
+- `docs/governance/pin-policy.yaml` (with a JSON Schema) has a row for every held package — `hold`, the clause,
+  `features`, `reason`, `authority`, `until` — and renders the canonical upgrade command; `pixi.toml` carries one
+  pointer line in place of the three comment generations.
+- `scripts/pin_policy_check.py` (repo scope, in `detectors-ci` and `pr-preflight`) reds an undeclared hold, a row with
+  no declaration, a stale pointer, and under `--diff <base>` a lost cap, a flattened table, a lowered floor or a moved
+  `never-move` package; over the 2026-10-13 batch it yields exactly nine findings. `scripts/pin_policy_restore.py`
+  rewrites each named declaration to its clause at the new floor, re-locks, re-checks, and refuses by name when the
+  lock cannot solve.
+- `pyforge steward estate plan` prints what would move, the BMAD table and the days since the last journal (`--due`
+  red past 30 days); `estate refresh` refuses on a dirty tree or `main`, upgrades on the rendered command, guards,
+  restores, re-locks and journals, and runs `pixi update` only under `--transitive` (operator-only, a session denial
+  for agents); `estate status` prints the last journal.
+- `estate reconcile` regenerates `environment.yaml`, the library catalog's floors (`llms_full_check.py
+  --fix-floors`, prose byte-identical), the BMAD-estate catalog, the env matrix, the generated docs, the pixi-version
+  sites and the `bmad-suite` metapackage, each by its own generator; runs every check by exit code; and appends the
+  memlog line and scoped stamp to each Spec the surface baseline names for the moved files.
+- `scripts/pin_policy_check.py --fan-out` compares every station package-level range
+  (`src/shared/packages/*/pyproject.toml`, the package `pixi.toml`) with the locked version; a version outside a
+  station's range is red, naming the station, and the refresh refuses to land it (ruling Q13).
+- `docs/governance/realization-register.yaml` (with a JSON Schema) declares every library whose install has a side
+  effect beyond the environment — `bmad-method`, `bmad-module-skill-forge`, each suite module, `bmad-loop`,
+  `caveman-installer`, `headroom-ai`, `codegraph`, `pre-commit`, `pixi`, the CLIs, the services, the import-probed
+  platform libraries — with its `realize`, `probe`, `test`, class and operator gate; a repo-scope check reds a
+  `bmad-*` / `mybmad*` pin or a marshal seed-kit item with no row. `estate realize` re-applies each moved row
+  (`operator_gate` rows only under `--yes`) and probes it, journaling `live | stale | missing`.
+- `estate verify` installs the default tier `--frozen` in a detached worktree (the Guild, core, testing-kit, the
+  eight station envs, `platform-ci-test`, `pyforge-foundry-full`; every environment under `--all`), runs the lanes
+  CI would run for a `pixi.toml` change honoring CAP-166's pauses, the laptop SBOM gate, the recipe-factory import
+  smoke, every register probe, each distinct test once and the fan-out, one row per environment, lane and probe
+  carrying its platform; other platforms are lock-solved and the journal says so; `stale`, `missing`, a red lane or
+  an installed `bmad-method` core below the pinned floor reds (rulings Q12, Q14).
+- A moved `bmad-method` or `bmad-*` floor runs `upgrade bmad-core` pre-flight and `pin-fan-out` always, the
+  deliberate apply and `prove-landed` under `--apply-bmad`, and `suite pipeline-truth`, naming `suite advance` as the
+  next operator step.
+- `.steward/estate-refresh/<date>.json` (tracked) validates against a shipped frozen schema; a how-to, one
+  `AGENTS.md` pointer and the release-cadence runbook's step 7 point at the path; the first refresh lands through it
+  and supersedes the hand batch.
+
+Flag classes: the policy registry, its schema and the check are `detector-or-gate` exempt; the how-to `docs-only`;
+the first refresh and the docs retirement are chores; the duty, the restore wiring, the reconcile, the verify and
+the BMAD hand-off sit behind one proposed flag, `pyforge.steward.estate_refresh`. Doctor keeps its currency ledgers
+and drift warnings on its own chain. Decomposes into **Epic 100**, minted next by `bmad-create-epics-and-stories`.
+
+**ONE kernel FR space now FR-1..FR-40** (FR-41 = next free id).
+
+**Content changed:** this section added (FR-40 registered). No FR renumbered or removed. `updated:` bumped.

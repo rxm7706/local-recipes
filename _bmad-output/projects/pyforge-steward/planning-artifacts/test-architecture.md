@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 7842b6ae5abf7b2b
-story_count: 362
+source_fingerprint: 1eb3947ea2762cc4
+story_count: 369
 test_file_count: 118
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 362
-- **Epics parsed:** 99
+- **Stories parsed:** 369
+- **Epics parsed:** 100
 - **Test files inventoried:** 118 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7842b6ae5abf7b2b`
+- **Source fingerprint:** `1eb3947ea2762cc4`
 
 ## Risk Assessment
 
@@ -126,6 +126,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 96: `platform-ci-local` never runs a stage on a stale env (fix under CAP-152)
 - Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
 - Epic 98: Station tests run when what they read changes (fix under CAP-159)
+- Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
 
 ### Low-risk epics
 
@@ -625,6 +626,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 99.5 | The preflight honors what CI will skip, and says so | none observed |
 | 99.6 | A paused expensive build still runs once a week | none observed |
 | 99.7 | The hand-disabled workflows are retired or parked, and the convention is docu... | none observed |
+| 100.1 | The pin policy is declared once and an upgrade is judged against it | none observed |
+| 100.2 | One command moves the library pins on the policy and restores what the upgrad... | none observed |
+| 100.3 | Every derived surface regenerates from the lock by its own generator | none observed |
+| 100.4 | The refreshed estate proves itself in every environment and every station suite | none observed |
+| 100.5 | A moved pin is realized, not just locked | none observed |
+| 100.6 | The hand sequence is retired by one how-to and one pointer | none observed |
+| 100.7 | The first refresh lands through the path | none observed |
 
 ## Quality Gates
 

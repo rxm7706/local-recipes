@@ -4408,6 +4408,12 @@ capabilities:
     heading: "every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-167
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the estate's library and BMAD pins move on one policy-driven, measured, repeatable path"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-warden:CAP-1
