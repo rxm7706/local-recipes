@@ -107,7 +107,7 @@ development_status:
   3-7-asymmetric-receipts-partial-failure-and-idempotence: done
   3-8-mason-ships-mason: done
   3-9-the-ship-verb-and-testpypi-rehearsal: done
-  30-1-recipes-that-import-playwright-depend-on-playwright-python: backlog
+  30-1-recipes-that-import-playwright-depend-on-playwright-python: done
   4-1-lock-engine-adapter-and-provenance: done
   4-2-manifest-discovery: done
   4-3-mason-environment-lock: done
@@ -172,7 +172,7 @@ development_status:
   epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
-  epic-30: backlog
+  epic-30: done
   epic-30-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
