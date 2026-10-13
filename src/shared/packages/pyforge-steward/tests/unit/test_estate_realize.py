@@ -8,10 +8,13 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pyforge.testing_kit import make_flag_provider_fixture
 
 from pyforge.steward.estate_realize import RealizeDeps, run_probe, run_realize
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
+
+flag_provider = make_flag_provider_fixture()
 
 
 @dataclass
@@ -48,7 +51,7 @@ def _journal_with_moves() -> dict:
     }
 
 
-def test_plan_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_plan_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flag_provider) -> None:  # noqa: ARG001
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
@@ -59,7 +62,7 @@ def test_plan_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     assert not any("upgrade" in " ".join(c) for c in runner.calls)
 
 
-def test_operator_gate_skipped_without_yes(tmp_path: Path) -> None:
+def test_operator_gate_skipped_without_yes(tmp_path: Path, flag_provider) -> None:  # noqa: ARG001
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
@@ -70,7 +73,7 @@ def test_operator_gate_skipped_without_yes(tmp_path: Path) -> None:
     assert doc["realize"]["bmad-method"]["realize"] == "skipped-operator-gate"
 
 
-def test_operator_gate_runs_with_yes(tmp_path: Path) -> None:
+def test_operator_gate_runs_with_yes(tmp_path: Path, flag_provider) -> None:  # noqa: ARG001
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
@@ -80,7 +83,7 @@ def test_operator_gate_runs_with_yes(tmp_path: Path) -> None:
     assert any("upgrade bmad-core --apply" in s.replace("  ", " ") for s in joined)
 
 
-def test_realize_argv_per_moved_class(tmp_path: Path) -> None:
+def test_realize_argv_per_moved_class(tmp_path: Path, flag_provider) -> None:  # noqa: ARG001
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
@@ -98,7 +101,7 @@ def test_realize_argv_per_moved_class(tmp_path: Path) -> None:
     assert "marshal refresh --project loop-home-a" in joined
 
 
-def test_probe_never_writes_on_realize_path(tmp_path: Path) -> None:
+def test_probe_never_writes_on_realize_path(tmp_path: Path, flag_provider) -> None:  # noqa: ARG001
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()

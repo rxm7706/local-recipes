@@ -344,7 +344,7 @@
       "id": "steward-estate-realize-yes",
       "applies_to": "bash",
       "trigger": "pyforge steward estate realize --yes (or pixi run … pyforge steward estate realize --yes)",
-      "reason": "Installer-owned trees re-apply only under operator `estate realize --yes` — agents run `estate realize --plan` (ruling Q10)."
+      "reason": "Installer-owned trees re-apply only under operator `pyforge steward estate realize --yes` — agents run `pyforge steward estate realize --plan` (ruling Q10)."
     },
     {
       "id": "bmad-switch-unsafe",

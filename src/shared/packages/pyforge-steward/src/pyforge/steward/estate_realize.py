@@ -386,7 +386,10 @@ def run_realize(
 
 
 def compute_realize_due_for_refresh(root: Path, moves: list[dict[str, Any]]) -> list[str]:
-    register = _load_register(root)
+    try:
+        register = _load_register(root)
+    except (OSError, ValueError, yaml.YAMLError, FileNotFoundError):
+        return []
     journal = {"moves": moves}
     return realize_due_packages(journal, register, all_rows=False)
 
