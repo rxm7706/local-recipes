@@ -6627,7 +6627,10 @@ check, deps none), 99.2 (gate sweep and the declared-state resolver, after 99.1)
 flag `pyforge.steward.ci_pause_control`, after 99.1), 99.4 (`ci pause`/`resume`, after 99.3), 99.5 (preflight parity,
 after 99.2 and 99.3), 99.6 (the weekly canary, after 99.2 and 99.3), 99.7 (retirements, parks and the how-to, after
 99.1 and 99.4). Story 99.1 carries a tracked spec at mint; the others are specced before their dispatch, once the
-story they depend on has landed. `marshal-policy.toml` `[epic_surfaces]."99"` is added with the mint. The spine is
+story they depend on has landed. **Amended 2026-10-13 (operator direction: chain Epic 99 unattended after Epic 100):** Stories
+99.2–99.7 were specced together on 2026-10-13, before 99.1 landed, from this epic's text and Story 99.1's spec, so
+`marshal factory dispatch --stories` can chain them; each spec tells its session to read the landed registry, checker
+and `ci` duty first and follow them where they differ. No AC, dependency or key changed. `marshal-policy.toml` `[epic_surfaces]."99"` is added with the mint. The spine is
 unchanged: CAP-166 lands on AD-1 (subprocess wrap of `gh`), AD-7 (one Duty protocol) and AD-8 (exit-code ownership),
 and AD-4 binds the deploy duty only, so the canary workflow is outside it. No existing story, key or status changed.*
 
