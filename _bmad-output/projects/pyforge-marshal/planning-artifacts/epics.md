@@ -9922,7 +9922,7 @@ So that the check stays inside its budget on a busy machine and never reports an
 **When** `marshal seed check` runs, with or without `doctor` on PATH
 **Then** the delegation and every CLI probe start together, and a successful delegation still wins. Local findings keep manifest order. A probe that times out names the command and the limit, never "not installed", with the same DRIFT severity and type. One `slow` test times the real `run_check` against 5 s in the serial slow lane, and `DW-marshal-98-1` closes with the before and after numbers
 **And** each of these fails a named test (mutation): serial probing, completion-order findings, a local result winning over the delegation, a timeout reported as "not installed"
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
