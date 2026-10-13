@@ -117,6 +117,14 @@ surface:
   - .dockerignore
   - scripts/container-gates
   - scripts/guild_image_ci.sh
+  - docs/governance/pin-policy.yaml
+  - docs/governance/pin-policy.schema.json
+  - scripts/pin_policy_check.py
+  - scripts/pin_policy_lib.py
+  - scripts/pin_policy_restore.py
+  - tests/scripts/test_pin_policy_check.py
+  - tests/scripts/test_pin_policy_restore.py
+  - tests/scripts/fixtures/pin_policy/**
 surface-drift-exclude:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py

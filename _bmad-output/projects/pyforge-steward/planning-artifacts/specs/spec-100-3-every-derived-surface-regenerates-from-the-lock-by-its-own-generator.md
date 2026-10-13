@@ -134,7 +134,8 @@ Type / Effort / Deps: feature / M / S-100.2.
 - Epic: Epic 100, Stories 100.1–100.7.
 - Ledger key: `100-3-every-derived-surface-regenerates-from-the-lock-by-its-own-generator`.
 - Ledger status at mint: `backlog`.
-- Deps: S-100.2. Re-base `baseline_revision` to the commit where 100.2 landed before dispatch.
+- Deps: S-100.2. `marshal factory dispatch` stamps `baseline_revision` with the launch commit (Story 100.1's run did), so no
+  hand re-base is needed.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."100"` (added with the mint).
 - Minted 2026-10-13 in one chain commit.
 

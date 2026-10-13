@@ -1639,8 +1639,11 @@ Drift — orphaned between stations.
 - **2026-10-13 (estate refresh)** — **Found: moving the estate's library and BMAD pins is a six-step hand sequence
   whose only policy is a comment, whose losses are found by eye, and whose derived surfaces, station proofs and BMAD
   install follow only when remembered.** The operator ran it on 2026-10-13 (`cd` → `pixi shell -e local-recipes` →
-  `pixi upgrade --pinning-strategy latest-up` with 28 `--exclude` flags copied from `pixi.toml:48`, the third generation
-  of that comment → `pixi update` → `exit` → `pixi install -a`) and left the result uncommitted on `main`. Measured there
+  `pixi upgrade --pinning-strategy latest-up` with 28 `--exclude` flags → `pixi update` → `exit` → `pixi install -a`) and
+  left the result uncommitted on `main` (corrected the same day: `main`'s `pixi.toml:48`, the third generation of that
+  comment, held 20 excludes; the operator's working tree extended it to 28 — `asgiref`, `channels_redis`, `psycopg`,
+  `psycopg2`, `libpq`, `pgvector`, `cachebox`, `pixi` — so the newest hold knowledge lived only in an uncommitted edit;
+  Story 100.1's policy seeds all 28). Measured there
   (`docs/intake/estate-refresh/PLAN-2026-10-13.md` § 2): 158 pin lines and about 21,000 lock lines changed, 367 package
   names moved; **five caps lost** (`git-pkgs` `<0.22`, `liquibase-postgresql` `<42`, `opengrep` `<1.31`, `pyjwt` `<3`,
   `transformers` `<6.0` — G117, each with its reason beside it), **two channel tables flattened** (`liquibase-postgresql`'s
