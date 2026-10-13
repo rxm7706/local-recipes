@@ -259,7 +259,23 @@ def _reconcile_spec_surface(
         if stamp_exit != 0:
             return _refusal(f"estate reconcile: scoped stamp failed for {spec_name} (exit {stamp_exit})")
 
-    block["spec_surface"] = {"specs": sorted(by_spec), "memlogs": memlog_events, "stamps": stamps}
+    surface_argv = [sys.executable, "-m", "pyforge.doctor.sources", "spec-surface"]
+    started = time.monotonic()
+    surface_proc = deps.runner(surface_argv, deps.root)
+    block["spec_surface"] = {
+        "specs": sorted(by_spec),
+        "memlogs": memlog_events,
+        "stamps": stamps,
+        "spec_surface_check": {
+            "argv": surface_argv,
+            "exit": int(surface_proc.returncode),
+            "seconds": round(time.monotonic() - started, 3),
+        },
+    }
+    if surface_proc.returncode != 0:
+        return _refusal(
+            f"estate reconcile: spec-surface-check failed after scoped stamps (exit {surface_proc.returncode})"
+        )
     return None
 
 
