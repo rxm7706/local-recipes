@@ -2,7 +2,7 @@
 title: "46.1: The env-hygiene scan walks each tree once and skips test code"
 type: 'fix'
 created: '2026-10-12'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '7b6caaae2434c529ab2cf49e0e2749713c30ab81'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -155,4 +155,36 @@ Nothing depends on the dropped findings: steward's keys audit uses its own `pyfo
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-12 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, maybe-false 1
+- findings:
+  - `[false]` `[reject]` Blind Hunter: symlinked scan roots could make `relative_to` fail and skip filtering — `ValueError` falls back to scanning the file (conservative); no erroneous skip demonstrated.
+  - `[false]` `[reject]` Edge Case Hunter: `tests/fixtures/` direct target — covered by `test_gather_reports_test_helper_when_tests_directory_is_the_target`.
+  - `[false]` `[reject]` Verification Gap: AC2 live-repo two-finding pin — manually verified `gather(repo_root)` returns only CFE `github_version_checker.py:68` and `scan_project.py:1898`.
+  - `[maybe-false]` `[reject]` Intent Alignment: residual risk (no flagging in test code) — named in intent-contract; not a defect.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Env-hygiene discovery skips test-code paths relative to the scan target; `_CredentialInjectionVisitor` records `os`/`environ`/`getenv` aliases during its single walk (removed `_resolve_os_aliases`). Live repo-root findings drop from four to two (test paths only). DW-doctor-44-1 resolved.
+
+Files changed:
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/checks/env_hygiene.py` — skip rule + inline alias tracking
+- `src/shared/packages/pyforge-doctor/tests/unit/test_checks_env_hygiene.py` — AC3/AC6/matrix tests
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md` — DW-doctor-44-1 closed
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — surface reconcile entries
+- This spec — change log, review, status
+
+Review: 0 patches applied; 4 findings rejected (3 false, 1 maybe-false).
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — pass (3600 passed, 1 skipped)
+- AC4 median CPU before 2.21 s / after 1.44 s (35% lower)
+- `python scripts/spec_surface_reconcile.py` — exit 0
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+
+Residual risk: credential injection in test-only paths is intentionally not flagged (operator ruling).
