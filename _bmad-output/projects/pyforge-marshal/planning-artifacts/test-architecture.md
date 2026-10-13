@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 1666b2f8f01445fe
-story_count: 452
+source_fingerprint: f3f6e589b7aa4827
+story_count: 453
 test_file_count: 266
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 452
-- **Epics parsed:** 96
+- **Stories parsed:** 453
+- **Epics parsed:** 97
 - **Test files inventoried:** 266 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1666b2f8f01445fe`
+- **Source fingerprint:** `f3f6e589b7aa4827`
 
 ## Risk Assessment
 
@@ -118,6 +118,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 96: A story spec says each frontmatter fact once
 - Epic 97: A seed-adopted repo edits its own files and keeps an empty plan
 - Epic 98: The local preflight judges marshal's tests the way CI does
+- Epic 99: Seed check stops waiting on its probes one at a time
 
 ### Low-risk epics
 
@@ -860,6 +861,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 97.1 | Seed accept records an intended edit, and repo-owned files leave the guard | none observed |
 | 97.2 | A seed update dry run on an adopted repo plans only real changes | none observed |
 | 98.1 | Two marshal tests stop failing every local preflight | none observed |
+| 99.1 | Seed check probes its tools at once and says when a probe timed out | none observed |
 
 ## Quality Gates
 
