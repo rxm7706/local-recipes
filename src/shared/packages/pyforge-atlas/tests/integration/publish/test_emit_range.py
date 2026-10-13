@@ -33,6 +33,7 @@ import http.server
 import os
 import socketserver
 import threading
+import time
 import urllib.request
 from functools import partial
 from pathlib import Path
@@ -76,8 +77,9 @@ def _seed_df() -> pd.DataFrame:
 # honor Range — this handler does, and logs it).
 # ---------------------------------------------------------------------------
 class _RangeServer:
-    def __init__(self, directory: Path):
+    def __init__(self, directory: Path, *, delay_after_write: float = 0.0):
         self.directory = str(directory)
+        self.delay_after_write = delay_after_write
         self.codes: list[int] = []
         self.ranges: list[str] = []
         self.range_spans: list[tuple[int, int]] = []
@@ -87,6 +89,14 @@ class _RangeServer:
         class Handler(http.server.SimpleHTTPRequestHandler):
             def log_message(self, *a):  # keep test output quiet
                 pass
+
+            def _write_body(self, data: bytes) -> None:
+                self.wfile.write(data)
+                if recorder.delay_after_write:
+                    # Regression seam (Story 29.1): hold this thread after the client has its bytes,
+                    # the window in which the old record-after-write order lost the entry.
+                    self.wfile.flush()
+                    time.sleep(recorder.delay_after_write)
 
             def _send_body(self, path: str):
                 length = os.path.getsize(path)
@@ -98,34 +108,38 @@ class _RangeServer:
                     end = int(end_s) if end_s else length - 1
                     end = min(end, length - 1)  # clamp a request past EOF
                     if start > end or start >= length:
+                        # Record BEFORE anything is sent: once the client can read the response it can
+                        # finish its query, and the test can assert, before this thread runs again.
+                        recorder.codes.append(416)
                         self.send_response(416)  # Range Not Satisfiable
                         self.send_header("Content-Range", f"bytes */{length}")
                         self.end_headers()
-                        recorder.codes.append(416)
                         return
                     with open(path, "rb") as fh:
                         fh.seek(start)
                         data = fh.read(end - start + 1)
+                    # Record BEFORE writing (Story 29.1): recording after the write let a single-request
+                    # query return, and its assertion run, while this list was still empty.
+                    recorder.codes.append(206)
+                    recorder.ranges.append(rng)
+                    recorder.range_spans.append((start, end))
+                    recorder.bytes_served += len(data)
                     self.send_response(206)
                     self.send_header("Content-Range", f"bytes {start}-{end}/{length}")
                     self.send_header("Accept-Ranges", "bytes")
                     self.send_header("Content-Length", str(len(data)))
                     self.end_headers()
-                    self.wfile.write(data)
-                    recorder.codes.append(206)
-                    recorder.ranges.append(rng)
-                    recorder.range_spans.append((start, end))
-                    recorder.bytes_served += len(data)
+                    self._write_body(data)
                 else:
                     with open(path, "rb") as fh:
                         data = fh.read()
+                    recorder.codes.append(200)  # recorded before writing, as above (Story 29.1)
+                    recorder.bytes_served += len(data)
                     self.send_response(200)
                     self.send_header("Accept-Ranges", "bytes")
                     self.send_header("Content-Length", str(length))
                     self.end_headers()
-                    self.wfile.write(data)
-                    recorder.codes.append(200)
-                    recorder.bytes_served += len(data)
+                    self._write_body(data)
 
             def do_HEAD(self):
                 path = self.translate_path(self.path)
@@ -357,6 +371,29 @@ def test_count_star_reads_footer_only_over_range(emitted_site):
             assert server.bytes_served < total_bytes // 10, (
                 f"count(*) should read ~footer only; served {server.bytes_served} of {total_bytes}"
             )
+    finally:
+        con.close()
+
+
+def test_the_server_records_a_response_before_the_client_can_read_it(emitted_site):
+    """Story 29.1 regression: the handler is held 0.5 s after writing each body, the window in which the old
+    record-after-write order left the log empty while the client already had its bytes. The request must be in the
+    log the moment the query returns -- no sleep on the test side, no retry."""
+    site = emitted_site
+    rel = _feedstock_chunk_relpath(site)
+    con = _offline_httpfs_connection()
+    try:
+        with _RangeServer(site, delay_after_write=0.5) as server:
+            n = con.execute(f"SELECT count(*) FROM read_parquet('{chunk_url(server.base, rel)}')").fetchone()[0]
+            # Snapshot the log the instant the query returns, before the delayed handler can run again.
+            seen = (list(server.codes), list(server.range_spans), server.bytes_served)
+            assert n == _N
+            assert 206 in seen[0], f"the response was not recorded before the client read it: {seen[0]}"
+        # Every response the server ever sent was already in the snapshot: none was recorded late. This holds
+        # however many GETs the client makes, not only for count(*)'s single footer read.
+        assert seen == (server.codes, server.range_spans, server.bytes_served), (
+            f"responses recorded after the client read them: snapshot {seen[0]} vs final {server.codes}"
+        )
     finally:
         con.close()
 

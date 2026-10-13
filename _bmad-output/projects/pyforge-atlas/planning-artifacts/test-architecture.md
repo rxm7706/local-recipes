@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 2d182c315c06662c
-story_count: 104
+source_fingerprint: adbdce49331f0999
+story_count: 105
 test_file_count: 146
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 104
-- **Epics parsed:** 28
+- **Stories parsed:** 105
+- **Epics parsed:** 29
 - **Test files inventoried:** 146 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2d182c315c06662c`
+- **Source fingerprint:** `adbdce49331f0999`
 
 ## Risk Assessment
 
@@ -61,6 +61,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 25: Atlas keeps each scanned repo's dependency history (spec-pyforge-atlas CAP-61)
 - Epic 27: Phase 4+5 of the deferral burn-down — atlas's open medium and low deferrals, fixed
 - Epic 28: The live-attach fixture Postgres starts under any basetemp (fix under spec-pyforge-atlas CAP-6)
+- Epic 29: The range test server records each response before the client can read it (fix under spec-pyforge-atlas CAP-16)
 
 ### Low-risk epics
 
@@ -325,6 +326,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.4 | The planning record matches the tree and the cross-station seams hold | none observed |
 | 27.5 | The distribution-breakdown facet filter builds its control | none observed |
 | 28.1 | The live-attach fixture Postgres starts under any basetemp | none observed |
+| 29.1 | The range test server records each response before the client can read it | none observed |
 
 ## Quality Gates
 
