@@ -9,7 +9,17 @@ from pathlib import Path
 import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 
-from pyforge.steward.estate_realize import RealizeDeps, run_probe, run_realize
+from pyforge.steward.estate import ESTATE_FLAG_KEY
+from pyforge.steward.estate_realize import (
+    RealizeDeps,
+    compute_realize_due_for_refresh,
+    packages_moved_in_journal,
+    production_realize_deps,
+    realize_due_packages,
+    run_probe,
+    run_realize,
+    shlex_split,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 
@@ -190,3 +200,132 @@ def test_bmad_loop_version_live(monkeypatch: pytest.MonkeyPatch) -> None:
     }
     deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
     assert run_probe(deps, row, package="bmad-loop") == "live"
+
+
+def test_realize_refuses_when_flag_off(tmp_path: Path) -> None:
+    journal_path = tmp_path / "journal.json"
+    journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
+    deps = RealizeDeps(root=REPO_ROOT, runner=RecordingRunner(), flag_on=lambda: False, enforce_require=False)
+    result = run_realize(deps, plan=False, yes=False, all_rows=False, journal_path=journal_path)
+    assert not result.ok
+    assert ESTATE_FLAG_KEY in result.summary
+
+
+def test_all_rows_plan_lists_register_packages() -> None:
+    import yaml
+
+    register = yaml.safe_load((REPO_ROOT / "docs/governance/realization-register.yaml").read_text(encoding="utf-8"))
+    due = realize_due_packages({"moves": []}, register, all_rows=True)
+    assert "bmad-method" in due
+
+
+def test_packages_moved_ignores_unchanged_versions() -> None:
+    assert packages_moved_in_journal({"moves": [{"package": "x", "from": "1", "to": "1"}]}) == set()
+
+
+def test_realize_failed_step_marks_failed(tmp_path: Path) -> None:
+    journal_path = tmp_path / "journal.json"
+    journal_path.write_text(
+        json.dumps({"moves": [{"package": "pre-commit", "from": "1", "to": "2", "feature": "*"}]}),
+        encoding="utf-8",
+    )
+    runner = RecordingRunner(responses={"pre-commit install": FakeProc([], 1, "", "fail")})
+    run_realize(_deps(runner), plan=False, yes=True, all_rows=False, journal_path=journal_path)
+    doc = json.loads(journal_path.read_text())
+    assert doc["realize"]["pre-commit"]["realize"] == "failed"
+
+
+def test_probe_locked_version_file_live(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    manifest_dir = tmp_path / "_bmad" / "_config"
+    manifest_dir.mkdir(parents=True)
+    manifest_dir.joinpath("manifest.yaml").write_text("installation:\n  version: 6.12.2\n", encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.2")
+    row = {
+        "env": "pyforge-guild",
+        "probe": {
+            "expect": "locked-version",
+            "path": "_bmad/_config/manifest.yaml",
+            "key": "installation.version",
+        },
+    }
+    deps = RealizeDeps(root=tmp_path, runner=RecordingRunner(), flag_on=lambda: True)
+    assert run_probe(deps, row, package="bmad-method") == "live"
+
+
+def test_probe_exit_0_and_import() -> None:
+    runner = RecordingRunner(responses={"echo ok": FakeProc([], 0, "", "")})
+    exit_row = {"env": "pyforge-guild", "probe": {"expect": "exit-0", "command": ["echo", "ok"]}}
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
+    assert run_probe(deps, exit_row, package="pre-commit") == "live"
+    import_row = {"env": "pyforge-guild", "probe": {"expect": "import-probe", "command": "import json"}}
+    assert run_probe(deps, import_row, package="x") == "live"
+
+
+def test_kit_ok_layer_off_counts_live() -> None:
+    kit_json = json.dumps(
+        {
+            "verb": "check",
+            "ok": True,
+            "result": {"kit": [{"item": "caveman-skill", "status": "layer-off"}]},
+        }
+    )
+    runner = RecordingRunner(responses={"seed check": FakeProc([], 0, kit_json)})
+    row = {"env": "pyforge-guild", "probe": {"expect": "kit-ok", "item": "caveman-skill"}}
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
+    assert run_probe(deps, row, package="caveman-installer") == "live"
+
+
+def test_stage_ok_all_green() -> None:
+    payload = {
+        "packages": [
+            {
+                "name": "bmad-method-test-architecture-enterprise",
+                "installed": {"value": "ok"},
+                "wired": {"value": "installed"},
+            }
+        ]
+    }
+    runner = RecordingRunner(responses={"pipeline-truth": FakeProc([], 0, json.dumps(payload))})
+    row = {
+        "env": "pyforge-guild",
+        "probe": {
+            "expect": "stage-ok",
+            "stages": ["installed", "wired"],
+            "member": "bmad-method-test-architecture-enterprise",
+        },
+    }
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
+    assert run_probe(deps, row, package="bmad-method-test-architecture-enterprise") == "live"
+
+
+def test_bmad_preflight_and_suite_advance_hint(tmp_path: Path) -> None:
+    journal_path = tmp_path / "journal.json"
+    journal_path.write_text(
+        json.dumps({"moves": [{"package": "bmad-method", "from": "1", "to": "2", "feature": "*"}]}),
+        encoding="utf-8",
+    )
+    module_payload = {
+        "packages": [{"name": "bmad-method-test-architecture-enterprise", "installed": {"value": "fail"}, "wired": {"value": "ok"}}]
+    }
+    runner = RecordingRunner(
+        responses={
+            "upgrade bmad-core": FakeProc([], 0, "", ""),
+            "pipeline-truth": FakeProc([], 0, json.dumps(module_payload)),
+            "--fan-out": FakeProc([], 0, "[]", ""),
+        }
+    )
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True, enforce_require=False)
+    run_realize(deps, plan=False, yes=True, all_rows=True, journal_path=journal_path)
+    doc = json.loads(journal_path.read_text())
+    assert "realize_preflight" in doc.get("bmad", {})
+    assert "suite_advance" in doc["realize"].get("bmad-method-test-architecture-enterprise", {})
+
+
+def test_compute_realize_due_for_refresh_empty_when_no_register(tmp_path: Path) -> None:
+    assert compute_realize_due_for_refresh(tmp_path, [{"package": "bmad-method", "from": "1", "to": "2"}]) == []
+
+
+def test_production_realize_deps_and_shlex() -> None:
+    deps = production_realize_deps(REPO_ROOT)
+    assert deps.root == REPO_ROOT
+    assert shlex_split("pyforge steward estate realize") == ["pyforge", "steward", "estate", "realize"]

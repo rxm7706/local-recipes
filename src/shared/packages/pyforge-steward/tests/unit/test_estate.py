@@ -22,6 +22,13 @@ from pyforge.steward.estate import (
     SCHEMA_RESOURCE,
     EstateDeps,
     EstateDuty,
+    _default_runner,
+    _days_since_last_journal,
+    _held_by,
+    _next_journal_path,
+    _parse_pixi_moves,
+    _production_deps,
+    _row_covers_feature,
     run_plan,
     run_refresh,
     run_status,
@@ -411,3 +418,105 @@ def test_estate_duty_unknown_verb() -> None:
     result = duty.run(ns)
     assert not result.ok
     assert "plan, refresh, reconcile, realize, or status" in result.summary
+
+
+def test_parse_pixi_moves_and_policy_helpers() -> None:
+    moves = _parse_pixi_moves(
+        {"packages": [{"name": "cron-descriptor", "environment": "pyforge-guild", "old": "1", "new": "2"}]}
+    )
+    assert moves[0]["package"] == "cron-descriptor"
+    assert _parse_pixi_moves(None) == []
+    assert _parse_pixi_moves({"packages": "bad"}) == []
+    assert _parse_pixi_moves([{"package": "x", "from": "1", "to": "2"}])[0]["feature"] == "*"
+    policy = {
+        "holds": [
+            {"package": "cron-descriptor", "hold": "floor-only", "features": ["pyforge-guild"], "authority": "test"}
+        ]
+    }
+    assert _held_by(policy, "cron-descriptor", "pyforge-guild") == "floor-only (test)"
+    assert _held_by(policy, "missing", "*") is None
+    assert _row_covers_feature("*", "any")
+    assert _row_covers_feature(["guild"], "guild.extra")
+
+
+def test_default_runner_and_production_deps(tmp_path: Path) -> None:
+    proc = _default_runner(["true"], tmp_path)
+    assert proc.returncode == 0
+    deps = _production_deps(REPO_ROOT)
+    assert deps.branch()
+    assert deps.head_sha() != ""
+    assert isinstance(deps.dirty(), bool)
+
+
+def test_next_journal_path_and_days_since(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    journal_dir = root / ".steward" / "estate-refresh"
+    journal_dir.mkdir(parents=True)
+    journal_dir.joinpath("2026-10-13.json").write_text("{}", encoding="utf-8")
+    assert _next_journal_path(root, today=datetime(2026, 10, 13, tzinfo=timezone.utc).date()).name == "2026-10-13-2.json"
+    days = _days_since_last_journal(root, now=datetime(2026, 10, 15, tzinfo=timezone.utc))
+    assert days == 2  # noqa: PLR2004
+
+
+def test_refresh_realize_due_and_fan_json_fallback(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    register = REPO_ROOT / "docs/governance/realization-register.yaml"
+    (root / "docs/governance/realization-register.yaml").write_text(register.read_text(encoding="utf-8"), encoding="utf-8")
+    runner = RecordingRunner()
+    runner.responses["upgrade"] = FakeProc(
+        [],
+        0,
+        json.dumps({"packages": [{"name": "bmad-method", "old": "6.12.0", "new": "6.12.2"}]}),
+        "",
+    )
+    runner.responses["--diff"] = FakeProc([], 1, "not-json", "")
+    runner.responses["--fan-out"] = FakeProc([], 0, "also-not-json", "")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert result.ok
+    assert "realize-due" in result.summary
+    assert "bmad-method" in result.summary
+
+
+def test_status_json_out_and_show_all(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    path = root / ".steward" / "estate-refresh" / "2026-10-01.json"
+    path.write_text(json.dumps({"base_sha": "x", "moves": [], "fan_out": {"ok": True}}), encoding="utf-8")
+    (root / ".steward" / "estate-refresh" / "2026-10-02.json").write_text(
+        json.dumps({"base_sha": "y", "moves": [{"p": 1}], "fan_out": {"ok": False}}),
+        encoding="utf-8",
+    )
+    deps = _deps(root, RecordingRunner())
+    json_status = run_status(deps, json_out=True, show_all=True)
+    assert json_status.ok
+    payload = json.loads(json_status.summary)
+    assert len(payload["journals"]) == 2  # noqa: PLR2004
+
+
+def test_estate_duty_reconcile_and_realize(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    register = REPO_ROOT / "docs/governance/realization-register.yaml"
+    (root / "docs/governance/realization-register.yaml").write_text(register.read_text(encoding="utf-8"), encoding="utf-8")
+    journal = tmp_path / "journal.json"
+    journal.write_text(json.dumps({"moves": [{"package": "bmad-method", "from": "1", "to": "2"}]}), encoding="utf-8")
+    duty = EstateDuty()
+    reconcile_ns = argparse.Namespace(
+        duty="estate",
+        estate_verb="reconcile",
+        journal_path=None,
+        _estate_deps=_deps(root, RecordingRunner()),
+        _reconcile_deps=None,
+    )
+    duty.run(reconcile_ns)
+    from pyforge.steward.estate_realize import RealizeDeps
+
+    realize_ns = argparse.Namespace(
+        duty="estate",
+        estate_verb="realize",
+        plan=True,
+        yes=False,
+        all=False,
+        journal=str(journal),
+        _estate_deps=_deps(root, RecordingRunner()),
+        _realize_deps=RealizeDeps(root=root, runner=RecordingRunner(), flag_on=lambda: True, enforce_require=False),
+    )
+    assert duty.run(realize_ns).ok
