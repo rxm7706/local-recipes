@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: e104f593055babeb
-story_count: 151
+source_fingerprint: 3f4a3a7894f11d14
+story_count: 152
 test_file_count: 96
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 151
-- **Epics parsed:** 44
+- **Stories parsed:** 152
+- **Epics parsed:** 45
 - **Test files inventoried:** 96 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e104f593055babeb`
+- **Source fingerprint:** `3f4a3a7894f11d14`
 
 ## Risk Assessment
 
@@ -80,6 +80,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 42: A repeated frontmatter key in a story spec turns Detectors red (spec-pyforge-doctor CAP-81, CAP-86)
 - Epic 43: bmad-drift knows the files marshal dispatch writes into Tier-3 (spec-pyforge-doctor CAP-11, CAP-12)
 - Epic 44: The doctor check speed budget holds under preflight load (spec-pyforge-doctor CAP-1, NFR-4)
+- Epic 46: The env-hygiene scan stops growing with the test suite (spec-pyforge-doctor CAP-1, NFR-4)
 
 ## Test Inventory
 
@@ -337,6 +338,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 42.1 | A repeated frontmatter key in a story spec turns Detectors red | none observed |
 | 43.1 | bmad-drift knows every file marshal dispatch writes into Tier-3 | none observed |
 | 44.1 | The doctor check speed budget is judged on the CPU the check spends | none observed |
+| 46.1 | The env-hygiene scan walks each tree once and skips test code | none observed |
 
 ## Quality Gates
 
