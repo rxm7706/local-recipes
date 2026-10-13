@@ -3504,7 +3504,7 @@ depends on it; the 15 named upstreams list PyPI `playwright` in `requires_dist`;
 - The story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry.
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
 
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
