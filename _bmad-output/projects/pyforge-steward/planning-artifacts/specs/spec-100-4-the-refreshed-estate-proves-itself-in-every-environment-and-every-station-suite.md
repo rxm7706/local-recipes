@@ -2,7 +2,7 @@
 title: '100.4: The refreshed estate proves itself in every environment and every station suite'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2a0ef21461602cc1b0ef16d238d8d7cc10193887'
 flag:
   key: pyforge.steward.estate_refresh          # Story 100.2's (one flag per CAP)
@@ -150,8 +150,19 @@ Type / Effort / Deps: feature / M / S-100.2, S-100.5.
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
 - Operator, once, on the branch (not a test): `pixi run --frozen -e pyforge-steward pyforge steward estate verify --env pyforge-guild --lane lint-types` — expected: exit 0 with a journal row (the first real run; recorded in the Auto Run Result).
 
+## Auto Run Result
+
+Status: done
+
+Implementation: `pyforge steward estate verify` in `estate_verify.py` (detached worktree under `.steward/estate-verify/worktree`, default tier installs, `preflight_ci.select_lanes_for_paths` for pixi.toml diff lanes, CI pause overrides, SBOM/verify-env/fan-out, register probes/tests, manual rows). `estate status` prints per-platform lock confirmation from the journal verify block.
+
+Verification: `test_estate_verify.py` 10 passed; `pyforge-steward-test` green after estate unknown-verb string update; `spec_surface_reconcile.py` and `spec-surface-check` exit 0 (memlog on `spec-pyforge-steward`).
+
+Operator smoke (not run in CI): `pixi run --frozen -e pyforge-steward pyforge steward estate verify --env pyforge-guild --lane lint-types`
+
 ## Spec Change Log
 
 - 2026-10-13: minted with CAP-167 / FR-40 and Epic 100. `type: feature`, Story 100.2's flag. Tiers, `--all` and the
   per-platform rows by rulings Q12 and Q14 (asked and answered 2026-10-13); waits on Story 100.5 for the register
   probes.
+- 2026-10-13: Story 100.4 implemented (estate verify + status platform lines).
