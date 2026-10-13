@@ -82,9 +82,12 @@ Epic 14/15 relays). Both are ambient, warn-only; nothing acts on them without an
 7. **Mason — suite refresh.** For each moved member: `steward suite advance` (tag or HEAD mode)
    through the CFE factory flow → local green build → operator `anaconda upload` →
    `generate-bmad-suite` regenerates the metapackage CalVer → pixi floor bumps
-   (`pixi-version-check` / `bump-pixi-version`) → `environment.yaml` regenerated. `pixi.toml`
-   edits need a memlog line + scoped `spec_surface_check.py --write-baseline --spec` on each of
-   the six blanket-glob specs.
+   (`pixi-version-check` / `bump-pixi-version`) → `environment.yaml` regenerated. After pixi floor
+   bumps on the estate path, run `steward estate refresh` (Story 100.2) and list `realize-due`
+   rows; operators re-apply side-effect installs with `steward estate realize --yes`, agents with
+   `steward estate realize --plan` only (Story 100.5 / ruling Q10). `pixi.toml` edits need a
+   memlog line + scoped `spec_surface_check.py --write-baseline --spec` on each of the six
+   blanket-glob specs.
 
    **Verified pass (6.12 suite wave, 2026-09-06/07):** owner **mason** (factory) + **steward**
    (pipeline) |

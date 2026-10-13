@@ -1245,6 +1245,10 @@ cmd = "python scripts/llms_full_check.py"
 description = "Detector (Story 100.1 / CAP-167): docs/governance/pin-policy.yaml is the single estate pin registry — reds an undeclared cap/channel/exact hold, a dangling row, or a stale pixi.toml pointer; --diff and pin_policy_restore.py pair for upgrade loss detection and repair. Pass -- --json for machine output."
 cmd = "python scripts/pin_policy_check.py --check"
 
+[feature.guild-tasks.tasks.realization-register-check]
+description = "Detector (Story 100.5 / CAP-167): docs/governance/realization-register.yaml is the single realization registry — schema, coverage from scribe read_pins and marshal seed kit, and realize argv shape. Pass -- --json for machine output."
+cmd = "python scripts/realization_register_check.py"
+
 [feature.guild-tasks.tasks.platform-ci-test-requirements-check]
 description = "Detector (Story 16.1 / CAP-5): src/platform/requirements/{base,local,production}.txt stay retired — pixi.toml is the sole platform dep authority. Exits non-zero if those files are resurrected. Pass -- --json for machine output."
 cmd = "python scripts/platform_ci_test_requirements_check.py"

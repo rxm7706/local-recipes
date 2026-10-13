@@ -518,6 +518,18 @@ def match_steward_estate_transitive(ctx: Context, rule: dict[str, Any]) -> Optio
     return None
 
 
+def match_steward_estate_realize_yes(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    for tokens in ctx.subcommands:
+        if "--yes" not in tokens:
+            continue
+        if not _contains(tokens, ["estate", "realize"]):
+            continue
+        if "steward" not in tokens:
+            continue
+        return str(rule["reason"])
+    return None
+
+
 def match_bmad_switch_unsafe(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     for tokens in ctx.subcommands:
         hit = any(
@@ -1553,6 +1565,7 @@ MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "adhoc-package-install": match_adhoc_package_install,
     "pixi-add-or-update": match_pixi_add_or_update,
     "steward-estate-transitive": match_steward_estate_transitive,
+    "steward-estate-realize-yes": match_steward_estate_realize_yes,
     "bmad-switch-unsafe": match_bmad_switch_unsafe,
     "git-commit-guardrail": match_git_commit_guardrail,
     "gh-pr-merge-squash": match_gh_pr_merge_squash,
