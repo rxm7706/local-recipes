@@ -103,6 +103,9 @@ conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage 
 # claimed it — allowlisted pending mason claiming it properly; delete then.
 scripts/pixi_version_registry.py     # single source of truth for the 16 pixi pin sites
 scripts/pixi_version_check.py        # detector (pixi task pixi-version-check)
+scripts/pin_policy_check.py          # steward Story 100.1 / CAP-167 detector (pixi task pin-policy-check); SPEC.md names it; folder surface pending bmad-spec re-derivation
+scripts/pin_policy_lib.py            # shared library for pin_policy_check / pin_policy_restore (Story 100.1)
+scripts/pin_policy_restore.py        # steward Story 100.1 mutator (--from base-ref); paired with pin_policy_check
 scripts/bump_pixi_version.py         # mutator (pixi task bump-pixi-version)
 scripts/apply_verification_verdicts.py  # DW verification-campaign verdict applier
 scripts/cfe_rebuild_guard_check.py   # mason Story 6.2 detector awaiting surface claim

@@ -8,6 +8,9 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("jsonschema")
+pytest.importorskip("yaml")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = REPO_ROOT / "scripts"
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "pin_policy"
