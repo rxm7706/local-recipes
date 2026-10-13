@@ -127,7 +127,7 @@ development_status:
   4-1-poll-loop-with-quiescence-debounce: done
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
-  40-1-the-docs-home-links-the-herald-pages-from-its-left-menu-and-a-shared-top-menu: backlog
+  40-1-the-docs-home-links-the-herald-pages-from-its-left-menu-and-a-shared-top-menu: done
   5-1-push-regenerated-exports-with-etag-guard: done
   5-2-conflict-refusal-on-export-push: done
   6-1-implement-herald-cli-dispatcher: done
@@ -212,7 +212,7 @@ development_status:
   epic-38-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional
-  epic-40: backlog
+  epic-40: done
   epic-40-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
