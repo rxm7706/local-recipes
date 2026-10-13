@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
 
 from pyforge.steward.estate import ESTATE_FLAG_KEY
 from pyforge.steward.estate_realize import (
@@ -68,6 +69,28 @@ def _journal_with_moves() -> dict:
             {"package": "pixi", "from": "0.80", "to": "0.81", "feature": "*"},
         ]
     }
+
+
+@flag_states("pyforge.steward.estate_refresh")
+def test_realize_refuses_when_estate_refresh_off(tmp_path: Path, flag_provider: dict[str, bool]) -> None:
+    journal_path = tmp_path / "journal.json"
+    journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
+    runner = RecordingRunner()
+    on = flag_provider["pyforge.steward.estate_refresh"]
+    deps = RealizeDeps(
+        root=REPO_ROOT,
+        runner=runner,
+        flag_on=lambda: on,
+        enforce_require=False,
+        loop_homes=list,
+    )
+    result = run_realize(deps, plan=True, yes=False, all_rows=False, journal_path=journal_path)
+    if on:
+        assert result.ok
+    else:
+        assert not result.ok
+        assert ESTATE_FLAG_KEY in result.summary
+        assert not runner.calls
 
 
 def test_plan_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flag_provider) -> None:  # noqa: ARG001

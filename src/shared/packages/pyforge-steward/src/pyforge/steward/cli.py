@@ -1175,7 +1175,7 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
 def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
     estate_subs = estate_parser.add_subparsers(
         dest="estate_verb",
-        metavar="{plan,refresh,reconcile,realize,status}",
+        metavar="{plan,refresh,reconcile,verify,realize,status}",
     )
     plan = estate_subs.add_parser("plan", help="dry-run upgrade through the pin policy")
     plan.add_argument("--json", action="store_true", help="emit plan JSON (estate-journal-schema plan shape)")
@@ -1193,6 +1193,35 @@ def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
     estate_subs.add_parser(
         "reconcile",
         help="regenerate derived surfaces, run checks, reconcile spec-surface drift",
+    )
+    verify = estate_subs.add_parser(
+        "verify",
+        help="install default tier in a detached worktree and run CI lanes + realization probes",
+    )
+    verify.add_argument("--env", metavar="NAME", default=None, help="install and skip other environments")
+    verify.add_argument("--lane", metavar="NAME", default=None, help="run one preflight or extra lane only")
+    verify.add_argument("--probe", metavar="PACKAGE", default=None, help="run one realization-register probe only")
+    verify.add_argument(
+        "--all",
+        action="store_true",
+        help="install every [environments] entry, not only the default tier",
+    )
+    verify.add_argument(
+        "--keep",
+        action="store_true",
+        help="leave the detached worktree on disk and print its path",
+    )
+    verify.add_argument(
+        "--ignore-ci-pauses",
+        action="store_true",
+        help="run lanes that CI currently pauses (Story 99.5)",
+    )
+    verify.add_argument(
+        "--budget-minutes",
+        type=float,
+        default=None,
+        metavar="N",
+        help="mark pixi install rows timed-out after N wall minutes",
     )
     realize = estate_subs.add_parser(
         "realize",

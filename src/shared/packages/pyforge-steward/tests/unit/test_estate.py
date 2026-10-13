@@ -417,7 +417,7 @@ def test_estate_duty_unknown_verb() -> None:
     ns = argparse.Namespace(estate_verb="nope")
     result = duty.run(ns)
     assert not result.ok
-    assert "plan, refresh, reconcile, realize, or status" in result.summary
+    assert "plan, refresh, reconcile, verify, realize, or status" in result.summary
 
 
 def test_parse_pixi_moves_and_policy_helpers() -> None:
