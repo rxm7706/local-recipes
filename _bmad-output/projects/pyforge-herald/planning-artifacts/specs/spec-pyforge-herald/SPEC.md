@@ -2,7 +2,7 @@
 id: SPEC-pyforge-herald
 spec: pyforge-herald
 status: ready
-updated: '2026-09-28'
+updated: '2026-10-12'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
   - docs/dreams/deck-family-currency.md
@@ -355,6 +355,9 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 - **CAP-57 — a deck exports as a native, editable .pptx through pptxgenjs-plus** ← spec-pyforge-herald CAP-57 (ready 2026-09-28)
   - **intent:** `pptxgenjs-plus` becomes a fourth export kind beside `marp --pptx` and the python-pptx fill, neither of which retires. A `pptxgenjs` plugin on `DECK_EXPORT_HOOK_SPEC` derives a slide model (title, bullets, tables, speaker notes) from the deck's current Marp source, and a Node driver shipped with the herald package renders it with `pptxgenjs-plus` into native text boxes, tables and notes: editable, no slide images, no Chrome. It writes its own dated kind, `src/pptx/<slug>-deck-native-<date>.pptx`, which never supersedes the Marp export and retires its own predecessor (CAP-53). `herald deck pptx-native <slug>` runs it from the Guild env, where `pptxgenjs-plus >=4.2.1` joins the dependencies. JSX-authored decks are mason's `pptxgenjs-plus-jsx` recipe, a kinship and not a dependency. Flag `pyforge.herald.deck_export_native`. (Operator ruling 3 of 2026-09-28; decision D7 in `.memlog.md`.)
   - **success:** `pixi run -e pyforge-guild herald deck pptx-native <slug>` exits 0 on a fixture deck and writes `<slug>-deck-native-<date>.pptx`; python-pptx reads it back with one slide per Marp slide, the titles and bullet text as text frames, tables as table graphic frames, the speaker notes in each notes slide, and no picture shape standing in for a slide. A second run on a later date leaves one version of the kind. The Marp and pptx-fill exports are byte-unchanged. With the flag OFF the verb is listed as disabled and exits 2 with a "flag off" message. `pixi.toml` carries `pptxgenjs-plus >=4.2.1` in `[feature.pyforge-guild.dependencies]`, `pixi.lock` is re-solved, `environment.yaml` is regenerated in the same PR, and `pyforge-station-tests` and `pyforge-herald-test` are green.
+- **CAP-58 — the docs site and the herald pages share one menu** ← spec-pyforge-herald CAP-58 (ready 2026-10-12)
+  - **intent:** A reader on any page of the one Pages artifact reaches the docs shelf, the herald overview, dossier, infographics, decks and the Kedro-Viz pipeline graph in one click. The docs left menu gains a first-level Herald group after the four Diátaxis quadrants, and docs and herald pages carry the same top menu (Docs, Overview, Dossier, Infographics, Decks, Kedro-Viz), both drawn from the one navigation list herald's site configuration already owns.
+  - **success:** `pixi run -e site pages-build` and `pixi run -e site pages-check` exit 0. In the built artifact the docs root's left menu lists Tutorials, How-to, Reference, Explanation, Herald in that order, Herald holding the five links; every docs page and every herald page renders the six top-menu links in that order; every one of those hrefs resolves to a file in the artifact under the configured base path, for the public site URL and for a fixture second-host base (CAP-56); a new entry in the herald navigation list appears in both menus with no other edit; and a check fails when a menu link does not resolve.
 
 ## Fold provenance
 
