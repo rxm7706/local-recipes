@@ -113,11 +113,13 @@ class TestSkillMdConsistency:
             "main.py",                    # G31 case study (llms/main.py imports)
             "build_py_wheel.py",          # G106 reactpy upstream sdist build-hook script (src/build_scripts/)
             "plugin.py",                  # G106 hatch-build-scripts' own plugin source (where clean_artifacts defaults True)
+            "plt.py",                     # G122 pwntools upstream source file (pwnlib/elf/plt.py, the #2721 MIPS guard)
             # Illustrative recipe-internal helpers that gotchas recommend
             # authoring/checking-in (named in prose, not skill-local scripts):
             "pin_version.py",             # G39 recipe-dir version-pin helper
             "fix_pyproject_version.py",   # G23 tree-sitter-swift checked-in helper
             "helper.py",                  # G23/G26 generic "checked-in helper"
+            "test_mips_guard.py",         # G122 recipes/pwntools recipe-dir test (recipe files are not scanned above)
             # Retired repo-root detectors, cited only in historical Version History
             # entries (a past release's own accurate description of what existed at
             # the time) — Doctor Story 6.9 (2026-08-09) ported the last of them into
