@@ -45,7 +45,7 @@ def test_missing_bmad_loop_row_fails(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert any("bmad-loop" in f for f in findings)
 
 
-def test_undeclared_bmad_row_fails(tmp_path: Path) -> None:
+def test_undeclared_bmad_row_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     data = load_register(REPO_ROOT)
     data = copy.deepcopy(data)
     data["rows"].append(
@@ -67,7 +67,7 @@ def test_undeclared_bmad_row_fails(tmp_path: Path) -> None:
     (tmp_path / "docs/governance/realization-register.schema.json").write_text(
         schema.read_text(encoding="utf-8"), encoding="utf-8"
     )
-    (tmp_path / "pixi.toml").write_text((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    monkeypatch.setattr(check_mod, "required_coverage_packages", lambda _root: set())
     findings, code = check_mod.check(tmp_path)
     assert code == 1
     assert any("bmad-fictional-package" in f for f in findings)
