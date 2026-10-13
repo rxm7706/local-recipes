@@ -1,6 +1,9 @@
 # conda-forge.yml — pre-seeds the feedstock
 conda_build_tool: rattler-build
 conda_install_tool: pixi
+noarch_platforms:
+- linux_64
+- win_64
 bot:
   automerge: true
   check_solvable: true

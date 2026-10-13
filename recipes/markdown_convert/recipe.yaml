@@ -33,7 +33,7 @@ requirements:
     - markdown-it-py >=4.0.0
     - mdit-py-plugins >=0.5.0
     - pandas >=3.0.1
-    - playwright >=1.57.0
+    - playwright-python >=1.57.0
     - pygments <3,>=2.17.2
     - ruamel.yaml >=0.19.1
     - string-grab >=1.3.0
@@ -78,14 +78,15 @@ extra:
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-16T20:36:40Z
+  cfe-forge-blocker-list:
+    - "run deps argsdict, string-grab and yaml-to-schemdraw are not on conda-forge; install-playwright is a local recipe (built green 2026-10-13)"
+  cfe-last-checked: 2026-10-13T05:30:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T20:36:40Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-10-13T04:35:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:

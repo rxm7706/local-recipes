@@ -34,7 +34,7 @@ requirements:
     - lxml
     - beautifulsoup4
     - cssutils
-    - playwright
+    - playwright-python
     - cssselect
 
 tests:
@@ -79,11 +79,11 @@ extra:
     - version-update-to-0.2.7
 
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-17T07:31:12Z
+  cfe-last-checked: 2026-10-13T05:30:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-17T07:31:12Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-08-17T07:31:12Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-13T04:35:14Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

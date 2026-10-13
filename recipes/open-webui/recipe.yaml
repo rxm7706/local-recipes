@@ -77,7 +77,7 @@ requirements:
     #- pymilvus ==2.5.0  # Conda Forge does not have pymilvus 2.5.0, only 1.1.2
     #- qdrant-client ==1.14.3  # Conda Forge does not have drant-client 1.14.3, only 1.15.1
     #- opensearch-py ==2.8.0  # Conda Forge does not have opensearch-py 2.8.0, only 2.5.0
-    - playwright ==1.49.1 # Caution: version must match docker-compose.playwright.yaml
+    - playwright-python ==1.49.1 # Caution: version must match docker-compose.playwright.yaml
     #- elasticsearch ==9.0.1  # Conda Forge does not have elasticsearch 9.0.1, only 9.1.0
     #- pinecone ==6.0.2 # conflict with googleapis-common-protos, only 7.3.0
     - oracledb ==3.2.0
@@ -151,3 +151,38 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: open-webui
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: open-webui
+  cfe-purls:
+    - pkg:conda/open-webui@${{ version }}?channel=conda-forge
+    - pkg:pypi/open-webui@${{ version }}
+  cfe-upstream-repo: https://github.com/open-webui/open-webui
+  cfe-upstream-homepage: https://github.com/open-webui/open-webui
+  cfe-import-names: [open_webui]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:open-webui-trimmed-run-deps"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "pip check: upstream requires 13 packages this recipe omits (elasticsearch, faster-whisper, firecrawl-py, opencv-python-headless, opensearch-py, peewee-migrate, pinecone, pymilvus, qdrant-client, rapidocr-onnxruntime, soundfile, starlette-compress, tencentcloud-sdk-python), and ftfy/build pin skews remain"
+  cfe-last-checked: 2026-10-13T05:30:00Z
+  cfe-generated-by-version: 8.100.0
+  cfe-generated-at-datetime: 2026-10-13T05:30:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-13T04:38:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # playwright-python (the bindings), not conda playwright (the Node CLI): upstream pins PyPI playwright==1.49.1 (G107).
+# tests:
+#    # pip_check stays false: 2026-10-13 pip check in the built env names only the omitted run deps above, not playwright.
+####
