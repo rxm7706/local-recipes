@@ -116,6 +116,29 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-12 (the docs home leads to the herald pages) — Wanted: a reader who lands on the Pages root can reach the
+  dossier, the infographics, the decks and the Kedro-Viz pipelines without knowing their URLs.** Since the unified
+  Pages artifact (CAP-52, AD-21, 2026-10-08) the root is the Starlight docs shelf, and docsite's whole output moved
+  under `/herald/`.
+  - **The docs side.** The docs home's left menu has four groups (Tutorials, How-to, Reference, Explanation), and
+    its top bar holds only the title, search and the theme toggle. Measured on the live site 2026-10-12, the root
+    links only two how-to pages that mention herald. Nothing links `/herald/`, `/herald/dossier/`,
+    `/herald/infographics/`, `/herald/decks/` or `/dashboard/kedro-viz/`.
+  - **The herald side.** Herald's own top menu (Overview, Dossier, Infographics, Decks, Kedro-Viz, from
+    `docsite/content/site.yml`) has no way back to the docs.
+  - **What the operator saw.** The site "is now docs", and everything else looked gone.
+
+  **What it looks like when real:** the docs left menu gains a fifth first-level group, **Herald**, linking
+  Overview, Dossier, Infographics, Decks and Kedro-Viz. Every docs page and every herald page carries the same top
+  menu: Docs, Overview, Dossier, Infographics, Decks, Kedro-Viz. Both menus come from one list in
+  `docsite/content/site.yml`, so a new herald page appears in both places at once. Every link resolves under the base
+  path of whichever host built the artifact (CAP-56's second host included). **Constraints:** a feature under the
+  docs-site capability. The quadrant order still comes from `docs/map.yaml`, and the Herald group follows it.
+  `pages-check` and the docs validators stay the gates. No page moves, and nothing under `/herald/` changes path.
+  Operator rulings 2026-10-12: layout "Sidebar group + top menu (Recommended)", group name "Herald (Recommended)", the
+  chain shape "Seed on herald Dream (Recommended)" ("this should be its own dream seeds, dream to code chain"), and
+  the SPEC.md render route "Yes, script-render (Recommended)". Owner `spec-pyforge-herald`. → CAP-58 / Epic 40 /
+  Story 40.1, specced 2026-10-12.
 - **2026-10-12 (ci surfaces on the dossier) — Wanted: the dossier says which CI surfaces are paused or stuck, from the
   same JSON the steward CLI prints.** Today the dossier (`docsite/content/dossier.yml`) shows the A→B cutover and
   nothing about the pipeline that lands it: two container-build pauses live since 2026-10-04 and 2026-10-09, six

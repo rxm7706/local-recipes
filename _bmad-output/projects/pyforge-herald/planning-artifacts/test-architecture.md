@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 5e3ada1ab5231f60
-story_count: 131
+source_fingerprint: 01aa2c14548227f2
+story_count: 132
 test_file_count: 87
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 131
-- **Epics parsed:** 38
+- **Stories parsed:** 132
+- **Epics parsed:** 39
 - **Test files inventoried:** 87 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5e3ada1ab5231f60`
+- **Source fingerprint:** `01aa2c14548227f2`
 
 ## Risk Assessment
 
@@ -74,6 +74,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 24: What Epic 23's four landings deferred (spec-pyforge-herald CAP-48..50)
 - Epic 27: The docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52)
 - Epic 31: The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56)
+- Epic 40: The docs site and the herald pages share one menu (spec-pyforge-herald CAP-58)
 
 ## Test Inventory
 
@@ -302,6 +303,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 36.1 | The CI live-demo workflow moves to the archive and its readers follow | none observed |
 | 37.1 | The herald portal loads without herald and says why | none observed |
 | 38.1 | django-herald is lint-clean and leaves the not-yet-clean list | none observed |
+| 40.1 | The docs home links the herald pages from its left menu and a shared top menu | none observed |
 
 ## Quality Gates
 

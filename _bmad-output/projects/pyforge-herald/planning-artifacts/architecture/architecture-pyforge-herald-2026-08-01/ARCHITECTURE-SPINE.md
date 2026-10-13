@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-11"   # RE-STAMPED 2026-10-11: prd->arch currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: prd->arch cascade for the PRD's 2026-10-10 reconciliation (Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10); lands on AD-14 and AD-13/AD-17 as built; the 2026-09-14 "must not quietly resolve" paragraph answered by the ruling, not by this spine. No AD added, amended or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> spine) and prd->arch cascade for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; lands on AD-3, AD-4, AD-22 and canopy:AD-21 as written; the AD-3 amendment line corrected in place (the formats are plugins on the hook, each producer runs from its own verb); no AD added or amended; one PPTX-invariant divergence recorded (the native driver is not token-driven). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+updated: "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD -> spine) for FR-8.6 / CAP-58 (Epic 40). AD-21 amended (one menu across the prefixes); no AD added. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: prd->arch currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: prd->arch cascade for the PRD's 2026-10-10 reconciliation (Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10); lands on AD-14 and AD-13/AD-17 as built; the 2026-09-14 "must not quietly resolve" paragraph answered by the ruling, not by this spine. No AD added, amended or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> spine) and prd->arch cascade for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; lands on AD-3, AD-4, AD-22 and canopy:AD-21 as written; the AD-3 amendment line corrected in place (the formats are plugins on the hook, each producer runs from its own verb); no AD added or amended; one PPTX-invariant divergence recorded (the native driver is not token-driven). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
@@ -781,6 +781,15 @@ content. A second artifact would bring back everything this AD prevents: a secon
 second copy of the shelf, and a second path owner. Parameterizing the host keeps one owner per
 prefix on every host.
 
+**Amended 2026-10-12 (CAP-58; FR-8.6): one menu across the prefixes.** The docs pages (owner: the docs site) and
+the herald pages (owner: docsite) carry the same top menu, and the docs left menu gains a Herald group. The menu
+crosses prefixes; ownership does not:
+- One navigation list, herald's `docsite/content/site.yml`. The docs site reads it as data at build time and never
+  imports herald code.
+- Each owner renders the list in its own pages. No owner writes into another's prefix.
+- Every link is built from the configured base path (the 2026-09-28 amendment), so the menu resolves on every
+  host. `pages-check` fails a menu link that does not resolve inside the artifact.
+
 **Content changed:** this section only. `updated:` bumped. AD-21 is added; no existing AD is
 amended or removed. The one prior rule this supersedes is CAP-44's (the Pages root is the dossier
 landing page), a Spec-level clause that no AD carried.
@@ -992,3 +1001,13 @@ Herald code moved on 2026-10-11: Story 19.2 (one real ship through the platform 
 `pyproject.toml` touched; PR #2128) landed, and Story 37.1 (the herald portal loads without herald and says why) was
 minted from DW-herald-19-2-1 (PR #2126). Each lands on the capabilities and decisions already recorded here; no FR, CAP
 or AD is added, amended or removed. The 2026-10-11 herald retrospective records what the day taught.
+
+## Currency reconciliation — 2026-10-12
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-8.6 / CAP-58 (Epic 40: the docs site and the herald
+pages share one menu).*
+
+CAP-58 changes how the artifact's two owners link each other, not who owns what, so it lands as an amendment to AD-21
+(in place above) rather than a new AD. No port, adapter or package boundary moves.
+
+**Content changed:** AD-21's 2026-10-12 amendment and this section. `updated:` bumped. No AD added or removed.
