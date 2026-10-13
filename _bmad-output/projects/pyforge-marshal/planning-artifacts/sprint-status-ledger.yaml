@@ -466,7 +466,7 @@ development_status:
   97-1-seed-accept-records-an-intended-edit-and-repo-owned-files-leave-the-guard: done
   97-2-a-seed-update-dry-run-on-an-adopted-repo-plans-only-real-changes: done
   98-1-two-marshal-tests-stop-failing-every-local-preflight: done
-  99-1-seed-check-probes-its-tools-at-once-and-says-when-a-probe-timed-out: backlog
+  99-1-seed-check-probes-its-tools-at-once-and-says-when-a-probe-timed-out: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: done
@@ -659,5 +659,5 @@ development_status:
   epic-97-retrospective: optional
   epic-98: done
   epic-98-retrospective: optional
-  epic-99: backlog
+  epic-99: done
   epic-99-retrospective: optional
