@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 8f163b26b4e4702b
-story_count: 111
+source_fingerprint: e2e0e2a1a58c9b32
+story_count: 112
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 111
-- **Epics parsed:** 29
+- **Stories parsed:** 112
+- **Epics parsed:** 30
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8f163b26b4e4702b`
+- **Source fingerprint:** `e2e0e2a1a58c9b32`
 
 ## Risk Assessment
 
@@ -62,6 +62,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 27: Phase 4+5 of the deferral burn-down: mason's open medium and low deferrals
 - Epic 28: The CFE-rebuild guard reads a SHA field whatever type YAML gives it (spec-pyforge-mason CAP-16)
 - Epic 29: pwndbg's pip check holds: a local pwntools carries the upstream unicorn fix (fix under spec-pyforge-mason CAP-18 and CAP-23)
+- Epic 30: Recipes that import playwright depend on playwright-python (fix under spec-pyforge-mason CAP-18 and CAP-23)
 
 ### Low-risk epics
 
@@ -230,6 +231,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |
 | 28.1 | The rebuild guard reads a SHA field whatever type YAML gives it | none observed |
 | 29.1 | pwndbg passes pip check with a local pwntools that carries the upstream unico... | none observed |
+| 30.1 | Recipes that import playwright depend on playwright-python | none observed |
 
 ## Quality Gates
 
