@@ -17,6 +17,16 @@ REPO_ROOT = Path(__file__).resolve().parents[6]
 flag_provider = make_flag_provider_fixture()
 
 
+def _deps(runner: RecordingRunner) -> RealizeDeps:
+    return RealizeDeps(
+        root=REPO_ROOT,
+        runner=runner,
+        flag_on=lambda: True,
+        enforce_require=False,
+        loop_homes=list,
+    )
+
+
 @dataclass
 class FakeProc:
     args: list[str]
@@ -55,8 +65,7 @@ def test_plan_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fl
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
-    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True, loop_homes=list)
-    result = run_realize(deps, plan=True, yes=False, all_rows=False, journal_path=journal_path)
+    result = run_realize(_deps(runner), plan=True, yes=False, all_rows=False, journal_path=journal_path)
     assert result.ok
     assert "bmad-method" in result.summary
     assert not any("upgrade" in " ".join(c) for c in runner.calls)
@@ -66,8 +75,7 @@ def test_operator_gate_skipped_without_yes(tmp_path: Path, flag_provider) -> Non
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
-    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True, loop_homes=list)
-    run_realize(deps, plan=False, yes=False, all_rows=False, journal_path=journal_path)
+    run_realize(_deps(runner), plan=False, yes=False, all_rows=False, journal_path=journal_path)
     assert not any("bmad-core" in " ".join(c) and "--apply" in c for c in runner.calls)
     doc = json.loads(journal_path.read_text())
     assert doc["realize"]["bmad-method"]["realize"] == "skipped-operator-gate"
@@ -77,8 +85,7 @@ def test_operator_gate_runs_with_yes(tmp_path: Path, flag_provider) -> None:  # 
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
-    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True, loop_homes=list)
-    run_realize(deps, plan=False, yes=True, all_rows=False, journal_path=journal_path)
+    run_realize(_deps(runner), plan=False, yes=True, all_rows=False, journal_path=journal_path)
     joined = [" ".join(c) for c in runner.calls]
     assert any("upgrade bmad-core --apply" in s.replace("  ", " ") for s in joined)
 
@@ -87,12 +94,8 @@ def test_realize_argv_per_moved_class(tmp_path: Path, flag_provider) -> None:  #
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
-    deps = RealizeDeps(
-        root=REPO_ROOT,
-        runner=runner,
-        flag_on=lambda: True,
-        loop_homes=lambda: [Path("/tmp/loop-home-a")],
-    )
+    deps = _deps(runner)
+    deps.loop_homes = lambda: [Path("/tmp/loop-home-a")]
     run_realize(deps, plan=False, yes=True, all_rows=False, journal_path=journal_path)
     joined = " | ".join(" ".join(c) for c in runner.calls)
     assert "bump_pixi_version.py" in joined
@@ -105,8 +108,7 @@ def test_probe_never_writes_on_realize_path(tmp_path: Path, flag_provider) -> No
     journal_path = tmp_path / "journal.json"
     journal_path.write_text(json.dumps(_journal_with_moves()), encoding="utf-8")
     runner = RecordingRunner()
-    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True, loop_homes=list)
-    run_realize(deps, plan=False, yes=False, all_rows=False, journal_path=journal_path)
+    run_realize(_deps(runner), plan=False, yes=False, all_rows=False, journal_path=journal_path)
     for argv in runner.calls:
         text = " ".join(argv).lower()
         if "pipeline-truth" in text or "seed check" in text:
