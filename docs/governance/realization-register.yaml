@@ -1,0 +1,501 @@
+version: 1
+rows:
+- package: bmad-method
+  env: pyforge-guild
+  realize:
+    steps:
+    - - pyforge
+      - steward
+      - upgrade
+      - bmad-core
+      - --apply
+    - - pyforge
+      - steward
+      - upgrade
+      - prove-landed
+    operator_gate: true
+  probe:
+    expect: locked-version
+    path: _bmad/_config/manifest.yaml
+    key: installation.version
+  test:
+  - bmad-drift-check
+  - bmad-estate-check
+  owner: pyforge-steward
+  authority: CAP-10
+  notes: Core apply then prove-landed
+  class: installer-tree
+- package: bmad-module-skill-forge
+  env: pyforge-guild
+  realize:
+    steps:
+    - - bmad-module-skill-forge
+      - update
+    operator_gate: true
+  probe:
+    expect: locked-version
+    path: _bmad/_config/skf-manifest.yaml
+    key: version
+  test:
+  - bmad-drift-check
+  owner: pyforge-steward
+  authority: CAP-16
+  class: installer-tree
+- package: bmad-builder
+  env: pyforge-guild
+  realize:
+    steps:
+    - - pyforge
+      - steward
+      - provision
+      - --module
+      - bmb
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-builder
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-18
+  class: module
+- package: bmad-method-test-architecture-enterprise
+  env: pyforge-guild
+  realize:
+    steps:
+    - - pyforge
+      - steward
+      - provision
+      - --module
+      - tea
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-method-test-architecture-enterprise
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-18
+  class: module
+- package: bmad-creative-intelligence-suite
+  env: pyforge-guild
+  realize:
+    steps:
+    - - pyforge
+      - steward
+      - provision
+      - --module
+      - cis
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-creative-intelligence-suite
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-18
+  class: module
+- package: bmad-utility-skills
+  env: pyforge-guild
+  realize:
+    steps:
+    - - pyforge
+      - steward
+      - provision
+      - --module
+      - utility-skills
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-utility-skills
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-18
+  class: module
+- package: bmad-manticore
+  env: pyforge-guild
+  realize:
+    steps:
+    - - pyforge
+      - steward
+      - provision
+      - --module
+      - manticore
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-manticore
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-18
+  class: module
+- package: bmad-suite
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-suite
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-21
+  notes: metapackage — realize none
+  class: module
+- package: bmad-eval-quality
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-eval-quality
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-27
+  notes: native-only / playbook class — realize none
+  class: module
+- package: bmad-labs-skills
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-labs-skills
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-27
+  notes: native-only / playbook class — realize none
+  class: module
+- package: bmad-dashboard
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-dashboard
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-27
+  notes: native-only / playbook class — realize none
+  class: module
+- package: mybmad-dashboard
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: mybmad-dashboard
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-27
+  notes: native-only / playbook class — realize none
+  class: module
+- package: bmad-module-template
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: stage-ok
+    stages:
+    - installed
+    - wired
+    member: bmad-module-template
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: CAP-27
+  notes: native-only / playbook class — realize none
+  class: module
+- package: bmad-loop
+  env: pyforge-marshal
+  realize:
+    steps:
+    - - pyforge
+      - marshal
+      - refresh
+    per_loop_home: true
+  probe:
+    expect: locked-version
+    command:
+    - bmad-loop
+    - --version
+  test: pyforge-marshal-test
+  owner: pyforge-marshal
+  authority: CAP-12
+  class: harness
+- package: caveman-installer
+  env: pyforge-guild
+  kit_item: caveman-skill
+  realize:
+    steps:
+    - - caveman-install
+      - --only
+      - claude
+      - --with-hooks
+    operator_gate: true
+  probe:
+    expect: kit-ok
+    item: caveman-skill
+  test: marshal seed check
+  owner: pyforge-marshal
+  authority: CAP-162
+  class: kit
+- package: headroom-ai
+  env: pyforge-guild
+  kit_item: ccr-store
+  realize:
+    steps: []
+  probe:
+    expect: kit-ok
+    item: ccr-store
+  test: marshal seed check
+  owner: pyforge-marshal
+  authority: CAP-162
+  class: kit
+- package: codegraph
+  env: pyforge-guild
+  kit_item: codegraph-index
+  realize:
+    steps:
+    - - pyforge
+      - marshal
+      - seed
+      - kit
+      - --apply
+  probe:
+    expect: kit-ok
+    item: codegraph-index
+  test: marshal seed check
+  owner: pyforge-marshal
+  authority: CAP-162
+  class: kit
+- package: pre-commit
+  env: pyforge-guild
+  realize:
+    steps:
+    - - pre-commit
+      - install
+      - --hook-type
+      - pre-commit
+      - --hook-type
+      - pre-push
+      - --hook-type
+      - commit-msg
+  probe:
+    expect: exit-0
+    command:
+    - python
+    - scripts/precommit_config_check.py
+  test: precommit-config-check
+  owner: pyforge-steward
+  authority: CAP-5
+  class: hooks
+- package: pixi
+  env: pyforge-guild
+  realize:
+    steps:
+    - - python
+      - scripts/bump_pixi_version.py
+  probe:
+    expect: exit-0
+    command:
+    - python
+    - scripts/pixi_version_check.py
+  test: pixi-version-check
+  owner: pyforge-steward
+  authority: CAP-5
+  class: pin-sites
+- package: gh
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - gh
+    - --version
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: fnd:CAP-12
+  class: cli
+- package: spec-kit
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - spec-kit
+    - --version
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: fnd:CAP-12
+  class: cli
+- package: age
+  env: pyforge-guild
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - age
+    - --version
+  test: pyforge-steward-test
+  owner: pyforge-steward
+  authority: fnd:CAP-12
+  class: cli
+- package: opengrep
+  env: pyforge-warden
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - opengrep
+    - --version
+  test: pyforge-warden-test
+  owner: pyforge-warden
+  authority: fnd:CAP-12
+  class: cli
+- package: osv-scanner
+  env: pyforge-warden
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - osv-scanner
+    - --version
+  test: pyforge-warden-test
+  owner: pyforge-warden
+  authority: fnd:CAP-12
+  class: cli
+- package: deptry
+  env: pyforge-warden
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - deptry
+    - --version
+  test: pyforge-warden-test
+  owner: pyforge-warden
+  authority: fnd:CAP-12
+  class: cli
+- package: kubernetes-helm
+  env: platform-dev
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - helm
+    - --version
+  test: platform-ci-local
+  owner: platform
+  authority: fnd:CAP-12
+  class: cli
+- package: postgresql
+  env: platform-dev
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - postgresql
+    - --version
+  test: platform-ci-local
+  owner: platform
+  authority: pap:AD-1
+  class: service
+- package: redis-server
+  env: platform-dev
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - redis-server
+    - --version
+  test: platform-ci-local
+  owner: platform
+  authority: pap:AD-1
+  class: service
+- package: silo
+  env: platform-dev
+  realize:
+    steps: []
+  probe:
+    expect: locked-version
+    command:
+    - silo
+    - --version
+  test: platform-ci-local
+  owner: platform
+  authority: pap:AD-1
+  class: service
+- package: httpx
+  env: pyforge-foundry-full
+  realize:
+    steps: []
+  probe:
+    expect: import-probe
+    command: import httpx
+  test: sbom-laptop-gate
+  owner: pyforge-steward
+  authority: fnd:CAP-12
+  class: import
+- package: pydantic
+  env: pyforge-foundry-full
+  realize:
+    steps: []
+  probe:
+    expect: import-probe
+    command: import pydantic
+  test: sbom-laptop-gate
+  owner: pyforge-steward
+  authority: fnd:CAP-12
+  class: import
+- package: pyyaml
+  env: pyforge-foundry-full
+  realize:
+    steps: []
+  probe:
+    expect: import-probe
+    command: import yaml
+  test: sbom-laptop-gate
+  owner: pyforge-steward
+  authority: fnd:CAP-12
+  class: import
+- package: jsonschema
+  env: pyforge-foundry-full
+  realize:
+    steps: []
+  probe:
+    expect: import-probe
+    command: import jsonschema
+  test: sbom-laptop-gate
+  owner: pyforge-steward
+  authority: fnd:CAP-12
+  class: import

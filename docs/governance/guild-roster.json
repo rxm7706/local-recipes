@@ -341,6 +341,12 @@
       "reason": "`pixi update` is operator-only — run `pyforge steward estate refresh` without `--transitive` inside a worktree that lands through a PR, or have the operator run `--transitive` by hand."
     },
     {
+      "id": "steward-estate-realize-yes",
+      "applies_to": "bash",
+      "trigger": "pyforge steward estate realize --yes (or pixi run … pyforge steward estate realize --yes)",
+      "reason": "Installer-owned trees re-apply only under operator `pyforge steward estate realize --yes` — agents run `pyforge steward estate realize --plan` (ruling Q10)."
+    },
+    {
       "id": "bmad-switch-unsafe",
       "applies_to": "bash",
       "trigger": "scripts/bmad-switch run from a worktree, or with BMAD_ACTIVE_PROJECT already set",

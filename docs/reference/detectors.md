@@ -40,6 +40,7 @@ None -- every scanned script declares a valid `DETECTOR` and has a pixi task.
 | `memlog_fidelity_check` | `repo` | `memlog-fidelity-check` | `scripts/memlog_fidelity_check.py` |
 | `missing_preserve_check` | `runtime` | `missing-preserve-check` | `scripts/missing_preserve_check.py` |
 | `pin_policy_check` | `repo` | `pin-policy-check` | `scripts/pin_policy_check.py` |
+| `realization_register_check` | `repo` | `realization-register-check` | `scripts/realization_register_check.py` |
 | `pixi_version_check` | `repo` | `pixi-version-check` | `scripts/pixi_version_check.py` |
 | `platform_ci_test_requirements_check` | `repo` | `platform-ci-test-requirements-check` | `scripts/platform_ci_test_requirements_check.py` |
 | `precommit_config_check` | `repo` | `precommit-config-check` | `scripts/precommit_config_check.py` |

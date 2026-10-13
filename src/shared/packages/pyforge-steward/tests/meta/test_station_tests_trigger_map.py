@@ -1300,6 +1300,14 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             ("docs/governance/guild-roster.json", ".claude/hooks/pre-shell.py"),
             "Story 100.2 AC4: estate transitive denial row and hook matcher parity",
         ),
+        "src/shared/packages/pyforge-steward/tests/unit/test_estate_realize.py": (
+            (
+                "docs/governance/guild-roster.json",
+                ".claude/hooks/pre-shell.py",
+                "docs/governance/realization-register.yaml",
+            ),
+            "Story 100.5: estate realize and realization register",
+        ),
         "src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py": _H["PLANNING"],
         "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": _H["CLASS_PATH"],
     },

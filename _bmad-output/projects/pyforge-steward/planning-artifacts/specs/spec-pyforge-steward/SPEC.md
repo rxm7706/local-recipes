@@ -125,6 +125,11 @@ surface:
   - tests/scripts/test_pin_policy_check.py
   - tests/scripts/test_pin_policy_restore.py
   - tests/scripts/fixtures/pin_policy/**
+  - docs/governance/realization-register.yaml
+  - docs/governance/realization-register.schema.json
+  - scripts/realization_register_check.py
+  - scripts/realization_register_lib.py
+  - tests/scripts/test_realization_register_check.py
 surface-drift-exclude:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py

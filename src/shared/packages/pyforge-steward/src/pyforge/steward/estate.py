@@ -503,6 +503,9 @@ def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
         "latest": deps.bmad_latest(_BMAD_CORE) or "unknown",
         "applied": False,
     }
+    from .estate_realize import compute_realize_due_for_refresh
+
+    realize_due = compute_realize_due_for_refresh(deps.root, moves)
     journal = {
         "base_sha": base_sha,
         "result_sha": "",
@@ -511,7 +514,7 @@ def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
         "moves": moves,
         "losses_restored": losses,
         "fan_out": {"ok": fan_ok, "findings": fan_findings},
-        "realize_due": [],
+        "realize_due": realize_due,
         "transitive": transitive,
         "bmad": bmad_block,
         "steps": steps,
@@ -524,6 +527,8 @@ def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
     journal_path.write_text(json.dumps(journal, indent=2) + "\n", encoding="utf-8")
 
     summary_lines = [f"estate refresh: journal → {journal_path.relative_to(deps.root)}"]
+    if realize_due:
+        summary_lines.append("realize-due: " + ", ".join(realize_due))
     if not fan_ok:
         summary_lines.append("fan-out: FAIL")
         return DutyResult(
@@ -600,4 +605,18 @@ class EstateDuty:
                 json_out=bool(getattr(ns, "json", False)),
                 show_all=bool(getattr(ns, "all", False)),
             )
-        return DutyResult(ok=False, summary="estate: need plan, refresh, reconcile, or status")
+        if verb == "realize":
+            from .estate_realize import production_realize_deps, run_realize
+
+            rdeps = getattr(ns, "_realize_deps", None)
+            if rdeps is None:
+                rdeps = production_realize_deps(root)
+            journal_arg = getattr(ns, "journal", None)
+            return run_realize(
+                rdeps,
+                plan=bool(getattr(ns, "plan", False)),
+                yes=bool(getattr(ns, "yes", False)),
+                all_rows=bool(getattr(ns, "all", False)),
+                journal_path=Path(journal_arg) if journal_arg else None,
+            )
+        return DutyResult(ok=False, summary="estate: need plan, refresh, reconcile, realize, or status")
