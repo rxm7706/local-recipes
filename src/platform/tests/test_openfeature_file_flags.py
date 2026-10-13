@@ -694,6 +694,11 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    "pyforge.steward.estate_refresh": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,

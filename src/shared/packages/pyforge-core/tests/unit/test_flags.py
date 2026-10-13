@@ -993,6 +993,7 @@ _SHIPPED_CLOCKS = {
         "",
     ),
     "pyforge.steward.glass_export": ("steward", "61-3-", "2026-09-17", "", ""),
+    "pyforge.steward.estate_refresh": ("steward", "100-2-", "2026-10-13", "", ""),
 }
 
 
@@ -1055,6 +1056,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.workspace_preserve_tag": {"dev": False, "staging": False, "production": False},
         "pyforge.steward.herald_webhook_sidecar": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.stations_index": {"dev": True, "staging": False, "production": False},
+        "pyforge.steward.estate_refresh": {"dev": True, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history": {"dev": True, "staging": True, "production": False},

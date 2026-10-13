@@ -6,11 +6,13 @@ import argparse
 import importlib.util
 import json
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit.flags import flag_states
 
 from pyforge.steward.cli import DUTIES, build_parser, resolve_duty
 from pyforge.steward.estate import (
@@ -110,17 +112,19 @@ def _deps(
     *,
     dirty: bool = False,
     branch: str = "story-branch",
-    flag_on: bool = True,
+    flag_on: bool | Callable[[], bool] = True,
     now: datetime | None = None,
+    enforce_require: bool = False,
 ) -> EstateDeps:
+    flag_fn = flag_on if callable(flag_on) else (lambda: flag_on)
     return EstateDeps(
         root=root,
         runner=runner,
         branch=lambda: branch,
         dirty=lambda: dirty,
         head_sha=lambda: "abc123",
-        flag_on=lambda: flag_on,
-        enforce_require=False,
+        flag_on=flag_fn,
+        enforce_require=enforce_require,
         bmad_latest=lambda _pkg: None,
         now=lambda: now or datetime(2026, 10, 13, tzinfo=timezone.utc),
     )
@@ -317,3 +321,88 @@ def test_steward_help_lists_estate(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         build_parser().parse_args(["--help"])
     assert "estate" in capsys.readouterr().out
+
+
+@flag_states("pyforge.steward.estate_refresh")
+def test_estate_verbs_respect_flag_state(
+    tmp_path: Path, flag_provider: dict[str, bool]
+) -> None:
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    on = flag_provider["pyforge.steward.estate_refresh"]
+    deps = _deps(root, runner, flag_on=lambda: on, enforce_require=True)
+    plan = run_plan(deps, json_out=False, due_only=False)
+    status = run_status(deps, json_out=False, show_all=False)
+    refresh = run_refresh(deps, transitive=False)
+    if on:
+        assert plan.ok
+        assert status.ok
+        assert refresh.ok
+    else:
+        assert not plan.ok and ESTATE_FLAG_KEY in plan.summary
+        assert not status.ok and ESTATE_FLAG_KEY in status.summary
+        assert not refresh.ok and ESTATE_FLAG_KEY in refresh.summary
+        assert not runner.calls
+
+
+def test_plan_prints_text_rows(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    result = run_plan(_deps(root, RecordingRunner()), json_out=False, due_only=False)
+    assert result.ok
+    assert "cron-descriptor" in result.summary
+    assert "--- bmad ---" in result.summary
+
+
+def test_status_no_journals(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / ".steward" / "estate-refresh").mkdir(parents=True)
+    result = run_status(_deps(root, RecordingRunner()), json_out=False, show_all=False)
+    assert result.ok
+    assert "no journals" in result.summary
+
+
+def test_refresh_restore_refusal(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    runner.responses["--diff"] = FakeProc([], 1, json.dumps([{"kind": "lost-cap", "package": "x"}]), "")
+    runner.responses["pin_policy_restore"] = FakeProc([], 1, "", "restore failed")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert not result.ok
+    assert "restore refused" in result.summary
+
+
+def test_refresh_success_and_second_journal_same_day(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    fixed_now = datetime(2026, 10, 13, tzinfo=timezone.utc)
+    deps = _deps(root, runner, now=fixed_now)
+    first = run_refresh(deps, transitive=False)
+    assert first.ok
+    second = run_refresh(deps, transitive=False)
+    assert second.ok
+    names = sorted(p.name for p in (root / ".steward" / "estate-refresh").glob("*.json"))
+    assert names == ["2026-10-13-2.json", "2026-10-13.json"]
+
+
+def test_estate_duty_run_plan_via_namespace(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    duty = EstateDuty()
+    ns = argparse.Namespace(
+        duty="estate",
+        estate_verb="plan",
+        json=False,
+        due=False,
+        transitive=False,
+        all=False,
+        _estate_deps=_deps(root, RecordingRunner()),
+    )
+    assert duty.run(ns).ok
+
+
+def test_estate_duty_unknown_verb() -> None:
+    duty = EstateDuty()
+    ns = argparse.Namespace(estate_verb="nope")
+    result = duty.run(ns)
+    assert not result.ok
+    assert "plan, refresh, or status" in result.summary
