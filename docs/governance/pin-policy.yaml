@@ -412,6 +412,14 @@ holds:
   authority: spec-100-1
   owner: pyforge-steward
   until: unknown
+- package: openai
+  hold: never-move
+  features:
+  - pyforge-guild
+  reason: pixi upgrade must not lower the openai floor while agno's litellm band still resolves openai 3.x
+  authority: spec-100-7
+  owner: pyforge-steward
+  until: litellm on conda-forge supports openai >=3 with py314 in every env that pulls agno
 - package: wagtail
   hold: cap
   cap: <8.0
