@@ -2,8 +2,8 @@
 title: '100.2: One command moves the library pins on the policy and restores what the upgrade loses'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'done'
+baseline_revision: '1368f8a66320f83b699f2e2bdaf300fcd074a07a'
 flag:
   key: pyforge.steward.estate_refresh          # new; minted by this story (one flag per CAP: 100.3, 100.4, 100.5 reuse it)
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -163,6 +163,12 @@ Type / Effort / Deps: feature / M / S-100.1.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (the roster and the hook are governed by `spec-pyforge-steward` CAP-165's surface; reconcile every Spec the detector names).
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
+
+## Auto Run Result
+
+Status: done
+
+Verification (2026-10-13, dispatch/pyforge-steward/100.2 worktree): `test_estate.py` 8/8; `pyforge-steward-test` 2466 passed; `pre-shell.py --self-test` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-steward` and `spec-feature-flag-governance` (no `--write-baseline` in this run). `pr-preflight` / full `detectors-ci` not run in this session — run before PR.
 
 ## Spec Change Log
 
