@@ -433,9 +433,7 @@ def run_verify(
                 lane.environment,
                 lane.task,
             ]
-            proc, seconds, special = _run_timed(
-                deps, argv, wt, budget_seconds=budget_seconds, started=install_started
-            )
+            proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
             verdict_s = _row_verdict(proc.returncode, special=special)
             if verdict_s not in ("ok", "lock-solved"):
                 any_red = True
@@ -475,9 +473,7 @@ def run_verify(
         verify_env = _environment_holding_task(pixi_data, "verify-env", root=deps.root)
         if verify_env is not None:
             argv = ["pixi", "run", "--frozen", "-e", verify_env, "verify-env"]
-            proc, seconds, special = _run_timed(
-                deps, argv, wt, budget_seconds=budget_seconds, started=install_started
-            )
+            proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
             verdict_s = _row_verdict(proc.returncode, special=special)
             if verdict_s != "ok":
                 any_red = True
@@ -538,11 +534,7 @@ def run_verify(
     register: dict[str, Any] = {}
     if register_path.is_file():
         register = yaml.safe_load(register_path.read_text(encoding="utf-8")) or {}
-    by_pkg = {
-        str(r["package"]): r
-        for r in (register.get("rows") or [])
-        if isinstance(r, dict) and r.get("package")
-    }
+    by_pkg = {str(r["package"]): r for r in (register.get("rows") or []) if isinstance(r, dict) and r.get("package")}
     tests_seen: set[str] = set()
     if not run_full and not probe_filter:
         by_pkg = {}
