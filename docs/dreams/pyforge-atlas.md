@@ -322,6 +322,31 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   overflow". **Kinships:** [[pyforge-steward]] (Story 34.1 shipped the test; pr-preflight's per-lane basetemp).
   Owner `spec-pyforge-atlas` (CAP-6, the one engine the attach joins). → Epic 28 / Story 28.1, specced 2026-10-11.
 
+- **2026-10-13 (range-test recorder race) — Found: the static-host Range proof can read its own request log before the
+  server thread has written it.** `test_count_star_reads_footer_only_over_range` in
+  `tests/integration/publish/test_emit_range.py` failed in the `pyforge-atlas-test` lane of a pre-push `pr-preflight`
+  run on 2026-10-13 with `assert (200 not in [] and 206 in [])`: the query returned the right count, but the
+  `_RangeServer` had recorded no request. The same file passed alone and under `-n auto --dist loadgroup` (12 passed,
+  three runs), and CI passed `atlas-test` on PR #2186 the same hour.
+  **Evidence:**
+  - The handler appends to `codes`, `ranges`, `range_spans` and `bytes_served` only after `self.wfile.write(data)`.
+    The client can finish the query, and the test can assert, before the server thread runs those appends. The
+    `count(*)` test makes exactly one Range request, so it is the one test whose list can be wholly empty.
+  - A scratch harness that delays the handler 0.5 s after each body write reproduces it every run: the log reads `[]`
+    right after the query and `[206]` one second later.
+  - A first hypothesis, DuckDB's external file cache answering a reused port's URL, was tested and ruled out: that
+    cache belongs to one database instance, and fresh connections on a reused port each issued their own Range request.
+  **What it looks like when fixed:** the handler records each response before it writes any of it, so the log is
+  complete by the time the client can read the response. The test keeps every assertion and gains a regression case
+  that delays the write and still sees the request.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). Test-only: one file changes, and no
+    skip, `xfail`, retry or sleep-and-hope is added (AD-11: gates are never weakened).
+  - A new epic: Epic 8, which shipped the Range proof (Story 8.2, the static web host), is done.
+  The operator asked for it directly in session: "Do this task here: Fix flaky atlas range-read test under xdist".
+  **Kinships:** [[pyforge-steward]] (the pre-push preflight lane that surfaced it). Owner `spec-pyforge-atlas` (CAP-16,
+  the read surface runs with no backend at all). → Epic 29 / Story 29.1, specced 2026-10-13.
+
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
 Atlas rebases to one Dream, one Spec, one PRD, one spine, one epic chain.

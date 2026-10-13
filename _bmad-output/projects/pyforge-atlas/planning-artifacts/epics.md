@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-10-11"   # RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-13"   # RE-STAMPED 2026-10-13: Epic 29 / Story 29.1 minted (fix under spec-pyforge-atlas CAP-16, no CAP, no flag; the range-test recorder race, Dream entry 2026-10-13). Prior: RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2212,6 +2212,30 @@ bodies and their assertions do not change; no skip, `xfail` or rerun is added (A
 **And** with no PostgreSQL binaries both tests still skip with the fixture's existing reason; the diff adds no skip or `xfail`; only the test file changes; restoring `-k '<tmp_path>/pgsock'` reds both tests under the long basetemp (mutation); `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
 **Status:** done
 
+## Epic 29: The range test server records each response before the client can read it (fix under spec-pyforge-atlas CAP-16)
+
+Minted 2026-10-13 from the station Dream's entry of that date (range-test recorder race) and the operator's ask in
+session, "Do this task here: Fix flaky atlas range-read test under xdist". `_RangeServer` in
+`tests/integration/publish/test_emit_range.py` appends each response to its request log only after writing the body,
+so a client can finish its query, and the test can assert, before the server thread records anything:
+`test_count_star_reads_footer_only_over_range` (one Range request) failed that way in a pre-push `pr-preflight` lane on
+2026-10-13 with `assert (200 not in [] and 206 in [])`. A defect against `spec-pyforge-atlas` CAP-16 (the read surface
+runs with no backend at all; Story 8.2 shipped the Range proof), so no CAP is minted; a new epic because Epic 8 is
+done. **HARD boundaries:** test-only, in `_RangeServer`'s handler and one new regression test; `pyforge.atlas.publish`
+and every existing assertion stay unchanged; no skip, `xfail`, retry or sleep is added to an existing test (AD-11:
+gates are never weakened); the new test's delay seam defaults to 0 for every other test.
+
+### Story 29.1: The range test server records each response before the client can read it
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • spec-pyforge-atlas CAP-16 (Story 8.2 shipped the Range proof) • AD-2, AD-11
+**Flag:** none (`spec-feature-flag-governance` Q1, a fix)
+**Surface:** `src/shared/packages/pyforge-atlas/tests/integration/publish/test_emit_range.py` (`_RangeServer`'s handler and one new test, only), the `spec-pyforge-atlas` memlog (the surface reconcile), `scripts/.spec-surface-baseline.json` (the scoped stamp)
+**Spec:** `planning-artifacts/specs/spec-29-1-the-range-test-server-records-each-response-before-the-client-can-read-it.md`
+**Given** `0d5702f516`, where the handler appends to `codes`, `ranges`, `range_spans` and `bytes_served` after `self.wfile.write(data)`, and a handler delayed 0.5 s after each body write: the log reads `[]` right after a `count(*)` query and `[206]` a second later
+**When** a client reads from `_RangeServer`
+**Then** every branch (206, 200, 416) records the response before writing any of it, so the log is complete when the client can read the response; a new regression test delays each body write and asserts the request is in the log as soon as the query returns
+**And** every existing test and assertion in the file is unchanged and green; the diff adds no skip, `xfail`, retry or sleep to an existing test; only the test file changes; moving the appends back after the write reds the new test (mutation); `pixi run -e pyforge-atlas pyforge-atlas-test` green
+**Status:** backlog
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency
@@ -2330,3 +2354,11 @@ Story 25.1's gate cleared: mason Story 21.1 is done on main (PR #1990), and the 
 
 Story 25.1's block above is left as minted (it carries no Status line). Every Story heading still maps 1:1 to a
 `sprint-status-ledger.yaml` key, and no key was added or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-13 (range-test recorder race)
+
+Epic 29 / Story 29.1 is new: a `fix` under `spec-pyforge-atlas` CAP-16, so no CAP, FR or AD moves and the PRD and the
+spine are not re-stamped. The heading maps 1:1 to its `sprint-status-ledger.yaml` key (`29-1-…` and `epic-29` at
+`backlog`, `epic-29-retrospective` at `optional`, through a worktree-local Tier-3 feed and `sprint-ledger-sync
+--project atlas`); `marshal-policy.toml` `[epic_surfaces]."29"` lands with it. No existing key changed; no blocked key
+flipped. `updated:` bumped.
