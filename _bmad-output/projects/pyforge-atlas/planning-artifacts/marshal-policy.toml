@@ -217,6 +217,21 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"29" = [  # the range test server records each response before the client can read it (fix under spec-pyforge-atlas
+  # CAP-16; Story 29.1), added 2026-10-13. The default surface, restated because a declared entry replaces it outright (the
+  # package glob covers tests/integration/publish/test_emit_range.py, the one file the fix changes), plus the ledger and
+  # every Spec memlog.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "28" = [  # the live-attach fixture Postgres starts under any basetemp (fix under spec-pyforge-atlas CAP-6; Story 28.1),
   # added 2026-10-11. The default surface, restated because a declared entry replaces it outright (the package glob
   # covers tests/unit/test_read_only_live_attach.py, the one code path the fix changes), plus the ledger and every Spec
