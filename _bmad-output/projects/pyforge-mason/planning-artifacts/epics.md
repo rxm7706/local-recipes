@@ -3471,8 +3471,9 @@ the local pwntools with `python-unicorn` 2.1.4, and `pip check` passes there
 Minted 2026-10-12 from the station Dream's entry of that day (later), on the operator's ask "Do this task here: Audit
 16 recipes that depend on conda playwright". Story 29.1's G107 check declares the `playwright` / `playwright-python`
 pair without linting it. **HARD boundaries:**
-- 30.1 touches the run dependencies and CFE blocks of the 15 recipes it names, and the CFE retro surface in
-  `retro(cfe):` commits only.
+- 30.1 touches the run dependencies and CFE blocks of the 15 recipes it names, three recipe defects found on the way
+  (md2pdf-mermaid's missing LICENSE, universal-document-mcp's build script, openhands-ai's `noarch_platforms`), and
+  the CFE retro surface in `retro(cfe):` commits only.
 - Local only. No feedstock, staged-recipes or upstream PR is opened without an explicit ask.
 - No `src/shared/packages/pyforge-mason/`, `pixi.toml` or `pixi.lock` file changes.
 - 30.1 is a fix and carries no flag (`spec-feature-flag-governance` CAP-1, Q1).
@@ -3486,6 +3487,7 @@ So that `import playwright` works in the installed environment and `pip check` c
 **Type:** fix • **Effort:** M • **Deps:** 29.1 • **FR/AD:** spec-pyforge-mason CAP-18 and CAP-23 (no new CAP; a fix
 carries no flag, `spec-feature-flag-governance` Q1); AD-1; AD-15; CFE Rule 1 + Rule 2
 **Surface:** `recipes/{botright,cuga,dataframe_image,install-playwright,markdown_convert,mcp-docs,md2pdf-mermaid,mermaid-cli,open-webui,openhands-ai,playwright-mcp,playwright-mcp-server,pytest-playwright-asyncio,universal-document-mcp,xync-client}/recipe.yaml`,
+`recipes/md2pdf-mermaid/LICENSE` (new), `recipes/openhands-ai/conda-forge.yml`,
 and the CFE retro surface (`.claude/skills/conda-forge-expert/**`) in `retro(cfe):` commits.
 **Spec:** `planning-artifacts/specs/spec-30-1-recipes-that-import-playwright-depend-on-playwright-python.md`
 **Given** conda-forge `playwright` is the Node CLI with no Python module, and `playwright-python` is the bindings and
@@ -3497,6 +3499,7 @@ depends on it; the 15 named upstreams list PyPI `playwright` in `requires_dist`;
 **And:**
 - Each recipe whose other dependencies resolve builds green on linux-64 with `pip check`. Any that cannot records its
   blocker in its CFE block.
+- Each changed recipe passes `validate_recipe`, except playwright-mcp, whose license lint is its recorded blocker.
 - `recipes/playwright-python` is unchanged.
 - The story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry.
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.

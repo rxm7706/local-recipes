@@ -2,7 +2,7 @@
 title: "30.1: Recipes that import playwright depend on playwright-python"
 type: 'fix'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -77,7 +77,8 @@ requires the PyPI distribution `playwright`, which only `playwright-python` inst
   `pixi run -e local-recipes recipe-build`, its import test and `pip check` passing. The Run results name each
   recipe's outcome. A recipe that cannot build has its blocker in `cfe-forge-blocker-list` and an accurate
   `cfe-local-build-status`.
-- **AC4 — Gates.** Each changed recipe passes `validate_recipe`.
+- **AC4 — Gates.** Each changed recipe passes `validate_recipe`, except playwright-mcp: its license lint
+  (`REPLACE_LICENSE`) is its recorded blocker, because upstream publishes no license.
 - **AC5 — Rule 2.** The story closes with a `retro(cfe):` commit carrying a CFE `CHANGELOG.md` semver entry.
 - **AC6 — Mutation.** Each change below makes a named check fail:
   - bare `playwright` back in any one of the 15: the G107 check;
@@ -96,7 +97,8 @@ requires the PyPI distribution `playwright`, which only `playwright-python` inst
 - Never open a feedstock, staged-recipes or upstream PR without an explicit ask.
 - Never touch `recipes/playwright-python`.
 - Never change a recipe's version, source or any dependency other than `playwright` in this story; a blocker is
-  recorded, not worked around.
+  recorded, not worked around. A recipe defect that stops a build and is fixable from upstream's own files (a
+  missing LICENSE, a broken build script, a missing `noarch_platforms`) is fixed, and the Spec Change Log says so.
 
 ## I/O & Edge-Case Matrix
 
@@ -130,9 +132,44 @@ requires the PyPI distribution `playwright`, which only `playwright-python` inst
 - `validate_recipe` on each changed recipe — expected: pass.
 - The three mutations of AC6 — expected: each fails its named check. Restore each.
 
+## Run results
+
+Built on linux-64 with `recipe-build` (rattler-build, local channel), 2026-10-13. Root cause found during the audit:
+`recipe-generator.py` resolves PyPI requirements through `name_resolver.resolve_name`, whose cache maps
+`playwright → playwright`.
+
+| Recipe | Outcome | Blocker (recorded in its CFE block) |
+|---|---|---|
+| mermaid-cli, install-playwright, pytest-playwright-asyncio, dataframe_image, md2pdf-mermaid | success: import and `pip check` pass | — |
+| open-webui | success: imports and `--help` pass; `pip_check` stays `false` | `pip check` names 13 run deps the recipe omits and two pin skews; playwright is not among them |
+| playwright-mcp-server | build clean, test env blocked | `asyncio` (a stdlib backport in upstream metadata) is not on conda-forge |
+| mcp-docs | build clean, test env blocked | `utils` is not on conda-forge |
+| markdown_convert | build clean, test env blocked | `argsdict`, `string-grab`, `yaml-to-schemdraw` |
+| botright | build clean, test env blocked | five deps not on conda-forge |
+| cuga | build clean, test env blocked | five deps not on conda-forge; `langfuse` is `langfuse-python` (G10) |
+| openhands-ai | build clean, test env blocked | six deps not on conda-forge; `zope-interface` is `zope.interface` (G10) |
+| playwright-mcp | failed | no license anywhere upstream (`REPLACE_LICENSE`) |
+| xync-client | failed | no license file; 11 deps not on conda-forge |
+| universal-document-mcp | failed | upstream setuptools flat-layout (four top-level packages) |
+
+- AC1: all 15 list `playwright-python` with the upstream spec; `recipes/playwright-python` unchanged.
+- AC2: `test_split_distribution_run_deps.py` passes with the pair linted.
+- AC4: `validate_recipe` passes on 14 of 15; playwright-mcp fails on its license, as on `main`.
+- AC5: `retro(cfe):` v8.100.1.
+- AC6:
+  - Bare `playwright` in `recipes/cuga` fails the check ("recipes/cuga/recipe.yaml: run lists `playwright`, not
+    `playwright-python`").
+  - Without the exemption, the check fails on `recipes/playwright-python`.
+  - Without the flag, the declared-pairs test fails.
+
 ## Spec Change Log
 
 - 2026-10-12: minted at the operator's ask "Do this task here: Audit 16 recipes that depend on conda playwright".
+- 2026-10-13 (implementation): three recipe defects that stopped a build or `validate_recipe` were fixed (healed
+  tissue): md2pdf-mermaid ships its LICENSE in the recipe dir (the 1.4.3 sdist omits it; copied from the v1.4.3 tag);
+  universal-document-mcp's build script names the source dir; openhands-ai's `conda-forge.yml` declares
+  `noarch_platforms` for its `win` run selector (G111). AC4 names playwright-mcp's license lint as its blocker. The Epic
+  30 boundary and Surface widened to match.
 
 ## Review Triage Log
 
