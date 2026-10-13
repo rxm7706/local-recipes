@@ -23,7 +23,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Never run `scripts/bmad-switch` from a parallel agent; set `BMAD_ACTIVE_PROJECT=<slug>` and write physical `_bmad-output/projects/<slug>/` paths.
 - Never run a bare `spec_surface_check.py --write-baseline`; stamp scoped with `--spec <project>/<spec>` after `git add`, from a clean tree.
 - `src/platform/` never imports `pyforge.*`; reach station code through `pyforge.core.station_port`. No `services/` or `:800x` process tree.
-- Any PR touching a path outside `recipes/` gets the `maintenance` label. A `pixi.toml` change regenerates `environment.yaml` in the same PR (`pixi project export conda-environment -e build > environment.yaml`); that check ignores the label.
+- Any PR touching a path outside `recipes/` gets the `maintenance` label. A `pixi.toml` change regenerates `environment.yaml` in the same PR through `pixi run -e pyforge-steward pyforge steward estate reconcile` (or the exporter it wraps); that check ignores the label.
 - Never raise a `postgresql`/`libpq` pin to 18 or lift a psycopg/psycopg2/pgvector cap to clear a solve; the estate holds PostgreSQL 17 (fnd:CAP-12).
 - Merge with `gh pr merge --merge`, never `--rebase` (squash is disabled in the repository settings; a rebase merge leaves no merge subject for landing evidence either). Create with `gh pr create --repo rxm7706/local-recipes`.
 - Commit messages carry no `Co-Authored-By` line and no AI attribution; the `commit-msg` hook in `.pre-commit-config.yaml` refuses them (`steward setup` installs it; `precommit-config-check` reds the file going missing).
@@ -60,6 +60,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Only `pyforge-guild` exists at runtime: station code, the tasks it shells to, and docs name `-e pyforge-guild`, never `-e local-recipes` (the 10 GB recipe factory) — steward's `test_no_station_assumes_local_recipes.py` reds a station `src/` that does. On a laptop install `pyforge-foundry-full`, the SBOM and default laptop install (fnd:CAP-12): every station feature plus `build`/`grayskull`, on linux-64, osx-arm64 and win-64; add `pyforge-foundry-full-stack` for the platform's local stack (PostgreSQL 17, redis-server, object storage; linux-64). Its conda-recipe-manager resolves only to 0.5.0 and it has no feedrattler: run current crm/feedrattler with `-e grayskull`.
 - Recipe-factory work is the one exception to the line above and runs in `-e local-recipes`; `-e pyforge-scribe` is only for `scribe graph compile` with its graphify / cocoindex / postgres extras. `pixi run -e pyforge-guild llms-full-check` exits non-zero when the library catalog drifts from `pixi.toml`.
 - `bmad-estate-check` (repo scope, in `detectors-ci`) reds when `docs/reference/bmad-estate-llms-full.md` no longer matches its sources — reconcile with `pixi run -e pyforge-guild scribe catalog bmad-estate --write`, never by hand; `bmad-method-version-drift-check` (installed core vs the `pixi.toml` floor and upstream, warn-only) runs alone by name; `tea-test-review` (advisory, never a gate) is a `local-recipes` task.
+- Estate pin refresh (policy, six verbs, landing a batch): `docs/how-to/refresh-the-estate.md`; cadence gate: `pixi run -e pyforge-steward pyforge steward estate plan --due`.
 
 ## Known pitfalls
 

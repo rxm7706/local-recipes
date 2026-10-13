@@ -212,6 +212,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`how-to/purge-preserved-refs.md`](how-to/purge-preserved-refs.md) | marshal | authored |
 | [`how-to/recipe-testing-and-builds.md`](how-to/recipe-testing-and-builds.md) | fleet | authored |
 | [`how-to/reconcile-spec-surface.md`](how-to/reconcile-spec-surface.md) | doctor | authored |
+| [`how-to/refresh-the-estate.md`](how-to/refresh-the-estate.md) | steward | authored |
 | [`how-to/restore-operations.md`](how-to/restore-operations.md) | fleet | authored |
 | [`how-to/run-and-understand-detectors.md`](how-to/run-and-understand-detectors.md) | doctor | authored |
 | [`how-to/run-herald-live-backend-locally.md`](how-to/run-herald-live-backend-locally.md) | herald | authored |
