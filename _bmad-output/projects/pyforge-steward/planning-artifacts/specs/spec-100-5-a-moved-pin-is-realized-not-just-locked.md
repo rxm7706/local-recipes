@@ -173,7 +173,8 @@ Type / Effort / Deps: feature / M / S-100.2.
 - Epic: Epic 100, Stories 100.1–100.7.
 - Ledger key: `100-5-a-moved-pin-is-realized-not-just-locked`.
 - Ledger status at mint: `backlog`.
-- Deps: S-100.2. Re-base `baseline_revision` to the commit where 100.2 landed before dispatch. Story 100.4 waits
+- Deps: S-100.2. `marshal factory dispatch` stamps `baseline_revision` with the launch commit (Story 100.1's run did), so no
+  hand re-base is needed. Story 100.4 waits
   on this story for the probes.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."100"` (added with the mint; widened the same day for the
   register and the installer-owned trees).

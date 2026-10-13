@@ -6642,8 +6642,8 @@ realization register and `estate realize`, after 100.2), 100.4 (`estate verify` 
 register probe, after 100.2 and 100.5), 100.6 (the how-to and the pointers, after 100.3, 100.4 and 100.5), 100.7 (the
 first refresh through the path, after 100.6). The operator's rulings of the same session (Q3 confirmed, Q10–Q14) and
 the direction "realized, not just locked" are in the Epic's boundaries and in Stories 100.1, 100.4 and 100.5. Every story carries a tracked spec at mint, each
-`ready-for-dev` with `Deps:` honoured by the dispatcher; the dependent ones are re-based (`baseline_revision`) when the
-story they wait on has landed. `marshal-policy.toml` `[epic_surfaces]."100"` is added with the mint. Every Story
+`ready-for-dev` with `Deps:` honoured by the dispatcher, which stamps each spec's `baseline_revision` with its launch
+commit (corrected 2026-10-13 after Story 100.1's run: no hand re-base is needed). `marshal-policy.toml` `[epic_surfaces]."100"` is added with the mint. Every Story
 heading maps 1:1 to a `sprint-status-ledger.yaml` key (`100-1`..`100-7` and `epic-100` at `backlog`,
 `epic-100-retrospective` at `optional`, through a worktree-local Tier-3 feed seeded from the tracked twin and
 `sprint-ledger-sync --project steward`). No existing story, key or status changed; no blocked key flipped.
