@@ -30,7 +30,7 @@ development_status:
   100-2-one-command-moves-the-library-pins-on-the-policy-and-restores-what-the-upgrade-loses: done
   100-3-every-derived-surface-regenerates-from-the-lock-by-its-own-generator: done
   100-4-the-refreshed-estate-proves-itself-in-every-environment-and-every-station-suite: backlog
-  100-5-a-moved-pin-is-realized-not-just-locked: backlog
+  100-5-a-moved-pin-is-realized-not-just-locked: done
   100-6-the-hand-sequence-is-retired-by-one-how-to-and-one-pointer: backlog
   100-7-the-first-refresh-lands-through-the-path: backlog
   11-1-langflow-joins-as-a-pluggable-app: done
