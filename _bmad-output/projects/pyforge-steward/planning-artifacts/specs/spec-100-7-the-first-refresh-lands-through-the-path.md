@@ -2,7 +2,7 @@
 title: '100.7: The first refresh lands through the path'
 type: 'chore'
 created: '2026-10-13'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
 review_loop_iteration: 0
 followup_review_recommended: false
