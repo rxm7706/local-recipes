@@ -6030,7 +6030,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py": "79dbb82993a7ad896319440b98602ad794cf33b1",
    "src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py": "28ad6ed8175da028e163ccb79dd974d724f990f6",
    "src/shared/packages/pyforge-steward/tests/unit/test_estate.py": "febab032724c04d46757fa612e8969d164aedb97",
-   "src/shared/packages/pyforge-steward/tests/unit/test_estate_reconcile.py": "d657005d6207fc860bdb42c525282f4d596d4ce7",
+   "src/shared/packages/pyforge-steward/tests/unit/test_estate_reconcile.py": "0e49e38b0b0171e855575f54c929ad70c7e5e91d",
    "src/shared/packages/pyforge-steward/tests/unit/test_events_stream_consumer.py": "cb2830c099111b716e537a127c1c1ad21cd7196e",
    "src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py": "5edb343ced43add446a86beef742ef207e3b24f9",
    "src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py": "1517c0f4d64aa0867c90c5830d6e3c2de37a1f3a",
@@ -6109,7 +6109,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "77e1c570df258e193a54c48eb684c545590dbb48"
+  "memlog": "50e3398dca51511b7b66bd0ec93743fbd8f75e10"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
