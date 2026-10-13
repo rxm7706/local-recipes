@@ -666,6 +666,31 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   CAP. Owner: mason. → Epic 25 / Story 25.16, with Story 25.15 re-scoped and amendments to Stories 25.5, 25.7 and
   25.13, specced 2026-10-10.
 
+- **2026-10-12 — Ruled: a local pwntools carries the upstream unicorn fix, so pwndbg's pip check holds.** Two
+  operator rulings of 2026-10-12, at the follow-up to the REA recipes (PR #2168): "Fix the unicorn conflict", then, on
+  how, "Backport #2721 locally (Recommended)".
+
+  A live read (read-only GETs) shaped both:
+  - `recipes/pwndbg` (2026.09.15) requires `unicorn>=2.1.4,<3`. pwndbg raised that floor to 2.1.3 and then to 2.1.4
+    (pwndbg `d98f0b708`, #3292).
+  - pwntools 4.15.0, its latest release, requires `unicorn>=2.0.1, !=2.1.3, !=2.1.4`, because both versions segfault
+    when pwntools emulates a MIPS PLT (unicorn-engine/unicorn#2134). conda-forge's newest `python-unicorn` is 2.1.4, so
+    no version satisfies both, and `recipes/pwndbg` ships with `pip_check: false`.
+  - pwntools fixed it on its `stable` branch in `7e5e79d00f` (Gallopsled/pwntools#2721, 2026-04-27). The dependency
+    becomes `unicorn>=2.0.1`, and `pwnlib/elf/plt.py` raises an `OSError` for MIPS on 2.1.3 and 2.1.4 instead of
+    crashing. No release carries it yet.
+  - `recipes/pwndbg` lists conda-forge `unicorn`, which is the C library. The Python bindings (`import unicorn`) are
+    `python-unicorn`, which pwndbg gets only through pwntools.
+
+  **What it looks like when real:** `recipes/pwntools` mirrors `conda-forge/pwntools-feedstock`: its `meta.yaml`
+  verbatim, and a v1 `recipe.yaml` beside it that applies #2721 as a source patch at build number 1. `recipes/pwndbg`
+  depends on `python-unicorn` and runs `pip check` again. Both build green on linux-64. Any solve that sees the local
+  channel or SelfExplainML takes the local pwntools over conda-forge's until a pwntools release carries #2721; the
+  mirror then drops the patch.
+  **Constraints:** local only, with no feedstock PR unless the operator asks; through `conda-forge-expert`; the story
+  closes with a `retro(cfe):` commit. It is a fix: no flag and no new CAP. It binds CAP-18 (the local mirror as source
+  of truth) and CAP-23 (recipe lifecycle machinery). Owner: mason. → Epic 29 / Story 29.1, specced 2026-10-12.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

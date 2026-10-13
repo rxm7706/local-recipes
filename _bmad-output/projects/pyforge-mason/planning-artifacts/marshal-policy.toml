@@ -311,6 +311,21 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"29" = [  # pwndbg's pip check holds: a local pwntools carries the upstream unicorn fix (fix under spec-pyforge-mason CAP-18 and CAP-23), added 2026-10-12
+  # The station's planning and package paths (a declared entry replaces the default outright, and 29.1 changes no
+  # pixi file), plus what Story 29.1 touches: the new pwntools mirror, the pwndbg recipe, the story's closing
+  # retro(cfe) commit, and every Spec memlog a surface reconcile names (spec-fleet-stewardship governs recipes/**,
+  # spec-packaging-factory the CFE surface).
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  "recipes/pwntools/**",
+  "recipes/pwndbg/**",
+  ".claude/skills/conda-forge-expert/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",
