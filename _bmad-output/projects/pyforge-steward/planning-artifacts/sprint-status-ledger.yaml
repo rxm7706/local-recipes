@@ -26,7 +26,7 @@ development_status:
   10-3-one-image-both-engines: done
   10-4-the-bcrypt-pin-stops-blocking-3-14: done
   10-5-the-db-gpt-sidecar-image-docker-compose-wiring: done
-  100-1-the-pin-policy-is-declared-once-and-an-upgrade-is-judged-against-it: backlog
+  100-1-the-pin-policy-is-declared-once-and-an-upgrade-is-judged-against-it: done
   100-2-one-command-moves-the-library-pins-on-the-policy-and-restores-what-the-upgrade-loses: backlog
   100-3-every-derived-surface-regenerates-from-the-lock-by-its-own-generator: backlog
   100-4-the-refreshed-estate-proves-itself-in-every-environment-and-every-station-suite: backlog
@@ -387,7 +387,7 @@ development_status:
   epic-1-retrospective: optional
   epic-10: done
   epic-10-retrospective: optional
-  epic-100: backlog
+  epic-100: in-progress
   epic-100-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
