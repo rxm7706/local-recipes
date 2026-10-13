@@ -328,6 +328,31 @@ verify_commands = [
   ".claude/skills/conda-forge-expert/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"30" = [  # Recipes that import playwright depend on playwright-python (fix under spec-pyforge-mason CAP-18 and CAP-23), added 2026-10-12
+  # The station's planning and package paths, plus the 15 recipes Story 30.1 corrects and its retro(cfe) commits.
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  "recipes/botright/**",
+  "recipes/cuga/**",
+  "recipes/dataframe_image/**",
+  "recipes/install-playwright/**",
+  "recipes/markdown_convert/**",
+  "recipes/mcp-docs/**",
+  "recipes/md2pdf-mermaid/**",
+  "recipes/mermaid-cli/**",
+  "recipes/open-webui/**",
+  "recipes/openhands-ai/**",
+  "recipes/playwright-mcp/**",
+  "recipes/playwright-mcp-server/**",
+  "recipes/pytest-playwright-asyncio/**",
+  "recipes/universal-document-mcp/**",
+  "recipes/xync-client/**",
+  ".claude/skills/conda-forge-expert/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",

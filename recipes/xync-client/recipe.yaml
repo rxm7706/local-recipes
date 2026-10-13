@@ -39,7 +39,7 @@ requirements:
     - pypng
     - kurigram
     - payeer-api
-    - playwright
+    - playwright-python
     - python-dotenv
     - python-okx
     - pyrogram-client
@@ -88,14 +88,17 @@ extra:
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-16T19:55:46Z
+  cfe-forge-blocker-list:
+    - "no license file copied, and license: MIT is unverified: the sdist ships no LICENSE and PyPI carries no license metadata or classifier"
+    - "summary and description are REPLACE_SUMMARY / REPLACE_DESCRIPTION placeholders (G90)"
+    - "run deps asynchuobi, blackboxprotobuf, bybit-p2p, kurigram, payeer-api, pybit, pyrogram-client, python-okx, tgcrypto, xn-client and xync-schema are not on conda-forge"
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T19:55:46Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-13T04:35:19Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:

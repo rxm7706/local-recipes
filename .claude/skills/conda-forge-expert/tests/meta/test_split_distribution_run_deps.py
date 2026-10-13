@@ -8,10 +8,9 @@ relied on pwntools).
 
 The pairs come from `pypi_conda_mappings/custom.yaml`. An entry whose `reason` starts with
 ``G107:`` maps a PyPI name to bindings under a different conda name, and the PyPI name, as a
-conda name, is the wrong half. Only entries marked `lint_wrong_half: true` are linted: the
-wrong half can be a legitimate dependency in its own right. `playwright` is the Node CLI
-that tools shelling out to it need, and `playwright-python` itself depends on it, so that
-pair is declared but not linted.
+conda name, is the wrong half. Only entries marked `lint_wrong_half: true` are linted. The
+bindings' own recipe is exempt: `playwright-python` depends on the `playwright` CLI by
+design (mason Story 30.1 moved the 15 recipes that listed the CLI alone to the bindings).
 """
 from __future__ import annotations
 
@@ -55,15 +54,22 @@ def _dep_names(items) -> list[str]:
     return names
 
 
-def _noarch_python_run_lists(recipe: dict) -> list[list[str]]:
+def _package_name(block: dict, fallback: str) -> str:
+    name = str((block.get("package") or {}).get("name") or fallback)
+    return "" if "${{" in name else name.lower()
+
+
+def _noarch_python_run_lists(recipe: dict, recipe_dir: str) -> list[tuple[str, list[str]]]:
+    """[(package name, run dep names)] for every noarch:python block of a recipe."""
     blocks = [recipe, *[o for o in recipe.get("outputs") or [] if isinstance(o, dict)]]
     top_noarch = (recipe.get("build") or {}).get("noarch")
+    top_name = _package_name(recipe, recipe_dir) or recipe_dir.lower()
     lists = []
     for block in blocks:
         noarch = (block.get("build") or {}).get("noarch", top_noarch)
         run = (block.get("requirements") or {}).get("run")
         if noarch == "python" and run:
-            lists.append(_dep_names(run))
+            lists.append((_package_name(block, top_name) or top_name, _dep_names(run)))
     return lists
 
 
@@ -71,7 +77,7 @@ def test_g107_pairs_are_declared() -> None:
     every = _split_pairs(linted_only=False)
     assert every.get("unicorn") == "python-unicorn", every
     assert every.get("playwright") == "playwright-python", every
-    assert _split_pairs() == {"unicorn": "python-unicorn"}
+    assert _split_pairs() == {"unicorn": "python-unicorn", "playwright": "playwright-python"}
 
 
 def test_no_noarch_python_recipe_depends_on_the_wrong_half() -> None:
@@ -84,8 +90,10 @@ def test_no_noarch_python_recipe_depends_on_the_wrong_half() -> None:
             continue  # the parse audit owns unparseable recipes
         if not isinstance(recipe, dict):
             continue
-        for names in _noarch_python_run_lists(recipe):
+        for package, names in _noarch_python_run_lists(recipe, path.parent.name):
             for wrong, bindings in pairs.items():
+                if package == bindings:
+                    continue  # the bindings' own recipe depends on the wrong half by design
                 if wrong in names and bindings not in names:
                     offenders.append(f"{path.relative_to(_REPO_ROOT)}: run lists `{wrong}`, not `{bindings}`")
     assert not offenders, "G107 split-distribution wrong half in run deps:\n" + "\n".join(offenders)

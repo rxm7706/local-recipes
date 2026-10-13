@@ -26,7 +26,7 @@ requirements:
   run:
     - python >=${{ python_min }}
     - pytest <10.0.0,>=6.2.4
-    - playwright >=1.18
+    - playwright-python >=1.18
     - pytest-base-url <3.0.0,>=1.0.0
     - python-slugify <9.0.0,>=6.0.0
     - pytest-asyncio >=0.24.0
@@ -70,13 +70,13 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-16T20:20:08Z
+  cfe-last-checked: 2026-10-13T04:46:00Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T20:20:08Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-13T04:34:59Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:

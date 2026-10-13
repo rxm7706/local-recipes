@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.100.0
+version: 8.100.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -563,7 +563,9 @@ The `# CFE comments` block mirrors the recipe's structure (location keys `build`
 
 `cfe-local-build-status` value semantics:
 
-- **`success`** — build EXIT=0 **and** the import test **and** `pip_check` all pass; the artifact landed in `noarch/` (or `linux-64/` for arch builds). The recipe is fully verified locally.
+- **`success`** — build EXIT=0 **and** the import test **and** `pip_check` all pass; the artifact landed in `noarch/` (or `linux-64/` for arch builds). The recipe is fully verified locally. With a
+  recorded waiver (`cfe-pip-check: false:<reason>`), `success` means build and import pass, and the waiver carries the
+  pip-check gap.
 - **`build-clean-test-blocked`** — the **build phase was clean** (the `.conda` was written) but the **test-env solve failed** on a missing / local-only / not-yet-on-conda-forge dependency (rattler-build quarantines the artifact to `broken/`). The recipe itself built fine; the block is a **prerequisite gap**, not a recipe defect. (Common in the langflow-closure class of multi-layer recursion.)
 - **`failed`** — the **build phase itself** failed (compile / packaging error). The recipe is not yet sound.
 - **`not-attempted`** — recipe authored but not built yet. This is the **default** the recipe-generator emits.
@@ -4200,8 +4202,21 @@ well. Two resolvers read mapping data, and both now honour it:
   entries into `[]`, and every override drops silently. `name_resolver.py` warns on stderr instead.
 
 `tests/meta/test_split_distribution_run_deps.py` reds a `noarch: python` recipe that lists the wrong half of a pair
-marked `lint_wrong_half: true` in `custom.yaml` (unicorn). The playwright pair is declared but not linted: the Node
-CLI is a legitimate dependency for tools that shell out to it.
+marked `lint_wrong_half: true` in `custom.yaml` (unicorn and playwright). The bindings' own recipe is exempt:
+`playwright-python` depends on the `playwright` CLI by design.
+
+**How the wrong half spread (mason Story 30.1).** `recipe-generator.py` resolves every PyPI requirement through
+`name_resolver.resolve_name`, and the resolver's cache maps `playwright → playwright`. So every generated recipe whose
+upstream requires PyPI `playwright` got the Node CLI. Sixteen recipes carried it; fifteen of them import the bindings,
+and none could pass `pip check`. Story 30.1 moved all fifteen to `playwright-python`. v8.100.0's tier-0 `custom.yaml`
+lookup stops new ones from the generator, and the check reds any that slip through. The cache itself still answers
+`playwright → playwright`: neither of its writers (`mapping_manager.py` and atlas's `export_pypi_conda_map` node)
+applies `custom.yaml`, so `mapping_gap.py` and atlas, which read the cache directly, still see the CLI. When the check flags a recipe, read the upstream
+`requires_dist`. If it names the PyPI distribution, the recipe needs the bindings.
+
+One hazard the check cannot see: conda-forge `playwright-python` depends on an unpinned `playwright`. An exact
+bindings pin (`==1.58.0`) therefore installs the newest driver, and neither the import test nor `pip check` exercises
+that skew.
 
 ---
 
@@ -4261,6 +4276,11 @@ curl -s https://api.github.com/repos/<org>/<repo>/compare/v<X.Y.Z>...<head-sha> 
 **Why**: `conda_recipe_v1_linter.lint_usage_of_selectors_for_noarch` treats **every** `if:` in `host`/`run` as bad unless `noarch_platforms` is set in the recipe's `conda-forge.yml`; with it set, `win`/`linux`/`osx`/`unix` nouns are allowed. The sibling passed only because its pre-seed `recipes/<name>/conda-forge.yml` (kept tracked, local-only) carries `noarch_platforms: [linux_64, win_64]`. staged-recipes has the same dependency: without `noarch_platforms` the `__win` variant is never built at all, so the yml is functionally required, not lint appeasement. Live case: `recipes/bmad-eval-quality` (2026-09-05).
 
 **Rule**: a noarch recipe with platform-conditional host/run deps ships `recipes/<name>/conda-forge.yml` with `noarch_platforms:` listing one subdir per selector branch (copy `recipes/bmad-method/conda-forge.yml`). This is the one case where `noarch_platforms` is not waste — a pure-Python noarch recipe with no selectors still must NOT carry it (the default `[linux_64]` is right there).
+
+Each selector branch also carries its virtual-package guard (`if: unix` → `__unix`, `if: win` → `__win`), as
+`recipes/bmad-method` does. Without the guards, the two noarch builds differ only by the win-only extras, and a solver
+cannot tell which build belongs on which platform: Windows can get the build without them. Live case:
+`recipes/openhands-ai` (mason Story 30.1) carried `if: win` → `pythonnet` and `noarch_platforms`, but no guards.
 
 ### G112. npm CLI packaged from a GitHub commit archive (no `dist/`): build with devDependencies, then reinstall production deps CLEAN — never `npm prune`
 
@@ -4532,6 +4552,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.100.1** (Oct 13, 2026) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted, and the generator path that spread it is named (PATCH).** See `CHANGELOG.md`.
 - **v8.100.0** (Oct 12, 2026) — **mason Story 29.1 Rule-2 retro: G122 (backport an unreleased upstream fix into a local mirror when two pins are disjoint), a second G107 case (`unicorn` vs `python-unicorn`), a G84 refinement, mapping overrides moved to `custom.yaml`, and the python_min test's stale fallback floor (MINOR).** See `CHANGELOG.md`.
 - **v8.99.2** (Oct 10, 2026) — **mason Story 25.4 retro: hand-stamp CFE block then rerun `--repair`; 14/14 repaired; build record for leftovers (PATCH).** See `CHANGELOG.md`.
 - **v8.99.1** (Oct 9, 2026) — **mason Story 25.2 closing retro: reading a `refresh-wave` report, the no-CFE-block cause behind every Wave 0 leftover, and a G93 addendum (PATCH).** See `CHANGELOG.md`.

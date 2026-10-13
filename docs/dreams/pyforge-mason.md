@@ -691,6 +691,28 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   closes with a `retro(cfe):` commit. It is a fix: no flag and no new CAP. It binds CAP-18 (the local mirror as source
   of truth) and CAP-23 (recipe lifecycle machinery). Owner: mason. → Epic 29 / Story 29.1, specced 2026-10-12.
 
+- **2026-10-12 (later) — Ruled: the recipes that import playwright depend on its bindings.** Operator ask of
+  2026-10-12, verbatim: "Do this task here: Audit 16 recipes that depend on conda playwright". Story 29.1's G107 check
+  (`test_split_distribution_run_deps.py`) declares the `playwright` / `playwright-python` pair but does not lint it.
+  Run unlinted, it flags 16 `noarch: python` recipes that list conda `playwright` and not `playwright-python`.
+
+  A live read (read-only GETs) settled each one:
+  - conda-forge `playwright` is the Node CLI and browser driver, with no Python module. `playwright-python` is the
+    bindings (`import playwright`, PyPI distribution `playwright`), and it depends on the CLI.
+  - Fifteen of the 16 upstreams list PyPI `playwright` in `requires_dist`, so each imports the bindings. The sixteenth,
+    `recipes/playwright-python`, is the bindings recipe itself, and its dependency on the CLI is correct.
+  - Every pin those 15 carry (`>=1.18` to `>=1.59.0`, plus `==1.49.1` and `==1.58.0`) has a `playwright-python` build on conda-forge (1.44.0 to
+    1.62.0).
+  - Fourteen of the 15 recipes have never been built locally (12 `cfe-local-build-status: not-attempted`, 2 with no
+    CFE block).
+
+  **What it looks like when real:** each of the 15 recipes lists `playwright-python` with its upstream spec in place of
+  `playwright`. The G107 check lints the pair, exempting only the bindings' own recipe. Each recipe whose other
+  dependencies resolve builds green on linux-64 with `pip check`; any that cannot build records the blocker in its CFE
+  block.
+  **Constraints:** local only, through `conda-forge-expert`, with a `retro(cfe):` commit. It is a fix: no flag and no
+  new CAP. It binds CAP-18 and CAP-23, as Story 29.1 does. Owner: mason. → Epic 30 / Story 30.1, specced 2026-10-12.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

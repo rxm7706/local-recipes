@@ -29,6 +29,8 @@
 playwright:
   conda_name: playwright-python
   import_name: playwright
+  # Linted, exempting the bindings' own recipe (playwright-python depends on the CLI).
+  lint_wrong_half: true
   reason: "G107: conda-forge playwright is the Node CLI/driver with no Python module; the PyPI bindings are conda playwright-python (verified 2026-07-29)."
 unicorn:
   conda_name: python-unicorn

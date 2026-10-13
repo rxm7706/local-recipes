@@ -16,7 +16,7 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - universal-document-mcp=universal_document_mcp.server:main
@@ -32,7 +32,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - mcp >=1.0.0
-    - playwright >=1.40.0
+    - playwright-python >=1.40.0
     - markdown >=3.5.0
     - requests >=2.31.0
     - aiomqtt >=0.13.0 #aiomqtt replaces asyncio-mqtt
@@ -66,3 +66,39 @@ extra:
   recipe-maintainers:
     - rxm7706
 
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: universal-document-mcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: universal-document-mcp
+  cfe-purls:
+    - pkg:conda/universal-document-mcp@${{ version }}?channel=conda-forge
+    - pkg:pypi/universal-document-mcp@${{ version }}
+  cfe-upstream-repo: https://github.com/augment-ai/universal-document-mcp
+  cfe-upstream-homepage: https://github.com/augment-ai/universal-document-mcp
+  cfe-import-names: [universal_document_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "upstream repo github.com/augment-ai/universal-document-mcp (every PyPI project URL) returns 404"
+    - "metadata generation fails: setuptools flat-layout auto-discovery finds four top-level packages (static, config, templates, universal_document_mcp); needs a source patch naming the package"
+  cfe-last-checked: 2026-10-13T04:46:00Z
+  cfe-generated-by-version: 8.100.0
+  cfe-generated-at-datetime: 2026-10-13T04:46:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-10-13T04:43:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# build:
+#  script:
+#    # pip install now names the source dir (`.`); without it pip had no requirement to install.
+# requirements:
+#  run:
+#    # playwright-python (the bindings), not conda playwright (the Node CLI): upstream requires PyPI playwright (G107).
+####

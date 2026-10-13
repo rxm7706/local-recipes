@@ -72,7 +72,7 @@ requirements:
     - pexpect ==4.9.0
     - pg8000 ==1.31.5
     - pillow ==12.2.0
-    - playwright ==1.58.0
+    - playwright-python ==1.58.0
     - poetry ==2.3.4
     - prompt-toolkit ==3.0.52
     - protobuf ==5.29.6
@@ -109,8 +109,12 @@ requirements:
     - uvicorn
     - whatthepatch ==1.0.7
     - zope-interface ==7.2
+    - if: unix
+      then:
+        - __unix
     - if: win
       then:
+        - __win
         - pythonnet
 
 tests:
@@ -152,14 +156,15 @@ extra:
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-08-16T20:25:32Z
+  cfe-forge-blocker-list:
+    - "run deps browsergym-core, dirhash, lmnr, openhands-agent-server, openhands-sdk and openhands-tools are not on conda-forge; memory-profiler is conda-forge memory_profiler and zope-interface is conda-forge zope.interface (G10)"
+  cfe-last-checked: 2026-10-13T05:05:55Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-16T20:25:32Z
-  cfe-local-build-status: not-attempted
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
-  cfe-local-build-tool: none
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-10-13T05:05:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
