@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: b80fcccb30f2195d
-story_count: 451
-test_file_count: 261
+source_fingerprint: f3f6e589b7aa4827
+story_count: 453
+test_file_count: 266
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 451
-- **Epics parsed:** 95
-- **Test files inventoried:** 261 under `src/shared/packages/pyforge-marshal/tests/`
+- **Stories parsed:** 453
+- **Epics parsed:** 97
+- **Test files inventoried:** 266 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b80fcccb30f2195d`
+- **Source fingerprint:** `f3f6e589b7aa4827`
 
 ## Risk Assessment
 
@@ -117,6 +117,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 95: Pre-verify ruff covers the platform and the portal packages
 - Epic 96: A story spec says each frontmatter fact once
 - Epic 97: A seed-adopted repo edits its own files and keeps an empty plan
+- Epic 98: The local preflight judges marshal's tests the way CI does
+- Epic 99: Seed check stops waiting on its probes one at a time
 
 ### Low-risk epics
 
@@ -145,6 +147,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/integration/test_performance_gates.py` | integration | none observed |
 | `src/shared/packages/pyforge-marshal/tests/integration/test_seed_egress_counter.py` | integration | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_27_2_portal_loop_homes.py` | meta | 27.2 |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_accept_writes_only_through_the_state_store.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_ad11_write_boundary.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_ad19_no_adapter_branch.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_ad23_inline_key_format_guard.py` | meta | none observed |
@@ -191,7 +194,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_remote_refs_are_full_refnames.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_rendered_policy_untracked.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_sc08_never_write_update_proof.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_seed_accept_remedy_surfaces.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_seed_layer_import_rules.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_seed_manifest_scope_invariants.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_seed_no_bare_exception.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_skf_domain_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_skill_projection_manifest_untracked.py` | meta | none observed |
@@ -358,8 +363,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_markers.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_regions_parse.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_scaffold.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_state_acceptances.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_state_store.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_templates_manifest.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_accept.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_adopt.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_check.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_seed_verbs_explain.py` | unit | none observed |
@@ -853,6 +860,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 96.1 | A story spec carries each frontmatter key once | none observed |
 | 97.1 | Seed accept records an intended edit, and repo-owned files leave the guard | none observed |
 | 97.2 | A seed update dry run on an adopted repo plans only real changes | none observed |
+| 98.1 | Two marshal tests stop failing every local preflight | none observed |
+| 99.1 | Seed check probes its tools at once and says when a probe timed out | none observed |
 
 ## Quality Gates
 

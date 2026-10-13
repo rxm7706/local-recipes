@@ -490,6 +490,19 @@ verify_commands = [
   "scripts/lint_types.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"40" = [  # the docs site and the herald pages share one menu (feature under CAP-58, FR-8.6, AD-21 amended; flag-exempt
+  # docs-only; Story 40.1), added 2026-10-12. The default surface, restated because a declared entry replaces it outright,
+  # plus the two sites the menu spans: docsite/ (site.yml, the shell template, build.py, the Pages assembler and its
+  # check) and docs-site/ (the sidebar generator and its generated JSON, the Starlight config and a Header override),
+  # their workflows' paths, and every Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docsite/**",
+  "docs-site/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

@@ -86,6 +86,27 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-12 (the speed budget under preflight load)** — **Found: `doctor check`'s five-second budget test fails
+  only when other lanes share the machine.** `tests/unit/test_check_speed_budget.py` runs `doctor check` on the live
+  repo root: one warm-up, then five timed runs judged by their median wall time. In local `pr-preflight` on 2026-10-12
+  it read 7.26 s, 5.19 s and 5.76 s on three branches. Alone it passes. **Measured at `c447946b3f`:**
+  - `doctor check` spends 2.75 s of CPU against 2.73 s of wall time on an idle machine. It is single-threaded and
+    CPU-bound, and only 0.4 s of that is child processes (`deptry --version`, `git ls-files`, `osv-scanner
+    --version`).
+  - About 95% is doctor's own `env_hygiene` scan: discovery 0.33 s over 2720 `.py` files, then 2.24 s to read them,
+    parse the 178 that mention `environ` or `getenv`, and walk their ASTs. The cost is spread across many files; the
+    largest single file is 0.15 s.
+  - So the budget does measure doctor's own work. What fails is the clock: about twenty preflight lanes on sixteen
+    cores stretch a CPU-bound run's wall time 2-2.7x.
+  - Separately, the work is growing. The same code costs 2.31 s of CPU on the 2026-10-04 tree and 2.75 s on today's,
+    with tracked `.py` files up from 2562 to 2801.
+  **What it looks like when fixed:** the test judges the five-second budget on the CPU the run spends (self plus
+  reaped children). That equals idle wall time for this run and does not stretch with other lanes' load. The
+  warm-up, the median of five, the non-vacuous findings guard and the 5.0 s number all stay. The scan's growth with
+  the repo is a deferral row carrying the measurement, so the margin is watched, not assumed. **Constraints:** a
+  fix under CAP-1 (the fast pre-flight) and NFR-4 (the speed budget), no CAP, no flag, test-only. The budget is not
+  raised, and the test is not skipped, marked `slow` or moved out of its lane. Operator ask, 2026-10-12: "yes, chain
+  the doctor budget test fix too". Owner `spec-pyforge-doctor`. → Epic 44 / Story 44.1, specced 2026-10-12.
 - **2026-10-12 (ci pause drift)** — **Found: a surface can be off for days with no switch flipped, and no Doctor
   source notices.** `dashboard.yml` run 37447093993 (2026-10-06 10:02) parked its `deploy` job in `waiting` on the
   `github-pages` environment (zero reviewers, wait timer 0, `current_user_can_approve=false`); `concurrency: { group:

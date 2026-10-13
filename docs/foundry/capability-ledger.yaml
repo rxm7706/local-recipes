@@ -6031,3 +6031,9 @@ capabilities:
     heading: "a deck exports as a native, editable .pptx through pptxgenjs-plus"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-58
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the docs site and the herald pages share one menu"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

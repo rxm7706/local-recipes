@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-11"   # RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-58 (Epic 40): FR-8.6 added to Feature Group 8 (the documentation site). See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -1129,6 +1129,14 @@ dossier and the Kedro-Viz dashboard ride in the same artifact.
 - `pr-preflight` runs `pages-check` (in place of `site-check`, which it subsumes) only when a diff touches `docsite-check.yml`'s own `paths`
 - The selection is read from the workflow file by steward Story 71.2 (`spec-pyforge-steward:CAP-159`); no second path list exists. A diff touching only `src/shared/packages/pyforge-marshal/` leaves it unselected, and one touching `docs/how-to/x.md` selects it (operator ruling 2026-09-27, D8). Story 27.5, whose ledger key is `blocked` until 71.2 lands; the operator flips it.
 
+**FR-8.6: The docs site and the herald pages share one menu** ← CAP-58 *(added 2026-10-12)*
+- The docs left menu lists the four quadrants in `docs/map.yaml` order, then a first-level **Herald** group: Overview,
+  Dossier, Infographics, Decks, Kedro-Viz.
+- Every docs page and every herald page carries one top menu: Docs, Overview, Dossier, Infographics, Decks, Kedro-Viz.
+- Both menus come from herald's one navigation list (`docsite/content/site.yml`); adding an entry there adds it to both.
+- Every menu link resolves under the configured base path on every host (FR-10.5), and `pages-check` fails a link that
+  does not resolve. No page moves. Story 40.1.
+
 **ONE FR space now Feature Groups 1–8** (FR-9.1 is the next free id).
 
 **Content changed:** this section only; no FR renumbered or removed. The architecture gains AD-21
@@ -1455,3 +1463,19 @@ Herald code moved on 2026-10-11: Story 19.2 (one real ship through the platform 
 `pyproject.toml` touched; PR #2128) landed, and Story 37.1 (the herald portal loads without herald and says why) was
 minted from DW-herald-19-2-1 (PR #2126). Each lands on the capabilities and decisions already recorded here; no FR, CAP
 or AD is added, amended or removed. The 2026-10-11 herald retrospective records what the day taught.
+
+## Currency reconciliation — 2026-10-12
+
+*RE-STAMPED: chain-currency cascade (spec → PRD) for CAP-58 (Epic 40: the docs site and the herald pages share one menu).*
+
+Since the unified Pages artifact (FR-8.2, 2026-10-08) the root is the docs shelf and herald's pages live under `/herald/`,
+but the docs home linked none of them. The operator ruled on 2026-10-12 for a Herald group in the docs left menu and one
+top menu shared by docs and herald, with a Docs link back.
+
+### The FR space
+
+FR-8.6 joins Feature Group 8, the documentation site, because it is that site's navigation. **ONE FR space still Feature
+Groups 1–10** (FR-11.1 is the next free id).
+
+**Content changed:** FR-8.6 and this section. No FR renumbered or removed. The architecture amends AD-21 (the shared menu
+crosses path prefixes without moving an owner). `updated:` bumped.

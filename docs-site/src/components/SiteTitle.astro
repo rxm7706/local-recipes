@@ -1,0 +1,64 @@
+---
+/**
+ * Story 40.1 (spec-pyforge-herald CAP-58): the site title plus the top menu shared by the docs
+ * and herald pages. The menu is herald's one navigation list (docsite/content/site.yml), turned
+ * into site-root paths by scripts/sidebar_from_map.py; every href is prefixed with the base path
+ * of the host that builds the artifact (CAP-56), never a hardcoded one.
+ */
+import Default from '@astrojs/starlight/components/SiteTitle.astro';
+import topnav from '../topnav.generated.json';
+
+const base = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+---
+
+<div class="pf-title-and-menu sl-flex">
+  <Default />
+  <nav class="pf-top-menu" aria-label="Site">
+    <ul>
+      {
+        topnav.map((item) => (
+          <li>
+            <a data-pf-menu-link href={`${base}${item.path}`}>
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</div>
+
+<style>
+  .pf-title-and-menu {
+    align-items: center;
+    gap: 1.5rem;
+    min-width: 0;
+  }
+  .pf-top-menu {
+    display: none;
+  }
+  .pf-top-menu ul {
+    display: flex;
+    gap: 1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .pf-top-menu a {
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-sm);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .pf-top-menu a:hover {
+    color: var(--sl-color-white);
+  }
+  /* On narrow screens the Herald sidebar group carries the same links. */
+  @media (min-width: 72rem) {
+    .pf-top-menu {
+      display: block;
+    }
+  }
+</style>
