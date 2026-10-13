@@ -148,9 +148,10 @@ Type / Effort / Deps: feature / M / none.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
-- `pixi run --frozen -e pyforge-guild ci-surface-gates-check` — expected: exit 0 (AC1, AC5).
 
 **Run before the push (not dispatch gates):**
+- `pixi run --frozen -e pyforge-guild ci-surface-gates-check` — expected: exit 0 (AC1, AC5). This story creates the
+  task, so it is never a launch-bound gate: `verify_commands` holds only the station suite (MRS-GATE-011).
 - `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_ci_surface_gates.py -q` — expected: pass (AC2–AC4).
 - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — expected: pass (the CI `scripts-suite` twin).
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: exit 0 (AC5).
@@ -164,3 +165,7 @@ Type / Effort / Deps: feature / M / none.
 - 2026-10-12: minted with CAP-166 / FR-39 and Epic 99 from the Dream entry of that date and the operator's rulings
   Q1–Q8. `type: feature`, `flag-exempt: detector-or-gate`. The `disabled_manually` rule runs only in `--live` (memlog
   decision of 2026-10-12: it needs the Actions API, so it never joins the offline `detectors-ci` leg).
+- 2026-10-13: `ci-surface-gates-check` moved from the dispatch gates (`**Commands:**`) to *Run before the push*.
+  `marshal factory dispatch` refused the launch with MRS-GATE-011: the command is not among steward's
+  `verify_commands`, and it cannot be, because this story creates the task. The check still runs before the push, and
+  AC1 and AC5 are unchanged.
