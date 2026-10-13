@@ -201,6 +201,339 @@ holds:
   authority: CAP-5 pixi-version-check
   owner: pyforge-steward
   until: estate refresh policy
+- package: asgiref
+  hold: cap
+  cap: <4.0
+  features:
+  - platform-ci-test
+  - platform-dev
+  - pyforge-steward
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: cachebox
+  hold: cap
+  cap: <6
+  features:
+  - platform-ci-test
+  - python-agent-platform
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: channels
+  hold: cap
+  cap: <5.0
+  features:
+  - local-recipes
+  - platform-ci-test
+  - platform-dev
+  - pyforge-steward
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: channels_redis
+  hold: cap
+  cap: <5.0
+  features:
+  - platform-ci-test
+  - platform-dev
+  - pyforge-steward
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: coderedcms
+  hold: cap
+  cap: <7.0
+  features:
+  - local-recipes
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: conda-forge-ci-setup
+  hold: cap
+  cap: <5.0
+  features:
+  - build
+  - local-recipes
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: conda-smithy
+  hold: cap
+  cap: <4
+  features:
+  - conda-smithy
+  - local-recipes
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: daphne
+  hold: cap
+  cap: <5.0
+  features:
+  - local-recipes
+  - platform-ci-test
+  - platform-dev
+  - pyforge-steward
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: django
+  hold: cap
+  cap: <6
+  features:
+  - mcp-host
+  - platform-ci-test
+  - pyforge-steward
+  - pyforge-testing-kit
+  - python-agent-platform
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: django
+  hold: cap
+  cap: <6.0
+  features:
+  - local-recipes
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: git-pkgs
+  hold: cap
+  cap: <0.22
+  features:
+  - pyforge-atlas.target.linux-64
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: libpq
+  hold: cap
+  cap: <18
+  features:
+  - dbgpt-sidecar
+  - local-recipes
+  - mcp-host
+  - platform-ci-test
+  - pyforge-scribe
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: nodejs
+  hold: cap
+  cap: <27.0
+  features:
+  - pyforge-herald
+  - python
+  - site
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: pgvector
+  hold: cap
+  cap: <0.8.2
+  features:
+  - scribe-pg
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: postgresql
+  hold: cap
+  cap: <18
+  features:
+  - bmad-suite-full
+  - bmad-ui
+  - platform-dev
+  - python-agent-platform
+  - scribe-pg
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: psycopg
+  hold: cap
+  cap: <3.2.11
+  features:
+  - mcp-host
+  - platform-ci-test
+  - pyforge-scribe
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: psycopg2
+  hold: cap
+  cap: <2.9.11
+  features:
+  - dbgpt-sidecar
+  - local-recipes
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: pyjwt
+  hold: cap
+  cap: <3
+  features:
+  - mcp-host
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: rattler-build-conda-compat
+  hold: cap
+  cap: <2.0.0a0
+  features:
+  - build
+  - local-recipes
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: transformers
+  hold: cap
+  cap: <6.0
+  features:
+  - pyforge-guild
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: wagtail
+  hold: cap
+  cap: <8.0
+  features:
+  - local-recipes
+  - platform-ci-test
+  - python-agent-platform
+  reason: Cap preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: liquibase-postgresql
+  hold: channel
+  channel: conda-forge
+  features:
+  - python-agent-platform
+  reason: Inline channel table preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+  cap: <42"
+- package: opengrep
+  hold: channel
+  channel: SelfExplainML
+  features:
+  - pyforge-warden.target.linux-64
+  reason: Inline channel table preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+  cap: <1.31"
+- package: pptxgenjs-plus
+  hold: channel
+  channel: SelfExplainML
+  features:
+  - pyforge-guild
+  - pyforge-herald
+  reason: Inline channel table preserved across pixi upgrade
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - python-agent-platform
+  reason: Exact pin (python-agent-platform)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - dbgpt-sidecar
+  reason: Exact pin (dbgpt-sidecar)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - mcp-host
+  reason: Exact pin (mcp-host)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - platform-ci-test
+  reason: Exact pin (platform-ci-test)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: pptxgenjs-plus
+  hold: exact
+  exact: 4.2.1.*
+  features:
+  - pyforge-guild
+  reason: Exact pin (pyforge-guild)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - local-recipes
+  reason: Exact pin (local-recipes)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - vuln-db
+  reason: Exact pin (vuln-db)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: python
+  hold: exact
+  exact: 3.14.*
+  features:
+  - platform-object-storage
+  reason: Exact pin (platform-object-storage)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
+- package: pptxgenjs-plus
+  hold: exact
+  exact: 4.2.1.*
+  features:
+  - pyforge-herald
+  reason: Exact pin (pyforge-herald)
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: unknown
 - package: python
   hold: exact
   exact: 3.14.*

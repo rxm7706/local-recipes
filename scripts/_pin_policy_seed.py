@@ -49,8 +49,9 @@ POINTER = (
 def main() -> None:
     manifest = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
     holds: list[dict] = []
-    seen_cap: set[tuple[str, str]] = set()
-    seen_channel: set[tuple[str, str]] = set()
+    cap_feats: dict[tuple[str, str], set[str]] = {}
+    channel_feats: dict[tuple[str, str], tuple[dict, set[str]]] = {}
+    exact_rows: list[dict] = []
 
     for pkg, (reason, authority, owner) in NEVER_MOVE.items():
         holds.append(
@@ -66,50 +67,28 @@ def main() -> None:
         )
 
     for d in iter_dependency_decls(manifest):
-        if d.has_cap:
-            cap = _cap_clause(d.spec)
-            key = (d.package, cap or "")
-            if key in seen_cap:
-                continue
-            seen_cap.add(key)
-            holds.append(
-                {
-                    "package": d.package,
-                    "hold": "cap",
-                    "cap": cap or "<unknown>",
-                    "features": [d.feature],
-                    "reason": f"Cap preserved across pixi upgrade ({d.feature})",
-                    "authority": "spec-100-1",
-                    "owner": "pyforge-steward",
-                    "until": "unknown",
-                }
-            )
+        if d.has_cap and not d.has_channel:
+            cap = _cap_clause(d.spec) or "<unknown>"
+            cap_feats.setdefault((d.package, cap), set()).add(d.feature)
         if d.has_channel:
-            ch = _channel_name(d.raw)
-            key = (d.package, ch or "")
-            if key in seen_channel:
-                continue
-            seen_channel.add(key)
-            row = {
-                "package": d.package,
-                "hold": "channel",
-                "channel": ch,
-                "features": [d.feature],
-                "reason": f"Inline channel table ({d.feature})",
-                "authority": "spec-100-1",
-                "owner": "pyforge-steward",
-                "until": "unknown",
-            }
+            ch = _channel_name(d.raw) or ""
             cap = _cap_clause(d.spec)
+            key = (d.package, ch)
+            row_template = {"channel": ch}
             if cap:
-                row["cap"] = cap
-            holds.append(row)
+                row_template["cap"] = cap
+            if key not in channel_feats:
+                channel_feats[key] = (row_template, set())
+            channel_feats[key][1].add(d.feature)
         if d.has_exact:
-            holds.append(
+            ver = d.spec
+            if isinstance(d.raw, dict) and "version" in d.raw:
+                ver = str(d.raw["version"])
+            exact_rows.append(
                 {
                     "package": d.package,
                     "hold": "exact",
-                    "exact": d.spec,
+                    "exact": ver,
                     "features": [d.feature],
                     "reason": f"Exact pin ({d.feature})",
                     "authority": "spec-100-1",
@@ -117,6 +96,35 @@ def main() -> None:
                     "until": "unknown",
                 }
             )
+
+    for (pkg, cap), feats in sorted(cap_feats.items()):
+        holds.append(
+            {
+                "package": pkg,
+                "hold": "cap",
+                "cap": cap,
+                "features": sorted(feats),
+                "reason": "Cap preserved across pixi upgrade",
+                "authority": "spec-100-1",
+                "owner": "pyforge-steward",
+                "until": "unknown",
+            }
+        )
+    for (pkg, ch), (template, feats) in sorted(channel_feats.items()):
+        row = {
+            "package": pkg,
+            "hold": "channel",
+            "channel": template["channel"],
+            "features": sorted(feats),
+            "reason": "Inline channel table preserved across pixi upgrade",
+            "authority": "spec-100-1",
+            "owner": "pyforge-steward",
+            "until": "unknown",
+        }
+        if "cap" in template:
+            row["cap"] = template["cap"]
+        holds.append(row)
+    holds.extend(exact_rows)
 
     policy = {
         "version": 1,

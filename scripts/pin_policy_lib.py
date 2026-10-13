@@ -105,7 +105,7 @@ def iter_dependency_decls(manifest: dict[str, Any]) -> Iterator[DepDecl]:
                         has_exact=has_exact,
                     )
             elif isinstance(value, dict):
-                walk(value, here)
+                yield from walk(value, here)
 
     yield from walk(manifest, [])
 
