@@ -2,7 +2,7 @@
 title: '100.1: The pin policy is declared once and an upgrade is judged against it'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '9fea58d6c7bf6e37d4c14c0d5de409ef3f2552a7'
 flag-exempt: detector-or-gate   # a registry and its check; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -200,5 +200,21 @@ Type / Effort / Deps: feature / M / none.
 
 - 2026-10-13: minted with CAP-167 / FR-40 and Epic 100 from the Dream entry of that date and the plan's recommended
   answers Q1–Q9 (adopted as assumptions until the operator overrides them). `type: feature`,
-  `flag-exempt: detector-or-gate`. The restore mutator lands here rather than in Story 100.2 so the check and its
+  `flag-exempt: detector-or-gate`. The   restore mutator lands here rather than in Story 100.2 so the check and its
   inverse are one pair with one fixture set, the `pixi_version_check.py` / `bump_pixi_version.py` shape.
+
+## Auto Run Result
+
+Status: in-review
+
+Implementation landed in worktree `dispatch/pyforge-steward/100.1` (baseline `9fea58d6c7bf6e37d4c14c0d5de409ef3f2552a7`).
+
+Verification (local):
+- `pytest tests/scripts/test_pin_policy_check.py tests/scripts/test_pin_policy_restore.py` — 11 passed (pyforge-guild)
+- `pyforge-doctor-scripts-test` — 1502 passed, 25 skipped (pin-policy tests skipped in pyforge-ci env)
+- `pin-policy-check` / `--fan-out` — exit 0
+- `spec_surface_reconcile.py` — exit 0 after memlog + allowlist
+
+Surface reconcile memlog (`spec-pyforge-steward/.memlog.md`): `docs/governance/pin-policy.yaml`, `docs/governance/pin-policy.schema.json`, `scripts/pin_policy_check.py`, `scripts/pin_policy_lib.py`, `scripts/pin_policy_restore.py`, `tests/scripts/test_pin_policy_check.py`, `tests/scripts/test_pin_policy_restore.py`, `tests/scripts/fixtures/pin_policy/`, `pixi.toml`, `docs/reference/detectors.md`, `marshal-policy.toml`, `scripts/spec_surface_allowlist.txt`.
+
+Scoped baseline stamp (`--write-baseline --spec …`) not run in this session — operator/steward PR step after merge prep.
