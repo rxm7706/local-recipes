@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-steward:estate-journal-schema",
+  "title": "Estate refresh journal and plan",
+  "description": "Frozen schema for estate plan (--json) and refresh journals (Story 100.2). Additive changes only.",
+  "oneOf": [
+    { "$ref": "#/$defs/plan" },
+    { "$ref": "#/$defs/journal" }
+  ],
+  "$defs": {
+    "move": {
+      "type": "object",
+      "required": ["package", "feature", "from", "to"],
+      "properties": {
+        "package": { "type": "string" },
+        "feature": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "held-by": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "bmad_row": {
+      "type": "object",
+      "required": ["package", "pinned", "installed", "latest"],
+      "properties": {
+        "package": { "type": "string" },
+        "pinned": { "type": "string" },
+        "installed": { "type": "string" },
+        "latest": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "plan": {
+      "type": "object",
+      "required": ["kind", "moves", "bmad", "days_since_last_journal", "due"],
+      "properties": {
+        "kind": { "const": "plan" },
+        "moves": { "type": "array", "items": { "$ref": "#/$defs/move" } },
+        "bmad": { "type": "array", "items": { "$ref": "#/$defs/bmad_row" } },
+        "days_since_last_journal": { "type": ["integer", "null"], "minimum": 0 },
+        "due": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "step": {
+      "type": "object",
+      "required": ["argv", "exit", "seconds"],
+      "properties": {
+        "argv": { "type": "array", "items": { "type": "string" } },
+        "exit": { "type": "integer" },
+        "seconds": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "journal": {
+      "type": "object",
+      "required": [
+        "base_sha",
+        "result_sha",
+        "platform",
+        "command",
+        "moves",
+        "losses_restored",
+        "fan_out",
+        "realize_due",
+        "transitive",
+        "bmad",
+        "steps",
+        "realize",
+        "reconcile",
+        "verify"
+      ],
+      "properties": {
+        "base_sha": { "type": "string" },
+        "result_sha": { "type": "string" },
+        "platform": { "type": "string" },
+        "command": { "type": "string" },
+        "moves": { "type": "array", "items": { "$ref": "#/$defs/move" } },
+        "losses_restored": { "type": "array" },
+        "fan_out": {
+          "type": "object",
+          "required": ["ok", "findings"],
+          "properties": {
+            "ok": { "type": "boolean" },
+            "findings": { "type": "array" }
+          },
+          "additionalProperties": true
+        },
+        "realize_due": { "type": "array" },
+        "transitive": { "type": "boolean" },
+        "bmad": {
+          "type": "object",
+          "required": ["pinned", "installed", "latest", "applied"],
+          "properties": {
+            "pinned": { "type": "string" },
+            "installed": { "type": "string" },
+            "latest": { "type": "string" },
+            "applied": { "type": "boolean" }
+          },
+          "additionalProperties": true
+        },
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+        "realize": { "type": "object" },
+        "reconcile": { "type": "object" },
+        "verify": { "type": "object" }
+      },
+      "additionalProperties": true
+    }
+  }
+}
