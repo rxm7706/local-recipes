@@ -1454,9 +1454,7 @@ def test_gather_real_dependency_checker_auth_headers_stays_clean() -> None:
 
 # --- Story 46.1: single walk + skip test code --------------------------------
 
-_PLANTED_UNCONDITIONAL_INJECTION = (
-    'import os\n\ndef handler():\n    headers["Y"] = os.environ.get("PLANT")\n'
-)
+_PLANTED_UNCONDITIONAL_INJECTION = 'import os\n\ndef handler():\n    headers["Y"] = os.environ.get("PLANT")\n'
 
 
 def _plant_story_46_1_fixture_tree(root: Path) -> None:
