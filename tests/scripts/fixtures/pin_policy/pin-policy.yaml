@@ -1,0 +1,38 @@
+version: 1
+defaults:
+  pinning_strategy: latest-up
+  floors_never_lower: true
+pointer: 'Pin policy pointer for fixture tree'
+holds:
+- package: postgresql
+  hold: never-move
+  features: '*'
+  reason: hold
+  authority: fnd:CAP-12
+  owner: pyforge-steward
+  until: policy
+- package: pyjwt
+  hold: cap
+  cap: <3
+  features: [demo]
+  reason: cap
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy
+- package: liquibase-postgresql
+  hold: channel
+  channel: conda-forge
+  cap: <42
+  features: [demo]
+  reason: channel
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy
+- package: pptxgenjs-plus
+  hold: channel
+  channel: SelfExplainML
+  features: [demo]
+  reason: channel
+  authority: spec-100-1
+  owner: pyforge-steward
+  until: policy

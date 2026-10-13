@@ -1,0 +1,11 @@
+[workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[feature.demo.dependencies]
+pyjwt = ">=2.15.1"
+liquibase-postgresql = ">=5.0.4"
+pptxgenjs-plus = ">=4.3.4"
+cron-descriptor = ">=1.4.5"
+boto3 = ">=1.43.106"
+postgresql = ">=18.0"

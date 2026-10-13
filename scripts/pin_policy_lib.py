@@ -21,7 +21,7 @@ MANIFEST_PATH = REPO_ROOT / "pixi.toml"
 LOCK_PATH = REPO_ROOT / "pixi.lock"
 STATION_PACKAGES = REPO_ROOT / "src" / "shared" / "packages"
 
-_CONDA_PKG_VER = re.compile(r"/([a-z0-9][a-z0-9_-]*)-(\d+(?:\.\d+)*)-\d+")
+_CONDA_PKG_VER = re.compile(r"/([a-z0-9][a-z0-9_-]*)-(\d+(?:\.\d+)*)-[^/]+\.conda")
 _CAP_RE = re.compile(r"(<|<=)\s*([^,\s]+)")
 
 
@@ -175,7 +175,7 @@ def render_upgrade_command(policy: dict[str, Any]) -> str:
             if isinstance(h, dict) and h.get("hold") == "never-move"
         }
     )
-    parts = ["pixi", "upgrade", f"--pinning-strategy={strategy}"]
+    parts = ["pixi", "upgrade", f"--pinning-strategy", strategy]
     for pkg in never:
         parts.extend(["--exclude", pkg])
     return " ".join(parts)
@@ -373,31 +373,11 @@ def check_diff(
                     f"never-move expression changed {base_d.spec!r} -> {now_d.spec!r}",
                 )
             )
+            continue
 
         base_cap = _cap_clause(base_d.spec)
         now_cap = _cap_clause(now_d.spec)
-        if base_cap and not now_cap:
-            if (feature, package) not in seen_flatten:
-                if base_d.has_channel and not now_d.has_channel:
-                    findings.append(
-                        Finding(
-                            "flattened-table",
-                            package,
-                            feature,
-                            f"inline table flattened {base_d.spec!r} -> {now_d.spec!r}",
-                        )
-                    )
-                    seen_flatten.add((feature, package))
-                else:
-                    findings.append(
-                        Finding(
-                            "lost-cap",
-                            package,
-                            feature,
-                            f"cap lost {base_d.spec!r} -> {now_d.spec!r}",
-                        )
-                    )
-        elif base_d.has_channel and not now_d.has_channel:
+        if base_d.has_channel and not now_d.has_channel:
             if (feature, package) not in seen_flatten:
                 findings.append(
                     Finding(
@@ -408,6 +388,17 @@ def check_diff(
                     )
                 )
                 seen_flatten.add((feature, package))
+            continue
+        if base_cap and not now_cap:
+            if (feature, package) not in seen_flatten:
+                findings.append(
+                    Finding(
+                        "lost-cap",
+                        package,
+                        feature,
+                        f"cap lost {base_d.spec!r} -> {now_d.spec!r}",
+                    )
+                )
 
         if floors_never_lower:
             bf = _floor_from_spec(base_d.spec)
@@ -440,8 +431,15 @@ def _normalize_pkg(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name.strip().lower())
 
 
+def _fan_out_candidate(package: str, spec: str) -> bool:
+    """Station ranges with an explicit ceiling are what fan-out judges against the lock."""
+    if package.startswith("pyforge-"):
+        return False
+    return "<" in spec
+
+
 def station_package_ranges(root: Path = REPO_ROOT) -> list[tuple[str, Path, str, str]]:
-    """(station, file, package, range_spec) for package-level pins."""
+    """(station, file, package, range_spec) for capped station-level pins."""
     out: list[tuple[str, Path, str, str]] = []
     for pkg_dir in sorted((root / "src/shared/packages").glob("pyforge-*/")):
         station = pkg_dir.name
@@ -451,10 +449,10 @@ def station_package_ranges(root: Path = REPO_ROOT) -> list[tuple[str, Path, str,
             deps = (data.get("project") or {}).get("dependencies") or []
             if isinstance(deps, list):
                 for req in deps:
-                    if not isinstance(req, str):
+                    if not isinstance(req, str) or "@" in req:
                         continue
                     parsed = _pep508_name_spec(req)
-                    if parsed:
+                    if parsed and _fan_out_candidate(parsed[0], parsed[1]):
                         out.append((station, pyproject, parsed[0], parsed[1]))
         pixi = pkg_dir / "pixi.toml"
         if pixi.is_file():
@@ -463,7 +461,9 @@ def station_package_ranges(root: Path = REPO_ROOT) -> list[tuple[str, Path, str,
             if isinstance(run_deps, dict):
                 for name, spec in run_deps.items():
                     spec_str = _spec_to_str(spec) if not isinstance(spec, str) else spec
-                    out.append((station, pixi, _normalize_pkg(name), spec_str))
+                    pkg = _normalize_pkg(name)
+                    if _fan_out_candidate(pkg, spec_str):
+                        out.append((station, pixi, pkg, spec_str))
     return out
 
 
@@ -474,24 +474,34 @@ def locked_version_in_env(
     block = envs.get(env_name) or {}
     packages = (block.get("packages") or {}).get(platform) or []
     pkg_norm = _normalize_pkg(package)
+    best: Version | None = None
     for entry in packages:
-        url = entry.get("conda") or entry.get("pypi") or ""
+        url = str(entry.get("conda") or entry.get("pypi") or "")
         if not url:
             continue
-        m = _CONDA_PKG_VER.search(str(url))
-        if m and _normalize_pkg(m.group(1)) == pkg_norm:
-            try:
-                return Version(m.group(2))
-            except InvalidVersion:
-                continue
-    return None
+        m = _CONDA_PKG_VER.search(url)
+        if not m:
+            continue
+        name_norm = _normalize_pkg(m.group(1))
+        if name_norm != pkg_norm and not name_norm.startswith(f"{pkg_norm}-"):
+            continue
+        try:
+            ver = Version(m.group(2))
+        except InvalidVersion:
+            continue
+        if best is None or ver > best:
+            best = ver
+    return best
 
 
 def version_in_range(version: Version, spec: str) -> bool:
     if not spec:
         return True
+    cleaned = spec.strip()
+    if cleaned.startswith(">="):
+        cleaned = cleaned.replace(",", ", ", 1) if "," in cleaned and ", " not in cleaned else cleaned
     try:
-        return version in SpecifierSet(spec.replace("=", "==").split(";")[0].strip())
+        return version in SpecifierSet(cleaned)
     except Exception:
         return True
 
