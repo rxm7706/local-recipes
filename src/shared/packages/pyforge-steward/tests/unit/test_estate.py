@@ -24,7 +24,7 @@ from pyforge.steward.estate import (
     run_status,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[5]
+REPO_ROOT = Path(__file__).resolve().parents[6]
 HOOK = REPO_ROOT / ".claude" / "hooks" / "pre-shell.py"
 REAL_ROSTER = REPO_ROOT / "docs" / "governance" / "guild-roster.json"
 
@@ -229,6 +229,7 @@ def test_ac4_transitive_and_hook(tmp_path: Path) -> None:
     spec = importlib.util.spec_from_file_location("pre_shell_hook_estate", HOOK)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     assert set(mod.MATCHERS) == {r["id"] for r in real["session_denials"]}
 
