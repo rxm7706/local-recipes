@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.steward.estate import EstateDeps, EXIT_ESTATE_REFUSAL
+from pyforge.steward.estate import EXIT_ESTATE_REFUSAL
 from pyforge.steward.estate_reconcile import (
     EXIT_RECONCILE_CHECKS,
     ReconcileDeps,

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import sys
 import time
 from dataclasses import dataclass, field
@@ -13,7 +12,6 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .estate import (
-    ESTATE_FLAG_KEY,
     EXIT_ESTATE_REFUSAL,
     EstateDeps,
     _ensure_flag,
