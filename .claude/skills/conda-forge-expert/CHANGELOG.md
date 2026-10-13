@@ -2,7 +2,10 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.100.1** (Oct 13, 2026, current) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted (PATCH).** Operator ask: "Do this task here: Audit 16 recipes that depend on conda playwright".
+**v8.100.2** (Oct 13, 2026, current) — **steward Story 100.6 Rule-2 retro: G117 points at the estate refresh how-to (PATCH).** Epic 100 retires the hand `pixi upgrade --exclude …` sequence; G117 symptom and fix blocks now name `pyforge steward estate refresh` and `docs/how-to/refresh-the-estate.md` instead of maintaining a parallel exclude list in prose.
+- **Files:** `SKILL.md` (G117, Version History; 8.100.1 → 8.100.2), `config/failure-catalog.yaml` (G117 symptom signature), `MANIFEST.yaml`, `config/skill-config.yaml`, `CHANGELOG.md`.
+
+**v8.100.1** (Oct 13, 2026) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted (PATCH).** Operator ask: "Do this task here: Audit 16 recipes that depend on conda playwright".
 - **Root cause.** `recipe-generator.py` resolves PyPI requirements through `name_resolver.resolve_name`. The resolver's cache (`pypi_conda_map.json`) maps `playwright → playwright`, the Node CLI with no Python module. Every generated recipe whose upstream requires PyPI `playwright` got the CLI. Sixteen recipes carried it: fifteen import the bindings, and none of those fifteen could pass `pip check`. The sixteenth, `recipes/playwright-python`, is the bindings recipe and depends on the CLI by design. v8.100.0's tier 0 (`custom.yaml` first) stops new ones from the generator. The cache still maps `playwright → playwright`: neither cache writer (`mapping_manager.py`, atlas's `export_pypi_conda_map`) applies `custom.yaml`, so `mapping_gap.py` and atlas still see the CLI (deferred in the mason ledger).
 - **The check now lints the pair.** `custom.yaml`'s `playwright` entry is `lint_wrong_half: true`, and `test_split_distribution_run_deps.py` exempts a recipe whose package name is the bindings' conda name. Three mutations were verified: bare `playwright` back in `recipes/cuga`, the exemption removed, and the flag dropped.
 - **The 15 recipes** list `playwright-python` with each upstream spec. Local linux-64 builds:

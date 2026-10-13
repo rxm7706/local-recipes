@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.100.1
+version: 8.100.2
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4355,7 +4355,7 @@ The unused wrapper is inert on the other OS. Reserve the `__unix`/`__win` split 
 
 ### G117. `pixi upgrade --pinning-strategy latest-up` silently DELETES deliberate upper bounds — a cap that encodes a known-unsolvable combination is removed with no warning, and the lock still solves, so nothing goes red
 
-**Symptom**: a routine "refresh the pins" pass. `pixi upgrade --pinning-strategy latest-up --exclude <a long list>` exits 0, the lock re-solves cleanly, and the manifest diff looks like a page of harmless floor bumps. Buried in it, pins that read `">=X,<Y"` now read `">=X"`. Nothing failed, because today's solve still picks a version under the old ceiling.
+**Symptom**: a routine "refresh the pins" pass. A policy-driven `pyforge steward estate refresh` (or a bare `pixi upgrade` with `latest-up` outside that path) exits 0, the lock re-solves cleanly, and the manifest diff looks like a page of harmless floor bumps. Buried in it, pins that read `">=X,<Y"` now read `">=X"`. Nothing failed, because today's solve still picks a version under the old ceiling. Prefer the estate path in `docs/how-to/refresh-the-estate.md`; never maintain a parallel exclude list in comments.
 
 **Why**: `latest-up` rewrites each pin to a *floor at the newly resolved version*. It has no concept of an intentional ceiling, so `,<Y` is not "preserved and raised" — it is dropped. `--exclude <pkg>` is the only protection, and it must be spelled per package: excluding `channels` does nothing for `channels_redis`, and excluding `django`/`wagtail` does nothing for the `coderedcms` pinned beside them under the same "Pin to LTS" comment.
 
@@ -4365,8 +4365,7 @@ The damage is **latent**, which is what makes it dangerous. The cap existed to f
 
 ```bash
 cp pixi.toml /tmp/pixi.toml.pre
-pixi upgrade --pinning-strategy latest-up --exclude ...
-# every pin that LOST a comma-clause -- the ones that matter:
+# after refresh (or a manual upgrade), every pin that LOST a comma-clause -- the ones that matter:
 diff <(grep -oE '^[A-Za-z0-9_.-]+ *= *"[^"]*"' /tmp/pixi.toml.pre | sort -u) \
      <(grep -oE '^[A-Za-z0-9_.-]+ *= *"[^"]*"' pixi.toml            | sort -u) \
   | grep -E '^<.*,<' 
@@ -4552,6 +4551,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.100.2** (Oct 13, 2026) — **steward Story 100.6 Rule-2 retro: G117 names the estate refresh path, not a hand exclude list (PATCH).** See `CHANGELOG.md`.
 - **v8.100.1** (Oct 13, 2026) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted, and the generator path that spread it is named (PATCH).** See `CHANGELOG.md`.
 - **v8.100.0** (Oct 12, 2026) — **mason Story 29.1 Rule-2 retro: G122 (backport an unreleased upstream fix into a local mirror when two pins are disjoint), a second G107 case (`unicorn` vs `python-unicorn`), a G84 refinement, mapping overrides moved to `custom.yaml`, and the python_min test's stale fallback floor (MINOR).** See `CHANGELOG.md`.
 - **v8.99.2** (Oct 10, 2026) — **mason Story 25.4 retro: hand-stamp CFE block then rerun `--repair`; 14/14 repaired; build record for leftovers (PATCH).** See `CHANGELOG.md`.

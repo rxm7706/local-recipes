@@ -948,7 +948,7 @@ rows:
     title: "`pixi upgrade --pinning-strategy latest-up` silently DELETES deliberate upper bounds — a cap that encodes a known-unsolvable combination is removed with no warning, and the lock still solves, so nothing goes red"
     symptom_signature:
       - "refresh the pins"
-      - "pixi upgrade --pinning-strategy latest-up --exclude <a long list>"
+      - "pyforge steward estate refresh (or pixi upgrade latest-up outside policy)"
       - "\">=X,<Y\""
       - "\">=X\""
     enforced_by: null
