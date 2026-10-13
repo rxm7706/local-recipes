@@ -2,7 +2,8 @@
 title: '100.6: The hand sequence is retired by one how-to and one pointer'
 type: 'chore'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: '0b33f165633d7862267998de5e35f5de4ee46d83'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -112,3 +113,33 @@ Type / Effort / Deps: chore / S / S-100.3, S-100.4, S-100.5.
 
 - 2026-10-13: minted with CAP-167 / FR-40 and Epic 100. `type: chore`, no flag. Widened the same day to document the
   realization register, `estate realize`, the fan-out, the verify tiers and the per-platform confirmation.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `docs/how-to/refresh-the-estate.md` (six verbs, policy, realization register, verify tiers, PR landing),
+registered it in `docs/map.yaml` / `docs/MAP.md`, pointed `AGENTS.md` and `docs/reference/agent-instruction-notes.md`
+at the how-to (Policy names `estate reconcile` for `environment.yaml`), and retired the hand exclude-list prose in
+conda-forge-expert G117 (CFE v8.100.2 `retro:` commit).
+
+Files: `docs/how-to/refresh-the-estate.md`, `docs/map.yaml`, `docs/MAP.md`, `AGENTS.md`,
+`docs/reference/agent-instruction-notes.md`, CFE skill surface (G117 + failure-catalog), spec-surface memlogs and
+baseline stamps on `spec-pyforge-scribe`, `spec-pyforge-doctor`, `spec-pyforge-steward`, `spec-packaging-factory`,
+`spec-conda-forge-expert-rebuild`.
+
+Verification:
+- `docs-map-render-test`, `docs-gen-test`, `governance-currency`, scribe `instruction_surface_parity`, `pyforge-steward-test`: pass
+- `spec_surface_reconcile.py`, `spec-surface-check`: pass (memlogs + scoped stamps; no bare `--write-baseline`)
+- AC3 grep: only intake plan, story AC text, and `archive/` (historical)
+- `detectors-ci`: exit 1 on this branch — `pin_policy_check.py` / sibling scripts fail with `ModuleNotFoundError` unless
+  `PYTHONPATH=scripts` (Epic 100 script layout; not introduced by this docs story). Re-run after upstream fix or with env workaround.
+
+Spec-surface paths named in memlogs:
+- `spec-pyforge-scribe`: `AGENTS.md`, `docs/reference/agent-instruction-notes.md`
+- `spec-pyforge-doctor`: `docs/how-to/refresh-the-estate.md`, `docs/map.yaml`, `docs/MAP.md`
+- `spec-pyforge-steward`: `docs/how-to/refresh-the-estate.md`
+- `spec-packaging-factory` + `spec-conda-forge-expert-rebuild`: `.claude/skills/conda-forge-expert/SKILL.md`,
+  `config/failure-catalog.yaml`, `CHANGELOG.md`, `MANIFEST.yaml`, `config/skill-config.yaml`
+
+Residual: `pr-preflight` / full `detectors-ci` not re-run green on script import path; operator should confirm on push.
