@@ -1,0 +1,15 @@
+[workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[feature.demo.dependencies]
+pyjwt = ">=2.15.0,<3"
+git-pkgs = ">=0.21.0,<0.22"
+opengrep = ">=1.30.0,<1.31"
+transformers = ">=4.0.0,<6.0"
+liquibase-postgresql = { version = ">=5.0.4,<42", channel = "conda-forge" }
+pptxgenjs-plus = { version = "4.2.1.*", channel = "SelfExplainML" }
+cron-descriptor = ">=2.1.0"
+openai = ">=3.19.2"
+boto3 = ">=1.43.75"
+postgresql = ">=17.11,<18"

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:governance:pin-policy.schema",
+  "title": "Estate pin policy registry",
+  "type": "object",
+  "required": ["version", "defaults", "pointer", "holds"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "defaults": {
+      "type": "object",
+      "required": ["pinning_strategy", "floors_never_lower"],
+      "additionalProperties": false,
+      "properties": {
+        "pinning_strategy": { "type": "string", "enum": ["latest-up"] },
+        "floors_never_lower": { "type": "boolean" }
+      }
+    },
+    "pointer": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact comment line pixi.toml must carry (without leading #)."
+    },
+    "holds": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/hold" }
+    }
+  },
+  "$defs": {
+    "hold": {
+      "type": "object",
+      "required": ["package", "hold", "features", "reason", "authority", "owner", "until"],
+      "additionalProperties": false,
+      "properties": {
+        "package": { "type": "string", "minLength": 1 },
+        "hold": {
+          "type": "string",
+          "enum": ["never-move", "cap", "channel", "exact", "floor-only"]
+        },
+        "cap": { "type": "string" },
+        "channel": { "type": "string" },
+        "exact": { "type": "string" },
+        "features": {
+          "oneOf": [
+            { "type": "string", "const": "*" },
+            { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }
+          ]
+        },
+        "reason": { "type": "string" },
+        "authority": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "until": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "hold": { "const": "cap" } } },
+          "then": { "required": ["cap"] }
+        },
+        {
+          "if": { "properties": { "hold": { "const": "channel" } } },
+          "then": { "required": ["channel"] }
+        },
+        {
+          "if": { "properties": { "hold": { "const": "exact" } } },
+          "then": { "required": ["exact"] }
+        }
+      ]
+    }
+  }
+}
