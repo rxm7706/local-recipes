@@ -1450,3 +1450,75 @@ def test_gather_real_dependency_checker_auth_headers_stays_clean() -> None:
         pytest.skip("not running inside the local-recipes monorepo checkout")
 
     assert env_hygiene._scan_file(script) == []
+
+
+# --- Story 46.1: single walk + skip test code --------------------------------
+
+_PLANTED_UNCONDITIONAL_INJECTION = 'import os\n\ndef handler():\n    headers["Y"] = os.environ.get("PLANT")\n'
+
+
+def _plant_story_46_1_fixture_tree(root: Path) -> None:
+    for relative in (
+        "test_x.py",
+        "x_test.py",
+        "conftest.py",
+        "tests.py",
+        "tests/helper.py",
+        "test/helper.py",
+        "app/main.py",
+    ):
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_PLANTED_UNCONDITIONAL_INJECTION, encoding="utf-8")
+
+
+def test_gather_skips_test_code_paths_relative_to_scan_target(tmp_path: Path):
+    _plant_story_46_1_fixture_tree(tmp_path)
+    unconditional = [f for f in gather(tmp_path) if f.check == CHECK_NAME]
+    assert len(unconditional) == 1
+    assert unconditional[0].evidence["var_name"] == "PLANT"
+    assert unconditional[0].evidence["file"] == str(tmp_path / "app" / "main.py")
+
+
+def test_gather_reports_test_helper_when_tests_directory_is_the_target(tmp_path: Path):
+    _plant_story_46_1_fixture_tree(tmp_path)
+    unconditional = [f for f in gather(tmp_path / "tests") if f.check == CHECK_NAME]
+    assert len(unconditional) == 1
+    assert unconditional[0].evidence["file"] == str(tmp_path / "tests" / "helper.py")
+
+
+def test_discover_does_not_treat_testing_or_contest_as_test_directories(tmp_path: Path):
+    for relative in ("testing/x.py", "contest.py", "latest.py"):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_PLANTED_UNCONDITIONAL_INJECTION, encoding="utf-8")
+    unconditional = [f for f in gather(tmp_path) if f.check == CHECK_NAME]
+    assert len(unconditional) == 3
+
+
+def test_scan_file_does_not_ast_walk_the_whole_module_for_alias_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Mutation guard (Story 46.1 AC6): a separate ``_resolve_os_aliases`` pass
+    walked the full module tree before the visitor -- one ``ast.walk(tree)``
+    per parsed file."""
+    import ast
+
+    _write(
+        tmp_path,
+        "sample.py",
+        'import os as o\n\ndef handler():\n    headers["Y"] = o.environ.get("X")\n',
+    )
+    module_walks = 0
+    real_walk = ast.walk
+
+    def _counting_walk(node: ast.AST):
+        nonlocal module_walks
+        if isinstance(node, ast.Module):
+            module_walks += 1
+        yield from real_walk(node)
+
+    monkeypatch.setattr(ast, "walk", _counting_walk)
+    env_hygiene._scan_file(tmp_path / "sample.py")
+    assert module_walks == 0
+    assert env_hygiene._scan_file(tmp_path / "sample.py")[0].evidence["var_name"] == "X"
