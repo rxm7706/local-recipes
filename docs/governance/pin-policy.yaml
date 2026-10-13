@@ -432,7 +432,7 @@ holds:
   authority: spec-100-1
   owner: pyforge-steward
   until: unknown
-  cap: <42"
+  cap: "<42"
 - package: opengrep
   hold: channel
   channel: SelfExplainML
@@ -442,7 +442,7 @@ holds:
   authority: spec-100-1
   owner: pyforge-steward
   until: unknown
-  cap: <1.31"
+  cap: "<1.31"
 - package: pptxgenjs-plus
   hold: channel
   channel: SelfExplainML
