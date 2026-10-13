@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -61,6 +62,7 @@ class FakeProc:
 
 @dataclass
 class RecordingRunner:
+    root: Path | None = None
     calls: list[tuple[list[str], Path]] = field(default_factory=list)
     responses: dict[str, FakeProc] = field(default_factory=dict)
     du_mb: int = 512
@@ -74,6 +76,15 @@ class RecordingRunner:
             if prefix in key:
                 return FakeProc(argv, proc.returncode, proc.stdout, proc.stderr)
         if argv[:4] == ["git", "worktree", "add", "--detach"]:
+            wt = Path(argv[4])
+            wt.mkdir(parents=True, exist_ok=True)
+            if self.root is not None:
+                for rel in ("pixi.toml", "pixi.lock"):
+                    shutil.copy2(self.root / rel, wt / rel)
+                for sub in ("_bmad", "scripts", "docs"):
+                    src = self.root / sub
+                    if src.is_dir():
+                        shutil.copytree(src, wt / sub, dirs_exist_ok=True)
             return FakeProc(argv, 0, "", "")
         if argv[:3] == ["git", "worktree", "remove"]:
             return FakeProc(argv, 0, "", "")
@@ -140,9 +151,10 @@ def _install_envs(runner: RecordingRunner, root: Path) -> list[str]:
     return [argv[4] for argv, cwd in runner.calls if argv[:3] == ["pixi", "install", "--frozen"] and cwd == wt]
 
 
-def test_worktree_first_then_default_tier_installs(tmp_path: Path) -> None:
+def test_worktree_first_then_default_tier_installs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner()
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    runner = RecordingRunner(root=root)
     result = run_verify(
         _deps(root, runner),
         env_filter=None,
@@ -162,7 +174,7 @@ def test_worktree_first_then_default_tier_installs(tmp_path: Path) -> None:
 
 def test_no_install_argv_targets_working_tree(tmp_path: Path) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner()
+    runner = RecordingRunner(root=root)
     run_verify(
         _deps(root, runner),
         env_filter="pyforge-guild",
@@ -180,9 +192,10 @@ def test_no_install_argv_targets_working_tree(tmp_path: Path) -> None:
             assert cwd != root
 
 
-def test_platform_excluded_env_is_lock_solved(tmp_path: Path) -> None:
+def test_platform_excluded_env_is_lock_solved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner()
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    runner = RecordingRunner(root=root)
     result = run_verify(
         _deps(root, runner),
         env_filter=None,
@@ -216,7 +229,7 @@ def test_paused_lane_skipped_and_ignore_runs(tmp_path: Path, monkeypatch: pytest
 
     monkeypatch.setattr(ev, "select_lanes_for_paths", _selection)
 
-    runner = RecordingRunner()
+    runner = RecordingRunner(root=root)
     result = run_verify(
         _deps(root, runner, pause_overrides=pauses),
         env_filter=None,
@@ -231,7 +244,7 @@ def test_paused_lane_skipped_and_ignore_runs(tmp_path: Path, monkeypatch: pytest
     assert "PAUSE_CONTAINER_BUILDS" in row["verdict"]
     assert not any("guild-container" in " ".join(a) and a[:3] == ["pixi", "run", "--frozen"] for a, _ in runner.calls)
 
-    runner2 = RecordingRunner()
+    runner2 = RecordingRunner(root=root)
     run_verify(
         _deps(root, runner2, pause_overrides=pauses),
         env_filter=None,
@@ -247,7 +260,7 @@ def test_paused_lane_skipped_and_ignore_runs(tmp_path: Path, monkeypatch: pytest
 
 def test_manual_rows_and_stale_probe_red_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner()
+    runner = RecordingRunner(root=root)
     monkeypatch.setattr(
         "pyforge.steward.estate_realize._locked_version",
         lambda *a, **k: "6.12.2",
@@ -271,9 +284,10 @@ def test_manual_rows_and_stale_probe_red_run(tmp_path: Path, monkeypatch: pytest
     assert probe["verdict"] == "stale"
 
 
-def test_probe_filter_runs_one_probe(tmp_path: Path) -> None:
+def test_probe_filter_runs_one_probe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner()
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    runner = RecordingRunner(root=root)
     result = run_verify(
         _deps(root, runner),
         env_filter=None,
@@ -292,9 +306,10 @@ def test_probe_filter_runs_one_probe(tmp_path: Path) -> None:
 def test_red_lane_reds_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _fixture_root(tmp_path)
     runner = RecordingRunner(
+        root=root,
         responses={
             "pixi run --frozen --skip-deps -e pyforge-guild lint-types": FakeProc([], 1, "", "fail"),
-        }
+        },
     )
 
     def _selection(*_a, **_k):
@@ -324,7 +339,7 @@ def test_red_lane_reds_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_journal_validates_and_keep_message(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner()
+    runner = RecordingRunner(root=root)
 
     def _selection(*_a, **_k):
         return Selection(
@@ -359,7 +374,7 @@ def test_journal_validates_and_keep_message(tmp_path: Path, monkeypatch: pytest.
 
 def test_guild_bound_row(tmp_path: Path) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner(du_mb=GUILD_SIZE_BOUND_MB + 1)
+    runner = RecordingRunner(root=root, du_mb=GUILD_SIZE_BOUND_MB + 1)
     result = run_verify(
         _deps(root, runner),
         env_filter="pyforge-guild",
@@ -377,7 +392,7 @@ def test_guild_bound_row(tmp_path: Path) -> None:
 
 def test_scoped_env_and_lane_skips_probes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _fixture_root(tmp_path)
-    runner = RecordingRunner()
+    runner = RecordingRunner(root=root)
 
     def _selection(*_a, **_k):
         return Selection(
