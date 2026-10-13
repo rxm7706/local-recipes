@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""Generate Starlight sidebar JSON from docs/map.yaml (Story 27.3, CAP-52 D1)."""
+"""Generate Starlight sidebar JSON from docs/map.yaml (Story 27.3, CAP-52 D1).
+
+Story 40.1 (CAP-58): after the four quadrants the sidebar gains a first-level Herald group, and a
+second output, ``topnav.generated.json``, carries the top menu shared by the docs and herald pages.
+Both come from herald's one navigation list, ``docsite/content/site.yml`` (``nav`` then
+``neighbours``), read here as data. Herald hrefs are relative to the ``/herald/`` mount; they are
+turned into site-root paths (``herald/``, ``dashboard/kedro-viz/``, ``""`` for the docs root) so the
+Starlight build can prefix whichever base path the host gives it."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -20,6 +28,12 @@ _QUADRANT_LABELS = {
     "explanation": "Explanation",
 }
 
+_HERALD_GROUP_LABEL = "Herald"
+#: Where docsite's output is mounted in the Pages artifact (assemble_pages.HERALD_PREFIX).
+_HERALD_MOUNT = "herald"
+#: The site.yml nav key of the link back to the docs root; it is in the top menu, not the Herald group.
+_DOCS_KEY = "docs"
+
 
 def _repo_root(docs_site_dir: Path) -> Path:
     return docs_site_dir.parent
@@ -31,6 +45,67 @@ def _docs_dir(repo_root: Path) -> Path:
 
 def _default_output(docs_site_dir: Path) -> Path:
     return docs_site_dir / "src" / "sidebar.generated.json"
+
+
+def _default_topnav_output(docs_site_dir: Path) -> Path:
+    return docs_site_dir / "src" / "topnav.generated.json"
+
+
+def _default_site_yml(repo_root: Path) -> Path:
+    return repo_root / "docsite" / "content" / "site.yml"
+
+
+def _site_root_path(herald_href: str) -> str:
+    """A site.yml href (relative to the ``/herald/`` mount) as a path relative to the site root.
+
+    ``index.html`` -> ``herald/``; ``dossier/index.html`` -> ``herald/dossier/``;
+    ``../dashboard/kedro-viz/`` -> ``dashboard/kedro-viz/``; ``../`` -> ``""`` (the docs root).
+    A path that climbs above the site root is refused."""
+    href = herald_href.strip()
+    if not href or href.startswith(("/", "#")) or "://" in href:
+        raise ValueError(f"site.yml href must be relative to the herald mount: {herald_href!r}")
+    is_dir = href.endswith(("/", "index.html"))
+    href = href.removesuffix("index.html")
+    joined = posixpath.normpath(posixpath.join(_HERALD_MOUNT, href))
+    if joined == ".":
+        return ""
+    if joined.startswith(".."):
+        raise ValueError(f"site.yml href leaves the site root: {herald_href!r}")
+    return f"{joined}/" if is_dir else joined
+
+
+def load_site_menu(site_yml: Path) -> list[dict[str, str]]:
+    """The shared menu, in order: site.yml ``nav`` then ``neighbours``, as ``{label, path}``."""
+    data = yaml.safe_load(site_yml.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or not isinstance(data.get("nav"), list):
+        raise ValueError(f"{site_yml}: expected a nav list")
+    menu: list[dict[str, str]] = []
+    for item in [*data["nav"], *(data.get("neighbours") or [])]:
+        label, href = item.get("label"), item.get("href")
+        if not isinstance(label, str) or not isinstance(href, str):
+            raise ValueError(f"{site_yml}: menu entry needs a label and an href: {item!r}")
+        menu.append({"label": label, "path": _site_root_path(href), "key": str(item.get("key") or "")})
+    if not any(entry["key"] == _DOCS_KEY for entry in menu):
+        raise ValueError(f"{site_yml}: nav has no '{_DOCS_KEY}' entry linking back to the docs")
+    return menu
+
+
+def herald_sidebar_group(menu: list[dict[str, str]]) -> dict[str, Any]:
+    """The first-level Herald group: every menu entry except the link back to the docs."""
+    return {
+        "label": _HERALD_GROUP_LABEL,
+        "collapsed": False,
+        "items": [
+            {"link": f"/{entry['path']}", "label": entry["label"]}
+            for entry in menu
+            if entry["key"] != _DOCS_KEY
+        ],
+    }
+
+
+def top_menu(menu: list[dict[str, str]]) -> list[dict[str, str]]:
+    """The top menu, in site.yml order, as ``{label, path}`` (path relative to the site root)."""
+    return [{"label": entry["label"], "path": entry["path"]} for entry in menu]
 
 
 def _quadrant_index_path(quadrant: str) -> str:
@@ -137,9 +212,19 @@ def _validate_and_build(
     return sidebar, []
 
 
-def build_sidebar(map_path: Path, docs_dir: Path) -> tuple[list[dict[str, Any]], list[str]]:
+def build_sidebar(
+    map_path: Path, docs_dir: Path, site_yml: Path | None = None
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """The quadrant groups in map.yaml order, then the Herald group when ``site_yml`` is given."""
     pages = _load_map(map_path)
-    return _validate_and_build(pages, docs_dir)
+    sidebar, errors = _validate_and_build(pages, docs_dir)
+    if errors or site_yml is None:
+        return sidebar, errors
+    try:
+        menu = load_site_menu(site_yml)
+    except ValueError as exc:
+        return [], [str(exc)]
+    return [*sidebar, herald_sidebar_group(menu)], []
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -161,6 +246,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Output JSON path (default: docs-site/src/sidebar.generated.json)",
     )
     parser.add_argument(
+        "--site",
+        type=Path,
+        help="Path to herald's docsite/content/site.yml (default: <repo>/docsite/content/site.yml)",
+    )
+    parser.add_argument(
+        "--topnav-output",
+        type=Path,
+        help="Top-menu JSON path (default: docs-site/src/topnav.generated.json)",
+    )
+    parser.add_argument(
         "--check",
         action="store_true",
         help="Validate only; exit 1 on any finding without writing output",
@@ -172,12 +267,17 @@ def main(argv: list[str] | None = None) -> int:
     map_path = args.map or (repo_root / "docs" / "map.yaml")
     docs_dir = args.docs or _docs_dir(repo_root)
     output = args.output or _default_output(docs_site_dir)
+    site_yml = args.site or _default_site_yml(repo_root)
+    topnav_output = args.topnav_output or _default_topnav_output(docs_site_dir)
 
     if not map_path.is_file():
         print(f"map not found: {map_path}", file=sys.stderr)
         return 1
+    if not site_yml.is_file():
+        print(f"site.yml not found: {site_yml}", file=sys.stderr)
+        return 1
 
-    sidebar, errors = build_sidebar(map_path, docs_dir)
+    sidebar, errors = build_sidebar(map_path, docs_dir, site_yml)
     if errors:
         for msg in errors:
             print(msg, file=sys.stderr)
@@ -188,6 +288,8 @@ def main(argv: list[str] | None = None) -> int:
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(sidebar, indent=2) + "\n", encoding="utf-8")
+    topnav_output.parent.mkdir(parents=True, exist_ok=True)
+    topnav_output.write_text(json.dumps(top_menu(load_site_menu(site_yml)), indent=2) + "\n", encoding="utf-8")
     return 0
 
 

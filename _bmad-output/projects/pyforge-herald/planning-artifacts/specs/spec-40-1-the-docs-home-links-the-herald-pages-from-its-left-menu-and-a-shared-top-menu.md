@@ -2,9 +2,9 @@
 title: "40.1: The docs home links the herald pages from its left menu and a shared top menu"
 type: 'feature'
 created: '2026-10-12'
-status: 'ready-for-dev'
+status: 'done'
 flag-exempt: docs-only   # the documentation site's own navigation; no CLI verb, portal or runtime path (spec-feature-flag-governance Q2)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -153,6 +153,46 @@ prefix plus the mount on the herald side), so the menus resolve on the public ho
 - 2026-10-12: minted from CAP-58 at the operator's rulings (layout, group name, chain shape). The evidence is the live
   site on 2026-10-12 and the sources at `origin/main` `4811cb5afa`.
 
+- 2026-10-12: implemented on Claude in an interactive session, at the operator's ask "the docs site fix / consolidation
+  - lets do that now using claude - while we wait for the cursor issues to get resolved" (Cursor's API returned 503).
+  Commits `b4043e360f` (implementation) and the review-fix commit that follows it. Two deviations from the Approach:
+  - **A `SiteTitle` override, not a `Header` override.** Overriding Starlight's `SiteTitle` keeps its header layout
+    (search, theme toggle, mobile menu button) as Starlight ships it and adds the menu beside the title.
+  - **The docs top menu shows at 72rem and wider.** Below that the header has no room. The Herald sidebar group,
+    which is the hamburger menu on phones, carries the same five herald links. Herald's own top menu is unchanged at
+    every width.
+  The ignore rule for the generated `src/topnav.generated.json` sits in a new `docs-site/.gitignore`, inside the epic
+  surface. `docs-site/README.md` lists the new local-only files.
+- 2026-10-12, evidence:
+  - The built artifact has 82 pages that carry the six links in order (every docs page, 404, herald's overview,
+    dossier, gallery, deck index and each deck family page). It also has 45 redirect stubs, 4 Kedro-Viz files and 31
+    raw infographic and deck exports, none of which carries the menu.
+  - `pages-check` exits 0 on the public URL, on `https://pages.example.com/pages/acme/docs` and on a root base `/`.
+  - `docs-site-validate` exits 0, and `pyforge-herald-test` passes 1828.
+  - Screenshots of the local build show the docs top menu at 1400px, the Herald sidebar group, and herald's dossier
+    with Docs first.
+- 2026-10-12, AC6 mutations, each restored afterwards:
+  - a broken `site.yml` href: `pages-check` exits 1;
+  - the Herald group dropped: two tests fail;
+  - a hardcoded `/local-recipes/` base: the no-hardcode test fails;
+  - the Docs entry removed: four tests fail.
+
 ## Review Triage Log
 
-- No review has run yet.
+- **Iteration 1 (2026-10-12), independent reviewer, verdict PASS, no blockers.** Triage:
+  1. should-fix: the gate could false-pass. It skipped pages without the menu, required it only on two pages, and
+     checked neither count nor order nor the sidebar. **Fixed**: every navigable page (not a redirect stub, the
+     Kedro-Viz export or a raw export) must show exactly site.yml's labels in order, each resolving, and the docs root
+     must link each herald target twice (top menu and Herald group). Tests cover a shell page losing its menu, one link
+     dropped, a fragment-only link and the sidebar links missing.
+  2. should-fix: `test_pages_artifact.py` read the site URL from the environment. **Fixed**: it passes `site_url`, and
+     it passes under the second-host environment too.
+  3. should-fix: no test pinned Docs first or `aria-current` on herald. **Fixed**:
+     `test_herald_shell_renders_docs_first_and_marks_the_current_page`.
+  4. should-fix: `.gitignore` sat outside the epic surface. **Fixed**: the rule moved to `docs-site/.gitignore`.
+  5. should-fix: no memlog reconcile or scoped stamp, the spec still `ready-for-dev`, and the deviations unrecorded.
+     **Fixed**: the memlog names every changed governed path, the stamp is scoped to `pyforge-herald/spec-pyforge-herald`,
+     and this log records the deviations.
+  6. nit: the docs-site README still described a four-quadrant sidebar. **Fixed.**
+  7. nit: a `href="#"` menu link passed. **Fixed**: an empty or fragment-only href is refused.
+  The menu check now runs after the cross-origin check, so a page with a cross-origin load still reports that first.

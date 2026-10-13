@@ -11,7 +11,13 @@ blurb: >-
   documentation disagree. Everything here is generated from the repository, so
   it stays in step with what actually ships.
 
+# The one navigation list for the whole Pages artifact (Story 40.1, CAP-58): herald's top menu
+# renders it here, and docs-site/scripts/sidebar_from_map.py reads it as data for the docs site's
+# top menu and its Herald sidebar group. hrefs are relative to the /herald/ mount.
 nav:
+  - key: docs
+    label: Docs
+    href: ../
   - key: index
     label: Overview
     href: index.html
