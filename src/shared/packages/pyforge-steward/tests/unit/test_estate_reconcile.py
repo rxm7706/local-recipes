@@ -192,14 +192,7 @@ def test_ac4_spec_surface_memlog_stamp_no_bare_baseline(tmp_path: Path) -> None:
     }
     for _key, spec in spec_dirs.items():
         project = "pyforge-steward" if spec != "spec-c" else "pyforge-guild"
-        memlog_path = (
-            root
-            / "_bmad-output/projects"
-            / project
-            / "planning-artifacts/specs"
-            / spec
-            / ".memlog.md"
-        )
+        memlog_path = root / "_bmad-output/projects" / project / "planning-artifacts/specs" / spec / ".memlog.md"
         memlog_path.parent.mkdir(parents=True)
         memlog_path.write_text("---\ntopic: test\n---\n\n- (note) seed\n", encoding="utf-8")
 

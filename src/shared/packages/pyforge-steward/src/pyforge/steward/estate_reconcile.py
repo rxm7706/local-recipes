@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .estate import (
-    EXIT_ESTATE_REFUSAL,
     EstateDeps,
     _ensure_flag,
     _list_journals,
@@ -120,7 +119,16 @@ WARN_CHECKS: tuple[tuple[str, list[str]], ...] = (
     ("pixi-currency-staleness-check", [sys.executable, "-m", "pyforge.doctor.sources", "pixi-currency-ledger"]),
     (
         "steward-deck-drift",
-        [sys.executable, "-m", "pyforge.steward.cli", "deck-drift", "--slug", "pyforge-steward", "--path", "deck.dc.html"],
+        [
+            sys.executable,
+            "-m",
+            "pyforge.steward.cli",
+            "deck-drift",
+            "--slug",
+            "pyforge-steward",
+            "--path",
+            "deck.dc.html",
+        ],
     ),
 )
 
@@ -224,14 +232,7 @@ def _reconcile_spec_surface(
     for spec_name in sorted(by_spec):
         project, _, spec_dir = spec_name.partition("/")
         memlog_path = (
-            deps.root
-            / "_bmad-output"
-            / "projects"
-            / project
-            / "planning-artifacts"
-            / "specs"
-            / spec_dir
-            / ".memlog.md"
+            deps.root / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / spec_dir / ".memlog.md"
         )
         if not _memlog_has_frontmatter(memlog_path):
             return _refusal(f"estate reconcile: memlog lacks frontmatter: {memlog_path.relative_to(deps.root)}")
@@ -248,7 +249,13 @@ def _reconcile_spec_surface(
 
     for spec_name in sorted(by_spec):
         stamp_exit = deps.stamp_spec(deps.root, spec_name)
-        stamps.append({"spec": spec_name, "argv": ["spec_surface_check.py", "--write-baseline", "--spec", spec_name], "exit": stamp_exit})
+        stamps.append(
+            {
+                "spec": spec_name,
+                "argv": ["spec_surface_check.py", "--write-baseline", "--spec", spec_name],
+                "exit": stamp_exit,
+            }
+        )
         if stamp_exit != 0:
             return _refusal(f"estate reconcile: scoped stamp failed for {spec_name} (exit {stamp_exit})")
 
