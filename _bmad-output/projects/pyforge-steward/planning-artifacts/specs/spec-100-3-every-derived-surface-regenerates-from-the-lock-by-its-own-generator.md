@@ -13,8 +13,6 @@ flag:
   scope: global                                # v1 is global only
   fallback: the `estate reconcile` verb refuses naming the flag; `llms_full_check.py --fix-floors` is a script mode that needs no flag and changes nothing unless invoked
   cleanup: with Story 100.2's flag, 90 days after ON in every environment (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
