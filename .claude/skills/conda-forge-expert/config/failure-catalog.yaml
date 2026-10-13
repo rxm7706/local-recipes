@@ -4,7 +4,7 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "1eced7d594da4e708c4e01d488f16d37771be425ff942a67431fcccb1bda51e1"
+source_sha256: "b3243770f5f751372a7bf356a0934fd6f8cbbff3c4641d1fffe1fbdfc4cface0"
 rows:
   - id: G1
     title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
@@ -948,9 +948,12 @@ rows:
     title: "`pixi upgrade --pinning-strategy latest-up` silently DELETES deliberate upper bounds — a cap that encodes a known-unsolvable combination is removed with no warning, and the lock still solves, so nothing goes red"
     symptom_signature:
       - "refresh the pins"
-      - "pyforge steward estate refresh (or pixi upgrade latest-up outside policy)"
+      - "pyforge steward estate refresh"
+      - "pixi upgrade"
+      - "latest-up"
       - "\">=X,<Y\""
       - "\">=X\""
+      - "docs/how-to/refresh-the-estate.md"
     enforced_by: null
   - id: G118
     title: "A name on the estate channel can mean a DIFFERENT artifact than the same name on conda-forge — nothing flags the collision, and the higher version wins the sort"
