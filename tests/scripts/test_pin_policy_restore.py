@@ -47,6 +47,7 @@ def test_restore_rewrites_and_recover_on_lock_fail(
         ["pin-policy-restore", "--from", "base", "--root", str(tmp_path)],
     )
 
+    monkeypatch.setattr(restore_mod, "check_static", lambda *a, **k: [])
     with mock.patch.object(subprocess, "run", return_value=mock.Mock(returncode=0)):
         rc = restore_mod.main()
     assert rc == 0

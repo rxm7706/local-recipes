@@ -43,14 +43,22 @@ def _restore_clause(policy: dict, package: str, feature: str, new_floor: str, ki
     return None
 
 
+def _toml_value(clause: str) -> str:
+    stripped = clause.strip()
+    if stripped.startswith("{") or stripped.startswith('"'):
+        return stripped
+    return f'"{stripped}"'
+
+
 def _replace_declaration(text: str, package: str, new_value: str) -> str | None:
     pattern = re.compile(
         rf'^(\s*{re.escape(package)}\s*=\s*)(.+?)(\s*(?:#.*)?)$',
         re.MULTILINE,
     )
+    rendered = _toml_value(new_value)
 
     def repl(m: re.Match[str]) -> str:
-        return f"{m.group(1)}{new_value}{m.group(3)}"
+        return f"{m.group(1)}{rendered}{m.group(3)}"
 
     new_text, n = pattern.subn(repl, text, count=1)
     return new_text if n else None
@@ -89,22 +97,17 @@ def main() -> int:
             continue
         base_decl = base_index.get((f.feature, f.package))
         base_spec = base_decl.spec if base_decl else ""
-        if f.kind in {"lowered-floor", "moved-hold"} and base_decl:
+        clause: str | None = None
+        if f.kind in {"flattened-table", "moved-hold"} and base_decl:
+            clause = base_spec
+        elif f.kind == "lowered-floor" and base_decl:
             m = re.search(r">=\s*(\d+(?:\.\d+)*)", base_spec)
             new_floor = m.group(1) if m else "0.0.0"
-            if f.kind == "moved-hold":
-                manifest_path.write_bytes(original_bytes)
-                print(
-                    f"REFUSE: never-move package {f.package} moved — restore manually from policy",
-                    file=sys.stderr,
-                )
-                return 1
+            clause = _restore_clause(policy, f.package, f.feature, new_floor, f.kind)
         else:
             m = re.search(r">=\s*(\d+(?:\.\d+)*)", f.detail.split("->")[-1])
             new_floor = m.group(1) if m else "0.0.0"
-        clause = _restore_clause(policy, f.package, f.feature, new_floor, f.kind)
-        if f.kind == "flattened-table" and base_decl:
-            clause = base_spec
+            clause = _restore_clause(policy, f.package, f.feature, new_floor, f.kind)
         if not clause:
             print(f"REFUSE: no policy clause for {f.package} @ {f.feature}", file=sys.stderr)
             return 1
