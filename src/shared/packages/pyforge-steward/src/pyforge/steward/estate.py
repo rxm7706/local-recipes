@@ -174,9 +174,7 @@ def _row_covers_feature(row_features: object, feature: str) -> bool:
     if row_features == "*":
         return True
     if isinstance(row_features, list):
-        return feature in row_features or any(
-            feature == f or feature.startswith(f + ".") for f in row_features
-        )
+        return feature in row_features or any(feature == f or feature.startswith(f + ".") for f in row_features)
     return False
 
 
@@ -185,9 +183,7 @@ def _held_by(policy: dict[str, Any], package: str, feature: str) -> str | None:
     rows = [
         h
         for h in holds
-        if isinstance(h, dict)
-        and h.get("package") == package
-        and _row_covers_feature(h.get("features"), feature)
+        if isinstance(h, dict) and h.get("package") == package and _row_covers_feature(h.get("features"), feature)
     ]
     if not rows:
         return None
@@ -229,7 +225,9 @@ def _parse_pixi_moves(payload: object) -> list[dict[str, str]]:
     return moves
 
 
-def _run_pixi_upgrade_json(deps: EstateDeps, command_argv: list[str], *, dry_run: bool) -> tuple[list[dict], _Completed]:
+def _run_pixi_upgrade_json(
+    deps: EstateDeps, command_argv: list[str], *, dry_run: bool
+) -> tuple[list[dict], _Completed]:
     argv = list(command_argv)
     if dry_run and "--dry-run" not in argv and "upgrade" in argv:
         idx = argv.index("upgrade")
@@ -363,9 +361,7 @@ def _format_plan_text(moves: list[dict], bmad: list[dict], days: int | None) -> 
     lines: list[str] = []
     for move in moves:
         held = move.get("held-by") or ""
-        lines.append(
-            f"{move['package']}\t{move['feature']}\t{move['from']}\t{move['to']}\t{held}"
-        )
+        lines.append(f"{move['package']}\t{move['feature']}\t{move['from']}\t{move['to']}\t{held}")
     lines.append("--- bmad ---")
     for row in bmad:
         lines.append(f"{row['package']}\tpinned={row['pinned']}\tinstalled={row['installed']}\tlatest={row['latest']}")

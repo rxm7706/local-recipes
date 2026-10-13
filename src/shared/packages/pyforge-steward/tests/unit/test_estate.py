@@ -12,13 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.steward.cli import DUTIES, build_parser, main, resolve_duty
+from pyforge.steward.cli import DUTIES, build_parser, resolve_duty
 from pyforge.steward.estate import (
     ESTATE_FLAG_KEY,
     EXIT_ESTATE_REFUSAL,
+    SCHEMA_RESOURCE,
     EstateDeps,
     EstateDuty,
-    SCHEMA_RESOURCE,
     run_plan,
     run_refresh,
     run_status,
@@ -97,8 +97,7 @@ def _fixture_root(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     (root / "pixi.toml").write_text(
-        '[project]\nname = "x"\n\n[feature.guild.dependencies]\n'
-        'bmad-method = ">=6.12.2"\n',
+        '[project]\nname = "x"\n\n[feature.guild.dependencies]\nbmad-method = ">=6.12.2"\n',
         encoding="utf-8",
     )
     (root / ".steward" / "estate-refresh").mkdir(parents=True)
