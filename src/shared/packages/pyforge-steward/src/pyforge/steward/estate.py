@@ -1,6 +1,6 @@
 """``steward estate`` — policy-driven pin refresh conductor (Story 100.2 / CAP-167).
 
-Four verbs in v1: ``plan``, ``refresh``, ``reconcile``, ``status``. Every mutating step is a
+Five verbs in v1: ``plan``, ``refresh``, ``reconcile``, ``verify``, ``status``. Every mutating step is a
 subprocess (AD-1); this module never edits ``pixi.toml`` (AD-5). Returns
 ``DutyResult`` only (AD-8).
 """
@@ -562,6 +562,12 @@ def run_status(deps: EstateDeps, *, json_out: bool, show_all: bool) -> DutyResul
         lines.append(f"=== {path.name} ===")
         lines.append(f"base_sha={doc.get('base_sha')} moves={len(doc.get('moves') or [])}")
         lines.append(f"fan_out.ok={doc.get('fan_out', {}).get('ok')}")
+        from .estate_verify import format_status_platforms
+
+        plat_lines = format_status_platforms(doc)
+        if plat_lines:
+            lines.append("--- platforms (verify) ---")
+            lines.extend(plat_lines)
     lines.append(f"due={'yes' if due else 'no'}")
     if json_out:
         payload = {"journals": [_load_journal(p) for p in selected], "due": due}
@@ -605,6 +611,22 @@ class EstateDuty:
                 json_out=bool(getattr(ns, "json", False)),
                 show_all=bool(getattr(ns, "all", False)),
             )
+        if verb == "verify":
+            from .estate_verify import production_verify_deps, run_verify
+
+            vdeps = getattr(ns, "_verify_deps", None)
+            if vdeps is None:
+                vdeps = production_verify_deps(root)
+            return run_verify(
+                vdeps,
+                env_filter=getattr(ns, "env", None),
+                lane_filter=getattr(ns, "lane", None),
+                probe_filter=getattr(ns, "probe", None),
+                all_envs=bool(getattr(ns, "all", False)),
+                keep=bool(getattr(ns, "keep", False)),
+                ignore_ci_pauses=bool(getattr(ns, "ignore_ci_pauses", False)),
+                budget_minutes=getattr(ns, "budget_minutes", None),
+            )
         if verb == "realize":
             from .estate_realize import production_realize_deps, run_realize
 
@@ -619,4 +641,4 @@ class EstateDuty:
                 all_rows=bool(getattr(ns, "all", False)),
                 journal_path=Path(journal_arg) if journal_arg else None,
             )
-        return DutyResult(ok=False, summary="estate: need plan, refresh, reconcile, realize, or status")
+        return DutyResult(ok=False, summary="estate: need plan, refresh, reconcile, verify, realize, or status")

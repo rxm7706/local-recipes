@@ -314,9 +314,14 @@ def run_verify(
             }
         )
 
+    scoped = bool(env_filter or lane_filter or probe_filter)
+    run_full = not scoped
+
     env_names = _tier_environments_from_root(deps.root, all_envs=all_envs)
     if env_filter:
         env_names = [e for e in env_names if e == env_filter]
+    elif not run_full:
+        env_names = []
 
     install_started = time.monotonic()
     for env_name in env_names:
@@ -372,61 +377,67 @@ def run_verify(
         )
 
     pixi_data = document
-    try:
-        lanes = list_preflight_lanes(pixi_data)
-    except Exception:  # noqa: BLE001
-        lanes = []
-    selection = select_lanes_for_paths(deps.root, lanes, pixi_data, VERIFY_CHANGED_PATHS)
     pauses = _load_ci_pauses(deps)
+    if run_full or lane_filter:
+        try:
+            lanes = list_preflight_lanes(pixi_data)
+        except Exception:  # noqa: BLE001
+            lanes = []
+        selection = select_lanes_for_paths(deps.root, lanes, pixi_data, VERIFY_CHANGED_PATHS)
+    else:
+        selection = None
 
-    for verdict in selection.verdicts:
-        if not verdict.selected:
-            continue
-        lane = Lane(verdict.task, verdict.environment, ())
-        if lane_filter and lane.task != lane_filter:
-            continue
-        pause = pauses.get(lane.task)
-        if pause and not ignore_ci_pauses:
-            switch, since = pause
+    if selection is not None:
+        for verdict in selection.verdicts:
+            if not verdict.selected:
+                continue
+            lane = Lane(verdict.task, verdict.environment, ())
+            if lane_filter and lane.task != lane_filter:
+                continue
+            pause = pauses.get(lane.task)
+            if pause and not ignore_ci_pauses:
+                switch, since = pause
+                rows.append(
+                    {
+                        "kind": "lane",
+                        "name": lane.task,
+                        "environment": lane.environment,
+                        "platform": run_platform,
+                        "verdict": f"skipped: paused in CI ({switch} since {since})",
+                        "exit": 0,
+                        "seconds": 0.0,
+                    }
+                )
+                continue
+            argv = [
+                "pixi",
+                "run",
+                "--frozen",
+                "--skip-deps",
+                "-e",
+                lane.environment,
+                lane.task,
+            ]
+            proc, seconds, special = _run_timed(
+                deps, argv, wt, budget_seconds=budget_seconds, started=install_started
+            )
+            verdict_s = _row_verdict(proc.returncode, special=special)
+            if verdict_s not in ("ok", "lock-solved"):
+                any_red = True
             rows.append(
                 {
                     "kind": "lane",
                     "name": lane.task,
                     "environment": lane.environment,
                     "platform": run_platform,
-                    "verdict": f"skipped: paused in CI ({switch} since {since})",
-                    "exit": 0,
-                    "seconds": 0.0,
+                    "verdict": verdict_s,
+                    "exit": proc.returncode,
+                    "seconds": round(seconds, 3),
+                    "argv": argv,
                 }
             )
-            continue
-        argv = [
-            "pixi",
-            "run",
-            "--frozen",
-            "--skip-deps",
-            "-e",
-            lane.environment,
-            lane.task,
-        ]
-        proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
-        verdict_s = _row_verdict(proc.returncode, special=special)
-        if verdict_s not in ("ok", "lock-solved"):
-            any_red = True
-        rows.append(
-            {
-                "kind": "lane",
-                "name": lane.task,
-                "environment": lane.environment,
-                "platform": run_platform,
-                "verdict": verdict_s,
-                "exit": proc.returncode,
-                "seconds": round(seconds, 3),
-                "argv": argv,
-            }
-        )
 
-    if lane_filter is None or lane_filter == "sbom-laptop-gate":
+    if run_full and (lane_filter is None or lane_filter == "sbom-laptop-gate"):
         argv = ["pixi", "run", "--frozen", "-e", "pyforge-foundry-full", "sbom-laptop-gate"]
         proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
         verdict_s = _row_verdict(proc.returncode, special=special)
@@ -445,7 +456,7 @@ def run_verify(
             }
         )
 
-    if lane_filter is None or lane_filter == "verify-env":
+    if run_full and (lane_filter is None or lane_filter == "verify-env"):
         argv = ["pixi", "run", "--frozen", "-e", "local-recipes", "verify-env"]
         proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
         verdict_s = _row_verdict(proc.returncode, special=special)
@@ -464,7 +475,7 @@ def run_verify(
             }
         )
 
-    if lane_filter is None or lane_filter == "pin-fan-out":
+    if run_full and (lane_filter is None or lane_filter == "pin-fan-out"):
         argv = [sys.executable, "scripts/pin_policy_check.py", "--fan-out", "--json"]
         proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
         verdict_s = _row_verdict(proc.returncode, special=special)
@@ -483,7 +494,7 @@ def run_verify(
             }
         )
 
-    if lane_filter is None:
+    if run_full and lane_filter is None:
         for name, command, plat in MANUAL_ROWS:
             rows.append(
                 {
@@ -514,6 +525,8 @@ def run_verify(
         if isinstance(r, dict) and r.get("package")
     }
     tests_seen: set[str] = set()
+    if not run_full and not probe_filter:
+        by_pkg = {}
     for pkg, row in sorted(by_pkg.items()):
         if probe_filter and pkg != probe_filter:
             continue
