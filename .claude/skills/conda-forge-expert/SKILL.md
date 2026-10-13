@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.100.0
+version: 8.100.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4200,8 +4200,15 @@ well. Two resolvers read mapping data, and both now honour it:
   entries into `[]`, and every override drops silently. `name_resolver.py` warns on stderr instead.
 
 `tests/meta/test_split_distribution_run_deps.py` reds a `noarch: python` recipe that lists the wrong half of a pair
-marked `lint_wrong_half: true` in `custom.yaml` (unicorn). The playwright pair is declared but not linted: the Node
-CLI is a legitimate dependency for tools that shell out to it.
+marked `lint_wrong_half: true` in `custom.yaml` (unicorn and playwright). The bindings' own recipe is exempt:
+`playwright-python` depends on the `playwright` CLI by design.
+
+**How the wrong half spread (mason Story 30.1).** `recipe-generator.py` resolves every PyPI requirement through
+`name_resolver.resolve_name`, and the resolver's cache maps `playwright → playwright`. So every generated recipe whose
+upstream requires PyPI `playwright` got the Node CLI. Sixteen recipes carried it; fifteen of them import the bindings,
+and none could pass `pip check`. Story 30.1 moved all fifteen to `playwright-python`. v8.100.0's tier-0 `custom.yaml`
+lookup stops new ones, and the check reds any that slip through. When the check flags a recipe, read the upstream
+`requires_dist`. If it names the PyPI distribution, the recipe needs the bindings.
 
 ---
 
@@ -4532,6 +4539,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.100.1** (Oct 13, 2026) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted, and the generator path that spread it is named (PATCH).** See `CHANGELOG.md`.
 - **v8.100.0** (Oct 12, 2026) — **mason Story 29.1 Rule-2 retro: G122 (backport an unreleased upstream fix into a local mirror when two pins are disjoint), a second G107 case (`unicorn` vs `python-unicorn`), a G84 refinement, mapping overrides moved to `custom.yaml`, and the python_min test's stale fallback floor (MINOR).** See `CHANGELOG.md`.
 - **v8.99.2** (Oct 10, 2026) — **mason Story 25.4 retro: hand-stamp CFE block then rerun `--repair`; 14/14 repaired; build record for leftovers (PATCH).** See `CHANGELOG.md`.
 - **v8.99.1** (Oct 9, 2026) — **mason Story 25.2 closing retro: reading a `refresh-wave` report, the no-CFE-block cause behind every Wave 0 leftover, and a G93 addendum (PATCH).** See `CHANGELOG.md`.
