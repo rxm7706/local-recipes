@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 572
+# stories: 579
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -34,6 +34,11 @@ development_status:
   100-6-the-hand-sequence-is-retired-by-one-how-to-and-one-pointer: done
   100-7-the-first-refresh-lands-through-the-path: done
   101-1-the-platform-ci-local-stubs-leak-no-process-and-the-holder-scan-takes-seconds: done
+  102-1-the-pages-workflow-is-steward-s-and-fires-only-on-the-published-inputs: backlog
+  102-2-one-pages-workflow-in-upstream-shape-builds-on-every-change-and-deploys-only-what-changed: backlog
+  102-3-steward-pages-build-deploy-status-replaces-deploy-dashboard-and-deploy-status: backlog
+  102-4-the-pages-build-mounts-atlas-s-kedro-viz-export-from-a-workflow-artifact-and-tolerates-its-absence: backlog
+  102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset: backlog
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
@@ -392,6 +397,8 @@ development_status:
   epic-100-retrospective: optional
   epic-101: done
   epic-101-retrospective: optional
+  epic-102: backlog
+  epic-102-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
   epic-12: done

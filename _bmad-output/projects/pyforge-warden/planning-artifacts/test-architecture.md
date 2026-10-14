@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 028c338d29459390
+source_fingerprint: cb82d34ab20e0c92
 story_count: 62
-test_file_count: 79
+test_file_count: 80
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-warden`
 - **Stories parsed:** 62
 - **Epics parsed:** 18
-- **Test files inventoried:** 79 under `src/shared/packages/pyforge-warden/tests/`
+- **Test files inventoried:** 80 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `028c338d29459390`
+- **Source fingerprint:** `cb82d34ab20e0c92`
 
 ## Risk Assessment
 
@@ -110,6 +110,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_feeds.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_fix_solver_seam.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_fix_target_resolution.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_graphql.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_fleet_github_rest.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_hooks.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_hygiene.py` | unit | none observed |

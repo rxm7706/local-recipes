@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): chain-currency cascade (spec -> PRD) for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); FR-23 and FR-24 registered; § Currency reconciliation — 2026-10-14 (Pages site) appended. Prior '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -718,6 +718,53 @@ shows one line per WARN; the source never calls `gh`, never imports `pyforge.ste
 *Decomposed as Epic 45 — Story 45.1, the epic number the plan reserved. `flag-exempt: detector-or-gate` by bmad-spec
 ruling (memlog, 2026-10-14).*
 
+## FR-23 — One registry orders the whole Pages site (spec-pyforge-doctor CAP-90)
+
+Added 2026-10-14 (the Pages deployment, redesigned; operator rulings 2026-10-13,
+`_bmad-output/brainstorming/brainstorm-pages-deployment-redesign-2026-10-13/brainstorm-intent.md`). The Pages site is
+ordered by two registries today: `docs/map.yaml` orders the four quadrants (68 pages at mint: 3 tutorials, 32 how-to,
+22 reference, 11 explanation) and herald's `docsite/content/site.yml` orders the herald menu and the Kedro-Viz
+neighbour, and `docs-site/scripts/sidebar_from_map.py` reads both (herald Story 40.1). `docs/MAP.md` § *Outside this
+map* still says the dossier publishes at the root (stale since herald Story 27.2, 2026-10-08) and names neither
+`docsite/` nor `docs-site/`. Under FR-17 the registry is Doctor's: `docs/map.yaml` gains an additive `sections:` list
+for the non-docs prefixes (`herald`, `status`, `pipelines`, `dashboards`, `changes`; `{key, label, href, owner, order}`
+plus optional `entries`), a row added as each section publishes; `docs-map-hygiene` validates the list's shape and
+warns on a tracked top-level directory the MAP's table does not name; the MAP's Publish roots row is corrected and the
+table names `docsite/`, `docs-site/` and `presentations/`. Every renderer is herald's and reads the list as data
+(`pyforge-herald:CAP-61`, Story 43.7, whose Deps name doctor 48.1).
+
+**Consequences (testable):** `load_map_yaml` accepts a well-formed `sections:` list and refuses an entry missing a
+field; `docs-map-hygiene` yields one `sections` WARN for a duplicate `key` or `order` or a malformed `href`, one
+`unnamed-top-level` WARN for a tracked top-level directory that is not `docs`, a dot-directory, an allow-listed
+infrastructure directory or the first segment of a path the table names, and never a FAIL from either class; `missing`
+and `unmapped` are unchanged; on the story's tree `docs-map-hygiene-check` exits 0 with the OK row, `docs-map-render`
+leaves `docs/MAP.md` byte-identical and `docs-currency-check` stays green; `sidebar_from_map.py` and `site.yml` are
+untouched.
+
+**Non-goals:** no renderer change (herald's), no row for a section that does not publish yet, no check that an `href`
+resolves in the built artifact, no rename of `docsite/` or `docs-site/`.
+
+*Decomposed as Epic 48 — Story 48.1. `flag-exempt: docs-only` (coordinator assignment; memlog, 2026-10-14).*
+
+## FR-24 — A stalled Pages deploy is named within a day (spec-pyforge-doctor CAP-91)
+
+Added 2026-10-14 (the same rulings). The Pages deploy sat in `waiting` from 2026-10-06 to 2026-10-12 and no detector
+saw it; steward's `ci status` now names that class from GitHub's side (`dashboard.deploy`, `deploy_waiting_hours: 24`,
+relayed by FR-22), but only for a signed-in reader with the steward flag on. A Doctor source, `pages-liveness`, names it
+from the reader's side: one HTTP request to the live Pages root for its `last-modified` header (measured 2026-10-14:
+the header is sent), the latest commit on `refs/remotes/origin/main` that touched a published input through
+`cli_bridge.run_git`, and a WARN when the commit is more than 24 hours newer than the header. No token, no `gh`, no
+GitHub API.
+
+**Consequences (testable):** on recorded fixtures a fresh site and one 23 hours behind yield the OK row; one 25 hours
+behind and the 2026-10-06 replay each yield one `pages-liveness-stale` WARN naming both timestamps and the lag; no
+network, a non-2xx on HEAD and GET, a missing or unparseable header and a failed git read each yield one
+`pages-liveness-unavailable` WARN and never an OK; a WARN never changes the exit code; `fleet-picture`'s ATTENTION
+block shows one line per WARN and `could not check Pages liveness` when the probe raises; the source is not in
+`detectors-ci` or `doctor check`'s default set; no test opens a socket.
+
+*Decomposed as Epic 48 — Story 48.2. `flag-exempt: detector-or-gate` by bmad-spec ruling (memlog, 2026-10-14).*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -1117,3 +1164,16 @@ extended), its one subprocess call in `cli_bridge` (AD-5, AD-12), and WARN-only 
 **The FR space now FR-1..FR-22** (FR-23 is the next free id).
 
 **Content changed:** FR-22 registered and this section added. No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-14 (Pages site)
+
+*Chain-currency cascade (spec → PRD): `spec-pyforge-doctor` minted CAP-90 and CAP-91 on 2026-10-14 from the station
+Dream's 2026-10-13 entry (one registry orders the whole site, and a stale site tells on itself), after herald's
+CAP-60 / CAP-61 chain for the Pages redesign was minted the same day. FR-23 and FR-24 registered above to cite them;
+decomposed as **Epic 48** (Stories 48.1 and 48.2). Story 48.1 is `flag-exempt: docs-only` and Story 48.2
+`flag-exempt: detector-or-gate` (memlog, 2026-10-14). The spine adds AD-14 (the registry orders, the renderer renders)
+and lands CAP-91 on AD-2, AD-3 and AD-5 as written.*
+
+**The FR space now FR-1..FR-24** (FR-25 is the next free id).
+
+**Content changed:** FR-23 and FR-24 registered and this section added. No FR renumbered or removed. `updated:` bumped.

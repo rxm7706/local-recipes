@@ -7,7 +7,7 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: "2026-10-13"   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-14"   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> arch) for FR-70 / CAP-62 and FR-71 / CAP-63 (Epic 30: the DAG export reaches Pages as a workflow artifact; Vizro boards publish as static exports). AD-21 amended (every static surface atlas publishes reaches Pages as a workflow artifact); no AD added or removed. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 28.1 and 29.1, two test-only fixes (CAP-6, CAP-16); no AD added, amended or removed. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> arch) for Story 25.1's gate clearing (key blocked -> backlog by operator ruling); no AD amended. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD -> arch) for marshal Story 66.2's deferred-work backfill; no AD amended. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-69 / CAP-61 (Epic 25); lands on AD-1, AD-2, AD-3, AD-4, AD-5, AD-6 and AD-13 as written, no AD amended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim. Reviewed again 2026-08-26 — AD-3 amended for the three governed pipeline additions; post-08-02 as-built deltas (CAP-19 query plane, host MCP face, CAP-18 hooks, vizro-ai deprecation, canopy AD-numbering disambiguation) reconciled in the appended section 'Currency reconciliation — 2026-08-26'. Reviewed again 2026-09-18 (fleet chain-currency sweep) — the 2026-09-17 PRD fold/rekey and 2026-09-10 code motion (Story 24.4 live Artifactory transport) reconciled in the appended section 'Currency reconciliation — 2026-09-18'; AD-3's Epic 13/15 citations corrected to post-rekey Epic 12/14."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
@@ -200,6 +200,17 @@ graph TD
 - **Binds:** Wave G, the published artifact layout
 - **Prevents:** a backend dependency sneaking into the portable surface; host lock-in
 - **Rule:** the Vizro-AI dashboard + BSL layer run in-browser via duckdb-wasm/Pyodide against Parquet chunks pulled over HTTP Range from a static host; the emitter is host-agnostic (Q4 default: GitHub Pages; enterprise mirror substitutable). Gate: `wasm-smoke` (Playwright headless load-and-query).
+- **Amended 2026-10-14 (CAP-62, CAP-63; FR-70, FR-71): every static surface atlas publishes reaches Pages as a
+  workflow artifact.** The published artifact layout this AD binds covers three static exports with zero backend —
+  the Parquet read surface, the Kedro-Viz DAG export (`kedro-viz-export`) and the Vizro boards
+  (`vizro-static-export`) — and each reaches the Pages build as a workflow artifact produced by atlas's own
+  workflow, never as bytes committed to `main` and never through a `deploy-pages` call of atlas's own (herald
+  AD-21 rule 2: one deploy caller, steward's). Each export carries its provenance as data for the consumer to
+  render (`manifest.json`: the export commit and date; per-board AD-17 stamps); none loads a third-party origin
+  (herald AD-21 as amended 2026-09-28: plotly.js is vendored once into the artifact, never `'cdn'`); a board that
+  declares an access column is never exported statically (`sld:AD-10`: refused before any write). The emitter stays
+  host-agnostic — the consumer, not atlas, chooses the mount, and `/dashboard/kedro-viz/` keeps its URL. Gates: the
+  workflow-shape, manifest and refusal tests Stories 30.1 and 30.2 add, beside `wasm-smoke`.
 
 ### AD-22 — The Wave-H factory consumes; it never writes atlas data (FR-22)
 
@@ -1501,3 +1512,35 @@ decisions as written:
 No port, adapter or package boundary moves.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-14
+
+*Trigger: the PRD's re-stamp for FR-70 / CAP-62 and FR-71 / CAP-63 (`prd→arch`) — the DAG export reaches Pages as a
+workflow artifact; Vizro boards publish as static exports under `/dashboard/vizro/` (Epic 30).* Checked against every
+AD. **AD-21 is amended** (in place above); no AD is added or removed:
+
+- **AD-21 (WASM read surface: static Parquet + HTTP Range, zero backend; the published artifact layout).** The AD already
+  binds atlas's static, host-agnostic artifact with Pages as the default host. The amendment widens "the published
+  artifact layout" to the Kedro-Viz export and the Vizro boards and states the handoff: a workflow artifact, never a
+  commit, never a second `deploy-pages` caller. Why amend rather than add: both capabilities are static surfaces atlas
+  publishes with zero backend to the same host, and the satellite sections already hold AD-24..AD-56, so a new primary
+  AD would read AD-57 beside AD-23.
+- **AD-1 (the DAG is the source of truth; import ban).** The manifest writer lives in `tools/` beside
+  `normalize_viz_build.py`; the static exporter lives under `dashboard/` and reuses `build_dashboard`. `pipelines/`,
+  `datasets/` and `hooks.py` are untouched, nothing new imports Dagster or `kedro-mcp`, and the no-inline-IO and F1
+  grep gates hold as written (`kedro-catalog-check`).
+- **AD-8 (BSL is the single semantic translation interface).** The static boards are the same `Dashboard` object the
+  live server runs, so every exported figure still routes through `dashboard.data` and the D1 models; nothing is
+  re-derived for the export (the archived intake's drift risk, closed by construction).
+- **AD-11 (gates are fixtures, never credentials).** The producer's stub `conf/local/credentials.yml` step stays; the
+  export tests run on the fixture data root; no credential enters either workflow.
+- **AD-17 (snapshots are advisory; payloads carry their build timestamp).** `manifest.json` carries the export commit
+  and date, and each Vizro board's `data_build_timestamp` is the page's own stamp, the one
+  `test_dashboard_provenance.py` already proves per page. The consumer renders the stamp; atlas never patches
+  kedro-viz's `index.html`.
+- **Foreign decisions, cited qualified:** herald AD-21 (one Pages artifact, one deploy caller, zero third-party
+  origins), `sld:AD-10` on the steward spine (static export and role isolation are mutually exclusive; refuse, never
+  warn), `pyforge-steward:CAP-166` (the CI-surfaces registry and the `ci` duty; the `kedro-viz-publish` row is
+  steward's and its `paused-manually → live` move is the operator's gate).
+
+**Content changed:** AD-21's 2026-10-14 amendment and this section. `updated:` bumped. No AD added or removed.
