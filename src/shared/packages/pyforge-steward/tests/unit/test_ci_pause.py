@@ -9,8 +9,13 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
+
+flag_provider = make_flag_provider_fixture()
 
 from pyforge.steward.ci import (
+    CI_FLAG_KEY,
     CI_PAUSES_LOG_REL,
     DEFAULT_REPO,
     EXIT_CI_GH_FAILED,
@@ -451,6 +456,36 @@ def test_main_pause_dry_run_no_live_gh(tmp_path: Path, monkeypatch: pytest.Monke
     )
     assert code == 0
     assert not any(cmd[:3] == ["gh", "variable", "set"] for cmd in recorded)
+
+
+@flag_states("pyforge.steward.ci_pause_control")
+def test_pause_respects_ci_pause_control_flag(
+    tmp_path: Path, flag_provider: dict[str, bool]
+) -> None:
+    reg_path = _write_registry(tmp_path)
+    on = flag_provider["pyforge.steward.ci_pause_control"]
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_recording_runner([]),
+        registry_path=reg_path,
+        flag_on=lambda: on,
+        now=lambda: datetime(2026, 10, 13, tzinfo=timezone.utc),
+    )
+    result = run_pause(
+        deps,
+        target="live.guild-container",
+        reason="save runner time",
+        review_by="2026-11-01",
+        yes=False,
+        remove_merge_gate=False,
+    )
+    if on:
+        assert result.ok is True
+        assert "dry run" in result.summary
+    else:
+        assert result.ok is False
+        assert CI_FLAG_KEY in result.summary
+        assert result.details.get("exit_code") == EXIT_CI_REFUSAL
 
 
 def test_no_live_scribe_in_tests() -> None:
