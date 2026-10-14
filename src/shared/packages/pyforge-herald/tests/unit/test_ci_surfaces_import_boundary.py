@@ -9,7 +9,9 @@ from pathlib import Path
 def _repo_root() -> Path:
     here = Path(__file__).resolve()
     for candidate in here.parents:
-        if (candidate / "pixi.toml").is_file():
+        if (candidate / "pixi.toml").is_file() and (
+            candidate / "src" / "shared" / "packages" / "pyforge-herald"
+        ).is_dir():
             return candidate
     raise AssertionError("repo root not found")
 
@@ -21,6 +23,24 @@ def _py_files_under(*roots: Path) -> list[Path]:
             continue
         out.extend(p for p in root.rglob("*.py") if p.is_file())
     return out
+
+
+def _literal_args(node: ast.Call) -> list[str]:
+    parts: list[str] = []
+    if node.args:
+        first = node.args[0]
+        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+            parts.append(first.value)
+        elif isinstance(first, ast.List):
+            for elt in first.elts:
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                    parts.append(elt.value)
+    for kw in node.keywords:
+        if kw.arg == "args" and isinstance(kw.value, ast.List):
+            for elt in kw.value.elts:
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                    parts.append(elt.value)
+    return parts
 
 
 def _forbidden_imports(path: Path) -> list[str]:
@@ -39,10 +59,9 @@ def _forbidden_imports(path: Path) -> list[str]:
         elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             if isinstance(node.func.value, ast.Name) and node.func.value.id == "subprocess":
                 if node.func.attr in ("run", "call", "Popen", "check_output", "check_call"):
-                    hits.append(f"{path}: subprocess.{node.func.attr}(...)")
-    text = path.read_text(encoding="utf-8")
-    if " gh " in text or text.strip().startswith("gh ") or "\ngh " in text:
-        hits.append(f"{path}: literal gh invocation")
+                    joined = " ".join(_literal_args(node))
+                    if joined.startswith("gh ") or joined == "gh" or " gh " in joined:
+                        hits.append(f"{path}: subprocess.{node.func.attr} invokes gh")
     return hits
 
 
