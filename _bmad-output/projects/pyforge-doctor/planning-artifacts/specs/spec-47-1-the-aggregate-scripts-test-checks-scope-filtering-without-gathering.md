@@ -3,7 +3,7 @@ title: '47.1: The aggregate scripts test checks scope filtering without gatherin
 type: 'fix'
 created: '2026-10-14'
 status: 'in-review'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -141,11 +141,24 @@ The real gathers are already judged where they belong: the `detectors` job runs 
 
 ## Named, not fixed here
 
-- **Two `pixi.toml` task descriptions still call the lane stdlib-only**, and both are tracked as `DW-doctor-47-1-1`
-  (owner steward). The `pyforge-ci` comment block above `pyforge-doctor-scripts-test` (`pixi.toml:840-847`, its
-  description "pure stdlib, no runtime deps required") and the `pyforge-doctor-aggregate-scripts-test` description
-  (`pixi.toml:3078`, "pyforge-ci, stdlib-only by design") are both untrue today. They are not edited here: a `pixi.toml`
-  change fires every station suite and the `environment.yaml` rule, which is out of scale for a description fix.
+- **Six places in `pixi.toml` still describe `pyforge-ci` as stdlib-only or free of runtime libraries.** All are
+  tracked as `DW-doctor-47-1-1` (owner steward). `grep -n "carries no runtime\|unavailable in \`pyforge-ci\`\|stdlib-only\|pure stdlib" pixi.toml`
+  finds them:
+  - `:651-652`, the `pyforge-steward-container-gates-test` comment: "`pyforge-ci` (deliberately zero runtime deps, mirrors
+    why `pyforge-doctor-scripts-test` lives there for its stdlib-only target)".
+  - `:830-832`, the `pyforge-deps-test` comment: "the leanest env in the repo — which carries no runtime libraries at
+    all". Its "the check is pure stdlib (ast + tomllib)" is about the check, and stays true.
+  - `:837`, the `pyforge-deps-test` description: "pure stdlib; no runtime deps required". It describes the check, and
+    stays true; it is listed because the grep finds it.
+  - `:840-847`, the comment above `pyforge-doctor-scripts-test` ("both it and `pyforge.doctor.models` are pure stdlib,
+    so this fits the same lean env") and its description ("pure stdlib, no runtime deps required").
+  - `:1638`, the `pr-preflight` description: "jsonschema (unavailable in `pyforge-ci`, which
+    `pyforge-doctor-scripts-test` already covers for the stdlib-only subset)".
+  - `:3078`, the `pyforge-doctor-aggregate-scripts-test` description: "skip under pyforge-doctor-scripts-test
+    (pyforge-ci, stdlib-only by design)".
+
+  They are not edited here: a `pixi.toml` change fires every station suite and the `environment.yaml` rule, which is
+  out of scale for a description fix.
 - **`pyforge-ci` is not stdlib-only in practice.** It declares none of Doctor's run-deps, but its `python` feature pulls
   `jsonschema` and `pyyaml` in through `spec-kit` (`pixi tree -e pyforge-ci -i jsonschema`: `spec-kit` -> `mcp` ->
   `jsonschema`), and `tests/scripts/conftest.py` puts `pyforge-core` on `sys.path`. So Doctor's dispatch tests run in
@@ -173,10 +186,13 @@ The real gathers are already judged where they belong: the `detectors` job runs 
 - 2026-10-14, after the independent review (FAIL on prose only): the workflow comments, the test docstring, the runner
   timings here and in the Dream entry, and a memlog correction are fixed; `DW-doctor-47-1-1` records the two `pixi.toml`
   descriptions and the env question. See *Review (2026-10-14, independent)*.
+- 2026-10-14, after the re-review (iteration 2, three low text-only findings): the `detectors.yml` comment says what
+  the `pyforge-ci` env composes, and *Named, not fixed here* and `DW-doctor-47-1-1` list all six `pixi.toml` places,
+  not two. `review_loop_iteration` is 1.
 
 ## Review (2026-10-14, independent)
 
-**Verdict: FAIL.** The code and all eight ACs pass, and all eight of the reviewer's mutations turned the test red. The
+**Iteration 1 — verdict: FAIL.** The code and all eight ACs pass, and all eight of the reviewer's mutations turned the test red. The
 failures are in comments and prose. Each finding, and what changed:
 
 1. **(medium) The workflow comment said the verdict-writer tests run in `pyforge-ci` too.** False. In `pyforge-ci`,
@@ -201,6 +217,23 @@ failures are in comments and prose. Each finding, and what changed:
    timings.
 6. **(informational)** No action.
 
+**Iteration 2 — re-review of `65f1315a4e`.** Findings 1-5 are confirmed fixed. Three new findings, all low and
+text-only:
+
+- **A. The `detectors.yml` comment said `pyforge-ci` "declares only build and test tools".** False. `pixi.toml:1051`
+  builds `pyforge-ci` from the `python` and `pyforge-ci` features. The `python` feature (`pixi.toml:35-44`) declares
+  gh, gitpython, nodejs, pnpm, bmad-method, spec-kit and truststore, and the `pyforge-ci` feature
+  (`pixi.toml:814-822`) also carries `ruamel.yaml` and `twine`. **Changed:** the comment now says the `pyforge-ci`
+  feature declares build, test and upload tools (plus `ruamel.yaml` for one test), and that the env also composes the
+  `python` feature, whose `spec-kit` pulls `jsonschema` and PyYAML in.
+- **B. `DW-doctor-47-1-1` and *Named, not fixed here* said "two" `pixi.toml` descriptions.** The grep finds six places:
+  `:651-652`, `:830-832`, `:837`, `:840-847`, `:1638` and `:3078`. **Changed:** both now list every hit, with its text.
+  `:837`, and the "pure stdlib" clause at `:830`, describe the check rather than the env and stay true; they are
+  listed because the grep finds them. The DW row is amended in place, because it was minted on this unmerged branch;
+  doctor's precedent is Story 44.1's review amending `DW-doctor-44-1` in `c3ebc48537`. Its `origin:` says so.
+- **C. `review_loop_iteration` stayed 0.** **Changed:** it is 1, one key (precedent: doctor 44.1, `c3ebc48537`).
+
 ## Review Triage Log
 
 - Independent review, 2026-10-14: FAIL on prose only; findings 1-5 fixed as above, 6 informational.
+- Re-review (iteration 2), 2026-10-14: findings 1-5 confirmed fixed; A, B and C (low, text-only) fixed as above.

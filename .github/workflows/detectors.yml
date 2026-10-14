@@ -69,9 +69,10 @@ jobs:
   # Doctor-registry integration, the spec-surface / deferred-work / mirror /
   # bmad-switch scripts). Until 2026-09-05 no workflow ran it and 24 stale
   # tests had rotted on main unnoticed. It runs in the `pyforge-ci` env the
-  # `pyforge-doctor-scripts-test` task was written for. That env declares only
-  # build and test tools, but its python feature pulls jsonschema and PyYAML in
-  # through spec-kit, so it is not stdlib-only (doctor DW-doctor-47-1-1).
+  # `pyforge-doctor-scripts-test` task was written for. Its `pyforge-ci` feature
+  # declares build, test and upload tools (plus ruamel.yaml for one test), and the
+  # env also composes the `python` feature, whose spec-kit pulls jsonschema and
+  # PyYAML in, so the env is not stdlib-only (doctor DW-doctor-47-1-1).
   scripts-suite:
     # ci-surfaces: detectors.scripts-suite
     # render: python scripts/ci_surface_gates.py --render
