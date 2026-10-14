@@ -91,8 +91,29 @@ def test_subprocess_failure_raises(monkeypatch):
         mod.ci_pause_drift_findings()
 
 
-def test_main_appends_watch_line_for_warn(monkeypatch, capsys):
+def _stub_fleet_main_ambient(fleet, monkeypatch, tmp_path):
+    empty_repo = tmp_path / "empty-repo"
+    empty_repo.mkdir()
+    monkeypatch.setattr(fleet, "REPO", empty_repo)
+    monkeypatch.setattr(fleet, "running_stations", lambda: (set(), {}))
+    monkeypatch.setattr(fleet, "loop_home_staleness", lambda: [])
+    monkeypatch.setattr(fleet, "bmad_core_drift_findings", lambda: [])
+    monkeypatch.setattr(fleet, "verification_staleness_findings", lambda: [])
+    monkeypatch.setattr(fleet, "dream_chain_gap_findings", lambda: [])
+    monkeypatch.setattr(fleet, "sibling_dreams_drift_findings", lambda: [])
+    monkeypatch.setattr(fleet, "capability_effect_findings", lambda: [])
+    monkeypatch.setattr(fleet, "status_body_consistency_findings", lambda: [])
+    monkeypatch.setattr(fleet, "baseline_drift_findings", lambda: [])
+    monkeypatch.setattr(
+        fleet.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 0, stdout="", stderr=""),
+    )
+
+
+def test_main_appends_watch_line_for_warn(monkeypatch, capsys, tmp_path):
     mod = _load_fleet_picture()
+    _stub_fleet_main_ambient(mod, monkeypatch, tmp_path)
     monkeypatch.setattr(
         mod,
         "ci_pause_drift_findings",
@@ -100,32 +121,19 @@ def test_main_appends_watch_line_for_warn(monkeypatch, capsys):
             {"check": "ci-pause-overdue", "status": "warn", "message": "CI surface overdue line"},
         ],
     )
-    monkeypatch.setattr(mod, "sibling_dreams_drift_findings", lambda repo=mod.REPO, timeout=20: [])
-    monkeypatch.setattr(mod, "capability_effect_findings", lambda repo=mod.REPO, timeout=60: [])
-    monkeypatch.setattr(mod, "status_body_consistency_findings", lambda repo=mod.REPO, timeout=120: [])
-    monkeypatch.setattr(mod, "verification_staleness_findings", lambda repo=mod.REPO, timeout=180: [])
-    monkeypatch.setattr(mod, "dream_chain_gap_findings", lambda repo=mod.REPO, timeout=120: [])
-    monkeypatch.setattr(mod, "bmad_core_drift_findings", lambda repo=mod.REPO, timeout=25: [])
-    monkeypatch.setattr(mod, "needs_attention", lambda: [])
     mod.main()
     out = capsys.readouterr().out
     assert "ci-pause-overdue: CI surface overdue line" in out
 
 
-def test_main_degrades_when_probe_raises(monkeypatch, capsys):
+def test_main_degrades_when_probe_raises(monkeypatch, capsys, tmp_path):
     mod = _load_fleet_picture()
+    _stub_fleet_main_ambient(mod, monkeypatch, tmp_path)
 
     def _boom(**kwargs):
         raise RuntimeError("probe failed")
 
     monkeypatch.setattr(mod, "ci_pause_drift_findings", _boom)
-    monkeypatch.setattr(mod, "sibling_dreams_drift_findings", lambda repo=mod.REPO, timeout=20: [])
-    monkeypatch.setattr(mod, "capability_effect_findings", lambda repo=mod.REPO, timeout=60: [])
-    monkeypatch.setattr(mod, "status_body_consistency_findings", lambda repo=mod.REPO, timeout=120: [])
-    monkeypatch.setattr(mod, "verification_staleness_findings", lambda repo=mod.REPO, timeout=180: [])
-    monkeypatch.setattr(mod, "dream_chain_gap_findings", lambda repo=mod.REPO, timeout=120: [])
-    monkeypatch.setattr(mod, "bmad_core_drift_findings", lambda repo=mod.REPO, timeout=25: [])
-    monkeypatch.setattr(mod, "needs_attention", lambda: [])
     mod.main()
     out = capsys.readouterr().out
     assert "could not check CI pauses" in out
