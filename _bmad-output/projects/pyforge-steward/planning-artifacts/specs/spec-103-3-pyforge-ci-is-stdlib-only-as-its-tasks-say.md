@@ -81,9 +81,9 @@ points to it):
   (`pyforge-deps-test`, `pyforge-doctor-scripts-test`) imports only the standard library, `pytest`, and the in-repo
   `pyforge-core` and `pyforge-testing-kit` sources. A `tests/scripts` file that needs any other library skips there,
   and runs in a step whose environment declares it.
-- **No runtime library is importable there.** None of `yaml`, `jsonschema`, `ruamel.yaml`, `mcp`, `pydantic`,
-  `httpx` or `openfeature` (the libraries `pyforge-doctor`'s run-dependencies or a `tests/scripts` guard name) can be
-  imported in `pyforge-ci`.
+- **No runtime library is importable there.** None of the import names `yaml`, `jsonschema`, `ruamel`, `mcp`,
+  `pydantic`, `httpx` or `openfeature` (the libraries `pyforge-doctor`'s run-dependencies or a `tests/scripts` guard
+  name) can be imported in `pyforge-ci`.
 - **What it still carries, each an explicit decision:**
   - the binaries and CLIs of the `python` feature: `python`, `pixi`, `gh`, `nodejs`, `pnpm`, `bmad-method`;
   - `gitpython` (with `gitdb`, `smmap`, `typing_extensions`) and `truststore`, from the `python` feature. Every one of
@@ -119,7 +119,7 @@ points to it):
   - `pr-preflight-lanes` gains the leg, which doctor's `test_preflight_mirrors_scripts_suite.py` requires.
 - **A guard that keeps it true.** A new stdlib-only test, `tests/scripts/test_pyforge_ci_is_stdlib_only.py`, asserts:
   - in `pyforge-ci` (`PIXI_ENVIRONMENT_NAME`), that none of the runtime libraries named above can be imported
-    (`importlib.util.find_spec` is `None` for each), and skips elsewhere;
+    (`importlib.util.find_spec(<name>)` is `None` for each top-level name), and skips elsewhere;
   - from `pixi.toml`, that `[feature.python.dependencies]` has no `spec-kit`, `pyforge-ci` composes no `spec-kit`
     feature, every other environment that composes `python` composes `spec-kit`, and
     `[feature.pyforge-ci.dependencies]` declares exactly the seven tools named above;
@@ -185,7 +185,7 @@ Type / Effort / Deps: fix / M / none.
   the rest of `GATING_CHECKS`). The change commits what it regenerated, and no change to `recipes/bmad-suite/recipe.yaml`
   or `.steward/estate-refresh/2026-10-14.json` (see Residual risk).
 - **AC4 — `pyforge-ci` is stdlib-only, as defined.** `pixi run --frozen -e pyforge-ci python -c "<find_spec of each
-  of yaml, jsonschema, ruamel.yaml, mcp, pydantic, httpx, openfeature>"` prints `None` for each, and
+  of yaml, jsonschema, ruamel, mcp, pydantic, httpx, openfeature>"` prints `None` for each, and
   `tests/scripts/test_pyforge_ci_is_stdlib_only.py` passes in `pyforge-ci` and skips its env assertion elsewhere.
   Its static assertions pass everywhere, and each fails on a mutation (AC9).
 - **AC5 — The 32 files skip cleanly in `pyforge-ci`.** `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`

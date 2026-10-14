@@ -139,7 +139,7 @@ Every criterion runs the real `run_status` against a recorded `gh` fixture (the 
 - **AC1 — The master row.** With `PAUSE_ALL_CI` unset, the payload has exactly one `master:PAUSE_ALL_CI` row:
   `switch` `PAUSE_ALL_CI`, `declared_state` `live`, `live_switch_value` `null`, `verdict` `live`,
   `paused_by_master` `false`. With it `"false"`, the same with `live_switch_value` `"false"`. With it `"true"` and
-  an `updatedAt`, `verdict` `drift`, `paused_since` that `updatedAt`, and the AC's `detail` text. No
+  an `updatedAt`, `verdict` `drift`, `paused_since` that `updatedAt`, and the Approach's `detail` text. No
   `unregistered:PAUSE_ALL_CI` row appears in any of the three.
 - **AC2 — Gated rows read paused.** With the master `true`, a fixture holding a `workflow` row whose every job reads
   the master, a `ci-job` row whose job reads it, a `ci-step` row whose job reads it, a `workflow` row one of whose
@@ -159,16 +159,20 @@ Every criterion runs the real `run_status` against a recorded `gh` fixture (the 
 - **AC5 — The schema stays frozen.** `data/ci-status-schema.json` keeps its `$id` and its required lists, gains only
   the optional `paused_by_master` boolean row property, and keeps the eight-value verdict enum.
   `test_json_validates_against_schema` validates the payloads of AC1-AC3.
-- **AC6 — The consumers read it unchanged.** One steward test feeds AC2's master-`true` payload, as printed, to each
-  consumer's own parsing function, imported from its source path the way herald's contract test imports
-  `docsite/tools/ci_surfaces_tile.py`, and asserts what each reports:
-  - doctor's `ci_pause_drift._findings_for_rows`: exactly one `ci-pause-drift` WARN, naming `master:PAUSE_ALL_CI`,
-    and none for a gated `paused` row; `_parse_payload` accepts the payload;
-  - herald's `select_non_live_rows`: the master row first and each gated row present, each line from
-    `format_row_line` ending with its detail; `validate_ci_status_envelope` accepts the payload;
-  - marshal's `surfaces_from_envelope`: a list that contains `master:PAUSE_ALL_CI`; `envelope_is_valid` is true.
-  - The test imports none of `pyforge.doctor`, `pyforge.herald` or `pyforge.marshal` as installed packages and
-    changes no file under them; `git diff origin/main...HEAD --stat` lists no consumer file.
+- **AC6 — The consumers read it unchanged.** A steward test writes AC2's master-`true` payload, exactly as `run_status`
+  prints it, to `src/shared/packages/pyforge-steward/tests/fixtures/ci_status_master_on.json` and fails when the
+  checked-in copy differs, so the fixture cannot go stale. Fed that file, each consumer's own code, run in its own
+  environment with no consumer file changed, reports the master (the Auto Run Result records each output):
+  - doctor, in `pyforge-doctor`: `pyforge.doctor.sources.ci_pause_drift._parse_payload` accepts it, and
+    `_findings_for_rows` returns exactly one `ci-pause-drift` WARN, naming `master:PAUSE_ALL_CI`, and none for a gated
+    `paused` row;
+  - herald, in `pyforge-herald`: `docsite/tools/ci_surfaces_tile.py`'s `validate_ci_status_envelope` accepts it, and
+    `select_non_live_rows` puts the master row first and keeps each gated row, each `format_row_line` ending with its
+    detail;
+  - marshal, in `pyforge-marshal`: `pyforge.marshal.core.landing_ci_pauses.envelope_is_valid` is true, and
+    `surfaces_from_envelope` contains `master:PAUSE_ALL_CI`.
+  - `git diff origin/main...HEAD --stat` lists no file under `pyforge-doctor`, `pyforge-herald`, `pyforge-marshal` or
+    `docsite/`.
 - **AC7 — The how-to.** `docs/how-to/pause-ci.md`'s **Master switch** paragraph names the `master:PAUSE_ALL_CI` row,
   its `drift` verdict while on, and the gated rows' `paused` verdict and `paused_by_master` field; its `verified:`
   frontmatter reads the landing date, and `docs-currency` stays green.
@@ -242,13 +246,14 @@ Every criterion runs the real `run_status` against a recorded `gh` fixture (the 
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass. This is the station's
-  `verify_commands` (MRS-GATE-010 binding), and it runs `test_ci_status.py` with AC6's consumer test.
+  `verify_commands` (MRS-GATE-010 binding), and it runs `test_ci_status.py` with AC6's fixture check.
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py -q` — expected: exit 0 (AC1-AC6).
+- `pixi run --frozen -e pyforge-steward pytest src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py -q` — expected: exit 0 (AC1-AC5, and AC6's fixture).
+- AC6's three consumer reads, each a `pixi run --frozen -e <consumer env> python -c …` over `tests/fixtures/ci_status_master_on.json` — expected: one doctor WARN naming `master:PAUSE_ALL_CI`, the tile listing the master first, marshal's list containing it.
 - The AC8 mutations, one at a time, re-running the named test each time — expected: each fails the named test. Revert each.
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` and `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: exit 0 with no file in either package changed (AC6, AC9).
-- `git diff origin/main...HEAD --stat` — expected: outside `_bmad-output/`, `docs/dreams/pyforge-steward.md` and `scripts/.spec-surface-baseline.json`, only `ci.py`, `data/ci-status-schema.json`, steward's tests and `docs/how-to/pause-ci.md`.
+- `git diff origin/main...HEAD --stat` — expected: outside `_bmad-output/`, `docs/dreams/pyforge-steward.md` and `scripts/.spec-surface-baseline.json`, only `ci.py`, `data/ci-status-schema.json`, steward's tests and fixture, and `docs/how-to/pause-ci.md`.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC9).
 - `pixi run --as-is -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
