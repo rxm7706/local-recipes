@@ -61,7 +61,7 @@ it twice in a row is a no-op.
   exports back into Design; `herald deck pptx-spec` / `pptx-fill` (Story 15.1) fill a template
   into a genuinely editable deck. The pieces exist; nothing sequences them.
 - **Pages publishes the posters and nothing else.** `docsite/build.py` (`spec-pyforge-pages`,
-  live at `rxm7706.github.io/local-recipes/infographics/`) renders the standalone infographics
+  live at `/herald/infographics/` on Pages) renders the standalone infographics
   into a gallery from configured globs. No PPTX, Marp, executive summary or per-deck family page
   is published or downloadable; `dashboard.yml` is the one Pages deployment and must stay so
   (pgs:CAP-2).

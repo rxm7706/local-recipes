@@ -1,7 +1,7 @@
 # pyforge-atlas-kedro-viz — kedro-viz DAG mirror of pyforge-atlas
 
 > The **real** DAG's kedro-viz view is continuously published from CI at
-> <https://rxm7706.github.io/local-recipes/kedro-viz/> (Epic 12/FR-62) — this
+> <https://rxm7706.github.io/local-recipes/dashboard/kedro-viz/> (`/dashboard/kedro-viz/` on Pages; Epic 12/FR-62) — this
 > stub-mirror prototype below is for offline/dependency-free exploration only.
 
 A **dependency-free Kedro project that mirrors the _shape_ of the shipped
