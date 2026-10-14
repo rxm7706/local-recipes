@@ -388,18 +388,17 @@ def render_workflow_file(
             continue
         # Replace an existing job if: (folded >-, expression, or plain scalar).
         if_pat = (
-            rf"(  {re.escape(job_id)}:\n"
+            rf"  {re.escape(job_id)}:\n"
             rf"(?:    #[^\n]*\n)*"
-            rf"    if: (?:>\-\n(?:      .+\n)+?|"
+            rf"    if: (?:>\-\n(?:      [^\n]+\n)+|"
             + _RE_IF_EXPRESSION
-            + r" *|[^\n]+)\n)"
+            + r" *\n|(?![>-])[^\n]+\n)"
         )
         new_text, n = re.subn(
             if_pat,
             lambda _m, _jid=job_id, _block=block: f"  {_jid}:\n{_block}",
             text,
             count=1,
-            flags=re.DOTALL,
         )
         if n:
             text = new_text
