@@ -4422,14 +4422,14 @@
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/page_object.py": "e141b68dd6f3ef35cf33bdec7c0cf507be3c0c7a",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-testing-kit/tests/conftest.py": "d15f83c9fddf3d9e1b88cd7038797eed52b2cf14",
-   "src/shared/packages/pyforge-testing-kit/tests/meta/test_testing_kit_lane_wired.py": "916265bc9406866afcf3bb33d5a37994a81a33ad",
+   "src/shared/packages/pyforge-testing-kit/tests/meta/test_testing_kit_lane_wired.py": "be9037f0f676aec3dd93142a1c896f9008ba8d70",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_branch_diff_guard.py": "05bd01d7689fc26f09a5141ff03ccfafd2cb7edd",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_cfe_surface.py": "234fa31f4b451f3b01e04525dd6c406477fcbef4",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_families.py": "38003507640139348c885bd4d15e0b3602fadfa5",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_flags.py": "309502e92957dcd562680bf055e51dc61c48b461",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py": "f3191c31cb02585a8927cd9cb6ec50872a11ae66"
   },
-  "memlog": "633cb915953ee98012ffe37896cf0164d0a2468c"
+  "memlog": "492b5a4d4781a261753c5c3a801389c0d10472cd"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {
