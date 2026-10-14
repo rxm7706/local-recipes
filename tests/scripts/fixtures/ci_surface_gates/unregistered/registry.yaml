@@ -101,8 +101,9 @@ surfaces:
   id: linter_issue_comment
   kind: workflow
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
-  state: paused-manually
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
+  retired_on: '2026-10-14'
+  state: retired
   switch: null
   switch_class: pause
   workflow: .github/workflows/linter_issue_comment.yml
@@ -156,8 +157,9 @@ surfaces:
   id: reusable-staged-recipes-linter-selftest
   kind: workflow
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
-  state: paused-manually
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
+  retired_on: '2026-10-14'
+  state: retired
   switch: null
   switch_class: pause
   workflow: .github/workflows/reusable-staged-recipes-linter-selftest.yml
@@ -166,8 +168,9 @@ surfaces:
   id: reusable-staged-recipes-linter
   kind: workflow
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
-  state: paused-manually
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
+  retired_on: '2026-10-14'
+  state: retired
   switch: null
   switch_class: pause
   workflow: .github/workflows/reusable-staged-recipes-linter.yml
@@ -176,8 +179,9 @@ surfaces:
   id: staged-recipes-linter
   kind: workflow
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
-  state: paused-manually
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
+  retired_on: '2026-10-14'
+  state: retired
   switch: null
   switch_class: pause
   workflow: .github/workflows/staged-recipes-linter.yml

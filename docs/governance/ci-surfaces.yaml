@@ -103,6 +103,8 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
+  switch: null
+  switch_class: pause
   state: retired
   retired_on: '2026-10-14'
   reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
@@ -157,6 +159,8 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
+  switch: null
+  switch_class: pause
   state: retired
   retired_on: '2026-10-14'
   reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
@@ -166,6 +170,8 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
+  switch: null
+  switch_class: pause
   state: retired
   retired_on: '2026-10-14'
   reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
@@ -175,6 +181,8 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
+  switch: null
+  switch_class: pause
   state: retired
   retired_on: '2026-10-14'
   reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
