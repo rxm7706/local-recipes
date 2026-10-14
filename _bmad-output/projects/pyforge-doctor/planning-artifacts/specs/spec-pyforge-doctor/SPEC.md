@@ -10,7 +10,6 @@ surface:
   - docs/how-to/**
   - docs/tutorials/**
   - docs/explanation/**
-  - .claude/data/conda-forge-expert/
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/**
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/sibling_dreams.py
   - src/shared/packages/pyforge-doctor/tests/unit/test_sources_sibling_dreams.py
@@ -36,7 +35,7 @@ sources:
   - ../../prds/prd-pyforge-doctor-2026-07-25/prd.md
   - ../../epics.md
 spec: pyforge-doctor
-updated: '2026-10-01'
+updated: '2026-10-14'
 covers-dreams:
   - docs/dreams/bmad-drift-new-artifact-shape.md
   - docs/dreams/bmad-method-version-drift.md
@@ -330,6 +329,9 @@ Four further capabilities (CAP-5..8) extend this v1 walking skeleton along a fro
 - **CAP-88 — `spec-surface` names a Spec surface glob that matches nothing** (minted 2026-10-01, from the deferral burn-down; extends `spec-regenerable-factory` CAP-2)
   - **intent:** `spec-surface` (`sources/chain.py::_check_spec_surface`, in `detectors-ci`) already reports an allowlist entry that matches no tracked file (`stale-allowlist`), but a Spec `surface:` glob that matches nothing produces no finding, so a retired or misspelt glob rots silently — the asymmetry `spec-regenerable-factory`'s memlog and Story 6.9 recorded. Each such glob becomes a `stale-surface` WARN naming the Spec and the glob. A WARN, never gating: 25 such globs sit in 7 Specs on 2026-10-01, and a Spec whose surface could not be read is not judged.
   - **success:** a fixture repo with one matching and one dead glob reports exactly one `stale-surface` WARN; a trailing-slash directory glob and a brace glob are judged by what they really match; an unreadable surface reports no `stale-surface` row; on `main` `spec-surface-check` lists the dead globs and exits 0; `pyforge-doctor-test` green.
+- **CAP-89 — a CI surface that drifted, stuck or outlived its review date is a Doctor finding where the operator already looks** (minted 2026-10-14; consumes `spec-pyforge-steward:CAP-166`; beside CAP-2 and CAP-6, the fleet view; plan `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` § 4.4)
+  - **intent:** A Doctor source, `ci-pause-drift` (`Source.CI_PAUSE_DRIFT`; `REGISTRY` scope `runtime`, subject `steward`, owner `doctor`), runs `pyforge steward ci status --json` through `cli_bridge` (AD-5, AD-12) and judges the rows of steward's frozen report (`$id: urn:local-recipes:pyforge-steward:ci-status-schema`). It never calls `gh`, never reads `docs/governance/ci-surfaces.yaml` and never imports `pyforge.steward`. Each row yields one WARN per rule that fires: `ci-pause-drift` (verdict `drift`: a live value or workflow state the registry declares otherwise, an unregistered switch, a `disabled_manually` workflow with no row), `ci-pause-stuck` (verdict `stuck`: a deployment `waiting` over 24 h, five or more consecutive `cancelled` runs, a paused `cost: high` row with no recent green canary) and `ci-pause-overdue` (`review_days_left` below 0, whatever the verdict, because steward's precedence `drift` > `stuck` > `overdue` lets the first two hide it). Each finding names the surface id, its switch, its owner and steward's `detail` when the row carries one. A report the source cannot read (steward's refusal: an unauthenticated `gh`, a 0/60 rate limit, `pyforge.steward.ci_pause_control` off; steward absent; a timeout; a payload missing the fields it reads) is one `ci-pause-unobserved` WARN naming the cause, never an OK. Steward's partial read (exit 1, the report on stderr) is judged and adds one `ci-pause-partial` WARN. A report with nothing to name is one OK row counting the surfaces judged. Every finding is a WARN, so no exit code moves (AD-2). It runs through `python -m pyforge.doctor.sources ci-pause-drift [--json]` and `fleet-picture`'s ATTENTION block (one watch line per WARN; a probe that raises reads `could not check CI pauses`), never in `detectors-ci`: its read is live and authenticated, as `sibling-dreams-drift`'s is (CAP-71).
+  - **success:** on recorded `steward ci status --json` fixtures, each validated against steward's shipped schema, one fixture per rule (a `drift` row, an `overdue` row, the 2026-10-06 waiting-deploy replay, a five-cancelled streak, a stale canary) yields exactly one WARN of the matching check naming the row; a `drift` row past its `review_by` yields two; `live`, `paused`, `opt-in-off`, `paused-manually` and `retired` rows within their dates yield none and the OK row; steward exiting 3, exiting 127, timing out, or printing a payload without `rows` each yields one `ci-pause-unobserved` WARN and no OK; the partial fixture yields its row findings plus `ci-pause-partial`; the dispatcher exits 0 on every fixture; `fleet-picture` prints one watch line per WARN and the degrade line when the probe raises; no test runs a live `steward` or `gh`; `doctor check`'s default set and its speed budget are unchanged; `pyforge-doctor-test` green.
 
 ## Constraints
 
@@ -348,6 +350,7 @@ Four further capabilities (CAP-5..8) extend this v1 walking skeleton along a fro
 - **`check --list` ships in v1:** it enumerates every named check without running them; running one named check in isolation matches that check's result within the full suite.
 - **CAP-77's catalog names only what already exists:** a live-proof mechanism cited in `live-proof-surfaces.md` must be a real, existing script/flag/task, never invented; a surface with no existing mechanism is recorded as a genuine gap. Extends AD-2's operability-not-policy posture — the finding is always advisory, never a second PR gate.
 - **Docs detectors (CAP-83/84):** CAP-62's posture — warn first, fail-open when a source cannot be read; promotion to fail is per check, recorded on the memlog. Generated pages are derived, never hand-edited. No page under `docs/` is copied into a per-tool instruction file (scribe CAP-27). Skill directories hold only the Agent Skills layout.
+- **CAP-89 reads steward's report, never GitHub and never steward's code** *(2026-10-14)*: the `ci-pause-drift` source runs `pyforge steward ci status --json` as argv through `cli_bridge` (AD-5, AD-12) and imports no `pyforge.steward` module; it makes no `gh` call and keeps no copy of steward's verdict rules or of the registry. A report it cannot read is a WARN and never an OK, and every finding is a WARN (AD-2). It is read-only (NFR-1): pauses are written only through `steward ci pause|resume --yes` (`spec-pyforge-steward:CAP-166`). It relays an instrument's report, AD-1's shape reached by the CLI, not AD-11's case: it judges the CI surfaces, not steward's own conformance, and a broken or absent steward reads as `ci-pause-unobserved`.
 
 ## Non-goals
 
@@ -357,6 +360,7 @@ Four further capabilities (CAP-5..8) extend this v1 walking skeleton along a fro
 - No waiver-authoring UI for the `accepted-risk` partition — the partition exists for forward-compatibility; authoring/managing waivers is out of v1.
 - Not a general-purpose OSS health-check tool — scoped to this factory's own instruments (warden, atlas) and this repo's own fleet.
 - **A persistent fleet-health surface is now in scope (CAP-6) — this is the graduation the original PRD named as "a possible v1.x addition," not a reopened non-goal.** What stays out: any surface requiring its own independent data-gathering path (CAP-6 is strictly derived from `monitor --fleet` output).
+- No `monitor --fleet` `ci` axis for CAP-89 (monitor's axes are cf_atlas Watch axes over feedstocks, AD-6), no `doctor check` membership and no `detectors-ci` entry (its read is live and authenticated), no second reader of GitHub or of the registry, no write of any kind, and no change to steward's report schema. The herald dossier tile and the marshal landing line are their own stations' chains.
 
 ## Success signal
 
@@ -373,9 +377,11 @@ For CAP-5..8: a health grade is trusted enough that the operator checks it befor
 - **Incoming surface claims recorded 2026-09-09, before any code lands**, so `spec-surface-check` does not read them as ungoverned drift on this Spec's `src/shared/packages/pyforge-doctor/**` glob: steward Story 49.2 writes a new `pyforge/doctor/sources/` module plus a report-schema entry and detectors membership — its *criterion* stays on `spec-pyforge-unifying-strategy` while the *implementation* is relayed to a new doctor Dream + Spec (`docs/dreams/capability-effect-check.md`, `specs/spec-capability-effect-check/`); steward Story 49.8 names `pyforge/doctor/sources/marshal.py:544` verbatim (the `~/.bmad-loops` read that Unifying CAP-17 retires), mints no doctor story, and carries its own one-line comment at `sources/__init__.py:223` in its own diff.
 - `spec-pyforge-charter` is registered in `DEFERRED_SPECS` with the reason "a constitutive Spec whose CAP-1/4/5/6/8 are document-integrity properties no story can pick up" — it was exempt from neither the decomposition expectation nor the documented-deferral list. The dict edit is code and rides the C8 story.
 - `bmad-drift`'s 17 live warns against marshal's artifacts (pin-behind CFE v8.86.1 < v8.90.1, two surface-changed, one deferred-stale) are **not** doctor's to fix and mint no doctor story: doctor is the detector, marshal's `SYNC-RUNBOOK.md` row 84 is the reconciler.
+- CAP-89 assumes steward's `ci status --json` stays additive-only under its frozen schema, so the fields the source reads (`rows[].id`, `switch`, `owner`, `verdict`, `review_by`, `review_days_left`, `last_green_run`, `detail`) stay; and wherever `pyforge.steward.ci_pause_control` is off (staging and production today, on in dev) the source reads `ci-pause-unobserved`, by design.
 
 ## Open Questions
 
 - Exact severity default (`warn` vs `fail`) for the credential-hygiene check when a risky pattern like JFROG_API_KEY unconditional injection is detected — unresolved through the full planning chain (the epics stage itself defers this to a `warn_or_fail` placeholder).
 - Exact schema-versioning *policy* for the `DoctorReport` envelope — `schema_version` starts at `1` (fixed), but no rule is specified for what triggers a version bump or how consumers should react to one.
 - CAP-6's persistent surface format (a tracked file, a dashboard page, a GitHub issue à la Renovate?) is not yet decided — the capability commits to "derived, idempotent, versioned," not a specific medium; that's an architecture-phase call.
+- CAP-89: steward's `stuck` rows carry no `detail` naming the rule that fired (a waiting deploy, a cancelled streak, or the stale-canary rule Story 99.6 adds), so the `ci-pause-stuck` finding names the row, its owner and its last green run but not the cause. An additive `detail` on those rows is steward's change, on steward's chain, if the operator wants the cause named; Doctor shows a `detail` as soon as the row carries one.

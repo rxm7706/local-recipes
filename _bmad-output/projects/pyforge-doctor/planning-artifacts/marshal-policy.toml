@@ -365,6 +365,22 @@ verify_commands = [
   "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"45" = [  # Doctor names the CI surfaces that drifted, stuck or outlived their review date (a new source under CAP-89 /
+  # FR-22, consuming spec-pyforge-steward:CAP-166; Story 45.1), added 2026-10-14. The default surface, restated because a
+  # declared entry replaces it outright, plus fleet-picture (one ATTENTION probe) and its tests, and every Spec memlog a
+  # reconcile names (spec-pyforge-core co-governs station src/; spec-pyforge-marshal names scripts/fleet_picture.py).
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/fleet_picture.py",
+  "tests/scripts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "46" = [  # the env-hygiene scan stops growing with the test suite (a fix under CAP-1 and NFR-4, no CAP; Story 46.1,
   # closing DW-doctor-44-1), added 2026-10-12. The default surface, restated because a declared entry replaces it outright,
   # plus the tracked deferral ledger and every Spec memlog a reconcile names (spec-pyforge-core co-governs station src/).
@@ -377,6 +393,21 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"47" = [  # the Detectors scripts lane finishes inside its timeout (a fix under CAP-42 and CAP-43, no CAP; Story 47.1),
+  # added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus the one test file
+  # and the one workflow the story changes, and every Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "tests/scripts/test_detectors_doctor_sources.py",
+  ".github/workflows/detectors.yml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "41" = [  # Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals (fix stories, no new CAP), added 2026-10-03

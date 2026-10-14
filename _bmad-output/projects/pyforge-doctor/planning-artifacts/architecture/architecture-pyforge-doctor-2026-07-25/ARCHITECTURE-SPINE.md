@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 42.1, 43.1, 44.1 and 46.1 as landed; no AD change. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: prd→arch cascade for the PRD's 2026-10-10 re-stamp (Stories 33.1 and 37.1 move blocked -> backlog; fix Stories 6.13 and 34.6 minted 2026-10-07); no AD amended; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-14'   # RE-STAMPED 2026-10-14: prd→arch cascade for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source); no AD amended. See § Currency reconciliation — 2026-10-14. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 42.1, 43.1, 44.1 and 46.1 as landed; no AD change. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: prd→arch cascade for the PRD's 2026-10-10 re-stamp (Stories 33.1 and 37.1 move blocked -> backlog; fix Stories 6.13 and 34.6 minted 2026-10-07); no AD amended; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -668,5 +668,26 @@ Checked against every AD. They land as written:
 - **44.1** changes a test only.
 - **46.1** changes `checks/env_hygiene.py` internally (one visitor walk, and test-code paths skipped relative to the scan
   target). The check's name, finding shape and read-only, offline contract (NFR-1) are unchanged.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-14
+
+*The `prd→arch` cascade for FR-22 / CAP-89 (Epic 45, Story 45.1): the `ci-pause-drift` source.*
+
+Checked against every AD. It lands on them as written:
+- **AD-3.** One new `Source` member, `CI_PAUSE_DRIFT`, registered like every other source (scope `runtime`, subject
+  `steward`, owner `doctor`). The taxonomy is extended, not opened.
+- **AD-5 and AD-12.** Its one subprocess call, `pyforge steward ci status --json`, goes through a new narrow helper in
+  `cli_bridge` (argv list, bounded timeout, `NO_COLOR=1`, one typed error). `run_cli_json` runs a script path and raises
+  on every non-zero exit, and this read must tell steward's partial read (exit 1) from its refusal (exit 3).
+- **AD-2.** Every finding is a WARN, including the one that says the report could not be read, so the exit domain
+  `{0, 2, 130}` is unchanged.
+- **AD-1 and AD-11.** It relays an instrument's report, as AD-1 relays warden's, but through the CLI: Doctor imports
+  no station. It is not AD-11's case, which forbids building the Marshal durability verdict from the station it
+  judges: this source judges the CI surfaces, and a broken or absent steward reads as `ci-pause-unobserved`, never as a
+  clean fleet.
+- **AD-6.** `monitor --fleet` gains no `ci` axis; its axes stay cf_atlas Watch axes.
+- **NFR-1 and NFR-4.** Read-only, and not in `doctor check`'s default set, so the speed budget does not move.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
