@@ -2,8 +2,8 @@
 title: '99.3: The operator sees the pause state of every CI surface in one command'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: '0627eb90775e2f8d10b7fa8dad108a71a9a24f60'
 flag:
   key: pyforge.steward.ci_pause_control       # new; minted by this story (one flag per CAP: 99.4 and 99.5 reuse it)
   provider: openfeature-file                  # the one tree, src/platform/config/flags.json (canopy:AD-11)
