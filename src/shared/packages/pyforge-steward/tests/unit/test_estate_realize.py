@@ -379,3 +379,15 @@ def test_command_probe_missing_binary_is_missing_not_a_crash() -> None:
     row = {"env": "pyforge-warden", "probe": {"expect": "locked-version", "command": ["osv-scanner", "--version"]}}
     deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
     assert run_probe(deps, row, package="osv-scanner") == "missing"
+
+
+def test_import_and_kit_probes_run_inside_the_row_env() -> None:
+    runner = RecordingRunner()
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
+    row = {"env": "pyforge-foundry-full", "probe": {"expect": "import-probe", "command": "import httpx"}}
+    assert run_probe(deps, row, package="httpx") == "live"
+    assert runner.calls[-1] == ["pixi", "run", "--frozen", "-e", "pyforge-foundry-full", "python", "-c", "import httpx"]
+    kit_row = {"env": "pyforge-guild", "probe": {"expect": "kit-ok", "item": "ccr-store"}}
+    run_probe(deps, kit_row, package="headroom-ai")
+    assert runner.calls[-1][:5] == ["pixi", "run", "--frozen", "-e", "pyforge-guild"]
+    assert runner.calls[-1][5:] == ["pyforge", "marshal", "seed", "check", "--json"]

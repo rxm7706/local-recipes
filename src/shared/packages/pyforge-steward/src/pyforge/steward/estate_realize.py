@@ -130,12 +130,8 @@ def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env:
         cmd = shlex_split(cmd)
     if not isinstance(cmd, list) or not cmd:
         return "missing"
-    argv = _in_env(env, cmd)
-    try:
-        proc = deps.runner(argv, deps.root)
-    except OSError:
-        return "missing"
-    if proc.returncode != 0:
+    proc = _run_in_env(deps, env, cmd)
+    if proc is None or proc.returncode != 0:
         return "missing"
     out = (proc.stdout or proc.stderr or "").strip()
     locked = _locked_version(deps.root, env, package, deps.platform())
@@ -172,9 +168,17 @@ def _parse_seed_kit(stdout: str) -> list[dict[str, Any]]:
     return kit if isinstance(kit, list) else []
 
 
-def _probe_kit_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
-    argv = ["pyforge", "marshal", "seed", "check", "--json"]
-    proc = deps.runner(argv, deps.root)
+def _run_in_env(deps: RealizeDeps, env: str, argv: list[Any]) -> _Completed | None:
+    try:
+        return deps.runner(_in_env(env, argv), deps.root)
+    except OSError:
+        return None
+
+
+def _probe_kit_ok(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
+    proc = _run_in_env(deps, env, ["pyforge", "marshal", "seed", "check", "--json"])
+    if proc is None:
+        return "missing"
     kit = _parse_seed_kit(proc.stdout or "")
     if not kit:
         return "missing"
@@ -193,9 +197,10 @@ def _probe_kit_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
     return "missing"
 
 
-def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
-    argv = ["pyforge", "steward", "suite", "pipeline-truth", "--json"]
-    proc = deps.runner(argv, deps.root)
+def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
+    proc = _run_in_env(deps, env, ["pyforge", "steward", "suite", "pipeline-truth", "--json"])
+    if proc is None:
+        return "missing"
     if proc.returncode != 0 and not (proc.stdout or "").strip():
         return "missing"
     try:
@@ -220,22 +225,25 @@ def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
     return "missing"
 
 
-def _probe_exit_0(deps: RealizeDeps, probe: dict[str, Any]) -> str:
+def _probe_exit_0(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
     cmd = probe.get("command")
     if isinstance(cmd, str):
         cmd = shlex_split(cmd)
-    if not isinstance(cmd, list):
+    if not isinstance(cmd, list) or not cmd:
         return "missing"
-    argv = [sys.executable, *cmd[1:]] if cmd and cmd[0] == "python" else list(cmd)
-    proc = deps.runner(argv, deps.root)
+    proc = _run_in_env(deps, env, cmd)
+    if proc is None:
+        return "missing"
     return "live" if proc.returncode == 0 else "stale"
 
 
-def _probe_import(deps: RealizeDeps, probe: dict[str, Any]) -> str:
+def _probe_import(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
     cmd = str(probe.get("command") or "")
     if not cmd:
         return "missing"
-    proc = deps.runner([sys.executable, "-c", cmd], deps.root)
+    proc = _run_in_env(deps, env, ["python", "-c", cmd])
+    if proc is None:
+        return "missing"
     return "live" if proc.returncode == 0 else "missing"
 
 
@@ -248,13 +256,13 @@ def run_probe(deps: RealizeDeps, row: dict[str, Any], *, package: str) -> str:
             return _probe_locked_version_file(deps.root, probe, env, deps.platform(), package=package)
         return _probe_locked_version_command(deps, probe, env, package)
     if expect == "kit-ok":
-        return _probe_kit_ok(deps, probe)
+        return _probe_kit_ok(deps, probe, env)
     if expect == "stage-ok":
-        return _probe_stage_ok(deps, probe)
+        return _probe_stage_ok(deps, probe, env)
     if expect == "exit-0":
-        return _probe_exit_0(deps, probe)
+        return _probe_exit_0(deps, probe, env)
     if expect == "import-probe":
-        return _probe_import(deps, probe)
+        return _probe_import(deps, probe, env)
     return "missing"
 
 
@@ -338,12 +346,8 @@ def run_realize(
             realize_state = "ran"
             env = str(row.get("env") or "pyforge-guild")
             for argv in steps:
-                try:
-                    proc = deps.runner(_in_env(env, argv), deps.root)
-                except OSError:
-                    realize_state = "failed"
-                    break
-                if proc.returncode != 0:
+                proc = _run_in_env(deps, env, argv)
+                if proc is None or proc.returncode != 0:
                     realize_state = "failed"
                     break
 

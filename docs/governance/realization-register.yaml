@@ -345,7 +345,7 @@ rows:
   probe:
     expect: locked-version
     command:
-    - spec-kit
+    - specify
     - --version
   test: pyforge-steward-test
   owner: pyforge-steward
