@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import sys
 import yaml
+
+_SCRIPTS = Path(__file__).resolve().parent
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
 
 from _ci_surface_gates_render import completeness_findings
 from _ci_surface_gates_render import render_all as render_all
