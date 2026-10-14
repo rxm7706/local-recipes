@@ -2,7 +2,7 @@
 title: "103.4: The `ci-surface-gates` tests write their fixtures under `tmp_path`"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '6e1918fea260f9ebe879ae52d549eeba70029207'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -197,3 +197,58 @@ Type / Effort / Deps: fix / S / none.
 - 2026-10-14: minted on the operator's standing direction of 2026-10-14 ("be autonomous, keep merging ... complete as
   much as you can autonomously"; "pre-existing findings are fixed now"). `type: fix`, no flag, no CAP. Bound to
   `spec-pyforge-steward` CAP-166 through Stories 99.1 and 99.6.
+
+## Auto Run Result
+
+Status: in-review (implemented by hand in worktree `local-recipes-wt-chain-steward-103-4-fixture-writes-2026-10-14`,
+branch `chain-steward-103-4-fixture-writes-2026-10-14`, on `6e1918fea2` plus the chain commit).
+
+What changed:
+- `tests/scripts/test_ci_surface_gates.py`: the twelve writing tests take `tmp_path` and build every case there under
+  the names they used before; `FIXTURES` became the `FIXTURE_TREE` pathspec, which only the guard reads. The autouse
+  `_fixture_tree_stays_clean` fixture and `test_fixture_tree_guard_is_active_and_sees_untracked_and_modified_files`
+  were added. No import line changed, and no other test's body changed.
+- `tests/scripts/fixtures/ci_surface_gates/`: all 18 files removed with `git rm`; nothing there stays tracked.
+
+Verification (2026-10-14):
+- Measured before the change (AC2, AC3), at `6e1918fea2` in `pyforge-ci`: a run on a clean checkout, 20 passed, left
+  `unregistered/registry.yaml` and `workflows_match.json` modified (`dashboard.yml` -> `pages.yml` three times in the
+  first, once in the second). With the directory deleted, a run recreated all 18 tracked paths. Each test run alone
+  against an emptied directory wrote exactly these, and the eight others wrote nothing:
+  - `test_fixture_unregistered_pause_var`, `test_fixture_row_switch_not_in_if`, `test_fixture_bad_switch_name`,
+    `test_fixture_wrong_pause_comparison`, `test_fixture_missing_job`, `test_fixture_paused_missing_review_by`: their
+    case's `.github/workflows/sample.yml` and `registry.yaml` (12 files);
+  - `test_live_fixture_match_exits_zero`, `test_live_extra_disabled_workflow_exits_one`,
+    `test_live_paused_manually_row_but_active_exits_one`: `workflows_match.json`, `workflows_extra_disabled.json`,
+    `workflows_active_mismatch.json`;
+  - `test_matrix_wrapped_if_parsed_like_bare`, `test_matrix_multiline_if_collects_both_vars`,
+    `test_high_cost_row_without_canary_fails_check`: their case's `sample.yml` (3 files).
+  No checked-in input was found, so no file stays (AC3).
+- With the deletions staged but not committed, the file passed 21 tests and the guard raised 21 teardown errors, each
+  listing the 18 `D` lines: the guard sees the tree, staged changes included.
+- After the change (AC1, AC4, AC7), each with `git status --porcelain --untracked-files=all` empty afterwards:
+  - `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_ci_surface_gates.py -q`: 21 passed, exit 0;
+  - `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_ci_surface_gates.py -q`: 21 passed, exit 0;
+  - the same file under `-n auto --dist loadgroup` in `pyforge-ci`: 21 passed, exit 0;
+  - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`: 1555 passed, 28 skipped, exit 0;
+  - `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test`: 59 passed, exit 0.
+  `tests/scripts/fixtures/ci_surface_gates/` is not recreated, and `git ls-files` lists nothing under it (AC2).
+- AC6, mutations, each restored from a saved copy and checked with `cmp`:
+  - `test_live_fixture_match_exits_zero` writing `workflows_match.json` into the repo's fixture tree again: the guard
+    failed at teardown of that test (`?? tests/scripts/fixtures/ci_surface_gates/workflows_match.json`), and of the
+    eight tests after it in file order while the stray file stayed (21 passed, 9 errors). The stray file was removed;
+  - `--untracked-files=no` in `_tree_status`: `test_fixture_tree_guard_is_active_and_sees_untracked_and_modified_files`
+    failed (the `??` line missing, only ` M` reported);
+  - the guard declared without `autouse=True`: the same test failed (`_fixture_tree_stays_clean` not in
+    `request.fixturenames`).
+- AC5: the 20 tests of `6e1918fea2` keep their names, inputs, detector arguments and assertions; the one test added is
+  AC4's.
+- AC8: `spec-pyforge-steward`'s memlog reconciles `tests/scripts/test_ci_surface_gates.py` and the removed fixtures
+  (no fixture path is on any Spec's baseline), then one scoped stamp, re-stamped after the last code edit;
+  `pixi run -e pyforge-guild spec-surface-check` exits 0. Its 123 `drift-presumed` warnings are all
+  `spec-pyforge-herald`'s deck files, present unchanged at `6e1918fea2`, and not this story's.
+- AC7, the full preflight: `pixi run --frozen -e pyforge-scribe-pg scribe-pg-up`, then `pixi run -e pyforge-guild
+  pr-preflight` on `f189bfc149`: exit 0 (read from the exit code). It ran 20 of 36 lanes, with 16 skipped by their
+  workflow's own rules, and every lane that ran was `ok`: `detectors-ci`, `pyforge-doctor-scripts-test`,
+  `pyforge-doctor-aggregate-scripts-test`, the eight station suites (`pyforge-steward-test`: 2606 passed, 1 skipped),
+  `pages-check` and the docs-site checks. `git status --porcelain --untracked-files=all` was empty afterwards.
