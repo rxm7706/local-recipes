@@ -560,8 +560,8 @@ def test_unrecognised_job_if_runs_that_job_s_lane_and_names_the_rule(tmp_path: P
         edits=[
             (
                 "pyforge-station-tests.yml",
-                "needs.changes.outputs.marshal == 'true')))) }}",
-                "needs.changes.outputs.marshal == 'true' && github.actor != 'nobody')))) }}",
+                "&& (needs.changes.outputs.marshal == 'true')) }}",
+                "&& (needs.changes.outputs.marshal == 'true' && github.actor != 'nobody')) }}",
             )
         ],
     )
