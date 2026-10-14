@@ -2,7 +2,7 @@
 id: SPEC-pyforge-marshal
 spec: pyforge-marshal
 status: ready
-updated: "2026-10-11"
+updated: "2026-10-14"
 owner-dream: docs/dreams/pyforge-marshal.md
 covers-dreams:
   - docs/dreams/pyforge-marshal.md
@@ -1107,6 +1107,9 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **CAP-291 — a recall miss or failure injects nothing** ← spec-marshal-recall-in-the-loop CAP-4 (ready 2026-10-11; the empty miss is Story 47.4's, recorded per run with Story 93.1)
   - **intent:** Scribe recall's honesty holds end to end: a query with no grounded hit, or one that fails, adds nothing to the session's prompt — never a synthesized "no relevant corrections found" line — and the run records the miss or the failure as a fact, not as prompt text.
   - **success:** Given a zero-hit or failed query, the injected block is empty or absent on both engines, and the run's `recall` disposition reads `miss` or `failed` (with its reason); a failure is a WARN and never blocks the launch.
+- **CAP-292 — a dispatch landing records which CI surfaces were paused when it merged** ← spec-pyforge-marshal CAP-292 (ready 2026-10-14; reads pyforge-steward:CAP-166)
+  - **intent:** once per landing, after the CAP-284 check wait and before the first `forge.merge_pr`, the dispatch landing reads `pyforge steward ci status --json` — a CLI subprocess through one adapter, steward's frozen `urn:local-recipes:pyforge-steward:ci-status-schema` envelope, never an import of `pyforge.steward` — and records `ci_pauses_at_merge` in the landing journal: `{"state": "read", "surfaces": [...], "fetched_at": ...}` with the surface ids sorted and an empty list written explicitly, or `{"state": "unknown", "reason": ...}` when steward cannot be read (no binary, a timeout, any non-zero exit — its refusals exit 3 and a partial read exits 1 — or output that is not the envelope). A row is listed when its `declared_state` is `paused-manually`, or when its `live_switch_value` is `true` and its `declared_state` is neither `opt-in-off` nor `retired`; steward's verdict alone under-reports, because `drift`, `stuck` and `overdue` outrank `paused`. The PR body gains one line — `CI paused at merge: <ids>`, `… none` or `… unknown (<reason>)` — through the existing `forge.update_pr` seam before the merge, and the finalize subprocess writes the same object into its own journal record, so the promotion record carries the list. Behind `pyforge.marshal.landing_ci_pauses`; off, the landing reads nothing and writes exactly what it writes today. The record changes no landing verdict and waits on no CI. (Operator direction 2026-10-13: mint after steward Story 99.3; plan `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` § 4.4 and § 6.)
+  - **success:** against Story 59.1's forge fake and a fake process returning recorded steward output: an envelope with two `paused` rows, a pause past its `review_by` (verdict `overdue`), a `paused-manually` row, an `opt-in-off` row whose value is `true`, a `value` row and `live` rows journals exactly the four paused ids, sorted; the PR-body line names the same ids; the finalize record carries the identical object; an all-live envelope writes `surfaces: []` and the line `none`; exit 3, exit 1, a missing binary, a timeout and stdout that is not the envelope each journal `unknown` with a reason and the landing still merges; a failed `update_pr` is a WARN-class finding and the landing reads `LANDED`; with the flag off no steward call is made, no key is written and the body is unchanged; one test file runs both flag states through `pyforge.testing_kit.flags.flag_states`; `pyforge-marshal-test` green.
 
 ## Constraints
 
@@ -1168,6 +1171,7 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **Preserved work is a tag, and no marshal deleter removes what no preserve holds** *(2026-10-04, CAP-287)*: dry run by default for anything that deletes; journal a preserve before reporting success (AD-6); match full refnames (Story 61.1); one grammar module; test with real git and a bare remote, never GitHub. Never rename or patch bmad-loop (AD-2), never move or delete a `preserve/` or `archive/` tag, never push past the content gate, and never treat a name as proof of durability.
 - **Scribe stays the sole owner of capture and grounding for recall in the loop** *(2026-10-11, CAP-288..CAP-291 ← spec-marshal-recall-in-the-loop)*: marshal is a read-only consumer of `scribe recall`, reached as a CLI subprocess and never by import — never a second capture path and never a change to recall's grounding rules; `recall.py` stays authoritative on what counts as a citable hit.
 - **Recall stays inside the token-economy discipline** *(2026-10-11, CAP-288..CAP-291)*: the injected block is scoped (team memory, `--mode memory`, not a full-repo pull) and counted like every other `[context]` layer's output (budget ceilings, per-story and per-run weighted-token accounting), never an unbounded reread.
+- **A landing records what CI skipped, and judges nothing by it** *(2026-10-14, CAP-292)*: steward is read only through `pyforge steward ci status --json` (one adapter, the frozen ci-status schema), never by import and never by marshal's own read of `gh`, the Actions API or `docs/governance/ci-surfaces.yaml` — one reader of the pause state (AD-71's build-line/estate seam); the record changes no landing verdict, waits on no CI and never refuses a merge — an unreadable status is `unknown` with its reason, never an empty list (AD-8), and a failed PR-body edit is a WARN.
 
 ## Non-goals
 
@@ -1206,6 +1210,7 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **A lower review bar** — the review pass gets more of what it should already have known, never less scrutiny or an automated approval path.
 - **Changing what scribe captures** — the capture types and the promotion workflow are scribe's; marshal only consumes recall.
 - **Reverse-direction capture** — a correction a review pass surfaces is not captured back into scribe automatically; that is a separate capability if pursued (← spec-marshal-recall-in-the-loop Open Question 4).
+- **Gating a landing on a paused CI surface** *(2026-10-14, CAP-292)* — `ci_pauses_at_merge` is paper trail; whether a paused gate should block a merge is the required-status-checks ruleset, the operator's separate decision (ruling Q6 under pyforge-steward:CAP-166). Also out: a record for hand landings (`gh pr merge`, `marshal land`), backfilling past landings, and any change to `pyforge.core.landing_evidence`, the merge subject or steward.
 
 ## Success signal
 
@@ -1252,6 +1257,7 @@ stabilization gate was called too early.
 - HTML-comment markers are unambiguous in the specific markdown files the manifest names.
 - The first two adopters are `local-recipes` (the oracle) and one greenfield pyforge sibling; external adoption is post-V1.
 - Marshal accepts ownership of `bmad-switch` / `bmad-loop-worktree` *source* while Genesis owns *delivery*. This is not yet ratified in Marshal's own planning chain.
+- What `pyforge steward ci status --json` reports at the read is what CI honored for the merged head *(2026-10-14, CAP-292)*: a switch flipped between the read and the merge call, or a run that started before a flip, is not seen.
 
 ## Open Questions
 
@@ -1338,3 +1344,7 @@ stabilization gate was called too early.
 - **K-03 has no quantified threshold in any source.** At what migrations-per-model-minor-version rate does the model become too volatile to install, and who makes that call?
 - **Does `marshal seed init` create a repository or only a tree?** Creation on a git host is scoped out, but a local `git init` and first commit are left unstated.
 - **Is append-at-EOF always a safe anchor fallback?** AD-56 chose the fallback for an unmatched anchor, but did not close whether an unfamiliar `CLAUDE.md` deserves a refusal instead.
+
+**CAP-292's own open question (2026-10-14):**
+
+- **Does `steward ci status --json` carry the master switch?** Its rows are the registry's surfaces, and `PAUSE_ALL_CI` is a convention, not a surface, so it has no row; every workflow's rendered fragment reads it. A landing made under the master therefore records each surface's own switch and understates `ci_pauses_at_merge`. Either steward adds the master's live value to its envelope (an additive change on pyforge-steward:CAP-166's chain) and CAP-292 lists every surface under it, or the gap is accepted and named in the PR-body line. Until answered, CAP-292 reports what the envelope shows.
