@@ -4884,3 +4884,15 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-10 -- iteration-6 PASS triage
   status: open
+
+### DW-atlas-steward-100-7-1: Atlas fails mypy in `pyforge-foundry-full`, so `sbom-laptop-gate` is red on main
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-100-7-the-first-refresh-lands-through-the-path.md`
+  summary: `sbom-laptop-gate` runs `lint-types` inside `pyforge-foundry-full`, where Atlas's real runtime libraries (FastHTML, Dagster, Kedro, OpenLineage) are installed. `pyforge-guild` does not install them, so mypy reads them as `Any` there and the CI `lint-types` lane stays green. In `pyforge-foundry-full`, mypy checks Atlas against their real types and finds 72 errors in 8 files. Follow-up: type the call sites against the real library signatures (or add per-module, per-code overrides under the 2026-09-20 baseline rule), then make the foundry-full mypy leg part of a lane so it cannot drift again.
+  evidence: 2026-10-14, `pixi run -e pyforge-foundry-full sbom-laptop-gate` on origin/main code (exit 1 at its `lint-types` dependency): `src/pyforge/atlas/dashboard/app.py` 61 errors (FastHTML `Nav` keyword spreads, missing `LandmarkDashboard` arguments), `datasets/upstream_discovery.py` 7, `views/widgets.py` 4, `orchestration/definitions.py` 2 (Dagster `GraphDefinition` dependencies, `UnresolvedAssetJobDefinition`), `query_plane_vectors.py` 2, `mcp/session.py` 1 (Kedro `AbstractSession`), `observability.py` 1 (OpenLineage facets), `rag/store.py` 1. The same run on branch `dispatch/pyforge-steward/100.7` gives the same 72. Doctor's one error in the same leg (`actuators/flag_kill_switch.py:46`) was fixed in Story 100.7.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/ (the 8 files above); scripts/lint_types.py; scripts/sbom_laptop_gate.py
+  origin: Story 100.7 `estate verify` (the register's import rows name `sbom-laptop-gate` as their test)
+  owner: atlas
+  severity: medium
+  promoted: 2026-10-14 — recorded with the Story 100.7 landing
+  status: open
