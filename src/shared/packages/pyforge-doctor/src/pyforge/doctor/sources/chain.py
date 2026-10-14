@@ -420,7 +420,7 @@ def _probe(p: Path) -> os.stat_result | None:
     the case that must not be answered ``False``."""
     try:
         return p.stat()
-    except (FileNotFoundError, NotADirectoryError):
+    except FileNotFoundError, NotADirectoryError:
         return None
 
 
@@ -1194,7 +1194,7 @@ def _load_dream_roster(
         types = frozenset(str(t) for t in data["dream_types"])
         stations = frozenset(str(s) for s in data["stations"])
         guild_dreams = frozenset(str(g) for g in data["guild_dreams"])
-    except (KeyError, TypeError):
+    except KeyError, TypeError:
         return (
             frozenset(),
             frozenset(),
@@ -1978,7 +1978,7 @@ def _load_allowlist(path: Path) -> list[tuple[str, str]] | None:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return []
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return None
     entries: list[tuple[str, str]] = []
     for raw in text.splitlines():
@@ -2070,7 +2070,7 @@ def _tracked_files(target: Path) -> list[str] | None:
     guards against for the same underlying cause."""
     try:
         out = run_git(target, ["-c", "core.quotePath=false", "ls-files", "-z"])
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     return [path for path in out.split("\0") if path]
 
@@ -2083,7 +2083,7 @@ def _repo_top_level(target: Path) -> Path | None:
     as a subdirectory of itself."""
     try:
         out = run_git(target, ["rev-parse", "--show-toplevel"])
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     top = out.strip()
     if not top:
@@ -5249,7 +5249,7 @@ def _churn_ref(target: Path) -> str:
     entry."""
     try:
         run_git(target, ["rev-parse", "--verify", "--quiet", _CHURN_PREFERRED_REF])
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return "HEAD"
     return _CHURN_PREFERRED_REF
 
@@ -5334,7 +5334,7 @@ def _authored_date(target: Path, tracked_path: Path, entry_id: str, cache: _Chur
                 rel,
             ],
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         cache.authored[key] = None
         return None
     first = out.splitlines()[0].strip() if out.strip() else ""
@@ -5396,7 +5396,7 @@ def _path_churn_free(target: Path, rel: str, since: date, ref: str) -> bool:
     the memo above has exactly one value to store per ``(path, since)``."""
     try:
         tracked = run_git(target, ["log", ref, "--oneline", "-1", "--", rel])
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return False
     if not tracked.strip():
         return False
@@ -5414,7 +5414,7 @@ def _path_churn_free(target: Path, rel: str, since: date, ref: str) -> bool:
                 rel,
             ],
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return False
     return not since_out.strip()
 
@@ -5685,7 +5685,7 @@ def _call_site_count(target: Path, symbol: str, cited_paths: list[str] | None = 
             ],
             ok_exit_codes=frozenset({0, 1}),
         )
-    except (CliBridgeError, UnicodeDecodeError):
+    except CliBridgeError, UnicodeDecodeError:
         return None
     decl_re = re.compile(_DECLARATION_RE_TEMPLATE.format(re.escape(symbol)))
     escaped = re.escape(symbol)
@@ -5814,7 +5814,7 @@ def _known_project_code_roots(target: Path) -> dict[str, str]:
         try:
             if _is_dir(code_root):
                 roots[proj.name] = str(code_root.relative_to(target))
-        except (OSError, ValueError):
+        except OSError, ValueError:
             # Per-sibling isolation is the point (docstring above); one
             # broken sibling must never poison every other project's own
             # turn.
