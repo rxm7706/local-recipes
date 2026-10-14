@@ -525,6 +525,22 @@ def bmad_core_drift_findings(
     return [f for f in findings if f.get("status") in ("warn", "fail")]
 
 
+def ci_pause_drift_findings(
+    repo: pathlib.Path = REPO, timeout: int = 120
+) -> list[dict]:
+    """WARN Findings from ``pyforge.doctor``'s ci-pause-drift source (Story 45.1)."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources", "ci-pause-drift", "--json"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("status") == "warn"]
+
+
 def sibling_dreams_drift_findings(
     repo: pathlib.Path = REPO, timeout: int = 20
 ) -> list[dict]:
@@ -1266,6 +1282,14 @@ def main() -> int:
         # on the normal any-gap path, which is exit 2 with valid JSON (see
         # dream_chain_gap_findings' docstring).
         watch.append("could not check dream-chain gaps")
+
+    try:
+        for finding in ci_pause_drift_findings():
+            check = finding.get("check", "ci-pause-drift")
+            message = finding.get("message", "CI pause drift").split(chr(10))[0][:110]
+            watch.append(f"{check}: {message}")
+    except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
+        watch.append("could not check CI pauses")
 
     try:
         for finding in sibling_dreams_drift_findings():

@@ -2,7 +2,8 @@
 title: '45.1: Doctor names every CI surface that drifted, stuck or outlived its review date'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '84bcb27e56a0f61a93ca7a04ecd317819b00e29c'
 flag-exempt: detector-or-gate   # a check that judges; gating it off would bring back the silent-off surface it names (spec-feature-flag-governance Q2; bmad-spec ruling 2026-10-14, memlog)
 review_loop_iteration: 0
 followup_review_recommended: false
