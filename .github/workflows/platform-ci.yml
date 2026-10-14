@@ -166,9 +166,7 @@ concurrency:
 
 jobs:
   test:
-    # ci-surfaces: platform-ci.test
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')) }}
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -266,9 +264,7 @@ jobs:
   # independent docker + podman builds (spec 10.3 — both engines, both
   # build paths).
   build-platform-image:
-    # ci-surfaces: platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (( github.event_name == 'workflow_dispatch' && ( (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) || (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity) ) ) || ( github.event_name != 'workflow_dispatch' && (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true' || vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true') ))) }}
+    if: >-
       (
         github.event_name == 'workflow_dispatch' &&
         (
@@ -744,9 +740,7 @@ jobs:
   # digest capture; rebuilds all three chart images here so sidecar digests
   # exist even though the `container` job builds only the platform image.
   golden-path-promotion:
-    # ci-surfaces: platform-ci.golden-path-promotion
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')) }}
+    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
     needs: container
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -852,9 +846,7 @@ jobs:
   # isolated `dbgpt-sidecar` pixi env in the first place.
   container-dbgpt:
     # Paused with `container` above while PAUSE_PLATFORM_CONTAINER_BUILDS is 'true'.
-    # ci-surfaces: platform-ci.container-dbgpt
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && ((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') || (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true'))) }}
+    if: >-
       (github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') ||
       (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')
     strategy:
@@ -1076,9 +1068,7 @@ jobs:
   # No `needs:` on `test`/`container-dbgpt` -- this job loads the shared
   # platform image from build-platform-image rather than rebuilding it.
   gke-portability-smoke:
-    # ci-surfaces: platform-ci.gke-portability-smoke
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (( (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke) || (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true') ) && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'))) }}
+    if: >-
       (
         (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke) ||
         (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true')
@@ -1338,9 +1328,7 @@ jobs:
   # No `needs:` on test/container-dbgpt. Loads the shared platform image from
   # build-platform-image (P1 fan-in) rather than rebuilding it.
   ocp-portability-smoke:
-    # ci-surfaces: platform-ci.ocp-portability-smoke
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (( (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke) || (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true') ) && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'))) }}
+    if: >-
       (
         (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke) ||
         (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true')
@@ -1557,9 +1545,7 @@ jobs:
   # No `needs:` on test/container-dbgpt. Loads the shared platform image
   # from build-platform-image (P1 fan-in) rather than rebuilding it.
   air-gap-parity:
-    # ci-surfaces: platform-ci.air-gap-parity
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (( (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity) || (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_AIR_GAP_PARITY == 'true') ) && ( github.event_name != 'workflow_dispatch' || inputs.jobs == 'all' || inputs.jobs == 'air-gap-parity-only' ))) }}
+    if: >-
       (
         (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity) ||
         (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_AIR_GAP_PARITY == 'true')
