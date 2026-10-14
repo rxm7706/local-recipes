@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from importlib import resources
 from pathlib import Path
 
@@ -757,3 +759,414 @@ def test_run_status_high_cost_canary_stale_is_stuck(tmp_path: Path) -> None:
     payload = result.details["payload"]
     by_id = {r["id"]: r for r in payload["rows"]}
     assert by_id["canary-stale.guild-container"]["verdict"] == "stuck"
+
+
+_MASTER_UPDATED = "2026-10-14T08:00:00Z"
+_MASTER_DETAIL = (
+    "master switch PAUSE_ALL_CI is true: every job that reads it is skipped, "
+    "and the registry declares no master pause"
+)
+_MASTER_PAUSE_DETAIL = "paused by the master switch PAUSE_ALL_CI"
+
+
+def _minimal_gh_runner(tmp_path: Path, variables: list[dict], fixed_now: datetime) -> Any:
+    fx = {
+        "rate_limit": {"resources": {"core": {"limit": 5000, "remaining": 4999}}},
+        "variables": variables,
+        "workflows": {"workflows": []},
+        "runs": {},
+        "pending": {},
+    }
+
+    def runner(argv: list[str], cwd: Path) -> _FakeProc:
+        if argv[:2] == ["gh", "api"] and argv[2] == "rate_limit":
+            return _FakeProc(argv, stdout=json.dumps(fx["rate_limit"]))
+        if argv[:2] == ["gh", "api"] and "actions/workflows" in argv[2]:
+            return _FakeProc(argv, stdout=json.dumps(fx["workflows"]))
+        if argv[:3] == ["gh", "variable", "list"]:
+            return _FakeProc(argv, stdout=json.dumps(fx["variables"]))
+        if argv[:3] == ["gh", "run", "list"]:
+            return _FakeProc(argv, stdout=json.dumps([]))
+        if argv[:2] == ["gh", "api"] and "pending_deployments" in argv[2]:
+            return _FakeProc(argv, stdout=json.dumps([]))
+        return _FakeProc(argv, returncode=1, stderr=f"unexpected argv: {argv}")
+
+    return runner
+
+
+def _master_gating_surfaces(*, include_precedence: bool = False, include_retired: bool = False) -> list[dict]:
+    surfaces: list[dict] = [
+            {
+                "id": "wf.all-gated",
+                "workflow": ".github/workflows/wf-all-gated.yml",
+                "kind": "workflow",
+                "switch": "PAUSE_WF_ALL",
+                "switch_class": "pause",
+                "state": "live",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "job.gated",
+                "workflow": ".github/workflows/job-gated.yml",
+                "job": "only",
+                "kind": "ci-job",
+                "switch": "PAUSE_JOB_GATED",
+                "switch_class": "pause",
+                "state": "live",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "step.gated",
+                "workflow": ".github/workflows/step-gated.yml",
+                "job": "main",
+                "step": "gate-step",
+                "kind": "ci-step",
+                "switch": "PAUSE_STEP_GATED",
+                "switch_class": "pause",
+                "state": "live",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "wf.mixed",
+                "workflow": ".github/workflows/wf-mixed.yml",
+                "kind": "workflow",
+                "switch": "PAUSE_WF_MIXED",
+                "switch_class": "pause",
+                "state": "live",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "wf.dispatch-only",
+                "workflow": ".github/workflows/wf-dispatch-only.yml",
+                "kind": "workflow",
+                "switch": None,
+                "switch_class": "pause",
+                "state": "live",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "row.value",
+                "workflow": ".github/workflows/wf-value.yml",
+                "job": "j",
+                "step": "s",
+                "kind": "value",
+                "switch": "SOME_VALUE",
+                "switch_class": "value",
+                "state": "live",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "row.retired",
+                "workflow": ".github/workflows/wf-retired.yml",
+                "kind": "workflow",
+                "switch": None,
+                "switch_class": "pause",
+                "state": "retired",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "row.manual",
+                "workflow": ".github/workflows/wf-manual.yml",
+                "kind": "workflow",
+                "switch": None,
+                "switch_class": "pause",
+                "state": "paused-manually",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "drift.own-switch",
+                "workflow": ".github/workflows/drift-own.yml",
+                "job": "only",
+                "kind": "ci-job",
+                "switch": "PAUSE_DRIFT_OWN",
+                "switch_class": "pause",
+                "state": "live",
+                "owner": "pyforge-steward",
+            },
+            {
+                "id": "paused.own-switch",
+                "workflow": ".github/workflows/paused-own.yml",
+                "job": "only",
+                "kind": "ci-job",
+                "switch": "PAUSE_OWN_PAUSED",
+                "switch_class": "pause",
+                "state": "paused",
+                "owner": "pyforge-steward",
+            },
+        ],
+    }
+    reg_path = root / "docs" / "governance" / "ci-surfaces.yaml"
+    reg_path.parent.mkdir(parents=True, exist_ok=True)
+    reg_path.write_text(yaml.safe_dump(reg), encoding="utf-8")
+    wf = root / ".github" / "workflows"
+    wf.mkdir(parents=True, exist_ok=True)
+    (wf / "wf-all-gated.yml").write_text(
+        """on: push
+jobs:
+  j1:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_WF_ALL != 'true') }}
+    runs-on: ubuntu-latest
+    steps: []
+  j2:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_WF_ALL != 'true') }}
+    runs-on: ubuntu-latest
+    steps: []
+""",
+        encoding="utf-8",
+    )
+    (wf / "job-gated.yml").write_text(
+        """on: push
+jobs:
+  only:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_JOB_GATED != 'true') }}
+    runs-on: ubuntu-latest
+    steps: []
+""",
+        encoding="utf-8",
+    )
+    (wf / "step-gated.yml").write_text(
+        """on: push
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: gate-step
+        if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_STEP_GATED != 'true') }}
+        run: echo ok
+""",
+        encoding="utf-8",
+    )
+    (wf / "wf-mixed.yml").write_text(
+        """on: push
+jobs:
+  gated:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_WF_MIXED != 'true') }}
+    runs-on: ubuntu-latest
+    steps: []
+  not-gated:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_WF_MIXED_ONLY != 'true') }}
+    runs-on: ubuntu-latest
+    steps: []
+""",
+        encoding="utf-8",
+    )
+    (wf / "wf-dispatch-only.yml").write_text(
+        """on:
+  workflow_dispatch:
+jobs:
+  manual:
+    runs-on: ubuntu-latest
+    steps: []
+""",
+        encoding="utf-8",
+    )
+    for name in ("wf-value.yml", "wf-retired.yml", "wf-manual.yml"):
+        (wf / name).write_text("on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps: []\n", encoding="utf-8")
+    (wf / "drift-own.yml").write_text(
+        """on: push
+jobs:
+  only:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DRIFT_OWN != 'true') }}
+    runs-on: ubuntu-latest
+    steps: []
+""",
+        encoding="utf-8",
+    )
+    (wf / "paused-own.yml").write_text(
+        """on: push
+jobs:
+  only:
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_OWN_PAUSED != 'true') }}
+    runs-on: ubuntu-latest
+    steps: []
+""",
+        encoding="utf-8",
+    )
+    return reg_path
+
+
+def _run_master_fixture(
+    tmp_path: Path,
+    *,
+    master_value: str | None,
+    extra_variables: list[dict] | None = None,
+    precedence_variables: bool = False,
+) -> dict:
+    reg_path = _write_master_gating_tree(tmp_path)
+    variables: list[dict] = list(extra_variables or [])
+    if master_value is not None:
+        variables.append(
+            {"name": "PAUSE_ALL_CI", "value": master_value, "updatedAt": _MASTER_UPDATED},
+        )
+    if precedence_variables:
+        variables.extend(
+            [
+                {"name": "PAUSE_DRIFT_OWN", "value": "true", "updatedAt": "2026-10-01T00:00:00Z"},
+                {"name": "PAUSE_OWN_PAUSED", "value": "true", "updatedAt": "2026-10-02T00:00:00Z"},
+            ]
+        )
+    fixed_now = datetime(2026, 10, 14, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_minimal_gh_runner(tmp_path, variables, fixed_now),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    result = run_status(deps, json_out=True)
+    assert result.ok is True
+    payload = result.details["payload"]
+    assert isinstance(payload, dict)
+    return payload
+
+
+def test_master_row_ac1_unset_false_true(tmp_path: Path) -> None:
+    for master_value, live_val, verdict, paused_since in (
+        (None, None, "live", None),
+        ("false", "false", "live", None),
+        ("true", "true", "drift", _MASTER_UPDATED),
+    ):
+        payload = _run_master_fixture(tmp_path, master_value=master_value)
+        master_rows = [r for r in payload["rows"] if r["id"] == "master:PAUSE_ALL_CI"]
+        assert len(master_rows) == 1
+        row = master_rows[0]
+        assert row["switch"] == "PAUSE_ALL_CI"
+        assert row["declared_state"] == "live"
+        assert row["live_switch_value"] == live_val
+        assert row["verdict"] == verdict
+        assert row["paused_since"] == paused_since
+        assert row["paused_by_master"] is False
+        if verdict == "drift":
+            assert row["detail"] == _MASTER_DETAIL
+        assert not any(r["id"] == "unregistered:PAUSE_ALL_CI" for r in payload["rows"])
+
+
+def test_gated_rows_ac2_master_on(tmp_path: Path) -> None:
+    payload = _run_master_fixture(tmp_path, master_value="true")
+    by_id = {r["id"]: r for r in payload["rows"]}
+
+    for rid in ("wf.all-gated", "job.gated", "step.gated"):
+        row = by_id[rid]
+        assert row["verdict"] == "paused"
+        assert row["paused_by_master"] is True
+        assert row["detail"] == _MASTER_PAUSE_DETAIL
+        assert row["paused_since"] == _MASTER_UPDATED
+
+    assert by_id["wf.mixed"]["verdict"] == "live"
+    assert by_id["wf.mixed"]["paused_by_master"] is False
+    assert by_id["wf.dispatch-only"]["verdict"] == "live"
+    assert by_id["wf.dispatch-only"]["paused_by_master"] is False
+    assert by_id["row.value"]["paused_by_master"] is False
+    assert by_id["row.retired"]["paused_by_master"] is False
+    assert by_id["row.manual"]["paused_by_master"] is False
+
+
+def test_precedence_ac3_master_on(tmp_path: Path) -> None:
+    payload = _run_master_fixture(tmp_path, master_value="true", precedence_variables=True)
+    by_id = {r["id"]: r for r in payload["rows"]}
+    drift = by_id["drift.own-switch"]
+    assert drift["verdict"] == "drift"
+    assert drift["paused_by_master"] is True
+    assert "master switch" not in str(drift.get("detail", ""))
+    paused = by_id["paused.own-switch"]
+    assert paused["verdict"] == "paused"
+    assert paused["paused_by_master"] is True
+    assert paused.get("detail") != _MASTER_PAUSE_DETAIL
+    assert paused["paused_since"] == "2026-10-02T00:00:00Z"
+
+
+def test_master_off_adds_only_master_row_and_flag(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+    fixed_now = datetime(2026, 10, 13, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_make_runner(tmp_path, [], fixed_now),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    payload = run_status(deps, json_out=True).details["payload"]
+    by_id = {r["id"]: r for r in payload["rows"]}
+    assert "master:PAUSE_ALL_CI" in by_id
+    for rid, row in by_id.items():
+        if rid == "master:PAUSE_ALL_CI":
+            continue
+        assert row["paused_by_master"] is False
+
+
+def test_ci_status_master_on_fixture_checked_in(tmp_path: Path) -> None:
+    payload = _run_master_fixture(tmp_path, master_value="true")
+    fixture_path = (
+        Path(__file__).resolve().parent.parent / "fixtures" / "ci_status_master_on.json"
+    )
+    canonical = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    if fixture_path.is_file():
+        assert canonical == fixture_path.read_text(encoding="utf-8")
+    else:
+        fixture_path.parent.mkdir(parents=True, exist_ok=True)
+        fixture_path.write_text(canonical, encoding="utf-8")
+
+
+def test_ac6_consumers_read_master_fixture() -> None:
+    fixture_path = (
+        Path(__file__).resolve().parent.parent / "fixtures" / "ci_status_master_on.json"
+    )
+    assert fixture_path.is_file(), "run test_ci_status_master_on_fixture_checked_in first"
+    repo_root = Path(__file__).resolve().parents[6]
+    fixture_s = str(fixture_path)
+
+    doctor_snippet = f"""
+import json
+from pathlib import Path
+from pyforge.doctor.models import DoctorStatus
+from pyforge.doctor.sources.ci_pause_drift import _findings_for_rows, _parse_payload
+payload = json.loads(Path({fixture_s!r}).read_text(encoding="utf-8"))
+parsed = _parse_payload(json.dumps(payload))
+assert parsed is not None
+findings = _findings_for_rows(parsed["rows"])
+warns = [f for f in findings if f.status == DoctorStatus.WARN and f.check == "ci-pause-drift"]
+assert len(warns) == 1
+assert "master:PAUSE_ALL_CI" in warns[0].message
+assert not any("wf.all-gated" in f.message for f in warns)
+"""
+    subprocess.run(
+        ["pixi", "run", "--frozen", "-e", "pyforge-doctor", "python", "-c", doctor_snippet],
+        cwd=repo_root,
+        check=True,
+    )
+
+    herald_snippet = f"""
+import json
+import sys
+from pathlib import Path
+repo = Path({str(repo_root)!r})
+sys.path.insert(0, str(repo))
+from docsite.tools.ci_surfaces_tile import format_row_line, select_non_live_rows, validate_ci_status_envelope
+fixture = Path({fixture_s!r})
+payload = json.loads(fixture.read_text(encoding="utf-8"))
+validate_ci_status_envelope(payload, path=str(fixture))
+non_live = select_non_live_rows(payload["rows"])
+assert non_live[0]["id"] == "master:PAUSE_ALL_CI"
+for row in non_live:
+    if row.get("detail"):
+        assert str(row["detail"]) in format_row_line(row)
+"""
+    subprocess.run(
+        ["pixi", "run", "--frozen", "-e", "pyforge-herald", "python", "-c", herald_snippet],
+        cwd=repo_root,
+        check=True,
+    )
+
+    marshal_snippet = f"""
+import json
+from pathlib import Path
+from pyforge.marshal.core.landing_ci_pauses import envelope_is_valid, surfaces_from_envelope
+payload = json.loads(Path({fixture_s!r}).read_text(encoding="utf-8"))
+assert envelope_is_valid(payload) is True
+assert "master:PAUSE_ALL_CI" in surfaces_from_envelope(payload)
+"""
+    subprocess.run(
+        ["pixi", "run", "--frozen", "-e", "pyforge-marshal", "python", "-c", marshal_snippet],
+        cwd=repo_root,
+        check=True,
+    )
