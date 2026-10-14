@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-14'
 status: 'in-review'
 baseline_revision: 'e0ad43f18c12c7c6e223c2f44b763c3e529db877'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -144,19 +144,23 @@ PostgreSQL, Redis, Docker or podman. No criterion counts, matches or signals a p
 it started.
 
 - **AC1 — The stubs record the process the stop path kills.**
-  - **Given** Story 63.7's stub root, **When** a `--test` run starts its services, **Then** the pids in
-    `postmaster.pid` and `redis.pid` belong to the long-running process itself (`/proc/<pid>/comm` is `sleep`). Their
-    cmdlines still pass `_is_our_postgres` and `_is_our_redis`: the run's stderr has `stopping postgres (pid <n>)` and
-    `stopping redis (pid <n>)` for those pids.
+  - **Given** Story 63.7's stub root, **When** a stand-in starts, **Then** the pid it records (`postmaster.pid`,
+    `--pidfile`) belongs to the long-running process itself (`/proc/<pid>/comm` is `sleep`). That pid carries the
+    test's marker, and its cmdline still passes `_is_our_postgres` and `_is_our_redis`.
+  - **When** a `--test` run starts and stops its services, **Then** each stand-in logs the pid it spawned and the marker
+    it ran with (`spawned <name> pid=<n> marker=<m>`). The run's stderr has `stopping postgres (pid <n>)` and
+    `stopping redis (pid <n>)` for exactly those pids, the postgres one equal to `postmaster.pid`, and both are gone
+    within 5 s of the run's exit.
   - `lock_holder.sh` ends in `exec sleep 999999`.
 - **AC2 — No test leaves a process behind.**
   - Every process a test in the three modules starts carries `PLATFORM_CI_STUB_MARKER=<tmp_path>`. This covers the
-    script runs, the `Popen`ed holders and `lock_holder.sh`.
+    script runs, the `Popen`ed holders and sleepers, `lock_holder.sh`, and AC3's scan subprocess.
   - **Given** the autouse fixture, **When** any test in the three modules finishes, **Then** no process other than
     pytest's own carries the test's marker within 5 s. If one does, the fixture kills those pids, and only those, and
     fails the test naming each pid and its cmdline.
-  - `test_stub_start_stop_cycle_leaves_no_process` drives each stand-in through start and stop, then runs one `--test`
-    cycle. It asserts both stop lines and an empty marked set.
+  - `test_stub_start_stop_cycle_leaves_no_process` drives each stand-in through start and stop and asserts that each
+    recorded pid carries the marker. It then runs one `--test` cycle and asserts that both stand-ins ran with the
+    test's marker, that both stop lines name the spawned pids, and that nothing marked is left.
   - `_kill_and_follow` kills its holder's process group in teardown.
 - **AC3 — The holder scan forks nothing per descriptor, and its contract holds.**
   - `test_pids_holding_path_lists_each_holder_once_sorted` holds a lock file open in two processes, one of them on two
@@ -169,7 +173,10 @@ it started.
   - **Given** an outside process holding the lock and a dead `.holder` record, **When** the waiter times out, **Then**
     the `pid=` lines under `processes holding <lock>:` name exactly that process. The waiter, its subshells and its
     helpers are not listed. The stale record is still reported as stale.
-  - The report calls `_pids_holding_path` once.
+  - The report calls `_pids_holding_path` once. A recording `fuser` first on the run's `PATH` logs each call, handing
+    it to the host's `fuser` (or, where there is none, to the same fork-free walk). Both lock-wait tests assert exactly
+    one call: `test_lock_wait_timeout_names_holder` with a live `.holder` record, and
+    `test_lock_wait_names_live_holder_and_stale_record` with a dead one.
   - Every existing assertion in `test_lock_wait_timeout_names_holder` and
     `test_lock_wait_names_live_holder_and_stale_record` holds unchanged.
 - **AC5 — The lock-wait tests are fast.** `test_lock_wait_timeout_names_holder` and
@@ -180,7 +187,13 @@ it started.
   - restoring the `readlink` walk as the fallback fails AC3's no-`fuser` run;
   - dropping the waiter's `exec 9>&-` fails AC4's exact-holder assertion;
   - matching the stub `pg_ctl`'s action as a substring of `"$*"` again fails
-    `test_stub_start_stop_cycle_leaves_no_process`.
+    `test_stub_start_stop_cycle_leaves_no_process`;
+  - the stand-ins unsetting `PLATFORM_CI_STUB_MARKER` before their `exec` fails
+    `test_stub_start_stop_cycle_leaves_no_process` (the recorded pid is unmarked);
+  - `_run_platform_ci_local` dropping the marker, with the redis stop path not killing, fails the same test (the run's
+    stand-ins log `marker=none`); the stop path not killing alone fails it too (the spawned pid outlives its stop);
+  - a second `_pids_holding_path` call in the report, in the live-record branch or beside the first, fails the
+    scan-count assertion of a lock-wait test.
 - **AC7 — Nothing else moves.**
   - `PLATFORM_CI_LOCAL_LOCK_WAIT` and its 7200 s default, the exit codes, the contention report's lines, the stage
     flags, step names, summary and `--help` text do not change.
@@ -218,7 +231,8 @@ it started.
 - `fuser` also lists processes that hold the file as their cwd or through a mapping. A lock file is neither in
   practice, and `e0ad43f18c` already used `fuser` that way.
 - The marker check reads only environments the user can read. A stub that cleared its environment (`env -i`) would
-  escape it. None does, and the regression test fails if a stub stops carrying the marker.
+  escape it. None does. The regression test fails if a stand-in stops carrying the marker (it asserts each recorded
+  pid is marked, and that the run's stand-ins log the test's marker), or if `_run_platform_ci_local` stops passing it.
 - A test killed by pytest's own timeout, or by a crash, skips its fixture. The marker still names its leftovers, so the
   before and after counts in AC8 expose them.
 
@@ -329,3 +343,25 @@ Verification (2026-10-14):
     postgres left running.
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test`: 2601 passed, 2 skipped, exit 0 (457 s).
 - `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+
+## Review (2026-10-14, independent)
+
+Verdict: failed. The fix is correct and AC5 and AC8 pass, but the review found gaps in what the tests prove. Each
+finding went back to implementation (review loop iteration 1), and the fix column records what landed.
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| 1 | MEDIUM | Residual risk claimed that "the regression test fails if a stub stops carrying the marker". It does not. Mutation m7b had the stand-ins `unset PLATFORM_CI_STUB_MARKER` before `exec`, and the regression test and `test_single_run_summary_unchanged` still passed. Mutation m9 dropped the marker in `_run_platform_ci_local` and made the redis stop path not kill; the tests passed and leaked 2 stand-ins unseen. | The direct drive asserts `pg_pid in _marked_pids(tmp_path)` and `redis_pid in _marked_pids(tmp_path)` after each start. The stand-ins log `spawned <name> pid=<n> marker=<m>`, and the `--test` cycle asserts both ran with the test's marker. The residual-risk line now says what is tested. Re-run in place, each file restored and checked with `cmp`: m7b fails (`the postgres stand-in dropped the test's marker`); m9 fails (`postgres stand-in ran without the test's marker: 'none'`); m9's stop-path half alone fails (`redis-server stand-in pid … outlived its stop`). |
+| 2 | LOW | AC4's "the report calls `_pids_holding_path` once" is untested. Re-adding a second scan (m10) leaves both lock-wait tests green. | `_write_recording_fuser` puts a `fuser` first on the run's `PATH` that logs each call and hands it to the host's `fuser` (or the same fork-free walk). Both lock-wait tests assert one scan (`_fuser_scans`): `test_lock_wait_timeout_names_holder` with a live `.holder` record, the stale-record test with a dead one. m10 in the pre-fix shape (a second scan in the live-record branch) fails the first; a duplicated scan line fails both. |
+| 3 | LOW | AC1's "for those pids" is not asserted in the `--test` cycle; the test matches only `stopping postgres \(pid \d+\)`. | The `--test` cycle ties `stopping postgres (pid N)` to the spawned postgres pid and to `postmaster.pid`, and `stopping redis (pid N)` to the spawned redis pid. Both must be gone within 5 s (not running, not a zombie). |
+| 4 | LOW | AC2 says every process a test starts carries the marker, but AC3's scan subprocess runs with `env={"PATH": ...}` only. | The scan subprocess runs with `{"PATH": …, **_marker_env(tmp_path)}`, and AC2 names it. |
+| 5 | INFO | `detectors-ci` exits 1 on `ledger-direction` once doctor 47.1 (landed on `main` after this branch's base) is merged; merge `origin/main` before the final checks. | Merged `origin/main` (`3394a2bf55`) as `156e9a6004` before the final checks. The merge brought 25 files, none on `spec-pyforge-steward`'s surface. |
+
+Verification after review 1 (2026-10-14, on `156e9a6004` plus the review fixes):
+- The three `test_platform_ci_local_*` modules: 28 passed in 126 s. `test_lock_wait_timeout_names_holder` took 32.47 s and
+  `test_lock_wait_names_live_holder_and_stale_record` 2.56 s. Marked processes: 0 before, 0 after.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: 2601 passed, 2 skipped, exit 0 (385 s). Marked processes:
+  0 before, 0 after.
+- The review's mutations m7b, m9 (both halves together, and the stop-path half alone) and m10 (two forms) each fail a
+  named test, as listed in the Review table above. Every mutated file was restored and checked with `cmp`. The pids the
+  mutations leaked that their marker could not reach were killed by pid, scoped to their own basetemp.

@@ -165,6 +165,7 @@ def _prepare_stub_root(root: Path) -> Path:
                 chmod +x "$pgdata/postgres"
                 setsid "$pgdata/postgres" -D "$pgdata" >> "$log" 2>&1 &
                 echo $! > "$pgdata/postmaster.pid"
+                echo "spawned postgres pid=$! marker=${PLATFORM_CI_STUB_MARKER:-none}" >> "$log"
                 if [ -n "$work" ]; then echo "$!" > "$work/.active"; fi
               fi
             fi
@@ -194,6 +195,7 @@ def _prepare_stub_root(root: Path) -> Path:
               chmod +x "$rdir/redis-server"
               setsid "$rdir/redis-server" --port "${rport:-0}" >> "$log" 2>&1 &
               [ -n "$pidfile" ] && echo $! > "$pidfile"
+              echo "spawned redis-server pid=$! marker=${PLATFORM_CI_STUB_MARKER:-none}" >> "$log"
             fi
             ;;
           initdb)
@@ -306,6 +308,37 @@ def _prepare_stub_root(root: Path) -> Path:
     _write_executable(plat / "manage.py", "#!/usr/bin/env bash\nexit 0\n")
     (plat / "tests" / "policy").mkdir(parents=True, exist_ok=True)
     return bin_dir
+
+
+def _write_recording_fuser(bin_dir: Path) -> None:
+    """Put a ``fuser`` first on the run's PATH that logs each call (Story 101.1).
+
+    It hands each call to the host's ``fuser``, or, where there is none, to the same
+    fork-free ``/proc`` walk the script falls back to, so the listing stays the real one.
+    """
+    real = shutil.which("fuser") or ""
+    _write_executable(
+        bin_dir / "fuser",
+        textwrap.dedent(
+            f"""\
+            #!/usr/bin/env bash
+            echo "fuser $*" >> "${{PLATFORM_CI_STUB_LOG:-/dev/null}}"
+            if [ -n "{real}" ]; then exec "{real}" "$@"; fi
+            target="${{@: -1}}"
+            for fd in /proc/[0-9]*/fd/*; do
+              [ "$fd" -ef "$target" ] || continue
+              fd="${{fd#/proc/}}"
+              printf ' %s' "${{fd%%/*}}"
+            done
+            echo
+            """
+        ),
+    )
+
+
+def _fuser_scans(stub_log: Path) -> list[str]:
+    """The recording ``fuser``'s calls in ``stub_log``: one per holder scan."""
+    return [ln for ln in stub_log.read_text(encoding="utf-8").splitlines() if ln.startswith("fuser ")]
 
 
 def _run_platform_ci_local(
@@ -449,6 +482,7 @@ def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
             )
         )
 
+    _write_recording_fuser(bin_dir)  # Story 101.1: counts the report's scans
     t = threading.Thread(target=hold)
     t.start()
     time.sleep(1)
@@ -466,6 +500,9 @@ def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
     assert waiter.returncode == 2
     assert "holder" in waiter.stderr.lower() or "lock held" in waiter.stderr.lower()
     assert "pid=" in waiter.stderr
+    # Story 101.1: with a live .holder record too, the report scans once; the listing and the
+    # live-record check read the same scan.
+    assert len(_fuser_scans(tmp_path / "waiter.log")) == 1, _fuser_scans(tmp_path / "waiter.log")
 
 
 def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
@@ -578,6 +615,24 @@ def _wait_comm(pid: int, comm: str, timeout: float = 5.0) -> str:
     return seen
 
 
+def _running(pid: int) -> bool:
+    """True while ``pid`` exists and is not a zombie."""
+    try:
+        stat = Path("/proc", str(pid), "stat").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return stat.rsplit(")", 1)[-1].split()[0] != "Z"
+
+
+def _wait_not_running(pid: int, timeout: float = 5.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while _running(pid):
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.05)
+    return True
+
+
 def test_stub_start_stop_cycle_leaves_no_process(tmp_path: Path) -> None:
     """Story 101.1: each service stand-in records the process the stop path kills.
 
@@ -595,6 +650,7 @@ def test_stub_start_stop_cycle_leaves_no_process(tmp_path: Path) -> None:
     subprocess.run([str(dev_bin / "pg_ctl"), "-D", str(pgdata), "start"], env=env, check=True, timeout=30)
     pg_pid = int((pgdata / "postmaster.pid").read_text(encoding="utf-8").split()[0])
     assert _wait_comm(pg_pid, "sleep") == "sleep"
+    assert pg_pid in _marked_pids(tmp_path), "the postgres stand-in dropped the test's marker"
     pg_cmd = _cmdline(pg_pid)
     assert "postgres" in pg_cmd and f"-D {pgdata}" in pg_cmd, pg_cmd
     subprocess.run([str(dev_bin / "pg_ctl"), "-D", str(pgdata), "stop", "-m", "fast"], env=env, check=True, timeout=30)
@@ -610,6 +666,7 @@ def test_stub_start_stop_cycle_leaves_no_process(tmp_path: Path) -> None:
     )
     redis_pid = int(pidfile.read_text(encoding="utf-8").strip())
     assert _wait_comm(redis_pid, "sleep") == "sleep"
+    assert redis_pid in _marked_pids(tmp_path), "the redis-server stand-in dropped the test's marker"
     assert "redis-server" in _cmdline(redis_pid)
     os.kill(redis_pid, signal.SIGTERM)
     assert _wait_marked_gone(tmp_path) == []
@@ -624,8 +681,22 @@ def test_stub_start_stop_cycle_leaves_no_process(tmp_path: Path) -> None:
         },
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert re.search(r"stopping postgres \(pid \d+\)", proc.stderr), proc.stderr
-    assert re.search(r"stopping redis \(pid \d+\)", proc.stderr), proc.stderr
+    # The run's own stand-ins carried the marker, so the autouse fixture can see them, and the
+    # pid each stop line names is the process the stand-in spawned and recorded.
+    log = (tmp_path / "cycle.log").read_text(encoding="utf-8")
+    spawned_rows = re.findall(r"^spawned (postgres|redis-server) pid=(\d+) marker=(.*)$", log, re.M)
+    assert sorted(name for name, _pid, _marker in spawned_rows) == ["postgres", "redis-server"], log
+    for name, _pid, marker in spawned_rows:
+        assert marker == str(tmp_path), f"{name} stand-in ran without the test's marker: {marker!r}"
+    spawned = {name: int(pid) for name, pid, _marker in spawned_rows}
+    pg_stop = re.search(r"stopping postgres \(pid (\d+)\)", proc.stderr)
+    redis_stop = re.search(r"stopping redis \(pid (\d+)\)", proc.stderr)
+    assert pg_stop and redis_stop, proc.stderr
+    recorded_pg = int((tmp_path / "cycle-work" / "pg" / "postmaster.pid").read_text(encoding="utf-8").split()[0])
+    assert int(pg_stop.group(1)) == spawned["postgres"] == recorded_pg, (proc.stderr, log)
+    assert int(redis_stop.group(1)) == spawned["redis-server"], (proc.stderr, log)
+    for name, pid in spawned.items():
+        assert _wait_not_running(pid), f"{name} stand-in pid {pid} outlived its stop"
     assert _wait_marked_gone(tmp_path) == []
 
 
@@ -674,7 +745,7 @@ def test_pids_holding_path_lists_each_holder_once_sorted(tmp_path: Path, tools: 
             assert _wait_comm(holder.pid, "sleep") == "sleep"
         scan = subprocess.run(
             [bash, "-c", _holding_path_function() + '_pids_holding_path "$1"\n', "_", str(target)],
-            env={"PATH": str(tool_dir)},
+            env={"PATH": str(tool_dir), **_marker_env(tmp_path)},
             capture_output=True,
             text=True,
             timeout=60,

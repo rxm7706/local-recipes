@@ -15,11 +15,13 @@ from pathlib import Path
 
 import pytest
 from test_platform_ci_local_concurrency import (
+    _fuser_scans,
     _marker_env,
     _no_stub_process_outlives_the_test,  # noqa: F401 -- autouse: no test here leaves a process behind (Story 101.1)
     _prepare_stub_root,
     _run_platform_ci_local,
     _write_executable,
+    _write_recording_fuser,
 )
 
 try:
@@ -298,6 +300,7 @@ def test_lock_wait_names_live_holder_and_stale_record(stub_root: tuple[Path, Pat
         "pid=999999\ncheckout=dead\nstages=test\nstarted=2020-01-01T00:00:00\n",
         encoding="utf-8",
     )
+    _write_recording_fuser(bin_dir)  # Story 101.1: counts the report's scans
     try:
         proc = _run_platform_ci_local(
             root,
@@ -316,6 +319,8 @@ def test_lock_wait_names_live_holder_and_stale_record(stub_root: tuple[Path, Pat
         # waiter or its own helpers (the waiter closes fd 9 before it scans).
         listed = [int(pid) for pid in re.findall(r"^  pid=(\d+) cmdline=", proc.stderr, re.MULTILINE)]
         assert listed == [holder.pid], proc.stderr
+        # ...and it scans once: the listing and the live-record check read the same scan.
+        assert len(_fuser_scans(root / "wait.log")) == 1, _fuser_scans(root / "wait.log")
     finally:
         os.kill(holder.pid, signal.SIGKILL)
         holder.wait(timeout=5)
