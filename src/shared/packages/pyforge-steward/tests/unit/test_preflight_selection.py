@@ -289,13 +289,15 @@ def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane
     assert "no CI counterpart" in next(e for e in journal["selected"] if e["lane"] == "docs-gen-test")["reason"]
 
 
-def test_pixi_toml_selects_every_lane_but_the_eight_coverage_gates(tmp_path: Path, all_tasks: set[str]) -> None:
+def test_pixi_toml_triggers_lint_and_station_lanes_not_pages(tmp_path: Path) -> None:
+    """``pixi.toml`` is not a ``pages.yml`` path (Story 102.2); it no longer selects pages-check."""
     repo = make_repo(tmp_path, {"pixi.toml": (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8") + "\n# touched\n"})
-    selection = select(repo)
-    assert selected_tasks(selection) == all_tasks - GATES
-    assert {v.task for v in selection.verdicts if not v.selected} == GATES
-    assert all(verdict(selection, g).workflow == "coverage-gates.yml" for g in GATES)
-    assert all("on.pull_request.paths" in verdict(selection, g).rule for g in GATES)
+    chosen = selected_tasks(select(repo))
+    assert ALWAYS_ON <= chosen
+    assert LINT <= chosen
+    assert not (chosen & PAGES_CHECK_LEAVES)
+    assert not (chosen & DOCS_SITE_VALIDATE)
+    assert not (chosen & GATES)
 
 
 def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -> None:
@@ -318,11 +320,9 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"docs/dreams/a-dream.md": "# dream\n"})
     chosen = selected_tasks(select(repo))
     assert SPEC_ALWAYS_ON <= chosen
-    # `docs/**` is a docsite-check.yml trigger path, so its three validators run too.
+    # ``docs/dreams/**`` is outside ``pages.yml``'s twelve published-input paths (Story 102.2).
     assert chosen == (
         ALWAYS_ON
-        | DOCS_SITE_VALIDATE
-        | PAGES_CHECK_LEAVES
         | {suite("doctor"), suite("herald"), suite("marshal"), suite("steward")}
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
