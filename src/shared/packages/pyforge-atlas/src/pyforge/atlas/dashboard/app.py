@@ -517,7 +517,7 @@ def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool, prov
     chart = _declared_chart(page, key)
     if chart is not None:
         components.append(chart)
-    page_controls: list[vm.ControlType | vm.ControlGroup] = controls
+    page_controls: list[vm.Filter | vm.ControlGroup] = [f for f in controls]
     return vm.Page(
         id=page.id,
         title=page.title,

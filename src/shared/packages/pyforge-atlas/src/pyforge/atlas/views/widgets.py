@@ -152,7 +152,9 @@ def _grid_websocket_renderer(view: View) -> Callable[[Document], None]:
             maintainer_input.on_change("value", _on_maintainer_change)
             controls.append(maintainer_input)
 
-        sort_options: list[str | tuple[Any, str]] = [("", "(unsorted)")] + [(c, c) for c in view.columns]
+        sort_options: list[str | tuple[Any, str]] = [("", "(unsorted)")]
+        for col in view.columns:
+            sort_options.append((col, col))
         sort_select = Select(
             title="Sort by",
             value="",
