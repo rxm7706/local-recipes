@@ -101,6 +101,9 @@ jobs:
         run: pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test
 
   detectors:
+    # ci-surfaces: detectors.detectors
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -157,9 +160,7 @@ jobs:
           fi
 
       - name: Install detector dependencies (pip fallback)
-    # ci-surfaces: detectors.detectors
-    # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
+        if: steps.py.outputs.mode == 'pip'
         run: |
           python -m pip install --quiet pyyaml playwright "ruamel.yaml>=0.18.17"
           python -m pip install --quiet ./src/shared/packages/pyforge-core

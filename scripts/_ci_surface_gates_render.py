@@ -313,6 +313,17 @@ def _render_comment_lines(indent: str, row_id: str) -> list[str]:
     ]
 
 
+def _render_block_for_plan(plan: JobRenderPlan) -> str:
+    child_indent = "    "
+    new_if = build_fragment(
+        inner=plan.inner,
+        workflow_switch=plan.workflow_switch,
+        job_switch=plan.job_switch,
+    )
+    lines = _render_comment_lines(child_indent, plan.row_id) + [f"{child_indent}if: {new_if}"]
+    return "\n".join(lines) + "\n"
+
+
 def render_workflow_file(
     path: Path,
     plans: list[JobRenderPlan],
@@ -321,89 +332,57 @@ def render_workflow_file(
 ) -> bool:
     """Apply render plans for one workflow file. Returns whether the file changed."""
     text = path.read_text(encoding="utf-8")
-    lines = text.splitlines(keepends=True)
     job_plans = {p.job_id: p for p in plans if p.workflow_rel.endswith(path.name)}
     if not job_plans:
         return False
     changed = False
-    in_jobs = False
-    i = 0
-    while i < len(lines):
-        if re.match(r"^jobs:\s*$", lines[i]):
-            in_jobs = True
-            i += 1
-            continue
-        if not in_jobs:
-            i += 1
-            continue
-        m = re.match(r"^  ([\w-]+):\s*$", lines[i])
-        if not m or m.group(1) not in job_plans:
-            i += 1
-            continue
-        job_id = m.group(1)
-        job_line_idx = i
-        plan = job_plans[job_id]
-        indent = _job_block_indent(lines, job_line_idx)
-        child_indent = indent + "  "
-        new_if = build_fragment(
-            inner=plan.inner,
-            workflow_switch=plan.workflow_switch,
-            job_switch=plan.job_switch,
-        )
-        if_range = _find_job_if_range(lines, job_line_idx, indent)
-        comment_lines = [
-            ln + ("\n" if not ln.endswith("\n") else "")
-            for ln in _render_comment_lines(child_indent, plan.row_id)
-        ]
-        if_line = f"{child_indent}if: {new_if}\n"
-        if if_range:
-            start, end = if_range
-            # Drop existing render comments immediately above if:
-            drop = start
-            while drop > i + 1:
-                prev_line = lines[drop - 1]
-                if not prev_line.startswith(child_indent):
-                    break
-                prev = prev_line.strip()
-                if prev.startswith(f"# {_RENDER_MARKER}") or prev.startswith("# render:"):
-                    drop -= 1
-                    continue
-                break
-            new_block = comment_lines + [if_line]
-            old_block = "".join(lines[drop:end])
-            new_text = "".join(new_block)
-            if old_block != new_text:
-                lines[drop:end] = new_block
+    for job_id, plan in sorted(job_plans.items(), key=lambda kv: (-len(kv[0]), -text.find(f"  {kv[0]}:\n"))):
+        block = _render_block_for_plan(plan)
+        marker = f"    # {_RENDER_MARKER} {plan.row_id}"
+        if marker in text:
+            pattern = (
+                rf"    # {_RENDER_MARKER} {re.escape(plan.row_id)}\n"
+                rf"    # render: {re.escape(_RENDER_CMD)}\n"
+                rf"    if: \$\{{\{{[^{{}}]*\}}\}} *\n"
+            )
+            new_text, n = re.subn(pattern, block.rstrip("\n") + "\n", text, count=1)
+            if n and new_text != text:
+                text = new_text
                 changed = True
-            i = job_line_idx + 1
-            while i < len(lines) and not re.match(r"^  [\w-]+:\s*$", lines[i]):
-                i += 1
             continue
-        # Insert if: as the first key under the job (before runs-on, needs, steps, …).
-        child_indent = indent + "  "
-        insert_at = i + 1
-        while insert_at < len(lines):
-            line = lines[insert_at]
-            if not line.strip():
-                insert_at += 1
-                continue
-            stripped = line.strip()
-            if stripped.startswith("#"):
-                insert_at += 1
-                continue
-            if line.startswith(child_indent):
-                break
-            if re.match(r"^  [\w-]+:\s*$", line):
-                break
-            insert_at += 1
-        insert_block = comment_lines + [if_line]
-        lines[insert_at:insert_at] = insert_block
+        # Replace an existing job if: (single-line ${{ }} or folded >- block).
+        if_pat = (
+            rf"(  {re.escape(job_id)}:\n"
+            rf"(?:    #[^\n]*\n)*"
+            rf"    if: (?:>\-\n(?:      .+\n)+?|\$\{{\{{[^{{}}]*\}}\}} *\n))"
+        )
+        new_text, n = re.subn(if_pat, rf"  {job_id}:\n{block}", text, count=1)
+        if n:
+            text = new_text
+            changed = True
+            continue
+        # Insert before the first job property (runs-on / needs / steps / …).
+        insert_pat = (
+            rf"(  {re.escape(job_id)}:\n)"
+            rf"((?:    #[^\n]*\n)*)"
+            rf"(    (?:runs-on|needs|if|steps|strategy|env|timeout-minutes):)"
+        )
+        new_text, n = re.subn(insert_pat, rf"\1\2{block}\3", text, count=1)
+        if n:
+            text = new_text
+            changed = True
+    # Drop a legacy if: line left beside the rendered fragment (needs/if ordering in some workflows).
+    deduped, n = re.subn(
+        r"(    if: \$\{\{ github\.event_name == 'workflow_dispatch' \|\| \(vars\.PAUSE_ALL_CI[^\n]+\n)"
+        r"    if: (?!.*PAUSE_ALL_CI)([^\n]+\n)",
+        r"\1",
+        text,
+    )
+    if n:
+        text = deduped
         changed = True
-        i = job_line_idx + 1
-        while i < len(lines) and not re.match(r"^  [\w-]+:\s*$", lines[i]):
-            i += 1
     if changed and not dry_run:
-        path.write_text("".join(lines), encoding="utf-8")
+        path.write_text(text, encoding="utf-8")
     return changed
 
 

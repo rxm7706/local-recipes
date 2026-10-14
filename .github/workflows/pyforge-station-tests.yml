@@ -474,10 +474,11 @@ jobs:
   # (django-pyforge is also a path trigger for testing-kit-test.)
   # Pinned by pyforge-core's `tests/meta/test_conformance_lane_wired.py`.
   core-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.core-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.core == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.core == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -498,10 +499,11 @@ jobs:
     # gated on `testing_kit`: the shared surface OR one of the two other inputs
     # its tests read (django-pyforge and the platform flag tree). Pinned by the
     # kit's `tests/meta/test_testing_kit_lane_wired.py`.
-    needs: changes
     # ci-surfaces: pyforge-station-tests.testing-kit-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.testing_kit == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.testing_kit == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.testing_kit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -513,10 +515,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-test
 
   atlas-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.atlas-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.atlas == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.atlas == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.atlas == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -552,10 +555,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-atlas kedro-catalog-check
 
   doctor-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.doctor-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.doctor == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.doctor == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.doctor == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -567,10 +571,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-doctor pyforge-doctor-test
 
   herald-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.herald-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.herald == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.herald == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.herald == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -593,10 +598,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-herald pyforge-herald-test
 
   marshal-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.marshal-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.marshal == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.marshal == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.marshal == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -613,10 +619,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-test
 
   mason-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.mason-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.mason == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.mason == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.mason == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -635,10 +642,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-mason pyforge-mason-recipe-build-smoke
 
   scribe-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.scribe-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.scribe == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.scribe == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.scribe == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -673,10 +681,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-scribe pyforge-scribe-test
 
   steward-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.steward-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.steward == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.steward == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.steward == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -688,10 +697,11 @@ jobs:
       - run: pixi run --frozen -e pyforge-steward pyforge-steward-test
 
   warden-test:
-    needs: changes
     # ci-surfaces: pyforge-station-tests.warden-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.warden == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.warden == 'true')) }}
+    needs: changes
+    if: needs.changes.outputs.warden == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -706,8 +716,6 @@ jobs:
   # referenced by no workflow until this job. Mirrors platform-ci.yml's
   # docker/podman matrix (spec 10.3 / Story 48.10).
   guild-container:
-    # Paused while repo variable PAUSE_CONTAINER_BUILDS is 'true' (operator 2026-10-04, to save runner time during
-    # the burn-down landings). Resume: `gh variable set PAUSE_CONTAINER_BUILDS --body false` (or delete it).
     # ci-surfaces: station-tests.guild-container
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && vars.PAUSE_CONTAINER_BUILDS != 'true') }}
