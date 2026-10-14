@@ -3652,7 +3652,7 @@
    ".cursor/rules/bmad-build.mdc": "6425c633bd14353c56d0d6565b9edf5825ecbf8f",
    ".marshal/seed-state.yml": "1bd1609630b7e345769eb5cf2a0ffc3f95e670e4",
    "_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json": "145f927a95dae989ece5f1b06dda05c9bacacc39",
-   "docs/dashboard/README.md": "2ff9be9bf01546fd40b5ef62452a5832efb07049",
+   "docs/dashboard/README.md": "29844496bfe76cf7d0ee26f22a9c264665465f46",
    "docs/dashboard/kedro-viz/.vite/manifest.json": "a792c3db598433602b258c3a62adb718e0999a38",
    "docs/dashboard/kedro-viz/404.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/api/deploy-viz-metadata": "d1d2447dda80afe6b86726adcff01310786474d2",
@@ -3871,7 +3871,7 @@
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "36c7872706225d8d1e2af89ced2c0b3c4cdd667f",
    "environment.yaml": "34f7aaaa937c5504f212bf2487b614a365a1d1eb",
-   "pixi.toml": "67b5b5ecd5a04e12e08c66d304cf86a0a303c340",
+   "pixi.toml": "6e6e8f0556f7b75669f7092ce94d332aa3e453e2",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -4423,7 +4423,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "735f6260467ef5678dcdd63c5d75906e362f1774"
+  "memlog": "5b469fc56108bf0345b4d9fa1712e43e8d396323"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
