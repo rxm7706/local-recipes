@@ -1739,6 +1739,31 @@ Drift — orphaned between stations.
   **Constraints:** a fix under CAP-152 (Stories 63.7, 89.1 and 96.1), with no CAP and no flag;
   `PLATFORM_CI_LOCAL_LOCK_WAIT`, the exit codes and the report format stay; never kill processes host-wide. Owner
   `spec-pyforge-steward`. → Epic 101 / Story 101.1, specced 2026-10-14.
+
+- **2026-10-13 (the Pages duct) — Ruled: steward owns the Pages deploy workflow; herald owns what is inside the
+  artifact.** Operator ruling 2026-10-13, from the herald Dream's same-day entry *the Pages deployment, redesigned*.
+  Today `spec-pyforge-herald`'s surface governs `.github/workflows/dashboard.yml` while steward already owns everything
+  around it: `steward deploy {dashboard,status,static}`, `steward budget check`, the CI-surfaces registry whose
+  `dashboard.deploy` row carries the `stuck_rules` for the 2026-10-06 incident (a deploy parked in `waiting` for six
+  days), and the preflight lane selection read from the workflow files (Story 71.2). This Dream's own § *What is
+  already Steward-shaped* named the Pages deploy a steward duty on 2026-07-23. Measured the same day: 1,342 runs,
+  720 deploys and 621 cancelled since 2026-09-13 on an unconditional push trigger; a published-inputs filter replays
+  to 132. **What it looks like when real:** `dashboard.yml` becomes `pages.yml` in BMAD-METHOD `docs.yaml`'s shape
+  and moves onto this Spec's surface (off herald's; memlog reconcile on both, a scoped stamp each); a `steward pages
+  build|deploy|status` duty replaces `deploy dashboard` and `deploy status`, whose last caller
+  (`kedro-viz-publish.yml`) stops committing to `main`; the registry row becomes `pages.deploy` and keeps its
+  `stuck_rules`; the deploy job skips when the built tree hash equals the last deployed one; a six-hourly schedule
+  rebuilds the fleet board and guild status pages and deploys only when they changed; the Kedro-Viz consumer step
+  downloads atlas's `kedro-viz-export` artifact and tolerates its absence, and lands only after Story 99.3 gives the
+  producer its `PAUSE_*` gate and `ci resume`; `actions/configure-pages` is authoritative on every host, so herald's
+  `pyforge.herald.pages_second_host` flag retires and the GitHub Enterprise how-to loses its flag step; the same
+  artifact is zipped as a release asset for the air-gapped host. Herald keeps `pages-build`, `pages-check`,
+  `docs-site/` and `/herald/`; doctor keeps `map.yaml`. **Constraints:** steward reaches `gh`, `git` and the build
+  tasks by subprocess (AD-1); `main()` keeps every exit code (AD-8); duty-count invariants in `tests/unit/test_cli.py`
+  move with the duty; one `deploy-pages` caller; nothing outward beyond this repository's own Pages. **Kinships:**
+  [[pyforge-herald]] (owner of the site's content and the lead entry), [[pyforge-atlas]] (the export producer),
+  [[pyforge-doctor]] (`ci_pause_drift`, the liveness probe). Owner `spec-pyforge-steward`; → `bmad-spec` after
+  herald's, one M2 story for the surface move and the duty. → CAP-168 / Epic 102 / Stories 102.1–102.5, specced 2026-10-14.
 - **2026-10-14 (CI and estate follow-ups) — Found: three steward reports say less than is true.** Three open
   deferred-work rows, each found by a story that landed on 2026-10-14. (1) `steward ci status --json` has no row for
   the master switch `PAUSE_ALL_CI` and judges each surface by its own switch, so while the master is on, doctor 45.1's
@@ -1749,16 +1774,16 @@ Drift — orphaned between stations.
   lock held 0.12.0 throughout (`DW-steward-100-7-2`). (3) Six places in `pixi.toml` call `pyforge-ci` stdlib-only, but
   its `python` feature's `spec-kit` brings `jsonschema`, `pyyaml` and 35 more packages, so tests built to skip there
   run there. Measured at `846d8383f5`: with those packages gone, 32 `tests/scripts` files fail, error or newly skip,
-  and every failure and error is for want of `yaml` (`DW-doctor-47-1-1`). The operator ruled 2026-10-14: "yes stdlib only". **What it looks
-  like when fixed:** the CI status report carries the master as its own row, `drift` while it is on, and every surface
-  whose jobs read it reads `paused` with a reason, so the three consumers report it with no change of their own;
-  reconcile writes each suite floor from the refresh it follows — the version the batch moved the member to, else the
-  floor it already had or what the member recipe builds — with no network lookup, and journals every floor and its
-  source; `pyforge-ci` composes no `spec-kit`, the tests that need a library skip there and run where it is declared,
-  and every claim about the env is true. **Constraints:** three fixes, under CAP-166, CAP-167 and CAP-5, with no CAP
-  and no flag; no consumer station changes; the bmad-suite generator is conda-forge-expert's, so its story invokes the
-  skill and closes with its retro; `pixi lock` only, and no other environment's packages move; nothing outward. Owner
-  `spec-pyforge-steward`. → Epic 102 / Stories 102.1-102.3, specced 2026-10-14.
+  and every failure and error is for want of `yaml` (`DW-doctor-47-1-1`). The operator ruled 2026-10-14: "yes stdlib
+  only". **What it looks like when fixed:** the CI status report carries the master as its own row, `drift` while it
+  is on, and every surface whose jobs read it reads `paused` with a reason, so the three consumers report it with no
+  change of their own; reconcile writes each suite floor from the refresh it follows — the version the batch moved the
+  member to, else the floor it already had or what the member recipe builds — with no network lookup, and journals
+  every floor and its source; `pyforge-ci` composes no `spec-kit`, the tests that need a library skip there and run
+  where it is declared, and every claim about the env is true. **Constraints:** three fixes, under CAP-166, CAP-167
+  and CAP-5, with no CAP and no flag; no consumer station changes; the bmad-suite generator is conda-forge-expert's,
+  so its story invokes the skill and closes with its retro; `pixi lock` only, and no other environment's packages
+  move; nothing outward. Owner `spec-pyforge-steward`. → Epic 103 / Stories 103.1-103.3, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

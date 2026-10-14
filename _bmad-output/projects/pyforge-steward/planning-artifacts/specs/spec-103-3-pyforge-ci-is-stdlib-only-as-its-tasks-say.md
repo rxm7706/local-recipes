@@ -1,5 +1,5 @@
 ---
-title: "102.3: `pyforge-ci` is stdlib-only, as its tasks say"
+title: "103.3: `pyforge-ci` is stdlib-only, as its tasks say"
 type: 'fix'
 created: '2026-10-14'
 status: 'ready-for-dev'
@@ -145,7 +145,7 @@ points to it):
 - **Move `gitpython` and `truststore` out of `python` too.** No `pyforge-ci` test imports them, and the move would
   recompose 13 environments. They stay, named.
 
-Ledger key: `102-3-pyforge-ci-is-stdlib-only-as-its-tasks-say`.
+Ledger key: `103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say`.
 Type / Effort / Deps: fix / M / none.
 
 ### Living CAP citations
@@ -259,9 +259,9 @@ Type / Effort / Deps: fix / M / none.
 - **A bare `estate reconcile` rewrites the latest refresh's journal.** With no `journal_path`, `run_reconcile`
   (`estate_reconcile.py:322`) loads the latest tracked journal, `.steward/estate-refresh/2026-10-14.json`, builds its
   generators from that journal's `moves` (so it runs `generate-bmad-suite`, which resolves the suite from the network
-  until Story 102.2 lands), and writes its reconcile block back into that file. The steward CLI passes no journal
+  until Story 103.2 lands), and writes its reconcile block back into that file. The steward CLI passes no journal
   path. AC3's run therefore moves files this story must not commit; restore them, and record the run's summary in the
-  Auto Run Result. Recorded as `DW-steward-102-3-1`; not fixed here.
+  Auto Run Result. Recorded as `DW-steward-103-3-1`; not fixed here.
 - A library a future `tests/scripts` file imports without a module-level guard, and which only a tool's tree brings
   into `pyforge-ci` (`requests`, `packaging`, `rich`), would still pass there. The guard test catches a module-level
   `importorskip` that no library task names, and AC4 catches the named runtime libraries. It does not police
@@ -290,15 +290,15 @@ Type / Effort / Deps: fix / M / none.
 - Parent Spec capability: `spec-pyforge-steward` CAP-5 (the environment and task registry: features composed by name,
   tasks in one feature). No CAP is minted, and no `SPEC.md` text changes.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-14 (CI and estate follow-ups) entry, item 3.
-- Epic: Epic 102 (new). Epic 63, which shipped CAP-5's Guild environment, is `done`.
-- Ledger key: `102-3-pyforge-ci-is-stdlib-only-as-its-tasks-say`.
+- Epic: Epic 103 (new). Epic 63, which shipped CAP-5's Guild environment, is `done`.
+- Ledger key: `103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say`.
 - Ledger status at mint: `backlog`.
-- Deps: none. Story 102.2 removes one of AC3's hazards (the network-resolved suite) but not the journal rewrite, so
-  102.3 does not wait for it.
+- Deps: none. Story 103.2 removes one of AC3's hazards (the network-resolved suite) but not the journal rewrite, so
+  103.3 does not wait for it.
 - Closes: `DW-doctor-47-1-1` (doctor `deferred-work-ledger.md`, owner pyforge-steward); close it citing this story's
-  merge. Records: `DW-steward-102-3-1` (steward `deferred-work-ledger.md`), open.
+  merge. Records: `DW-steward-103-3-1` (steward `deferred-work-ledger.md`), open.
 - Spec: the `spec-pyforge-steward` memlog records the operator's ruling, the evidence, the design and this mint.
-- Surface: `marshal-policy.toml` `[epic_surfaces]."102"` (added with this mint) covers `pixi.toml`, `pixi.lock`,
+- Surface: `marshal-policy.toml` `[epic_surfaces]."103"` (added with this mint) covers `pixi.toml`, `pixi.lock`,
   `environment.yaml`, `.github/workflows/detectors.yml`, `tests/scripts/**`, the library catalog and the generated
   docs.
 - Minted 2026-10-14 in one chain commit.

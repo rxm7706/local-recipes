@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> spine) for FR-40 / CAP-167 (estate refresh, Epic 100). Lands on AD-1, AD-5 (as read since Story 72.1: steward code never writes pixi.toml; pixi upgrade and the repo mutator do, as subprocesses), AD-7 and AD-8 as written; AD-4's no-daemon posture holds; no AD added, amended or removed. See § Currency reconciliation — 2026-10-13 (estate refresh).. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only; 85.5 and 72.2 unblocked; index 49.13 done; Story 86.1, a fix under CAP-114). Lands on AD-1, AD-8 and fnd:AD-23's local-evidence rule as written; no AD added, amended or removed. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and its flag values); lands on AD-1, AD-8, canopy:AD-11, canopy:AD-19 and CAP-94's exception as written, no AD amended. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: prd->arch cascade after the PRD's 2026-10-07 re-stamp (independent review of the free-threading Dream entry; no CAP, no FR); no AD added, amended or removed. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> spine) for FR-41 / CAP-168 (the Pages duct, Epic 102). AD-4 amended (dated): the deploy's mutation is one deploy-pages run of pages.yml and the hash compare is the diff-before-mutate gate; PRD D6's no-new-workflow clause retired by the 2026-10-13 ruling; the Deferred row 'Formal GitHub Actions deploy workflow for the dashboard' is taken up by Epic 102; lands on AD-1, AD-7, AD-8 and AD-9 as written; no AD added or removed. See § Currency reconciliation — 2026-10-14 (the Pages duct). Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> spine) for FR-40 / CAP-167 (estate refresh, Epic 100). Lands on AD-1, AD-5 (as read since Story 72.1: steward code never writes pixi.toml; pixi upgrade and the repo mutator do, as subprocesses), AD-7 and AD-8 as written; AD-4's no-daemon posture holds; no AD added, amended or removed. See § Currency reconciliation — 2026-10-13 (estate refresh).. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only; 85.5 and 72.2 unblocked; index 49.13 done; Story 86.1, a fix under CAP-114). Lands on AD-1, AD-8 and fnd:AD-23's local-evidence rule as written; no AD added, amended or removed. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD -> spine) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and its flag values); lands on AD-1, AD-8, canopy:AD-11, canopy:AD-19 and CAP-94's exception as written, no AD amended. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: prd->arch cascade after the PRD's 2026-10-07 re-stamp (independent review of the free-threading Dream entry; no CAP, no FR); no AD added, amended or removed. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -82,6 +82,7 @@ graph TD
 - **Prevents:** an ArgoCD/Flux-class GitOps control plane entering scope (explicit non-goal, PRD §5)
 - **Rule:** `steward deploy dashboard` computes a diff (freshly-built `docs/dashboard/` output vs. the currently committed tree) before any git mutation; a no-diff run performs zero commits (FR-9's testable consequence). No daemon, scheduler, or new GitHub Actions workflow ships in v1 (PRD D6) — the operator or an existing workflow invokes the CLI.
 - **AMENDED 2026-08-26 (Story 30.2, CAP-2).** The wrapped external is **retired**: the `dashboard-gen` generator (the static Guildhall console's build path) was deleted 2026-08-25 with its 100+ inbound references, superseded by the CMS-managed Lane 1 front door on the Canopy host (`spec-pyforge-unifying-strategy` CAP-2, parity proven by `console-parity-inventory.md` first). `deploy.py`'s `build_dashboard` is now an injectable no-op (`("true",)`) and the verb survives as the reconciled diff+commit over `docs/dashboard/` (Kedro-Viz staging + the stub) — the AD-4 reconciliation invariant (diff-before-mutate, zero commits on no-diff) is unchanged and still tested. The mermaid diagram's `DEPLOY --> DASHGEN` edge is historical, like `PROVISION --> WORKTREE` after AD-5's 2026-08-09 amendment.
+- **AMENDED 2026-10-14 (CAP-168, FR-41, Epic 102).** The mutation moves from a git push to one `deploy-pages` run. The operator ruled 2026-10-13 that steward owns the Pages deploy workflow (the duct) and herald the content inside the artifact; `.github/workflows/dashboard.yml` becomes `.github/workflows/pages.yml` on this station's surface, in BMAD-METHOD `docs.yaml`'s shape. The invariant holds in its new form: the `deploy` job computes the built tree's hash (`build.json`, the built-from footer excluded) and compares it with the live site's before any `deploy-pages` call; an equal hash performs zero deploys, so a six-hourly scheduled rebuild of the fleet board costs a build and no deploy when nothing moved. `steward pages build|deploy|status` replaces `deploy dashboard` and `deploy status` (Story 102.3): `deploy` triggers one run of the one workflow through `gh workflow run` (AD-1), it never commits or pushes, and no `github-actions[bot]` commit lands on `main` for Pages. PRD D6's "no new GitHub Actions workflow in v1" clause is retired by the ruling: the workflow already existed, it moves here; the Deferred row below ("Formal GitHub Actions deploy workflow for the dashboard") is taken up by Epic 102. Still no daemon or standing controller: the schedule is GitHub's cron on the one workflow, and the duty is CLI-invoked.
 
 ### AD-5 — Provision wraps, never forks, Marshal-owned machinery (FR-12/13, PRD D4)
 
@@ -188,7 +189,8 @@ Deployment & environments (the operational envelope this altitude owns):
 | FR-5 credential inventory | `keys.py`, `.steward/keys-inventory.yaml` | provenance convention, meta test |
 | FR-6 revocation record | `keys.py` | AD-1 (out-of-scope: 3rd-party API calls) |
 | FR-7 JFROG_API_KEY regression test | `tests/conformance/` | AD-2 |
-| FR-8..FR-11 deploy dashboard | `deploy.py` | AD-1, AD-4 |
+| FR-8..FR-11 deploy dashboard (FR-8, FR-11 → `steward pages`; FR-9, FR-10 retire with Story 102.3) | `deploy.py` (`perimeter`, `static` stay) | AD-1, AD-4 |
+| FR-41 the Pages duct (`pages.yml`, `steward pages build\|deploy\|status`) | `pages.py`, `scripts/pages_build_stamp.py`, `.github/workflows/pages.yml`, `docs/governance/ci-surfaces.yaml` (`pages*` rows) | AD-1, AD-4 (amended 2026-10-14), AD-7, AD-8 |
 | FR-12..FR-15 provision | `provision.py` | AD-1, AD-5 |
 | FR-16..FR-18 budget | `budget.py`, `.steward/budget.yaml` | AD-1, AD-6 |
 | CLI dispatch, exit codes | `cli.py` | AD-7, AD-8 |
@@ -210,7 +212,7 @@ No human elicitation occurred (headless/express run, per the calling task's dire
 - **`age` version range pin** → first `keys` story, once real output-schema evidence exists (mirrors Warden's NFR-C1 precedent). Owner: Epic A (Keys).
 - **`Duty` protocol's exact method signature/return-type detail** beyond the Protocol-conformance obligation (AD-7) → Epic E (Packaging & Test Scaffold), the first story that actually writes `interfaces.py`.
 - **`presenton-pixi-image` on OpenShift / air-gap bundle deploy substrate** — explicitly out of v1 scope (PRD §5/§6.2); if a future epic takes it up, it needs its own architecture pass (a new deploy adapter, likely a new AD for the OpenShift/registry routing posture) rather than an extension of AD-4.
-- **Formal GitHub Actions deploy workflow for the dashboard** (vs. today's direct-push AD-4 default) → revisit only if push-button/scheduled automation becomes a real want (PRD D6, §6.2).
+- **Formal GitHub Actions deploy workflow for the dashboard** (vs. today's direct-push AD-4 default) → revisit only if push-button/scheduled automation becomes a real want (PRD D6, §6.2). **Taken up 2026-10-14** by Epic 102 (CAP-168, FR-41): `pages.yml` is that workflow, steward's duct, with the six-hourly schedule and `steward pages deploy` as the push button; AD-4 amended the same day.
 - **Third-party credential-revocation API integration** (JFrog, GitHub, Anthropic) → explicit v1 non-goal (PRD §5); if ever taken up, each provider is its own adapter, still bound by AD-1.
 - **Automated budget enforcement / metered spend source** → explicit v1 non-goal (PRD §5); AD-6 stays in force (honest not-configured signal) until a real spend source exists to wire in.
 - **CLI command-tree depth / lazy-loading / entry-point plugin architecture** (the general 2026 guidance the technical-research report surfaced) → not warranted at v1's four-subcommand scale; revisit only if Steward's duty count or per-duty verb count grows materially.
@@ -2372,3 +2374,41 @@ written:
 No port, adapter or package boundary moves.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-14 (the Pages duct)
+
+`prd→arch` edge after the PRD's 2026-10-14 re-stamp (§ Currency reconciliation — 2026-10-14 (the Pages duct) there):
+FR-41 / CAP-168, the Pages duct, decomposed as Epic 102 (Stories 102.1–102.5). Checked against the decisions as
+written:
+
+- **AD-4 (deploy is CLI-invoked reconciliation) — amended, dated, above.** The operator's 2026-10-13 ruling moves the
+  Pages workflow onto this station and the deploy's mutation from a git push to one `deploy-pages` run; the invariant
+  (diff before mutate, zero deploys on no diff) survives as the `deploy` job's hash compare against the live
+  `build.json`. D6's no-new-workflow clause is retired; the Deferred row that parked it is taken up. No daemon: the
+  schedule is GitHub's cron on the one workflow, the duty is CLI-invoked.
+- **AD-1 (wrap, never reimplement).** `gh workflow run`, `gh run list`, `gh run download`, `gh release`, `curl` and
+  `pixi run --frozen -e site pages-check` by subprocess. The hash over the built tree and the artifact-run selection
+  are the only code, stdlib over a directory and recorded JSON; no second build, no second status reader (the
+  registry verdict is `ci.py`'s), no import of herald's or docsite's code.
+- **AD-7 (one Duty protocol).** `pages` is one duty module exposing `build`, `deploy` and `status`; `DUTIES` grows by
+  one and the count assertions move (Story 102.3); `deploy` keeps `perimeter` and `static`, its `dashboard` and
+  `status` verbs deleted, not deprecated (AD-5's 2026-08-09 rule).
+- **AD-8 (exit-code sole ownership).** `main()` alone projects; `EXIT_PAGES_REFUSAL` is documented beside
+  `EXIT_CI_REFUSAL`; the stamp script is a `scripts/` tool with its own 0/1 domain and the workflow reads it as a
+  step exit.
+- **AD-9 (enterprise routing inherited).** No new endpoint: `gh` reads the repository's own host; `configure-pages`
+  is each host's authority, realizing herald herald:AD-21's one-artifact-N-hosts amendment without a flag once herald
+  CAP-60 retires `pyforge.herald.pages_second_host`.
+- **CAP-166's one write path holds.** The no-op skip reads the live `build.json`; no repository variable is written
+  from a workflow step or a test; the `dashboard*` rows are renamed `pages*` and `docsite-check*` retire by Story
+  99.7's convention; every job keeps its fragment as the first term of its `if:`.
+- **Boundaries.** The artifact's content stays herald's (`docsite/**`, `docs-site/**`, `pages-build`, `pages-check`,
+  `/herald/`), the export atlas's (Story 30.1 produces `kedro-viz-export`; herald's M2 story tolerates its absence),
+  `map.yaml` doctor's; the GHE how-to is doctor's co-governance; herald herald:AD-21's one `deploy-pages` caller is kept.
+- **A/B.** The capability is A-side, `rebuild` in `docs/foundry/capability-ledger.yaml`; B rebuilds the duct from
+  the Spec under its own CI; no B surface, `docs/foundry/PIN.md` untouched.
+
+No port, adapter or package boundary moves.
+
+**Content changed:** AD-4's 2026-10-14 amendment, the Capability → Architecture Map's FR-8..FR-11 and FR-41 rows, the
+Deferred row's taken-up note and this section. `updated:` bumped. No AD added or removed.

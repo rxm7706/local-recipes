@@ -1,5 +1,5 @@
 ---
-title: "102.2: `estate reconcile` writes the bmad-suite floors from the batch, not the network"
+title: "103.2: `estate reconcile` writes the bmad-suite floors from the batch, not the network"
 type: 'fix'
 created: '2026-10-14'
 status: 'ready-for-dev'
@@ -102,7 +102,7 @@ numbers are at `846d8383f5`.
 - **Widen the trigger beyond `bmad-*`** (to `mybmad-dashboard`). CAP-167 says the generator runs "when a `bmad-*`
   floor moved"; changing the trigger is a Spec change, not this fix.
 
-Ledger key: `102-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network`.
+Ledger key: `103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network`.
 Type / Effort / Deps: fix / S / none.
 
 ### Living CAP citations
@@ -221,14 +221,14 @@ steward test runs reconcile against a fake runner and a tmp tree.
 - Parent Spec capability: `spec-pyforge-steward` CAP-167 (Story 100.3's `estate reconcile`, first run by Story 100.7).
   No CAP is minted, and no `SPEC.md` text changes.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-14 (CI and estate follow-ups) entry, item 2.
-- Epic: Epic 102 (new). Epic 100, which shipped CAP-167, is `done`.
-- Ledger key: `102-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network`.
+- Epic: Epic 103 (new). Epic 100, which shipped CAP-167, is `done`.
+- Ledger key: `103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network`.
 - Ledger status at mint: `backlog`.
 - Deps: none.
 - Closes: `DW-steward-100-7-2` (steward `deferred-work-ledger.md`); close it citing this story's merge.
 - Closes with: a conda-forge-expert retro (AC9), not deferrable.
 - Spec: the `spec-pyforge-steward` memlog records the evidence, the design and this mint.
-- Surface: `marshal-policy.toml` `[epic_surfaces]."102"` (added with this mint) covers the generator, its CLI wrapper,
+- Surface: `marshal-policy.toml` `[epic_surfaces]."103"` (added with this mint) covers the generator, its CLI wrapper,
   its tests and the skill files.
 - Minted 2026-10-14 in one chain commit.
 

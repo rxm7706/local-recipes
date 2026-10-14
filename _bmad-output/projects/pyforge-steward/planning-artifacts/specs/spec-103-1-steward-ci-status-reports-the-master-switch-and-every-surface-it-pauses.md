@@ -1,5 +1,5 @@
 ---
-title: "102.1: `steward ci status` reports the master switch, and every surface it pauses"
+title: "103.1: `steward ci status` reports the master switch, and every surface it pauses"
 type: 'fix'
 created: '2026-10-14'
 status: 'ready-for-dev'
@@ -114,7 +114,7 @@ are at `846d8383f5`.
 - **A `reads_master` field declared on each registry row.** It is derivable from the workflow files, and the
   completeness check already proves every gated job carries the fragment. A declared copy could drift.
 
-Ledger key: `102-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses`.
+Ledger key: `103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses`.
 Type / Effort / Deps: fix / S / none.
 
 ### Living CAP citations
@@ -228,14 +228,14 @@ Every criterion runs the real `run_status` against a recorded `gh` fixture (the 
 - Parent Spec capability: `spec-pyforge-steward` CAP-166 (Story 99.3's `steward ci status`). No CAP is minted, and no
   `SPEC.md` text changes.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-14 (CI and estate follow-ups) entry, item 1.
-- Epic: Epic 102 (new). Epic 99, which shipped CAP-166, is `done`, so the fix opens a new epic with the two other
-  2026-10-14 follow-ups. `epic-102` and `epic-102-retrospective` are minted with it.
-- Ledger key: `102-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses`.
+- Epic: Epic 103 (new). Epic 99, which shipped CAP-166, is `done`, so the fix opens a new epic with the two other
+  2026-10-14 follow-ups. `epic-103` and `epic-103-retrospective` are minted with it.
+- Ledger key: `103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses`.
 - Ledger status at mint: `backlog`.
 - Deps: none.
 - Closes: `DW-steward-101-1-1` (steward `deferred-work-ledger.md`); close it citing this story's merge.
 - Spec: the `spec-pyforge-steward` memlog records the evidence, the design and this mint.
-- Surface: `marshal-policy.toml` `[epic_surfaces]."102"` (added with this mint).
+- Surface: `marshal-policy.toml` `[epic_surfaces]."103"` (added with this mint).
 - Minted 2026-10-14 in one chain commit.
 
 ## Verification
