@@ -94,10 +94,10 @@ table.tbl tr.hi td { background:#fbe4de; }
   <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
     <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
       <span style="color:var(--color-accent-700);">PYFORGE GUILD · THE ARTISAN BUILDER · MASON CHAIN · SPEC-PYFORGE-MASON</span>
-      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">realized</span> · Spec <span data-fact="spec_status">shipped</span> · tree <span data-fact="tree_commit_date">2026-09-15</span></span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Dream <span data-fact="dream_status">specified</span> · Spec <span data-fact="spec_status">ready</span> · tree <span data-fact="tree_commit_date">2026-10-14</span></span>
     </div>
     <h1 class="xp" style="font-weight:900; font-size:78px; line-height:0.94; letter-spacing:-0.02em; margin:0;">PyForge Mason</h1>
-    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-mason · module pyforge.mason · console script <span data-fact="console_entry">mason</span> · spec-pyforge-mason <span data-fact="spec_capabilities">CAP-1..13</span></div>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-mason · module pyforge.mason · console script <span data-fact="console_entry">mason</span> · spec-pyforge-mason <span data-fact="spec_capabilities">CAP-1..35</span></div>
     <p style="max-width:1030px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">The repository's packaging craft is real, proven and trapped: a full recipe lifecycle, a corpus of hard-won gotchas and an MCP tool surface, reachable only inside one session in one repository through one manifest. And the half it never had is the half nobody has — no single tool ships a library to PyPI <i>and</i> conda-forge. <b>Mason is the installable face of that craft plus the missing half:</b> <span class="code">mason recipe</span> wraps <span class="code">conda-forge-expert</span> through one port and never forks it; <span class="code">mason package</span> builds and ships to both ecosystems in one motion with a receipt that tells the truth; <span class="code">mason environment</span> binds conflicting worlds into one lockfile. <span style="color:var(--color-accent-700); font-weight:700;">Packaging a library should be a sentence, not an afternoon of YAML archaeology.</span></p>
     <div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
       <span class="tag tag-outline code">mason &lt;noun&gt; &lt;verb&gt;</span>
@@ -113,15 +113,15 @@ table.tbl tr.hi td { background:#fbe4de; }
   <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
     <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Stories shipped</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">70/70</span> done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="stories_done_total">110/112</span> done</div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Epics closed</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">17/17</span> done</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="epics_done_total">29/30</span> done</div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Capabilities</div>
-      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">13</span> · Spec <span data-fact="spec_status">shipped</span></div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;"><span data-fact="spec_capabilities">35</span> · Spec <span data-fact="spec_status">ready</span></div>
     </div>
     <div style="padding:20px; border-right:2px solid var(--color-divider);">
       <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Package</div>
@@ -175,11 +175,11 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">MCP tools on the conda-forge server — recipe-authoring, atlas-intelligence and project-scanning surfaces — the craft Mason fronts as a CLI instead of duplicating as a second server</div>
       </div>
       <div style="border-left:2px solid var(--color-divider); padding:0 24px;">
-        <div class="bignum"><span data-fact="groundtruth_gotcha_max">117</span></div>
+        <div class="bignum"><span data-fact="groundtruth_gotcha_max">122</span></div>
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">the highest-numbered recipe-authoring gotcha in the skill — each one a real build failure with its fix, an appreciating asset that a fork would turn into a depreciating one</div>
       </div>
       <div style="border-left:2px solid var(--color-divider); padding:0 0 0 24px;">
-        <div class="bignum"><span data-fact="recipes_count">7864</span></div>
+        <div class="bignum"><span data-fact="recipes_count">7874</span></div>
         <div style="font-size:14px; line-height:1.4; margin-top:8px;">recipes in the local mirror under <span class="code">recipes/</span> — the estate the craft tends, and the co-located source directory a conda-forge ship reads from</div>
       </div>
     </div>
@@ -343,7 +343,7 @@ table.tbl tr.hi td { background:#fbe4de; }
       <span class="num">04</span>
       <h2>Thirteen capabilities — the whole contract at a glance</h2>
     </div>
-<p class="lede">The kernel is seven capabilities, each carrying a success criterion written to fail when the capability is absent and a mechanical <span class="code">verified:</span> line from a re-verification at a named HEAD. Six more — the Presenton satellite — were folded in at the operator's direction as <span class="code">CAP-8..13</span>, continuing the numbering and keeping their own scope. The Spec reads <span data-fact="spec_status">shipped</span>; the Dream reads <span data-fact="dream_status">realized</span>.</p>
+<p class="lede">The kernel is seven capabilities, each carrying a success criterion written to fail when the capability is absent and a mechanical <span class="code">verified:</span> line from a re-verification at a named HEAD. Six more — the Presenton satellite — were folded in at the operator's direction as <span class="code">CAP-8..13</span>, continuing the numbering and keeping their own scope. The Spec reads <span data-fact="spec_status">ready</span>; the Dream reads <span data-fact="dream_status">specified</span>.</p>
 <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
       <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:14px 16px; background:var(--color-accent-100);">
         <div style="display:flex; gap:6px; align-items:center;"><span style="font-size:11px; font-weight:800; color:var(--color-accent-700);">CAP-1</span><span class="chip ok">the seam</span></div>
@@ -421,7 +421,7 @@ table.tbl tr.hi td { background:#fbe4de; }
     <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;">
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">82/100</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">01 · The Proclaimer</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="herald_stories_done_total">133/133</span></span></div>
         <h3>Herald</h3>
         <div class="role">Visual Media Engine &amp; System Messenger</div>
         <div class="motto">"Capture the dream. Illustrate the telemetry. Proclaim the release."</div>
@@ -429,7 +429,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">herald deck seed · deck pull · deck status · progress · success · notice · scheduler</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">270/274</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">02 · The Commander</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="marshal_stories_done_total">453/454</span></span></div>
         <h3>Marshal</h3>
         <div class="role">Autonomous Build Factory Supervisor &amp; BMAD Orchestrator</div>
         <div class="motto">"Enforce the spec. Guard the boundaries. Run the line."</div>
@@ -437,7 +437,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">marshal factory spin · gate evaluate · run · land · deploy</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">03 · The Navigator</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="atlas_stories_done_total">94/95</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">03 · The Navigator</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="atlas_stories_done_total">104/105</span></span></div>
         <h3>Atlas</h3>
         <div class="role">Dependency Mapper &amp; Data Pipeline Architect</div>
         <div class="motto">"Chart the dependencies. Map the world. Define the floor."</div>
@@ -445,7 +445,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">pyforge atlas run · read · list · staleness-report · cve-watcher · feedstock-health</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">04 · The Guardian</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="warden_stories_done_total">49/49</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">04 · The Guardian</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="warden_stories_done_total">62/62</span></span></div>
         <h3>Warden</h3>
         <div class="role">Multi-Axis Dependency Compliance Gate</div>
         <div class="motto">"Halt the threat. Clear the axes. Protect the perimeter."</div>
@@ -453,7 +453,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">warden scan · warden --doctor · pyforge warden scan</div>
       </div>
       <div class="station me">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">70/70</span> · <span data-fact="mason_epics_done_total">17/17</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">05 · The Artisan Builder</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="mason_stories_done_total">110/112</span> · <span data-fact="mason_epics_done_total">29/30</span></span></div>
         <h3>Mason</h3>
         <div class="role">Package &amp; Release Craftsman</div>
         <div class="motto">"We forge the blocks. We bind the environment. We ship the structure."</div>
@@ -461,7 +461,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">mason recipe new · validate · build · diagnose · optimize · scan · submit · update · package build · ship · environment lock · check · doctor</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">95/105</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">06 · The Physician</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="doctor_stories_done_total">154/154</span></span></div>
         <h3>Doctor</h3>
         <div class="role">Ecosystem Health &amp; Diagnostics Officer</div>
         <div class="motto">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</div>
@@ -469,7 +469,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">doctor check · monitor · diagnose · backlog-intake · flags kill-switch</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">35/35</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">07 · The Chronicler</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="scribe_stories_done_total">48/48</span></span></div>
         <h3>Scribe</h3>
         <div class="role">Knowledge Curator &amp; Team Memory Keeper</div>
         <div class="motto">"Capture the decision. Keep the graph. Answer from memory."</div>
@@ -477,7 +477,7 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="verbs code">scribe capture · graph compile · recall</div>
       </div>
       <div class="station">
-        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">231/244</span></span></div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;"><span class="kicker">08 · The Provisioner</span><span class="tag tag-outline" style="font-size:11px; padding:3px 8px;"><span data-fact="steward_stories_done_total">358/370</span></span></div>
         <h3>Steward</h3>
         <div class="role">Platform, Deployment &amp; Operations Officer</div>
         <div class="motto">"Provision the line. Hold the keys. Keep the lights on."</div>
@@ -490,7 +490,7 @@ table.tbl tr.hi td { background:#fbe4de; }
 
   <section data-label="The Guild — eight stations, one builder (cont. 3/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
     <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
-<div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">926/972</span> stories and <span data-fact="fleet_epics_done_total">207/219</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">19/23</span> · marshal <span data-fact="marshal_epics_done_total">40/43</span> · atlas <span data-fact="atlas_epics_done_total">23/24</span> · warden <span data-fact="warden_epics_done_total">12/12</span> · doctor <span data-fact="doctor_epics_done_total">22/24</span> · scribe <span data-fact="scribe_epics_done_total">18/18</span> · steward <span data-fact="steward_epics_done_total">56/58</span></span></div>
+<div class="box" style="margin-top:18px; display:flex; justify-content:space-between; gap:24px; align-items:baseline;"><span><b>Fleet, from the tracked ledgers:</b> <span data-fact="fleet_stories_done_total">1422/1438</span> stories and <span data-fact="fleet_epics_done_total">384/389</span> epics done across the eight guild-roster stations — read with the real sprint-status parser, never a regex, never a prior poster.</span><span class="muted" style="white-space:nowrap;">epics: herald <span data-fact="herald_epics_done_total">40/40</span> · marshal <span data-fact="marshal_epics_done_total">97/98</span> · atlas <span data-fact="atlas_epics_done_total">28/29</span> · warden <span data-fact="warden_epics_done_total">18/18</span> · doctor <span data-fact="doctor_epics_done_total">47/47</span> · scribe <span data-fact="scribe_epics_done_total">26/26</span> · steward <span data-fact="steward_epics_done_total">99/101</span></span></div>
     </div>
   </section>
 
@@ -520,17 +520,17 @@ table.tbl tr.hi td { background:#fbe4de; }
     </div>
   </section>
 
-  <section data-label="Persona, grammar and the skill deliberately not minted" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
+  <section data-label="Persona, grammar and the skills Mason wields" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
     <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
 <div class="sechead">
       <span class="num">07</span>
-      <h2>Persona, grammar and the skill deliberately not minted</h2>
+      <h2>Persona, grammar and the skills Mason wields</h2>
     </div>
-<p class="lede">Skills are wielded, never worn. Every other station compiles an SKF content skill from its own package; Mason is the one that does not — by policy, not by omission. Its skill tier <i>is</i> <span class="code">conda-forge-expert</span>: a second recipe skill would be the fork the whole design exists to prevent.</p>
+<p class="lede">Skills are wielded, never worn. Until 2026-09-28 Mason was the one station with no skill of its own — its skill tier <i>was</i> <span class="code">conda-forge-expert</span>, by policy. The operator ruling of that day (Dream entry <span data-fact="dream_log_2026-09-27">2026-09-27</span>, Epic 19) gives Mason its own SKF-compiled station skill, with <span class="code">conda-forge-expert</span> as one of the skills it wields; the line that holds is unchanged — a second <i>recipe</i> skill would be the fork the whole design exists to prevent.</p>
 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
       <div class="card"><div class="k">Persona</div><h3 style="font-size:17px; margin:8px 0 4px;">bmad-agent-mason</h3><p>The addressable station persona. <b>Consults <span class="code">conda-forge-expert</span></b>, then acts only through <span class="code">pyforge mason …</span> grammar and <span class="code">POST /stations/mason/mcp</span>; never freelances against the filesystem, never authors a recipe from training data. Greets, then dispatches.</p></div>
-      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">The craft it wraps</div><h3 style="font-size:17px; margin:8px 0 4px;">conda-forge-expert</h3><p>Skill version <span data-fact="cfe_skill_version">8.90.5</span>, gotchas numbered to <span data-fact="groundtruth_gotcha_max">117</span>, an autonomous loop with a success criterion per step, a build-failure protocol, a pre-PR quality gate. Authoritative over Mason on all recipe semantics under Rule 1; improved by every effort under Rule 2. Mason edits none of it.</p></div>
-      <div class="card"><div class="k">The skill never minted</div><h3 style="font-size:17px; margin:8px 0 4px;">.claude/skills/pyforge-mason/</h3><p>A path that must never exist — named as such in <span class="code">AGENTS.md</span> and guarded by the governance-currency check. Epic 11 says it in one line: <i>never a SKF skill that replaces conda-forge-expert</i>. The persona uses the craft's grammar and the craft's MCP tools; no second recipe skill.</p></div>
+      <div class="card" style="background:#fbe4de; border-color:var(--color-accent);"><div class="k">The craft it wraps</div><h3 style="font-size:17px; margin:8px 0 4px;">conda-forge-expert</h3><p>Skill version <span data-fact="cfe_skill_version">8.100.3</span>, gotchas numbered to <span data-fact="groundtruth_gotcha_max">122</span>, an autonomous loop with a success criterion per step, a build-failure protocol, a pre-PR quality gate. Authoritative over Mason on all recipe semantics under Rule 1; improved by every effort under Rule 2. Mason edits none of it.</p></div>
+      <div class="card"><div class="k">The station skill, minted 2026-09-28</div><h3 style="font-size:17px; margin:8px 0 4px;">.claude/skills/pyforge-mason/</h3><p>Mason's own SKF-compiled station skill (Epic 19), the one dated exception in <span class="code">AGENTS.md</span> § Policy: <span class="code">A-only</span> until <span class="code">pyforge.cutover_root</span> flips to <span class="code">foundry</span>, when B rebuilds it under <span class="code">skills/stations/</span>. Epic 11's line still holds: <i>never a SKF skill that replaces conda-forge-expert</i> — the station skill wields the craft's grammar and MCP tools; no second recipe skill.</p></div>
       <div class="card"><div class="k">The shared floor</div><h3 style="font-size:17px; margin:8px 0 4px;">pyforge-core</h3><p>One lattice, one envelope, one exception root: <span class="code">MasonError</span> re-parents to <span class="code">PyforgeError</span>, and the <span class="code">pyforge.core.hooks</span> loader carries Mason's <span class="code">pyforge.mason.build_engine</span> hook — rattler-build and conda-build as plugins on the shared contract, one loader, not a second.</p></div>
     </div>
 <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin-top:16px;">
@@ -831,11 +831,11 @@ table.tbl tr.hi td { background:#fbe4de; }
         <tr><td><b>Runtime deps</b></td><td><span class="code">packaging</span> · <span class="code">pyforge-core</span> · <span class="code">PyYAML</span></td><td>only what the module imports: <span class="code">SpecifierSet</span> for the engine ranges; the shared exception root and hook loader; conda-lock's own content-hash parser for <span class="code">environment check</span> — no stdlib YAML exists</td><td><span class="code">[project] dependencies</span></td></tr>
         <tr><td><b>CLI</b></td><td><span class="code">argparse</span></td><td>click and typer are forbidden by requirement — no CLI framework for ergonomics alone; the sibling stations' dispatchers are argparse for the same reason</td><td>stdlib</td></tr>
         <tr><td><b>Engines</b></td><td>pixi · pyproject-build · twine · conda-lock · gh</td><td>conda run-dependencies with declared version ranges, mirrored in <span class="code">engines/__init__.py</span> and held equal by a meta-test; discovered on PATH, never fetched at runtime</td><td><span class="code">[package.run-dependencies]</span> · <span class="code">test_engine_version_range_sync.py</span></td></tr>
-        <tr class="hi"><td><b>The craft it wraps</b></td><td>conda-forge-expert <span data-fact="groundtruth_skill_version">8.90.5</span> · <span data-fact="groundtruth_mcp_tools">46</span> MCP tools · gotchas to G<span data-fact="groundtruth_gotcha_max">117</span></td><td>a location resolved at run time, never a dependency: the scripts tier is what the port spawns; the import floor is probed under the selected interpreter before first use</td><td><span class="code">SKILL.md</span> frontmatter · <span class="code">bmad-groundtruth</span></td></tr>
+        <tr class="hi"><td><b>The craft it wraps</b></td><td>conda-forge-expert <span data-fact="groundtruth_skill_version">8.100.3</span> · <span data-fact="groundtruth_mcp_tools">46</span> MCP tools · gotchas to G<span data-fact="groundtruth_gotcha_max">122</span></td><td>a location resolved at run time, never a dependency: the scripts tier is what the port spawns; the import floor is probed under the selected interpreter before first use</td><td><span class="code">SKILL.md</span> frontmatter · <span class="code">bmad-groundtruth</span></td></tr>
         <tr><td><b>Build</b></td><td>hatchling · pixi build</td><td>wheel, sdist and <span class="code">.conda</span> from one <span class="code">pyforge-mason-build</span> task — the triad that the "Mason ships Mason" proof compares itself against</td><td><span class="code">pixi.toml</span> tasks</td></tr>
         <tr><td><b>Tests</b></td><td>pytest · a fake CFE root</td><td>the whole suite runs against a fixture root of stub scripts with canned output — no real installation, network or recipe directory; the one delegation-fidelity exception is slow-marked and skips cleanly; the CI smoke lane runs a real <span class="code">mason recipe build</span></td><td><span class="code">pyforge-mason-test</span> · <span class="code">-test-slow</span> · <span class="code">-recipe-build-smoke</span></td></tr>
-        <tr><td><b>The factory around it</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.0</span> · bmad-loop <span data-fact="bmad_loop_version">0.11.1</span></td><td>the planning chain and the unattended story loop that built the station; Rule 1 and Rule 2 bind every session that touches a recipe</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span></td></tr>
-        <tr><td><b>The estate it ships into</b></td><td><span data-fact="groundtruth_pixi_envs">31</span> pixi environments · cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> · <span data-fact="groundtruth_atlas_phases">22</span> atlas phases · <span data-fact="recipes_count">7864</span> recipes</td><td>the ground truth <span class="code">bmad-groundtruth</span> reports — the mirror Mason's recipes live in and the intelligence surface that tells it what to package next</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
+        <tr><td><b>The factory around it</b></td><td>BMAD core <span data-fact="bmad_core_version">6.12.2</span> · bmad-loop <span data-fact="bmad_loop_version">0.12.0</span></td><td>the planning chain and the unattended story loop that built the station; Rule 1 and Rule 2 bind every session that touches a recipe</td><td><span class="code">_bmad/_config/manifest.yaml</span> · <span class="code">pixi.lock</span></td></tr>
+        <tr><td><b>The estate it ships into</b></td><td><span data-fact="groundtruth_pixi_envs">36</span> pixi environments · cf_atlas schema <span data-fact="groundtruth_schema_version">29</span> · <span data-fact="groundtruth_atlas_phases">22</span> atlas phases · <span data-fact="recipes_count">7874</span> recipes</td><td>the ground truth <span class="code">bmad-groundtruth</span> reports — the mirror Mason's recipes live in and the intelligence surface that tells it what to package next</td><td><span class="code">pixi run -e local-recipes bmad-groundtruth</span></td></tr>
       </tbody>
     </table>
     </div>
@@ -936,7 +936,7 @@ table.tbl tr.hi td { background:#fbe4de; }
       <div class="card"><div class="k">The conda-forge reviewer</div><p>Recipes that arrive already through the craft's own gates — validate, optimize, scan, a green linux-64 build — with finding identifiers untouched and the two-phase submission preserved. Mason adds no dialect: what the reviewer sees is what <span class="code">conda-forge-expert</span> would have produced.</p></div>
       <div class="card"><div class="k">The platform and security lead</div><p>A tool that reads no credential variable of its own, checks upload credentials for presence before building and never logs a value; every engine a declared conda run-dependency, nothing fetched at runtime; every mutating verb dry-run by default. The attack surface is the inherited environment, and nothing else.</p></div>
       <div class="card"><div class="k">The skill's own maintainer</div><p>A wrapper that cannot drift into a fork: a deny-list with planted violations, a sole-caller test, a one-entry allow-list, a governance check over merged history. Every gotcha added to the skill reaches every Mason install with no change to Mason — the loop that governs the domain keeps governing it.</p></div>
-      <div class="card"><div class="k">The executive reader</div><p>The repository's most-exercised capability, finally installable: <span data-fact="mason_stories_done_total">70/70</span> stories across <span data-fact="mason_epics_done_total">17/17</span> epics, a Spec that reads <span data-fact="spec_status">shipped</span>, a Dream that reads <span data-fact="dream_status">realized</span> — with the one honest caveat written down: the public publish of <span class="code">pyforge-mason</span> itself is still rehearsal-tier.</p></div>
+      <div class="card"><div class="k">The executive reader</div><p>The repository's most-exercised capability, finally installable: <span data-fact="mason_stories_done_total">110/112</span> stories across <span data-fact="mason_epics_done_total">29/30</span> epics, a Spec that reads <span data-fact="spec_status">ready</span>, a Dream that reads <span data-fact="dream_status">specified</span> — with the one honest caveat written down: the public publish of <span class="code">pyforge-mason</span> itself is still rehearsal-tier.</p></div>
     </div>
     </div>
   </section>
@@ -994,12 +994,12 @@ table.tbl tr.hi td { background:#fbe4de; }
       <span class="num">21</span>
       <h2>Proof — the receipts, from the ledgers</h2>
     </div>
-<p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec, the manifests and <span class="code">bmad-groundtruth</span> at tree <span data-fact="tree_commit_date">2026-09-15</span> — never from a prior poster, never from memory. The July stub this poster replaces quoted a feedstock count and a gotcha count that no ledger could re-derive; neither appears here.</p>
+<p class="lede">Every number here is a row in this deck's <span class="code">facts.yaml</span>, re-derived from the tracked sprint ledgers, the Spec, the manifests and <span class="code">bmad-groundtruth</span> at tree <span data-fact="tree_commit_date">2026-10-14</span> — never from a prior poster, never from memory. The July stub this poster replaces quoted a feedstock count and a gotcha count that no ledger could re-derive; neither appears here.</p>
 <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid var(--color-text); margin-bottom:22px;">
-      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">70/70</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser</div></div>
-      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">17/17</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the installable shell to the realization-gate residue</div></div>
-      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">13</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities — seven in the kernel, each re-verified mechanically at a named HEAD; six in the satellite; Spec <span data-fact="spec_status">shipped</span></div></div>
-      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">realized</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — retained at the realization-gate re-read, with its caveat written down</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;"><div class="bignum"><span data-fact="stories_done_total">110/112</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">stories done — the whole tracked ledger, retros excluded, read with the real parser</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="epics_done_total">29/30</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">epics done — from the installable shell to the realization-gate residue</div></div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;"><div class="bignum"><span data-fact="spec_capabilities">35</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">capabilities — seven in the kernel, each re-verified mechanically at a named HEAD; six in the satellite; Spec <span data-fact="spec_status">ready</span></div></div>
+      <div style="padding:18px 0 6px 14px;"><div class="bignum" style="font-size:40px; padding-top:6px;"><span data-fact="dream_status">specified</span></div><div style="font-size:13px; line-height:1.4; margin-top:8px;">the Dream's own status — retained at the realization-gate re-read, with its caveat written down</div></div>
     </div>
     </div>
   </section>
@@ -1023,8 +1023,8 @@ table.tbl tr.hi td { background:#fbe4de; }
 <table class="tbl" style="margin-top:0;">
       <thead><tr><th>Station</th><th>Herald</th><th>Marshal</th><th>Atlas</th><th>Warden</th><th>Mason</th><th>Doctor</th><th>Scribe</th><th>Steward</th><th>Fleet</th></tr></thead>
       <tbody>
-        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">82/100</span></td><td><span data-fact="marshal_stories_done_total">270/274</span></td><td><span data-fact="atlas_stories_done_total">94/95</span></td><td><span data-fact="warden_stories_done_total">49/49</span></td><td><b><span data-fact="mason_stories_done_total">70/70</span></b></td><td><span data-fact="doctor_stories_done_total">95/105</span></td><td><span data-fact="scribe_stories_done_total">35/35</span></td><td><span data-fact="steward_stories_done_total">231/244</span></td><td><b><span data-fact="fleet_stories_done_total">926/972</span></b></td></tr>
-        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">19/23</span></td><td><span data-fact="marshal_epics_done_total">40/43</span></td><td><span data-fact="atlas_epics_done_total">23/24</span></td><td><span data-fact="warden_epics_done_total">12/12</span></td><td><b><span data-fact="mason_epics_done_total">17/17</span></b></td><td><span data-fact="doctor_epics_done_total">22/24</span></td><td><span data-fact="scribe_epics_done_total">18/18</span></td><td><span data-fact="steward_epics_done_total">56/58</span></td><td><b><span data-fact="fleet_epics_done_total">207/219</span></b></td></tr>
+        <tr><td><b>Stories</b></td><td><span data-fact="herald_stories_done_total">133/133</span></td><td><span data-fact="marshal_stories_done_total">453/454</span></td><td><span data-fact="atlas_stories_done_total">104/105</span></td><td><span data-fact="warden_stories_done_total">62/62</span></td><td><b><span data-fact="mason_stories_done_total">110/112</span></b></td><td><span data-fact="doctor_stories_done_total">154/154</span></td><td><span data-fact="scribe_stories_done_total">48/48</span></td><td><span data-fact="steward_stories_done_total">358/370</span></td><td><b><span data-fact="fleet_stories_done_total">1422/1438</span></b></td></tr>
+        <tr><td><b>Epics</b></td><td><span data-fact="herald_epics_done_total">40/40</span></td><td><span data-fact="marshal_epics_done_total">97/98</span></td><td><span data-fact="atlas_epics_done_total">28/29</span></td><td><span data-fact="warden_epics_done_total">18/18</span></td><td><b><span data-fact="mason_epics_done_total">29/30</span></b></td><td><span data-fact="doctor_epics_done_total">47/47</span></td><td><span data-fact="scribe_epics_done_total">26/26</span></td><td><span data-fact="steward_epics_done_total">99/101</span></td><td><b><span data-fact="fleet_epics_done_total">384/389</span></b></td></tr>
       </tbody>
     </table>
     </div>
@@ -1032,7 +1032,7 @@ table.tbl tr.hi td { background:#fbe4de; }
 
   <section data-label="Proof — the receipts, from the ledgers (cont. 3/3)" style="box-sizing:border-box; width:100%; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); overflow:hidden;">
     <div style="width:1240px; margin:0 auto; padding:56px 56px 0; box-sizing:border-box">
-<div class="box" style="margin-top:18px;"><b>The gap the realization gate found, and the two stories that closed it.</b> With the Dream already <span data-fact="dream_status">realized</span>, a fleet-readiness re-read found the station's differentiator unexercised in the estate that built it: <span class="code">mason doctor</span> in Mason's own pixi environment reported the import floor unsatisfied and the <span class="code">recipe</span> family unavailable, and nothing in the estate routed through <span class="code">mason recipe</span> at all. Two effect stories were minted on Mason's own epics rather than argued away — Story 16.1 (the environment satisfies the floor) and Story 16.2 (a first estate caller: the <span class="code">pyforge-mason-recipe-build-smoke</span> task in the station-tests lane). Both landed; a later live run of the same <span class="code">doctor</span> command reports the floor satisfied and no unavailable verbs. The status was retained with the caveat written down, not upgraded by assertion.</div>
+<div class="box" style="margin-top:18px;"><b>The gap the realization gate found, and the two stories that closed it.</b> With the Dream already <span data-fact="dream_status">specified</span>, a fleet-readiness re-read found the station's differentiator unexercised in the estate that built it: <span class="code">mason doctor</span> in Mason's own pixi environment reported the import floor unsatisfied and the <span class="code">recipe</span> family unavailable, and nothing in the estate routed through <span class="code">mason recipe</span> at all. Two effect stories were minted on Mason's own epics rather than argued away — Story 16.1 (the environment satisfies the floor) and Story 16.2 (a first estate caller: the <span class="code">pyforge-mason-recipe-build-smoke</span> task in the station-tests lane). Both landed; a later live run of the same <span class="code">doctor</span> command reports the floor satisfied and no unavailable verbs. The status was retained with the caveat written down, not upgraded by assertion.</div>
     </div>
   </section>
 
@@ -1043,7 +1043,7 @@ table.tbl tr.hi td { background:#fbe4de; }
       <h2>The seed — Dream to shipped station, dated</h2>
     </div>
 <p class="lede">Every claim below has a dated entry in the Dream's realization log. The dates are the log's own; nothing here is projected.</p>
-<div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text);">
+<div style="display:grid; grid-template-columns:repeat(6,1fr); gap:0; border-top:3px solid var(--color-text);">
       <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px 0;">
         <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-07-25">2026-07-25</span></div>
         <div style="font-size:15px; font-weight:800; margin:6px 0;">Dreamt and specified</div>
@@ -1064,10 +1064,15 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div style="font-size:15px; font-weight:800; margin:6px 0;">The gate re-read</div>
         <div style="font-size:12px; line-height:1.45;">Status retained, with a caveat: the differentiator was unexercised in the estate that built it. Two effect stories minted on Mason's own epics; the two Mason capabilities living on Steward's chain named in Kinships so the decomposition is not silently incomplete.</div>
       </div>
+      <div style="border-right:2px solid var(--color-divider); padding:18px 14px 6px;">
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="dream_log_2026-09-27">2026-09-27</span> → <span data-fact="dream_log_2026-10-12">2026-10-12</span></div>
+        <div style="font-size:15px; font-weight:800; margin:6px 0;">The chain grows</div>
+        <div style="font-size:12px; line-height:1.45;">Epics 19–30 minted and landed by operator ruling: Mason's own station skill (19), no station caps pixi (20), the intake toolchain packaged (21), CFE's sentinel, licence and host-gate checks (22–24, 26), the feedstock refresh campaign on Mason's chain (25), and three fixes under existing CAPs (28–30).</div>
+      </div>
       <div style="padding:18px 0 6px 14px; background:var(--color-accent-100);">
-        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-09-15</span></div>
+        <div class="code" style="font-size:11px; font-weight:700; color:var(--color-accent-700);"><span data-fact="tree_commit_date">2026-10-14</span></div>
         <div style="font-size:15px; font-weight:800; margin:6px 0; color:var(--color-accent);">Re-derived</div>
-        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">realized</span>, Spec <span data-fact="spec_status">shipped</span>, <span data-fact="epics_done_total">17/17</span> epics, both gap stories landed — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
+        <div style="font-size:12px; line-height:1.45;">Dream <span data-fact="dream_status">specified</span>, Spec <span data-fact="spec_status">ready</span>, <span data-fact="epics_done_total">29/30</span> epics, both gap stories landed — and this poster rebuilt from the fact ledger at this tree, to the family standard.</div>
       </div>
     </div>
 <div class="box" style="margin-top:22px;"><b>Why the origin is a practice, not a product — and why that mattered for the record.</b> Mason tends the repository's origin dream, the perpetual packaging factory: realized as a running factory, never "done". The factory's own body had drifted eleven minor versions behind the craft it describes when a currency pass caught it — the lesson the pass named fleet-wide is that a stamped literal version number cannot keep pace with a skill that ships several releases a day, and a <i>derived</i> pin is the durable shape. This poster is that lesson applied to itself: every version, count and date on it is a ledger row, re-derivable on demand.</div>
@@ -1085,10 +1090,11 @@ table.tbl tr.hi td { background:#fbe4de; }
         <div class="k">Now — shipped and verified</div>
         <ul style="margin:12px 0 0; padding-left:18px; font-size:14px; line-height:1.55;">
           <li>Three nouns, <span data-fact="cli_verbs">12</span> verbs, one port, five engines, four ship targets, five exit codes — the whole surface behind <span class="code">pyforge mason …</span></li>
-          <li><span data-fact="spec_capabilities">CAP-1..CAP-13</span> — seven kernel capabilities re-verified mechanically at a named HEAD, six satellite capabilities specified</li>
+          <li><span data-fact="spec_capabilities">CAP-1..CAP-35</span> — seven kernel capabilities re-verified mechanically at a named HEAD, six satellite capabilities specified, CAP-14 onward minted on the station's chain since</li>
           <li>The seam-holds suite green: deny-list with planted violations, sole caller, one-entry allow-list, governance over merged history, delegation fidelity</li>
           <li>The station persona consulting <span class="code">conda-forge-expert</span>, the <span class="code">/stations/mason/</span> portal slice, the CLI-to-tool parity gate, the build-engine hook on <span class="code">pyforge-core</span></li>
-          <li>The floor satisfied and a first estate caller of <span class="code">mason recipe</span> in the CI smoke lane; tracked ledger <span data-fact="stories_done_total">70/70</span> · <span data-fact="epics_done_total">17/17</span></li>
+          <li>The floor satisfied and a first estate caller of <span class="code">mason recipe</span> in the CI smoke lane; tracked ledger <span data-fact="stories_done_total">110/112</span> · <span data-fact="epics_done_total">29/30</span></li>
+          <li>Since the gate re-read: Mason's own station skill, the intake toolchain (git-pkgs, forge) packaged, the feedstock refresh campaign running through CFE's tracked bulk-refresh driver — Epics 19–30, all landed but Epic 22's one story waiting on a rattler-build feature</li>
         </ul>
       </div>
       <div class="card">
@@ -1125,7 +1131,7 @@ table.tbl tr.hi td { background:#fbe4de; }
     <div class="xp" style="font-weight:900; font-size:52px; line-height:1.02; letter-spacing:-0.015em; margin-top:14px; max-width:1000px;">We forge the blocks. We bind the environment. We ship the structure.</div>
     <p style="font-size:18px; line-height:1.5; margin:18px 0 0; max-width:960px; opacity:0.94;">Structural integrity is not optional. Deterministic, binary-compatible, reproducible — or it does not ship. The craft stays where it is governed and improves through the loop that governs it; Mason is its installable face, honest about every edge, with a receipt that never calls a queue a release. The hand that builds is never the gate that judges.</p>
     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
-      <span><b>PyForge Mason</b> · mason chain · <span class="code">spec-pyforge-mason</span> · <span data-fact="spec_capabilities">CAP-1..13</span> · <span class="code">pyforge-mason</span> <span data-fact="package_version">0.1.0</span></span>
+      <span><b>PyForge Mason</b> · mason chain · <span class="code">spec-pyforge-mason</span> · <span data-fact="spec_capabilities">CAP-1..35</span> · <span class="code">pyforge-mason</span> <span data-fact="package_version">0.1.0</span></span>
       <span>docs/dreams/pyforge-mason.md · <span class="code">src/shared/packages/pyforge-mason/</span> · PyForge Guild · Dream to Code</span>
     </div>
   </section>

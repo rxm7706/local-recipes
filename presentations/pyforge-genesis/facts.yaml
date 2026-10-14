@@ -3,186 +3,176 @@
 # Shape + source catalog: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-family-currency/facts-ledger.md
 deck: pyforge-genesis
 persona: "PyForge Genesis"
-derived_at: "2026-09-15T06:31:04-05:00"
-tree: "a407cd03f665391f24f5d9c7022705d10d956b51-dirty"
+derived_at: "2026-10-14T10:43:28-05:00"
+tree: "8ef404d388d1bdafac6aa0d96a8f626f97cad47a-dirty"
 facts:
   - id: atlas_epics_done_total
-    value: "23/24"
+    value: "28/29"
     source: "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["23/24", "23 of 24"]
+    shown_as: ["28/29", "28 of 29"]
   - id: atlas_stories_done_total
-    value: "94/95"
+    value: "104/105"
     source: "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["94/95", "94 of 95"]
+    shown_as: ["104/105", "104 of 105"]
   - id: bmad_core_version
-    value: "6.12.0"
+    value: "6.12.2"
     source: "_bmad/_config/manifest.yaml"
     method: "installation.version"
-    shown_as: ["6.12.0"]
+    shown_as: ["6.12.2"]
   - id: bmad_loop_version
-    value: "0.11.1"
+    value: "0.12.0"
     source: "pixi.lock"
     method: "version segment of the locked bmad-loop conda package filename"
-    shown_as: ["0.11.1"]
+    shown_as: ["0.12.0"]
   - id: cfe_skill_version
-    value: "8.90.5"
+    value: "8.100.3"
     source: ".claude/skills/conda-forge-expert/SKILL.md"
     method: "frontmatter version"
-    shown_as: ["8.90.5"]
+    shown_as: ["8.100.3"]
   - id: doctor_epics_done_total
-    value: "22/24"
+    value: "47/47"
     source: "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["22/24", "22 of 24"]
+    shown_as: ["47/47", "47 of 47"]
   - id: doctor_stories_done_total
-    value: "95/105"
+    value: "154/154"
     source: "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["95/105", "95 of 105"]
+    shown_as: ["154/154", "154 of 154"]
   - id: dreams_archived
-    value: "37"
-    source: "docs/dreams/*.md"
-    method: "count of files whose frontmatter status is archived"
-    shown_as: ["37"]
-  - id: dreams_dreamt
-    value: "10"
-    source: "docs/dreams/*.md"
-    method: "count of files whose frontmatter status is dreamt"
-    shown_as: ["10"]
-  - id: dreams_realized
-    value: "61"
-    source: "docs/dreams/*.md"
-    method: "count of files whose frontmatter status is realized"
-    shown_as: ["61"]
+    value: "165"
+    source: "docs/dreams/*.md + archive/docs/dreams/*.md"
+    method: "count of Dreams under archive/docs/dreams/ with a frontmatter status (archive location; not frontmatter status buckets)"
+    shown_as: ["165"]
   - id: dreams_specified
-    value: "61"
-    source: "docs/dreams/*.md"
+    value: "15"
+    source: "docs/dreams/*.md + archive/docs/dreams/*.md"
     method: "count of files whose frontmatter status is specified"
-    shown_as: ["61"]
+    shown_as: ["15"]
   - id: dreams_total
-    value: "169"
-    source: "docs/dreams/*.md"
-    method: "count of files with a frontmatter status"
-    shown_as: ["169"]
+    value: "180"
+    source: "docs/dreams/*.md + archive/docs/dreams/*.md"
+    method: "count of Dreams with a frontmatter status (live by status; archive-only slugs toward archived)"
+    shown_as: ["180"]
   - id: fleet_epics_done_total
-    value: "207/219"
+    value: "384/389"
     source: "_bmad-output/projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml"
     method: "sum over the guild-roster stations of done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["207/219", "207 of 219"]
+    shown_as: ["384/389", "384 of 389"]
   - id: fleet_stories_done_total
-    value: "926/972"
+    value: "1422/1438"
     source: "_bmad-output/projects/pyforge-*/planning-artifacts/sprint-status-ledger.yaml"
     method: "sum over the guild-roster stations of done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["926/972", "926 of 972"]
+    shown_as: ["1422/1438", "1422 of 1438"]
   - id: groundtruth_atlas_phases
     value: "22"
     source: "pixi run -e local-recipes bmad-groundtruth"
     method: "JSON key atlas_phases"
     shown_as: ["22"]
   - id: groundtruth_gotcha_max
-    value: "117"
+    value: "122"
     source: "pixi run -e local-recipes bmad-groundtruth"
     method: "JSON key gotcha_max"
-    shown_as: ["117"]
+    shown_as: ["122"]
   - id: groundtruth_mcp_tools
     value: "46"
     source: "pixi run -e local-recipes bmad-groundtruth"
     method: "JSON key mcp_tools"
     shown_as: ["46"]
   - id: groundtruth_pixi_envs
-    value: "31"
+    value: "36"
     source: "pixi run -e local-recipes bmad-groundtruth"
     method: "JSON key pixi_envs"
-    shown_as: ["31"]
+    shown_as: ["36"]
   - id: groundtruth_schema_version
     value: "29"
     source: "pixi run -e local-recipes bmad-groundtruth"
     method: "JSON key schema_version"
     shown_as: ["29"]
   - id: groundtruth_skill_version
-    value: "8.90.5"
+    value: "8.100.3"
     source: "pixi run -e local-recipes bmad-groundtruth"
     method: "JSON key skill_version"
-    shown_as: ["8.90.5"]
+    shown_as: ["8.100.3"]
   - id: guild_stations
     value: "8"
     source: "docs/governance/guild-roster.json"
     method: "length of stations"
     shown_as: ["8"]
   - id: herald_epics_done_total
-    value: "19/23"
+    value: "40/40"
     source: "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["19/23", "19 of 23"]
+    shown_as: ["40/40", "40 of 40"]
   - id: herald_stories_done_total
-    value: "82/100"
+    value: "133/133"
     source: "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["82/100", "82 of 100"]
+    shown_as: ["133/133", "133 of 133"]
   - id: marshal_epics_done_total
-    value: "40/43"
+    value: "97/98"
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["40/43", "40 of 43"]
+    shown_as: ["97/98", "97 of 98"]
   - id: marshal_stories_done_total
-    value: "270/274"
+    value: "453/454"
     source: "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["270/274", "270 of 274"]
+    shown_as: ["453/454", "453 of 454"]
   - id: mason_epics_done_total
-    value: "17/17"
+    value: "29/30"
     source: "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["17/17", "17 of 17"]
+    shown_as: ["29/30", "29 of 30"]
   - id: mason_stories_done_total
-    value: "70/70"
+    value: "110/112"
     source: "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["70/70", "70 of 70"]
+    shown_as: ["110/112", "110 of 112"]
   - id: poster_last_commit_date
-    value: "2026-09-14"
+    value: "2026-09-15"
     source: "presentations/pyforge-genesis/project/PyForge Genesis Infographic standalone.html"
     method: "git log -1 --format=%cs -- <poster> (last commit touching the poster)"
-    shown_as: ["2026-09-14"]
+    shown_as: ["2026-09-15"]
   - id: recipes_count
-    value: "7864"
+    value: "7874"
     source: "recipes/ (git ls-files)"
     method: "count of TRACKED recipes/<name>/ directories (git ls-files -- recipes; untracked local dirs and dot-dirs never count), excluding the staged-recipes templates recipes/example/ and recipes/examples/"
-    shown_as: ["7864"]
+    shown_as: ["7874"]
   - id: scribe_epics_done_total
-    value: "18/18"
+    value: "26/26"
     source: "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["18/18", "18 of 18"]
+    shown_as: ["26/26", "26 of 26"]
   - id: scribe_stories_done_total
-    value: "35/35"
+    value: "48/48"
     source: "_bmad-output/projects/pyforge-scribe/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["35/35", "35 of 35"]
+    shown_as: ["48/48", "48 of 48"]
   - id: steward_epics_done_total
-    value: "56/58"
+    value: "99/101"
     source: "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["56/58", "56 of 58"]
+    shown_as: ["99/101", "99 of 101"]
   - id: steward_stories_done_total
-    value: "231/244"
+    value: "358/370"
     source: "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["231/244", "231 of 244"]
+    shown_as: ["358/370", "358 of 370"]
   - id: tree_commit_date
-    value: "2026-09-15"
+    value: "2026-10-14"
     source: "git log -1 --format=%cs"
     method: "HEAD commit date (YYYY-MM-DD)"
-    shown_as: ["2026-09-15"]
+    shown_as: ["2026-10-14"]
   - id: warden_epics_done_total
-    value: "12/12"
+    value: "18/18"
     source: "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total epic-N keys (parse_sprint_status; -retrospective keys excluded)"
-    shown_as: ["12/12", "12 of 12"]
+    shown_as: ["18/18", "18 of 18"]
   - id: warden_stories_done_total
-    value: "49/49"
+    value: "62/62"
     source: "_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml"
     method: "done/total story keys (parse_sprint_status; epic-* keys excluded)"
-    shown_as: ["49/49", "49 of 49"]
+    shown_as: ["62/62", "62 of 62"]

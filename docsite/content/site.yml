@@ -47,7 +47,7 @@ infographics:
   # Globs, relative to the repo root, resolved in order. Every matching .html
   # file is published as its own page and listed in the gallery.
   #
-  # These are the ten PyForge posters refreshed in the 2026-09-13 currency
+  # These are the ten PyForge posters refreshed in the 2026-10-14 currency
   # sweep. Four more infographics exist under presentations/ for unrelated
   # projects (deckcraft, presenton-pixi-image, unity-data-stack,
   # wasm-analytics-stack) — to publish those too, replace this whole list with

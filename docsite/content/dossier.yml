@@ -1,26 +1,27 @@
 # Source of truth for the PyForge Dossier.
 # Edit this file; `python docsite/build.py` re-renders the site and the artifact.
-# Figures re-verified against the working tree 2026-09-13; run
+# Figures re-verified against the working tree 2026-10-14; run
 # `python docsite/tools/verify_claims.py` to check them again.
 # A stat carrying `check:` is machine-verified against the source tree.
 
 title: The PyForge Dossier
-eyebrow: INTERNAL CONTROL PLANE — A→B CUTOVER — 2026-09-26
+eyebrow: INTERNAL CONTROL PLANE — A→B CUTOVER — 2026-10-14
 heading: PyForge
 summary: 'Where the A→B cutover stands, and the evidence for it: **A** (`local-recipes`) is the control plane
   and oracle until `pyforge.cutover_root` flips; **B** (`python-foundry`) is the lasting root, rebuilt from
   Frame + Spec. The station sections are A-side evidence — a full-source investigation of the shared
-  foundation and each of the eight stations, verified directly from code on 2026-09-13.'
+  foundation and each of the eight stations, verified directly from code on 2026-09-13 and re-verified
+  on 2026-10-14.'
 stats:
 - value: '8'
   label: Stations
-- value: ~200K
+- value: ~261K
   label: Lines of source
 - value: '1'
   label: Shared leaf package
 - value: 4×
   label: Reuse the same verdict lattice
-- value: '10'
+- value: '17'
   label: Claims this pass found stale
 toc:
 - id: estate
@@ -136,13 +137,14 @@ sections:
     headers:
     - Verb
     - Done means
-    - State, 2026-09-26
+    - State, 2026-10-14
     rows:
     - cells:
       - Launch the Foundry
       - the regenerated kernel runs on B — not "A's tree arrived"
       - '**Not done.** B is open (44.3) and its kernel passes the core, steward and marshal slices of the case
-        list (Epic 54); the estate move (44.4–44.6) is backlog and the flag has not flipped.'
+        list (Epic 54); the file-move stories (44.4–44.6) are parked at backlog, never dispatched; the estate
+        has not moved and the flag has not flipped.'
       mono:
       - false
       - false
@@ -166,7 +168,7 @@ sections:
     - cells:
       - Wire the BMAD-suite
       - it is re-provisioned from the adoption register
-      - '**Not done.** Epic 60: 60.1 is done, 60.2–60.4 are backlog.'
+      - '**Done.** Epic 60: 60.1–60.4 are done.'
       mono:
       - false
       - false
@@ -184,8 +186,10 @@ sections:
     tone: amber
     label: Operator watch
     body:
-    - Epic 44 is in progress. Its Launch stories 44.3, 44.7, 44.12 and 44.13 are done; 44.4–44.6 are backlog,
-      and eight rows stay `blocked` until an operator flips each one.
+    - Epic 44 is in progress. Its Launch stories 44.3, 44.7, 44.12 and 44.13 are done; the file-move stories
+      44.4–44.6 are parked at backlog, never dispatched; 44.10 (archive A) is retired by operator ruling
+      2026-09-25, its ledger key left `blocked`; the other seven 44.x rows stay `blocked` until an operator
+      flips each one. The estate has not moved.
     - Shipped on A is not in effect on B. A capability is done on B only when its ledger row claims
       `verified-in-foundry`, and no row does yet.
   - type: ci_surfaces
@@ -316,8 +320,8 @@ sections:
       way." — the package''s own README'
   - type: stats
     stats:
-    - value: 30,847
-      label: Lines · 115 files
+    - value: 33,588
+      label: Lines · 130 files
       check: src_lines
     - value: 8 / 11
       label: Pipelines wired to MCP
@@ -426,8 +430,8 @@ sections:
       disable a check that judges the Marshal."'
   - type: stats
     stats:
-    - value: 21,842
-      label: Lines · 36 files
+    - value: 28,550
+      label: Lines · 48 files
       check: src_lines
     - value: '5'
       label: Commands
@@ -499,8 +503,8 @@ sections:
     md: '"Dream-to-deck bridge CLI — seeds, pulls, and syncs Claude Design decks via the herald deck subcommands."'
   - type: stats
     stats:
-    - value: 13,303
-      label: Lines · 26 files
+    - value: 17,596
+      label: Lines · 38 files
       check: src_lines
     - value: '5'
       label: Top-level commands
@@ -566,8 +570,8 @@ sections:
       landing, fleet status, and adapter portability." — the package''s own `pyproject.toml`'
   - type: stats
     stats:
-    - value: 81,864
-      label: Lines · 166 files — largest station
+    - value: 109,570
+      label: Lines · 204 files — largest station
       check: src_lines
     - value: '2'
       label: Dispatch engines
@@ -663,8 +667,8 @@ sections:
     text: What arrived since the last pass
   - type: prose
     body:
-    - Marshal is now the largest station in the fleet by a wide margin — 81,864 lines across 166 files,
-      roughly 2.7× Atlas and about 41% of all station source. A prior scale table that put Atlas at the
+    - Marshal is now the largest station in the fleet by a wide margin — 109,570 lines across 204 files,
+      roughly 3.3× Atlas and about 42% of all station source. A prior scale table that put Atlas at the
       top is simply inverted now.
     - 'The growth is concentrated in an entire **token-economy subsystem** the earlier pass never mentions:
       `marshal context refresh` over a derived-context and planning-graph pair, wire compression wrapping
@@ -717,11 +721,11 @@ sections:
       canonical… It is never forked." — the package''s own README'
   - type: stats
     stats:
-    - value: 9,053
+    - value: 9,424
       label: Source lines · 23 files
       check: src_lines
-    - value: 24,671
-      label: Test lines — 2.7×
+    - value: 28,072
+      label: Test lines — 3.0×
       check: test_lines
     - value: '13'
       label: CLI verbs, 4 nouns
@@ -777,8 +781,8 @@ sections:
       for team-relevant decisions, ADRs, and project state."'
   - type: stats
     stats:
-    - value: 5,024
-      label: Lines · 17 files
+    - value: 5,893
+      label: Lines · 18 files
       check: src_lines
     - value: 4 / 7
       label: Command groups / subcommands
@@ -826,7 +830,7 @@ sections:
       the header is right and the body paragraph is what's stale.
   - type: prose
     body:
-    - 'The station is no longer the fleet''s smallest by as clear a margin — 3,279 lines have become 5,024.
+    - 'The station is no longer the fleet''s smallest by as clear a margin — 3,279 lines have become 5,893.
       The additions are a `promote` path, transcript ingestion, an `index` group (`build` / `report` /
       `move-list` / `refresh`), the three-backend storage registry, and the semantic-recall mode. The
       three-layer discipline survived all of it: capture is still the only writer, compile still rebuilds
@@ -854,10 +858,10 @@ sections:
     md: '"A result is evidence, not a scratchpad." — `DutyResult`''s own docstring'
   - type: stats
     stats:
-    - value: 18,978
-      label: Source lines · 37 files
+    - value: 35,770
+      label: Source lines · 74 files
       check: src_lines
-    - value: 25,570
+    - value: 49,783
       label: Test lines
       check: test_lines
     - value: '15'
@@ -918,8 +922,8 @@ sections:
       and acting as a strict CI/CD exit-code gate."'
   - type: stats
     stats:
-    - value: 18,455
-      label: Lines · 34 files
+    - value: 20,194
+      label: Lines · 41 files
       check: src_lines
     - value: '7'
       label: Status rungs — the fleet's largest lattice
@@ -1238,9 +1242,19 @@ sections:
     rows:
     - cells:
       - Marshal
-      - 81,864
-      - '166'
-      - Largest by far — 41% of all station source; two dispatch engines plus a whole token-economy layer
+      - 109,570
+      - '204'
+      - Largest by far — 42% of all station source; two dispatch engines plus a whole token-economy layer
+      mono:
+      - true
+      - true
+      - true
+      - false
+    - cells:
+      - Steward
+      - 35,770
+      - '74'
+      - 15 duties; `upgrade.py` alone is 4,294 lines
       mono:
       - true
       - true
@@ -1248,8 +1262,8 @@ sections:
       - false
     - cells:
       - Atlas
-      - 30,847
-      - '115'
+      - 33,588
+      - '130'
       - A real Kedro project plus 11 pipeline packages, now with a2a, rag and factory subsystems
       mono:
       - true
@@ -1258,8 +1272,8 @@ sections:
       - false
     - cells:
       - Doctor
-      - 21,842
-      - '36'
+      - 28,550
+      - '48'
       - Dominated by one 4,964-line Marshal-oversight module
       mono:
       - true
@@ -1267,19 +1281,9 @@ sections:
       - true
       - false
     - cells:
-      - Steward
-      - 18,978
-      - '37'
-      - 15 duties; `upgrade.py` alone is 4,294 lines
-      mono:
-      - true
-      - true
-      - true
-      - false
-    - cells:
       - Warden
-      - 18,455
-      - '34'
+      - 20,194
+      - '41'
       - Densest per-file — one CLI verb, four real engines
       mono:
       - true
@@ -1288,8 +1292,8 @@ sections:
       - false
     - cells:
       - Herald
-      - 13,303
-      - '26'
+      - 17,596
+      - '38'
       - Deck bridge core + Four Moments + own React dashboard
       mono:
       - true
@@ -1298,9 +1302,9 @@ sections:
       - false
     - cells:
       - Mason
-      - 9,053
+      - 9,424
       - '23'
-      - Heaviest test ratio of all (2.7:1)
+      - Heaviest test ratio of all (3.0:1)
       mono:
       - true
       - true
@@ -1308,8 +1312,8 @@ sections:
       - false
     - cells:
       - Scribe
-      - 5,024
-      - '17'
+      - 5,893
+      - '18'
       - Smallest — capture/compile/recall, plus an index group
       mono:
       - true
@@ -1318,8 +1322,8 @@ sections:
       - false
     - cells:
       - pyforge-core
-      - 1,984
-      - '13'
+      - 4,049
+      - '18'
       - The leaf every one of the above builds on — and now their HTTP client layer too
       mono:
       - true
@@ -1331,9 +1335,12 @@ sections:
     text: What the second pass changed
   - type: prose
     body:
-    - This dossier was first compiled on 2026-08-30 and re-verified against the working tree on 2026-09-13.
-      Three stations — Herald, Mason and Warden — came through with every checked claim intact. Five did
-      not, and the fleet's total source has gone from roughly 110,000 lines to roughly 200,000.
+    - This dossier was first compiled on 2026-08-30 and re-verified against the working tree on 2026-09-13,
+      then again on 2026-10-14. In the second pass three stations — Herald, Mason and Warden — came through
+      with every checked claim intact; five did not, and the fleet's total source went from roughly 110,000
+      lines to roughly 200,000. The third pass found 17 checked figures stale across all eight stations — no
+      station held — and the total at roughly 261,000; Steward nearly doubled (18,978 → 35,770 source lines,
+      37 → 74 files) and now stands second only to Marshal.
     - 'Two corrections change conclusions rather than figures. Marshal now hosts its own MCP server, so
       the MCP-hosting gap above is no longer "Atlas, and only Atlas." And Atlas''s second dashboard path
       — the `views/` legacy bridge rendering Bokeh fragments — has been deleted outright; a previous pass
@@ -1350,7 +1357,7 @@ sections:
   - type: lede
     md: Only what the case list, the capability ledger and CI prove is listed here; each row names its
       evidence (`source`). The station sections are forensic reads of A's source, re-run in full on
-      2026-09-13; the caveat below names what those reads did not establish.
+      2026-09-13 with their figures re-checked on 2026-10-14; the caveat below names what those reads did not establish.
   - type: table
     headers:
     - Claim
@@ -1431,5 +1438,5 @@ footer:
   note: Station sections compiled from direct, parallel source investigation of all 8
     `src/shared/packages/pyforge-*` stations plus `pyforge-core` — local-recipes repository — with every
     figure re-verified against the working tree on the date shown. The A→B control plane and § 10 state the
-    cutover as of 2026-09-26.
-  date: '2026-09-13'
+    cutover as of 2026-10-14.
+  date: '2026-10-14'
