@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 01aa2c14548227f2
-story_count: 132
-test_file_count: 87
+source_fingerprint: e3fc8d56fd7a0ec1
+story_count: 133
+test_file_count: 88
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 132
-- **Epics parsed:** 39
-- **Test files inventoried:** 87 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 133
+- **Epics parsed:** 40
+- **Test files inventoried:** 88 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `01aa2c14548227f2`
+- **Source fingerprint:** `e3fc8d56fd7a0ec1`
 
 ## Risk Assessment
 
@@ -66,6 +66,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 36: The CI live demo retires to the archive once a ship records itself locally
 - Epic 37: The host's Django pages load without herald installed
 - Epic 38: django-herald passes the lint gate
+- Epic 39: The dossier shows which CI surfaces are not live (spec-pyforge-herald CAP-59)
 
 ### Low-risk epics
 
@@ -131,6 +132,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_twins_handlers.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_versions.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_viewer_publish_flag.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_menu.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_shelf_loader.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_sidebar.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py` | unit | none observed |
@@ -303,6 +305,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 36.1 | The CI live-demo workflow moves to the archive and its readers follow | none observed |
 | 37.1 | The herald portal loads without herald and says why | none observed |
 | 38.1 | django-herald is lint-clean and leaves the not-yet-clean list | none observed |
+| 39.1 | The dossier tile shows every CI surface that is not live | none observed |
 | 40.1 | The docs home links the herald pages from its left menu and a shared top menu | none observed |
 
 ## Quality Gates
