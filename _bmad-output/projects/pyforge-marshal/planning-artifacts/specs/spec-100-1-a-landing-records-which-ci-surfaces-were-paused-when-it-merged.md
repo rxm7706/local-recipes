@@ -2,7 +2,8 @@
 title: "100.1: A landing records which CI surfaces were paused when it merged"
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: in-progress
+baseline_revision: 63c7cbbff4a5cd1afb07b0f122c7f61a495fd95e
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
