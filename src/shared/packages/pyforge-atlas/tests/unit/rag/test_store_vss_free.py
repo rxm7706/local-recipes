@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 import duckdb
+import pytest
 
 from pyforge.atlas.rag.store import DuckdbVssRagStore, HashingEmbedder
 
@@ -42,18 +43,46 @@ class _VssFreeConnection:
         return getattr(self._con, name)
 
 
-def test_store_index_and_search_without_vss_extension() -> None:
+def _store() -> DuckdbVssRagStore:
     con = _VssFreeConnection()
-    store = DuckdbVssRagStore(
+    return DuckdbVssRagStore(
         embedder=HashingEmbedder(dim=8),
         connection=con,  # type: ignore[arg-type]
         vss_loader=lambda _c: None,
         table="rag_test",
     )
+
+
+def test_store_index_and_search_without_vss_extension() -> None:
+    store = _store()
     n = store.index([("a", "python packaging"), ("b", "rust cargo")])
     assert n == 2
     assert store.count() == 2
     hits = store.similarity_search("python conda", k=1)
     assert len(hits) == 1
     assert hits[0]["id"] in {"a", "b"}
+    store.close()
+
+
+def test_store_empty_index_and_zero_k_search() -> None:
+    store = _store()
+    assert store.index([]) == 0
+    assert store.count() == 0
+    assert store.similarity_search("anything", k=0) == []
+    store.close()
+
+
+def test_store_dimension_mismatch_raises() -> None:
+    store = _store()
+    store.index([("a", "text")])
+    with pytest.raises(ValueError, match="dimension mismatch"):
+        store._search_vector([0.0] * (store.dim + 1), k=1)
+    store.close()
+
+
+def test_store_reindex_replaces_rows() -> None:
+    store = _store()
+    store.index([("a", "one")])
+    store.index([("b", "two"), ("c", "three")])
+    assert store.count() == 2
     store.close()
