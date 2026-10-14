@@ -6267,7 +6267,7 @@ So that every pause carries its reason, its owner and its review date, and nothi
 **When** `pyforge steward ci pause <surface|switch> --reason "…" --review-by <date>` runs without `--yes`
 **Then** it prints the `gh variable set` argv, the registry diff and the team-memory capture text, and makes no `gh` call and no write (a fake-subprocess test asserts both)
 **And** with `--yes` it runs `gh variable set <SWITCH> --body true --repo rxm7706/local-recipes`, updates the row (`state`, `paused_since`, `paused_by`, `reason`, `review_by`) in the current checkout and says the row lands through a PR, appends `.steward/ci-pauses.log`, and runs `scribe capture --type project`; `resume` reverses it; a `gate: true` row refuses without `--i-am-removing-a-merge-gate` (ruling Q5) and a `retired` row refuses, both before any write; no test calls a live `gh`.
-**Status:** backlog
+**Status:** done
 
 ### Story 99.5: The preflight honors what CI will skip, and says so
 

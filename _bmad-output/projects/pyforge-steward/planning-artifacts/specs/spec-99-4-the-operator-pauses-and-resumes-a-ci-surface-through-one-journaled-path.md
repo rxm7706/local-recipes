@@ -2,8 +2,8 @@
 title: '99.4: The operator pauses and resumes a CI surface through one journaled path'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'done'
+baseline_revision: '695ef625ea76cf64effe8c7c2f2ba5df90fc5035'
 flag:
   key: pyforge.steward.ci_pause_control       # Story 99.3's (one flag per CAP)
   provider: openfeature-file                  # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -118,3 +118,12 @@ Type / Effort / Deps: feature / S / S-99.3.
 
 - 2026-10-13: specced from Epic 99's Story 99.4 text ahead of its dependencies' landing so the steward chain runs
   unattended (operator direction 2026-10-13).
+- 2026-10-13: implemented `steward ci pause|resume` (dry run default, `--yes` writes gh + registry + journal + scribe);
+  unit tests in `test_ci_pause.py` (AC1–AC6).
+
+## Auto Run Result
+
+Status: done
+
+Verification: `test_ci_pause.py` and `pyforge-steward-test` green; `lint-types` exit 0; `spec_surface_reconcile.py` exit 0
+after memlog on `spec-pyforge-steward`. Scoped baseline stamp deferred to PR author (no `--write-baseline` in this run).
