@@ -53,9 +53,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         "--json",
     ]
     try:
-        code, stdout, stderr = cli_bridge.run_argv(
-            argv, cwd=target.resolve(), timeout=_DISPATCH_TIMEOUT
-        )
+        code, stdout, stderr = cli_bridge.run_argv(argv, cwd=target.resolve(), timeout=_DISPATCH_TIMEOUT)
     except CliBridgeError as exc:
         return _unobserved(f"cause: {exc}")
 
@@ -151,10 +149,7 @@ def _findings_for_row(row: dict[str, Any]) -> tuple[Finding, ...]:
         )
     elif verdict == "stuck":
         last_green = row.get("last_green_run")
-        msg = (
-            f"CI surface {row_id!r} stuck (switch {switch!r}, owner {owner}, "
-            f"last_green_run {last_green!r})"
-        )
+        msg = f"CI surface {row_id!r} stuck (switch {switch!r}, owner {owner}, last_green_run {last_green!r})"
         findings.append(
             Finding(
                 source=Source.CI_PAUSE_DRIFT,

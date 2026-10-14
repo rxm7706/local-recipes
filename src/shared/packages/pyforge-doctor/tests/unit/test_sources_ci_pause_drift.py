@@ -18,10 +18,7 @@ from pyforge.doctor.sources import ci_pause_drift
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "ci_pause_drift"
-SCHEMA_PATH = (
-    REPO_ROOT
-    / "src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json"
-)
+SCHEMA_PATH = REPO_ROOT / "src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json"
 SCHEMA = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
 _VALIDATOR = Draft202012Validator(SCHEMA)
 _ALL_FIXTURES = sorted(FIXTURES.glob("*.json"))
@@ -78,32 +75,24 @@ def test_row_overdue_yields_one_ci_pause_overdue_warn(monkeypatch, tmp_path: Pat
 
 
 def test_dashboard_deploy_waiting_replay_is_stuck(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(
-        cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_stuck_dashboard_deploy.json"))
-    )
+    monkeypatch.setattr(cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_stuck_dashboard_deploy.json")))
     findings = ci_pause_drift.gather(tmp_path)
     assert _warn_checks(findings) == ["ci-pause-stuck"]
     assert "dashboard.deploy" in findings[0].message
 
 
 def test_cancel_streak_is_stuck(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(
-        cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_stuck_cancel_streak.json"))
-    )
+    monkeypatch.setattr(cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_stuck_cancel_streak.json")))
     assert _warn_checks(ci_pause_drift.gather(tmp_path)) == ["ci-pause-stuck"]
 
 
 def test_stale_canary_on_paused_high_cost_is_stuck(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(
-        cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_stuck_canary_stale.json"))
-    )
+    monkeypatch.setattr(cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_stuck_canary_stale.json")))
     assert _warn_checks(ci_pause_drift.gather(tmp_path)) == ["ci-pause-stuck"]
 
 
 def test_drift_with_review_days_left_minus_three_yields_two_warns(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(
-        cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_drift_and_overdue.json"))
-    )
+    monkeypatch.setattr(cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_drift_and_overdue.json")))
     assert set(_warn_checks(ci_pause_drift.gather(tmp_path))) == {"ci-pause-drift", "ci-pause-overdue"}
 
 
@@ -129,9 +118,7 @@ def test_empty_rows_ok_count_zero(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_unregistered_drift_owner_none(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(
-        cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_unregistered_drift.json"))
-    )
+    monkeypatch.setattr(cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_unregistered_drift.json")))
     findings = ci_pause_drift.gather(tmp_path)
     assert "owner (none)" in findings[0].message
 
@@ -225,13 +212,9 @@ def test_mutation_fail_status_breaks_warn_only_contract(monkeypatch, tmp_path: P
     assert all(f.status != DoctorStatus.FAIL for f in findings)
 
 
-def test_mutation_overdue_from_verdict_instead_of_days_left_would_miss_combo(
-    monkeypatch, tmp_path: Path
-) -> None:
+def test_mutation_overdue_from_verdict_instead_of_days_left_would_miss_combo(monkeypatch, tmp_path: Path) -> None:
     """Drift row with review_days_left < 0 must emit ci-pause-overdue even when verdict is drift."""
-    monkeypatch.setattr(
-        cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_drift_and_overdue.json"))
-    )
+    monkeypatch.setattr(cli_bridge, "run_argv", _fake_bridge(0, _load_fixture("row_drift_and_overdue.json")))
     assert "ci-pause-overdue" in _warn_checks(ci_pause_drift.gather(tmp_path))
 
 

@@ -55,6 +55,7 @@ from . import (
     capability_effect,
     capability_ledger,
     chain,
+    ci_pause_drift,
     deps,
     docs_currency,
     docs_map_hygiene,
@@ -70,7 +71,6 @@ from . import (
     one_chain,
     pixi_currency,
     platform_policy,
-    ci_pause_drift,
     sibling_dreams,
     status_body_consistency,
 )

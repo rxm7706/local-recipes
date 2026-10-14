@@ -350,16 +350,12 @@ def test_run_argv_returns_exit_code_and_streams(tmp_path: Path) -> None:
         print(json.dumps({"ok": True}))
         """,
     )
-    code, stdout, stderr = run_argv(
-        [sys.executable, str(script)], cwd=tmp_path, timeout=10
-    )
+    code, stdout, stderr = run_argv([sys.executable, str(script)], cwd=tmp_path, timeout=10)
     assert code == 0
     assert "ok" in stdout
     assert stderr == ""
 
-    code, stdout, stderr = run_argv(
-        [sys.executable, str(script), "--fail"], cwd=tmp_path, timeout=10
-    )
+    code, stdout, stderr = run_argv([sys.executable, str(script), "--fail"], cwd=tmp_path, timeout=10)
     assert code == 3
     assert "err" in stderr
 
