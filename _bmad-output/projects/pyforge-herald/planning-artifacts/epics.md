@@ -1854,7 +1854,7 @@ snapshot's `fetched_at`; extra keys are ignored
 `pixi run -e site pages-check` exits 0; a contract test reads steward's shipped schema file as data and reds when its
 verdict enum differs from the tile's order; an import-boundary test finds no `pyforge.steward` import in herald or
 docsite code; `pyforge-herald-test` is green, its flag test running the key in both states with `flag_states`
-**Status:** backlog
+**Status:** done
 
 ## Epic 40: The docs site and the herald pages share one menu (spec-pyforge-herald CAP-58)
 
