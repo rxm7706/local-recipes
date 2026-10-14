@@ -11,6 +11,10 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
+
+flag_provider = make_flag_provider_fixture()
 
 pytest.importorskip("jsonschema")
 
@@ -364,14 +368,33 @@ def test_unauthenticated_rate_limit_refuses(tmp_path: Path) -> None:
     assert result.details.get("exit_code") == EXIT_CI_REFUSAL
 
 
-def test_flag_off_refuses_both_verbs(tmp_path: Path) -> None:
+@flag_states("pyforge.steward.ci_pause_control")
+def test_flag_off_refuses_both_verbs(tmp_path: Path, flag_provider: dict[str, bool]) -> None:
     reg_path = _write_fixture_tree(tmp_path)
-    deps = CiDeps(root=tmp_path, runner=lambda a, c: _FakeProc(a), registry_path=reg_path, flag_on=lambda: False)
-    for fn, kwargs in ((run_status, {"json_out": False}), (run_vars, {"refresh": False})):
-        result = fn(deps, **kwargs)
-        assert result.ok is False
-        assert CI_FLAG_KEY in result.summary
-        assert result.details.get("exit_code") == EXIT_CI_REFUSAL
+    on = flag_provider["pyforge.steward.ci_pause_control"]
+    if not on:
+        deps = CiDeps(
+            root=tmp_path,
+            runner=lambda a, c: _FakeProc(a),
+            registry_path=reg_path,
+            flag_on=lambda: False,
+        )
+        for fn, kwargs in ((run_status, {"json_out": False}), (run_vars, {"refresh": False})):
+            result = fn(deps, **kwargs)
+            assert result.ok is False
+            assert CI_FLAG_KEY in result.summary
+            assert result.details.get("exit_code") == EXIT_CI_REFUSAL
+        return
+    fixed_now = datetime(2026, 10, 13, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_make_runner(tmp_path, [], fixed_now),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    result = run_status(deps, json_out=True)
+    assert result.ok is True
 
 
 def test_json_validates_against_schema(tmp_path: Path) -> None:
@@ -564,7 +587,7 @@ def test_vars_refresh_rate_limit_refuses(tmp_path: Path) -> None:
 
 def test_ci_duty_unknown_verb() -> None:
     deps = CiDeps(root=Path("/tmp"), runner=lambda a, c: _FakeProc(a), flag_on=lambda: True)
-    ns = argparse.Namespace(_ci_deps=deps, ci_verb="pause", json=False, refresh=False)
+    ns = argparse.Namespace(_ci_deps=deps, ci_verb="nope", json=False, refresh=False)
     result = CiDuty().run(ns)
     assert result.ok is False
-    assert "status or vars" in result.summary
+    assert "pause" in result.summary

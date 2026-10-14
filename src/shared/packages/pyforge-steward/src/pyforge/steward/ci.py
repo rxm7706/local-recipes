@@ -19,8 +19,10 @@ from .interfaces import DutyResult
 CI_FLAG_KEY = "pyforge.steward.ci_pause_control"
 DEFAULT_REPO = "rxm7706/local-recipes"
 CI_VARS_REL = Path(".steward/ci-vars.json")
+CI_PAUSES_LOG_REL = Path(".steward/ci-pauses.log")
 SCHEMA_ID = "urn:local-recipes:pyforge-steward:ci-status-schema"
 EXIT_CI_REFUSAL = 3
+EXIT_CI_GH_FAILED = 1  # gh variable set/delete failed (AD-8; same domain as EXIT_FAILED)
 
 VERDICTS = (
     "live",
@@ -704,6 +706,353 @@ def run_vars(deps: CiDeps, *, refresh: bool) -> DutyResult:
     return DutyResult(ok=True, summary=f"ci vars: snapshot from {fetched}{age}, {n} variables")
 
 
+def _registry_file(deps: CiDeps) -> Path:
+    if deps.registry_path is not None:
+        return deps.registry_path
+    loader_root = deps.root
+    scripts = loader_root / "scripts"
+    if not (scripts / "_ci_surface_gates_lib.py").is_file():
+        loader_root = repo_root()
+        scripts = loader_root / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from _ci_surface_gates_lib import REGISTRY_REL  # noqa: PLC0415
+
+    return loader_root / REGISTRY_REL
+
+
+def _save_registry(deps: CiDeps, registry: dict[str, Any]) -> None:
+    import yaml
+
+    path = _registry_file(deps)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(registry, sort_keys=False, allow_unicode=True), encoding="utf-8")
+
+
+def _operator_name(deps: CiDeps) -> str:
+    proc = deps.runner(["git", "config", "user.name"], deps.root)
+    if proc.returncode == 0 and proc.stdout.strip():
+        return proc.stdout.strip()
+    return "operator"
+
+
+def _resolve_surface_rows(registry: dict[str, Any], target: str) -> list[dict[str, Any]]:
+    surfaces = registry.get("surfaces") or []
+    by_id: list[dict[str, Any]] = []
+    by_switch: list[dict[str, Any]] = []
+    for row in surfaces:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("id") or "") == target:
+            by_id.append(row)
+        sw = row.get("switch")
+        if sw is not None and str(sw) == target:
+            by_switch.append(row)
+    if by_id:
+        return by_id
+    return by_switch
+
+
+def _pause_gh_argv(deps: CiDeps, switch: str) -> list[str]:
+    return [
+        "gh",
+        "variable",
+        "set",
+        switch,
+        "--body",
+        "true",
+        "--repo",
+        deps.repo,
+    ]
+
+
+def _resume_gh_argv(deps: CiDeps, switch: str) -> list[str]:
+    return ["gh", "variable", "delete", switch, "--repo", deps.repo]
+
+
+def _capture_argv(text: str) -> list[str]:
+    return [
+        "pixi",
+        "run",
+        "-e",
+        "pyforge-guild",
+        "scribe",
+        "capture",
+        "--type",
+        "project",
+        "--text",
+        text,
+    ]
+
+
+def _build_capture_text(
+    *,
+    action: str,
+    switch: str,
+    surface_ids: list[str],
+    reason: str | None,
+    review_by: str | None,
+) -> str:
+    ids = ", ".join(surface_ids)
+    if action == "pause":
+        return (
+            f"CI pause: set {switch} for {ids}; reason: {reason}; "
+            f"review by {review_by}; registry updated in checkout — land via PR"
+        )
+    return f"CI resume: delete {switch} for {ids}; registry updated in checkout — land via PR"
+
+
+def _format_pause_diff(
+    rows: list[dict[str, Any]],
+    *,
+    today: str,
+    by: str,
+    reason: str,
+    review_by: str,
+) -> str:
+    lines = ["registry diff:"]
+    for row in rows:
+        rid = str(row.get("id") or "")
+        lines.append(f"  {rid}: state: paused, paused_since: {today}, paused_by: {by}")
+        lines.append(f"    reason: {reason}, review_by: {review_by}")
+    return "\n".join(lines)
+
+
+def _format_resume_diff(rows: list[dict[str, Any]]) -> str:
+    lines = ["registry diff:"]
+    for row in rows:
+        rid = str(row.get("id") or "")
+        switch_class = str(row.get("switch_class") or "pause")
+        new_state = "opt-in-off" if switch_class == "enable" else "live"
+        lines.append(f"  {rid}: state: {new_state} (cleared pause metadata)")
+    return "\n".join(lines)
+
+
+def _append_journal(deps: CiDeps, record: dict[str, Any]) -> None:
+    path = deps.root / CI_PAUSES_LOG_REL
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def _apply_pause_row(row: dict[str, Any], *, today: str, by: str, reason: str, review_by: str) -> None:
+    row["state"] = "paused"
+    row["paused_since"] = today
+    row["paused_by"] = by
+    row["reason"] = reason
+    row["review_by"] = review_by
+
+
+def _apply_resume_row(row: dict[str, Any]) -> None:
+    switch_class = str(row.get("switch_class") or "pause")
+    row["state"] = "opt-in-off" if switch_class == "enable" else "live"
+    for key in ("paused_since", "paused_by", "reason", "review_by"):
+        row.pop(key, None)
+
+
+def run_pause(
+    deps: CiDeps,
+    *,
+    target: str,
+    reason: str,
+    review_by: str,
+    yes: bool,
+    remove_merge_gate: bool,
+) -> DutyResult:
+    refused = _ensure_flag(deps)
+    if refused is not None:
+        return refused
+
+    reason = reason.strip()
+    review_d = _parse_date(review_by)
+    today = deps.now().date().isoformat()
+
+    registry = _load_registry(deps)
+    rows = _resolve_surface_rows(registry, target)
+    if not rows:
+        return _refusal(f"ci pause: no registry row for {target!r}")
+
+    switches = {str(r.get("switch")) for r in rows if r.get("switch") is not None}
+    if len(switches) != 1:
+        return _refusal("ci pause: target must resolve to exactly one switch")
+    switch = switches.pop()
+
+    for row in rows:
+        if str(row.get("state") or "") == "retired":
+            return _refusal(f"ci pause: refused — row {row.get('id')} is retired")
+        if row.get("gate") is True and not remove_merge_gate:
+            return _refusal(
+                f"ci pause: refused — row {row.get('id')} has gate: true "
+                f"(pass --i-am-removing-a-merge-gate to override)"
+            )
+        if str(row.get("switch_class") or "") == "enable":
+            return _refusal(f"ci pause: refused — {switch} is an enable opt-in, not a pause switch")
+        if str(row.get("state") or "") == "paused":
+            since = row.get("paused_since") or "unknown"
+            rb = row.get("review_by") or "unknown"
+            return _refusal(f"ci pause: already paused since {since}, review_by {rb}")
+        if not reason:
+            return _refusal("ci pause: refused — --reason must not be empty")
+        if review_d is None:
+            return _refusal(f"ci pause: refused — invalid --review-by {review_by!r}")
+        if review_d < deps.now().date():
+            return _refusal(f"ci pause: refused — review_by {review_by} is in the past")
+
+    by = _operator_name(deps)
+    surface_ids = [str(r.get("id") or "") for r in rows]
+    gh_argv = _pause_gh_argv(deps, switch)
+    capture_text = _build_capture_text(
+        action="pause",
+        switch=switch,
+        surface_ids=surface_ids,
+        reason=reason,
+        review_by=review_by,
+    )
+    diff = _format_pause_diff(rows, today=today, by=by, reason=reason, review_by=review_by)
+    capture_argv = _capture_argv(capture_text)
+
+    if not yes:
+        summary = "\n".join(
+            [
+                "ci pause (dry run):",
+                "gh: " + " ".join(gh_argv),
+                diff,
+                "scribe: " + " ".join(capture_argv),
+            ]
+        )
+        return DutyResult(ok=True, summary=summary)
+
+    proc = deps.runner(gh_argv, deps.root)
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or f"exit {proc.returncode}").strip()
+        return DutyResult(
+            ok=False,
+            summary=f"ci pause: gh variable set failed: {err}",
+            details={"exit_code": EXIT_CI_GH_FAILED},
+        )
+
+    for row in rows:
+        _apply_pause_row(row, today=today, by=by, reason=reason, review_by=review_by)
+    _save_registry(deps, registry)
+
+    journal = {
+        "ts": deps.now().isoformat(),
+        "action": "pause",
+        "switch": switch,
+        "surface": surface_ids if len(surface_ids) > 1 else surface_ids[0],
+        "reason": reason,
+        "review_by": review_by,
+        "by": by,
+    }
+    _append_journal(deps, journal)
+
+    cap = deps.runner(capture_argv, deps.root)
+    if cap.returncode != 0:
+        err = (cap.stderr or cap.stdout or f"exit {cap.returncode}").strip()
+        return DutyResult(
+            ok=False,
+            summary=f"ci pause: registry updated but scribe capture failed: {err}",
+            details={"exit_code": EXIT_CI_GH_FAILED},
+        )
+
+    return DutyResult(
+        ok=True,
+        summary=(
+            f"ci pause: set {switch} on GitHub; updated registry for {', '.join(surface_ids)}; "
+            "journaled; captured — land the registry change via PR"
+        ),
+    )
+
+
+def run_resume(deps: CiDeps, *, target: str, yes: bool) -> DutyResult:
+    refused = _ensure_flag(deps)
+    if refused is not None:
+        return refused
+
+    registry = _load_registry(deps)
+    rows = _resolve_surface_rows(registry, target)
+    if not rows:
+        return _refusal(f"ci resume: no registry row for {target!r}")
+
+    switches = {str(r.get("switch")) for r in rows if r.get("switch") is not None}
+    if len(switches) != 1:
+        return _refusal("ci resume: target must resolve to exactly one switch")
+    switch = switches.pop()
+
+    for row in rows:
+        if str(row.get("state") or "") == "retired":
+            return _refusal(f"ci resume: refused — row {row.get('id')} is retired")
+        if str(row.get("switch_class") or "") == "enable":
+            return _refusal(f"ci resume: refused — {switch} is an enable opt-in")
+        state = str(row.get("state") or "live")
+        if state != "paused":
+            return _refusal(f"ci resume: refused — row {row.get('id')} is {state}, not paused")
+
+    surface_ids = [str(r.get("id") or "") for r in rows]
+    gh_argv = _resume_gh_argv(deps, switch)
+    capture_text = _build_capture_text(
+        action="resume",
+        switch=switch,
+        surface_ids=surface_ids,
+        reason=None,
+        review_by=None,
+    )
+    diff = _format_resume_diff(rows)
+    capture_argv = _capture_argv(capture_text)
+
+    if not yes:
+        summary = "\n".join(
+            [
+                "ci resume (dry run):",
+                "gh: " + " ".join(gh_argv),
+                diff,
+                "scribe: " + " ".join(capture_argv),
+            ]
+        )
+        return DutyResult(ok=True, summary=summary)
+
+    proc = deps.runner(gh_argv, deps.root)
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or f"exit {proc.returncode}").strip()
+        return DutyResult(
+            ok=False,
+            summary=f"ci resume: gh variable delete failed: {err}",
+            details={"exit_code": EXIT_CI_GH_FAILED},
+        )
+
+    for row in rows:
+        _apply_resume_row(row)
+    _save_registry(deps, registry)
+
+    journal = {
+        "ts": deps.now().isoformat(),
+        "action": "resume",
+        "switch": switch,
+        "surface": surface_ids if len(surface_ids) > 1 else surface_ids[0],
+        "reason": None,
+        "review_by": None,
+        "by": _operator_name(deps),
+    }
+    _append_journal(deps, journal)
+
+    cap = deps.runner(capture_argv, deps.root)
+    if cap.returncode != 0:
+        err = (cap.stderr or cap.stdout or f"exit {cap.returncode}").strip()
+        return DutyResult(
+            ok=False,
+            summary=f"ci resume: registry updated but scribe capture failed: {err}",
+            details={"exit_code": EXIT_CI_GH_FAILED},
+        )
+
+    return DutyResult(
+        ok=True,
+        summary=(
+            f"ci resume: deleted {switch} on GitHub; updated registry for {', '.join(surface_ids)}; "
+            "journaled; captured — land the registry change via PR"
+        ),
+    )
+
+
 class CiDuty:
     name = "ci"
 
@@ -715,4 +1064,19 @@ class CiDuty:
             return run_status(deps, json_out=bool(getattr(ns, "json", False)))
         if verb == "vars":
             return run_vars(deps, refresh=bool(getattr(ns, "refresh", False)))
-        return DutyResult(ok=False, summary="ci: need status or vars")
+        if verb == "pause":
+            return run_pause(
+                deps,
+                target=str(getattr(ns, "target", "")),
+                reason=str(getattr(ns, "reason", "")),
+                review_by=str(getattr(ns, "review_by", "")),
+                yes=bool(getattr(ns, "yes", False)),
+                remove_merge_gate=bool(getattr(ns, "remove_merge_gate", False)),
+            )
+        if verb == "resume":
+            return run_resume(
+                deps,
+                target=str(getattr(ns, "target", "")),
+                yes=bool(getattr(ns, "yes", False)),
+            )
+        return DutyResult(ok=False, summary="ci: need status, vars, pause, or resume")
