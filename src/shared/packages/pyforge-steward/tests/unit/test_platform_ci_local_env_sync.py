@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 from test_platform_ci_local_concurrency import (
+    _marker_env,
+    _no_stub_process_outlives_the_test,  # noqa: F401 -- autouse: no test here leaves a process behind (Story 101.1)
     _prepare_stub_root,
     _write_executable,
 )
@@ -43,6 +45,7 @@ def _run_script(
     run_env["PLATFORM_CI_LOCAL_ENGINE"] = "docker"
     run_env["PLATFORM_CI_STUB_LOG"] = str(stub_log)
     run_env["PLATFORM_CI_LOCAL_WORK"] = str(root / "work")
+    run_env.update(_marker_env(root))
     if use_run_lock:
         run_env["PLATFORM_CI_LOCAL_LOCK"] = str(root / "platform-ci-local.lock")
         run_env["PLATFORM_CI_LOCAL_LOCK_WAIT"] = "120"
