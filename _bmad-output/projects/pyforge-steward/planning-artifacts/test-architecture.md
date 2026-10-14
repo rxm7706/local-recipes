@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 1eb3947ea2762cc4
-story_count: 369
-test_file_count: 118
+source_fingerprint: 8fee4b9b6df8d9eb
+story_count: 370
+test_file_count: 125
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 369
-- **Epics parsed:** 100
-- **Test files inventoried:** 118 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 370
+- **Epics parsed:** 101
+- **Test files inventoried:** 125 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1eb3947ea2762cc4`
+- **Source fingerprint:** `8fee4b9b6df8d9eb`
 
 ## Risk Assessment
 
@@ -127,6 +127,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 97: The not-yet-clean ceiling may shrink but never grow (fix under CAP-153)
 - Epic 98: Station tests run when what they read changes (fix under CAP-159)
 - Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
+- Epic 101: The `platform-ci-local` stubs leak no process, and the holder scan takes seconds (fix under CAP-152)
 
 ### Low-risk epics
 
@@ -167,6 +168,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_budget_set.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_budget_show.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_catalog.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_ci_pause.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_corridor.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_cutover.py` | unit | none observed |
@@ -190,6 +193,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_estate.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_estate_realize.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_estate_reconcile.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_estate_verify.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_events_stream_consumer.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py` | unit | none observed |
@@ -213,6 +220,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` | unit | none observed |
@@ -633,6 +641,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 100.5 | A moved pin is realized, not just locked | none observed |
 | 100.6 | The hand sequence is retired by one how-to and one pointer | none observed |
 | 100.7 | The first refresh lands through the path | none observed |
+| 101.1 | The `platform-ci-local` stubs leak no process, and the holder scan takes seconds | none observed |
 
 ## Quality Gates
 

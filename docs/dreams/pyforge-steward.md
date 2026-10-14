@@ -1720,6 +1720,25 @@ Drift — orphaned between stations.
   installed-confirmed on the platform that ran, `estate status` naming which platforms confirmed the current lock,
   merge does not wait, and B rebuilds the refresh from the Spec (ledger mode `rebuild`, no B surface) (Q14). Owner
   `spec-pyforge-steward`. → CAP-167 / FR-40, specced 2026-10-13; Epic 100 next.
+- **2026-10-14 (platform-ci-local stub leak) — Found: the `platform-ci-local` tests leave processes behind, and with
+  enough of them a lock wait can no longer name its holders in time.** On 2026-10-14 the host held 6,222 orphaned
+  `sleep 999999` processes, reparented to `systemd --user` after about 23 hours of test runs; the operator cleared them.
+  Story 63.7's stub `pg_ctl` and `redis-server` start a bash wrapper whose body is `sleep 999999` and record the
+  wrapper's pid. The stop path kills that pid, and the `sleep` survives, so every stubbed run that starts services
+  leaks two. Story 89.1's lock-holder test leaks a third. The waiter's report then walks every `/proc/*/fd/*` and forks a
+  `readlink` per descriptor, twice. Measured at `e0ad43f18c`, one walk took 74.6 s at 550 processes and 110.6 s at 6,549.
+  So `test_lock_wait_timeout_names_holder` and `test_lock_wait_names_live_holder_and_stale_record` ran into the tests'
+  120 s timeout, which redded steward 99.7's verification and marshal's pre-push preflight. `fuser` took 1.1 s at the
+  same load, `lsof` 6.1 s, and a bash `-ef` walk 0.8 s. The waiter also listed itself and its own helpers as holders,
+  because it kept the lock's descriptor open while it scanned. The operator approved the fix: "the platform-ci-local
+  test stubs leak processes, and the holder scan is slow". **What it looks like when fixed:** each stub execs its
+  long-running process, so the pid it records is the pid the stop path kills. Every test's teardown stops what it
+  started, and a marker scoped to the test's tmp dir proves that nothing survives, without any host-wide `pgrep`. The
+  holder scan uses `fuser` when present, otherwise one `/proc` walk that forks nothing per descriptor. The scan runs
+  once, after the waiter has closed its own descriptor, and its output is still one pid per line, sorted and unique.
+  **Constraints:** a fix under CAP-152 (Stories 63.7, 89.1 and 96.1), with no CAP and no flag;
+  `PLATFORM_CI_LOCAL_LOCK_WAIT`, the exit codes and the report format stay; never kill processes host-wide. Owner
+  `spec-pyforge-steward`. → Epic 101 / Story 101.1, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

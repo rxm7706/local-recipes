@@ -1143,6 +1143,21 @@ verify_commands = [
   "AGENTS.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"101" = [  # the platform-ci-local stubs leak no process, and the holder scan takes seconds (fix under
+  # spec-pyforge-steward CAP-152; Story 101.1), added 2026-10-14. The default surface, restated because a declared entry
+  # replaces it outright, plus the platform-ci-local script (on spec-pyforge-steward's surface) and every Spec memlog.
+  # Its three test modules live under the steward package, which the default surface already covers.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/platform-ci-local.sh",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts
