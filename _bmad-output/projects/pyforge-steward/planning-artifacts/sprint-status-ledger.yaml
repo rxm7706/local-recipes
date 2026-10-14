@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 584
+# stories: 585
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -42,6 +42,7 @@ development_status:
   103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses: backlog
   103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network: backlog
   103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say: backlog
+  103-4-the-ci-surface-gates-tests-write-their-fixtures-under-tmp-path: backlog
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
