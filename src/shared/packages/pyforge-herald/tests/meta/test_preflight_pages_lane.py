@@ -127,7 +127,7 @@ def test_marshal_only_diff_leaves_pages_check_unselected(tmp_path: Path) -> None
     selection = _select(repo)
     assert "pages-check" not in _selected_tasks(selection)
     skipped = {v.task: v for v in selection.verdicts if not v.selected}
-    assert skipped["pages-check"].workflow == "docsite-check.yml"
+    assert skipped["pages-check"].workflow == "docsite-check.yml; pages.yml"
 
 
 def test_docs_how_to_diff_selects_pages_check(tmp_path: Path) -> None:

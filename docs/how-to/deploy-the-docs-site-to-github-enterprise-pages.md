@@ -5,7 +5,7 @@ Use this procedure on the **enterprise copy** of this repository (`ghe.example` 
 ## Prerequisites
 
 - An enterprise GitHub host (for example `https://ghe.example`) with a mirror or fork of `rxm7706/local-recipes` that you keep current with `main` on the public upstream.
-- GitHub Actions enabled for that repository, with a runner that can execute `dashboard.yml` (Ubuntu, `pixi`, and network access to your internal conda channel — not the public internet).
+- GitHub Actions enabled for that repository, with a runner that can execute `pages.yml` (Ubuntu, `pixi`, and network access to your internal conda channel — not the public internet).
 - The internal conda mirror and channel configuration from [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) (follow that guide; do not duplicate its steps here).
 
 ## 1. Keep the enterprise repository aligned with `main`
@@ -22,7 +22,7 @@ git merge upstream/main
 git push origin main
 ```
 
-Repeat the fetch, merge, and push whenever you want the internal site to pick up upstream doc changes. The enterprise repo runs the same `.github/workflows/dashboard.yml` as upstream; it must contain the Story 31.1 flag and `export_pages_host_env.py` wiring.
+Repeat the fetch, merge, and push whenever you want the internal site to pick up upstream doc changes. The enterprise repo runs the same `.github/workflows/pages.yml` as upstream; it must contain the Story 31.1 flag and `export_pages_host_env.py` wiring.
 
 ## 2. Enable GitHub Enterprise Pages with GitHub Actions as the source
 
@@ -30,11 +30,11 @@ In the enterprise repository on `ghe.example`:
 
 1. Open **Settings → Pages**.
 2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not "Deploy from a branch").
-3. Save. No custom workflow file is required — `dashboard.yml` is already the sole `actions/deploy-pages` caller.
+3. Save. No custom workflow file is required — `pages.yml` is already the sole `actions/deploy-pages` caller.
 
 ## 3. Point CI runners at the internal conda mirror
 
-The `build` job in `.github/workflows/dashboard.yml` runs `pixi run --frozen -e site pages-check`, which resolves packages from the channels configured for this repo. On enterprise runners that cannot reach `conda.anaconda.org` or the public internet, configure the mirror and channel URLs using [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) before the first Pages build.
+The `build` job in `.github/workflows/pages.yml` runs `pixi run --frozen -e site pages-check`, which resolves packages from the channels configured for this repo. On enterprise runners that cannot reach `conda.anaconda.org` or the public internet, configure the mirror and channel URLs using [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) before the first Pages build.
 
 Typical enterprise patterns (choose what your platform supports):
 
@@ -60,7 +60,7 @@ On the **enterprise** repository only (leave the public upstream copy at `defaul
 }
 ```
 
-Commit and push that change to `main` on `ghe.example`. The `Resolve Pages host env` step in `dashboard.yml` runs:
+Commit and push that change to `main` on `ghe.example`. The `Resolve Pages host env` step in `pages.yml` runs:
 
 ```bash
 pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"

@@ -25,7 +25,7 @@ These run on `pull_request` events (several also re-run on push to `main`):
 
 | Workflow | Triggers | Role |
 |----------|----------|------|
-| `dashboard.yml` | push to `main`, `workflow_dispatch` | Fleet dashboard Pages deploy |
+| `pages.yml` | push to `main`, `workflow_dispatch` | Fleet dashboard Pages deploy |
 | `kedro-viz-publish.yml` | push to `main` (path-filtered), `workflow_dispatch` | Kedro viz publish (paused manually in GitHub; see [Pause CI](pause-ci.md)) |
 
 ### On-demand / manual workflows

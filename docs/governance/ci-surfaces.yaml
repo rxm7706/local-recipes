@@ -49,7 +49,7 @@ surfaces:
   state: live
   owner: pyforge-steward
 - id: dashboard
-  workflow: .github/workflows/dashboard.yml
+  workflow: .github/workflows/pages.yml
   kind: workflow
   cost: low
   gate: false
@@ -434,7 +434,7 @@ surfaces:
   state: live
   owner: pyforge-steward
 - id: dashboard.build
-  workflow: .github/workflows/dashboard.yml
+  workflow: .github/workflows/pages.yml
   job: build
   kind: ci-job
   cost: low
@@ -444,7 +444,7 @@ surfaces:
   state: live
   owner: pyforge-steward
 - id: dashboard.deploy
-  workflow: .github/workflows/dashboard.yml
+  workflow: .github/workflows/pages.yml
   job: deploy
   kind: ci-job
   cost: low

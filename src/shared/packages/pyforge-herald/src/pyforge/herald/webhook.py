@@ -4,7 +4,7 @@
 **CI system and events (this story's first, load-bearing AC).** GitHub
 Actions -- the repo's only CI system. ``on-ship`` fires from a workflow
 step run after a successful push to ``main`` (mirrors this repo's own
-``dashboard.yml``/``detectors.yml`` "push to main = ship happened"
+``pages.yml``/``detectors.yml`` "push to main = ship happened"
 convention, not GitHub's native ``pull_request closed+merged`` event,
 which no existing workflow here uses). ``on-pr-close`` fires from a
 ``pull_request: types: [closed]`` step; this module never trusts the HTTP

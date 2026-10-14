@@ -29,7 +29,7 @@
  },
  "pyforge-atlas/spec-pyforge-atlas": {
   "files": {
-   ".github/workflows/kedro-viz-publish.yml": "35c6ed88cfd0af33e552c6840fda0cc063ec4e11",
+   ".github/workflows/kedro-viz-publish.yml": "5170fa8f31b0c84569a87af80db113197f040dd2",
    "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "2c420e19160d080f1469058873a7ede17a4b20e1",
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
@@ -467,7 +467,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "29ed662bb92449b91ff8053731c6c65aefd76c2c"
+  "memlog": "ceb5c7cbdc66ea3ea9a03cea1ac226b4ee84becb"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -2935,7 +2935,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "67b5b5ecd5a04e12e08c66d304cf86a0a303c340",
+   "pixi.toml": "6e6e8f0556f7b75669f7092ce94d332aa3e453e2",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "f634eebb7d280de9667527361cb160b786242fd0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "52923d5b2ec955c7f91f434f710d7d166bcd8398",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3203,7 +3203,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py": "99998ff1a279e20279fa0c375756c817d35b7b2e",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/twins.py": "65a557b69151d34cda832f4d60fb6107893c18f0",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/watch.py": "f67db2e41141141af7527dd3f22319d65f223365",
-   "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py": "e479ed853b506cb28758943ee2c95506dd120282",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py": "67036ee9bef7b47fe55757adc63f348944c03fc1",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook_host.py": "72de1a5d383184578e2174e3a4d021ef9c0a3959",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/__init__.py": "b9e09847a6e53c11db7d1afdbeefd6fc00ff6c2e",
@@ -3534,7 +3534,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/passport.py": "2278ef2d166f09db42fa761a0f48428a4462b774",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "01eaa9552962e20f9cffd781e50359da42e67699",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py": "e031dac9ef690372b6a7ea7b3acead16dd7b85e6",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py": "573f614131283815ced916b38d1bda2edc3d48b4",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py": "0f6ba11f73f54a833a2b3d1dc9813f79f4686574",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py": "5a7db75ff877822830c1f0182be606800d5afb94",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_xdist.py": "3509b8895043af7c4e69e76bc6b7ff262333b277",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py": "b228c5c6f4520d5583704a187374baaadee9d1a5",
@@ -3596,7 +3596,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "520a8939a2165cd90f5a710868ba3c21c9a1ac29"
+  "memlog": "c9907cc44056fdf74ed760869b78c5a4dc4d43e9"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {

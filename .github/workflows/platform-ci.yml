@@ -1108,7 +1108,7 @@ jobs:
           name: platform-ci-image
 
       # AD-16: helm and kubectl come from the `platform-dev` pixi
-      # environment, never a system install -- mirrors `dashboard.yml`'s
+      # environment, never a system install -- mirrors `pages.yml`'s
       # single-environment usage, which activates it onto PATH so later
       # steps invoke `helm`/`kubectl` directly (no `pixi run -e` prefix
       # needed).

@@ -410,6 +410,17 @@ def _oracle_fires(repo: Path, workflow: str, changed: list[str]) -> bool:
     return any(_oracle_match(p.split("/"), c.split("/")) for p in paths["paths"] for c in changed)
 
 
+def _oracle_push_fires(repo: Path, workflow: str, changed: list[str]) -> bool:
+    data = yaml.safe_load((repo / ".github" / "workflows" / workflow).read_text(encoding="utf-8"))
+    triggers = data.get("on", data.get(True))
+    if not isinstance(triggers, dict):
+        return False
+    push = triggers.get("push")
+    if not isinstance(push, dict) or "paths" not in push:
+        return False
+    return any(preflight_ci.filter_matches(push["paths"], path) for path in changed)
+
+
 # Story 98.1: the station-tests `changes` step's shell lists script paths (e.g.
 # `scripts/target_version_check.py`) that also appear in lint-types pixi task
 # commands. preflight_ci treats that filter script as a lane host, so those
@@ -465,6 +476,8 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         chosen.add("test-ci")
     if _oracle_fires(repo, "docsite-check.yml", changed):
         chosen |= DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
+    if _oracle_push_fires(repo, "pages.yml", changed):
+        chosen |= PAGES_CHECK_LEAVES
     if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
         out = _oracle_outputs(repo, "pyforge-station-tests.yml", tmp_path)
         for key, lane in [("core", "pyforge-core-test"), ("testing_kit", "pyforge-testing-kit-test")] + [
@@ -796,6 +809,21 @@ def test_service_mutex_keys_follows_ci_firing_site(tmp_path: Path) -> None:
     assert preflight_ci.lane_service_mutex_key(repo, lane, pixi) == "services:redis"
     keys = preflight_ci.service_mutex_keys(repo, [lane], pixi)
     assert keys[("lane-b", "pyforge-guild")] == "services:redis"
+
+
+def test_pages_yml_push_fires_pages_check_for_tutorials(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path, {"docs/tutorials/a.md": "# a\n"})
+    lanes, pixi = lanes_and_pixi(repo)
+    lane = next(item for item in lanes if item.task == "pages-check")
+    assert "pages-check" in selected_tasks(select(repo))
+    assert "pages.yml" in preflight_ci.firing_workflows_for_lane(repo, lane, pixi)
+
+
+def test_pages_yml_push_does_not_fire_for_dream_only(tmp_path: Path) -> None:
+    repo = make_repo(tmp_path, {"docs/dreams/a-dream.md": "# dream\n"})
+    lanes, pixi = lanes_and_pixi(repo)
+    lane = next(item for item in lanes if item.task == "pages-check")
+    assert "pages.yml" not in preflight_ci.firing_workflows_for_lane(repo, lane, pixi)
 
 
 def test_a_repository_without_workflows_still_selects_every_lane(tmp_path: Path) -> None:
