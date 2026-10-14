@@ -68,6 +68,27 @@ def strip_expression_wrappers(text: str) -> str:
     return text
 
 
+def _split_top_level(text: str, op: str) -> list[str]:
+    parts: list[str] = []
+    depth = 0
+    start = 0
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+        elif depth == 0 and text.startswith(op, i):
+            parts.append(text[start:i].strip())
+            i += len(op)
+            start = i
+            continue
+        i += 1
+    parts.append(text[start:].strip())
+    return [p for p in parts if p]
+
+
 def _unwrap_redundant_parens(expr: str) -> str:
     """Strip outer ``(…)`` wrappers when the whole expression is one parenthesized group."""
     expr = expr.strip()
@@ -89,7 +110,7 @@ def parse_fragment_inner(if_text: str) -> str | None:
     raw = strip_expression_wrappers(_normalize_if_text(if_text))
     if _FRAGMENT_DISPATCH not in raw:
         return None
-    or_parts = [p.strip() for p in raw.split("||")]
+    or_parts = _split_top_level(raw, "||")
     if len(or_parts) < 2:
         return None
     paren = or_parts[1].strip()
@@ -101,7 +122,7 @@ def parse_fragment_inner(if_text: str) -> str | None:
     if not compact.startswith(master.replace(" ", "")):
         return None
     # Drop leading master && workflow/job pause terms; remainder is inner condition.
-    terms = [t.strip() for t in re.split(r"\s*&&\s*", inner)]
+    terms = _split_top_level(inner, "&&")
     idx = 0
     while idx < len(terms):
         term = terms[idx]
@@ -363,8 +384,8 @@ def render_workflow_file(
             job_switch=plan.job_switch,
         )
         block = _render_block_for_plan(plan)
-        marker = f"    # {_RENDER_MARKER} {plan.row_id}"
-        if marker in text:
+        marker_line = f"    # {_RENDER_MARKER} {plan.row_id}\n"
+        if marker_line in text:
             pattern = (
                 rf"(    # {_RENDER_MARKER} {re.escape(plan.row_id)}\n"
                 rf"    # render: {re.escape(_RENDER_CMD)}\n"
