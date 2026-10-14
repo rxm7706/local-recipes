@@ -135,6 +135,7 @@ def test_setup_initrepo_validate_fast_are_wired_into_help():
             "session",
             "deck-drift",
             "estate",
+            "ci",
         )
     ],
 )
