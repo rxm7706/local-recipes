@@ -2,7 +2,7 @@
 title: "103.1: `steward ci status` reports the master switch, and every surface it pauses"
 type: 'fix'
 created: '2026-10-14'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -257,6 +257,38 @@ Every criterion runs the real `run_status` against a recorded `gh` fixture (the 
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC9).
 - `pixi run --as-is -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
+
+## Review Triage Log
+
+### 2026-10-14 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 1, false 0, maybe-false 0
+- findings:
+  - `[low]` `[patch]` `test_ci_status.py` import block order (I001) — ruff --fix ordering applied
+
+## Auto Run Result
+
+Status: done
+
+Summary: `steward ci status --json` now emits a `master:PAUSE_ALL_CI` row and sets `paused_by_master` on gated surfaces while the master is on, without changing doctor, herald, or marshal code.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py` — master row, gating via `_ci_surface_gates_lib.collect_var_uses`, verdict overlay
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json` — optional `paused_by_master`
+- `src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py` — AC1–AC6 tests
+- `src/shared/packages/pyforge-steward/tests/fixtures/ci_status_master_on.json` — frozen AC6 payload
+- `docs/how-to/pause-ci.md` — master switch read-path documentation
+- Memlogs + scoped baseline stamps for `spec-pyforge-steward`, `spec-pyforge-core`, `spec-pyforge-doctor`
+
+Review: one low patch (import order). `followup_review_recommended: false`.
+
+Verification:
+- `pyforge-steward-test` — pass (includes `test_ci_status.py`, AC6 consumer subprocess checks)
+- `pyforge-doctor-test`, `pyforge-herald-test` — pass
+- `python scripts/spec_surface_reconcile.py` — OK
+- `spec-surface-check` — ok for this story’s reconciled specs
+- `lint-types` — steward ruff clean after import fix
+
+Residual risks: marshal landing line still lists master by `live_switch_value` only; herald snapshot refresh remains operator-driven (per spec).
 
 ## Spec Change Log
 

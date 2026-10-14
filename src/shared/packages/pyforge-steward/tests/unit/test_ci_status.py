@@ -7,9 +7,9 @@ import json
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
 from importlib import resources
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
