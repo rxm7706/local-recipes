@@ -313,3 +313,9 @@ Verification after review 1 (2026-10-14):
   - an untracked `leftover.json` in the repo's fixture tree before the run: only the named test failed, naming it.
 - `spec-pyforge-steward`'s memlog records the review, the correction and the reconcile, then one scoped stamp after
   the last code edit; `spec-surface-check` exits 0.
+- `pixi run -e pyforge-guild pr-preflight` on `e7ace47f09` (load average about 30 on 16 cores): exit 1. 15 of the
+  20 lanes that ran were `ok`, including `pyforge-doctor-scripts-test` and every scripts and docs lane; `git status
+  --porcelain` was empty afterwards. The one red lane was `detectors-ci` (exit 2): `chain_currency_sweep_check` read
+  `UNKNOWN: exceeded 300s` at 300.1 s, with every other detector passing, and the runner then cancelled
+  `pyforge-doctor-test` and `pyforge-steward-test`. Run alone straight after, `pixi run -e pyforge-guild
+  chain-currency-sweep-check` exited 0 in 87 s. The push's pre-push hook re-runs the whole preflight.
