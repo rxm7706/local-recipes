@@ -569,7 +569,7 @@
    "docs/how-to/monitor-the-fleet.md": "9fd532b364f8ff1d692772334318a058d67df868",
    "docs/how-to/ocp-cluster-bringup.md": "5ea5280ff7a623932860118e4b811de1cfe39506",
    "docs/how-to/one-chain-station-ops.md": "9ab588ab903bb5073ffcca1064044c9e921565d2",
-   "docs/how-to/pixi-tasks.md": "f43c1e2ab9e483f089593908139bd6f037929a4a",
+   "docs/how-to/pixi-tasks.md": "ccf7189667c2f0c2061394ec9f76be2824c08dbf",
    "docs/how-to/presentation-deck.md": "441ae6933101a8138236f0cf78bc39d58483035a",
    "docs/how-to/purge-preserved-refs.md": "d398c6312bbaebc754e4ec6bacd30b0e6ebc8caf",
    "docs/how-to/recipe-testing-and-builds.md": "558bf19fae242667f02575630f78b2dec39f21d0",
@@ -582,7 +582,7 @@
    "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "5cafb00243b95e5616910c5b404095b9305b8691",
    "docs/how-to/troubleshooting-recipe-builds.md": "74ae1f42e23b84bbdbfbd9e2b5eec92898e6bd96",
-   "docs/map.yaml": "01da4a06579086a8e197c9f261d6c0b57575f752",
+   "docs/map.yaml": "cabc61a1ce3fcb3a7ead53c946b67416aecd710f",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "9512c037ee900086236de08a42ec8fa22e3274b2",
    "docs/tutorials/local-platform-development.md": "c49d337b890409a759da01286a581b3fd1bda840",
@@ -769,7 +769,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "e316d699cd31fab668416db006e49abfffc5cda9"
+  "memlog": "49746d6ccf50401c5c60e658969f8cac73997e87"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -5813,7 +5813,7 @@
    "recipes/bmad-eval-quality/build.sh": "aa8925aaf5b98492d41cf6a5389f9ee150dce298",
    "recipes/bmad-eval-quality/conda-forge.yml": "f9c4a4296a9e3d457ae11a08e9eae3d739807129",
    "recipes/bmad-eval-quality/recipe.yaml": "68911a73ec5c0302610f9e4eea0b829623f04d27",
-   "recipes/bmad-suite/recipe.yaml": "3de6509eefcbd8bf613f0649e14329b712157379",
+   "recipes/bmad-suite/recipe.yaml": "cd9224210b991d1ff460ef2b0a5653be2e82a297",
    "recipes/bmad-suite/suite-members.yaml": "449192ac291d8e17eb097e6e9c9e6a257de482ca",
    "recipes/mybmad-dashboard/wrapper/src/mybmad_dashboard/launcher.py": "cf2a4e6c9cb5225d70994430d2677b13d99c62a4",
    "scripts/_ci_surface_gates_lib.py": "1e8b120340e1caa2fa1951d9108329379792b1f1",
@@ -6128,7 +6128,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "0b7b79c6b31c1ca3e4f099a81993a081ffd80e7a"
+  "memlog": "9c2fbecc3cd4cc680d658ae0f92ecbcd7cc2fafc"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

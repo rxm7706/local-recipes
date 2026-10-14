@@ -1883,7 +1883,8 @@
     "latest": "unknown",
     "applied": false,
     "realize_preflight": {
-      "preflight_exit": 2,
+      "preflight_exit": 0,
+      "preflight_target": "6.12.2",
       "fan_out_exit": 0,
       "fan_out": []
     }
@@ -2122,7 +2123,7 @@
       "to": "6.12.2",
       "platform": "linux-64",
       "realize": "skipped-operator-gate",
-      "probe": "stale"
+      "probe": "live"
     },
     "bmad-module-skill-forge": {
       "package": "bmad-module-skill-forge",
@@ -2130,7 +2131,7 @@
       "to": "3.0.0",
       "platform": "linux-64",
       "realize": "skipped-operator-gate",
-      "probe": "stale"
+      "probe": "live"
     },
     "caveman-installer": {
       "package": "caveman-installer",
@@ -2164,12 +2165,20 @@
       "realize": "none",
       "probe": "live"
     },
+    "playwright": {
+      "package": "playwright",
+      "from": "1.63.0",
+      "to": "1.64.0",
+      "platform": "linux-64",
+      "realize": "ran",
+      "probe": "live"
+    },
     "pre-commit": {
       "package": "pre-commit",
       "from": "4.6.2",
       "to": "4.7.0",
       "platform": "linux-64",
-      "realize": "ran",
+      "realize": "skipped-worktree",
       "probe": "live"
     },
     "redis-server": {
@@ -2189,6 +2198,315 @@
       "probe": "live"
     }
   },
-  "reconcile": {},
+  "reconcile": {
+    "generators": [
+      {
+        "argv": [
+          "pixi",
+          "project",
+          "export",
+          "conda-environment",
+          "-e",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 0.017
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/llms_full_check.py",
+          "--fix-floors"
+        ],
+        "exit": 0,
+        "seconds": 0.332
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "-m",
+          "pyforge.scribe.cli",
+          "catalog",
+          "bmad-estate",
+          "--write"
+        ],
+        "exit": 1,
+        "seconds": 0.012
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/pixi_env_matrix.py",
+          "--update",
+          "docs/dreams/pyforge-unifying-strategy.md"
+        ],
+        "exit": 2,
+        "seconds": 0.056
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/docs_environments.py"
+        ],
+        "exit": 0,
+        "seconds": 0.131
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/docs_pixi_tasks.py"
+        ],
+        "exit": 0,
+        "seconds": 0.142
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          ".claude/scripts/conda-forge-expert/bmad_suite_metapackage.py"
+        ],
+        "exit": 0,
+        "seconds": 2.469
+      }
+    ],
+    "checks": [
+      {
+        "name": "llms-full-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/llms_full_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.601,
+        "warn_only": false
+      },
+      {
+        "name": "bmad-estate-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/bmad_estate_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.464,
+        "warn_only": false
+      },
+      {
+        "name": "pixi-version-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/pixi_version_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.304,
+        "warn_only": false
+      },
+      {
+        "name": "target-version-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/target_version_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.305,
+        "warn_only": false
+      },
+      {
+        "name": "sbom-gaps-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/sbom_gap_derive.py"
+        ],
+        "exit": 0,
+        "seconds": 0.281,
+        "warn_only": false
+      },
+      {
+        "name": "platform-policy-suite-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.doctor.sources",
+          "platform-policy-suite"
+        ],
+        "exit": 0,
+        "seconds": 0.388,
+        "warn_only": false
+      },
+      {
+        "name": "pin-policy-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/pin_policy_check.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 0.387,
+        "warn_only": false
+      },
+      {
+        "name": "pixi-lock-check",
+        "argv": [
+          "pixi",
+          "lock",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 0.586,
+        "warn_only": false
+      },
+      {
+        "name": "pixi-currency-staleness-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.doctor.sources",
+          "pixi-currency-ledger"
+        ],
+        "exit": 0,
+        "seconds": 0.694,
+        "warn_only": true
+      },
+      {
+        "name": "steward-deck-drift",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.steward.cli",
+          "deck-drift",
+          "--slug",
+          "pyforge-steward",
+          "--path",
+          "deck.dc.html"
+        ],
+        "exit": 0,
+        "seconds": 0.345,
+        "warn_only": true
+      }
+    ],
+    "moved_paths": [
+      "docs/how-to/pixi-tasks.md",
+      "docs/map.yaml",
+      "docs/reference/environments.md",
+      "recipes/bmad-suite/recipe.yaml"
+    ],
+    "git_add": {
+      "paths": [
+        "docs/how-to/pixi-tasks.md",
+        "docs/map.yaml",
+        "recipes/bmad-suite/recipe.yaml"
+      ],
+      "exit": 0
+    },
+    "spec_surface": {
+      "specs": [
+        "pyforge-doctor/spec-pyforge-doctor",
+        "pyforge-steward/spec-pyforge-steward"
+      ],
+      "memlogs": [
+        {
+          "spec": "pyforge-doctor/spec-pyforge-doctor",
+          "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md",
+          "exit": 0
+        },
+        {
+          "spec": "pyforge-steward/spec-pyforge-steward",
+          "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md",
+          "exit": 0
+        }
+      ],
+      "stamps": [
+        {
+          "spec": "pyforge-doctor/spec-pyforge-doctor",
+          "argv": [
+            "spec_surface_check.py",
+            "--write-baseline",
+            "--spec",
+            "pyforge-doctor/spec-pyforge-doctor"
+          ],
+          "exit": 0
+        },
+        {
+          "spec": "pyforge-steward/spec-pyforge-steward",
+          "argv": [
+            "spec_surface_check.py",
+            "--write-baseline",
+            "--spec",
+            "pyforge-steward/spec-pyforge-steward"
+          ],
+          "exit": 0
+        }
+      ],
+      "spec_surface_check": {
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.doctor.sources",
+          "spec-surface"
+        ],
+        "exit": 0,
+        "seconds": 2.914
+      }
+    },
+    "recommended_commit": "estate reconcile: regenerate derived surfaces and reconcile spec-surface\n\nJournal: .steward/estate-refresh/2026-10-14.json"
+  },
   "verify": {}
 }
