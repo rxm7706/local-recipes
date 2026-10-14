@@ -6312,7 +6312,7 @@ So that every off switch in the repo has a reason and a reader knows where to lo
 **When** the story lands
 **Then** the four staged-recipes-linter workflows and the `.github/workflows/scripts/` files only they use are deleted, each with a `retired` row (ruling Q4); `test-all` and `kedro-viz-publish` carry `paused-manually` rows with the operator's recorded reason and `review_by` 2026-11-01; `--check --live` exits 0
 **And** `docs/how-to/pause-ci.md`, registered in `docs/map.yaml`, documents the convention, `steward ci status|pause|resume` and the dispatch carve-out; `AGENTS.md` § *Running and verifying* gains one pointer line (scribe's parity meta-test and `governance-currency` stay green); no tracked doc outside a dated log entry cites `ACTIONS_ENABLED` as current state.
-**Status:** backlog
+**Status:** in-review
 
 ## Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
 
