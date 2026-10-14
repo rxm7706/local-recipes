@@ -179,8 +179,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-10-13T09:52:52-05:00'
-      tree: 5e78c565cc8175b73ef0742b76ab4665360a1d9a
+      derived_at: '2026-10-13T19:04:54-05:00'
+      tree: 36f6ce363a75c5ffa8eac28e643e9a60da2c6993
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
