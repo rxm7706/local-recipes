@@ -338,6 +338,9 @@ def offline_check(
         if state == "paused" and not row.get("review_by"):
             findings.append(f"registry row {row_id}: paused row missing review_by")
 
+        if str(row.get("cost") or "") == "high" and not row.get("canary"):
+            findings.append(f"registry row {row_id}: cost: high row missing canary")
+
     findings.extend(completeness_findings(root, registry, workflows_dir=workflows_dir))
 
     return findings
