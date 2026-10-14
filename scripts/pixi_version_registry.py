@@ -85,8 +85,6 @@ SITES: tuple[Site, ...] = (
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("platform-test-setup/action.yml setup-pixi", ".github/actions/platform-test-setup/action.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
-    _site("staged-recipes-linter.yml micromamba create-arg", ".github/workflows/staged-recipes-linter.yml",
-          r"pixi>=" + _PIXI_VERSION, kind="floor"),
     _site("root Containerfile builder stage", "Containerfile",
           r"ghcr\.io/prefix-dev/pixi:" + _PIXI_VERSION + r" AS builder", kind="exact"),
     _site("src/platform/Containerfile builder stage", "src/platform/Containerfile",
