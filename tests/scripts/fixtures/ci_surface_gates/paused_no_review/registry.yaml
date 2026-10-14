@@ -1,0 +1,22 @@
+conventions:
+  dispatch_ignores_pauses: true
+  enable_prefix: ENABLE_
+  master: PAUSE_ALL_CI
+  pause_prefix: PAUSE_
+grandfathered_names:
+- PAUSE_FOO
+surfaces:
+- cost: low
+  gate: false
+  id: sample.job1
+  job: job1
+  kind: ci-job
+  owner: pyforge-steward
+  paused_by: operator
+  paused_since: '2026-10-01'
+  reason: test
+  state: paused
+  switch: PAUSE_FOO
+  switch_class: pause
+  workflow: .github/workflows/sample.yml
+version: 1

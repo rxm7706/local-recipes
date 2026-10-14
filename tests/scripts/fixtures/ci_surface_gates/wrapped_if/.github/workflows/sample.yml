@@ -1,0 +1,6 @@
+jobs:
+  job1:
+    if: ${{ vars.PAUSE_X != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok
