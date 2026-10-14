@@ -6050,9 +6050,9 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py": "771ac403b9f1d871233a09c818bc3c850c6358fd",
    "src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py": "79dbb82993a7ad896319440b98602ad794cf33b1",
    "src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py": "28ad6ed8175da028e163ccb79dd974d724f990f6",
-   "src/shared/packages/pyforge-steward/tests/unit/test_estate.py": "36eec4bfdc83d4837bd8dc606721832605d61136",
+   "src/shared/packages/pyforge-steward/tests/unit/test_estate.py": "359f426c8ec6b3699d8c0a0457f35ac92fd81027",
    "src/shared/packages/pyforge-steward/tests/unit/test_estate_realize.py": "753394348bcbaf041013c7b1855ff233d8ff4367",
-   "src/shared/packages/pyforge-steward/tests/unit/test_estate_reconcile.py": "beb912aef852ca8b14d14de8e9fb0fd0dc07793f",
+   "src/shared/packages/pyforge-steward/tests/unit/test_estate_reconcile.py": "58d64a9b71b996d543e43a48cd7e24cbabe28b4f",
    "src/shared/packages/pyforge-steward/tests/unit/test_estate_verify.py": "fb928aa11933ee5a4ad463b78f00d9224a055cc4",
    "src/shared/packages/pyforge-steward/tests/unit/test_events_stream_consumer.py": "cb2830c099111b716e537a127c1c1ad21cd7196e",
    "src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py": "5edb343ced43add446a86beef742ef207e3b24f9",
@@ -6134,7 +6134,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "b26ec1186a5cb9000d0f346781b228898f8d4841"
+  "memlog": "e15840a797090348cf9d7521b4109791b19fa3ad"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
