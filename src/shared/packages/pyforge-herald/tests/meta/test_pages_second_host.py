@@ -367,3 +367,11 @@ def test_flags_json_carries_pages_second_host() -> None:
     tree = json.loads((root / "src/platform/config/flags.json").read_text(encoding="utf-8"))
     flag = tree["flags"][PAGES_SECOND_HOST_FLAG]
     assert flag["defaultVariant"] == "off"
+
+
+def test_flags_json_carries_ci_surfaces_tile() -> None:
+    root = _repo_root()
+    tree = json.loads((root / "src/platform/config/flags.json").read_text(encoding="utf-8"))
+    flag = tree["flags"]["pyforge.herald.ci_surfaces_tile"]
+    assert flag["defaultVariant"] == "off"
+    assert flag["metadata"]["story"].startswith("39-1-")
