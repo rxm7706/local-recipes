@@ -61,6 +61,7 @@ This is A (`rxm7706/local-recipes`), the PyForge control plane and BMAD Agentic-
 - Recipe-factory work is the one exception to the line above and runs in `-e local-recipes`; `-e pyforge-scribe` is only for `scribe graph compile` with its graphify / cocoindex / postgres extras. `pixi run -e pyforge-guild llms-full-check` exits non-zero when the library catalog drifts from `pixi.toml`.
 - `bmad-estate-check` (repo scope, in `detectors-ci`) reds when `docs/reference/bmad-estate-llms-full.md` no longer matches its sources — reconcile with `pixi run -e pyforge-guild scribe catalog bmad-estate --write`, never by hand; `bmad-method-version-drift-check` (installed core vs the `pixi.toml` floor and upstream, warn-only) runs alone by name; `tea-test-review` (advisory, never a gate) is a `local-recipes` task.
 - Estate pin refresh (policy, six verbs, landing a batch): `docs/how-to/refresh-the-estate.md`; cadence gate: `pixi run -e pyforge-steward pyforge steward estate plan --due`.
+- CI pause registry and switches: `docs/how-to/pause-ci.md`; live inventory: `pixi run -e pyforge-steward pyforge steward ci status`.
 
 ## Known pitfalls
 

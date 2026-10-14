@@ -276,6 +276,10 @@ def offline_check(
         wf = str(row.get("workflow") or "")
         job = row.get("job")
         row_id = str(row.get("id") or wf)
+        state = str(row.get("state") or "")
+
+        if state == "retired":
+            continue
 
         wf_path = root / wf
         wf_dir = workflows_dir or (root / ".github" / "workflows")
@@ -334,7 +338,6 @@ def offline_check(
                     f"(expected {pause_prefix}*, {enable_prefix}*, or grandfathered)"
                 )
 
-        state = str(row.get("state") or "")
         if state == "paused" and not row.get("review_by"):
             findings.append(f"registry row {row_id}: paused row missing review_by")
 
