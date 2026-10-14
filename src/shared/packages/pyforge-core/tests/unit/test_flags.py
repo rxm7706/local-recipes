@@ -994,6 +994,7 @@ _SHIPPED_CLOCKS = {
     ),
     "pyforge.steward.glass_export": ("steward", "61-3-", "2026-09-17", "", ""),
     "pyforge.steward.estate_refresh": ("steward", "100-2-", "2026-10-13", "", ""),
+    # Story 99.3 minted; 99.4 / 99.5 reuse (CAP-166).
     "pyforge.steward.ci_pause_control": ("steward", "99-3-", "2026-10-13", "", ""),
 }
 

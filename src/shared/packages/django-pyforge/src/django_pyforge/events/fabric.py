@@ -270,10 +270,7 @@ class EventFabric:
             raise LoopDepthExceededError(depth=depth, event_type=str(event_type))
         traceparent = event.get(EXT_TRACEPARENT)
         if traceparent is not None and not parse_traceparent(traceparent):
-            msg = (
-                f"{EXT_TRACEPARENT} must be a W3C Trace Context header, "
-                f"got {traceparent!r}"
-            )
+            msg = f"{EXT_TRACEPARENT} must be a W3C Trace Context header, got {traceparent!r}"
             raise TraceparentFormatError(msg)
         if traceparent is None:
             # The publisher's own trace (the request, or the consumer that

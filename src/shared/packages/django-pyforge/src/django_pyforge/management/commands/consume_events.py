@@ -181,6 +181,5 @@ class Command(BaseCommand):
                 stop=stop,
             )
         self.stdout.write(
-            f"consume_events {station}: passes={passes} handled={handled} "
-            f"quarantined={moved}",
+            f"consume_events {station}: passes={passes} handled={handled} quarantined={moved}",
         )

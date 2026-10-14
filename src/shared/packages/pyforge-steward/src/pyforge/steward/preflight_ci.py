@@ -632,16 +632,24 @@ def resolve_ci_vars(
                 fetched = fetched.replace(tzinfo=UTC)
             age = moment - fetched
             if age <= SNAPSHOT_MAX_AGE:
+
+                def _snapshot_lookup(name: str, v: dict[str, str] = variables) -> str:
+                    return v.get(name, "")
+
                 return CiVarResolution(
                     _format_snapshot_age(fetched, moment),
-                    lambda name, v=variables: v.get(name, ""),
+                    _snapshot_lookup,
                 )
         except ValueError:
             pass
     if variables is not None and fetched_raw is None:
+
+        def _snapshot_lookup_no_ts(name: str, v: dict[str, str] = variables) -> str:
+            return v.get(name, "")
+
         return CiVarResolution(
             "snapshot (no fetched_at)",
-            lambda name, v=variables: v.get(name, ""),
+            _snapshot_lookup_no_ts,
         )
     return CiVarResolution("declared", lambda name: _declared_ci_var(name, registry))
 

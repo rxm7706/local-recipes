@@ -206,7 +206,6 @@ def evaluate_cutover_root(source: Path | str | None = None) -> str:
     return read_cutover_root(path)
 
 
-
 def evaluate_cli_boolean(key: str, default: bool = False, source: Path | str | None = None) -> bool:
     """The CLI reader's value for *key*: ``pyforge.core.flags.read_boolean`` over the tree itself.
 

@@ -13,6 +13,7 @@ from .fleet import FLEET_FIX_PROPOSALS_FLAG
 from .models import FixProposal
 from .models import FleetRepoScan
 from .models import JobStatus
+
 if TYPE_CHECKING:
     from uuid import UUID
 

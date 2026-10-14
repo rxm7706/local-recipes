@@ -16,8 +16,7 @@ def chrome_home(request: HttpRequest) -> HttpResponse:
         "steward_portal/home.html",
         {
             "environments": [
-                {"name": name, "features": list(features)}
-                for name, features in sorted(environments.items())
+                {"name": name, "features": list(features)} for name, features in sorted(environments.items())
             ],
         },
     )

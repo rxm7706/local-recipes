@@ -69,8 +69,7 @@ def validate_portal_config(config: PortalConfig) -> list[CheckMessage]:
     if config.mount_token != expected:
         errors.append(
             Error(
-                "portal must register at "
-                f"{expected}; got {config.mount_token!r}",
+                f"portal must register at {expected}; got {config.mount_token!r}",
                 hint=hint,
                 id="django_pyforge.E001",
             ),

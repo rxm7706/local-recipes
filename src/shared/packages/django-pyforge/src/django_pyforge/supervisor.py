@@ -368,12 +368,8 @@ def enforce_run_bounds(
             details={"station": station, "queue_depth": depth, "limit": ceiling},
         )
     max_running = int_setting(
-        SETTING_MAX_RUNNING_PER_SUB_LOOP
-        if tool == LOOP_PUBLISH_TOOL
-        else SETTING_MAX_RUNNING_PER_SUB,
-        DEFAULT_MAX_RUNNING_PER_SUB_LOOP
-        if tool == LOOP_PUBLISH_TOOL
-        else DEFAULT_MAX_RUNNING_PER_SUB,
+        SETTING_MAX_RUNNING_PER_SUB_LOOP if tool == LOOP_PUBLISH_TOOL else SETTING_MAX_RUNNING_PER_SUB,
+        DEFAULT_MAX_RUNNING_PER_SUB_LOOP if tool == LOOP_PUBLISH_TOOL else DEFAULT_MAX_RUNNING_PER_SUB,
     )
     live = live_runs_for_subject(subject)
     if len(live) >= max_running:
@@ -723,8 +719,7 @@ def heartbeat_held_run(handle: str, *, payload: dict[str, Any] | None = None) ->
             **existing,
             "publish": publish,
             "tasks": merged_tasks,
-            "harness_run_id": publish.get("harness_run_id")
-            or existing.get("harness_run_id"),
+            "harness_run_id": publish.get("harness_run_id") or existing.get("harness_run_id"),
         }
     live.update(**update_fields)
     _slide_handle_expiry(handle_row)
@@ -1084,10 +1079,7 @@ def revoke_subject(
     """
     subject = subject.strip() if isinstance(subject, str) else ""
     if not subject:
-        msg = (
-            "revoke_subject requires a non-empty subject: pre-0004 rows carry "
-            "subject='' and would all be cancelled"
-        )
+        msg = "revoke_subject requires a non-empty subject: pre-0004 rows carry subject='' and would all be cancelled"
         raise ValueError(msg)
     rows = list(
         RunState.objects.filter(
@@ -1226,9 +1218,7 @@ def prune_run_state(*, now: datetime | None = None) -> dict[str, Any]:
     # live rows alone above `max_rows` are the ceilings' business, and a sweep
     # reporting `truncated` with nothing it may delete would send an operator
     # -- or the self-rescheduling task -- round forever.
-    over_cap_left = remaining > max_rows and (
-        RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES).exists()
-    )
+    over_cap_left = remaining > max_rows and (RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES).exists())
     truncated = len(aged_ids) >= batch or len(handle_ids) >= batch or over_cap_left
     return {
         "aged_out": int(aged_out),

@@ -11,7 +11,4 @@ from django.urls import path
 
 from django_pyforge.discovery import iter_portal_configs
 
-urlpatterns = [
-    path(f"{portal.station_name}/", include(portal.urlconf))
-    for portal in iter_portal_configs()
-]
+urlpatterns = [path(f"{portal.station_name}/", include(portal.urlconf)) for portal in iter_portal_configs()]

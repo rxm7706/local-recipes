@@ -104,9 +104,7 @@ class CircuitBreaker:
         self._success()
         return result
 
-    async def call_or_degrade(
-        self, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> Any:
+    async def call_or_degrade(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         try:
             return await self.acall(func, *args, **kwargs)
         except CircuitOpenError:
