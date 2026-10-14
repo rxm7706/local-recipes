@@ -1,0 +1,137 @@
+# Target-release catalog for CAP-1 pre-flight (Story 14.1 shape).
+# Grounded in the unpacked conda package `bmad-method 6.12.2`
+# (.pixi/envs/pyforge-guild/lib/node_modules/bmad-method, package.json 6.12.2,
+# CHANGELOG "v6.12.2 - 2026-10-11" and "v6.12.1 - 2026-10-04") diffed against the
+# cached 6.12.0 package on 2026-10-14 (steward Story 100.7) -- never from the
+# release page.
+version: "6.12.2"
+baseline_pair_from: "6.12.0"
+
+# Package skill set (src/**/SKILL.md) is identical to 6.12.0's: no rename, add or
+# removal across 6.12.1 and 6.12.2. removals.txt is byte-identical.
+skill_renames: []
+removals: []
+skill_adds: []
+
+# CAP-9 (Story 14.9): the 21 deprecation shims this installed core still ships
+# (installShims: true) — 20 skill-manifest.csv `v6-shims` paths (core + bmm)
+# plus `bmad-generate-project-context`, which ships as `lifecycle: shim` under
+# `src/bmm-skills/plan/bmad-generate-project-context/SKILL.md` rather than
+# under a `v6-shims/` dir. A `--no-shims` apply retires all of these.
+shims_to_retire:
+  - bmad-checkpoint-preview
+  - bmad-create-architecture
+  - bmad-create-prd
+  - bmad-create-story
+  - bmad-dev-auto
+  - bmad-dev-story
+  - bmad-document-project
+  - bmad-domain-research
+  - bmad-editorial-review
+  - bmad-editorial-review-prose
+  - bmad-editorial-review-structure
+  - bmad-edit-prd
+  - bmad-generate-project-context
+  - bmad-market-research
+  - bmad-quick-dev
+  - bmad-review-adversarial-general
+  - bmad-review-edge-case-hunter
+  - bmad-review-verification-gap
+  - bmad-sprint-status
+  - bmad-technical-research
+  - bmad-validate-prd
+
+# Upstream installer rewrites these; repo-local edits are conflict surfaces (trap 1).
+# 35 package files changed 6.12.0 -> 6.12.2. Two installer-owned copies carry
+# in-repo edits and need the three-way re-apply (pass --package-root and
+# --installed-package-root):
+# - .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py (the N.M-key fix)
+# - .claude/skills/bmad-retrospective/scripts/sprint_status.py
+# resolve_config.py is unchanged upstream at 6.12.2, but 6.12.1 makes 23 bmm skills
+# (the v6 shims included) load config through it instead of reading
+# _bmad/bmm/config.yaml, so its repo-custom layers 5/6 now reach every skill.
+upstream_touched_paths:
+  - .claude/skills/bmad-sprint-planning/scripts/sprint_plan.py
+  - .claude/skills/bmad-retrospective/scripts/sprint_status.py
+  - _bmad/scripts/resolve_config.py
+  - _bmad/scripts/memlog.py
+
+# Local markers that prove resolve_config.py carries repo-custom layers 5/6.
+repo_custom_markers:
+  - BMAD_ACTIVE_PROJECT
+  - .active-project
+
+# Legacy customization basenames (without .toml) that halt deprecation shims (trap 2).
+# The 6.11 shims still ship at 6.12 (all 13 bmm + 6 core), so their legacy
+# names stay live; the new walkthrough shim adds two more.
+legacy_custom_names:
+  - bmad-dev-auto
+  - bmad-dev-auto.user
+  - bmad-quick-dev
+  - bmad-quick-dev.user
+  - bmad-checkpoint-preview
+  - bmad-checkpoint-preview.user
+
+# Hard prerequisites at this release (trap 4). None are NEW versus 6.11.0 —
+# recorded so the report keeps naming what a bare PATH must satisfy.
+hard_prerequisites:
+  - name: node
+    min_version: "20.12.0"
+    severity: hard
+    notes: "package.json engines floor (unchanged since 6.11); pixi env ships node 24.x"
+  - name: uv
+    severity: hard
+    notes: "bmad-build / bmad-build-auto still halt if uv is unavailable (6.11 contract)"
+  - name: python
+    min_version: "3.11"
+    severity: hard
+    notes: "rendered skills require Python >= 3.11 via uv (6.11 contract)"
+
+# Forwarder / orchestrator contract changes (trap 9).
+forwarder_contract_changes:
+  - skill: bmad-create-epics-and-stories
+    forwards_to: null
+    notes: >-
+      6.12.1 (#3020): writes `status: draft` and keeps it when final validation
+      fails, listing the open checks; `status: final` only when every check
+      passes. Planning chains that read the epics frontmatter status see draft
+      until validation is clean.
+    suite_min_versions: {}
+  - skill: bmad-party-mode
+    forwards_to: null
+    notes: >-
+      6.12.1 (#3015): create-party's collision check reads resolve_party.py
+      --list-codes, so aliases and custom-only member codes collide too.
+    suite_min_versions: {}
+
+# Config-format migration staging (trap 11).
+config_migration:
+  status: migration-not-cutover
+  notes: >-
+    6.12.1 (#3016) moves the defaults for user-scope keys into config.toml so
+    bmad-build and bmad-build-auto render without config.user.toml ("re-run the
+    installer to pick this up"). The installer still regenerates
+    _bmad/bmm/config.yaml; no TOML cutover. 6.12.2 notes that v7 is available
+    for preview: the v7 line is the cutover to flag loudly, not this release.
+
+# Custom modules (CAP-7, Story 14.7; failure-modes.md traps 13/14); see 6.12.0.yaml
+# for the field contract.
+custom_modules:
+  - name: skf
+    own_installer: [bmad-module-skill-forge, update]
+    config_paths:
+      - _bmad/skf/config.yaml
+    # skf 3.0.0 (pixi pin >=3.0.0 since the 2026-10-14 estate refresh). Its
+    # installer no longer lists claude-code among the ides or .claude/skills among
+    # its directories; .claude/skills/skf-* are left in place.
+    pin: v3.0.0
+    packaged_source: .pixi/envs/pyforge-guild/lib/node_modules/bmad-module-skill-forge/src
+    notes: >-
+      skf 2.1.0 -> 3.0.0 is a major release. The own installer rewrites
+      _bmad/skf/**; the three in-repo edits mason Story 27.1 made to
+      _bmad/skf/shared/scripts (skill-brief.v1.json, skf-provenance-gap-dispatch.py,
+      skf-structural-diff.py) are not re-applied by this module path and must be
+      carried by hand after the apply.
+
+# 6.12.2 also pins CIS and TEA to their last v6 releases (v0.3.2 and v1.27.2;
+# newer releases target v7). This repo pins both at those versions already.
