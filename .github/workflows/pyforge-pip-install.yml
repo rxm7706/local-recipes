@@ -84,9 +84,9 @@ concurrency:
 
 jobs:
   pip-install:
-  # ci-surfaces: pyforge-pip-install.pip-install
-  # render: python scripts/ci_surface_gates.py --render
-  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_PIP_INSTALL != 'true') }}
+    # ci-surfaces: pyforge-pip-install.pip-install
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_PIP_INSTALL != 'true') }}
     name: pip-install
     runs-on: ubuntu-latest
     timeout-minutes: 15

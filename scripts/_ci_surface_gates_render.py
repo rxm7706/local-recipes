@@ -155,6 +155,22 @@ def build_fragment(*, inner: str, workflow_switch: str, job_switch: str | None) 
     return f"${{{{ {expr} }}}}"
 
 
+def _inner_from_job_if(existing_if: Any, job_switch: str | None) -> str:
+    if existing_if is None:
+        return ""
+    parsed = parse_fragment_inner(_normalize_if_text(existing_if))
+    if parsed is not None:
+        inner = parsed
+    else:
+        inner = strip_expression_wrappers(_normalize_if_text(existing_if))
+    if job_switch:
+        lone = f"vars.{job_switch} != 'true'"
+        compact = inner.replace(" ", "").replace('"', "'")
+        if compact == lone.replace(" ", ""):
+            return ""
+    return inner
+
+
 def plan_renders(
     root: Path,
     registry: dict[str, Any],
@@ -194,13 +210,7 @@ def plan_renders(
                 else:
                     job_switch = job_pause_var(path, job_id)
             existing_if = job_def.get("if")
-            inner = ""
-            if existing_if is not None:
-                parsed = parse_fragment_inner(_normalize_if_text(existing_if))
-                if parsed is not None:
-                    inner = parsed
-                else:
-                    inner = strip_expression_wrappers(_normalize_if_text(existing_if))
+            inner = _inner_from_job_if(existing_if, job_switch)
             plans.append(
                 JobRenderPlan(
                     workflow_rel=rel,
@@ -273,7 +283,8 @@ def _find_job_if_range(lines: list[str], job_line_idx: int, indent: str) -> tupl
         if line.startswith(child_indent) and line.strip().startswith("if:"):
             start = i
             i += 1
-            while i < len(lines):
+            folded = lines[start].strip().endswith(">-") or lines[start].strip().endswith("|")
+            while folded and i < len(lines):
                 nxt = lines[i]
                 if not nxt.strip():
                     i += 1
@@ -281,11 +292,9 @@ def _find_job_if_range(lines: list[str], job_line_idx: int, indent: str) -> tupl
                 if nxt.startswith(child_indent + " ") or nxt.startswith(child_indent + "\t"):
                     i += 1
                     continue
-                if nxt.startswith(child_indent) and not nxt.strip().startswith("if:"):
-                    break
-                if re.match(r"^  [\w-]+:\s*$", nxt):
-                    break
-                i += 1
+                break
+            if not folded:
+                i = start + 1
             return start, i
         if line.startswith(child_indent):
             i += 1
@@ -326,20 +335,27 @@ def render_workflow_file(
         job_id = m.group(1)
         plan = job_plans[job_id]
         indent = _job_block_indent(lines, i)
+        child_indent = indent + "  "
         new_if = build_fragment(
             inner=plan.inner,
             workflow_switch=plan.workflow_switch,
             job_switch=plan.job_switch,
         )
         if_range = _find_job_if_range(lines, i, indent)
-        comment_lines = [ln + ("\n" if not ln.endswith("\n") else "") for ln in _render_comment_lines(indent, plan.row_id)]
-        if_line = f"{indent}if: {new_if}\n"
+        comment_lines = [
+            ln + ("\n" if not ln.endswith("\n") else "")
+            for ln in _render_comment_lines(child_indent, plan.row_id)
+        ]
+        if_line = f"{child_indent}if: {new_if}\n"
         if if_range:
             start, end = if_range
             # Drop existing render comments immediately above if:
             drop = start
             while drop > i + 1:
-                prev = lines[drop - 1].strip()
+                prev_line = lines[drop - 1]
+                if not prev_line.startswith(child_indent):
+                    break
+                prev = prev_line.strip()
                 if prev.startswith(f"# {_RENDER_MARKER}") or prev.startswith("# render:"):
                     drop -= 1
                     continue

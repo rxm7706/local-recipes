@@ -10,9 +10,9 @@ on:
 
 jobs:
   oracle:
-  # ci-surfaces: marshal-local-recipes-seed-oracle.oracle
-  # render: python scripts/ci_surface_gates.py --render
-  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_MARSHAL_LOCAL_RECIPES_SEED_ORACLE != 'true') }}
+    # ci-surfaces: marshal-local-recipes-seed-oracle.oracle
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_MARSHAL_LOCAL_RECIPES_SEED_ORACLE != 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

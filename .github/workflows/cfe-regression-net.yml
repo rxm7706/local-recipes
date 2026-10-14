@@ -76,9 +76,9 @@ concurrency:
 
 jobs:
   cfe-regression-net:
-  # ci-surfaces: cfe-regression-net.cfe-regression-net
-  # render: python scripts/ci_surface_gates.py --render
-  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CFE_REGRESSION_NET != 'true') }}
+    # ci-surfaces: cfe-regression-net.cfe-regression-net
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CFE_REGRESSION_NET != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
