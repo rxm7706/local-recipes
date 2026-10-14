@@ -2,8 +2,8 @@
 title: "31.1: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
+status: 'in-progress'
+baseline_revision: '22e5c19c285e722bcf7d58203689d57e9cc4dd55'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -38,7 +38,9 @@ from typing import Any, Callable
 from bokeh.document import Document
 from bokeh.embed import components
 from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, DataTable, Select, TableColumn, TextInput
+from bokeh.models import ColumnDataSource
+from bokeh.models.widgets.inputs import Select, TextInput
+from bokeh.models.widgets.tables import DataTable, TableColumn
 
 from . import cli_bridge
 from .registry import View
@@ -150,10 +152,11 @@ def _grid_websocket_renderer(view: View) -> Callable[[Document], None]:
             maintainer_input.on_change("value", _on_maintainer_change)
             controls.append(maintainer_input)
 
+        sort_options: list[str | tuple[Any, str]] = [("", "(unsorted)")] + [(c, c) for c in view.columns]
         sort_select = Select(
             title="Sort by",
             value="",
-            options=[("", "(unsorted)")] + [(c, c) for c in view.columns],
+            options=sort_options,
         )
 
         def _on_sort_change(attr: str, old: str, new: str) -> None:

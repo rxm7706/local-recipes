@@ -227,3 +227,10 @@ disable_error_code = ["union-attr"]
 [[tool.mypy.overrides]]
 module = "pyforge.atlas.trending_candidates.handoff_main"
 disable_error_code = ["union-attr"]
+
+# Story 31.1: Vizro models declare defaults inside Annotated[..., Field(default=...)],
+# which mypy reads as required call-arg (54 in dashboard/app.py). Explicit defaults would
+# change model_fields_set / legacy Action paths. The pydantic mypy plugin clears 10/54 only.
+[[tool.mypy.overrides]]
+module = "pyforge.atlas.dashboard.app"
+disable_error_code = ["call-arg"]

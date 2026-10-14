@@ -117,7 +117,8 @@ def test_output_statistics_rowcount_facet(captured):
     complete = {e.job.name: e for e in events if e.eventType == RunState.COMPLETE}
     # 3 input rows survive both transforms → 3 output rows on each output dataset.
     out = complete["double_it"].outputs[0]
-    assert out.facets["outputStatistics"].rowCount == 3
+    assert "outputStatistics" not in out.facets
+    assert out.outputFacets["outputStatistics"].rowCount == 3
 
 
 def test_node_metrics_run_facet_rows_latency_cache(captured):
@@ -226,7 +227,7 @@ def test_empty_frame_rows_facet_is_zero():
     hooks.after_pipeline_run({}, {}, None, None)
     complete = next(e for e in events if e.eventType == RunState.COMPLETE)
     assert complete.run.facets["atlasNodeMetrics"].rows == 0
-    assert complete.outputs[0].facets["outputStatistics"].rowCount == 0
+    assert complete.outputs[0].outputFacets["outputStatistics"].rowCount == 0
 
 
 def test_non_dataframe_output_degrades_without_crashing():
