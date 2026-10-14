@@ -145,15 +145,17 @@ rows:
   authority: CAP-18
   class: module
 - package: bmad-suite
-  env: pyforge-guild
+  env: bmad-suite-full
   realize:
     steps: []
   probe:
-    expect: stage-ok
-    stages:
-    - installed
-    - wired
-    member: bmad-suite
+    # A metapackage: pipeline-truth reports its 13 members, not itself, so the probe
+    # reads the metapackage's own conda-meta record in the env that declares it.
+    expect: exit-0
+    command:
+    - sh
+    - -c
+    - ls "$CONDA_PREFIX"/conda-meta/bmad-suite-*.json
   test: pyforge-steward-test
   owner: pyforge-steward
   authority: CAP-21

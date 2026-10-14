@@ -551,6 +551,13 @@ def run_verify(
         enforce_require=False,
         platform=deps.platform,
     )
+    root_realize = RealizeDeps(
+        root=deps.root,
+        runner=deps.runner,
+        flag_on=deps.flag_on,
+        enforce_require=False,
+        platform=deps.platform,
+    )
     register_path = deps.root / "docs/governance/realization-register.yaml"
     register: dict[str, Any] = {}
     if register_path.is_file():
@@ -563,7 +570,14 @@ def run_verify(
         if probe_filter and pkg != probe_filter:
             continue
         row_env = str(row.get("env") or "pyforge-guild")
-        if not (wt / ".pixi" / "envs" / row_env).is_dir():
+        # A kit item (the caveman skill, the codegraph index) is state of the checkout,
+        # which a fresh verify worktree never carries: probe it in the real checkout.
+        is_kit = row.get("class") == "kit"
+        probe_deps = root_realize if is_kit else realize
+        probe_root = deps.root if is_kit else wt
+        # An env is installed once pixi wrote its conda-meta history; `pixi run --as-is`
+        # can leave an empty env directory behind without installing anything.
+        if not (probe_root / ".pixi" / "envs" / row_env / "conda-meta" / "history").is_file():
             # A probe never installs its env (Story 100.7), so a row whose env this
             # verify did not install cannot read live or stale here: say so, never red.
             rows.append(
@@ -578,7 +592,7 @@ def run_verify(
             )
             state = "skipped"
         else:
-            state = run_probe(realize, row, package=pkg)
+            state = run_probe(probe_deps, row, package=pkg)
             if state in ("stale", "missing"):
                 any_red = True
             rows.append(

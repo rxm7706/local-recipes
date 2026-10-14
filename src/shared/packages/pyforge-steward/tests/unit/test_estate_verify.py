@@ -98,7 +98,9 @@ class RecordingRunner:
         if argv[:3] == ["pixi", "lock", "--check"]:
             return FakeProc(argv, 0, "", "")
         if argv[:3] == ["pixi", "install", "--frozen"]:
-            (cwd / ".pixi" / "envs" / argv[4]).mkdir(parents=True, exist_ok=True)
+            meta = cwd / ".pixi" / "envs" / argv[4] / "conda-meta"
+            meta.mkdir(parents=True, exist_ok=True)
+            (meta / "history").write_text("", encoding="utf-8")
             return FakeProc(argv, 0, "", "")
         if argv[:3] == ["pixi", "run", "--frozen"]:
             return FakeProc(argv, 0, "", "")
@@ -591,3 +593,29 @@ def test_register_test_runs_in_the_env_that_defines_its_task(tmp_path: Path, mon
     result = _verify(root, RecordingRunner(root=root), probe_filter="bmad-method")
     test_row = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "register-test")
     assert test_row["argv"][:5] == ["pixi", "run", "--frozen", "-e", "pyforge-steward"]
+
+
+def test_kit_probe_runs_against_the_real_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The caveman skill and the codegraph index belong to the checkout, not the fresh worktree."""
+    root = _fixture_root(tmp_path)
+    reg = root / "docs/governance/realization-register.yaml"
+    reg.write_text(
+        "version: 1\nrows:\n"
+        "  - package: codegraph\n    env: pyforge-guild\n    class: kit\n"
+        "    probe:\n      expect: kit-ok\n      item: codegraph-index\n    test: []\n",
+        encoding="utf-8",
+    )
+    meta = root / ".pixi/envs/pyforge-guild/conda-meta"
+    meta.mkdir(parents=True)
+    (meta / "history").write_text("", encoding="utf-8")
+    import pyforge.steward.estate_verify as ev
+
+    seen: list[Path] = []
+
+    def _probe(deps, row, *, package):
+        seen.append(deps.root)
+        return "live"
+
+    monkeypatch.setattr(ev, "run_probe", _probe)
+    _verify(root, RecordingRunner(root=root))
+    assert seen == [root]
