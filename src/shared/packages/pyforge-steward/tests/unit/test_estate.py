@@ -656,3 +656,30 @@ def test_parse_pixi_moves_dashed_names() -> None:
     assert _artifact_version(side) == "14.3.0"
     assert _artifact_version({"conda": "https://x/linux-64/clang-18-18.1.8-default_h1.conda"}) == "18.1.8"
     assert _artifact_version({"conda": "https://x/noarch/pip-24.2-pyh8b19718_1.tar.bz2"}) == "24.2"
+
+
+def test_reconcile_duty_wires_real_memlog_add_and_stamp_seams(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The CLI duty must not run reconcile on the dataclass's no-op seams (Story 100.7)."""
+    import pyforge.steward.estate_reconcile as er
+
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    seen: dict[str, object] = {}
+
+    def _capture(rdeps, *, journal_path=None):
+        seen["rdeps"] = rdeps
+        return None
+
+    monkeypatch.setattr(er, "run_reconcile", _capture)
+    ns = argparse.Namespace(duty="estate", estate_verb="reconcile", _estate_deps=_deps(root, runner))
+    EstateDuty().run(ns)
+    rdeps = seen["rdeps"]
+    memlog = root / "_bmad-output/projects/p/planning-artifacts/specs/spec-x/.memlog.md"
+    rdeps.memlog_append(memlog, "Surface reconcile")
+    rdeps.git_add(root, ["docs/map.yaml"])
+    rdeps.stamp_spec(root, "p/spec-x")
+    memlog_call, add_call, stamp_call = runner.calls[-3:]
+    assert memlog_call[1:5] == ["_bmad/scripts/memlog.py", "append", "--path", str(memlog)]
+    assert memlog_call[-2:] == ["--text", "Surface reconcile"]
+    assert add_call == ["git", "add", "--", "docs/map.yaml"]
+    assert stamp_call[1:] == ["scripts/spec_surface_check.py", "--write-baseline", "--spec", "p/spec-x"]

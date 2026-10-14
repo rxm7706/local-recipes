@@ -753,10 +753,11 @@ class EstateDuty:
         if verb == "refresh":
             return run_refresh(deps, transitive=bool(getattr(ns, "transitive", False)))
         if verb == "reconcile":
-            from .estate_reconcile import ReconcileDeps, run_reconcile
+            from .estate_reconcile import ReconcileDeps, production_reconcile_seams, run_reconcile
 
             rdeps = getattr(ns, "_reconcile_deps", None)
             if rdeps is None:
+                seams = production_reconcile_seams(deps.runner)
                 rdeps = ReconcileDeps(
                     root=deps.root,
                     runner=deps.runner,
@@ -768,6 +769,9 @@ class EstateDuty:
                     bmad_latest=deps.bmad_latest,
                     now=deps.now,
                     enforce_require=deps.enforce_require,
+                    memlog_append=seams.memlog_append,
+                    git_add=seams.git_add,
+                    stamp_spec=seams.stamp_spec,
                 )
             journal_path = getattr(ns, "journal_path", None)
             return run_reconcile(rdeps, journal_path=journal_path)

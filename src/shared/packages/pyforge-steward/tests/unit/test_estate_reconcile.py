@@ -285,3 +285,27 @@ def test_reconcile_respects_flag_state(tmp_path: Path, flag_provider: dict[str, 
         assert not result.ok
         assert result.details["exit_code"] == EXIT_ESTATE_REFUSAL
         assert ESTATE_FLAG_KEY in result.summary
+
+
+def test_production_seams_run_memlog_from_the_repo_root(tmp_path: Path) -> None:
+    from pyforge.steward.estate_reconcile import production_reconcile_seams
+
+    cwds: list[Path] = []
+
+    class _Proc:
+        returncode = 0
+
+    def _runner(argv, cwd):
+        cwds.append(cwd)
+        return _Proc()
+
+    seams = production_reconcile_seams(_runner)
+    memlog = tmp_path / "_bmad-output/projects/p/planning-artifacts/specs/spec-x/.memlog.md"
+    assert seams.memlog_append(memlog, "t") == 0
+    assert cwds == [tmp_path]
+
+
+def test_docs_map_is_a_watched_path() -> None:
+    from pyforge.steward.estate_reconcile import WATCH_PATHS
+
+    assert "docs/map.yaml" in WATCH_PATHS

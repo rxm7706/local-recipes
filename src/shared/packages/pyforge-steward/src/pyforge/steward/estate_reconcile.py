@@ -32,6 +32,8 @@ WATCH_PATHS: tuple[str, ...] = (
     "docs/dreams/pyforge-unifying-strategy.md",
     "docs/reference/environments.md",
     "docs/how-to/pixi-tasks.md",
+    # the docs generators restamp the map entry of each page they write
+    "docs/map.yaml",
     "recipes/bmad-suite/recipe.yaml",
 )
 
@@ -153,6 +155,48 @@ def specs_for_moved_paths(baseline: dict[str, Any], moved: set[str]) -> dict[str
         if overlap:
             by_spec[spec_name] = overlap
     return by_spec
+
+
+@dataclass(frozen=True)
+class ReconcileSeams:
+    memlog_append: Callable[[Path, str], int]
+    git_add: Callable[[Path, list[str]], int]
+    stamp_spec: Callable[[Path, str], int]
+
+
+def production_reconcile_seams(runner: Callable[[list[str], Path], Any]) -> ReconcileSeams:
+    """The memlog, git-add and stamp seams the CLI duty runs; the dataclass defaults are no-ops."""
+
+    def memlog_append(memlog_path: Path, text: str) -> int:
+        argv = [
+            sys.executable,
+            "_bmad/scripts/memlog.py",
+            "append",
+            "--path",
+            str(memlog_path),
+            "--type",
+            "event",
+            "--text",
+            text,
+        ]
+        return int(runner(argv, _repo_of(memlog_path)).returncode)
+
+    def git_add(root: Path, paths: list[str]) -> int:
+        return int(runner(["git", "add", "--", *paths], root).returncode)
+
+    def stamp_spec(root: Path, spec_name: str) -> int:
+        argv = [sys.executable, "scripts/spec_surface_check.py", "--write-baseline", "--spec", spec_name]
+        return int(runner(argv, root).returncode)
+
+    return ReconcileSeams(memlog_append=memlog_append, git_add=git_add, stamp_spec=stamp_spec)
+
+
+def _repo_of(memlog_path: Path) -> Path:
+    """The repo root above ``_bmad-output/projects/<p>/planning-artifacts/specs/<s>/.memlog.md``."""
+    for parent in memlog_path.parents:
+        if parent.name == "_bmad-output":
+            return parent.parent
+    return memlog_path.parent
 
 
 @dataclass
