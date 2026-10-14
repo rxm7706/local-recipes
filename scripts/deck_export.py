@@ -14,10 +14,11 @@ Story 21.5 (spec-deck-family-lockstep CAP-3) also stamps the exec summary and
 the three marp sources with a small marked-fact band from ``facts.yaml``, then
 dates the marp sources to the rebuild day so the Standard export set is current.
 
-Usage (run inside the local-recipes pixi env, which carries marp + Chrome)::
+Usage (run inside the pyforge-guild pixi env, the session default; it carries
+``marp`` since steward Story 63.8, and Chrome is read from the host)::
 
-    pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...]
-    pixi run -e local-recipes deck-export <slug> --format all|pptx|summary|html
+    pixi run -e pyforge-guild deck-export <slug> [html|deck-pptx|infographic-pptx ...]
+    pixi run -e pyforge-guild deck-export <slug> --format all|pptx|summary|html
 
 With no targets and no ``--format`` it regenerates all three marp exports after
 stamping. ``--pptx`` needs Chrome at ``/usr/bin/google-chrome`` (auto-wired
@@ -105,7 +106,7 @@ def run_marp(extra: list[str]) -> None:
     if not marp_bin:
         sys.exit(
             "error: 'marp' not on PATH — run via: "
-            "pixi run -e local-recipes deck-export ..."
+            "pixi run -e pyforge-guild deck-export ..."
         )
     cmd = [marp_bin, "--allow-local-files", *extra]
     print("  $", " ".join(cmd))

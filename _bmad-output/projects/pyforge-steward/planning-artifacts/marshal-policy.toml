@@ -702,6 +702,17 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "scripts/platform-ci-local.sh",
   "docs/how-to/recipe-testing-and-builds.md",
+  # Widened 2026-10-14 for Story 63.8 (marp in the Guild env, a fix under CAP-5): the deck-export script and its
+  # test (herald-governed), the deck how-to and the two regenerated pixi pages (doctor-governed) and the measured env
+  # matrix in the unifying-strategy Dream. pixi.toml, pixi.lock, environment.yaml, the steward meta test and every
+  # Spec memlog were already in.
+  "scripts/deck_export.py",
+  "tests/scripts/test_deck_export.py",
+  "docs/how-to/presentation-deck.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/reference/environments.md",
+  "docs/map.yaml",
+  "docs/dreams/pyforge-unifying-strategy.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "67" = [  # the estate consolidates — laptop SBOM, gap list, spine no-archive (spec-python-foundry-cutover fnd:CAP-12..15), added 2026-09-25

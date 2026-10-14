@@ -1739,6 +1739,25 @@ Drift — orphaned between stations.
   **Constraints:** a fix under CAP-152 (Stories 63.7, 89.1 and 96.1), with no CAP and no flag;
   `PLATFORM_CI_LOCAL_LOCK_WAIT`, the exit codes and the report format stay; never kill processes host-wide. Owner
   `spec-pyforge-steward`. → Epic 101 / Story 101.1, specced 2026-10-14.
+- **2026-10-14 (marp in the Guild env) — Found: `deck-export` cannot run in the environment every agent runs,
+  because the `marp` binary it calls lives only in `local-recipes`.** Story 63.1 moved the Guild tasks into
+  `[feature.guild-tasks.tasks]` so they run under `-e pyforge-guild`, the session default, and Story 63.6 gave
+  `deck-export`, `deck-facts` and `deck-trio` their `pyforge-herald` import there. `deck-export` — which herald's
+  `deck pull`, `deck sync-all` and the deck pipeline shell as `pixi run -e pyforge-guild deck-export <slug>` — then
+  runs `marp`, and `marp-cli` was declared only in `[feature.local-recipes.dependencies]`. At `846d8383f5` the
+  Guild env has no `bin/marp` (`local-recipes` has one), so `pixi run -e pyforge-guild deck-export <slug>` exits 1
+  with `'marp' not on PATH — run via: pixi run -e local-recipes deck-export ...`, the one form the session hook
+  refuses as a Guild-task / local-recipes mix-up. The deck-family currency sweep of 2026-10-14 ran every export
+  with `PATH="$PWD/.pixi/envs/local-recipes/bin:$PATH"` prepended by hand, and the `deck-export`, `deck-trio` and
+  `deck-facts` task descriptions, `scripts/deck_export.py`'s docstring and hint, and the deck how-to still said
+  `-e local-recipes`. **What it looks like when fixed:** `marp-cli` is pinned in
+  `[feature.pyforge-guild.dependencies]` at the `local-recipes` floor; `pixi.lock` carries it in every env that
+  composes the Guild feature; `marp --version` and `deck-export <slug>` exit 0 from `-e pyforge-guild` with no
+  `PATH` prefix; every usage line for a Guild task names `-e pyforge-guild`; and a steward meta test pins the
+  dependency and the usage lines so the gap cannot reopen. **Constraints:** a fix under CAP-5 (Story 63.1), no
+  CAP and no flag; the `local-recipes` floor and its nodejs-26 note stay (conda-forge's `marp-cli` builds are
+  nodejs 22/24, which the Guild's nodejs 24 pin already fits); `environment.yaml` regenerates in the same change.
+  Owner `spec-pyforge-steward`. → Epic 63 / Story 63.8, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
