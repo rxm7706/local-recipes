@@ -80,9 +80,6 @@ SEARCH = (
     (ROOT / "docs" / "dashboard", "check_*.py"),
 )
 
-# Story 99.1: the checker is named ci_surface_gates.py (not *_check.py) by contract.
-_EXTRA_SCRIPT_DETECTORS = (ROOT / "scripts" / "ci_surface_gates.py",)
-
 SCOPES = ("repo", "runtime")
 
 # Sentinel for `_declared_scope`: a file matches the `*_check.py`/`check_*.py`
@@ -146,7 +143,10 @@ def discover() -> tuple[list[dict], list[str]]:
     paths_to_scan: list[pathlib.Path] = []
     for directory, pattern in SEARCH:
         paths_to_scan.extend(sorted(directory.glob(pattern)))
-    paths_to_scan.extend(p for p in _EXTRA_SCRIPT_DETECTORS if p.is_file())
+    # Story 99.1: ci_surface_gates.py is the checker but not *_check.py named.
+    extra_ci_surface = ROOT / "scripts" / "ci_surface_gates.py"
+    if extra_ci_surface.is_file():
+        paths_to_scan.append(extra_ci_surface)
 
     seen: set[pathlib.Path] = set()
     for path in paths_to_scan:

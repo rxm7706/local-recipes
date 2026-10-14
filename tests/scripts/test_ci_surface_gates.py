@@ -7,7 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
+
+pytest.importorskip("jsonschema")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DETECTOR_PATH = REPO_ROOT / "scripts" / "ci_surface_gates.py"
