@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["pyyaml"]
 # ///
 """SKF Description Guard — defend SKILL.md frontmatter description against
@@ -23,7 +23,7 @@ Subcommands:
       where schema_hash covers the full frontmatter block (handy for
       tamper detection if the caller wants belt-and-braces verification).
 
-  verify-restore <skill-md> --captured-description <STR>
+  verify-restore <skill-md> (--captured-description <STR> | --captured-file <PATH>)
       Re-read the file, compare current description against the captured
       value using token-stream equality (split on whitespace, compare
       element-by-element). If diverged, atomically rewrite the frontmatter
@@ -32,6 +32,21 @@ Subcommands:
          "current_description": "..."}
       If not diverged (including whitespace-only differences), emit
         {"diverged": false, "restored": false, "diff_kind": "none"|"whitespace-only"}
+      --captured-file names a JSON file whose `description` string is the
+      captured value: `capture`'s output saved to a file, or a metadata.json,
+      so the value never passes through a shell string. A file that cannot
+      be read, is not a JSON object or has no string `description` exits 1.
+      An empty or whitespace-only captured value is refused with exit 1
+      before the skill file is read: there is nothing to restore from, and
+      writing it back would blank the very field this guard protects.
+
+  sanitize <skill-md>
+      Replace every `<` with `{` and every `>` with `}` in the on-disk
+      `description` (create-skill's compile-time substitution, applied
+      again) and rewrite the frontmatter only when something changed. Emits
+        {"substitutions": N, "sanitized": true|false, "description": "..."}
+      where `description` is the value now on disk. No shell quoting of the
+      description is involved, so backticks and `$` in it are safe.
 
 Token-stream comparison is the documented sweet spot — catches replaced
 words, truncation, and reintroduced angle-brackets while ignoring cosmetic
@@ -44,11 +59,16 @@ is auto-resolved:
   uv run skf-description-guard.py capture <skill-md>
   uv run skf-description-guard.py verify-restore <skill-md> \\
       --captured-description "the snapshot string"
+  uv run skf-description-guard.py capture <skill-md> > guard.json
+  uv run skf-description-guard.py verify-restore <skill-md> \\
+      --captured-file guard.json
+  uv run skf-description-guard.py sanitize <skill-md>
 
 Exit codes:
   0  — operation succeeded (including no-divergence verify)
-  1  — user error (bad args, file missing, frontmatter unparseable)
-  2  — operation failure (restore write failed)
+  1  — user error (bad args, empty captured description, file missing,
+       frontmatter unparseable)
+  2  — operation failure (restore or sanitize write failed)
 """
 
 from __future__ import annotations
@@ -57,6 +77,7 @@ import argparse
 import hashlib
 import json
 import os
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -168,11 +189,16 @@ def restore_description(skill_md: Path, captured: str) -> None:
     block scalars and nested `description:` keys in sibling mappings.
 
     Key order is preserved (PyYAML's `safe_dump` honours dict insertion order;
-    this module's `requires-python = ">=3.10"` guarantees ordered dicts).
+    this module's `requires-python = ">=3.11"` guarantees ordered dicts).
     Quoting style of *other* fields may change to whatever `safe_dump`
     chooses for each scalar — downstream readers parse YAML, so any valid
     YAML emission is acceptable.
     """
+    if not captured.strip():
+        # Defence in depth for library callers: the CLI refuses this earlier,
+        # but no code path may ever write an empty description.
+        raise ValueError("cannot restore: captured description is empty or whitespace-only")
+
     text = skill_md.read_text(encoding="utf-8")
     leading, fm_yaml, body = _split_frontmatter(text)
     if not fm_yaml:
@@ -206,7 +232,9 @@ def restore_description(skill_md: Path, captured: str) -> None:
         prefix=skill_md.name + ".", suffix=".skf-guard.tmp", dir=skill_md.parent
     )
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+        # newline="" writes "\n" untranslated: text mode would turn every
+        # line ending into "\r\n" on Windows.
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as tmp:
             tmp.write(new_text)
             tmp.flush()
             os.fsync(tmp.fileno())
@@ -237,7 +265,44 @@ def _cmd_capture(args: argparse.Namespace) -> int:
     return 0
 
 
+def read_captured_file(path: Path) -> str:
+    """The `description` string of a JSON file: capture's output, or a metadata.json.
+
+    Raises ValueError when the file cannot be read, holds no JSON object, or
+    has no string `description`.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"cannot read {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not JSON: {exc}") from exc
+    if not isinstance(data, dict) or not isinstance(data.get("description"), str):
+        raise ValueError(f"{path} has no string `description`")
+    return data["description"]
+
+
 def _cmd_verify_restore(args: argparse.Namespace) -> int:
+    if args.captured_file is not None:
+        try:
+            captured = read_captured_file(Path(args.captured_file))
+        except ValueError as exc:
+            _fail(str(exc))
+        source = f"the description in {args.captured_file}"
+    else:
+        captured = args.captured_description
+        source = "--captured-description"
+    if not captured.strip():
+        # Restoring an empty snapshot would blank the field the guard exists
+        # to protect. The snapshot was lost from context, or the description
+        # was already empty before the tool ran; either way there is nothing
+        # to restore, so refuse before touching the file.
+        _fail(
+            f"{source} is empty or whitespace-only; refusing to "
+            "overwrite the on-disk description with an empty value (the capture "
+            "was lost, or the field was already empty before the tool ran)"
+        )
+
     skill_md = Path(args.skill_md)
     if not skill_md.is_file():
         _fail(f"file not found: {skill_md}")
@@ -246,7 +311,6 @@ def _cmd_verify_restore(args: argparse.Namespace) -> int:
     except ValueError as exc:
         _fail(str(exc))
 
-    captured = args.captured_description
     diff_kind = classify_divergence(captured, current)
     diverged = is_diverged(diff_kind)
 
@@ -266,6 +330,39 @@ def _cmd_verify_restore(args: argparse.Namespace) -> int:
             sys.stdout.write("\n")
             return 2
 
+    json.dump(result, sys.stdout)
+    sys.stdout.write("\n")
+    return 0
+
+
+def sanitize_angle_brackets(description: str) -> tuple[str, int]:
+    """Replace every `<` with `{` and every `>` with `}`; return (value, substitutions)."""
+    count = description.count("<") + description.count(">")
+    return description.replace("<", "{").replace(">", "}"), count
+
+
+def _cmd_sanitize(args: argparse.Namespace) -> int:
+    skill_md = Path(args.skill_md)
+    try:
+        st = os.stat(skill_md)  # not Path.is_file(): Python 3.14 hides EACCES there
+    except OSError as exc:
+        _fail(f"cannot read {skill_md}: {exc.strerror or exc}")
+    if not stat.S_ISREG(st.st_mode):
+        _fail(f"not a file: {skill_md}")
+    try:
+        current, _ = read_description(skill_md)
+    except (OSError, ValueError) as exc:
+        _fail(str(exc))
+    sanitized, count = sanitize_angle_brackets(current)
+    result = {"substitutions": count, "sanitized": False, "description": current}
+    if count:
+        try:
+            restore_description(skill_md, sanitized)
+        except (OSError, ValueError) as exc:
+            json.dump({**result, "write_error": str(exc)}, sys.stdout)
+            sys.stdout.write("\n")
+            return 2
+        result.update(sanitized=True, description=sanitized)
     json.dump(result, sys.stdout)
     sys.stdout.write("\n")
     return 0
@@ -292,12 +389,23 @@ def _build_parser() -> argparse.ArgumentParser:
         help="verify on-disk description against captured snapshot; restore if diverged",
     )
     p_ver.add_argument("skill_md", help="path to SKILL.md")
-    p_ver.add_argument(
+    captured = p_ver.add_mutually_exclusive_group(required=True)
+    captured.add_argument(
         "--captured-description",
-        required=True,
         help="the description string captured before the tool call",
     )
+    captured.add_argument(
+        "--captured-file",
+        help="a JSON file whose `description` is the captured value (capture's output saved to a file)",
+    )
     p_ver.set_defaults(func=_cmd_verify_restore)
+
+    p_san = sub.add_parser(
+        "sanitize",
+        help="replace every < with { and every > with } in the on-disk description",
+    )
+    p_san.add_argument("skill_md", help="path to SKILL.md")
+    p_san.set_defaults(func=_cmd_sanitize)
 
     return parser
 

@@ -2,7 +2,7 @@
 title: '100.7: The first refresh lands through the path'
 type: 'chore'
 created: '2026-10-13'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -117,5 +117,95 @@ Type / Effort / Deps: chore / S / S-100.6.
 
 ## Spec Change Log
 
+- 2026-10-14: unblocked (operator ruling: every held package excluded; the refresh converges past a
+  lowered floor). Hand-driven landing. Each defect the run found was fixed on the branch:
+  - The pixi 0.8x upgrade JSON shape.
+  - Realize steps and probes run in each row's env.
+  - Reconcile's no-op seams, and its checks now run in the Guild env.
+  - Verify's lanes, env choice, kit rows, installed marker, Guild bound and journal merge.
+  - Probes for six register rows and the playwright row.
+  - The liquibase floor test and ruff 0.17.0's import order.
+  Open follow-ups: DW-steward-100-7-1 and DW-atlas-steward-100-7-1.
 - 2026-10-13: minted with CAP-167 / FR-40 and Epic 100. `type: chore`. Widened the same day: `realize --plan` in
   the run, the operator's `realize --yes` and `--transitive` on the branch, the per-platform confirmation.
+
+## Unblock (2026-10-14, hand-driven after MRS-DISP-045)
+
+Operator ruling 2026-10-14: exclude every held package from the upgrade. The blocked run's
+two conflicts were lowered floors on unheld packages, so `estate refresh` also converges: a floor
+the upgrade lowers resets `pixi.toml`/`pixi.lock` to base, excludes that package and reruns.
+
+- `upgrade_excludes` (`scripts/pin_policy_lib.py`): every hold kind becomes `--exclude`. The
+  `openai` and `cron-descriptor` never-move workarounds are dropped.
+- `estate refresh`: converged in two rounds, excluding `cron-descriptor` and `openai`. 108
+  packages moved, no policy loss restored, `pixi lock` solved on all three platforms, and
+  fan-out came back clean. Journal: `.steward/estate-refresh/2026-10-14.json`. The 2026-10-13
+  stub journal is removed.
+- `_parse_pixi_moves` reads pixi 0.8x `upgrade --json` (`environment` shape); the old parser
+  journaled zero moves, so no realize row was ever due.
+- `estate realize`: register steps and probes now run inside each row's env (they ran bare
+  and crashed on `osv-scanner` and `pre-commit`). The spec-kit probe runs `specify --version`.
+  Every non-gated row reads `live`. Operator gates were skipped: `bmad-method` and
+  `bmad-module-skill-forge` read `stale`, `caveman-installer` reads `live`.
+- `estate reconcile`: derived docs, the library catalog and the bmad-suite pins were regenerated.
+- `pin_policy_check.py --diff origin/main` exits 0.
+
+The two stale gated rows were realized afterwards: the operator ran `estate realize --yes`, and
+the BMAD rows were then applied through `steward upgrade bmad-core` (see the Auto Run Result of
+2026-10-14). `estate refresh --transitive` was not run.
+
+## Auto Run Result (2026-10-14)
+
+Journal: `.steward/estate-refresh/2026-10-14.json`. It carries the `moves`, `converge`,
+`losses_restored`, `fan_out`, `realize_due`, `bmad`, `realize`, `reconcile` and `verify` blocks,
+with `platform: linux-64` (AC1).
+
+- **Moves:** 308 `(package, env)` moves. The upgrade converged in 2 rounds, excluding
+  `cron-descriptor` and `openai`. Losses restored: 0, and `pin_policy_check.py --diff origin/main`
+  exits 0 (AC2).
+- **BMAD:** core went from 6.12.0 to 6.12.2 and skf from 2.2.0 to 3.0.0. Both were applied by
+  `pyforge steward upgrade bmad-core --target 6.12.2 --apply` with the curated catalog
+  `bmad_core_releases/6.12.2.yaml`. Local edits to installer-owned files were re-applied three
+  ways, so Mason 27.1's skf edits survive. The operator ran `estate realize --yes` first. That
+  raw update dropped those edits, so the tree was restored and the catalog apply replaced it.
+  `--transitive` was not run.
+- **Realize:** every register row reads `live`. `pre-commit` reads `skipped-worktree`
+  (`primary_checkout_only`): hooks are shared through the common git dir.
+- **Reconcile:** all eight gating checks and both warn checks exit 0 (AC3). `environment.yaml`
+  matches the exporter's output.
+- **Verify:** run at `ea1ecaa8e9`. linux-64 is `confirmed`; osx-arm64 and win-64 are
+  `lock-solved`. 13 default-tier envs installed. The Guild env measures 1871 MB against a
+  2048 MB bound.
+  - Lanes: 29 of 34 `ok`, 3 `manual` (atlas browser, herald browser, scribe Postgres).
+  - Probes: 32 of 34 `live`. `bmad-suite-full` and `platform-dev` were skipped because those
+    envs are not installed in the verify worktree.
+  - Register tests: 9 of 11 `ok`.
+  - The two red lanes and the two red register tests are:
+    - `pyforge-steward-test`: the trigger-map meta-test read two literal paths in this story's
+      new tests as files the suite opens. Fixed after the run; the full suite passes.
+    - `sbom-laptop-gate`: Atlas has 72 mypy errors in `pyforge-foundry-full`. Main's own lock
+      shows the same 72. Recorded as `DW-atlas-steward-100-7-1`, owner atlas. This is the one
+      accepted AC4 gap.
+- **Fixes the run found:** see the Spec Change Log entry of 2026-10-14 and the PR body. They
+  touch refresh, realize, reconcile and verify, plus the register probes. They also fix three
+  reds the refresh caused: the platform liquibase floor test, ruff 0.17.0's import order, and
+  doctor's optional Counter type.
+
+## Auto Run Result (2026-10-13, superseded by the unblock above)
+
+Status: blocked  
+Blocking condition: `pin_policy_restore` refuses after `estate refresh` — `pixi lock` cannot solve once policy losses are rewritten (cron-descriptor floor restore vs `django-celery-beat`; earlier openai 3.x vs litellm 1.105). Auto-checkpoint pixi state on the branch was reset to `origin/main` at commit `34a765839f`.
+
+**Agent half (done on `dispatch/pyforge-steward/100.7`):**
+
+- Fixed `scripts/pin_policy_check.py` / `pin_policy_restore.py` to insert `scripts/` on `sys.path` so `estate plan|refresh` can render and diff policy (`80bca4916b`).
+- Hardened restore: lowered-floor uses base declaration; channel-table cap loss uses base table; corrected `cap: "<42"` / `"<1.31"` YAML in `docs/governance/pin-policy.yaml`.
+- Added `never-move` holds for `openai` (`pyforge-guild`) and `cron-descriptor` (`python-agent-platform`) in pin-policy for solve conflicts found during refresh probes.
+- Partial `estate reconcile` output and memlog/scoped stamps live on the branch from checkpoint `9714b363f4` (derived docs + `environment.yaml`); journal stub at `.steward/estate-refresh/2026-10-13.json` is not a complete AC1 run.
+- `python scripts/spec_surface_reconcile.py` — OK after memlog entries on `spec-pyforge-steward`, `spec-pyforge-doctor`, `spec-pyforge-marshal`, `spec-pyforge-unifying-strategy`.
+
+**Operator on the branch (required before AC1–AC5):**
+
+1. From a clean tree at `origin/main` pixi (`34a765839f`), run `pixi run -e pyforge-steward pyforge steward estate refresh` (with updated pin-policy), then `realize --yes` for operator-gate rows, `estate reconcile`, `estate verify`.
+2. Confirm `pin_policy_check.py --diff origin/main` exit 0 and land one PR with `maintenance`, lock-solved ×3, and marshal merge subject per Q14.
+3. Scoped `--write-baseline --spec …` for any new governed paths after the real batch (never a bare global stamp).

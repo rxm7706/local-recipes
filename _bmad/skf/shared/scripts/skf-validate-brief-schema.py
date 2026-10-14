@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["pyyaml", "jsonschema>=4.0"]
 # ///
 """SKF Validate Brief Schema — schema check for a skill-brief.yaml on disk.
@@ -111,6 +111,9 @@ def _translate_jsonschema_error(err) -> dict:
 
     if validator == "required":
         missing = err.message.split("'")[1] if "'" in err.message else "(unknown)"
+        if err.absolute_path:
+            # A nested object's field (`scope.ui_variants[0].name`), not a top-level one.
+            missing = f"{field}.{missing}"
         return {
             "field": missing,
             "message": (

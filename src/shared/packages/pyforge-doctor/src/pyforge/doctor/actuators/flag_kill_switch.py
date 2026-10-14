@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from prometheus_client import Counter
 
 
 @dataclass(frozen=True)
@@ -34,6 +38,7 @@ def disable_flag(path: Path, flag: str) -> KillSwitchResult:
     )
 
 
+_KILL_SWITCH_TOTAL: Counter | None
 try:
     from prometheus_client import Counter
 

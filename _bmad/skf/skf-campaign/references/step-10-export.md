@@ -2,7 +2,9 @@
 nextStepFile: 'step-11-maintenance.md'
 stateSchemaFile: 'assets/campaign-state-schema.json'
 stateFile: '{campaignWorkspacePath}/_campaign-state.yaml'
-backupFile: '{campaignWorkspacePath}/_campaign-state.yaml.bak'
+decisionLogFile: '{campaignWorkspacePath}/_campaign-decision-log.md'
+gateScript: 'scripts/campaign-quality-gate.py'
+stateScript: 'scripts/campaign-state.py'
 validateScript: 'scripts/campaign-validate-state.py'
 ---
 
@@ -12,94 +14,104 @@ validateScript: 'scripts/campaign-validate-state.py'
 
 ## STEP GOAL:
 
-Present all completed skills for operator review and gate the export behind explicit confirmation. This is the only campaign step that requires manual approval before proceeding — no files are written until the operator confirms.
+Classify every completed skill against the quality gate, present the verdicts for operator review, and gate the export of the skills that clear it behind explicit confirmation. This is the only campaign stage whose gate holds back a file write: nothing is exported until the operator confirms.
 
 ## RULES
 
-- This step uses the **read-backup-modify-write** pattern.
-- Validate state on load via `uv run {validateScript} --state-file {stateFile}`; HALT (exit 3) on non-zero.
-- Update `campaign.last_updated` to current ISO-8601 with timezone on every write.
-- Update `campaign.current_stage` to `9`.
-- If `{headless_mode}` is true, auto-proceed past the write-gate with `[E]` and log: "headless: auto-proceed past export write-gate".
+- Write `campaign.current_stage` = 9 only in this stage's final state write (§6), after the export gate: step-resume resumes at `current_stage + 1`, so an early write skips unfinished work, and a campaign cancelled at the gate shows the gate again when it resumes.
+- Write state and decision-log entries only through `{stateScript}`, and on a non-zero exit HALT with the same code (State Contract in `references/campaign-contracts.md`). A log entry is `uv run {stateScript} log --log-file {decisionLogFile} --type <decision|auto|event> --text '<entry>'`.
+- If `{headless_mode}` is true, auto-proceed past the write-gate with `[E]` and log "headless: auto-proceed past export write-gate" (type `auto`); emit this stage's progress events, and at any HARD HALT the error envelope, per `references/campaign-contracts.md`.
 
 ## TASKS
 
-### §1 — Read + Validate State
+### §1: Read + Validate State
 
 Load `{stateFile}`. Run `uv run {validateScript} --state-file {stateFile}`; on non-zero, HALT (exit 3) with the script's `errors[]`.
 
-### §2 — Read Directive
+### §2: Read Directive
 
-If `campaign.directive_path` is set in state, load the file at that path and apply its contents as campaign-wide context for this stage's processing, per the directive contract in `references/campaign-directive-spec.md`. If the file is not found, continue without error (directive is optional).
+If `campaign.directive_path` is set in state, the gate script applies its `## Quality Overrides` itself (§3), so do not adjust the gate by hand. Read any other section as campaign-wide context, per the directive contract in `references/campaign-directive-spec.md`. If the file is not found, continue without error (directive is optional).
 
-### §3 — Collect Export Candidates
+### §3: Collect Export Candidates
 
-Gather all skills from `skills[]` with `status == "completed"`. These are the export candidates.
+Classify every completed skill against its quality gate, passing `--directive-file` when state sets `campaign.directive_path`; never compare scores by hand:
 
-If no completed skills exist, display a warning and proceed directly to §6 (stage completion) — there is nothing to export.
+```
+uv run {gateScript} classify --state-file {stateFile} [--directive-file <campaign.directive_path>]
+```
 
-Present a summary table of export candidates:
+Each completed skill gets a `verdict`: `pass` (score at or above its `soft_target`), `fallback` (at or above its `soft_fallback`) or `fail` (below the fallback, or no score). Only `pass` and `fallback` skills are export candidates (`export[]`); `excluded[]` lists the others with their `reason`, and they stay on disk and in the report. Each row's `export_name` is the skill folder its build wrote, the name `skf-export-skill` resolves: for a Tier B skill quick-skill names it after the library, not the campaign target. A Tier B score is the skill-check score QS records, not a test-skill score. Log each `excluded[]` skill and each `unparsed` or `warnings` entry to the decision log. On exit 2 (an override that breaks the gate, or a directive that cannot be read), HALT (exit code 2, `invalid-input`) with its `error`.
 
-| # | Name | Tier | Quality Score | Skill Path |
-|---|------|------|---------------|------------|
-| 1 | {name} | {tier} | {quality_score} | {skill_path} |
-| ... | ... | ... | ... | ... |
+If `export[]` is empty (no completed skill, or none clears the gate), display a warning naming any `excluded[]` skills and proceed directly to §6 (stage completion): there is nothing to export.
 
-Display: "**{N} skill(s) ready for export.**"
+Present the verdicts, one row per entry of its `skills[]`:
 
-### §4 — Write-Gate HALT
+| # | Name | Tier | Quality Score | Gate | Export Name | Skill Path |
+|---|------|------|---------------|------|-------------|------------|
+| 1 | {name} | {tier} | {quality_score} | {verdict} | {export_name} | {skill_path} |
+| ... | ... | ... | ... | ... | ... | ... |
+
+When `excluded[]` is not empty, list it under the table: "**Not exported (below the quality gate):** {name} ({quality_score}: {reason}), ..."
+
+Display: "**{N} skill(s) ready for export.**" ({N} is the number of `export[]` skills.)
+
+### §4: Write-Gate HALT
 
 Present the export confirmation gate:
 
 "**Export Gate — Confirm before writing files**
 
-{N} completed skill(s) will be exported via `skf-export-skill`:
+{N} skill(s) that clear the quality gate will be exported via `skf-export-skill`:
 
-{summary table from §3}
+{summary table and exclusions from §3}
 
-- **[E]xport all** — invoke `skf-export-skill` for each completed skill
-- **[C]ancel** — halt the campaign gracefully (no files written, resume later)
+- **[E]xport all**: invoke `skf-export-skill` for each skill in `export[]`
+- **[C]ancel**: halt the campaign gracefully (no files written, resume later)
 
 Choose [E] or [C]:"
 
 **HALT and wait for operator input.**
 
-**Headless mode:** auto-proceed with `[E]` and log: "headless: auto-proceed past export write-gate".
+**GATE [default: E]**: in headless mode, auto-proceed with `[E]` (the RULES log line). `[E]` exports only the `export[]` skills; the excluded ones are logged at §3.
 
 #### On `[C]ancel`:
 
 Display: "Export cancelled by operator. Campaign halted gracefully — no files written. Resume later to retry export."
 
-Log the cancellation to the decision log, then HALT with exit code 11 (`export-cancelled`). Do NOT mark the campaign as failed — this is a graceful, resumable halt; the operator may resume later.
+Log the cancellation (type `decision`), then HALT with exit code 11 (`export-cancelled`). Do NOT mark the campaign as failed: this is a graceful, resumable halt, and nothing of this stage is written, so the operator may resume later at this gate.
 
 #### On `[E]xport`:
 
-Log the export decision to the decision log, then proceed to §5.
+Log the export decision (type `decision`), then proceed to §5.
 
-### §5 — Invoke EX
+### §5: Invoke EX
 
-For each completed skill (from §3), invoke `skf-export-skill` in headless mode:
+For each `skills[]` row of §3 whose `name` is in `export[]`, invoke `skf-export-skill` in headless mode under the row's `export_name`:
 
 ```
-skf-export-skill {skill_name} --headless
+skf-export-skill {export_name} --headless
 ```
 
-Capture the result envelope `SKF_EXPORT_RESULT_JSON` per skill.
+Capture its result envelope `SKF_EXPORT_RESULT_JSON`, then record the outcome under the campaign `name`, so step-11's report and result envelope read it from state:
 
-**On per-skill EX success** (exit code 0): log the result and continue.
-
-**On per-skill EX failure** (non-zero exit): log the error (exit code, envelope if available, or stderr). Continue with remaining skills — per-skill failure does not block remaining exports.
+- **Exit code 0:** `uv run {stateScript} set-skill --state-file {stateFile} --skill {name} --export exported`, and log the result (type `event`).
+- **Non-zero exit:** `uv run {stateScript} set-skill --state-file {stateFile} --skill {name} --export failed --export-exit-code <exit_code> [--export-halt-reason <halt_reason>]`, with the envelope's `halt_reason` when it printed one, and log the error (type `event`: exit code, envelope or stderr). Continue with the remaining skills: one failure does not block the other exports.
 
 After all exports complete, display a summary:
 
 "**Export Results:**
 - Exported: {success_count} skill(s)
 - Failed: {fail_count} skill(s)
+- Not exported, below the quality gate: {excluded_count} skill(s)
 {list of failed skills if any}"
 
-### §6 — Stage Completion
+### §6: Stage Completion
 
-Set `campaign.current_stage` to `9`. Update `campaign.last_updated` to current ISO-8601 with timezone. Backup `{stateFile}` to `{backupFile}`, then write the updated state.
+Write the stage:
+
+```
+uv run {stateScript} set-stage --state-file {stateFile} --stage 9
+```
 
 ## OUTPUT
 

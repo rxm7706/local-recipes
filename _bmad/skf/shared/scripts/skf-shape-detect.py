@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.9"
+# requires-python = ">=3.11"
 # dependencies = []
 # ///
 """SKF Shape Detect — classify repos into known skill shapes from manifest files.
@@ -13,7 +13,8 @@ three pipelines.
 The five-shape heuristic ladder (apply in order, first match wins):
 
   1. language-reference — parser/grammar/language-toolchain project
-     Signals: parser-related deps (pest, antlr4, tree-sitter, lark ...)
+     Signals: a compiler tree, a grammar file, a package named after a
+     parser tool (pest, antlr4, tree-sitter, lark ...)
   2. stack-compose     — multi-ecosystem composite project
      Signals: manifests from 2+ distinct ecosystems
   3. reference-app     — application, CLI, or demo project
@@ -22,18 +23,79 @@ The five-shape heuristic ladder (apply in order, first match wins):
      Signals: main/module/exports fields, [lib] target, export count
   5. unknown           — no heuristic matched
 
+A reference-app that rests on a framework dependency alone (no bin) in a
+package that names itself a library also carries the signal
+`app_or_library:framework_dep`: an app built on the framework and a
+library that extends it (FastAPI, a Flask or Django extension, axum-extra)
+declare the same dependencies, so the caller judges which one it is from
+the README or the manifest description. The shape stays reference-app.
+
+A parser tool among the runtime dependencies (a consumer: nom, pyparsing,
+tree-sitter ...) decides no shape: a language or DSL built on it and an app
+or library that only reads its input with it declare the same dependency.
+The ladder goes on and its shape carries the signal
+`language_or_user:parser_dep`, so the caller judges which one it is from the
+README or the manifest description. A dev or build dependency is no
+consumer, nor is one in a non-core member (examples/, docs/) or the monorepo
+coordinator root, as with frameworks. Only when the parser dependency is the
+repository's only signal (a bare DSL manifest: no rung answers and no
+manifest declares a bin) does it still give language-reference, in place of
+unknown.
+
 CLI:
   uv run src/shared/scripts/skf-shape-detect.py \\
       --repo-url <url> --manifests <path1,path2,...>
+  uv run src/shared/scripts/skf-shape-detect.py \\
+      --repo-url <url> --manifests <path1,path2,...> --tree-file <file>
+  uv run src/shared/scripts/skf-shape-detect.py \\
+      --repo-url <url> --manifests-file <scan.json> --manifest-dir <root> \\
+      --tree-file <file>
 
 Input:
   --repo-url      repository URL (required; context only, no cloning)
   --manifests     comma-separated local file paths to manifest files (may be
                   empty when a tree-level signal is supplied instead)
+  --manifests-file the JSON envelope `skf-scan-manifests.py scan <root>`
+                  printed, in place of --manifests: its `manifests[]`
+                  entries of the types this script classifies (the _PARSERS
+                  file names) are read, each `path` resolved against
+                  --manifest-dir, so no caller filters, resolves or joins
+                  the manifest list. A manifest's own path below that root
+                  (not where the root sits) decides whether it is core and
+                  how deep it is.
+  --manifest-dir  the folder the scan ran on (required with
+                  --manifests-file)
+  --tree-file     the repository's whole file list (`-` reads it from stdin),
+                  read by skf-detect-language.py's read_tree_file() (the
+                  sibling in this folder, which must sit beside this
+                  script), whose --tree-file text lists the listings it
+                  reads (`git -c core.quotePath=false ls-tree -r --name-only
+                  HEAD` prints one). The script finds the tree-level signals
+                  in it itself (tree_signals()), in place of --grammar-files
+                  and --tree-paths
   --grammar-files comma-separated repo-relative grammar files (*.y, *.g4,
                   *.pest, Grammar/python.gram, ...); a whole-language signal
   --tree-paths    comma-separated repo-relative directory/structural signals
                   harvested from the clone (compiler/ dir, lexer/parser/ast)
+Passing --tree-file with --grammar-files or --tree-paths is an error, and
+so is passing --manifests with --manifests-file.
+
+tree_signals() reads every file of the listing and every folder that holds
+one, so no caller's filter drops a path the gates accept (a root
+`grammar.js`, `Python/ceval.c`, `check.go`), but leaves out a path with a
+hidden segment or a segment of _NON_CORE_PATH_SEGMENTS (tests and fixtures,
+docs, examples, benchmarks, scripts and tools): a CI workflow's check.yml,
+scripts/check.sh or a test fixture's vm.js is not the repository's own
+code. The grammar files are the paths _is_grammar_file() accepts at most
+_GRAMMAR_MAX_DEPTH segments deep (a grammar deeper in the tree is a vendored
+or test fixture) and outside a parsing folder below the top of the tree (a
+library's reader of an input format, such as sympy/parsing/latex/LaTeX.g4,
+_FORMAT_PARSER_DIRS), and the tree paths are every folder (with a trailing /)
+and every file, which the compiler-folder, triad and corroborating-member
+gates of _whole_language_tree() then judge: the triad among the paths near a
+compiler folder, the corroborating member anywhere. A listing that says it
+was cut short (a GitHub tree's `truncated`) adds the signal
+`tree_truncated`.
 
 Output (JSON on stdout):
   shape         library-API | reference-app | language-reference
@@ -46,25 +108,26 @@ Output (JSON on stdout):
 Exit codes:
   0  shape classified (not unknown)
   1  unknown shape (no heuristic matched)
-  2  error (invalid args, missing/unreadable files, parse failure)
+  2  error (invalid args, missing/unreadable files, a tree listing that
+     cannot be read, holds no path or reports a failure, a manifests file
+     that is not a scan envelope, parse failure)
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
-try:
-    import tomllib
-except ImportError:
-    tomllib = None  # type: ignore[assignment]
-
 # ---------------------------------------------------------------------------
-# Parser/grammar deps that signal language-reference shape
+# Parser/grammar tools: a package named after one is a language-reference
+# producer; one among the runtime deps raises the language_or_user:parser_dep
+# question (detect() below)
 # ---------------------------------------------------------------------------
 
 _PARSER_DEPS_NPM = frozenset({
@@ -100,6 +163,17 @@ _GRAMMAR_EXTS = frozenset({
     ".ungram",
 })
 _GRAMMAR_BASENAMES = frozenset({"grammar.js", "grammar.json", "python.gram"})
+# A grammar file deeper than this many path segments is a vendored or test
+# fixture, not the repo's own grammar (Grammar/python.gram is 2 deep).
+_GRAMMAR_MAX_DEPTH = 4
+# A library keeps its readers of other formats in a parsing folder of its own
+# package: sympy's sympy/parsing/latex/LaTeX.g4 and
+# sympy/parsing/autolev/Autolev.g4 sit beside sympy/core/ and the library's
+# other modules. A grammar below such a folder parses an input the library
+# reads, not the language the repository implements. A parsing folder at the
+# top of the tree is not one of these: there the parser is the repository's
+# own.
+_FORMAT_PARSER_DIRS = frozenset({"parsing", "parsers"})
 
 # Concrete parsers a repo CONSUMES. If a repo's own runtime deps contain one of
 # these it delegates parsing — a formatter/linter/bundler, never a
@@ -247,9 +321,14 @@ def _whole_language_tree(tree_paths: list[str]) -> tuple[str, str] | None:
           ``_COMPILER_DIRS_CASE`` (case-sensitive ``Parser``). A file named
           ``Parser.js`` or ``compiler.dart`` never satisfies this; a bare
           ``src/`` / ``lib/`` / ``src/language/`` directory never does either.
-      (D) a lexer+parser+AST triad, parser MANDATORY, at least 2 of 3 present.
-      (W) a corroborating codegen / VM / type-checker member, so a markdown or
-          CSS library (lexer+parser+AST only) does not qualify.
+      (D) a lexer+parser+AST triad, parser MANDATORY, at least 2 of 3 present,
+          among the members NEAR that compiler directory (_near_compiler_dir):
+          a large library's lexer and parser in an unrelated corner of the
+          tree (PyTorch's TorchScript frontend beside its torch/compiler/ API
+          package) are no compiler's triad.
+      (W) a corroborating codegen / VM / type-checker member anywhere in the
+          tree, so a markdown or CSS library (lexer+parser+AST only) does not
+          qualify.
 
     Gates G (delegating consumer) and L (markup identity) depend on manifest
     data and are applied by the caller.
@@ -258,15 +337,13 @@ def _whole_language_tree(tree_paths: list[str]) -> tuple[str, str] | None:
         return None
 
     compiler_dirs: list[str] = []
-    stems: set[str] = set()
-    basenames: set[str] = set()
+    members_of: list[tuple[str, str, str]] = []  # (path, basename, stem)
     for tp in tree_paths:
         norm = tp.rstrip("/")
         if not norm:
             continue
         base = norm.rsplit("/", 1)[-1]
-        basenames.add(base)
-        stems.add(base.rsplit(".", 1)[0].lower() if "." in base else base.lower())
+        members_of.append((norm, base, base.rsplit(".", 1)[0].lower() if "." in base else base.lower()))
         if tp.endswith("/"):
             low = norm.lower()
             if any(low == m or low.endswith("/" + m) for m in _COMPILER_DIRS) or \
@@ -277,183 +354,101 @@ def _whole_language_tree(tree_paths: list[str]) -> tuple[str, str] | None:
     if not compiler_dirs:
         return None
 
-    # (D) — triad, parser mandatory, >= 2 of 3
-    lexer = bool(stems & _LEXER_STEMS) or "rustc_lexer" in basenames
-    parser = bool(stems & _PARSER_STEMS) or "rustc_parse" in basenames
-    binder, checker = "binder" in stems, "checker" in stems
-    ast = (bool(stems & _AST_STEMS) or "rustc_ast" in basenames
-           or (binder and checker))
-    if not parser or (lexer + parser + ast) < 2:
-        return None
-
-    # (W) — corroborating compiler-grade member
+    # (W): a corroborating compiler-grade member, anywhere in the tree
+    stems = {stem for _, _, stem in members_of}
     w = bool(stems & (_CODEGEN_STEMS | _VM_STEMS | _CHECK_STEMS)) or \
-        any(b.startswith("rustc_codegen") for b in basenames)
+        any(base.startswith("rustc_codegen") for _, base, _ in members_of)
     if not w:
         return None
 
-    members = ",".join(
-        m for m, present in (("lexer", lexer), ("parser", parser), ("ast", ast))
-        if present
-    )
-    return compiler_dirs[0], members
+    # (D): a triad near a compiler directory, parser mandatory, >= 2 of 3
+    for compiler_dir in compiler_dirs:
+        near = [(base, stem) for path, base, stem in members_of if _near_compiler_dir(path, compiler_dir)]
+        stems = {stem for _, stem in near}
+        basenames = {base for base, _ in near}
+        lexer = bool(stems & _LEXER_STEMS) or "rustc_lexer" in basenames
+        parser = bool(stems & _PARSER_STEMS) or "rustc_parse" in basenames
+        ast = (bool(stems & _AST_STEMS) or "rustc_ast" in basenames
+               or ("binder" in stems and "checker" in stems))
+        if parser and (lexer + parser + ast) >= 2:
+            members = ",".join(
+                m for m, present in (("lexer", lexer), ("parser", parser), ("ast", ast))
+                if present
+            )
+            return compiler_dir, members
+    return None
 
 
-# ---------------------------------------------------------------------------
-# Minimal TOML parser (Python < 3.11 fallback)
-# ---------------------------------------------------------------------------
-
-def _split_preserving_nesting(s: str, sep: str) -> list[str]:
-    parts: list[str] = []
-    buf: list[str] = []
-    depth = 0
-    in_str = ""
-    for ch in s:
-        if in_str:
-            buf.append(ch)
-            if ch == in_str:
-                in_str = ""
-            continue
-        if ch in ('"', "'"):
-            in_str = ch
-            buf.append(ch)
-            continue
-        if ch in ("[", "{"):
-            depth += 1
-            buf.append(ch)
-            continue
-        if ch in ("]", "}"):
-            depth -= 1
-            buf.append(ch)
-            continue
-        if ch == sep and depth == 0:
-            parts.append("".join(buf))
-            buf = []
-            continue
-        buf.append(ch)
-    if buf:
-        parts.append("".join(buf))
-    return parts
-
-
-def _decode_toml_value(raw: str) -> Any:
-    s = raw.strip()
-    if not s:
-        return ""
-    if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
-        return s[1:-1]
-    if len(s) >= 2 and s[0] == "'" and s[-1] == "'":
-        return s[1:-1]
-    if s == "true":
+def _near_compiler_dir(path: str, compiler_dir: str) -> bool:
+    """Whether a tree path is near a compiler directory, for gate D: the
+    directory itself or a path under it, or a path at most two levels below
+    the directory that holds it (CPython's Parser/ has Python/ast.c beside
+    it, the Go port's internal/compiler/ has internal/parser/parser.go)."""
+    if path == compiler_dir or path.startswith(compiler_dir + "/"):
         return True
-    if s == "false":
+    parent = compiler_dir.rsplit("/", 1)[0] if "/" in compiler_dir else ""
+    if parent and not path.startswith(parent + "/"):
         return False
-    if s.startswith("["):
-        idx = s.rfind("]")
-        if idx < 0:
-            return []
-        inner = s[1:idx].strip()
-        if not inner:
-            return []
-        items = []
-        for item in _split_preserving_nesting(inner, ","):
-            item = item.strip()
-            if item and item[0] != "#":
-                items.append(_decode_toml_value(item))
-        return items
-    if s.startswith("{"):
-        idx = s.rfind("}")
-        if idx < 0:
-            return {}
-        inner = s[1:idx].strip()
-        result: dict[str, Any] = {}
-        for pair in _split_preserving_nesting(inner, ","):
-            pair = pair.strip()
-            if "=" in pair:
-                k, _, v = pair.partition("=")
-                result[k.strip()] = _decode_toml_value(v.strip())
-        return result
-    try:
-        return int(s) if "." not in s else float(s)
-    except ValueError:
-        return s
+    return path[len(parent) + 1 if parent else 0:].count("/") <= 1
 
 
-def _loads_toml_fallback(content: str) -> dict[str, Any]:
-    """Parse the TOML subset found in pyproject.toml / Cargo.toml."""
-    root: dict[str, Any] = {}
-    current = root
-    lines = content.split("\n")
-    i = 0
-    while i < len(lines):
-        raw = lines[i]
-        i += 1
-        stripped = raw.strip()
-        if not stripped or stripped[0] == "#":
+def tree_signals(files: list[str]) -> tuple[list[str], list[str]]:
+    """(grammar files, tree paths) of a repository's whole file list, the
+    tree-level inputs of detect(): the grammar files _is_grammar_file()
+    accepts at most _GRAMMAR_MAX_DEPTH segments deep and not below a
+    _FORMAT_PARSER_DIRS folder under the top one, and every folder (with
+    a trailing /) then every file as tree paths, so the gates of
+    _whole_language_tree(), not a name filter, decide what counts. A path
+    with a hidden segment or a segment of _NON_CORE_PATH_SEGMENTS (tests and
+    fixtures, docs, examples, benchmarks, scripts and tools) is left out of
+    both: a CI workflow, a script or a test fixture is not the repository's
+    own code. An entry that ends in / is a folder."""
+    grammar: set[str] = set()
+    dirs: set[str] = set()
+    names: set[str] = set()
+    for raw in files:
+        entry = raw.strip()
+        parts = [p for p in entry.split("/") if p and p != "."]
+        if not parts or any(p.startswith(".") or p.lower() in _NON_CORE_PATH_SEGMENTS for p in parts):
             continue
+        path = "/".join(parts)
+        if entry.endswith("/"):
+            dirs.add(path + "/")
+        else:
+            names.add(path)
+            if (len(parts) <= _GRAMMAR_MAX_DEPTH and _is_grammar_file(path)
+                    and not any(p.lower() in _FORMAT_PARSER_DIRS for p in parts[1:-1])):
+                grammar.add(path)
+        for depth in range(1, len(parts)):
+            dirs.add("/".join(parts[:depth]) + "/")
+    return sorted(grammar), sorted(dirs) + sorted(names)
 
-        # [[array.of.tables]]
-        if stripped.startswith("[["):
-            end = stripped.find("]]")
-            if end < 0:
-                continue
-            path = [p.strip() for p in stripped[2:end].split(".")]
-            target = root
-            for key in path[:-1]:
-                target = target.setdefault(key, {})
-            arr = target.setdefault(path[-1], [])
-            if not isinstance(arr, list):
-                arr = [arr]
-                target[path[-1]] = arr
-            entry: dict[str, Any] = {}
-            arr.append(entry)
-            current = entry
-            continue
 
-        # [table]
-        if stripped.startswith("[") and not stripped.startswith("[["):
-            end = stripped.find("]")
-            if end < 0:
-                continue
-            path = [p.strip() for p in stripped[1:end].split(".")]
-            current = root
-            for key in path:
-                nxt = current.setdefault(key, {})
-                if not isinstance(nxt, dict):
-                    nxt = {}
-                    current[key] = nxt
-                current = nxt
-            continue
+_SIBLINGS: dict[str, Any] = {}
 
-        # key = value
-        eq = stripped.find("=")
-        if eq < 0:
-            continue
-        key = stripped[:eq].strip().strip('"')
-        val_str = stripped[eq + 1:].strip()
 
-        # Remove trailing comment outside strings
-        if val_str and val_str[0] not in ('"', "'", "[", "{"):
-            ci = val_str.find(" #")
-            if ci >= 0:
-                val_str = val_str[:ci].strip()
-
-        # Multi-line array
-        if val_str.startswith("[") and "]" not in val_str:
-            while i < len(lines):
-                val_str += " " + lines[i].strip()
-                i += 1
-                if "]" in val_str:
-                    break
-
-        current[key] = _decode_toml_value(val_str)
-    return root
+def _sibling(filename: str) -> Any:
+    """A helper of this folder, loaded once as a module: skf-detect-language.py
+    reads a --tree-file listing. Raises ImportError when it does not sit
+    beside this script."""
+    module = _SIBLINGS.get(filename)
+    if module is None:
+        path = Path(__file__).resolve().parent / filename
+        name = "skf_" + filename.removeprefix("skf-").removesuffix(".py").replace("-", "_")
+        spec = importlib.util.spec_from_file_location(name, path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"cannot load {filename} beside {Path(__file__).name}")
+        module = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(module)
+        except (OSError, SyntaxError) as exc:
+            raise ImportError(f"cannot load {filename} beside {Path(__file__).name}: {exc}") from exc
+        _SIBLINGS[filename] = module
+    return module
 
 
 def _parse_toml(content: str) -> dict[str, Any]:
-    if tomllib is not None:
-        return tomllib.loads(content)
-    return _loads_toml_fallback(content)
+    return tomllib.loads(content)
 
 
 # ---------------------------------------------------------------------------
@@ -817,6 +812,29 @@ def _parse_manifest(path: Path) -> dict[str, Any]:
     return parser(path)
 
 
+def read_manifests_file(path: str) -> list[str]:
+    """The manifest paths of a skf-scan-manifests.py envelope that this
+    script classifies (a _PARSERS file name), in the envelope's order and
+    as the envelope spells them: relative to the folder the scan ran on."""
+    try:
+        envelope = json.loads(Path(path).read_bytes().decode("utf-8-sig"))
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        _die(f"cannot read the manifests file {path}: {exc}", "MANIFESTS_FILE_ERROR")
+    entries = envelope.get("manifests") if isinstance(envelope, dict) else None
+    if not isinstance(entries, list):
+        _die(f"{path} is not a skf-scan-manifests.py envelope: it has no manifests list",
+             "MANIFESTS_FILE_ERROR")
+    paths: list[str] = []
+    for entry in entries:
+        rel = entry.get("path") if isinstance(entry, dict) else None
+        if not isinstance(rel, str) or not rel:
+            _die(f"{path}: a manifests entry has no path", "MANIFESTS_FILE_ERROR")
+        rel = rel.replace("\\", "/")
+        if rel.rsplit("/", 1)[-1] in _PARSERS and rel not in paths:
+            paths.append(rel)
+    return paths
+
+
 # ---------------------------------------------------------------------------
 # Core classification
 # ---------------------------------------------------------------------------
@@ -826,6 +844,7 @@ def detect(
     manifest_paths: list[str],
     grammar_files: list[str] | None = None,
     tree_paths: list[str] | None = None,
+    manifest_dir: str | None = None,
 ) -> dict[str, Any]:
     """Classify a repo into a skill shape from its manifest files.
 
@@ -834,7 +853,9 @@ def detect(
     tree-level signals harvested from the clone; they let whole-language repos
     that carry no parser-generator dependency — and even manifest-less ones —
     be classified. When all three inputs are empty there is nothing to
-    classify and we error, exactly as before.
+    classify and we error, exactly as before. With `manifest_dir`, each
+    manifest path is relative to it: the file read is the joined path, and
+    the core and depth checks see the relative one.
     """
     grammar_files = grammar_files or []
     tree_paths = tree_paths or []
@@ -843,7 +864,7 @@ def detect(
 
     parsed: list[dict[str, Any]] = []
     for mp in manifest_paths:
-        p = Path(mp)
+        p = Path(manifest_dir) / mp if manifest_dir is not None else Path(mp)
         if not p.is_file():
             _die(f"Manifest not found: {p.as_posix()}", "MANIFEST_NOT_FOUND")
         m = _parse_manifest(p)
@@ -934,15 +955,20 @@ def detect(
     # like "parser"/"compiler"/"lang", which are false-positive farms (a CSS
     # parser, compiler-builtins, an arg parser are ordinary libraries).
     #
-    # CONSUMER: a project that depends on a parser generator (a DSL built on
-    # lalrpop) is also a language project. Exclude the repo's own producer name
-    # from the consumer list so a self-reference isn't double-counted as "uses".
+    # CONSUMER: a project with a parser tool among its core members' RUNTIME
+    # deps, read like the framework signals above: a dev or build dependency
+    # tests or builds the project, and an examples/ member or the coordinator
+    # root is not the product. It may be a language built on the tool (a DSL
+    # on lalrpop) or only read its input with it (a CLI on nom), so it
+    # decides no shape: the ladder asks (below). Exclude the repo's own
+    # producer name from the consumer list so a self-reference isn't
+    # double-counted as "uses".
     own_names = {
         (m.get("name") or "").strip().lower() for m in parsed if m.get("name")
     }
     parser_producers = sorted(n for n in own_names if n in _ALL_PARSER_DEPS)
     parser_deps = sorted(
-        d for d in all_deps
+        d for d in core_runtime_deps
         if d.lower() in _ALL_PARSER_DEPS and d.lower() not in parser_producers
     )
 
@@ -1019,16 +1045,21 @@ def detect(
         return {"shape": "language-reference", "signals": signals,
                 "confidence": round(confidence, 2), **result_base}
 
-    # 1b. language-reference — a parser/grammar producer (own name) or a project
-    # built on a parser generator (consumer dep).
-    if parser_producers or parser_deps:
-        # A producer (named itself a grammar tool) is a stronger signal than a
-        # consumer (merely depends on one).
-        base = 0.80 if parser_producers else 0.75
+    # 1b. language-reference: a parser/grammar producer (own name).
+    if parser_producers:
         n_sig = len(parser_producers) + len(parser_deps)
-        confidence = _clamp(base + n_sig * 0.05, base, 0.90)
+        confidence = _clamp(0.80 + n_sig * 0.05, 0.80, 0.90)
         return {"shape": "language-reference", "signals": signals,
                 "confidence": round(confidence, 2), **result_base}
+
+    # A consumer dep fits a language built on the parser tool and a project
+    # that only reads its input with it alike: the dependency names alone
+    # cannot tell them apart, so the rungs below answer with their own shape
+    # and this signal hands that question to the caller. Gates G and L hold
+    # here too: a repo they exclude is no language reference either way.
+    parser_question = bool(parser_deps) and not delegating_consumer and not markup_identity
+    if parser_question:
+        signals.append("language_or_user:parser_dep")
 
     # 2. stack-compose
     if len(ecosystems) > 1:
@@ -1041,6 +1072,13 @@ def detect(
     # core runtime framework. A single-package repo with a bin is an app.
     app_trigger = has_framework if package_count > 1 else (app_has_bin or has_framework)
     if app_trigger:
+        # A framework dependency with no bin, in a package that names itself a
+        # library, fits an app built on the framework and a library that
+        # extends it (FastAPI on starlette, axum-extra on axum) alike: the
+        # dependency names alone cannot tell them apart, so the signal hands
+        # that question to the caller and the shape stays reference-app.
+        if not app_has_bin and has_library_structure:
+            signals.append("app_or_library:framework_dep")
         strength = (1 if app_has_bin else 0) + (1 if has_framework else 0)
         confidence = _clamp(0.80 + (strength - 1) * 0.05, 0.80, 0.90)
         return {"shape": "reference-app", "signals": signals,
@@ -1059,7 +1097,21 @@ def detect(
         return {"shape": "library-API", "signals": signals,
                 "confidence": round(confidence, 2), **result_base}
 
-    # 5. unknown
+    # 5. language-reference: a consumer dep is the repository's only signal (a
+    # bare DSL manifest: no rung above answered and no manifest declares a
+    # bin), so no other shape is left to weigh the question against. A bin
+    # that rung 3 does not count (the bin-only members of a monorepo) is an
+    # app signal all the same: such a repository stays unknown, like its twin
+    # with no parser dependency, and the caller analyzes it interactively.
+    if parser_question and not has_bin:
+        signals.remove("language_or_user:parser_dep")
+        return {"shape": "language-reference", "signals": signals,
+                "confidence": 0.75, **result_base}
+
+    # 6. unknown: the interactive fallback weighs the parser itself, with no
+    # shape for the question to qualify.
+    if parser_question:
+        signals.remove("language_or_user:parser_dep")
     return {"shape": "unknown", "signals": signals,
             "confidence": 0.0, **result_base}
 
@@ -1095,15 +1147,31 @@ def _force_utf8(*streams) -> None:
 
 
 def main(argv: list[str]) -> int:
-    _force_utf8(sys.stdout, sys.stderr)
+    _force_utf8(sys.stdin, sys.stdout, sys.stderr)
     parser = argparse.ArgumentParser(
         description="Classify a repo into a known skill shape from its manifest files.",
     )
     parser.add_argument("--repo-url", required=True, help="Repository URL")
     parser.add_argument(
-        "--manifests", required=True,
+        "--manifests", default=None,
         help="Comma-separated local file paths to manifest files (may be empty "
-             "when --grammar-files or --tree-paths carry the signal)",
+             "when --tree-file, --grammar-files or --tree-paths carry the signal); "
+             "required unless --manifests-file is given",
+    )
+    parser.add_argument(
+        "--manifests-file", default=None,
+        help="The JSON envelope skf-scan-manifests.py scan printed, in place of "
+             "--manifests: its manifests of the types this script classifies, "
+             "each path resolved against --manifest-dir",
+    )
+    parser.add_argument(
+        "--manifest-dir", default=None,
+        help="The folder the scan ran on (required with --manifests-file)",
+    )
+    parser.add_argument(
+        "--tree-file", default=None,
+        help="The repository's whole file list: JSON (a `tree` list, or a list) or "
+             "one path per line; - reads stdin. Replaces --grammar-files and --tree-paths",
     )
     parser.add_argument(
         "--grammar-files", default="",
@@ -1117,13 +1185,39 @@ def main(argv: list[str]) -> int:
     )
     args = parser.parse_args(argv)
 
-    manifest_paths = [p.strip() for p in args.manifests.split(",") if p.strip()]
+    if args.manifests_file is not None:
+        if args.manifests is not None:
+            _die("pass the manifests once: --manifests or --manifests-file", "INVALID_ARGS")
+        if args.manifest_dir is None:
+            _die("--manifests-file needs --manifest-dir, the folder the scan ran on", "INVALID_ARGS")
+        manifest_paths = read_manifests_file(args.manifests_file)
+    elif args.manifests is None:
+        _die("--manifests or --manifests-file is required", "MISSING_MANIFESTS")
+    else:
+        if args.manifest_dir is not None:
+            _die("--manifest-dir goes with --manifests-file", "INVALID_ARGS")
+        manifest_paths = [p.strip() for p in args.manifests.split(",") if p.strip()]
     grammar_files = [p.strip() for p in args.grammar_files.split(",") if p.strip()]
     tree_paths = [p.strip() for p in args.tree_paths.split(",") if p.strip()]
+    truncated = False
+    if args.tree_file is not None:
+        if grammar_files or tree_paths:
+            _die("pass the tree once: --tree-file, or --grammar-files and --tree-paths", "INVALID_ARGS")
+        try:
+            files, truncated = _sibling("skf-detect-language.py").read_tree_file(args.tree_file)
+        except (ImportError, ValueError) as exc:  # ValueError: the sibling's TreeListingError
+            _die(str(exc), "TREE_FILE_ERROR")
+        grammar_files, tree_paths = tree_signals(files)
     if not manifest_paths and not grammar_files and not tree_paths:
-        _die("--manifests requires at least one path", "MISSING_MANIFESTS")
-
-    result = detect(args.repo_url, manifest_paths, grammar_files, tree_paths)
+        if args.tree_file is None:
+            _die("--manifests requires at least one path", "MISSING_MANIFESTS")
+        # The listing holds only paths tree_signals() leaves out (hidden,
+        # tests, docs, scripts): no signal to classify.
+        result = {"shape": "unknown", "signals": [], "confidence": 0.0, "export_count": 0, "package_count": 0}
+    else:
+        result = detect(args.repo_url, manifest_paths, grammar_files, tree_paths, args.manifest_dir)
+    if truncated:
+        result["signals"].append("tree_truncated")
     json.dump(result, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
 

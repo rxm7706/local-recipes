@@ -1,6 +1,6 @@
 ---
 nextStepFile: 'coverage-check.md'
-outputFile: '{forge_version}/test-report-{skill_name}-{run_id}.md'
+outputFile: '{report_file}'
 ---
 
 <!-- Config: communicate in {communication_language}. -->
@@ -19,16 +19,16 @@ Read the skill metadata (loaded in step 01) and branch on its `skill_type` field
 - `skill_type: 'stack'` → **Contextual Mode** (full coherence validation — cross-references resolve, types match, integration patterns complete; coherence category scored)
 - unset or unclear → default to **Naive Mode** (conservative — fewer checks, less chance of false negatives from missing context) and note the default in the report
 
-What each mode actually checks and how category weights are distributed is owned by `scoring-rules.md` (Tier-Dependent Scoring) and `coherence-check.md` — do not restate it here.
+What each mode actually checks is owned by `coherence-check.md`, and how category weights are distributed by step 5's scoring script (`scripts/compute-score.py`): do not restate either here.
 
-**Quick-tier adjustment (applies to both modes):** If `forge_tier` is `Quick`, Signature Accuracy and Type Coverage are skipped during scoring (no AST available); their weights are redistributed proportionally to the remaining active categories per `scoring-rules.md` Tier-Dependent Scoring.
+**Quick-tier adjustment (applies to both modes):** set nothing here. Step 5 passes the tier to the scoring script, which skips Signature Accuracy and Type Coverage at Quick tier (no AST available) and redistributes their weights.
 
 ### 2. Update Output Document
 
 Update `{outputFile}` frontmatter:
 - Set `testMode: '{naive|contextual}'`
 
-Append the **Test Summary** section to `{outputFile}`:
+Write the **Test Summary** section in place of the template's `## Test Summary` heading and the placeholder comment under it, in `{outputFile}`:
 
 ```markdown
 ## Test Summary
@@ -48,5 +48,5 @@ Append the **Test Summary** section to `{outputFile}`:
 
 Report the detected mode ({naive|contextual}) and why it was selected (individual skill → naive, stack → contextual), then proceed to the coverage check.
 
-Update stepsCompleted, then load and execute {nextStepFile}.
+Append `'detect-mode'` to `stepsCompleted` in the `{outputFile}` frontmatter, then load and execute {nextStepFile}.
 

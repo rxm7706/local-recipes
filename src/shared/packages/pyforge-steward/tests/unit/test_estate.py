@@ -22,6 +22,7 @@ from pyforge.steward.estate import (
     SCHEMA_RESOURCE,
     EstateDeps,
     EstateDuty,
+    _artifact_version,
     _days_since_last_journal,
     _default_runner,
     _held_by,
@@ -473,12 +474,22 @@ def test_refresh_realize_due_and_fan_json_fallback(tmp_path: Path) -> None:
         json.dumps({"packages": [{"name": "bmad-method", "old": "6.12.0", "new": "6.12.2"}]}),
         "",
     )
-    runner.responses["--diff"] = FakeProc([], 1, "not-json", "")
+    runner.responses["--diff"] = FakeProc([], 0, "[]", "")
     runner.responses["--fan-out"] = FakeProc([], 0, "also-not-json", "")
     result = run_refresh(_deps(root, runner), transitive=False)
     assert result.ok
     assert "realize-due" in result.summary
     assert "bmad-method" in result.summary
+
+
+def test_refresh_refuses_a_diff_that_prints_no_json(tmp_path: Path) -> None:
+    """A broken policy diff is a refusal, never a clean pass (Story 100.7 review)."""
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    runner.responses["--diff"] = FakeProc([], 1, "not-json", "")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert not result.ok
+    assert "printed no JSON" in result.summary
 
 
 def test_status_json_out_and_show_all(tmp_path: Path) -> None:
@@ -526,3 +537,150 @@ def test_estate_duty_reconcile_and_realize(tmp_path: Path) -> None:
         _realize_deps=RealizeDeps(root=root, runner=RecordingRunner(), flag_on=lambda: True, enforce_require=False),
     )
     assert duty.run(realize_ns).ok
+
+
+def test_parse_pixi_moves_environment_shape() -> None:
+    """pixi 0.8x ``upgrade --json``: explicit rows only, one per environment (Story 100.7)."""
+
+    def side(version: str) -> dict[str, str]:
+        return {"conda": f"https://conda.anaconda.org/conda-forge/noarch/pyjwt-{version}-pyh5ded981_0.conda"}
+
+    payload = {
+        "version": 1,
+        "environment": {
+            "pyforge-steward": {
+                "linux-64": [
+                    {"name": "pyjwt", "before": side("2.15.0"), "after": side("2.15.1"), "explicit": True},
+                    {"name": "idna", "before": side("3.10"), "after": side("3.11"), "explicit": False},
+                ],
+                "win-64": [
+                    {"name": "pyjwt", "before": side("2.15.0"), "after": side("2.15.1"), "explicit": True},
+                ],
+            }
+        },
+    }
+    moves = _parse_pixi_moves(payload)
+    assert moves == [{"package": "pyjwt", "feature": "pyforge-steward", "from": "2.15.0", "to": "2.15.1"}]
+
+
+def test_refresh_excludes_a_package_whose_floor_the_upgrade_lowered(tmp_path: Path) -> None:
+    """A lowered floor reruns the upgrade from base with that package excluded (Story 100.7)."""
+    root = _fixture_root(tmp_path)
+    diffs = iter(
+        [
+            FakeProc([], 1, json.dumps([{"kind": "lowered-floor", "package": "cron-descriptor"}]), ""),
+            FakeProc([], 0, "[]", ""),
+            FakeProc([], 0, "[]", ""),
+        ]
+    )
+
+    class Runner(RecordingRunner):
+        def __call__(self, argv: list[str], cwd: Path) -> FakeProc:
+            if "--diff" in " ".join(argv):
+                self.calls.append(list(argv))
+                proc = next(diffs)
+                return FakeProc(argv, proc.returncode, proc.stdout, proc.stderr)
+            return super().__call__(argv, cwd)
+
+    runner = Runner()
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert result.ok, result.summary
+    upgrades = [c for c in runner.calls if c[:2] == ["pixi", "upgrade"]]
+    assert len(upgrades) == 2  # noqa: PLR2004
+    assert "cron-descriptor" not in upgrades[0]
+    assert upgrades[1][-3:] == ["--exclude", "cron-descriptor", "--json"]
+    assert ["git", "checkout", "abc123", "--", "pixi.toml", "pixi.lock"] in runner.calls
+    assert not any("pin_policy_restore" in " ".join(c) for c in runner.calls)
+    doc = json.loads(next((root / ".steward" / "estate-refresh").glob("*.json")).read_text(encoding="utf-8"))
+    assert doc["converge"] == {"rounds": 2, "excluded": ["cron-descriptor"], "converged": True, "unresolved": []}
+    assert doc["command"].endswith("--exclude cron-descriptor")
+
+
+def test_refresh_stops_converging_at_the_round_cap(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    counter = iter(range(100))
+
+    class Runner(RecordingRunner):
+        def __call__(self, argv: list[str], cwd: Path) -> FakeProc:
+            if "--diff" in " ".join(argv):
+                self.calls.append(list(argv))
+                pkg = f"pkg{next(counter)}"
+                return FakeProc(argv, 1, json.dumps([{"kind": "lowered-floor", "package": pkg}]), "")
+            return super().__call__(argv, cwd)
+
+    runner = Runner()
+    result = run_refresh(_deps(root, runner), transitive=False)
+    upgrades = [c for c in runner.calls if c[:2] == ["pixi", "upgrade"]]
+    assert len(upgrades) == 4  # noqa: PLR2004
+    reverts = [c for c in runner.calls if c[:2] == ["git", "checkout"]]
+    assert len(reverts) == 3  # noqa: PLR2004
+    # the fourth round's lowered floor reaches the restore, which the fake lets pass
+    assert result.ok
+    doc = json.loads(next((root / ".steward" / "estate-refresh").glob("*.json")).read_text(encoding="utf-8"))
+    assert doc["converge"]["converged"] is False
+    assert doc["converge"]["unresolved"] == ["pkg3"]
+    assert doc["converge"]["excluded"] == ["pkg0", "pkg1", "pkg2"]
+
+
+def test_refresh_refuses_when_the_upgrade_fails(tmp_path: Path) -> None:
+    """A failed upgrade resets the pixi files, journals the refusal and exits with the refusal code."""
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    runner.responses["pixi upgrade"] = FakeProc([], 1, "", "solve failed")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert not result.ok
+    assert result.details["exit_code"] == EXIT_ESTATE_REFUSAL
+    assert "pixi upgrade failed in round 1" in result.summary
+    assert runner.calls[-1] == ["git", "checkout", "abc123", "--", "pixi.toml", "pixi.lock"]
+    assert not any(c[:2] == ["pixi", "lock"] for c in runner.calls)
+    doc = json.loads(next((root / ".steward" / "estate-refresh").glob("*.json")).read_text(encoding="utf-8"))
+    assert doc["refused"].startswith("pixi upgrade failed")
+    jsonschema = pytest.importorskip("jsonschema")
+    jsonschema.validate(
+        doc, json.loads(SCHEMA_RESOURCE.read_text(encoding="utf-8")), cls=jsonschema.Draft202012Validator
+    )
+
+
+def test_refresh_refuses_when_the_lock_fails(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    runner.responses["pixi lock"] = FakeProc([], 1, "", "unsolvable")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert not result.ok
+    assert "pixi lock failed" in result.summary
+    assert runner.calls[-1][:2] == ["git", "checkout"]
+
+
+def test_parse_pixi_moves_dashed_names() -> None:
+    side = {"conda": "https://conda.anaconda.org/conda-forge/linux-64/gcc_linux-64-14.3.0-h1382650_11.conda"}
+    assert _artifact_version(side) == "14.3.0"
+    assert _artifact_version({"conda": "https://x/linux-64/clang-18-18.1.8-default_h1.conda"}) == "18.1.8"
+    assert _artifact_version({"conda": "https://x/noarch/pip-24.2-pyh8b19718_1.tar.bz2"}) == "24.2"
+
+
+def test_reconcile_duty_wires_real_memlog_add_and_stamp_seams(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The CLI duty must not run reconcile on the dataclass's no-op seams (Story 100.7)."""
+    import pyforge.steward.estate_reconcile as er
+
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    seen: dict[str, object] = {}
+
+    def _capture(rdeps, *, journal_path=None):
+        seen["rdeps"] = rdeps
+        return None
+
+    monkeypatch.setattr(er, "run_reconcile", _capture)
+    ns = argparse.Namespace(duty="estate", estate_verb="reconcile", _estate_deps=_deps(root, runner))
+    EstateDuty().run(ns)
+    rdeps = seen["rdeps"]
+    memlog = root / "_bmad-output/projects/p/planning-artifacts/specs/spec-x/.memlog.md"
+    rdeps.memlog_append(memlog, "Surface reconcile")
+    rdeps.git_add(root, ["pkg/generated.txt"])
+    rdeps.stamp_spec(root, "p/spec-x")
+    memlog_call, add_call, stamp_call = runner.calls[-3:]
+    assert memlog_call[1:5] == ["_bmad/scripts/memlog.py", "append", "--path", str(memlog)]
+    assert memlog_call[-2:] == ["--text", "Surface reconcile"]
+    assert add_call == ["git", "add", "--", "pkg/generated.txt"]
+    assert stamp_call[1].endswith("spec_surface_check.py")
+    assert stamp_call[2:] == ["--write-baseline", "--spec", "p/spec-x"]

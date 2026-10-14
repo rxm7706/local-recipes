@@ -6447,7 +6447,7 @@ So that the batch is proven rather than remembered, and the path is proven on it
 **When** `estate plan`, then `estate refresh` (without `--transitive`; the operator may run it on the branch), `estate realize --plan` (the operator runs `realize --yes` on the branch for the installer-owned rows), `estate reconcile` and `estate verify` run in the story's worktree
 **Then** the journal records every move and every restored loss; the nine loss classes of the hand batch yield zero findings after the restore; every environment on this platform installs; every lane is green; the PR carries the `maintenance` label and lands with the marshal subject; the hand batch on the operator's working tree is superseded and the operator discards it
 **And** the `bmad-method` pre-flight report is in the journal, and every `operator_gate` realize is the operator's `realize --yes` on the same branch or a journaled `stale` that the next refresh repeats; every register probe reads `live` before merge except the journaled operator rows; `estate status` shows linux-64 as the confirming platform and the other two as lock-solved; the story spec's Auto Run Result cites the journal path and the before/after counts.
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

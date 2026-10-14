@@ -1,13 +1,11 @@
 ---
 outputFile: '{forge_data_folder}/analyze-source-report-{project_name}.md'
 nextStepOptions:
-  step 1a: 'step-auto-scope.md'
   step 2: 'scan-project.md'
   step 3: 'identify-units.md'
   step 4: 'map-and-detect.md'
   step 5: 'recommend.md'
   step 6: 'generate-briefs.md'
-  step 7: 'health-check.md'
 ---
 
 <!-- Config: communicate in {communication_language}. -->
@@ -16,7 +14,7 @@ nextStepOptions:
 
 ## STEP GOAL:
 
-To resume the analyze-source workflow from where it was left off in a previous session by reading the analysis report's progress state and routing to the correct next step.
+To resume an unfinished analyze-source run from where a previous session left off, by reading the analysis report's progress state and routing to the correct next step. Init section 1 sends only an unfinished report of the step-by-step analysis here: it archives a finished report and one whose `mode` is `'auto'` and starts a fresh analysis instead.
 
 ## Rules
 
@@ -39,7 +37,6 @@ Load {outputFile} and read frontmatter:
 - `forge_tier`
 - `existing_skills`
 - `confirmed_units`
-- `mode` — `'auto'` when the report was produced by the auto-scope path; absent or any other value means interactive
 
 ### 3. Present Progress Summary
 
@@ -55,11 +52,7 @@ Load {outputFile} and read frontmatter:
 
 ### 4. Determine Next Step
 
-**IF the report's `mode` is `'auto'`** (produced by the auto-scope path; reached here because the resume invocation did not carry `[auto]`): an auto analysis is a single idempotent pass, not a resumable interactive chain. Do not use the interactive table below.
-- If `auto-scope` is in `stepsCompleted`, the auto analysis already completed — announce "**This auto analysis is already complete.** Would you like to start a new analysis?" and stop.
-- Otherwise (an auto run interrupted before auto-scope finished), re-enter the auto path: load, read fully, then execute `step-auto-scope.md` (it reads the existing report frontmatter and re-runs cleanly). **STOP HERE.**
-
-For interactive reports, map the last completed step to the next step file:
+Map the last completed step to the next step file:
 
 | Last Completed | Next Step |
 |----------------|-----------|
@@ -68,10 +61,6 @@ For interactive reports, map the last completed step to the next step file:
 | identify-units | map-and-detect |
 | map-and-detect | recommend |
 | recommend | generate-briefs |
-| generate-briefs | health-check |
-
-**IF `health-check` is in `stepsCompleted`:**
-"**This analysis appears to be complete.** All steps have been finished. Would you like to start a new analysis?"
 
 ### 5. Update and Route
 

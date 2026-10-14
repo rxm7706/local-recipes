@@ -53,8 +53,9 @@ retires the row). Defaults: `pinning_strategy: latest-up`, `floors_never_lower: 
 - **Retire a hold** — delete the row only after its `until` is satisfied; run
   `python scripts/pin_policy_check.py --check` so nothing still depends on the old exclusion.
 
-The canonical upgrade command is **rendered** from the policy (never-move rows become `--exclude`
-flags). Do not maintain a parallel exclude list in comments:
+The canonical upgrade command is **rendered** from the policy: every held package, whatever its
+`hold`, becomes an `--exclude` flag, so the upgrade solves with each cap, exact pin and channel
+table still in place. Do not maintain a parallel exclude list in comments:
 
 ```bash
 python scripts/pin_policy_check.py --render-command
@@ -103,7 +104,10 @@ pixi run -e pyforge-steward pyforge steward estate refresh
 ```
 
 After upgrade, `pin_policy_check --diff` judges cap loss, flattened channel tables, lowered floors,
-and moved never-move packages; `pin_policy_restore` rewrites declarations from policy when needed;
+and moved never-move packages. A lowered floor means the upgrade raised another package past what the
+old floor allows, so `refresh` resets `pixi.toml` and `pixi.lock` to the base, excludes the package it
+lowered, and runs the upgrade again (up to four rounds; the journal's `converge` block names each
+package it excluded). `pin_policy_restore` then rewrites any declaration still lost;
 `pixi lock` re-solves; **`pin_policy_check --fan-out`** compares station `pyproject.toml` /
 package pins to the lock. A red fan-out names the **station and file** — fix that pin on that
 station's story; the refresh must not land a lock that violates a station range.
