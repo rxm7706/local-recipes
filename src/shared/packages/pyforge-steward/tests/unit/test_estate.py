@@ -310,7 +310,7 @@ def test_ac5_status_and_duty_count(tmp_path: Path) -> None:
     assert status.ok
     assert "2026-10-01.json" in status.summary
 
-    assert len(DUTIES) == 28  # noqa: PLR2004
+    assert len(DUTIES) == 29  # noqa: PLR2004
     assert "estate" in DUTIES
     assert isinstance(resolve_duty("estate"), EstateDuty)
 

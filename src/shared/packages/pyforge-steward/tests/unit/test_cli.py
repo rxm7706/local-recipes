@@ -67,6 +67,7 @@ def test_there_are_exactly_twenty_eight_duties():
         "session",
         "deck-drift",
         "estate",
+        "ci",
     )
 
 
@@ -237,7 +238,7 @@ def test_a_bad_flag_overlay_projects_to_the_usage_code(monkeypatch, tmp_path, ca
 
 def test_keys_exec_is_a_verb_of_keys_not_a_new_duty(capsys):
     """`exec` joins `keys` (Story 75.1): the duty count stays 28, the verb list grows to seven."""
-    assert len(DUTIES) == 28  # noqa: PLR2004
+    assert len(DUTIES) == 29  # noqa: PLR2004
     assert "exec" not in DUTIES
     with pytest.raises(SystemExit):
         build_parser().parse_args(["keys", "--help"])
