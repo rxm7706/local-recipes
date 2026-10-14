@@ -1327,8 +1327,9 @@ def test_real_redis_retry_backoff_dlq_and_harvest(
         # retry it counts as N ms idle can be up to 1 ms early in real time; the
         # timestamps here are client reads taken after each reply, adding
         # latency jitter. Under CPU contention a correct 200 ms backoff measured
-        # 199.5 ms. The slack is far below the 100 ms step it still proves.
-        slack = 0.005
+        # 199.5 ms; after ~7 min of platform tests the 100 ms step measured
+        # ~92.5 ms once. Ten ms slack still separates 100 from 200 ms steps.
+        slack = 0.01
         assert calls[1] - calls[0] >= 0.1 - slack
         assert calls[2] - calls[1] >= 0.2 - slack
         ((_qid, fields),) = list_quarantined(client)

@@ -54,6 +54,7 @@ jobs:
       - name: Resolve Pages host env (flag + configure-pages)
         run: |
           pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python docsite/tools/export_ci_surfaces_tile_env.py >> "$GITHUB_ENV"
         env:
           PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
           PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}

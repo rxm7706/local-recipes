@@ -188,6 +188,7 @@ sections:
       and eight rows stay `blocked` until an operator flips each one.
     - Shipped on A is not in effect on B. A capability is done on B only when its ledger row claims
       `verified-in-foundry`, and no row does yet.
+  - type: ci_surfaces
 - id: foundation
   num: '00'
   title: The shared spine

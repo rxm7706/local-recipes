@@ -728,6 +728,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.herald.ci_surfaces_tile": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.herald.deck_export_native": {
         "dev": True,
         "staging": True,
