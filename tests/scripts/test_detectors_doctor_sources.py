@@ -122,7 +122,21 @@ def test_run_doctor_sources_returns_ten_unknown_rows_when_unimportable(monkeypat
     assert all("pyforge.doctor is not importable" in row["summary"] for row in rows)
 
 
-def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector():
+def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector(monkeypatch):
+    """Scope filtering and row building, judged against stub gathers (doctor Story 47.1). The real gathers walk the
+    live tree: when this test called them twice it spent 684.59 s of the 691.89 s that the two-file
+    `pyforge-doctor-aggregate-scripts-test` task (59 tests) took, and ran the Detectors `scripts-suite` job past its
+    timeout. `detectors-ci` in the `detectors` job already runs every one of them for real. Every
+    `_DOCTOR_SOURCE_TASKS` name gets a stub, so a gather that ran anyway would read `unknown` (KeyError), not `pass`."""
+    _doctor_dispatch()
+    from pyforge.doctor import sources
+    from pyforge.doctor.models import Source
+
+    names = [name for name, _task in detectors._DOCTOR_SOURCE_TASKS]
+    monkeypatch.setattr(
+        "pyforge.doctor.sources.__main__.DISPATCH", {name: (lambda root: []) for name in names}
+    )
+
     # Steward 30.2: dashboard-drift is repo-scope (reintroduction gate).
     repo_rows = detectors._run_doctor_sources("repo")
     all_rows = detectors._run_doctor_sources("all")
@@ -131,6 +145,39 @@ def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector():
     assert len(repo_rows) == len(detectors._DOCTOR_SOURCE_TASKS)
     assert "dashboard-drift" in {row["name"] for row in repo_rows}
     assert "dashboard-drift" in {row["name"] for row in all_rows}
+
+    # Row building: one row per task, in order, scoped by `scope_for`, each a clean pass.
+    tasks = dict(detectors._DOCTOR_SOURCE_TASKS)
+    assert [row["name"] for row in all_rows] == names
+    for row in all_rows:
+        assert row["task"] == tasks[row["name"]]
+        assert row["scope"] == sources.scope_for(Source(row["name"]))
+        assert (row["status"], row["rc"], row["summary"]) == ("pass", 0, "no findings"), row
+    # A real runtime-scope source, if one is ever registered, is not in the repo rows.
+    assert {row["name"] for row in repo_rows} == {
+        name for name in names if sources.scope_for(Source(name)) == "repo"
+    }
+
+    # A repo-scope call skips a runtime-scope source. Every registered source is repo-scope today, so mark one
+    # runtime through `scope_for`, which `_run_doctor_sources` reads at call time.
+    runtime_name = next(name for name in names if name != "dashboard-drift")
+    real_scope_for = sources.scope_for
+    monkeypatch.setattr(
+        sources,
+        "scope_for",
+        lambda source: "runtime" if source.value == runtime_name else real_scope_for(source),
+    )
+
+    repo_rows = detectors._run_doctor_sources("repo")
+    all_rows = detectors._run_doctor_sources("all")
+    runtime_rows = detectors._run_doctor_sources("runtime")
+
+    assert runtime_name not in {row["name"] for row in repo_rows}
+    assert len(repo_rows) == len(detectors._DOCTOR_SOURCE_TASKS) - 1
+    assert "dashboard-drift" in {row["name"] for row in repo_rows}
+    assert len(all_rows) == len(detectors._DOCTOR_SOURCE_TASKS)
+    assert {row["name"]: row["scope"] for row in all_rows}[runtime_name] == "runtime"
+    assert [(row["name"], row["scope"]) for row in runtime_rows] == [(runtime_name, "runtime")]
 
 
 def test_doctor_source_tasks_include_ledger_direction_wiring():
@@ -209,10 +256,11 @@ def test_doctor_source_tasks_include_bmad_output_hygiene_and_a_matching_pixi_tas
 
 def _doctor_dispatch():
     """Doctor's dispatch table, or a skip naming what is missing. It imports every source module and Doctor's
-    run-deps (`pyforge.core`, `jsonschema`, `yaml`); the Detectors `scripts-suite` job's first step runs this file in
-    the stdlib-only `pyforge-ci` env, which has none of them (Story 38.5). Its second step, and `pr-preflight`, run it
-    again through `pyforge-doctor-aggregate-scripts-test` in `pyforge-doctor`, where these tests run for real
-    (Story 39.1)."""
+    run-deps (`pyforge.core`, `jsonschema`, `yaml`). The Detectors `scripts-suite` job's first step runs this file in
+    `pyforge-ci`, which declares none of them (Story 38.5); but its `python` feature pulls `jsonschema` and `yaml` in
+    through `spec-kit`, and `tests/scripts/conftest.py` puts `pyforge-core` on `sys.path`, so these tests run there too
+    (found in Story 47.1). Its second step, and `pr-preflight`, run the file again through
+    `pyforge-doctor-aggregate-scripts-test` in `pyforge-doctor`, where Doctor's run-deps are declared (Story 39.1)."""
     return pytest.importorskip("pyforge.doctor.sources.__main__").DISPATCH
 
 
