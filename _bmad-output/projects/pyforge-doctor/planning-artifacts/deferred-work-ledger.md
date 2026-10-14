@@ -3022,4 +3022,5 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: story-47-1 independent review, 2026-10-14 (finding 2); amended in place by its re-review, iteration 2 (finding B: six places, not two), as the row was minted on the same unmerged branch
   severity: low
   status: open
+  story: promoted to steward Story 102.3 (spec-pyforge-steward CAP-5, steward Epic 102, minted 2026-10-14 on the operator's ruling "yes stdlib only"; spec `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-102-3-pyforge-ci-is-stdlib-only-as-its-tasks-say.md`); close when 102.3 lands, citing its merge.
   reason: Not fixed in Story 47.1. A `pixi.toml` change fires every station suite and the `environment.yaml` rule, which is out of scale for a description fix, and the env's composition is steward's ruling. Story 47.1 corrected the same claim in `.github/workflows/detectors.yml` and in `tests/scripts/test_detectors_doctor_sources.py`, which it touches.

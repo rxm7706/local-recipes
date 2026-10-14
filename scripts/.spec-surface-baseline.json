@@ -6156,7 +6156,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "6fab7f365b208d5c0e2920bb402b5d659fbc6199"
+  "memlog": "84ef1b81c30766ecc2160768b76d3c4142559704"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

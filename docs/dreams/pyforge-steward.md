@@ -1739,6 +1739,26 @@ Drift — orphaned between stations.
   **Constraints:** a fix under CAP-152 (Stories 63.7, 89.1 and 96.1), with no CAP and no flag;
   `PLATFORM_CI_LOCAL_LOCK_WAIT`, the exit codes and the report format stay; never kill processes host-wide. Owner
   `spec-pyforge-steward`. → Epic 101 / Story 101.1, specced 2026-10-14.
+- **2026-10-14 (CI and estate follow-ups) — Found: three steward reports say less than is true.** Three open
+  deferred-work rows, each found by a story that landed on 2026-10-14. (1) `steward ci status --json` has no row for
+  the master switch `PAUSE_ALL_CI` and judges each surface by its own switch, so while the master is on, doctor 45.1's
+  CI pause drift source, herald 39.1's dossier tile and marshal 100.1's landing line all under-report
+  (`DW-steward-101-1-1`). (2) `estate reconcile` regenerates the bmad-suite metapackage with a generator that takes
+  each member's upstream latest and silently falls back to the member recipe when a lookup fails, and it journals only
+  the exit code. Story 100.7's two reconciles on one branch wrote `bmad-loop >=0.13.2` and then `>=0.12.0`, while the
+  lock held 0.12.0 throughout (`DW-steward-100-7-2`). (3) Six places in `pixi.toml` call `pyforge-ci` stdlib-only, but
+  its `python` feature's `spec-kit` brings `jsonschema`, `pyyaml` and 35 more packages, so tests built to skip there
+  run there. Measured at `846d8383f5`: with those packages gone, 32 `tests/scripts` files fail, error or newly skip,
+  and every failure and error is for want of `yaml` (`DW-doctor-47-1-1`). The operator ruled 2026-10-14: "yes stdlib only". **What it looks
+  like when fixed:** the CI status report carries the master as its own row, `drift` while it is on, and every surface
+  whose jobs read it reads `paused` with a reason, so the three consumers report it with no change of their own;
+  reconcile writes each suite floor from the refresh it follows — the version the batch moved the member to, else the
+  floor it already had or what the member recipe builds — with no network lookup, and journals every floor and its
+  source; `pyforge-ci` composes no `spec-kit`, the tests that need a library skip there and run where it is declared,
+  and every claim about the env is true. **Constraints:** three fixes, under CAP-166, CAP-167 and CAP-5, with no CAP
+  and no flag; no consumer station changes; the bmad-suite generator is conda-forge-expert's, so its story invokes the
+  skill and closes with its retro; `pixi lock` only, and no other environment's packages move; nothing outward. Owner
+  `spec-pyforge-steward`. → Epic 102 / Stories 102.1-102.3, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

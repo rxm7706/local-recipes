@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 8fee4b9b6df8d9eb
-story_count: 370
+source_fingerprint: 4b6be9b6a1cd5d93
+story_count: 373
 test_file_count: 125
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 370
-- **Epics parsed:** 101
+- **Stories parsed:** 373
+- **Epics parsed:** 102
 - **Test files inventoried:** 125 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8fee4b9b6df8d9eb`
+- **Source fingerprint:** `4b6be9b6a1cd5d93`
 
 ## Risk Assessment
 
@@ -128,6 +128,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 98: Station tests run when what they read changes (fix under CAP-159)
 - Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
 - Epic 101: The `platform-ci-local` stubs leak no process, and the holder scan takes seconds (fix under CAP-152)
+- Epic 102: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167 and CAP-5)
 
 ### Low-risk epics
 
@@ -642,6 +643,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 100.6 | The hand sequence is retired by one how-to and one pointer | none observed |
 | 100.7 | The first refresh lands through the path | none observed |
 | 101.1 | The `platform-ci-local` stubs leak no process, and the holder scan takes seconds | none observed |
+| 102.1 | `steward ci status` reports the master switch, and every surface it pauses | none observed |
+| 102.2 | `estate reconcile` writes the bmad-suite floors from the batch, not the network | none observed |
+| 102.3 | `pyforge-ci` is stdlib-only, as its tasks say | none observed |
 
 ## Quality Gates
 
