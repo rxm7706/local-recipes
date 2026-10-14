@@ -135,7 +135,7 @@ development_status:
   42-1-a-repeated-frontmatter-key-in-a-story-spec-turns-detectors-red: done
   43-1-bmad-drift-knows-every-file-marshal-dispatch-writes-into-tier-3: done
   44-1-the-doctor-check-speed-budget-is-judged-on-the-cpu-the-check-spends: done
-  45-1-doctor-names-every-ci-surface-that-drifted-stuck-or-outlived-its-review-date: backlog
+  45-1-doctor-names-every-ci-surface-that-drifted-stuck-or-outlived-its-review-date: done
   46-1-the-env-hygiene-scan-walks-each-tree-once-and-skips-test-code: done
   47-1-the-aggregate-scripts-test-checks-scope-filtering-without-gathering: done
   5-1-marshal-durability-source-independent-by-construction: done
@@ -246,7 +246,7 @@ development_status:
   epic-43-retrospective: optional
   epic-44: done
   epic-44-retrospective: optional
-  epic-45: backlog
+  epic-45: done
   epic-45-retrospective: optional
   epic-46: done
   epic-46-retrospective: optional
