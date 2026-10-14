@@ -379,9 +379,12 @@ jobs:
             _bmad
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
+            docs/404.md
             docs/dreams
             docs/foundry
             docs/governance
+            docs/index.md
+            docs/map.yaml
             docs/how-to/pixi-tasks.md
             docs/reference/bmad-estate-llms-full.md
             docs/reference/environments.md

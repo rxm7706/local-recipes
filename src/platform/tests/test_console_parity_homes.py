@@ -328,7 +328,7 @@ def test_generator_gone_kedro_viz_kept() -> None:
     dash_wf = (REPO_ROOT / ".github" / "workflows" / "pages.yml").read_text(
         encoding="utf-8",
     )
-    assert "schedule:" not in dash_wf
+    assert "17 6 * * 1" in dash_wf
     assert "generate.py" not in dash_wf
 
 
