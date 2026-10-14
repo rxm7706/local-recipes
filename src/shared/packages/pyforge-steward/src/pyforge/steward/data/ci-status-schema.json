@@ -61,7 +61,8 @@
             "overdue"
           ]
         },
-        "detail": { "type": "string" }
+        "detail": { "type": "string" },
+        "paused_by_master": { "type": "boolean" }
       },
       "additionalProperties": false
     }

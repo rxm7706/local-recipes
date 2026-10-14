@@ -2,7 +2,7 @@
 title: "103.1: `steward ci status` reports the master switch, and every surface it pauses"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
 review_loop_iteration: 0
 followup_review_recommended: false
