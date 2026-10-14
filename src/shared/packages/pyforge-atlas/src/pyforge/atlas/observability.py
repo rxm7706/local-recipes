@@ -69,10 +69,10 @@ from openlineage.client.event_v2 import (
     RunState,
 )
 from openlineage.client.facet_v2 import (
+    OutputDatasetFacet,
     error_message_run,
     output_statistics_output_dataset,
 )
-from openlineage.client.generated.output_dataset import OutputDatasetFacet
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.transport import Transport
 from openlineage.client.uuid import generate_new_uuid
