@@ -365,7 +365,7 @@ def render_workflow_file(
         insert_pat = (
             rf"(  {re.escape(job_id)}:\n)"
             rf"((?:    #[^\n]*\n)*)"
-            rf"(    (?:runs-on|needs|if|steps|strategy|env|timeout-minutes):)"
+            rf"(    (?:name|runs-on|needs|if|steps|strategy|env|timeout-minutes):)"
         )
         new_text, n = re.subn(insert_pat, rf"\1\2{block}\3", text, count=1)
         if n:
@@ -374,8 +374,9 @@ def render_workflow_file(
     # Drop a legacy if: line left beside the rendered fragment (needs/if ordering in some workflows).
     deduped, n = re.subn(
         r"(    if: \$\{\{ github\.event_name == 'workflow_dispatch' \|\| \(vars\.PAUSE_ALL_CI[^\n]+\n)"
+        r"(    needs:[^\n]+\n)?"
         r"    if: (?!.*PAUSE_ALL_CI)([^\n]+\n)",
-        r"\1",
+        r"\1\2",
         text,
     )
     if n:
