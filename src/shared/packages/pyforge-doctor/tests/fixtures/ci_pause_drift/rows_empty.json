@@ -1,0 +1,9 @@
+{
+  "fetched_at": "2026-10-13T12:00:00Z",
+  "repo": "rxm7706/local-recipes",
+  "rate_limit": {
+    "core_limit": 5000,
+    "core_remaining": 4999
+  },
+  "rows": []
+}

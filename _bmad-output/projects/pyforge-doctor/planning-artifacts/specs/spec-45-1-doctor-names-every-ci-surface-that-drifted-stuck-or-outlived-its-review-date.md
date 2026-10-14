@@ -2,7 +2,8 @@
 title: '45.1: Doctor names every CI surface that drifted, stuck or outlived its review date'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '84bcb27e56a0f61a93ca7a04ecd317819b00e29c'
 flag-exempt: detector-or-gate   # a check that judges; gating it off would bring back the silent-off surface it names (spec-feature-flag-governance Q2; bmad-spec ruling 2026-10-14, memlog)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -194,6 +195,11 @@ Type / Effort / Deps: feature / S / none (steward 99.3 is `done` on `main`).
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
 - The four mutations of AC10 — expected: each fails its named test. Restore each.
 - Operator, after landing, with `gh` authenticated and the steward flag on: `pixi run --frozen -e pyforge-guild python -m pyforge.doctor.sources ci-pause-drift` — expected: exit 0, and a `ci-pause-overdue` WARN for any live pause past 2026-11-01; then `python scripts/fleet_picture.py` shows the same lines under ATTENTION.
+
+## Auto Run Result
+
+Status: done  
+Verification: `pyforge-doctor-test` (3655 passed), `tests/scripts/test_fleet_picture_ci_pauses.py` (5 passed), `spec_surface_reconcile.py` (OK). Surface reconcile memlogs on `spec-pyforge-doctor`, co-governor `spec-pyforge-core`, and `spec-pyforge-marshal`.
 
 ## Spec Change Log
 
