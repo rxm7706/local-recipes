@@ -309,3 +309,15 @@ def test_docs_map_is_a_watched_path() -> None:
     from pyforge.steward.estate_reconcile import WATCH_PATHS
 
     assert "docs/map.yaml" in WATCH_PATHS
+
+
+def test_checks_run_in_the_guild_env() -> None:
+    """The duty runs in pyforge-steward, which has no pyforge.doctor; checks are Guild tasks (Story 100.7)."""
+    import sys
+
+    from pyforge.steward.estate_reconcile import GATING_CHECKS, WARN_CHECKS
+
+    for name, argv in (*GATING_CHECKS, *WARN_CHECKS):
+        assert sys.executable not in argv, name
+        if argv[0] == "pixi" and argv[1] == "run":
+            assert argv[argv.index("-e") + 1] == "pyforge-guild", name

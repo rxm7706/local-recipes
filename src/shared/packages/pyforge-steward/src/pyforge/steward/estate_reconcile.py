@@ -106,31 +106,27 @@ def _build_generators(journal: dict[str, Any], root: Path) -> list[tuple[str, li
     return gens
 
 
+def _guild_python(*args: str) -> list[str]:
+    """Checks are Guild tasks: the steward env carries no ``pyforge.doctor``, so they run in pyforge-guild."""
+    return ["pixi", "run", "--as-is", "-x", "-e", "pyforge-guild", "python", *args]
+
+
 GATING_CHECKS: tuple[tuple[str, list[str]], ...] = (
-    ("llms-full-check", [sys.executable, "scripts/llms_full_check.py"]),
-    ("bmad-estate-check", [sys.executable, "scripts/bmad_estate_check.py"]),
-    ("pixi-version-check", [sys.executable, "scripts/pixi_version_check.py"]),
-    ("target-version-check", [sys.executable, "scripts/target_version_check.py"]),
-    ("sbom-gaps-check", [sys.executable, "scripts/sbom_gap_derive.py"]),
-    ("platform-policy-suite-check", [sys.executable, "-m", "pyforge.doctor.sources", "platform-policy-suite"]),
-    ("pin-policy-check", [sys.executable, "scripts/pin_policy_check.py", "--check"]),
+    ("llms-full-check", _guild_python("scripts/llms_full_check.py")),
+    ("bmad-estate-check", _guild_python("scripts/bmad_estate_check.py")),
+    ("pixi-version-check", _guild_python("scripts/pixi_version_check.py")),
+    ("target-version-check", _guild_python("scripts/target_version_check.py")),
+    ("sbom-gaps-check", _guild_python("scripts/sbom_gap_derive.py")),
+    ("platform-policy-suite-check", _guild_python("-m", "pyforge.doctor.sources", "platform-policy-suite")),
+    ("pin-policy-check", _guild_python("scripts/pin_policy_check.py", "--check")),
     ("pixi-lock-check", ["pixi", "lock", "--check"]),
 )
 
 WARN_CHECKS: tuple[tuple[str, list[str]], ...] = (
-    ("pixi-currency-staleness-check", [sys.executable, "-m", "pyforge.doctor.sources", "pixi-currency-ledger"]),
+    ("pixi-currency-staleness-check", _guild_python("-m", "pyforge.doctor.sources", "pixi-currency-ledger")),
     (
         "steward-deck-drift",
-        [
-            sys.executable,
-            "-m",
-            "pyforge.steward.cli",
-            "deck-drift",
-            "--slug",
-            "pyforge-steward",
-            "--path",
-            "deck.dc.html",
-        ],
+        _guild_python("-m", "pyforge.steward.cli", "deck-drift", "--slug", "pyforge-steward", "--path", "deck.dc.html"),
     ),
 )
 
@@ -303,7 +299,7 @@ def _reconcile_spec_surface(
         if stamp_exit != 0:
             return _refusal(f"estate reconcile: scoped stamp failed for {spec_name} (exit {stamp_exit})")
 
-    surface_argv = [sys.executable, "-m", "pyforge.doctor.sources", "spec-surface"]
+    surface_argv = _guild_python("-m", "pyforge.doctor.sources", "spec-surface")
     started = time.monotonic()
     surface_proc = deps.runner(surface_argv, deps.root)
     block["spec_surface"] = {
