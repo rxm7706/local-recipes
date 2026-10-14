@@ -168,7 +168,7 @@ jobs:
   test:
     # ci-surfaces: platform-ci.test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')))))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')))))))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -268,7 +268,7 @@ jobs:
   build-platform-image:
     # ci-surfaces: platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE != 'true' && (${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE != 'true' && (( github.event_name == 'workflow_dispatch' && ( (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) || (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity) ) ) || ( github.event_name != 'workflow_dispatch' && (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true' || vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true') ))) }} github.event_name == 'workflow_dispatch' && ( (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) || (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity) ) ) || ( github.event_name != 'workflow_dispatch' && (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true' || vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true') ))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE != 'true' && (${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE != 'true' && (( github.event_name == 'workflow_dispatch' && ( (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) || (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity) ) ) || ( github.event_name != 'workflow_dispatch' && (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true' || vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true') ))) }} github.event_name == 'workflow_dispatch' && ( (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) || (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity) ) ) || ( github.event_name != 'workflow_dispatch' && (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true' || vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true') ))) }} github.event_name == 'workflow_dispatch' && ( (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) || (inputs.jobs == 'air-gap-parity-only' && inputs.air_gap_parity) ) ) || ( github.event_name != 'workflow_dispatch' && (vars.PLATFORM_CI_AIR_GAP_PARITY == 'true' || vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true' || vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true') ))) }}
         github.event_name == 'workflow_dispatch' &&
         (
           (inputs.jobs == 'all' && (inputs.air_gap_parity || inputs.gke_portability_smoke || inputs.ocp_portability_smoke)) ||
@@ -338,7 +338,6 @@ jobs:
     # ci-surfaces: platform-ci.container
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true' && (((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all')) }}
-      (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -742,7 +741,7 @@ jobs:
   golden-path-promotion:
     # ci-surfaces: platform-ci.golden-path-promotion
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')))))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && (github.event_name != 'workflow_dispatch' || inputs.jobs == 'all')))))))) }}
     needs: container
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -849,8 +848,7 @@ jobs:
   container-dbgpt:
     # ci-surfaces: platform-ci.container-dbgpt
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true' && ((((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all')) }} (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')) }}
-      (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true' && (((github.event_name == 'workflow_dispatch' && inputs.jobs == 'all')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -1072,7 +1070,7 @@ jobs:
   gke-portability-smoke:
     # ci-surfaces: platform-ci.gke-portability-smoke
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE != 'true' && (((( (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke)) }} (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke)) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE != 'true' && ((((( (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke)) }} (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke)) }} (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke)) }}
         (github.event_name == 'workflow_dispatch' && inputs.gke_portability_smoke) ||
         (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_GKE_PORTABILITY_SMOKE == 'true')
       ) &&
@@ -1333,7 +1331,7 @@ jobs:
   ocp-portability-smoke:
     # ci-surfaces: platform-ci.ocp-portability-smoke
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE != 'true' && (((( (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke)) }} (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke)) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE != 'true' && ((((( (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke)) }} (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke)) }} (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke)) }}
         (github.event_name == 'workflow_dispatch' && inputs.ocp_portability_smoke) ||
         (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_OCP_PORTABILITY_SMOKE == 'true')
       ) &&
@@ -1551,7 +1549,7 @@ jobs:
   air-gap-parity:
     # ci-surfaces: platform-ci.air-gap-parity
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_AIR_GAP_PARITY != 'true' && (((( (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity)) }} (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity)) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PLATFORM_CI != 'true' && vars.PLATFORM_CI_AIR_GAP_PARITY != 'true' && ((((( (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity)) }} (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity)) }} (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity)) }}
         (github.event_name == 'workflow_dispatch' && inputs.air_gap_parity) ||
         (github.event_name != 'workflow_dispatch' && vars.PLATFORM_CI_AIR_GAP_PARITY == 'true')
       ) &&

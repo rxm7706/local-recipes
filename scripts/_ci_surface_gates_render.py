@@ -66,6 +66,22 @@ def strip_expression_wrappers(text: str) -> str:
     return text
 
 
+def _unwrap_redundant_parens(expr: str) -> str:
+    """Strip outer ``(…)`` wrappers when the whole expression is one parenthesized group."""
+    expr = expr.strip()
+    while len(expr) >= 2 and expr.startswith("(") and expr.endswith(")"):
+        depth = 0
+        for i, ch in enumerate(expr):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0 and i != len(expr) - 1:
+                    return expr
+        expr = expr[1:-1].strip()
+    return expr
+
+
 def parse_fragment_inner(if_text: str) -> str | None:
     """Extract the job's inner condition from a rendered fragment, or ``None`` if not a fragment."""
     raw = strip_expression_wrappers(_normalize_if_text(if_text))
@@ -95,7 +111,7 @@ def parse_fragment_inner(if_text: str) -> str | None:
             continue
         break
     rest = " && ".join(terms[idx:]).strip()
-    return rest
+    return _unwrap_redundant_parens(rest)
 
 
 def has_render_fragment(if_text: str) -> bool:
@@ -146,7 +162,9 @@ def _active_workflow_states(registry: dict[str, Any]) -> dict[str, str]:
 def build_fragment(*, inner: str, workflow_switch: str, job_switch: str | None) -> str:
     pause_terms = [_MASTER_CMP, f"vars.{workflow_switch} != 'true'"]
     if job_switch:
-        pause_terms.append(f"vars.{job_switch} != 'true'")
+        compact_inner = inner.replace(" ", "").replace('"', "'")
+        if f"vars.{job_switch}" not in compact_inner:
+            pause_terms.append(f"vars.{job_switch} != 'true'")
     if inner:
         body = " && ".join([*pause_terms, f"({inner})"])
     else:
@@ -160,9 +178,9 @@ def _inner_from_job_if(existing_if: Any, job_switch: str | None) -> str:
         return ""
     parsed = parse_fragment_inner(_normalize_if_text(existing_if))
     if parsed is not None:
-        inner = parsed
+        inner = _unwrap_redundant_parens(parsed)
     else:
-        inner = strip_expression_wrappers(_normalize_if_text(existing_if))
+        inner = _unwrap_redundant_parens(strip_expression_wrappers(_normalize_if_text(existing_if)))
     if job_switch:
         lone = f"vars.{job_switch} != 'true'"
         compact = inner.replace(" ", "").replace('"', "'")
@@ -337,15 +355,23 @@ def render_workflow_file(
         return False
     changed = False
     for job_id, plan in sorted(job_plans.items(), key=lambda kv: (-len(kv[0]), -text.find(f"  {kv[0]}:\n"))):
+        new_if = build_fragment(
+            inner=plan.inner,
+            workflow_switch=plan.workflow_switch,
+            job_switch=plan.job_switch,
+        )
         block = _render_block_for_plan(plan)
         marker = f"    # {_RENDER_MARKER} {plan.row_id}"
         if marker in text:
             pattern = (
-                rf"    # {_RENDER_MARKER} {re.escape(plan.row_id)}\n"
+                rf"(    # {_RENDER_MARKER} {re.escape(plan.row_id)}\n"
                 rf"    # render: {re.escape(_RENDER_CMD)}\n"
-                rf"    if: \$\{{\{{[^{{}}]*\}}\}} *\n"
+                rf"    if: )(\$\{{\{{.*?\}}\}} *\n)"
             )
-            new_text, n = re.subn(pattern, block.rstrip("\n") + "\n", text, count=1)
+            m = re.search(pattern, text, flags=re.DOTALL)
+            if m and _normalize_if_text(m.group(2)) == _normalize_if_text(new_if):
+                continue
+            new_text, n = re.subn(pattern, rf"\1{new_if}\n", text, count=1, flags=re.DOTALL)
             if n and new_text != text:
                 text = new_text
                 changed = True
