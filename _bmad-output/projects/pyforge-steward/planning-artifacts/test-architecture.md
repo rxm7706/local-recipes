@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: c3f19967dd7423b4
+source_fingerprint: 3618c040daf3616f
 story_count: 378
-test_file_count: 125
+test_file_count: 126
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-steward`
 - **Stories parsed:** 378
 - **Epics parsed:** 103
-- **Test files inventoried:** 125 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 126 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c3f19967dd7423b4`
+- **Source fingerprint:** `3618c040daf3616f`
 
 ## Risk Assessment
 
@@ -152,6 +152,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
