@@ -129,7 +129,7 @@ development_status:
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
   40-1-the-docs-home-links-the-herald-pages-from-its-left-menu-and-a-shared-top-menu: done
-  41-1-the-pages-hygiene-before-the-rework: backlog
+  41-1-the-pages-hygiene-before-the-rework: done
   42-1-the-fleet-board-and-guild-status-pages-render-at-build: backlog
   42-2-the-kedro-viz-mount-is-an-artifact-handoff-that-tolerates-absence: backlog
   42-3-the-second-host-needs-no-flag: backlog
@@ -228,7 +228,7 @@ development_status:
   epic-4-retrospective: optional
   epic-40: done
   epic-40-retrospective: optional
-  epic-41: backlog
+  epic-41: done
   epic-41-retrospective: optional
   epic-42: backlog
   epic-42-retrospective: optional
