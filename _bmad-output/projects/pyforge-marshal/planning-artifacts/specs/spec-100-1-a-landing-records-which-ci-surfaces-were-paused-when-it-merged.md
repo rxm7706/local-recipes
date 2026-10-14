@@ -2,7 +2,7 @@
 title: "100.1: A landing records which CI surfaces were paused when it merged"
 type: 'feature'
 created: '2026-10-14'
-status: in-progress
+status: done
 baseline_revision: 63c7cbbff4a5cd1afb07b0f122c7f61a495fd95e
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -248,3 +248,21 @@ Type / Effort / Deps: feature / S / none (steward Story 99.3 is done).
 ## Review Triage Log
 
 - No review has run yet.
+
+## Review Triage Log
+
+### 2026-10-14 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (independent review: implementation matches CAP-292 AC1–AC8; matrix rows covered in test_landing_ci_pauses.py)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Dispatch landing reads steward CI status once after the check wait (flag `pyforge.marshal.landing_ci_pauses`), records `ci_pauses_at_merge` in the journal/outcome/finalize payload, and updates the PR body with one `CI paused at merge:` line before merge.
+
+Verification: `pyforge-marshal-test` (13040 passed), `pyforge-deps-test` (130 passed), `flag-gate-check` (ok), `python scripts/spec_surface_reconcile.py` (ok), `spec-surface-check` (ok, scoped stamps on pyforge-marshal/spec-pyforge-marshal, pyforge-marshal/spec-pyforge-core, pyforge-steward/spec-pyforge-unifying-strategy).
+
+Review: 0 patch/defer items. followup_review_recommended: false.
+
+Residual risk: `PAUSE_ALL_CI` has no steward row (documented in spec); steward flag off yields `unknown` until operator enables `pyforge.steward.ci_pause_control`.
