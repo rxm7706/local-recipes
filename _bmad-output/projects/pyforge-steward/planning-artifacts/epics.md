@@ -6221,7 +6221,7 @@ So that no pause exists that the registry does not name.
 **When** the registry is seeded with every active workflow, every job that reads a `vars.*` switch today, each `workflow_dispatch`-only workflow (switch `null`), the six `disabled_manually` workflows, and today's state (`paused_since` 2026-10-04 and 2026-10-09, `review_by` 2026-11-01 per ruling Q8)
 **Then** `scripts/ci_surface_gates.py --check` exits 0 on the tree and exits 1 naming the workflow, job and switch on each planted fixture: a `vars.X` no row names, a row whose declared switch its job's `if:` does not read, a name outside the convention and its grandfather list (ruling Q7), a comparison other than the literal `'true'`
 **And** `--check --live` (authenticated `gh`) also reds a `disabled_manually` workflow without a `paused-manually` or `retired` row and exits 2 when it cannot observe (unauthenticated, or a 0/60 rate limit), and only the offline mode runs in `detectors-ci`; the schema rejects a row missing `owner`, `state` or `cost`, and a `paused` row missing `paused_since`, `reason` or `review_by`.
-**Status:** backlog
+**Status:** done
 
 ### Story 99.2: Every CI job carries its pause switch
 
