@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: be04263a179efa16
-story_count: 107
+source_fingerprint: d2550d7121e98ee6
+story_count: 108
 test_file_count: 146
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 107
-- **Epics parsed:** 30
+- **Stories parsed:** 108
+- **Epics parsed:** 31
 - **Test files inventoried:** 146 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `be04263a179efa16`
+- **Source fingerprint:** `d2550d7121e98ee6`
 
 ## Risk Assessment
 
@@ -63,6 +63,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 28: The live-attach fixture Postgres starts under any basetemp (fix under spec-pyforge-atlas CAP-6)
 - Epic 29: The range test server records each response before the client can read it (fix under spec-pyforge-atlas CAP-16)
 - Epic 30: The DAG export and the Vizro boards reach Pages as workflow artifacts (spec-pyforge-atlas CAP-62, CAP-63)
+- Epic 31: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20)
 
 ### Low-risk epics
 
@@ -330,6 +331,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 29.1 | The range test server records each response before the client can read it | none observed |
 | 30.1 | The DAG export reaches Pages as a workflow artifact | none observed |
 | 30.2 | Vizro boards publish as static exports under /dashboard/vizro/ | none observed |
+| 31.1 | Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so | none observed |
 
 ## Quality Gates
 
