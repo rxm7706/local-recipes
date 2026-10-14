@@ -588,7 +588,7 @@ def test_register_test_runs_in_the_env_that_defines_its_task(tmp_path: Path, mon
     monkeypatch.setattr(
         ev,
         "_environment_holding_task",
-        lambda _d, task, root: "pyforge-steward" if task == "bmad-drift-check" else None,
+        lambda _d, task, root, prefer=(): "pyforge-steward" if task == "bmad-drift-check" else None,
     )
     result = _verify(root, RecordingRunner(root=root), probe_filter="bmad-method")
     test_row = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "register-test")
@@ -619,3 +619,42 @@ def test_kit_probe_runs_against_the_real_checkout(tmp_path: Path, monkeypatch: p
     monkeypatch.setattr(ev, "run_probe", _probe)
     _verify(root, RecordingRunner(root=root))
     assert seen == [root]
+
+
+def test_a_task_in_several_envs_runs_in_the_preferred_one(tmp_path: Path) -> None:
+    """bmad-estate-check reaches local-recipes too, which has no pyforge.scribe (Story 100.7)."""
+    import tomllib
+
+    from pyforge.steward.estate_verify import _environment_holding_task
+
+    manifest = (
+        '[environments]\nlocal-recipes = ["recipes", "guild-tasks"]\n'
+        'pyforge-guild = ["guild", "guild-tasks"]\n\n'
+        '[feature.guild-tasks.tasks.bmad-estate-check]\ncmd = "echo"\n'
+    )
+    (tmp_path / "pixi.toml").write_text(manifest, encoding="utf-8")
+    data = tomllib.loads(manifest)
+    assert _environment_holding_task(data, "bmad-estate-check", root=tmp_path) == "local-recipes"
+    held = _environment_holding_task(data, "bmad-estate-check", root=tmp_path, prefer=("pyforge-guild",))
+    assert held == "pyforge-guild"
+    assert _environment_holding_task(data, "bmad-estate-check", root=tmp_path, prefer=("pyforge-warden",)) == (
+        "local-recipes"
+    )
+
+
+def test_kit_register_test_runs_in_the_real_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """marshal seed check reads the checkout's kit items, which a fresh worktree lacks (Story 100.7)."""
+    root = _fixture_root(tmp_path)
+    (root / "docs/governance/realization-register.yaml").write_text(
+        "version: 1\nrows:\n"
+        "  - package: codegraph\n    env: pyforge-guild\n    class: kit\n"
+        "    probe:\n      expect: kit-ok\n      item: codegraph-index\n    test: [marshal seed check]\n",
+        encoding="utf-8",
+    )
+    import pyforge.steward.estate_verify as ev
+
+    monkeypatch.setattr(ev, "run_probe", lambda deps, row, *, package: "live")
+    runner = RecordingRunner(root=root)
+    _verify(root, runner)
+    seed = [cwd for argv, cwd in runner.calls if argv[-3:] == ["marshal", "seed", "check"]]
+    assert seed == [root]

@@ -10,9 +10,7 @@ def _provision_wagtail_admin_group(sender: AppConfig, **kwargs: object) -> None:
 
 
 def _seed_detector_schedule(sender: AppConfig, **kwargs: object) -> None:
-    from platformapp.front_door.detector_jobs import (  # noqa: PLC0415
-        seed_detector_schedule,
-    )
+    from platformapp.front_door.detector_jobs import seed_detector_schedule  # noqa: PLC0415
 
     seed_detector_schedule()
 

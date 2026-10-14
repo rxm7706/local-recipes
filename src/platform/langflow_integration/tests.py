@@ -132,9 +132,7 @@ def _build_text_only_flow_data(seed_text: str) -> dict:
     doesn't require a live model endpoint (AD-16's local-first posture).
     """
     from lfx.components.input_output.text import TextInputComponent  # noqa: PLC0415
-    from lfx.components.input_output.text_output import (  # noqa: PLC0415
-        TextOutputComponent,
-    )
+    from lfx.components.input_output.text_output import TextOutputComponent  # noqa: PLC0415
     from lfx.graph import Graph  # noqa: PLC0415
 
     text_input = TextInputComponent()

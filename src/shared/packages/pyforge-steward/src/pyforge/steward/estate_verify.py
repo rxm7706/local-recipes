@@ -118,8 +118,18 @@ def _env_supported(document: dict[str, Any], env_name: str, platform: str) -> bo
     return platform in plats
 
 
-def _environment_holding_task(pixi_data: dict[str, Any], task: str, *, root: Path) -> str | None:
-    """Resolve which ``[environments]`` row composes the feature that owns ``task``."""
+def _environment_holding_task(
+    pixi_data: dict[str, Any],
+    task: str,
+    *,
+    root: Path,
+    prefer: tuple[str, ...] = (),
+) -> str | None:
+    """Resolve which ``[environments]`` row composes the feature that owns ``task``.
+
+    A task composed into several envs (the guild tasks reach ``local-recipes`` too) runs in
+    the first ``prefer`` env that holds it, so a register test runs where its row lives.
+    """
     owning_features: set[str] = set()
     for feat_name, feat in pixi_data.get("feature", {}).items():
         tasks = feat.get("tasks") if isinstance(feat, dict) else None
@@ -127,10 +137,15 @@ def _environment_holding_task(pixi_data: dict[str, Any], task: str, *, root: Pat
             owning_features.add(str(feat_name))
     if not owning_features:
         return None
-    for env_name, env_feats in load_pixi_environments(cwd=root).items():
-        if owning_features.intersection(env_feats):
+    holding = [
+        env_name
+        for env_name, env_feats in load_pixi_environments(cwd=root).items()
+        if owning_features.intersection(env_feats)
+    ]
+    for env_name in prefer:
+        if env_name in holding:
             return env_name
-    return None
+    return holding[0] if holding else None
 
 
 def _tier_environments_from_root(root: Path, *, all_envs: bool) -> list[str]:
@@ -616,11 +631,21 @@ def run_verify(
             if lane_filter and t != lane_filter:
                 continue
             words = shlex.split(t)
-            # Run the test where its task lives (pyforge-steward-test is a pyforge-steward
-            # task, platform-ci-local a local-recipes one), else in the row's env.
-            test_env = _environment_holding_task(pixi_data, words[0], root=deps.root) if words else None
-            argv = ["pixi", "run", "--frozen", "-e", test_env or str(row.get("env") or "pyforge-guild"), *words]
-            proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
+            # Run the test in an env that holds its task (pyforge-steward-test is a
+            # pyforge-steward task, platform-ci-local a local-recipes one), preferring the
+            # row's env, then pyforge-guild; a task no env holds runs in the row's env.
+            row_env = str(row.get("env") or "pyforge-guild")
+            test_env = (
+                _environment_holding_task(pixi_data, words[0], root=deps.root, prefer=(row_env, "pyforge-guild"))
+                if words
+                else None
+            )
+            argv = ["pixi", "run", "--frozen", "-e", test_env or row_env, *words]
+            # Kit items (caveman skill, codegraph index) live in the real checkout, as their probes do.
+            test_cwd = deps.root if row.get("class") == "kit" else wt
+            proc, seconds, special = _run_timed(
+                deps, argv, test_cwd, budget_seconds=budget_seconds, started=install_started
+            )
             verdict_s = _row_verdict(proc.returncode, special=special)
             if verdict_s != "ok":
                 any_red = True
