@@ -15,6 +15,7 @@ landing wait for CI.
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import shutil
 import sys
@@ -30,6 +31,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.forge_gh import GhForge
 from .adapters.fs_local import LocalFs
+from .adapters.steward_cli import StewardCli
 from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import deferred_work, identity, promotion
 from .core import dispatch as dispatch_core
@@ -49,8 +51,9 @@ from .core.dispatch_landing import (
 from .core.dispatch_verification import DispatchVerificationVerdict
 from .core.egress import Redacted, to_redacted_text
 from .core.identity import StoryKey, normalize, render_feed_key
-from .core.journal import LANDING_CHECKS_FIELD
+from .core.journal import CI_PAUSES_AT_MERGE_FIELD, LANDING_CHECKS_FIELD
 from .core.landing_checks import CheckRun, CheckState, classify_check_runs
+from .core.landing_ci_pauses import append_ci_pauses_line_to_pr_body
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy, LandingCheckSettings, resolve_landing_check_settings
 from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
@@ -59,6 +62,7 @@ from .core.verdict import compute_verdict
 from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
 from .dispatch_verify import (
     compose_dispatch_policy,
+    landing_ci_pauses_enabled,
     run_verify_commands_only,
 )
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef
@@ -104,6 +108,39 @@ def _dispatch_pr_title(slug: str, story_key: StoryKey) -> Redacted:
 
 def _dispatch_pr_body(story_key: StoryKey) -> Redacted:
     return Redacted(f"Dispatch-landed story {story_key} via marshal factory dispatch (CAP-4).")
+
+
+# Story 100.1 (CAP-292): WARN when the pre-merge PR body update fails; merge proceeds.
+_LANDING_CI_PAUSES_PR_UPDATE_CODE = "MRS-DISP-066"
+
+
+def _record_ci_pauses_at_merge_before_merge(
+    *,
+    repo_root: Path,
+    process: ProcessPort,
+    forge: ForgePort,
+    repo_ref: ForgeRef,
+    pr_number: int,
+    project_slug: str,
+    key: StoryKey,
+    findings: list[Finding],
+    data: dict[str, object],
+) -> None:
+    """One steward read per landing; writes ``ci_pauses_at_merge`` and updates the PR body."""
+    record = StewardCli(process).ci_status_record(repo_root=repo_root)
+    data[CI_PAUSES_AT_MERGE_FIELD] = record
+    body_text = append_ci_pauses_line_to_pr_body(_dispatch_pr_body(key).text, record)
+    title = _dispatch_pr_title(project_slug, key)
+    try:
+        forge.update_pr(repo_ref, pr_number, title, Redacted(body_text))
+    except ForgeCommandError as exc:
+        findings.append(
+            Finding(
+                code=_LANDING_CI_PAUSES_PR_UPDATE_CODE,
+                severity=Severity.WARN,
+                message=f"could not update PR #{pr_number} with CI pause line before merge: {exc}",
+            )
+        )
 
 
 def _tail_lines(text: str, *, limit: int = 20) -> str:
@@ -1772,6 +1809,20 @@ def execute_dispatch_land(
             envelope,
         )
 
+    ci_pauses_flag_on, _ci_flag_warning = landing_ci_pauses_enabled(repo_root=git_repo_root)
+    if ci_pauses_flag_on:
+        _record_ci_pauses_at_merge_before_merge(
+            repo_root=git_repo_root,
+            process=process,
+            forge=forge,
+            repo_ref=repo_ref,
+            pr_number=pr.number,
+            project_slug=project_slug,
+            key=key,
+            findings=findings,
+            data=data,
+        )
+
     hold_after_verify = resolve_hold_dispatch_landing(
         spec_text=story_spec_text,
         hold_landing_cli=hold_landing_cli,
@@ -2085,6 +2136,9 @@ def execute_dispatch_land(
     if followup_review is not None and followup_review.dw_id is not None:
         # Story 73.1 (CAP-281): finalize closes the row this follow-up review served, naming this landing.
         finalize_argv += ["--followup-review-id", followup_review.dw_id, "--landing-subject", subject]
+    ci_pauses_payload = data.get(CI_PAUSES_AT_MERGE_FIELD)
+    if ci_pauses_payload is not None:
+        finalize_argv += ["--ci-pauses-at-merge", json.dumps(ci_pauses_payload, separators=(",", ":"))]
     try:
         finalize_result = process.run(finalize_argv, cwd=git_repo_root)
     except ProcessError as exc:

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 647
+# stories: 650
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -34,6 +34,7 @@ development_status:
   10-6-marshal-seed-adopt: done
   10-7-marshal-seed-init: done
   10-8-manifest-declared-writable-artifacts-are-exempt-from-their-own-never-write-collision: done
+  100-1-a-landing-records-which-ci-surfaces-were-paused-when-it-merged: done
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
   11-3-migration-registry-and-runner: done
@@ -471,6 +472,8 @@ development_status:
   epic-1-retrospective: optional
   epic-10: done
   epic-10-retrospective: optional
+  epic-100: done
+  epic-100-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
   epic-12: done

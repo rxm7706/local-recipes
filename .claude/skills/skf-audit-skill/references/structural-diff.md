@@ -1,15 +1,28 @@
 ---
 nextStepFile: 'semantic-diff.md'
 outputFile: '{forge_version}/drift-report-{timestamp}.md'
-loadProvenanceProbeOrder:
-  - '{project-root}/_bmad/skf/shared/scripts/skf-load-provenance.py'
-  - '{project-root}/src/shared/scripts/skf-load-provenance.py'
+# This run's stage data folder, beside its drift report: step 5 classifies the
+# JSON saved here. The `.skf-` name keeps the version folder SKF's own.
+auditDataFolder: '{forge_version}/.skf-audit/{timestamp}'
+# §1b: the recipe runner, and the snapshot helper that adds its finds.
+extractPublicApiProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-extract-public-api.py'
+  - '{project-root}/src/shared/scripts/skf-extract-public-api.py'
+extractionSnapshotProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-extraction-snapshot.py'
+  - '{project-root}/src/shared/scripts/skf-extraction-snapshot.py'
+# Every HALT after the [C] of upstream-checkout.md closes the private tree with it.
+sourceTreeProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-source-tree.py'
+  - '{project-root}/src/shared/scripts/skf-source-tree.py'
 compareFileHashesProbeOrder:
   - '{project-root}/_bmad/skf/shared/scripts/skf-compare-file-hashes.py'
   - '{project-root}/src/shared/scripts/skf-compare-file-hashes.py'
 structuralDiffProbeOrder:
   - '{project-root}/_bmad/skf/shared/scripts/skf-structural-diff.py'
   - '{project-root}/src/shared/scripts/skf-structural-diff.py'
+# §5: this skill's renderer of the Structural Drift tables, from the skill root.
+renderDriftTablesScript: 'scripts/render-drift-tables.py'
 ---
 
 <!-- Config: communicate in {communication_language}. -->
@@ -18,123 +31,123 @@ structuralDiffProbeOrder:
 
 ## STEP GOAL:
 
-Compare the original provenance map extractions from create-skill against the current re-index snapshot from Step 02 to detect structural drift. Identify added, removed, and changed exports with file:line citations and confidence tier labels.
+Compare the provenance map create-skill wrote with step 2's re-index snapshot: added, removed, moved and changed exports with file:line citations and confidence labels, then script and asset drift.
 
 ## Rules
 
 - Focus only on structural comparison — added/removed/changed exports
 - Do not classify severity (Step 05) or suggest remediation (Step 06)
-- Use subprocess Pattern 4 (parallel) when available; if unavailable, compare sequentially
+- Save each helper's JSON in `{auditDataFolder}`: step 5 classifies those files, not the tables this step renders, and §5 renders the tables from them
 
 ## MANDATORY SEQUENCE
 
-### 1. Run the Deterministic Export Diff
-
-The export comparison — canonicalization, set arithmetic (added/removed/moved), and field-level change detection — is fully deterministic and runs in one subprocess. Do **not** diff the two export lists by hand: an LLM comparing dozens or hundreds of exports can silently drop or mis-match entries, which violates this skill's zero-hallucination contract.
-
-**Resolve `{structuralDiffHelper}`** from `{structuralDiffProbeOrder}`; first existing path wins. HALT if no candidate exists.
-
-Run one comparison over the baseline provenance map (from step 1) and the current extraction snapshot (`{extractionSnapshot}`, written to disk by step 2 §3):
+**Halt envelope.** Every HALT in this step names its exit code, `halt_reason` and phase. When `{source_tree}` is set (the [C] of `upstream-checkout.md`), first run `uv run {sourceTreeHelper} close --tree "{source_tree}"` from `{project-root}` and go on whatever it prints. In headless mode, stage `{run_dir}/halt.json` as `{"phase": "<phase>", "reason": "<the halt message>", "halt_reason": "<halt_reason>", "skill_name": "{skill_name}", "report_path": "{outputFile}"}`, adding `"path"` when the halt names one, then run:
 
 ```bash
-uv run {structuralDiffHelper} {provenanceMap} {extractionSnapshot}
+uv run {emitEnvelopeHelper} emit-halt --workflow skf-audit-skill --run-dir "{run_dir}" --target stderr < "{run_dir}/halt.json"
 ```
 
-The helper reads both shapes directly — the provenance map's `entries[]` (with `export_name`/`export_type`/`source_file`/`source_line`) and the snapshot's `exports[]` — and aliases the field names, so no manual projection is needed.
+Display the line it prints, then stop with the halt's exit code. If the emitter exits non-zero or prints no line, display the halt message alone. An interactive HALT displays its message and emits nothing.
 
-**Canonicalization is applied inside the helper, symmetrically to both sides**, before name-keyed matching — so cosmetic extractor differences do not surface as false-positive "Changed"/"Removed"/"Added" entries:
+### 1. Run the Deterministic Export Diff
 
-- **Quote style on string defaults** — `kind: str = "Hnsw"` ↔ `kind: str = 'Hnsw'`.
-- **Stdlib module qualification** — `typing.Optional[...]` → `Optional[...]`, `dataclasses.field(...)` → `field(...)` (user-defined namespaces are never collapsed).
-- **Public-API re-export resolution** — a renamed public re-export (`_Impl` → `Public`) matches the baseline entry instead of splitting into "Removed `_Impl`" + "Added `Public`". The re-export map is **auto-derived from the provenance map** (identical to the `{reexport_map}` projection `skf-load-provenance.py normalize` produced in step 1 §4). Pass `--reexport-map {file}` only to override with a custom map.
+One helper call compares the two export lists. Never diff them by hand: a hand diff of hundreds of exports drops or mis-matches entries, which this skill's zero-hallucination contract forbids.
 
-Parse the emitted JSON:
+**Resolve `{structuralDiffHelper}`** from `{structuralDiffProbeOrder}`; first existing path wins (SKILL.md On Activation checked that one exists).
 
-```
-{
-  "summary": {"added": N, "removed": N, "changed": N, "moved": N, "unchanged": N},
-  "added":   [ <entry>, ... ],   // in current snapshot, NOT in provenance map
-  "removed": [ <entry>, ... ],   // in provenance map, NOT in current snapshot
-  "changed": [ {"name", "field", "baseline_value", "current_value"}, ... ],
-  "moved":   [ {"name", "previous_file", "current_file"}, ... ],
-  "unchanged_count": N,
-  "applied_transforms": [ {"transform": "quote-style|stdlib-prefix|reexport-resolution", "count": N}, ... ]
-}
+Compare the baseline provenance map (`{provenanceMap}`, step 1 §1) with the extraction snapshot (`{extractionSnapshot}`, step 2 §3), and save the diff in `{auditDataFolder}` (create the folder first: `mkdir -p "{auditDataFolder}"`):
+
+```bash
+uv run {structuralDiffHelper} "{provenanceMap}" "{extractionSnapshot}" -o "{auditDataFolder}/structural-diff.json"
 ```
 
-Stash `applied_transforms` in workflow context — step 6 surfaces it in the Provenance section so a reviewer can tell which cosmetic differences the diff collapsed and which changes were real.
+For a stack skill with v2 provenance, add `--group-by source_library` (see Stack-Specific Structural Diff).
 
-**If `uv` / the helper cannot execute** (e.g. claude.ai web): fall back to comparing the two lists by hand — match by canonicalized export name (apply the three transforms above to both sides), then read off added (current-only), removed (baseline-only), moved (same name, different `file`), and changed (matched name, differing type/signature/line). Compare a field only when it is present on both sides.
+With `-o` the helper saves the diff to the file and prints one line, `{"status": "ok", "output": ..., "summary": {...}}`. Exit `0` (no export added, removed, changed or moved) and exit `1` (differences found) both saved it. Exit `2` saved nothing; act on its `error`:
 
-### 2. Read Added / Removed / Moved from the Diff
+- It names `{extractionSnapshot}` (unreadable, not JSON, or, with `--group-by`, no export with a `source_library`): step 2 wrote that file, so fix it as re-index §3 describes and run the command again.
+- It starts `Cannot write output`: HALT with **exit 4**, `halt_reason: "write-failed"`, phase `structural-diff:diff`, `"path": "{auditDataFolder}/structural-diff.json"`.
+- Otherwise it names `{provenanceMap}`, which step 1 §4 read: HALT with **exit 3**, `halt_reason: "provenance-invalid"`, phase `structural-diff:diff`, `"path": "{provenanceMap}"`, showing the `error`.
 
-These sets come straight from the helper's JSON — no further set arithmetic:
+The helper canonicalizes both sides before it matches each export by its name and its file (the quote style of string defaults, stdlib module prefixes, and a renamed public re-export resolved through the re-export map it derives from the provenance map), and, for a matched export, takes a semantic kind a by-eye read records as the runner's base kind when the runner's signature shows that form (`async_function` or `decorator` as `function`, `enum` as `class`), so a cosmetic extractor difference never reads as drift. It records each transform it applied in `applied_transforms`, and takes `--reexport-map {file}` only to override the derived map.
 
-- **Added** — `added[]`: exports in the current snapshot but not the provenance map. Each carries name, type, signature, file, line, confidence.
-- **Removed** — `removed[]`: exports in the provenance map but not the current snapshot. Same fields (in provenance-map field names).
-- **Moved** — `moved[]`: matched exports whose file path changed (`previous_file` → `current_file`). A move is **not** a removal.
+The saved diff holds every set §5 renders. This step reads three of its fields itself: §1b reads `summary.removed` and the `name` of each `removed[]` entry (an export in the provenance map but not in the snapshot), and §6 records `applied_transforms` (each transform the helper applied, with its count) in the drift report's frontmatter for step 6's Provenance table.
 
-Confidence tier for each entry is the `confidence` field the extractor recorded (T1 if AST-backed, T1-low if text-based).
+### 1b. Find Relocated Exports (Forge+ and Deep with ccc)
 
-### 3. Read Changed Exports from the Diff
+**Run only when** the tier is Forge+ or Deep, `tools.ccc` is true in forge-tier.yaml, and the saved diff's `summary.removed` is above 0. Otherwise skip this section silently.
 
-`changed[]` lists per-field differences for exports present in BOTH sets. Each item names the export, the `field` that changed (type / signature / line / confidence), and its `baseline_value` → `current_value`. Group items by export name when compiling the report, and pair with the export's `moved[]` entry (if any) to describe location changes.
+An export moved to a file outside the bounded scan list is missing from the snapshot, so the diff reports it as removed, which step 5 grades CRITICAL. Look for each `removed[]` entry of `{auditDataFolder}/structural-diff.json` elsewhere in the source:
+
+1. Search for its name: `cd {source_root} && ccc search --limit 5 "{name}"` (CLI), the `/ccc` skill (Claude Code) or the ccc MCP server (Cursor). `ccc search` reads the index of the current working directory (`knowledge/ccc-bridge.md` gives its flags). When `{source_tree}` is set, `{source_root}` is the private tree the [C] of `upstream-checkout.md` read, which has no ccc index: list the files of the tree that hold the name as a word instead, with `git -C "{source_root}" grep -l -w -F -e "{name}"`, and take them as the candidates.
+2. Drop each candidate file on `{bounded_scan_files}`: step 2 extracted those files, so the diff already saw their exports.
+3. Write the remaining candidates of every name, relative to `{source_root}` with forward slashes, as one JSON list in `{auditDataFolder}/relocation-candidates.json`. Resolve `{extractPublicApiHelper}` and `{extractionSnapshotHelper}` from their probe orders, then, from `{project-root}`, run the recipes over the candidates and add what they find to the snapshot:
+
+   ```bash
+   rm -f "{auditDataFolder}/relocations.json"
+   uv run {extractPublicApiHelper} --mode full --source-root "{source_root}" --files-from "{auditDataFolder}/relocation-candidates.json" --head-cap 0 -o "{auditDataFolder}/relocations.json"
+   uv run {extractionSnapshotHelper} relocate "{extractionSnapshot}" --diff "{auditDataFolder}/structural-diff.json" --extraction "{auditDataFolder}/relocations.json"
+   ```
+
+   `relocate` adds each export the runner found under a removed name in a file outside the bounded scan list (with the removed entry's `source_library` for a stack), recounts the snapshot and prints `added`: never edit the snapshot by hand.
+
+When `added` is above 0, run §1's command again with the same arguments and the same `-o`, acting on its exit code as §1 does. The helper pairs each relocation with its removed entry as a move (or, when the name occurs more than once, lists it under `ambiguous_names[]`). A removed export the runner finds nowhere else stays removed. When ccc cannot search (no index for `{source_root}`, or the command fails), the runner writes no JSON, or `relocate` prints an `error`, skip the rest of this section and note `ccc relocation check skipped: {reason}` on the **Method:** line (§5).
+
+### 2. What the Diff Decides
+
+Every set comes straight from the saved diff, never from set arithmetic of your own. Four of its facts steer what later steps judge:
+
+- **Moved** (`moved[]`): a matched export whose file changed. A move is **not** a removal.
+- **Ambiguous names** (`ambiguous_names[]`): a name left on both sides that occurs more than once on a side (a `GET` handler in several route files, for example), so the helper paired none of its entries. They stay in `removed[]` and `added[]`, and step 5 judges whether a removed and an added entry of one name are one export that moved.
+- **Off the public surface** (`not_public[]`): for a public-api skill, step 2 marked each export by the public surface create-skill and update-skill keep its map to, and an export marked `public: false` that pairs with no map entry is listed here, not in `added[]`, since neither workflow documents it. It is not drift: it is not counted in Total Drift Items or the exit code, and step 5 never classifies it (`--from-diff` reads only `added[]`, `removed[]`, `changed[]` and `moved[]`). §5's renderer counts it in an **Off the public surface:** note. A name in `ambiguous_names[]` stays in `added[]` for step 5 to pair, and a map entry is matched whatever its mark, so none reads as removed.
+- **Not drift:** `summary.signature_unverified` counts matched exports whose signature sits in different fields on the two sides, so a change there cannot be seen, and `label_changes[]` lists matched exports whose `confidence` or `extraction_method` differs, which names the tool that read the export, not what the source says. Neither is counted in Total Drift Items, and step 5 classifies neither.
 
 ### 4b. Detect Script/Asset Drift
 
 **Only execute if provenance-map.json contains `file_entries`.**
 
-**Resolve `{compareFileHashesHelper}`** from `{compareFileHashesProbeOrder}`; first existing path wins. HALT if no candidate exists.
-
-Run one deterministic comparison subprocess — it walks tracked file_entries[] AND the inverse direction (source-tree → candidate set in standard script/asset/doc directories) so the LLM does not orchestrate per-file hashing:
+**Resolve `{compareFileHashesHelper}`** from `{compareFileHashesProbeOrder}`; first existing path wins. Run one comparison: it hashes the tracked `file_entries[]` and, the other way round, walks the source tree for the files the map does not track, with the script and asset detector create-skill and update-skill use, plus the documents under `docs/authoritative/`, keeping only those the skill brief's scope takes, by the scope test update-skill and create-skill use. A module of a Python package named like a script folder, a file the map's `entries[]` cite, a file under `scripts/[MANUAL]/` or `assets/[MANUAL]/`, and a script or an asset whose `scripts_intent` or `assets_intent` is `none` are never new files. Pass `--brief` only when that brief, `{forge_data_folder}/{skill_name}/skill-brief.yaml`, exists (a skill built without one, such as a quick skill, has none):
 
 ```bash
-uv run {compareFileHashesHelper} compare {provenanceMap} {sourceRoot}
+uv run {compareFileHashesHelper} compare "{provenanceMap}" "{source_root}" \
+    [--brief "{forge_data_folder}/{skill_name}/skill-brief.yaml"] > "{auditDataFolder}/file-drift.json"
 ```
 
-Parse the emitted JSON:
+The saved JSON, which step 5 builds its Script/Asset findings from:
 
 ```
 {
-  "added":   ["<rel-path>", ...],   // present on disk in tracked dirs, NOT in file_entries
+  "added":   ["<rel-path>", ...],   // a script or an asset to the detector, or a docs/authoritative/ file, on disk, in the brief's scope, NOT in file_entries
+  "added_not_checked": null,        // or why no new file was looked for: "no skill brief", the brief's error, or a helper it cannot load
   "removed": ["<rel-path>", ...],   // in file_entries, missing on disk
   "changed": [{"path": "...", "stored_hash": "sha256:...", "current_hash": "sha256:..."}],
   "stats":   {"added": N, "removed": N, "changed": N, "unchanged": N}
 }
 ```
 
-Hash-prefix normalization (writer-vs-reader compatibility — `skf-create-skill` writes `content_hash` with a `"sha256:"` prefix, a bare-hex hash from `hashlib` would otherwise never match) is handled inside the script. Downstream consumers read `added`/`removed`/`changed` directly with no further normalization.
+**When `added_not_checked` is not null** (`no skill brief` without `--brief`, the error of a brief the helper could not read, or `cannot load ... re-install SKF` when a helper beside it could not be loaded), no new file was looked for, so `added` is empty, while the tracked files were still compared: §5's renderer prints the reason under the Script/Asset Drift table. Record it for the envelope too: write `new_files_not_checked: {added_not_checked}` to `{run_dir}/warning.txt` with a file write (the reason can hold quotes), then, from `{project-root}`, run `uv run {emitEnvelopeHelper} record --run-dir "{run_dir}" --warning "$(cat "{run_dir}/warning.txt")"`.
 
-Append the three lists into the Structural Drift section under a `### Script/Asset Drift (added {stats.added}, removed {stats.removed}, changed {stats.changed})` heading — take each count straight from `stats`, no recount.
-
-**If `uv`/the helper cannot execute** (e.g. claude.ai web): skip the script/asset drift check with a `### Script/Asset Drift — skipped (hashing helper unavailable)` note rather than blocking the audit. This check is supplementary to the export diff, which has its own by-hand fallback in §1.
+**When no candidate resolves, or the command exits non-zero** (delete the file then), skip the check with a `### Script/Asset Drift: skipped ({the reason})` note: it is supplementary to the export diff, so it never halts the audit.
 
 ### Stack-Specific Structural Diff
 
 If `{is_stack_skill}` is true:
 
-**For v2 provenance (per-export entries with `source_library`):**
-- Group entries by `source_library`
-- For each library, run the same deterministic diff as the single-skill path (§1) — pass the per-library baseline slice and the matching current snapshot to `{structuralDiffHelper}`
-- Report per-library diff results
+**A code-mode stack (v2 provenance, per-export entries with `source_library`):** step 2 re-indexed it from the project root step 1 §5 bound.
+- §1 runs with `--group-by source_library`: the helper diffs each library on its own and tags every listed item with its `source_library`
+- §5's renderer adds a By Library table, each library's counts from `groups[]` (the top-level `summary` sums them)
 
-**For code-mode stacks:** Re-extract from each source repo and compare per-library entries.
-
-**For compose-mode stacks:** Compare current constituent skill exports against the entries recorded at compose time. Use the `source_library` field to match entries to constituents.
-
-**For v1 legacy provenance:** Report library-level summary only (export counts, extraction methods). Note that per-export drift detection requires re-composition with v2 provenance.
-
-**Integration drift:** For each integration in `integrations[]`, verify that co-import files still contain the detected patterns (code-mode) or that constituent skills still document the integration (compose-mode).
+A compose-mode stack never reaches this step: step 1 sends it to step 1c (`constituent-freshness.md`), which checks its constituents' freshness instead.
 
 ### 5. Compile Structural Drift Section
 
-**Rollup for high-volume uniform findings.** When ≥ 10 findings in the same table share one root cause (deleted source file, renamed module, entire package tree removed), you may collapse them into one row per root cause. Rollup rows replace the per-symbol `Export`/`Signature` columns with `Count` and `Representative symbols` (up to 3 names, `…` if more). Rollup applies to **Added Exports**, **Removed Exports**, and **Script/Asset Drift** tables — **not** to Changed Exports, which are heterogeneous by construction (signature changes and cross-file changes are inspected per-finding). Record which groupings were collapsed in workflow context for reviewer traceability.
+Render the section's tables from the saved files, never by hand: a hand copy of hundreds of rows drops or mis-matches them as a hand diff would. `{renderDriftTablesScript}` resolves relative to the skill root; from `{project-root}`, run:
 
-**Rollup row form (Added / Removed Exports):**
+```bash
+uv run {renderDriftTablesScript} structural "{auditDataFolder}/structural-diff.json" --file-drift "{auditDataFolder}/file-drift.json"
+```
 
-| Root Cause | Count | Representative symbols | Location | Confidence |
-|------------|-------|------------------------|----------|------------|
-| {deleted/renamed path or similar} | {N} | `{sym1}`, `{sym2}`, `{sym3}`, … | {root-cause path} | {T1/T1-low} |
+It prints the section's tables (`--help` lists them). A rollup changes no count: the headings and the summary come from the JSON.
 
 Append to {outputFile}:
 
@@ -142,37 +155,14 @@ Append to {outputFile}:
 ## Structural Drift
 
 **Comparison:** Provenance map ({provenance_date}) vs Current scan ({scan_date})
-**Method:** {Quick: text-diff / Forge: AST structural / Deep: AST structural}
+**Method:** {Quick: text-diff / Forge, Forge+ or Deep: AST structural}. Labels follow the tool that ran: T1 for an ast-grep match, T1-low for an export read by eye{; AST fallback files: {ast_fallback_files}, when any}{; ccc relocation check skipped: {reason}, when §1b skipped it}
 
-### Added Exports ({count})
-
-| Export | Type | Signature | Location | Confidence |
-|--------|------|-----------|----------|------------|
-| {name} | {type} | {signature} | {file}:{line} | {T1/T1-low} |
-
-### Removed Exports ({count})
-
-| Export | Type | Original Signature | Original Location | Confidence |
-|--------|------|-------------------|-------------------|------------|
-| {name} | {type} | {signature} | {file}:{line} | {T1/T1-low} |
-
-### Changed Exports ({count})
-
-| Export | Change Type | Before | After | Location | Confidence |
-|--------|------------|--------|-------|----------|------------|
-| {name} | {signature/type/location} | {old} | {new} | {file}:{line} | {T1/T1-low} |
-
-### Summary
-
-| Category | Count |
-|----------|-------|
-| Added | {added_count} |
-| Removed | {removed_count} |
-| Changed | {changed_count} |
-| **Total Drift Items** | {total} |
+{what the command printed, unchanged}
 ```
+
+When §4b skipped its check and the printed tables hold no Script/Asset Drift heading, add its `### Script/Asset Drift: skipped ({the reason})` note after them. When the command exits non-zero, its JSON `error`, else its first stderr line, says what it could not read: write `Structural drift tables not rendered: {error}` in place of its output and go on, since step 5 classifies the saved diff, not these tables.
 
 ### 6. Update Report and Auto-Proceed
 
-Update {outputFile} frontmatter — append `'structural-diff'` to `stepsCompleted`. Once the ## Structural Drift section has been appended, load, read fully, and execute `{nextStepFile}` (semantic diff).
+Update {outputFile} frontmatter: append `'structural-diff'` to `stepsCompleted` and set `applied_transforms` to the saved diff's `applied_transforms` (an empty list when none fired). Once the ## Structural Drift section has been appended, load, read fully, and execute `{nextStepFile}` (semantic diff).
 

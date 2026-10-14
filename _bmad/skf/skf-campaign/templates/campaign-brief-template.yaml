@@ -1,5 +1,5 @@
-# Machine-generated campaign brief — resume context for fresh sessions
-# Populated by step-01-setup.md from operator inputs
+# Machine-generated campaign brief: resume context for fresh sessions
+# Written by campaign-state.py init from the parsed targets
 
 # Campaign identifier
 campaign_name: ""
@@ -15,15 +15,14 @@ targets: []
 #   tier: "A"           # A (full pipeline) or B (batch)
 #   pin: null            # version pin, or null for latest
 #   depends_on: []       # list of skill names this target depends on
+#   plus any other field the target's source gave it, such as a language or
+#   scope hint
 
 # Quality thresholds applied to all skills in this campaign
 quality_gate:
   hard: "zero-critical-high"
   soft_target: 90
   soft_fallback: 80
-
-# Where health findings are routed: "local" (project-local) or "improvement" (shared queue)
-health_findings_queue: "local"
 
 # Optional path to the architecture document the verify (Stage 7) and refine
 # (Stage 8) stages consume. Empty string means those stages discover it at

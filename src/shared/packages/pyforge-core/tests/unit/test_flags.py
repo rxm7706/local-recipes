@@ -885,6 +885,7 @@ _SHIPPED_CLOCKS = {
         "",
     ),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
+    "pyforge.marshal.landing_ci_pauses": ("marshal", "100-1-", "2026-10-14", "", ""),
     # Stories 87.3/87.7/87.15 share this key (default off in every environment).
     "pyforge.marshal.preserve_refs": ("marshal", "87-3-", "2026-10-04", "", ""),
     "pyforge.warden.fix_target_resolution": (
@@ -956,6 +957,7 @@ _SHIPPED_CLOCKS = {
     # CAP-55 deck_viewer: Story 30.1 publish/twins; Story 30.2 portal + deck-twins API routes.
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
     "pyforge.herald.pages_second_host": ("herald", "31-1-", "2026-09-28", "", ""),
+    "pyforge.herald.ci_surfaces_tile": ("herald", "39-1-", "2026-10-14", "", ""),
     "pyforge.herald.deck_export_native": ("herald", "32-1-", "2026-09-28", "", ""),
     "pyforge.steward.ledger_query_postgres_sync": (
         "steward",
@@ -994,6 +996,8 @@ _SHIPPED_CLOCKS = {
     ),
     "pyforge.steward.glass_export": ("steward", "61-3-", "2026-09-17", "", ""),
     "pyforge.steward.estate_refresh": ("steward", "100-2-", "2026-10-13", "", ""),
+    # Story 99.3 minted; 99.4 / 99.5 reuse (CAP-166).
+    "pyforge.steward.ci_pause_control": ("steward", "99-3-", "2026-10-13", "", ""),
 }
 
 
@@ -1057,7 +1061,9 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.herald_webhook_sidecar": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.stations_index": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.estate_refresh": {"dev": True, "staging": False, "production": False},
+        "pyforge.steward.ci_pause_control": {"dev": True, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
+        "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
@@ -1065,6 +1071,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.herald.deck_publish": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.deck_viewer": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.pages_second_host": {"dev": True, "staging": True, "production": False},
+        "pyforge.herald.ci_surfaces_tile": {"dev": True, "staging": False, "production": False},
         "pyforge.herald.deck_export_native": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_draft_pr_estate": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fleet_inventory": {"dev": True, "staging": True, "production": False},

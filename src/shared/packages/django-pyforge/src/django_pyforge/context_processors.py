@@ -26,11 +26,7 @@ def is_switcher_tile(portal: object, roles: frozenset[str]) -> bool:
 def chrome(request: HttpRequest) -> dict[str, object]:
     roles = roles_from_request(request)
     return {
-        "pyforge_portals": [
-            portal
-            for portal in iter_portal_configs()
-            if is_switcher_tile(portal, roles)
-        ],
+        "pyforge_portals": [portal for portal in iter_portal_configs() if is_switcher_tile(portal, roles)],
         # Same OIDC session as station tiles. Not a portal; process stays sidecar.
         "pyforge_sidecars": [mybmad_sidecar()] if roles else [],
     }

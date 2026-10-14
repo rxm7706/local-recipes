@@ -3343,6 +3343,13 @@ capabilities:
     heading: "a recall miss or failure injects nothing"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # 2026-10-14 ci pause control plane, marshal row: reads pyforge-steward:CAP-166 (steward Story 99.3)
+  - id: pyforge-marshal:CAP-292
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "a dispatch landing records which CI surfaces were paused when it merged"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
@@ -5693,6 +5700,12 @@ capabilities:
     heading: "`spec-surface` names a Spec surface glob that matches nothing"
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-89
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a CI surface that drifted, stuck or outlived its review date is a Doctor finding where the operator already looks"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald
@@ -6041,5 +6054,11 @@ capabilities:
     spec: pyforge-herald
     station: pyforge-herald
     heading: "the docs site and the herald pages share one menu"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-59
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the dossier shows which CI surfaces are not live, from the steward's own status answer"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

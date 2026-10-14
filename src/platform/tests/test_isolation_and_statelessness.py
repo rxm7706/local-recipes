@@ -226,9 +226,7 @@ def _build_text_only_flow_data(seed_text: str) -> dict:
     package's established no-shared-conftest convention).
     """
     from lfx.components.input_output.text import TextInputComponent  # noqa: PLC0415
-    from lfx.components.input_output.text_output import (  # noqa: PLC0415
-        TextOutputComponent,
-    )
+    from lfx.components.input_output.text_output import TextOutputComponent  # noqa: PLC0415
     from lfx.graph import Graph  # noqa: PLC0415
 
     text_input = TextInputComponent()

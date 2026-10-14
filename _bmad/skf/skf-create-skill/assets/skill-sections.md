@@ -140,7 +140,8 @@ Indexed pipe-delimited format for CLAUDE.md managed section (~80-120 tokens per 
   // "scripts": [{ "file": "scripts/{name}", "purpose": "{description}", "source_file": "{source-path}", "confidence": "T1-low" }],
   // "assets": [{ "file": "assets/{name}", "purpose": "{description}", "source_file": "{source-path}", "confidence": "T1-low" }],
   // doc_sources[] — include ONLY when doc detection ran; omit if detection was skipped entirely
-  // "doc_sources": [{ "url": "https://...", "detected_via": "homepageUrl|readme_link|pages_api|docs_folder|readme_always", "content_hash": "sha256:{hex}|null", "recorded_at": "ISO-8601" }],
+  // "doc_sources": [{ "url": "https://...", "detected_via": "homepageUrl|readme_link|pages_api|docs_folder|readme_always|brief_doc_urls", "content_hash": "sha256:{hex}|null", "recorded_at": "ISO-8601" }],
+  // detected_via "brief_doc_urls" = docs-only skills: the brief's doc_urls (plus subpages step 3c fetched), hashed by `skf-detect-docs.py hash-urls`
   "generated_by": "{quick-skill|create-skill}",
   "dependencies": [],
   "compatibility": "{semver-range}"
@@ -193,7 +194,7 @@ Each reference file includes:
       "source_line": 42,
       "confidence": "T1",
       "extraction_method": "ast-grep",
-      "ast_node_type": "export_function_declaration",
+      "ast_node_type": "export_statement",
       "signature_source": "T1"
     }
   ],
@@ -202,7 +203,7 @@ Each reference file includes:
       "libraries": ["lib-a", "lib-b"],
       "pattern_type": "provider-consumer",
       "detection_method": "co-import grep|architecture_co_mention|inferred_from_shared_domain",
-      "co_import_files": [{"file": "src/app.ts", "line": 5}],
+      "co_import_files": [{"path": "src/app.ts", "line_a": 5, "line_b": 7}],
       "confidence": "T1|T2|T3"
     }
   ],
@@ -281,10 +282,13 @@ t2_future_count: {N}
 ## Validation Results
 - Schema: {pass/fail} (quality score: {score}/100)
 - Frontmatter: {pass/fail}
-- Body: {pass/fail} {split-body applied if applicable}
+- Body: {pass/fail} {body split applied if applicable}
 - Security: {pass/warn/skipped}
-- Content Quality (tessl): {pass/warn/skipped} (score: {score}%)
+- Description angle brackets: {none | re-sanitized ({count} substitutions) | not checked — no description}
+- Tessl Review: {tessl_summary}
 - Metadata: {pass/fail}
+- Provenance labels: {pass | relabeled {N} to match extraction_method: {export names}}{; WARN, no node kind found: {export names}}
+- Provenance lines: {pass | findings | fixed {N} source lines, {M} citation prefixes and {K} node kinds | not run: verifier missing | not run: verifier error}{; second run: verifier error}{; unverified, no definition line found: {export names}}{; WARN: {each line, citation or node-kind warning §7a lists}}{; source lines not checked: no local source tree}{; node kinds not checked: no ast-grep CLI | unrecognized ast-grep}{; node kinds unchecked: {export name (reason) for each node_kinds_unchecked item}}{; node kinds skipped: {N} in files ast-grep has no language for}
 
 ## Quality Score Breakdown
 - Frontmatter (30%): {score} | Description (30%): {score} | Body (20%): {score} | Links (10%): {score} | File (10%): {score}
@@ -300,8 +304,15 @@ t2_future_count: {N}
 
 ## Remaining Warnings
 - {any warnings from extraction or validation}
+
+## Tessl Review
+- Result: {tessl_summary}
+- Workspace: {tessl_workspace or —} · tessl {tessl_version or —} · Run: {tessl_run_id or —}
+- Validation findings: {each {tessl_validation} finding as `name (status): message`, or "none"}
+- Description suggestions (to act on one, edit the description in the brief and re-run create-skill): {each of {tessl_description_suggestions}, or "none"}
+- Content suggestions (advisory, not applied): {each of {tessl_content_suggestions} with its `(not applicable: <rule-id>)` mark, or "none"}
 ```
 
 **Frontmatter — pinned detection contract:** the `t2_future_count` field is the authoritative forward-looking-annotation count for downstream gate checks (e.g. skf-test-skill §2b migration-section rule). Emit **always**, even when 0 — omission is indistinguishable from "no T2-future data" and silently flips the gate into Case 2/3 for a Case-1 skill. `generated` and `forge_tier` mirror the narrative header for consumers that read only the frontmatter. Downstream gate rules parse `t2_future_count` from frontmatter, not prose — prose drift (heading renames, alternate phrasings like "forward-looking annotations") silently breaks grep-based detection.
 
-**Description Guard slot:** populated by step 6 §0 (create-skill) and §0 (update-skill) when the guard protocol fires. `Restored: true` indicates that an external tool (typically `skill-check --fix` or `split-body`) rewrote the frontmatter `description` and the guard restored the pre-tool value. When `Restored: false`, leave `Triggering tool`, `Original description preserved`, and `Notes` as `—`. When `Restored: true`, fill all four fields: tool name, whether the original was successfully written back, and a one-sentence note describing what the tool had changed (e.g., "replaced with generic summary", "truncated at 80 chars", "angle-bracket tokens re-introduced"). Downstream test-skill assertions can grep for `Restored: true` to detect unintended tool rewrites without parsing free-form warning prose.
+**Description Guard slot:** populated by step 6 §0 (create-skill) and §0 (update-skill) when the guard protocol fires. `Restored: true` indicates that an external tool (typically `skill-check --fix`, create-skill's `skf-shard-body.py` body split or update-skill's `split-body`) rewrote the frontmatter `description` and the guard restored the pre-tool value. When `Restored: false`, leave `Triggering tool`, `Original description preserved`, and `Notes` as the no-fire dash the template above shows. When `Restored: true`, fill all four fields: tool name, whether the original was successfully written back, and a one-sentence note describing what the tool had changed (e.g., "replaced with generic summary", "truncated at 80 chars", "angle-bracket tokens re-introduced"). Downstream test-skill assertions can grep for `Restored: true` to detect unintended tool rewrites without parsing free-form warning prose.

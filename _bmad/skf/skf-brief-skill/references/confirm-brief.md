@@ -1,6 +1,7 @@
 ---
 nextStepFile: 'write-brief.md'
 reviseStepFile: 'scope-definition.md'
+analyzeStepFile: 'analyze-target.md'
 advancedElicitationSkill: '/bmad-advanced-elicitation'
 partyModeSkill: '/bmad-party-mode'
 ---
@@ -17,9 +18,11 @@ partyModeSkill: '/bmad-party-mode'
 
 ### 1. Assemble Complete Brief
 
-Use the values already accepted in steps 01-03 directly — do not re-load `{briefSchemaPath}` here. The 18 fields below are all in conversation; the schema is only consulted in §4 if an inline adjustment needs a specific field's validation rule cited.
+Use the values already accepted in steps 01-03 directly: do not load `assets/skill-brief-schema.md` here. The 18 fields below are all in conversation; the schema is only consulted in §4 if an inline adjustment needs a specific field's validation rule cited.
 
-**Ratify run (`ratify_mode: true`):** steps 2-3 were skipped (interactive `[R]` at gather-intent §3.1a, or the headless §8 GATE `from_brief` route), so there is no fresh steps 01-03 output to compile. Use the brief context variables **hydrated from the parsed brief** at step 1 in place of that output — the hydrated variable names match the field references below one-for-one. `detected_version` is absent on this path; rely on the hydrated `version` (step 5 pins it via `version_resolved`).
+**Ratify run (`ratify_mode: true`):** steps 2-3 were skipped (step 1 ratified a brief through `references/gather-intent-ratify.md`: a brief path at the first prompt, or a headless `from_brief`), so there is no fresh steps 01-03 output to compile. Use the brief context variables **hydrated from the parsed brief** at step 1 in place of that output: the hydrated variable names match the field references below one-for-one. `detected_version` is absent on this path; rely on the hydrated `version` (step 5 writes from the ratified file, which keeps it).
+
+After a `[R]` pass on a ratify run, take `scope.*`, `scripts_intent`, `assets_intent` and `doc_urls` from step 3, except `scope.amendments`, which step 3 never writes; every other field, `scope.amendments` included, stays hydrated.
 
 Compile all gathered data from steps 01-03 into the complete brief:
 
@@ -57,6 +60,7 @@ Skill Brief: {name}
 ====================
 
 Target:      {source_repo}
+Target ref:  {target_ref; omit this line entirely when target_ref is unset}
 Language:    {language}
 Forge Tier:  {forge_tier} — {tier_gloss}
 Description: {description}
@@ -117,7 +121,7 @@ Flag any fields that may need review:
 {If language was overridden or low confidence:}
 "**Note:** Language was {auto-detected / manually overridden}."
 
-"**Description:** synthesized and confirmed in step 1 §7b. This is the text agents read when deciding whether to route to your skill — refine here if you want to tighten it now that the full brief is visible."
+"**Description:** synthesized in step 1 and accepted there. This is the text agents read when deciding whether to route to your skill: refine it here if you want to tighten it now that the full brief is visible."
 
 {If forge tier was defaulted:}
 "**Note:** Forge tier defaulted to Quick (no forge-tier.yaml found)."
@@ -138,7 +142,7 @@ You can:
 ### 4. Handle Inline Adjustments
 
 If the user requests changes to specific fields (name, description, version, etc.):
-- If the adjustment requires explaining a field's validation rule or allowed values, load `{briefSchemaPath}` now (otherwise skip the read — the common path does not need it)
+- If the adjustment requires explaining a field's validation rule or allowed values, load `assets/skill-brief-schema.md` now (otherwise skip the read: the common path does not need it)
 - Make the adjustment
 - Re-present the updated brief
 - Return to the menu
@@ -149,16 +153,14 @@ Display: **Select an Option:** [R] Revise Scope [A] Advanced Elicitation [P] Par
 
 #### Menu Handling Logic:
 
-- IF R: Load, read entire file, then execute {reviseStepFile} to re-enter scope definition
+- IF R: When `ratify_mode` is true, `source_type` is not `docs-only` and `ratify_analyzed` is not set, load, read entire file, then execute {analyzeStepFile}, which chains to scope definition. Otherwise load, read entire file, then execute {reviseStepFile} to re-enter scope definition
 - IF A: Invoke {advancedElicitationSkill}, and when finished redisplay the menu
 - IF P: Invoke {partyModeSkill}, and when finished redisplay the menu
 - IF C: Load, read entire file, then execute {nextStepFile}
-- IF X: Treat as user-cancellation. Display `"Cancelled — no brief was written."` and HALT (exit code 6, `halt_reason: "user-cancelled"`). Cancellation here is non-destructive — step 5 has not run, no skill-brief.yaml file exists yet. `[X]` is interactive-only; the headless GATE never reaches this branch.
+- IF X: Treat as user-cancellation. Remove the run folder (`case "{run_dir}" in "{project-root}/_bmad-output/.skf-run/skf-brief-skill-"*) rm -rf "{run_dir}" ;; esac`), display `"Cancelled: no brief was written."` and HALT (exit code 6, `halt_reason: "user-cancelled"`). Step 5 has not run, so no brief was written; a saved draft stays for a later resume. `[X]` is interactive-only; the headless GATE never reaches this branch.
 - IF Any other comments or queries: help user respond, apply any field adjustments, re-present brief if changed, then [Redisplay Menu Options](#5-present-menu-options)
 
 #### Execution rules:
 
 - **GATE [default: C]** — If `{headless_mode}`: auto-proceed with [C] Confirm, log: "headless: auto-confirm brief"
-- After other menu items execution, return to this menu
-- User can chat, request field changes, or ask questions — always respond and then redisplay menu
 

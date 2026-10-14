@@ -382,6 +382,14 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         subject_station="fleet",
         owning_station="doctor",
     ),  # Story 16.1 (Epic 16 / CAP-1) -- sources/sibling_dreams.py. Diffs
+    SourceRegistration(
+        source=Source.CI_PAUSE_DRIFT,
+        scope="runtime",
+        subject_station="steward",
+        owning_station="doctor",
+    ),  # Story 45.1 (Epic 45 / CAP-89) -- sources/ci_pause_drift.py. Reads
+    # steward ``ci status --json`` via dispatch; warn-only; fleet-picture
+    # ATTENTION probe; not in ``doctor check`` default set (NFR-4).
     # shared Dream status/owner/content-hash/title vs the named sibling tree; warn-only; fleet
     # subject (local docs/dreams + archive/docs/dreams, and the sibling). Opt-in via
     # `doctor check --sibling-dreams` + fleet-picture ATTENTION probe.
@@ -615,7 +623,8 @@ def degrade_on_exception(
     ``capability_effect``, ``capability_ledger``, ``chain``, ``docs_currency``,
     ``docs_map_hygiene``, ``docs_shelf``, ``factory``, ``frozen_path``,
     ``frontmatter_duplicate_keys``, ``general_docs_consistency``,
-    ``live_proof_surfaces``, ``one_chain``, ``pixi_currency``, ``sibling_dreams``
+    ``live_proof_surfaces``, ``one_chain``, ``pixi_currency``, ``sibling_dreams``,
+    ``ci_pause_drift``
     and ``status_body_consistency`` (all in ``sources/``). Any other source module
     does not call it; an exception
     escaping such a ``gather()`` is a real bug in a module that promises never

@@ -17,7 +17,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_CFE_REGRESSION_NET
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -26,7 +26,16 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_COPILOT_SETUP_STEPS
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: ci-canary
+  workflow: .github/workflows/ci-canary.yml
+  kind: workflow
+  cost: low
+  gate: false
+  switch: PAUSE_CI_CANARY
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -35,7 +44,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_COVERAGE_GATES
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -44,7 +53,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_DASHBOARD
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -56,7 +65,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_DETECTORS
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -65,7 +74,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_DOCSITE_CHECK
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -79,12 +88,13 @@ surfaces:
   state: paused-manually
   owner: pyforge-steward
   reason: not recorded (asked 2026-10-12)
+  review_by: '2026-11-01'
 - id: lint-types
   workflow: .github/workflows/lint-types.yml
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_LINT_TYPES
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -95,15 +105,16 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: marshal-local-recipes-seed-oracle
   workflow: .github/workflows/marshal-local-recipes-seed-oracle.yml
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_MARSHAL_LOCAL_RECIPES_SEED_ORACLE
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -112,7 +123,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_PLATFORM_CI
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -130,7 +141,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_PYFORGE_PIP_INSTALL
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -139,7 +150,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_PYFORGE_STATION_TESTS
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -150,9 +161,10 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: reusable-staged-recipes-linter
   workflow: .github/workflows/reusable-staged-recipes-linter.yml
   kind: workflow
@@ -160,9 +172,10 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: staged-recipes-linter
   workflow: .github/workflows/staged-recipes-linter.yml
   kind: workflow
@@ -170,15 +183,16 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: substrate-nightly
   workflow: .github/workflows/substrate-nightly.yml
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_SUBSTRATE_NIGHTLY
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -201,6 +215,7 @@ surfaces:
   state: paused-manually
   owner: pyforge-steward
   reason: not recorded (asked 2026-10-12)
+  review_by: '2026-11-01'
 - id: test-linux
   workflow: .github/workflows/test-linux.yml
   kind: workflow
@@ -243,7 +258,7 @@ surfaces:
   review_by: '2026-11-01'
   owner: pyforge-steward
   local_twin: pyforge-steward-guild-image-build
-  canary: weekly
+  canary: ci-canary.station-tests.guild-container
 - id: platform-ci.container
   workflow: .github/workflows/platform-ci.yml
   job: container
@@ -259,6 +274,8 @@ surfaces:
     pause
   review_by: '2026-11-01'
   owner: pyforge-steward
+  local_twin: platform-ci-local --images --container
+  canary: ci-canary.platform-ci.container
   transitive:
   - platform-ci.golden-path-promotion
 - id: platform-ci.container-dbgpt
@@ -276,6 +293,8 @@ surfaces:
     pause
   review_by: '2026-11-01'
   owner: pyforge-steward
+  local_twin: platform-ci-local --images
+  canary: ci-canary.platform-ci.container-dbgpt
 - id: platform-ci.build-platform-image.PLATFORM_CI_AIR_GAP_PARITY
   workflow: .github/workflows/platform-ci.yml
   job: build-platform-image
@@ -286,6 +305,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_AIR_GAP_PARITY
 - id: platform-ci.build-platform-image.PLATFORM_CI_GKE_PORTABILITY_SMOKE
   workflow: .github/workflows/platform-ci.yml
   job: build-platform-image
@@ -296,6 +316,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_GKE_PORTABILITY_SMOKE
 - id: platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
   workflow: .github/workflows/platform-ci.yml
   job: build-platform-image
@@ -306,6 +327,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
 - id: platform-ci.gke-portability-smoke
   workflow: .github/workflows/platform-ci.yml
   job: gke-portability-smoke
@@ -316,6 +338,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.gke-portability-smoke
 - id: platform-ci.ocp-portability-smoke
   workflow: .github/workflows/platform-ci.yml
   job: ocp-portability-smoke
@@ -326,6 +349,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.ocp-portability-smoke
 - id: platform-ci.air-gap-parity
   workflow: .github/workflows/platform-ci.yml
   job: air-gap-parity
@@ -336,6 +360,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.air-gap-parity
 - id: platform-ci.golden-path-promotion.push-registry
   workflow: .github/workflows/platform-ci.yml
   job: golden-path-promotion
@@ -363,6 +388,276 @@ surfaces:
   job: golden-path-promotion
   kind: ci-job
   cost: medium
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: cfe-regression-net.cfe-regression-net
+  workflow: .github/workflows/cfe-regression-net.yml
+  job: cfe-regression-net
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: copilot-setup-steps.copilot-setup-steps
+  workflow: .github/workflows/copilot-setup-steps.yml
+  job: copilot-setup-steps
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: coverage-gates.changes
+  workflow: .github/workflows/coverage-gates.yml
+  job: changes
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: coverage-gates.named-module-gates
+  workflow: .github/workflows/coverage-gates.yml
+  job: named-module-gates
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: dashboard.build
+  workflow: .github/workflows/dashboard.yml
+  job: build
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: dashboard.deploy
+  workflow: .github/workflows/dashboard.yml
+  job: deploy
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: detectors.scripts-suite
+  workflow: .github/workflows/detectors.yml
+  job: scripts-suite
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: detectors.detectors
+  workflow: .github/workflows/detectors.yml
+  job: detectors
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: docsite-check.check
+  workflow: .github/workflows/docsite-check.yml
+  job: check
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: lint-types.lint-types
+  workflow: .github/workflows/lint-types.yml
+  job: lint-types
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: marshal-local-recipes-seed-oracle.oracle
+  workflow: .github/workflows/marshal-local-recipes-seed-oracle.yml
+  job: oracle
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: platform-ci.test
+  workflow: .github/workflows/platform-ci.yml
+  job: test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-pip-install.pip-install
+  workflow: .github/workflows/pyforge-pip-install.yml
+  job: pip-install
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.changes
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: changes
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.core-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: core-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.testing-kit-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: testing-kit-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.atlas-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: atlas-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.doctor-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: doctor-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.herald-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: herald-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.marshal-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: marshal-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.mason-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: mason-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.scribe-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: scribe-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.steward-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: steward-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: ci-canary.plan
+  workflow: .github/workflows/ci-canary.yml
+  job: plan
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: PAUSE_CI_CANARY
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: ci-canary.build
+  workflow: .github/workflows/ci-canary.yml
+  job: build
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: PAUSE_CI_CANARY
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.warden-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: warden-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: substrate-nightly.publish
+  workflow: .github/workflows/substrate-nightly.yml
+  job: publish
+  kind: ci-job
+  cost: low
   gate: false
   switch: null
   switch_class: pause

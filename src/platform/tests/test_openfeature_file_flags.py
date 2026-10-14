@@ -699,9 +699,21 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    # Story 99.3; 99.4 / 99.5 preflight parity reuse the same key (CAP-166).
+    "pyforge.steward.ci_pause_control": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,
+        "production": False,
+    },
+    # Story 100.1 (CAP-292); default off, on in dev only (spec flag.default).
+    "pyforge.marshal.landing_ci_pauses": {
+        "dev": True,
+        "staging": False,
         "production": False,
     },
     # Stories 87.3/87.7/87.15; default off (spec flag.default).
@@ -720,6 +732,11 @@ _SHIPPED_BOOLEANS = {
     "pyforge.herald.pages_second_host": {
         "dev": True,
         "staging": True,
+        "production": False,
+    },
+    "pyforge.herald.ci_surfaces_tile": {
+        "dev": True,
+        "staging": False,
         "production": False,
     },
     "pyforge.herald.deck_export_native": {

@@ -1,9 +1,11 @@
 ---
 nextStepFile: 'report.md'
-outputFile: '{forge_version}/test-report-{skill_name}-{run_id}.md'
-scoringRulesFile: '{scoringRulesPath}'
+outputFile: '{report_file}'
 sourceAccessProtocol: 'references/source-access-protocol.md'
 scoringScript: 'scripts/compute-score.py'
+# §4b.1 reads the run's gaps from the gap ledger the stages recorded them in.
+ledgerFile: '{forge_version}/test-findings-{run_id}.json'
+gapLedgerScript: 'scripts/gap-ledger.py'
 ---
 
 <!-- Config: communicate in {communication_language}. -->
@@ -14,126 +16,96 @@ scoringScript: 'scripts/compute-score.py'
 
 Calculate the overall completeness score by aggregating coverage, coherence, and external validation category scores with the appropriate weight distribution (naive or contextual), apply the pass/fail threshold, and determine the test result.
 
-### 1. Load Scoring Rules
+**Halt envelope.** Every HALT in this step names its `halt_reason` and phase and carries exit code 1. It releases the run lock first, whatever the release prints: from `{project-root}`, run `uv run {runLockHelper} release --lock "{forge_version}/.test-skill.lock" --owner "{run_owner}"` (SKILL.md Workflow Rules). In headless mode it then writes `{"phase": "<phase>", "reason": "<the halt message>", "halt_reason": "<halt_reason>", "skill_name": "{skill_name}", "report_path": "{report_file}"}`, adding `"path"` when the halt names one, to `{run_dir}/halt.json` and runs:
 
-Load `{scoringRulesFile}` to get:
-- Category weights (naive vs contextual distribution)
-- Tier-dependent scoring adjustments
+```bash
+uv run {emitEnvelopeHelper} emit-halt --workflow skf-test-skill --run-dir "{run_dir}" --target stderr < "{run_dir}/halt.json"
+```
 
-**Resolve the pass threshold (precedence: CLI > pipeline default > scalar > bundled fallback):**
+Display the line it prints, as the run's last line, then stop. If the emitter exits non-zero or prints no line, display the halt message alone. An interactive HALT displays its message and emits nothing.
 
-1. If the workflow received `--threshold=<N>` on invocation, use that integer as `effective_threshold` (CLI wins). Set `threshold_source` = `"CLI override ({N}%)"`.
-2. Else if `{pipeline_default_threshold}` is set in workflow context (resolved by init.md §1b from the per-pipeline threshold lookup table when `{pipeline_alias}` is present), use it as `effective_threshold`. Set `threshold_source` = `"pipeline default ({pipeline_alias} → {N}%)"`.
-3. Else if the resolved `{defaultThreshold}` workflow-context variable (from SKILL.md On Activation §3 — `workflow.default_threshold` scalar, default `80`) is set, use it as `effective_threshold`. Set `threshold_source` = `"workflow default ({N}%)"`.
-4. Else fall back to `80` (the bundled default — this branch should be unreachable when SKILL.md resolution ran correctly, but keeps the step robust if customize.toml resolution failed silently). Set `threshold_source` = `"bundled fallback (80%)"`.
+### 1. Read the Pass Threshold
 
-Store `threshold_source` in workflow context for use in the score report section.
+`{scoringScript}` owns the category weights, their redistribution and every verdict rule; this step sets its flags, hands it the score files and reads its output.
 
-Pass `effective_threshold` into the scoring-input JSON's `threshold` field in §3a (the compute-score.py script already honors this field). The CLI flag, pipeline default, and the scalar all feed the same downstream field; the script does not need to know which layer supplied the value.
+**The pass threshold was resolved once, at init** (init.md §1b, precedence: CLI > pipeline default > scalar > bundled fallback), and init.md §6c wrote it into the report. Read `threshold` and `thresholdSource` from the `{outputFile}` frontmatter and bind `effective_threshold` ← `threshold` as a number (without its `%`) and `threshold_source` ← `thresholdSource`. Never resolve the precedence again here: the frontmatter keeps what a long run's context may lose.
 
-**Docs-only mode check:** If the Coverage Analysis section in `{outputFile}` notes docs-only mode (set by step 3 for skills with all `[EXT:...]` citations and no local source), apply Quick-tier weight redistribution: Signature Accuracy and Type Coverage are not scored, their weights (22% + 14%) are redistributed proportionally to remaining active categories. Coverage score is based on documentation completeness rather than source coverage (as calculated by step 3).
+Pass `effective_threshold` into the scoring-input JSON's `threshold` field in §3a. The CLI flag, pipeline default, and the scalar all feed the same downstream field; the script does not need to know which layer supplied the value.
 
-### 2. Read Category Scores from Output
+### 2. The Category Score Files
 
-Read `{outputFile}` and extract the category scores calculated in previous steps:
+The category scores are never read back out of the report: each is the output file of the script that computed it, in the run folder `{run_dir}` (init.md §6b), and §3b hands the files to the scoring script by path:
 
-**From Coverage Analysis (step 03):**
-- Export Coverage: {percentage}%
-- Signature Accuracy: {percentage}% or N/A (Quick tier)
-- Type Coverage: {percentage}% or N/A (Quick tier)
-
-**From Coherence Analysis (step 04):**
-- Combined Coherence: {percentage}% (contextual mode only)
-- Or: not scored (naive mode — weight redistributed)
-
-**From External Validation (step 04b):**
-- External Validation Score: {percentage}% (combined skill-check + tessl average)
-- Or: N/A (if neither tool was available — weight redistributed to other categories)
+- `coverage.json`: Export Coverage (coverage-check §2c)
+- `signatures.json`: Signature Accuracy and Type Coverage (coverage-check §2b; there is none at Quick tier, for a docs-only skill, at States 2 to 5, or for a stack or a reference app)
+- `coherence.json`: the combined coherence (coherence-check §5c; contextual mode only)
+- `external.json`: the external validation score (external-validators §4; its `externalScore` is null when neither validator scored)
+- `surface.json`: at State 2, the provenance-map and metadata counts behind the State 2 undercount deduction (coverage-check §2)
 
 ### 3. Apply Weight Distribution
 
 **Read testMode from {outputFile} frontmatter.**
 
-#### 2b. Apply State 2 Undercount Deduction (pre-script)
-
-If `analysis_confidence == 'provenance-map'` (State 2) AND `metadata.json.skill_type != "stack"` AND step 3 recorded a provenance vs metadata divergence > 5% (see §4b in step 3), apply a 10-point deduction to `exportCoverage` BEFORE building the scoring input:
-
-```
-exportCoverage_adjusted = max(0, exportCoverage - 10)
-```
-
-Record in the report: `scoring_notes: State 2 undercount risk acknowledged — 10% deduction applied to Export Coverage (raw: {N}%, adjusted: {M}%)`. Use the adjusted value as the `exportCoverage` field in §3a below. The deduction is deterministic and does not change category weights or active-category counting.
-
-Stack skills are exempt (the `metadata.json.skill_type != "stack"` guard above; `skill_type` is loaded in step 01 and also surfaces as `stackSkill` in §3a): a stack's own barrel is empty by design, so a provenance-vs-metadata divergence on a stack reflects the barrel-vs-constituent surface difference (suppressed by §4b's stack-skill branch in step 3), not extraction undercount — deducting for it would penalize a correctly built stack.
-
 #### 3a. Construct Scoring Input JSON
 
-Build a JSON object from the data gathered in steps 1-2:
+Build the flags the script reads from workflow context, and `toolingStatus` from the `{outputFile}` frontmatter (init.md §6c wrote it), never from memory:
 
 ```json
 {
   "mode": "{testMode: contextual or naive}",
   "tier": "{forge_tier: Quick, Forge, Forge+, or Deep}",
-  "docsOnly": "{true if docs_only_mode detected in step 03, else false}",
+  "docsOnly": "{true if docs_only_mode is set (coverage-check §0), else false}",
   "state2": "{true if analysis_confidence is provenance-map, else false}",
   "stackSkill": "{true if metadata.json.skill_type == 'stack', else false}",
   "referenceApp": "{true if metadata.json.scope_type == 'reference-app', else false}",
-  "scores": {
-    "exportCoverage": "{export_coverage_percentage}",
-    "signatureAccuracy": "{signature_accuracy_percentage or null if N/A}",
-    "typeCoverage": "{type_coverage_percentage or null if N/A}",
-    "coherence": "{combined_coherence_percentage or null if naive mode}",
-    "externalValidation": "{external_validation_score or null if N/A}"
-  },
-  "threshold": "{effective_threshold from §1 — CLI --threshold wins, then pipeline default, then workflow.default_threshold scalar, then 80}",
-  "analysisConfidence": "{resolved analysis confidence — 'degraded' when python3/frontmatter validator missing; else full/provenance-map/metadata-only/remote-only/docs-only; omit if unknown}",
-  "toolingStatus": "{a missing-helper marker like 'python3-missing' or 'frontmatter-validator-missing' when a helper is unavailable, else omit}"
+  "threshold": "{effective_threshold from §1}",
+  "analysisConfidence": "{analysis_confidence: full, provenance-map, metadata-only, remote-only or docs-only}",
+  "toolingStatus": "{toolingStatus from the {outputFile} frontmatter: ok, or frontmatter-validator-timeout}"
 }
 ```
 
-**Important:** Score values must be numbers (not strings). Use `null` (not `"N/A"`) for categories that were not scored. `analysisConfidence` and `toolingStatus` are optional strings — pass them so the script can apply the post-score tooling cap (§3d) deterministically; the script fires Cap 1 when `analysisConfidence == "degraded"` or `toolingStatus` contains `missing`. Read `metadata.json.skill_type` from `{resolved_skill_package}/metadata.json`; if the value is `"stack"`, set `stackSkill: true` and pass `null` for `signatureAccuracy` and `typeCoverage` (the categories will be redistributed per `{scoringRulesFile}` Stack Skills rule). Likewise read `metadata.json.scope_type`; if the value is `"reference-app"`, set `referenceApp: true` and pass `null` for `signatureAccuracy` and `typeCoverage` (redistributed per `{scoringRulesFile}` Reference-App rule — a reference app documents wiring patterns, not library export signatures).
+**Important:** the flags are bare booleans (`true`, not `"true"`) and the threshold a number. Always pass `toolingStatus`: any value other than `ok` fires Cap 1 (§3d). `analysisConfidence` names the source access only, never tooling health. Read `metadata.json.skill_type` and `metadata.json.scope_type` from `{resolved_skill_package}/metadata.json`: a stack (`stackSkill`) and a reference app (`referenceApp`, which documents wiring patterns, not library export signatures) have no Signature Accuracy or Type Coverage, and the script redistributes their weights. With no local source (`analysisConfidence` `metadata-only` or `remote-only`, States 3 and 4) it skips both categories at any tier, as it does at Quick tier, for `docsOnly` and for `state2`.
 
 #### 3b. Run the Scoring Script
 
+Pass the §3a JSON and the score files that exist: `--signatures` when coverage-check scored the signatures, `--coherence` in contextual mode, and `--surface` at State 2:
+
 ```bash
-echo '<JSON>' | uv run {scoringScript} --stdin
+uv run {scoringScript} --json-input '<the §3a JSON>' --coverage "{run_dir}/coverage.json" [--signatures "{run_dir}/signatures.json"] [--coherence "{run_dir}/coherence.json"] --external "{run_dir}/external.json" [--surface "{run_dir}/surface.json"] > "{run_dir}/score.json"
 ```
 
-Where `{scoringScript}` is the path resolved from the frontmatter variable (relative to the skill root, i.e., the skf-test-skill/ directory). The script also accepts the JSON as a positional argument (`uv run {scoringScript} '<JSON>'`) or via `--json-input '<JSON>'`; `--stdin` is preferred since it avoids shell-quote escaping of nested JSON.
+Where `{scoringScript}` is the path resolved from the frontmatter variable (relative to the skill root, i.e., the skf-test-skill/ directory).
 
-Parse the JSON output. The script returns:
-- `weights` — final redistributed weights per category
-- `weightedScores` — weighted contribution per category
-- `totalScore` — the overall completeness score
-- `threshold` — the threshold used
-- `result` — `"PASS"`, `"FAIL"`, or **`"INCONCLUSIVE"`** (minimum-evidence floor — see `{scoringRulesFile}`)
-- `activeCategories` — list of categories that were scored
-- `skippedCategories` — list of categories that were skipped
-- `skipReasons` — why each category was skipped
-- `weightSum` — sum of final weights (should be ~100)
-- `inconclusiveReasons` — only present when `result == "INCONCLUSIVE"`; explains which floor clause tripped
-- **Verdict-override group** — present as an atomic set of four keys only when a post-score cap or the threshold fallback engaged (§3d/§4b are applied by the script, not re-derived here):
-  - `effectiveResult` — the **final verdict** after caps + fallback (`"PASS"` / `"FAIL"`); read this as the outcome for §4–§8
-  - `capReason` — string describing the cap(s) that fired, or `null`
-  - `thresholdFallback` — `true` when the FAIL→PASS-at-80-floor fallback fired
-  - `originalThreshold` — the pre-fallback threshold when `thresholdFallback` is `true`, else `null`
+Read its output from `{run_dir}/score.json`, where the report step's result contract reads `activeCategories` and `inconclusiveReasons` too. The script returns:
+- `weights`: final redistributed weights per category
+- `weightedScores`: weighted contribution per category
+- `totalScore`: the overall completeness score
+- `threshold`: the threshold used
+- `result`: `"PASS"`, `"FAIL"`, or **`"INCONCLUSIVE"`** (the minimum-evidence floor)
+- `activeCategories`: list of categories that were scored
+- `skippedCategories`: list of categories that were skipped
+- `skipReasons`: why each category was skipped
+- `weightSum`: sum of final weights (should be ~100)
+- `inconclusiveReasons`: only present when `result == "INCONCLUSIVE"`; explains which floor clause tripped
+- `state2Deduction` and `scoringNotes`: present when the State 2 undercount deduction was weighed (`applied` says whether it lowered Export Coverage) and when a note applies
+- **Verdict-override group**: present as an atomic set of four keys only when a post-score cap or the threshold fallback engaged (§3d/§4b are applied by the script, not re-derived here):
+  - `effectiveResult`: the **final verdict** after caps + fallback (`"PASS"` / `"FAIL"`); read this as the outcome for §4 to §8
+  - `capReason`: string describing the cap(s) that fired, or `null`
+  - `thresholdFallback`: `true` when the FAIL→PASS-at-80-floor fallback fired
+  - `originalThreshold`: the pre-fallback threshold when `thresholdFallback` is `true`, else `null`
   - When the group is **absent**, no cap or fallback engaged and `result` is the final verdict.
 
-Use these values for Section 4 (pass/fail/inconclusive) and Section 6 (output formatting). **The script owns the minimum-evidence floor, both post-score caps, and the threshold fallback — everywhere below, read its emitted fields (`result`, `effectiveResult`, `capReason`, `thresholdFallback`) and never recompute a verdict, cap, or threshold decision.** The final verdict is `effectiveResult` when the override group is present, otherwise `result` (INCONCLUSIVE is never overridden).
+Use these values for Section 4 (pass/fail/inconclusive) and Section 6 (output formatting). **The script owns the minimum-evidence floor, the State 2 deduction, both post-score caps, and the threshold fallback: everywhere below, read its emitted fields (`result`, `effectiveResult`, `capReason`, `thresholdFallback`, `scoringNotes`) and never recompute a verdict, cap, deduction or threshold decision.** The final verdict is `effectiveResult` when the override group is present, otherwise `result` (INCONCLUSIVE is never overridden).
 
-#### 3c. Fallback (if script execution fails)
+#### 3c. If the Script Refuses the Input or Does Not Run
 
-**First distinguish "the script could not run" from "the script rejected the input" — they take opposite paths.**
+A `{"error": ..., "code": "INVALID_INPUT"}` envelope in `{run_dir}/score.json` (exit 2, or exit 1 for a payload that is not JSON) means the script ran and refused what it was given: a flag is missing, mistyped or out of range, or a score file is missing its score or holds a refused result. **Correct the §3a input, or re-run the step that writes the refused file, and run it again.** Never compute a total by hand from the numbers the script refused.
 
-A `{"error": ..., "code": "INVALID_INPUT"}` envelope on stdout means the script ran fine and refused what it was given: a field is missing, mistyped, or out of range (exit 2), or the payload was not parseable JSON at all (exit 1). Either way the *input* is wrong, not the script. **Correct the §3a input and re-run.** Do not fall through to the manual redistribution below — it would hand-compute a total from the very numbers the script just refused, so an out-of-range `exportCoverage` would silently become a score. If the input cannot be corrected, report `score: scoring input rejected — {error}` and leave the score unset rather than emitting a computed total.
-
-The fallback below applies only when the script genuinely could not run — missing file, no `uv`, unreadable interpreter — that is, **no envelope on stdout at all**.
-
-If the script is unavailable, redistribute each skipped category's weight (the `null`-scored categories in the §3a JSON — naive mode already zeroes coherence, and Quick-tier/docsOnly/state2/stackSkill/referenceApp already null out Signature Accuracy + Type Coverage) proportionally across the active categories, then report `total = Σ(weight/100 × category_score)` using the detected mode's weight table in `{scoringRulesFile}`. Report: "**Note:** Scoring script unavailable — calculated manually per scoring-rules.md."
+No envelope at all (the script file is missing, or it cannot start): HALT with its stderr (`halt_reason: "helper-failed"`, phase `score:compute`). A quality gate does not score by hand, so the run stops without a score rather than with an unchecked one.
 
 ### 3d. Read Post-Score Caps (applied by the script)
 
-The script applies two post-score caps — **Cap 1** (tooling degraded) and **Cap 2** (docs-only with no external validators) — and returns the settled outcome as `capReason` + `effectiveResult` (§3b). Read those fields; never recompute a cap. If `capReason` is non-null, record `scoring_notes: {capReason}` in the report. A fired cap forces the script's `PASS` into `FAIL`, never touches an INCONCLUSIVE verdict, and may still be re-flipped to PASS by the threshold fallback (§4b) — `effectiveResult` reflects that settled outcome. (Both caps exist because a degraded-tooling or docs-only-without-validators run has too thin an evidence base to trust a PASS; §3a passes the fields Cap 1 reads.)
+The script settles the verdict in the one order its docstring states, with two post-score caps: **Cap 1** (any `toolingStatus` other than `ok`) and **Cap 2** (docs-only with no external validation score). It returns the settled outcome as `capReason` + `effectiveResult` (§3b). Read those fields; never recompute a cap. If `capReason` is non-null, record `scoring_notes: {capReason}` in the report. A fired cap forces the script's `PASS` into `FAIL`, never touches an INCONCLUSIVE verdict, and is never re-flipped by the threshold fallback (§4b): a capped run stays FAIL whatever the threshold. (Both caps exist because a degraded-tooling or docs-only-without-validators run has too thin an evidence base to trust a PASS; §3a passes the field Cap 1 reads.)
 
 ### 4. Determine Result (PASS / FAIL / INCONCLUSIVE)
 
@@ -144,7 +116,7 @@ IF result == "INCONCLUSIVE" — minimum-evidence floor tripped; not PASS, not FA
 ELSE settled verdict = effectiveResult if the override group is present, else result   (PASS or FAIL)
 ```
 
-**INCONCLUSIVE floor clauses** (see `{scoringRulesFile}`):
+**INCONCLUSIVE floor clauses** (the script's minimum-evidence floor):
 - `active_categories < 2` (after all redistribution), OR
 - `tier == "Quick"` AND Export Coverage is the sole scoring contributor
 
@@ -152,7 +124,7 @@ ELSE settled verdict = effectiveResult if the override group is present, else re
 
 After §4 determines the result but before §5 recommends the next workflow, the script's threshold fallback may already have converted a FAIL into a PASS at the 80% floor. This step documents that quality compromise in an evidence report.
 
-The rule the script encodes (documented for interpretation): when `result == "FAIL"` AND `totalScore >= 80` AND `effective_threshold > 80`, the script overrides `result` to `"PASS"` at the 80% floor; an `INCONCLUSIVE` verdict is never overridden. Read the script's fields:
+Read the script's fields:
 
 - `thresholdFallback == true` → the fallback fired; `effectiveResult` is `"PASS"` and `originalThreshold` holds the pre-fallback threshold.
 - `thresholdFallback` absent or `false` → no fallback; the settled verdict from §4 stands.
@@ -164,17 +136,21 @@ The rule the script encodes (documented for interpretation): when `result == "FA
 3. Set `effective_threshold = 80` for use by §5/§6/§7/§8.
 4. Generate the evidence report (§4b.1 below).
 
-The cap↔fallback interaction (a cap forcing FAIL that the fallback then re-flips to PASS at the 80 floor) is resolved inside the script — `effectiveResult` reflects the settled outcome. The `{totalScore}` used in the report below is the script's raw `totalScore`.
+The `{totalScore}` used in the report below is the script's raw `totalScore`.
 
 #### 4b.1 Generate Evidence Report
 
 Write the evidence report to `{forge_version}/evidence-report-fallback.md`. The report documents the quality compromise for audit purposes.
 
-**Read gap entries:** extract findings from the Coverage Analysis and Coherence Analysis sections in `{outputFile}` — list each gap with severity (Critical through Low).
+**Read the gaps from the gap ledger**, not from the report's sections: the stages recorded every gap they found in `{ledgerFile}`, and the hard gate passed, so none is Critical or High. The script orders and counts them (`{gapLedgerScript}` resolves relative to the skill root):
+
+```bash
+uv run {gapLedgerScript} render --ledger "{ledgerFile}"
+```
+
+Exit 0: write its output unchanged under **Findings Preventing Higher Threshold**: the totals, the Remediation Summary and one entry per gap, by severity. A render that exits 1 prints its error on stderr: write that line there instead and continue, since the evidence report does not decide the verdict.
 
 **Check for prior remediation:** glob `{forge_version}/test-report-{skill_name}-*.md` for a prior test report. If found, note the path — this implies remediation was attempted between runs. If not found, note "first test run — no prior remediation cycle".
-
-**Check for post-score cap:** if Cap 1 or Cap 2 (§3d) fired, note the cap reason in the remediation section: "Score capped due to {cap_reason} — address tooling to test at the higher threshold."
 
 **Evidence report template:**
 
@@ -196,10 +172,7 @@ Write the evidence report to `{forge_version}/evidence-report-fallback.md`. The 
 
 ## Findings Preventing Higher Threshold
 
-{For each gap entry from Coverage Analysis and Coherence Analysis:}
-- **{GAP-NNN}: {title}** — Severity: {severity}, Category: {category}
-
-{Count: N critical, M high, P medium, Q low, R info findings}
+{the output of the render command above, unchanged}
 
 ## Remediation Context
 
@@ -209,12 +182,9 @@ A prior test run was found at `{prior_report_path}`, indicating remediation was 
 {If no prior test report:}
 No prior test report found for this skill version — this is the first test run.
 
-{If post-score cap was active:}
-**Note:** Score was capped due to {cap_reason}. Address tooling limitations to test at the higher threshold.
-
 ## Conclusion
 
-Skill accepted at 80% floor (original target: {original_threshold}%). The {N} findings above prevented meeting the higher threshold. Review and address findings before the next pipeline run to achieve the {original_threshold}% target.
+Skill accepted at 80% floor (original target: {original_threshold}%). The findings above prevented meeting the higher threshold. Review and address findings before the next pipeline run to achieve the {original_threshold}% target.
 ```
 
 Record `evidence_report_path: '{forge_version}/evidence-report-fallback.md'` in workflow context for use by §6/§7/§8 and by report.md.
@@ -225,10 +195,11 @@ Based on the **settled verdict** (§4 — `effectiveResult` when the override gr
 
 **IF PASS:**
 - `nextWorkflow: 'export-skill'` — skill is ready for export
-- **Drift override:** if workflow context carries
-  `allow_workspace_drift: true` (set in step 1 §5b when the user passed
+- **Drift override:** if the `{outputFile}` frontmatter's `workspaceDrift`
+  is `overridden` (init.md §5b wrote it when the user passed
   `--allow-workspace-drift` AND the workspace HEAD did not match
-  `metadata.source_commit`), the PASS is a **conditional PASS**:
+  `metadata.source_commit`; the flag on a clean tree leaves it `ok`), the
+  PASS is a **conditional PASS**:
   - Write `testResult: 'pass-with-drift'` to the output frontmatter instead of
     bare `'pass'`. The result contract (§4c of step 6) mirrors the same
     value.
@@ -245,9 +216,9 @@ Based on the **settled verdict** (§4 — `effectiveResult` when the override gr
 **IF INCONCLUSIVE:**
 - `nextWorkflow: 'manual-review'` — evidence base is insufficient to grade the skill automatically. The test report records `inconclusiveReasons` from the scoring script. Surface to the user — do not auto-recommend export or update.
 
-### 6. Append Completeness Score to Output
+### 6. Write the Completeness Score Section
 
-Append the **Completeness Score** section to `{outputFile}`:
+Write the **Completeness Score** section in place of the template's `## Completeness Score` heading and the placeholder comment under it, in `{outputFile}`:
 
 ```markdown
 ## Completeness Score
@@ -277,11 +248,14 @@ Append the **Completeness Score** section to `{outputFile}`:
 **Threshold Fallback:** scored {totalScore}% against {original_threshold}% target — accepted at 80% floor. Evidence report: {evidence_report_path}
 **Weight Distribution:** {naive (redistributed) | contextual (full)}
 **Tier Adjustment:** {none | Quick tier — signature and type coverage not scored}
-**External Validators:** {both available | skill-check only | tessl only | none — weight redistributed}
+**External Validators:** {skill-check and Tessl Review | skill-check only | Tessl Review only | none — weight redistributed} (from `{external_tools_used}`; `tessl` is Tessl Review)
 **Analysis Confidence:** {full | provenance-map | metadata-only | remote-only | docs-only}
+**Tooling Status:** {ok | frontmatter-validator-timeout}
+{If the script returned `scoringNotes` or a `capReason`:}
+**Scoring Notes:** {each entry of `scoringNotes`, and `capReason`}
 ```
 
-If `analysis_confidence` is not `full`, append a degradation notice. **The notice must be confidence-aware** — see the degradation notice rules in `{sourceAccessProtocol}`:
+If `analysis_confidence` is not `full`, add a degradation notice at the end of the Completeness Score section. **The notice must be confidence-aware** (see the degradation notice rules in `{sourceAccessProtocol}`):
 
 ```markdown
 ### Access Degradation Notice
@@ -294,12 +268,11 @@ If `analysis_confidence` is not `full`, append a degradation notice. **The notic
 ### 7. Update Output Frontmatter
 
 Update `{outputFile}` frontmatter:
-- `testResult: '{pass|pass-with-drift|fail|inconclusive}'` (lowercase; mirrors the **settled verdict** — `effectiveResult` when the override group is present, else `result` — with `pass-with-drift` substituted for `pass` when `allow_workspace_drift` was set and drift was observed — see §5 drift override)
+- `testResult: '{pass|pass-with-drift|fail|inconclusive}'` (lowercase; mirrors the **settled verdict**, `effectiveResult` when the override group is present, else `result`, with `pass-with-drift` substituted for `pass` when the frontmatter's `workspaceDrift` is `overridden`: see the §5 drift override)
 - `score: '{total}%'`
-- `threshold: '{threshold}%'`
-- `thresholdSource: '{threshold_source}'`
+- `threshold: '{threshold}%'`: the threshold the verdict was settled against (80 after a threshold fallback); `thresholdSource` keeps what init.md wrote
 - When `threshold_fallback` is true, add: `thresholdFallback: true`, `originalThreshold: '{original_threshold}%'`, `evidenceReportPath: '{evidence_report_path}'`
-- `analysisConfidence: '{full|degraded|provenance-map|metadata-only|remote-only|docs-only}'`
+- `analysisConfidence: '{full|provenance-map|metadata-only|remote-only|docs-only}'`
 - `nextWorkflow: '{export-skill|update-skill|manual-review}'`
 - Append `'score'` to `stepsCompleted`
 
@@ -311,5 +284,5 @@ Report the completeness score to the user: the total percentage and PASS/FAIL ve
 
 Then proceed to the gap report.
 
-Update stepsCompleted, then load and execute {nextStepFile}.
+`stepsCompleted` now ends with `'score'` (§7 appended it), so load and execute {nextStepFile}.
 

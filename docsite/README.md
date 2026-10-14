@@ -7,6 +7,7 @@ GitHub Pages site — and rebuilt from this repository every time either changes
 docsite/
   content/
     dossier.yml        ← the dossier itself. This is the source of truth.
+    ci-status.json     ← committed stdout of `pyforge steward ci status --json` (Story 39.1)
     site.yml           ← which infographics to publish, nav, artifact URL
   templates/           ← Jinja2: one macro per content block type
   assets/              ← the dossier stylesheet + the site-only chrome
@@ -108,11 +109,22 @@ copies this directory into `dist/assets/fonts/` and never fetches at build time.
 Open `content/dossier.yml`. It is a list of sections, each a list of typed
 blocks. To change a sentence, find the sentence and change it.
 
-Fourteen block types exist — `lede`, `prose`, `h3`, `table`, `callout`,
+Fifteen block types exist — `lede`, `prose`, `h3`, `table`, `callout`,
 `finding`, `stats`, `quote`, `relations`, `lattice`, `engines`, `chips`,
-`note`, `verify`. Each has exactly one macro in
+`note`, `verify`, `ci_surfaces`. Each has exactly one macro in
 `templates/blocks.html.j2`, used by both the site and the artifact, so they
 cannot drift apart.
+
+Refresh the CI surfaces snapshot (operator, authenticated `gh`, with
+`pyforge.steward.ci_pause_control` on for the run):
+
+```bash
+pixi run --frozen -e pyforge-guild pyforge steward ci status --json > docsite/content/ci-status.json
+```
+
+Commit the file only from an exit-0 run; the dossier tile reads it when
+`pyforge.herald.ci_surfaces_tile` is on (`export_ci_surfaces_tile_env.py`
+hands that state to the `site` build in CI).
 
 Text fields take a small inline-Markdown subset:
 

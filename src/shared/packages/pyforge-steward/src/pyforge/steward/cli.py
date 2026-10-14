@@ -80,6 +80,7 @@ DUTIES: tuple[str, ...] = (
     "session",
     "deck-drift",
     "estate",
+    "ci",
 )
 
 _HELP = {
@@ -191,6 +192,10 @@ _HELP = {
         "reconcile (regenerate derived surfaces + spec-surface), status (journal); "
         "behind pyforge.steward.estate_refresh (Story 100.2 / CAP-167)"
     ),
+    "ci": (
+        "CI pause visibility — status (one table/json of every surface) and vars (gitignored snapshot) "
+        "behind pyforge.steward.ci_pause_control (Story 99.3 / CAP-166 FR-39)"
+    ),
 }
 
 
@@ -266,6 +271,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_deck_drift_arguments(duty_parser)
         elif name == "estate":
             _add_estate_subparsers(duty_parser)
+        elif name == "ci":
+            _add_ci_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -1172,6 +1179,46 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     clean.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
 
+def _add_ci_subparsers(ci_parser: argparse.ArgumentParser) -> None:
+    ci_subs = ci_parser.add_subparsers(dest="ci_verb", required=True)
+    status = ci_subs.add_parser("status", help="report pause state for every CI surface")
+    status.add_argument("--json", action="store_true", help="emit ci-status-schema JSON")
+    vars_p = ci_subs.add_parser("vars", help="read or refresh the gitignored ci-vars snapshot")
+    vars_p.add_argument(
+        "--refresh",
+        action="store_true",
+        help="fetch gh variable list and write .steward/ci-vars.json",
+    )
+    pause_p = ci_subs.add_parser("pause", help="pause a CI surface (dry run unless --yes)")
+    pause_p.add_argument("target", help="registry row id or GitHub variable name")
+    pause_p.add_argument("--reason", required=True, help="why CI is paused (required)")
+    pause_p.add_argument(
+        "--review-by",
+        required=True,
+        dest="review_by",
+        metavar="YYYY-MM-DD",
+        help="date to re-review the pause",
+    )
+    pause_p.add_argument(
+        "--yes",
+        action="store_true",
+        help="perform gh variable set and update the registry (operator only)",
+    )
+    pause_p.add_argument(
+        "--i-am-removing-a-merge-gate",
+        action="store_true",
+        dest="remove_merge_gate",
+        help="allow pausing a gate: true row (ruling Q5)",
+    )
+    resume_p = ci_subs.add_parser("resume", help="resume a paused CI surface (dry run unless --yes)")
+    resume_p.add_argument("target", help="registry row id or GitHub variable name")
+    resume_p.add_argument(
+        "--yes",
+        action="store_true",
+        help="perform gh variable delete and update the registry (operator only)",
+    )
+
+
 def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
     estate_subs = estate_parser.add_subparsers(
         dest="estate_verb",
@@ -1688,6 +1735,10 @@ def resolve_duty(name: str) -> Duty:
         from .estate import EstateDuty
 
         return EstateDuty()
+    if name == "ci":
+        from .ci import CiDuty
+
+        return CiDuty()
     return NullDuty(name)
 
 

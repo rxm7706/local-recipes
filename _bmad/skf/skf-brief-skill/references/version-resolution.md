@@ -1,6 +1,6 @@
 # Version Resolution
 
-Single source of truth for how brief-skill resolves the `version` field of `skill-brief.yaml`. Loaded by step 2 §4b (auto-detect, fallback path only when the language is not script-supported) and step 5 §3 (resolve & write) so both operate on the same precedence rules and invariant. Step-01 §3b references this file in prose for human-readable rationale but does not load it — that step only collects `target_version` and validates its shape with an inline regex.
+Single source of truth for how brief-skill resolves the `version` field of `skill-brief.yaml`. Loaded by step 2 §4b (auto-detect, fallback path only when the language is not script-supported) and step 5 §3 (resolve & write) so both operate on the same precedence rules and invariant. Step-01 §3b references this file in prose for human-readable rationale but does not load it: that step only collects `target_version` and checks its shape with `skf-validate-brief-inputs.py --only target_version`.
 
 **Aligned with** `assets/skill-brief-schema.md` "Version Detection" section. If you change one, change the other.
 
@@ -13,7 +13,7 @@ For the detected source language, attempt the lookups in order. Stop at the firs
 - **Rust:** `Cargo.toml` `[package] version` (static). If `version = { workspace = true }`, resolve from workspace root `Cargo.toml` → `git describe --tags --abbrev=0`.
 - **Go:** version tag from `go.mod`, or `git describe --tags --abbrev=0`.
 
-For remote GitHub sources, fetch version-bearing files via `gh api repos/{owner}/{repo}/contents/{file}?ref={analysis_ref}` (decode base64) — `{analysis_ref}` is the ref resolved in step 02 §1, defaulting to `HEAD` when no `target_ref`/`target_version` was pinned; reading at the pinned ref keeps the "Detected version" consistent with the version being skilled. For local sources, read the file directly.
+For remote GitHub sources, read version-bearing files from `{run_dir}/files/`, where step 2 stages the files it fetches; fetch one that is not there yet with step 2's fetch helper, naming it: `uv run {githubFetchHelper} --repo "{owner}/{repo}" --ref "{analysis_ref}" --tree-file "{run_dir}/tree.json" --dest "{run_dir}/files" "{file}"`. `{analysis_ref}` is the ref resolved in step 02 §1, defaulting to `HEAD` when no `target_ref`/`target_version` was pinned; reading at the pinned ref keeps the "Detected version" consistent with the version being skilled. For local sources, read the file directly.
 
 If every step fails or returns a non-semver value, the detected version is `null` — the resolver below falls back to `"1.0.0"`.
 
@@ -42,5 +42,6 @@ Step-05 §3 enforces this by setting both fields to the same string when `target
 | Step | Responsibility |
 |------|----------------|
 | 01 §3b | Collect `target_version` (interactive prompt, or headless arg). Do not auto-detect — that is step 02's job. |
+| 02 §1 | Resolve `target_version` to the git tag step 2 reads, through `skf-validate-pins.py`. With no match, analyze `HEAD` and warn. |
 | 02 §4b | Run the detection algorithm regardless of whether `target_version` is set. If `target_version` is set and the detected version differs, surface the disagreement to the user — but the precedence above is unchanged: `target_version` wins. |
 | 05 §3 | Apply the precedence rules and write `version`. If `target_version` is set, also write the `target_version` field with the identical value. Enforce the invariant. |

@@ -55,6 +55,7 @@ from . import (
     capability_effect,
     capability_ledger,
     chain,
+    ci_pause_drift,
     deps,
     docs_currency,
     docs_map_hygiene,
@@ -107,6 +108,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 16.1 (Epic 16/CAP-1) -- sibling Dream title drift; fail-open,
     # warn-only; fleet-picture ATTENTION probes this DISPATCH name.
     Source.SIBLING_DREAMS_DRIFT.value: sibling_dreams.gather,
+    # Story 45.1 (Epic 45 / CAP-89) -- CI pause drift/stuck/overdue from
+    # steward ``ci status --json``; fleet-picture ATTENTION probes this name.
+    Source.CI_PAUSE_DRIFT.value: ci_pause_drift.gather,
     # Retro action item 3 (retro-pyforge-steward-2026-09-04.md, 2026-09-05)
     # -- another genuinely NEW (non-ported) DISPATCH member, same shape as
     # DUE_FOR_VERIFICATION/SIBLING_DREAMS_DRIFT above.

@@ -1280,6 +1280,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DISP-064": Verdict.WARN,
     # Story 92.1: a dispatch run whose recorded worktree is gone (stale) -- never blocks a launch.
     "MRS-DISP-065": Verdict.WARN,
+    # Story 100.1 (CAP-292): pre-merge PR body update for CI pauses failed -- merge proceeds.
+    "MRS-DISP-066": Verdict.WARN,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

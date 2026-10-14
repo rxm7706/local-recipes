@@ -37,6 +37,12 @@ set -uo pipefail
 ROOT="${PIXI_PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$ROOT" || exit 2
 
+python - <<'PY'
+from pathlib import Path
+from pyforge.steward.preflight_ci import emit_twin_banner
+emit_twin_banner(Path(".").resolve(), "platform-ci-local")
+PY
+
 STAGES=()
 ENGINE="${PLATFORM_CI_LOCAL_ENGINE:-docker}"
 while [ $# -gt 0 ]; do
@@ -62,6 +68,9 @@ acquire_run_lock() {
   mkdir -p "$(dirname "$lock_file")"
   exec 9>"$lock_file"
   if ! flock -w "$wait_sec" 9; then
+    # Close the lock fd first, so the holder scan never lists this waiter or its
+    # own helpers (Story 101.1).
+    exec 9>&-
     echo "platform-ci-local: lock held longer than ${wait_sec}s — not starting services" >&2
     _report_lock_contention "$lock_file" "$lock_meta" >&2
     exit 2
@@ -76,22 +85,20 @@ acquire_run_lock() {
 
 _report_lock_contention() {
   local lock_file="$1" lock_meta="$2"
-  local recorded_pid="" line
+  local recorded_pid="" line holders hp among=0
   if [ -f "$lock_meta" ]; then
     while IFS= read -r line; do
       case "$line" in pid=*) recorded_pid="${line#pid=}" ;; esac
     done <"$lock_meta"
   fi
+  # One scan per report (Story 101.1): the listing and the live-record check read it.
+  holders="$(_pids_holding_path "$lock_file")"
   echo "processes holding ${lock_file}:" >&2
-  _pids_holding_path "$lock_file" | while read -r hp; do
-    [ -n "$hp" ] || continue
+  for hp in $holders; do
     printf '  pid=%s cmdline=%s\n' "$hp" "$(_proc_cmdline "$hp")" >&2
+    [ "$hp" = "$recorded_pid" ] && among=1
   done
   if [ -n "$recorded_pid" ] && kill -0 "$recorded_pid" 2>/dev/null; then
-    local among=0 hp
-    for hp in $(_pids_holding_path "$lock_file"); do
-      [ "$hp" = "$recorded_pid" ] && among=1
-    done
     if [ "$among" = 1 ]; then
       echo "holder (from ${lock_meta}):" >&2
       cat "$lock_meta" >&2
@@ -118,18 +125,21 @@ _pid_alive() {
   kill -0 "$1" 2>/dev/null
 }
 
+# Every process with a descriptor open on $1: one pid per line, sorted, unique.
+# fuser when present; otherwise one pass over /proc/<pid>/fd with bash's own -ef
+# test (same device and inode), which forks nothing per descriptor. A readlink
+# per descriptor took 110 s at 6,549 processes (Story 101.1).
 _pids_holding_path() {
-  local target="$1" pid fd link
-  for pid in /proc/[0-9]*; do
-    pid="${pid#/proc/}"
-    for fd in /proc/"$pid"/fd/*; do
-      [ -L "$fd" ] || continue
-      link="$(readlink "$fd" 2>/dev/null || true)"
-      [ "$link" = "$target" ] || [ "$link" = "${target} (deleted)" ] || continue
-      echo "$pid"
-      break
-    done
-  done | sort -u
+  local target="$1" fd
+  if command -v fuser >/dev/null 2>&1; then
+    fuser "$target" 2>/dev/null | tr -s ' \n' '\n' | sed '/^$/d' | sort -un
+    return
+  fi
+  for fd in /proc/[0-9]*/fd/*; do
+    [ "$fd" -ef "$target" ] || continue
+    fd="${fd#/proc/}"
+    echo "${fd%%/*}"
+  done | sort -un
 }
 
 _wait_pid_exit() {

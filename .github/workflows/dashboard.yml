@@ -32,6 +32,9 @@ concurrency:
 
 jobs:
   build:
+    # ci-surfaces: dashboard.build
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DASHBOARD != 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -51,6 +54,7 @@ jobs:
       - name: Resolve Pages host env (flag + configure-pages)
         run: |
           pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python docsite/tools/export_ci_surfaces_tile_env.py >> "$GITHUB_ENV"
         env:
           PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
           PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
@@ -67,6 +71,9 @@ jobs:
           path: docs-site/build/site
 
   deploy:
+    # ci-surfaces: dashboard.deploy
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DASHBOARD != 'true') }}
     runs-on: ubuntu-latest
     needs: build
     environment:

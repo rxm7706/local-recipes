@@ -10,15 +10,15 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-10-09. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-10-13. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
-<!-- bmad-estate-digest: installed=58220a6d9490 -->
-<!-- bmad-estate-digest: skills=c2259b597d92 -->
+<!-- bmad-estate-digest: installed=2a8aac8d7467 -->
+<!-- bmad-estate-digest: skills=781de936eb78 -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
-<!-- bmad-estate-digest: suite=37ccab8802f2 -->
-<!-- bmad-estate-digest: pins=4c42a2caf3a4 -->
+<!-- bmad-estate-digest: suite=03ee22708ed5 -->
+<!-- bmad-estate-digest: pins=a16daebabc88 -->
 <!-- bmad-estate-digest: harness=c35ae088e6fe -->
 <!-- bmad-estate-digest: cadence=bd38c415273d -->
 <!-- bmad-estate-digest: pipeline-truth=44136fa355b3 -->
@@ -27,13 +27,13 @@
 
 Source: `_bmad/_config/manifest.yaml`, `_bmad/_config/skf-manifest.yaml`.
 
-- **bmad-method core:** `6.12.0` — `installShims: false`; installed 2026-04-30T17:24:22.503Z, last updated 2026-09-07T01:39:38.942Z.
-- **Skill Forge (skf):** `2.1.0`, installed 2026-09-07T01:39:39.614Z.
+- **bmad-method core:** `6.12.2` — `installShims: false`; installed 2026-04-30T17:24:22.503Z, last updated 2026-10-14T01:24:27.409Z.
+- **Skill Forge (skf):** `3.0.0`, installed 2026-10-14T01:24:28.045Z.
 
 | Module | Version | Source |
 |---|---|---|
-| `core` | 6.12.0 | built-in |
-| `bmm` | 6.12.0 | built-in |
+| `core` | 6.12.2 | built-in |
+| `bmm` | 6.12.2 | built-in |
 | `skf` | main | custom |
 
 ## 2. Skills by family
@@ -166,13 +166,13 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 133 skills.
 | `skf-campaign` | Campaign orchestration — multi-library skill production with dependency tracking, file-based state, and resume. Use when the user asks to "run a campaign" or "orchestrate skills." |
 | `skf-create-skill` | Compile a skill from a brief. Supports --batch for multiple briefs. Use when the user requests to "create a skill" or "compile a skill." |
 | `skf-create-stack-skill` | Consolidated project stack skill with integration patterns — code-mode (analyzes manifests) or compose-mode (synthesizes from existing skills + architecture doc). Use when the user requests to "create a stack skill", "fo |
-| `skf-drop-skill` | Drop a specific skill version or an entire skill — soft (deprecate) or hard (purge) with platform context rebuild. Use when the user requests to "drop" or "remove a skill." |
-| `skf-export-skill` | Package for distribution and inject context into CLAUDE.md/AGENTS.md/.cursorrules. Use when the user requests to "export" or "package a skill." |
+| `skf-drop-skill` | Deprecates or purges a skill version or a whole skill, then rebuilds the platform context files. Use when the user requests to "drop a skill" or "remove a skill". |
+| `skf-export-skill` | Exports an SKF skill, validating its package, writing its context snippet and updating the managed section in CLAUDE.md, AGENTS.md or .cursorrules. Use when the user requests to "export a skill" or "package a skill." |
 | `skf-forger` | Skill compilation specialist — the forge master. Use when the user asks to "talk to Ferris" or requests the "Skill Forge agent." |
 | `skf-quick-skill` | Fast skill from a package name or GitHub URL — no brief needed. Use when the user requests a "quick skill" or "skill from URL" or "skill from package." |
-| `skf-refine-architecture` | Improve architecture doc using verified skill data and VS feasibility findings. Use when the user requests to "refine skill architecture" or "improve architecture doc." |
+| `skf-refine-architecture` | Refines an architecture document against generated skills and a Verify Stack report. Use when the user requests to "refine the architecture against generated skills" or "refine an architecture doc with a VS report." |
 | `skf-rename-skill` | Rename a skill across all its versions — transactional copy-verify-delete with platform context rebuild. Use when the user requests to "rename a skill." |
-| `skf-setup` | Initialize forge environment, detect tools, and set capability tier (Quick/Forge/Forge+/Deep). Use when the user requests to "set up" or "initialize the forge". |
+| `skf-setup` | Initialize forge environment, detect tools, and set capability tier (Quick/Forge/Forge+/Deep). Use when the user requests to "set up the forge" or "initialize the forge". |
 | `skf-test-skill` | Cognitive completeness verification — quality gate before export. Use when the user requests to "test a skill" or "verify skill completeness." |
 | `skf-update-skill` | Smart regeneration preserving [MANUAL] sections after source changes. Use when the user requests to "update a skill" or "regenerate a skill." |
 | `skf-verify-stack` | Pre-code stack feasibility verification against architecture and PRD documents. Use when the user requests to "verify a tech stack" or "verify stack." |
@@ -321,10 +321,10 @@ Deprecated catalog rows (kept for drift completeness, never a metapackage run-de
 
 | Member | Source | Source | Source |
 |---|---|---|---|
-| `bmad-method` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 6.12.0 | `pixi.toml` → 6.12.0 | `recipes/bmad-method/recipe.yaml` → 6.12.1 |
+| `bmad-method` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 6.12.0 | `pixi.toml` → 6.12.2 | `recipes/bmad-method/recipe.yaml` → 6.12.1 |
 | `bmad-loop` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.11.1 | `pixi.toml` → 0.12.0 | `recipes/bmad-loop/recipe.yaml` → 0.12.0 |
 | `bmad-method-test-architecture-enterprise` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 1.24.0 | `pixi.toml` → 1.27.2 | `recipes/bmad-method-test-architecture-enterprise/recipe.yaml` → 1.27.2 |
-| `bmad-module-skill-forge` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.1.0 | `pixi.toml` → 2.2.0 | `recipes/bmad-module-skill-forge/recipe.yaml` → 2.2.0 |
+| `bmad-module-skill-forge` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.1.0 | `pixi.toml` → 3.0.0 | `recipes/bmad-module-skill-forge/recipe.yaml` → 2.2.0 |
 | `bmad-eval-quality` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 0.2.0.dev0 @3172162f | `pixi.toml` → 4.3.0 | `recipes/bmad-eval-quality/recipe.yaml` → 4.3.0 |
 | `bmad-utility-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 2.0.0 @HEAD | `pixi.toml` → 2.0.0 | `recipes/bmad-utility-skills/recipe.yaml` → 2.0.0 |
 | `bmad-labs-skills` | `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md` → 1.0.0.dev0 @HEAD | `pixi.toml` → 1.0.0.dev0 | `recipes/bmad-labs-skills/recipe.yaml` → 1.0.0.dev0 |
@@ -377,12 +377,12 @@ Source: `pixi.toml` — every dependency table that names a `bmad-*` / `mybmad-*
 | `bmad-loop` | `feature.pyforge-marshal.dependencies` | `>=0.12.0` |
 | `bmad-manticore` | `feature.local-recipes.dependencies` | `>=3.1.0.dev0` |
 | `bmad-manticore` | `feature.pyforge-guild.dependencies` | `>=3.1.0.dev0` |
-| `bmad-method` | `feature.local-recipes.dependencies` | `>=6.12.0` |
-| `bmad-method` | `feature.python.dependencies` | `>=6.12.0` |
+| `bmad-method` | `feature.local-recipes.dependencies` | `>=6.12.2` |
+| `bmad-method` | `feature.python.dependencies` | `>=6.12.2` |
 | `bmad-method-test-architecture-enterprise` | `feature.local-recipes.dependencies` | `>=1.27.2` |
 | `bmad-method-test-architecture-enterprise` | `feature.pyforge-guild.dependencies` | `>=1.27.2` |
-| `bmad-module-skill-forge` | `feature.local-recipes.target.linux-64.dependencies` | `>=2.2.0` |
-| `bmad-module-skill-forge` | `feature.pyforge-guild.target.linux-64.dependencies` | `>=2.2.0` |
+| `bmad-module-skill-forge` | `feature.local-recipes.target.linux-64.dependencies` | `>=3.0.0` |
+| `bmad-module-skill-forge` | `feature.pyforge-guild.target.linux-64.dependencies` | `>=3.0.0` |
 | `bmad-module-template` | `feature.local-recipes.dependencies` | `>=0.1.0` |
 | `bmad-module-template` | `feature.pyforge-guild.dependencies` | `>=0.1.0` |
 | `bmad-suite` | `feature.bmad-suite-full.dependencies` | `>=2026.9.26` |

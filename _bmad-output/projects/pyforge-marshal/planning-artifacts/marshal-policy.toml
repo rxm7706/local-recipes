@@ -641,6 +641,23 @@ verify_commands = [
   "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"100" = [  # a landing says which CI gates were paused when it merged (spec-pyforge-marshal CAP-292 / FR-239; Story
+  # 100.1), added 2026-10-14. The default surface, restated because a declared entry replaces it outright (its package
+  # glob covers dispatch_land.py, the new steward adapter, core/, the supervisor, finalize and the tests), plus the
+  # flagd tree the story's flag joins (pyforge.marshal.landing_ci_pauses) and every Spec memlog: marshal's src/ is
+  # co-governed by spec-pyforge-core.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts

@@ -1,0 +1,88 @@
+name: CI Canary
+
+# Weekly build of every paused cost:high CI surface (Story 99.6 / CAP-166 FR-39).
+# Builds only — no deploy, publish, or registry push (AD-4).
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+
+jobs:
+  plan:
+    # ci-surfaces: ci-canary
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CI_CANARY != 'true') }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has_targets: ${{ steps.plan.outputs.has_targets }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-guild
+          cache: true
+
+      - id: plan
+        run: |
+          set -euo pipefail
+          matrix="$(pixi run --frozen -e pyforge-guild python scripts/ci_canary.py matrix --json)"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          if python -c "import json,sys; d=json.loads(sys.argv[1]); sys.exit(0 if d.get('include') else 1)" "$matrix"; then
+            echo "has_targets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_targets=false" >> "$GITHUB_OUTPUT"
+            echo "No paused cost:high surfaces; canary matrix is empty." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  build:
+    # ci-surfaces: ci-canary.build
+    # render: python scripts/ci_surface_gates.py --render
+    needs: plan
+    if: ${{ needs.plan.outputs.has_targets == 'true' && (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CI_CANARY != 'true')) }}
+    name: canary (${{ matrix.id }})
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record canary target
+        run: |
+          {
+            echo "### CI canary: \`${{ matrix.id }}\`"
+            echo ""
+            echo "- Registry token: \`${{ matrix.canary }}\`"
+            echo "- Engine: docker only (podman matrix legs are not built here)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Free runner disk for image builds
+        run: |
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/lib/jvm \
+            /usr/local/.ghcup /usr/share/swift || true
+          sudo docker image prune -af >/dev/null 2>&1 || true
+          df -h / | tail -1
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        if: matrix.id == 'station-tests.guild-container'
+        with:
+          environments: pyforge-steward
+          cache: true
+
+      - name: Build guild Containerfile (docker)
+        if: matrix.id == 'station-tests.guild-container'
+        run: pixi run --frozen -e pyforge-steward pyforge-steward-guild-image-build -- docker
+
+      - name: Build platform image (docker)
+        if: matrix.id == 'platform-ci.container'
+        run: docker build -f src/platform/Containerfile -t platform-ci-canary .
+
+      - name: Build DB-GPT sidecar image (docker)
+        if: matrix.id == 'platform-ci.container-dbgpt'
+        run: docker build -f src/platform/compose/dbgpt/Containerfile -t dbgpt-sidecar-canary .

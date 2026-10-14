@@ -68,11 +68,19 @@ jobs:
   # tests/scripts is the detectors' own test suite (scripts/detectors.py's
   # Doctor-registry integration, the spec-surface / deferred-work / mirror /
   # bmad-switch scripts). Until 2026-09-05 no workflow ran it and 24 stale
-  # tests had rotted on main unnoticed. It runs in the pure-stdlib
-  # `pyforge-ci` env the `pyforge-doctor-scripts-test` task was written for.
+  # tests had rotted on main unnoticed. It runs in the `pyforge-ci` env the
+  # `pyforge-doctor-scripts-test` task was written for. Its `pyforge-ci` feature
+  # declares build, test and upload tools (plus ruamel.yaml for one test), and the
+  # env also composes the `python` feature, whose spec-kit pulls jsonschema and
+  # PyYAML in, so the env is not stdlib-only (doctor DW-doctor-47-1-1).
   scripts-suite:
+    # ci-surfaces: detectors.scripts-suite
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25, not 15 (doctor Story 47.1): GitHub cancelled this job at 15 minutes on main 8d04520770
+    # (run 38523258032: tests/scripts 8m00s, then the aggregate step cancelled 6m41s in) and on PRs #2204 and #2205.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
         with:
@@ -89,8 +97,12 @@ jobs:
         run: pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test
       # The detector-aggregate tests that load Doctor's dispatch table, and the
       # verdict-writer tests that import its citation predicate (doctor Story 41.1),
-      # skip above (pyforge-ci has none of Doctor's run-deps, by design); they run
-      # for real here, where Doctor's run-deps are installed (doctor Story 38.5).
+      # run for real here, where Doctor's run-deps are declared (doctor Story 38.5).
+      # In the step above, the verdict-writer file skips: its module-level
+      # importorskip of pyforge.doctor.sources.chain runs at collection, before
+      # test_detectors_doctor_sources.py puts Doctor's source on sys.path. The
+      # dispatch tests do run there, because pyforge-ci pulls jsonschema and PyYAML
+      # in through spec-kit (doctor Story 47.1, DW-doctor-47-1-1).
       # pr-preflight runs the same task (doctor Story 39.1): every step in this job must be a
       # `pixi run --frozen -e <env> <task>` that pr-preflight also runs, or
       # doctor's test_preflight_mirrors_scripts_suite.py reds.
@@ -98,6 +110,9 @@ jobs:
         run: pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test
 
   detectors:
+    # ci-surfaces: detectors.detectors
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:

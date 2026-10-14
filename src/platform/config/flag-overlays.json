@@ -8,6 +8,7 @@
     "pyforge.steward.herald_webhook_sidecar": "on",
     "pyforge.steward.stations_index": "on",
     "pyforge.marshal.verify_fix_loop": "on",
+    "pyforge.marshal.landing_ci_pauses": "on",
     "pyforge.marshal.preserve_refs": "off",
     "pyforge.atlas.dependency_history_sensor": "on",
     "pyforge.atlas.dependency_history": "on",
@@ -16,6 +17,7 @@
     "pyforge.herald.deck_viewer": "on",
     "pyforge.herald.deck_publish": "on",
     "pyforge.herald.pages_second_host": "on",
+    "pyforge.herald.ci_surfaces_tile": "on",
     "pyforge.herald.deck_export_native": "on",
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.fleet_scan": "on",
@@ -30,7 +32,8 @@
     "pyforge.steward.ledger_query_herald_facts": "off",
     "pyforge.steward.ledger_query_jira_github_matrix": "off",
     "pyforge.steward.glass_export": "off",
-    "pyforge.steward.estate_refresh": "on"
+    "pyforge.steward.estate_refresh": "on",
+    "pyforge.steward.ci_pause_control": "on"
   },
   "staging": {
     "pyforge.cutover_root": "local-recipes",
@@ -41,6 +44,7 @@
     "pyforge.steward.herald_webhook_sidecar": "off",
     "pyforge.steward.stations_index": "off",
     "pyforge.marshal.verify_fix_loop": "on",
+    "pyforge.marshal.landing_ci_pauses": "off",
     "pyforge.marshal.preserve_refs": "off",
     "pyforge.atlas.dependency_history_sensor": "on",
     "pyforge.atlas.dependency_history": "on",
@@ -49,6 +53,7 @@
     "pyforge.herald.deck_viewer": "on",
     "pyforge.herald.deck_publish": "on",
     "pyforge.herald.pages_second_host": "on",
+    "pyforge.herald.ci_surfaces_tile": "off",
     "pyforge.herald.deck_export_native": "on",
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.fleet_scan": "on",
@@ -63,7 +68,8 @@
     "pyforge.steward.ledger_query_herald_facts": "off",
     "pyforge.steward.ledger_query_jira_github_matrix": "off",
     "pyforge.steward.glass_export": "off",
-    "pyforge.steward.estate_refresh": "off"
+    "pyforge.steward.estate_refresh": "off",
+    "pyforge.steward.ci_pause_control": "off"
   },
   "production": {
     "pyforge.cutover_root": "local-recipes",
@@ -74,6 +80,7 @@
     "pyforge.steward.herald_webhook_sidecar": "off",
     "pyforge.steward.stations_index": "off",
     "pyforge.marshal.verify_fix_loop": "off",
+    "pyforge.marshal.landing_ci_pauses": "off",
     "pyforge.marshal.preserve_refs": "off",
     "pyforge.atlas.dependency_history_sensor": "off",
     "pyforge.atlas.dependency_history": "off",
@@ -82,6 +89,7 @@
     "pyforge.herald.deck_viewer": "off",
     "pyforge.herald.deck_publish": "off",
     "pyforge.herald.pages_second_host": "off",
+    "pyforge.herald.ci_surfaces_tile": "off",
     "pyforge.herald.deck_export_native": "off",
     "pyforge.warden.fix_draft_pr_estate": "off",
     "pyforge.warden.fleet_scan": "off",
@@ -96,6 +104,7 @@
     "pyforge.steward.ledger_query_herald_facts": "off",
     "pyforge.steward.ledger_query_jira_github_matrix": "off",
     "pyforge.steward.glass_export": "off",
-    "pyforge.steward.estate_refresh": "off"
+    "pyforge.steward.estate_refresh": "off",
+    "pyforge.steward.ci_pause_control": "off"
   }
 }

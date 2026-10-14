@@ -162,6 +162,9 @@ LAND_FINDINGS_FIELD = "land_findings"
 # back so a refusal stays visible to `marshal status` either way.
 LANDING_CHECKS_FIELD = "landing_checks"
 
+# Story 100.1 (CAP-292): steward CI pause surfaces active at merge time.
+CI_PAUSES_AT_MERGE_FIELD = "ci_pauses_at_merge"
+
 # Story 2.3's two new observation kinds (AD-26/AD-27): "registered" here in
 # the same sense every OTHER kind this module's own docstring names is --
 # this module keeps no closed kind-registry/enum (`kind` is any non-blank

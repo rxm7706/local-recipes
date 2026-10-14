@@ -1,0 +1,23 @@
+{
+  "fetched_at": "2026-10-13T12:00:00Z",
+  "repo": "rxm7706/local-recipes",
+  "rate_limit": {
+    "core_limit": 5000,
+    "core_remaining": 4999
+  },
+  "rows": [
+    {
+      "id": "drift-live",
+      "switch": "PAUSE_DRIFT_LIVE",
+      "declared_state": "live",
+      "live_switch_value": "true",
+      "paused_since": null,
+      "review_by": "2026-10-10",
+      "review_days_left": -3,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "drift",
+      "detail": "registry/live mismatch"
+    }
+  ]
+}

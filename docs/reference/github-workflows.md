@@ -29,7 +29,7 @@ Workflows landed after the original audit and this table never caught up (one, `
 | group | when | which |
 |---|---|---|
 | **Inherited at fork** | 2025-04-13 (`first commit`) | `automate-review-labels`, `correct_directory`, `create_feedstocks`, `do_not_edit_example`, `tokens.yml.notused` — **all five deleted 2026-07-26**, see below |
-| **Synced from upstream** | 2026-05-07 (`Add cocoindex (#18)`) | `staged-recipes-linter`, `linter_issue_comment` |
+| **Synced from upstream** | 2026-05-07 (`Add cocoindex (#18)`) | `staged-recipes-linter`, `linter_issue_comment` — **retired 2026-10-14** (Story 99.7; not a staged-recipes fork) |
 | **Authored here** | 2025-12-24 → 2026-07-18 | `test-{all,linux,macos,windows}`, `sync-pypi-mappings`, `dashboard` |
 
 ---
@@ -44,9 +44,7 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 | workflow | trigger | what it does | why you care |
 |---|---|---|---|
-| **`staged-recipes-linter.yml`** | `pull_request` (opened, synchronize, reopened, labeled, unlabeled) | Runs `.github/workflows/scripts/linter.py` | **The PR gate.** See *The two always-on gates* below. |
 | **`dashboard.yml`** | `push` to main, `schedule`, dispatch | Regenerates `data.js` from git history + live detectors, deploys to Pages | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the lean `pyforge-ci` env with `--locked`. |
-| **`linter_issue_comment.yml`** | `issue_comment` — **only** when the body contains `please rerun linter` or `/rerun-linter` | Re-requests the linter check suite | Re-lint without pushing. Rarely needed: toggling any label re-triggers the linter too. |
 
 ### Explicit-run only (`workflow_dispatch`)
 
@@ -58,18 +56,17 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 ---
 
-## The two always-on gates (`.github/workflows/scripts/linter.py`)
+## Retired 2026-10-14 — staged-recipes linter family (Story 99.7)
 
-CLAUDE.md's PR rules are not convention — they are these code paths; see CLAUDE.md
-§ *Critical Rule — PR CI gates* for the actionable commands.
+The upstream-synced workflows `staged-recipes-linter.yml`, `linter_issue_comment.yml`,
+`reusable-staged-recipes-linter.yml`, `reusable-staged-recipes-linter-selftest.yml`, and
+`.github/workflows/scripts/{linter,linter_issue_comment}.py` were removed. This repo is not a
+staged-recipes fork; the linter never matched how PyForge lands work.
 
-1. **Check #1** — *"Do not edit files outside of the `recipes/` directory."* Maps to
-   CLAUDE.md rule 1 (the `maintenance` label).
-2. **Check #3** — verifies `environment.yaml` matches a fresh regeneration. Maps to
-   CLAUDE.md rule 2. The `maintenance` label does NOT suppress this one.
-
-Check #2 validates recipe placement (`recipes/<name>/<recipe>.yaml`, not
-`recipes/<name>.yaml`).
+**Replacements:** merge gate remains `detectors-ci`; non-recipe edits still need the
+`maintenance` label; `environment.yaml` sync is `pixi run -e pyforge-steward pyforge steward provision --verify`.
+Registry rows: `docs/governance/ci-surfaces.yaml` (`state: retired`). See
+[How to pause CI](../how-to/pause-ci.md).
 
 ---
 
@@ -96,9 +93,9 @@ workflow, and it hardcoded *both* `{owner}/staged-recipes` and
 documenting only `automate-review-labels`).
 <!-- governance-currency:ignore-end -->
 
-**The result is that `.github/workflows/` now matches upstream's shape** —
-`staged-recipes-linter` + `linter_issue_comment` + `scripts/` — plus the four
-workflows authored here.
+**The result was that `.github/workflows/` matched upstream's linter shape until Story 99.7
+retired it** — today the tree is PyForge-authored workflows plus the registry in
+`docs/governance/ci-surfaces.yaml`.
 
 ---
 

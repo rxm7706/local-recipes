@@ -2,17 +2,25 @@
 
 Loads the real ``scripts/platform-ci-local.sh`` with stub pixi env binaries and a
 minimal ``src/platform`` tree — no PostgreSQL, Redis or container engine required.
+
+Story 101.1: every process a test here starts carries ``PLATFORM_CI_STUB_MARKER=<tmp_path>``,
+and an autouse fixture (imported by the other ``test_platform_ci_local_*`` modules) fails a
+test that leaves one behind. The check is scoped to that marker, never to a process name.
 """
 
 from __future__ import annotations
 
+import contextlib
 import os
+import re
+import shutil
 import signal
 import subprocess
 import sys
 import textwrap
 import threading
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -28,6 +36,69 @@ pytestmark = pytest.mark.skipif(
     reason="scripts/platform-ci-local.sh required",
 )
 
+_MARKER_VAR = "PLATFORM_CI_STUB_MARKER"
+
+
+def _marker_env(root: Path) -> dict[str, str]:
+    """The environment entry every process a test starts carries (Story 101.1)."""
+    return {_MARKER_VAR: str(root)}
+
+
+def _marked_pids(root: Path) -> list[int]:
+    """Pids, other than this one, whose environment holds exactly ``root``'s marker entry.
+
+    Scoped to one test's marker, never a process name or a host-wide pattern. A zombie's
+    environ reads empty, so a process that has exited never matches.
+    """
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return []
+    entry = f"{_MARKER_VAR}={root}".encode()
+    me = os.getpid()
+    found: list[int] = []
+    for name in os.listdir(proc):
+        if not name.isdigit() or int(name) == me:
+            continue
+        try:
+            environ = (proc / name / "environ").read_bytes()
+        except OSError:
+            continue
+        if entry in environ.split(b"\0"):
+            found.append(int(name))
+    return sorted(found)
+
+
+def _wait_marked_gone(root: Path, timeout: float = 5.0) -> list[int]:
+    """Poll until no process carries ``root``'s marker; return whatever is left at the deadline."""
+    deadline = time.monotonic() + timeout
+    while True:
+        pids = _marked_pids(root)
+        if not pids or time.monotonic() >= deadline:
+            return pids
+        time.sleep(0.1)
+
+
+def _cmdline(pid: int) -> str:
+    try:
+        raw = Path("/proc", str(pid), "cmdline").read_bytes()
+    except OSError:
+        return "?"
+    return raw.replace(b"\0", b" ").decode(errors="replace").strip()
+
+
+@pytest.fixture(autouse=True)
+def _no_stub_process_outlives_the_test(tmp_path: Path) -> Iterator[None]:
+    """Story 101.1: a test that leaves a process carrying its marker fails, after those are killed."""
+    yield
+    survivors = _wait_marked_gone(tmp_path)
+    if not survivors:
+        return
+    described = [f"pid={pid} cmdline={_cmdline(pid)}" for pid in survivors]
+    for pid in survivors:
+        with contextlib.suppress(OSError):
+            os.kill(pid, signal.SIGKILL)
+    pytest.fail("processes started by the test outlived it:\n" + "\n".join(described))
+
 
 def _write_executable(path: Path, body: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -39,6 +110,11 @@ def _prepare_stub_root(root: Path) -> Path:
     """One-time layout: ``bin/``, pixi env stubs, minimal ``src/platform``."""
     bin_dir = root / "bin"
 
+    # The postgres and redis-server stand-ins exec their long-running process, so the pid the
+    # stub records is the one the stop path kills; a bash wrapper's sleep child outlived every
+    # stop (Story 101.1). ``exec -a "$0 $*"`` keeps the cmdline that _is_our_postgres and
+    # _is_our_redis prove. pg_ctl reads its action as a whole argument: a substring match on
+    # "$*" took a tmp path naming "start" for a start, so a stop started a second postgres.
     service_stub = textwrap.dedent(
         """\
         #!/usr/bin/env bash
@@ -47,12 +123,14 @@ def _prepare_stub_root(root: Path) -> Path:
         name="$(basename "$0")"
         work=""
         pgdata=""
+        action=""
         args=("$@")
         for i in "${!args[@]}"; do
           if [ "${args[$i]}" = "-D" ]; then
             pgdata="${args[$((i + 1))]}"
             work="${pgdata%/pg}"
           fi
+          case "${args[$i]}" in start|stop) action="${args[$i]}" ;; esac
         done
         held=""
         if [ -n "$lock" ]; then
@@ -64,7 +142,7 @@ def _prepare_stub_root(root: Path) -> Path:
         echo "$name $* pid=$$ lock_fd=${held:-no}" >> "$log"
         case "$name" in
           pg_ctl)
-            if [[ "$*" == *stop* ]]; then
+            if [ "$action" = stop ]; then
               echo "stop pg $$" >> "$log"
               if [ -n "$pgdata" ] && [ -f "$pgdata/postmaster.pid" ]; then
                 kill "$(head -1 "$pgdata/postmaster.pid")" 2>/dev/null || true
@@ -77,16 +155,17 @@ def _prepare_stub_root(root: Path) -> Path:
                 fi
               fi
             fi
-            if [[ "$*" == *start* ]]; then
+            if [ "$action" = start ]; then
               echo "start pg $$" >> "$log"
               if [ -n "$pgdata" ]; then
                 cat > "$pgdata/postgres" <<'STIN'
         #!/usr/bin/env bash
-        sleep 999999
+        exec -a "$0 $*" sleep 999999
         STIN
                 chmod +x "$pgdata/postgres"
                 setsid "$pgdata/postgres" -D "$pgdata" >> "$log" 2>&1 &
                 echo $! > "$pgdata/postmaster.pid"
+                echo "spawned postgres pid=$! marker=${PLATFORM_CI_STUB_MARKER:-none}" >> "$log"
                 if [ -n "$work" ]; then echo "$!" > "$work/.active"; fi
               fi
             fi
@@ -111,11 +190,12 @@ def _prepare_stub_root(root: Path) -> Path:
             if [ -n "$rdir" ]; then
               cat > "$rdir/redis-server" <<'STIN'
         #!/usr/bin/env bash
-        sleep 999999
+        exec -a "$0 $*" sleep 999999
         STIN
               chmod +x "$rdir/redis-server"
               setsid "$rdir/redis-server" --port "${rport:-0}" >> "$log" 2>&1 &
               [ -n "$pidfile" ] && echo $! > "$pidfile"
+              echo "spawned redis-server pid=$! marker=${PLATFORM_CI_STUB_MARKER:-none}" >> "$log"
             fi
             ;;
           initdb)
@@ -230,6 +310,37 @@ def _prepare_stub_root(root: Path) -> Path:
     return bin_dir
 
 
+def _write_recording_fuser(bin_dir: Path) -> None:
+    """Put a ``fuser`` first on the run's PATH that logs each call (Story 101.1).
+
+    It hands each call to the host's ``fuser``, or, where there is none, to the same
+    fork-free ``/proc`` walk the script falls back to, so the listing stays the real one.
+    """
+    real = shutil.which("fuser") or ""
+    _write_executable(
+        bin_dir / "fuser",
+        textwrap.dedent(
+            f"""\
+            #!/usr/bin/env bash
+            echo "fuser $*" >> "${{PLATFORM_CI_STUB_LOG:-/dev/null}}"
+            if [ -n "{real}" ]; then exec "{real}" "$@"; fi
+            target="${{@: -1}}"
+            for fd in /proc/[0-9]*/fd/*; do
+              [ "$fd" -ef "$target" ] || continue
+              fd="${{fd#/proc/}}"
+              printf ' %s' "${{fd%%/*}}"
+            done
+            echo
+            """
+        ),
+    )
+
+
+def _fuser_scans(stub_log: Path) -> list[str]:
+    """The recording ``fuser``'s calls in ``stub_log``: one per holder scan."""
+    return [ln for ln in stub_log.read_text(encoding="utf-8").splitlines() if ln.startswith("fuser ")]
+
+
 def _run_platform_ci_local(
     root: Path,
     bin_dir: Path,
@@ -243,6 +354,7 @@ def _run_platform_ci_local(
     run_env["PATH"] = f"{bin_dir}:{run_env.get('PATH', '')}"
     run_env["PLATFORM_CI_LOCAL_ENGINE"] = "docker"
     run_env["PLATFORM_CI_STUB_LOG"] = str(stub_log)
+    run_env.update(_marker_env(root))
     run_env.setdefault("PLATFORM_CI_LOCAL_PG_PORT", "35432")
     run_env.setdefault("PLATFORM_CI_LOCAL_REDIS_PORT", "36379")
     if env:
@@ -370,6 +482,7 @@ def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
             )
         )
 
+    _write_recording_fuser(bin_dir)  # Story 101.1: counts the report's scans
     t = threading.Thread(target=hold)
     t.start()
     time.sleep(1)
@@ -387,6 +500,9 @@ def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
     assert waiter.returncode == 2
     assert "holder" in waiter.stderr.lower() or "lock held" in waiter.stderr.lower()
     assert "pid=" in waiter.stderr
+    # Story 101.1: with a live .holder record too, the report scans once; the listing and the
+    # live-record check read the same scan.
+    assert len(_fuser_scans(tmp_path / "waiter.log")) == 1, _fuser_scans(tmp_path / "waiter.log")
 
 
 def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
@@ -405,6 +521,7 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
             "PLATFORM_CI_LOCAL_LOCK_WAIT": "120",
             "PLATFORM_CI_LOCAL_ENGINE": "docker",
             "PLATFORM_CI_STUB_SLOW": "1",
+            **_marker_env(tmp_path),
         }
     )
     assert _SCRIPT is not None
@@ -481,3 +598,161 @@ def test_single_run_summary_unchanged(tmp_path: Path) -> None:
     assert proc.returncode == 0
     assert "RESULT: PASS" in proc.stdout
     assert "===== platform-ci-local summary" in proc.stdout
+
+
+def _wait_comm(pid: int, comm: str, timeout: float = 5.0) -> str:
+    """Poll ``/proc/<pid>/comm`` until it reads ``comm``; return the last value read."""
+    deadline = time.monotonic() + timeout
+    seen = ""
+    while time.monotonic() < deadline:
+        try:
+            seen = Path("/proc", str(pid), "comm").read_text(encoding="utf-8").strip()
+        except OSError:
+            seen = ""
+        if seen == comm:
+            break
+        time.sleep(0.05)
+    return seen
+
+
+def _running(pid: int) -> bool:
+    """True while ``pid`` exists and is not a zombie."""
+    try:
+        stat = Path("/proc", str(pid), "stat").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return stat.rsplit(")", 1)[-1].split()[0] != "Z"
+
+
+def _wait_not_running(pid: int, timeout: float = 5.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while _running(pid):
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.05)
+    return True
+
+
+def test_stub_start_stop_cycle_leaves_no_process(tmp_path: Path) -> None:
+    """Story 101.1: each service stand-in records the process the stop path kills.
+
+    Before the fix the recorded pid was a bash wrapper and its ``sleep 999999`` child
+    outlived every stop, two per run; 6,222 had gathered on the host by 2026-10-14.
+    """
+    if not Path("/proc/self/fd").is_dir():
+        pytest.skip("needs /proc")
+    bin_dir = _prepare_stub_root(tmp_path)
+    dev_bin = tmp_path / ".pixi" / "envs" / "platform-dev" / "bin"
+    env = {**os.environ, **_marker_env(tmp_path), "PLATFORM_CI_STUB_LOG": str(tmp_path / "stub.log")}
+
+    pgdata = tmp_path / "direct" / "pg"
+    pgdata.mkdir(parents=True)
+    subprocess.run([str(dev_bin / "pg_ctl"), "-D", str(pgdata), "start"], env=env, check=True, timeout=30)
+    pg_pid = int((pgdata / "postmaster.pid").read_text(encoding="utf-8").split()[0])
+    assert _wait_comm(pg_pid, "sleep") == "sleep"
+    assert pg_pid in _marked_pids(tmp_path), "the postgres stand-in dropped the test's marker"
+    pg_cmd = _cmdline(pg_pid)
+    assert "postgres" in pg_cmd and f"-D {pgdata}" in pg_cmd, pg_cmd
+    subprocess.run([str(dev_bin / "pg_ctl"), "-D", str(pgdata), "stop", "-m", "fast"], env=env, check=True, timeout=30)
+
+    rdir = tmp_path / "direct" / "redis"
+    rdir.mkdir()
+    pidfile = tmp_path / "direct" / "redis.pid"
+    subprocess.run(
+        [str(dev_bin / "redis-server"), "--port", "0", "--dir", str(rdir), "--pidfile", str(pidfile)],
+        env=env,
+        check=True,
+        timeout=30,
+    )
+    redis_pid = int(pidfile.read_text(encoding="utf-8").strip())
+    assert _wait_comm(redis_pid, "sleep") == "sleep"
+    assert redis_pid in _marked_pids(tmp_path), "the redis-server stand-in dropped the test's marker"
+    assert "redis-server" in _cmdline(redis_pid)
+    os.kill(redis_pid, signal.SIGTERM)
+    assert _wait_marked_gone(tmp_path) == []
+
+    proc = _run_platform_ci_local(
+        tmp_path,
+        bin_dir,
+        stub_log=tmp_path / "cycle.log",
+        env={
+            "PLATFORM_CI_LOCAL_LOCK": str(tmp_path / "cycle.lock"),
+            "PLATFORM_CI_LOCAL_WORK": str(tmp_path / "cycle-work"),
+        },
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    # The run's own stand-ins carried the marker, so the autouse fixture can see them, and the
+    # pid each stop line names is the process the stand-in spawned and recorded.
+    log = (tmp_path / "cycle.log").read_text(encoding="utf-8")
+    spawned_rows = re.findall(r"^spawned (postgres|redis-server) pid=(\d+) marker=(.*)$", log, re.M)
+    assert sorted(name for name, _pid, _marker in spawned_rows) == ["postgres", "redis-server"], log
+    for name, _pid, marker in spawned_rows:
+        assert marker == str(tmp_path), f"{name} stand-in ran without the test's marker: {marker!r}"
+    spawned = {name: int(pid) for name, pid, _marker in spawned_rows}
+    pg_stop = re.search(r"stopping postgres \(pid (\d+)\)", proc.stderr)
+    redis_stop = re.search(r"stopping redis \(pid (\d+)\)", proc.stderr)
+    assert pg_stop and redis_stop, proc.stderr
+    recorded_pg = int((tmp_path / "cycle-work" / "pg" / "postmaster.pid").read_text(encoding="utf-8").split()[0])
+    assert int(pg_stop.group(1)) == spawned["postgres"] == recorded_pg, (proc.stderr, log)
+    assert int(redis_stop.group(1)) == spawned["redis-server"], (proc.stderr, log)
+    for name, pid in spawned.items():
+        assert _wait_not_running(pid), f"{name} stand-in pid {pid} outlived its stop"
+    assert _wait_marked_gone(tmp_path) == []
+
+
+def _holding_path_function() -> str:
+    """The script's own ``_pids_holding_path`` definition, verbatim."""
+    assert _SCRIPT is not None
+    match = re.search(r"^_pids_holding_path\(\) \{\n.*?^\}\n", _SCRIPT.read_text(encoding="utf-8"), re.M | re.S)
+    assert match, "_pids_holding_path not found in scripts/platform-ci-local.sh"
+    return match.group(0)
+
+
+@pytest.mark.parametrize(
+    "tools",
+    [("fuser", "tr", "sed", "sort"), ("sort",)],
+    ids=["fuser", "proc-walk-without-fuser-or-readlink"],
+)
+def test_pids_holding_path_lists_each_holder_once_sorted(tmp_path: Path, tools: tuple[str, ...]) -> None:
+    """Story 101.1: one pid per line, sorted and unique, by fuser or by the fork-free /proc walk.
+
+    The second case puts only ``sort`` on PATH, so the walk can fork neither ``fuser`` nor a
+    ``readlink`` per descriptor (110 s at 6,549 processes before the fix).
+    """
+    if not Path("/proc/self/fd").is_dir():
+        pytest.skip("needs /proc")
+    found = {name: shutil.which(name) for name in tools}
+    missing = sorted(name for name, path in found.items() if path is None)
+    if missing:
+        pytest.skip(f"not on PATH: {', '.join(missing)}")
+    bash = shutil.which("bash")
+    assert bash is not None
+    tool_dir = tmp_path / "tools"
+    tool_dir.mkdir()
+    for name, path in found.items():
+        assert path is not None
+        (tool_dir / name).symlink_to(path)
+    target = tmp_path / "held.lock"
+    target.touch()
+    env = {**os.environ, **_marker_env(tmp_path)}
+    holders = [
+        # one holder on two descriptors, one on one
+        subprocess.Popen([bash, "-c", 'exec 8>"$1" 9>"$1"; exec sleep 999999', "_", str(target)], env=env),
+        subprocess.Popen([bash, "-c", 'exec 9>"$1"; exec sleep 999999', "_", str(target)], env=env),
+    ]
+    try:
+        for holder in holders:
+            assert _wait_comm(holder.pid, "sleep") == "sleep"
+        scan = subprocess.run(
+            [bash, "-c", _holding_path_function() + '_pids_holding_path "$1"\n', "_", str(target)],
+            env={"PATH": str(tool_dir), **_marker_env(tmp_path)},
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert scan.returncode == 0, scan.stderr
+        assert scan.stdout == "".join(f"{pid}\n" for pid in sorted(h.pid for h in holders)), scan.stdout
+    finally:
+        for holder in holders:
+            holder.kill()
+            holder.wait(timeout=5)

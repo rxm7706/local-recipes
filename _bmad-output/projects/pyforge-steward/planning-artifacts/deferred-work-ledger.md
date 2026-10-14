@@ -6357,3 +6357,51 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-10 — recorded by the marshal chain that mints Stories 91.1 and 92.1
   status: open
+
+### DW-steward-100-7-1: `estate realize` decides a row is due from the package name alone, and only explicit moves reach it
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-100-7-the-first-refresh-lands-through-the-path.md`
+  summary: Story 100.7's refresh journals one move per (package, env) for the packages the manifest declares (`explicit`). `realize_due_packages` matches a register row by package name across every env. So a row comes due when its package moved in some other env, and its from/to versions come from that env's move. A register package that is only a dependency of a dependency in its own env never comes due at all. Follow-up: match each move to the row's `env`, and keep non-explicit lock moves for packages the register names (the refresh can pass the register's package set to the move parser so the journal stays small).
+  evidence: 2026-10-14 refresh journal `.steward/estate-refresh/2026-10-14.json` on branch `dispatch/pyforge-steward/100.7`: `osv-scanner` stays 2.4.0 -> 2.4.0 in `pyforge-warden` (a transitive there), yet the realize block records 2.6.0 -> 2.7.0 `live`, taken from the `local-recipes` env's move. `pydantic` is declared in no feature, so its row can never come due; `age` and `deptry` come due only through `local-recipes`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py (`_parse_environment_moves`) and src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py (`realize_due_packages`, `packages_moved_in_journal`)
+  origin: independent review of the Story 100.7 hand fixes, 2026-10-14 (findings 3, 8, 9)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-14 — recorded with the Story 100.7 landing
+  status: open
+  also: (a) `estate plan`'s `held-by` column is always null now that moves carry an env name, not a feature name; (b) `plan` does not converge, so the command it prints differs from the one `refresh` runs once a floor is lowered; (c) the `silo --version` probe reads stale (it prints `RELEASE.<date>`, and the version pattern catches the Go version), and the loose version match at `estate_realize.py` reads a patch-stale version as `live`.
+
+### DW-steward-100-7-2: `estate reconcile` commits whatever the network-dependent bmad-suite generator writes
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-100-7-the-first-refresh-lands-through-the-path.md`
+  summary: `estate reconcile` runs `bmad_suite_metapackage.py`, which takes each member's upstream latest and silently falls back to the member recipe's floor when a lookup fails. So the metapackage floors reconcile writes depend on the network at that moment, and reconcile journals only the generator's exit code. Follow-up: reconcile should journal each member's resolved floor and source, and refuse, or name in the journal, a fallback it did not ask for. It should also never raise a floor above what the member recipe builds unless that member moves in the same batch.
+  evidence: Story 100.7 on branch `dispatch/pyforge-steward/100.7`. Commit `fe9679af8d` wrote `bmad-loop >=0.13.2` and TEA `>=2.0.3`; the 2026-10-14 reconcile wrote `>=0.12.0` and `>=1.27.2`. A `bmad_suite_metapackage.py --dry-run` an hour later read `[github]` 0.13.2 and 2.0.3 again. `pixi.lock` held bmad-loop 0.12.0 and TEA 1.27.2 throughout.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py (`_build_generators`, the `generate-bmad-suite` step); .claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py (`_resolve_upstream`)
+  origin: Story 100.7 Rule-2 retro (CFE v8.100.3)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-14 — recorded with the CFE retro for Story 100.7
+  status: open
+
+### DW-steward-99-6: Record one green workflow_dispatch of ci-canary.yml after merge (AC4).
+
+- source_spec: `planning-artifacts/specs/spec-99-6-a-paused-expensive-build-still-runs-once-a-week.md`
+  summary: Record one green workflow_dispatch of ci-canary.yml after merge (AC4).
+  evidence: GitHub Actions is the arbiter; this build-auto run cannot dispatch outward CI without operator confirmation.
+  location: .github/workflows/ci-canary.yml
+  origin: spec-deferred 7100cbe26d59 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-14 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-101-1-1: `steward ci status --json` has no row for the `PAUSE_ALL_CI` master switch
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-101-1-the-platform-ci-local-stubs-leak-no-process-and-the-holder-scan-takes-seconds.md`
+  summary: `steward ci status` (Story 99.3, CAP-166) builds one row per registered surface and one per unregistered switch-like variable. The registry's master switch (`conventions.master: PAUSE_ALL_CI` in `docs/governance/ci-surfaces.yaml`) is counted as registered, so it never gets an unregistered row, and it is no surface, so it never gets a surface row. While the master switch is on, every job that reads it is paused, but the payload shows each surface at its own switch's value. Three consumers inherit the gap: doctor 45.1's CI pause drift source, herald 39.1's dossier CI surfaces tile, and marshal 100.1's landing line all under-report while `PAUSE_ALL_CI` is `true`. Follow-up: the payload carries the master switch's live value as its own row, or as a field each row's verdict reads, and the three consumers read it. Recorded only; Story 101.1 does not implement it.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py` `_switch_names_in_registry` adds `conventions.master` to the registered names; `_build_rows` emits rows only for `surfaces` entries and unregistered variables, so no row ever names `PAUSE_ALL_CI` (read at `e0ad43f18c`). The three chain PRs each name the gap: doctor 45.1 (#2205), herald 39.1 (#2206) and marshal 100.1's chain (not yet opened on 2026-10-14).
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py (`_switch_names_in_registry`, `_build_rows`, `_status_payload`)
+  origin: operator ruling 2026-10-14, recorded with Story 101.1's mint (no implementation)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-14 — recorded with Story 101.1's chain
+  status: open

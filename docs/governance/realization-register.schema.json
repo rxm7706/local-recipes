@@ -46,7 +46,11 @@
               }
             },
             "operator_gate": { "type": "boolean" },
-            "per_loop_home": { "type": "boolean" }
+            "per_loop_home": { "type": "boolean" },
+            "primary_checkout_only": {
+              "type": "boolean",
+              "description": "Story 100.7: the step writes state every checkout shares (git hooks); realize skips it from a linked worktree."
+            }
           },
           "additionalProperties": false
         },

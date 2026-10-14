@@ -3,12 +3,20 @@ rows:
 - package: bmad-method
   env: pyforge-guild
   realize:
+    # {locked} is the version the refresh locked; --package-root lets the apply
+    # three-way re-apply local edits to installer-owned files. A target needs a
+    # curated catalog under pyforge/steward/data/bmad_core_releases/. The apply
+    # switches the checkout to its own review branch, uncommitted.
     steps:
     - - pyforge
       - steward
       - upgrade
       - bmad-core
+      - --target
+      - '{locked}'
       - --apply
+      - --package-root
+      - .pixi/envs/pyforge-guild/lib/node_modules/bmad-method
     - - pyforge
       - steward
       - upgrade
@@ -137,15 +145,17 @@ rows:
   authority: CAP-18
   class: module
 - package: bmad-suite
-  env: pyforge-guild
+  env: bmad-suite-full
   realize:
     steps: []
   probe:
-    expect: stage-ok
-    stages:
-    - installed
-    - wired
-    member: bmad-suite
+    # A metapackage: pipeline-truth reports its 13 members, not itself, so the probe
+    # reads the metapackage's own conda-meta record in the env that declares it.
+    expect: exit-0
+    command:
+    - sh
+    - -c
+    - ls "$CONDA_PREFIX"/conda-meta/bmad-suite-*.json
   test: pyforge-steward-test
   owner: pyforge-steward
   authority: CAP-21
@@ -202,8 +212,9 @@ rows:
     steps: []
   probe:
     expect: stage-ok
+    # Not a pixi dependency (pixi.toml keeps it commented out), so the installed
+    # stage never holds a version; wired is what this row realizes.
     stages:
-    - installed
     - wired
     member: mybmad-dashboard
   test: pyforge-steward-test
@@ -292,6 +303,7 @@ rows:
 - package: pre-commit
   env: pyforge-guild
   realize:
+    primary_checkout_only: true
     steps:
     - - pre-commit
       - install
@@ -345,18 +357,42 @@ rows:
   probe:
     expect: locked-version
     command:
-    - spec-kit
+    - specify
     - --version
   test: pyforge-steward-test
   owner: pyforge-steward
   authority: fnd:CAP-12
+  class: cli
+- package: playwright
+  env: pyforge-atlas
+  realize:
+    # The Node driver sets the browser revision the Python bindings launch; a moved
+    # driver needs its Chromium build downloaded (CI installs one per run).
+    steps:
+    - - python
+      - -m
+      - playwright
+      - install
+      - chromium
+  probe:
+    expect: exit-0
+    command:
+    - python
+    - -c
+    - from playwright.sync_api import sync_playwright; p = sync_playwright().start(); p.chromium.launch().close(); p.stop()
+  test: pyforge-atlas-test
+  owner: pyforge-atlas
+  authority: spec-100-7
+  notes: browser build for atlas's dashboard e2e and herald's browser check
   class: cli
 - package: age
   env: pyforge-guild
   realize:
     steps: []
   probe:
-    expect: locked-version
+    # conda-forge's age build prints "(devel)" for --version (no version ldflags),
+    # so the version cannot be read back; the probe proves the binary runs.
+    expect: exit-0
     command:
     - age
     - --version
@@ -411,7 +447,8 @@ rows:
     expect: locked-version
     command:
     - helm
-    - --version
+    - version
+    - --short
   test: platform-ci-local
   owner: platform
   authority: fnd:CAP-12
@@ -423,7 +460,7 @@ rows:
   probe:
     expect: locked-version
     command:
-    - postgresql
+    - postgres
     - --version
   test: platform-ci-local
   owner: platform
@@ -447,7 +484,9 @@ rows:
   realize:
     steps: []
   probe:
-    expect: locked-version
+    # silo prints "RELEASE.2026-09-16T00-00-00Z" while conda locks 2026.09.16.00.00.00;
+    # the probe proves the binary runs rather than matching the two spellings.
+    expect: exit-0
     command:
     - silo
     - --version

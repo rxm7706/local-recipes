@@ -46,9 +46,7 @@ def _run_echo_flow(seed_text: str) -> str:
     convention (`langflow_integration/tests.py`'s `pytest.importorskip`).
     """
     from lfx.components.input_output.text import TextInputComponent  # noqa: PLC0415
-    from lfx.components.input_output.text_output import (  # noqa: PLC0415
-        TextOutputComponent,
-    )
+    from lfx.components.input_output.text_output import TextOutputComponent  # noqa: PLC0415
     from lfx.graph import Graph  # noqa: PLC0415
     from lfx.processing.process import run_graph  # noqa: PLC0415
 

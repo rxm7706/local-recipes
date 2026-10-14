@@ -9,6 +9,10 @@ import sys
 import tomllib
 from pathlib import Path
 
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
 import pin_policy_lib as lib
 from pin_policy_lib import REPO_ROOT, check_diff, check_static, load_policy
 
@@ -101,9 +105,11 @@ def main() -> int:
         if f.kind in {"flattened-table", "moved-hold"} and base_decl:
             clause = base_spec
         elif f.kind == "lowered-floor" and base_decl:
-            m = re.search(r">=\s*(\d+(?:\.\d+)*)", base_spec)
-            new_floor = m.group(1) if m else "0.0.0"
-            clause = _restore_clause(policy, f.package, f.feature, new_floor, f.kind)
+            # floors_never_lower: restore the base declaration (spec 100.1 matrix — cron-descriptor, openai).
+            clause = base_spec
+        elif f.kind == "lost-cap" and base_decl and base_spec.strip().startswith("{"):
+            # Channel table cap loss: base declaration is authoritative (G118).
+            clause = base_spec
         else:
             m = re.search(r">=\s*(\d+(?:\.\d+)*)", f.detail.split("->")[-1])
             new_floor = m.group(1) if m else "0.0.0"

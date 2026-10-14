@@ -86,6 +86,44 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-14 (the Detectors scripts lane outgrew its timeout)** — **Found: the `scripts-suite` job ran past its
+  15-minute limit, and GitHub cancelled it.** It happened on `main` at `8d04520770` and on PR #2204. The job has two
+  test steps: `tests/scripts` in `pyforge-ci` (5m22s to 9m10s across six runs on 2026-10-14), then
+  `pyforge-doctor-aggregate-scripts-test` in `pyforge-doctor` (4m56s to 6m30s when it finished). A local `--durations` run of the second step took 691.89 s, and 684.59 s of it
+  was one test, `test_run_doctor_sources_filters_by_scope_like_a_scanned_detector`. It calls the real
+  `_run_doctor_sources` twice, for `repo` and for `all`, and each call gathers every Doctor source over the live tree.
+  The test then checks only row counts and that `dashboard-drift` is present. Every other test in the two files takes
+  under 0.4 s. The same test ran its real gathers in the first step too, because `pyforge-ci` resolves Doctor's
+  run-deps through `spec-kit`. **What it looks like when fixed:** the test swaps Doctor's dispatch table for stubs, so it checks scope
+  filtering and row building without gathering, and it shows that a `repo` call skips a source whose scope is
+  `runtime`. The two files finish in under a minute locally. The `detectors` job still runs every real gather through
+  `detectors-ci`. The job's `timeout-minutes` rises to 25, so the first step's growth does not cancel the lane again.
+  **Constraints:** a fix under CAP-42 and CAP-43 (Epic 39's `pyforge-doctor-aggregate-scripts-test`), no CAP, no flag.
+  No assertion loses its intent, and `scripts/detectors.py` does not change. Operator ask 2026-10-14: "raise
+  timeout-minutes for that job (to about 25) and make those two test files faster". Owner `spec-pyforge-doctor`.
+  → Epic 47 / Story 47.1, specced 2026-10-14.
+- **2026-10-14 (ci pause drift, specced)** — **Found: the report Doctor was waiting for now exists, and it already
+  does the looking.** Steward Story 99.3 landed one command that lists every CI surface with a verdict, read from the
+  registry and from GitHub, and that refuses rather than guesses when GitHub cannot be read
+  (`spec-pyforge-steward:CAP-166`). So Doctor needs no second pair of eyes on GitHub. It needs to read that one report
+  and say aloud the parts that need the operator. Three things do: a surface whose live state differs from what the
+  registry declares (this also covers a workflow switched off by hand with no row); a surface that is stuck (a deploy
+  waiting more than a day, five or more cancelled runs in a row, or a paused expensive build whose weekly canary has
+  not passed lately); and a pause whose review date has passed, even when one of the other two already applies.
+  **What it looks like when fixed:** the operator runs `fleet-picture` and its ATTENTION block names each such
+  surface on its own line, with the row's owner and the reason. When Doctor cannot read the report (GitHub not
+  signed in, steward's own switch off, steward not installed), it says so in one line instead of reporting a clean
+  fleet. Nothing it reports changes an exit code. The 2026-10-06 waiting deploy, replayed from a recorded report, is
+  named stuck. **Changed since the 2026-10-12 entry:** Doctor reads steward's report, not the registry and GitHub
+  itself, so there is one reader of GitHub and one set of verdicts. The `monitor --fleet` `ci` axis is not carried:
+  that verb's axes are conda-forge feedstock signals. The check runs on demand and in `fleet-picture`, never in
+  `detectors-ci`, because it needs a live, signed-in read. **Constraints:** advisory, never a second PR gate; reads
+  steward only through its command line. `bmad-spec` ruled it `flag-exempt: detector-or-gate`: it is a check that
+  judges, and switching it off would bring back the silent-off surface it exists to name, so
+  `pyforge.doctor.ci_pause_drift` is not minted. Kinships: `spec-pyforge-steward:CAP-166` (Stories 99.3 and 99.6
+  produce the verdicts it reads), `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` (§ 4.4, § 5, § 6), and the
+  herald tile and marshal landing line, which read the same report on their own chains. Owner `spec-pyforge-doctor`.
+  → CAP-89 / FR-22, specced 2026-10-14; Epic 45 / Story 45.1.
 - **2026-10-13 (one registry orders the whole site, and a stale site tells on itself) — Wanted: `docs/map.yaml` orders
   every section of the Pages site, and an advisory source notices a Pages deploy that stopped.** From the herald
   Dream's same-day entry *the Pages deployment, redesigned* (operator rulings 2026-10-13). Today `docs/map.yaml`
@@ -104,7 +142,6 @@ forward. That dream is archived; this one is the real record.
   public URL and the local git log, never the GitHub API. **Kinships:** [[pyforge-herald]] (the site and the lead
   entry), [[pyforge-steward]] (`ci_pause_drift`, the registry row). Owner `spec-pyforge-doctor`; → `bmad-spec` after
   herald's, one story in M2 (registry) and one in M1 (the MAP rows).
-
 - **2026-10-12 (the env-hygiene scan stops growing with the test suite)** — **Found: Story 44.1 made the five-second
   budget judge CPU, and `DW-doctor-44-1` showed the margin is thin and shrinking.** One `doctor check` on the repo root
   spends 2.75 s of CPU at `c447946b3f`. Under load that is about 1.25x headroom, and the scan grew 19% in eight days.
@@ -167,6 +204,7 @@ forward. That dream is archived; this one is the real record.
   `bmad-spec` rules it `detector-or-gate`; depends on steward's registry and `steward ci status --json` landing first;
   reads `pyforge.steward` through the CLI's JSON, never by import. Operator ruling 2026-10-12: the plan's recommended
   answers Q1–Q8 stand; Epic 43 went to Story 43.1 the same day, so this is a new epic. Owner `spec-pyforge-doctor`.
+  → specced 2026-10-14 as CAP-89 / FR-22 (see the 2026-10-14 entry for what changed); Epic 45 / Story 45.1.
 - **2026-10-12 (bmad-drift knows dispatch run artifacts)** — **Found: bmad-drift fails the files marshal dispatch
   writes into its own Tier-3 store.** Marshal Story 47.1 (with 47.2 and 93.1) writes a recall-feedback pair into the
   dispatch worktree's gitignored `implementation-artifacts/`: `recall-feedback__<story>__<run>.md` and a sibling

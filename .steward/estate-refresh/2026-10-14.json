@@ -1,0 +1,3885 @@
+{
+  "base_sha": "e4cfee6ee0edd5af4338ceab5d475f1ba5d42d8c",
+  "result_sha": "",
+  "platform": "linux-64",
+  "command": "pixi upgrade --pinning-strategy latest-up --exclude asgiref --exclude cachebox --exclude channels --exclude channels_redis --exclude coderedcms --exclude conda-build --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude conda-index --exclude conda-libmamba-solver --exclude conda-recipe-manager --exclude conda-smithy --exclude daphne --exclude django --exclude frozendict --exclude git-pkgs --exclude grayskull --exclude libpq --exclude liquibase-postgresql --exclude networkx --exclude nodejs --exclude opengrep --exclude pgvector --exclude pixi --exclude postgresql --exclude pptxgenjs-plus --exclude psycopg --exclude psycopg2 --exclude pyjwt --exclude python --exclude rattler-build-conda-compat --exclude shellcheck --exclude transformers --exclude wagtail --exclude cron-descriptor --exclude openai",
+  "moves": [
+    {
+      "package": "mybmad-dashboard",
+      "feature": "bmad-ui",
+      "from": "0.1.0.dev0",
+      "to": "0.1.0.dev0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "build",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "conda",
+      "feature": "build",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "gh",
+      "feature": "build",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "build",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "build",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "build",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "build",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "conda-smithy",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "gh",
+      "feature": "conda-smithy",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "conda-smithy",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "conda-smithy",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "conda-smithy",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "conda-smithy",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "pytz",
+      "feature": "dbgpt-sidecar",
+      "from": "2026.4",
+      "to": "2026.5"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "default",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "bmad-module-skill-forge",
+      "feature": "default",
+      "from": "2.2.0",
+      "to": "3.0.0"
+    },
+    {
+      "package": "caveman-installer",
+      "feature": "default",
+      "from": "2.7.0",
+      "to": "4.0.0"
+    },
+    {
+      "package": "gh",
+      "feature": "default",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "default",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "mypy",
+      "feature": "default",
+      "from": "2.3.1",
+      "to": "2.4.0"
+    },
+    {
+      "package": "onnxruntime",
+      "feature": "default",
+      "from": "1.30.0",
+      "to": "1.31.0"
+    },
+    {
+      "package": "pre-commit",
+      "feature": "default",
+      "from": "4.6.2",
+      "to": "4.7.0"
+    },
+    {
+      "package": "ruff",
+      "feature": "default",
+      "from": "0.16.9",
+      "to": "0.17.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "default",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "tmux",
+      "feature": "default",
+      "from": "3.7c_",
+      "to": "3.8_"
+    },
+    {
+      "package": "truststore",
+      "feature": "default",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "default",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "gcloud",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "conda",
+      "feature": "gcloud",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "gh",
+      "feature": "gcloud",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "gcloud",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "google-cloud-sdk",
+      "feature": "gcloud",
+      "from": "586.0.0",
+      "to": "588.0.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "gcloud",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "gcloud",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "gcloud",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "grayskull",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "conda",
+      "feature": "grayskull",
+      "from": "26.7.2",
+      "to": "26.7.3"
+    },
+    {
+      "package": "gh",
+      "feature": "grayskull",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "grayskull",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "grayskull",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "grayskull",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "grayskull",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "linux",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "conda",
+      "feature": "linux",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "gh",
+      "feature": "linux",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "linux",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "linux",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "linux",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "linux",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "a2a-sdk",
+      "feature": "local-recipes",
+      "from": "1.1.5",
+      "to": "1.2.2"
+    },
+    {
+      "package": "azure-identity",
+      "feature": "local-recipes",
+      "from": "1.25.3",
+      "to": "1.26.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "local-recipes",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "bmad-module-skill-forge",
+      "feature": "local-recipes",
+      "from": "2.2.0",
+      "to": "3.0.0"
+    },
+    {
+      "package": "caveman-installer",
+      "feature": "local-recipes",
+      "from": "2.7.0",
+      "to": "4.0.0"
+    },
+    {
+      "package": "claude-agent-acp",
+      "feature": "local-recipes",
+      "from": "0.81.2",
+      "to": "0.90.0"
+    },
+    {
+      "package": "cocoindex",
+      "feature": "local-recipes",
+      "from": "1.0.24",
+      "to": "1.0.25"
+    },
+    {
+      "package": "conda-lock",
+      "feature": "local-recipes",
+      "from": "4.0.2",
+      "to": "4.0.3"
+    },
+    {
+      "package": "conda-pypi",
+      "feature": "local-recipes",
+      "from": "0.12.0",
+      "to": "0.13.0"
+    },
+    {
+      "package": "dagster",
+      "feature": "local-recipes",
+      "from": "1.13.24",
+      "to": "1.13.26"
+    },
+    {
+      "package": "dagster-pipes",
+      "feature": "local-recipes",
+      "from": "1.13.24",
+      "to": "1.13.26"
+    },
+    {
+      "package": "dagster-webserver",
+      "feature": "local-recipes",
+      "from": "1.13.24",
+      "to": "1.13.26"
+    },
+    {
+      "package": "django-lasuite",
+      "feature": "local-recipes",
+      "from": "0.0.29",
+      "to": "0.0.30"
+    },
+    {
+      "package": "duckdb",
+      "feature": "local-recipes",
+      "from": "1.5.5",
+      "to": "1.5.6"
+    },
+    {
+      "package": "fasta2a",
+      "feature": "local-recipes",
+      "from": "2.0.1",
+      "to": "2.1.1"
+    },
+    {
+      "package": "fastmcp",
+      "feature": "local-recipes",
+      "from": "4.0.10",
+      "to": "4.1.0"
+    },
+    {
+      "package": "fastmcp-slim",
+      "feature": "local-recipes",
+      "from": "4.0.10",
+      "to": "4.1.0"
+    },
+    {
+      "package": "getdaft",
+      "feature": "local-recipes",
+      "from": "0.7.25",
+      "to": "0.7.26"
+    },
+    {
+      "package": "gh",
+      "feature": "local-recipes",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "github-copilot-sdk",
+      "feature": "local-recipes",
+      "from": "1.0.14",
+      "to": "1.0.21"
+    },
+    {
+      "package": "gitpython",
+      "feature": "local-recipes",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "google-cloud-bigquery",
+      "feature": "local-recipes",
+      "from": "3.45.2",
+      "to": "3.46.1"
+    },
+    {
+      "package": "google-genai",
+      "feature": "local-recipes",
+      "from": "2.25.0",
+      "to": "2.30.1"
+    },
+    {
+      "package": "graphifyy",
+      "feature": "local-recipes",
+      "from": "0.9.68",
+      "to": "0.9.89"
+    },
+    {
+      "package": "great-expectations",
+      "feature": "local-recipes",
+      "from": "1.23.2",
+      "to": "1.24.0"
+    },
+    {
+      "package": "headroom-ai",
+      "feature": "local-recipes",
+      "from": "0.37.0",
+      "to": "0.40.0"
+    },
+    {
+      "package": "kedro",
+      "feature": "local-recipes",
+      "from": "1.6.0",
+      "to": "1.7.0"
+    },
+    {
+      "package": "kedro-dagster",
+      "feature": "local-recipes",
+      "from": "0.8.0",
+      "to": "0.8.1"
+    },
+    {
+      "package": "kedro-viz",
+      "feature": "local-recipes",
+      "from": "12.4.0",
+      "to": "12.5.0"
+    },
+    {
+      "package": "llama.cpp",
+      "feature": "local-recipes",
+      "from": "10751",
+      "to": "11351"
+    },
+    {
+      "package": "mammoth",
+      "feature": "local-recipes",
+      "from": "1.12.2",
+      "to": "1.13.0"
+    },
+    {
+      "package": "markdown",
+      "feature": "local-recipes",
+      "from": "3.11",
+      "to": "3.11.1"
+    },
+    {
+      "package": "mcp",
+      "feature": "local-recipes",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "mlx-lm",
+      "feature": "local-recipes",
+      "from": "0.31.3",
+      "to": "0.32.0"
+    },
+    {
+      "package": "moto",
+      "feature": "local-recipes",
+      "from": "5.2.3",
+      "to": "5.2.4"
+    },
+    {
+      "package": "mypy",
+      "feature": "local-recipes",
+      "from": "2.3.1",
+      "to": "2.4.0"
+    },
+    {
+      "package": "numpy",
+      "feature": "local-recipes",
+      "from": "2.5.3",
+      "to": "2.5.4"
+    },
+    {
+      "package": "ocrmypdf",
+      "feature": "local-recipes",
+      "from": "17.12.1",
+      "to": "17.13.0"
+    },
+    {
+      "package": "office2pdf",
+      "feature": "local-recipes",
+      "from": "0.7.0",
+      "to": "0.8.1"
+    },
+    {
+      "package": "ollama-python",
+      "feature": "local-recipes",
+      "from": "0.6.2",
+      "to": "0.6.3"
+    },
+    {
+      "package": "openlineage-python",
+      "feature": "local-recipes",
+      "from": "1.53.0",
+      "to": "1.54.0"
+    },
+    {
+      "package": "opentelemetry-api",
+      "feature": "local-recipes",
+      "from": "1.45.0",
+      "to": "1.45.1"
+    },
+    {
+      "package": "opentelemetry-sdk",
+      "feature": "local-recipes",
+      "from": "1.45.0",
+      "to": "1.45.1"
+    },
+    {
+      "package": "osv-scanner",
+      "feature": "local-recipes",
+      "from": "2.6.0",
+      "to": "2.7.0"
+    },
+    {
+      "package": "pandera",
+      "feature": "local-recipes",
+      "from": "0.32.1",
+      "to": "0.34.1"
+    },
+    {
+      "package": "pandoc",
+      "feature": "local-recipes",
+      "from": "3.11",
+      "to": "3.12.1"
+    },
+    {
+      "package": "pixi-build-cmake",
+      "feature": "local-recipes",
+      "from": "0.4.6",
+      "to": "0.4.7"
+    },
+    {
+      "package": "pixi-build-python",
+      "feature": "local-recipes",
+      "from": "0.8.6",
+      "to": "0.8.7"
+    },
+    {
+      "package": "pixi-build-rattler-build",
+      "feature": "local-recipes",
+      "from": "0.4.6",
+      "to": "0.4.7"
+    },
+    {
+      "package": "pixi-build-rust",
+      "feature": "local-recipes",
+      "from": "0.5.6",
+      "to": "0.5.7"
+    },
+    {
+      "package": "pixitainer",
+      "feature": "local-recipes",
+      "from": "0.8.3",
+      "to": "0.9.0"
+    },
+    {
+      "package": "playwright",
+      "feature": "local-recipes",
+      "from": "1.63.0",
+      "to": "1.64.0"
+    },
+    {
+      "package": "polars",
+      "feature": "local-recipes",
+      "from": "1.44.2",
+      "to": "2.0.0"
+    },
+    {
+      "package": "pydantic-ai",
+      "feature": "local-recipes",
+      "from": "2.51.0",
+      "to": "2.55.0"
+    },
+    {
+      "package": "pypdf",
+      "feature": "local-recipes",
+      "from": "6.19.0",
+      "to": "6.20.1"
+    },
+    {
+      "package": "pyrefly",
+      "feature": "local-recipes",
+      "from": "1.3.1",
+      "to": "1.3.2"
+    },
+    {
+      "package": "pytest-mock",
+      "feature": "local-recipes",
+      "from": "3.15.1",
+      "to": "3.16.0"
+    },
+    {
+      "package": "qpdf",
+      "feature": "local-recipes",
+      "from": "12.4.1",
+      "to": "12.4.2"
+    },
+    {
+      "package": "ruff",
+      "feature": "local-recipes",
+      "from": "0.16.9",
+      "to": "0.17.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "local-recipes",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "sqlfluff",
+      "feature": "local-recipes",
+      "from": "4.3.0",
+      "to": "4.4.0"
+    },
+    {
+      "package": "sqlglot",
+      "feature": "local-recipes",
+      "from": "30.19.0",
+      "to": "30.22.0"
+    },
+    {
+      "package": "tmux",
+      "feature": "local-recipes",
+      "from": "3.7c_",
+      "to": "3.8_"
+    },
+    {
+      "package": "truststore",
+      "feature": "local-recipes",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "typer",
+      "feature": "local-recipes",
+      "from": "0.27.2",
+      "to": "0.27.3"
+    },
+    {
+      "package": "uv",
+      "feature": "local-recipes",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "vizro",
+      "feature": "local-recipes",
+      "from": "0.1.60",
+      "to": "0.1.62"
+    },
+    {
+      "package": "cryptography",
+      "feature": "mcp-host",
+      "from": "50.0.1",
+      "to": "50.0.2"
+    },
+    {
+      "package": "mcp",
+      "feature": "mcp-host",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "mcp-types",
+      "feature": "mcp-host",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "starlette",
+      "feature": "mcp-host",
+      "from": "1.7.0",
+      "to": "1.8.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "osx",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "conda",
+      "feature": "osx",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "gh",
+      "feature": "osx",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "osx",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "osx",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "osx",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "osx",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "boto3",
+      "feature": "platform-ci-test",
+      "from": "1.43.102",
+      "to": "1.43.111"
+    },
+    {
+      "package": "coverage",
+      "feature": "platform-ci-test",
+      "from": "7.16.1",
+      "to": "7.16.2"
+    },
+    {
+      "package": "cryptography",
+      "feature": "platform-ci-test",
+      "from": "50.0.1",
+      "to": "50.0.2"
+    },
+    {
+      "package": "django-allauth",
+      "feature": "platform-ci-test",
+      "from": "65.19.4",
+      "to": "65.19.7"
+    },
+    {
+      "package": "django-health-check",
+      "feature": "platform-ci-test",
+      "from": "4.6.1",
+      "to": "4.8.0"
+    },
+    {
+      "package": "django-ipware",
+      "feature": "platform-ci-test",
+      "from": "7.0.1",
+      "to": "8.0.0"
+    },
+    {
+      "package": "djlint",
+      "feature": "platform-ci-test",
+      "from": "1.46.2",
+      "to": "1.46.4"
+    },
+    {
+      "package": "fastapi",
+      "feature": "platform-ci-test",
+      "from": "0.141.1",
+      "to": "0.143.0"
+    },
+    {
+      "package": "httptools",
+      "feature": "platform-ci-test",
+      "from": "0.8.0",
+      "to": "0.9.0"
+    },
+    {
+      "package": "mcp",
+      "feature": "platform-ci-test",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "mcp-types",
+      "feature": "platform-ci-test",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "mypy",
+      "feature": "platform-ci-test",
+      "from": "2.3.1",
+      "to": "2.4.0"
+    },
+    {
+      "package": "openfeature-flagd-core",
+      "feature": "platform-ci-test",
+      "from": "1.0.0",
+      "to": "1.0.0"
+    },
+    {
+      "package": "openfeature-provider-flagd",
+      "feature": "platform-ci-test",
+      "from": "0.5.2",
+      "to": "0.5.2"
+    },
+    {
+      "package": "opentelemetry-api",
+      "feature": "platform-ci-test",
+      "from": "1.44.0",
+      "to": "1.45.1"
+    },
+    {
+      "package": "opentelemetry-exporter-otlp-proto-http",
+      "feature": "platform-ci-test",
+      "from": "1.44.0",
+      "to": "1.45.1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-asgi",
+      "feature": "platform-ci-test",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-celery",
+      "feature": "platform-ci-test",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-django",
+      "feature": "platform-ci-test",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-psycopg",
+      "feature": "platform-ci-test",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-redis",
+      "feature": "platform-ci-test",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-wsgi",
+      "feature": "platform-ci-test",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-sdk",
+      "feature": "platform-ci-test",
+      "from": "1.44.0",
+      "to": "1.45.1"
+    },
+    {
+      "package": "pre-commit",
+      "feature": "platform-ci-test",
+      "from": "4.6.2",
+      "to": "4.7.0"
+    },
+    {
+      "package": "python-ipware",
+      "feature": "platform-ci-test",
+      "from": "3.0.0",
+      "to": "4.1.1"
+    },
+    {
+      "package": "rcssmin",
+      "feature": "platform-ci-test",
+      "from": "1.2.2",
+      "to": "1.3.0"
+    },
+    {
+      "package": "ruff",
+      "feature": "platform-ci-test",
+      "from": "0.16.9",
+      "to": "0.17.0"
+    },
+    {
+      "package": "sse-starlette",
+      "feature": "platform-ci-test",
+      "from": "3.4.11",
+      "to": "3.5.0"
+    },
+    {
+      "package": "websockets",
+      "feature": "platform-ci-test",
+      "from": "17.1",
+      "to": "17.2"
+    },
+    {
+      "package": "werkzeug",
+      "feature": "platform-ci-test",
+      "from": "3.1.8",
+      "to": "3.1.9"
+    },
+    {
+      "package": "boto3",
+      "feature": "platform-dev",
+      "from": "1.43.75",
+      "to": "1.43.106"
+    },
+    {
+      "package": "django-allauth",
+      "feature": "platform-dev",
+      "from": "65.19.4",
+      "to": "65.19.7"
+    },
+    {
+      "package": "django-health-check",
+      "feature": "platform-dev",
+      "from": "4.6.1",
+      "to": "4.8.0"
+    },
+    {
+      "package": "django-ipware",
+      "feature": "platform-dev",
+      "from": "7.0.1",
+      "to": "8.0.0"
+    },
+    {
+      "package": "duckdb",
+      "feature": "platform-dev",
+      "from": "1.5.5",
+      "to": "1.5.6"
+    },
+    {
+      "package": "fastapi",
+      "feature": "platform-dev",
+      "from": "0.141.1",
+      "to": "0.143.0"
+    },
+    {
+      "package": "kubernetes-client",
+      "feature": "platform-dev",
+      "from": "1.34.3",
+      "to": "1.37.1"
+    },
+    {
+      "package": "langflow",
+      "feature": "platform-dev",
+      "from": "1.12.3",
+      "to": "1.12.4"
+    },
+    {
+      "package": "openfeature-flagd-core",
+      "feature": "platform-dev",
+      "from": "1.0.0",
+      "to": "1.0.0"
+    },
+    {
+      "package": "openfeature-provider-flagd",
+      "feature": "platform-dev",
+      "from": "0.5.2",
+      "to": "0.5.2"
+    },
+    {
+      "package": "opentelemetry-instrumentation-celery",
+      "feature": "platform-dev",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-django",
+      "feature": "platform-dev",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-wsgi",
+      "feature": "platform-dev",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "pgjdbc",
+      "feature": "platform-dev",
+      "from": "42.7.13",
+      "to": "42.7.14"
+    },
+    {
+      "package": "python-ipware",
+      "feature": "platform-dev",
+      "from": "3.0.0",
+      "to": "4.1.1"
+    },
+    {
+      "package": "rcssmin",
+      "feature": "platform-dev",
+      "from": "1.2.2",
+      "to": "1.3.0"
+    },
+    {
+      "package": "redis-server",
+      "feature": "platform-dev",
+      "from": "8.10.1",
+      "to": "8.10.2"
+    },
+    {
+      "package": "rjsmin",
+      "feature": "platform-dev",
+      "from": "1.2.5",
+      "to": "1.3.0"
+    },
+    {
+      "package": "seaweedfs",
+      "feature": "platform-object-storage",
+      "from": "4.47",
+      "to": "4.48"
+    },
+    {
+      "package": "kedro-viz",
+      "feature": "pyforge-atlas",
+      "from": "12.4.0",
+      "to": "12.5.0"
+    },
+    {
+      "package": "mcp",
+      "feature": "pyforge-atlas",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "playwright",
+      "feature": "pyforge-atlas",
+      "from": "1.63.0",
+      "to": "1.64.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "pyforge-ci",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "gh",
+      "feature": "pyforge-ci",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "pyforge-ci",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "pixi-build-python",
+      "feature": "pyforge-ci",
+      "from": "0.8.6",
+      "to": "0.8.7"
+    },
+    {
+      "package": "pixi-build-rattler-build",
+      "feature": "pyforge-ci",
+      "from": "0.4.6",
+      "to": "0.4.7"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "pyforge-ci",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "pyforge-ci",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "boto3",
+      "feature": "pyforge-container",
+      "from": "1.43.107",
+      "to": "1.43.111"
+    },
+    {
+      "package": "cocoindex",
+      "feature": "pyforge-container",
+      "from": "1.0.24",
+      "to": "1.0.25"
+    },
+    {
+      "package": "copier",
+      "feature": "pyforge-container",
+      "from": "9.18.2",
+      "to": "9.19.1"
+    },
+    {
+      "package": "fastapi",
+      "feature": "pyforge-container",
+      "from": "0.141.1",
+      "to": "0.143.0"
+    },
+    {
+      "package": "graphifyy",
+      "feature": "pyforge-container",
+      "from": "0.9.68",
+      "to": "0.9.89"
+    },
+    {
+      "package": "kedro-viz",
+      "feature": "pyforge-container",
+      "from": "12.4.0",
+      "to": "12.5.0"
+    },
+    {
+      "package": "mcp",
+      "feature": "pyforge-container",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "playwright",
+      "feature": "pyforge-container",
+      "from": "1.63.0",
+      "to": "1.64.0"
+    },
+    {
+      "package": "py-rattler",
+      "feature": "pyforge-container",
+      "from": "0.26.0",
+      "to": "0.27.1"
+    },
+    {
+      "package": "tmux",
+      "feature": "pyforge-container",
+      "from": "3.7c_",
+      "to": "3.8_"
+    },
+    {
+      "package": "truststore",
+      "feature": "pyforge-container",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "mcp",
+      "feature": "pyforge-doctor",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "pyforge-foundry-full",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "bmad-module-skill-forge",
+      "feature": "pyforge-foundry-full",
+      "from": "2.2.0",
+      "to": "3.0.0"
+    },
+    {
+      "package": "boto3",
+      "feature": "pyforge-foundry-full",
+      "from": "1.43.107",
+      "to": "1.43.111"
+    },
+    {
+      "package": "caveman-installer",
+      "feature": "pyforge-foundry-full",
+      "from": "2.7.0",
+      "to": "4.0.0"
+    },
+    {
+      "package": "cocoindex",
+      "feature": "pyforge-foundry-full",
+      "from": "1.0.24",
+      "to": "1.0.25"
+    },
+    {
+      "package": "conda",
+      "feature": "pyforge-foundry-full",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "copier",
+      "feature": "pyforge-foundry-full",
+      "from": "9.18.2",
+      "to": "9.19.1"
+    },
+    {
+      "package": "cryptography",
+      "feature": "pyforge-foundry-full",
+      "from": "50.0.1",
+      "to": "50.0.2"
+    },
+    {
+      "package": "fastapi",
+      "feature": "pyforge-foundry-full",
+      "from": "0.141.1",
+      "to": "0.143.0"
+    },
+    {
+      "package": "gh",
+      "feature": "pyforge-foundry-full",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "pyforge-foundry-full",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "graphifyy",
+      "feature": "pyforge-foundry-full",
+      "from": "0.9.68",
+      "to": "0.9.89"
+    },
+    {
+      "package": "kedro-viz",
+      "feature": "pyforge-foundry-full",
+      "from": "12.4.0",
+      "to": "12.5.0"
+    },
+    {
+      "package": "mcp",
+      "feature": "pyforge-foundry-full",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "mypy",
+      "feature": "pyforge-foundry-full",
+      "from": "2.3.1",
+      "to": "2.4.0"
+    },
+    {
+      "package": "onnxruntime",
+      "feature": "pyforge-foundry-full",
+      "from": "1.30.0",
+      "to": "1.31.0"
+    },
+    {
+      "package": "playwright",
+      "feature": "pyforge-foundry-full",
+      "from": "1.63.0",
+      "to": "1.64.0"
+    },
+    {
+      "package": "pre-commit",
+      "feature": "pyforge-foundry-full",
+      "from": "4.6.2",
+      "to": "4.7.0"
+    },
+    {
+      "package": "ruff",
+      "feature": "pyforge-foundry-full",
+      "from": "0.16.9",
+      "to": "0.17.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "pyforge-foundry-full",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "tmux",
+      "feature": "pyforge-foundry-full",
+      "from": "3.7c_",
+      "to": "3.8_"
+    },
+    {
+      "package": "truststore",
+      "feature": "pyforge-foundry-full",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "pyforge-foundry-full",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "bmad-module-skill-forge",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "2.2.0",
+      "to": "3.0.0"
+    },
+    {
+      "package": "boto3",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "1.43.107",
+      "to": "1.43.111"
+    },
+    {
+      "package": "caveman-installer",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "2.7.0",
+      "to": "4.0.0"
+    },
+    {
+      "package": "cocoindex",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "1.0.24",
+      "to": "1.0.25"
+    },
+    {
+      "package": "conda",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "copier",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "9.18.2",
+      "to": "9.19.1"
+    },
+    {
+      "package": "cryptography",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "50.0.1",
+      "to": "50.0.2"
+    },
+    {
+      "package": "fastapi",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "0.141.1",
+      "to": "0.143.0"
+    },
+    {
+      "package": "gh",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "graphifyy",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "0.9.69",
+      "to": "0.9.89"
+    },
+    {
+      "package": "kedro-viz",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "12.4.0",
+      "to": "12.5.0"
+    },
+    {
+      "package": "kubernetes-client",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "1.34.3",
+      "to": "1.37.1"
+    },
+    {
+      "package": "mcp",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "mypy",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "2.3.1",
+      "to": "2.4.0"
+    },
+    {
+      "package": "onnxruntime",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "1.30.0",
+      "to": "1.31.0"
+    },
+    {
+      "package": "playwright",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "1.63.0",
+      "to": "1.64.0"
+    },
+    {
+      "package": "pre-commit",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "4.6.2",
+      "to": "4.7.0"
+    },
+    {
+      "package": "redis-server",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "8.10.1",
+      "to": "8.10.2"
+    },
+    {
+      "package": "ruff",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "0.16.9",
+      "to": "0.17.0"
+    },
+    {
+      "package": "seaweedfs",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "4.47",
+      "to": "4.48"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "tmux",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "3.7c_",
+      "to": "3.8_"
+    },
+    {
+      "package": "truststore",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "pyforge-foundry-full-stack",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "pyforge-guild",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "bmad-module-skill-forge",
+      "feature": "pyforge-guild",
+      "from": "2.2.0",
+      "to": "3.0.0"
+    },
+    {
+      "package": "caveman-installer",
+      "feature": "pyforge-guild",
+      "from": "2.7.0",
+      "to": "4.0.0"
+    },
+    {
+      "package": "gh",
+      "feature": "pyforge-guild",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "pyforge-guild",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "mypy",
+      "feature": "pyforge-guild",
+      "from": "2.3.1",
+      "to": "2.4.0"
+    },
+    {
+      "package": "onnxruntime",
+      "feature": "pyforge-guild",
+      "from": "1.30.0",
+      "to": "1.31.0"
+    },
+    {
+      "package": "pre-commit",
+      "feature": "pyforge-guild",
+      "from": "4.6.2",
+      "to": "4.7.0"
+    },
+    {
+      "package": "ruff",
+      "feature": "pyforge-guild",
+      "from": "0.16.9",
+      "to": "0.17.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "pyforge-guild",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "tmux",
+      "feature": "pyforge-guild",
+      "from": "3.7c_",
+      "to": "3.8_"
+    },
+    {
+      "package": "truststore",
+      "feature": "pyforge-guild",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "pyforge-guild",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "boto3",
+      "feature": "pyforge-herald",
+      "from": "1.43.107",
+      "to": "1.43.111"
+    },
+    {
+      "package": "fastapi",
+      "feature": "pyforge-herald",
+      "from": "0.142.2",
+      "to": "0.143.0"
+    },
+    {
+      "package": "mcp",
+      "feature": "pyforge-herald",
+      "from": "2.2.0",
+      "to": "2.3.0"
+    },
+    {
+      "package": "playwright",
+      "feature": "pyforge-herald",
+      "from": "1.63.0",
+      "to": "1.64.0"
+    },
+    {
+      "package": "copier",
+      "feature": "pyforge-marshal",
+      "from": "9.18.2",
+      "to": "9.19.1"
+    },
+    {
+      "package": "psutil",
+      "feature": "pyforge-marshal",
+      "from": "7.2.2",
+      "to": "7.2.2"
+    },
+    {
+      "package": "tmux",
+      "feature": "pyforge-marshal",
+      "from": "3.7c_",
+      "to": "3.8_"
+    },
+    {
+      "package": "truststore",
+      "feature": "pyforge-mason",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "cocoindex",
+      "feature": "pyforge-scribe",
+      "from": "1.0.24",
+      "to": "1.0.25"
+    },
+    {
+      "package": "graphifyy",
+      "feature": "pyforge-scribe",
+      "from": "0.9.68",
+      "to": "0.9.89"
+    },
+    {
+      "package": "cocoindex",
+      "feature": "pyforge-scribe-pg",
+      "from": "1.0.24",
+      "to": "1.0.25"
+    },
+    {
+      "package": "graphifyy",
+      "feature": "pyforge-scribe-pg",
+      "from": "0.9.68",
+      "to": "0.9.89"
+    },
+    {
+      "package": "cryptography",
+      "feature": "pyforge-testing-kit",
+      "from": "50.0.1",
+      "to": "50.0.2"
+    },
+    {
+      "package": "py-rattler",
+      "feature": "pyforge-warden",
+      "from": "0.26.0",
+      "to": "0.27.1"
+    },
+    {
+      "package": "boto3",
+      "feature": "python-agent-platform",
+      "from": "1.43.75",
+      "to": "1.43.106"
+    },
+    {
+      "package": "django-allauth",
+      "feature": "python-agent-platform",
+      "from": "65.19.4",
+      "to": "65.19.7"
+    },
+    {
+      "package": "django-health-check",
+      "feature": "python-agent-platform",
+      "from": "4.6.1",
+      "to": "4.8.0"
+    },
+    {
+      "package": "django-ipware",
+      "feature": "python-agent-platform",
+      "from": "7.0.1",
+      "to": "8.0.0"
+    },
+    {
+      "package": "duckdb",
+      "feature": "python-agent-platform",
+      "from": "1.5.5",
+      "to": "1.5.6"
+    },
+    {
+      "package": "fastapi",
+      "feature": "python-agent-platform",
+      "from": "0.141.1",
+      "to": "0.143.0"
+    },
+    {
+      "package": "langflow",
+      "feature": "python-agent-platform",
+      "from": "1.12.3",
+      "to": "1.12.4"
+    },
+    {
+      "package": "openfeature-flagd-core",
+      "feature": "python-agent-platform",
+      "from": "1.0.0",
+      "to": "1.0.0"
+    },
+    {
+      "package": "openfeature-provider-flagd",
+      "feature": "python-agent-platform",
+      "from": "0.5.2",
+      "to": "0.5.2"
+    },
+    {
+      "package": "opentelemetry-instrumentation-celery",
+      "feature": "python-agent-platform",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-django",
+      "feature": "python-agent-platform",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "opentelemetry-instrumentation-wsgi",
+      "feature": "python-agent-platform",
+      "from": "0.65b0",
+      "to": "0.66b1"
+    },
+    {
+      "package": "pgjdbc",
+      "feature": "python-agent-platform",
+      "from": "42.7.13",
+      "to": "42.7.14"
+    },
+    {
+      "package": "python-ipware",
+      "feature": "python-agent-platform",
+      "from": "3.0.0",
+      "to": "4.1.1"
+    },
+    {
+      "package": "rcssmin",
+      "feature": "python-agent-platform",
+      "from": "1.2.2",
+      "to": "1.3.0"
+    },
+    {
+      "package": "rjsmin",
+      "feature": "python-agent-platform",
+      "from": "1.2.5",
+      "to": "1.3.0"
+    },
+    {
+      "package": "conda",
+      "feature": "site",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "uv",
+      "feature": "site",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "vuln-db",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "conda",
+      "feature": "vuln-db",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "cyclonedx-bom",
+      "feature": "vuln-db",
+      "from": "7.4.0",
+      "to": "7.5.0"
+    },
+    {
+      "package": "gh",
+      "feature": "vuln-db",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "vuln-db",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "vuln-db",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "vuln-db",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "vuln-db",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    },
+    {
+      "package": "bmad-method",
+      "feature": "win",
+      "from": "6.12.0",
+      "to": "6.12.2"
+    },
+    {
+      "package": "conda",
+      "feature": "win",
+      "from": "26.7.2",
+      "to": "26.9.2"
+    },
+    {
+      "package": "gh",
+      "feature": "win",
+      "from": "2.101.0",
+      "to": "2.102.0"
+    },
+    {
+      "package": "gitpython",
+      "feature": "win",
+      "from": "3.1.62",
+      "to": "3.2.0"
+    },
+    {
+      "package": "spec-kit",
+      "feature": "win",
+      "from": "1.0.12",
+      "to": "1.2.0"
+    },
+    {
+      "package": "truststore",
+      "feature": "win",
+      "from": "0.10.4",
+      "to": "0.10.5"
+    },
+    {
+      "package": "uv",
+      "feature": "win",
+      "from": "0.12.19",
+      "to": "0.13.0"
+    }
+  ],
+  "converge": {
+    "rounds": 2,
+    "excluded": [
+      "cron-descriptor",
+      "openai"
+    ]
+  },
+  "losses_restored": [],
+  "fan_out": {
+    "ok": true,
+    "findings": []
+  },
+  "realize_due": [
+    "bmad-method",
+    "bmad-module-skill-forge",
+    "caveman-installer",
+    "gh",
+    "headroom-ai",
+    "osv-scanner",
+    "pre-commit",
+    "redis-server",
+    "spec-kit"
+  ],
+  "transitive": false,
+  "bmad": {
+    "pinned": "6.12.2",
+    "installed": "6.12.0",
+    "latest": "unknown",
+    "applied": false,
+    "realize_preflight": {
+      "preflight_exit": 0,
+      "preflight_target": "6.12.2",
+      "fan_out_exit": 0,
+      "fan_out": []
+    }
+  },
+  "steps": [
+    {
+      "argv": [
+        "pixi",
+        "upgrade",
+        "--pinning-strategy",
+        "latest-up",
+        "--exclude",
+        "asgiref",
+        "--exclude",
+        "cachebox",
+        "--exclude",
+        "channels",
+        "--exclude",
+        "channels_redis",
+        "--exclude",
+        "coderedcms",
+        "--exclude",
+        "conda-build",
+        "--exclude",
+        "conda-forge-ci-setup",
+        "--exclude",
+        "conda-forge-pinning",
+        "--exclude",
+        "conda-index",
+        "--exclude",
+        "conda-libmamba-solver",
+        "--exclude",
+        "conda-recipe-manager",
+        "--exclude",
+        "conda-smithy",
+        "--exclude",
+        "daphne",
+        "--exclude",
+        "django",
+        "--exclude",
+        "frozendict",
+        "--exclude",
+        "git-pkgs",
+        "--exclude",
+        "grayskull",
+        "--exclude",
+        "libpq",
+        "--exclude",
+        "liquibase-postgresql",
+        "--exclude",
+        "networkx",
+        "--exclude",
+        "nodejs",
+        "--exclude",
+        "opengrep",
+        "--exclude",
+        "pgvector",
+        "--exclude",
+        "pixi",
+        "--exclude",
+        "postgresql",
+        "--exclude",
+        "pptxgenjs-plus",
+        "--exclude",
+        "psycopg",
+        "--exclude",
+        "psycopg2",
+        "--exclude",
+        "pyjwt",
+        "--exclude",
+        "python",
+        "--exclude",
+        "rattler-build-conda-compat",
+        "--exclude",
+        "shellcheck",
+        "--exclude",
+        "transformers",
+        "--exclude",
+        "wagtail",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 74.436
+    },
+    {
+      "argv": [
+        "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+        "scripts/pin_policy_check.py",
+        "--diff",
+        "e4cfee6ee0edd5af4338ceab5d475f1ba5d42d8c",
+        "--json"
+      ],
+      "exit": 1,
+      "seconds": 0.25
+    },
+    {
+      "argv": [
+        "git",
+        "checkout",
+        "e4cfee6ee0edd5af4338ceab5d475f1ba5d42d8c",
+        "--",
+        "pixi.toml",
+        "pixi.lock"
+      ],
+      "exit": 0,
+      "seconds": 0.025
+    },
+    {
+      "argv": [
+        "pixi",
+        "upgrade",
+        "--pinning-strategy",
+        "latest-up",
+        "--exclude",
+        "asgiref",
+        "--exclude",
+        "cachebox",
+        "--exclude",
+        "channels",
+        "--exclude",
+        "channels_redis",
+        "--exclude",
+        "coderedcms",
+        "--exclude",
+        "conda-build",
+        "--exclude",
+        "conda-forge-ci-setup",
+        "--exclude",
+        "conda-forge-pinning",
+        "--exclude",
+        "conda-index",
+        "--exclude",
+        "conda-libmamba-solver",
+        "--exclude",
+        "conda-recipe-manager",
+        "--exclude",
+        "conda-smithy",
+        "--exclude",
+        "daphne",
+        "--exclude",
+        "django",
+        "--exclude",
+        "frozendict",
+        "--exclude",
+        "git-pkgs",
+        "--exclude",
+        "grayskull",
+        "--exclude",
+        "libpq",
+        "--exclude",
+        "liquibase-postgresql",
+        "--exclude",
+        "networkx",
+        "--exclude",
+        "nodejs",
+        "--exclude",
+        "opengrep",
+        "--exclude",
+        "pgvector",
+        "--exclude",
+        "pixi",
+        "--exclude",
+        "postgresql",
+        "--exclude",
+        "pptxgenjs-plus",
+        "--exclude",
+        "psycopg",
+        "--exclude",
+        "psycopg2",
+        "--exclude",
+        "pyjwt",
+        "--exclude",
+        "python",
+        "--exclude",
+        "rattler-build-conda-compat",
+        "--exclude",
+        "shellcheck",
+        "--exclude",
+        "transformers",
+        "--exclude",
+        "wagtail",
+        "--exclude",
+        "cron-descriptor",
+        "--exclude",
+        "openai",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 75.944
+    },
+    {
+      "argv": [
+        "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+        "scripts/pin_policy_check.py",
+        "--diff",
+        "e4cfee6ee0edd5af4338ceab5d475f1ba5d42d8c",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 0.247
+    },
+    {
+      "argv": [
+        "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+        "scripts/pin_policy_check.py",
+        "--diff",
+        "e4cfee6ee0edd5af4338ceab5d475f1ba5d42d8c",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 0.255
+    },
+    {
+      "argv": [
+        "pixi",
+        "lock"
+      ],
+      "exit": 0,
+      "seconds": 0.482
+    },
+    {
+      "argv": [
+        "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+        "scripts/pin_policy_check.py",
+        "--fan-out",
+        "--json"
+      ],
+      "exit": 0,
+      "seconds": 2.78
+    }
+  ],
+  "realize": {
+    "bmad-method": {
+      "package": "bmad-method",
+      "from": "6.12.0",
+      "to": "6.12.2",
+      "platform": "linux-64",
+      "realize": "skipped-operator-gate",
+      "probe": "live"
+    },
+    "bmad-module-skill-forge": {
+      "package": "bmad-module-skill-forge",
+      "from": "2.2.0",
+      "to": "3.0.0",
+      "platform": "linux-64",
+      "realize": "skipped-operator-gate",
+      "probe": "live"
+    },
+    "caveman-installer": {
+      "package": "caveman-installer",
+      "from": "2.7.0",
+      "to": "4.0.0",
+      "platform": "linux-64",
+      "realize": "skipped-operator-gate",
+      "probe": "live"
+    },
+    "gh": {
+      "package": "gh",
+      "from": "2.101.0",
+      "to": "2.102.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "headroom-ai": {
+      "package": "headroom-ai",
+      "from": "0.37.0",
+      "to": "0.40.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "osv-scanner": {
+      "package": "osv-scanner",
+      "from": "2.6.0",
+      "to": "2.7.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "playwright": {
+      "package": "playwright",
+      "from": "1.63.0",
+      "to": "1.64.0",
+      "platform": "linux-64",
+      "realize": "ran",
+      "probe": "live"
+    },
+    "pre-commit": {
+      "package": "pre-commit",
+      "from": "4.6.2",
+      "to": "4.7.0",
+      "platform": "linux-64",
+      "realize": "skipped-worktree",
+      "probe": "live"
+    },
+    "redis-server": {
+      "package": "redis-server",
+      "from": "8.10.1",
+      "to": "8.10.2",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "spec-kit": {
+      "package": "spec-kit",
+      "from": "1.0.12",
+      "to": "1.2.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    }
+  },
+  "reconcile": {
+    "generators": [
+      {
+        "argv": [
+          "pixi",
+          "project",
+          "export",
+          "conda-environment",
+          "-e",
+          "build"
+        ],
+        "exit": 0,
+        "seconds": 0.017
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/llms_full_check.py",
+          "--fix-floors"
+        ],
+        "exit": 0,
+        "seconds": 0.332
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "-m",
+          "pyforge.scribe.cli",
+          "catalog",
+          "bmad-estate",
+          "--write"
+        ],
+        "exit": 1,
+        "seconds": 0.012
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/pixi_env_matrix.py",
+          "--update",
+          "docs/dreams/pyforge-unifying-strategy.md"
+        ],
+        "exit": 2,
+        "seconds": 0.056
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/docs_environments.py"
+        ],
+        "exit": 0,
+        "seconds": 0.131
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/docs_pixi_tasks.py"
+        ],
+        "exit": 0,
+        "seconds": 0.142
+      },
+      {
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          ".claude/scripts/conda-forge-expert/bmad_suite_metapackage.py"
+        ],
+        "exit": 0,
+        "seconds": 2.469
+      }
+    ],
+    "checks": [
+      {
+        "name": "llms-full-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/llms_full_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.601,
+        "warn_only": false
+      },
+      {
+        "name": "bmad-estate-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/bmad_estate_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.464,
+        "warn_only": false
+      },
+      {
+        "name": "pixi-version-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/pixi_version_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.304,
+        "warn_only": false
+      },
+      {
+        "name": "target-version-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/target_version_check.py"
+        ],
+        "exit": 0,
+        "seconds": 0.305,
+        "warn_only": false
+      },
+      {
+        "name": "sbom-gaps-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/sbom_gap_derive.py"
+        ],
+        "exit": 0,
+        "seconds": 0.281,
+        "warn_only": false
+      },
+      {
+        "name": "platform-policy-suite-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.doctor.sources",
+          "platform-policy-suite"
+        ],
+        "exit": 0,
+        "seconds": 0.388,
+        "warn_only": false
+      },
+      {
+        "name": "pin-policy-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "scripts/pin_policy_check.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 0.387,
+        "warn_only": false
+      },
+      {
+        "name": "pixi-lock-check",
+        "argv": [
+          "pixi",
+          "lock",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 0.586,
+        "warn_only": false
+      },
+      {
+        "name": "pixi-currency-staleness-check",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.doctor.sources",
+          "pixi-currency-ledger"
+        ],
+        "exit": 0,
+        "seconds": 0.694,
+        "warn_only": true
+      },
+      {
+        "name": "steward-deck-drift",
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.steward.cli",
+          "deck-drift",
+          "--slug",
+          "pyforge-steward",
+          "--path",
+          "deck.dc.html"
+        ],
+        "exit": 0,
+        "seconds": 0.345,
+        "warn_only": true
+      }
+    ],
+    "moved_paths": [
+      "docs/how-to/pixi-tasks.md",
+      "docs/map.yaml",
+      "docs/reference/environments.md",
+      "recipes/bmad-suite/recipe.yaml"
+    ],
+    "git_add": {
+      "paths": [
+        "docs/how-to/pixi-tasks.md",
+        "docs/map.yaml",
+        "recipes/bmad-suite/recipe.yaml"
+      ],
+      "exit": 0
+    },
+    "spec_surface": {
+      "specs": [
+        "pyforge-doctor/spec-pyforge-doctor",
+        "pyforge-steward/spec-pyforge-steward"
+      ],
+      "memlogs": [
+        {
+          "spec": "pyforge-doctor/spec-pyforge-doctor",
+          "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md",
+          "exit": 0
+        },
+        {
+          "spec": "pyforge-steward/spec-pyforge-steward",
+          "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md",
+          "exit": 0
+        }
+      ],
+      "stamps": [
+        {
+          "spec": "pyforge-doctor/spec-pyforge-doctor",
+          "argv": [
+            "spec_surface_check.py",
+            "--write-baseline",
+            "--spec",
+            "pyforge-doctor/spec-pyforge-doctor"
+          ],
+          "exit": 0
+        },
+        {
+          "spec": "pyforge-steward/spec-pyforge-steward",
+          "argv": [
+            "spec_surface_check.py",
+            "--write-baseline",
+            "--spec",
+            "pyforge-steward/spec-pyforge-steward"
+          ],
+          "exit": 0
+        }
+      ],
+      "spec_surface_check": {
+        "argv": [
+          "pixi",
+          "run",
+          "--as-is",
+          "-x",
+          "-e",
+          "pyforge-guild",
+          "python",
+          "-m",
+          "pyforge.doctor.sources",
+          "spec-surface"
+        ],
+        "exit": 0,
+        "seconds": 2.914
+      }
+    },
+    "recommended_commit": "estate reconcile: regenerate derived surfaces and reconcile spec-surface\n\nJournal: .steward/estate-refresh/2026-10-14.json"
+  },
+  "verify": {
+    "platforms": {
+      "linux-64": {
+        "lock_sha": "dd5b87f22df74fcd",
+        "verdict": "confirmed"
+      },
+      "osx-arm64": {
+        "lock_sha": "dd5b87f22df74fcd",
+        "verdict": "lock-solved"
+      },
+      "win-64": {
+        "lock_sha": "dd5b87f22df74fcd",
+        "verdict": "lock-solved"
+      }
+    },
+    "rows": [
+      {
+        "kind": "worktree",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.0,
+        "argv": [
+          "git",
+          "worktree",
+          "add",
+          "--detach",
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree",
+          "ea1ecaa8e93649fab812ba68128cf8282a7df9a7"
+        ]
+      },
+      {
+        "kind": "lock-check",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.0,
+        "argv": [
+          "pixi",
+          "lock",
+          "--check"
+        ]
+      },
+      {
+        "kind": "platform",
+        "name": "osx-arm64",
+        "platform": "osx-arm64",
+        "verdict": "lock-solved",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "platform",
+        "name": "win-64",
+        "platform": "win-64",
+        "verdict": "lock-solved",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "guild-bound",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.0,
+        "size_mb": 1871,
+        "bound_mb": 2048
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 2.862,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-guild"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-core",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.28,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-core"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-testing-kit",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.3,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-testing-kit"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-atlas",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 1.27,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-atlas"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-doctor",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.366,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-doctor"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-herald",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.437,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-herald"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-marshal",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.384,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-marshal"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-mason",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.764,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-mason"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-scribe",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.392,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-scribe"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-steward",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.579,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-steward"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-warden",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.507,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-warden"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "platform-ci-test",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 1.361,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "platform-ci-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "environment",
+        "name": "pyforge-foundry-full",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 1.366,
+        "size_delta_mb": null,
+        "argv": [
+          "pixi",
+          "install",
+          "--frozen",
+          "-e",
+          "pyforge-foundry-full"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "ruff",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 1.04,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "ruff"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "ruff-format",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 1.073,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "ruff-format"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "mypy",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 23.755,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "mypy"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "target-version-check",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.261,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "target-version-check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "precommit-config-check",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.269,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "precommit-config-check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "detectors-ci",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 194.242,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "detectors-ci"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "test-ci",
+        "environment": "local-recipes",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 536.766,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "local-recipes",
+          "test-ci"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-doctor-scripts-test",
+        "environment": "pyforge-ci",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 273.061,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-ci",
+          "pyforge-doctor-scripts-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-doctor-aggregate-scripts-test",
+        "environment": "pyforge-doctor",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 268.059,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-doctor",
+          "pyforge-doctor-aggregate-scripts-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "docs-map-render-test",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.721,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "docs-map-render-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "docs-gen-test",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.877,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-guild",
+          "docs-gen-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-core-test",
+        "environment": "pyforge-core",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 14.517,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-core",
+          "pyforge-core-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-testing-kit-test",
+        "environment": "pyforge-testing-kit",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 1.912,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-testing-kit",
+          "pyforge-testing-kit-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-atlas-test",
+        "environment": "pyforge-atlas",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 49.439,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-atlas",
+          "pyforge-atlas-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-doctor-test",
+        "environment": "pyforge-doctor",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 136.227,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-doctor",
+          "pyforge-doctor-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-herald-test",
+        "environment": "pyforge-herald",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 36.886,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-herald",
+          "pyforge-herald-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-marshal-test",
+        "environment": "pyforge-marshal",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 52.989,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-marshal",
+          "pyforge-marshal-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-mason-test",
+        "environment": "pyforge-mason",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 16.787,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-mason",
+          "pyforge-mason-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-scribe-test",
+        "environment": "pyforge-scribe",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 3.8,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-scribe",
+          "pyforge-scribe-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-steward-test",
+        "environment": "pyforge-steward",
+        "platform": "linux-64",
+        "verdict": "red",
+        "exit": 1,
+        "seconds": 411.004,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-steward",
+          "pyforge-steward-test"
+        ],
+        "output_tail": "E       assert not ['steward: read `docs/map.yaml` (from src/shared/packages/pyforge-steward/tests/unit/test_estate.py, src/shared/packag.../test_estate.py); representative path `scripts/spec_surface_check.py`: the `changes` step left output `steward` false']\n\nsrc/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py:1696: AssertionError\n=============================== warnings summary ===============================\ntests/unit/test_quarantine.py::test_record_quarantine_admit_naive_datetimes_still_mints\n  /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/.pixi/envs/pyforge-steward/lib/python3.14/site-packages/django/db/models/fields/__init__.py:1671: RuntimeWarning: DateTimeField QuarantineShelfRow.arrived_at received a naive datetime (2026-09-17 12:00:00) while time zone support is active.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py::test_every_read_and_declared_glob_fires_its_job\n1 failed, 2580 passed, 2 skipped, 1 warning in 409.92s (0:06:49)\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (pyforge-steward-test in pyforge-steward): pytest src/shared/packages/pyforge-steward/tests -q: (Run the pyforge-steward suite across all three tiers (unit + conformance + meta).)"
+      },
+      {
+        "kind": "lane",
+        "name": "pyforge-warden-test",
+        "environment": "pyforge-warden",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 22.271,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "pyforge-warden",
+          "pyforge-warden-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "docs-site-install",
+        "environment": "site",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 2.897,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "site",
+          "docs-site-install"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "docs-site-sidebar",
+        "environment": "site",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.264,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "site",
+          "docs-site-sidebar"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pages-build",
+        "environment": "site",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 3.738,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "site",
+          "pages-build"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pages-check",
+        "environment": "site",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 1.316,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "site",
+          "pages-check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "docs-site-validate-links",
+        "environment": "site",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.255,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "site",
+          "docs-site-validate-links"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "docs-site-validate-sidebar-order",
+        "environment": "site",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.237,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "site",
+          "docs-site-validate-sidebar-order"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "docs-site-validate-sidebar",
+        "environment": "site",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.262,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "--skip-deps",
+          "-e",
+          "site",
+          "docs-site-validate-sidebar"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "sbom-laptop-gate",
+        "environment": "pyforge-foundry-full",
+        "platform": "linux-64",
+        "verdict": "red",
+        "exit": 1,
+        "seconds": 34.272,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-foundry-full",
+          "sbom-laptop-gate"
+        ],
+        "output_tail": "[lint-types] mypy        pyforge-doctor       ok\n[lint-types] mypy        pyforge-herald       ok\n[lint-types] mypy        pyforge-marshal      ok\n[lint-types] mypy        pyforge-mason        ok\n[lint-types] mypy        pyforge-scribe       ok\n[lint-types] mypy        pyforge-steward      ok\n[lint-types] mypy        pyforge-testing-kit  ok\n[lint-types] mypy        pyforge-warden       ok\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (ruff in pyforge-foundry-full): python scripts/lint_types.py ruff: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten pyforge-* and nine django-* packages under src/shared/packages/ (src + tests), each read with its own [tool.ruff]. NOT_YET_CLEAN django entries only shrink. The CI lane and pr-preflight call this task verbatim.)\n\n\u2728 Pixi task (ruff-format in pyforge-foundry-full): python scripts/lint_types.py ruff-format: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* and nine django-* packages; NOT_YET_CLEAN django entries only shrink. Fix with `pixi run -e pyforge-guild ruff-format-fix`.)\n\n\u2728 Pixi task (mypy in pyforge-foundry-full): python scripts/lint_types.py mypy: (Story 66.1 (spec-pyforge-steward CAP-153): `mypy -p pyforge.<station>` inside each of the ten pyforge-* packages, each read with its own [tool.mypy] (strict for pyforge-core). The CI lane and pr-preflight call this task verbatim.)"
+      },
+      {
+        "kind": "lane",
+        "name": "verify-env",
+        "environment": "local-recipes",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.234,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "local-recipes",
+          "verify-env"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "pin-fan-out",
+        "environment": "pyforge-guild",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 2.623,
+        "argv": [
+          "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
+          "scripts/pin_policy_check.py",
+          "--fan-out",
+          "--json"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "lane",
+        "name": "atlas-browser-gate",
+        "platform": "pyforge-atlas",
+        "verdict": "manual",
+        "command": "CI=1 pixi run --frozen -e pyforge-atlas pyforge-atlas-test",
+        "exit": null,
+        "seconds": 0.0
+      },
+      {
+        "kind": "lane",
+        "name": "herald-browser-check",
+        "platform": "pyforge-herald",
+        "verdict": "manual",
+        "command": "pixi run --frozen -e pyforge-herald pyforge-herald-browser-check",
+        "exit": null,
+        "seconds": 0.0
+      },
+      {
+        "kind": "lane",
+        "name": "scribe-postgres",
+        "platform": "pyforge-scribe",
+        "verdict": "manual",
+        "command": "pixi run -e pyforge-guild scribe-pg-up && pixi run --frozen -e pyforge-scribe pyforge-scribe-test",
+        "exit": null,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "age",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "pyforge-steward-test",
+        "package": "age",
+        "platform": "linux-64",
+        "verdict": "red",
+        "exit": 1,
+        "seconds": 415.587,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-steward",
+          "pyforge-steward-test"
+        ],
+        "output_tail": "E       assert not ['steward: read `docs/map.yaml` (from src/shared/packages/pyforge-steward/tests/unit/test_estate.py, src/shared/packag.../test_estate.py); representative path `scripts/spec_surface_check.py`: the `changes` step left output `steward` false']\n\nsrc/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py:1696: AssertionError\n=============================== warnings summary ===============================\ntests/unit/test_quarantine.py::test_record_quarantine_admit_naive_datetimes_still_mints\n  /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/.pixi/envs/pyforge-steward/lib/python3.14/site-packages/django/db/models/fields/__init__.py:1671: RuntimeWarning: DateTimeField QuarantineShelfRow.arrived_at received a naive datetime (2026-09-17 12:00:00) while time zone support is active.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py::test_every_read_and_declared_glob_fires_its_job\n1 failed, 2580 passed, 2 skipped, 1 warning in 414.50s (0:06:54)\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (pyforge-steward-test in pyforge-steward): pytest src/shared/packages/pyforge-steward/tests -q: (Run the pyforge-steward suite across all three tiers (unit + conformance + meta).)"
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-builder",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-creative-intelligence-suite",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-dashboard",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-eval-quality",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-labs-skills",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-loop",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "pyforge-marshal-test",
+        "package": "bmad-loop",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 50.869,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-marshal",
+          "pyforge-marshal-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-manticore",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-method",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "bmad-drift-check",
+        "package": "bmad-method",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.687,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-guild",
+          "bmad-drift-check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "register-test",
+        "name": "bmad-estate-check",
+        "package": "bmad-method",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.556,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-guild",
+          "bmad-estate-check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-method-test-architecture-enterprise",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-module-skill-forge",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-module-template",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-suite",
+        "platform": "linux-64",
+        "verdict": "skipped: bmad-suite-full not installed (verify --all installs every env)",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "bmad-utility-skills",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "caveman-installer",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "marshal seed check",
+        "package": "caveman-installer",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 3.946,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-guild",
+          "marshal",
+          "seed",
+          "check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "codegraph",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "deptry",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "pyforge-warden-test",
+        "package": "deptry",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 20.05,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-warden",
+          "pyforge-warden-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "gh",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "headroom-ai",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "httpx",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "sbom-laptop-gate",
+        "package": "httpx",
+        "platform": "linux-64",
+        "verdict": "red",
+        "exit": 1,
+        "seconds": 3.815,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-foundry-full",
+          "sbom-laptop-gate"
+        ],
+        "output_tail": "[lint-types] mypy        pyforge-doctor       ok\n[lint-types] mypy        pyforge-herald       ok\n[lint-types] mypy        pyforge-marshal      ok\n[lint-types] mypy        pyforge-mason        ok\n[lint-types] mypy        pyforge-scribe       ok\n[lint-types] mypy        pyforge-steward      ok\n[lint-types] mypy        pyforge-testing-kit  ok\n[lint-types] mypy        pyforge-warden       ok\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (ruff in pyforge-foundry-full): python scripts/lint_types.py ruff: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten pyforge-* and nine django-* packages under src/shared/packages/ (src + tests), each read with its own [tool.ruff]. NOT_YET_CLEAN django entries only shrink. The CI lane and pr-preflight call this task verbatim.)\n\n\u2728 Pixi task (ruff-format in pyforge-foundry-full): python scripts/lint_types.py ruff-format: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* and nine django-* packages; NOT_YET_CLEAN django entries only shrink. Fix with `pixi run -e pyforge-guild ruff-format-fix`.)\n\n\u2728 Pixi task (mypy in pyforge-foundry-full): python scripts/lint_types.py mypy: (Story 66.1 (spec-pyforge-steward CAP-153): `mypy -p pyforge.<station>` inside each of the ten pyforge-* packages, each read with its own [tool.mypy] (strict for pyforge-core). The CI lane and pr-preflight call this task verbatim.)"
+      },
+      {
+        "kind": "probe",
+        "name": "jsonschema",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "kubernetes-helm",
+        "platform": "linux-64",
+        "verdict": "skipped: platform-dev not installed (verify --all installs every env)",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "platform-ci-local",
+        "package": "kubernetes-helm",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 507.057,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-guild",
+          "platform-ci-local"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "mybmad-dashboard",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "opengrep",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "osv-scanner",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "pixi",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "pixi-version-check",
+        "package": "pixi",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.318,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-guild",
+          "pixi-version-check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "playwright",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "pyforge-atlas-test",
+        "package": "playwright",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 54.705,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-atlas",
+          "pyforge-atlas-test"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "postgresql",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "pre-commit",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "register-test",
+        "name": "precommit-config-check",
+        "package": "pre-commit",
+        "platform": "linux-64",
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.259,
+        "argv": [
+          "pixi",
+          "run",
+          "--frozen",
+          "-e",
+          "pyforge-guild",
+          "precommit-config-check"
+        ],
+        "output_tail": null
+      },
+      {
+        "kind": "probe",
+        "name": "pydantic",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "pyyaml",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "redis-server",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "silo",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      },
+      {
+        "kind": "probe",
+        "name": "spec-kit",
+        "platform": "linux-64",
+        "verdict": "live",
+        "exit": 0,
+        "seconds": 0.0
+      }
+    ]
+  }
+}

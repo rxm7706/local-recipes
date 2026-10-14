@@ -121,6 +121,16 @@ def main() -> int:
         help="run offline registry/workflow checks (default when no other mode)",
     )
     parser.add_argument(
+        "--render",
+        action="store_true",
+        help="write pause if: fragments into active workflow jobs (Story 99.2)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="with --render, report changes without writing workflow files",
+    )
+    parser.add_argument(
         "--live",
         action="store_true",
         help="also compare GitHub workflow disabled_manually state (read-only gh api)",
@@ -168,6 +178,25 @@ def main() -> int:
         else:
             print("fixture-workflows must be a list or {workflows: [...]}", file=sys.stderr)
             return 2
+
+    if args.render:
+        if not args.registry.is_file():
+            print(f"missing registry {args.registry}", file=sys.stderr)
+            return 2
+        try:
+            registry = lib.load_registry(args.registry)
+        except (OSError, ValueError) as exc:
+            print(exc, file=sys.stderr)
+            return 2
+        changed = lib.render_all(
+            args.root,
+            registry,
+            workflows_dir=args.workflows_dir,
+            dry_run=args.dry_run,
+        )
+        for rel in changed:
+            print(f"rendered {rel}")
+        return 0
 
     live = args.live or args.fixture_workflows is not None
     findings, override = run_check(

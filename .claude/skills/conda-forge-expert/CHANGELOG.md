@@ -2,7 +2,12 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.100.2** (Oct 13, 2026, current) — **steward Story 100.6 Rule-2 retro: G117 points at the estate refresh how-to (PATCH).** Epic 100 retires the hand `pixi upgrade --exclude …` sequence; G117 symptom and fix blocks now name `pyforge steward estate refresh` and `docs/how-to/refresh-the-estate.md` instead of maintaining a parallel exclude list in prose.
+**v8.100.3** (Oct 14, 2026, current) — **steward Story 100.7 Rule-2 retro: the bmad-suite generator's floors depend on the network (PATCH).** Story 100.7 ran the first estate refresh through `pyforge steward estate`. `estate reconcile` regenerates `recipes/bmad-suite/recipe.yaml` with `bmad_suite_metapackage.py`, so a recipe moved in a story that was not recipe work.
+- **Finding.** The generator takes each member's upstream latest and silently falls back to the member recipe's floor when a lookup fails. Two reconcile runs on one branch wrote different floors. The first wrote `bmad-loop >=0.13.2` and TEA `>=2.0.3` (`[github]`); the second wrote `>=0.12.0` and `>=1.27.2` (member-recipe floors). A `--dry-run` an hour later read 0.13.2 and 2.0.3 again. The lock held 0.12.0 and 1.27.2 throughout. The landed recipe keeps main's floors for those two; `bmad-method >=6.12.2` and `bmad-module-skill-forge >=3.0.0` follow the BMAD core and skf apply.
+- **Rule.** Before committing a regenerated metapackage, run `--dry-run` and read each changed row's source. Commit a floor only when its source is a registry, not a silent fallback. Commit a floor above what the member recipe builds only together with that member's version bump. The follow-up is recorded as DW-steward-100-7-2: reconcile should refuse, or journal, a fallback it did not ask for.
+- **Files:** `SKILL.md` (the `cfe-upstream-registry` section, Version History; 8.100.2 → 8.100.3), `MANIFEST.yaml`, `config/skill-config.yaml`. No gotcha number changed, so `config/failure-catalog.yaml` is not regenerated.
+
+**v8.100.2** (Oct 13, 2026) — **steward Story 100.6 Rule-2 retro: G117 points at the estate refresh how-to (PATCH).** Epic 100 retires the hand `pixi upgrade --exclude …` sequence; G117 symptom and fix blocks now name `pyforge steward estate refresh` and `docs/how-to/refresh-the-estate.md` instead of maintaining a parallel exclude list in prose.
 - **Files:** `SKILL.md` (G117, Version History; 8.100.1 → 8.100.2), `config/failure-catalog.yaml` (regenerated from G117 with `generate-failure-catalog`, never hand-edited), `MANIFEST.yaml`, `config/skill-config.yaml`, `CHANGELOG.md`.
 
 **v8.100.1** (Oct 13, 2026) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted (PATCH).** Operator ask: "Do this task here: Audit 16 recipes that depend on conda playwright".

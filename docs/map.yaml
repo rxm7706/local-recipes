@@ -92,8 +92,12 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-13T19:05:56-05:00'
-      tree: 2c6ff4dd4a125b12e935fcfcf95759b8fb17a719-dirty
+      derived_at: '2026-10-13T22:08:41-05:00'
+      tree: 5683b2ef8f7df7c7b16fc22fe19a106fdb8b525d-dirty
+  - path: how-to/pause-ci.md
+    quadrant: how-to
+    owner: pyforge-steward
+    kind: authored
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -179,8 +183,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-10-13T19:04:54-05:00'
-      tree: 36f6ce363a75c5ffa8eac28e643e9a60da2c6993
+      derived_at: '2026-10-13T09:52:52-05:00'
+      tree: 5e78c565cc8175b73ef0742b76ab4665360a1d9a
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet
@@ -193,8 +197,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-13T19:05:56-05:00'
-      tree: 2c6ff4dd4a125b12e935fcfcf95759b8fb17a719-dirty
+      derived_at: '2026-10-13T22:08:41-05:00'
+      tree: 5683b2ef8f7df7c7b16fc22fe19a106fdb8b525d-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet

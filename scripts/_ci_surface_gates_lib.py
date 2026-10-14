@@ -7,7 +7,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import sys
 import yaml
+
+_SCRIPTS = Path(__file__).resolve().parent
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
+from _ci_surface_gates_render import completeness_findings
+from _ci_surface_gates_render import render_all as render_all
 
 REGISTRY_REL = Path("docs/governance/ci-surfaces.yaml")
 SCHEMA_REL = Path("docs/governance/ci-surfaces.schema.json")
@@ -234,6 +242,9 @@ def offline_check(
     pause_prefix, enable_prefix, grandfathered = _conventions(registry)
     switch_rows = _switch_names_in_registry(registry)
     declared_switches = set(switch_rows)
+    master = str((registry.get("conventions") or {}).get("master") or "")
+    if master:
+        declared_switches.add(master)
 
     try:
         var_uses = collect_var_uses(root, workflows_dir)
@@ -265,6 +276,10 @@ def offline_check(
         wf = str(row.get("workflow") or "")
         job = row.get("job")
         row_id = str(row.get("id") or wf)
+        state = str(row.get("state") or "")
+
+        if state == "retired":
+            continue
 
         wf_path = root / wf
         wf_dir = workflows_dir or (root / ".github" / "workflows")
@@ -323,9 +338,13 @@ def offline_check(
                     f"(expected {pause_prefix}*, {enable_prefix}*, or grandfathered)"
                 )
 
-        state = str(row.get("state") or "")
         if state == "paused" and not row.get("review_by"):
             findings.append(f"registry row {row_id}: paused row missing review_by")
+
+        if str(row.get("cost") or "") == "high" and not row.get("canary"):
+            findings.append(f"registry row {row_id}: cost: high row missing canary")
+
+    findings.extend(completeness_findings(root, registry, workflows_dir=workflows_dir))
 
     return findings
 

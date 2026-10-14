@@ -991,6 +991,7 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # sidecar fingerprinting a pulled Design deck artifact (size + sha256) at
 # each observed etag -- host-scratch, not repo content.
 .steward/deck-integrity-baseline.json
+.steward/ci-vars.json
 
 # Fleet-drain / agent scratch worktrees (`git worktree add` under repo root).
 # Machine-local checkouts with pixi envs — never commit; remove with

@@ -1,5 +1,12 @@
 ---
 nextStepFile: '../extract.md'
+# Resolve `{cccGitHygieneHelper}` to the first existing path. It keeps ccc's
+# index folders and SKF's workspace lock out of git, and undoes the
+# `.gitignore` edit `ccc init` makes in a workspace clone. If neither path
+# exists, skip the call and continue: it never gates the workflow.
+cccGitHygieneProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-ccc-git-hygiene.py'
+  - '{project-root}/src/shared/scripts/skf-ccc-git-hygiene.py'
 ---
 
 <!-- Config: communicate in {communication_language}. -->
@@ -8,7 +15,7 @@ nextStepFile: '../extract.md'
 
 ## STEP GOAL:
 
-If tier is Forge+ or Deep AND ccc is available, perform a semantic discovery pass over the source code to identify the most relevant files for the skill being created. Store ranked discovery results in context to pre-rank the file extraction queue in step 3.
+If tier is Forge+ or Deep AND ccc is available, perform a semantic discovery pass over the source code to identify the most relevant files for the skill being created. Store the ranked results in context: step 3 reads the files it reads one at a time in their order.
 
 For Quick and Forge tiers, or when ccc is unavailable, skip silently and proceed.
 
@@ -32,19 +39,21 @@ Check `tools.ccc` from forge-tier.yaml. If `tools.ccc` is false, set `{ccc_disco
 
 If `tools.ccc` is true, check the remote source guard **before** proceeding to section 2:
 
-**Remote source guard:** If `source_root` is a remote URL (GitHub repository — workspace clone or ephemeral clone happens in step 3), CCC cannot operate yet. Set `{ccc_discovery: []}` and display: "CCC discovery deferred — remote source will be indexed after clone in step 3." Auto-proceed to section 5 (step completion). Step-03 will detect the deferred scenario and run CCC discovery on the resolved clone (workspace or ephemeral) before AST extraction begins.
+**Remote source guard:** If `source_root` is a remote URL (a GitHub repository, which step 3 reads into a private tree), CCC cannot operate yet. Set `{ccc_discovery: []}` and display: "CCC discovery deferred: remote source will be indexed after clone in step 3." Auto-proceed to section 5 (step completion). Step-03 will detect the deferred scenario and run CCC discovery on SKF's workspace clone, once it holds the commit step 3 reads, before AST extraction begins.
 
 If `source_root` is a local path, continue to section 2.
 
 ### 2. Check CCC Index State
 
-Read `ccc_index` from forge-tier.yaml:
+Read `ccc_index` from forge-tier.yaml and branch on `ccc_index.status`:
 
-- If `ccc_index.status` is `"fresh"` or `"created"`: continue to section 3.
-- If `ccc_index.status` is `"stale"`: display brief note — "CCC index is stale — discovery results may miss recent changes." Continue to section 3.
-- If `ccc_index.status` is `"none"` or `"failed"`: attempt lazy indexing via `ccc_bridge.ensure_index(source_root)`. If indexing succeeds, continue to section 3. If indexing fails, set `{ccc_discovery: []}` and auto-proceed to section 5.
+- `"fresh"`, `"created"` or `"skipped"`: continue to section 3. Section 4 searches with `--refresh`, which brings the index up to date first, so its age never needs checking here. `"skipped"` belongs here because setup's `--ccc-skip-index` lane still writes `settings.yml` with the SKF exclusions and only defers the indexing cost: the first refresh search builds the index safely, and takes longer.
+- `"none"` or `"failed"`: attempt lazy indexing via `ccc_bridge.ensure_index(source_root)`. If indexing succeeds, continue to section 3. If indexing fails, set `{ccc_discovery: []}` and auto-proceed to section 5.
+- Any other status, for example a `"stale"` an older SKF recorded: treat it like `"fresh"`.
 
-**Tool resolution for ccc_bridge.ensure_index:** Use `/ccc` skill indexing (Claude Code), ccc MCP server (Cursor), or `cd {source_root} && ccc init` + `ccc index` (CLI). Note: `ccc init` takes no positional arguments — it initializes the index for the current working directory. See `knowledge/tool-resolution.md`.
+**Tool resolution for ccc_bridge.ensure_index:** Use `/ccc` skill indexing (Claude Code), ccc MCP server (Cursor), or the CLI: `cd "{source_root}" && ccc init`, and when it exits non-zero with `A parent directory has a project marker` (a local source inside a git checkout or below another ccc project), `cd "{source_root}" && ccc init -f`, the same handling as step 7 §6b. Run `cd "{source_root}" && ccc index` only once `{source_root}/.cocoindex_code/settings.yml` exists: without it, `ccc index` initializes the enclosing git checkout with ccc's defaults and none of the SKF exclusions, so treat indexing as failed instead. Note: `ccc init` takes no positional arguments — it initializes the index for the current working directory. See `knowledge/tool-resolution.md`. Exception: when `{source_root}` is `{project-root}` and `{project-root}/.cocoindex_code/settings.yml` does not exist, do not run `ccc init` or `ccc index` — `/skf-setup` initializes the project index with the SKF exclusions. Set `{ccc_discovery: []}`, note that re-running `/skf-setup` enables semantic discovery, and auto-proceed to section 5.
+
+**Keep a lazy index out of git:** after lazy indexing has run any ccc command, whichever tool ran it and whether it succeeded or not, return to `{project-root}`, resolve `{cccGitHygieneHelper}` from `{cccGitHygieneProbeOrder}` and run `uv run {cccGitHygieneHelper} nested --dir "{source_root}" --project-root "{project-root}"` before continuing to section 3 or section 5. It is the same check as step 7 §6b: when git does not ignore `{source_root}/.cocoindex_code/`, it writes a `.gitignore` holding `*` inside that folder, and SKF never edits a project's own `.gitignore`. Bind `{ccc_ignore_notice}` ← `notice` and display `{ccc_ignore_notice}` verbatim when it is not null: its remedy command is quoted for paths with spaces. If no candidate exists, or the helper exits non-zero or prints no JSON, continue: discovery never blocks.
 
 ### 3. Construct Semantic Query
 
@@ -63,6 +72,8 @@ Where:
 Run `ccc_bridge.search(query, source_root, top_k=20)`:
 
 **Tool resolution for ccc_bridge.search:** Use `/ccc` skill search (Claude Code), ccc MCP server (Cursor), or `cd {source_root} && ccc search --limit 20 "{query}"` (CLI). Note: `ccc search` operates on the index in the current working directory — there is no flag to specify a project directory. See `knowledge/tool-resolution.md`.
+
+**Setup's index (every section 2 status except `"none"` and `"failed"`):** search with `cd "{source_root}" && ccc search --refresh --limit 20 "{query}"` (the `/ccc` skill or the CLI), with an extended timeout, because the refresh pass runs before the search. The ccc MCP search tool refreshes by default: leave its `refresh_index` set to true. No status says that the index still matches the source (after `"skipped"` there may be no index yet), and a plain `ccc search` does not re-index a project the daemon already has loaded. The pass is incremental: it re-reads `settings.yml`, indexes new and changed files, and drops deleted files and the ones a pattern now leaves out, so on an unchanged project it returns almost as fast as a plain search. If the refresh search fails or times out, run the plain `cd "{source_root}" && ccc search --limit 20 "{query}"` once, with the same timeout, before treating the search as failed: the daemon finishes the pass on its own, and the plain search reads the index as it stands. After lazy indexing in section 2, the plain search is enough.
 
 **If search succeeds:**
 
