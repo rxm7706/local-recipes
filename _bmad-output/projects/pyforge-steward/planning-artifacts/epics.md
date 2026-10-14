@@ -6252,7 +6252,7 @@ So that what is off, since when and until when is one read, and Doctor, Herald a
 **When** `pyforge steward ci status` runs with the flag on
 **Then** it prints one row per surface (switch, declared state, live value, `paused_since`, `review_by` with days left or overdue, owner, last green run) with one verdict from `live`, `paused`, `opt-in-off`, `paused-manually`, `retired`, `drift`, `stuck`, `overdue`: a replay of the 2026-10-06 waiting deploy reads `stuck`, five consecutive cancelled runs read `stuck`, a live value the registry declares otherwise reads `drift`, a `disabled_manually` workflow with no row reads `drift` naming it, and an elapsed `review_by` reads `overdue`
 **And** `--json` validates against the shipped, frozen schema (`$id: urn:local-recipes:pyforge-steward:ci-status-schema`, additive changes only); `ci vars --refresh` writes the gitignored `.steward/ci-vars.json` with `fetched_at`; an unauthenticated `gh` or a 0/60 rate limit refuses with a documented exit code (AD-8), never a green table; with the flag off the duty refuses naming the flag; the CLI duty-count assertions move with the new duty.
-**Status:** backlog
+**Status:** done
 
 ### Story 99.4: The operator pauses and resumes a CI surface through one journaled path
 

@@ -378,7 +378,7 @@ development_status:
   98-1-station-tests-run-when-what-they-read-changes: done
   99-1-the-ci-surfaces-are-declared-once-and-the-workflows-are-judged-against-them: done
   99-2-every-ci-job-carries-its-pause-switch: done
-  99-3-the-operator-sees-the-pause-state-of-every-ci-surface-in-one-command: backlog
+  99-3-the-operator-sees-the-pause-state-of-every-ci-surface-in-one-command: done
   99-4-the-operator-pauses-and-resumes-a-ci-surface-through-one-journaled-path: backlog
   99-5-the-preflight-honors-what-ci-will-skip-and-says-so: backlog
   99-6-a-paused-expensive-build-still-runs-once-a-week: backlog

@@ -2,8 +2,8 @@
 title: '99.3: The operator sees the pause state of every CI surface in one command'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'done'
+baseline_revision: '0627eb90775e2f8d10b7fa8dad108a71a9a24f60'
 flag:
   key: pyforge.steward.ci_pause_control       # new; minted by this story (one flag per CAP: 99.4 and 99.5 reuse it)
   provider: openfeature-file                  # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -134,3 +134,9 @@ Type / Effort / Deps: feature / M / S-99.1.
 
 - 2026-10-13: specced from Epic 99's Story 99.3 text ahead of Story 99.1's landing so the steward chain runs
   unattended (operator direction 2026-10-13). Flag block written as the six-field mapping the flag gate requires.
+
+## Auto Run Result
+
+Status: in-review
+
+Implementation: `steward ci status|vars` behind `pyforge.steward.ci_pause_control`; frozen `ci-status-schema.json`; fixture-backed unit tests (AC1–AC6). Verification: `pyforge-steward-test` green; `test_ci_status.py` green; `spec_surface_reconcile.py` green after memlog reconcile on `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`, and co-governor `spec-pyforge-core`. Scoped baseline stamp deferred to PR author (no `--write-baseline` in this run).

@@ -80,6 +80,7 @@ DUTIES: tuple[str, ...] = (
     "session",
     "deck-drift",
     "estate",
+    "ci",
 )
 
 _HELP = {
@@ -191,6 +192,10 @@ _HELP = {
         "reconcile (regenerate derived surfaces + spec-surface), status (journal); "
         "behind pyforge.steward.estate_refresh (Story 100.2 / CAP-167)"
     ),
+    "ci": (
+        "CI pause visibility — status (one table/json of every surface) and vars (gitignored snapshot) "
+        "behind pyforge.steward.ci_pause_control (Story 99.3 / CAP-166 FR-39)"
+    ),
 }
 
 
@@ -266,6 +271,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_deck_drift_arguments(duty_parser)
         elif name == "estate":
             _add_estate_subparsers(duty_parser)
+        elif name == "ci":
+            _add_ci_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -1172,6 +1179,18 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
     clean.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
 
+def _add_ci_subparsers(ci_parser: argparse.ArgumentParser) -> None:
+    ci_subs = ci_parser.add_subparsers(dest="ci_verb", required=True)
+    status = ci_subs.add_parser("status", help="report pause state for every CI surface")
+    status.add_argument("--json", action="store_true", help="emit ci-status-schema JSON")
+    vars_p = ci_subs.add_parser("vars", help="read or refresh the gitignored ci-vars snapshot")
+    vars_p.add_argument(
+        "--refresh",
+        action="store_true",
+        help="fetch gh variable list and write .steward/ci-vars.json",
+    )
+
+
 def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
     estate_subs = estate_parser.add_subparsers(
         dest="estate_verb",
@@ -1688,6 +1707,10 @@ def resolve_duty(name: str) -> Duty:
         from .estate import EstateDuty
 
         return EstateDuty()
+    if name == "ci":
+        from .ci import CiDuty
+
+        return CiDuty()
     return NullDuty(name)
 
 

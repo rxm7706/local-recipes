@@ -464,6 +464,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.steward.ci_pause_control": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "99-3-the-operator-sees-the-pause-state-of-every-ci-surface-in-one-command",
+        "created": "2026-10-13",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }

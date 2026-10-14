@@ -699,6 +699,11 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    "pyforge.steward.ci_pause_control": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,
