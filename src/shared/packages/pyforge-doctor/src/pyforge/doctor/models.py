@@ -214,6 +214,11 @@ class Source(StrEnum):
     # the named sibling (OpenTeams mgmt-wf) on status/owner/content-hash.
     # Fleet subject; never FAIL; fail-open without token / when unreachable.
     SIBLING_DREAMS_DRIFT = "sibling-dreams-drift"
+    # Story 45.1 (Epic 45 / CAP-89 FR-22): warn-only read of steward
+    # ``ci status --json`` — drift, stuck, and review-date overdue rows;
+    # fleet-picture ATTENTION probes this DISPATCH name. Never imports
+    # ``pyforge.steward``; subprocess lives in ``cli_bridge`` only.
+    CI_PAUSE_DRIFT = "ci-pause-drift"
     # Story 17.2 (Epic 17 / FR-147): Dream-tier hygiene mode on the
     # dream-chain surface — frontmatter validity (status vocab, owner in
     # station/`guild`, title present), README table sync, realization-log

@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.supervisor import get_run as supervisor_get_run
-from django_pyforge.supervisor import register_runner
-from django_pyforge.supervisor import start_bounded
+from django_pyforge.supervisor import register_runner, start_bounded
 
 WARDEN_STATION = "warden"
 RUN_AUDIT_TOOL = "run_audit"

@@ -237,3 +237,39 @@ def run_check_script(
         raise CliBridgeError(f"{script_path.name} failed to launch: {exc!r}") from exc
 
     return result.returncode, result.stdout + result.stderr
+
+
+def run_argv(
+    argv: list[str],
+    *,
+    cwd: Path,
+    timeout: float = 120.0,
+) -> tuple[int, str, str]:
+    """Run ``argv`` in ``cwd``; return ``(returncode, stdout, stderr)``.
+
+    Story 45.1 (CAP-89): steward ``ci status --json`` via
+    ``pyforge.core.dispatch`` may exit 0 with stdout, 1 with a partial report
+    on stderr, or 3/127/other refusals — unlike :func:`run_cli_json`, which
+    treats every non-zero exit as failure. Raises :class:`CliBridgeError` only
+    on launch failure or timeout.
+    """
+    env = dict(os.environ)
+    env["NO_COLOR"] = "1"
+
+    try:
+        result = subprocess.run(
+            argv,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise CliBridgeError(f"{' '.join(argv[:3])} timed out after {timeout}s") from exc
+    except OSError as exc:
+        raise CliBridgeError(f"{' '.join(argv[:3])} failed to launch: {exc!r}") from exc
+
+    return result.returncode, result.stdout, result.stderr

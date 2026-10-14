@@ -1,0 +1,22 @@
+{
+  "fetched_at": "2026-10-13T12:00:00Z",
+  "repo": "rxm7706/local-recipes",
+  "rate_limit": {
+    "core_limit": 5000,
+    "core_remaining": 4999
+  },
+  "rows": [
+    {
+      "id": "canary-stale.guild-container",
+      "switch": "PAUSE_CANARY_STALE",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-12-01",
+      "review_days_left": 49,
+      "owner": "pyforge-steward",
+      "last_green_run": "2026-09-20T00:00:00Z",
+      "verdict": "stuck"
+    }
+  ]
+}

@@ -322,6 +322,7 @@ _DEGRADE_CALL_SITES = {
     "one_chain": 3,
     "pixi_currency": 1,
     "sibling_dreams": 1,
+    "ci_pause_drift": 1,
     "status_body_consistency": 1,
 }
 
