@@ -31,6 +31,15 @@ surfaces:
   workflow: .github/workflows/copilot-setup-steps.yml
 - cost: low
   gate: false
+  id: ci-canary
+  kind: workflow
+  owner: pyforge-steward
+  state: live
+  switch: PAUSE_CI_CANARY
+  switch_class: pause
+  workflow: .github/workflows/ci-canary.yml
+- cost: low
+  gate: false
   id: coverage-gates
   kind: workflow
   owner: pyforge-steward
@@ -227,7 +236,7 @@ surfaces:
   switch: null
   switch_class: pause
   workflow: .github/workflows/test-windows.yml
-- canary: weekly
+- canary: ci-canary.station-tests.guild-container
   cost: high
   gate: false
   id: station-tests.guild-container
@@ -243,11 +252,13 @@ surfaces:
   switch: PAUSE_CONTAINER_BUILDS
   switch_class: pause
   workflow: .github/workflows/pyforge-station-tests.yml
-- cost: high
+- canary: ci-canary.platform-ci.container
+  cost: high
   gate: false
   id: platform-ci.container
   job: container
   kind: ci-job
+  local_twin: platform-ci-local --images --container
   owner: pyforge-steward
   paused_by: operator
   paused_since: '2026-10-09'
@@ -260,11 +271,13 @@ surfaces:
   transitive:
   - platform-ci.golden-path-promotion
   workflow: .github/workflows/platform-ci.yml
-- cost: high
+- canary: ci-canary.platform-ci.container-dbgpt
+  cost: high
   gate: false
   id: platform-ci.container-dbgpt
   job: container-dbgpt
   kind: ci-job
+  local_twin: platform-ci-local --images
   owner: pyforge-steward
   paused_by: operator
   paused_since: '2026-10-09'
@@ -275,7 +288,8 @@ surfaces:
   switch: PAUSE_PLATFORM_CONTAINER_BUILDS
   switch_class: pause
   workflow: .github/workflows/platform-ci.yml
-- cost: high
+- canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_AIR_GAP_PARITY
+  cost: high
   gate: false
   id: platform-ci.build-platform-image.PLATFORM_CI_AIR_GAP_PARITY
   job: build-platform-image
@@ -285,7 +299,8 @@ surfaces:
   switch: PLATFORM_CI_AIR_GAP_PARITY
   switch_class: enable
   workflow: .github/workflows/platform-ci.yml
-- cost: high
+- canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_GKE_PORTABILITY_SMOKE
+  cost: high
   gate: false
   id: platform-ci.build-platform-image.PLATFORM_CI_GKE_PORTABILITY_SMOKE
   job: build-platform-image
@@ -295,7 +310,8 @@ surfaces:
   switch: PLATFORM_CI_GKE_PORTABILITY_SMOKE
   switch_class: enable
   workflow: .github/workflows/platform-ci.yml
-- cost: high
+- canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
+  cost: high
   gate: false
   id: platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
   job: build-platform-image
@@ -305,7 +321,8 @@ surfaces:
   switch: PLATFORM_CI_OCP_PORTABILITY_SMOKE
   switch_class: enable
   workflow: .github/workflows/platform-ci.yml
-- cost: high
+- canary: ci-canary.platform-ci.gke-portability-smoke
+  cost: high
   gate: false
   id: platform-ci.gke-portability-smoke
   job: gke-portability-smoke
@@ -315,7 +332,8 @@ surfaces:
   switch: PLATFORM_CI_GKE_PORTABILITY_SMOKE
   switch_class: enable
   workflow: .github/workflows/platform-ci.yml
-- cost: high
+- canary: ci-canary.platform-ci.ocp-portability-smoke
+  cost: high
   gate: false
   id: platform-ci.ocp-portability-smoke
   job: ocp-portability-smoke
@@ -325,7 +343,8 @@ surfaces:
   switch: PLATFORM_CI_OCP_PORTABILITY_SMOKE
   switch_class: enable
   workflow: .github/workflows/platform-ci.yml
-- cost: high
+- canary: ci-canary.platform-ci.air-gap-parity
+  cost: high
   gate: false
   id: platform-ci.air-gap-parity
   job: air-gap-parity
@@ -597,6 +616,26 @@ surfaces:
   switch: null
   switch_class: pause
   workflow: .github/workflows/pyforge-station-tests.yml
+- cost: low
+  gate: false
+  id: ci-canary.plan
+  job: plan
+  kind: ci-job
+  owner: pyforge-steward
+  state: live
+  switch: PAUSE_CI_CANARY
+  switch_class: pause
+  workflow: .github/workflows/ci-canary.yml
+- cost: low
+  gate: false
+  id: ci-canary.build
+  job: build
+  kind: ci-job
+  owner: pyforge-steward
+  state: live
+  switch: PAUSE_CI_CANARY
+  switch_class: pause
+  workflow: .github/workflows/ci-canary.yml
 - cost: low
   gate: false
   id: pyforge-station-tests.warden-test
