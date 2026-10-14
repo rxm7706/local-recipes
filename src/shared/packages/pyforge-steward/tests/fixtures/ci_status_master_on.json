@@ -88,20 +88,6 @@
       "verdict": "live"
     },
     {
-      "declared_state": "retired",
-      "detail": "registry row row.retired is retired but .github/workflows/wf-retired.yml still exists",
-      "id": "row.retired",
-      "last_green_run": null,
-      "live_switch_value": null,
-      "owner": "pyforge-steward",
-      "paused_by_master": false,
-      "paused_since": null,
-      "review_by": null,
-      "review_days_left": null,
-      "switch": null,
-      "verdict": "drift"
-    },
-    {
       "declared_state": "paused-manually",
       "id": "row.manual",
       "last_green_run": null,
@@ -113,34 +99,6 @@
       "review_days_left": null,
       "switch": null,
       "verdict": "paused-manually"
-    },
-    {
-      "declared_state": "live",
-      "detail": "paused by the master switch PAUSE_ALL_CI",
-      "id": "drift.own-switch",
-      "last_green_run": null,
-      "live_switch_value": null,
-      "owner": "pyforge-steward",
-      "paused_by_master": true,
-      "paused_since": "2026-10-14T08:00:00Z",
-      "review_by": null,
-      "review_days_left": null,
-      "switch": "PAUSE_DRIFT_OWN",
-      "verdict": "paused"
-    },
-    {
-      "declared_state": "paused",
-      "detail": "registry row paused.own-switch declares paused but PAUSE_OWN_PAUSED is not true",
-      "id": "paused.own-switch",
-      "last_green_run": null,
-      "live_switch_value": null,
-      "owner": "pyforge-steward",
-      "paused_by_master": true,
-      "paused_since": null,
-      "review_by": null,
-      "review_days_left": null,
-      "switch": "PAUSE_OWN_PAUSED",
-      "verdict": "drift"
     },
     {
       "declared_state": "live",

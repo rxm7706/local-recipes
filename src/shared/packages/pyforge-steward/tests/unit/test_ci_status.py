@@ -856,15 +856,6 @@ def _master_gating_surfaces(*, include_precedence: bool = False, include_retired
                 "owner": "pyforge-steward",
             },
             {
-                "id": "row.retired",
-                "workflow": ".github/workflows/wf-retired.yml",
-                "kind": "workflow",
-                "switch": None,
-                "switch_class": "pause",
-                "state": "retired",
-                "owner": "pyforge-steward",
-            },
-            {
                 "id": "row.manual",
                 "workflow": ".github/workflows/wf-manual.yml",
                 "kind": "workflow",
@@ -873,27 +864,59 @@ def _master_gating_surfaces(*, include_precedence: bool = False, include_retired
                 "state": "paused-manually",
                 "owner": "pyforge-steward",
             },
+    ]
+    if include_retired:
+        surfaces.append(
             {
-                "id": "drift.own-switch",
-                "workflow": ".github/workflows/drift-own.yml",
-                "job": "only",
-                "kind": "ci-job",
-                "switch": "PAUSE_DRIFT_OWN",
+                "id": "row.retired",
+                "workflow": ".github/workflows/wf-retired.yml",
+                "kind": "workflow",
+                "switch": None,
                 "switch_class": "pause",
-                "state": "live",
+                "state": "retired",
                 "owner": "pyforge-steward",
-            },
-            {
-                "id": "paused.own-switch",
-                "workflow": ".github/workflows/paused-own.yml",
-                "job": "only",
-                "kind": "ci-job",
-                "switch": "PAUSE_OWN_PAUSED",
-                "switch_class": "pause",
-                "state": "paused",
-                "owner": "pyforge-steward",
-            },
-        ],
+            }
+        )
+    if include_precedence:
+        surfaces.extend(
+            [
+                {
+                    "id": "drift.own-switch",
+                    "workflow": ".github/workflows/drift-own.yml",
+                    "job": "only",
+                    "kind": "ci-job",
+                    "switch": "PAUSE_DRIFT_OWN",
+                    "switch_class": "pause",
+                    "state": "live",
+                    "owner": "pyforge-steward",
+                },
+                {
+                    "id": "paused.own-switch",
+                    "workflow": ".github/workflows/paused-own.yml",
+                    "job": "only",
+                    "kind": "ci-job",
+                    "switch": "PAUSE_OWN_PAUSED",
+                    "switch_class": "pause",
+                    "state": "paused",
+                    "owner": "pyforge-steward",
+                },
+            ]
+        )
+    return surfaces
+
+
+def _write_master_gating_tree(root: Path, *, include_precedence: bool = False, include_retired: bool = False) -> Path:
+    reg = {
+        "version": 1,
+        "conventions": {
+            "pause_prefix": "PAUSE_",
+            "enable_prefix": "ENABLE_",
+            "master": "PAUSE_ALL_CI",
+        },
+        "surfaces": _master_gating_surfaces(
+            include_precedence=include_precedence,
+            include_retired=include_retired,
+        ),
     }
     reg_path = root / "docs" / "governance" / "ci-surfaces.yaml"
     reg_path.parent.mkdir(parents=True, exist_ok=True)
@@ -960,8 +983,14 @@ jobs:
 """,
         encoding="utf-8",
     )
-    for name in ("wf-value.yml", "wf-retired.yml", "wf-manual.yml"):
+    for name in ("wf-value.yml", "wf-manual.yml"):
         (wf / name).write_text("on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps: []\n", encoding="utf-8")
+    if include_retired:
+        (wf / "wf-retired.yml").write_text(
+            "on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps: []\n", encoding="utf-8"
+        )
+    if not include_precedence:
+        return reg_path
     (wf / "drift-own.yml").write_text(
         """on: push
 jobs:
@@ -992,7 +1021,11 @@ def _run_master_fixture(
     extra_variables: list[dict] | None = None,
     precedence_variables: bool = False,
 ) -> dict:
-    reg_path = _write_master_gating_tree(tmp_path)
+    reg_path = _write_master_gating_tree(
+        tmp_path,
+        include_precedence=precedence_variables,
+        include_retired=precedence_variables,
+    )
     variables: list[dict] = list(extra_variables or [])
     if master_value is not None:
         variables.append(
@@ -1057,7 +1090,6 @@ def test_gated_rows_ac2_master_on(tmp_path: Path) -> None:
     assert by_id["wf.dispatch-only"]["verdict"] == "live"
     assert by_id["wf.dispatch-only"]["paused_by_master"] is False
     assert by_id["row.value"]["paused_by_master"] is False
-    assert by_id["row.retired"]["paused_by_master"] is False
     assert by_id["row.manual"]["paused_by_master"] is False
 
 
