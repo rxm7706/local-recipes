@@ -153,7 +153,8 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   2026-10-06. **Constraints:** a feature under CAP-11 (the progress visibility surface); behind a flag
   (`pyforge.herald.ci_surfaces_tile` proposed); reads steward through the CLI's JSON, never by import; depends on
   steward's `ci status` landing first; `docsite-check.yml` stays the gate. Operator ruling 2026-10-12: the plan's
-  recommended answers Q1–Q8 stand. Owner `spec-pyforge-herald`.
+  recommended answers Q1–Q8 stand. Owner `spec-pyforge-herald`. → CAP-59 / FR-11.1 / Epic 39 / Story 39.1,
+  specced 2026-10-14 (entry of that date below).
 - **2026-10-11 (django-herald lint clean) — Ruled: the django-herald portal passes the lint gate and is the first
   package off its not-yet-clean list.** Story 37.1's review found that no gate lints the `django-*` portal packages:
   `lint-types` globs only `pyforge-*`, and `platform-ci-local` lints only `src/platform`. django-herald's
@@ -596,6 +597,25 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   and the Spec's "the Guildhall is Marshal's ([[factory-console]])" cites a `superseded` Spec
   and a retired console — the referent is a Charter amendment (batch row C12), raised on
   `docs/governance/spec-pyforge-charter/.memlog.md` this date.
+- **2026-10-14 (ci surfaces on the dossier, specced) — Ruled: the tile shows the steward's answer as it was
+  captured, and says when it was captured.** Steward's status command landed on 2026-10-13 (steward Story 99.3,
+  `pyforge-steward:CAP-166`), so the operator's order of that day holds: the doctor, herald and marshal readers are
+  minted now, one chain each (`docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` § 5 and § 6).
+  - **What changed since the seed.** The command reads GitHub live, and only for a signed-in reader with the
+    steward's own switch on. The site's build is neither, and should not become one just to draw a tile. So the
+    dossier cannot ask the command while it builds.
+  - **What it looks like when real.** The operator captures the command's answer into the repository when a pause
+    starts or ends. The dossier draws its "CI surfaces" tile from that captured copy: one line per surface that is
+    not live, with its verdict, switch, since and review-by dates, and owner, or one "all live" line. The tile
+    names the capture time, so an old copy reads as old, and a copy with the wrong shape fails the site check
+    instead of drawing a quiet, empty tile. Herald shows the steward's verdict and never judges a surface itself;
+    the doctor's drift source does the judging.
+  - **Constraints.** Behind the proposed flag; off, the dossier is unchanged. Herald reads the steward only through
+    the command's output, never its code. Whether the capture should one day refresh itself is the operator's call
+    (it would need a token and an automated pull request).
+  Kinships: [[pyforge-steward]] (`spec-pyforge-steward`, `pyforge-steward:CAP-166`: the status command and its
+  frozen output), [[pyforge-doctor]] (the drift source that judges), the plan. Owner `spec-pyforge-herald`. →
+  CAP-59 / FR-11.1 / Epic 39 / Story 39.1, specced 2026-10-14.
 
 ## One-chain fold (2026-09-17)
 

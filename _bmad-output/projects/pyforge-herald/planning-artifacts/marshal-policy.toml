@@ -490,6 +490,24 @@ verify_commands = [
   "scripts/lint_types.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"39" = [  # the dossier shows which CI surfaces are not live (feature under CAP-59, FR-11.1; flag
+  # pyforge.herald.ci_surfaces_tile; Story 39.1), added 2026-10-14. The default surface, restated because a declared
+  # entry replaces it outright, plus: docsite/ (the snapshot docsite/content/ci-status.json, dossier.yml, build.py, the
+  # block macro, the snapshot tool, the README), the flag tree, its overlay and herald's flag inventory, the two Pages
+  # workflows (a Guild step that hands the flag to the site build, as CAP-56's does; no if: line changes), and every
+  # Spec memlog a reconcile names (spec-pyforge-steward co-governs the workflows through CAP-166's registry).
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docsite/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-herald.md",
+  ".github/workflows/dashboard.yml",
+  ".github/workflows/docsite-check.yml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "40" = [  # the docs site and the herald pages share one menu (feature under CAP-58, FR-8.6, AD-21 amended; flag-exempt
   # docs-only; Story 40.1), added 2026-10-12. The default surface, restated because a declared entry replaces it outright,
   # plus the two sites the menu spans: docsite/ (site.yml, the shell template, build.py, the Pages assembler and its

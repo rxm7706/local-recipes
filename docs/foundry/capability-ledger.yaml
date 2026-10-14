@@ -6043,3 +6043,9 @@ capabilities:
     heading: "the docs site and the herald pages share one menu"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-59
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the dossier shows which CI surfaces are not live, from the steward's own status answer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
