@@ -2,7 +2,7 @@
 title: '47.1: The aggregate scripts test checks scope filtering without gathering'
 type: 'fix'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
 context:

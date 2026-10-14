@@ -3298,7 +3298,7 @@ So that the scripts lane finishes, while every real gather is still judged where
 **When** the aggregate step runs under `pyforge-doctor`
 **Then** the test swaps `pyforge.doctor.sources.__main__.DISPATCH` for stubs, keeps its four assertions, checks each row's task, scope, status and rc, and shows that a `repo` call skips a source `scope_for` reads as `runtime`; the two files pass in under 60 s; `scripts-suite` has `timeout-minutes: 25`
 **And** `pyforge-doctor-scripts-test` in `pyforge-ci` exits 0; `pyforge-doctor-test`, `detectors-ci` and `ci-surface-gates-check` stay green; each of these fails the test (mutation): the scope filter removed, a row's scope taken from the call's argument, one name left without a stub
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
