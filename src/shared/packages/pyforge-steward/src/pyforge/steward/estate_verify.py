@@ -372,7 +372,9 @@ def run_verify(
             any_red = True
         size_delta: int | None = None
         if env_name == "pyforge-guild":
-            guild_mb = _du_sm_mb(deps.runner, wt / ".pixi", wt)
+            # The env, not .pixi: .pixi/bld holds pixi-build's cache for the path-dependency
+            # packages (about 1 GB), which is not the install footprint CAP-5 bounds.
+            guild_mb = _du_sm_mb(deps.runner, wt / ".pixi" / "envs" / "pyforge-guild", wt)
             if guild_mb is not None:
                 if prev_guild_mb is not None:
                     size_delta = guild_mb - prev_guild_mb

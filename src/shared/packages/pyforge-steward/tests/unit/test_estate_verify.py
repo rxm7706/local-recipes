@@ -444,6 +444,9 @@ def test_guild_bound_row(tmp_path: Path) -> None:
     bound = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "guild-bound")
     assert bound["verdict"] == "red"
     assert not result.ok
+    du = next(argv for argv, _cwd in runner.calls if argv[:2] == ["du", "-sm"])
+    # the env itself, not .pixi (whose bld/ cache is about 1 GB of path-dependency builds)
+    assert du[-1].endswith(".pixi/envs/pyforge-guild")
 
 
 def test_scoped_env_and_lane_skips_probes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
