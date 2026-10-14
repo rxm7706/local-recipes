@@ -562,19 +562,35 @@ def run_verify(
     for pkg, row in sorted(by_pkg.items()):
         if probe_filter and pkg != probe_filter:
             continue
-        state = run_probe(realize, row, package=pkg)
-        if state in ("stale", "missing"):
-            any_red = True
-        rows.append(
-            {
-                "kind": "probe",
-                "name": pkg,
-                "platform": run_platform,
-                "verdict": state,
-                "exit": 0 if state == "live" else 1,
-                "seconds": 0.0,
-            }
-        )
+        row_env = str(row.get("env") or "pyforge-guild")
+        if not (wt / ".pixi" / "envs" / row_env).is_dir():
+            # A probe never installs its env (Story 100.7), so a row whose env this
+            # verify did not install cannot read live or stale here: say so, never red.
+            rows.append(
+                {
+                    "kind": "probe",
+                    "name": pkg,
+                    "platform": run_platform,
+                    "verdict": f"skipped: {row_env} not installed (verify --all installs every env)",
+                    "exit": 0,
+                    "seconds": 0.0,
+                }
+            )
+            state = "skipped"
+        else:
+            state = run_probe(realize, row, package=pkg)
+            if state in ("stale", "missing"):
+                any_red = True
+            rows.append(
+                {
+                    "kind": "probe",
+                    "name": pkg,
+                    "platform": run_platform,
+                    "verdict": state,
+                    "exit": 0 if state == "live" else 1,
+                    "seconds": 0.0,
+                }
+            )
         tests = row.get("test") or []
         if isinstance(tests, str):
             tests = [tests]
@@ -585,7 +601,11 @@ def run_verify(
             tests_seen.add(t)
             if lane_filter and t != lane_filter:
                 continue
-            argv = ["pixi", "run", "--frozen", "-e", str(row.get("env") or "pyforge-guild"), *shlex.split(t)]
+            words = shlex.split(t)
+            # Run the test where its task lives (pyforge-steward-test is a pyforge-steward
+            # task, platform-ci-local a local-recipes one), else in the row's env.
+            test_env = _environment_holding_task(pixi_data, words[0], root=deps.root) if words else None
+            argv = ["pixi", "run", "--frozen", "-e", test_env or str(row.get("env") or "pyforge-guild"), *words]
             proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
             verdict_s = _row_verdict(proc.returncode, special=special)
             if verdict_s != "ok":

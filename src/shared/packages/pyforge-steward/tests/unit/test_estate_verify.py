@@ -98,6 +98,7 @@ class RecordingRunner:
         if argv[:3] == ["pixi", "lock", "--check"]:
             return FakeProc(argv, 0, "", "")
         if argv[:3] == ["pixi", "install", "--frozen"]:
+            (cwd / ".pixi" / "envs" / argv[4]).mkdir(parents=True, exist_ok=True)
             return FakeProc(argv, 0, "", "")
         if argv[:3] == ["pixi", "run", "--frozen"]:
             return FakeProc(argv, 0, "", "")
@@ -560,3 +561,33 @@ def test_red_lane_keeps_its_output_tail(tmp_path: Path, monkeypatch: pytest.Monk
     result = _verify(root, runner, lane_filter="lint-types")
     lane = next(r for r in result.details["verify"]["rows"] if r.get("name") == "lint-types")
     assert lane["output_tail"] == "boom: lint failed"
+
+
+def test_probe_for_an_env_this_verify_did_not_install_is_skipped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A probe never installs its env, so an env outside the tier reads skipped, never red."""
+    root = _fixture_root(tmp_path)
+    reg = root / "docs/governance/realization-register.yaml"
+    reg.write_text(reg.read_text(encoding="utf-8").replace("env: pyforge-guild", "env: platform-dev"))
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.2")
+    result = _verify(root, RecordingRunner(root=root))
+    probe = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "probe")
+    assert probe["verdict"].startswith("skipped: platform-dev not installed")
+    assert probe["exit"] == 0
+
+
+def test_register_test_runs_in_the_env_that_defines_its_task(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """pyforge-steward-test lives in pyforge-steward, not the row's pyforge-guild (Story 100.7)."""
+    root = _fixture_root(tmp_path)
+    import pyforge.steward.estate_verify as ev
+
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    monkeypatch.setattr(
+        ev,
+        "_environment_holding_task",
+        lambda _d, task, root: "pyforge-steward" if task == "bmad-drift-check" else None,
+    )
+    result = _verify(root, RecordingRunner(root=root), probe_filter="bmad-method")
+    test_row = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "register-test")
+    assert test_row["argv"][:5] == ["pixi", "run", "--frozen", "-e", "pyforge-steward"]
