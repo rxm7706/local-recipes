@@ -9950,7 +9950,7 @@ So that whoever reads the landing knows which gates did not run.
 **When** the landing merges
 **Then** it reads `pyforge steward ci status --json` once, before the merge, and journals `ci_pauses_at_merge` as `{"state": "read", "surfaces": [...], "fetched_at": ...}`: each row declared `paused-manually` and each row whose live switch is `true` and that is neither `opt-in-off` nor `retired`, sorted. The PR body gains `CI paused at merge: <ids>`, and the finalize record carries the same object. An all-live read writes `surfaces: []` and `none`. A steward that cannot be read writes `{"state": "unknown", "reason": ...}` and `unknown (<reason>)`, and the landing still merges
 **And** a failed PR-body edit is a WARN and the landing reads `LANDED`; the flag off makes no steward call and writes no key; one test file runs both flag states through `flag_states`; dropping the overdue-pause rule, the explicit empty list or the unknown path fails a named test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
