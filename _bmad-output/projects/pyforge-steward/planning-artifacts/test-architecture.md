@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: c3f19967dd7423b4
-story_count: 378
-test_file_count: 125
+source_fingerprint: 735f33856514c4ed
+story_count: 379
+test_file_count: 126
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 378
+- **Stories parsed:** 379
 - **Epics parsed:** 103
-- **Test files inventoried:** 125 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 126 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c3f19967dd7423b4`
+- **Source fingerprint:** `735f33856514c4ed`
 
 ## Risk Assessment
 
@@ -129,7 +129,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 98: Station tests run when what they read changes (fix under CAP-159)
 - Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
 - Epic 101: The `platform-ci-local` stubs leak no process, and the holder scan takes seconds (fix under CAP-152)
-- Epic 103: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167 and CAP-5)
+- Epic 103: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167, CAP-5 and CAP-159)
 
 ### Low-risk epics
 
@@ -152,6 +152,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
@@ -652,6 +653,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.1 | `steward ci status` reports the master switch, and every surface it pauses | none observed |
 | 103.2 | `estate reconcile` writes the bmad-suite floors from the batch, not the network | none observed |
 | 103.3 | `pyforge-ci` is stdlib-only, as its tasks say | none observed |
+| 103.5 | The preflight keys each lane by its task and its environment | none observed |
 
 ## Quality Gates
 
