@@ -568,9 +568,7 @@ def _eval_ci_atom(
     job_id: str,
     job: dict[str, Any],
 ) -> bool:
-    text = atom.strip()
-    while text.startswith("(") and text.endswith(")"):
-        text = text[1:-1].strip()
+    text = _unwrap_parens(atom.strip())
     event = re.match(r"^github\.event_name\s*(==|!=)\s*'([^']*)'$", text)
     if event:
         op, literal = event.groups()
@@ -589,6 +587,21 @@ def _eval_ci_atom(
     raise _Unevaluable(f"job {job_id!r} if: atom {atom!r} is outside the CI pause fragment grammar")
 
 
+def _unwrap_parens(text: str) -> str:
+    text = text.strip()
+    while text.startswith("(") and text.endswith(")"):
+        depth = 0
+        for index, ch in enumerate(text):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0 and index != len(text) - 1:
+                    return text
+        text = text[1:-1].strip()
+    return text
+
+
 def _eval_ci_if_expression(
     text: str,
     *,
@@ -599,7 +612,9 @@ def _eval_ci_if_expression(
     job_id: str,
     job: dict[str, Any],
 ) -> bool:
+    text = _unwrap_parens(text)
     for part in _split_top_level(text, "||"):
+        part = _unwrap_parens(part)
         if all(
             _eval_ci_atom(
                 piece,
@@ -700,7 +715,7 @@ class _State:
         if "if" not in job:
             return True, ""
         text = _normalize_condition(job["if"])
-        if self.ci_registry and ("vars." in text or "github.event_name" in text):
+        if "vars." in text or "github.event_name" in text:
             holds = _eval_ci_if_expression(
                 text,
                 registry=self.ci_registry,
