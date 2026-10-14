@@ -2,8 +2,8 @@
 title: "102.1: The Pages workflow is steward's and fires only on the published inputs"
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
+status: 'in-progress'
+baseline_revision: 'b23834e6f0ac0fdaec6d1bdca801769d796ae6c9'
 flag-exempt: detector-or-gate   # a workflow's `on:` block, checkout depth and sparse paths are evaluated by GitHub before any step can read a flag; the station read Story 99.2's gate sweep and 99.6's canary the same way (spec-feature-flag-governance Q2). The flag pyforge.steward.pages_duty is minted by Story 102.2, whose steps are the first a flag can gate.
 review_loop_iteration: 0
 followup_review_recommended: false

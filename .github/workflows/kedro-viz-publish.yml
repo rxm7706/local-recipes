@@ -21,7 +21,7 @@ name: Kedro-Viz publish (real atlas DAG)
 # dashboard`'s diff-gate would see spurious churn on every run (a different
 # checkout path every time) and never report "nothing to deploy".
 #
-# The already-existing `dashboard.yml` Pages workflow (unconditional
+# The already-existing `pages.yml` Pages workflow (unconditional
 # push-to-main trigger, uploads the whole `docs/dashboard/` tree) republishes
 # automatically once this workflow's commit lands on `main` -- zero changes
 # made to it.
@@ -56,7 +56,7 @@ jobs:
       # (never commits) on a detached HEAD -- re-attach to a real local
       # `main` tracking `origin/main` before ever invoking it. Hardcoded to
       # `main` (not a templated ref), matching this workflow's own single
-      # trigger branch and `dashboard.yml`'s identical hardcoding.
+      # trigger branch and `pages.yml`'s identical hardcoding.
       - name: Re-attach to main (undo checkout's detached HEAD)
         run: |
           git checkout -B main

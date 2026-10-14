@@ -55,6 +55,7 @@ _PIXI_VALUE_FLAGS = frozenset({"--manifest-path", "--color"})
 _PYTHON_INTERPRETERS = frozenset({"python", "python3"})
 _PR_FIRING_TYPES = frozenset({"opened", "synchronize", "reopened"})
 _PR_RECOGNISED_KEYS = frozenset({"paths", "branches", "types"})
+_PUSH_RECOGNISED_KEYS = frozenset({"paths", "branches", "tags", "paths-ignore"})
 
 _EXPRESSION = re.compile(r"\$\{\{(.*?)\}\}", re.DOTALL)
 _STRING_LITERAL = re.compile(r"'((?:[^']|'')*)'")
@@ -197,6 +198,21 @@ class Workflow:
             return dict(block) if isinstance(block, dict) else {"<not a mapping>": block}
         return None
 
+    @property
+    def push(self) -> dict[str, Any] | None:
+        """The ``on.push`` block, or ``None`` when the workflow has no push trigger."""
+        trigger = self.data.get("on", self.data.get(True))
+        if trigger == "push":
+            return {}
+        if isinstance(trigger, list):
+            return {} if "push" in trigger else None
+        if isinstance(trigger, dict) and "push" in trigger:
+            block = trigger["push"]
+            if block is None:
+                return {}
+            return dict(block) if isinstance(block, dict) else {"<not a mapping>": block}
+        return None
+
 
 def load_workflows(repo_root: Path) -> list[Workflow]:
     directory = repo_root / WORKFLOWS_RELATIVE
@@ -235,6 +251,22 @@ def _pull_request_fires(config: dict[str, Any], paths: Sequence[str]) -> tuple[b
             return True, "on.pull_request.paths matches a changed path"
         return False, f"on.pull_request.paths: none of the {len(paths)} changed paths matches"
     return True, "on.pull_request has no paths filter"
+
+
+def _push_fires(config: dict[str, Any], paths: Sequence[str]) -> tuple[bool, str]:
+    unknown = sorted(str(key) for key in config if key not in _PUSH_RECOGNISED_KEYS)
+    if unknown:
+        raise _Unevaluable(f"on.push.{', '.join(unknown)} is not recognised")
+    if "branches" in config and not filter_matches(_as_list(config["branches"]), BASE_BRANCH):
+        return False, f"on.push.branches {config['branches']!r} excludes {BASE_BRANCH}"
+    if "paths" in config:
+        patterns = _as_list(config["paths"])
+        if not patterns:
+            raise _Unevaluable("on.push.paths is empty")
+        if any(filter_matches(patterns, path) for path in paths):
+            return True, "on.push.paths matches a changed path"
+        return False, f"on.push.paths: none of the {len(paths)} changed paths matches"
+    return True, "on.push has no paths filter"
 
 
 # ---------------------------------------------------------------------------
@@ -909,7 +941,12 @@ class _State:
     def sites_for(self, lane: LaneLike) -> list[_Site]:
         sites: list[_Site] = []
         for workflow in self.workflows:
-            if workflow.pull_request is None:
+            trigger_blocks: list[tuple[dict[str, Any], Any]] = []
+            if workflow.pull_request is not None:
+                trigger_blocks.append((workflow.pull_request, _pull_request_fires))
+            if workflow.push is not None:
+                trigger_blocks.append((workflow.push, _push_fires))
+            if not trigger_blocks:
                 continue
             for job_id, job in workflow.jobs.items():
                 steps = job.get("steps") if isinstance(job, dict) else None
@@ -923,12 +960,22 @@ class _State:
                     and _step_matches(lane, step["run"], self.pixi_data)
                 ]
                 if matched:
-                    sites.append(self._site(lane, workflow, job_id, job, matched))
+                    for config, fires in trigger_blocks:
+                        sites.append(self._site(lane, workflow, job_id, job, matched, config, fires))
         return sites
 
-    def _site(self, lane: LaneLike, workflow: Workflow, job_id: str, job: dict[str, Any], matched: list[int]) -> _Site:
+    def _site(
+        self,
+        lane: LaneLike,
+        workflow: Workflow,
+        job_id: str,
+        job: dict[str, Any],
+        matched: list[int],
+        trigger_config: dict[str, Any],
+        fires_fn: Any,
+    ) -> _Site:
         try:
-            fires, rule = _pull_request_fires(workflow.pull_request or {}, self.paths)
+            fires, rule = fires_fn(trigger_config or {}, self.paths)
             if not fires:
                 return _Site(workflow.file, job_id, "skip", rule)
             holds, rule = self._job_holds(workflow, job_id, job)

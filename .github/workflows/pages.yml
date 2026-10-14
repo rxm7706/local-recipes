@@ -1,25 +1,39 @@
-name: Dashboard (GitHub Pages)
+name: Pages
 
+# Steward owns this duct (spec-pyforge-steward CAP-168 / Story 102.1). Herald owns
+# the artifact content (pages-build, pages-check, docsite/, docs-site/, /herald/).
+# This workflow is the sole actions/deploy-pages caller (herald herald:AD-21). No
+# bot commit on main.
+#
 # Publishes one GitHub Pages artifact assembled at docs-site/build/site/
 # (Starlight docs shelf at /, herald dossier at /herald/, Kedro-Viz at
-# /dashboard/kedro-viz/). Steward 30.2 retired the Guildhall generator; atlas
-# Kedro-Viz is staged under docs/dashboard/kedro-viz/ by kedro-viz-publish.yml
-# and copied into the artifact by docsite/tools/assemble_pages.py. Lane 1
-# /console/ is the operator console.
+# /dashboard/kedro-viz/). Atlas Kedro-Viz is staged under docs/dashboard/kedro-viz/
+# by kedro-viz-publish.yml and copied into the artifact by docsite/tools/assemble_pages.py.
+# Lane 1 /console/ is the operator console.
 #
-# kedro-viz-publish.yml stages the export, then this workflow republishes
-# on push to main. No scheduled regen — there is no data.js to refresh.
-#
-# This workflow is the only deploy-pages caller. A second workflow calling
-# deploy-pages would race this one and intermittently wipe the Kedro-Viz
-# export. Same reason kedro-viz-publish.yml stages rather than deploys.
-# docsite/build.py only ever deletes the outputs it owns; nothing under
-# docs-site/build/ is committed — see .gitignore.
+# kedro-viz-publish.yml stages the export, then this workflow republishes on push
+# to main when published inputs change. Story 102.2 adds pull_request and the no-op
+# deploy skip.
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'docs/tutorials/**'
+      - 'docs/how-to/**'
+      - 'docs/reference/**'
+      - 'docs/explanation/**'
+      - 'docs/index.md'
+      - 'docs/404.md'
+      - 'docs/map.yaml'
+      - 'docs/dashboard/**'
+      - 'docs-site/**'
+      - 'docsite/**'
+      - 'presentations/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
 
 permissions:
   contents: read
@@ -39,7 +53,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          sparse-checkout: |
+            /*
+            !/presentations/
+            /presentations/*/project/*.html
+          sparse-checkout-cone-mode: false
 
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:

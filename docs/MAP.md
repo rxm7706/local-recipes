@@ -31,7 +31,7 @@ general documentation:
 | Governance | `docs/governance/` | Policy corpus; cross-cutting, not Diátaxis-quadrant material |
 | Foundry | `docs/foundry/` | Foundry registry, frames and guards — machine-read by detectors, not authored documentation |
 | Station/package docs | `src/shared/packages/pyforge-*/README.md`, skill dirs | Station-scoped; link *into* this map where general |
-| Publish roots (generated) | `docs/dashboard/` | GitHub Pages upload root, not authored documentation — one subfolder per published dashboard board (see [`docs/dashboard/README.md`](dashboard/README.md)). The PyForge dossier/infographic site (`docsite/build.py`, deployed by `dashboard.yml`) is the one exception, publishing directly at this root rather than its own subfolder. Today only `kedro-viz/` (atlas Kedro-Viz) publishes as a subfolder; a subfolder for another board is created only when that board actually publishes, never minted empty ahead of time |
+| Publish roots (generated) | `docs/dashboard/` | GitHub Pages upload root, not authored documentation — one subfolder per published dashboard board (see [`docs/dashboard/README.md`](dashboard/README.md)). The PyForge dossier/infographic site (`docsite/build.py`, deployed by `pages.yml`) is the one exception, publishing directly at this root rather than its own subfolder. Today only `kedro-viz/` (atlas Kedro-Viz) publishes as a subfolder; a subfolder for another board is created only when that board actually publishes, never minted empty ahead of time |
 
 ## One-chain operator layer (2026-09-17)
 
