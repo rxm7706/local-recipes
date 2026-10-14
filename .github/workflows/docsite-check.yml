@@ -1,11 +1,11 @@
 name: Docsite check
 
-# Story 24.2 (spec-pyforge-herald CAP-49): PR-time twin of dashboard.yml's build
+# Story 24.2 (spec-pyforge-herald CAP-49): PR-time twin of pages.yml's build
 # step — it builds and checks, it never deploys. Story 27.2 reshaped both lanes
 # to `pixi run -e site pages-check`, which assembles Starlight + herald +
 # dashboard into docs-site/build/site/ and verifies redirects and links.
 #
-# `dashboard.yml` stays the only `deploy-pages` caller; a second one would race
+# `pages.yml` stays the only `deploy-pages` caller; a second one would race
 # it and intermittently wipe the Kedro-Viz export (see that workflow's header).
 
 on:

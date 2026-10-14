@@ -77,7 +77,7 @@ def resolve_from_process_environment() -> str:
 
 
 def export_host_env_for_ci() -> dict[str, str]:
-    """Compute env vars for ``dashboard.yml`` (Guild env only — reads the flag tree)."""
+    """Compute env vars for ``pages.yml`` (Guild env only — reads the flag tree)."""
     configured_base_url = os.environ.get(ENV_CONFIGURED_BASE_URL, "").strip() or None
     configured_base_path = os.environ.get(ENV_CONFIGURED_BASE_PATH, "").strip() or None
     apply = second_host_enabled()
