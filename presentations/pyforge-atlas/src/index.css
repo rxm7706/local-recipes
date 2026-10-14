@@ -1,3 +1,13 @@
+/* Archivo Expanded is the 125% width of the variable Archivo (fontsource-variable, wdth axis). */
+@font-face {
+  font-family: 'Archivo Expanded';
+  font-style: normal;
+  font-weight: 700 900;
+  font-stretch: 125%;
+  font-display: swap;
+  src: url('@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2') format('woff2-variations');
+}
+
 :root {
   --paper: #f6f4ee;
   --navy: #0b1626;
