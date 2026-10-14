@@ -15,20 +15,14 @@ import contextlib
 import signal
 import socket
 import threading
-from typing import TYPE_CHECKING
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.core.management.base import CommandError
+from django.core.management.base import BaseCommand, CommandError
 
-from django_pyforge.events import STATION_TOKENS
-from django_pyforge.events import EventFabric
-from django_pyforge.events import connect_event_broker
-from django_pyforge.events.adapters import station_handler
-from django_pyforge.events.adapters import subscriptions_for
-from django_pyforge.events.fabric import Handler
-from django_pyforge.events.fabric import handler_timeout_ms
+from django_pyforge.events import STATION_TOKENS, EventFabric, connect_event_broker
+from django_pyforge.events.adapters import station_handler, subscriptions_for
+from django_pyforge.events.fabric import Handler, handler_timeout_ms
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -181,6 +175,5 @@ class Command(BaseCommand):
                 stop=stop,
             )
         self.stdout.write(
-            f"consume_events {station}: passes={passes} handled={handled} "
-            f"quarantined={moved}",
+            f"consume_events {station}: passes={passes} handled={handled} quarantined={moved}",
         )

@@ -30,40 +30,39 @@ from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
-from django_pyforge.events.constants import APPLIED_PREFIX
-from django_pyforge.events.constants import DLQ
-from django_pyforge.events.constants import DLQ_ATTEMPTS_FIELD
-from django_pyforge.events.constants import DLQ_ERROR_FIELD
-from django_pyforge.events.constants import DLQ_GROUP_FIELD
-from django_pyforge.events.constants import DLQ_QUARANTINED_AT_FIELD
-from django_pyforge.events.constants import DLQ_REASON_EXHAUSTED
-from django_pyforge.events.constants import DLQ_REASON_FIELD
-from django_pyforge.events.constants import DLQ_REASON_UNPARSEABLE
-from django_pyforge.events.constants import DLQ_STREAM_ID_FIELD
-from django_pyforge.events.constants import EVENT_APPLIED_TTL_SECONDS_DEFAULT
-from django_pyforge.events.constants import EVENT_BACKOFF_BASE_MS_DEFAULT
-from django_pyforge.events.constants import EVENT_BACKOFF_MAX_MS_DEFAULT
-from django_pyforge.events.constants import EVENT_FIELD
-from django_pyforge.events.constants import EVENT_HANDLER_TIMEOUT_MS_DEFAULT
-from django_pyforge.events.constants import EVENT_MAX_ATTEMPTS_DEFAULT
-from django_pyforge.events.constants import EVENT_STREAM_MAXLEN_DEFAULT
-from django_pyforge.events.constants import EVENT_TYPES
-from django_pyforge.events.constants import EXT_GIT_SHA
-from django_pyforge.events.constants import EXT_LOOP_DEPTH
-from django_pyforge.events.constants import EXT_SBOM_PURL
-from django_pyforge.events.constants import EXT_SPEC_ID
-from django_pyforge.events.constants import EXT_TENANT
-from django_pyforge.events.constants import EXT_TRACEPARENT
-from django_pyforge.events.constants import EXT_WORK_ITEM_ID
-from django_pyforge.events.constants import LAST_ERROR_PREFIX
-from django_pyforge.events.constants import LOOP_DEPTH_CEILING
-from django_pyforge.events.constants import SPECVERSION
-from django_pyforge.events.constants import STATION_TOKENS
-from django_pyforge.events.constants import STREAM
-from django_pyforge.events.tracing import TraceparentFormatError
-from django_pyforge.events.tracing import bound_trace
-from django_pyforge.events.tracing import current_traceparent
-from django_pyforge.events.tracing import parse_traceparent
+from django_pyforge.events.constants import (
+    APPLIED_PREFIX,
+    DLQ,
+    DLQ_ATTEMPTS_FIELD,
+    DLQ_ERROR_FIELD,
+    DLQ_GROUP_FIELD,
+    DLQ_QUARANTINED_AT_FIELD,
+    DLQ_REASON_EXHAUSTED,
+    DLQ_REASON_FIELD,
+    DLQ_REASON_UNPARSEABLE,
+    DLQ_STREAM_ID_FIELD,
+    EVENT_APPLIED_TTL_SECONDS_DEFAULT,
+    EVENT_BACKOFF_BASE_MS_DEFAULT,
+    EVENT_BACKOFF_MAX_MS_DEFAULT,
+    EVENT_FIELD,
+    EVENT_HANDLER_TIMEOUT_MS_DEFAULT,
+    EVENT_MAX_ATTEMPTS_DEFAULT,
+    EVENT_STREAM_MAXLEN_DEFAULT,
+    EVENT_TYPES,
+    EXT_GIT_SHA,
+    EXT_LOOP_DEPTH,
+    EXT_SBOM_PURL,
+    EXT_SPEC_ID,
+    EXT_TENANT,
+    EXT_TRACEPARENT,
+    EXT_WORK_ITEM_ID,
+    LAST_ERROR_PREFIX,
+    LOOP_DEPTH_CEILING,
+    SPECVERSION,
+    STATION_TOKENS,
+    STREAM,
+)
+from django_pyforge.events.tracing import TraceparentFormatError, bound_trace, current_traceparent, parse_traceparent
 
 Handler = Callable[[dict[str, Any]], None]
 StopCheck = Callable[[], bool]
@@ -270,10 +269,7 @@ class EventFabric:
             raise LoopDepthExceededError(depth=depth, event_type=str(event_type))
         traceparent = event.get(EXT_TRACEPARENT)
         if traceparent is not None and not parse_traceparent(traceparent):
-            msg = (
-                f"{EXT_TRACEPARENT} must be a W3C Trace Context header, "
-                f"got {traceparent!r}"
-            )
+            msg = f"{EXT_TRACEPARENT} must be a W3C Trace Context header, got {traceparent!r}"
             raise TraceparentFormatError(msg)
         if traceparent is None:
             # The publisher's own trace (the request, or the consumer that

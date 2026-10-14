@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from django.core.checks import CheckMessage
-from django.core.checks import Error
-from django.core.checks import register
+from django.core.checks import CheckMessage, Error, register
 
-from django_pyforge.portals import PortalConfig
 from django_pyforge.discovery import iter_portal_configs
+from django_pyforge.portals import PortalConfig
 
 CHROME_FIELDS = (
     "station_name",
@@ -69,8 +67,7 @@ def validate_portal_config(config: PortalConfig) -> list[CheckMessage]:
     if config.mount_token != expected:
         errors.append(
             Error(
-                "portal must register at "
-                f"{expected}; got {config.mount_token!r}",
+                f"portal must register at {expected}; got {config.mount_token!r}",
                 hint=hint,
                 id="django_pyforge.E001",
             ),

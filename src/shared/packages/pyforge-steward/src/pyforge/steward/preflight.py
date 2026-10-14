@@ -712,6 +712,7 @@ def run_preflight(
     run_lane_ctx: Callable[[LaneRunContext], int] | None = None,
     jobs: int | None = None,
     keep_going: bool = False,
+    ignore_ci_pauses: bool = False,
     install_environment: Callable[[str], int] | None = None,
     scratch_parent: Path | None = None,
     subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None,
@@ -732,8 +733,45 @@ def run_preflight(
         print(f"preflight: {exc}", file=sys.stderr)
         return EXIT_CONFIG
 
-    selection = preflight_ci.select_lanes(repo_root, lanes, pixi_data)
-    lanes = [lane for lane in lanes if selection.is_selected(lane)]
+    flag_on = preflight_ci._flag_on(repo_root)  # noqa: SLF001 — shared pause gate
+    resolution = preflight_ci.resolve_ci_vars(repo_root, flag_on=flag_on)
+    var_lookup = resolution.lookup if flag_on else None
+    selection = preflight_ci.select_lanes(repo_root, lanes, pixi_data, var_lookup=var_lookup)
+    paused_lanes: list[preflight_ci.PausedLane] = []
+    paused_results: list[LaneResult] = []
+    if flag_on:
+        surface_paused = preflight_ci.list_paused_ci_surfaces(repo_root, resolution)
+        lane_paused = preflight_ci.discover_paused_lanes(repo_root, lanes, pixi_data, resolution)
+        banner_lines: dict[str, preflight_ci.PausedLane] = {entry.task: entry for entry in surface_paused}
+        for entry in lane_paused:
+            banner_lines.setdefault(entry.task, entry)
+        paused_lanes = list(banner_lines.values())
+        if paused_lanes:
+            preflight_ci.print_ci_pause_banner(repo_root, paused_lanes, resolution=resolution)
+        paused_lanes = lane_paused
+        paused_tasks = {entry.task for entry in paused_lanes}
+        run_lanes = [lane for lane in lanes if selection.is_selected(lane)]
+        if ignore_ci_pauses and paused_tasks:
+            for lane in lanes:
+                if lane.task in paused_tasks and lane not in run_lanes:
+                    run_lanes.append(lane)
+        elif paused_tasks:
+            for entry in paused_lanes:
+                paused_results.append(
+                    LaneResult(
+                        entry.task,
+                        entry.environment,
+                        0.0,
+                        0,
+                        "not-run",
+                        0.0,
+                        {"verdict": entry.journal_verdict()},
+                    )
+                )
+            run_lanes = [lane for lane in run_lanes if lane.task not in paused_tasks]
+        lanes = run_lanes
+    else:
+        lanes = [lane for lane in lanes if selection.is_selected(lane)]
     skipped_count = len(selection.verdicts) - len(lanes)
     note = f" ({selection.all_reason})" if selection.all_reason else ""
     print(
@@ -1013,8 +1051,21 @@ def run_preflight(
             "total_seconds": total_seconds,
             "verdict": verdict,
             "invoking_environment": env,
-            "selection": selection.to_journal(),
-            "lanes": [_lane_result_dict(r) for r in ordered_results],
+            "selection": {
+                **selection.to_journal(),
+                **({"ci_var_source": resolution.source} if flag_on else {}),
+                **(
+                    {
+                        "ci_pause_override": [
+                            f"ran despite pause (--ignore-ci-pauses): {entry.journal_verdict()}"
+                            for entry in paused_lanes
+                        ]
+                    }
+                    if flag_on and ignore_ci_pauses and paused_lanes
+                    else {}
+                ),
+            },
+            "lanes": [_lane_result_dict(r) for r in ordered_results] + [_lane_result_dict(r) for r in paused_results],
         },
     )
     if exit_code == EXIT_OK:
@@ -1042,6 +1093,11 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
         action="store_true",
         help="run every selected lane even when one exits non-zero",
     )
+    parser.add_argument(
+        "--ignore-ci-pauses",
+        action="store_true",
+        help="run lanes paused in CI anyway (Story 99.5)",
+    )
     return parser.parse_args(list(argv))
 
 
@@ -1057,6 +1113,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         repo_root,
         jobs=args.jobs,
         keep_going=args.keep_going,
+        ignore_ci_pauses=args.ignore_ci_pauses,
     )
 
 

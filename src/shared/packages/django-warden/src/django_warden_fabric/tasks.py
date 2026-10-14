@@ -152,7 +152,7 @@ def run_fleet_inventory(self, inventory_run_id: str, organisation: str) -> str:
             timeout=FLEET_INVENTORY_REQUEST_TIMEOUT_SECONDS,
         )
         run_fleet_inventory_sync(organisation=organisation, listing_client=client)
-    except (FleetInventoryError, FleetInventoryApiError):
+    except FleetInventoryError, FleetInventoryApiError:
         logger.exception("fleet inventory %s failed", inventory_run_id)
         raise
     else:
