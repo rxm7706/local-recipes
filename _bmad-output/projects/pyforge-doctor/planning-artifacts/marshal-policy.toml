@@ -410,6 +410,26 @@ verify_commands = [
   ".github/workflows/detectors.yml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"48" = [  # one registry orders the whole Pages site, and a stale site tells on itself (CAP-90 / FR-23 and CAP-91 /
+  # FR-24; Stories 48.1 and 48.2), added 2026-10-14. The default surface, restated because a declared entry replaces it
+  # outright, plus the registry and its render (docs/map.yaml, docs/MAP.md outside the markers; the docs-map schema sits
+  # under the package), fleet-picture (one ATTENTION probe) and its tests, and every Spec memlog a reconcile names
+  # (spec-pyforge-core co-governs station src/; spec-pyforge-marshal names scripts/fleet_picture.py). Nothing under
+  # docsite/ or docs-site/: the renderer is herald's (AD-14).
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docs/map.yaml",
+  "docs/MAP.md",
+  "scripts/fleet_picture.py",
+  "tests/scripts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "41" = [  # Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals (fix stories, no new CAP), added 2026-10-03
   # The default surface, restated because a declared entry replaces it outright, plus what the four stories touch
   # outside the package: the spec-surface, verdict-writer and baseline scripts and their tests (41.1), the detectors

@@ -1,5 +1,5 @@
 ---
-title: "30.1: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so"
+title: "31.1: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so"
 type: 'fix'
 created: '2026-10-14'
 status: 'ready-for-dev'
@@ -147,7 +147,7 @@ run --frozen -e pyforge-guild lint-types`. `pr-preflight` builds its lanes from 
 5. Run the existing `mypy` task in `pyforge-foundry-full` as a second step of the `lint-types` CI job, and as a
    `pr-preflight` lane. An atlas meta test pins both, so neither can be dropped silently.
 
-Ledger key: `30-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so`.
+Ledger key: `31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so`.
 Type / Effort / Deps: fix / M / none.
 
 ### Living CAP citations
@@ -309,12 +309,12 @@ Re-stamp them with a dated Currency reconciliation note, as
   `pr-preflight` lane list) and `fnd:CAP-13` (the laptop gate).
 - Dream: `docs/dreams/pyforge-atlas.md` § *Realization log*, the 2026-10-14 (foundry-full mypy) entry.
 - Deferred work closed: `DW-atlas-steward-100-7-1` (`deferred-work-ledger.md`), promoted to this story at mint.
-- Epic: Epic 30 (new). No open atlas epic owns the type gate, and Epics 25 to 29 are all `done`. `epic-30` and
-  `epic-30-retrospective` are minted with it.
-- Ledger key: `30-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so`.
+- Epic: Epic 31 (new). No open atlas epic owns the type gate, and Epics 25 to 29 are all `done`, and Epic 31 is the Pages redesign (CAP-62, CAP-63). `epic-31` and
+  `epic-31-retrospective` are minted with it.
+- Ledger key: `31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so`.
 - Ledger status at mint: `backlog`.
 - Deps: none.
-- Surface: `marshal-policy.toml` `[epic_surfaces]."30"`, added with this mint.
+- Surface: `marshal-policy.toml` `[epic_surfaces]."31"`, added with this mint.
 - Minted 2026-10-14 in one planning-only chain commit; implementation is dispatched through `marshal factory dispatch`.
 
 ## Verification
@@ -344,6 +344,8 @@ Re-stamp them with a dated Currency reconciliation note, as
   flag, no CAP; bound to `spec-pyforge-atlas` CAP-20 (AD-32). The DW row's per-file counts (79 in total) and its
   "FastHTML" were corrected against a fresh measurement: 72 errors, and Dash's `html.Nav`. The typed fixes, the one
   override, the OpenLineage correction and both coverage tests were proven on a scratch copy; no code was committed.
+- 2026-10-14: renumbered from 30.1 to 31.1 the same day, before landing. The Pages redesign chain (`6db9855387`) took
+  Epic 30 with Stories 30.1 and 30.2 under CAP-62 and CAP-63; nothing else in this spec changed.
 
 ## Review Triage Log
 

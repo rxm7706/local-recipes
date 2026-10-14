@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-13"
+updated: "2026-10-14"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -135,6 +135,7 @@ surface:
   - scripts/realization_register_check.py
   - scripts/realization_register_lib.py
   - tests/scripts/test_realization_register_check.py
+  - .github/workflows/pages.yml
 surface-drift-exclude:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/asgi.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/consumers.py
@@ -770,6 +771,56 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
     `<0.13` range reds naming `pyforge-marshal`; a fake-subprocess fixture asserts `realize`'s argv per class, that
     an `operator_gate` row runs only under `--yes`, and that a probe never writes; `pyforge-steward-test` and
     `detectors-ci` green.
+- **CAP-168 — the Pages deploy workflow is steward's duct** ← spec-pyforge-steward CAP-168 (ready 2026-10-14; extends CAP-2, CAP-166; works with CAP-159; reads `spec-pyforge-herald:CAP-52`, `spec-pyforge-herald:CAP-56`)
+  - **intent:** `.github/workflows/pages.yml` is the one Pages workflow and the one `deploy-pages` caller, on this
+    Spec's surface (off `spec-pyforge-herald`'s, which keeps `pages-build`, `pages-check`, `docsite/`, `docs-site/`
+    and `/herald/`), in BMAD-METHOD `docs.yaml`'s shape: a `build` job on `pull_request` and on `push` to `main`,
+    each filtered to the published inputs (`docs/tutorials/**`, `docs/how-to/**`, `docs/reference/**`,
+    `docs/explanation/**`, `docs/index.md`, `docs/404.md`, `docs/map.yaml`, `docs/dashboard/**` until atlas
+    Story 30.1 deletes the committed tree, `docs-site/**`, `docsite/**`, `presentations/**`, the workflow itself),
+    on `workflow_dispatch`, on a weekly schedule and on a six-hourly schedule; `fetch-depth: 1` and a sparse checkout
+    that takes `presentations/*/project/*.html` and nothing under `presentations/*/src/pptx`; `pages-check` is the
+    build; a `pull_request` run uploads the built site as a PR artifact (`pages-site`) and never deploys;
+    `docsite-check.yml` folds in and is deleted; a `deploy` job on `main` only, skipped when the built tree's hash
+    equals the live site's — the built artifact carries `build.json` (tree hash, built-from sha, run id, built at),
+    the hash is taken with `build.json` and the built-from footer excluded, the deploy job reads the live
+    `<SITE_URL>/build.json` and compares, and an absent or unreadable one reads as changed — so a scheduled run that
+    finds nothing changed costs a build and no deploy; concurrency `pages-build` with `cancel-in-progress` for
+    `build` and `pages` without it for `deploy`; `timeout-minutes` on both. Every job carries its CAP-166 fragment;
+    the registry rows `dashboard`, `dashboard.build` and `dashboard.deploy` are renamed in place to `pages` (switch
+    `PAUSE_PAGES`; `stuck_rules` `deploy_waiting_hours: 24`, `consecutive_cancelled_runs: 5`), `pages.build` and
+    `pages.deploy`, and `docsite-check` and `docsite-check.check` retire (`state: retired`, `retired_on`; Story
+    99.7's convention for a deleted workflow), so `steward ci status` and the preflight read the new names. The
+    `build` job downloads atlas's newest successful
+    `kedro-viz-export` artifact (cross-run, `actions: read`) into the mount and, when none exists, skips the mount,
+    hides the tile and exits 0. The `Resolve Pages host env` step and `export_pages_host_env.py` leave the workflow:
+    `actions/configure-pages`'s `base_url` and `base_path` feed `SITE_URL` directly on github.com and on GitHub
+    Enterprise, so the GHE how-to loses its flag step. Each deploy from `main` also uploads the built site as
+    `pages-site.zip` on a rolling pre-release `pages-site` re-pointed at the deploying commit, the pull-the-zip path
+    for the air-gapped host. A `pages` duty, `pyforge steward pages build|deploy|status`, replaces `deploy dashboard`
+    and `deploy status` (FR-8..FR-11's reconciled push; their last caller, `kedro-viz-publish.yml`, stops committing
+    to `main` under atlas Story 30.1): `build` runs `pixi run --frozen -e site pages-check` by subprocess and reports
+    its exit; `deploy` runs `gh workflow run pages.yml --ref main` and reports the run and its deployment; `status`
+    reports the live root's `last-modified` and `build.json`, the last `pages.yml` run (`gh run list`) and the
+    registry verdict for `pages` (`ci status`'s reader). Behind `pyforge.steward.pages_duty`, which also gates the
+    no-op skip, the artifact mount and the release asset through one Guild step that hands `pages.yml` the flag's
+    state (CAP-56's and herald CAP-59's shape); off, the duty refuses naming the flag and the workflow deploys every
+    build, mounts nothing and uploads no asset. The pre-push lane selection (CAP-159, Story 71.2) follows the file,
+    since it reads `.github/workflows/*.yml` at run time. (Operator rulings 2026-10-13; the herald Dream's lead
+    entry; decisions in `.memlog.md`, 2026-10-14.)
+  - **success:** measured on `main` 30 days after Story 102.1 lands, Pages deploys are under 150 and no cancelled
+    streak reaches five (today 720 deploys and 621 cancelled per 30 days; the filter replay says 132); after 102.2,
+    one workflow touches Pages besides atlas's producer, `docsite-check.yml` is gone, and a fixture built tree
+    against its own `build.json` yields `changed=false` and against a differing one `changed=true`, the hash
+    unchanged by the built-from footer; after 102.3, `kedro-viz-publish.yml` and no other tracked file calls
+    `steward deploy dashboard` or `deploy status`, `steward pages build` returns `pages-check`'s exit, `deploy` runs
+    the `gh workflow run` argv a fake-subprocess fixture asserts, `status` prints its three lines from recorded
+    `curl` and `gh` fixtures, `DUTIES` keeps its length and the two count assertions pass, and zero commits by
+    `github-actions[bot]` land on `main` for Pages; after 102.4, a fixture run with the artifact mounts it and one
+    without exits 0 with the mount skipped and the tile hidden; after 102.5, `pages.yml` has no `pages_second_host`
+    step, the how-to has no flag step and names the zip, and `pages-site.zip` exists after a deploy;
+    `scripts/ci_surface_gates.py --check` exits 0 with the renamed rows; `pixi run --frozen -e pyforge-steward
+    pyforge-steward-test`, `flag-gate-check` and `detectors-ci` are green.
 
 ## Constraints
 
@@ -808,6 +859,20 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
   are re-applied only through their own installers under `estate realize --yes`, operator-invoked (a
   `session_denials` row denies the form to agents, as for `--transitive`); a probe never writes. No package-level station pin is rewritten by the refresh: a locked version outside a station's range is
   refused and named. The capability is A-side, ledger mode `rebuild`; no B surface, `docs/foundry/PIN.md` untouched.
+- **CAP-168 (the duct is one workflow, one caller, by subprocess):** steward reaches `gh`, `git`, `curl` and the
+  build task (`pages-check`) by subprocess (AD-1) and never imports herald's or docsite's code; the artifact's
+  content stays herald's, the DAG export atlas's, `map.yaml` doctor's — this Spec owns the workflow file, the
+  registry rows, the duty and the budget, nothing under `/herald/`. `main()` keeps every exit code (AD-8); the duty
+  returns `DutyResult` and never calls `sys.exit`; one duty module (AD-7), the count assertions moving with it. AD-4
+  is amended, not reversed: the deploy stays CLI-invoked reconciliation — `steward pages deploy` triggers one run of
+  one workflow, and the deploy job's hash compare is the no-diff gate (zero deploys when nothing changed) — while
+  PRD D6's "no new GitHub Actions workflow" clause is retired by the 2026-10-13 ruling, since the workflow already
+  exists and moves here. One `deploy-pages` caller (herald herald:AD-21). Nothing outward beyond this repository's own
+  Pages, release and Actions: no second repository, no bot commit on `main`, no cross-origin load. No job loses its
+  existing `if:`; `workflow_dispatch` ignores every pause (CAP-166). The hash comparison reads the live site and
+  writes no repository variable: `gh variable set` stays CAP-166's one write path. The registry rows under
+  `docs/governance/` are a governance act landed by the story with its PR. The pre-push lane selection is read from
+  the workflows (CAP-159), never a second list.
 
 ## Non-goals
 
@@ -826,6 +891,14 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
   their reasons and moves none of them; no new floor or cap on `pixi` itself; no `anaconda upload` or feedstock
   submission from the refresh (`suite advance` stays the operator's); no recipe-build workflow rebuild; no
   python-foundry surface; the 2026-10-13 hand batch is not committed as-is.
+- No change to the artifact's content (herald's `docsite/**`, `docs-site/**`, the dossier, the decks), to `map.yaml`
+  (doctor's) or to the Kedro-Viz producer (atlas Story 30.1 owns the `kedro-viz-export` upload and the deletion of
+  `docs/dashboard/kedro-viz/`) under CAP-168; no Vizro board and no M3 generator work; no `/status/` renderer (herald
+  renders the fleet board and guild status from `sprint-ledger-query --format json`, `scripts/fleet_picture.py` and
+  `steward ci status --json`; this Spec supplies the schedule and the skip); no second `deploy-pages` caller and no
+  reusable `workflow_call` until a second lane needs Pages; no PR comment bot and no per-PR preview environment
+  (Pages has none; the PR artifact is the review surface); no change to `steward deploy perimeter|static`; no
+  python-foundry surface (ledger mode `rebuild`).
 
 ## Success signal
 
@@ -845,6 +918,13 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
   `--help` documents (not re-verified against a live run); a detached worktree's `pixi install --frozen` reproduces
   CI's fresh clone, and the 36 environments install on linux-64 within the session's disk budget (the Guild's 2 GB
   bound is the only measured size).
+- `actions/download-artifact@v8` downloads another workflow's artifact given `run-id` and `github-token` under
+  `actions: read` (GitHub's documented v4+ behaviour; not run live here — Story 102.4 is the proof); a six-hourly
+  schedule queues at GitHub's discretion and may run minutes late, which the skip makes harmless;
+  `actions/configure-pages@v6` emits `base_url` and `base_path` on GitHub Enterprise Server as on github.com
+  (documented, not testable from this repository); the live `<SITE_URL>/build.json` is served within seconds of
+  `deploy-pages` reporting success; nothing in `pages-check` reads git history once `presentations/*/src/pptx` is
+  out of the checkout (Story 102.1's first check) — CAP-168.
 
 ## Open Questions
 
@@ -856,3 +936,7 @@ The `JFROG_API_KEY` cross-host leak pattern has a passing, named regression test
   SelfExplainML pins wait on the feedstock's `__win` build being served, and `cron-descriptor`'s and `openai`'s
   higher floors have no recorded author. The operator answers per row when Story 100.1 seeds the registry; a row
   with no `until` is a warning the check reports.
+- Should `pages-site.zip` also attach to a CalVer release once one exists, and should the rolling `pages-site`
+  pre-release then retire? And if a `PAUSE_DASHBOARD` variable is set live when Story 102.2 lands, does the
+  operator move it to `PAUSE_PAGES` through `steward ci pause|resume --yes` (the only write path) or delete it?
+  Both are the operator's (CAP-168).

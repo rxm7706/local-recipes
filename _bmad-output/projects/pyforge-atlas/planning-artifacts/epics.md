@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-10-14"   # RE-STAMPED 2026-10-14: Epic 30 / Story 30.1 minted (fix under spec-pyforge-atlas CAP-20, no CAP, no flag; closes DW-atlas-steward-100-7-1: atlas passes mypy in pyforge-foundry-full, and the existing mypy task runs there in the lint-types CI job and in pr-preflight; Dream entry 2026-10-14). Prior: RE-STAMPED 2026-10-13: Epic 29 / Story 29.1 minted (fix under spec-pyforge-atlas CAP-16, no CAP, no flag; the range-test recorder race, Dream entry 2026-10-13). Prior: RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-14"   # RE-STAMPED 2026-10-14: Epic 31 / Story 31.1 minted (fix under spec-pyforge-atlas CAP-20, no CAP, no flag; closes DW-atlas-steward-100-7-1: atlas passes mypy in pyforge-foundry-full, and the existing mypy task runs there in the lint-types CI job and in pr-preflight; Dream entry 2026-10-14; renumbered from 30.1 after the Pages chain took Epic 30). Prior: RE-STAMPED 2026-10-14: Epic 30 / Stories 30.1-30.2 minted (features under spec-pyforge-atlas CAP-62 and CAP-63, FR-70 and FR-71, AD-21 amended; flags pyforge.atlas.viz_export_artifact and pyforge.atlas.vizro_static_boards) from the operator ruling of 2026-10-13 (the DAG export reaches Pages as an artifact; Dream entry of that date): keys 30-1 and 30-2 (backlog), epic-30 (backlog) and epic-30-retrospective (optional) added; no other key moved. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: Epic 29 / Story 29.1 minted (fix under spec-pyforge-atlas CAP-16, no CAP, no flag; the range-test recorder race, Dream entry 2026-10-13). Prior: RE-STAMPED 2026-10-11: Epic 28 / Story 28.1 minted (fix under spec-pyforge-atlas CAP-6, no CAP, no flag; the live-attach fixture socket path, Dream entry 2026-10-11). Prior: RE-STAMPED 2026-10-10: arch->epics cascade after the spine's 2026-10-10 re-stamp (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no epic or story added or changed; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2236,7 +2236,63 @@ gates are never weakened); the new test's delay seam defaults to 0 for every oth
 **And** every existing test and assertion in the file is unchanged and green; the diff adds no skip, `xfail`, retry or sleep to an existing test; only the test file changes; moving the appends back after the write reds the new test (mutation); `pixi run -e pyforge-atlas pyforge-atlas-test` green
 **Status:** done
 
-## Epic 30: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20)
+## Epic 30: The DAG export and the Vizro boards reach Pages as workflow artifacts (spec-pyforge-atlas CAP-62, CAP-63)
+
+Minted 2026-10-14 from the station Dream's entry of 2026-10-13 (the DAG export reaches Pages as an artifact) — the
+operator ruling carried from the herald Dream's same-day entry *the Pages deployment, redesigned* — via `bmad-spec`
+(CAP-62 amending CAP-41, CAP-63; FR-70, FR-71; AD-21 amended). Measured 2026-10-13: `docs/dashboard/kedro-viz/`
+(11 MB, 215 tracked files) was last written 2026-08-15; `kedro-viz-publish.yml` has been `disabled_manually` since
+2026-08-24 with no recorded reason; 23 first-parent merges since then touched the paths it watches, so the published
+graph lags its DAG by two months; its builds took 92 to 137 s. Steward Epic 99 is done, so every job gets a `PAUSE_*`
+switch and a registry row by the Story 99.2 convention. **HARD boundaries:**
+- No server and no live data on Pages (the placement rule on the herald Dream); the live Vizro server and the console
+  stay Lane 1 `/console/`.
+- Nothing atlas runs commits to `main`, calls `deploy-pages`, or edits `pages.yml` / `dashboard.yml` (steward's and
+  herald's); the artifact is the only handoff, and `/dashboard/kedro-viz/` keeps its URL.
+- Zero third-party origins in anything handed to the Pages build (herald AD-21): plotly.js is vendored once, never
+  `'cdn'`.
+- `conf/local/credentials.yml` stays stubbed in the producer as today; AD-1 import boundaries hold (`pipelines/`,
+  `datasets/`, `hooks.py` untouched; the exporter lives under `dashboard/` and `tools/`).
+- The registry `docs/governance/ci-surfaces.yaml`, its schema and the `steward ci` duty are steward's: atlas names the
+  switch and the row; the `paused-manually → live` move is the operator's gate, never a blocked row.
+- A board with a declared access column is never exported statically (`sld:AD-10`): refuse, never warn.
+
+### Story 30.1: The DAG export reaches Pages as a workflow artifact
+
+As a reader of `/dashboard/kedro-viz/` who wants the pipeline graph to be the one on `main`,
+I want atlas's producer workflow to build the Kedro-Viz export on every DAG change and hand it to the Pages build as a
+workflow artifact that carries its commit and date,
+So that the published graph stops lagging its DAG by months and no bot commit carries 11 MB of export bytes onto `main`.
+
+**Type:** feature • **Effort:** M • **Deps:** — (cross-station, prose, never a blocked row: steward Story 102.2, the renamed `pages.yml`, exists to consume it; steward Story 102.4 is the consumer step) • **FR/AD:** spec-pyforge-atlas CAP-62 (FR-70), amending CAP-41 • AD-21 (amended 2026-10-14), AD-17, AD-1, AD-11; reads `pyforge-steward:CAP-166` • Dream 2026-10-13 (the DAG export reaches Pages as an artifact) • operator ruling 2026-10-13
+**Flag:** `pyforge.atlas.viz_export_artifact` (new; minted by this story; tree default off, dev on through the overlay. OFF: `viz-publish-stage` stages as today, writes no manifest, and the upload step is skipped)
+**Surface:** `.github/workflows/kedro-viz-publish.yml` (the upload step, the CI-pause fragment, `permissions`, the retired commit steps), `src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py` or a sibling `tools/viz_manifest.py` (the manifest), `pixi.toml` (`viz-publish-stage`), `docs/dashboard/kedro-viz/**` (leaves git), `.gitignore` (the staging path), `docs/dashboard/README.md`, a flag reader under `src/shared/packages/pyforge-atlas/src/pyforge/atlas/`, tests under `src/shared/packages/pyforge-atlas/tests/` (the workflow shape, the manifest, the flag in both states), `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `docs/governance/flag-inventory/pyforge-atlas.md`, `docs/governance/ci-surfaces.yaml` (the row's `switch`; steward's co-governed edit)
+**Spec:** `planning-artifacts/specs/spec-30-1-the-dag-export-reaches-pages-as-a-workflow-artifact.md`
+**Given** `kedro-viz-publish.yml` as it stands (path filter, stub credentials, `viz-publish-stage`, then `steward deploy dashboard` committing `docs/dashboard/kedro-viz/` with `contents: write`), disabled by hand since 2026-08-24, and a committed export last written 2026-08-15
+**When** the story's tree is built with the flag on
+**Then** `git ls-files docs/dashboard/kedro-viz` lists nothing and the path is gitignored; `viz-publish-stage` leaves `manifest.json` beside `index.html` with `export_commit` (40-hex, equal to `git rev-parse HEAD`), `export_date` (ISO 8601 UTC) and `kedro_viz_version` (equal to `deploy-viz-metadata`'s `version`); the workflow has one `actions/upload-artifact` step (`name: kedro-viz-export`, `retention-days: 90`, the staged path), no `steward deploy dashboard`, `git checkout -B main` or `git config user.name` step, `permissions.contents: read`, the path filter, `workflow_dispatch` and the stub-credentials step unchanged, and its job `if:` carries `PAUSE_KEDRO_VIZ_PUBLISH`
+**And** the registry row `kedro-viz-publish` names `switch: PAUSE_KEDRO_VIZ_PUBLISH` (its `paused-manually → live` move is the operator's, through steward's `ci` duty, after the workflow is re-enabled on GitHub); `docs/dashboard/README.md` names the artifact and no longer names `steward deploy dashboard`; with the flag off no manifest is written and the staged tree is byte-identical to today's; `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in both states with `pyforge.testing_kit.flags.flag_states`
+**Status:** backlog
+
+### Story 30.2: Vizro boards publish as static exports under /dashboard/vizro/
+
+As a reader of the Pages site who wants the atlas boards without a server,
+I want each board of the BSL-driven Vizro dashboard exported offline as a static page, with its data's build stamp,
+and handed to the Pages build as a workflow artifact that loads nothing from a third-party origin,
+So that the dashboards sit beside the pipeline graph under `/dashboard/`, air-gap-clean, while the live Vizro server
+stays on Lane 1.
+
+**Type:** feature • **Effort:** L • **Deps:** S-30.1 (cross-station, prose, never a blocked row: herald Story 43.3 (CAP-61, M3) `publicDir` mounts; steward 102.4's consumer step, generalized to this artifact) • **FR/AD:** spec-pyforge-atlas CAP-63 (FR-71), extending CAP-8, CAP-40, CAP-42, CAP-50 and CAP-62 • AD-21 (amended 2026-10-14), AD-17, AD-8, AD-1; `sld:AD-10` (steward spine) • Dream 2026-10-13 • operator ruling 2026-10-13
+**Flag:** `pyforge.atlas.vizro_static_boards` (new; minted by this story; tree default off, dev on through the overlay. OFF: the task refuses with the flag-off message and writes nothing)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/static_export.py` (new: the exporter over `build_dashboard`, the vendored plotly copy, the manifest, the access-column refusal), `pixi.toml` (`vizro-static-export` under `[feature.local-recipes.tasks]`), `.github/workflows/kedro-viz-publish.yml` (a second job — or its own workflow with its own registry row, the operator's call), `.gitignore` (`docs/dashboard/vizro/`), `docs/dashboard/README.md`, tests under `src/shared/packages/pyforge-atlas/tests/integration/dashboard/` and `tests/unit/` (the export on the fixture data root, the vendored script, the refusal, the manifest, the workflow shape, the flag in both states), `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `docs/governance/flag-inventory/pyforge-atlas.md`
+**Spec:** `planning-artifacts/specs/spec-30-2-vizro-boards-publish-as-static-exports-under-dashboard-vizro.md`
+**Given** the 34-page BSL-driven `Dashboard` object `dashboard-dryrun` builds offline in `-e local-recipes`, each page carrying its own AD-17 stamp, and the archived intake workaround whose `include_plotlyjs='cdn'` herald AD-21 forbids
+**When** `pixi run -e local-recipes vizro-static-export` runs with the flag on against the fixture data root
+**Then** it exits 0 and writes `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, exactly one `assets/plotly.min.js` (plotly's own `package_data` copy), and `manifest.json` with `exported_at`, `export_commit` and one `boards[]` entry per page (`id`, `title`, `path`, `data_build_timestamp`); `grep -rl cdn.plot.ly docs/dashboard/vizro` prints nothing and every `<script src=` resolves to the vendored file; the Run controls of `scan-project` and `env-inspect` are absent and those pages say they show the latest cached result
+**And** a fixture board with a declared access column makes the task exit 1 naming the board and write nothing (`sld:AD-10`); with the flag off it refuses and writes nothing; with the export under `docs/dashboard/vizro/`, `pixi run -e site pages-check` exits 0 with no cross-origin finding under `dashboard/vizro/` and `VENDORED_ROOTS` unchanged; the producer job uploads `docs/dashboard/vizro/` as `vizro-static-export` (`retention-days: 90`) and has no commit or push step; `dashboard-dryrun`, `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in both states with `flag_states`
+**Status:** backlog
+
+## Epic 31: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20)
 
 Minted 2026-10-14 from the station Dream's entry of that date (foundry-full mypy), from `DW-atlas-steward-100-7-1`,
 and from the operator's approval, "chain the three DWs". `sbom-laptop-gate` runs `lint-types` inside
@@ -2254,7 +2310,7 @@ gate. **HARD boundaries:**
 - No test is weakened (AD-11). The four OpenLineage assertions move to the key the spec defines; touched modules meet
   the 80% unit floor without a lowered floor or a skipped test.
 
-### Story 30.1: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so
+### Story 31.1: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so
 
 As the operator whose laptop gate has been red on `main` while every CI lane stayed green,
 I want Atlas to type-check against its real libraries, and that check to run in CI and before every push,
@@ -2263,7 +2319,7 @@ So that a type error only real library types reveal reds the PR that adds it, no
 **Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • spec-pyforge-atlas CAP-20 • `spec-pyforge-steward:CAP-153`, `spec-pyforge-steward:CAP-159`, `fnd:CAP-13` (cited) • AD-11, AD-32 • closes `DW-atlas-steward-100-7-1` • Dream 2026-10-14 (foundry-full mypy) • operator approval 2026-10-14 "chain the three DWs"
 **Flag:** none (`spec-feature-flag-governance` Q1, a fix)
 **Surface:** seven atlas modules: `dashboard/app.py`, `views/widgets.py`, `datasets/upstream_discovery.py`, `orchestration/definitions.py`, `mcp/session.py`, `observability.py` and `rag/store.py` (`query_plane_vectors.py` unchanged). Also `src/shared/packages/pyforge-atlas/pyproject.toml` (one override), `tests/unit/observability/test_observability_fixtures.py` (four assertions), two new vss-free unit test modules (`rag/store.py`, `mcp/session.py`) and a new `tests/meta/test_foundry_full_mypy_lane.py`. Outside atlas: `.github/workflows/lint-types.yml` (one step) and `pixi.toml` (`pr-preflight-lanes`), with `docs/how-to/pixi-tasks.md` and `environment.yaml` regenerated if they move. Plus each governor's memlog (see the story spec), `scripts/.spec-surface-baseline.json` and the atlas `deferred-work-ledger.md` (closing the DW)
-**Spec:** `planning-artifacts/specs/spec-30-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so.md`
+**Spec:** `planning-artifacts/specs/spec-31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so.md`
 **Given** `846d8383f5`, where `pixi run --frozen -e pyforge-foundry-full lint-types` exits 1 with `pyforge-atlas` at `Found 72 errors in 8 files`. By file: `dashboard/app.py` 59 (54 `call-arg` on Vizro models whose defaults sit inside `Annotated[..., Field(default=...)]`), `views/widgets.py` 4, two each in `upstream_discovery.py`, `definitions.py` and `query_plane_vectors.py`, and one each in `session.py`, `observability.py` and `rag/store.py`. `pyforge-guild` reports none, and no workflow runs mypy in `pyforge-foundry-full`
 **When** `pixi run --frozen -e pyforge-foundry-full mypy` runs, on a branch, in CI or in `pr-preflight`
 **Then** it exits 0. The 17 errors that are neither Vizro's `call-arg` nor the OpenLineage defect, and the one the Bokeh import fix exposes, are fixed by typed call sites, annotations or narrowing, with no `# type: ignore`, `cast` or `ignore_errors`. The only new override is `call-arg` on `pyforge.atlas.dashboard.app`, and with it removed only Vizro's "Missing named argument" errors return. `observability.py` emits `outputStatistics` under `outputFacets`, and the four assertions read it there. `pixi run --frozen -e pyforge-guild lint-types` still exits 0
@@ -2396,3 +2452,17 @@ spine are not re-stamped. The heading maps 1:1 to its `sprint-status-ledger.yaml
 `backlog`, `epic-29-retrospective` at `optional`, through a worktree-local Tier-3 feed and `sprint-ledger-sync
 --project atlas`); `marshal-policy.toml` `[epic_surfaces]."29"` lands with it. No existing key changed; no blocked key
 flipped. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-14 (the DAG export reaches Pages as an artifact)
+
+`arch→epics` edge after the spine's 2026-10-14 re-stamp (FR-70 / CAP-62, FR-71 / CAP-63; AD-21 amended, no AD added).
+Epic 30 / Stories 30.1 and 30.2 decompose the two CAPs from the Dream's 2026-10-13 entry and the operator ruling it
+carries. Both stories are `type: feature` behind a flag (`pyforge.atlas.viz_export_artifact`,
+`pyforge.atlas.vizro_static_boards`) and are minted `backlog`; cross-station work (steward 102.2 / 102.4, herald CAP-61
+M3) is prose on the `**Deps:**` lines and in the story specs, never a blocked row. The two new headings map 1:1 to
+their `sprint-status-ledger.yaml` keys (`30-1-the-dag-export-reaches-pages-as-a-workflow-artifact`,
+`30-2-vizro-boards-publish-as-static-exports-under-dashboard-vizro`, both `backlog`; `epic-30` `backlog`;
+`epic-30-retrospective` `optional`), written through a worktree-local Tier-3 feed seeded from the tracked ledger and
+`sprint-ledger-sync --project atlas`. Measured with `fleet_scan.parse_sprint_status` after the sync: 107 story keys
+(104 done) and 30 epic keys, from 105 (104 done) and 29 before this mint. `marshal-policy.toml` `[epic_surfaces]."30"`
+lands with it. No existing key changed; no blocked key flipped. `updated:` bumped.

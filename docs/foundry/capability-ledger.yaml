@@ -4423,6 +4423,12 @@ capabilities:
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 
   # warden one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
+  - id: pyforge-steward:CAP-168
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the Pages deploy workflow is steward's duct"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - id: pyforge-warden:CAP-1
     spec: pyforge-warden
     station: pyforge-warden
@@ -4957,6 +4963,18 @@ capabilities:
     mode: rebuild
     path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   # 2026-09-17 mason one-chain fold remints
+  - id: pyforge-atlas:CAP-62
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "the DAG export reaches Pages as a workflow artifact"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
+  - id: pyforge-atlas:CAP-63
+    spec: pyforge-atlas
+    station: pyforge-atlas
+    heading: "Vizro boards publish as static exports under `/dashboard/vizro/`"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - id: pyforge-mason:CAP-1
     spec: pyforge-mason
     station: pyforge-mason
@@ -5707,6 +5725,18 @@ capabilities:
     mode: rebuild
     path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   # herald one-chain fold 2026-09-17: station Spec is ready; classify reminted CAPs
+  - id: pyforge-doctor:CAP-90
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "one registry orders the whole Pages site"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+  - id: pyforge-doctor:CAP-91
+    spec: pyforge-doctor
+    station: pyforge-doctor
+    heading: "a stalled Pages deploy is named within a day"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - id: pyforge-herald:CAP-1
     spec: pyforge-herald
     station: pyforge-herald
@@ -6060,5 +6090,17 @@ capabilities:
     spec: pyforge-herald
     station: pyforge-herald
     heading: "the dossier shows which CI surfaces are not live, from the steward's own status answer"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-60
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "the Pages site shows the fleet and the guild, and builds for any host without a flag"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
+  - id: pyforge-herald:CAP-61
+    spec: pyforge-herald
+    station: pyforge-herald
+    heading: "one generator renders the whole Pages site"
     mode: rebuild
     path: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md

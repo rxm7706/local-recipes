@@ -13,7 +13,6 @@ docsite/
   assets/              ← the dossier stylesheet + the site-only chrome
   tools/
     verify_claims.py   ← checks the dossier's numbers against the source tree
-    import_artifact.py ← one-time migration from the published artifact
   build.py             ← renders everything
 ```
 
@@ -189,8 +188,10 @@ remembering to look.
    whole dashboard code path had been deleted and that a second station had
    started hosting an MCP server. No script infers that.
 4. **Push.** The Action rebuilds and deploys the site.
-5. **Republish the artifact** from `dist/artifact/dossier.html` if the shared
-   dossier link should move in step.
+5. **Session close (Claude artifact):** rebuild `dist/artifact/dossier.html`
+   (`pixi run site` or `python docsite/build.py`), then republish **The PyForge
+   Dossier** in the Artifact tool from that file so the shared dossier link
+   stays current.
 
 Steps 1, 2, 4 are automatic. Step 3 is the judgment call, and it is supposed
 to be.

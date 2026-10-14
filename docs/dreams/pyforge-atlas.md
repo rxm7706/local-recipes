@@ -390,7 +390,29 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
     `spec-pyforge-steward:CAP-159`'s, so the implementation reconciles their governors.
   The operator approved it on 2026-10-14: "chain the three DWs". **Kinships:** [[pyforge-steward]] (the lint/types
   gate, `spec-pyforge-steward:CAP-153`; `pr-preflight`; `sbom-laptop-gate`, `fnd:CAP-13`). Owner `spec-pyforge-atlas`
-  (CAP-20, one command runs every check CI runs; AD-32). → Epic 30 / Story 30.1, specced 2026-10-14.
+  (CAP-20, one command runs every check CI runs; AD-32). → Epic 31 / Story 31.1, specced 2026-10-14 (minted as
+  30.1, renumbered the same day: the Pages redesign chain took Epic 30).
+
+- **2026-10-13 (the DAG export reaches Pages as an artifact) — Ruled: Kedro-Viz stays on Pages through an artifact
+  handoff; the committed export retires; Vizro boards follow as static exports.** Operator ruling 2026-10-13, from the
+  herald Dream's same-day entry *the Pages deployment, redesigned*. Measured that day: `docs/dashboard/kedro-viz/`
+  (11 MB, 215 tracked files) was last written 2026-08-15; `kedro-viz-publish.yml` has been `disabled_manually` since
+  2026-08-24 with no recorded reason (steward's CI-pause plan, G12); 23 first-parent merges since then touched the
+  paths that workflow watches (pipelines, `catalog.yml`, `globals.yml`, datasets), so the published graph lags its DAG
+  by two months; the publish build took 92 to 137 s per run. CAP-41 ("publish stays in sync", shipped) does not hold
+  while the producer is paused and the export is bytes in git. **What it looks like when real:** the producer
+  workflow is re-enabled through `ci resume` once steward Story 99.3 gives it a `PAUSE_*` gate, keeps its path
+  filter, runs `viz-publish-stage` and uploads the export as the workflow artifact `kedro-viz-export` (90-day
+  retention) instead of committing; `docs/dashboard/kedro-viz/` leaves git; the Pages build downloads the newest
+  successful artifact and skips the mount, hiding the tile, when none exists; `/dashboard/kedro-viz/` keeps its URL
+  and shows the export's commit and date. A later story publishes Vizro boards under `/dashboard/vizro/` as offline
+  exports of the BSL-driven dashboard object (`dashboard-dryrun` already builds it without a server), with plotly.js
+  vendored into the artifact: the intake workaround's `include_plotlyjs='cdn'` is a third-party load AD-21 forbids.
+  **Constraints:** no server and no live data on Pages (the placement rule on the herald Dream); the live Vizro server
+  stays Lane 1; `conf/local/credentials.yml` stays stubbed in the producer as today; AD-1 import boundaries hold.
+  **Kinships:** [[pyforge-herald]] (the site), [[pyforge-steward]] (`pages.yml`, `ci resume`, the registry row).
+  Owner `spec-pyforge-atlas` (CAP-41 amended); → `bmad-spec` after herald's, one M2 story for the handoff, one later
+  story for Vizro. → CAP-62, CAP-63 / FR-70, FR-71 / Epic 30 / Stories 30.1–30.2, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

@@ -248,8 +248,35 @@ harness_preference = ["cursor"]
   # co-governor reconciles
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
-"30" = [  # atlas passes mypy in pyforge-foundry-full, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20; Story
-  # 30.1, closes DW-atlas-steward-100-7-1), added 2026-10-14. The default surface, restated because a declared entry
+"30" = [  # the DAG export and the Vizro boards reach Pages as workflow artifacts (features under spec-pyforge-atlas
+  # CAP-62 and CAP-63, FR-70 and FR-71; flags pyforge.atlas.viz_export_artifact and pyforge.atlas.vizro_static_boards;
+  # Stories 30.1 and 30.2), added 2026-10-14. The default surface, restated because a declared entry replaces it
+  # outright, plus: atlas's producer workflow (the upload steps, the CI-pause fragment, permissions), the pixi tasks
+  # (viz-publish-stage, vizro-static-export), the committed export that leaves git and the gitignored staging paths
+  # under docs/dashboard/, the dashboard README, the flag tree, its overlay and atlas's flag inventory, the
+  # CI-surfaces registry row's switch (steward's co-governed edit, pyforge-steward:CAP-166), the ledger, and every
+  # Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  ".github/workflows/kedro-viz-publish.yml",
+  "docs/dashboard/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-atlas.md",
+  "docs/governance/ci-surfaces.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"31" = [  # atlas passes mypy in pyforge-foundry-full, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20; Story
+  # 31.1, closes DW-atlas-steward-100-7-1), added 2026-10-14. The default surface, restated because a declared entry
   # replaces it outright (the package glob covers the seven typed modules, pyproject.toml's one override, the four moved
   # observability assertions and the three new test modules), plus: the lint-types workflow's foundry-full step, the
   # pr-preflight lane in pixi.toml and the task doc it may regenerate, the DW row this story closes, and every Spec memlog

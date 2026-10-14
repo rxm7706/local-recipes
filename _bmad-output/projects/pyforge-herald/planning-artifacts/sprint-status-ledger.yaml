@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 213
+# stories: 230
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -129,6 +129,17 @@ development_status:
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
   40-1-the-docs-home-links-the-herald-pages-from-its-left-menu-and-a-shared-top-menu: done
+  41-1-the-pages-hygiene-before-the-rework: done
+  42-1-the-fleet-board-and-guild-status-pages-render-at-build: backlog
+  42-2-the-kedro-viz-mount-is-an-artifact-handoff-that-tolerates-absence: backlog
+  42-3-the-second-host-needs-no-flag: backlog
+  43-1-astro-renders-the-dossier-from-dossier-yml: backlog
+  43-2-the-overview-gallery-and-deck-family-pages-are-astro-pages: backlog
+  43-3-astro-assembles-the-artifact-mounts-redirects-and-search: backlog
+  43-4-fonts-and-theme-come-from-one-design-system: backlog
+  43-5-every-number-is-measured-and-every-page-says-what-built-it: backlog
+  43-6-agents-and-the-changes-feed-read-the-site: backlog
+  43-7-docsite-retires-and-one-generator-remains: backlog
   5-1-push-regenerated-exports-with-etag-guard: done
   5-2-conflict-refusal-on-export-push: done
   6-1-implement-herald-cli-dispatcher: done
@@ -217,6 +228,12 @@ development_status:
   epic-4-retrospective: optional
   epic-40: done
   epic-40-retrospective: optional
+  epic-41: done
+  epic-41-retrospective: optional
+  epic-42: backlog
+  epic-42-retrospective: optional
+  epic-43: backlog
+  epic-43-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done
