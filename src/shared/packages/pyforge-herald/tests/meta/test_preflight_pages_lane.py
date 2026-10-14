@@ -1,4 +1,4 @@
-"""Story 27.5: pr-preflight runs pages-check only when docsite-check.yml paths change."""
+"""Story 27.5 / 102.2: pr-preflight runs pages-check when pages.yml pull_request paths change."""
 
 from __future__ import annotations
 
@@ -96,10 +96,10 @@ def test_pr_preflight_carries_pages_check_not_site_check() -> None:
     assert site_legs == []
 
 
-def test_pages_check_lane_bound_to_docsite_check_workflow() -> None:
+def test_pages_check_lane_bound_to_pages_workflow() -> None:
     root = _repo_root()
-    workflow = yaml.safe_load((root / ".github/workflows/docsite-check.yml").read_text(encoding="utf-8"))
-    steps = workflow["jobs"]["check"]["steps"]
+    workflow = yaml.safe_load((root / ".github/workflows/pages.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["build"]["steps"]
     run_lines = [s["run"] for s in steps if isinstance(s, dict) and "run" in s]
     assert any("pages-check" in line for line in run_lines)
     pixi = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
@@ -115,9 +115,9 @@ def test_pages_check_lane_bound_to_docsite_check_workflow() -> None:
         ("docs/how-to/x.md", True),
     ],
 )
-def test_docsite_check_paths_under_github_glob_semantics(path: str, expected: bool) -> None:
+def test_pages_paths_under_github_glob_semantics(path: str, expected: bool) -> None:
     root = _repo_root()
-    workflow = yaml.safe_load((root / ".github/workflows/docsite-check.yml").read_text(encoding="utf-8"))
+    workflow = yaml.safe_load((root / ".github/workflows/pages.yml").read_text(encoding="utf-8"))
     patterns = workflow[True]["pull_request"]["paths"]
     assert preflight_ci.filter_matches(patterns, path) is expected
 
@@ -127,7 +127,7 @@ def test_marshal_only_diff_leaves_pages_check_unselected(tmp_path: Path) -> None
     selection = _select(repo)
     assert "pages-check" not in _selected_tasks(selection)
     skipped = {v.task: v for v in selection.verdicts if not v.selected}
-    assert skipped["pages-check"].workflow == "docsite-check.yml; pages.yml"
+    assert skipped["pages-check"].workflow == "pages.yml"
 
 
 def test_docs_how_to_diff_selects_pages_check(tmp_path: Path) -> None:
