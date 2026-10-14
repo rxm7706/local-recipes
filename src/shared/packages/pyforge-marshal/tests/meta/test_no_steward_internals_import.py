@@ -33,7 +33,11 @@ def _steward_import_violations(tree: ast.Module) -> list[str]:
     found: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            found.extend(alias.name for alias in node.names if alias.name == "pyforge.steward" or alias.name.startswith("pyforge.steward."))
+            found.extend(
+                alias.name
+                for alias in node.names
+                if alias.name == "pyforge.steward" or alias.name.startswith("pyforge.steward.")
+            )
         elif isinstance(node, ast.ImportFrom):
             if node.module and (node.module == "pyforge.steward" or node.module.startswith("pyforge.steward.")):
                 found.append(node.module)

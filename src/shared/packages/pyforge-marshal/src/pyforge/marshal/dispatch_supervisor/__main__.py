@@ -91,8 +91,8 @@ from ..core.dispatch_verify_fix import (
 from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
-    LAND_FINDINGS_FIELD,
     CI_PAUSES_AT_MERGE_FIELD,
+    LAND_FINDINGS_FIELD,
     LANDING_CHECKS_FIELD,
     JournalEntryId,
     Phase,

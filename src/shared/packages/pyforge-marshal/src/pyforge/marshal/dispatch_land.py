@@ -55,7 +55,6 @@ from .core.journal import CI_PAUSES_AT_MERGE_FIELD, LANDING_CHECKS_FIELD
 from .core.landing_checks import CheckRun, CheckState, classify_check_runs
 from .core.landing_ci_pauses import append_ci_pauses_line_to_pr_body
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
-from .dispatch_verify import landing_ci_pauses_enabled
 from .core.policy import EffectivePolicy, LandingCheckSettings, resolve_landing_check_settings
 from .core.refs import ORIGIN_MAIN as _ORIGIN_MAIN
 from .core.refs import ORIGIN_MAIN_SHORT
@@ -63,6 +62,7 @@ from .core.verdict import compute_verdict
 from .dispatch_land_heal import DispatchLandHealResult, try_heal_dispatch_land_merge
 from .dispatch_verify import (
     compose_dispatch_policy,
+    landing_ci_pauses_enabled,
     run_verify_commands_only,
 )
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef

@@ -1048,26 +1048,26 @@ def finalize_dispatch_land(
     if close is not None and close.finding is not None:
         findings.append(close.finding)
     finalize_payload: dict[str, object] = {
-            "story_key": str(key),
-            "resynced": resynced,
-            "deferred_work_intake_finding": (intake_finding.to_json_dict() if intake_finding is not None else None),
-            # Story 79.1: booleans, so a skipped promotion reads differently on the journal from a done one
-            # (an uncorroborated landing leaves no finding). True only when THIS run wrote the feed row /
-            # published the spec -- never for a row or a spec that was already `done`.
-            "landing_corroborated": landing_corroborated,
-            "feed_row_promoted": feed_row_promoted,
-            "tracked_spec_promoted": tracked_spec_promoted,
-            # Story 66.1 (CAP-275): the `DW-FRR-<story>` row THIS run published onto origin/main, else null
-            # (not flagged, already carried, or a failed read/publish -- the WARN names which).
-            "followup_review_promoted_id": followup.promoted_id if followup is not None else None,
-            # Story 73.1 (CAP-281): the `DW-FRR-<story>` row THIS run closed on origin/main, else null (a
-            # normal landing, a row already closed or absent, or a failed publish -- the WARN names which).
-            "followup_review_closed_id": close.closed_id if close is not None else None,
-            # Story 68.1 (CAP-277): every finding this run collected, all severities -- the
-            # promotion's MRS-LAND-011, the resync's MRS-LAND-009, MRS-DISP-051 -- so a failed
-            # step is on the journal, not only in a stderr nobody reads.
-            "findings": [finding.to_json_dict() for finding in findings],
-        }
+        "story_key": str(key),
+        "resynced": resynced,
+        "deferred_work_intake_finding": (intake_finding.to_json_dict() if intake_finding is not None else None),
+        # Story 79.1: booleans, so a skipped promotion reads differently on the journal from a done one
+        # (an uncorroborated landing leaves no finding). True only when THIS run wrote the feed row /
+        # published the spec -- never for a row or a spec that was already `done`.
+        "landing_corroborated": landing_corroborated,
+        "feed_row_promoted": feed_row_promoted,
+        "tracked_spec_promoted": tracked_spec_promoted,
+        # Story 66.1 (CAP-275): the `DW-FRR-<story>` row THIS run published onto origin/main, else null
+        # (not flagged, already carried, or a failed read/publish -- the WARN names which).
+        "followup_review_promoted_id": followup.promoted_id if followup is not None else None,
+        # Story 73.1 (CAP-281): the `DW-FRR-<story>` row THIS run closed on origin/main, else null (a
+        # normal landing, a row already closed or absent, or a failed publish -- the WARN names which).
+        "followup_review_closed_id": close.closed_id if close is not None else None,
+        # Story 68.1 (CAP-277): every finding this run collected, all severities -- the
+        # promotion's MRS-LAND-011, the resync's MRS-LAND-009, MRS-DISP-051 -- so a failed
+        # step is on the journal, not only in a stderr nobody reads.
+        "findings": [finding.to_json_dict() for finding in findings],
+    }
     ci_pauses_record = _parse_ci_pauses_at_merge_arg(ci_pauses_at_merge)
     if ci_pauses_record is not None:
         finalize_payload[CI_PAUSES_AT_MERGE_FIELD] = ci_pauses_record

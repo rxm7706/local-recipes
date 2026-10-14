@@ -15,6 +15,7 @@ from pyforge.marshal.adapters.steward_cli import StewardCli
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
+from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.journal import CI_PAUSES_AT_MERGE_FIELD
 from pyforge.marshal.core.landing_checks import CheckRun
 from pyforge.marshal.core.landing_ci_pauses import (
@@ -25,10 +26,10 @@ from pyforge.marshal.core.landing_ci_pauses import (
     row_counts_as_paused_at_merge,
     surfaces_from_envelope,
 )
-from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.dispatch_land import _dispatch_pr_body, execute_dispatch_land
 from pyforge.marshal.ports.forge import ForgeCommandError
+
 
 def _load_dispatch_landing_harness():
     path = Path(__file__).with_name("test_dispatch_landing.py")
@@ -105,7 +106,12 @@ def _sample_envelope() -> dict[str, Any]:
         "repo": "rxm7706/local-recipes",
         "rate_limit": {"core_limit": 5000, "core_remaining": 4999},
         "rows": [
-            {"id": "platform-ci.container", "declared_state": "paused", "live_switch_value": "true", "verdict": "paused"},
+            {
+                "id": "platform-ci.container",
+                "declared_state": "paused",
+                "live_switch_value": "true",
+                "verdict": "paused",
+            },
             {
                 "id": "platform-ci.container-dbgpt",
                 "declared_state": "paused",
@@ -118,11 +124,26 @@ def _sample_envelope() -> dict[str, Any]:
                 "live_switch_value": "true",
                 "verdict": "paused",
             },
-            {"id": "wf.manual", "declared_state": "paused-manually", "live_switch_value": None, "verdict": "paused-manually"},
+            {
+                "id": "wf.manual",
+                "declared_state": "paused-manually",
+                "live_switch_value": None,
+                "verdict": "paused-manually",
+            },
             {"id": "opt.in", "declared_state": "opt-in-off", "live_switch_value": "true", "verdict": "opt-in-off"},
-            {"id": "platform-ci.registry", "declared_state": "live", "live_switch_value": "https://example", "verdict": "live"},
+            {
+                "id": "platform-ci.registry",
+                "declared_state": "live",
+                "live_switch_value": "https://example",
+                "verdict": "live",
+            },
             {"id": "lint", "declared_state": "live", "live_switch_value": "false", "verdict": "live"},
-            {"id": "unregistered:PAUSE_FOO", "declared_state": "drift", "live_switch_value": "true", "verdict": "drift"},
+            {
+                "id": "unregistered:PAUSE_FOO",
+                "declared_state": "drift",
+                "live_switch_value": "true",
+                "verdict": "drift",
+            },
         ],
     }
 
@@ -194,9 +215,7 @@ class _BodyRecordingForge(_ChecksForge):
 
 
 @flag_states(_FLAG)
-def test_ac7_flag_on_records_and_updates_pr_body(
-    tmp_path: Path, monkeypatch, flag_provider: dict[str, bool]
-) -> None:
+def test_ac7_flag_on_records_and_updates_pr_body(tmp_path: Path, monkeypatch, flag_provider: dict[str, bool]) -> None:
     enabled = flag_provider[_FLAG]
     _install_flag_tree(tmp_path, enabled=enabled)
     sample = _sample_envelope()
@@ -215,9 +234,7 @@ def test_ac7_flag_on_records_and_updates_pr_body(
     if enabled:
         assert envelope.data[CI_PAUSES_AT_MERGE_FIELD]["state"] == "read"
         assert len(envelope.data[CI_PAUSES_AT_MERGE_FIELD]["surfaces"]) == 4
-        assert forge.bodies[-1] == append_ci_pauses_line_to_pr_body(
-            base_text, envelope.data[CI_PAUSES_AT_MERGE_FIELD]
-        )
+        assert forge.bodies[-1] == append_ci_pauses_line_to_pr_body(base_text, envelope.data[CI_PAUSES_AT_MERGE_FIELD])
     else:
         assert CI_PAUSES_AT_MERGE_FIELD not in envelope.data
         assert all("CI paused at merge" not in b for b in forge.bodies)
@@ -277,9 +294,10 @@ def test_ac5_check_refusal_skips_steward(tmp_path: Path, monkeypatch) -> None:
 
 def test_steward_cli_unknown_paths() -> None:
     assert StewardCli(_StewardProcess()).ci_status_record(repo_root=Path("/tmp")).get("state") == "unknown"
-    assert StewardCli(_StewardProcess(returncode=1, stderr="partial\n")).ci_status_record(repo_root=Path("/tmp"))[
-        "state"
-    ] == "unknown"
+    assert (
+        StewardCli(_StewardProcess(returncode=1, stderr="partial\n")).ci_status_record(repo_root=Path("/tmp"))["state"]
+        == "unknown"
+    )
     assert StewardCli(_StewardProcess(stdout="not json")).ci_status_record(repo_root=Path("/tmp"))["state"] == "unknown"
     assert StewardCli(_StewardProcess(stdout="{}")).ci_status_record(repo_root=Path("/tmp"))["state"] == "unknown"
 
