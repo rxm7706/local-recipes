@@ -1,0 +1,18 @@
+conventions:
+  dispatch_ignores_pauses: true
+  enable_prefix: ENABLE_
+  master: PAUSE_ALL_CI
+  pause_prefix: PAUSE_
+grandfathered_names: []
+surfaces:
+- cost: low
+  gate: false
+  id: sample.ghost
+  job: ghost
+  kind: ci-job
+  owner: pyforge-steward
+  state: live
+  switch: null
+  switch_class: pause
+  workflow: .github/workflows/sample.yml
+version: 1
