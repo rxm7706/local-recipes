@@ -65,7 +65,7 @@ SITES: tuple[Site, ...] = (
           r'^pixi = ">=' + _PIXI_VERSION + r'"', kind="floor"),
     _site("environment.yaml", "environment.yaml",
           r"^- pixi >=" + _PIXI_VERSION + r"$", kind="floor", derived=True),
-    _site("dashboard.yml setup-pixi", ".github/workflows/dashboard.yml",
+    _site("pages.yml setup-pixi", ".github/workflows/pages.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("kedro-viz-publish.yml setup-pixi", ".github/workflows/kedro-viz-publish.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
