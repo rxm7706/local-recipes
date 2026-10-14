@@ -6393,3 +6393,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-14 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-101-1-1: `steward ci status --json` has no row for the `PAUSE_ALL_CI` master switch
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-101-1-the-platform-ci-local-stubs-leak-no-process-and-the-holder-scan-takes-seconds.md`
+  summary: `steward ci status` (Story 99.3, CAP-166) builds one row per registered surface and one per unregistered switch-like variable. The registry's master switch (`conventions.master: PAUSE_ALL_CI` in `docs/governance/ci-surfaces.yaml`) is counted as registered, so it never gets an unregistered row, and it is no surface, so it never gets a surface row. While the master switch is on, every job that reads it is paused, but the payload shows each surface at its own switch's value. Three consumers inherit the gap: doctor 45.1's CI pause drift source, herald 39.1's dossier CI surfaces tile, and marshal 100.1's landing line all under-report while `PAUSE_ALL_CI` is `true`. Follow-up: the payload carries the master switch's live value as its own row, or as a field each row's verdict reads, and the three consumers read it. Recorded only; Story 101.1 does not implement it.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py` `_switch_names_in_registry` adds `conventions.master` to the registered names; `_build_rows` emits rows only for `surfaces` entries and unregistered variables, so no row ever names `PAUSE_ALL_CI` (read at `e0ad43f18c`). The three chain PRs each name the gap: doctor 45.1 (#2205), herald 39.1 (#2206) and marshal 100.1's chain (not yet opened on 2026-10-14).
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py (`_switch_names_in_registry`, `_build_rows`, `_status_payload`)
+  origin: operator ruling 2026-10-14, recorded with Story 101.1's mint (no implementation)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-14 — recorded with Story 101.1's chain
+  status: open
