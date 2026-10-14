@@ -459,9 +459,7 @@ def test_main_pause_dry_run_no_live_gh(tmp_path: Path, monkeypatch: pytest.Monke
 
 
 @flag_states("pyforge.steward.ci_pause_control")
-def test_pause_respects_ci_pause_control_flag(
-    tmp_path: Path, flag_provider: dict[str, bool]
-) -> None:
+def test_pause_respects_ci_pause_control_flag(tmp_path: Path, flag_provider: dict[str, bool]) -> None:
     reg_path = _write_registry(tmp_path)
     on = flag_provider["pyforge.steward.ci_pause_control"]
     deps = CiDeps(
