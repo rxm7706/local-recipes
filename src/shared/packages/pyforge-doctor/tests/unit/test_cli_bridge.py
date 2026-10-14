@@ -18,7 +18,14 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.doctor.cli_bridge import CliBridgeError, run_check_script, run_cli_json, run_git, run_pytest
+from pyforge.doctor.cli_bridge import (
+    CliBridgeError,
+    run_argv,
+    run_check_script,
+    run_cli_json,
+    run_git,
+    run_pytest,
+)
 
 
 def _write_script(tmp_path: Path, body: str) -> Path:
@@ -330,3 +337,40 @@ def test_run_check_script_passes_args_and_runs_in_cwd(tmp_path: Path) -> None:
 
     assert '"argv": ["--check", "extra"]' in output
     assert str(workdir) in output
+
+
+def test_run_argv_returns_exit_code_and_streams(tmp_path: Path) -> None:
+    script = _write_script(
+        tmp_path,
+        """
+        import json, sys
+        if "--fail" in sys.argv:
+            print("err", file=sys.stderr)
+            sys.exit(3)
+        print(json.dumps({"ok": True}))
+        """,
+    )
+    code, stdout, stderr = run_argv(
+        [sys.executable, str(script)], cwd=tmp_path, timeout=10
+    )
+    assert code == 0
+    assert "ok" in stdout
+    assert stderr == ""
+
+    code, stdout, stderr = run_argv(
+        [sys.executable, str(script), "--fail"], cwd=tmp_path, timeout=10
+    )
+    assert code == 3
+    assert "err" in stderr
+
+
+def test_run_argv_timeout_raises(tmp_path: Path) -> None:
+    script = _write_script(
+        tmp_path,
+        """
+        import time
+        time.sleep(30)
+        """,
+    )
+    with pytest.raises(CliBridgeError, match="timed out"):
+        run_argv([sys.executable, str(script)], cwd=tmp_path, timeout=0.2)
