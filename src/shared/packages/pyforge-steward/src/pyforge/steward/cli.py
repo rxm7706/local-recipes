@@ -1189,6 +1189,34 @@ def _add_ci_subparsers(ci_parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="fetch gh variable list and write .steward/ci-vars.json",
     )
+    pause_p = ci_subs.add_parser("pause", help="pause a CI surface (dry run unless --yes)")
+    pause_p.add_argument("target", help="registry row id or GitHub variable name")
+    pause_p.add_argument("--reason", required=True, help="why CI is paused (required)")
+    pause_p.add_argument(
+        "--review-by",
+        required=True,
+        dest="review_by",
+        metavar="YYYY-MM-DD",
+        help="date to re-review the pause",
+    )
+    pause_p.add_argument(
+        "--yes",
+        action="store_true",
+        help="perform gh variable set and update the registry (operator only)",
+    )
+    pause_p.add_argument(
+        "--i-am-removing-a-merge-gate",
+        action="store_true",
+        dest="remove_merge_gate",
+        help="allow pausing a gate: true row (ruling Q5)",
+    )
+    resume_p = ci_subs.add_parser("resume", help="resume a paused CI surface (dry run unless --yes)")
+    resume_p.add_argument("target", help="registry row id or GitHub variable name")
+    resume_p.add_argument(
+        "--yes",
+        action="store_true",
+        help="perform gh variable delete and update the registry (operator only)",
+    )
 
 
 def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:

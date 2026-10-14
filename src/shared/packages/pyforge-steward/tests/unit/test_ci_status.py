@@ -564,7 +564,7 @@ def test_vars_refresh_rate_limit_refuses(tmp_path: Path) -> None:
 
 def test_ci_duty_unknown_verb() -> None:
     deps = CiDeps(root=Path("/tmp"), runner=lambda a, c: _FakeProc(a), flag_on=lambda: True)
-    ns = argparse.Namespace(_ci_deps=deps, ci_verb="pause", json=False, refresh=False)
+    ns = argparse.Namespace(_ci_deps=deps, ci_verb="nope", json=False, refresh=False)
     result = CiDuty().run(ns)
     assert result.ok is False
-    assert "status or vars" in result.summary
+    assert "pause" in result.summary

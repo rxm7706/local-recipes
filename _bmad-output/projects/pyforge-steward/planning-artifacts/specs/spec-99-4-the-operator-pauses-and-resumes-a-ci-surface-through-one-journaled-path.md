@@ -2,8 +2,8 @@
 title: '99.4: The operator pauses and resumes a CI surface through one journaled path'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: '695ef625ea76cf64effe8c7c2f2ba5df90fc5035'
 flag:
   key: pyforge.steward.ci_pause_control       # Story 99.3's (one flag per CAP)
   provider: openfeature-file                  # the one tree, src/platform/config/flags.json (canopy:AD-11)
