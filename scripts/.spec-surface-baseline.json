@@ -3502,7 +3502,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py": "9fb725c40539dcc2a0350b7346009f86a240c85d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py": "e222222dcd925d63065cfbb955f479babbe990f1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py": "ebf4ac0d7882848fdd7628517c89bd3aba5ece0d",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py": "d929c51c35408782c6b71955e4b2011dc28ad788",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py": "7ff449533eddcfd20a962f93d15c94754bb4d5f7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py": "dfd994ed87604d29300939203d4632d86deaaeb0",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py": "6513e757ca6d68c2f1ab35e9569e517aa8c62ce7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/frames.py": "b114e6ab296bccf732ec602bc683ae1ca4892d89",
@@ -3577,7 +3577,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "dcbebaa5f286b5aa36c5e8ca8ad2952a8666057e"
+  "memlog": "e36fc5fdaa12b60eb51ca8b2bf087173efacfdb2"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -5961,7 +5961,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/deploy_profiles.py": "9fb725c40539dcc2a0350b7346009f86a240c85d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py": "e222222dcd925d63065cfbb955f479babbe990f1",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py": "ebf4ac0d7882848fdd7628517c89bd3aba5ece0d",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py": "d929c51c35408782c6b71955e4b2011dc28ad788",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py": "7ff449533eddcfd20a962f93d15c94754bb4d5f7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py": "dfd994ed87604d29300939203d4632d86deaaeb0",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/five_tier.py": "6513e757ca6d68c2f1ab35e9569e517aa8c62ce7",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/frames.py": "b114e6ab296bccf732ec602bc683ae1ca4892d89",
@@ -6046,7 +6046,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py": "28ad6ed8175da028e163ccb79dd974d724f990f6",
    "src/shared/packages/pyforge-steward/tests/unit/test_estate.py": "0b4630ad2433d325588f513eaa9e8e101e82923e",
    "src/shared/packages/pyforge-steward/tests/unit/test_estate_realize.py": "753394348bcbaf041013c7b1855ff233d8ff4367",
-   "src/shared/packages/pyforge-steward/tests/unit/test_estate_reconcile.py": "58f4aa9616efa5495de887dd320786a7bb581b6e",
+   "src/shared/packages/pyforge-steward/tests/unit/test_estate_reconcile.py": "beb912aef852ca8b14d14de8e9fb0fd0dc07793f",
    "src/shared/packages/pyforge-steward/tests/unit/test_estate_verify.py": "d966e326e8ee1f2a3d08462d96c5e90eed74177b",
    "src/shared/packages/pyforge-steward/tests/unit/test_events_stream_consumer.py": "cb2830c099111b716e537a127c1c1ad21cd7196e",
    "src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py": "5edb343ced43add446a86beef742ef207e3b24f9",
@@ -6128,7 +6128,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "dd807feb2eac0aa264ecd721422652910e5c7d61"
+  "memlog": "0b7b79c6b31c1ca3e4f099a81993a081ffd80e7a"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
