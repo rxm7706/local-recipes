@@ -92,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-12T02:21:24-05:00'
-      tree: 7c57d5620e514aaa55b7624bf9489922c9da3583-dirty
+      derived_at: '2026-10-13T19:05:56-05:00'
+      tree: 2c6ff4dd4a125b12e935fcfcf95759b8fb17a719-dirty
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -193,8 +193,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-09T00:50:03-05:00'
-      tree: 4f8ad495cee49e4caa6eea28d25fa708d7851af7-dirty
+      derived_at: '2026-10-13T19:05:56-05:00'
+      tree: 2c6ff4dd4a125b12e935fcfcf95759b8fb17a719-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet
