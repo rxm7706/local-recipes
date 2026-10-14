@@ -88,8 +88,8 @@ forward. That dream is archived; this one is the real record.
 
 - **2026-10-14 (the Detectors scripts lane outgrew its timeout)** — **Found: the `scripts-suite` job ran past its
   15-minute limit, and GitHub cancelled it.** It happened on `main` at `8d04520770` and on PR #2204. The job has two
-  test steps: `tests/scripts` in `pyforge-ci` (7 to 9 minutes on a runner), then `pyforge-doctor-aggregate-scripts-test`
-  in `pyforge-doctor` (5 to 7 minutes). A local `--durations` run of the second step took 691.89 s, and 684.59 s of it
+  test steps: `tests/scripts` in `pyforge-ci` (5m22s to 9m10s across six runs on 2026-10-14), then
+  `pyforge-doctor-aggregate-scripts-test` in `pyforge-doctor` (4m56s to 6m30s when it finished). A local `--durations` run of the second step took 691.89 s, and 684.59 s of it
   was one test, `test_run_doctor_sources_filters_by_scope_like_a_scanned_detector`. It calls the real
   `_run_doctor_sources` twice, for `repo` and for `all`, and each call gathers every Doctor source over the live tree.
   The test then checks only row counts and that `dashboard-drift` is present. Every other test in the two files takes

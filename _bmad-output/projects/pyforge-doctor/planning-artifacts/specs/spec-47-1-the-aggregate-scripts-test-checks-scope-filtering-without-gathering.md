@@ -26,8 +26,10 @@ declared_low_risk: false
 **Problem:** GitHub cancels the Detectors `scripts-suite` job at its `timeout-minutes: 15`. It did on `main` at
 `8d04520770` (run 38523258032, cancelled 15m16s in) and on PR #2204 (run 38523307187, cancelled 15m19s in), both during
 the second test step, `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test` (Story 39.1; Story
-41.1 added its second file). On a runner the first step, `tests/scripts` in `pyforge-ci`, takes 7 to 9 minutes and the
-aggregate step 5 to 7, so the job sat between 10 and 15 minutes and now runs past it.
+41.1 added its second file). On runners on 2026-10-14 the first step, `tests/scripts` in `pyforge-ci`, took 5m22s to
+9m10s, and the aggregate step took 4m56s to 6m30s when it finished. Runs 38519271682, 38521425377 and 38527926138
+passed, with first steps of 5m52s, 7m07s and 5m22s; runs 38523258032, 38523307187 and 38534495374 were cancelled, with
+first steps of 8m00s, 9m10s and 9m09s. So the job sat between 10 and 15 minutes, and now runs past it.
 
 **The evidence:** a local `--durations` run of the aggregate task was 59 passed in 691.89 s. One test took 684.59 s:
 `tests/scripts/test_detectors_doctor_sources.py::test_run_doctor_sources_filters_by_scope_like_a_scanned_detector`. It
@@ -139,6 +141,11 @@ The real gathers are already judged where they belong: the `detectors` job runs 
 
 ## Named, not fixed here
 
+- **Two `pixi.toml` task descriptions still call the lane stdlib-only**, and both are tracked as `DW-doctor-47-1-1`
+  (owner steward). The `pyforge-ci` comment block above `pyforge-doctor-scripts-test` (`pixi.toml:840-847`, its
+  description "pure stdlib, no runtime deps required") and the `pyforge-doctor-aggregate-scripts-test` description
+  (`pixi.toml:3078`, "pyforge-ci, stdlib-only by design") are both untrue today. They are not edited here: a `pixi.toml`
+  change fires every station suite and the `environment.yaml` rule, which is out of scale for a description fix.
 - **`pyforge-ci` is not stdlib-only in practice.** It declares none of Doctor's run-deps, but its `python` feature pulls
   `jsonschema` and `pyyaml` in through `spec-kit` (`pixi tree -e pyforge-ci -i jsonschema`: `spec-kit` -> `mcp` ->
   `jsonschema`), and `tests/scripts/conftest.py` puts `pyforge-core` on `sys.path`. So Doctor's dispatch tests run in
@@ -163,7 +170,37 @@ The real gathers are already judged where they belong: the `detectors` job runs 
 - 2026-10-14, AC8: each of the three mutations failed the test (the filter removed: the marked source appeared in the
   `repo` rows; the scope taken from the argument: `'all' == 'repo'`; one stub left out: that row read `unknown`), and
   the restored tree passed.
+- 2026-10-14, after the independent review (FAIL on prose only): the workflow comments, the test docstring, the runner
+  timings here and in the Dream entry, and a memlog correction are fixed; `DW-doctor-47-1-1` records the two `pixi.toml`
+  descriptions and the env question. See *Review (2026-10-14, independent)*.
+
+## Review (2026-10-14, independent)
+
+**Verdict: FAIL.** The code and all eight ACs pass, and all eight of the reviewer's mutations turned the test red. The
+failures are in comments and prose. Each finding, and what changed:
+
+1. **(medium) The workflow comment said the verdict-writer tests run in `pyforge-ci` too.** False. In `pyforge-ci`,
+   `tests/scripts/test_apply_verification_verdicts.py:31`'s module-level `importorskip` skips the whole file
+   ("could not import 'pyforge.doctor.sources.chain'"). Collection is alphabetical, so it runs before
+   `test_detectors_doctor_sources.py` puts Doctor's source on `sys.path`. In the reverse order, 31 tests fail, because
+   the script's subprocess refuses outside `pyforge-doctor`. **Changed:** the comment above the aggregate step limits
+   the "run there too" claim to the dispatch tests, and says the verdict-writer file skips there and why. Reproduced:
+   in `pyforge-ci`, the two files give 23 passed and 1 skipped (`test_apply_verification_verdicts.py:31`).
+2. **(low) The stale "pyforge-ci is stdlib-only" claim remained** at `.github/workflows/detectors.yml:71-72`,
+   `pixi.toml:3078` and `pixi.toml:840-847`. **Changed:** the workflow comment now says what the env carries.
+   `pixi.toml` is not edited. Its two lines are in *Named, not fixed here*, and doctor's `deferred-work-ledger.md`
+   gains `DW-doctor-47-1-1` (owner steward, low, open), which covers both the stale task descriptions and the
+   `pyforge-ci` env-composition question.
+3. **(low) The runner timings overstated.** "7 to 9 minutes" and "5 to 7" did not match run 38527926138 (5m22s and
+   4m56s) or main's run 38523258032 (8m00s for the first step before the cancel). **Changed:** the workflow comment
+   cites run 38523258032. This spec's Intent and the Dream entry give the measured ranges and name the six runs.
+4. **(low) The test docstring said 691.89 s was "this file's".** It is the whole two-file task (59 tests).
+   **Changed:** the docstring says so.
+5. **(low) The design memlog entry said "three assertions"; there are four.** **Changed:** a correction entry is
+   appended to `spec-pyforge-doctor/.memlog.md`. Past lines are not edited. The same entry corrects that entry's runner
+   timings.
+6. **(informational)** No action.
 
 ## Review Triage Log
 
-- No review has run yet.
+- Independent review, 2026-10-14: FAIL on prose only; findings 1-5 fixed as above, 6 informational.

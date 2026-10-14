@@ -124,10 +124,10 @@ def test_run_doctor_sources_returns_ten_unknown_rows_when_unimportable(monkeypat
 
 def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector(monkeypatch):
     """Scope filtering and row building, judged against stub gathers (doctor Story 47.1). The real gathers walk the
-    live tree -- 684.59 s of this file's 691.89 s when this test called them twice, which ran the Detectors
-    `scripts-suite` job past its timeout -- and `detectors-ci` in the `detectors` job already runs every one of them
-    for real. Every `_DOCTOR_SOURCE_TASKS` name gets a stub, so a gather that ran anyway would read `unknown`
-    (KeyError), not `pass`."""
+    live tree: when this test called them twice it spent 684.59 s of the 691.89 s that the two-file
+    `pyforge-doctor-aggregate-scripts-test` task (59 tests) took, and ran the Detectors `scripts-suite` job past its
+    timeout. `detectors-ci` in the `detectors` job already runs every one of them for real. Every
+    `_DOCTOR_SOURCE_TASKS` name gets a stub, so a gather that ran anyway would read `unknown` (KeyError), not `pass`."""
     _doctor_dispatch()
     from pyforge.doctor import sources
     from pyforge.doctor.models import Source
