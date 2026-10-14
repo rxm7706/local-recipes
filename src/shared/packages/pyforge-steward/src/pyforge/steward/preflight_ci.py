@@ -682,6 +682,29 @@ def _pause_switch_live(name: str, resolution: CiVarResolution) -> bool:
     return resolution.lookup(name).lower() == "true"
 
 
+def list_paused_ci_surfaces(repo_root: Path, resolution: CiVarResolution) -> list[PausedLane]:
+    """Registry pause rows whose switch reads live in ``resolution`` (Story 99.5 banner)."""
+    registry = _load_ci_surfaces_registry(repo_root)
+    paused: list[PausedLane] = []
+    seen: set[str] = set()
+    for row in registry.get("surfaces") or []:
+        if not isinstance(row, dict):
+            continue
+        switch = str(row.get("switch") or "")
+        if not switch or str(row.get("switch_class") or "") != "pause":
+            continue
+        if not _pause_switch_live(switch, resolution):
+            continue
+        label = str(row.get("local_twin") or row.get("job") or row.get("id") or switch).split()[0]
+        if label in seen:
+            continue
+        seen.add(label)
+        since = str(row.get("paused_since") or "unknown")
+        review = str(row.get("review_by") or "unknown")
+        paused.append(PausedLane(label, "", switch, since, review))
+    return paused
+
+
 def discover_paused_lanes(
     repo_root: Path,
     lanes: Sequence[LaneLike],
@@ -692,12 +715,8 @@ def discover_paused_lanes(
 ) -> list[PausedLane]:
     """Lanes CI would not run solely because pause switches are on (Story 99.5)."""
     registry = _load_ci_surfaces_registry(repo_root)
-    with_pause = select_lanes(
-        repo_root, lanes, pixi_data, process=process, var_lookup=resolution.lookup
-    )
-    without_pause = select_lanes(
-        repo_root, lanes, pixi_data, process=process, var_lookup=_empty_ci_var
-    )
+    with_pause = select_lanes(repo_root, lanes, pixi_data, process=process, var_lookup=resolution.lookup)
+    without_pause = select_lanes(repo_root, lanes, pixi_data, process=process, var_lookup=_empty_ci_var)
     paused: list[PausedLane] = []
     for lane in lanes:
         if with_pause.is_selected(lane):
@@ -1150,9 +1169,7 @@ def select_lanes(
     dirty: list[str] = []
     try:
         with tempfile.TemporaryDirectory(prefix="preflight-select-") as scratch_name:
-            return _select(
-                repo_root, lanes, pixi_data, proc, Path(scratch_name), changed, dirty, var_lookup=var_lookup
-            )
+            return _select(repo_root, lanes, pixi_data, proc, Path(scratch_name), changed, dirty, var_lookup=var_lookup)
     except _SelectAll as exc:
         return _select_all(lanes, str(exc), changed, dirty)
     except Exception as exc:  # noqa: BLE001 -- a lane that cannot decide runs

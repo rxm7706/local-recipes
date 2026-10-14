@@ -2,7 +2,7 @@
 title: '99.5: The preflight honors what CI will skip, and says so'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '6587b1d7aa69be2794a44853646def731b56d856'
 flag:
   key: pyforge.steward.ci_pause_control       # Story 99.3's (one flag per CAP)
@@ -114,6 +114,11 @@ Type / Effort / Deps: feature / M / S-99.2, S-99.3.
 - `pixi run --frozen -e pyforge-guild detectors-ci` and `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild python scripts/spec_surface_reconcile.py` and `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps.
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0, with the banner naming the two live pauses.
+
+## Auto Run Result
+
+Status: done
+Verification: pyforge-steward-test (2568 passed), test_preflight_ci + test_preflight, tests/scripts (pre_push/platform_ci_local/guild_image/ci_pause_twin), spec_surface_reconcile OK; pr-preflight prints declared-source banner for live PAUSE_CONTAINER_BUILDS and PAUSE_PLATFORM_CONTAINER_BUILDS.
 
 ## Spec Change Log
 

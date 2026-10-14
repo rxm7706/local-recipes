@@ -163,7 +163,9 @@ def test_run_preflight_journals_paused_skip(
         "discover_paused_lanes",
         lambda *a, **k: [paused],
     )
-    monkeypatch.setattr(preflight_ci, "resolve_ci_vars", lambda *a, **k: preflight_ci.CiVarResolution("snapshot 1h", lambda n: "true"))
+    monkeypatch.setattr(
+        preflight_ci, "resolve_ci_vars", lambda *a, **k: preflight_ci.CiVarResolution("snapshot 1h", lambda n: "true")
+    )
     monkeypatch.setattr(preflight_ci, "_flag_on", lambda _r: True)
     code = preflight.run_preflight(
         repo,

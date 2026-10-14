@@ -740,9 +740,15 @@ def run_preflight(
     paused_lanes: list[preflight_ci.PausedLane] = []
     paused_results: list[LaneResult] = []
     if flag_on:
-        paused_lanes = preflight_ci.discover_paused_lanes(repo_root, lanes, pixi_data, resolution)
+        surface_paused = preflight_ci.list_paused_ci_surfaces(repo_root, resolution)
+        lane_paused = preflight_ci.discover_paused_lanes(repo_root, lanes, pixi_data, resolution)
+        banner_lines: dict[str, preflight_ci.PausedLane] = {entry.task: entry for entry in surface_paused}
+        for entry in lane_paused:
+            banner_lines.setdefault(entry.task, entry)
+        paused_lanes = list(banner_lines.values())
         if paused_lanes:
             preflight_ci.print_ci_pause_banner(repo_root, paused_lanes, resolution=resolution)
+        paused_lanes = lane_paused
         paused_tasks = {entry.task for entry in paused_lanes}
         run_lanes = [lane for lane in lanes if selection.is_selected(lane)]
         if ignore_ci_pauses and paused_tasks:
@@ -1059,8 +1065,7 @@ def run_preflight(
                     else {}
                 ),
             },
-            "lanes": [_lane_result_dict(r) for r in ordered_results]
-            + [_lane_result_dict(r) for r in paused_results],
+            "lanes": [_lane_result_dict(r) for r in ordered_results] + [_lane_result_dict(r) for r in paused_results],
         },
     )
     if exit_code == EXIT_OK:
