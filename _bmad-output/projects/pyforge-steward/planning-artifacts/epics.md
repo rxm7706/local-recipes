@@ -6297,7 +6297,7 @@ So that a pause saves runner time without hiding a broken image.
 **When** `ci-canary.yml` runs on `schedule: 0 4 * * 0` or `workflow_dispatch`, gated by `PAUSE_CI_CANARY` like every workflow
 **Then** it builds each such surface once through the pixi task its paused job runs (docker engine only) and writes each result to the job summary; it is a CI workflow, not a deploy, so AD-4 does not bind it
 **And** `--check` reds a `cost: high` row without `canary`; `ci status` reads each paused row's last green canary run and reports `stuck` after 14 days without one; one green dispatch is recorded in the story spec.
-**Status:** backlog
+**Status:** done
 
 ### Story 99.7: The hand-disabled workflows are retired or parked, and the convention is documented
 
