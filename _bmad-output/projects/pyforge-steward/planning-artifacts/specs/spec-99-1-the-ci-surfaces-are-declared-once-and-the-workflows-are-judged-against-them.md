@@ -169,3 +169,9 @@ Type / Effort / Deps: feature / M / none.
   `marshal factory dispatch` refused the launch with MRS-GATE-011: the command is not among steward's
   `verify_commands`, and it cannot be, because this story creates the task. The check still runs before the push, and
   AC1 and AC5 are unchanged.
+
+## Auto Run Result
+
+Status: done
+
+Implemented CAP-166 Story 99.1: seeded `docs/governance/ci-surfaces.yaml` (35 surfaces) with schema, offline/live checker `scripts/ci_surface_gates.py` + `_ci_surface_gates_lib.py`, `ci-surface-gates-check` pixi task, `detectors.py` discovery, regenerated `docs/reference/detectors.md`, and `tests/scripts/test_ci_surface_gates.py` (18 tests; module skips under `pyforge-ci` when `jsonschema` is absent). Verification: `ci-surface-gates-check`, `pyforge-steward-test` (2524 passed), `pyforge-doctor-scripts-test` (1504 passed, 27 skipped), `spec_surface_reconcile.py`, `spec-surface-check` OK. Memlog + scoped baseline stamps: `pyforge-steward/spec-pyforge-steward`, `pyforge-doctor/spec-pyforge-doctor`, `pyforge-marshal/spec-pyforge-core`. Healed: Py3.14 `except (A, B)` tuple syntax in `pyforge/doctor/sources/chain.py` (blocked `spec_surface_reconcile`). Operator after merge: `python scripts/ci_surface_gates.py --check --live` with authenticated `gh`.
