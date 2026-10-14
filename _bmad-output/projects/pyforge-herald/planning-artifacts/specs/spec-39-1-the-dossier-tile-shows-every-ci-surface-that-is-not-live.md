@@ -2,8 +2,8 @@
 title: '39.1: The dossier tile shows every CI surface that is not live'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '8d0452077065cbbe805551804a1ad3fe8b3dba14'
+status: 'in-progress'
+baseline_revision: '63c7cbbff4a5cd1afb07b0f122c7f61a495fd95e'
 flag:
   key: pyforge.herald.ci_surfaces_tile          # new; minted by this story
   provider: openfeature-file                    # the one tree, src/platform/config/flags.json (canopy:AD-11)
