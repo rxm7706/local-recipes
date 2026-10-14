@@ -255,6 +255,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.herald.ci_surfaces_tile": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "herald",
+        "story": "39-1-the-dossier-tile-shows-every-ci-surface-that-is-not-live",
+        "created": "2026-10-14",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.herald.deck_export_native": {
       "state": "ENABLED",
       "variants": {

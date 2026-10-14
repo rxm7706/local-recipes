@@ -2,8 +2,8 @@
 title: '39.1: The dossier tile shows every CI surface that is not live'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '8d0452077065cbbe805551804a1ad3fe8b3dba14'
+status: 'done'
+baseline_revision: '63c7cbbff4a5cd1afb07b0f122c7f61a495fd95e'
 flag:
   key: pyforge.herald.ci_surfaces_tile          # new; minted by this story
   provider: openfeature-file                    # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -218,3 +218,9 @@ flag test run in both states
   (`ci.py`, `ci-status-schema.json`). The data route (a committed snapshot, not a build-time call) is the 2026-10-14
   decision on the Spec's memlog. The implementing session reads the landed steward command first and follows it where
   it differs from the shape quoted here.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-herald-test`, `site-check`, `pages-check`, `flag-gate-check`, and `python scripts/spec_surface_reconcile.py` exit 0 on the story tree (2026-10-14). Committed snapshot `docsite/content/ci-status.json` captured from steward `ci status --json`. Flag `pyforge.herald.ci_surfaces_tile` defaults off; dev overlay on. Production Pages deploy keeps the tile off until the operator flips the flag.

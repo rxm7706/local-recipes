@@ -44,6 +44,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "docsite"
+_TOOLS = SITE / "tools"
 
 #: Everything this build creates, and therefore the only things it may delete.
 #: The output directory can be a shared publish root (docs/dashboard/ also
@@ -551,9 +552,18 @@ def git_commit(repo_root: Path) -> str:
         return ""
 
 
+def _apply_ci_surfaces(doc: dict) -> None:
+    if str(_TOOLS) not in sys.path:
+        sys.path.insert(0, str(_TOOLS))
+    from ci_surfaces_tile import apply_ci_surfaces_blocks  # noqa: E402
+
+    apply_ci_surfaces_blocks(doc, content_dir=CONTENT)
+
+
 def build(out_dir: Path, repo_root: Path) -> dict:
     site_cfg = yaml.safe_load((CONTENT / "site.yml").read_text(encoding="utf-8"))
     doc = yaml.safe_load((CONTENT / "dossier.yml").read_text(encoding="utf-8"))
+    _apply_ci_surfaces(doc)
 
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES)),
@@ -734,6 +744,12 @@ def build(out_dir: Path, repo_root: Path) -> dict:
 
 def check(out_dir: Path, result: dict) -> int:
     problems: list[str] = []
+
+    if str(_TOOLS) not in sys.path:
+        sys.path.insert(0, str(_TOOLS))
+    from ci_surfaces_tile import collect_shape_problems  # noqa: E402
+
+    problems.extend(collect_shape_problems(CONTENT))
 
     required = [
         "index.html", ".nojekyll", "assets/site.css",
