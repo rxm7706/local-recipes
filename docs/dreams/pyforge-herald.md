@@ -690,6 +690,28 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   Kinships: [[pyforge-steward]] (`spec-pyforge-steward`, `pyforge-steward:CAP-166`: the status command and its
   frozen output), [[pyforge-doctor]] (the drift source that judges), the plan. Owner `spec-pyforge-herald`. →
   CAP-59 / FR-11.1 / Epic 39 / Story 39.1, specced 2026-10-14.
+- **2026-10-14 (archivo-expanded) — Found: no React deck installs or builds from its lock, because Story 30.1 named a
+  font package npm does not publish.** Story 30.1 (`697c985d25`, 2026-10-08) vendored the fonts of the 14 React decks
+  under `presentations/` by adding `@fontsource/archivo` and `@fontsource/archivo-expanded` to 13 decks' `package.json`
+  and nine `@fontsource/…` imports to each `src/main.jsx`, and regenerated no `package-lock.json`. Measured at
+  `846d8383f5`: every one of the 14 locks has zero `@fontsource` entries, agentic-sdlc's included, whose three font
+  packages are real. `@fontsource/archivo-expanded` is not on the registry: `npm view` and `npm install` answer E404,
+  while `@fontsource/archivo` and `@fontsource-variable/archivo` are at 5.3.0. On HEAD's manifests, in scratch copies,
+  `npm ci` exits 1 in pyforge-atlas (E404) and in agentic-sdlc (EUSAGE, lock out of sync with its manifest); a build in
+  a `node_modules` that predates 30.1 fails with `Rollup failed to resolve import "@fontsource/archivo/400.css"`. So
+  herald's `deck pull` prover (`deck_pipeline.NpmLocalProver`: `npm run extract`, then `npm run build`) could not pass
+  for any deck, and no deck could record a bridge etag until the operator unblocked it that day with a local, untracked
+  `node_modules` shim. Story 30.1's zero-origin meta-test never saw it: it scans each deck's source `index.html`, never
+  a built bundle. **What it looks like when fixed:** Archivo Expanded is the 125% width of the variable Archivo, which
+  `docsite/assets/fonts/fonts.css` already declares that way from `@fontsource-variable/archivo`. Each Archivo deck
+  depends on that package in place of the phantom one, drops the three `archivo-expanded` imports, and declares the one
+  `@font-face` for `'Archivo Expanded'` (`font-stretch: 125%`) in its `src/index.css`. Every lock is regenerated from
+  the registry with no shim present, and `npm ci` and `npm run build` exit 0 in all 14 decks; the built bundle carries
+  the `wdth` face and names no other origin. A meta-test reads every deck's `package.json` against its lock, offline,
+  so a declared dependency with no lock entry fails the suite before a prover does. **Constraints:** a fix under CAP-55
+  (Story 30.1), with no CAP and no flag; no deck's content, design, weights or `index.html` changes; `dist/`,
+  `node_modules/` and every font binary stay untracked (AD-4). Owner `spec-pyforge-herald`. → Epic 30 / Story 30.3,
+  specced 2026-10-14.
 
 ## One-chain fold (2026-09-17)
 
