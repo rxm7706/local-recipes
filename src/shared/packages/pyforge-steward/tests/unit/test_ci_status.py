@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -20,6 +21,7 @@ from pyforge.steward.ci import (
     EXIT_CI_REFUSAL,
     SCHEMA_ID,
     CiDeps,
+    CiDuty,
     run_status,
     run_vars,
 )
@@ -454,3 +456,115 @@ def test_main_json_flag_off_refuses(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     )
     code = main(["ci", "status", "--json"])
     assert code == EXIT_CI_REFUSAL
+
+
+def test_rate_limit_gh_api_failure_refuses(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+
+    def runner(argv: list[str], cwd: Path) -> _FakeProc:
+        if argv[:2] == ["gh", "api"] and argv[2] == "rate_limit":
+            return _FakeProc(argv, returncode=1, stdout="rate limit denied")
+        return _FakeProc(argv, returncode=1)
+
+    deps = CiDeps(root=tmp_path, runner=runner, registry_path=reg_path, flag_on=lambda: True)
+    result = run_status(deps, json_out=False)
+    assert result.ok is False
+    assert "rate limit denied" in result.summary
+
+
+def test_rate_limit_invalid_json_refuses(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+
+    def runner(argv: list[str], cwd: Path) -> _FakeProc:
+        if argv[:2] == ["gh", "api"] and argv[2] == "rate_limit":
+            return _FakeProc(argv, stdout="not-json")
+        return _FakeProc(argv, returncode=1)
+
+    deps = CiDeps(root=tmp_path, runner=runner, registry_path=reg_path, flag_on=lambda: True)
+    result = run_status(deps, json_out=False)
+    assert result.ok is False
+    assert "invalid JSON" in result.summary
+
+
+def test_variable_list_failure_refuses(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+
+    def runner(argv: list[str], cwd: Path) -> _FakeProc:
+        if argv[:2] == ["gh", "api"] and argv[2] == "rate_limit":
+            return _FakeProc(
+                argv,
+                stdout=json.dumps({"resources": {"core": {"limit": 5000, "remaining": 1}}}),
+            )
+        if argv[:3] == ["gh", "variable", "list"]:
+            return _FakeProc(argv, returncode=1, stderr="variables unavailable")
+        return _FakeProc(argv, returncode=1)
+
+    deps = CiDeps(root=tmp_path, runner=runner, registry_path=reg_path, flag_on=lambda: True)
+    result = run_status(deps, json_out=False)
+    assert result.ok is False
+    assert "variables unavailable" in result.summary
+
+
+def test_workflows_response_invalid_refuses(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+
+    def runner(argv: list[str], cwd: Path) -> _FakeProc:
+        if argv[:2] == ["gh", "api"] and argv[2] == "rate_limit":
+            return _FakeProc(
+                argv,
+                stdout=json.dumps({"resources": {"core": {"limit": 5000, "remaining": 1}}}),
+            )
+        if argv[:3] == ["gh", "variable", "list"]:
+            return _FakeProc(argv, stdout=json.dumps([]))
+        if argv[:2] == ["gh", "api"] and "actions/workflows" in argv[2]:
+            return _FakeProc(argv, stdout=json.dumps({"workflows": "bad"}))
+        return _FakeProc(argv, returncode=1)
+
+    deps = CiDeps(root=tmp_path, runner=runner, registry_path=reg_path, flag_on=lambda: True)
+    result = run_status(deps, json_out=False)
+    assert result.ok is False
+    assert "workflows array" in result.summary
+
+
+def test_vars_missing_snapshot(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+    deps = CiDeps(root=tmp_path, runner=lambda a, c: _FakeProc(a), registry_path=reg_path, flag_on=lambda: True)
+    result = run_vars(deps, refresh=False)
+    assert result.ok is False
+    assert "no snapshot yet" in result.summary
+
+
+def test_vars_corrupt_snapshot(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+    snap = tmp_path / CI_VARS_REL
+    snap.parent.mkdir(parents=True, exist_ok=True)
+    snap.write_text("{not json", encoding="utf-8")
+    deps = CiDeps(root=tmp_path, runner=lambda a, c: _FakeProc(a), registry_path=reg_path, flag_on=lambda: True)
+    result = run_vars(deps, refresh=False)
+    assert result.ok is False
+    assert "corrupt JSON" in result.summary
+
+
+def test_vars_refresh_rate_limit_refuses(tmp_path: Path) -> None:
+    reg_path = _write_fixture_tree(tmp_path)
+
+    def runner(argv: list[str], cwd: Path) -> _FakeProc:
+        if argv[:2] == ["gh", "api"] and argv[2] == "rate_limit":
+            return _FakeProc(
+                argv,
+                stdout=json.dumps({"resources": {"core": {"limit": 60, "remaining": 60}}}),
+            )
+        return _FakeProc(argv, returncode=1)
+
+    deps = CiDeps(root=tmp_path, runner=runner, registry_path=reg_path, flag_on=lambda: True)
+    result = run_vars(deps, refresh=True)
+    assert result.ok is False
+    assert result.details.get("exit_code") == EXIT_CI_REFUSAL
+
+
+def test_ci_duty_unknown_verb() -> None:
+    deps = CiDeps(root=Path("/tmp"), runner=lambda a, c: _FakeProc(a), flag_on=lambda: True)
+    ns = argparse.Namespace(_ci_deps=deps, ci_verb="pause", json=False, refresh=False)
+    result = CiDuty().run(ns)
+    assert result.ok is False
+    assert "status or vars" in result.summary
