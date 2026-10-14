@@ -907,5 +907,6 @@ def test_guildhall_generator_stays_deleted():
     assert (repo / ".github" / "workflows" / "kedro-viz-publish.yml").is_file()
     pages_wf = (repo / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
     assert "schedule:" in pages_wf
-    assert "17 6 * * 1" in pages_wf
+    assert "23 */6 * * *" in pages_wf
+    assert "17 6 * * 1" not in pages_wf
     assert "generate.py" not in pages_wf
