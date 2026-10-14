@@ -23,8 +23,7 @@ import tempfile
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any
-from typing import Callable
+from typing import Any, Callable
 
 IN_CLUSTER_FLAGS_PATH = Path("/etc/pyforge/flags.json")
 LOCAL_DEV_RELATIVE = Path("src/platform/config/flags.json")
@@ -206,7 +205,6 @@ def evaluate_cutover_root(source: Path | str | None = None) -> str:
     return read_cutover_root(path)
 
 
-
 def evaluate_cli_boolean(key: str, default: bool = False, source: Path | str | None = None) -> bool:
     """The CLI reader's value for *key*: ``pyforge.core.flags.read_boolean`` over the tree itself.
 
@@ -280,8 +278,7 @@ def flags_asgi_app() -> Any:
 
 
 def tree_view(request: Any) -> Any:
-    from django.http import HttpResponse
-    from django.http import HttpResponseForbidden
+    from django.http import HttpResponse, HttpResponseForbidden
 
     if not request.user.is_authenticated:
         return HttpResponseForbidden("authentication required")
@@ -292,8 +289,7 @@ def tree_view(request: Any) -> Any:
 
 
 def eval_view(request: Any, key: str) -> Any:
-    from django.http import HttpResponseForbidden
-    from django.http import JsonResponse
+    from django.http import HttpResponseForbidden, JsonResponse
 
     if not request.user.is_authenticated:
         return HttpResponseForbidden("authentication required")

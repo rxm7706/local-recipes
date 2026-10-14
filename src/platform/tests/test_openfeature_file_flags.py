@@ -699,6 +699,7 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    # Story 99.3; 99.4 / 99.5 preflight parity reuse the same key (CAP-166).
     "pyforge.steward.ci_pause_control": {
         "dev": True,
         "staging": False,

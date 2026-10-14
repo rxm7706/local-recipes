@@ -11,8 +11,7 @@ import inspect
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
-from typing import Callable
+from typing import Any, Callable
 
 FAIL_MAX = 5
 FAIL_FAST_SECONDS = 0.5
@@ -104,9 +103,7 @@ class CircuitBreaker:
         self._success()
         return result
 
-    async def call_or_degrade(
-        self, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> Any:
+    async def call_or_degrade(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         try:
             return await self.acall(func, *args, **kwargs)
         except CircuitOpenError:

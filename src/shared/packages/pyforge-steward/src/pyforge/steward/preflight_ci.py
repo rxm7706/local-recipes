@@ -29,13 +29,16 @@ expand, a ``changes`` step that fails, a lane with no CI counterpart.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shlex
 import shutil
+import sys
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -537,6 +540,245 @@ def _declared_ci_var(name: str, registry: Mapping[str, Any]) -> str:
     return ""
 
 
+def _empty_ci_var(_name: str) -> str:
+    """Simulate every pause switch unset (Story 99.5 — compare selection without pauses)."""
+    return ""
+
+
+CI_VARS_REL = Path(".steward/ci-vars.json")
+CI_FLAG_KEY = "pyforge.steward.ci_pause_control"
+SNAPSHOT_MAX_AGE = timedelta(hours=24)
+
+TWIN_CI_SURFACE_IDS: dict[str, tuple[str, ...]] = {
+    "platform-ci-local": ("platform-ci.container", "platform-ci.container-dbgpt"),
+    "guild_image_ci": ("station-tests.guild-container",),
+}
+
+
+@dataclass(frozen=True)
+class CiVarResolution:
+    """How ``vars.*`` terms resolve during lane selection (Story 99.5)."""
+
+    source: str  # printed once per run, e.g. ``snapshot 1h`` or ``declared``
+    lookup: Callable[[str], str]
+    note: str = ""  # e.g. unreadable snapshot
+
+
+def _format_snapshot_age(fetched_at: datetime, now: datetime) -> str:
+    hours = max(0, int((now - fetched_at).total_seconds() // 3600))
+    if hours < 1:
+        return "snapshot <1h"
+    return f"snapshot {hours}h"
+
+
+def _read_ci_vars_snapshot(root: Path) -> tuple[dict[str, str] | None, str | None]:
+    path = root / CI_VARS_REL
+    if not path.is_file():
+        return None, None
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None, "unreadable"
+    if not isinstance(doc, dict):
+        return None, "unreadable"
+    variables = doc.get("variables")
+    if not isinstance(variables, dict):
+        return None, "unreadable"
+    flat = {str(k): "" if v is None else str(v) for k, v in variables.items()}
+    fetched = doc.get("fetched_at")
+    if not isinstance(fetched, str):
+        return flat, None
+    try:
+        ts = datetime.fromisoformat(fetched.replace("Z", "+00:00"))
+    except ValueError:
+        return flat, None
+    return flat, ts.isoformat()
+
+
+def _flag_on(root: Path) -> bool:
+    try:
+        from pyforge.core.flags import read_boolean
+    except ImportError:
+        return False
+    return read_boolean(CI_FLAG_KEY, default=False)
+
+
+def resolve_ci_vars(
+    repo_root: Path,
+    *,
+    flag_on: bool | None = None,
+    now: datetime | None = None,
+) -> CiVarResolution:
+    """Snapshot (<24 h) wins when the flag is on; otherwise declared registry state."""
+    root = repo_root.resolve()
+    registry = _load_ci_surfaces_registry(root)
+    if flag_on is None:
+        flag_on = _flag_on(root)
+    if not flag_on:
+        return CiVarResolution("declared", lambda name: _declared_ci_var(name, registry))
+
+    moment = now or datetime.now(tz=UTC)
+    variables, fetched_raw = _read_ci_vars_snapshot(root)
+    if variables is None and fetched_raw == "unreadable":
+        return CiVarResolution(
+            "declared",
+            lambda name: _declared_ci_var(name, registry),
+            note="snapshot unreadable",
+        )
+    if variables is not None and fetched_raw is not None:
+        try:
+            fetched = datetime.fromisoformat(fetched_raw.replace("Z", "+00:00"))
+            if fetched.tzinfo is None:
+                fetched = fetched.replace(tzinfo=UTC)
+            age = moment - fetched
+            if age <= SNAPSHOT_MAX_AGE:
+
+                def _snapshot_lookup(name: str, v: dict[str, str] = variables) -> str:
+                    return v.get(name, "")
+
+                return CiVarResolution(
+                    _format_snapshot_age(fetched, moment),
+                    _snapshot_lookup,
+                )
+        except ValueError:
+            pass
+    if variables is not None and fetched_raw is None:
+
+        def _snapshot_lookup_no_ts(name: str, v: dict[str, str] = variables) -> str:
+            return v.get(name, "")
+
+        return CiVarResolution(
+            "snapshot (no fetched_at)",
+            _snapshot_lookup_no_ts,
+        )
+    return CiVarResolution("declared", lambda name: _declared_ci_var(name, registry))
+
+
+def _registry_row_for_lane(registry: Mapping[str, Any], lane_task: str) -> dict[str, Any] | None:
+    for row in registry.get("surfaces") or []:
+        if not isinstance(row, dict):
+            continue
+        twin = str(row.get("local_twin") or "").split()[0]
+        if twin == lane_task:
+            return row
+    return None
+
+
+def _registry_row_by_id(registry: Mapping[str, Any], row_id: str) -> dict[str, Any] | None:
+    for row in registry.get("surfaces") or []:
+        if isinstance(row, dict) and str(row.get("id") or "") == row_id:
+            return row
+    return None
+
+
+@dataclass(frozen=True)
+class PausedLane:
+    task: str
+    environment: str
+    switch: str
+    since: str
+    review_by: str
+
+    def banner_line(self) -> str:
+        return f"paused in CI: {self.task} ({self.switch} since {self.since}, review_by {self.review_by})"
+
+    def journal_verdict(self) -> str:
+        return f"skipped: paused in CI ({self.switch} since {self.since}, review_by {self.review_by})"
+
+
+def _pause_switch_live(name: str, resolution: CiVarResolution) -> bool:
+    return resolution.lookup(name).lower() == "true"
+
+
+def list_paused_ci_surfaces(repo_root: Path, resolution: CiVarResolution) -> list[PausedLane]:
+    """Registry pause rows whose switch reads live in ``resolution`` (Story 99.5 banner)."""
+    registry = _load_ci_surfaces_registry(repo_root)
+    paused: list[PausedLane] = []
+    seen: set[str] = set()
+    for row in registry.get("surfaces") or []:
+        if not isinstance(row, dict):
+            continue
+        switch = str(row.get("switch") or "")
+        if not switch or str(row.get("switch_class") or "") != "pause":
+            continue
+        if not _pause_switch_live(switch, resolution):
+            continue
+        label = str(row.get("local_twin") or row.get("job") or row.get("id") or switch).split()[0]
+        if label in seen:
+            continue
+        seen.add(label)
+        since = str(row.get("paused_since") or "unknown")
+        review = str(row.get("review_by") or "unknown")
+        paused.append(PausedLane(label, "", switch, since, review))
+    return paused
+
+
+def discover_paused_lanes(
+    repo_root: Path,
+    lanes: Sequence[LaneLike],
+    pixi_data: Mapping[str, Any],
+    resolution: CiVarResolution,
+    *,
+    process: PosixProcess | None = None,
+) -> list[PausedLane]:
+    """Lanes CI would not run solely because pause switches are on (Story 99.5)."""
+    registry = _load_ci_surfaces_registry(repo_root)
+    with_pause = select_lanes(repo_root, lanes, pixi_data, process=process, var_lookup=resolution.lookup)
+    without_pause = select_lanes(repo_root, lanes, pixi_data, process=process, var_lookup=_empty_ci_var)
+    paused: list[PausedLane] = []
+    for lane in lanes:
+        if with_pause.is_selected(lane):
+            continue
+        if not without_pause.is_selected(lane):
+            continue
+        row = _registry_row_for_lane(registry, lane.task)
+        if row is None:
+            continue
+        switch = str(row.get("switch") or "")
+        if not switch or not _pause_switch_live(switch, resolution):
+            continue
+        since = str(row.get("paused_since") or "unknown")
+        review = str(row.get("review_by") or "unknown")
+        paused.append(PausedLane(lane.task, lane.environment, switch, since, review))
+    return paused
+
+
+def print_ci_pause_banner(
+    repo_root: Path,
+    paused: Sequence[PausedLane],
+    *,
+    resolution: CiVarResolution | None = None,
+) -> None:
+    if resolution is not None and resolution.source:
+        note = f" ({resolution.note})" if resolution.note else ""
+        print(f"preflight: ci vars from {resolution.source}{note}", file=sys.stderr)
+    for entry in paused:
+        print(f"preflight: {entry.banner_line()}", file=sys.stderr)
+
+
+def emit_twin_banner(repo_root: Path, twin_key: str) -> None:
+    """Print pause banner lines for a manual CI twin script (Story 99.5 AC4)."""
+    if not _flag_on(repo_root):
+        return
+    resolution = resolve_ci_vars(repo_root, flag_on=True)
+    registry = _load_ci_surfaces_registry(repo_root)
+    surface_ids = TWIN_CI_SURFACE_IDS.get(twin_key, ())
+    paused: list[PausedLane] = []
+    for row_id in surface_ids:
+        row = _registry_row_by_id(registry, row_id)
+        if row is None:
+            continue
+        switch = str(row.get("switch") or "")
+        if not switch or not _pause_switch_live(switch, resolution):
+            continue
+        twin = str(row.get("local_twin") or "").split()[0] or row_id
+        since = str(row.get("paused_since") or "unknown")
+        review = str(row.get("review_by") or "unknown")
+        paused.append(PausedLane(twin, "", switch, since, review))
+    if paused:
+        print_ci_pause_banner(repo_root, paused, resolution=resolution)
+
+
 def _split_top_level(text: str, op: str) -> list[str]:
     parts: list[str] = []
     depth = 0
@@ -577,7 +819,8 @@ def _eval_ci_atom(
     var = re.match(r"^vars\.([A-Z0-9_]+)\s*(==|!=)\s*'([^']*)'$", text)
     if var:
         name, op, literal = var.groups()
-        value = _declared_ci_var(name, registry)
+        lookup = getattr(state, "ci_var_lookup", None)
+        value = lookup(name) if lookup is not None else _declared_ci_var(name, registry)
         return (value == literal) if op == "==" else (value != literal)
     match = _NEEDS_CONDITION.fullmatch(text)
     if match:
@@ -657,6 +900,7 @@ class _State:
     env: dict[str, str]
     scratch: Path
     ci_registry: Mapping[str, Any] = field(default_factory=dict)
+    ci_var_lookup: Callable[[str], str] | None = None
     _outputs: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
     _counter: int = 0
 
@@ -921,6 +1165,7 @@ def select_lanes(
     pixi_data: Mapping[str, Any],
     *,
     process: PosixProcess | None = None,
+    var_lookup: Callable[[str], str] | None = None,
 ) -> Selection:
     """The lanes CI would run for this diff, read from ``.github/workflows/*.yml``.
 
@@ -932,7 +1177,7 @@ def select_lanes(
     dirty: list[str] = []
     try:
         with tempfile.TemporaryDirectory(prefix="preflight-select-") as scratch_name:
-            return _select(repo_root, lanes, pixi_data, proc, Path(scratch_name), changed, dirty)
+            return _select(repo_root, lanes, pixi_data, proc, Path(scratch_name), changed, dirty, var_lookup=var_lookup)
     except _SelectAll as exc:
         return _select_all(lanes, str(exc), changed, dirty)
     except Exception as exc:  # noqa: BLE001 -- a lane that cannot decide runs
@@ -947,6 +1192,8 @@ def _select(
     scratch: Path,
     changed: list[str],
     dirty: list[str],
+    *,
+    var_lookup: Callable[[str], str] | None = None,
 ) -> Selection:
     env = _git_env()
     probe = _git(process, root, ["rev-parse", "--verify", "--quiet", BASE_REF], env)
@@ -976,11 +1223,35 @@ def _select(
         )
 
     ci_registry = _load_ci_surfaces_registry(root)
-    states = [_State(root, process, workflows, pixi_data, tuple(changed), env, scratch, ci_registry)]
+    states = [
+        _State(
+            root,
+            process,
+            workflows,
+            pixi_data,
+            tuple(changed),
+            env,
+            scratch,
+            ci_registry,
+            ci_var_lookup=var_lookup,
+        )
+    ]
     if dirty:
         snapshot_env = _snapshot_env(process, root, scratch, env, base_sha)
         union = tuple(dict.fromkeys([*changed, *dirty]))
-        states.append(_State(root, process, workflows, pixi_data, union, snapshot_env, scratch, ci_registry))
+        states.append(
+            _State(
+                root,
+                process,
+                workflows,
+                pixi_data,
+                union,
+                snapshot_env,
+                scratch,
+                ci_registry,
+                ci_var_lookup=var_lookup,
+            )
+        )
 
     verdicts: list[LaneVerdict] = []
     for lane in lanes:

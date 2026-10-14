@@ -44,38 +44,25 @@ import logging
 import secrets
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import connection
-from django.db import transaction
-from django.db.models import F
-from django.db.models import Q
+from django.db import connection, transaction
+from django.db.models import F, Q
 from django.db.utils import DatabaseError
 from django.utils import timezone
 
 from django_pyforge.assertion.crypto import verify_assertion
 from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.schema import CLAIM_ROLES
-from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.assertion.schema import audience_for
-from django_pyforge.events.constants import EVENT_SCHEMAS
-from django_pyforge.events.constants import EXT_GIT_SHA
-from django_pyforge.events.constants import EXT_SBOM_PURL
-from django_pyforge.events.constants import EXT_SPEC_ID
-from django_pyforge.events.constants import EXT_TENANT
-from django_pyforge.events.fabric import EventBrokerConfigError
-from django_pyforge.events.fabric import connect_event_broker
-from django_pyforge.models import McpHandle
-from django_pyforge.models import RunState
+from django_pyforge.assertion.schema import CLAIM_ROLES, CLAIM_SUB, audience_for
+from django_pyforge.events.constants import EVENT_SCHEMAS, EXT_GIT_SHA, EXT_SBOM_PURL, EXT_SPEC_ID, EXT_TENANT
+from django_pyforge.events.fabric import EventBrokerConfigError, connect_event_broker
+from django_pyforge.models import McpHandle, RunState
 from django_pyforge.queues import station_time_limit
-from django_pyforge.rate_limit import START_SCOPE
-from django_pyforge.rate_limit import consume
-from django_pyforge.rate_limit import int_setting
+from django_pyforge.rate_limit import START_SCOPE, consume, int_setting
 from django_pyforge.roles import unique_tenant_from_raw
 
 HANDLE_ENTROPY_BYTES = 32
@@ -368,12 +355,8 @@ def enforce_run_bounds(
             details={"station": station, "queue_depth": depth, "limit": ceiling},
         )
     max_running = int_setting(
-        SETTING_MAX_RUNNING_PER_SUB_LOOP
-        if tool == LOOP_PUBLISH_TOOL
-        else SETTING_MAX_RUNNING_PER_SUB,
-        DEFAULT_MAX_RUNNING_PER_SUB_LOOP
-        if tool == LOOP_PUBLISH_TOOL
-        else DEFAULT_MAX_RUNNING_PER_SUB,
+        SETTING_MAX_RUNNING_PER_SUB_LOOP if tool == LOOP_PUBLISH_TOOL else SETTING_MAX_RUNNING_PER_SUB,
+        DEFAULT_MAX_RUNNING_PER_SUB_LOOP if tool == LOOP_PUBLISH_TOOL else DEFAULT_MAX_RUNNING_PER_SUB,
     )
     live = live_runs_for_subject(subject)
     if len(live) >= max_running:
@@ -723,8 +706,7 @@ def heartbeat_held_run(handle: str, *, payload: dict[str, Any] | None = None) ->
             **existing,
             "publish": publish,
             "tasks": merged_tasks,
-            "harness_run_id": publish.get("harness_run_id")
-            or existing.get("harness_run_id"),
+            "harness_run_id": publish.get("harness_run_id") or existing.get("harness_run_id"),
         }
     live.update(**update_fields)
     _slide_handle_expiry(handle_row)
@@ -1084,10 +1066,7 @@ def revoke_subject(
     """
     subject = subject.strip() if isinstance(subject, str) else ""
     if not subject:
-        msg = (
-            "revoke_subject requires a non-empty subject: pre-0004 rows carry "
-            "subject='' and would all be cancelled"
-        )
+        msg = "revoke_subject requires a non-empty subject: pre-0004 rows carry subject='' and would all be cancelled"
         raise ValueError(msg)
     rows = list(
         RunState.objects.filter(
@@ -1226,9 +1205,7 @@ def prune_run_state(*, now: datetime | None = None) -> dict[str, Any]:
     # live rows alone above `max_rows` are the ceilings' business, and a sweep
     # reporting `truncated` with nothing it may delete would send an operator
     # -- or the self-rescheduling task -- round forever.
-    over_cap_left = remaining > max_rows and (
-        RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES).exists()
-    )
+    over_cap_left = remaining > max_rows and (RunState.objects.filter(status__in=RunState.TERMINAL_STATUSES).exists())
     truncated = len(aged_ids) >= batch or len(handle_ids) >= batch or over_cap_left
     return {
         "aged_out": int(aged_out),
