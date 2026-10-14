@@ -59,7 +59,9 @@ def test_a_shelf_with_bodies_and_resolving_links_passes(tmp_path: Path) -> None:
         tmp_path,
         {
             "index.html": _page('<p>Home <a href="/local-recipes/how-to/">How-to</a> <a href="herald/">Herald</a></p>'),
-            "how-to/index.html": _page('<p>Guides <a href="/local-recipes/#top">top</a> <a href="https://github.com/x">ext</a></p>'),
+            "how-to/index.html": _page(
+                '<p>Guides <a href="/local-recipes/#top">top</a> <a href="https://github.com/x">ext</a></p>'
+            ),
             "herald/index.html": "<html>herald pages are judged elsewhere</html>",
         },
     )
@@ -81,7 +83,9 @@ def test_a_broken_shelf_link_fails(tmp_path: Path, capsys: pytest.CaptureFixture
 
 
 def test_a_shelf_link_missing_the_base_path_fails(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    root = _artifact(tmp_path, {"index.html": _page('<p><a href="/how-to/">how-to</a></p>'), "how-to/index.html": _page("<p>x</p>")})
+    root = _artifact(
+        tmp_path, {"index.html": _page('<p><a href="/how-to/">how-to</a></p>'), "how-to/index.html": _page("<p>x</p>")}
+    )
     with pytest.raises(SystemExit):
         _assemble_pages()._check_shelf_pages(root, SITE_URL)
     assert "outside the base path" in capsys.readouterr().err
@@ -115,7 +119,11 @@ def test_nested_divs_in_the_body_do_not_end_it_early(tmp_path: Path) -> None:
 def test_a_relative_link_on_the_404_page_fails(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     root = _artifact(
         tmp_path,
-        {"index.html": _page("<p>home</p>"), "how-to/index.html": _page("<p>x</p>"), "404.html": _page('<p><a href="how-to/">how-to</a></p>')},
+        {
+            "index.html": _page("<p>home</p>"),
+            "how-to/index.html": _page("<p>x</p>"),
+            "404.html": _page('<p><a href="how-to/">how-to</a></p>'),
+        },
     )
     with pytest.raises(SystemExit):
         _assemble_pages()._check_shelf_pages(root, SITE_URL)
@@ -133,13 +141,18 @@ def test_a_link_escaping_the_artifact_fails(tmp_path: Path, capsys: pytest.Captu
 def test_a_percent_encoded_link_resolves(tmp_path: Path) -> None:
     root = _artifact(
         tmp_path,
-        {"index.html": _page('<p><a href="/local-recipes/how-to/my%20notes/">notes</a></p>'), "how-to/my notes/index.html": _page("<p>n</p>")},
+        {
+            "index.html": _page('<p><a href="/local-recipes/how-to/my%20notes/">notes</a></p>'),
+            "how-to/my notes/index.html": _page("<p>n</p>"),
+        },
     )
     _assemble_pages()._check_shelf_pages(root, SITE_URL)
 
 
 def test_a_broken_image_in_a_body_fails(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    root = _artifact(tmp_path, {"index.html": _page('<p>A figure: <img src="/local-recipes/img/missing.png" alt="x"></p>')})
+    root = _artifact(
+        tmp_path, {"index.html": _page('<p>A figure: <img src="/local-recipes/img/missing.png" alt="x"></p>')}
+    )
     with pytest.raises(SystemExit):
         _assemble_pages()._check_shelf_pages(root, SITE_URL)
     assert "broken shelf link" in capsys.readouterr().err
@@ -149,4 +162,3 @@ def test_check_runs_the_shelf_check() -> None:
     import inspect
 
     assert "_check_shelf_pages(artifact_root, site_url)" in inspect.getsource(_assemble_pages().check)
-

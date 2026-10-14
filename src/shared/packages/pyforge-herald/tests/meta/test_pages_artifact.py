@@ -50,7 +50,10 @@ def _write_shared_menu(artifact: Path, base: str, *, herald_index_extra: str = "
     top = "".join(f'<a data-pf-menu-link href="{base}{path}">{label}</a>' for label, path, _ in _SHARED_MENU)
     sidebar = "".join(f'<a href="{base}{path}">{label}</a>' for label, path, _ in _SHARED_MENU[1:])
     for rel in ("index.html", "404.html"):
-        (artifact / rel).write_text(f"<html>{top}{sidebar}<main><div class='sl-markdown-content'><p>Shelf page body.</p></div></main></html>", encoding="utf-8")
+        (artifact / rel).write_text(
+            f"<html>{top}{sidebar}<main><div class='sl-markdown-content'><p>Shelf page body.</p></div></main></html>",
+            encoding="utf-8",
+        )
     for sub in ("", "dossier/", "infographics/", "decks/"):
         rel = "../" if sub else ""
         menu = "".join(f'<a data-pf-menu-link href="{rel}{href}">{label}</a>' for label, _, href in _SHARED_MENU)

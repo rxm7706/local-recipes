@@ -196,7 +196,10 @@ def _artifact(tmp_path: Path, base: str) -> Path:
     )
     root.mkdir(parents=True)
     for rel in ("index.html", "404.html"):
-        (root / rel).write_text(f"<html>{top}{sidebar}<main><div class='sl-markdown-content'><p>Shelf page body.</p></div></main></html>", encoding="utf-8")
+        (root / rel).write_text(
+            f"<html>{top}{sidebar}<main><div class='sl-markdown-content'><p>Shelf page body.</p></div></main></html>",
+            encoding="utf-8",
+        )
     for sub in _HERALD_PAGES:
         rel = "../" if sub else ""
         menu = "".join(f'<a data-pf-menu-link href="{rel}{href}">{label}</a>' for label, href in _EXPECTED)
