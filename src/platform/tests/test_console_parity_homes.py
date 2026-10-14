@@ -325,10 +325,10 @@ def test_generator_gone_kedro_viz_kept() -> None:
     ):
         assert f"[feature.local-recipes.tasks.{task}]" not in pixi
     assert (REPO_ROOT / ".github" / "workflows" / "kedro-viz-publish.yml").is_file()
-    dash_wf = (REPO_ROOT / ".github" / "workflows" / "dashboard.yml").read_text(
+    dash_wf = (REPO_ROOT / ".github" / "workflows" / "pages.yml").read_text(
         encoding="utf-8",
     )
-    assert "schedule:" not in dash_wf
+    assert "17 6 * * 1" in dash_wf
     assert "generate.py" not in dash_wf
 
 

@@ -68,12 +68,12 @@ def test_dashboard_yml_is_sole_deploy_pages_caller() -> None:
         text = path.read_text(encoding="utf-8")
         if "actions/deploy-pages" in text or "deploy-pages@" in text:
             deploy_hits.append(path.name)
-    assert deploy_hits == ["dashboard.yml"]
+    assert deploy_hits == ["pages.yml"]
 
 
 def test_dashboard_yml_uploads_unified_artifact() -> None:
     root = _repo_root()
-    text = (root / ".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+    text = (root / ".github/workflows/pages.yml").read_text(encoding="utf-8")
     assert "path: docs-site/build/site" in text
     assert "concurrency:" in text
     assert "group: pages" in text

@@ -622,7 +622,7 @@ superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
 - [ ] For a deck published to the family pages under `docsite/`: a PR touching
       `docsite/**` or `docs/dashboard/**` runs the `Docsite check` `pull_request`
       lane (`.github/workflows/docsite-check.yml`) — `docsite/build.py --check`
-      + `site-check` — before merge, not just `dashboard.yml`'s push-to-main
+      + `site-check` — before merge, not just `pages.yml`'s push-to-main
       build; `pixi run -e pyforge-guild pr-preflight` predicts it locally.
 
 ---

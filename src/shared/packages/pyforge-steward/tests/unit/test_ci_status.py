@@ -122,7 +122,7 @@ def _fixture_registry() -> dict:
             },
             {
                 "id": "dashboard",
-                "workflow": ".github/workflows/dashboard.yml",
+                "workflow": ".github/workflows/pages.yml",
                 "kind": "workflow",
                 "switch": "PAUSE_DASHBOARD",
                 "switch_class": "pause",
@@ -201,7 +201,7 @@ def _write_fixture_tree(root: Path) -> Path:
     for name in (
         "pyforge-station-tests.yml",
         "platform-ci.yml",
-        "dashboard.yml",
+        "pages.yml",
         "cancel-streak.yml",
         "drift-live.yml",
         "kedro-viz-publish.yml",
@@ -241,11 +241,11 @@ def _gh_fixture_responses(now: datetime) -> dict[str, object]:
             "workflows": [
                 {"path": ".github/workflows/kedro-viz-publish.yml", "state": "disabled_manually"},
                 {"path": ".github/workflows/orphan-disabled.yml", "state": "disabled_manually"},
-                {"path": ".github/workflows/dashboard.yml", "state": "active"},
+                {"path": ".github/workflows/pages.yml", "state": "active"},
             ]
         },
         "runs": {
-            ".github/workflows/dashboard.yml": [
+            ".github/workflows/pages.yml": [
                 {
                     "databaseId": 37447093993,
                     "conclusion": None,
@@ -700,7 +700,7 @@ def test_run_status_high_cost_canary_stale_is_stuck(tmp_path: Path) -> None:
     for name in (
         "pyforge-station-tests.yml",
         "platform-ci.yml",
-        "dashboard.yml",
+        "pages.yml",
         "cancel-streak.yml",
         "drift-live.yml",
         "kedro-viz-publish.yml",
