@@ -38,6 +38,9 @@ concurrency:
 
 jobs:
   lint-types:
+  # ci-surfaces: lint-types.lint-types
+  # render: python scripts/ci_surface_gates.py --render
+  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_LINT_TYPES != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

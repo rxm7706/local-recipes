@@ -39,6 +39,9 @@ concurrency:
 
 jobs:
   check:
+  # ci-surfaces: docsite-check.check
+  # render: python scripts/ci_surface_gates.py --render
+  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DOCSITE_CHECK != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

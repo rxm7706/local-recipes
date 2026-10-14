@@ -71,6 +71,9 @@ jobs:
   # tests had rotted on main unnoticed. It runs in the pure-stdlib
   # `pyforge-ci` env the `pyforge-doctor-scripts-test` task was written for.
   scripts-suite:
+  # ci-surfaces: detectors.scripts-suite
+  # render: python scripts/ci_surface_gates.py --render
+  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -154,85 +157,6 @@ jobs:
           fi
 
       - name: Install detector dependencies (pip fallback)
-        if: steps.py.outputs.mode == 'pip'
-        run: |
-          python -m pip install --quiet pyyaml playwright "ruamel.yaml>=0.18.17"
-          python -m pip install --quiet ./src/shared/packages/pyforge-core
-          python -m pip install --quiet ./src/shared/packages/pyforge-doctor
-
-      # check_layout drives headless Chrome. ubuntu-latest ships google-chrome,
-      # which the detector prefers via channel="chrome" before falling back to a
-      # playwright-managed chromium. If neither resolves, check_layout reports
-      # UNKNOWN and the runner exits 2 -- surfaced as a warning here, rather than
-      # quietly skipping the one check that asserts the bar LOOKS right.
-      - name: Verify a browser is present for the layout gate
-        run: |
-          which google-chrome || which chromium || \
-            ${{ steps.py.outputs.cmd }} -m playwright install --with-deps chromium
-
-      # Registry integrity is reported first and separately, so a hole in the
-      # registry reads as "the registry is wrong" rather than as a finding from
-      # some detector.
-      - name: Registry integrity
-        run: ${{ steps.py.outputs.cmd }} scripts/detectors.py --list || true
-
-      - name: Run repo-scope detectors
-        run: |
-          set +e
-          ${{ steps.py.outputs.cmd }} scripts/detectors.py --scope repo 2>&1 | tee detectors.out
-          rc=${PIPESTATUS[0]}
-          set -e
-
-          {
-            echo "## Detectors — repo scope"
-            echo
-            echo '```'
-            sed -n '1,40p' detectors.out
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          # One annotation per detector that reported, so findings are visible on
-          # the PR without opening the log. Advisory: the step still exits 0.
-          grep -E '^\s+(✗|\?) ' detectors.out | while read -r line; do
-            echo "::warning title=Detector::${line}"
-          done || true
-
-          case "$rc" in
-            0) echo "All repo-scope detectors passed." ;;
-            1) echo "::warning title=Detectors::Findings reported (advisory — not blocking). See the job summary." ;;
-            2) echo "::warning title=Detectors::A detector COULD NOT RUN — unknown, not green. See the job summary." ;;
-            *) echo "::warning title=Detectors::Runner exited ${rc}." ;;
-          esac
-          exit 0
-
-      # Story 12.2 (pyforge-mason, spec-conda-forge-expert-rebuild CAP-3 /
-      # re-scope pre-condition (a)): cfe_rebuild_guard_check ALONE is blocking.
-      # This deliberately re-runs the one detector after the advisory sweep
-      # (which already surfaced its findings as annotations) and lets its exit
-      # code stand: 0 clean · 1 findings · 2 could-not-run — and 2 must never
-      # read as success, so ANY non-zero reds this job. Scoped on purpose: the
-      # 2026-07-31 advisory posture for every OTHER repo-scope detector is
-      # unchanged (see the header comment above).
-      - name: CFE rebuild guard (blocking — Story 12.2)
-        run: ${{ steps.py.outputs.cmd }} scripts/cfe_rebuild_guard_check.py
-
-      # Operator ruling 2026-09-14 (DW-VOCAB-2026-09-14-16, the inverted force
-      # ratio): Doctor's durability verdict on Marshal's row is blocking. Same
-      # shape as the step above — the source re-runs after the advisory sweep
-      # and its exit code stands. It projects through pyforge.doctor.verdict,
-      # whose frozen domain is {0, 2, 130}: 0 ok (warn included), 2 FAIL — there
-      # is no 1, and 2 here means a real regression, not "could not run" (see
-      # CLAUDE.md § Health / status on the two surfaces' inverted 2).
-      #
-      # Why `ledger-regression` and not the `marshal-durability` category:
-      # both are Doctor's verdict on the same 2026-08-08 incident class (a
-      # sync destroying 96 `done` markers while printing success), but
-      # `marshal-durability` compares the WORKING TREE against HEAD — on a
-      # runner those are the same commit, so it can observe nothing — while
-      # `ledger-regression` compares origin/main..HEAD (first-parent fallback
-      # on a push to main), the form its own docstring says was designed to
-      # run in CI. fetch-depth: 0 above is what makes that range resolvable.
-      # Scoped on purpose: ledger-direction and every other Marshal-row source
-      # stay advisory; widening is a further ruling, not a drift.
-      - name: Doctor's durability verdict on Marshal (blocking — ruling 2026-09-14)
-        run: ${{ steps.py.outputs.cmd }} -m pyforge.doctor.sources ledger-regression
+  # ci-surfaces: detectors.detectors
+  # render: python scripts/ci_surface_gates.py --render
+  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}

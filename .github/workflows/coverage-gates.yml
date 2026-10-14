@@ -55,6 +55,9 @@ concurrency:
 
 jobs:
   changes:
+  # ci-surfaces: coverage-gates.changes
+  # render: python scripts/ci_surface_gates.py --render
+  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_COVERAGE_GATES != 'true') }}
     runs-on: ubuntu-latest
     outputs:
       stations: ${{ steps.filter.outputs.stations }}
@@ -114,7 +117,9 @@ jobs:
 
   named-module-gates:
     needs: changes
-    if: needs.changes.outputs.stations != '[]'
+  # ci-surfaces: coverage-gates.named-module-gates
+  # render: python scripts/ci_surface_gates.py --render
+  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_COVERAGE_GATES != 'true' && (needs.changes.outputs.stations != '[]')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:

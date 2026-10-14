@@ -17,6 +17,9 @@ on:
 
 jobs:
   copilot-setup-steps:
+  # ci-surfaces: copilot-setup-steps.copilot-setup-steps
+  # render: python scripts/ci_surface_gates.py --render
+  if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_COPILOT_SETUP_STEPS != 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
