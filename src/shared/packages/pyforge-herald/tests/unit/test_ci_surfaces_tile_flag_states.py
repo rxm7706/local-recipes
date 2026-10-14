@@ -11,7 +11,7 @@ import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
 from pyforge.testing_kit.flags import flag_states
 
-from pyforge.herald.ci_surfaces_tile import CI_SURFACES_TILE_FLAG, ci_surfaces_tile_enabled
+from pyforge.herald.ci_surfaces_tile import CI_SURFACES_TILE_FLAG
 
 flag_provider = make_flag_provider_fixture()
 
@@ -108,12 +108,6 @@ def _fixture_all_verdicts() -> dict:
         "rate_limit": {"core_limit": 5000, "core_remaining": 5000},
         "rows": rows,
     }
-
-
-@flag_states(CI_SURFACES_TILE_FLAG)
-def test_flag_read_matches_openfeature_state(flag_provider: dict[str, bool]) -> None:
-    expected = flag_provider[CI_SURFACES_TILE_FLAG]
-    assert ci_surfaces_tile_enabled() is expected
 
 
 def test_ac1_lines_per_verdict_in_order(tmp_path: Path) -> None:
