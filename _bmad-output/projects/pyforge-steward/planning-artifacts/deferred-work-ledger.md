@@ -6382,3 +6382,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-14 — recorded with the CFE retro for Story 100.7
   status: open
+
+### DW-steward-99-6: Record one green workflow_dispatch of ci-canary.yml after merge (AC4).
+
+- source_spec: `planning-artifacts/specs/spec-99-6-a-paused-expensive-build-still-runs-once-a-week.md`
+  summary: Record one green workflow_dispatch of ci-canary.yml after merge (AC4).
+  evidence: GitHub Actions is the arbiter; this build-auto run cannot dispatch outward CI without operator confirmation.
+  location: .github/workflows/ci-canary.yml
+  origin: spec-deferred 7100cbe26d59 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-14 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

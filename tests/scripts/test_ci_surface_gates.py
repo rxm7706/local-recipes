@@ -470,3 +470,65 @@ def test_six_fixture_rules_together_six_findings() -> None:
         "paused_no_review",
     }
     assert len(classes) == 6
+
+
+def test_high_cost_row_without_canary_fails_check() -> None:
+    lib = _load_module(LIB_PATH, "ci_surface_lib_canary")
+    root = FIXTURES / "missing_canary"
+    root.mkdir(parents=True, exist_ok=True)
+    reg = {
+        "version": 1,
+        "conventions": {"pause_prefix": "PAUSE_", "enable_prefix": "ENABLE_", "master": "PAUSE_ALL_CI"},
+        "grandfathered_names": [],
+        "surfaces": [
+            {
+                "id": "expensive",
+                "workflow": ".github/workflows/sample.yml",
+                "job": "build",
+                "kind": "ci-job",
+                "cost": "high",
+                "switch": "PAUSE_SAMPLE",
+                "switch_class": "pause",
+                "state": "live",
+                "owner": "pyforge-steward",
+            }
+        ],
+    }
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    (wf_dir / "sample.yml").write_text(
+        "jobs:\n  build:\n    if: vars.PAUSE_SAMPLE != 'true'\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n",
+        encoding="utf-8",
+    )
+    findings = lib.offline_check(root, reg)
+    assert any("missing canary" in f for f in findings)
+
+
+def test_ci_canary_matrix_from_fixture_registry() -> None:
+    canary = _load_module(REPO_ROOT / "scripts" / "ci_canary.py", "ci_canary_test")
+    reg = {
+        "surfaces": [
+            {
+                "id": "station-tests.guild-container",
+                "cost": "high",
+                "state": "paused",
+                "local_twin": "pyforge-steward-guild-image-build",
+            },
+            {
+                "id": "platform-ci.container",
+                "cost": "high",
+                "state": "live",
+            },
+            {"id": "lint-types", "cost": "low", "state": "paused"},
+        ]
+    }
+    matrix = json.loads(canary.matrix_json(reg))
+    assert matrix == {
+        "include": [
+            {
+                "id": "station-tests.guild-container",
+                "canary": "ci-canary.station-tests.guild-container",
+                "local_twin": "pyforge-steward-guild-image-build",
+            }
+        ]
+    }

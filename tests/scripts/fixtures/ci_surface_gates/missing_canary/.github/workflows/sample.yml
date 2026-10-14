@@ -1,0 +1,6 @@
+jobs:
+  build:
+    if: vars.PAUSE_SAMPLE != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok
