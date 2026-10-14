@@ -134,6 +134,8 @@ def test_realize_argv_per_moved_class(tmp_path: Path, flag_provider) -> None:  #
     assert "pre-commit install" in joined
     assert "caveman-install --only claude --with-hooks" in joined
     assert "marshal refresh --project loop-home-a" in joined
+    precommit = next(c for c in runner.calls if "pre-commit" in c and "install" in c)
+    assert precommit[:5] == ["pixi", "run", "--frozen", "-e", "pyforge-guild"]
 
 
 def test_probe_never_writes_on_realize_path(tmp_path: Path, flag_provider) -> None:  # noqa: ARG001

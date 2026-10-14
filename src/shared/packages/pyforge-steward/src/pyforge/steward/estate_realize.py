@@ -115,15 +115,22 @@ def _probe_locked_version_file(root: Path, probe: dict[str, Any], env: str, plat
     return "live" if str(installed) == str(locked) else "stale"
 
 
+def _in_env(env: str, argv: list[Any]) -> list[str]:
+    """Run a register argv inside the row's pixi env.
+
+    Register steps and probes name bare tools (``osv-scanner``, ``pre-commit``); each row's
+    ``env`` says where they live, and the calling env (pyforge-steward) carries only some.
+    """
+    return ["pixi", "run", "--frozen", "-e", env, *(str(part) for part in argv)]
+
+
 def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env: str, package: str) -> str:
     cmd = probe.get("command")
     if isinstance(cmd, str):
         cmd = shlex_split(cmd)
     if not isinstance(cmd, list) or not cmd:
         return "missing"
-    # The register scopes each probe to the row's env; a bare argv would find only what the
-    # calling env happens to carry (osv-scanner lives in pyforge-warden, not pyforge-steward).
-    argv = ["pixi", "run", "--frozen", "-e", env, *(str(part) for part in cmd)]
+    argv = _in_env(env, cmd)
     try:
         proc = deps.runner(argv, deps.root)
     except OSError:
@@ -329,8 +336,13 @@ def run_realize(
             realize_state = "skipped-operator-gate"
         else:
             realize_state = "ran"
+            env = str(row.get("env") or "pyforge-guild")
             for argv in steps:
-                proc = deps.runner(argv, deps.root)
+                try:
+                    proc = deps.runner(_in_env(env, argv), deps.root)
+                except OSError:
+                    realize_state = "failed"
+                    break
                 if proc.returncode != 0:
                     realize_state = "failed"
                     break
