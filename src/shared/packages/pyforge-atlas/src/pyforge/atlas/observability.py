@@ -272,9 +272,7 @@ class AtlasObservabilityHooks:
                             rowCount=rows, producer=PRODUCER
                         )
                     )
-            datasets.append(
-                OutputDataset(namespace=self._namespace, name=name, outputFacets=output_facets)
-            )
+            datasets.append(OutputDataset(namespace=self._namespace, name=name, outputFacets=output_facets))
         return datasets
 
     # -- OTel helpers ------------------------------------------------------- #

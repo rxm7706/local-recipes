@@ -10,9 +10,7 @@ import pytest
 
 from pyforge.atlas.rag.store import DuckdbVssRagStore, HashingEmbedder
 
-_VSS_STMT = re.compile(
-    r"(?i)(SET\s+hnsw_enable_experimental_persistence|CREATE\s+INDEX.*USING\s+HNSW|DROP\s+INDEX)"
-)
+_VSS_STMT = re.compile(r"(?i)(SET\s+hnsw_enable_experimental_persistence|CREATE\s+INDEX.*USING\s+HNSW|DROP\s+INDEX)")
 
 
 class _VssFreeConnection:
