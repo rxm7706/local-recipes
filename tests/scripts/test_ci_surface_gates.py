@@ -61,7 +61,7 @@ def test_no_hardcoded_grandfather_or_prefix_lists_in_checker() -> None:
 def test_fixture_unregistered_pause_var() -> None:
     FIXTURES.mkdir(parents=True, exist_ok=True)
     wf_dir = FIXTURES / "unregistered" / ".github" / "workflows"
-    wf_dir.mkdir(parents=True)
+    wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
         "jobs:\n  job1:\n    if: vars.PAUSE_FOO != 'true'\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n",
         encoding="utf-8",
@@ -92,7 +92,7 @@ def test_fixture_row_switch_not_in_if() -> None:
     FIXTURES.mkdir(parents=True, exist_ok=True)
     root = FIXTURES / "row_drift"
     wf_dir = root / ".github" / "workflows"
-    wf_dir.mkdir(parents=True)
+    wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
         "jobs:\n  job1:\n    if: vars.PAUSE_KNOWN != 'true'\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n",
         encoding="utf-8",
