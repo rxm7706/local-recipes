@@ -346,6 +346,51 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   The operator asked for it directly in session: "Do this task here: Fix flaky atlas range-read test under xdist".
   **Kinships:** [[pyforge-steward]] (the pre-push preflight lane that surfaced it). Owner `spec-pyforge-atlas` (CAP-16,
   the read surface runs with no backend at all). → Epic 29 / Story 29.1, specced 2026-10-13.
+- **2026-10-14 (foundry-full mypy) — Found: Atlas fails mypy wherever its real libraries are installed, and no lane
+  runs mypy there.** `sbom-laptop-gate` runs `lint-types` inside `pyforge-foundry-full`, which installs Atlas's real
+  runtime libraries (Vizro and Dash, Dagster, Kedro, OpenLineage, Bokeh, BeautifulSoup, DuckDB). There mypy checks
+  Atlas against their real types and fails. `pyforge-guild`, where the CI `lint-types` lane and `pr-preflight` run mypy,
+  installs none of them, so mypy reads every one as `Any` and stays green. Steward Story 100.7 recorded the debt as
+  `DW-atlas-steward-100-7-1`.
+  **Evidence:**
+  - At `846d8383f5`, in a fresh worktree, `pixi run --frozen -e pyforge-foundry-full lint-types` exits 1 at its mypy
+    leg. Atlas reports `Found 72 errors in 8 files (checked 130 source files)`. The other nine `pyforge-*` packages pass,
+    and so do ruff and `ruff format`. The same mypy (2.4.0, the lock's) over `pyforge-guild` reports no issues.
+  - By file: `dashboard/app.py` 59 (54 `call-arg`, 4 `arg-type`, 1 `operator`), `views/widgets.py` 4 `attr-defined`,
+    `datasets/upstream_discovery.py` 2, `orchestration/definitions.py` 2, `query_plane_vectors.py` 2, and one each in
+    `mcp/session.py`, `observability.py` and `rag/store.py`. The DW row's per-file counts summed to 79, and it named
+    FastHTML; the `Nav` in question is Dash's `html.Nav`.
+  - All 54 `call-arg` errors read "Missing named argument" on a Vizro model. Vizro declares those defaults inside
+    `Annotated[..., Field(default=...)]`, which mypy cannot see. The pydantic mypy plugin, tried in a scratch config,
+    clears 10 of the 54 (`Card.href`, `AgGrid.footer`) and one `arg-type`, and leaves 44. Passing the defaults
+    explicitly would change `model_fields_set`, which Vizro reads: an explicit `Action.inputs` puts an action on Vizro's
+    deprecated legacy path.
+  - One error is a real defect. `observability.py` emits OpenLineage's `outputStatistics` facet under `facets`. It is
+    an `OutputDatasetFacet`, which openlineage-python 1.53.0 takes under `outputFacets`, so a strict consumer never sees
+    the row count where the spec puts it. Four test assertions pin the wrong key.
+  - On a scratch copy every other error takes a typed fix. Fixing the Bokeh imports exposes one more, which also takes a
+    typed fix. With those fixes and one per-module override (`call-arg` on `pyforge.atlas.dashboard.app`), mypy reports
+    no issues in either environment. The unit suite then fails the same environment-bound tests it fails on an
+    untouched copy, and no others, once the four assertions read `outputFacets`.
+  - No workflow runs mypy in `pyforge-foundry-full`. `lint-types.yml` runs only `pixi run --frozen -e pyforge-guild
+    lint-types`, and no workflow runs `sbom-laptop-gate`.
+  - Atlas's touched-module coverage floor is 80% unit. Three of the modules involved sit below it today:
+    `mcp/session.py` 75.0%, `rag/store.py` 35.1% and `query_plane_vectors.py` 30.9%. The vector tests skip unless the
+    DuckDB `vss` extension is provisioned, and the gate's runner does not provision it.
+  **What it looks like when fixed:** `mypy -p pyforge.atlas` reports no issues against the real libraries. The CI
+  `lint-types` job and `pr-preflight` both run the existing `mypy` task in `pyforge-foundry-full`, so the same drift
+  reds the next PR that adds it instead of waiting for the laptop gate.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1), and no `SPEC.md` change.
+  - Typed call sites first. An override only where mypy cannot type the call, per module and per error code (the
+    2026-09-20 baseline rule), never `ignore_errors`. No inline `# type: ignore`: with `warn_unused_ignores` on, one that
+    `pyforge-foundry-full` needs is an `unused-ignore` error in `pyforge-guild`.
+  - The lane is the existing `mypy` task in another environment. No new script and no dependency change.
+  - `.github/workflows/lint-types.yml` is `spec-pyforge-steward`'s, and the lane list in `pixi.toml` is
+    `spec-pyforge-steward:CAP-159`'s, so the implementation reconciles their governors.
+  The operator approved it on 2026-10-14: "chain the three DWs". **Kinships:** [[pyforge-steward]] (the lint/types
+  gate, `spec-pyforge-steward:CAP-153`; `pr-preflight`; `sbom-laptop-gate`, `fnd:CAP-13`). Owner `spec-pyforge-atlas`
+  (CAP-20, one command runs every check CI runs; AD-32). → Epic 30 / Story 30.1, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

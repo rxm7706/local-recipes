@@ -248,6 +248,33 @@ harness_preference = ["cursor"]
   # co-governor reconciles
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"30" = [  # atlas passes mypy in pyforge-foundry-full, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20; Story
+  # 30.1, closes DW-atlas-steward-100-7-1), added 2026-10-14. The default surface, restated because a declared entry
+  # replaces it outright (the package glob covers the seven typed modules, pyproject.toml's one override, the four moved
+  # observability assertions and the three new test modules), plus: the lint-types workflow's foundry-full step, the
+  # pr-preflight lane in pixi.toml and the task doc it may regenerate, the DW row this story closes, and every Spec memlog
+  # (pixi.toml alone has seven governors). The PRD, spine, brief and epics globs are for the chain-currency re-stamps
+  # those co-governor memlogs can trip, and nothing else.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".github/workflows/lint-types.yml",
+  "docs/how-to/pixi-tasks.md",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # chain-currency re-stamps only
+  "_bmad-output/projects/*/planning-artifacts/prds/**",
+  "_bmad-output/projects/*/planning-artifacts/architecture/**",
+  "_bmad-output/projects/*/planning-artifacts/briefs/**",
+  "_bmad-output/projects/*/planning-artifacts/epics.md",
+]
 
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
