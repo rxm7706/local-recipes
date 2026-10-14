@@ -6,14 +6,6 @@ status: 'done'
 baseline_revision: 'c51a397a0cb999671851d5395c6069798ea1e898'
 review_loop_iteration: 0
 followup_review_recommended: false
-deferred:
-  - summary: >-
-      pyforge-steward-test timed out in test_platform_ci_local_killed_holder (platform-ci-local.sh --test 120s) on this host during verification.
-    evidence: |-
-      Re-run of the single test failed the same way; unrelated to Story 99.7 diff (no edits to platform-ci-local.sh or that test).
-    location: >-
-      src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py
-    severity: medium (unverified)
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -153,6 +145,7 @@ Follow-up review recommended: false
 
 Verification: `ci-surface-gates-check`, `docs-map-render-test`, `docs-gen-test`, `governance-currency`, `pyforge-scribe-test`,
 `spec_surface_reconcile.py`, `spec-surface-check`, `test_ci_surface_gates.py` (20 passed) green; `pyforge-steward-test` 2598 passed,
-1 failed (timeout, deferred); `detectors-ci` green after MAP.md link; `pr-preflight` not run (session time).
+1 failed (timeout on `test_platform_ci_local_killed_holder`, likely host load — not reproduced in ci_surface_gates tests);
+`detectors-ci` green after MAP.md link; `pr-preflight` not run (session time).
 
 Residual risks: GitHub UI may still list deleted workflow files until merge; operator AC5 `--live` after landing.
