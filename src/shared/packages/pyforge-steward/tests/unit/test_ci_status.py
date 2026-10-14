@@ -19,9 +19,9 @@ flag_provider = make_flag_provider_fixture()
 pytest.importorskip("jsonschema")
 
 from pyforge.steward.ci import (
+    CANARY_STALE_DAYS,
     CI_FLAG_KEY,
     CI_VARS_REL,
-    CANARY_STALE_DAYS,
     DEFAULT_REPO,
     EXIT_CI_REFUSAL,
     SCHEMA_ID,
