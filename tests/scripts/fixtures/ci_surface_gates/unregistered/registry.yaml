@@ -83,6 +83,7 @@ surfaces:
   kind: workflow
   owner: pyforge-steward
   reason: not recorded (asked 2026-10-12)
+  review_by: '2026-11-01'
   state: paused-manually
   switch: null
   switch_class: pause
@@ -209,6 +210,7 @@ surfaces:
   kind: workflow
   owner: pyforge-steward
   reason: not recorded (asked 2026-10-12)
+  review_by: '2026-11-01'
   state: paused-manually
   switch: null
   switch_class: pause
