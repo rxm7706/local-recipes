@@ -2,7 +2,7 @@
 title: '100.7: The first refresh lands through the path'
 type: 'chore'
 created: '2026-10-13'
-status: 'blocked'
+status: 'in-review'
 baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -120,7 +120,32 @@ Type / Effort / Deps: chore / S / S-100.6.
 - 2026-10-13: minted with CAP-167 / FR-40 and Epic 100. `type: chore`. Widened the same day: `realize --plan` in
   the run, the operator's `realize --yes` and `--transitive` on the branch, the per-platform confirmation.
 
-## Auto Run Result
+## Unblock (2026-10-14, hand-driven after MRS-DISP-045)
+
+Operator ruling 2026-10-14: exclude every held package from the upgrade. The blocked run's
+two conflicts were lowered floors on unheld packages, so `estate refresh` also converges: a floor
+the upgrade lowers resets `pixi.toml`/`pixi.lock` to base, excludes that package and reruns.
+
+- `upgrade_excludes` (`scripts/pin_policy_lib.py`): every hold kind becomes `--exclude`. The
+  `openai` and `cron-descriptor` never-move workarounds are dropped.
+- `estate refresh`: converged in two rounds, excluding `cron-descriptor` and `openai`. 108
+  packages moved, no policy loss restored, `pixi lock` solved on all three platforms, and
+  fan-out came back clean. Journal: `.steward/estate-refresh/2026-10-14.json`. The 2026-10-13
+  stub journal is removed.
+- `_parse_pixi_moves` reads pixi 0.8x `upgrade --json` (`environment` shape); the old parser
+  journaled zero moves, so no realize row was ever due.
+- `estate realize`: register steps and probes now run inside each row's env (they ran bare
+  and crashed on `osv-scanner` and `pre-commit`). The spec-kit probe runs `specify --version`.
+  Every non-gated row reads `live`. Operator gates were skipped: `bmad-method` and
+  `bmad-module-skill-forge` read `stale`, `caveman-installer` reads `live`.
+- `estate reconcile`: derived docs, the library catalog and the bmad-suite pins were regenerated.
+- `pin_policy_check.py --diff origin/main` exits 0.
+
+Operator, optional on this branch: `estate realize --yes` for the two stale gated rows, and
+`estate refresh --transitive`. Skipping them is an accepted gap (Failure modes: `bmad-method`
+stays `stale`, journaled).
+
+## Auto Run Result (2026-10-13, superseded by the unblock above)
 
 Status: blocked  
 Blocking condition: `pin_policy_restore` refuses after `estate refresh` — `pixi lock` cannot solve once policy losses are rewritten (cron-descriptor floor restore vs `django-celery-beat`; earlier openai 3.x vs litellm 1.105). Auto-checkpoint pixi state on the branch was reset to `origin/main` at commit `34a765839f`.
