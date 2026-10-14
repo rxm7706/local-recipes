@@ -121,7 +121,13 @@ def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env:
         cmd = shlex_split(cmd)
     if not isinstance(cmd, list) or not cmd:
         return "missing"
-    proc = deps.runner(list(cmd), deps.root)
+    # The register scopes each probe to the row's env; a bare argv would find only what the
+    # calling env happens to carry (osv-scanner lives in pyforge-warden, not pyforge-steward).
+    argv = ["pixi", "run", "--frozen", "-e", env, *(str(part) for part in cmd)]
+    try:
+        proc = deps.runner(argv, deps.root)
+    except OSError:
+        return "missing"
     if proc.returncode != 0:
         return "missing"
     out = (proc.stdout or proc.stderr or "").strip()
@@ -132,7 +138,7 @@ def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env:
         return "live"
     # semver loose: first token on last line
     m = re.search(r"(\d+\.\d+\.\d+(?:\.\d+)?)", out)
-    if m and m.group(1) == locked.split(".")[0:3]:  # noqa: PLR2004
+    if m and m.group(1) == ".".join(locked.split(".")[0:3]):
         return "live"
     if m and locked.startswith(m.group(1).rsplit(".", 1)[0]):
         return "live"

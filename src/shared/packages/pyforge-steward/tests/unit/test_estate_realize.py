@@ -358,3 +358,22 @@ def test_production_realize_deps_and_shlex() -> None:
     deps = production_realize_deps(REPO_ROOT)
     assert deps.root == REPO_ROOT
     assert shlex_split("pyforge steward estate realize") == ["pyforge", "steward", "estate", "realize"]
+
+
+def test_command_probe_runs_inside_the_row_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The probe argv carries ``pixi run --frozen -e <env>`` (Story 100.7: osv-scanner crashed)."""
+    runner = RecordingRunner(responses={"osv-scanner --version": FakeProc([], 0, "osv-scanner version: 2.3.8\n")})
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "2.3.8")
+    row = {"env": "pyforge-warden", "probe": {"expect": "locked-version", "command": ["osv-scanner", "--version"]}}
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
+    assert run_probe(deps, row, package="osv-scanner") == "live"
+    assert runner.calls[-1] == ["pixi", "run", "--frozen", "-e", "pyforge-warden", "osv-scanner", "--version"]
+
+
+def test_command_probe_missing_binary_is_missing_not_a_crash() -> None:
+    def runner(argv: list[str], cwd: Path) -> FakeProc:
+        raise FileNotFoundError(argv[0])
+
+    row = {"env": "pyforge-warden", "probe": {"expect": "locked-version", "command": ["osv-scanner", "--version"]}}
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
+    assert run_probe(deps, row, package="osv-scanner") == "missing"
