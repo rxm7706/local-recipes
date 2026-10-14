@@ -2,8 +2,8 @@
 title: "102.1: The Pages workflow is steward's and fires only on the published inputs"
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
+status: 'done'
+baseline_revision: 'b23834e6f0ac0fdaec6d1bdca801769d796ae6c9'
 flag-exempt: detector-or-gate   # a workflow's `on:` block, checkout depth and sparse paths are evaluated by GitHub before any step can read a flag; the station read Story 99.2's gate sweep and 99.6's canary the same way (spec-feature-flag-governance Q2). The flag pyforge.steward.pages_duty is minted by Story 102.2, whose steps are the first a flag can gate.
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -235,9 +235,42 @@ a Dream edit
 - The weekly cron minute and hour: any Monday slot; P-A's `17 6 * * 1` is the default.
 - Whether `tests/unit/test_ci_status.py`'s recorded fixtures keep the old workflow name: the implementer's, recorded.
 
+## Auto Run Result
+
+Status: done
+
+**AC3 (sparse shallow clone):** `git clone --depth 1 --filter=blob:none --sparse file://<worktree> <dir>` then
+`git sparse-checkout set --no-cone '/*' '!/presentations/' '/presentations/*/project/*.html'`;
+`find presentations -path '*/src/pptx/*'` empty (0 paths); 77 tracked `presentations/*/project/*.html` present;
+`pixi run --frozen -e site pages-check` exit 0 (2026-10-14, sparse clone from `file://` worktree at
+commit f7a658ccc3 on branch `dispatch/pyforge-steward/102.1`).
+
+**Verification (2026-10-14):** `python scripts/ci_surface_gates.py --check` exit 0; `pixi-version-check` exit 0;
+`python scripts/spec_surface_reconcile.py` exit 0; steward preflight/meta tests including `test_pages_workflow.py`
+and AC6 preflight cases green (76 tests in selection suite run); herald `test_pages_artifact.py` green.
+
+**Governance:** Surface reconcile memlog entries on `spec-pyforge-steward`, `spec-pyforge-herald`,
+`spec-pyforge-marshal`, `spec-pyforge-unifying-strategy`, `spec-pyforge-doctor`, `spec-pyforge-atlas`, and
+`spec-python-agent-platform` (no `--write-baseline` in this run per dispatch guard).
+
+## Review Triage Log
+
+### 2026-10-14 — Review pass
+
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff matches AC1–AC7 scope; AC8 remains operator thirty-day read)
+
 ## Spec Change Log
 
 - 2026-10-14: specced at mint from Epic 102's Story 102.1 text, `spec-pyforge-steward` CAP-168 and the live
   `dashboard.yml`. The measured numbers are the brainstorm's and the design-thinking doc's (2026-10-13). The
   implementing session reads the live workflow and registry first and follows them where they differ from the shape
   quoted here.
+- 2026-10-14 (review before landing): AC3's sparse checkout is dropped; the build job checks out `fetch-depth: 1`
+  over the whole tree. The deck family pages (herald CAP-35) publish each deck's `src/pptx/*.pptx` and
+  `src/marp/*.md` as downloads and read `project/*.stamp.json` sidecars; `docsite/build.py` `_listed_files` returns an
+  empty list for an absent directory and `site-check` accepts empty download lists, so the sparse set passed AC3's
+  `pages-check` and would have deployed ten family pages with no downloads. Measured on `main` 2026-10-14: the build
+  reads 77.6 MB of the 84.9 MB tracked under `presentations/` (`project/` 8.4, `src/pptx/` 67.0, `src/marp/` 2.3),
+  so sparse could save at most 7.3 MB. The premise was the mint brief's (the coordinator's), not the session's.
+  `tests/meta/test_pages_workflow.py` now asserts the shallow checkout and the absence of a sparse set.

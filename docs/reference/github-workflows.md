@@ -44,7 +44,7 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 | workflow | trigger | what it does | why you care |
 |---|---|---|---|
-| **`dashboard.yml`** | `push` to main, `schedule`, dispatch | Builds the unified Pages artifact (`docs-site/build/site/`: Starlight shelf at `/`, dossier under `/herald/`, dashboard under `/dashboard/`) and deploys via the sole `deploy-pages` caller | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the `site` env with `--frozen`. |
+| **`pages.yml`** | `push` to main, `schedule`, dispatch | Builds the unified Pages artifact (`docs-site/build/site/`: Starlight shelf at `/`, dossier under `/herald/`, dashboard under `/dashboard/`) and deploys via the sole `deploy-pages` caller | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the `site` env with `--frozen`. |
 
 ### Explicit-run only (`workflow_dispatch`)
 
@@ -141,7 +141,7 @@ splits into two arguments and micromamba errors `Empty package name`.
 3. `pixi.toml` (third feature block)
 4. `environment.yaml`
 5. `.github/workflows/staged-recipes-linter.yml` → `create-args: pixi>=0.76.2`
-6. `.github/workflows/dashboard.yml` → `pixi-version: v0.76.2`
+6. `.github/workflows/pages.yml` → `pixi-version: v0.76.2`
 7. **`.github/actions/sync-pypi-mappings/action.yml` → `pixi-version: v0.76.2`**
 
 №7 was missed when the others were unified. Pinned at v0.59.0, it could not parse the
@@ -167,7 +167,7 @@ until one manual dispatch is observed green.
 | `docker/setup-qemu-action` | `@v4` | v4 **is** current (v4.2.0) |
 | `peter-evans/create-pull-request` | `@v8` | |
 
-Before this audit `dashboard.yml` held every stale action in the repo
+Before this audit `pages.yml` held every stale action in the repo
 (checkout@v4, setup-python@v5, configure-pages@v5, upload-pages-artifact@v3,
 deploy-pages@v4) — which is precisely the set GitHub's Node-20 deprecation warning
 named on each deploy.

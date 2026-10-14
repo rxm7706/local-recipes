@@ -905,6 +905,7 @@ def test_guildhall_generator_stays_deleted():
     ):
         assert f"[feature.local-recipes.tasks.{task}]" not in pixi
     assert (repo / ".github" / "workflows" / "kedro-viz-publish.yml").is_file()
-    dash_wf = (repo / ".github" / "workflows" / "dashboard.yml").read_text(encoding="utf-8")
-    assert "schedule:" not in dash_wf
-    assert "generate.py" not in dash_wf
+    pages_wf = (repo / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8")
+    assert "schedule:" in pages_wf
+    assert "17 6 * * 1" in pages_wf
+    assert "generate.py" not in pages_wf

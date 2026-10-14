@@ -6382,6 +6382,7 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-14 — recorded with the CFE retro for Story 100.7
   status: open
+  story: promoted to Story 103.2 (spec-pyforge-steward CAP-167, Epic 103, minted 2026-10-14; spec `planning-artifacts/specs/spec-103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network.md`); close when 103.2 lands, citing its merge.
 
 ### DW-steward-99-6: Record one green workflow_dispatch of ci-canary.yml after merge (AC4).
 
@@ -6404,4 +6405,17 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   owner: steward
   severity: medium
   promoted: 2026-10-14 — recorded with Story 101.1's chain
+  status: open
+  story: promoted to Story 103.1 (spec-pyforge-steward CAP-166, Epic 103, minted 2026-10-14; spec `planning-artifacts/specs/spec-103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses.md`); close when 103.1 lands, citing its merge.
+
+### DW-steward-103-3-1: A bare `estate reconcile` rewrites the latest refresh's journal and re-runs that batch's generators
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say.md`
+  summary: AGENTS.md says a `pixi.toml` change regenerates `environment.yaml` through `pyforge steward estate reconcile`. Run that way, with no refresh behind it, `run_reconcile` takes the latest tracked journal under `.steward/estate-refresh/` as its own. It builds its generators from that journal's `moves`, so a batch that once moved a `bmad-*` package re-runs `generate-bmad-suite`, network-resolved until Story 103.2 lands. It then writes its reconcile block back into that journal, over the refresh's own record. The memlog event it appends names that journal as the refresh that moved the paths. Story 103.3's reconcile run has to restore both files by hand. Follow-up: a reconcile with no new refresh writes a journal of its own (or none) and runs only the generators its own change needs, or the CLI takes a journal path. Recorded only; Story 103.3 does not implement it.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py:322`-`:336` (`journal_path is None` with journals present takes `journals[-1]` and loads it), `:340` (generators from that journal's moves via `_build_generators`, `:98` the `bmad-*` trigger), `:392`-`:394` (writes `journal_doc["reconcile"]` back when the file exists); `src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py:776`-`:777` (the CLI passes `getattr(ns, "journal_path", None)`, and `cli.py`'s `reconcile` parser declares no such argument). The latest tracked journal at `846d8383f5` is `.steward/estate-refresh/2026-10-14.json`, whose `moves` include `bmad-method` and `bmad-module-skill-forge`. Read 2026-10-14, not run.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py (`run_reconcile`)
+  origin: found while minting Story 103.3, 2026-10-14 (no implementation)
+  owner: steward
+  severity: low
+  promoted: 2026-10-14 — recorded with Story 103.3's chain
   status: open
