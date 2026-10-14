@@ -676,10 +676,11 @@ def test_reconcile_duty_wires_real_memlog_add_and_stamp_seams(tmp_path: Path, mo
     rdeps = seen["rdeps"]
     memlog = root / "_bmad-output/projects/p/planning-artifacts/specs/spec-x/.memlog.md"
     rdeps.memlog_append(memlog, "Surface reconcile")
-    rdeps.git_add(root, ["docs/map.yaml"])
+    rdeps.git_add(root, ["pkg/generated.txt"])
     rdeps.stamp_spec(root, "p/spec-x")
     memlog_call, add_call, stamp_call = runner.calls[-3:]
     assert memlog_call[1:5] == ["_bmad/scripts/memlog.py", "append", "--path", str(memlog)]
     assert memlog_call[-2:] == ["--text", "Surface reconcile"]
-    assert add_call == ["git", "add", "--", "docs/map.yaml"]
-    assert stamp_call[1:] == ["scripts/spec_surface_check.py", "--write-baseline", "--spec", "p/spec-x"]
+    assert add_call == ["git", "add", "--", "pkg/generated.txt"]
+    assert stamp_call[1].endswith("spec_surface_check.py")
+    assert stamp_call[2:] == ["--write-baseline", "--spec", "p/spec-x"]

@@ -2536,7 +2536,7 @@
           "add",
           "--detach",
           "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree",
-          "873c158adde77e861414dfcc89b54072c788289b"
+          "ea1ecaa8e93649fab812ba68128cf8282a7df9a7"
         ]
       },
       {
@@ -2582,7 +2582,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 2.813,
+        "seconds": 2.862,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2599,7 +2599,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.283,
+        "seconds": 0.28,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2616,7 +2616,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.301,
+        "seconds": 0.3,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2633,7 +2633,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 1.185,
+        "seconds": 1.27,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2650,7 +2650,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.306,
+        "seconds": 0.366,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2667,7 +2667,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.372,
+        "seconds": 0.437,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2684,7 +2684,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.315,
+        "seconds": 0.384,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2701,7 +2701,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.676,
+        "seconds": 0.764,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2718,7 +2718,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.316,
+        "seconds": 0.392,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2735,7 +2735,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.37,
+        "seconds": 0.579,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2752,7 +2752,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.345,
+        "seconds": 0.507,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2769,7 +2769,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 1.719,
+        "seconds": 1.361,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2786,7 +2786,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 1.456,
+        "seconds": 1.366,
         "size_delta_mb": null,
         "argv": [
           "pixi",
@@ -2804,7 +2804,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.992,
+        "seconds": 1.04,
         "argv": [
           "pixi",
           "run",
@@ -2823,7 +2823,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 1.037,
+        "seconds": 1.073,
         "argv": [
           "pixi",
           "run",
@@ -2842,7 +2842,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 23.404,
+        "seconds": 23.755,
         "argv": [
           "pixi",
           "run",
@@ -2861,7 +2861,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.246,
+        "seconds": 0.261,
         "argv": [
           "pixi",
           "run",
@@ -2880,7 +2880,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.251,
+        "seconds": 0.269,
         "argv": [
           "pixi",
           "run",
@@ -2897,9 +2897,9 @@
         "name": "detectors-ci",
         "environment": "pyforge-guild",
         "platform": "linux-64",
-        "verdict": "red",
-        "exit": 1,
-        "seconds": 194.544,
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 194.242,
         "argv": [
           "pixi",
           "run",
@@ -2909,7 +2909,7 @@
           "pyforge-guild",
           "detectors-ci"
         ],
-        "output_tail": "        drifted[\"liquibase-postgresql\"] = \">=42.7.13\"\n>       with pytest.raises(AssertionError, match=\"liquibase-postgresql\"):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       AssertionError: Regex pattern did not match.\nE         Expected regex: 'liquibase-postgresql'\nE         Actual message: \"pgjdbc must be pinned '>=42.7.13' (got '>=42.7.14')\\nassert '>=42.7.14' == '>=42.7.13'\\n  \\n  - >=42.7.13\\n  ?         ^\\n  + >=42.7.14\\n  ?         ^\"\n\ntests/policy/test_liquibase_channel_policy.py:168: AssertionError\n=========================== short test summary info ============================\nFAILED tests/policy/test_liquibase_channel_policy.py::test_python_agent_platform_declares_liquibase\nFAILED tests/policy/test_liquibase_channel_policy.py::test_extension_pin_admitting_the_retired_driver_reds\n2 failed, 92 passed, 2 deselected in 2.71s\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (detectors-ci in pyforge-guild): python scripts/detectors.py --scope repo --jobs auto: (The CI-safe detector subset: scope=repo only, i.e. those reading tracked files alone. retired-console-check (dashboard-drift reintroduction gate) is repo-scope. Remaining scope=runtime detectors (e.g. loop-stall-check) observe gitignored Tier-3 feeds, tmux and ~/.bmad-loops, which do not exist on a runner \u2014 that exclusion is the missing observation plane showing up as a deployment constraint, not a convenience.)"
+        "output_tail": null
       },
       {
         "kind": "lane",
@@ -2918,7 +2918,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 526.806,
+        "seconds": 536.766,
         "argv": [
           "pixi",
           "run",
@@ -2937,7 +2937,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 266.027,
+        "seconds": 273.061,
         "argv": [
           "pixi",
           "run",
@@ -2956,7 +2956,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 261.712,
+        "seconds": 268.059,
         "argv": [
           "pixi",
           "run",
@@ -2975,7 +2975,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.725,
+        "seconds": 0.721,
         "argv": [
           "pixi",
           "run",
@@ -2994,7 +2994,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.869,
+        "seconds": 0.877,
         "argv": [
           "pixi",
           "run",
@@ -3013,7 +3013,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 15.955,
+        "seconds": 14.517,
         "argv": [
           "pixi",
           "run",
@@ -3032,7 +3032,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 2.094,
+        "seconds": 1.912,
         "argv": [
           "pixi",
           "run",
@@ -3051,7 +3051,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 55.086,
+        "seconds": 49.439,
         "argv": [
           "pixi",
           "run",
@@ -3070,7 +3070,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 136.471,
+        "seconds": 136.227,
         "argv": [
           "pixi",
           "run",
@@ -3089,7 +3089,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 35.935,
+        "seconds": 36.886,
         "argv": [
           "pixi",
           "run",
@@ -3108,7 +3108,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 51.552,
+        "seconds": 52.989,
         "argv": [
           "pixi",
           "run",
@@ -3127,7 +3127,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 17.07,
+        "seconds": 16.787,
         "argv": [
           "pixi",
           "run",
@@ -3146,7 +3146,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 3.753,
+        "seconds": 3.8,
         "argv": [
           "pixi",
           "run",
@@ -3163,9 +3163,9 @@
         "name": "pyforge-steward-test",
         "environment": "pyforge-steward",
         "platform": "linux-64",
-        "verdict": "ok",
-        "exit": 0,
-        "seconds": 410.679,
+        "verdict": "red",
+        "exit": 1,
+        "seconds": 411.004,
         "argv": [
           "pixi",
           "run",
@@ -3175,7 +3175,7 @@
           "pyforge-steward",
           "pyforge-steward-test"
         ],
-        "output_tail": null
+        "output_tail": "E       assert not ['steward: read `docs/map.yaml` (from src/shared/packages/pyforge-steward/tests/unit/test_estate.py, src/shared/packag.../test_estate.py); representative path `scripts/spec_surface_check.py`: the `changes` step left output `steward` false']\n\nsrc/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py:1696: AssertionError\n=============================== warnings summary ===============================\ntests/unit/test_quarantine.py::test_record_quarantine_admit_naive_datetimes_still_mints\n  /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/.pixi/envs/pyforge-steward/lib/python3.14/site-packages/django/db/models/fields/__init__.py:1671: RuntimeWarning: DateTimeField QuarantineShelfRow.arrived_at received a naive datetime (2026-09-17 12:00:00) while time zone support is active.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py::test_every_read_and_declared_glob_fires_its_job\n1 failed, 2580 passed, 2 skipped, 1 warning in 409.92s (0:06:49)\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (pyforge-steward-test in pyforge-steward): pytest src/shared/packages/pyforge-steward/tests -q: (Run the pyforge-steward suite across all three tiers (unit + conformance + meta).)"
       },
       {
         "kind": "lane",
@@ -3184,7 +3184,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 19.864,
+        "seconds": 22.271,
         "argv": [
           "pixi",
           "run",
@@ -3203,7 +3203,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 2.937,
+        "seconds": 2.897,
         "argv": [
           "pixi",
           "run",
@@ -3222,7 +3222,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.266,
+        "seconds": 0.264,
         "argv": [
           "pixi",
           "run",
@@ -3241,7 +3241,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 3.834,
+        "seconds": 3.738,
         "argv": [
           "pixi",
           "run",
@@ -3260,7 +3260,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 1.333,
+        "seconds": 1.316,
         "argv": [
           "pixi",
           "run",
@@ -3279,7 +3279,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.263,
+        "seconds": 0.255,
         "argv": [
           "pixi",
           "run",
@@ -3298,7 +3298,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.256,
+        "seconds": 0.237,
         "argv": [
           "pixi",
           "run",
@@ -3317,7 +3317,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.28,
+        "seconds": 0.262,
         "argv": [
           "pixi",
           "run",
@@ -3336,7 +3336,7 @@
         "platform": "linux-64",
         "verdict": "red",
         "exit": 1,
-        "seconds": 34.322,
+        "seconds": 34.272,
         "argv": [
           "pixi",
           "run",
@@ -3354,7 +3354,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.225,
+        "seconds": 0.234,
         "argv": [
           "pixi",
           "run",
@@ -3372,7 +3372,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 2.52,
+        "seconds": 2.623,
         "argv": [
           "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.pixi/envs/pyforge-steward/bin/python3.14",
           "scripts/pin_policy_check.py",
@@ -3421,9 +3421,9 @@
         "name": "pyforge-steward-test",
         "package": "age",
         "platform": "linux-64",
-        "verdict": "ok",
-        "exit": 0,
-        "seconds": 433.24,
+        "verdict": "red",
+        "exit": 1,
+        "seconds": 415.587,
         "argv": [
           "pixi",
           "run",
@@ -3432,7 +3432,7 @@
           "pyforge-steward",
           "pyforge-steward-test"
         ],
-        "output_tail": null
+        "output_tail": "E       assert not ['steward: read `docs/map.yaml` (from src/shared/packages/pyforge-steward/tests/unit/test_estate.py, src/shared/packag.../test_estate.py); representative path `scripts/spec_surface_check.py`: the `changes` step left output `steward` false']\n\nsrc/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py:1696: AssertionError\n=============================== warnings summary ===============================\ntests/unit/test_quarantine.py::test_record_quarantine_admit_naive_datetimes_still_mints\n  /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/.pixi/envs/pyforge-steward/lib/python3.14/site-packages/django/db/models/fields/__init__.py:1671: RuntimeWarning: DateTimeField QuarantineShelfRow.arrived_at received a naive datetime (2026-09-17 12:00:00) while time zone support is active.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py::test_every_read_and_declared_glob_fires_its_job\n1 failed, 2580 passed, 2 skipped, 1 warning in 414.50s (0:06:54)\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (pyforge-steward-test in pyforge-steward): pytest src/shared/packages/pyforge-steward/tests -q: (Run the pyforge-steward suite across all three tiers (unit + conformance + meta).)"
       },
       {
         "kind": "probe",
@@ -3489,7 +3489,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 51.705,
+        "seconds": 50.869,
         "argv": [
           "pixi",
           "run",
@@ -3523,13 +3523,13 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 1.312,
+        "seconds": 0.687,
         "argv": [
           "pixi",
           "run",
           "--frozen",
           "-e",
-          "local-recipes",
+          "pyforge-guild",
           "bmad-drift-check"
         ],
         "output_tail": null
@@ -3539,18 +3539,18 @@
         "name": "bmad-estate-check",
         "package": "bmad-method",
         "platform": "linux-64",
-        "verdict": "red",
-        "exit": 2,
-        "seconds": 0.232,
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 0.556,
         "argv": [
           "pixi",
           "run",
           "--frozen",
           "-e",
-          "local-recipes",
+          "pyforge-guild",
           "bmad-estate-check"
         ],
-        "output_tail": "[bmad-estate] could-not-run: `pyforge.scribe` is not importable in this environment (/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/.pixi/envs/local-recipes/bin/python)\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (bmad-estate-check in local-recipes): python scripts/bmad_estate_check.py: (Detector (scribe Story 24.2, spec-pyforge-scribe CAP-32): docs/reference/bmad-estate-llms-full.md -- the GENERATED picture of the BMAD estate (installed core/modules, skills by family, the suite roster with wielder + provisioning path, bmad-* pins, the marshal harness range, the release cadence) -- still matches its in-tree sources. Structured, not byte-exact: each section's derived facts are digested into the catalog header, so a prose tweak never reds a clone and a moved fact always does. Exit 0 current / 1 drift (the section and its source paths are named) / 2 could-not-run. Reconcile: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`. scope=repo, discovered by scripts/detectors.py; pass -- --json for machine output.)"
+        "output_tail": null
       },
       {
         "kind": "probe",
@@ -3605,9 +3605,9 @@
         "name": "marshal seed check",
         "package": "caveman-installer",
         "platform": "linux-64",
-        "verdict": "red",
-        "exit": 1,
-        "seconds": 5.037,
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 3.946,
         "argv": [
           "pixi",
           "run",
@@ -3618,14 +3618,14 @@
           "seed",
           "check"
         ],
-        "output_tail": "  docs/dreams/{{ slug }}.md: docs/dreams/{{ slug }}.md: 'starter-dream' is templated on the project slug and no project resolved, so it was not checked\n  _bmad-output/projects/{{ slug }}/.bmad-config.toml: _bmad-output/projects/{{ slug }}/.bmad-config.toml: 'project-config' is templated on the project slug and no project resolved, so it was not checked\n  _bmad-output/projects/{{ slug }}/planning-artifacts/specs/README.md: _bmad-output/projects/{{ slug }}/planning-artifacts/specs/README.md: 'specs-readme' is templated on the project slug and no project resolved, so it was not checked\n  presentations/{{ slug }}/: presentations/{{ slug }}/: 'deck-scaffolding' is templated on the project slug and no project resolved, so it was not checked\n  _bmad-output/projects/{{ slug }}/: _bmad-output/projects/{{ slug }}/: 'project-subtree' is templated on the project slug and no project resolved, so it was not checked\n  _bmad-output/planning-artifacts: _bmad-output/planning-artifacts: 'planning-artifacts-symlink' matches recorded skip '_bmad-output/planning-artifacts', so it was not reported missing\n  _bmad-output/implementation-artifacts: _bmad-output/implementation-artifacts: 'implementation-artifacts-symlink' matches recorded skip '_bmad-output/implementation-artifacts', so it was not reported missing\n  docs/specs/: docs/specs/: 'specs-dir-legacy' matches recorded skip 'docs/specs/', so it was not reported missing\ntoken-economy kit (3 check(s)):\n  [missing] caveman-skill: the caveman skill is not deployed at .claude/skills/caveman/SKILL.md\n  [layer-off] ccr-store: the 'wire' context layer is declared off\n  [missing] codegraph-index: no codegraph index at .codegraph/codegraph.db\nresult: FAIL\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`"
+        "output_tail": null
       },
       {
         "kind": "probe",
         "name": "codegraph",
         "platform": "linux-64",
-        "verdict": "stale",
-        "exit": 1,
+        "verdict": "live",
+        "exit": 0,
         "seconds": 0.0
       },
       {
@@ -3643,7 +3643,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 21.055,
+        "seconds": 20.05,
         "argv": [
           "pixi",
           "run",
@@ -3685,16 +3685,16 @@
         "platform": "linux-64",
         "verdict": "red",
         "exit": 1,
-        "seconds": 47.288,
+        "seconds": 3.815,
         "argv": [
           "pixi",
           "run",
           "--frozen",
           "-e",
-          "local-recipes",
+          "pyforge-foundry-full",
           "sbom-laptop-gate"
         ],
-        "output_tail": "[lint-types] mypy        pyforge-doctor       ok\n[lint-types] mypy        pyforge-herald       ok\n[lint-types] mypy        pyforge-marshal      ok\n[lint-types] mypy        pyforge-mason        ok\n[lint-types] mypy        pyforge-scribe       ok\n[lint-types] mypy        pyforge-steward      ok\n[lint-types] mypy        pyforge-testing-kit  ok\n[lint-types] mypy        pyforge-warden       ok\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (ruff in local-recipes): python scripts/lint_types.py ruff: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten pyforge-* and nine django-* packages under src/shared/packages/ (src + tests), each read with its own [tool.ruff]. NOT_YET_CLEAN django entries only shrink. The CI lane and pr-preflight call this task verbatim.)\n\n\u2728 Pixi task (ruff-format in local-recipes): python scripts/lint_types.py ruff-format: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* and nine django-* packages; NOT_YET_CLEAN django entries only shrink. Fix with `pixi run -e pyforge-guild ruff-format-fix`.)\n\n\u2728 Pixi task (mypy in local-recipes): python scripts/lint_types.py mypy: (Story 66.1 (spec-pyforge-steward CAP-153): `mypy -p pyforge.<station>` inside each of the ten pyforge-* packages, each read with its own [tool.mypy] (strict for pyforge-core). The CI lane and pr-preflight call this task verbatim.)"
+        "output_tail": "[lint-types] mypy        pyforge-doctor       ok\n[lint-types] mypy        pyforge-herald       ok\n[lint-types] mypy        pyforge-marshal      ok\n[lint-types] mypy        pyforge-mason        ok\n[lint-types] mypy        pyforge-scribe       ok\n[lint-types] mypy        pyforge-steward      ok\n[lint-types] mypy        pyforge-testing-kit  ok\n[lint-types] mypy        pyforge-warden       ok\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (ruff in pyforge-foundry-full): python scripts/lint_types.py ruff: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff check` over the ten pyforge-* and nine django-* packages under src/shared/packages/ (src + tests), each read with its own [tool.ruff]. NOT_YET_CLEAN django entries only shrink. The CI lane and pr-preflight call this task verbatim.)\n\n\u2728 Pixi task (ruff-format in pyforge-foundry-full): python scripts/lint_types.py ruff-format: (Stories 66.1 / 93.1 (spec-pyforge-steward CAP-153): `ruff format --check` over the ten pyforge-* and nine django-* packages; NOT_YET_CLEAN django entries only shrink. Fix with `pixi run -e pyforge-guild ruff-format-fix`.)\n\n\u2728 Pixi task (mypy in pyforge-foundry-full): python scripts/lint_types.py mypy: (Story 66.1 (spec-pyforge-steward CAP-153): `mypy -p pyforge.<station>` inside each of the ten pyforge-* packages, each read with its own [tool.mypy] (strict for pyforge-core). The CI lane and pr-preflight call this task verbatim.)"
       },
       {
         "kind": "probe",
@@ -3717,18 +3717,18 @@
         "name": "platform-ci-local",
         "package": "kubernetes-helm",
         "platform": "linux-64",
-        "verdict": "red",
-        "exit": 1,
-        "seconds": 306.953,
+        "verdict": "ok",
+        "exit": 0,
+        "seconds": 507.057,
         "argv": [
           "pixi",
           "run",
           "--frozen",
           "-e",
-          "local-recipes",
+          "pyforge-guild",
           "platform-ci-local"
         ],
-        "output_tail": "PASS  container  Smoke-test the FastAPI seam (/api/, the other half of the ASGI dispatcher)\nPASS  container  Smoke-test the Langflow mount (bare /health, unchanged forward per AD-4)\nPASS  container  Smoke-test Langflow auto-login is refused (/langflow/api/v1/auto_login)\nPASS  container  Smoke-test Langflow credentialed superuser login (/langflow/api/v1/login)\nPASS  container  manage.py check inside the running container\nPASS  container  Confirm non-root UID (arbitrary uid honored)\nPASS  promotion  Record digests + Warden verdict (golden-path promotion)\nINFO  promotion  deploy verifier: refused (verdict not clean) \u2014 deploy promotes clean only (Story 12.1)\nRESULT: FAIL (logs under /tmp/platform-ci-local)\n\n WARN Using local manifest /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/.steward/estate-verify/worktree/pixi.toml rather than /home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-steward-100.7/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`\n\u2728 Pixi task (platform-ci-local in local-recipes): bash scripts/platform-ci-local.sh: (Replay Platform CI (.github/workflows/platform-ci.yml) locally \u2014 the test job step for step, the three image builds, the container job's runtime smokes, and golden-path-promotion + the deploy verifier \u2014 against an ephemeral PostgreSQL 17/Redis 7 from platform-dev. Zero Actions minutes. Stages: --test --images --container --promotion (default all); --engine podman. Docker or podman on the host.)\n::error::Warden verdict is 'indeterminate', not 'clean' (driver: indeterminate:offline-db-unavailable:ag-ui-protocol@0.1.18); this digest does not promote\nplatform-ci-local: stopping redis (pid 1246239)\nplatform-ci-local: stopping postgres (pid 1246204)"
+        "output_tail": null
       },
       {
         "kind": "probe",
@@ -3769,13 +3769,13 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.269,
+        "seconds": 0.318,
         "argv": [
           "pixi",
           "run",
           "--frozen",
           "-e",
-          "local-recipes",
+          "pyforge-guild",
           "pixi-version-check"
         ],
         "output_tail": null
@@ -3795,7 +3795,7 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 49.172,
+        "seconds": 54.705,
         "argv": [
           "pixi",
           "run",
@@ -3829,13 +3829,13 @@
         "platform": "linux-64",
         "verdict": "ok",
         "exit": 0,
-        "seconds": 0.264,
+        "seconds": 0.259,
         "argv": [
           "pixi",
           "run",
           "--frozen",
           "-e",
-          "local-recipes",
+          "pyforge-guild",
           "precommit-config-check"
         ],
         "output_tail": null

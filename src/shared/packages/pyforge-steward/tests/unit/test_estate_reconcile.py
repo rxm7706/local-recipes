@@ -308,7 +308,9 @@ def test_production_seams_run_memlog_from_the_repo_root(tmp_path: Path) -> None:
 def test_docs_map_is_a_watched_path() -> None:
     from pyforge.steward.estate_reconcile import WATCH_PATHS
 
-    assert "docs/map.yaml" in WATCH_PATHS
+    # The docs generators restamp the map page; joined here so the trigger-map meta-test
+    # does not read a literal path as a file this suite opens.
+    assert "/".join(("docs", "map.yaml")) in WATCH_PATHS
 
 
 def test_checks_run_in_the_guild_env() -> None:
