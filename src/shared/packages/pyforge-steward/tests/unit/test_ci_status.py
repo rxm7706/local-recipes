@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from importlib import resources
 from pathlib import Path
 
@@ -21,11 +21,13 @@ pytest.importorskip("jsonschema")
 from pyforge.steward.ci import (
     CI_FLAG_KEY,
     CI_VARS_REL,
+    CANARY_STALE_DAYS,
     DEFAULT_REPO,
     EXIT_CI_REFUSAL,
     SCHEMA_ID,
     CiDeps,
     CiDuty,
+    _canary_stale,
     run_status,
     run_vars,
 )
@@ -591,3 +593,19 @@ def test_ci_duty_unknown_verb() -> None:
     result = CiDuty().run(ns)
     assert result.ok is False
     assert "pause" in result.summary
+
+
+def test_paused_high_cost_canary_stale_and_fresh() -> None:
+    """Story 99.6 AC3: canary_last_green older than 15 days => stuck; recent => not stuck."""
+    row = {
+        "id": "station-tests.guild-container",
+        "state": "paused",
+        "cost": "high",
+        "canary": "ci-canary.station-tests.guild-container",
+    }
+    now = datetime(2026, 10, 13, 12, 0, 0, tzinfo=timezone.utc)
+    stale_at = (now - timedelta(days=CANARY_STALE_DAYS)).isoformat().replace("+00:00", "Z")
+    fresh_at = (now - timedelta(days=3)).isoformat().replace("+00:00", "Z")
+    assert _canary_stale(row, {"station-tests.guild-container": stale_at}, now=now)
+    assert _canary_stale(row, {}, now=now)
+    assert not _canary_stale(row, {"station-tests.guild-container": fresh_at}, now=now)

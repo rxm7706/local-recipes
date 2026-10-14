@@ -30,6 +30,15 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+- id: ci-canary
+  workflow: .github/workflows/ci-canary.yml
+  kind: workflow
+  cost: low
+  gate: false
+  switch: PAUSE_CI_CANARY
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
 - id: coverage-gates
   workflow: .github/workflows/coverage-gates.yml
   kind: workflow
@@ -243,7 +252,7 @@ surfaces:
   review_by: '2026-11-01'
   owner: pyforge-steward
   local_twin: pyforge-steward-guild-image-build
-  canary: weekly
+  canary: ci-canary.station-tests.guild-container
 - id: platform-ci.container
   workflow: .github/workflows/platform-ci.yml
   job: container
@@ -259,6 +268,8 @@ surfaces:
     pause
   review_by: '2026-11-01'
   owner: pyforge-steward
+  local_twin: platform-ci-local --images --container
+  canary: ci-canary.platform-ci.container
   transitive:
   - platform-ci.golden-path-promotion
 - id: platform-ci.container-dbgpt
@@ -276,6 +287,8 @@ surfaces:
     pause
   review_by: '2026-11-01'
   owner: pyforge-steward
+  local_twin: platform-ci-local --images
+  canary: ci-canary.platform-ci.container-dbgpt
 - id: platform-ci.build-platform-image.PLATFORM_CI_AIR_GAP_PARITY
   workflow: .github/workflows/platform-ci.yml
   job: build-platform-image
@@ -286,6 +299,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_AIR_GAP_PARITY
 - id: platform-ci.build-platform-image.PLATFORM_CI_GKE_PORTABILITY_SMOKE
   workflow: .github/workflows/platform-ci.yml
   job: build-platform-image
@@ -296,6 +310,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_GKE_PORTABILITY_SMOKE
 - id: platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
   workflow: .github/workflows/platform-ci.yml
   job: build-platform-image
@@ -306,6 +321,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.build-platform-image.PLATFORM_CI_OCP_PORTABILITY_SMOKE
 - id: platform-ci.gke-portability-smoke
   workflow: .github/workflows/platform-ci.yml
   job: gke-portability-smoke
@@ -316,6 +332,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.gke-portability-smoke
 - id: platform-ci.ocp-portability-smoke
   workflow: .github/workflows/platform-ci.yml
   job: ocp-portability-smoke
@@ -326,6 +343,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.ocp-portability-smoke
 - id: platform-ci.air-gap-parity
   workflow: .github/workflows/platform-ci.yml
   job: air-gap-parity
@@ -336,6 +354,7 @@ surfaces:
   switch_class: enable
   state: opt-in-off
   owner: pyforge-steward
+  canary: ci-canary.platform-ci.air-gap-parity
 - id: platform-ci.golden-path-promotion.push-registry
   workflow: .github/workflows/platform-ci.yml
   job: golden-path-promotion
@@ -595,6 +614,26 @@ surfaces:
   cost: low
   gate: false
   switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: ci-canary.plan
+  workflow: .github/workflows/ci-canary.yml
+  job: plan
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: PAUSE_CI_CANARY
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: ci-canary.build
+  workflow: .github/workflows/ci-canary.yml
+  job: build
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: PAUSE_CI_CANARY
   switch_class: pause
   state: live
   owner: pyforge-steward

@@ -2,8 +2,8 @@
 title: '99.6: A paused expensive build still runs once a week'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: '753a10bf6535b853dc1203f7e186710fd137c9b9'
 flag-exempt: detector-or-gate   # a scheduled proof that a paused image still builds; a gated canary reports a silent green
 review_loop_iteration: 0
 followup_review_recommended: false
