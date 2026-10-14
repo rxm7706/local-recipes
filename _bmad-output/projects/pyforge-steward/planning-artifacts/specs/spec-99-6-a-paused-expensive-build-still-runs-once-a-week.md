@@ -2,11 +2,19 @@
 title: '99.6: A paused expensive build still runs once a week'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '753a10bf6535b853dc1203f7e186710fd137c9b9'
 flag-exempt: detector-or-gate   # a scheduled proof that a paused image still builds; a gated canary reports a silent green
 review_loop_iteration: 0
 followup_review_recommended: false
+deferred:
+  - summary: >-
+      Record one green workflow_dispatch of ci-canary.yml after merge (AC4).
+    evidence: |-
+      GitHub Actions is the arbiter; this build-auto run cannot dispatch outward CI without operator confirmation.
+    location: >-
+      .github/workflows/ci-canary.yml
+    severity: medium
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -108,3 +116,21 @@ Type / Effort / Deps: feature / S / S-99.2, S-99.3.
 
 - 2026-10-13: specced from Epic 99's Story 99.6 text ahead of its dependencies' landing so the steward chain runs
   unattended (operator direction 2026-10-13).
+
+## Review Triage Log
+
+### 2026-10-14 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches AC1–AC3; AC4 deferred post-merge)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `.github/workflows/ci-canary.yml` (weekly schedule + `workflow_dispatch`, `PAUSE_CI_CANARY` / `PAUSE_ALL_CI` gate with dispatch carve-out). Matrix comes from `scripts/ci_canary.py` over paused `cost: high` registry rows (docker-only builds for guild + platform container jobs). Registry rows now carry `canary: ci-canary.<id>`; offline check fails missing canary on any `cost: high` row. `steward ci status` treats paused high-cost rows as `stuck` when the matching canary job has no success within 15 days.
+
+**Files (high level):** ci-canary workflow; `scripts/ci_canary.py`; `_ci_surface_gates_lib.py`; `docs/governance/ci-surfaces.yaml`; `pyforge/steward/ci.py`; tests in `test_ci_surface_gates.py` and `test_ci_status.py`; `scripts/spec_surface_allowlist.txt` (interim for `ci_canary.py`).
+
+**Verification:** `ci-surface-gates-check` exit 0; `test_ci_surface_gates.py` 20 passed; `test_ci_status.py` 19 passed; `pyforge-steward-test` 2569 passed; `spec_surface_reconcile.py` and `spec-surface-check` exit 0 after memlog reconcile. `pr-preflight` / full `detectors-ci` not run in this pass (run before PR push).
+
+**Residual risk:** `ci status` canary freshness uses `gh api` per successful canary run to list jobs (extra API calls on status). Platform container canary builds the image only, not full runtime smokes from `platform-ci` `container` job.
