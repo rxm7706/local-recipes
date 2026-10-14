@@ -45,7 +45,6 @@ NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = {
     "django-mason": frozenset({"ruff"}),
     "django-pyforge": frozenset({"ruff"}),
     "django-scribe": frozenset({"ruff"}),
-    "django-steward": frozenset({"ruff"}),
     "django-warden": frozenset({"ruff"}),
 }
 
