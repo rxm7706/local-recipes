@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-steward:ci-status-schema",
+  "title": "CiStatusReport",
+  "description": "Frozen envelope for steward ci status --json (Story 99.3 / CAP-166 FR-39). Additive changes only.",
+  "type": "object",
+  "required": ["fetched_at", "repo", "rate_limit", "rows"],
+  "properties": {
+    "fetched_at": {
+      "type": "string",
+      "description": "ISO-8601 timestamp when GitHub data was collected."
+    },
+    "repo": {
+      "type": "string",
+      "description": "owner/name repository slug."
+    },
+    "rate_limit": {
+      "type": "object",
+      "required": ["core_limit", "core_remaining"],
+      "properties": {
+        "core_limit": { "type": "integer" },
+        "core_remaining": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/row" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "row": {
+      "type": "object",
+      "required": [
+        "id",
+        "switch",
+        "declared_state",
+        "live_switch_value",
+        "verdict"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "switch": { "type": ["string", "null"] },
+        "declared_state": { "type": "string" },
+        "live_switch_value": { "type": ["string", "null"] },
+        "paused_since": { "type": ["string", "null"] },
+        "review_by": { "type": ["string", "null"] },
+        "review_days_left": { "type": ["integer", "null"] },
+        "owner": { "type": ["string", "null"] },
+        "last_green_run": { "type": ["string", "null"] },
+        "verdict": {
+          "enum": [
+            "live",
+            "paused",
+            "opt-in-off",
+            "paused-manually",
+            "retired",
+            "drift",
+            "stuck",
+            "overdue"
+          ]
+        },
+        "detail": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
