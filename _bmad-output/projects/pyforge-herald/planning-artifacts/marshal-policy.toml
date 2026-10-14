@@ -495,7 +495,7 @@ verify_commands = [
   # entry replaces it outright, plus: docsite/ (the snapshot docsite/content/ci-status.json, dossier.yml, build.py, the
   # block macro, the snapshot tool, the README), the flag tree, its overlay and herald's flag inventory, the two Pages
   # workflows (a Guild step that hands the flag to the site build, as CAP-56's does; no if: line changes), and every
-  # Spec memlog a reconcile names (spec-pyforge-steward co-governs the workflows through CAP-166's registry).
+  # Spec memlog a reconcile names (spec-pyforge-steward co-governs the workflows through pyforge-steward:CAP-166's registry).
   "src/shared/packages/pyforge-herald/**",
   "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
