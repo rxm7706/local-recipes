@@ -119,3 +119,4 @@ scripts/docs_station_cli.py          # pyforge-doctor Story 30.3, same class as 
 scripts/_docs_gen_common.py          # pyforge-doctor Story 30.3, same class as scripts/docs_pixi_tasks.py above — shared derived_at/tree stamp plumbing for all five docs-* generators, no pixi task of its own. Allowlisted pending SPEC.md re-derivation claiming it properly.
 .steward/estate-refresh/**           # Story 100.2 CAP-167 tracked estate refresh journals (.gitkeep + dated JSON); memlog names surface gain pending bmad-spec re-derive of spec-pyforge-steward
 scripts/_ci_surface_gates_render.py  # Story 99.2 CAP-166 pause-fragment render module; memlog names surface gain pending bmad-spec re-derive of spec-pyforge-steward
+scripts/ci_canary.py  # Story 99.6 CAP-166 weekly canary matrix helper; memlog names surface gain pending bmad-spec re-derive of spec-pyforge-steward
