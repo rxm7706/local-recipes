@@ -5,13 +5,10 @@ from __future__ import annotations
 import uuid
 
 from django.core.management.base import BaseCommand
-from pyforge.core.flags import FlagOff
-from pyforge.core.flags import disabled_help
-from pyforge.core.flags import require
+from pyforge.core.flags import FlagOff, disabled_help, require
 
 from django_warden_fabric.fleet import FLEET_INVENTORY_FLAG
-from django_warden_fabric.fleet_inventory import FleetInventoryError
-from django_warden_fabric.fleet_inventory import load_organisation_from_config
+from django_warden_fabric.fleet_inventory import FleetInventoryError, load_organisation_from_config
 from django_warden_fabric.tasks import run_fleet_inventory
 
 

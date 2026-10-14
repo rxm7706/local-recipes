@@ -68,7 +68,6 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         return _unobserved(f"exit {code}: {hint}")
 
     if payload is None:
-        stream = stderr if partial else stdout
         return _unobserved(f"exit {code}: unparseable CI status JSON")
 
     findings = list(_findings_for_rows(payload["rows"]))
