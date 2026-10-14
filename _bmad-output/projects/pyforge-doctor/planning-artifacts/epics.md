@@ -3243,7 +3243,7 @@ So that a surface that is silently off reaches me within one run, without a seco
 **When** `python -m pyforge.doctor.sources ci-pause-drift` or `fleet-picture` runs
 **Then** each `drift` row is one `ci-pause-drift` WARN, each `stuck` row one `ci-pause-stuck` WARN, and each row whose `review_days_left` is below 0 one `ci-pause-overdue` WARN whatever its verdict, each naming the surface, switch, owner and steward's `detail`; a report with nothing to name is one OK row; a report the source cannot read (exit 3, exit 127, a timeout, a payload without `rows`) is one `ci-pause-unobserved` WARN and no OK; the partial read is judged plus one `ci-pause-partial` WARN; the dispatcher exits 0 on every fixture
 **And** one recorded fixture per rule (a drift row, an overdue row, the 2026-10-06 waiting-deploy replay, a five-cancelled streak, a stale canary), each validated against steward's shipped schema, yields exactly one WARN; `fleet-picture` prints one watch line per WARN and `could not check CI pauses` when the probe raises; no test runs a live `steward` or `gh`; each of these fails a named test (mutation): a finding turned FAIL, the overdue rule read from the verdict instead of `review_days_left`, an unreadable report returned as OK
-**Status:** backlog
+**Status:** done
 
 ## Epic 46: The env-hygiene scan stops growing with the test suite (spec-pyforge-doctor CAP-1, NFR-4)
 
