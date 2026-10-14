@@ -2,8 +2,8 @@
 title: '99.1: The CI surfaces are declared once and the workflows are judged against them'
 type: 'feature'
 created: '2026-10-12'
-status: 'ready-for-dev'
-baseline_revision: '938380474e9579145e58b6710c9a88f8bb47f73b'
+status: 'in-progress'
+baseline_revision: '735c01371935ea844eb12f8ab180cd2083460335'
 flag-exempt: detector-or-gate   # a registry check; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false

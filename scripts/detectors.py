@@ -80,6 +80,9 @@ SEARCH = (
     (ROOT / "docs" / "dashboard", "check_*.py"),
 )
 
+# Story 99.1: the checker is named ci_surface_gates.py (not *_check.py) by contract.
+_EXTRA_SCRIPT_DETECTORS = (ROOT / "scripts" / "ci_surface_gates.py",)
+
 SCOPES = ("repo", "runtime")
 
 # Sentinel for `_declared_scope`: a file matches the `*_check.py`/`check_*.py`
@@ -140,25 +143,33 @@ def discover() -> tuple[list[dict], list[str]]:
     detectors: list[dict] = []
     findings: list[str] = []
 
+    paths_to_scan: list[pathlib.Path] = []
     for directory, pattern in SEARCH:
-        for path in sorted(directory.glob(pattern)):
-            rel = path.relative_to(ROOT).as_posix()
-            scope = _declared_scope(path)
-            if scope is _NOT_A_DETECTOR:
-                continue
-            if scope is None:
-                findings.append(
-                    f"{rel}: looks like a detector but declares no valid "
-                    f'DETECTOR = {{"scope": "repo"|"runtime"}} — it would be invisible '
-                    f"to CI, the board and the loop")
-                continue
-            task = next((t for t, c in tasks.items()
-                         if path.name in c and "--json" not in c), None)
-            if task is None:
-                findings.append(
-                    f"{rel}: declares scope={scope} but has no pixi task — "
-                    f"nothing can invoke it by name")
-            detectors.append({"path": rel, "name": path.stem, "scope": scope, "task": task})
+        paths_to_scan.extend(sorted(directory.glob(pattern)))
+    paths_to_scan.extend(p for p in _EXTRA_SCRIPT_DETECTORS if p.is_file())
+
+    seen: set[pathlib.Path] = set()
+    for path in paths_to_scan:
+        if path in seen:
+            continue
+        seen.add(path)
+        rel = path.relative_to(ROOT).as_posix()
+        scope = _declared_scope(path)
+        if scope is _NOT_A_DETECTOR:
+            continue
+        if scope is None:
+            findings.append(
+                f"{rel}: looks like a detector but declares no valid "
+                f'DETECTOR = {{"scope": "repo"|"runtime"}} — it would be invisible '
+                f"to CI, the board and the loop")
+            continue
+        task = next((t for t, c in tasks.items()
+                     if path.name in c and "--json" not in c), None)
+        if task is None:
+            findings.append(
+                f"{rel}: declares scope={scope} but has no pixi task — "
+                f"nothing can invoke it by name")
+        detectors.append({"path": rel, "name": path.stem, "scope": scope, "task": task})
     return detectors, findings
 
 
