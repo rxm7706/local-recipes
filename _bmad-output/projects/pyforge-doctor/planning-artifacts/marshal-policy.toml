@@ -365,6 +365,22 @@ verify_commands = [
   "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"45" = [  # Doctor names the CI surfaces that drifted, stuck or outlived their review date (a new source under CAP-89 /
+  # FR-22, consuming spec-pyforge-steward:CAP-166; Story 45.1), added 2026-10-14. The default surface, restated because a
+  # declared entry replaces it outright, plus fleet-picture (one ATTENTION probe) and its tests, and every Spec memlog a
+  # reconcile names (spec-pyforge-core co-governs station src/; spec-pyforge-marshal names scripts/fleet_picture.py).
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/fleet_picture.py",
+  "tests/scripts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "46" = [  # the env-hygiene scan stops growing with the test suite (a fix under CAP-1 and NFR-4, no CAP; Story 46.1,
   # closing DW-doctor-44-1), added 2026-10-12. The default surface, restated because a declared entry replaces it outright,
   # plus the tracked deferral ledger and every Spec memlog a reconcile names (spec-pyforge-core co-governs station src/).

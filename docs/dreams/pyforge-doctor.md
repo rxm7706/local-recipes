@@ -86,6 +86,28 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-14 (ci pause drift, specced)** — **Found: the report Doctor was waiting for now exists, and it already
+  does the looking.** Steward Story 99.3 landed one command that lists every CI surface with a verdict, read from the
+  registry and from GitHub, and that refuses rather than guesses when GitHub cannot be read
+  (`spec-pyforge-steward:CAP-166`). So Doctor needs no second pair of eyes on GitHub. It needs to read that one report
+  and say aloud the parts that need the operator. Three things do: a surface whose live state differs from what the
+  registry declares (this also covers a workflow switched off by hand with no row); a surface that is stuck (a deploy
+  waiting more than a day, five or more cancelled runs in a row, or a paused expensive build whose weekly canary has
+  not passed lately); and a pause whose review date has passed, even when one of the other two already applies.
+  **What it looks like when fixed:** the operator runs `fleet-picture` and its ATTENTION block names each such
+  surface on its own line, with the row's owner and the reason. When Doctor cannot read the report (GitHub not
+  signed in, steward's own switch off, steward not installed), it says so in one line instead of reporting a clean
+  fleet. Nothing it reports changes an exit code. The 2026-10-06 waiting deploy, replayed from a recorded report, is
+  named stuck. **Changed since the 2026-10-12 entry:** Doctor reads steward's report, not the registry and GitHub
+  itself, so there is one reader of GitHub and one set of verdicts. The `monitor --fleet` `ci` axis is not carried:
+  that verb's axes are conda-forge feedstock signals. The check runs on demand and in `fleet-picture`, never in
+  `detectors-ci`, because it needs a live, signed-in read. **Constraints:** advisory, never a second PR gate; reads
+  steward only through its command line. `bmad-spec` ruled it `flag-exempt: detector-or-gate`: it is a check that
+  judges, and switching it off would bring back the silent-off surface it exists to name, so
+  `pyforge.doctor.ci_pause_drift` is not minted. Kinships: `spec-pyforge-steward:CAP-166` (Stories 99.3 and 99.6
+  produce the verdicts it reads), `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` (§ 4.4, § 5, § 6), and the
+  herald tile and marshal landing line, which read the same report on their own chains. Owner `spec-pyforge-doctor`.
+  → CAP-89 / FR-22, specced 2026-10-14; Epic 45 / Story 45.1.
 - **2026-10-12 (the env-hygiene scan stops growing with the test suite)** — **Found: Story 44.1 made the five-second
   budget judge CPU, and `DW-doctor-44-1` showed the margin is thin and shrinking.** One `doctor check` on the repo root
   spends 2.75 s of CPU at `c447946b3f`. Under load that is about 1.25x headroom, and the scan grew 19% in eight days.
@@ -148,6 +170,7 @@ forward. That dream is archived; this one is the real record.
   `bmad-spec` rules it `detector-or-gate`; depends on steward's registry and `steward ci status --json` landing first;
   reads `pyforge.steward` through the CLI's JSON, never by import. Operator ruling 2026-10-12: the plan's recommended
   answers Q1–Q8 stand; Epic 43 went to Story 43.1 the same day, so this is a new epic. Owner `spec-pyforge-doctor`.
+  → specced 2026-10-14 as CAP-89 / FR-22 (see the 2026-10-14 entry for what changed); Epic 45 / Story 45.1.
 - **2026-10-12 (bmad-drift knows dispatch run artifacts)** — **Found: bmad-drift fails the files marshal dispatch
   writes into its own Tier-3 store.** Marshal Story 47.1 (with 47.2 and 93.1) writes a recall-feedback pair into the
   dispatch worktree's gitignored `implementation-artifacts/`: `recall-feedback__<story>__<run>.md` and a sibling
