@@ -944,7 +944,8 @@ class _State:
             trigger_blocks: list[tuple[dict[str, Any], Any]] = []
             if workflow.pull_request is not None:
                 trigger_blocks.append((workflow.pull_request, _pull_request_fires))
-            if workflow.push is not None:
+            elif workflow.push is not None:
+                # Pre-push simulates pull_request; push-only workflows (pages.yml) use on.push.
                 trigger_blocks.append((workflow.push, _push_fires))
             if not trigger_blocks:
                 continue
@@ -1506,6 +1507,27 @@ def static_service_mutex_keys(
     except _SelectAll:
         return {(lane.task, lane.environment): None for lane in lanes}
     return {(lane.task, lane.environment): _static_service_mutex_key(lane, workflows, pixi_data) for lane in lanes}
+
+
+def firing_workflows_for_lane(
+    repo_root: Path,
+    lane: LaneLike,
+    pixi_data: Mapping[str, Any],
+    *,
+    process: PosixProcess | None = None,
+) -> tuple[str, ...]:
+    """Workflow files whose rules would run this lane for the current diff."""
+    repo_root = repo_root.resolve()
+    proc = process or PosixProcess()
+    try:
+        with tempfile.TemporaryDirectory(prefix="preflight-firing-") as scratch_name:
+            states = _evaluation_states(repo_root, pixi_data, proc, Path(scratch_name))
+    except _SelectAll:
+        return ()
+    names: set[str] = set()
+    for state in states:
+        names.update(s.workflow for s in state.sites_for(lane) if s.outcome == "run")
+    return tuple(sorted(names))
 
 
 def service_mutex_keys(
