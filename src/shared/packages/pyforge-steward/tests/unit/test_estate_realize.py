@@ -458,3 +458,31 @@ def test_bmad_core_step_targets_the_locked_version(tmp_path: Path, monkeypatch: 
     assert "{locked}" not in " ".join(apply)
     preflight = next(c for c in runner.calls if "bmad-core" in c and "--apply" not in c)
     assert preflight[-2:] == ["--target", "6.12.2"]
+
+
+def test_stage_probe_reads_each_cell_ok_not_its_value() -> None:
+    """pipeline-truth's installed cell holds a version and its wired cell present/runnable/n/a;
+    the verdict is the cell's `ok` (Story 100.7: every suite member read stale)."""
+    payload = {
+        "packages": [
+            {
+                "name": "bmad-method-test-architecture-enterprise",
+                "installed": {"value": "1.27.2", "ok": True, "detail": None},
+                "wired": {"value": "runnable", "ok": True, "detail": None},
+            },
+            {
+                "name": "mybmad-dashboard",
+                "installed": {"value": None, "ok": False, "detail": "not installed"},
+                "wired": {"value": "runnable", "ok": True, "detail": None},
+            },
+        ]
+    }
+    runner = RecordingRunner(responses={"pipeline-truth": FakeProc([], 0, json.dumps(payload))})
+    deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
+    live = {
+        "env": "pyforge-guild",
+        "probe": {"expect": "stage-ok", "member": "bmad-method-test-architecture-enterprise"},
+    }
+    stale = {"env": "pyforge-guild", "probe": {"expect": "stage-ok", "member": "mybmad-dashboard"}}
+    assert run_probe(deps, live, package="bmad-method-test-architecture-enterprise") == "live"
+    assert run_probe(deps, stale, package="mybmad-dashboard") == "stale"

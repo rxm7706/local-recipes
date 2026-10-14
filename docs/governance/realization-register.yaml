@@ -210,8 +210,9 @@ rows:
     steps: []
   probe:
     expect: stage-ok
+    # Not a pixi dependency (pixi.toml keeps it commented out), so the installed
+    # stage never holds a version; wired is what this row realizes.
     stages:
-    - installed
     - wired
     member: mybmad-dashboard
   test: pyforge-steward-test

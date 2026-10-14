@@ -240,6 +240,12 @@ def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
         for stage in stages:
             cell = pkg.get(stage)
             if isinstance(cell, dict):
+                # pipeline-truth's verdict per stage is its `ok`; `value` is the evidence
+                # (a version for installed, present/runnable/wired/n/a for wired).
+                if "ok" in cell:
+                    if cell["ok"] is not True:
+                        return "stale"
+                    continue
                 val = str(cell.get("value") or "").lower()
                 if val not in ("ok", "green", "true", "wired", "installed"):
                     return "stale"
