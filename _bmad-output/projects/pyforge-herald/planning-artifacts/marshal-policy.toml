@@ -522,6 +522,59 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"41" = [  # Pages hygiene before the rework (fix under CAP-52 and CAP-44; no CAP, no flag; Story 41.1), added 2026-10-14.
+  # The default surface, restated because a declared entry replaces it outright, plus docsite/ (md_inline, dossier.yml,
+  # import_artifact.py, README), the four docs pages the story corrects, the prototype README, and every Spec memlog a
+  # reconcile names.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docsite/**",
+  "docs/index.md",
+  "docs/reference/github-workflows.md",
+  "docs/explanation/enterprise-deployment.md",
+  "docs/dreams/design-sync-loop.md",
+  "src/prototype/packages/pyforge-atlas-kedro-viz/README.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"42" = [  # the Pages site shows the fleet and the guild, and builds for any host without a flag (feature under CAP-60,
+  # FR-12.1..FR-12.3; flags pyforge.herald.status_pages new and pyforge.herald.pages_second_host retired; Stories
+  # 42.1-42.3), added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus
+  # docsite/ (build.py, the status templates, the build inputs, site.yml, assemble_pages.py, pages_second_host.py), the
+  # flag tree, its overlay and herald's flag inventory, the GHE how-to, and every Spec memlog a reconcile names
+  # (spec-pyforge-steward co-governs the workflow that writes the inputs; herald never edits pages.yml).
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docsite/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-herald.md",
+  "docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"43" = [  # one generator renders the whole Pages site (feature under CAP-61, FR-12.4..FR-12.5, AD-23; flag
+  # pyforge.herald.pages_one_generator, retired by 43.7; Stories 43.1-43.7), added 2026-10-14. The default surface,
+  # restated because a declared entry replaces it outright, plus docs-site/ (the Astro pages, components, loaders,
+  # config, redirects map, package.json, lockfile), docsite/ (read in place, then deleted by 43.7), pixi.toml (the site
+  # tasks 43.7 retires), the flag tree, its overlay and herald's flag inventory, AGENTS.md (the dossier citation moves
+  # in 43.7), and every Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docs-site/**",
+  "docsite/**",
+  "pixi.toml",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-herald.md",
+  "AGENTS.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

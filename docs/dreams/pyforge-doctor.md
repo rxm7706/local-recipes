@@ -141,7 +141,8 @@ forward. That dream is archived; this one is the real record.
   the `map.yaml` schema change is additive and `docs-map-hygiene` keeps every current check; the probe reads one
   public URL and the local git log, never the GitHub API. **Kinships:** [[pyforge-herald]] (the site and the lead
   entry), [[pyforge-steward]] (`ci_pause_drift`, the registry row). Owner `spec-pyforge-doctor`; → `bmad-spec` after
-  herald's, one story in M2 (registry) and one in M1 (the MAP rows).
+  herald's, one story in M2 (registry) and one in M1 (the MAP rows). → CAP-90 / CAP-91, FR-23 / FR-24, AD-14, Epic 48 /
+  Stories 48.1–48.2, specced 2026-10-14 (the registry and the MAP rows are one story, 48.1; the probe is 48.2).
 - **2026-10-12 (the env-hygiene scan stops growing with the test suite)** — **Found: Story 44.1 made the five-second
   budget judge CPU, and `DW-doctor-44-1` showed the margin is thin and shrinking.** One `doctor check` on the repo root
   spends 2.75 s of CPU at `c447946b3f`. Under load that is about 1.25x headroom, and the scan grew 19% in eight days.

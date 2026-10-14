@@ -1763,7 +1763,7 @@ Drift — orphaned between stations.
   move with the duty; one `deploy-pages` caller; nothing outward beyond this repository's own Pages. **Kinships:**
   [[pyforge-herald]] (owner of the site's content and the lead entry), [[pyforge-atlas]] (the export producer),
   [[pyforge-doctor]] (`ci_pause_drift`, the liveness probe). Owner `spec-pyforge-steward`; → `bmad-spec` after
-  herald's, one M2 story for the surface move and the duty.
+  herald's, one M2 story for the surface move and the duty. → CAP-168 / Epic 102 / Stories 102.1–102.5, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

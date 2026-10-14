@@ -185,8 +185,10 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   [[pyforge-atlas]] (the Kedro-Viz producer artifact, Vizro static boards), [[pyforge-doctor]] (`map.yaml` orders the
   whole site, a liveness probe), [[pyforge-marshal]] (`status --format json`), [[pyforge-unifying-strategy]]
   (`fnd:CAP-14`: the dossier stays the cutover's control plane; the Actions budget). Owner `spec-pyforge-herald`
-  (CAP-44, CAP-49, CAP-52, CAP-56 and CAP-58 amended; new CAPs for M1, M2 and M3). → `bmad-spec` next; herald M1 lands
-  first, the steward surface move opens M2.
+  (CAP-44, CAP-49, CAP-52, CAP-56 and CAP-58 amended; new CAPs for M2 and M3; M1 a fix). → CAP-60 / CAP-61, FR-12.1–12.5,
+  AD-21 amended and AD-23 added; Epic 41 (fix) / 42 / 43, Stories 41.1, 42.1–42.3, 43.1–43.7, specced 2026-10-14; steward
+  CAP-168 / Epic 102, atlas CAP-62–63 / Epic 30 and doctor CAP-90–91 / Epic 48 minted the same day on their own Dreams.
+  Herald Epic 41 lands first, the steward surface move (102.1) opens M2.
 
 - **2026-10-12 (the docs home leads to the herald pages) — Wanted: a reader who lands on the Pages root can reach the
   dossier, the infographics, the decks and the Kedro-Viz pipelines without knowing their URLs.** Since the unified

@@ -366,7 +366,7 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   stays Lane 1; `conf/local/credentials.yml` stays stubbed in the producer as today; AD-1 import boundaries hold.
   **Kinships:** [[pyforge-herald]] (the site), [[pyforge-steward]] (`pages.yml`, `ci resume`, the registry row).
   Owner `spec-pyforge-atlas` (CAP-41 amended); → `bmad-spec` after herald's, one M2 story for the handoff, one later
-  story for Vizro.
+  story for Vizro. → CAP-62, CAP-63 / FR-70, FR-71 / Epic 30 / Stories 30.1–30.2, specced 2026-10-14.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

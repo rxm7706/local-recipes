@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-13"   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-14"   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-168 (the Pages duct; operator rulings 2026-10-13); FR-41 registered; FR-8 and FR-11 move onto `steward pages build|status`, FR-9 and FR-10 retire with `deploy dashboard` (superseded in part, nothing renumbered); D6's no-new-workflow clause retired; SM-2 recorded as history. See § Currency reconciliation — 2026-10-14 (the Pages duct). Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for CAP-167 (estate refresh; the plan's recommended answers Q1-Q9 adopted as assumptions); FR-40 registered. See § Currency reconciliation — 2026-10-13 (estate refresh). Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-166 (the CI pause control plane, operator rulings Q1-Q8); FR-39 registered. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entries (Story 67.4 re-scoped repo-only under fnd:CAP-13; Stories 85.5 and 72.2 unblocked and index row 49.13 done; Story 86.1 minted, a fix under CAP-114); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-10.. Prior: RE-STAMPED 2026-10-07 (later): chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07 (later: Stories 85.1–85.4 and 74.2).. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec memlog -> PRD) for the independent review of the free-threading Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md; four operator rulings); no CAP minted, no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2719,3 +2719,76 @@ and drift warnings on its own chain. Decomposes into **Epic 100**, minted next b
 **ONE kernel FR space now FR-1..FR-40** (FR-41 = next free id).
 
 **Content changed:** this section added (FR-40 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-14 (the Pages duct)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-168 on 2026-10-14 from the
+Realization-log entry of 2026-10-13 (the Pages duct), the herald Dream's same-day lead entry (the Pages deployment,
+redesigned) and the operator rulings of 2026-10-13, relayed 2026-10-14 with the pre-assigned numbers (CAP-168, FR-41,
+Epic 102, flag `pyforge.steward.pages_duty`). Same-day reconcile; the FR is derived from its CAP.*
+
+### The FR space: FR-41 registered
+
+#### FR-41: The Pages deploy workflow is steward's duct ← CAP-168
+
+The Pages workflow fired on every push to `main`: 1,342 runs since 2026-09-13, 720 deploys, 621 cancelled, about 24
+deploys a day, a full-history checkout of a 658 MB `presentations/` tree each time, a deploy parked in `waiting` for
+six days unseen, and a separate PR twin (`docsite-check.yml`, 522 runs) carrying its own copy of the path filter. The
+file sat on herald's surface while steward owned the duty, the budget, the registry row with its stuck rules and the
+preflight that reads the workflow files. The operator ruled 2026-10-13: steward owns the duct, herald the content.
+One workflow, `.github/workflows/pages.yml`, on steward's surface, in BMAD-METHOD `docs.yaml`'s shape, fires on the
+published inputs, builds on every change, deploys only what changed, mounts atlas's export from an artifact, takes
+its host from `actions/configure-pages`, ships its artifact as a release asset, and is driven and read by a `pages`
+duty; no bot commits on `main`.
+**Consequences (testable):**
+- `.github/workflows/pages.yml` (a `git mv` of `dashboard.yml`) triggers on `push` to `main` and `pull_request` with
+  one twelve-entry published-inputs filter (`docs/tutorials/**`, `docs/how-to/**`, `docs/reference/**`,
+  `docs/explanation/**`, `docs/index.md`, `docs/404.md`, `docs/map.yaml`, `docs/dashboard/**` until atlas Story 30.1,
+  `docs-site/**`, `docsite/**`, `presentations/**`, the workflow itself), on `workflow_dispatch` and on a six-hourly
+  schedule; `fetch-depth: 1` with a sparse checkout that admits `presentations/*/project/*.html` and no `src/pptx`;
+  a `pull_request` run uploads the built site as a PR artifact and never deploys; `docsite-check.yml` is deleted.
+- The `deploy` job runs on `main` only and skips when the built tree's hash (`build.json`, the built-from footer
+  excluded) equals the live site's; a fixture tree against its own `build.json` yields `changed=false`, against a
+  differing one `changed=true`; `build` cancels in progress, `deploy` never.
+- `docs/governance/ci-surfaces.yaml` carries `pages` (switch `PAUSE_PAGES`; `stuck_rules` `deploy_waiting_hours: 24`,
+  `consecutive_cancelled_runs: 5`), `pages.build` and `pages.deploy` in place of the `dashboard*` rows, and
+  `docsite-check*` as `retired`; every job keeps its CAP-166 fragment first; `ci_surface_gates.py --check` exits 0.
+- `pyforge steward pages build|deploy|status`: `build` runs `pages-check` by subprocess and reports its exit; `deploy`
+  runs `gh workflow run pages.yml --ref main` and names the run; `status` prints the live root's `last-modified` and
+  `build.json`, the last run and the `pages` registry verdict; `deploy dashboard` and `deploy status` are deleted
+  with their git plumbing; `DUTIES` gains `pages` and the count assertions move.
+- The `build` job downloads atlas's newest successful `kedro-viz-export` artifact into the mount (`actions: read`) and
+  exports `present|absent`, exiting 0 either way; `docs/dashboard/**` leaves the filter once the committed tree is
+  gone.
+- `SITE_URL` comes from `configure-pages` on every host with no flag step; each deploy from `main` uploads
+  `pages-site.zip` on a rolling `pages-site` pre-release; the GitHub Enterprise how-to loses its flag section and
+  gains the pull-the-zip path.
+- The pre-push lane selection (FR-32, Story 71.2) follows the file with no second list; `scripts/pixi_version_registry.py`
+  registers the `pages.yml setup-pixi` site in place of `dashboard.yml`'s and `docsite-check.yml`'s.
+- Thirty days after Story 102.1 lands, Pages deploys per 30 days are under 150 and no cancelled streak reaches five;
+  after Story 102.3, zero commits by `github-actions[bot]` land on `main` for Pages and one workflow touches Pages
+  besides atlas's producer.
+
+Flag classes: Story 102.1 (the rename, the filter, the checkout) is `detector-or-gate` exempt — a workflow's `on:`
+block is evaluated before any step can read a flag; Stories 102.2–102.5 sit behind one flag,
+`pyforge.steward.pages_duty`, minted by 102.2 with its first reader (`pages.py`), off: the workflow deploys every
+build, mounts nothing and uploads no asset, and the duty refuses naming the flag. Herald keeps the artifact's content
+(`docsite/**`, `docs-site/**`, `pages-build`, `pages-check`), atlas the export (Story 30.1), doctor `map.yaml`.
+Decomposes into **Epic 102** (Stories 102.1–102.5), minted in the same chain commit.
+
+### FR-8..FR-11 superseded in part, D6 retired (2026-10-14)
+
+FR-8 (dashboard build) and FR-11 (deploy status) move onto `steward pages build` and `steward pages status`; FR-9
+(reconciled push) and FR-10 (its dry run) retire with `deploy dashboard` under Story 102.3. The reconciliation they
+described — diff before mutate, zero commits on no diff — survives as the deploy job's hash compare (AD-4 as amended
+2026-10-14), with the mutation now one `deploy-pages` run instead of a git push. D6's "zero new GitHub Actions
+workflow in v1" is retired by the 2026-10-13 ruling: the workflow already existed and moves onto this station's
+surface. SM-2 (`steward deploy dashboard` replaces 100% of manual `dashboard-gen` + push) is history: the generator
+retired on 2026-08-25 (AD-4's 2026-08-26 amendment) and the verb retires with Story 102.3; the measure that replaces
+it is CAP-168's success (deploys per 30 days under 150; zero `github-actions[bot]` commits on `main` for Pages). The
+FR text above is left as written; this section is the record.
+
+**ONE kernel FR space now FR-1..FR-41** (FR-42 = next free id).
+
+**Content changed:** this section added (FR-41 registered; FR-8..FR-11, D6 and SM-2 annotated here, their text above
+unchanged). No FR renumbered or removed. `updated:` bumped.

@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-09-28"
+updated: "2026-10-14"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -272,7 +272,7 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
 - **CAP-40 — Bootstrap operator Vizro pages (optional follow-on, Story 21.9)** ← spec-atlas-kedro-catalog-expansion CAP-5 (shipped 2026-09-09)
   - **intent:** After bootstrap, operators inspect index health, identity
   - **success:** Three new pages (`bootstrap-index-health`,
-- **CAP-41 — Kedro-Viz publish stays in sync (optional follow-on, Story 21.10)** ← spec-atlas-kedro-catalog-expansion CAP-6 (shipped 2026-09-09)
+- **CAP-41 — Kedro-Viz publish stays in sync (optional follow-on, Story 21.10)** ← spec-atlas-kedro-catalog-expansion CAP-6 (shipped 2026-09-09; amended 2026-10-14 by CAP-62: the producer hands the export to Pages as a workflow artifact, never as a commit)
   - **intent:** Static Kedro-Viz export republishes when catalog or dataset
   - **success:** `kedro-viz-publish.yml` triggers on `catalog.yml`, `globals.yml`,
 - **CAP-42 — Vizro parity with identity canvases (Epic 22 follow-on)** ← spec-atlas-kedro-catalog-expansion CAP-7 (shipped 2026-09-09)
@@ -352,6 +352,71 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     anywhere; no `sqlite3` import exists under `src/pyforge/atlas` (the F1 grep gate); a sensor tick with unchanged
     heads skips and one with a moved head yields one run request and advances the cursor; an unreachable inventory
     repo keeps its last-good partition with a `stale` marker; `kedro-test` and `kedro-catalog-check` green.
+- **CAP-62 — the DAG export reaches Pages as a workflow artifact** ← spec-pyforge-atlas CAP-62 (ready 2026-10-14; amends CAP-41; works with CAP-16; reads `pyforge-steward:CAP-166`)
+  - **intent:** `.github/workflows/kedro-viz-publish.yml` keeps its path filter (`pipelines/**`, `conf/base/catalog.yml`,
+    `conf/base/globals.yml`, `datasets/**`) and `workflow_dispatch`, materializes the stub `conf/local/credentials.yml`
+    as today, runs `viz-publish-stage`, and uploads the staged tree as the workflow artifact `kedro-viz-export` with
+    90-day retention instead of calling `steward deploy dashboard`. No step commits or pushes: the re-attach-to-`main`
+    and git-identity steps go, and the job's `permissions.contents` drops to `read`. `viz-publish-stage` writes
+    `manifest.json` beside `index.html` — `export_commit` (the 40-hex commit the DAG was read from: `GITHUB_SHA` when
+    set, else `git rev-parse HEAD`), `export_date` (that commit's committer date, ISO 8601 UTC) and `kedro_viz_version`
+    (equal to the `version` field of `build/api/deploy-viz-metadata`); `tools/normalize_viz_build.py` still strips the
+    checkout path and the wall-clock timestamp, so two builds of one DAG still agree. The committed
+    `docs/dashboard/kedro-viz/` tree leaves git in the same story (`git rm -r --cached`, a `.gitignore` entry for the
+    staging path), so no export bytes sit on `main`. The job carries the CI-pause fragment reading
+    `vars.PAUSE_KEDRO_VIZ_PUBLISH` in the shape steward Story 99.2 rendered on every other job; the registry row
+    `kedro-viz-publish` (steward's, `docs/governance/ci-surfaces.yaml`) names that switch through steward's co-governor
+    reconcile, and its move from `paused-manually` to `live` is the operator's, through steward's `ci` duty, once the
+    hand-disabled workflow is re-enabled on GitHub. The consumer is steward Story 102.4 on the renamed `pages.yml`
+    (steward 102.2): it downloads the newest successful `kedro-viz-export` into `/dashboard/kedro-viz/`, skips the mount
+    and hides the tile when none exists, and shows the manifest's `export_commit` and `export_date` on that page, which
+    keeps its URL. Flag `pyforge.atlas.viz_export_artifact`; off, `viz-publish-stage` stages as today and writes no
+    manifest, and the workflow's upload step is skipped. (Operator ruling 2026-10-13; the placement rule on the herald
+    Dream; decisions in `.memlog.md`, 2026-10-14.)
+  - **success:** on the story's tree `git ls-files docs/dashboard/kedro-viz | wc -l` prints 0 and `git check-ignore
+    docs/dashboard/kedro-viz/index.html` exits 0. `pixi run -e pyforge-atlas viz-publish-stage` with the flag on leaves
+    `docs/dashboard/kedro-viz/manifest.json` whose three keys parse: `export_commit` matches `^[0-9a-f]{40}$` and equals
+    `git rev-parse HEAD`, `export_date` parses as ISO 8601 UTC, and `kedro_viz_version` equals `deploy-viz-metadata`'s
+    `version`; with the flag off no `manifest.json` is written and the staged tree is byte-identical to today's. A
+    workflow test reads `kedro-viz-publish.yml` as YAML and asserts one `actions/upload-artifact` step with `name:
+    kedro-viz-export`, `retention-days: 90` and the staged path; no step naming `steward deploy dashboard`, `git checkout
+    -B main` or `git config user.name`; `permissions.contents` equal to `read`; the path filter, `workflow_dispatch` and
+    the stub-credentials step unchanged; and the job's `if:` carrying `PAUSE_KEDRO_VIZ_PUBLISH`. The registry row
+    `kedro-viz-publish` names `switch: PAUSE_KEDRO_VIZ_PUBLISH`. `docs/dashboard/README.md` names the artifact and no
+    longer names `steward deploy dashboard`. `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in
+    both states with `pyforge.testing_kit.flags.flag_states`.
+- **CAP-63 — Vizro boards publish as static exports under `/dashboard/vizro/`** ← spec-pyforge-atlas CAP-63 (ready 2026-10-14; extends CAP-8, CAP-40, CAP-42, CAP-50 and CAP-62; binds `sld:AD-10` of the steward spine)
+  - **intent:** a `vizro-static-export` task in `-e local-recipes` (the env that carries the vizro closure; `pyforge-guild`
+    has none) builds the same BSL-driven `Dashboard` object `dashboard-dryrun` builds
+    (`pyforge.atlas.dashboard.app.build_dashboard`, 34 pages, no server, no `.run()`) and writes one static page per
+    board under `docs/dashboard/vizro/<page-id>/index.html` and a board index at `docs/dashboard/vizro/index.html`. Each
+    page's declared chart and table are rendered through plotly's `to_html(full_html=False, include_plotlyjs=<relative
+    path>)` pointing at ONE vendored `docs/dashboard/vizro/assets/plotly.min.js`, copied from plotly's own
+    `package_data/plotly.min.js` in the env, never `'cdn'` (herald AD-21: no third-party origin in the Pages artifact;
+    the archived intake workaround's `include_plotlyjs='cdn'` is the thing refused). Controls that submit work (the Run
+    buttons of `scan-project` and `env-inspect`, which go through `dashboard.scan_submit`) are not exported: the static
+    page shows the latest cached result and says so, and no filter is emulated client-side. `manifest.json` at the
+    export root names each board (`id`, `title`, `path`, `data_build_timestamp` — the page's own AD-17 stamp, the one
+    `tests/integration/dashboard/test_dashboard_provenance.py` already proves per page) plus `exported_at` and
+    `export_commit`. A board that declares an access column is refused before any file is written (`sld:AD-10`, the rule
+    `steward deploy static` already applies); no page declares one today, so the refusal is proven on a fixture. The
+    producer job (a second job on `kedro-viz-publish.yml`, or its own workflow with its own registry row — the operator's
+    call) runs in `-e local-recipes`, is path-filtered on `dashboard/**`, `semantic/**` and `conf/base/catalog.yml`, and
+    uploads `docs/dashboard/vizro/` as the workflow artifact `vizro-static-export` (90-day retention); the Pages build
+    consumes it as it consumes `kedro-viz-export` (steward 102.4's step; herald CAP-61 (M3) mounts it through
+    `publicDir`), and `pages-check` judges the mount with no `VENDORED_ROOTS` exemption in
+    `docsite/tools/assemble_pages.py`. The live Vizro server and the console stay Lane 1. Flag
+    `pyforge.atlas.vizro_static_boards`; off, the task refuses with the flag-off message and writes nothing.
+  - **success:** `pixi run -e local-recipes vizro-static-export` with the flag on and the fixture data root exits 0 and
+    writes `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, exactly one
+    `assets/plotly.min.js`, and `manifest.json` whose `boards[]` holds one entry per exported page with the four keys and
+    whose `exported_at` and `export_commit` parse. `grep -rl cdn.plot.ly docs/dashboard/vizro` prints nothing and every
+    `<script src=` in the export resolves to the vendored file. With the export under `docs/dashboard/vizro/`, `pixi run
+    -e site pages-check` exits 0 and reports no cross-origin finding under `dashboard/vizro/`, `VENDORED_ROOTS`
+    unchanged. A fixture board with an access column makes the task exit 1 naming the board and write nothing; with the
+    flag off the task refuses and writes nothing. A workflow test asserts one `actions/upload-artifact` step with `name:
+    vizro-static-export` and `retention-days: 90` and no commit or push step. `dashboard-dryrun`, `kedro-test` and
+    `kedro-catalog-check` green; the flag test runs the key in both states with `flag_states`.
 
 ## Constraints
 
@@ -829,3 +894,15 @@ reimplementing pipelines in core". **Story 25.3 IS that story.** The one-line `p
 it implies is steward's surface — split it, or land a steward memlog line first, or
 `spec-surface-check` reds at merge. C10's other half, the 46 CFE tools, stays mason's.
 
+## Open Questions — 2026-10-14 (CAP-62, CAP-63)
+
+Two questions the mint of 2026-10-14 leaves to the operator; both sit on `.memlog.md` as `(question by claude)`.
+
+- **CAP-62:** which duty moves the `kedro-viz-publish` registry row from `paused-manually` to `live` once the workflow
+  carries `PAUSE_KEDRO_VIZ_PUBLISH`? As landed on 2026-10-14, steward's `run_resume` (`ci.py`) accepts only a row whose
+  state is `paused` and which names one switch, and this row reads `paused-manually` with `switch: null` — so the move
+  needs a steward story that lets `ci resume` accept a re-enabled hand-disabled workflow, or an operator hand edit of
+  the row with `gh workflow enable`. Named as Story 30.1's operator gate until decided.
+- **CAP-63:** does the Vizro producer run as a second job on `kedro-viz-publish.yml` (one atlas producer workflow, one
+  registry row) or as its own workflow with its own row? One owner per workflow holds either way. Story 30.2 is written
+  for the second job and names the alternative.

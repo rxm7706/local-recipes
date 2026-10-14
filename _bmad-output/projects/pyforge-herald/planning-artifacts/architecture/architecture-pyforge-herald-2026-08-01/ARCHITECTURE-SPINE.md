@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-14"   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> spine) for FR-11.1 / CAP-59 (Epic 39, the dossier's CI surfaces tile). No AD added or amended; it lands on AD-21. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD -> spine) for FR-8.6 / CAP-58 (Epic 40). AD-21 amended (one menu across the prefixes); no AD added. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: prd->arch currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: prd->arch cascade for the PRD's 2026-10-10 reconciliation (Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10); lands on AD-14 and AD-13/AD-17 as built; the 2026-09-14 "must not quietly resolve" paragraph answered by the ruling, not by this spine. No AD added, amended or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> spine) and prd->arch cascade for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; lands on AD-3, AD-4, AD-22 and canopy:AD-21 as written; the AD-3 amendment line corrected in place (the formats are plugins on the hook, each producer runs from its own verb); no AD added or amended; one PPTX-invariant divergence recorded (the native driver is not token-driven). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+updated: "2026-10-14"   # RE-STAMPED 2026-10-14 (later): chain-currency cascade (spec -> PRD -> spine) for FR-12.1..FR-12.5 / CAP-60, CAP-61 (Epics 42-43). AD-21 amended (the placement rule; steward owns the deploy caller; one registry); AD-23 added (one generator renders every prefix). See § Currency reconciliation — 2026-10-14 (later). Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD -> spine) for FR-11.1 / CAP-59 (Epic 39, the dossier's CI surfaces tile). No AD added or amended; it lands on AD-21. See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD -> spine) for FR-8.6 / CAP-58 (Epic 40). AD-21 amended (one menu across the prefixes); no AD added. See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: prd->arch currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: prd->arch cascade for the PRD's 2026-10-10 reconciliation (Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10); lands on AD-14 and AD-13/AD-17 as built; the 2026-09-14 "must not quietly resolve" paragraph answered by the ruling, not by this spine. No AD added, amended or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> spine) and prd->arch cascade for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; lands on AD-3, AD-4, AD-22 and canopy:AD-21 as written; the AD-3 amendment line corrected in place (the formats are plugins on the hook, each producer runs from its own verb); no AD added or amended; one PPTX-invariant divergence recorded (the native driver is not token-driven). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
@@ -790,6 +790,22 @@ crosses prefixes; ownership does not:
 - Every link is built from the configured base path (the 2026-09-28 amendment), so the menu resolves on every
   host. `pages-check` fails a menu link that does not resolve inside the artifact.
 
+**Amended 2026-10-14 (CAP-60, CAP-61; FR-12.1..FR-12.5): the placement rule, the duct's owner, one registry.**
+- **Placement rule.** A surface that is dynamic, authenticated or per-user lives on Lane 1 `/console/`; a surface that
+  is static, public and built at deploy time lives on Pages, rendered only from tracked files and public API JSON,
+  never from Tier-3, Lane 1 data or warden findings. MyBMAD (`bmad-code-org/bmad-method-ui` `web/`: a Next.js server
+  with PostgreSQL, sessions and Server Actions) fails this rule for Pages and may run as a Lane 1 sidecar; its Pages
+  twin is the fleet board (`/status/`), a build-time snapshot of the eight ledgers.
+- **The duct has one owner.** Steward owns the one deploy caller, `pages.yml` (`pyforge-steward:CAP-168`), its path
+  filters, schedule, concurrency, no-op skip, registry row and budget; herald, doctor and atlas own their prefixes and
+  the inputs the workflow's Guild steps hand to the build. The rule "one deploy caller" is unchanged; who owns it is now
+  stated.
+- **One registry.** `docs/map.yaml` `sections:` (`pyforge-doctor:CAP-90`) orders every prefix: the docs quadrants, the
+  herald pages, `/status/`, the dashboard mounts and `/changes/`. The 2026-10-12 amendment's one navigation list moves
+  from herald's `site.yml` to that registry when CAP-61 lands; each owner still renders it in its own pages.
+- **New prefixes, kept URLs.** `/status/` and `/changes/` are new; `/dashboard/kedro-viz/` keeps its URL and Vizro
+  boards go beside it under `/dashboard/vizro/` (`pyforge-atlas:CAP-63`); the 44 legacy redirects stay.
+
 **Content changed:** this section only. `updated:` bumped. AD-21 is added; no existing AD is
 amended or removed. The one prior rule this supersedes is CAP-44's (the Pages root is the dossier
 landing page), a Spec-level clause that no AD carried.
@@ -886,6 +902,31 @@ the deck list and the viewer instead of only linking out. Story 30.2.
 
 **Content changed:** this section, AD-22, and the amendment lines on AD-3, AD-12 and AD-21 only.
 `updated:` bumped. AD-4 is untouched. No AD is removed.
+
+### AD-23 — One generator renders every prefix; another station's contribution is data it reads at build
+
+**Binds:** The Pages artifact is rendered by one generator, Astro with Starlight (`docs-site/`), for every prefix:
+the docs shelf, the herald pages, the status pages, the dashboard mounts and the changes feed (CAP-61). What another
+station or another herald tool contributes arrives as data the generator reads at build time — YAML (`dossier.yml`,
+`facts.yaml`, `docs/map.yaml`), JSON written by a Guild step of steward's workflow (`fleet-status.json`, the
+`ci-status.json` snapshot, `marshal status --format json`, `herald progress --json`, the 30-day merge list), or a
+downloaded workflow artifact (`kedro-viz-export`, `vizro-static-export`) mounted through `publicDir` — never code the
+generator imports. The measurer (`verify_claims.py`) is one more producer of data.
+
+**Prevents:**
+- A second generator or an assembler with its own link, origin and redirect logic (the 3,830-line shape measured on
+  2026-10-13).
+- A `site` env that depends on `pyforge.*` packages, or a herald build that imports another station.
+- A name clash between two site directories: with one generator there is one directory.
+
+**Rule:** New Pages content is an Astro page, component or content collection under `docs-site/src/`, plus a data
+input if it needs one; never a new renderer, template language or copy step. The five files vendored from BMAD-METHOD
+stay hash-pinned; everything else under `docs-site/` is this station's. Bespoke Python under `docs-site/` stays under
+300 lines. Until Story 43.7 retires the Jinja path, `pyforge.herald.pages_one_generator` selects the generator for
+`/herald/`.
+
+**[ADOPTED 2026-10-14]** — operator rulings 2026-10-13 (M3, the holistic site); the foundry rebuilds this surface
+from the Spec (`mode: rebuild`), so every bespoke line is rebuild cost.
 
 ## Currency reconciliation — 2026-10-03 (Phase 4+5)
 
@@ -1028,3 +1069,15 @@ deploy caller, so it lands on AD-21 unamended and no AD is added. Two facts bind
   and handed to the `site` build the way AD-21's 2026-09-28 (night) amendment hands it the host inputs (CAP-56).
 
 **Content changed:** this section only. No AD added, amended or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-14 (later): the Pages deployment, redesigned
+
+*RE-STAMPED: chain-currency cascade (spec → PRD → spine) for FR-12.1..FR-12.5 / CAP-60, CAP-61 (Epics 42 and 43; Epic 41
+is a fix).*
+
+The operator's 2026-10-13 rulings change who owns the deploy caller, where a surface may live, and how many generators
+render the artifact. The first two land as an amendment to AD-21 (in place above: the placement rule, the duct's owner,
+one registry, the new prefixes). The third is a new decision, AD-23: one generator, and every other contribution is
+data. No port, adapter or package boundary moves; `src/platform/` still imports no `pyforge.*`.
+
+**Content changed:** AD-21's 2026-10-14 amendment, AD-23 and this section. `updated:` bumped. No AD removed.
