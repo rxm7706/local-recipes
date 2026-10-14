@@ -2,7 +2,7 @@
 title: "101.1: The `platform-ci-local` stubs leak no process, and the holder scan takes seconds"
 type: 'fix'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e0ad43f18c12c7c6e223c2f44b763c3e529db877'
 review_loop_iteration: 1
 followup_review_recommended: false

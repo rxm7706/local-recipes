@@ -6479,7 +6479,7 @@ So that the suite neither fills the host nor times out on its own leftovers.
 **When** the steward suite runs the three `platform-ci-local` test modules, or a run waits past `PLATFORM_CI_LOCAL_LOCK_WAIT`
 **Then** each stub execs its long-running process (`exec -a "$0 $*" sleep 999999`), so the recorded pid is the process the stop path kills and its cmdline still passes `_is_our_postgres` / `_is_our_redis`; `lock_holder.sh` execs its `sleep`; the killed-run helper kills its holder's process group in teardown; every process a test starts carries `PLATFORM_CI_STUB_MARKER=<tmp_path>`, and an autouse fixture fails any test that leaves a process carrying that entry (killing only those); a named regression test runs one start/stop cycle and finds no marked process left
 **And** the waiter closes fd 9 before it reports and scans once; `_pids_holding_path` keeps `fuser` and otherwise walks `/proc/<pid>/fd/*` with bash's own `-ef` test, forking nothing per descriptor, and prints one pid per line, sorted and unique; a test runs the function's fallback with `fuser` and `readlink` off `PATH` and gets exactly the holders' pids; the stale-record test asserts the report lists exactly its holder; each lock-wait test passes in under 60 s; reverting the stub `exec` fails the regression test and the fixture (mutation); `pixi run --frozen -e pyforge-steward pyforge-steward-test` is green and leaves no process carrying the suite's marker, and the `spec-pyforge-steward` memlog reconciles every changed governed path before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
