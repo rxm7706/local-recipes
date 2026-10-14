@@ -255,3 +255,5 @@ promoted by `dispatch_land_finalize`.
 - 2026-10-14: minted from the station Dream's 2026-10-14 (marp in the Guild env) entry. `type: fix`, no flag, no
   CAP. Bound to `spec-pyforge-steward` CAP-5 through Story 63.1, with CAP-152 (Story 63.6) for the task's move.
   Minted with the code in one chain commit; the evidence above is this change's own measurement.
+
+- 2026-10-14 (landing): `docs/foundry/sbom-gaps.md` loses its `pin:marp-cli` row. The derivation (`scripts/sbom_gap_derive.py`) stops yielding the key once marp-cli is a Guild-feature pin composed into pyforge-foundry-full, and `tests/scripts/test_sbom_gap_derive.py::test_live_document_matches_derivation` redded the pre-push preflight on the stale row. Added to the surface; `sbom-gaps-check` exits 0 after.

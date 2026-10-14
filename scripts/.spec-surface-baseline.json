@@ -5799,7 +5799,7 @@
    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md": "002b2f409cd33910e6f784285b8fb10311b660a2",
    "docs/dreams/mcp-era-isolation.md": "c28133c24bb44df9a55993f3c2143f3b3f21ae6d",
    "docs/dreams/mcp-host-real-station-tools.md": "02819e9037cb99df295a31730295b28e6c68d24e",
-   "docs/foundry/sbom-gaps.md": "bd6bf608e72c42b3b6507403ef9c03d7def11bb9",
+   "docs/foundry/sbom-gaps.md": "7077ffb487494817d24d82f2f9f9ecf015b39111",
    "docs/foundry/upstream-drafts/crm-parse-crash-on-valid-indentation.md": "4bd82f28e161063e31f583f3ed6f1ddac4c910dd",
    "docs/foundry/upstream-drafts/crm-sentinel-type-key-leak.md": "e42216016d14cf81613bb1f78f643c370dc40d6a",
    "docs/foundry/upstream-drafts/sbom-conda-smithy-co-solve.md": "c927861f674d6841a696a6422324ce08b4a37b70",
@@ -6157,7 +6157,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "88454036edde49dd1d38e33a1f6606606e4113d5"
+  "memlog": "38d71887e62bd02696013ed0ebcaeed8be2b63a6"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
