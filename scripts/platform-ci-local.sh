@@ -126,6 +126,10 @@ _pid_alive() {
 
 _pids_holding_path() {
   local target="$1" pid fd link
+  if command -v fuser >/dev/null 2>&1; then
+    fuser "$target" 2>/dev/null | tr -s ' \n' '\n' | sed '/^$/d' | sort -un
+    return
+  fi
   for pid in /proc/[0-9]*; do
     pid="${pid#/proc/}"
     for fd in /proc/"$pid"/fd/*; do

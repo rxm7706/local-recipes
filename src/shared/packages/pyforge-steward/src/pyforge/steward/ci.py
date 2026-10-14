@@ -21,6 +21,8 @@ DEFAULT_REPO = "rxm7706/local-recipes"
 CI_VARS_REL = Path(".steward/ci-vars.json")
 CI_PAUSES_LOG_REL = Path(".steward/ci-pauses.log")
 SCHEMA_ID = "urn:local-recipes:pyforge-steward:ci-status-schema"
+CANARY_WORKFLOW = ".github/workflows/ci-canary.yml"
+CANARY_STALE_DAYS = 15
 EXIT_CI_REFUSAL = 3
 EXIT_CI_GH_FAILED = 1  # gh variable set/delete failed (AD-8; same domain as EXIT_FAILED)
 
@@ -64,6 +66,7 @@ class _GhSnapshot:
     runs_by_workflow: dict[str, list[dict[str, Any]]]
     pending_deploy_run_ids: set[int]
     run_list_errors: list[str]
+    canary_last_green: dict[str, str | None]  # registry row id -> ISO timestamp
 
 
 def _default_runner(argv: list[str], cwd: Path) -> _Completed:
@@ -258,6 +261,9 @@ def _collect_snapshot(deps: CiDeps, registry: dict[str, Any]) -> tuple[_GhSnapsh
                 if isinstance(rid, int) and _fetch_pending_deployments(deps, rid):
                     pending_ids.add(rid)
 
+    canary_runs = runs_by_wf.get(CANARY_WORKFLOW, [])
+    canary_last_green = _collect_canary_last_green(deps, canary_runs)
+
     snap = _GhSnapshot(
         rate_limit=rl,
         variables=variables,
@@ -265,6 +271,7 @@ def _collect_snapshot(deps: CiDeps, registry: dict[str, Any]) -> tuple[_GhSnapsh
         runs_by_workflow=runs_by_wf,
         pending_deploy_run_ids=pending_ids,
         run_list_errors=run_errors,
+        canary_last_green=canary_last_green,
     )
     return snap, None
 
@@ -315,6 +322,97 @@ def _last_green(runs: list[dict[str, Any]]) -> str | None:
         if str(run.get("conclusion") or "") == "success":
             return str(run.get("createdAt") or "") or None
     return None
+
+
+def _canary_surface_id(row: dict[str, Any]) -> str | None:
+    token = row.get("canary")
+    if token is None:
+        return None
+    text = str(token)
+    prefix = "ci-canary."
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return str(row.get("id") or "") or None
+
+
+def _parse_utc_timestamp(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _canary_job_name(surface_id: str) -> str:
+    return f"canary ({surface_id})"
+
+
+def _fetch_run_jobs(deps: CiDeps, run_id: int) -> list[dict[str, Any]] | None:
+    data, err = _gh_json(deps, f"repos/{deps.repo}/actions/runs/{run_id}/jobs")
+    if data is None:
+        return None
+    jobs = data.get("jobs")
+    if not isinstance(jobs, list):
+        return None
+    return [j for j in jobs if isinstance(j, dict)]
+
+
+def _collect_canary_last_green(deps: CiDeps, runs: list[dict[str, Any]]) -> dict[str, str | None]:
+    """Map registry surface id -> latest successful canary job timestamp."""
+    best: dict[str, str] = {}
+    for run in runs:
+        if str(run.get("conclusion") or "") != "success":
+            continue
+        rid = run.get("databaseId")
+        if not isinstance(rid, int):
+            continue
+        jobs = _fetch_run_jobs(deps, rid)
+        if jobs is None:
+            continue
+        for job in jobs:
+            if str(job.get("conclusion") or "") != "success":
+                continue
+            name = str(job.get("name") or "")
+            if not name.startswith("canary (") or not name.endswith(")"):
+                continue
+            surface_id = name[len("canary (") : -1]
+            started = str(job.get("completedAt") or job.get("startedAt") or run.get("createdAt") or "")
+            if not started:
+                continue
+            prev = best.get(surface_id)
+            if prev is None or started > prev:
+                best[surface_id] = started
+    return {k: v for k, v in best.items()}
+
+
+def _canary_stale(
+    row: dict[str, Any],
+    canary_last_green: dict[str, str | None],
+    *,
+    now: datetime,
+) -> bool:
+    if str(row.get("state") or "") != "paused":
+        return False
+    if str(row.get("cost") or "") != "high":
+        return False
+    surface_id = _canary_surface_id(row)
+    if not surface_id:
+        return False
+    last = canary_last_green.get(surface_id)
+    if last is None:
+        return True
+    parsed = _parse_utc_timestamp(last)
+    if parsed is None:
+        return True
+    age = now - parsed
+    return age >= timedelta(days=CANARY_STALE_DAYS)
 
 
 def _consecutive_cancelled(runs: list[dict[str, Any]], n: int) -> bool:
@@ -514,6 +612,8 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
         verdict = state_v
         if drift:
             verdict = "drift"
+        elif _canary_stale(row, snap.canary_last_green, now=deps.now()):
+            verdict = "stuck"
         elif _row_stuck(row, runs, snap, now=deps.now()):
             verdict = "stuck"
         elif days_left is not None and days_left < 0:
