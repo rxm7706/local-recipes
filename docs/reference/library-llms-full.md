@@ -928,7 +928,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **bmad-module-skill-forge** (>=3.0.0) — BMAD Skill Forge module (conda-forge).
 - **cachebox** (>=5.2.3) — fast in-process cache.
 - **crispy-bootstrap5** (>=2026.9) — django-crispy-forms Bootstrap 5 template pack.
-- **cron-descriptor** (>=1.4.5) — human-readable cron strings (django-celery-beat).
+- **cron-descriptor** (>=2.1.0) — human-readable cron strings (django-celery-beat).
 - **cryptography** (>=50.0.2) — crypto primitives (Fernet, TLS helpers).
 - **django-allauth** (>=65.19.7) — Django auth (accounts/social/MFA); `platform-ci-test` + host.
 - **django-anymail** (>=15.2) — Django transactional email backends.
@@ -971,7 +971,7 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **pre-commit** (>=4.7.0) — git hook runner (`platform-ci-test`).
 - **prometheus_client** (>=0.26.0) — Prometheus metrics client; `platform-ci-test`
   + `pyforge-doctor` envs.
-- **pyjwt** (>=2.15.1) — JSON Web Tokens.
+- **pyjwt** (>=2.15.0) — JSON Web Tokens.
 - **pytest-django** (>=4.13.0) — pytest plugin for Django.
 - **pytest-sugar** (>=1.1.1) — prettier pytest progress.
 - **python-crontab** (>=3.4.0) — crontab parse/edit (celery-beat).
