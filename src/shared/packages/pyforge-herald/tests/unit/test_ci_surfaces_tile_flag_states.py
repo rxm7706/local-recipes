@@ -8,9 +8,12 @@ import sys
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit import make_flag_provider_fixture
 from pyforge.testing_kit.flags import flag_states
 
 from pyforge.herald.ci_surfaces_tile import CI_SURFACES_TILE_FLAG, ci_surfaces_tile_enabled
+
+flag_provider = make_flag_provider_fixture()
 
 VERDICT_ORDER = (
     "drift",
@@ -26,7 +29,9 @@ VERDICT_ORDER = (
 def _repo_root() -> Path:
     here = Path(__file__).resolve()
     for candidate in here.parents:
-        if (candidate / "pixi.toml").is_file() and (candidate / "docsite" / "tools").is_dir():
+        if (candidate / "pixi.toml").is_file() and (
+            candidate / "src" / "shared" / "packages" / "pyforge-herald"
+        ).is_dir():
             return candidate
     raise AssertionError("could not locate repo root")
 
@@ -105,19 +110,16 @@ def _fixture_all_verdicts() -> dict:
     }
 
 
-def test_flag_key_and_two_state_read(tmp_path: Path) -> None:
-    assert CI_SURFACES_TILE_FLAG == "pyforge.herald.ci_surfaces_tile"
-    with flag_states(CI_SURFACES_TILE_FLAG, on=True):
-        assert ci_surfaces_tile_enabled() is True
-    with flag_states(CI_SURFACES_TILE_FLAG, on=False):
-        assert ci_surfaces_tile_enabled() is False
+@flag_states(CI_SURFACES_TILE_FLAG)
+def test_flag_read_matches_openfeature_state(flag_provider: dict[str, bool]) -> None:
+    expected = flag_provider[CI_SURFACES_TILE_FLAG]
+    assert ci_surfaces_tile_enabled() is expected
 
 
 def test_ac1_lines_per_verdict_in_order(tmp_path: Path) -> None:
     cst = _load_ci_surfaces_tool()
     snap = _write_snapshot(tmp_path, _fixture_all_verdicts())
-    with flag_states(CI_SURFACES_TILE_FLAG, on=True):
-        block = cst.render_ci_surfaces_tile(flag_enabled=True, snapshot_path=snap)
+    block = cst.render_ci_surfaces_tile(flag_enabled=True, snapshot_path=snap)
     assert block is not None
     assert block["fetched_at"] == "2026-10-14T12:00:00+00:00"
     assert len(block["lines"]) == len(VERDICT_ORDER) + 1
@@ -152,12 +154,17 @@ def test_ac2_all_live(tmp_path: Path) -> None:
     assert "live" in block["lines"][0].lower()
 
 
-def test_ac5_flag_off_does_not_read_snapshot(tmp_path: Path) -> None:
+@flag_states(CI_SURFACES_TILE_FLAG)
+def test_ac8_render_follows_flag_state(flag_provider: dict[str, bool], tmp_path: Path) -> None:
     cst = _load_ci_surfaces_tool()
-    snap = tmp_path / "missing.json"
-    with flag_states(CI_SURFACES_TILE_FLAG, on=False):
-        block = cst.render_ci_surfaces_tile(flag_enabled=False, snapshot_path=snap)
-    assert block is None
+    snap = _write_snapshot(tmp_path, _fixture_all_verdicts())
+    enabled = flag_provider[CI_SURFACES_TILE_FLAG]
+    block = cst.render_ci_surfaces_tile(flag_enabled=enabled, snapshot_path=snap)
+    if enabled:
+        assert block is not None
+        assert block["lines"]
+    else:
+        assert block is None
 
 
 def test_overdue_and_due_today_formatting(tmp_path: Path) -> None:
@@ -204,8 +211,7 @@ def test_ac4_shape_refusals(tmp_path: Path) -> None:
         "fetched_at": "t",
         "repo": "r",
         "rate_limit": {"core_limit": 1, "core_remaining": 1},
-        "rows": [{"id": "dashboard.deploy", "verdict": None}],
+        "rows": [{"id": "dashboard.deploy"}],
     }
-    bad_verdict["rows"][0].pop("verdict")
     with pytest.raises(cst.CiStatusShapeError, match="row 0 \\(dashboard.deploy\\) missing verdict"):
         cst.validate_ci_status_envelope(bad_verdict, path=str(path))

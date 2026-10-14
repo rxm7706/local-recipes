@@ -15,15 +15,16 @@ SCHEMA_REL = (
 def _repo_root() -> Path:
     here = Path(__file__).resolve()
     for candidate in here.parents:
-        if (candidate / "pixi.toml").is_file():
+        if (candidate / "pixi.toml").is_file() and (
+            candidate / "src" / "shared" / "packages" / "pyforge-herald"
+        ).is_dir():
             return candidate
     raise AssertionError("repo root not found")
 
 
 def _load_ci_surfaces_tool():
     root = _repo_root()
-    tools = root / "docsite" / "tools"
-    path = tools / "ci_surfaces_tile.py"
+    path = root / "docsite" / "tools" / "ci_surfaces_tile.py"
     spec = importlib.util.spec_from_file_location("ci_surfaces_tile_contract", path)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)

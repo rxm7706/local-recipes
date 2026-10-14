@@ -383,6 +383,7 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
             "twins",  # Story 30.1 (CAP-55): twin scan/build/publish, not bridge-core
             "pptx_native",  # Story 32.1 (CAP-57): native pptx export, not bridge-core
             "pages_host",  # Story 31.1 (CAP-56): Pages second-host flag read, not bridge-core
+            "ci_surfaces_tile",  # Story 39.1 (CAP-59): CI surfaces tile flag read, not bridge-core
             "local_ship",  # Story 19.2 (no CAP; CAP-38/CAP-39 effect): operator loopback ship, not bridge-core
         }
         == swept
