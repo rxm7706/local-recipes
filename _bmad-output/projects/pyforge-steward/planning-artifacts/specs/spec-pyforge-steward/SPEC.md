@@ -123,6 +123,7 @@ surface:
   - docs/governance/ci-surfaces.schema.json
   - scripts/pin_policy_check.py
   - scripts/ci_surface_gates.py
+  - scripts/pages_build_stamp.py
   - scripts/_ci_surface_gates_lib.py
   - tests/scripts/test_ci_surface_gates.py
   - scripts/pin_policy_lib.py
