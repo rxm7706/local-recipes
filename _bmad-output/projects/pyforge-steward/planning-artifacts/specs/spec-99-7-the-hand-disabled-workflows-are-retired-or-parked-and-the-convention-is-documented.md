@@ -2,10 +2,18 @@
 title: '99.7: The hand-disabled workflows are retired or parked, and the convention is documented'
 type: 'chore'
 created: '2026-10-13'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'c51a397a0cb999671851d5395c6069798ea1e898'
 review_loop_iteration: 0
 followup_review_recommended: false
+deferred:
+  - summary: >-
+      pyforge-steward-test timed out in test_platform_ci_local_killed_holder (platform-ci-local.sh --test 120s) on this host during verification.
+    evidence: |-
+      Re-run of the single test failed the same way; unrelated to Story 99.7 diff (no edits to platform-ci-local.sh or that test).
+    location: >-
+      src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_killed_holder.py
+    severity: medium (unverified)
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -116,3 +124,35 @@ Type / Effort / Deps: chore / S / S-99.1, S-99.4.
 
 - 2026-10-13: specced from Epic 99's Story 99.7 text ahead of its dependencies' landing so the steward chain runs
   unattended (operator direction 2026-10-13).
+- 2026-10-14: landed — retired staged-recipes linter workflows and scripts; parked rows carry `review_by`; added
+  `docs/how-to/pause-ci.md`, MAP/map.yaml, AGENTS pointer; `ci_surface_gates` skips missing files for `retired` rows.
+
+## Review Triage Log
+
+### 2026-10-14 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 0, false 0, maybe-false 1
+- findings:
+  - `[maybe-false]` `[defer]` Steward full suite one timeout on platform-ci-local lock-holder test — deferred; environmental on this run.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Retired four staged-recipes linter GitHub workflows and sole-use scripts; updated `docs/governance/ci-surfaces.yaml`
+(`retired` / `paused-manually` + `review_by`); added `docs/how-to/pause-ci.md` and registry links; one AGENTS.md pointer;
+taught `scripts/_ci_surface_gates_lib.py` to ignore deleted workflow files for `retired` rows; struck stale `ACTIONS_ENABLED`
+evidence in fleet-readiness and spec-ocp memlog.
+
+Files changed: deleted six `.github/workflows*` linter artifacts; `docs/governance/ci-surfaces.yaml`, `docs/how-to/pause-ci.md`,
+`docs/map.yaml`, `docs/MAP.md`, `AGENTS.md`, steward `provision.py` docstrings, `scripts/_ci_surface_gates_lib.py`,
+`scripts/pixi_version_registry.py`, `pixi.toml` comment, docs reference/how-to updates, test fixtures, planning memlogs.
+
+Review: one deferred environmental steward-test timeout; no patches from review layers.
+
+Follow-up review recommended: false
+
+Verification: `ci-surface-gates-check`, `docs-map-render-test`, `docs-gen-test`, `governance-currency`, `pyforge-scribe-test`,
+`spec_surface_reconcile.py`, `spec-surface-check`, `test_ci_surface_gates.py` (20 passed) green; `pyforge-steward-test` 2598 passed,
+1 failed (timeout, deferred); `detectors-ci` green after MAP.md link; `pr-preflight` not run (session time).
+
+Residual risks: GitHub UI may still list deleted workflow files until merge; operator AC5 `--live` after landing.
