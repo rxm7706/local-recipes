@@ -509,6 +509,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.steward.pages_duty": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "102-2-one-pages-workflow-in-upstream-shape-builds-on-every-change-and-deploys-only-what-changed",
+        "created": "2026-10-14",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }

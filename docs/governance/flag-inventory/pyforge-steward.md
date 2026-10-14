@@ -201,6 +201,7 @@ Classes: `runtime` -- a resolved code fragment is an entry point of the station'
 | CAP-165 | module | code with no entry point: `tests/scripts/test_session_denial_forms.py` | `pyforge.steward.estate_refresh`, `pyforge.steward.workspace_preserve_tag` |
 | CAP-166 | module | code with no entry point: `.steward/estate-refresh`, `pixi.lock` | `pyforge.steward.ci_pause_control` |
 | CAP-167 | module | code with no entry point: `.steward/estate-refresh`, `pixi.lock` | `pyforge.steward.estate_refresh` |
+| CAP-168 | module | `scripts/pages_build_stamp.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py` | `pyforge.steward.pages_duty` |
 
 ### spec-pyforge-unifying-strategy (ready)
 

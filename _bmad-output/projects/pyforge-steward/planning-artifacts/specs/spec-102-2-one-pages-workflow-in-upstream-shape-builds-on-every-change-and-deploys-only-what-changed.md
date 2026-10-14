@@ -2,8 +2,8 @@
 title: '102.2: One Pages workflow in upstream shape builds on every change and deploys only what changed'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
+status: 'in-progress'
+baseline_revision: '22e5c19c285e722bcf7d58203689d57e9cc4dd55'
 flag:
   key: pyforge.steward.pages_duty                 # new; minted by this story (102.3, 102.4 and 102.5 reuse it)
   provider: openfeature-file                      # the one tree, src/platform/config/flags.json (canopy:AD-11)
