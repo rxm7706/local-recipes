@@ -37,6 +37,12 @@ set -uo pipefail
 ROOT="${PIXI_PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$ROOT" || exit 2
 
+python - <<'PY'
+from pathlib import Path
+from pyforge.steward.preflight_ci import emit_twin_banner
+emit_twin_banner(Path(".").resolve(), "platform-ci-local")
+PY
+
 STAGES=()
 ENGINE="${PLATFORM_CI_LOCAL_ENGINE:-docker}"
 while [ $# -gt 0 ]; do

@@ -2,8 +2,8 @@
 title: '99.5: The preflight honors what CI will skip, and says so'
 type: 'feature'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: '6587b1d7aa69be2794a44853646def731b56d856'
 flag:
   key: pyforge.steward.ci_pause_control       # Story 99.3's (one flag per CAP)
   provider: openfeature-file                  # the one tree, src/platform/config/flags.json (canopy:AD-11)

@@ -14,6 +14,12 @@ TAG="${GUILD_IMAGE_TAG:-pyforge-guild-ci}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+python - <<'PY'
+from pathlib import Path
+from pyforge.steward.preflight_ci import emit_twin_banner
+emit_twin_banner(Path(".").resolve(), "guild_image_ci")
+PY
+
 if ! command -v "$ENGINE" >/dev/null 2>&1; then
   echo "guild_image_ci: ${ENGINE} not found on PATH" >&2
   exit 1
