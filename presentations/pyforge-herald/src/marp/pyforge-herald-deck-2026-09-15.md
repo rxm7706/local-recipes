@@ -118,4 +118,4 @@ Herald · PyForge Guild · Dream to Code
 
 ## Ledger
 
-<span data-fact="tree_commit_date">2026-09-15</span> · <span data-fact="cfe_skill_version">8.90.5</span> · <span data-fact="bmad_core_version">6.12.0</span> · <span data-fact="fleet_epics_done_total">207/219</span> · <span data-fact="fleet_stories_done_total">926/972</span>
+<span data-fact="tree_commit_date">2026-10-14</span> · <span data-fact="cfe_skill_version">8.100.3</span> · <span data-fact="bmad_core_version">6.12.2</span> · <span data-fact="fleet_epics_done_total">384/389</span> · <span data-fact="fleet_stories_done_total">1422/1438</span>

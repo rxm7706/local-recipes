@@ -74,4 +74,4 @@ Warden · module `pyforge.warden` · dist `pyforge-warden`
 
 ## Ledger
 
-<span data-fact="tree_commit_date">2026-09-19</span> · <span data-fact="cfe_skill_version">8.90.5</span> · <span data-fact="bmad_core_version">6.12.0</span> · <span data-fact="fleet_epics_done_total">221/239</span> · <span data-fact="fleet_stories_done_total">995/1050</span>
+<span data-fact="tree_commit_date">2026-10-14</span> · <span data-fact="cfe_skill_version">8.100.3</span> · <span data-fact="bmad_core_version">6.12.2</span> · <span data-fact="fleet_epics_done_total">384/389</span> · <span data-fact="fleet_stories_done_total">1422/1438</span>

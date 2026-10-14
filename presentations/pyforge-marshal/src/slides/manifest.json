@@ -14,7 +14,7 @@
   {
     "id": "03-the-problem",
     "label": "The problem",
-    "notes": "Autonomous coding fails two ways: unattended agents ship plausible-but-wrong code, or humans review everything and the speed evaporates. Marshal's answer is structural — deterministic orchestration, spec gates before merge, scope checks on frozen surfaces, independent verification. Gates are never weakened to raise the autonomy share. The receipts: 128 stories shipped fleet-wide, zero frozen-surface violations reaching a merge.",
+    "notes": "Autonomous coding fails two ways: unattended agents ship plausible-but-wrong code, or humans review everything and the speed evaporates. Marshal's answer is structural — deterministic orchestration, spec gates before merge, scope checks on frozen surfaces, independent verification. Gates are never weakened to raise the autonomy share. The receipts: 1422 stories shipped fleet-wide, zero frozen-surface violations reaching a merge.",
     "bg": "#f3f2f2"
   },
   {
@@ -44,7 +44,7 @@
   {
     "id": "08-the-guild-stations-01-04",
     "label": "The Guild — stations 01–04",
-    "notes": "The first four stations. Herald the Proclaimer — decks, infographics, broadcasts, and now video scripts for manticore. Marshal the Commander — this deck's subject, six CLI commands shipped. Atlas the Navigator — the dependency map, complete at 57 of 57. Warden the Guardian — the six-axis compliance gate, complete at 43 of 43, never false-green.",
+    "notes": "The first four stations. Herald the Proclaimer — decks, infographics, broadcasts, and now video scripts for manticore. Marshal the Commander — this deck's subject, six CLI commands shipped. Atlas the Navigator — the dependency map, complete at 104 of 105. Warden the Guardian — the six-axis compliance gate, complete at 62 of 62, never false-green.",
     "bg": "#f3f2f2"
   },
   {
@@ -146,7 +146,7 @@
   {
     "id": "25-proof-road",
     "label": "Proof & road",
-    "notes": "Act VI: the receipts, then the map. Atlas 57 of 57; Warden 43 of 43; Marshal's own Epic 1 built by the line it now runs; 128 of 333 fleet-wide. Ahead: gates as objects, the outside supervisor, the landing paper trail, fleet status, portability proven — then the four Dreams: pr-lifecycle, durable-runs, fidelity-enforcement, one-front-door, and the installer fold.",
+    "notes": "Act VI: the receipts, then the map. Atlas 104 of 105; Warden 62 of 62; Marshal's own Epic 1 built by the line it now runs; 1422 of 1438 fleet-wide. Ahead: gates as objects, the outside supervisor, the landing paper trail, fleet status, portability proven — then the four Dreams: pr-lifecycle, durable-runs, fidelity-enforcement, one-front-door, and the installer fold.",
     "bg": "#f3f2f2"
   },
   {
