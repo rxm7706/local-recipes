@@ -1062,7 +1062,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.estate_refresh": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.ci_pause_control": {"dev": True, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
-        "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": True, "production": False},
+        "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},

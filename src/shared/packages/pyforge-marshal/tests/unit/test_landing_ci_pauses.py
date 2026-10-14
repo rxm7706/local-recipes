@@ -21,10 +21,12 @@ from pyforge.marshal.core.landing_checks import CheckRun
 from pyforge.marshal.core.landing_ci_pauses import (
     LANDING_CI_PAUSES_FLAG_KEY,
     append_ci_pauses_line_to_pr_body,
+    envelope_is_valid,
     record_from_envelope,
     render_ci_pauses_pr_line,
     row_counts_as_paused_at_merge,
     surfaces_from_envelope,
+    unknown_record,
 )
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.dispatch_land import _dispatch_pr_body, execute_dispatch_land
@@ -48,8 +50,6 @@ _ChecksForge = _lh._ChecksForge
 _GREEN = _lh._GREEN
 _install_fake_spec_surface = _lh._install_fake_spec_surface
 
-_FLAG = LANDING_CI_PAUSES_FLAG_KEY
-
 
 def _install_flag_tree(repo_root: Path, *, enabled: bool) -> None:
     config_dir = repo_root / "src/platform/config"
@@ -59,7 +59,7 @@ def _install_flag_tree(repo_root: Path, *, enabled: bool) -> None:
         json.dumps(
             {
                 "flags": {
-                    _FLAG: {
+                    LANDING_CI_PAUSES_FLAG_KEY: {
                         "state": "ENABLED",
                         "variants": {"on": True, "off": False},
                         "defaultVariant": variant,
@@ -214,9 +214,9 @@ class _BodyRecordingForge(_ChecksForge):
         return super().update_pr(repo, number, title, body)
 
 
-@flag_states(_FLAG)
+@flag_states("pyforge.marshal.landing_ci_pauses")
 def test_ac7_flag_on_records_and_updates_pr_body(tmp_path: Path, monkeypatch, flag_provider: dict[str, bool]) -> None:
-    enabled = flag_provider[_FLAG]
+    enabled = flag_provider["pyforge.marshal.landing_ci_pauses"]
     _install_flag_tree(tmp_path, enabled=enabled)
     sample = _sample_envelope()
 
@@ -300,6 +300,54 @@ def test_steward_cli_unknown_paths() -> None:
     )
     assert StewardCli(_StewardProcess(stdout="not json")).ci_status_record(repo_root=Path("/tmp"))["state"] == "unknown"
     assert StewardCli(_StewardProcess(stdout="{}")).ci_status_record(repo_root=Path("/tmp"))["state"] == "unknown"
+
+
+def test_steward_cli_success_and_resolve_binary(tmp_path: Path, monkeypatch) -> None:
+    envelope_json = json.dumps(_sample_envelope())
+    cli = StewardCli(_StewardProcess(stdout=envelope_json))
+    outcome = cli.ci_status(repo_root=tmp_path, binary_path="/bin/false")
+    assert outcome.ok is True
+    assert outcome.envelope is not None
+    assert cli.ci_status_record(repo_root=tmp_path, binary_path="/bin/false")["state"] == "read"
+
+    monkeypatch.setattr("shutil.which", lambda _: None)
+    bin_dir = tmp_path / ".pixi/envs/pyforge-steward/bin"
+    bin_dir.mkdir(parents=True)
+    pyforge = bin_dir / "pyforge"
+    pyforge.write_text("#!/bin/sh\n", encoding="utf-8")
+    pyforge.chmod(0o755)
+    assert cli.resolve_binary(tmp_path) == str(pyforge)
+    assert cli.resolve_binary(None) is None
+
+
+def test_steward_cli_timeout_and_refusal(tmp_path: Path, monkeypatch) -> None:
+    cli = StewardCli(_StewardProcess(raise_timeout=True))
+    outcome = cli.ci_status(repo_root=Path("/tmp"), binary_path="/bin/true")
+    assert outcome.ok is False
+    assert outcome.reason and "timed out" in outcome.reason
+
+    cli2 = StewardCli(_StewardProcess(returncode=3, stderr="flag off\n"))
+    outcome = cli2.ci_status(repo_root=Path("/tmp"), binary_path="/bin/true")
+    assert outcome.ok is False
+    assert "exit 3" in (outcome.reason or "")
+
+    cli3 = StewardCli(_StewardProcess())
+    monkeypatch.setattr(cli3, "resolve_binary", lambda *args, **kwargs: None)
+    outcome = cli3.ci_status(repo_root=tmp_path, binary_path=None)
+    assert outcome.ok is False
+    assert outcome.reason and "no pyforge binary" in outcome.reason
+
+
+def test_envelope_is_valid_and_pr_render_helpers() -> None:
+    assert envelope_is_valid(_sample_envelope()) is True
+    assert envelope_is_valid({"rows": []}) is False
+    assert unknown_record("x")["reason"] == "x"
+    record = record_from_envelope(_sample_envelope())
+    line = render_ci_pauses_pr_line(record)
+    assert line.startswith("CI paused at merge:")
+    assert append_ci_pauses_line_to_pr_body("body", record).startswith("body\n")
+    assert render_ci_pauses_pr_line({"state": "unknown", "reason": "r"}) == "CI paused at merge: unknown (r)"
+    assert render_ci_pauses_pr_line({"state": "bad"}) == "CI paused at merge: unknown (invalid record)"
 
 
 def test_finalize_ac6_invalid_json_becomes_unknown() -> None:

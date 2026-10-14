@@ -47,7 +47,7 @@ def surfaces_from_envelope(envelope: dict[str, Any]) -> list[str]:
     return sorted(ids)
 
 
-def envelope_is_valid(envelope: object) -> envelope is dict[str, Any]:
+def envelope_is_valid(envelope: object) -> bool:
     if not isinstance(envelope, dict):
         return False
     for key in ("fetched_at", "repo", "rate_limit", "rows"):

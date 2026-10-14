@@ -13,6 +13,7 @@ import shutil
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from pyforge.core.process import ProcessError, ProcessPort
 
@@ -137,7 +138,7 @@ class StewardCli:
         *,
         repo_root: Path,
         binary_path: str | None = None,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Return the landing journal record (``read`` or ``unknown``). Never raises."""
         outcome = self.ci_status(repo_root=repo_root, binary_path=binary_path)
         if outcome.ok and outcome.envelope is not None:
