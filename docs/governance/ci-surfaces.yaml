@@ -17,7 +17,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_CFE_REGRESSION_NET
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -26,7 +26,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_COPILOT_SETUP_STEPS
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -35,7 +35,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_COVERAGE_GATES
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -44,7 +44,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_DASHBOARD
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -56,7 +56,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_DETECTORS
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -65,7 +65,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_DOCSITE_CHECK
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -84,7 +84,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_LINT_TYPES
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -103,7 +103,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_MARSHAL_LOCAL_RECIPES_SEED_ORACLE
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -112,7 +112,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_PLATFORM_CI
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -130,7 +130,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_PYFORGE_PIP_INSTALL
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -139,7 +139,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_PYFORGE_STATION_TESTS
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -178,7 +178,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_SUBSTRATE_NIGHTLY
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -363,6 +363,256 @@ surfaces:
   job: golden-path-promotion
   kind: ci-job
   cost: medium
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: cfe-regression-net.cfe-regression-net
+  workflow: .github/workflows/cfe-regression-net.yml
+  job: cfe-regression-net
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: copilot-setup-steps.copilot-setup-steps
+  workflow: .github/workflows/copilot-setup-steps.yml
+  job: copilot-setup-steps
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: coverage-gates.changes
+  workflow: .github/workflows/coverage-gates.yml
+  job: changes
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: coverage-gates.named-module-gates
+  workflow: .github/workflows/coverage-gates.yml
+  job: named-module-gates
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: dashboard.build
+  workflow: .github/workflows/dashboard.yml
+  job: build
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: dashboard.deploy
+  workflow: .github/workflows/dashboard.yml
+  job: deploy
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: detectors.scripts-suite
+  workflow: .github/workflows/detectors.yml
+  job: scripts-suite
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: detectors.detectors
+  workflow: .github/workflows/detectors.yml
+  job: detectors
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: docsite-check.check
+  workflow: .github/workflows/docsite-check.yml
+  job: check
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: lint-types.lint-types
+  workflow: .github/workflows/lint-types.yml
+  job: lint-types
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: marshal-local-recipes-seed-oracle.oracle
+  workflow: .github/workflows/marshal-local-recipes-seed-oracle.yml
+  job: oracle
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: platform-ci.test
+  workflow: .github/workflows/platform-ci.yml
+  job: test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-pip-install.pip-install
+  workflow: .github/workflows/pyforge-pip-install.yml
+  job: pip-install
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.changes
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: changes
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.core-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: core-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.testing-kit-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: testing-kit-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.atlas-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: atlas-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.doctor-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: doctor-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.herald-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: herald-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.marshal-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: marshal-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.mason-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: mason-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.scribe-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: scribe-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.steward-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: steward-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: pyforge-station-tests.warden-test
+  workflow: .github/workflows/pyforge-station-tests.yml
+  job: warden-test
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: substrate-nightly.publish
+  workflow: .github/workflows/substrate-nightly.yml
+  job: publish
+  kind: ci-job
+  cost: low
   gate: false
   switch: null
   switch_class: pause

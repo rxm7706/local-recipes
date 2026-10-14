@@ -515,6 +515,123 @@ def _snapshot_env(
 
 
 # ---------------------------------------------------------------------------
+# CI pause fragment grammar (Story 99.2 / CAP-166)
+# ---------------------------------------------------------------------------
+
+
+def _load_ci_surfaces_registry(root: Path) -> dict[str, Any]:
+    path = root / "docs/governance/ci-surfaces.yaml"
+    if not path.is_file():
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
+
+
+def _declared_ci_var(name: str, registry: Mapping[str, Any]) -> str:
+    master = str((registry.get("conventions") or {}).get("master") or "")
+    if name == master:
+        return ""
+    for row in registry.get("surfaces") or []:
+        if isinstance(row, dict) and str(row.get("switch") or "") == name:
+            return "true" if str(row.get("state") or "") == "paused" else ""
+    return ""
+
+
+def _split_top_level(text: str, op: str) -> list[str]:
+    parts: list[str] = []
+    depth = 0
+    start = 0
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+        elif depth == 0 and text.startswith(op, i):
+            parts.append(text[start:i].strip())
+            i += len(op)
+            start = i
+            continue
+        i += 1
+    parts.append(text[start:].strip())
+    return [p for p in parts if p]
+
+
+def _eval_ci_atom(
+    atom: str,
+    *,
+    registry: Mapping[str, Any],
+    context: Mapping[str, str],
+    state: Any,
+    workflow: Workflow,
+    job_id: str,
+    job: dict[str, Any],
+) -> bool:
+    text = _unwrap_parens(atom.strip())
+    event = re.match(r"^github\.event_name\s*(==|!=)\s*'([^']*)'$", text)
+    if event:
+        op, literal = event.groups()
+        value = context.get("github.event_name", "")
+        return (value == literal) if op == "==" else (value != literal)
+    var = re.match(r"^vars\.([A-Z0-9_]+)\s*(==|!=)\s*'([^']*)'$", text)
+    if var:
+        name, op, literal = var.groups()
+        value = _declared_ci_var(name, registry)
+        return (value == literal) if op == "==" else (value != literal)
+    match = _NEEDS_CONDITION.fullmatch(text)
+    if match:
+        dep, name, operator, literal = match.groups()
+        value = state._needs_output(workflow, job, dep, name)
+        return value == literal if operator == "==" else value != literal
+    raise _Unevaluable(f"job {job_id!r} if: atom {atom!r} is outside the CI pause fragment grammar")
+
+
+def _unwrap_parens(text: str) -> str:
+    text = text.strip()
+    while text.startswith("(") and text.endswith(")"):
+        depth = 0
+        for index, ch in enumerate(text):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0 and index != len(text) - 1:
+                    return text
+        text = text[1:-1].strip()
+    return text
+
+
+def _eval_ci_if_expression(
+    text: str,
+    *,
+    registry: Mapping[str, Any],
+    context: Mapping[str, str],
+    state: Any,
+    workflow: Workflow,
+    job_id: str,
+    job: dict[str, Any],
+) -> bool:
+    text = _unwrap_parens(text)
+    for part in _split_top_level(text, "||"):
+        part = _unwrap_parens(part)
+        if all(
+            _eval_ci_atom(
+                piece,
+                registry=registry,
+                context=context,
+                state=state,
+                workflow=workflow,
+                job_id=job_id,
+                job=job,
+            )
+            for piece in _split_top_level(part, "&&")
+        ):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Evaluating one state of the tree
 # ---------------------------------------------------------------------------
 
@@ -539,6 +656,7 @@ class _State:
     paths: Sequence[str]
     env: dict[str, str]
     scratch: Path
+    ci_registry: Mapping[str, Any] = field(default_factory=dict)
     _outputs: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
     _counter: int = 0
 
@@ -597,6 +715,17 @@ class _State:
         if "if" not in job:
             return True, ""
         text = _normalize_condition(job["if"])
+        if "vars." in text or "github.event_name" in text:
+            holds = _eval_ci_if_expression(
+                text,
+                registry=self.ci_registry,
+                context=self._context(),
+                state=self,
+                workflow=workflow,
+                job_id=job_id,
+                job=job,
+            )
+            return holds, f"job {job_id!r} if: {text} evaluates to {holds!r}"
         match = _NEEDS_CONDITION.fullmatch(text)
         if not match:
             raise _Unevaluable(f"job {job_id!r} if: {job['if']!r} is not a needs.<job>.outputs.<x> comparison")
@@ -663,8 +792,12 @@ class _State:
         job = workflow.jobs.get(job_id)
         if not isinstance(job, dict) or not isinstance(job.get("steps"), list):
             raise _Unevaluable(f"job {job_id!r} has no steps to run")
-        if job.get("needs") or "if" in job:
-            raise _Unevaluable(f"job {job_id!r} has its own needs/if; its outputs are not evaluated")
+        if job.get("needs"):
+            raise _Unevaluable(f"job {job_id!r} has its own needs; its outputs are not evaluated")
+        if "if" in job:
+            holds, _ = self._job_holds(workflow, job_id, job)
+            if not holds:
+                return {}
         context = self._context()
         step_outputs: dict[str, dict[str, str]] = {}
         for step in job["steps"]:
@@ -842,11 +975,12 @@ def _select(
             p for p in _nul_paths(_git_ok(process, root, args, env, "reading the working tree")) if p not in dirty
         )
 
-    states = [_State(root, process, workflows, pixi_data, tuple(changed), env, scratch)]
+    ci_registry = _load_ci_surfaces_registry(root)
+    states = [_State(root, process, workflows, pixi_data, tuple(changed), env, scratch, ci_registry)]
     if dirty:
         snapshot_env = _snapshot_env(process, root, scratch, env, base_sha)
         union = tuple(dict.fromkeys([*changed, *dirty]))
-        states.append(_State(root, process, workflows, pixi_data, union, snapshot_env, scratch))
+        states.append(_State(root, process, workflows, pixi_data, union, snapshot_env, scratch, ci_registry))
 
     verdicts: list[LaneVerdict] = []
     for lane in lanes:
@@ -898,7 +1032,8 @@ def select_lanes_for_paths(
             if probe.returncode != 0:
                 raise _SelectAll(f"{BASE_REF} does not exist")
             workflows = load_workflows(repo_root)
-            states = [_State(repo_root, proc, workflows, pixi_data, changed, env, scratch)]
+            ci_registry = _load_ci_surfaces_registry(repo_root)
+            states = [_State(repo_root, proc, workflows, pixi_data, changed, env, scratch, ci_registry)]
             verdicts: list[LaneVerdict] = []
             for lane in lanes:
                 outcomes = [_outcome(state.sites_for(lane)) for state in states]
@@ -963,11 +1098,12 @@ def _evaluation_states(
         dirty.extend(
             p for p in _nul_paths(_git_ok(process, root, args, env, "reading the working tree")) if p not in dirty
         )
-    states = [_State(root, process, workflows, pixi_data, tuple(changed), env, scratch)]
+    ci_registry = _load_ci_surfaces_registry(root)
+    states = [_State(root, process, workflows, pixi_data, tuple(changed), env, scratch, ci_registry)]
     if dirty:
         snapshot_env = _snapshot_env(process, root, scratch, env, base_sha)
         union = tuple(dict.fromkeys([*changed, *dirty]))
-        states.append(_State(root, process, workflows, pixi_data, union, snapshot_env, scratch))
+        states.append(_State(root, process, workflows, pixi_data, union, snapshot_env, scratch, ci_registry))
     return states
 
 

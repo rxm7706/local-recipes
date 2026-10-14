@@ -71,6 +71,9 @@ jobs:
   # tests had rotted on main unnoticed. It runs in the pure-stdlib
   # `pyforge-ci` env the `pyforge-doctor-scripts-test` task was written for.
   scripts-suite:
+    # ci-surfaces: detectors.scripts-suite
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -98,6 +101,9 @@ jobs:
         run: pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test
 
   detectors:
+    # ci-surfaces: detectors.detectors
+    # render: python scripts/ci_surface_gates.py --render
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:

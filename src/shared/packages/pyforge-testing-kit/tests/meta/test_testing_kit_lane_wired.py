@@ -81,7 +81,9 @@ def job_problems(workflow_text: str) -> list[str]:
     problems: list[str] = []
     if not re.search(r"^\s+needs:\s*changes\s*$", block, re.MULTILINE):
         problems.append(f"`{JOB}` does not need `changes`")
-    if not re.search(rf"^\s+if:\s*{re.escape(GATE)} == 'true'\s*$", block, re.MULTILINE):
+    # The gate may sit inside a larger expression: steward Story 99.2 wraps every job's
+    # `if:` in its CI pause switches (`vars.PAUSE_*`) and a workflow_dispatch override.
+    if not re.search(rf"^\s+if:.*\b{re.escape(GATE)} == 'true'", block, re.MULTILINE):
         problems.append(f"`{JOB}` is not gated on `{GATE}`")
     runs = _RUN_LINE.findall(block)
     if RUN not in runs:
@@ -221,7 +223,9 @@ def test_detector_fires_when_the_gate_is_neutered() -> None:
 
 
 def test_detector_fires_when_the_if_line_changes() -> None:
-    mutated = _workflow_text().replace(f"    if: {GATE} == 'true'\n", "    if: needs.changes.outputs.core == 'true'\n")
+    text = _workflow_text()
+    assert text.count(f"{GATE} == 'true'") == 1, "mutation premise: one job gates on the kit"
+    mutated = text.replace(f"{GATE} == 'true'", "needs.changes.outputs.core == 'true'")
     assert job_problems(mutated) == [f"`{JOB}` is not gated on `{GATE}`"]
 
 
@@ -235,8 +239,9 @@ def test_detector_fires_on_an_extra_pytest_step() -> None:
 
 def test_detector_fires_when_another_job_needs_the_kit_job() -> None:
     text = _workflow_text()
-    head = "  atlas-test:\n    needs: changes\n"
-    mutated = text.replace(head, "  atlas-test:\n    needs: [changes, testing-kit-test]\n")
+    start = text.index("  atlas-test:\n")
+    needs = text.index("    needs: changes\n", start)
+    mutated = text[:needs] + "    needs: [changes, testing-kit-test]\n" + text[needs + len("    needs: changes\n") :]
     assert mutated != text, "mutation premise: atlas-test needs only changes"
     assert job_problems(mutated) == [
         f"`atlas-test` needs `{JOB}` -- it is a peer of the other jobs, not a gate on them"
