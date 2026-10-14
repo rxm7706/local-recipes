@@ -1881,7 +1881,12 @@
     "pinned": "6.12.2",
     "installed": "6.12.0",
     "latest": "unknown",
-    "applied": false
+    "applied": false,
+    "realize_preflight": {
+      "preflight_exit": 2,
+      "fan_out_exit": 0,
+      "fan_out": []
+    }
   },
   "steps": [
     {
@@ -2110,7 +2115,80 @@
       "seconds": 2.78
     }
   ],
-  "realize": {},
+  "realize": {
+    "bmad-method": {
+      "package": "bmad-method",
+      "from": "6.12.0",
+      "to": "6.12.2",
+      "platform": "linux-64",
+      "realize": "skipped-operator-gate",
+      "probe": "stale"
+    },
+    "bmad-module-skill-forge": {
+      "package": "bmad-module-skill-forge",
+      "from": "2.2.0",
+      "to": "3.0.0",
+      "platform": "linux-64",
+      "realize": "skipped-operator-gate",
+      "probe": "stale"
+    },
+    "caveman-installer": {
+      "package": "caveman-installer",
+      "from": "2.7.0",
+      "to": "4.0.0",
+      "platform": "linux-64",
+      "realize": "skipped-operator-gate",
+      "probe": "live"
+    },
+    "gh": {
+      "package": "gh",
+      "from": "2.101.0",
+      "to": "2.102.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "headroom-ai": {
+      "package": "headroom-ai",
+      "from": "0.37.0",
+      "to": "0.40.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "osv-scanner": {
+      "package": "osv-scanner",
+      "from": "2.6.0",
+      "to": "2.7.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "pre-commit": {
+      "package": "pre-commit",
+      "from": "4.6.2",
+      "to": "4.7.0",
+      "platform": "linux-64",
+      "realize": "ran",
+      "probe": "live"
+    },
+    "redis-server": {
+      "package": "redis-server",
+      "from": "8.10.1",
+      "to": "8.10.2",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    },
+    "spec-kit": {
+      "package": "spec-kit",
+      "from": "1.0.12",
+      "to": "1.2.0",
+      "platform": "linux-64",
+      "realize": "none",
+      "probe": "live"
+    }
+  },
   "reconcile": {},
   "verify": {}
 }
