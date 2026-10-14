@@ -6381,6 +6381,8 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   owner: steward
   severity: medium
   promoted: 2026-10-14 — recorded with the CFE retro for Story 100.7
+  status: open
+
 ### DW-steward-99-6: Record one green workflow_dispatch of ci-canary.yml after merge (AC4).
 
 - source_spec: `planning-artifacts/specs/spec-99-6-a-paused-expensive-build-still-runs-once-a-week.md`
