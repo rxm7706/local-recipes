@@ -12,7 +12,7 @@ Vendored byte-identically from [bmad-code-org/BMAD-METHOD](https://github.com/bm
 |------|--------|
 | `.nvmrc` | `68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53` |
 | `scripts/fix-doc-links.js` | `137086840431f3026352609cd59922483d3a36375df3bb5bbce5f44b45c0eef8` |
-| `scripts/validate-doc-links.js` | `116a18e8f8cfbd9695acb07eb1d0833680000aba0de60a312a1f2d46817d2642` |
+| `scripts/validate-doc-links.js` | `fbcd868edc370949ea9a86e0f6928f1b9d910f77c09ed3f00616c21305879d42` |
 | `scripts/validate-sidebar-order.js` | `fddb0234166b72340ce994add14ad75cd0fef1824504c6af214563da0d7e4db5` |
 | `src/lib/site-url.mjs` | `734c233ba2d1e601771caf05b55a99d3db35576fe0305e8e341e5e18daeb3520` |
 

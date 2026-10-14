@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 91e8e551dda0dfca
-story_count: 154
-test_file_count: 96
+source_fingerprint: 0dbabec02416ef7a
+story_count: 156
+test_file_count: 97
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 154
-- **Epics parsed:** 47
-- **Test files inventoried:** 96 under `src/shared/packages/pyforge-doctor/tests/`
+- **Stories parsed:** 156
+- **Epics parsed:** 48
+- **Test files inventoried:** 97 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `91e8e551dda0dfca`
+- **Source fingerprint:** `0dbabec02416ef7a`
 
 ## Risk Assessment
 
@@ -83,6 +83,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 45: Doctor names the CI surfaces that drifted, stuck or outlived their review date (spec-pyforge-doctor CAP-89)
 - Epic 46: The env-hygiene scan stops growing with the test suite (spec-pyforge-doctor CAP-1, NFR-4)
 - Epic 47: The Detectors scripts lane finishes inside its timeout (spec-pyforge-doctor CAP-42, CAP-43)
+- Epic 48: One registry orders the whole Pages site, and a stale site tells on itself (spec-pyforge-doctor CAP-90, CAP-91)
 
 ## Test Inventory
 
@@ -156,6 +157,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_frontmatter_parse.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ci_pause_drift.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_forward_dependency.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_currency.py` | unit | none observed |
@@ -343,6 +345,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 45.1 | Doctor names every CI surface that drifted, stuck or outlived its review date | none observed |
 | 46.1 | The env-hygiene scan walks each tree once and skips test code | none observed |
 | 47.1 | The aggregate scripts test checks scope filtering without gathering | none observed |
+| 48.1 | One registry orders every section of the Pages site | none observed |
+| 48.2 | A Pages deploy more than a day behind its inputs is named in fleet-picture | none observed |
 
 ## Quality Gates
 

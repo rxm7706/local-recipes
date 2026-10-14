@@ -1169,6 +1169,48 @@ verify_commands = [
   "scripts/platform-ci-local.sh",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"102" = [  # the Pages deploy workflow is steward's duct (spec-pyforge-steward CAP-168 / FR-41; Stories 102.1-102.5),
+  # added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus: the Pages
+  # workflow under both names and the PR twin it folds in (102.1, 102.2) and every other workflow whose comment names
+  # it, the registry and its checker (102.1 moves the workflow path, 102.2 renames the rows), the pixi-version registry
+  # (the setup-pixi sites move with the files), the stamp script (102.2), the flagd tree, its overlay and steward's flag
+  # inventory (102.2), the repo-wide .gitignore (102.4), the docs that name the workflow or the retired verbs (102.1,
+  # 102.3, 102.5: co-governor reconciles on doctor's and herald's Specs), herald's docsite tool, platform test, webhook
+  # and artifact test only where they name the file (102.1), atlas's normalize tool and fleet_scan where their comments
+  # name the retired verb (102.3), the steward deferred-work ledger (102.3), and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  ".github/workflows/**",
+  "docs/governance/ci-surfaces.yaml",
+  "scripts/ci_surface_gates.py",
+  "scripts/_ci_surface_gates_lib.py",
+  "scripts/pixi_version_registry.py",
+  "scripts/pages_build_stamp.py",
+  "scripts/fleet_scan.py",
+  "tests/scripts/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-steward.md",
+  "docs/governance/flag-inventory/pyforge-herald.md",
+  "docs/MAP.md",
+  "docs/dashboard/README.md",
+  "docs/how-to/**",
+  "docs/reference/github-workflows.md",
+  "docs/explanation/enterprise-deployment.md",
+  "docsite/tools/pages_second_host.py",
+  "src/platform/tests/test_console_parity_homes.py",
+  "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py",
+  "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py",
+  "src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts

@@ -542,7 +542,7 @@
    "docs/_STYLE_GUIDE.md": "e6990a6bfdc55d153bfcad31dd5c457eba39b327",
    "docs/explanation/README.md": "81b1b482086c5e46ff8536f0e22e69866da460b5",
    "docs/explanation/airgap-distribution-contract.md": "02160d11cded02af845a6d238562b99ae3a29df8",
-   "docs/explanation/enterprise-deployment.md": "016fe323b799c0f3f83a0c1ee4cf4770be532d7d",
+   "docs/explanation/enterprise-deployment.md": "2ef0fddec965662e06f97d83338c68d65fd5d1c4",
    "docs/explanation/mcp-server-architecture.md": "6fb8dd596eb8916c54c2e404e31e549e2c556fe5",
    "docs/explanation/one-chain-lock-and-mop.md": "dcde234d1bbe05c517a984f63331dea6476540c7",
    "docs/explanation/platform-deployment-architecture.md": "e9100d1d63f3f6fc1886dc83d2452d4a1f80389b",
@@ -782,7 +782,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "c498b0f7c292e0fb77efd102321f63cda64551b7"
+  "memlog": "9d89d1d35be746add853b9a5f6bce8143c9583b7"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -6157,7 +6157,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "693f3c612130d4ca5557e478c14f628244798214"
+  "memlog": "88454036edde49dd1d38e33a1f6606606e4113d5"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},

@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-10-14'   # RE-STAMPED 2026-10-14: prd→arch cascade for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source); no AD amended. See § Currency reconciliation — 2026-10-14. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 42.1, 43.1, 44.1 and 46.1 as landed; no AD change. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: prd→arch cascade for the PRD's 2026-10-10 re-stamp (Stories 33.1 and 37.1 move blocked -> backlog; fix Stories 6.13 and 34.6 minted 2026-10-07); no AD amended; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-14'   # RE-STAMPED 2026-10-14 (Pages site): prd→arch cascade for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, the Pages site registry and the pages-liveness source); AD-14 added (docs/map.yaml is the one registry of the published site; Doctor owns the registry, never a renderer); no AD amended. See § Currency reconciliation — 2026-10-14 (Pages site). Prior '2026-10-14'   # RE-STAMPED 2026-10-14: prd→arch cascade for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source); no AD amended. See § Currency reconciliation — 2026-10-14. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD -> arch) for Stories 42.1, 43.1, 44.1 and 46.1 as landed; no AD change. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: prd→arch cascade for the PRD's 2026-10-10 re-stamp (Stories 33.1 and 37.1 move blocked -> backlog; fix Stories 6.13 and 34.6 minted 2026-10-07); no AD amended; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -420,6 +420,26 @@ detectors live with (`dashboard_drift`, `loop_stall`, `unpushed_work`) — a nam
 condition in this repo, not a new one. Divergence is therefore caught at landing time,
 not at push time.
 
+### AD-14 — `docs/map.yaml` is the one registry of the published site; Doctor owns the registry, never a renderer (binds FR-23, CAP-90)
+
+**Prevents:** two registries feeding one generator (on 2026-10-13 `docs/map.yaml` ordered the four quadrants while
+herald's `docsite/content/site.yml` ordered the herald menu, and `docs-site/scripts/sidebar_from_map.py` read both);
+a renderer's concern (a label's styling, a template, page content) leaking into the registry; Doctor code rendering a
+page of the site and so owning a surface it should only judge.
+**Rule:** `docs/map.yaml`, under Doctor's `data/docs-map-schema.json`, is the one place the Pages site's order and
+ownership are declared: `pages:` for the four quadrants (CAP-84) and `sections:` for every non-docs prefix (CAP-90),
+each row `{key, label, href, owner, order}` with optional `entries`. The schema grows only by addition
+(`schema_version` stays 1 while every existing map validates). A row is added when its section publishes, by the
+station that publishes it, through the same surface reconcile that adds a `pages:` row. Every renderer — the
+Starlight sidebar, the top menu, the home tiles — is herald's and reads the registry as data; Doctor validates the
+registry's shape and hygiene (`docs-map-hygiene`, `docs-currency`) and renders nothing of the site. `docs/MAP.md`'s
+generated Page registry section is the registry's own human render, not a site page, and the rest of `docs/MAP.md` is
+hand-authored outside the markers (CAP-84).
+*Recorded because the 2026-10-13 analysis found four separately minted site mechanisms glued by bespoke code, and the
+one doctor-owned piece of that glue was a second nav list beside the registry Doctor already owned. The boundary is
+the one herald's AD-21 draws for prefixes (one owner per prefix), drawn here for the registry: one owner for the
+order, one owner per renderer.*
+
 ## Currency reconciliation — 2026-08-26
 
 *Chain-currency sweep (CHAIN-CURRENCY-RUNBOOK.md): the PRD re-dated this pass after
@@ -691,3 +711,32 @@ Checked against every AD. It lands on them as written:
 - **NFR-1 and NFR-4.** Read-only, and not in `doctor check`'s default set, so the speed budget does not move.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-14 (Pages site)
+
+*The `prd→arch` cascade for FR-23 / CAP-90 and FR-24 / CAP-91 (Epic 48, Stories 48.1 and 48.2): the Pages site
+registry and the `pages-liveness` source.*
+
+**AD-14 added** (above, after AD-13): `docs/map.yaml` is the one registry of the published site; Doctor owns the
+registry and its hygiene, never a renderer. CAP-90's `sections:` list, its two warn-first hygiene classes and the
+corrected `docs/MAP.md` table land on it; `pyforge-herald:CAP-61` (Story 43.7) is the renderer side of the same
+boundary.
+
+CAP-91 checked against every other AD. It lands on them as written:
+- **AD-3.** One new `Source` member, `PAGES_LIVENESS`, registered like every other source (scope `runtime`, subject
+  `herald`, owner `doctor`). The taxonomy is extended, not opened.
+- **AD-5 and AD-12.** Its one subprocess call, `git log` on `refs/remotes/origin/main` over the published-inputs
+  pathspecs, goes through the existing `cli_bridge.run_git`; the HTTP request is `urllib.request`, not a subprocess,
+  so the sole-subprocess meta-test still names `cli_bridge` alone.
+- **AD-2.** Every finding is a WARN, including `pages-liveness-unavailable`, so the exit domain `{0, 2, 130}` is
+  unchanged.
+- **AD-1 and AD-11.** It reads a public fact about the deploy (the site's `last-modified`) and the repository's own
+  history; it imports no station and relays no station's self-report, so AD-11 does not bind it.
+- **AD-6.** `monitor --fleet` gains no axis.
+- **NFR-1 and NFR-4.** Read-only (no fetch, no write), and not in `doctor check`'s default set, so the speed budget
+  does not move.
+
+CAP-90's `unnamed-top-level` class reads the git index through `cli_bridge.run_git` (AD-5) inside the existing
+`docs-map-hygiene` source (AD-3: no new member).
+
+**Content changed:** AD-14 added; this section. `updated:` bumped. No AD amended or removed.

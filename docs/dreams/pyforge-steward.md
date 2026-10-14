@@ -1759,6 +1759,31 @@ Drift — orphaned between stations.
   nodejs 22/24, which the Guild's nodejs 24 pin already fits); `environment.yaml` regenerates in the same change.
   Owner `spec-pyforge-steward`. → Epic 63 / Story 63.8, specced 2026-10-14.
 
+- **2026-10-13 (the Pages duct) — Ruled: steward owns the Pages deploy workflow; herald owns what is inside the
+  artifact.** Operator ruling 2026-10-13, from the herald Dream's same-day entry *the Pages deployment, redesigned*.
+  Today `spec-pyforge-herald`'s surface governs `.github/workflows/dashboard.yml` while steward already owns everything
+  around it: `steward deploy {dashboard,status,static}`, `steward budget check`, the CI-surfaces registry whose
+  `dashboard.deploy` row carries the `stuck_rules` for the 2026-10-06 incident (a deploy parked in `waiting` for six
+  days), and the preflight lane selection read from the workflow files (Story 71.2). This Dream's own § *What is
+  already Steward-shaped* named the Pages deploy a steward duty on 2026-07-23. Measured the same day: 1,342 runs,
+  720 deploys and 621 cancelled since 2026-09-13 on an unconditional push trigger; a published-inputs filter replays
+  to 132. **What it looks like when real:** `dashboard.yml` becomes `pages.yml` in BMAD-METHOD `docs.yaml`'s shape
+  and moves onto this Spec's surface (off herald's; memlog reconcile on both, a scoped stamp each); a `steward pages
+  build|deploy|status` duty replaces `deploy dashboard` and `deploy status`, whose last caller
+  (`kedro-viz-publish.yml`) stops committing to `main`; the registry row becomes `pages.deploy` and keeps its
+  `stuck_rules`; the deploy job skips when the built tree hash equals the last deployed one; a six-hourly schedule
+  rebuilds the fleet board and guild status pages and deploys only when they changed; the Kedro-Viz consumer step
+  downloads atlas's `kedro-viz-export` artifact and tolerates its absence, and lands only after Story 99.3 gives the
+  producer its `PAUSE_*` gate and `ci resume`; `actions/configure-pages` is authoritative on every host, so herald's
+  `pyforge.herald.pages_second_host` flag retires and the GitHub Enterprise how-to loses its flag step; the same
+  artifact is zipped as a release asset for the air-gapped host. Herald keeps `pages-build`, `pages-check`,
+  `docs-site/` and `/herald/`; doctor keeps `map.yaml`. **Constraints:** steward reaches `gh`, `git` and the build
+  tasks by subprocess (AD-1); `main()` keeps every exit code (AD-8); duty-count invariants in `tests/unit/test_cli.py`
+  move with the duty; one `deploy-pages` caller; nothing outward beyond this repository's own Pages. **Kinships:**
+  [[pyforge-herald]] (owner of the site's content and the lead entry), [[pyforge-atlas]] (the export producer),
+  [[pyforge-doctor]] (`ci_pause_drift`, the liveness probe). Owner `spec-pyforge-steward`; → `bmad-spec` after
+  herald's, one M2 story for the surface move and the duty. → CAP-168 / Epic 102 / Stories 102.1–102.5, specced 2026-10-14.
+
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
 Steward rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-steward]]` banners. Exempted chains (Guild unifying-strategy; foundry regenerate / capability-ledger / cutover) keep their folders with `fold-exemption`.

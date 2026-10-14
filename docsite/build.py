@@ -236,7 +236,9 @@ def md_inline(text: str | None) -> str:
     text = _BOLD.sub(r"<b>\1</b>", text)
     text = _EM.sub(r"<em>\1</em>", text)
 
-    return _SLOT.sub(lambda m: slots[int(m.group(1))], text)
+    while _SLOT.search(text):
+        text = _SLOT.sub(lambda m: slots[int(m.group(1))], text)
+    return text
 
 
 def strip_tags(s: str) -> str:

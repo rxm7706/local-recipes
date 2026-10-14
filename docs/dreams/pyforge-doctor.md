@@ -124,6 +124,25 @@ forward. That dream is archived; this one is the real record.
   produce the verdicts it reads), `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` (§ 4.4, § 5, § 6), and the
   herald tile and marshal landing line, which read the same report on their own chains. Owner `spec-pyforge-doctor`.
   → CAP-89 / FR-22, specced 2026-10-14; Epic 45 / Story 45.1.
+- **2026-10-13 (one registry orders the whole site, and a stale site tells on itself) — Wanted: `docs/map.yaml` orders
+  every section of the Pages site, and an advisory source notices a Pages deploy that stopped.** From the herald
+  Dream's same-day entry *the Pages deployment, redesigned* (operator rulings 2026-10-13). Today `docs/map.yaml`
+  orders the four quadrants, and herald's `docsite/content/site.yml` feeds the Herald rows into doctor's
+  `sidebar_from_map.py` (Story 40.1): two registries, one generator. Measured the same day: the Pages deploy sat in
+  `waiting` from 2026-10-06 to 2026-10-12 and no detector saw it; `docs/MAP.md` § *Publish roots* still says the
+  dossier publishes at the root, which Story 27.2 moved under `/herald/` on 2026-10-08. **What it looks like when
+  real:** `map.yaml` gains additive sections for the non-docs prefixes (`herald`, `status`, `pipelines`, `dashboards`,
+  `changes`) so one file orders the sidebar, the top menu and the home tiles, and herald's `site.yml` nav list retires
+  into it; an advisory `fleet-picture` source compares the live Pages root's `last-modified` with the latest commit on
+  `main` that touched a published input and warns past 24 hours (the 2026-10-06 class, beside Story 43.1's
+  `waiting_deployment_over_24h`); `docs/MAP.md`'s *Publish roots* row is corrected and its *outside this map* table
+  names `docsite/` and `docs-site/` side by side until M3 dissolves `docsite/`; `docs-map-hygiene` warns on a
+  top-level directory the table does not name. **Constraints:** findings stay advisory and never change an exit code;
+  the `map.yaml` schema change is additive and `docs-map-hygiene` keeps every current check; the probe reads one
+  public URL and the local git log, never the GitHub API. **Kinships:** [[pyforge-herald]] (the site and the lead
+  entry), [[pyforge-steward]] (`ci_pause_drift`, the registry row). Owner `spec-pyforge-doctor`; → `bmad-spec` after
+  herald's, one story in M2 (registry) and one in M1 (the MAP rows). → CAP-90 / CAP-91, FR-23 / FR-24, AD-14, Epic 48 /
+  Stories 48.1–48.2, specced 2026-10-14 (the registry and the MAP rows are one story, 48.1; the probe is 48.2).
 - **2026-10-12 (the env-hygiene scan stops growing with the test suite)** — **Found: Story 44.1 made the five-second
   budget judge CPU, and `DW-doctor-44-1` showed the margin is thin and shrinking.** One `doctor check` on the repo root
   spends 2.75 s of CPU at `c447946b3f`. Under load that is about 1.25x headroom, and the scan grew 19% in eight days.

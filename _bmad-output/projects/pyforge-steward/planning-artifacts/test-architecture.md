@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 25989552cb5a734f
-story_count: 371
+source_fingerprint: f1742d8453ecc15c
+story_count: 376
 test_file_count: 126
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 371
-- **Epics parsed:** 101
+- **Stories parsed:** 376
+- **Epics parsed:** 102
 - **Test files inventoried:** 126 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `25989552cb5a734f`
+- **Source fingerprint:** `f1742d8453ecc15c`
 
 ## Risk Assessment
 
@@ -39,6 +39,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 71: The preflight answers in under a minute (spec-pyforge-steward CAP-159)
 - Epic 78: Two platform auth controls stop failing open (security hotfix)
 - Epic 87: The platform host boots without the optional engines it mounts (fix under unifying CAP-10)
+- Epic 102: The Pages deploy workflow is steward's duct (spec-pyforge-steward CAP-168)
 
 ### Medium-risk epics
 
@@ -644,6 +645,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 100.6 | The hand sequence is retired by one how-to and one pointer | none observed |
 | 100.7 | The first refresh lands through the path | none observed |
 | 101.1 | The `platform-ci-local` stubs leak no process, and the holder scan takes seconds | none observed |
+| 102.1 | The Pages workflow is steward's and fires only on the published inputs | none observed |
+| 102.2 | One Pages workflow in upstream shape builds on every change and deploys only ... | none observed |
+| 102.3 | `steward pages build\|deploy\|status` replaces `deploy dashboard` and `deploy... | none observed |
+| 102.4 | The Pages build mounts atlas's Kedro-Viz export from a workflow artifact and ... | none observed |
+| 102.5 | `configure-pages` is authoritative on every host and the artifact ships as a ... | none observed |
 
 ## Quality Gates
 
