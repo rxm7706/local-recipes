@@ -4,14 +4,15 @@ from __future__ import annotations
 import json
 import re
 import subprocess
-import tomllib
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
+import tomllib
 import yaml
 from jsonschema import Draft202012Validator
-from packaging.specifiers import SpecifierSet
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -53,7 +54,7 @@ class DepDecl:
 def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        raise ValueError(f"{path}: policy root must be a mapping")
+        raise ValueError(f"{path}: policy root must be a mapping")  # noqa: TRY004 -- callers catch ValueError for a malformed file
     return data
 
 
@@ -165,20 +166,40 @@ def _matching_rows(policy: dict[str, Any], package: str, feature: str) -> list[d
     ]
 
 
-def render_upgrade_command(policy: dict[str, Any]) -> str:
-    defaults = policy.get("defaults") or {}
-    strategy = defaults.get("pinning_strategy", "latest-up")
-    never = sorted(
+def upgrade_excludes(policy: dict[str, Any]) -> list[str]:
+    """Every held package, whatever the hold kind: ``pixi upgrade`` must leave each alone.
+
+    ``check_static`` already requires a hold row for every cap, exact pin and channel table
+    (``undeclared-hold``), so the holds cover every declaration ``latest-up`` would flatten.
+    """
+    return sorted(
         {
             str(h["package"])
             for h in policy.get("holds") or []
-            if isinstance(h, dict) and h.get("hold") == "never-move"
+            if isinstance(h, dict) and h.get("package") and h.get("hold")
         }
     )
-    parts = ["pixi", "upgrade", f"--pinning-strategy", strategy]
-    for pkg in never:
+
+
+def render_upgrade_command(policy: dict[str, Any], extra_excludes: Iterable[str] = ()) -> str:
+    defaults = policy.get("defaults") or {}
+    strategy = defaults.get("pinning_strategy", "latest-up")
+    return " ".join(upgrade_argv(strategy, [*upgrade_excludes(policy), *extra_excludes]))
+
+
+def upgrade_argv(strategy: str, excludes: Iterable[str]) -> list[str]:
+    """The canonical ``pixi upgrade`` argv: every held package is excluded.
+
+    A held package (never-move, cap, exact, channel) keeps its declaration through the
+    upgrade, so the solve the upgrade runs already honours the hold. Excluding only
+    never-move rows let the upgrade drop a cap or an exact pin, raise the packages that
+    depend on it, and leave ``pin_policy_restore`` re-adding a clause the new floors cannot
+    satisfy (Story 100.7, operator ruling 2026-10-14).
+    """
+    parts = ["pixi", "upgrade", "--pinning-strategy", strategy]
+    for pkg in sorted(set(excludes)):
         parts.extend(["--exclude", pkg])
-    return " ".join(parts)
+    return parts
 
 
 def read_pointer_line(manifest_text: str) -> str | None:
@@ -248,7 +269,6 @@ def check_static(
                     )
                 )
 
-    rendered = render_upgrade_command(policy)
     pointer = (policy.get("pointer") or "").strip()
     expected_comment = pointer if pointer else ""
     actual = read_pointer_line(manifest_text)
@@ -389,16 +409,15 @@ def check_diff(
                 )
                 seen_flatten.add((feature, package))
             continue
-        if base_cap and not now_cap:
-            if (feature, package) not in seen_flatten:
-                findings.append(
-                    Finding(
-                        "lost-cap",
-                        package,
-                        feature,
-                        f"cap lost {base_d.spec!r} -> {now_d.spec!r}",
-                    )
+        if base_cap and not now_cap and (feature, package) not in seen_flatten:
+            findings.append(
+                Finding(
+                    "lost-cap",
+                    package,
+                    feature,
+                    f"cap lost {base_d.spec!r} -> {now_d.spec!r}",
                 )
+            )
 
         if floors_never_lower:
             bf = _floor_from_spec(base_d.spec)
@@ -502,7 +521,7 @@ def version_in_range(version: Version, spec: str) -> bool:
         cleaned = cleaned.replace(",", ", ", 1) if "," in cleaned and ", " not in cleaned else cleaned
     try:
         return version in SpecifierSet(cleaned)
-    except Exception:
+    except InvalidSpecifier:
         return True
 
 
@@ -519,7 +538,6 @@ def check_fan_out(root: Path = REPO_ROOT, lock_path: Path = LOCK_PATH) -> list[F
     lock = yaml.safe_load(lock_path.read_text(encoding="utf-8"))
     findings: list[Finding] = []
     for station, path, package, spec in station_package_ranges(root):
-        env = station if (root / "pixi.toml").exists() else station
         env = station  # pyforge-marshal env name matches package dir
         locked = locked_version_in_env(lock, env, package)
         if locked is None:

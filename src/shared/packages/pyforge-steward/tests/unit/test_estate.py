@@ -526,3 +526,80 @@ def test_estate_duty_reconcile_and_realize(tmp_path: Path) -> None:
         _realize_deps=RealizeDeps(root=root, runner=RecordingRunner(), flag_on=lambda: True, enforce_require=False),
     )
     assert duty.run(realize_ns).ok
+
+
+def test_parse_pixi_moves_environment_shape() -> None:
+    """pixi 0.8x ``upgrade --json``: explicit rows only, one per environment (Story 100.7)."""
+
+    def side(version: str) -> dict[str, str]:
+        return {"conda": f"https://conda.anaconda.org/conda-forge/noarch/pyjwt-{version}-pyh5ded981_0.conda"}
+
+    payload = {
+        "version": 1,
+        "environment": {
+            "pyforge-steward": {
+                "linux-64": [
+                    {"name": "pyjwt", "before": side("2.15.0"), "after": side("2.15.1"), "explicit": True},
+                    {"name": "idna", "before": side("3.10"), "after": side("3.11"), "explicit": False},
+                ],
+                "win-64": [
+                    {"name": "pyjwt", "before": side("2.15.0"), "after": side("2.15.1"), "explicit": True},
+                ],
+            }
+        },
+    }
+    moves = _parse_pixi_moves(payload)
+    assert moves == [{"package": "pyjwt", "feature": "pyforge-steward", "from": "2.15.0", "to": "2.15.1"}]
+
+
+def test_refresh_excludes_a_package_whose_floor_the_upgrade_lowered(tmp_path: Path) -> None:
+    """A lowered floor reruns the upgrade from base with that package excluded (Story 100.7)."""
+    root = _fixture_root(tmp_path)
+    diffs = iter(
+        [
+            FakeProc([], 1, json.dumps([{"kind": "lowered-floor", "package": "cron-descriptor"}]), ""),
+            FakeProc([], 0, "[]", ""),
+            FakeProc([], 0, "[]", ""),
+        ]
+    )
+
+    class Runner(RecordingRunner):
+        def __call__(self, argv: list[str], cwd: Path) -> FakeProc:
+            if "--diff" in " ".join(argv):
+                self.calls.append(list(argv))
+                proc = next(diffs)
+                return FakeProc(argv, proc.returncode, proc.stdout, proc.stderr)
+            return super().__call__(argv, cwd)
+
+    runner = Runner()
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert result.ok, result.summary
+    upgrades = [c for c in runner.calls if c[:2] == ["pixi", "upgrade"]]
+    assert len(upgrades) == 2  # noqa: PLR2004
+    assert "cron-descriptor" not in upgrades[0]
+    assert upgrades[1][-3:] == ["--exclude", "cron-descriptor", "--json"]
+    assert ["git", "checkout", "abc123", "--", "pixi.toml", "pixi.lock"] in runner.calls
+    assert not any("pin_policy_restore" in " ".join(c) for c in runner.calls)
+    doc = json.loads(next((root / ".steward" / "estate-refresh").glob("*.json")).read_text(encoding="utf-8"))
+    assert doc["converge"] == {"rounds": 2, "excluded": ["cron-descriptor"]}
+    assert doc["command"].endswith("--exclude cron-descriptor")
+
+
+def test_refresh_stops_converging_at_the_round_cap(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    counter = iter(range(100))
+
+    class Runner(RecordingRunner):
+        def __call__(self, argv: list[str], cwd: Path) -> FakeProc:
+            if "--diff" in " ".join(argv):
+                self.calls.append(list(argv))
+                pkg = f"pkg{next(counter)}"
+                return FakeProc(argv, 1, json.dumps([{"kind": "lowered-floor", "package": pkg}]), "")
+            return super().__call__(argv, cwd)
+
+    runner = Runner()
+    run_refresh(_deps(root, runner), transitive=False)
+    upgrades = [c for c in runner.calls if c[:2] == ["pixi", "upgrade"]]
+    assert len(upgrades) == 4  # noqa: PLR2004
+    reverts = [c for c in runner.calls if c[:2] == ["git", "checkout"]]
+    assert len(reverts) == 3  # noqa: PLR2004

@@ -1,12 +1,11 @@
 """Tests for scripts/pin_policy_check.py (Story 100.1 / CAP-167)."""
 from __future__ import annotations
 
-import importlib.util
 import sys
-import tomllib
 from pathlib import Path
 
 import pytest
+import tomllib
 
 pytest.importorskip("jsonschema")
 pytest.importorskip("yaml")
@@ -18,8 +17,8 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures" / "pin_policy"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-import pin_policy_check as check_mod  # noqa: E402
-import pin_policy_lib as lib  # noqa: E402
+import pin_policy_check as check_mod
+import pin_policy_lib as lib
 
 
 def _load_check_source() -> str:
@@ -191,3 +190,23 @@ def test_stale_pointer_finding() -> None:
     bad_text = "# wrong pointer\n[feature.python.dependencies]\npixi = \">=0.80.0\"\n"
     findings = lib.check_static(policy, tomllib.loads(bad_text), bad_text)
     assert any(f.kind == "stale-pointer" for f in findings)
+
+
+def test_render_command_excludes_every_held_package() -> None:
+    """Cap, exact and channel holds are excluded too, not just never-move (Story 100.7)."""
+    policy = {
+        "defaults": {"pinning_strategy": "latest-up"},
+        "holds": [
+            {"package": "asgiref", "hold": "never-move"},
+            {"package": "wagtail", "hold": "cap", "cap": "<8.0"},
+            {"package": "pgjdbc", "hold": "exact", "exact": "42.7.13"},
+            {"package": "opengrep", "hold": "channel", "channel": "SelfExplainML"},
+            {"package": "wagtail", "hold": "cap", "cap": "<8.0", "features": ["platform"]},
+        ],
+    }
+    assert lib.render_upgrade_command(policy).split() == [
+        "pixi", "upgrade", "--pinning-strategy", "latest-up",
+        "--exclude", "asgiref", "--exclude", "opengrep", "--exclude", "pgjdbc", "--exclude", "wagtail",
+    ]
+    assert lib.render_upgrade_command(policy, ["openai"]).split()[-2:] == ["--exclude", "wagtail"]
+    assert "openai" in lib.render_upgrade_command(policy, ["openai"]).split()

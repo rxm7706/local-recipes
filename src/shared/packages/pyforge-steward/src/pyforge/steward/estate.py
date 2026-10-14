@@ -202,9 +202,55 @@ def _render_upgrade_command(deps: EstateDeps) -> tuple[str, list[str]]:
     return command, shlex.split(command)
 
 
+_ARTIFACT_VERSION = re.compile(r"/[A-Za-z0-9_.+-]+?-(\d[^-/]*)-[^/]+\.(?:conda|tar\.bz2)$")
+
+
+def _artifact_version(side: object) -> str:
+    if not isinstance(side, dict):
+        return ""
+    if side.get("version"):
+        return str(side["version"])
+    m = _ARTIFACT_VERSION.search(str(side.get("conda") or ""))
+    return m.group(1) if m else ""
+
+
+def _parse_environment_moves(environments: dict[str, Any]) -> list[dict[str, str]]:
+    """pixi 0.8x shape: ``{"environment": {env: {platform: [{name, before, after, explicit}]}}}``.
+
+    One row per (package, environment, from, to) for the packages the manifest declares
+    (``explicit``); the platforms of one environment collapse into one row.
+    """
+    seen: set[tuple[str, str, str, str]] = set()
+    moves: list[dict[str, str]] = []
+    for env in sorted(environments):
+        platforms = environments[env]
+        if not isinstance(platforms, dict):
+            continue
+        for platform in sorted(platforms):
+            items = platforms[platform]
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if not isinstance(item, dict) or not item.get("explicit"):
+                    continue
+                row = (
+                    str(item.get("name") or ""),
+                    env,
+                    _artifact_version(item.get("before")),
+                    _artifact_version(item.get("after")),
+                )
+                if not row[0] or row in seen:
+                    continue
+                seen.add(row)
+                moves.append({"package": row[0], "feature": row[1], "from": row[2], "to": row[3]})
+    return moves
+
+
 def _parse_pixi_moves(payload: object) -> list[dict[str, str]]:
     """Normalize pixi upgrade --json (or --dry-run --json) into move rows."""
     moves: list[dict[str, str]] = []
+    if isinstance(payload, dict) and isinstance(payload.get("environment"), dict):
+        return _parse_environment_moves(payload["environment"])
     if isinstance(payload, list):
         items = payload
     elif isinstance(payload, dict):
@@ -427,6 +473,58 @@ def _next_journal_path(root: Path, *, today: date) -> Path:
         suffix += 1
 
 
+_MAX_CONVERGE_ROUNDS = 4
+
+
+def _lowered_floors(deps: EstateDeps, base_sha: str, steps: list[dict]) -> set[str]:
+    argv = [sys.executable, "scripts/pin_policy_check.py", "--diff", base_sha, "--json"]
+    started = time.monotonic()
+    proc = deps.runner(argv, deps.root)
+    _record_step(steps, argv, proc, started)
+    try:
+        findings = json.loads(proc.stdout or "[]")
+    except json.JSONDecodeError:
+        return set()
+    if not isinstance(findings, list):
+        return set()
+    return {
+        str(f["package"])
+        for f in findings
+        if isinstance(f, dict) and f.get("kind") == "lowered-floor" and f.get("package")
+    }
+
+
+def _converge_upgrade(
+    deps: EstateDeps, command_argv: list[str], base_sha: str, steps: list[dict]
+) -> tuple[list[dict], dict[str, Any]]:
+    """Run ``pixi upgrade``; when it lowers a declared floor, exclude that package and rerun.
+
+    ``latest-up`` lowers a floor only when it raised another package to a version the old
+    floor cannot satisfy. ``pin_policy_restore`` would put the floor back and leave
+    ``pixi lock`` unsolvable (Story 100.7: cron-descriptor against django-celery-beat, openai
+    against litellm). Excluding the package that would be lowered keeps its declaration in the
+    solve, so the upgrade picks a version of the other package that fits it. Each retry starts
+    from the base ``pixi.toml`` and ``pixi.lock``.
+    """
+    excluded: list[str] = []
+    moves: list[dict] = []
+    for round_no in range(1, _MAX_CONVERGE_ROUNDS + 1):
+        argv = [*command_argv, *(a for pkg in excluded for a in ("--exclude", pkg))]
+        started = time.monotonic()
+        moves, proc = _run_pixi_upgrade_json(deps, argv, dry_run=False)
+        _record_step(steps, [*argv, "--json"], proc, started)
+        new = sorted(_lowered_floors(deps, base_sha, steps) - set(excluded))
+        if not new:
+            return moves, {"rounds": round_no, "excluded": excluded}
+        if round_no == _MAX_CONVERGE_ROUNDS:
+            break
+        revert = ["git", "checkout", base_sha, "--", "pixi.toml", "pixi.lock"]
+        started = time.monotonic()
+        _record_step(steps, revert, deps.runner(revert, deps.root), started)
+        excluded.extend(new)
+    return moves, {"rounds": _MAX_CONVERGE_ROUNDS, "excluded": excluded}
+
+
 def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
     refused = _ensure_flag(deps)
     if refused is not None:
@@ -439,9 +537,9 @@ def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
     steps: list[dict] = []
     base_sha = deps.head_sha()
     command, command_argv = _render_upgrade_command(deps)
-    started = time.monotonic()
-    moves, upgrade_proc = _run_pixi_upgrade_json(deps, command_argv, dry_run=False)
-    _record_step(steps, command_argv + ["--json"], upgrade_proc, started)
+    moves, converge = _converge_upgrade(deps, command_argv, base_sha, steps)
+    if converge["excluded"]:
+        command = " ".join([command, *(f"--exclude {pkg}" for pkg in converge["excluded"])])
 
     if transitive:
         update_argv = ["pixi", "update"]
@@ -512,6 +610,7 @@ def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
         "platform": deps.platform(),
         "command": command,
         "moves": moves,
+        "converge": converge,
         "losses_restored": losses,
         "fan_out": {"ok": fan_ok, "findings": fan_findings},
         "realize_due": realize_due,
