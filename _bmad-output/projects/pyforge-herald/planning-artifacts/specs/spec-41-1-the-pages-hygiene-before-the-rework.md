@@ -2,7 +2,8 @@
 title: '41.1: The Pages hygiene before the rework'
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '4ea6f365af657b8bbe92149891859cdc1e198d7b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
