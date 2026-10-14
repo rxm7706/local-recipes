@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-14'   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for FR-22 / CAP-89 (Epic 45, the ci-pause-drift source, consuming spec-pyforge-steward:CAP-166); FR-22 registered; § Currency reconciliation — 2026-10-14 appended. Prior '2026-10-13'   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10..13 entries (Stories 42.1, 43.1, 44.1 and 46.1 minted and landed; co-governor surface reconciles); no FR registered. See § Currency reconciliation — 2026-10-13. Prior '2026-10-10'   # RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Stories 33.1 and 37.1's gates cleared, their keys flipped blocked -> backlog by operator ruling) and the 2026-10-07 mint of fix Stories 6.13 and 34.6; no FR registered; § Currency reconciliation — 2026-10-10 appended. Prior: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -699,6 +699,25 @@ never changes the exit code; a glob in a Spec whose surface could not be read is
 
 *Decomposed as Epic 38 — Story 38.2 (Deps 38.1, the same module), a new epic because Epic 37 is `done`.*
 
+## FR-22 — A CI surface that drifted, stuck or outlived its review date is a Doctor finding (spec-pyforge-doctor CAP-89)
+
+Added 2026-10-14 (the CI pause control plane, `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md`). Steward's
+`ci status --json` (`spec-pyforge-steward:CAP-166`, Story 99.3) gives one verdict per CI surface, but nothing the
+operator already reads shows it: the Pages deploy sat `waiting` from 2026-10-06 to 2026-10-12 with no report. A Doctor
+source reads that report through steward's CLI and names, in `fleet-picture`, every surface that drifted from its
+declared state, is stuck, or is past its `review_by`.
+
+**Consequences (testable):** on a recorded report, a `drift` row is one `ci-pause-drift` WARN, a `stuck` row (the
+2026-10-06 waiting-deploy replay, a five-cancelled streak, a stale canary) is one `ci-pause-stuck` WARN, and a row whose
+`review_days_left` is below 0 is one `ci-pause-overdue` WARN whatever its verdict; each names the surface, its switch
+and its owner; a report the source cannot read (steward's refusal, steward absent, a timeout, a malformed payload) is
+one `ci-pause-unobserved` WARN and never an OK; a WARN never changes the exit code; `fleet-picture`'s ATTENTION block
+shows one line per WARN; the source never calls `gh`, never imports `pyforge.steward`, and is not part of
+`detectors-ci`.
+
+*Decomposed as Epic 45 — Story 45.1, the epic number the plan reserved. `flag-exempt: detector-or-gate` by bmad-spec
+ruling (memlog, 2026-10-14).*
+
 ## 9. Assumptions Index
 
 - §1/Brief carry-over — Doctor adds no new detection capability beyond credential
@@ -1085,3 +1104,16 @@ after this PRD's 2026-10-07 re-stamp. `SPEC.md` is unchanged, and no CAP is adde
 **The FR space: no FR registered.** The FR space stays FR-1..FR-21 (FR-22 is the next free id).
 
 **Content changed:** this section only. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-14
+
+*Chain-currency cascade (spec → PRD): `spec-pyforge-doctor` minted CAP-89 on 2026-10-14, Doctor's consumer of the CI
+pause control plane (`spec-pyforge-steward:CAP-166`; the plan's § 5 row for doctor), once steward Story 99.3 had landed
+the report it reads. FR-22 registered above to cite it; decomposed as **Epic 45** (Story 45.1), the epic the plan
+reserved. The source is `flag-exempt: detector-or-gate` by bmad-spec ruling: it only judges, and gating it off would
+bring back the silent-off surface it exists to name. No AD amended: one new `Source` member (AD-3, the closed taxonomy
+extended), its one subprocess call in `cli_bridge` (AD-5, AD-12), and WARN-only findings (AD-2).*
+
+**The FR space now FR-1..FR-22** (FR-23 is the next free id).
+
+**Content changed:** FR-22 registered and this section added. No FR renumbered or removed. `updated:` bumped.

@@ -2,7 +2,7 @@
 id: SPEC-pyforge-herald
 spec: pyforge-herald
 status: ready
-updated: '2026-10-12'
+updated: '2026-10-14'
 owner-dream: docs/dreams/pyforge-herald.md
 covers-dreams:
   - docs/dreams/deck-family-currency.md
@@ -27,7 +27,6 @@ surface:
   - presentations/pyforge-*/project/*.dc.html
   - presentations/pyforge-*/src/marp/**
   - presentations/pyforge-*/src/pptx/**
-  - presentations/{unity-data-stack,wasm-analytics-stack,deckcraft,presenton-pixi-image}/**
   - scripts/deck_trio.py
   - src/shared/packages/pyforge-herald/src/pyforge/herald/transport/mcp_transport.py
   - src/shared/packages/pyforge-herald/pyproject.toml
@@ -38,7 +37,6 @@ surface:
   - docs/index.md
   - docs/404.md
   - .github/workflows/dashboard.yml
-  - docs/dashboard/index.html
 surface-drift-exclude:
   - src/shared/packages/pyforge-herald/src/pyforge/herald/station_api.py
   - presentations/pyforge-atlas/facts.yaml
@@ -358,7 +356,14 @@ argued, not merely filed), **Progress** (HER-11 — a build in flight is not sel
 - **CAP-58 — the docs site and the herald pages share one menu** ← spec-pyforge-herald CAP-58 (ready 2026-10-12)
   - **intent:** A reader on any page of the one Pages artifact reaches the docs shelf, the herald overview, dossier, infographics, decks and the Kedro-Viz pipeline graph in one click. The docs left menu gains a first-level Herald group after the four Diátaxis quadrants, and docs and herald pages carry the same top menu (Docs, Overview, Dossier, Infographics, Decks, Kedro-Viz), both drawn from the one navigation list herald's site configuration already owns.
   - **success:** `pixi run -e site pages-build` and `pixi run -e site pages-check` exit 0. In the built artifact the docs root's left menu lists Tutorials, How-to, Reference, Explanation, Herald in that order, Herald holding the five links; every docs page and every herald page renders the six top-menu links in that order; every one of those hrefs resolves to a file in the artifact under the configured base path, for the public site URL and for a fixture second-host base (CAP-56); a new entry in the herald navigation list appears in both menus with no other edit; and a check fails when a menu link does not resolve.
+- **CAP-59 — the dossier shows which CI surfaces are not live, from the steward's own status answer** ← spec-pyforge-herald CAP-59 (ready 2026-10-14; extends CAP-11; works with CAP-43, CAP-47; reads `pyforge-steward:CAP-166`)
+  - **intent:** The dossier's A→B control-plane section carries one CI surfaces tile, rendered at build time from a committed copy of `pyforge steward ci status --json` (steward Story 99.3; its frozen envelope `urn:local-recipes:pyforge-steward:ci-status-schema`: `fetched_at`, `repo`, `rate_limit` and `rows[]`, each row carrying `id`, `switch`, `declared_state`, `live_switch_value`, `paused_since`, `review_by`, `review_days_left`, `owner`, `last_green_run`, `verdict` and an optional `detail`). The tile shows one line per surface whose verdict is not `live`: surface id, verdict, switch, `paused_since`, `review_by` with days left or days overdue, owner, and the detail when present. Lines run `drift`, `stuck`, `overdue`, `paused`, `paused-manually`, `opt-in-off`, `retired`, by id within a verdict; a verdict the tile does not know still shows, after those, and is never read as live. When every row is live, the tile shows one all-live line. It names its snapshot's `fetched_at`, so an old copy reads as old. The snapshot, `docsite/content/ci-status.json`, is that command's stdout as printed, refreshed by an operator run of `pixi run -e pyforge-guild pyforge steward ci status --json` and never hand-edited. Herald reaches steward only through that output: it never imports `pyforge.steward`, and neither herald code nor the Pages build calls `gh`; the verdict is steward's, and the tile never re-derives it. The site env gains no pyforge dependency: herald's package reads the flag through `pyforge.core.flags.read_boolean` and hands it to the site build the way CAP-56's host inputs are handed. One block type, with one macro used by the site and the artifact build. `dashboard.yml` stays the one deploy caller (AD-21). Flag `pyforge.herald.ci_surfaces_tile`; off, the dossier renders as it does today and the snapshot is not read. (Operator order of 2026-10-13, after steward Story 99.3; the plan's rulings Q1–Q8 of 2026-10-12; decisions in `.memlog.md`, 2026-10-14.)
+  - **success:** On a fixture snapshot with one row per verdict, `pixi run -e site site-check` exits 0 and the built dossier, the site page and the artifact build alike, holds one tile line per non-live row, in the stated order and with each field, and no line for the live row; an all-live fixture renders the one all-live line; extra keys in the envelope or a row are ignored. A snapshot missing `fetched_at` or `rows`, or a row missing `id` or `verdict`, makes `site-check` exit 1 naming the snapshot and the row; with the flag on and no snapshot, `site-check` exits 1 naming the path. With the flag off no tile renders and no other block of the dossier changes. `pixi run -e site pages-check` exits 0. A contract test reads steward's shipped schema file as data and fails when its verdict enum differs from the tile's verdict order. An import-boundary test finds no `pyforge.steward` import in herald or docsite code. `pyforge-herald-test` is green, and its flag test runs the key in both states with `pyforge.testing_kit.flags.flag_states`.
 
 ## Fold provenance
 
 One-chain fold 2026-09-17: CAPs reminted sequentially from 1; absorbed folders keep pointer + memlog + companions. Station Spec stays `ready`.
+
+## Open Questions
+
+- Should CAP-59's snapshot refresh automatically, through a scheduled job that runs `steward ci status` and opens a pull request, or stay an operator act at each pause and resume? A scheduled job is outward work (a token that reads repository variables, an automated PR) and needs the operator's decision; until then the operator refreshes it.

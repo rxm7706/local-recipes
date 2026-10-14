@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-12"   # RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-58 (Epic 40): FR-8.6 added to Feature Group 8 (the documentation site). See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-14"   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-59 (Epic 39): Feature Group 11 opened, FR-11.1 registered (the dossier's CI surfaces tile, read from steward's `ci status --json` through a committed snapshot). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-12: chain-currency cascade (spec -> PRD) for CAP-58 (Epic 40): FR-8.6 added to Feature Group 8 (the documentation site). See § Currency reconciliation — 2026-10-12. Prior: RE-STAMPED 2026-10-11: code->prd currency after herald Stories 19.2 (PR #2123) and 36.1 (PR #2128) landed and Story 37.1 was minted (PR #2126); no FR, CAP or AD added, amended or removed. Prior: RE-STAMPED 2026-10-10: Story 19.2 re-scoped to the local host by the operator ruling of 2026-10-10 (spec-pyforge-herald memlog decision); the 2026-09-14 "no perimeter to host a persistent listener on" premise is superseded; FR-7.1..FR-7.4 source-capability arrows corrected in place (they were shifted against the 2026-09-17 remint); one residual recorded (FR-7.1 CI-notifies half stays open on a loopback host). No FR added, renumbered or removed. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -1479,3 +1479,42 @@ Groups 1–10** (FR-11.1 is the next free id).
 
 **Content changed:** FR-8.6 and this section. No FR renumbered or removed. The architecture amends AD-21 (the shared menu
 crosses path prefixes without moving an owner). `updated:` bumped.
+
+## Currency reconciliation — 2026-10-14
+
+*RE-STAMPED: chain-currency cascade (spec → PRD) for CAP-59 (Epic 39: the dossier shows which CI surfaces are not
+live). Same-day reconcile; the FR derives from its CAP.*
+
+Steward's CI pause control plane (`pyforge-steward:CAP-166`, steward Epic 99) put every CI surface in one registry and
+gave it one status command, `pyforge steward ci status --json`, whose frozen output names three readers: Doctor, Herald
+and Marshal (`docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` § 4.4). The command landed with steward Story 99.3
+on 2026-10-13, and the operator's order of that day minted the readers. Herald's is the dossier tile the station Dream
+seeded on 2026-10-12.
+
+### Feature Group 11: The dossier's view of the CI surfaces (registered 2026-10-14)
+
+This group is new, not an amendment. Group 3 holds Herald's own progress records, and the tile holds no Herald record;
+Group 8 is the docs site's build, navigation and gates, and the tile is dossier content. CAP-59 extends CAP-11,
+Moment 2's promise that factory motion is visible.
+
+**FR-11.1: The dossier shows every CI surface that is not live, from steward's status answer** ← CAP-59
+- The dossier's A→B control-plane section carries one CI surfaces tile, rendered at build time from
+  `docsite/content/ci-status.json`, a committed copy of `pyforge steward ci status --json` as printed. The operator
+  refreshes it by running that command; nobody edits it by hand.
+- One line per surface whose verdict is not `live`: surface id, verdict, switch, `paused_since`, `review_by` with days
+  left or days overdue, owner, and the detail when present. Lines run `drift`, `stuck`, `overdue`, `paused`,
+  `paused-manually`, `opt-in-off`, `retired`, by id within a verdict. A verdict the tile does not know still shows,
+  after those, and is never read as live. When every surface is live, one all-live line.
+- The tile names the snapshot's `fetched_at`. A snapshot missing `fetched_at` or `rows`, or a row missing `id` or
+  `verdict`, fails `site-check`, naming the snapshot and the row; with the flag on, so does a missing snapshot. Extra
+  keys are ignored, because steward's schema grows only by addition.
+- Herald never imports `pyforge.steward`, and neither herald code nor the Pages build calls `gh`; the verdict is
+  steward's, never re-derived. The `site` env gains no pyforge dependency, and `dashboard.yml` stays the one deploy
+  caller (FR-8.2).
+- Flag `pyforge.herald.ci_surfaces_tile`; off, the dossier renders as it does today. Story 39.1.
+
+**ONE FR space now Feature Groups 1–11** (FR-12.1 is the next free id).
+
+**Content changed:** this section added (Feature Group 11, FR-11.1). No FR renumbered or removed. The spine gains no
+AD: the tile is one more block of the dossier producer under `/herald/` (AD-21), and it reads steward's output as data;
+see the spine's § Currency reconciliation — 2026-10-14. § Success Metrics is unchanged. `updated:` bumped.

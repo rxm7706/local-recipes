@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 242
+# stories: 248
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -135,7 +135,9 @@ development_status:
   42-1-a-repeated-frontmatter-key-in-a-story-spec-turns-detectors-red: done
   43-1-bmad-drift-knows-every-file-marshal-dispatch-writes-into-tier-3: done
   44-1-the-doctor-check-speed-budget-is-judged-on-the-cpu-the-check-spends: done
+  45-1-doctor-names-every-ci-surface-that-drifted-stuck-or-outlived-its-review-date: backlog
   46-1-the-env-hygiene-scan-walks-each-tree-once-and-skips-test-code: done
+  47-1-the-aggregate-scripts-test-checks-scope-filtering-without-gathering: done
   5-1-marshal-durability-source-independent-by-construction: done
   5-2-render-the-verdict-through-a-doctor-verb: done
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
@@ -244,8 +246,12 @@ development_status:
   epic-43-retrospective: optional
   epic-44: done
   epic-44-retrospective: optional
+  epic-45: backlog
+  epic-45-retrospective: optional
   epic-46: done
   epic-46-retrospective: optional
+  epic-47: done
+  epic-47-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done
