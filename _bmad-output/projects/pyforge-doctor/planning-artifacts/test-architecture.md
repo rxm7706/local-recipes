@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: c0176ab08474315f
-story_count: 153
+source_fingerprint: 91e8e551dda0dfca
+story_count: 154
 test_file_count: 96
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 153
-- **Epics parsed:** 46
+- **Stories parsed:** 154
+- **Epics parsed:** 47
 - **Test files inventoried:** 96 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c0176ab08474315f`
+- **Source fingerprint:** `91e8e551dda0dfca`
 
 ## Risk Assessment
 
@@ -82,6 +82,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 44: The doctor check speed budget holds under preflight load (spec-pyforge-doctor CAP-1, NFR-4)
 - Epic 45: Doctor names the CI surfaces that drifted, stuck or outlived their review date (spec-pyforge-doctor CAP-89)
 - Epic 46: The env-hygiene scan stops growing with the test suite (spec-pyforge-doctor CAP-1, NFR-4)
+- Epic 47: The Detectors scripts lane finishes inside its timeout (spec-pyforge-doctor CAP-42, CAP-43)
 
 ## Test Inventory
 
@@ -341,6 +342,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 44.1 | The doctor check speed budget is judged on the CPU the check spends | none observed |
 | 45.1 | Doctor names every CI surface that drifted, stuck or outlived its review date | none observed |
 | 46.1 | The env-hygiene scan walks each tree once and skips test code | none observed |
+| 47.1 | The aggregate scripts test checks scope filtering without gathering | none observed |
 
 ## Quality Gates
 

@@ -86,6 +86,21 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-14 (the Detectors scripts lane outgrew its timeout)** — **Found: the `scripts-suite` job ran past its
+  15-minute limit, and GitHub cancelled it.** It happened on `main` at `8d04520770` and on PR #2204. The job has two
+  test steps: `tests/scripts` in `pyforge-ci` (7 to 9 minutes on a runner), then `pyforge-doctor-aggregate-scripts-test`
+  in `pyforge-doctor` (5 to 7 minutes). A local `--durations` run of the second step took 691.89 s, and 684.59 s of it
+  was one test, `test_run_doctor_sources_filters_by_scope_like_a_scanned_detector`. It calls the real
+  `_run_doctor_sources` twice, for `repo` and for `all`, and each call gathers every Doctor source over the live tree.
+  The test then checks only row counts and that `dashboard-drift` is present. Every other test in the two files takes
+  under 0.4 s. **What it looks like when fixed:** the test swaps Doctor's dispatch table for stubs, so it checks scope
+  filtering and row building without gathering, and it shows that a `repo` call skips a source whose scope is
+  `runtime`. The two files finish in under a minute locally. The `detectors` job still runs every real gather through
+  `detectors-ci`. The job's `timeout-minutes` rises to 25, so the first step's growth does not cancel the lane again.
+  **Constraints:** a fix under CAP-42 and CAP-43 (Epic 39's `pyforge-doctor-aggregate-scripts-test`), no CAP, no flag.
+  No assertion loses its intent, and `scripts/detectors.py` does not change. Operator ask 2026-10-14: "raise
+  timeout-minutes for that job (to about 25) and make those two test files faster". Owner `spec-pyforge-doctor`.
+  → Epic 47 / Story 47.1, specced 2026-10-14.
 - **2026-10-14 (ci pause drift, specced)** — **Found: the report Doctor was waiting for now exists, and it already
   does the looking.** Steward Story 99.3 landed one command that lists every CI surface with a verdict, read from the
   registry and from GitHub, and that refuses rather than guesses when GitHub cannot be read
