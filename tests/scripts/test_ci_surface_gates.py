@@ -19,8 +19,19 @@ REGISTRY_PATH = REPO_ROOT / "docs/governance/ci-surfaces.yaml"
 SCHEMA_PATH = REPO_ROOT / "docs/governance/ci-surfaces.schema.json"
 # Story 103.4: every case below is built under its test's own tmp_path. They used to be written
 # into this tracked directory, so each run, and so each pr-preflight, edited tracked files and the
-# pre-push hook refused the push. The autouse guard fails a test after which it is not clean.
+# pre-push hook refused the push. The autouse guard fails the test that adds an entry there.
 FIXTURE_TREE = "tests/scripts/fixtures/ci_surface_gates"
+# A git hook exports locators to its children (in a linked worktree GIT_DIR names that worktree's
+# gitdir), and a git command that inherits them acts on that repository, not on its cwd.
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_COMMON_DIR",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_PREFIX",
+)
 
 
 def _load_module(path: Path, name: str):
@@ -38,46 +49,84 @@ def _run_detector(*extra: str) -> subprocess.CompletedProcess[str]:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
 
 
-def _tree_status(root: Path, pathspec: str) -> str:
-    """``git status --porcelain`` for one pathspec, every untracked file on its own line.
+def _tree_status(root: Path, pathspec: str) -> list[str]:
+    """``git status --porcelain`` lines for one pathspec: changed, untracked and ignored files.
 
-    A status read that fails is a failure, never an empty (clean) answer.
+    Each untracked (``??``) and ignored (``!!``) file is its own line. The read takes no optional
+    lock, so it never holds ``index.lock``, and a read that fails is a failure, never a clean answer.
     """
     proc = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all", "--", pathspec],
+        [
+            "git",
+            "--no-optional-locks",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--ignored=matching",
+            "--",
+            pathspec,
+        ],
         cwd=root,
         capture_output=True,
         text=True,
         check=False,
     )
     assert proc.returncode == 0, f"git status failed in {root}: {proc.stderr.strip()}"
-    return proc.stdout
+    return proc.stdout.splitlines()
+
+
+def _isolate_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make git act on its cwd alone, with no global or system config, whatever its parent exported."""
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
 
 
 @pytest.fixture(autouse=True)
 def _fixture_tree_stays_clean():
-    """Fail any test after which the tracked fixture tree has a change or an untracked file."""
+    """Fail the test that leaves a new change, untracked file or ignored file in the fixture tree."""
+    before = set(_tree_status(REPO_ROOT, FIXTURE_TREE))
     yield
-    status = _tree_status(REPO_ROOT, FIXTURE_TREE)
-    assert status == "", (
-        f"{FIXTURE_TREE} is not clean after this test. Build generated cases under tmp_path "
-        f"(Story 103.4); commit a checked-in input before this file runs:\n{status}"
+    added = [
+        line for line in _tree_status(REPO_ROOT, FIXTURE_TREE) if line not in before
+    ]
+    assert added == [], (
+        f"this test left new entries in {FIXTURE_TREE}; build generated cases under tmp_path "
+        "(Story 103.4):\n" + "\n".join(added)
     )
 
 
-def test_fixture_tree_guard_is_active_and_sees_untracked_and_modified_files(
-    tmp_path: Path, request: pytest.FixtureRequest
+def test_fixture_tree_guard_is_active_and_sees_modified_untracked_and_ignored_files(
+    tmp_path: Path, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Story 103.4 AC4: the guard runs for every test here, and its status read is not blind."""
+    """Story 103.4 AC4: the guard is on, the tree is clean, and its status read is not blind.
+
+    The per-test guard fails only the test that adds an entry, so a leftover from an earlier run
+    is caught here, once.
+    """
     assert "_fixture_tree_stays_clean" in request.fixturenames
+    leftover = _tree_status(REPO_ROOT, FIXTURE_TREE)
+    assert leftover == [], (
+        f"{FIXTURE_TREE} is not clean; remove what an earlier run left:\n"
+        + "\n".join(leftover)
+    )
+
+    # Run the scratch repository as a linked worktree's git hook would run this test: with a
+    # GIT_DIR exported. Isolated, git must create its own .git and leave the decoy alone.
+    decoy = tmp_path / "decoy.git"
+    monkeypatch.setenv("GIT_DIR", str(decoy))
+    monkeypatch.setenv("GIT_WORK_TREE", str(tmp_path))
+    _isolate_git(monkeypatch)
     repo = tmp_path / "scratch"
     repo.mkdir()
 
-    def git(*args: str) -> None:
-        subprocess.run(
+    def git(*args: str) -> str:
+        return subprocess.run(
             [
                 "git",
                 "-c",
@@ -94,20 +143,30 @@ def test_fixture_tree_guard_is_active_and_sees_untracked_and_modified_files(
             check=True,
             capture_output=True,
             text=True,
-        )
+        ).stdout
 
     git("init", "-q", "--template=")
+    assert not decoy.exists(), (
+        "git followed the exported GIT_DIR instead of its own cwd"
+    )
+    assert (
+        Path(git("rev-parse", "--absolute-git-dir").strip()).resolve()
+        == (repo / ".git").resolve()
+    )
     case = repo / FIXTURE_TREE / "case"
     case.mkdir(parents=True)
     (case / "registry.yaml").write_text("version: 1\n", encoding="utf-8")
+    (repo / ".gitignore").write_text("*.log\n", encoding="utf-8")
     git("add", "--", FIXTURE_TREE)
     git("commit", "-q", "--no-verify", "-m", "seed")
-    assert _tree_status(repo, FIXTURE_TREE) == ""
+    assert _tree_status(repo, FIXTURE_TREE) == []
     (case / "registry.yaml").write_text("version: 2\n", encoding="utf-8")
     (case / "workflows_match.json").write_text("{}", encoding="utf-8")
-    lines = _tree_status(repo, FIXTURE_TREE).splitlines()
+    (case / "run.log").write_text("x\n", encoding="utf-8")
+    lines = _tree_status(repo, FIXTURE_TREE)
     assert f" M {FIXTURE_TREE}/case/registry.yaml" in lines
     assert f"?? {FIXTURE_TREE}/case/workflows_match.json" in lines
+    assert f"!! {FIXTURE_TREE}/case/run.log" in lines
 
 
 def test_live_tree_offline_check_exits_zero() -> None:
@@ -154,6 +213,7 @@ def test_fixture_unregistered_pause_var(tmp_path: Path) -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "PAUSE_FOO" in proc.stdout + proc.stderr
@@ -206,6 +266,7 @@ def test_fixture_row_switch_not_in_if(tmp_path: Path) -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "PAUSE_OTHER" in proc.stdout + proc.stderr
@@ -258,6 +319,7 @@ def test_fixture_bad_switch_name(tmp_path: Path) -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "SKIP_FOO" in proc.stdout + proc.stderr
@@ -310,6 +372,7 @@ def test_fixture_wrong_pause_comparison(tmp_path: Path) -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "PAUSE_FOO" in proc.stdout + proc.stderr
@@ -362,6 +425,7 @@ def test_fixture_missing_job(tmp_path: Path) -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "ghost" in proc.stdout + proc.stderr
@@ -417,6 +481,7 @@ def test_fixture_paused_missing_review_by(tmp_path: Path) -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "review_by" in proc.stdout + proc.stderr

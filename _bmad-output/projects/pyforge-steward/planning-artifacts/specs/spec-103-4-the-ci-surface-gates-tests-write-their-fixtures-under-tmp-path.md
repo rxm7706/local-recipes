@@ -4,14 +4,13 @@ type: 'fix'
 created: '2026-10-14'
 status: 'in-review'
 baseline_revision: '6e1918fea260f9ebe879ae52d549eeba70029207'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-99-1-the-ci-surfaces-are-declared-once-and-the-workflows-are-judged-against-them.md
   - tests/scripts/test_ci_surface_gates.py
-  - tests/scripts/fixtures/ci_surface_gates/
   - scripts/ci_surface_gates.py
   - scripts/_ci_surface_gates_lib.py
   - docs/governance/ci-surfaces.yaml
@@ -58,16 +57,24 @@ is ok. Line numbers are at `6e1918fea2`.
   arguments and every assertion stay as they are. The `FIXTURES` constant goes; nothing else uses it.
 - **The generated files leave git.** All 18 tracked files under `tests/scripts/fixtures/ci_surface_gates/` are removed
   with `git rm`. None is a checked-in input, so none stays. The directory then holds nothing tracked.
-- **A guard, active for every test.** An autouse function-scoped fixture runs, after each test,
-  `git status --porcelain --untracked-files=all -- tests/scripts/fixtures/ci_surface_gates` in the repo root and fails
-  the test when the output is not empty, naming each line and the fix. It reads `git`'s exit code: a failed status read
-  fails too, so the guard is never silently off. Function scope makes it hold under xdist (`-n auto --dist loadgroup`)
-  and in any order, and it names the test that wrote. It costs one `git status` per test (about 13 ms here).
-- **The guard is tested.** `test_fixture_tree_guard_is_active_and_sees_untracked_and_modified_files` asserts that the
-  guard fixture is in the test's own `request.fixturenames`. It then builds a scratch repository under `tmp_path` with
-  one committed fixture and runs the guard's status read there: empty when clean, then a ` M` line for the edited file
-  and a `??` line for a new one. It runs `git` with the global and system config off and `--no-verify`, so no user
-  hook or signing setting reaches the scratch commit.
+- **A guard, active for every test.** An autouse function-scoped fixture reads
+  `git --no-optional-locks status --porcelain --untracked-files=all --ignored=matching --
+  tests/scripts/fixtures/ci_surface_gates` in the repo root before and after each test. It fails the test when the
+  read after it has a line the read before it did not, naming each new line and the fix, so the first failing test is
+  the writer. `--ignored=matching` makes an ignored file (`!!`) count, and `--no-optional-locks` keeps the read from
+  taking `index.lock`. It reads `git`'s exit code: a failed status read fails too, so the guard is never silently off.
+  Function scope makes it hold under xdist (`-n auto --dist loadgroup`) and in any order. It costs two `git status`
+  reads per test (about 13 ms each here).
+- **The guard is tested.** `test_fixture_tree_guard_is_active_and_sees_modified_untracked_and_ignored_files` asserts
+  that the guard fixture is in the test's own `request.fixturenames`, and that the repo's fixture tree is clean, so a
+  leftover from an earlier run fails this one test. It then exports a decoy `GIT_DIR` and `GIT_WORK_TREE`, as a linked
+  worktree's git hook does, and isolates git with `monkeypatch`: it removes `GIT_DIR`, `GIT_WORK_TREE`,
+  `GIT_INDEX_FILE`, `GIT_OBJECT_DIRECTORY`, `GIT_COMMON_DIR`, `GIT_CEILING_DIRECTORIES` and `GIT_PREFIX`, and sets
+  `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`. It builds a scratch repository under `tmp_path` with one
+  committed fixture and asserts that git created that repository's own `.git` and left the decoy alone. It then runs
+  the guard's status read there: empty when clean, then a ` M` line for the edited file, a `??` line for a new one and
+  a `!!` line for an ignored one. Every scratch commit runs with `core.hooksPath=/dev/null`, `commit.gpgsign=false`
+  and `--no-verify`.
 
 **Rejected:**
 - **Regenerating the two stale files and keeping them tracked.** They go stale again on the next registry edit. Any
@@ -105,17 +112,25 @@ Type / Effort / Deps: fix / S / none.
 - **AC3 — A checked-in input stays.** No file under `tests/scripts/fixtures/ci_surface_gates/` is read by a test
   without being written by it first, so no file stays. If the implementation finds one, it stays tracked, and the Auto
   Run Result names it.
-- **AC4 — The guard.** An autouse function-scoped fixture fails any test after which
-  `git status --porcelain --untracked-files=all -- tests/scripts/fixtures/ci_surface_gates` is non-empty, or the status
-  read itself fails. `test_fixture_tree_guard_is_active_and_sees_untracked_and_modified_files` proves the fixture is
-  active for it, and that the status read returns an empty string for a clean scratch tree, a ` M` line for a modified
-  tracked fixture and a `??` line for an untracked one.
+- **AC4 — The guard.** An autouse function-scoped fixture fails any test that adds a line to
+  `git --no-optional-locks status --porcelain --untracked-files=all --ignored=matching --
+  tests/scripts/fixtures/ci_surface_gates`, and fails when the status read itself fails.
+  `test_fixture_tree_guard_is_active_and_sees_modified_untracked_and_ignored_files` proves that:
+  - the fixture is active for it;
+  - the repo's fixture tree reads empty;
+  - with a decoy `GIT_DIR` exported, the isolated scratch repository's git creates its own `.git` and leaves the decoy
+    alone;
+  - the status read returns no line for a clean scratch tree, and a ` M`, a `??` and a `!!` line for a modified, an
+    untracked and an ignored fixture.
 - **AC5 — No assertion weakens.** Every test that exists at `6e1918fea2` still exists under the same name, with the
   same inputs, the same detector arguments and the same assertions. The only test added is AC4's.
 - **AC6 — Mutations.** Each change below fails a named test, and the Auto Run Result records which. Each is reverted.
   - one test's case root moved back under the repository's `tests/scripts/fixtures/ci_surface_gates/`: the guard fails
-    that test;
-  - `--untracked-files=no` in the guard's status read: AC4's named test fails.
+    that test, and no other;
+  - `--untracked-files=no` in the guard's status read: the read fails, so every test fails;
+  - the guard declared without `autouse=True`, `--ignored=matching` dropped, or `GIT_DIR` dropped from the scrub: AC4's
+    named test fails;
+  - an untracked file left in the repo's fixture tree before the run: AC4's named test fails, and no other.
 - **AC7 — Green, and the tree clean.** Each of the following exits 0, and `git status --porcelain` is empty after it:
   - `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_ci_surface_gates.py -q`;
   - `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_ci_surface_gates.py -q`;
@@ -142,6 +157,8 @@ Type / Effort / Deps: fix / S / none.
 - Never ignore the fixture directory in `.gitignore`.
 
 **Residual risk:**
+- The per-test guard fails only the test that adds a line, so a leftover from an earlier run is caught by AC4's named
+  test alone, once per run.
 - A checkout made before this merge that still holds the two modified copies keeps them as local edits to deleted
   files. Merging `main` over them stops on the local change; `git checkout -- tests/scripts/fixtures/ci_surface_gates`
   before the merge clears it. A fresh worktree from `main` has none.
@@ -158,6 +175,8 @@ Type / Effort / Deps: fix / S / none.
 | A future test writes into the fixture tree | silently, and an auto-checkpoint may commit it | the guard fails that test |
 | xdist spreads the file over workers | each worker writes the shared tracked paths | each test writes only its own `tmp_path` |
 | `git status` cannot run in the repo root | not checked | the guard fails, naming the error |
+| The file runs under a linked worktree's git hook (`GIT_DIR` exported) | not applicable | the scratch repository ignores it; the shared `.git/config` and the branch are untouched |
+| A file matching an ignore rule (`*.log`) lands in the fixture tree | not applicable | it reads `!!` and the guard fails the writer |
 
 </intent-contract>
 
@@ -189,6 +208,7 @@ Type / Effort / Deps: fix / S / none.
 - The AC6 mutations, one at a time, re-running the file each time — expected: each fails its named test. Revert each.
 - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` and `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test` — expected: exit 0, tree clean (AC7).
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamp (AC8).
+- `.pixi/envs/pyforge-guild/bin/ruff check tests/scripts/test_ci_surface_gates.py` (the root config) — expected: exit 0.
 - `pixi run --frozen -e pyforge-scribe-pg scribe-pg-up`, then `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code, and `git status --porcelain` empty after it (AC7).
 - `git push` — expected: the `pre-push-preflight` hook passes with no `PYFORGE_PREFLIGHT_SKIP` (AC7).
 
@@ -197,6 +217,9 @@ Type / Effort / Deps: fix / S / none.
 - 2026-10-14: minted on the operator's standing direction of 2026-10-14 ("be autonomous, keep merging ... complete as
   much as you can autonomously"; "pre-existing findings are fixed now"). `type: fix`, no flag, no CAP. Bound to
   `spec-pyforge-steward` CAP-166 through Stories 99.1 and 99.6.
+- 2026-10-14, review 1 (failed): the Approach, AC4, AC6, the residual risk and the I/O matrix follow the review's
+  fixes. The guard fails only the writer and sees ignored files; the named test isolates git from a hook's exports
+  and catches a leftover; `tests/scripts/fixtures/ci_surface_gates/` leaves `context:`.
 
 ## Auto Run Result
 
@@ -252,3 +275,41 @@ Verification (2026-10-14):
   workflow's own rules, and every lane that ran was `ok`: `detectors-ci`, `pyforge-doctor-scripts-test`,
   `pyforge-doctor-aggregate-scripts-test`, the eight station suites (`pyforge-steward-test`: 2606 passed, 1 skipped),
   `pages-check` and the docs-site checks. `git status --porcelain --untracked-files=all` was empty afterwards.
+
+## Review (2026-10-14, independent)
+
+Verdict: failed, one blocker (PR #2222 at `13b92761f7`). Each finding went back to implementation (review loop
+iteration 1), and the fix column records what landed. The named guard test is now
+`test_fixture_tree_guard_is_active_and_sees_modified_untracked_and_ignored_files`; the Auto Run Result above records
+the first pass under its old name.
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| 1 | BLOCKER | The scratch-repo guard test ran `git` with the caller's whole environment, though the Approach and the memlog said the global and system config were off; only `-c` overrides were passed. Under a linked worktree's pre-push hook git 2.43 exports `GIT_DIR=<main>/.git/worktrees/<name>`, and with that inherited the test set `core.bare=true` in the shared `.git/config` and committed `seed` onto the current branch. The reviewer reproduced both in scratch repositories. | `_isolate_git(monkeypatch)` deletes `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_OBJECT_DIRECTORY`, `GIT_COMMON_DIR`, `GIT_CEILING_DIRECTORIES` and `GIT_PREFIX`, and sets `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1` (the precedents: `test_mason_cfe_surface_check.py`'s `_isolate_git_env`, `test_fleet_poll_sync.py`'s `_git_env`). The test exports a decoy `GIT_DIR` and `GIT_WORK_TREE` first, then asserts that git made the scratch repository's own `.git` and left the decoy alone. Reproduced in a scratch main repository with a linked worktree, running the guard test with `GIT_DIR=<main>/.git/worktrees/wt` exported: the `13b92761f7` file set `core.bare=true` in the scratch main and committed `seed` onto the worktree's branch; the fixed file passed, and `core.bare` stayed `false` with no new commit. The real primary checkout reads `core.bare=false` and has no `seed` commit, because `scripts/pre_push_preflight.sh` unsets `GIT_DIR` before `pr-preflight`. |
+| 2 | NIT | The guard missed files that match ignore rules (`*.log`, `*.tmp`, `__pycache__/`, `.venv`, a global excludesFile). | `_tree_status` passes `--ignored=matching`, so an ignored file reads `!!` and counts; the named test covers a `!!` line for a `*.log` file. |
+| 3 | NIT | A stray file failed the teardown of every later test (15 errors in mutation 1), and the read could take `index.lock`. | The guard snapshots the status before each test and fails only on new lines, so only the writer fails. The named test also asserts the repo's fixture tree is clean, so a leftover from an earlier run fails it once. The read runs `git --no-optional-locks status`. |
+| 4 | NIT | Seven older `subprocess.run` calls lacked `check=` (ruff `PLW1510` under the root config; `ruff check` on the file exited 1). | `check=False` on each; behaviour unchanged. `ruff check tests/scripts/test_ci_surface_gates.py` exits 0. |
+| 5 | NIT | `context:` still listed the removed `tests/scripts/fixtures/ci_surface_gates/`; the memlog read "Story 103.3s". | The path left `context:`; a one-line correction is appended to the `spec-pyforge-steward` memlog, which is append-only. |
+| 6 | OUT OF SCOPE | `test_six_fixture_rules_together_six_findings` is vacuous: it takes the `len()` of a six-item literal set, so Story 99.1's AC2 has no test. AC5 freezes the existing assertions. | Deferred to a follow-up story, which the coordinator is chaining. |
+
+Verification after review 1 (2026-10-14):
+- The file: 21 passed in `pyforge-ci`, in `pyforge-guild` and in `pyforge-ci` under `-n auto --dist loadgroup`, each
+  exit 0 with `git status --porcelain` empty afterwards.
+- `.pixi/envs/pyforge-guild/bin/ruff check tests/scripts/test_ci_surface_gates.py`: exit 0. `ruff format --diff`
+  shows only three hunks, all on lines this story did not touch (the module docstring's blank line, the
+  `grandfathered_names` assertion and one registry dict), left alone beside Story 103.3's coming import edit.
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test`: 1555 passed, 28 skipped, exit 0.
+  `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test`: 59 passed, exit 0. The tree was clean
+  after both.
+- Mutations, each restored from a saved copy and checked with `cmp`:
+  - `test_live_fixture_match_exits_zero` writing into the repo's fixture tree: only that test failed, at teardown
+    (`?? …/workflows_match.json`; 21 passed, 1 error);
+  - `--untracked-files=no`: git refuses it beside `--ignored` ("Unsupported combination"), so the read fails and every
+    test errors; the guard fails closed;
+  - the guard without `autouse=True`: the named test failed (`_fixture_tree_stays_clean` not in `request.fixturenames`);
+  - `--ignored=matching` dropped: the named test failed (the `!!` line missing);
+  - `GIT_DIR` dropped from `_LEAKY_GIT_VARS`: the named test failed ("git followed the exported GIT_DIR instead of its
+    own cwd");
+  - an untracked `leftover.json` in the repo's fixture tree before the run: only the named test failed, naming it.
+- `spec-pyforge-steward`'s memlog records the review, the correction and the reconcile, then one scoped stamp after
+  the last code edit; `spec-surface-check` exits 0.

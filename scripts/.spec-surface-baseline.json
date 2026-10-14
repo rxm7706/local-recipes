@@ -6150,7 +6150,7 @@
    "tests/scripts/fixtures/pin_policy/pin-policy.yaml": "0a1e842e817fb4c853531b0b3932f77bed9d14c8",
    "tests/scripts/fixtures/pin_policy/pixi.toml.after": "de2f979701008c09e465977e94faab891b85398c",
    "tests/scripts/fixtures/pin_policy/pixi.toml.base": "95d98b47795403125f52f41ab46fd46853c471c1",
-   "tests/scripts/test_ci_surface_gates.py": "c7e79e08bad87dd0d111ecc1d37836d2376f8a49",
+   "tests/scripts/test_ci_surface_gates.py": "48367582183d434ad7c3e52af16be6088dbcefea",
    "tests/scripts/test_pin_policy_check.py": "a8d05fc2cd52310e342375e78d08ef70145db208",
    "tests/scripts/test_pin_policy_restore.py": "9c6699a6e335a085ce626734574a438c185d7ae1",
    "tests/scripts/test_realization_register_check.py": "2aaae3034a8aefabd475af58420a3c90d39ee768",
@@ -6158,7 +6158,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "fa7bcc22858ffa6273cce832584d985734df2827"
+  "memlog": "835420091a36ba7c120bcb91e1170558620fc667"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
