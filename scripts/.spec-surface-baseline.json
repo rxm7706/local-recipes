@@ -6750,11 +6750,11 @@
    "src/shared/packages/django-warden/src/django_warden_fabric/fleet_project_items.py": "6fd01c29b3b7500ea10944d57c8e8d337de38d2f",
    "src/shared/packages/django-warden/src/django_warden_fabric/management/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-   "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_approve.py": "63fcf49f0294bd6574529b4ae918ae70188b71da",
-   "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_inventory.py": "ee812e1df85ac9cb2fcfdf6766077016e067640e",
+   "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_approve.py": "e280db5bc8a7d104c1fc0e5fb1b3b045f02ba38e",
+   "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_inventory.py": "6eb364eb126f16cccfcb6def67cf9ec50d360e2a",
    "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_project_items.py": "daf5fc6b12a5470aaa12d302fb72372f2004e8a2",
-   "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_run.py": "6f35828ff9aed82d188f51aff3e9861fa41dbbf4",
-   "src/shared/packages/django-warden/src/django_warden_fabric/mcp_asgi.py": "b4b82f65e34ecd2b91f6761426a315b044aa1eeb",
+   "src/shared/packages/django-warden/src/django_warden_fabric/management/commands/warden_fleet_run.py": "cac9f26ad2abded2ed0704bedf0dae9fda734f85",
+   "src/shared/packages/django-warden/src/django_warden_fabric/mcp_asgi.py": "8f39e6bbb18caa56106a2f1228849ea6e0ef5f88",
    "src/shared/packages/django-warden/src/django_warden_fabric/migrations/0001_initial.py": "f383b6da522b81c561ca1df52af2a71f0b621be4",
    "src/shared/packages/django-warden/src/django_warden_fabric/migrations/0002_fleet_run.py": "4d59a6ffd34a77f3b8721f4de4c6ad7072f66928",
    "src/shared/packages/django-warden/src/django_warden_fabric/migrations/0003_fix_proposal.py": "7bebd24f1ed979696d425f2ee786160fc9a8f756",
@@ -7262,7 +7262,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "a93bb9ba1cf96bdb2c1f810185a157e2153f2629"
+  "memlog": "91c0b8392fd434fb07cdeaa73ec559a592d1e856"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
