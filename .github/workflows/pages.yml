@@ -53,12 +53,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # Shallow, not sparse: the deck family pages publish each deck's PPTX (src/pptx/) and Marp
+          # (src/marp/) files and its stamp sidecars (project/*.stamp.json), which is 77.6 MB of the
+          # 84.9 MB tracked under presentations/ (2026-10-14). A sparse set that drops them still
+          # passes site-check, because an absent download directory lists nothing.
           fetch-depth: 1
-          sparse-checkout: |
-            /*
-            !/presentations/
-            /presentations/*/project/*.html
-          sparse-checkout-cone-mode: false
 
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:

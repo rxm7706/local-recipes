@@ -266,3 +266,11 @@ and AC6 preflight cases green (76 tests in selection suite run); herald `test_pa
   `dashboard.yml`. The measured numbers are the brainstorm's and the design-thinking doc's (2026-10-13). The
   implementing session reads the live workflow and registry first and follows them where they differ from the shape
   quoted here.
+- 2026-10-14 (review before landing): AC3's sparse checkout is dropped; the build job checks out `fetch-depth: 1`
+  over the whole tree. The deck family pages (herald CAP-35) publish each deck's `src/pptx/*.pptx` and
+  `src/marp/*.md` as downloads and read `project/*.stamp.json` sidecars; `docsite/build.py` `_listed_files` returns an
+  empty list for an absent directory and `site-check` accepts empty download lists, so the sparse set passed AC3's
+  `pages-check` and would have deployed ten family pages with no downloads. Measured on `main` 2026-10-14: the build
+  reads 77.6 MB of the 84.9 MB tracked under `presentations/` (`project/` 8.4, `src/pptx/` 67.0, `src/marp/` 2.3),
+  so sparse could save at most 7.3 MB. The premise was the mint brief's (the coordinator's), not the session's.
+  `tests/meta/test_pages_workflow.py` now asserts the shallow checkout and the absence of a sparse set.

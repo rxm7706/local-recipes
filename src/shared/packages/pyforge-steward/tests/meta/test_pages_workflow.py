@@ -42,7 +42,10 @@ def test_pages_yml_trigger_shape() -> None:
     assert schedule[0]["cron"] == "17 6 * * 1"
 
 
-def test_pages_yml_build_checkout_is_shallow_and_sparse() -> None:
+def test_pages_yml_build_checkout_is_shallow_and_keeps_the_deck_downloads() -> None:
+    """Shallow, never sparse over presentations/: the deck family pages publish each deck's
+    src/pptx and src/marp files and the project/ stamp sidecars, and site-check passes on an
+    absent download directory (it lists nothing), so a sparse set would drop them silently."""
     document = yaml.safe_load(PAGES_WORKFLOW.read_text(encoding="utf-8"))
     checkout = next(
         step
@@ -51,7 +54,4 @@ def test_pages_yml_build_checkout_is_shallow_and_sparse() -> None:
     )
     with_block = checkout["with"]
     assert with_block["fetch-depth"] == 1
-    sparse = with_block["sparse-checkout"]
-    assert "!/presentations/" in sparse
-    assert "/presentations/*/project/*.html" in sparse
-    assert with_block.get("sparse-checkout-cone-mode") is False
+    assert "sparse-checkout" not in with_block
