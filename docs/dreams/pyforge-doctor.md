@@ -93,7 +93,8 @@ forward. That dream is archived; this one is the real record.
   was one test, `test_run_doctor_sources_filters_by_scope_like_a_scanned_detector`. It calls the real
   `_run_doctor_sources` twice, for `repo` and for `all`, and each call gathers every Doctor source over the live tree.
   The test then checks only row counts and that `dashboard-drift` is present. Every other test in the two files takes
-  under 0.4 s. **What it looks like when fixed:** the test swaps Doctor's dispatch table for stubs, so it checks scope
+  under 0.4 s. The same test ran its real gathers in the first step too, because `pyforge-ci` resolves Doctor's
+  run-deps through `spec-kit`. **What it looks like when fixed:** the test swaps Doctor's dispatch table for stubs, so it checks scope
   filtering and row building without gathering, and it shows that a `repo` call skips a source whose scope is
   `runtime`. The two files finish in under a minute locally. The `detectors` job still runs every real gather through
   `detectors-ci`. The job's `timeout-minutes` rises to 25, so the first step's growth does not cancel the lane again.

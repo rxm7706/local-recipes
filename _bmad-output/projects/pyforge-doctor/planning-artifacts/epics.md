@@ -3282,7 +3282,7 @@ to check row counts. A defect of a shipped test and a CI limit, so no CAP and no
 **HARD boundaries:**
 - No assertion loses its intent, and no test is deleted or skipped under `pyforge-doctor`.
 - `scripts/detectors.py` does not change; the `detectors` job still runs every real gather through `detectors-ci`.
-- `pyforge-ci` stays stdlib-only (Epic 39).
+- `pyforge-ci` gains no dependency (Epic 39).
 
 ### Story 47.1: The aggregate scripts test checks scope filtering without gathering
 
@@ -3297,7 +3297,7 @@ So that the scripts lane finishes, while every real gather is still judged where
 **Given** `pyforge-doctor-aggregate-scripts-test` takes 691.89 s locally, 684.59 s of it in one test that calls the real `_run_doctor_sources("repo")` and `("all")`, each gathering all 29 `_DOCTOR_SOURCE_TASKS` sources over the live tree, and `scripts-suite` has `timeout-minutes: 15`
 **When** the aggregate step runs under `pyforge-doctor`
 **Then** the test swaps `pyforge.doctor.sources.__main__.DISPATCH` for stubs, keeps its four assertions, checks each row's task, scope, status and rc, and shows that a `repo` call skips a source `scope_for` reads as `runtime`; the two files pass in under 60 s; `scripts-suite` has `timeout-minutes: 25`
-**And** the test skips under `pyforge-ci` with the other dispatch tests; `pyforge-doctor-test`, `detectors-ci` and `ci-surface-gates-check` stay green; each of these fails the test (mutation): the scope filter removed, a row's scope taken from the call's argument, one name left without a stub
+**And** `pyforge-doctor-scripts-test` in `pyforge-ci` exits 0; `pyforge-doctor-test`, `detectors-ci` and `ci-surface-gates-check` stay green; each of these fails the test (mutation): the scope filter removed, a row's scope taken from the call's argument, one name left without a stub
 **Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

@@ -75,7 +75,9 @@ jobs:
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DETECTORS != 'true') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25, not 15 (doctor Story 47.1): the job ran past 15 minutes on main 8d04520770 and PR #2204, with
+    # tests/scripts at 7-9 minutes and the aggregate step at 5-7 minutes on a runner.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
         with:
@@ -92,8 +94,10 @@ jobs:
         run: pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test
       # The detector-aggregate tests that load Doctor's dispatch table, and the
       # verdict-writer tests that import its citation predicate (doctor Story 41.1),
-      # skip above (pyforge-ci has none of Doctor's run-deps, by design); they run
-      # for real here, where Doctor's run-deps are installed (doctor Story 38.5).
+      # skip above wherever Doctor's run-deps cannot import. pyforge-ci declares none
+      # of them, but its python feature pulls jsonschema and PyYAML in through
+      # spec-kit, so today they run there too (doctor Story 47.1). They always run
+      # here, where Doctor's run-deps are declared (doctor Story 38.5).
       # pr-preflight runs the same task (doctor Story 39.1): every step in this job must be a
       # `pixi run --frozen -e <env> <task>` that pr-preflight also runs, or
       # doctor's test_preflight_mirrors_scripts_suite.py reds.
