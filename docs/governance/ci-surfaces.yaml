@@ -88,6 +88,7 @@ surfaces:
   state: paused-manually
   owner: pyforge-steward
   reason: not recorded (asked 2026-10-12)
+  review_by: '2026-11-01'
 - id: lint-types
   workflow: .github/workflows/lint-types.yml
   kind: workflow
@@ -102,11 +103,10 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
-  switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: marshal-local-recipes-seed-oracle
   workflow: .github/workflows/marshal-local-recipes-seed-oracle.yml
   kind: workflow
@@ -157,31 +157,28 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
-  switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: reusable-staged-recipes-linter
   workflow: .github/workflows/reusable-staged-recipes-linter.yml
   kind: workflow
   cost: low
   gate: false
-  switch: null
-  switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: staged-recipes-linter
   workflow: .github/workflows/staged-recipes-linter.yml
   kind: workflow
   cost: low
   gate: false
-  switch: null
-  switch_class: pause
-  state: paused-manually
+  state: retired
+  retired_on: '2026-10-14'
+  reason: staged-recipes linting retired; local-recipes is not a staged-recipes fork
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
 - id: substrate-nightly
   workflow: .github/workflows/substrate-nightly.yml
   kind: workflow
@@ -210,6 +207,7 @@ surfaces:
   state: paused-manually
   owner: pyforge-steward
   reason: not recorded (asked 2026-10-12)
+  review_by: '2026-11-01'
 - id: test-linux
   workflow: .github/workflows/test-linux.yml
   kind: workflow

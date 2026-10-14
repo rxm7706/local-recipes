@@ -29,11 +29,11 @@ Story 3.3 slice: `format_environments` — read-only text/`--json` rendering
 of `load_pixi_environments`'s own output. Wired as `steward provision
 --list [--json]`.
 
-Story 3.4 slice: `check_environment_sync` — wraps the EXACT sync-gate
-comparison `.github/workflows/scripts/linter.py` already runs on every PR
-(read `environment.yaml`, run `pixi project export conda-environment -e
-build`, compare both `.rstrip()`'d) rather than reimplementing the
-comparison a second way (AD-1). Wired as `steward provision --verify`.
+Story 3.4 slice: `check_environment_sync` — the same sync gate as the former
+staged-recipes linter step (read `environment.yaml`, run `pixi project export
+conda-environment -e build`, compare both `.rstrip()`'d) rather than
+reimplementing the comparison a second way (AD-1). Wired as `steward provision
+--verify` (Story 99.7 retired the linter workflows; this duty owns the check).
 
 Story 6.1 slice (Epic 6, `--module`): `_SUPPORTED_MODULES` (bmb via setup-
 skill scripts), `provision_module` (assembles `module.yaml`'s own declared
@@ -316,11 +316,11 @@ _SYNC_EXPORT_CMD: tuple[str, ...] = ("pixi", "project", "export", "conda-environ
 
 
 def check_environment_sync(*, cwd: str | Path) -> tuple[bool, str]:
-    """Wrap the EXACT sync-gate check `.github/workflows/scripts/linter.py`
-    already runs on every PR to this repo (AD-1: reuse, never reimplement
-    the comparison) — reads `environment.yaml`, runs `pixi project export
-    conda-environment -e build`, and compares both `.rstrip()`'d, exactly
-    like the linter's own logic.
+    """Sync-gate check (Story 3.4 / FR-15; linter workflows retired in 99.7).
+
+    Reads `environment.yaml`, runs `pixi project export conda-environment -e
+    build`, and compares both `.rstrip()`'d — the same recipe the staged-recipes
+    linter used before retirement (AD-1: one comparison, never two).
 
     Returns `(in_sync, diff_text)`. `diff_text` is empty when in sync,
     otherwise a unified diff (`environment.yaml` vs. the freshly exported

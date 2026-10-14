@@ -2,8 +2,8 @@
 title: '99.7: The hand-disabled workflows are retired or parked, and the convention is documented'
 type: 'chore'
 created: '2026-10-13'
-status: 'ready-for-dev'
-baseline_revision: '233e07909b5f7e89e49744cdeb642cdc0985b177'
+status: 'in-progress'
+baseline_revision: 'c51a397a0cb999671851d5395c6069798ea1e898'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

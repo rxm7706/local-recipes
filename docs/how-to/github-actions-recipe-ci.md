@@ -13,7 +13,6 @@ These run on `pull_request` events (several also re-run on push to `main`):
 | Workflow | Triggers | Role |
 |----------|----------|------|
 | `detectors.yml` | `pull_request`, push to `main` | Repo health detectors (`detectors-ci` subset) |
-| `staged-recipes-linter.yml` | `pull_request` | Recipe lint (staged-recipes parity) |
 | `coverage-gates.yml` | `pull_request`, push to `main` | PyForge station coverage gates |
 | `pyforge-station-tests.yml` | `pull_request`, push to `main` (path-filtered) | PyForge station test matrix + the `core-test` conformance job (pyforge-core's whole suite, sole-ownership meta-tests included; fires on shared-surface OR any station change) |
 | `platform-ci.yml` | `pull_request`, push to `main` (path-filtered) | Django platform CI |
@@ -27,8 +26,7 @@ These run on `pull_request` events (several also re-run on push to `main`):
 | Workflow | Triggers | Role |
 |----------|----------|------|
 | `dashboard.yml` | push to `main`, `workflow_dispatch` | Fleet dashboard Pages deploy |
-| `kedro-viz-publish.yml` | push to `main` (path-filtered), `workflow_dispatch` | Kedro viz publish |
-| `linter_issue_comment.yml` | `issue_comment` | Re-runs linter on maintainer comment |
+| `kedro-viz-publish.yml` | push to `main` (path-filtered), `workflow_dispatch` | Kedro viz publish (paused manually in GitHub; see [Pause CI](pause-ci.md)) |
 
 ### On-demand / manual workflows
 
@@ -40,7 +38,10 @@ Manual recipe CI to preserve quota — dispatch with `gh workflow run`:
 | Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native Windows builds |
 | Sync PyPI mappings | `gh workflow run sync-pypi-mappings.yml` | Refresh conda-forge-expert PyPI mappings |
 | Platform deploy | `gh workflow run platform-deploy.yml` | Deploy platform from a CI promotion artifact |
-| Linter self-test | `gh workflow run reusable-staged-recipes-linter-selftest.yml` | Self-test for the reusable linter workflow |
+
+The staged-recipes linter workflow family was **retired 2026-10-14** (Story 99.7); recipe hygiene
+is enforced by `detectors-ci`, station tests, and `pixi run -e pyforge-steward pyforge steward provision --verify`
+for `environment.yaml` sync.
 
 ## Recipe CI workflows (developer guide detail)
 
