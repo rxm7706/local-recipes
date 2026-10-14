@@ -11,5 +11,5 @@ This site publishes the Diátaxis shelf from the repository's `docs/` tree: task
 
 ## Related sites on Pages
 
-- [Herald dossier and deck families](/herald/) — infographics, dossier, and presentation tooling
+- [Herald dossier and deck families](herald/) — infographics, dossier, and presentation tooling
 - [Kedro-Viz dashboard](/dashboard/README.md) — pipeline visualization served from the platform artifact

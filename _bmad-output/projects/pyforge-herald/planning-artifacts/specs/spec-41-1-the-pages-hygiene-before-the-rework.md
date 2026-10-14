@@ -231,6 +231,15 @@ unified artifact and its one deploy caller; the two old-root references point at
   ritual) and `brainstorm-intent.md` § *Hygiene to fold into M1*. The NUL leak was measured on the live
   `/herald/dossier/` and the artifact render on 2026-10-13; the implementing session re-reads `md_inline` on its own
   tree and follows it where the line numbers quoted here have moved.
+- 2026-10-14 (review before landing): the implementing session met AC4 by adding `/herald/` and
+  `/dashboard/kedro-viz/` to `CUSTOM_PAGE_ROUTES` in `docs-site/scripts/validate-doc-links.js` and re-stamping its
+  sha256 in `docs-site/README.md`. That file is vendored byte-identical from BMAD-METHOD (CAP-52; herald:AD-21
+  rule 5, re-vendor never fork), so both edits are reverted to `main`. AC4 is met instead by a root-relative link,
+  `[Herald dossier and deck families](herald/)`: the upstream validator checks only links that start with `/`, `./`,
+  `../` or end in `.md`, and from the docs root `herald/` resolves to `<base>/herald/` on every host.
+  `docs-site-validate`, `test_docs_site.py` (7 passed) and `pages-check` exit 0. Found on the way and left to its
+  own story: the docs root renders an empty `sl-markdown-content` body on the live site and in this build, so
+  `docs/index.md`'s body (the quadrant list and Related sites) never reaches a reader.
 
 ## Review Triage Log
 
