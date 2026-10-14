@@ -122,6 +122,7 @@ from ..core.identity import (
     render_feed_key,
 )
 from ..core.journal import (
+    CI_PAUSES_AT_MERGE_FIELD,
     LANDING_CHECKS_FIELD,
     FoldResult,
     JournalEntryId,
@@ -3476,6 +3477,11 @@ def dispatch_once(
         land_checks = land_envelope.data.get(LANDING_CHECKS_FIELD) if isinstance(land_envelope, Envelope) else None
         if land_checks is not None:
             data[LANDING_CHECKS_FIELD] = land_checks
+        land_ci_pauses = (
+            land_envelope.data.get(CI_PAUSES_AT_MERGE_FIELD) if isinstance(land_envelope, Envelope) else None
+        )
+        if land_ci_pauses is not None:
+            data[CI_PAUSES_AT_MERGE_FIELD] = land_ci_pauses
         if isinstance(land_envelope, Envelope) and land_envelope.data.get("marked_ready_for_review") is True:
             data["marked_ready_for_review"] = True
         if land_verdict in {

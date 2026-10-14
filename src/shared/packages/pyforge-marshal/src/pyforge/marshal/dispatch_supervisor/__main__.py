@@ -92,6 +92,7 @@ from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
     LAND_FINDINGS_FIELD,
+    CI_PAUSES_AT_MERGE_FIELD,
     LANDING_CHECKS_FIELD,
     JournalEntryId,
     Phase,
@@ -2124,6 +2125,9 @@ def _run_and_journal_landing(
     landing_checks = envelope.data.get(LANDING_CHECKS_FIELD)
     if landing_checks is not None:
         outcome_payload[LANDING_CHECKS_FIELD] = landing_checks
+    ci_pauses_at_merge = envelope.data.get(CI_PAUSES_AT_MERGE_FIELD)
+    if ci_pauses_at_merge is not None:
+        outcome_payload[CI_PAUSES_AT_MERGE_FIELD] = ci_pauses_at_merge
     if envelope.data.get("marked_ready_for_review") is True:
         outcome_payload["marked_ready_for_review"] = True
     outcome_entry = build_entry(
@@ -2143,7 +2147,7 @@ def _run_and_journal_landing(
             run_dir,
             outcome_entry,
             fsync=False,
-            offload_fields=frozenset({LAND_FINDINGS_FIELD, LANDING_CHECKS_FIELD}),
+            offload_fields=frozenset({LAND_FINDINGS_FIELD, LANDING_CHECKS_FIELD, CI_PAUSES_AT_MERGE_FIELD}),
         )
     except FsError as exc:
         print(

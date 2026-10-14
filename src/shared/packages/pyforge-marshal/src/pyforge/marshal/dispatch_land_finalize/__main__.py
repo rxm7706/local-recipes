@@ -11,6 +11,7 @@ is already ``done`` on ``origin/main`` (Story 22.15).
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -39,7 +40,8 @@ from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.commit_vcs import CommittingVcs
 from pyforge.marshal.core.egress import to_redacted_text
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
-from pyforge.marshal.core.journal import Phase
+from pyforge.marshal.core.journal import CI_PAUSES_AT_MERGE_FIELD, Phase
+from pyforge.marshal.core.landing_ci_pauses import CI_PAUSES_UNKNOWN_PARSE_FINALIZE
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from pyforge.marshal.core.status import render_ledger_advancements
@@ -866,6 +868,18 @@ def _promote_tracked_spec(
     return True, None
 
 
+def _parse_ci_pauses_at_merge_arg(raw: str | None) -> dict[str, object] | None:
+    if raw is None:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return dict(CI_PAUSES_UNKNOWN_PARSE_FINALIZE)
+    if not isinstance(parsed, dict):
+        return dict(CI_PAUSES_UNKNOWN_PARSE_FINALIZE)
+    return parsed
+
+
 def finalize_dispatch_land(
     project_slug: str,
     story_key: str,
@@ -874,6 +888,7 @@ def finalize_dispatch_land(
     clock: ClockPort | None = None,
     followup_review_id: str | None = None,
     landing: str | None = None,
+    ci_pauses_at_merge: str | None = None,
 ) -> int:
     """Run the post-merge finalize sequence for ``story_key``.
 
@@ -1032,11 +1047,7 @@ def finalize_dispatch_land(
         findings.append(followup.finding)
     if close is not None and close.finding is not None:
         findings.append(close.finding)
-    deploy_run.write(
-        findings,
-        kind=_FINALIZE_RESYNC_KIND,
-        phase=Phase.OBSERVATION,
-        payload={
+    finalize_payload: dict[str, object] = {
             "story_key": str(key),
             "resynced": resynced,
             "deferred_work_intake_finding": (intake_finding.to_json_dict() if intake_finding is not None else None),
@@ -1056,7 +1067,15 @@ def finalize_dispatch_land(
             # promotion's MRS-LAND-011, the resync's MRS-LAND-009, MRS-DISP-051 -- so a failed
             # step is on the journal, not only in a stderr nobody reads.
             "findings": [finding.to_json_dict() for finding in findings],
-        },
+        }
+    ci_pauses_record = _parse_ci_pauses_at_merge_arg(ci_pauses_at_merge)
+    if ci_pauses_record is not None:
+        finalize_payload[CI_PAUSES_AT_MERGE_FIELD] = ci_pauses_record
+    deploy_run.write(
+        findings,
+        kind=_FINALIZE_RESYNC_KIND,
+        phase=Phase.OBSERVATION,
+        payload=finalize_payload,
     )
     blocking = [f for f in findings if f.severity.name == "ERROR"]
     if blocking:
@@ -1074,16 +1093,23 @@ def main(argv: list[str] | None = None) -> int:
     # Story 73.1 (CAP-281): a follow-up review run's landing names the row it closes and the merge subject.
     parser.add_argument("--followup-review-id", dest="followup_review_id", default=None)
     parser.add_argument("--landing-subject", dest="landing_subject", default=None)
+    parser.add_argument("--ci-pauses-at-merge", dest="ci_pauses_at_merge", default=None)
     args = parser.parse_args(argv)
     worktree = Path(args.worktree) if args.worktree is not None else None
     if args.followup_review_id is None:
-        return finalize_dispatch_land(args.project_slug, args.story_key, worktree)
+        return finalize_dispatch_land(
+            args.project_slug,
+            args.story_key,
+            worktree,
+            ci_pauses_at_merge=args.ci_pauses_at_merge,
+        )
     return finalize_dispatch_land(
         args.project_slug,
         args.story_key,
         worktree,
         followup_review_id=args.followup_review_id,
         landing=args.landing_subject,
+        ci_pauses_at_merge=args.ci_pauses_at_merge,
     )
 
 

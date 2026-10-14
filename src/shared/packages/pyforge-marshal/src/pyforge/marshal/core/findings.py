@@ -2016,6 +2016,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-064",
         # Story 92.1: dispatch run whose worktree was removed — WARN, never blocks launch.
         "MRS-DISP-065",
+        # Story 100.1 (CAP-292): landing could not update the PR body with the CI pause line — WARN, merge proceeds.
+        "MRS-DISP-066",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

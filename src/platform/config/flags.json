@@ -135,6 +135,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.marshal.landing_ci_pauses": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "100-1-a-landing-records-which-ci-surfaces-were-paused-when-it-merged",
+        "created": "2026-10-14",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.atlas.dependency_history_sensor": {
       "state": "ENABLED",
       "variants": {
