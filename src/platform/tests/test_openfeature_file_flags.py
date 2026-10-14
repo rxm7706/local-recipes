@@ -710,6 +710,12 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    # Story 100.1 (CAP-292); default off, on in dev/staging (spec flag.default).
+    "pyforge.marshal.landing_ci_pauses": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     # Stories 87.3/87.7/87.15; default off (spec flag.default).
     "pyforge.marshal.preserve_refs": False,
     "pyforge.herald.deck_publish": {
