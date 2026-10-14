@@ -305,8 +305,14 @@ def _realize_steps_for_row(deps: RealizeDeps, row: dict[str, Any]) -> list[list[
 
 def _run_bmad_preflight(deps: RealizeDeps) -> dict[str, Any]:
     block: dict[str, Any] = {}
-    pre = deps.runner(["pyforge", "steward", "upgrade", "bmad-core"], deps.root)
-    block["preflight_exit"] = pre.returncode
+    target = _locked_version(deps.root, "pyforge-guild", "bmad-method", deps.platform())
+    if target is None:
+        block["preflight_exit"] = None
+        block["preflight_error"] = "bmad-method has no locked version in pyforge-guild"
+    else:
+        pre = _run_in_env(deps, "pyforge-guild", ["pyforge", "steward", "upgrade", "bmad-core", "--target", target])
+        block["preflight_exit"] = None if pre is None else pre.returncode
+        block["preflight_target"] = target
     fan = deps.runner([sys.executable, "scripts/pin_policy_check.py", "--fan-out", "--json"], deps.root)
     block["fan_out_exit"] = fan.returncode
     if (fan.stdout or "").strip():
@@ -373,7 +379,13 @@ def run_realize(
         else:
             realize_state = "ran"
             env = str(row.get("env") or "pyforge-guild")
+            locked = _locked_version(deps.root, env, pkg, deps.platform())
             for argv in steps:
+                if any("{locked}" in str(part) for part in argv):
+                    if locked is None:
+                        realize_state = "failed"
+                        break
+                    argv = [str(part).replace("{locked}", locked) for part in argv]
                 proc = _run_in_env(deps, env, argv, install=True)
                 if proc is None or proc.returncode != 0:
                     realize_state = "failed"

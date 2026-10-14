@@ -120,7 +120,7 @@ def test_operator_gate_runs_with_yes(tmp_path: Path, flag_provider) -> None:  # 
     runner = RecordingRunner()
     run_realize(_deps(runner), plan=False, yes=True, all_rows=False, journal_path=journal_path)
     joined = [" ".join(c) for c in runner.calls]
-    assert any("upgrade bmad-core --apply" in s.replace("  ", " ") for s in joined)
+    assert any("upgrade bmad-core --target" in s and "--apply" in s for s in joined)
 
 
 def test_realize_argv_per_moved_class(tmp_path: Path, flag_provider) -> None:  # noqa: ARG001
@@ -441,3 +441,20 @@ def test_linked_worktree_detection(tmp_path: Path) -> None:
     subprocess.run(["git", "-C", str(main), "worktree", "add", "-q", str(wt)], check=True)
     assert linked_worktree(main) is False
     assert linked_worktree(wt) is True
+
+
+def test_bmad_core_step_targets_the_locked_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The register's {locked} placeholder becomes the version the refresh locked (Story 100.7)."""
+    journal_path = tmp_path / "journal.json"
+    journal_path.write_text(
+        json.dumps({"moves": [{"package": "bmad-method", "from": "6.12.0", "to": "6.12.2", "feature": "*"}]}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.2")
+    runner = RecordingRunner()
+    run_realize(_deps(runner), plan=False, yes=True, all_rows=False, journal_path=journal_path)
+    apply = next(c for c in runner.calls if "bmad-core" in c and "--apply" in c)
+    assert apply[apply.index("--target") + 1] == "6.12.2"
+    assert "{locked}" not in " ".join(apply)
+    preflight = next(c for c in runner.calls if "bmad-core" in c and "--apply" not in c)
+    assert preflight[-2:] == ["--target", "6.12.2"]

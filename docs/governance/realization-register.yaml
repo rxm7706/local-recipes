@@ -3,12 +3,20 @@ rows:
 - package: bmad-method
   env: pyforge-guild
   realize:
+    # {locked} is the version the refresh locked; --package-root lets the apply
+    # three-way re-apply local edits to installer-owned files. A target needs a
+    # curated catalog under pyforge/steward/data/bmad_core_releases/. The apply
+    # switches the checkout to its own review branch, uncommitted.
     steps:
     - - pyforge
       - steward
       - upgrade
       - bmad-core
+      - --target
+      - '{locked}'
       - --apply
+      - --package-root
+      - .pixi/envs/pyforge-guild/lib/node_modules/bmad-method
     - - pyforge
       - steward
       - upgrade
