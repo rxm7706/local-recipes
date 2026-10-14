@@ -792,8 +792,12 @@ class _State:
         job = workflow.jobs.get(job_id)
         if not isinstance(job, dict) or not isinstance(job.get("steps"), list):
             raise _Unevaluable(f"job {job_id!r} has no steps to run")
-        if job.get("needs") or "if" in job:
-            raise _Unevaluable(f"job {job_id!r} has its own needs/if; its outputs are not evaluated")
+        if job.get("needs"):
+            raise _Unevaluable(f"job {job_id!r} has its own needs; its outputs are not evaluated")
+        if "if" in job:
+            holds, _ = self._job_holds(workflow, job_id, job)
+            if not holds:
+                return {}
         context = self._context()
         step_outputs: dict[str, dict[str, str]] = {}
         for step in job["steps"]:
