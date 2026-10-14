@@ -539,11 +539,7 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
     for name, (value, _updated) in snap.variables.items():
         if name in registered_switches:
             continue
-        looks_like = (
-            name.startswith(pause_prefix)
-            or name.startswith(enable_prefix)
-            or name in grandfather
-        )
+        looks_like = name.startswith(pause_prefix) or name.startswith(enable_prefix) or name in grandfather
         if not looks_like:
             continue
         rows_out.append(

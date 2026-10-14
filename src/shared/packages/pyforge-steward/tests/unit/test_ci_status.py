@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from importlib import resources
 from pathlib import Path
 
 import pytest
 import yaml
-from importlib import resources
 
 pytest.importorskip("jsonschema")
 
@@ -204,7 +204,16 @@ def _write_fixture_tree(root: Path) -> Path:
 def _gh_fixture_responses(now: datetime) -> dict[str, object]:
     _ = now
     waiting_iso = "2026-10-06T12:00:00Z"
-    cancelled = [{"conclusion": "cancelled", "status": "completed", "createdAt": "2026-10-01T00:00:00Z", "event": "push", "databaseId": i} for i in range(5)]  # noqa: E501
+    cancelled = [
+        {
+            "conclusion": "cancelled",
+            "status": "completed",
+            "createdAt": "2026-10-01T00:00:00Z",
+            "event": "push",
+            "databaseId": i,
+        }
+        for i in range(5)
+    ]  # noqa: E501
     return {
         "rate_limit": {"resources": {"core": {"limit": 5000, "remaining": 4999}}},
         "variables": [
@@ -235,7 +244,13 @@ def _gh_fixture_responses(now: datetime) -> dict[str, object]:
             ".github/workflows/cancel-streak.yml": cancelled,
             ".github/workflows/drift-live.yml": [],
             ".github/workflows/pyforge-station-tests.yml": [
-                {"databaseId": 1, "conclusion": "success", "status": "completed", "createdAt": "2026-10-01T00:00:00Z", "event": "push"}
+                {
+                    "databaseId": 1,
+                    "conclusion": "success",
+                    "status": "completed",
+                    "createdAt": "2026-10-01T00:00:00Z",
+                    "event": "push",
+                }
             ],
         },
         "pending": {37447093993: [{"environment": "github-pages"}]},
@@ -269,8 +284,8 @@ def _make_runner(root: Path, recorded: list[list[str]], now: datetime, *, fail_r
 
 
 def test_ci_status_schema_id_pinned() -> None:
-    schema_text = resources.files("pyforge.steward").joinpath("data", "ci-status-schema.json").read_text(
-        encoding="utf-8"
+    schema_text = (
+        resources.files("pyforge.steward").joinpath("data", "ci-status-schema.json").read_text(encoding="utf-8")
     )
     schema = json.loads(schema_text)
     assert schema["$id"] == SCHEMA_ID
@@ -371,8 +386,8 @@ def test_json_validates_against_schema(tmp_path: Path) -> None:
     )
     result = run_status(deps, json_out=True)
     payload = json.loads(result.summary)
-    schema_text = resources.files("pyforge.steward").joinpath("data", "ci-status-schema.json").read_text(
-        encoding="utf-8"
+    schema_text = (
+        resources.files("pyforge.steward").joinpath("data", "ci-status-schema.json").read_text(encoding="utf-8")
     )
     jsonschema.validate(payload, json.loads(schema_text))
 
