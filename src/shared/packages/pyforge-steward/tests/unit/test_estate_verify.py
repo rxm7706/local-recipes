@@ -98,6 +98,9 @@ class RecordingRunner:
         if argv[:3] == ["pixi", "lock", "--check"]:
             return FakeProc(argv, 0, "", "")
         if argv[:3] == ["pixi", "install", "--frozen"]:
+            meta = cwd / ".pixi" / "envs" / argv[4] / "conda-meta"
+            meta.mkdir(parents=True, exist_ok=True)
+            (meta / "history").write_text("", encoding="utf-8")
             return FakeProc(argv, 0, "", "")
         if argv[:3] == ["pixi", "run", "--frozen"]:
             return FakeProc(argv, 0, "", "")
@@ -444,6 +447,9 @@ def test_guild_bound_row(tmp_path: Path) -> None:
     bound = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "guild-bound")
     assert bound["verdict"] == "red"
     assert not result.ok
+    du = next(argv for argv, _cwd in runner.calls if argv[:2] == ["du", "-sm"])
+    # the env itself, not .pixi (whose bld/ cache is about 1 GB of path-dependency builds)
+    assert du[-1].endswith(".pixi/envs/pyforge-guild")
 
 
 def test_scoped_env_and_lane_skips_probes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -473,3 +479,182 @@ def test_scoped_env_and_lane_skips_probes(tmp_path: Path, monkeypatch: pytest.Mo
         budget_minutes=None,
     )
     assert not any(r.get("kind") == "probe" for r in result.details["verify"]["rows"])
+
+
+def _verify(root: Path, runner: RecordingRunner, **kwargs: object):
+    args = {
+        "env_filter": None,
+        "lane_filter": None,
+        "probe_filter": None,
+        "all_envs": False,
+        "keep": False,
+        "ignore_ci_pauses": False,
+        "budget_minutes": None,
+    }
+    args.update(kwargs)
+    return run_verify(_deps(root, runner), **args)  # type: ignore[arg-type]
+
+
+def test_register_test_given_as_a_string_is_one_test(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A `test:` string is one lane, not one lane per character (Story 100.7 live run)."""
+    root = _fixture_root(tmp_path)
+    reg = root / "docs/governance/realization-register.yaml"
+    reg.write_text(reg.read_text(encoding="utf-8").replace("test: [bmad-drift-check]", "test: marshal seed check"))
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    runner = RecordingRunner(root=root)
+    result = _verify(root, runner, probe_filter="bmad-method")
+    tests = [r for r in result.details["verify"]["rows"] if r.get("kind") == "register-test"]
+    assert [r["name"] for r in tests] == ["marshal seed check"]
+    assert tests[0]["argv"][-3:] == ["marshal", "seed", "check"]
+
+
+def test_lanes_resolve_from_the_pr_preflight_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A lane with no explicit env runs where pr-preflight runs (pyforge-guild), not in the verify env."""
+    root = _fixture_root(tmp_path)
+    import pyforge.steward.estate_verify as ev
+
+    seen: dict[str, object] = {}
+
+    def _lanes(pixi_data, **kwargs):
+        seen.update(kwargs)
+        return []
+
+    monkeypatch.setattr(ev, "list_preflight_lanes", _lanes)
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    _verify(root, RecordingRunner(root=root))
+    assert seen.get("invoking_env") == "pyforge-guild"
+
+
+def test_verify_writes_into_the_latest_refresh_journal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The verify block lands in the refresh it verifies; a same-day second journal is the latest."""
+    root = _fixture_root(tmp_path)
+    jdir = root / ".steward/estate-refresh"
+    for name in ("2026-10-14.json", "2026-10-14-2.json"):
+        (jdir / name).write_text(json.dumps({"base_sha": name, "verify": {}}), encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    result = _verify(root, RecordingRunner(root=root), probe_filter="bmad-method")
+    assert sorted(p.name for p in jdir.glob("*.json")) == ["2026-10-14-2.json", "2026-10-14.json"]
+    assert json.loads((jdir / "2026-10-14-2.json").read_text())["verify"]["rows"]
+    assert json.loads((jdir / "2026-10-14.json").read_text())["verify"] == {}
+    assert result.details["journal_path"].endswith("2026-10-14-2.json")
+
+
+def test_red_lane_keeps_its_output_tail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner(
+        root=root,
+        responses={
+            "pixi run --frozen --skip-deps -e pyforge-guild lint-types": FakeProc([], 1, "", "boom: lint failed")
+        },
+    )
+    import pyforge.steward.estate_verify as ev
+
+    monkeypatch.setattr(
+        ev,
+        "select_lanes_for_paths",
+        lambda *_a, **_k: Selection(
+            base_ref="refs/remotes/origin/main",
+            all_reason=None,
+            changed_paths=("pixi.toml",),
+            dirty_paths=(),
+            verdicts=(LaneVerdict("lint-types", "pyforge-guild", True, "fixture"),),
+        ),
+    )
+    result = _verify(root, runner, lane_filter="lint-types")
+    lane = next(r for r in result.details["verify"]["rows"] if r.get("name") == "lint-types")
+    assert lane["output_tail"] == "boom: lint failed"
+
+
+def test_probe_for_an_env_this_verify_did_not_install_is_skipped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A probe never installs its env, so an env outside the tier reads skipped, never red."""
+    root = _fixture_root(tmp_path)
+    reg = root / "docs/governance/realization-register.yaml"
+    reg.write_text(reg.read_text(encoding="utf-8").replace("env: pyforge-guild", "env: platform-dev"))
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.2")
+    result = _verify(root, RecordingRunner(root=root))
+    probe = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "probe")
+    assert probe["verdict"].startswith("skipped: platform-dev not installed")
+    assert probe["exit"] == 0
+
+
+def test_register_test_runs_in_the_env_that_defines_its_task(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """pyforge-steward-test lives in pyforge-steward, not the row's pyforge-guild (Story 100.7)."""
+    root = _fixture_root(tmp_path)
+    import pyforge.steward.estate_verify as ev
+
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    monkeypatch.setattr(
+        ev,
+        "_environment_holding_task",
+        lambda _d, task, root, prefer=(): "pyforge-steward" if task == "bmad-drift-check" else None,
+    )
+    result = _verify(root, RecordingRunner(root=root), probe_filter="bmad-method")
+    test_row = next(r for r in result.details["verify"]["rows"] if r.get("kind") == "register-test")
+    assert test_row["argv"][:5] == ["pixi", "run", "--frozen", "-e", "pyforge-steward"]
+
+
+def test_kit_probe_runs_against_the_real_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The caveman skill and the codegraph index belong to the checkout, not the fresh worktree."""
+    root = _fixture_root(tmp_path)
+    reg = root / "docs/governance/realization-register.yaml"
+    reg.write_text(
+        "version: 1\nrows:\n"
+        "  - package: codegraph\n    env: pyforge-guild\n    class: kit\n"
+        "    probe:\n      expect: kit-ok\n      item: codegraph-index\n    test: []\n",
+        encoding="utf-8",
+    )
+    meta = root / ".pixi/envs/pyforge-guild/conda-meta"
+    meta.mkdir(parents=True)
+    (meta / "history").write_text("", encoding="utf-8")
+    import pyforge.steward.estate_verify as ev
+
+    seen: list[Path] = []
+
+    def _probe(deps, row, *, package):
+        seen.append(deps.root)
+        return "live"
+
+    monkeypatch.setattr(ev, "run_probe", _probe)
+    _verify(root, RecordingRunner(root=root))
+    assert seen == [root]
+
+
+def test_a_task_in_several_envs_runs_in_the_preferred_one(tmp_path: Path) -> None:
+    """bmad-estate-check reaches local-recipes too, which has no pyforge.scribe (Story 100.7)."""
+    import tomllib
+
+    from pyforge.steward.estate_verify import _environment_holding_task
+
+    manifest = (
+        '[environments]\nlocal-recipes = ["recipes", "guild-tasks"]\n'
+        'pyforge-guild = ["guild", "guild-tasks"]\n\n'
+        '[feature.guild-tasks.tasks.bmad-estate-check]\ncmd = "echo"\n'
+    )
+    (tmp_path / "pixi.toml").write_text(manifest, encoding="utf-8")
+    data = tomllib.loads(manifest)
+    assert _environment_holding_task(data, "bmad-estate-check", root=tmp_path) == "local-recipes"
+    held = _environment_holding_task(data, "bmad-estate-check", root=tmp_path, prefer=("pyforge-guild",))
+    assert held == "pyforge-guild"
+    assert _environment_holding_task(data, "bmad-estate-check", root=tmp_path, prefer=("pyforge-warden",)) == (
+        "local-recipes"
+    )
+
+
+def test_kit_register_test_runs_in_the_real_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """marshal seed check reads the checkout's kit items, which a fresh worktree lacks (Story 100.7)."""
+    root = _fixture_root(tmp_path)
+    (root / "docs/governance/realization-register.yaml").write_text(
+        "version: 1\nrows:\n"
+        "  - package: codegraph\n    env: pyforge-guild\n    class: kit\n"
+        "    probe:\n      expect: kit-ok\n      item: codegraph-index\n    test: [marshal seed check]\n",
+        encoding="utf-8",
+    )
+    import pyforge.steward.estate_verify as ev
+
+    monkeypatch.setattr(ev, "run_probe", lambda deps, row, *, package: "live")
+    runner = RecordingRunner(root=root)
+    _verify(root, runner)
+    seed = [cwd for argv, cwd in runner.calls if argv[-3:] == ["marshal", "seed", "check"]]
+    assert seed == [root]

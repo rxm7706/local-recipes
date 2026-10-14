@@ -32,6 +32,8 @@ WATCH_PATHS: tuple[str, ...] = (
     "docs/dreams/pyforge-unifying-strategy.md",
     "docs/reference/environments.md",
     "docs/how-to/pixi-tasks.md",
+    # the docs generators restamp the map entry of each page they write
+    "docs/map.yaml",
     "recipes/bmad-suite/recipe.yaml",
 )
 
@@ -104,31 +106,27 @@ def _build_generators(journal: dict[str, Any], root: Path) -> list[tuple[str, li
     return gens
 
 
+def _guild_python(*args: str) -> list[str]:
+    """Checks are Guild tasks: the steward env carries no ``pyforge.doctor``, so they run in pyforge-guild."""
+    return ["pixi", "run", "--as-is", "-x", "-e", "pyforge-guild", "python", *args]
+
+
 GATING_CHECKS: tuple[tuple[str, list[str]], ...] = (
-    ("llms-full-check", [sys.executable, "scripts/llms_full_check.py"]),
-    ("bmad-estate-check", [sys.executable, "scripts/bmad_estate_check.py"]),
-    ("pixi-version-check", [sys.executable, "scripts/pixi_version_check.py"]),
-    ("target-version-check", [sys.executable, "scripts/target_version_check.py"]),
-    ("sbom-gaps-check", [sys.executable, "scripts/sbom_gap_derive.py"]),
-    ("platform-policy-suite-check", [sys.executable, "-m", "pyforge.doctor.sources", "platform-policy-suite"]),
-    ("pin-policy-check", [sys.executable, "scripts/pin_policy_check.py", "--check"]),
+    ("llms-full-check", _guild_python("scripts/llms_full_check.py")),
+    ("bmad-estate-check", _guild_python("scripts/bmad_estate_check.py")),
+    ("pixi-version-check", _guild_python("scripts/pixi_version_check.py")),
+    ("target-version-check", _guild_python("scripts/target_version_check.py")),
+    ("sbom-gaps-check", _guild_python("scripts/sbom_gap_derive.py")),
+    ("platform-policy-suite-check", _guild_python("-m", "pyforge.doctor.sources", "platform-policy-suite")),
+    ("pin-policy-check", _guild_python("scripts/pin_policy_check.py", "--check")),
     ("pixi-lock-check", ["pixi", "lock", "--check"]),
 )
 
 WARN_CHECKS: tuple[tuple[str, list[str]], ...] = (
-    ("pixi-currency-staleness-check", [sys.executable, "-m", "pyforge.doctor.sources", "pixi-currency-ledger"]),
+    ("pixi-currency-staleness-check", _guild_python("-m", "pyforge.doctor.sources", "pixi-currency-ledger")),
     (
         "steward-deck-drift",
-        [
-            sys.executable,
-            "-m",
-            "pyforge.steward.cli",
-            "deck-drift",
-            "--slug",
-            "pyforge-steward",
-            "--path",
-            "deck.dc.html",
-        ],
+        _guild_python("-m", "pyforge.steward.cli", "deck-drift", "--slug", "pyforge-steward", "--path", "deck.dc.html"),
     ),
 )
 
@@ -153,6 +151,48 @@ def specs_for_moved_paths(baseline: dict[str, Any], moved: set[str]) -> dict[str
         if overlap:
             by_spec[spec_name] = overlap
     return by_spec
+
+
+@dataclass(frozen=True)
+class ReconcileSeams:
+    memlog_append: Callable[[Path, str], int]
+    git_add: Callable[[Path, list[str]], int]
+    stamp_spec: Callable[[Path, str], int]
+
+
+def production_reconcile_seams(runner: Callable[[list[str], Path], Any]) -> ReconcileSeams:
+    """The memlog, git-add and stamp seams the CLI duty runs; the dataclass defaults are no-ops."""
+
+    def memlog_append(memlog_path: Path, text: str) -> int:
+        argv = [
+            sys.executable,
+            "_bmad/scripts/memlog.py",
+            "append",
+            "--path",
+            str(memlog_path),
+            "--type",
+            "event",
+            "--text",
+            text,
+        ]
+        return int(runner(argv, _repo_of(memlog_path)).returncode)
+
+    def git_add(root: Path, paths: list[str]) -> int:
+        return int(runner(["git", "add", "--", *paths], root).returncode)
+
+    def stamp_spec(root: Path, spec_name: str) -> int:
+        argv = [sys.executable, "scripts/spec_surface_check.py", "--write-baseline", "--spec", spec_name]
+        return int(runner(argv, root).returncode)
+
+    return ReconcileSeams(memlog_append=memlog_append, git_add=git_add, stamp_spec=stamp_spec)
+
+
+def _repo_of(memlog_path: Path) -> Path:
+    """The repo root above ``_bmad-output/projects/<p>/planning-artifacts/specs/<s>/.memlog.md``."""
+    for parent in memlog_path.parents:
+        if parent.name == "_bmad-output":
+            return parent.parent
+    return memlog_path.parent
 
 
 @dataclass
@@ -259,7 +299,7 @@ def _reconcile_spec_surface(
         if stamp_exit != 0:
             return _refusal(f"estate reconcile: scoped stamp failed for {spec_name} (exit {stamp_exit})")
 
-    surface_argv = [sys.executable, "-m", "pyforge.doctor.sources", "spec-surface"]
+    surface_argv = _guild_python("-m", "pyforge.doctor.sources", "spec-surface")
     started = time.monotonic()
     surface_proc = deps.runner(surface_argv, deps.root)
     block["spec_surface"] = {

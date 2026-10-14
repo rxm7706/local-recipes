@@ -1,11 +1,15 @@
 ---
 nextStepFile: 'ccc-index.md'
 # `{detectToolsHelper}` = first existing path in `{detectToolsProbeOrder}`;
-# halt if neither exists. This script is the source of truth for tool
-# detection and tier calculation — no prose-driven probes.
+# halt if neither exists.
 detectToolsProbeOrder:
   - '{project-root}/_bmad/skf/shared/scripts/skf-detect-tools.py'
   - '{project-root}/src/shared/scripts/skf-detect-tools.py'
+# `{emitEnvelopeHelper}` = first existing path in `{emitEnvelopeProbeOrder}`,
+# for the blocked envelope a halt in this step emits under headless or quiet.
+emitEnvelopeProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-emit-result-envelope.py'
+  - '{project-root}/src/shared/scripts/skf-emit-result-envelope.py'
 ---
 
 <!-- Config: communicate in {communication_language}. The first-run preamble below is user-visible — render it in the user's language. -->
@@ -14,100 +18,88 @@ detectToolsProbeOrder:
 
 ## STEP GOAL:
 
-Verify availability of the four forge tools (ast-grep, gh, qmd, ccc), read any existing configuration for re-run comparison, check for tier override, and calculate the capability tier — all via `{detectToolsHelper}` so the deterministic work is done once, by a tested script, never by the LLM.
+Through `{detectToolsHelper}`, verify the four forge tools (ast-grep, gh, qmd, ccc), each at its minimum version, compare them with the previous run's configuration, and calculate the capability tier. Then, on an interactive run, tell the user what setup is about to write before step 1b or step 2 writes anything.
 
 ## Rules
 
-- Focus only on tool detection and tier calculation — do not write any files (Step 02)
-- Never reimplement tool probes or the tier rules in prose — the script is authoritative
-- Tool command failures are not errors — they indicate unavailability (the script swallows them)
+- Focus only on tool detection and tier calculation: write nothing but this run's folder and the detector's output and stderr in it (step 2 writes the configuration)
+- Never reimplement tool probes or the tier rules in prose: the script is authoritative
+- Display messages only when `{quiet_mode}` is false; the one exception is the envelope line a halt displays
+- When `{quiet_mode}` is true, write no assistant text at all between tool calls: no status, progress or step-transition notes, however brief
+- If no path in `detectToolsProbeOrder` exists, halt with phase `step 1:helper-missing`, `path` set to its first entry, and reason `Setup cannot proceed: skf-detect-tools.py was not found. Reinstall SKF, then re-run /skf-setup.`
+- Every halt follows the SKILL.md halt contract: when `{quiet_mode}` is true, run `uv run {emitEnvelopeHelper} emit-blocked --phase '<phase>' --reason '<reason>' --path "<path>"`, which builds the payload itself (no `--path` for a halt without one, `--stderr-from` where the halt names it, and `--customization-resolver-unavailable "<reason>"` once SKILL.md On Activation item 6 bound `{customization_resolver_unavailable}` to a reason, escaped as the halt contract says), and display its stdout line verbatim and nothing else (the reason alone if `{emitEnvelopeHelper}` resolves to no path, or the helper exits non-zero or prints no line); otherwise display the reason
 
 ## MANDATORY SEQUENCE
 
-### 1. Check for Existing Configuration (Re-run Detection)
+### 1. Run Detection Helper
 
-Prior state lives in two files; the detector helper (§2) reads forge-tier.yaml itself when invoked with `--prior-state-from`, so this section only handles preferences.yaml directly and the first-run preamble.
+Create this run's folder:
 
-**Read existing preferences.yaml** at `{project-root}/_bmad/_memory/forger-sidecar/preferences.yaml`:
+```bash
+mkdir -p "{project-root}/_bmad-output/.skf-run" && mktemp -d "{project-root}/_bmad-output/.skf-run/skf-setup-XXXXXXXX"
+```
 
-- If exists: check for `tier_override` value
-- If not found: set `{tier_override}` to null
+Bind `{run_dir}` ← the path it prints. If the folder cannot be created, halt with phase `step 1:run-folder`, `path` `{project-root}/_bmad-output/.skf-run`, and reason `Setup cannot proceed: the run folder could not be created: <message>`, where `<message>` is the command's first stderr line. With no run folder to hold that stderr, a quiet run repeats the command with its stderr piped to the emitter, which fills `<message>`; a repeat that succeeds removes the folder it made, and its reason then ends `(no error message)`:
 
-**First-run preamble** — when the prior-state read (§2 below, `prior.previous_tier`) returns null AND `{headless_mode}` is `false`, display this preamble before continuing so the user knows what is about to happen and can abort cleanly with Esc / Ctrl+C before any writes. (When `{headless_mode}` is true, skip the preamble entirely — pipelines never need it.)
+```bash
+{ mkdir -p "{project-root}/_bmad-output/.skf-run" && rmdir "$(mktemp -d "{project-root}/_bmad-output/.skf-run/skf-setup-XXXXXXXX")"; } 2>&1 >/dev/null | uv run {emitEnvelopeHelper} emit-blocked --phase "step 1:run-folder" --path "{project-root}/_bmad-output/.skf-run" --reason "Setup cannot proceed: the run folder could not be created: <message>" --stderr-from - [--customization-resolver-unavailable "{customization_resolver_unavailable}"]
+```
 
-"**About to set up the forge.** This workflow will:
+In each `emit-blocked` call of this step, keep the bracketed `--customization-resolver-unavailable` only when On Activation item 6 bound `{customization_resolver_unavailable}` to a reason, escaped as the halt contract says; otherwise leave it out.
 
-- Detect available tools (ast-grep, gh, qmd, ccc) — read-only probes only
-- Write `{project-root}/_bmad/_memory/forger-sidecar/forge-tier.yaml` (capability tier + tool state)
-- Write `{project-root}/_bmad/_memory/forger-sidecar/preferences.yaml` (first-run defaults)
-- Create `{forge_data_folder}/` if missing
-- When ccc is available: augment `{project-root}/.cocoindex_code/settings.yml` with SKF exclusion patterns, then create or refresh the project ccc index
+Then run the detector into the folder:
 
-**About tiers:** SKF picks one of four tiers (Quick / Forge / Forge+ / Deep) based on which tools are installed. **All four are fully usable** — higher tiers add power, they don't fix gaps. If you're new and only have a base Python install, Quick tier is the right starting point and the report at the end will show you exactly which tools to install if you want to climb later.
+```bash
+uv run {detectToolsHelper} --project-root "{project-root}" \
+    --prior-state-from "{sidecar_path}/forge-tier.yaml" \
+    [--tier-override="{tier_override}"] [--require-tier="{require_tier}"] \
+    > "{run_dir}/detect-tools.json" 2> "{run_dir}/detect-tools.err" && cat "{run_dir}/detect-tools.json"
+```
 
-Press Esc or Ctrl+C now if this isn't the right project — no files have been written yet."
+Pass `--tier-override` only when `{tier_override}` (bound at activation from `preferences.yaml`) is non-null, and `--require-tier` only when `{require_tier}` is non-null, with the value exactly as activation bound it, even when it names no tier: the script rejects such a value, and the halt below then names the valid tiers.
 
-**Re-run notice** — when the prior-state read (§2 below, `prior.previous_tier`) returns a non-null value AND `{headless_mode}` is `false`, display this notice instead of the first-run preamble, before continuing, so a user who re-ran in the wrong/sibling repo can abort before any config rewrite or re-index. (When `{headless_mode}` is true, skip it — pipelines re-run intentionally.)
+Output is one JSON document on stdout; `DETECT_OUTPUT_SCHEMA` in the helper's docstring documents it.
 
-"**Forge already set up here:** {previous_tier} tier, detected {previous_detection_date}. Re-running re-probes the tools and refreshes config/index in this project. To refresh the tier without paying the ccc re-index cost, re-run with `--ccc-skip-index`. Press Esc or Ctrl+C now if this isn't the project you meant — nothing has been rewritten yet."
+**If the script exits non-zero or prints no JSON:** halt before section 2 with phase `step 1:detect-tools`, `path` `{project-root}`, and reason `Setup cannot proceed: tool detection failed: <message>`, where `<message>` is the diagnostic in `{run_dir}/detect-tools.err`: an interactive run reads that file and shows the `message` of its JSON error, else its first line. Under `{quiet_mode}` the blocked envelope is the only line displayed, and the emitter reads `<message>` from that file:
 
-### 2. Run Detection Helper
+```bash
+uv run {emitEnvelopeHelper} emit-blocked --phase "step 1:detect-tools" --path "{project-root}" \
+    --reason "Setup cannot proceed: tool detection failed: <message>" --stderr-from "{run_dir}/detect-tools.err" \
+    [--customization-resolver-unavailable "{customization_resolver_unavailable}"]
+```
 
-Build the Bash invocation: `uv run {detectToolsHelper} --project-root "{project-root}" --prior-state-from "{project-root}/_bmad/_memory/forger-sidecar/forge-tier.yaml"`. If `{tier_override}` is non-null, append `--tier-override "{tier_override}"`. If `{require_tier}` is non-null, append `--require-tier "{require_tier}"`. Then execute. (`--project-root` lets the script compute the CCC-index freshness verdict — `prior.ccc_index_fresh` — so step 1b branches on a boolean instead of doing timestamp math.)
+### 2. Parse Output and Set Context Flags
 
-The script (see `src/shared/scripts/skf-detect-tools.py` docstring for the full `DETECT_OUTPUT_SCHEMA`) probes ast-grep / gh / qmd / ccc concurrently with two-step verification for qmd and ccc (binary-identity check + daemon-health check, including the `CocoIndex Code` identity-marker substring check that rejects PATH-shadowing aliases). It applies the 4-rule tier table, performs the tier-override sanity check (override is honored but flagged unsafe when underlying tools are missing), and evaluates `--require-tier` using a tool-prerequisite check (Deep does not subsume Forge+ — Deep does not require ccc). Output is one JSON document on stdout.
+Steps 2 and 4 read the staged `detect-tools.json` themselves. Bind only what the next steps branch on (field paths are relative to the script's top-level object):
 
-### 3. Parse Output and Set Context Flags
-
-From the JSON, set these context flags. Field paths are relative to the script's top-level object.
-
-From `tools`:
-
-- `{ast_grep}` ← `tools.ast_grep.available`
-- `{ast_grep_version}` ← `tools.ast_grep.version`
-- `{gh_cli}` ← `tools.gh_cli.available`
-- `{gh_cli_version}` ← `tools.gh_cli.version`
-- `{qmd}` ← `tools.qmd.available`
-- `{qmd_status}` ← `tools.qmd.status` (`"absent" | "daemon_stopped" | "healthy"` — drives the climb-hint distinction in step 4)
-- `{qmd_version}` ← `tools.qmd.version`
 - `{ccc}` ← `tools.ccc.available`
-- `{ccc_daemon}` ← `tools.ccc.daemon` (`"healthy" | "stopped" | "error" | null`)
-- `{ccc_version}` ← `tools.ccc.version`
-- `{security_scan}` ← `tools.security_scan.available` (informational only — never affects tier)
+- `{calculated_tier}` ← `tier.calculated`, the tier downstream steps act on
+- `{require_tier_satisfied}` ← `require_tier.satisfied` (`true | false | null`; null when `--require-tier` was not set) and `{require_tier_failure_missing_tools}` ← `require_tier.missing_tools` (a list)
+- `{previous_tier}` ← `prior.previous_tier` and `{previous_detection_date}` ← `prior.previous_detection_date` (both null on a first run)
+- `{ccc_index_fresh}` ← `prior.ccc_index_fresh` (boolean; step 1b forwards it as `--index-fresh`)
 
-From `tier`:
+A tier tool below its minimum version binds `false` here, like a missing one: it counts toward no tier, and step 4 names it with its upgrade from the staged output.
 
-- `{calculated_tier}` ← `tier.calculated` — the tier downstream steps act on
-- `{detected_tier}` ← `tier.detected` — what would have been chosen without override
-- `{tier_override_active}` ← `tier.override_applied`
-- `{tier_override_invalid}` ← `tier.override_invalid`
-- `{tier_override_invalid_value}` ← `tier.override_invalid_value`
-- `{tier_override_invalid_suggestion}` ← `tier.override_invalid_suggestion` (closest valid tier name from a fuzzy match — `null` when no candidate cleared the cutoff or when override is valid; consumed by step 4's invalid-override note as a "did you mean ...?" hint)
-- `{tier_override_unsafe}` ← `tier.override_unsafe`
-- `{tier_override_unsafe_missing}` ← `tier.override_unsafe_missing` (a list — step 4 joins with `", "` for display)
+### 3. Show the First-Run Preamble or the Re-run Notice (skip when `{quiet_mode}` is true)
 
-From `require_tier`:
+Now that section 2 has bound `{previous_tier}` and `{previous_detection_date}`, and before step 1b or step 2 writes anything, display one of these:
 
-- `{require_tier_satisfied}` ← `require_tier.satisfied` (`true | false | null`; null when `--require-tier` was not set)
-- `{require_tier_failure_missing_tools}` ← `require_tier.missing_tools` (a list)
+**First-run preamble:** when `{previous_tier}` is null:
 
-From `prior` (populated by `--prior-state-from`; all fields null/empty on first run):
+"**About to set up the forge.** Setup has probed the available tools (ast-grep, gh, qmd and ccc, plus git and uv), read-only, and keeps their result in the scratch folder `{run_dir}` until it finishes. It goes on now to:
 
-- `{previous_tier}` ← `prior.previous_tier`
-- `{previous_detection_date}` ← `prior.previous_detection_date`
-- `{previous_tools}` ← `prior.previous_tools`
-- `{previous_ccc_index_status}` ← `prior.previous_ccc_index_status`
-- `{previous_ccc_indexed_path}` ← `prior.previous_ccc_indexed_path`
-- `{previous_ccc_last_indexed}` ← `prior.previous_ccc_last_indexed`
-- `{previous_ccc_staleness_threshold_hours}` ← `prior.previous_ccc_staleness_threshold_hours`
-- `{ccc_index_fresh}` ← `prior.ccc_index_fresh` (boolean; the script's deterministic freshness verdict — prior index covers this project AND status was fresh/created AND `last_indexed` is within the staleness threshold of now. Step 1b branches on this directly instead of doing timestamp math.)
+- Write `{sidecar_path}/forge-tier.yaml` (capability tier + tool state)
+- Create `{forge_data_folder}/` if missing
+- When ccc is available: prepare `{project-root}/.cocoindex_code/settings.yml` (run `ccc init` if it is missing, which in a git checkout also adds `/.cocoindex_code/` to `.gitignore`; merge the SKF exclusion patterns and remove ones a previous folder config left behind), then create or refresh the project ccc index
 
-From `deltas` (computed by the script from current tools + prior; eliminates LLM-side set arithmetic in the report banner):
+**About tiers:** SKF picks one of four tiers (Quick / Forge / Forge+ / Deep) based on which tools are installed, each at its minimum version or newer. **All four are fully usable**: higher tiers add power, they don't fix gaps. If you're new and only have a base Python install, Quick tier is the right starting point and the report at the end will show you exactly which tools to install or upgrade if you want to climb later."
 
-- `{tools_added}` ← `deltas.tools_added` (the list)
-- `{tools_removed}` ← `deltas.tools_removed` (the list)
-- `{tier_changed}` ← `deltas.tier_changed` (boolean)
+**Re-run notice:** when `{previous_tier}` is non-null:
+
+"**Forge already set up here:** {previous_tier} tier, detected {previous_detection_date}. The tools were just re-probed, and setup now refreshes this project's config and ccc index. Next time, to refresh only the tier without paying the ccc re-index cost, run it with `--ccc-skip-index`."
+
+When `{require_tier_satisfied}` is `false`, end the one you display with: "`--require-tier {require_tier}` is not met: this run writes the detected tier but builds no ccc index and runs no registry hygiene."
 
 ### 4. Auto-Proceed
 
-After context flags are populated, display "**Proceeding to CCC index check...**", then load `{nextStepFile}`, read it fully, and execute it.
+Load `{nextStepFile}`, read it fully, and execute it.

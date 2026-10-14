@@ -285,3 +285,41 @@ def test_reconcile_respects_flag_state(tmp_path: Path, flag_provider: dict[str, 
         assert not result.ok
         assert result.details["exit_code"] == EXIT_ESTATE_REFUSAL
         assert ESTATE_FLAG_KEY in result.summary
+
+
+def test_production_seams_run_memlog_from_the_repo_root(tmp_path: Path) -> None:
+    from pyforge.steward.estate_reconcile import production_reconcile_seams
+
+    cwds: list[Path] = []
+
+    class _Proc:
+        returncode = 0
+
+    def _runner(argv, cwd):
+        cwds.append(cwd)
+        return _Proc()
+
+    seams = production_reconcile_seams(_runner)
+    memlog = tmp_path / "_bmad-output/projects/p/planning-artifacts/specs/spec-x/.memlog.md"
+    assert seams.memlog_append(memlog, "t") == 0
+    assert cwds == [tmp_path]
+
+
+def test_docs_map_is_a_watched_path() -> None:
+    from pyforge.steward.estate_reconcile import WATCH_PATHS
+
+    # The docs generators restamp the map page; joined here so the trigger-map meta-test
+    # does not read a literal path as a file this suite opens.
+    assert "/".join(("docs", "map.yaml")) in WATCH_PATHS
+
+
+def test_checks_run_in_the_guild_env() -> None:
+    """The duty runs in pyforge-steward, which has no pyforge.doctor; checks are Guild tasks (Story 100.7)."""
+    import sys
+
+    from pyforge.steward.estate_reconcile import GATING_CHECKS, WARN_CHECKS
+
+    for name, argv in (*GATING_CHECKS, *WARN_CHECKS):
+        assert sys.executable not in argv, name
+        if argv[0] == "pixi" and argv[1] == "run":
+            assert argv[argv.index("-e") + 1] == "pyforge-guild", name

@@ -1,8 +1,8 @@
 # DO NOT EDIT -- overwritten on every update.
 #
 # Workflow customization surface for skf-create-stack-skill.
-# Team overrides:     _bmad/custom/skf-create-stack-skill.toml (under {project-root})
-# Personal overrides: _bmad/custom/skf-create-stack-skill.user.toml (under {project-root})
+# Team overrides:     {project-root}/_bmad/custom/skf-create-stack-skill.toml
+# Personal overrides: {project-root}/_bmad/custom/skf-create-stack-skill.user.toml
 
 [workflow]
 
@@ -10,7 +10,9 @@
 #   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
 #   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
 
-# Steps to run before the standard activation (uv probe, config load).
+# Steps SKILL.md On Activation step 3 runs right after the customization
+# resolve: config.yaml is loaded and headless mode resolved by then, and
+# init.md's pre-flight (the emitter, the run folder) has not run yet.
 # Overrides append. Use for org-wide pre-flight checks (auth, network,
 # compliance) that must precede any stack compilation work.
 
@@ -26,21 +28,29 @@ activation_steps_append = []
 # (house style, naming conventions, integration-pattern guardrails).
 # Overrides append.
 #
-# Each entry is either:
+# Each entry is one of:
 #   - a literal sentence, e.g. "Stack skills must cite their constituent libraries."
 #   - a file reference prefixed with `file:`, e.g.
 #     "file:{project-root}/docs/stack-style.md" (globs supported; file
 #     contents are loaded and treated as facts).
+#   - an entry prefixed with `!`, which loads nothing and drops each earlier
+#     entry it names.
+#
+# The default below loads every project-context.md under {project-root}.
+# Overrides append, so they cannot delete it; to stop loading those files,
+# set in {project-root}/_bmad/custom/skf-create-stack-skill.toml:
+#   persistent_facts = ["!file:{project-root}/**/project-context.md"]
 
 persistent_facts = [
   "file:{project-root}/**/project-context.md",
 ]
 
-# Command invoked once the workflow reaches its terminal stage — after the
-# stack package is committed and the result contract is written (step 9,
-# report.md §6c), before the health-check chain. Override wins. Use for a
-# terminal action such as catalog registration or notifying a downstream
-# pipeline. Empty string = no terminal action. The hook never fails the run.
+# Command invoked once a run finishes (step 9, report.md §2c): after the
+# stack package is committed, the report is shown and the result files are
+# written, before the health-check chain. A run that halts never invokes it.
+# Override wins. Use for a terminal action such as catalog registration or
+# notifying a downstream pipeline. Empty string = no terminal action. The
+# hook never fails the run: a failure prints one report line.
 
 on_complete = ""
 
@@ -48,9 +58,10 @@ on_complete = ""
 #
 # Lift the canonical asset paths so orgs can substitute house-style copies
 # without forking the skill. Empty string = use the bundled default.
+# stack_skill_template_path covers the SKILL.md, context snippet, catalog and
+# reference-file structures; the metadata.json contract
+# (assets/metadata-contract.md) carries SKF's ownership markers, so no
+# override replaces it.
 
 stack_skill_template_path = ""
 integration_patterns_path = ""
-manifest_patterns_path = ""
-compose_mode_rules_path = ""
-provenance_map_schema_path = ""

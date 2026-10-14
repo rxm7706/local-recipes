@@ -1,20 +1,39 @@
 ---
 nextStepFile: 'validate.md'
-# Resolve `{atomicWriteHelper}` by probing `{atomicWriteProbeOrder}` in order
-# (installed SKF module path first, src/ dev-checkout fallback); first existing
-# path wins. HALT if neither resolves — stage/commit/flip-link/write below
-# MUST go through the atomic helper, per §1 rollback contract.
 atomicWriteProbeOrder:
   - '{project-root}/_bmad/skf/shared/scripts/skf-atomic-write.py'
   - '{project-root}/src/shared/scripts/skf-atomic-write.py'
-# Resolve `{frontmatterValidator}` by probing `{frontmatterValidatorProbeOrder}`
-# in order (installed SKF module path first, src/ dev-checkout fallback); first
-# existing path wins. Used by the §8 pre-commit frontmatter + body-size gate
-# (`--max-body-lines`). If neither resolves, the gate degrades to a WARNING —
-# step 8 (validate.md) still runs the full post-commit check.
 frontmatterValidatorProbeOrder:
   - '{project-root}/_bmad/skf/shared/scripts/skf-validate-frontmatter.py'
   - '{project-root}/src/shared/scripts/skf-validate-frontmatter.py'
+skillInventoryProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-skill-inventory.py'
+  - '{project-root}/src/shared/scripts/skf-skill-inventory.py'
+verifyProvenanceCompletenessProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-verify-provenance-completeness.py'
+  - '{project-root}/src/shared/scripts/skf-verify-provenance-completeness.py'
+namesPresentProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-names-present.py'
+  - '{project-root}/src/shared/scripts/skf-names-present.py'
+renderMetadataStatsProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-render-metadata-stats.py'
+  - '{project-root}/src/shared/scripts/skf-render-metadata-stats.py'
+renderStackMetadataProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-render-stack-metadata.py'
+  - '{project-root}/src/shared/scripts/skf-render-stack-metadata.py'
+countTokensProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-count-tokens.py'
+  - '{project-root}/src/shared/scripts/skf-count-tokens.py'
+emitEnvelopeProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-emit-result-envelope.py'
+  - '{project-root}/src/shared/scripts/skf-emit-result-envelope.py'
+bundleFile: '{run_dir}/extraction-bundle.json'
+exportRecordsFile: '{run_dir}/export-records.json'
+importCountsFile: '{run_dir}/import-counts.json'
+pairsFile: '{run_dir}/pair-intersect.json'
+stackInventoryFile: '{run_dir}/stack-inventory.json'
+composeEntriesFile: '{run_dir}/compose-entries.json'
+draftFolder: '{run_dir}/draft'
 ---
 
 <!-- Config: communicate in {communication_language}. Artifact text in {document_output_language}. -->
@@ -27,217 +46,208 @@ Write all deliverable and workspace artifact files to their target directories.
 
 ## Rules
 
-- Write all output files in correct directory structure — do not modify compiled content from Step 06
-- Create directory structure before writing files
-- Report each file written with path and size
+- Stage the draft step 6 approved verbatim, except for the fixes the §8 pre-commit gate makes in staging, and take every other value from `{bundleFile}` and `{exportRecordsFile}`, never from memory
 
 ## MANDATORY SEQUENCE
 
+**Halt envelope.** Every HALT here prints its envelope, as SKILL.md's Workflow Rules require: stage `{run_dir}/halt.json` as `{"phase": "<phase>", "halt_reason": "<halt_reason>", "reason": "<the halt message, one line>", "skill_name": "{stack_name}", "mode": "<code|compose>", "stack_libraries": ["<confirmed library>", ...]}`, adding `"path"` when the halt names one, then run:
+
+```bash
+uv run {emitEnvelopeHelper} emit-halt --workflow skf-create-stack-skill --run-dir "{run_dir}" --target stderr < "{run_dir}/halt.json"
+```
+
+Display the line it prints and stop with the halt's exit code (`references/invocation-contract.md` lists every halt); when `{emitEnvelopeHelper}` resolves to no path or prints no line, display the halt message alone.
+
+**Warnings.** Every `workflow_warnings[]` entry here has `step: "step-07"` and `severity: "warn"` unless its section names another severity. Record each at once, as SKILL.md's Workflow state contract shows: `uv run {emitEnvelopeHelper} record --run-dir "{run_dir}" --warning "$(cat "{run_dir}/warning.txt")"`.
+
+**Advisory checks.** §5's snippet count, §7's source-line check and §8's validator and export-name check never halt the run: when a check's helper resolves to no path, cannot run or prints no JSON (exit `2`), append a `workflow_warnings[]` entry (`code`: the one the section names, `message`: the reason) and go on.
+
 ### 1. Resolve Paths and Stage Target Directory
 
-Resolve `{version}` per S11 below — the primary library version in code-mode, or the stack-local scheme in compose-mode (`1.0.0` for a new stack, or a bump of `{prior_stack_version}` on re-composition). The final artifact paths are:
+`{skill_group}` is `{skills_output_folder}/{stack_name}/`, `{skill_package}` is `{skills_output_folder}/{stack_name}/{version}/{stack_name}/` and `{forge_version}` is `{forge_data_folder}/{stack_name}/{version}/`, with the `{version}` the stack version below resolves.
 
-```
-{skill_group}                          # {skills_output_folder}/{project_name}-stack/
-{skill_package}                        # {skills_output_folder}/{project_name}-stack/{version}/{project_name}-stack/
-├── references/
-│   └── integrations/
-{forge_version}                        # {forge_data_folder}/{project_name}-stack/{version}/
-```
+**The atomic writer.** Resolve `{atomicWriteHelper}` from `{atomicWriteProbeOrder}`; first existing path wins. If neither exists, HALT (exit 3, `halt_reason: "helper-missing"`, phase `generate-output:atomic-writer`) with "**Cannot proceed.** `skf-atomic-write.py` is missing, so the stack cannot be written safely. Re-install SKF, then re-run." Nothing is written before this check: §2 to §6 stage the package, which §9 commits whole before §10 flips the `active` link, and §7 and §8b write each workspace file atomically.
 
-Where the skill name is `{project_name}-stack` and `{version}` is the semver version (with build metadata stripped per `knowledge/version-paths.md`).
+**Pre-flight: ownership, phase 1 (S3).** Before any prior metadata is read, resolve `{skillInventoryHelper}` from `{skillInventoryProbeOrder}` and run:
 
-**Primary library definition (S11):** In code-mode, the primary library is the dependency with the highest import count from step 3; its `version` (from the manifest) becomes `{primary_library_version}`, falling back to `1.0.0` if unavailable. In compose-mode, the stack carries its own release identity: default `{version}` to `1.0.0` (a stack-local scheme) rather than borrowing the highest constituent semver. Constituent versions are preserved in `dependencies[]`, so no information is lost, and the stack's version does not track whichever constituent happens to have the highest version. The `1.0.0` default applies only to a **genuinely new** stack — see the re-composition rule below.
-
-**Re-composition versioning (S11, compose-mode):** When the S3 pre-flight resolves a `{prior_stack_version}` (re-composing a stack that already has a release line), continue that line instead of resetting — defaulting to `1.0.0` would publish a version *below* the existing release (e.g. `1.0.0` shadowing a prior `3.0.5`, a backward jump). Bump `{prior_stack_version}`:
-
-- **Major** if any library in `{prior_libraries}` is removed or replaced — dropping a documented library is breaking for consumers of the stack.
-- **Minor** otherwise — libraries only added, and/or integration content changed (backward-compatible).
-
-Never emit a `{version}` ≤ `{prior_stack_version}`. Narrate the resolved version and the bump rationale.
-
-**Pre-flight: group-dir type check (S3):** If `{skills_output_folder}/{project_name}-stack/` already exists, probe `{skills_output_folder}/{project_name}-stack/active/{project_name}-stack/metadata.json`. If that metadata exists and `skill_type != "stack"`, HALT with:
-
-"**Cannot proceed.** `{skills_output_folder}/{project_name}-stack/` exists but is not a stack skill (`skill_type={found_type}`). Rename the existing directory or choose a different `project_name` to avoid collision."
-
-Do NOT proceed to staging or commit. Emit the result envelope on stderr per the Result Contract in SKILL.md and exit `4` (`stack_libraries` carries the confirmed library names; nothing was committed, so `skill_package` is `null`):
-
-```
-SKF_STACK_RESULT_JSON: {"status":"error","skill_package":null,"skill_name":"{project_name}-stack","stack_libraries":["<confirmed-lib>", "..."],"mode":"{code|compose}","exit_code":4,"halt_reason":"write-failure"}
+```bash
+uv run {skillInventoryHelper} {skills_output_folder} --skill {stack_name} --write-check --forge-data-folder {forge_data_folder}
 ```
 
-If that metadata exists and `skill_type == "stack"`, this run is a **re-composition**: capture its `version` as `{prior_stack_version}` and its `libraries` array as `{prior_libraries}` for the S11 re-composition rule above. If the group dir is absent — or exists but has no resolvable `active` stack metadata — treat this as a new stack and leave `{prior_stack_version}` unset.
+Bind `{write_verdict}` ← `write_check.verdict`, `{write_folder}` ← `write_check.folder`, `{write_detail}` ← `write_check.detail` and `{prior_active_version}` ← `write_check.marked_active_version`, and apply the ownership refusals below. When `{prior_active_version}` is not null, read `{skills_output_folder}/{stack_name}/{prior_active_version}/{stack_name}/metadata.json`: a `skill_type` other than `"stack"` is a HALT (exit 4, `halt_reason: "write-failure"`, phase `generate-output:not-a-stack`, `path` `{skill_group}`) with "**Cannot proceed.** `{skills_output_folder}/{stack_name}/` exists but is not a stack skill (`skill_type={found_type}`). Rename the existing directory or pass another `stack_name` to avoid collision." Otherwise the run is a **re-composition**: capture its `version` as `{prior_stack_version}` and its `libraries` as `{prior_libraries}`. A new stack leaves `{prior_stack_version}` unset.
 
-**Atomic write strategy (C2 / B5):** All artifact writes for `{skill_package}` MUST stage into a temp directory first, then commit atomically via `skf-atomic-write.py commit-dir`. The active symlink flip only happens AFTER the commit succeeds.
+**Stack version.** `{skillInventoryHelper}` computes `{version}`; never reduce, compare or bump a version by hand:
 
-Create the staging directory:
+- **Code mode:** pipe `[{"name": "<library>", "import_count": <its file_count>, "version": "<its manifest version, or null>"}, ...]`, one entry per library of `{bundleFile}`, and bind `{version}` ← `version`:
+
+  ```bash
+  uv run {skillInventoryHelper} version primary -
+  ```
+
+- **Compose mode, new stack** (`{prior_stack_version}` unset): `1.0.0`; the constituent versions stay in `dependencies[]`.
+- **Compose mode, re-composition:** bind `{version}` ← `version`, with this run's libraries as `{stack_libraries}` and both lists comma-separated:
+
+  ```bash
+  uv run {skillInventoryHelper} version bump --prior "{prior_stack_version}" --prior-libraries "{prior_libraries}" --libraries "{stack_libraries}"
+  ```
+
+Narrate the version and the helper's `reason` or `bump`. On `BAD_INPUT` or `USAGE` the call is malformed: fix it and run it again. Start a new release line at `1.0.0` only when no candidate resolves, the call prints no JSON, or the prior `version` names none (`NOT_A_VERSION`), and append a `workflow_warnings[]` entry (`code: "stack-version-default"`, `message`: the helper's `error`, or why it did not run).
+
+**Pre-flight: ownership, phase 2.** Before the first write below, run the same check for `{version}` and apply the same bindings and refusals:
+
+```bash
+uv run {skillInventoryHelper} {skills_output_folder} --skill {stack_name} --write-check --write-version {version} --forge-data-folder {forge_data_folder}
+```
+
+**Ownership refusals (both phases).** Continue only when the status is `ok` and `{write_verdict}` is `"ok"`, or, when no helper candidate resolves, only when nothing exists at `{skill_group}` (no folder, no file, not even a broken link). Otherwise create nothing and refuse with "**`{stack_name}`: nothing was written.** {clause}", taking the clause of the first case that applies:
+
+- `{write_verdict}` is `"flat-layout"`: "It still uses the flat layout: a version written beside its root `SKILL.md` would leave a skill SKF can no longer migrate or rename. Run `@Ferris TS {stack_name}` (or US, AS or EX) once to move it into the versioned layout, then re-run."
+- `{write_verdict}` is `"not-skf-output"`: "It is not SKF output: `{write_folder}` {write_detail}, so SKF writes no version there. {remedy}"
+- The status is not `ok`, or the output has no `write_check` (an older helper with no `--write-check` reports a new skill as `SKILL_NOT_FOUND`): "SKF could not check who generated it ({the helper's `error`, if any}; re-install SKF if the installed `skf-skill-inventory.py` is out of date). {remedy}"
+- No helper candidate resolved: "SKF cannot check who generated it: `skf-skill-inventory.py` is missing; re-install SKF. {remedy}"
+
+`{remedy}` is "A shared `{skills_output_folder}` is supported: SKF leaves the skills it did not generate alone, so manage `{stack_name}` yourself and pass another `stack_name` for this stack. Only if `{skills_output_folder}` holds a module's own source rather than skills, set `skills_output_folder` in `{project-root}/_bmad/skf/config.yaml` to a folder of its own, move your SKF skills there and re-run `/skf-setup`. A version folder without `metadata.json` may be an interrupted run's: delete it yourself."
+
+Each refusal is a HARD HALT (exit 5, `halt_reason: "not-skf-output"`, or `halt_reason: "flat-layout"` for the flat-layout refusal, phase `generate-output:ownership`, `path` `{write_folder}`, or `{skill_group}` when no helper candidate resolved): do NOT proceed to staging.
+
+**Stage**, in write order: the staging folder `{skill_package}.skf-tmp/` (`{skill_staging}` below), its subfolders, then the workspace folder:
 
 ```bash
 python3 {atomicWriteHelper} stage-dir --target {skill_package}
-```
-
-After this call, writes land in `{skill_package}.skf-tmp/` (referred to below as `{skill_staging}`). Create the required subdirectories inside the staging dir:
-
-```bash
 mkdir -p {skill_staging}/references/integrations
-```
-
-Also create the forge workspace directory directly (these are workspace artifacts, not deliverables — they do not need stage-dir / commit-dir):
-
-```bash
 mkdir -p {forge_version}
 ```
 
-**Rollback contract:** If ANY write in sections 2–7 below fails, immediately run:
-
-```bash
-python3 {atomicWriteHelper} commit-dir --rollback --target {skill_package}
-```
-
-Then abort (see B7): purge any `{forge_version}/*-tmp` staging artifacts, emit the result envelope on stderr per the Result Contract in SKILL.md, and halt the workflow. This is the single rollback exit shared by §7 (workspace-write failure) and §9 (commit-dir failure):
-
-```
-SKF_STACK_RESULT_JSON: {"status":"error","skill_package":null,"skill_name":"{project_name}-stack","stack_libraries":["<confirmed-lib>", "..."],"mode":"{code|compose}","exit_code":4,"halt_reason":"write-failure"}
-```
+**Rollback contract.** If a write of §2 to §9 fails, run `python3 {atomicWriteHelper} commit-dir --rollback --target {skill_package}`, purge any `{forge_version}/*-tmp` staging artifacts and HALT (exit 4, `halt_reason: "write-failure"`, phase `generate-output:write`, unless the section names another halt), keeping the run folder.
 
 ### 2. Stage SKILL.md
 
-Write the approved `skill_content` from step 06 to `{skill_staging}/SKILL.md` (regular write — the whole staging dir will be atomically committed later).
+Copy the approved draft as it stands on disk:
+
+```bash
+cp "{draftFolder}/SKILL.md" "{skill_staging}/SKILL.md"
+```
 
 ### 3. Stage Per-Library Reference Files
 
-For each confirmed library, write `{skill_staging}/references/{library_name}.md`:
+For each library of `{bundleFile}`'s `per_library_extractions[]`, write `{skill_staging}/references/{library_name}.md` in the references structure of `{stackSkillTemplatePath}` from its bundle entry (its Import count is its `file_count`; compose mode: its export count, and the constituent's `metadata.json` version), with its records in `{exportRecordsFile}` as its key exports (compose mode: its `exports`).
 
-Load structure from `{stackSkillTemplatePath}` references section:
-- Library name, version from manifest (**in compose-mode**: version from source skill `metadata.json`)
-- Import count and file count (**in compose-mode**: export count from source skill metadata)
-- Key exports with signatures
-- Usage patterns with file:line citations (**in compose-mode**: usage patterns from source skill SKILL.md)
-- Confidence tier label
-
-**If the catalog was extracted** (large stack — step 06 §4 placed the `Library Reference Index` + `Per-Library Summaries` out of SKILL.md), also write `{skill_staging}/references/stack-catalog.md` using the structure in `{stackSkillTemplatePath}`, and confirm SKILL.md carries the inline pointer instead of the two sections. Small stacks keep the catalog inline and write no `stack-catalog.md`.
+If step 6 extracted the catalog, copy `{draftFolder}/stack-catalog.md` to `{skill_staging}/references/stack-catalog.md` too; its per-library links stay file-relative, `[ref]({name}.md)`.
 
 ### 4. Stage Integration Pair Reference Files
 
-For each detected integration pair, write `{skill_staging}/references/integrations/{libraryA}-{libraryB}.md`:
-
-Load structure from `{stackSkillTemplatePath}` integrations section:
-- Library pair and integration type
-- Co-import file count
-- Integration pattern description with file:line citations
-- Usage convention
-- Confidence tier label
-
-**If no integrations detected:** Skip this section (no files to write).
+For each entry of `{bundleFile}`'s `integrations[]`, write `{skill_staging}/references/integrations/{a}-{b}.md` in the integrations structure of `{stackSkillTemplatePath}` from the entry (`type`, its pair's `intersection_count` in `{pairsFile}` as the co-import file count, 0 in compose mode, `description` with its `key_files` citations, `tier`). In compose mode its Integration Pattern section carries the entry's `evidence` and `reference` lines in place of `key_files` citations, and, when its `vs` is set, the VS lines and annotation of its SKILL.md entry.
 
 ### 5. Stage context-snippet.md
 
-Write `{skill_staging}/context-snippet.md`:
+Write `{skill_staging}/context-snippet.md` in the context-snippet format of `{stackSkillTemplatePath}`, with the `{version}` §1 resolved. Measure it as step 8's validator does: resolve `{countTokensHelper}` from `{countTokensProbeOrder}`, run the call below and bind `{token_estimate}` ← its `context-snippet.md` row's `tokens` (advisory, `snippet-unmeasured`: an unmeasured snippet stays as written).
 
-Use the Vercel-aligned indexed format targeting **~80-120 tokens** (M2). Token estimation is heuristic — use `ceil(char_count / 4)` as the working approximation (the standard rule-of-thumb for English text in BPE-style tokenizers; precise counts differ per model). Compute against the rendered snippet body (excluding trailing newline).
-
-```
-[{project_name}-stack v{version — resolved in §1}]|root: skills/{project_name}-stack/
-|IMPORTANT: {project_name}-stack — read SKILL.md before writing integration code. Do NOT rely on training data.
-|stack: {dep-1}@{v1}, {dep-2}@{v2}, {dep-3}@{v3}
-|integrations: {pattern-1}, {pattern-2}
-|gotchas: {1-2 most critical integration pitfalls}
+```bash
+uv run {countTokensHelper} {skill_staging}
 ```
 
-**Overflow strategy (M2):** If the estimated token count exceeds **120 tokens**, trim in this fixed order until under budget:
-
-1. **Drop the `gotchas` line first.** Pitfalls live in SKILL.md and references; the snippet's job is discovery, not full warning surface.
-2. **Strip versions from the `stack` line** (`{dep-1}, {dep-2}` instead of `{dep-1}@{v1}`). Versions are recoverable from `metadata.json`.
-3. **Truncate the `stack` list to the top 8 dependencies by import count** (or by export count in compose-mode), appending `, ...+{N} more`.
-4. **Truncate the `integrations` list to the top 5 by file count**, appending `, ...+{N} more`.
-
-If the snippet is still over budget after step 4, log a warning to workflow_warnings (see Workflow Rules in SKILL.md) — do not block the write. The `IMPORTANT:` line is mandatory and never trimmed.
-
-**Underflow note:** Snippets below ~80 tokens are acceptable (small stacks naturally produce short snippets). The lower bound is informational, not enforced.
+While `{token_estimate}` exceeds **120**, apply the next trim and measure again: drop the `gotchas` line; strip the `stack` line's versions; keep its top 8 dependencies by import count (export count in compose mode); keep the top 5 `integrations` by co-import file count (§4), each cut list ending `, ...+{N} more`. Never trim the `IMPORTANT:` line. Over budget after the last trim, keep the snippet and append a `workflow_warnings[]` entry (`code: "snippet-over-budget"`, `message`: its `{token_estimate}`).
 
 ### 6. Stage metadata.json
 
-Write `{skill_staging}/metadata.json`, populating every field from the metadata.json schema in `{stackSkillTemplatePath}` (loaded in §3) — that template is the single schema source; do not re-transcribe it here. Resolve the field values whose template placeholders don't spell out the rule:
+Write `{skill_staging}/metadata.json` to `assets/metadata-contract.md`, with `version` ← `{version}` and `forge_tier` ← step 1's run tier. Resolve `{renderStackMetadataHelper}` from `{renderStackMetadataProbeOrder}` and run:
 
-- `version` — the `{version}` resolved in §1 (not the template's literal `1.0.0`, which is only the new-stack default).
-- `forge_tier` — the run tier (Quick/Forge/Forge+/Deep) resolved in step 1.
-- `confidence_tier` — the dominant T-code from `confidence_distribution`. Pick the tier with the highest count; resolve ties toward the weaker tier (T1-low > T1, T2 > T1-low, T3 > T2) so the reported value never overstates confidence. When `confidence_distribution` is empty (no libraries extracted), emit `"T1-low"` as the conservative default.
-- `source_authority` — the lowest authority among constituent skills (official > community > internal).
+```bash
+uv run {renderStackMetadataHelper} metadata --input -
+```
+
+Pipe it `{"mode": "code|compose", "libraries": [{"name": "<library>", "confidence": "<its per_library_extractions[].confidence>", "source_authority": "<compose mode: the constituent's>"}, ...], "integrations": [{"a": "<library>", "b": "<library>"}, ...]}`, every library of `{bundleFile}` and every pair of its `integrations[]`, each pair in the order of its `references/integrations/{a}-{b}.md` name, and write the fields the contract takes from it verbatim. On exit `2`, fix the input its stderr names and run it again. If no candidate resolves, invoke the rollback contract from §1, with exit 3, `halt_reason: "helper-missing"` and phase `generate-output:metadata` for its HALT.
 
 ### 7. Write Forge Data Artifacts (Workspace)
 
-Write workspace artifacts directly to `{forge_version}` (these are workspace-only, not part of the skill package — no staging required). Each individual file MUST be written via `skf-atomic-write.py write` to avoid partial-write corruption:
+Write `{forge_version}/provenance-map.json`, the variant of the run's mode in `assets/provenance-map-schema.md`; if the write fails, invoke the rollback contract from §1.
+
+- **In code-mode:** `entries[]` is the `entries` of `{exportRecordsFile}`, the records step 4 checked, and `integrations[]` holds the pairs of `{bundleFile}`, each with its co-import files from `{pairsFile}`: the call below writes both from those files as they stand. Pipe it only the map's `provenance_version`, `skill_name`, `skill_type`, `source_repo`, `source_commit` and `generated_at`. On exit `2` its stderr names the input it refused (fix it and run it again) or the write that failed.
+
+  ```bash
+  <the other map fields as JSON> | uv run {renderStackMetadataHelper} provenance --records "{exportRecordsFile}" --bundle "{bundleFile}" --pairs "{pairsFile}" --input - --target "{forge_version}/provenance-map.json"
+  ```
+
+- **In compose-mode:** write only the entries, as `{"entries": [...]}`, to `{composeEntriesFile}`, each with its `source_library` and cited fields, its `export_name` the literal identifier of the cited contract as the staged `SKILL.md` or a file directly in `references/` writes it, never a descriptive label (§8 checks it). The call below sets each entry's `confidence`, `signature_source` and `extraction_method` from its constituent's `per_library_extractions[].confidence` and adds `integrations[]` and `constituents[]`, each `metadata_hash` copied from `{stackInventoryFile}`, never a fresh hash. Pipe it the code-mode fields and `source_ref`, the `source_*` fields null; exit `2` as in code mode.
+
+  ```bash
+  <the other map fields as JSON> | uv run {renderStackMetadataHelper} provenance --records "{composeEntriesFile}" --bundle "{bundleFile}" --inventory "{stackInventoryFile}" --skills-root "{skills_output_folder}" --project-root "{project-root}" --input - --target "{forge_version}/provenance-map.json"
+  ```
+
+**Source lines (code mode only).** Check that each entry's `source_line` defines its export: resolve `{verifyProvenanceCompletenessHelper}` from `{verifyProvenanceCompletenessProbeOrder}` and run `verify`, `fix`, then `verify` again, with `{project_root}` the project root, `project_root` from step 1, that each `source_file` is relative to (never `{scan_root}`):
 
 ```bash
-<json-content> | python3 {atomicWriteHelper} write --target {forge_version}/provenance-map.json
-<md-content>   | python3 {atomicWriteHelper} write --target {forge_version}/evidence-report.md
+uv run {verifyProvenanceCompletenessHelper} verify \
+    --metadata {skill_staging}/metadata.json \
+    --provenance {forge_version}/provenance-map.json \
+    --source-root {project_root} \
+    -o {forge_version}/provenance-verify.skf-tmp
+uv run {verifyProvenanceCompletenessHelper} fix \
+    --verify {forge_version}/provenance-verify.skf-tmp \
+    --provenance {forge_version}/provenance-map.json \
+    --skill-dir {skill_staging}
 ```
 
-If any workspace write fails, invoke the rollback contract from §1.
+Read the JSON, not the exit code, ignoring `missing` and `orphaned` (a stack's `exports` is `[]`). Record a `workflow_warnings[]` entry (`severity: "info"`, `code: "provenance-lines-fixed"`) naming the lines `fix` moved, and one (`code: "provenance-line-unverified"`, `message`: the item's `export_name`, `source_file`, `source_line`, `reason` and `definition_lines`) per `stale[]` item of the last `verify`. The check is advisory (`provenance-lines-unchecked`) and ends at a `summary.stale_check` of `skipped-no-source-root`. Delete `{forge_version}/provenance-verify.skf-tmp` at the end.
 
-**provenance-map.json:**
+### 8. Pre-Commit Gate
 
-Use the schema from `{provenanceMapSchemaPath}` — see that asset for the canonical templates and field definitions of both variants:
-
-- **In code-mode:** use the code-mode variant (`source_repo` / `source_commit` populated; `extraction_method` ∈ `ast_bridge|source_reading|qmd_bridge`; `detection_method = "co-import grep"`).
-- **In compose-mode:** use the compose-mode variant (source-anchor fields `null`; `extraction_method = "compose-from-skill"`; `detection_method ∈ "architecture_co_mention|constituent_documented_contract|inferred_from_shared_domain"`; includes the additional `constituents[]` array for drift detection).
-
-Populate compose-mode `constituents[].metadata_hash` from the value stored in workflow state at step 2 (S13), not a fresh re-hash at step-7 time — `{provenanceMapSchemaPath}` carries the rationale for why the manifest-detection-time hash is the correct provenance anchor.
-
-**evidence-report.md:**
-- Extraction summary per library
-- Integration detection results per pair
-- Warnings and failures encountered
-- Confidence tier distribution
-
-### 8. Pre-Commit Frontmatter & Body-Size Gate
-
-The full schema/frontmatter validation runs in step 8 (`validate.md`) — but that runs *after* commit-dir and flip-link have already published the package. The most common non-auto-fixable `skill-check` hard rejects — a `description` over the 1024-char limit (which `skill-check --fix` cannot trim for you) and a SKILL.md body over the `body.max_lines` limit (default **500**) — would therefore only surface on an already-committed, symlink-active artifact, forcing edits to the live `SKILL.md`. `skill-check` also *warns* (non-blocking) when the body exceeds `body.max_tokens` (default **5000**). Additive re-composition of an already-large stack grows the body monotonically, so body overflow is the likeliest trigger. Catch these here, while the package is still in `.skf-tmp`.
-
-Resolve `{frontmatterValidator}` from `{frontmatterValidatorProbeOrder}` (first existing path wins). Run it against the **staged** `SKILL.md`, passing the real skill name so the directory-match check is not fooled by the `.skf-tmp` staging suffix, `--max-body-lines 500` to assert the skill-check body-line limit, and `--max-body-tokens 5000` to surface the skill-check body-token *warning* pre-commit (advisory — see disposition below):
+Catch in staging what step 8's `skill-check --fix` cannot correct, a `description` over 1024 characters or a body over 500 lines: resolve `{frontmatterValidator}` from `{frontmatterValidatorProbeOrder}` and run it on the staged `SKILL.md` under the real skill name:
 
 ```bash
-uv run {frontmatterValidator} {skill_staging}/SKILL.md --skill-dir-name {project_name}-stack --max-body-lines 500 --max-body-tokens 5000
+uv run {frontmatterValidator} {skill_staging}/SKILL.md --skill-dir-name {stack_name} --max-body-lines 500 --max-body-tokens 5000
 ```
 
-The validator emits JSON: `status` (`pass`/`warn`/`fail`), `issues[]` (each with `severity` ∈ `high|medium|low`, `field`, `message`), `body_lines` (the counted body size), `body_tokens` (the estimated token count), and `summary`. Disposition:
+Act on its `issues[]` severities, not its exit code (an over-long `description` is `medium` and exits `0`):
 
-- **`status` is `fail`, OR any `issues[]` entry has `severity` `high` or `medium`** — a hard violation that `npx skill-check` (step 8) would reject and `--fix` cannot auto-correct. HALT-to-fix **in staging**, then re-run the validator until it clears. Remediate by `field`:
-  - `description` / `name` / `compatibility` — trim/correct `{skill_staging}/SKILL.md` (e.g. shorten `description` to ≤ 1024 chars).
-  - `body` (`body lines N exceeds max 500`) — reduce the staged body: prefer a **selective split** of the largest Tier-2 section(s) into `{skill_staging}/references/`, keeping Tier-1 content inline (mirrors `validate.md` §3); or trim redundant content. Re-run the gate until `body_lines ≤ 500`. (An over-`body_tokens` estimate is advisory, not a hard stop — see the low-severity note below.)
+- **`status` is `fail`, or an issue is `high` or `medium`:** fix it in staging and run the validator again until it clears: shorten the `description`, or split the largest Tier-2 sections of the `body` into `{skill_staging}/references/` (Tier-1 content stays inline, as in `validate.md` §3) or trim it. A split that moves the catalog into `{skill_staging}/references/stack-catalog.md` rewrites each `[ref](references/{name}.md)` in it to `[ref]({name}.md)`.
+- **Only `low` issues:** append each to `workflow_warnings[]` (`code: "pre-commit-gate-issue"`, `message`: its `field` and `message`) and proceed.
 
-  Do NOT proceed to §9 commit-dir with an unresolved high/medium issue. Note: an over-long `description` is rated `medium` and exits `0`, so key the HALT on the issue severities above — not on the exit code.
-- **Only `low`-severity issues (e.g. an unexpected field, or a `body token estimate N exceeds max 5000` advisory)** — record each as a WARNING in the evidence report and proceed; these do not block the commit. The body-token estimate is a char/4 heuristic that runs higher than `skill-check`'s own whitespace-split count, and `skill-check` treats `body.max_tokens` as a non-blocking warning — so an over-token estimate is advisory here, not a HALT (the `body.max_lines` gate above remains the hard body pre-check).
+If the validator does not resolve or cannot run, the gate is advisory (`pre-commit-gate-skipped`).
 
-**If `{frontmatterValidator}` does not resolve** (neither probe path exists) **or the invocation cannot run**, emit a WARNING ("pre-commit frontmatter + body-size gate skipped — validator unavailable") and proceed. Step 8 (`validate.md`) remains the post-commit backstop (including the `body.max_lines` split path in its §3); this gate is a best-effort early catch, never a new hard dependency.
+**Compose-mode export names (compose mode only).** `skf-test-skill` counts an entry toward Export Coverage only when the package writes its `export_name`: resolve `{namesPresentHelper}` from `{namesPresentProbeOrder}` and run:
+
+```bash
+uv run {namesPresentHelper} --provenance {forge_version}/provenance-map.json --skill-dir {skill_staging}
+```
+
+When its `absent[]` is empty, go on to §8b. Otherwise, when `{headless_mode}` is false, rename each absent entry whose contract a staged file names by a literal identifier to that identifier in `{composeEntriesFile}` and run the §7 compose-mode `provenance` call again; then, in both modes, run the call above with `--drop-absent` to drop every entry still absent. Record a `workflow_warnings[]` entry (`message`: its `source_library` and `export_name`, old and new for a rename) per renamed entry (`code: "compose-export-name-renamed"`) and per `dropped[]` entry (`code: "compose-export-name-dropped"`). The check is advisory (`compose-export-names-unchecked`).
+
+### 8b. Write the Evidence Report (Workspace)
+
+With the §8 gate's warnings recorded, bin the final map's entries by `signature_source` with `{renderMetadataStatsHelper}` (from `{renderMetadataStatsProbeOrder}`), then write `evidence-report.md`; if the write fails, invoke the rollback contract from §1:
+
+```bash
+echo '{}' | uv run {renderMetadataStatsHelper} {forge_version}/provenance-map.json --shape stack
+<md-content> | python3 {atomicWriteHelper} write --target {forge_version}/evidence-report.md
+```
+
+**evidence-report.md** lists each library's extraction summary and tier from `{bundleFile}` (its `failed[]` included); each pair's integration result; every `workflow_warnings[]` entry, each line of `{run_dir}/warnings.jsonl` decoded as the JSON string it holds; each auto-decision of `{run_dir}/headless-decisions.jsonl` as its `gate`, `taken_action` and `reason` (the scope gate's dropped libraries included), or "none"; and the helper's `confidence_distribution`, one count per entry (`metadata.json` counts libraries), or "not computed" when the helper is missing or exits `2`.
 
 ### 9. Commit Staging Directory
 
-After all staged writes in sections 2–6 completed successfully, atomically swap the staging dir into place:
+With §2 to §6 staged, swap the staging dir into place:
 
 ```bash
 python3 {atomicWriteHelper} commit-dir --target {skill_package}
 ```
 
-The helper moves any existing `{skill_package}` aside to a `.skf-rollback-<pid>` dir before the swap. On failure the helper restores the prior target and exits non-zero — in that case invoke the rollback contract from §1 and HALT.
+On failure, invoke the rollback contract from §1. Then delete the working files no later step reads: `rm -rf "{draftFolder}" "{bundleFile}" "{exportRecordsFile}" "{importCountsFile}" "{pairsFile}" "{stackInventoryFile}" "{composeEntriesFile}"`; the run folder keeps its warnings and decisions for step 9's envelope.
 
 ### 10. Flip Active Symlink
 
-ONLY AFTER `commit-dir` succeeds, flip the `{skill_group}/active` symlink to point at `{version}`:
+Only after `commit-dir` succeeds, point `{skill_group}/active` at the committed `{version}`:
 
 ```bash
 python3 {atomicWriteHelper} flip-link --link {skill_group}/active --target {version}
 ```
 
-The helper holds an flock on `{skill_group}/active.skf-lock` and refuses to replace a non-symlink at `{skill_group}/active` — this guards against accidentally overwriting a real directory (ECH BLOCKER 6/B6). After the flip, `{skill_group}/active/{project_name}-stack/` resolves to the just-committed skill package.
-
-If `flip-link` fails, emit a warning (the committed package is still valid), note the symlink-flip failure in the evidence report, and continue.
+If it fails, append a `workflow_warnings[]` entry (`code: "flip-link-failed"`, `message`: the helper's error) and continue: the committed package is valid.
 
 ### 11. Display Write Summary
 
-Report the files written: the `{skill_package}` deliverables (SKILL.md with `{line_count}` lines, context-snippet.md with `{token_estimate}` tokens, metadata.json, `references/` `{lib_count}` library files, `references/integrations/` `{pair_count}` integration files), the `{forge_version}` workspace (provenance-map.json, evidence-report.md), the `{skill_group}/active -> {version}` symlink, and the `{total_count}` total.
+Report each file written, with its path and size (SKILL.md's line count, the snippet's `{token_estimate}`), the `{skill_group}/active -> {version}` link and the file count.
 
 ### 12. Auto-Proceed to Next Step
 
 Load, read the full file and then execute `{nextStepFile}`.
-

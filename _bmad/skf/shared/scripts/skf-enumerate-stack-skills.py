@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = []
 # ///
 """SKF Enumerate Stack Skills — inventory skill packages + resolve exports.
@@ -21,23 +21,79 @@ subprocesses read this inventory's cached result instead of re-reading
 SKILL.md, then extract usage patterns per skill (the part that does
 benefit from LLM judgment).
 
-Subcommand:
-  enumerate <skills-root> [--pairs] [--reliability]
-      Emit JSON {"skills": [...], "cycles": [...], "warnings": [...]}
-      describing every subdirectory of <skills-root> that resolves to a
-      skill package. Both layouts from knowledge/version-paths.md are
-      supported: the flat layout (<child>/SKILL.md) and the version-nested
-      layout (<child>/active/<name>/SKILL.md via the `active` symlink, or
-      <child>/<version>/<name>/SKILL.md by highest version). Each entry
-      carries:
+Subcommands:
+  enumerate <skills-root> [--pairs] [--reliability] [--expect-hashes FILE]
+      Emit JSON {"skills": [...], "cycles": [...], "warnings": [...],
+      "not_skf_output": [...]} for the skill folders under <skills-root>.
+  candidates <skills-root> [--explicit a,b]
+      Pick the compose-mode candidates and gate them against the same
+      roster, in one call (see Candidates below).
+  scope --skills a,b,c --in-scope a,b
+      Split the unique pairs of an inventory's skills by the skills in
+      scope (see Scope below).
 
-        name             — skill name (top-level subdirectory name)
-        path             — relative path to the resolved package under
-                           skills-root, forward-slash
-        exports          — exports list resolved via cascade
-        exports_source   — "metadata|references|skill-md|unknown"
-        confidence       — "T1|T2|T1-low" (mapped from exports_source)
-        metadata_hash    — sha256: prefix on metadata.json digest, or null
+Ownership. A stack roster reads only the skills SKF generated: a package
+counts only when its metadata.json carries an SKF marker (generated_by
+naming an SKF generator, tool_versions.skf, or skill_type with forge_tier
+or confidence_tier), the rule skf-skill-inventory.py applies (the marker
+functions are pinned copies of its own). For each top-level folder (dot
+names, `_batch` and `.skf-` names aside) the package is the first marked
+candidate of: the version the `active` link names (a real folder directly
+in the group), the version folders from highest to lowest (`active`,
+links and `.skf-` names aside), then a flat root SKILL.md beside a marked
+root metadata.json. A versioned package is always `{version}/{name}/`,
+named after the folder. `enumerate` never reads the export manifest;
+`candidates` reads it only to pick candidates, and the package of each
+one it keeps still comes from this roster.
+
+A folder with no marked candidate is left out of `skills[]`: listed in
+`not_skf_output` when it looks like a skill (a root SKILL.md or a
+`{version}/{name}/` folder), or, when a candidate's metadata.json or
+version folder cannot be read, named in one warning instead, because SKF
+cannot tell whether it generated that folder. A linked package inside a
+version is never SKF output either, and its metadata.json is never read.
+A top-level link is never SKF output: it is listed in `not_skf_output`
+when it looks like a skill, and a broken one, or one SKF cannot read
+through, is skipped. `not_skf_output` is always present, sorted, and
+never counts toward `warnings`, `--pairs` or `--reliability`.
+
+Each `skills[]` entry carries:
+  name            the top-level folder name
+  path            the package relative to skills-root, forward-slash:
+                  `x/active/x`, `x/{version}/x` or `x` (flat)
+  exports         exports list resolved via cascade
+  exports_source  "metadata|references|skill-md|unknown"
+  confidence      "T1|T2|T1-low", the exports-source label (mapped from
+                  exports_source, see Confidence mapping)
+  evidence_tier   "T1|T1-low|T2|T3", the tier the package's own recorded
+                  evidence supports (see Evidence tier)
+  metadata_hash   "sha256:" digest of the package's metadata.json; never
+                  null for an enumerated package, whose metadata.json is
+                  always readable
+  skill_type      metadata.json `skill_type`, when it is a string
+  language        metadata.json `language`: a string, or a list of
+                  strings (a stack may list its libraries' languages)
+  confidence_tier metadata.json `confidence_tier`, when it belongs to the
+                  scale its skill_type records: a forge tier
+                  (Quick|Forge|Forge+|Deep) for a single skill (skill_type
+                  single, individual or null), a confidence tier
+                  (T1|T1-low|T2|T3) for a stack, either scale for any
+                  other skill_type
+  exports_documented
+                  metadata.json `stats.exports_documented`, a whole number
+  metadata_schema_version
+                  metadata.json `spec_version`, the metadata schema the
+                  package was written to (such as "1.3")
+  source_repo     metadata.json `source_repo`, trimmed
+  source_repo_basename
+                  the repository name source_repo ends in (see Source
+                  basenames)
+  source_root     metadata.json `source_root`, trimmed
+  source_root_basename
+                  the last folder name of source_root (see Source
+                  basenames)
+Each metadata.json field is null when the file lacks it or holds a value
+of another shape, so a caller never reopens metadata.json to read it.
 
 Exports resolution cascade (must match parallel-extract.md §0):
 
@@ -50,12 +106,12 @@ Exports resolution cascade (must match parallel-extract.md §0):
 
   2. references/*.md — scan top-level `*.md` files under references/
      for an `## API` or `## Exports` section. Bulleted list items in
-     that section become exports. Set exports_source="references",
-     metadata_hash=null.
+     that section become exports. Set exports_source="references"
+     (metadata_hash stays the digest of metadata.json when one was read).
 
   3. SKILL.md prose — look for an `## Exports` or `## API Surface`
-     section and parse its bulleted list. Set exports_source="skill-md",
-     metadata_hash=null.
+     section and parse its bulleted list. Set exports_source="skill-md"
+     (metadata_hash stays the digest of metadata.json when one was read).
 
   4. None of the above — exports=[], exports_source="unknown",
      confidence="T1-low", append a warning
@@ -67,6 +123,31 @@ Confidence mapping:
   skill-md    → T2     (prose parsing, comparable trust to references)
   unknown     → T1-low (degraded extraction; nothing found)
 
+  `confidence` says only where the exports list came from: every package
+  whose metadata.json lists exports (even an empty list, which SKF's
+  generators always write) reads T1, whatever evidence it rests on.
+
+Evidence tier:
+
+  `evidence_tier` is the largest bin of the package's metadata.json
+  `confidence_distribution` (t1 is T1, t1_low T1-low, t2 T2, t3 T3). A tie
+  goes to the weaker tier (T1-low over T1, T2 over T1-low, T3 over T2), so
+  the tier never overstates confidence. A bin counts only when it holds a
+  positive number; with none (the distribution is absent, not an object or
+  all zero) the tier is T1-low, the conservative default. create-stack-skill
+  picks a stack's own confidence_tier by the same rule. A docs-only skill
+  whose bins are all T3 reads T3 here, while its `confidence` reads T1.
+
+Source basenames:
+
+  Lower case, from the last non-empty segment between `/` or `\\`
+  separators, for matching a skill to a technology name.
+  source_repo_basename also drops a trailing `.git`, and is null when
+  source_repo holds no separator (it is then no URL, owner/repo pair or
+  path). Either is null when no name remains (such as `.` or `..`).
+  `https://github.com/Org/Repo.git/` and `Org/Repo` both give `repo`; a
+  source_root of `packages/Core` gives `core`.
+
 Cycle detection:
 
   metadata.json may declare `composes: ["<skill-name>", ...]` referencing
@@ -75,11 +156,12 @@ Cycle detection:
   starting node to `cycles[]` and emit a warning. Cycles do not abort
   enumeration; the inventory still lists every skill.
 
-Symlink handling:
+Warnings:
 
-  A skill directory may itself be a symlink (e.g. an "active" pointer).
-  If the target is unreadable (broken symlink, permission denied, etc.),
-  emit a warning and skip the entry — do not crash the whole scan.
+  Each starts `<name>: `: a metadata.json or version folder that cannot
+  be read (on a candidate passed over, or on a folder SKF cannot tell it
+  generated), an SKF package with no SKILL.md, no exports found via any
+  resolution path, a folder that cannot be resolved, and composes cycles.
 
 Per-skill errors (malformed metadata.json, OSError, etc.) are captured
 as warnings on the top-level result; they do not exit the process.
@@ -99,7 +181,8 @@ consumers that read only skills/cycles/warnings are unaffected):
 
   --reliability
       Attach the inventory reliability verdict computed from the counts
-      the script already owns:
+      the script already owns, over the skills SKF generated and their
+      warnings; `not_skf_output` never counts:
         skill_count       — len(skills)
         warning_count     — len(warnings)
         unreliable_ratio  — warning_count / (skill_count + warning_count),
@@ -109,15 +192,100 @@ consumers that read only skills/cycles/warnings are unaffected):
                             so consuming prompts read a boolean instead of
                             re-deriving a ratio + threshold comparison).
       The raw counts are emitted alongside the boolean so a caller's halt
-      message can still render "{warning_count}/{skill_count+warning_count}
-      skills returned malformed metadata".
+      message can still render "{warning_count} warning(s) across
+      {skill_count} skill(s)".
+
+  --expect-hashes FILE
+      Compare each skill's metadata_hash with the one FILE recorded for it
+      and attach three sorted name lists: `changed_skills` (enumerated now
+      with another metadata_hash), `missing_skills` (recorded, but not
+      enumerated now: removed, or no longer readable) and `new_skills`
+      (enumerated now, not recorded). FILE, or stdin for `-`, holds an
+      earlier enumerate result (its skills[] entries give each name's
+      metadata_hash) or an object mapping each skill name to its hash.
+      Hashes compare as written. A caller that verifies skills over a long
+      run re-enumerates with the result it started from, instead of
+      re-reading each metadata.json modification time.
+
+Candidates:
+
+  Compose mode builds a stack from the skills SKF generated. The
+  `candidates` subcommand picks them and gates them against the roster
+  `enumerate` builds:
+
+  candidate_source
+      Where the candidates came from. "explicit": the --explicit names
+      (trimmed, duplicates dropped). An --explicit entry that holds `/` or
+      `\\` is a package path instead, absolute or relative to the current
+      folder: it names the first folder of its path under <skills-root>
+      (`<skills-root>/react/1.2.0/react` and `<skills-root>/react/active/react`
+      both name `react`). "manifest": each key of
+      `<skills-root>/.export-manifest.json` `exports`. "active-links": when
+      there is no --explicit list and the manifest is absent, lists
+      nothing or cannot be read, each top-level folder holding
+      `active/<name>/SKILL.md` (`active` a link or a real folder; dot
+      names never match, and `_batch` and `.skf-` names are skipped as the
+      roster skips them).
+  kept
+      The roster entries (the shape of a skills[] entry) of the candidates
+      whose skill_type is single, individual or null (an early Quick Skill
+      package), sorted by name.
+  excluded
+      Every other candidate, once, as {skill_dir, reason, message}, sorted
+      by skill_dir. `message` is the log line to show, starting
+      `<skill_dir>: `. The reason is the first that applies:
+        not-a-skill     in the roster with another skill_type (a stack)
+        not-skf-output  listed in not_skf_output
+        roster-warning  named by roster warnings (the message holds them)
+        no-such-folder  an --explicit name with no folder at
+                        <skills-root>/<name>
+        no-skf-package  anything else (a folder holding no SKF package)
+      and an --explicit package path that is not inside <skills-root> is
+      excluded as given, with the reason `outside-skills-root`.
+  stale_manifest_keys
+      The manifest keys with no folder at <skills-root>/<key>, sorted: the
+      manifest names a skill that is gone, which the caller halts on. A
+      folder SKF cannot read is not called gone. Never in excluded.
+  manifest_parse_error
+      Why the manifest could not be read (unreadable, not JSON, its root or
+      its `exports` not an object); the candidates then come from the
+      active links. null otherwise, and whenever --explicit is given (the
+      manifest is not read then).
+
+  The result also carries the roster's `cycles`, `warnings` and
+  `not_skf_output`, with kept[] in place of skills[]. A composes cycle is
+  not an exclusion reason: cycles[] reports it as `enumerate` does.
+
+Scope:
+
+  refine-architecture decides which skills its architecture document
+  covers after `enumerate` ran. The `scope` subcommand splits the pairs
+  `--pairs` emitted, so no prompt sorts them by hand, and a pair is never
+  dropped from both halves. It reads no skills root: --skills names the
+  inventory (the `name` of each skills[] entry of an enumerate result) and
+  --in-scope the skills in scope, both comma-separated, trimmed, with empty
+  items dropped. Names compare exactly, as skills[] spells them.
+
+  in_scope            the --in-scope names that are inventory skills, sorted
+  out_of_scope        every other inventory skill, sorted
+  unknown             the --in-scope names that are no inventory skill, each
+                      once, in the order given
+  in_scope_pairs      the pairs, as `--pairs` emits them over --skills,
+                      whose library_a and library_b are both in in_scope
+  out_of_scope_pairs  every other pair: the two lists hold each pair once
+  pair_count, in_scope_pair_count, out_of_scope_pair_count
+                      the sizes of the three pair lists (all, in, out)
 
 Exit codes:
   0  enumeration succeeded (including zero skills found)
-  1  user error (bad skills-root path)
+  1  user error: a bad skills-root path, an --expect-hashes FILE that
+     cannot be read or holds neither accepted shape, an --explicit list
+     that names no skill, or a scope --skills list that names no skill
 
 CLI:
-  uv run skf-enumerate-stack-skills.py enumerate <skills-root> [--pairs] [--reliability]
+  uv run skf-enumerate-stack-skills.py enumerate <skills-root> [--pairs] [--reliability] [--expect-hashes FILE]
+  uv run skf-enumerate-stack-skills.py candidates <skills-root> [--explicit a,b]
+  uv run skf-enumerate-stack-skills.py scope --skills a,b,c --in-scope a,b
 """
 
 from __future__ import annotations
@@ -126,7 +294,10 @@ import argparse
 import hashlib
 import itertools
 import json
+import math
+import os
 import re
+import stat
 import sys
 from pathlib import Path
 
@@ -148,12 +319,48 @@ SOURCE_UNKNOWN = "unknown"
 # inventory does not trip the halt.
 RELIABILITY_THRESHOLD = 0.20
 
+# The exports-source label (`confidence`). It says where the exports list
+# came from, never what evidence the package rests on: that is evidence_tier.
 _CONFIDENCE_BY_SOURCE = {
     SOURCE_METADATA: "T1",
     SOURCE_REFERENCES: "T2",
     SOURCE_SKILL_MD: "T2",
     SOURCE_UNKNOWN: "T1-low",
 }
+
+# The confidence_distribution bins of metadata.json, from the strongest tier
+# to the weakest. dominant_tier reads them in this order and lets a later bin
+# win a tie, so a tie resolves toward the weaker tier.
+_DISTRIBUTION_BINS = (("t1", "T1"), ("t1_low", "T1-low"), ("t2", "T2"), ("t3", "T3"))
+
+# The tier of a package that records no evidence (the conservative default).
+_NO_EVIDENCE_TIER = "T1-low"
+
+# confidence_tier holds a different scale per skill_type: a single skill
+# records the forge tier it was compiled at, a stack the dominant confidence
+# tier of its libraries (its forge tier is in forge_tier). skill_type
+# individual (the earlier name for single) and a missing skill_type (an early
+# Quick Skill package) read as single; any other skill_type takes either scale.
+_FORGE_TIERS = ("Quick", "Forge", "Forge+", "Deep")
+_STACK_TIERS = ("T1", "T1-low", "T2", "T3")
+_SINGLE_SKILL_TYPES = (None, "single", "individual")
+
+# A source_repo or source_root path or URL splits into segments on either
+# separator.
+_PATH_SEPARATOR_RE = re.compile(r"[/\\]")
+
+# candidates: the export manifest in the skills root, where each candidate
+# came from, and why a candidate was excluded.
+EXPORT_MANIFEST = ".export-manifest.json"
+CANDIDATES_EXPLICIT = "explicit"
+CANDIDATES_MANIFEST = "manifest"
+CANDIDATES_ACTIVE_LINKS = "active-links"
+REASON_NOT_A_SKILL = "not-a-skill"
+REASON_NOT_SKF_OUTPUT = "not-skf-output"
+REASON_ROSTER_WARNING = "roster-warning"
+REASON_NO_SUCH_FOLDER = "no-such-folder"
+REASON_NO_SKF_PACKAGE = "no-skf-package"
+REASON_OUTSIDE_SKILLS_ROOT = "outside-skills-root"
 
 # Section headings recognised in the references/ cascade and the SKILL.md
 # cascade. Case-sensitive — these are the canonical SKF heading forms
@@ -213,29 +420,31 @@ def _normalize_exports(raw) -> list[str]:
     return out
 
 
-def _resolve_from_metadata(skill_dir: Path) -> tuple[list[str] | None, str | None, list[str], list[str]]:
+def _resolve_from_metadata(skill_dir: Path) -> tuple[list[str] | None, str | None, list[str], list[str], dict]:
     """Try to resolve exports from metadata.json.
 
-    Returns (exports, metadata_hash, composes, warnings).
-      exports        — list of names if metadata.json was readable AND
+    Returns (exports, metadata_hash, composes, warnings, metadata).
+      exports        : list of names if metadata.json was readable AND
                        contained an `exports[]` array (may be empty);
                        None if metadata.json absent or malformed.
-      metadata_hash  — sha256: digest of metadata.json content, or None
+      metadata_hash  : sha256: digest of metadata.json content, or None
                        if file absent / unreadable.
-      composes       — list of constituent skill names (for cycle
+      composes       : list of constituent skill names (for cycle
                        detection); empty list if absent.
-      warnings       — per-skill warnings (malformed JSON, etc.)
+      warnings       : per-skill warnings (malformed JSON, etc.)
+      metadata       : the parsed metadata.json object, or {} when the
+                       file is absent, unreadable or not a JSON object.
     """
     meta_path = skill_dir / "metadata.json"
     if not meta_path.is_file():
-        return None, None, [], []
+        return None, None, [], [], {}
 
     warnings: list[str] = []
     try:
         raw_bytes = meta_path.read_bytes()
     except OSError as exc:
         warnings.append(f"failed to read metadata.json: {exc}")
-        return None, None, [], warnings
+        return None, None, [], warnings, {}
 
     metadata_hash = _sha256_of_bytes(raw_bytes)
 
@@ -245,11 +454,11 @@ def _resolve_from_metadata(skill_dir: Path) -> tuple[list[str] | None, str | Non
         warnings.append(f"metadata.json is not valid JSON: {exc}")
         # Hash is still useful — record it so callers can correlate
         # malformed files across runs.
-        return None, metadata_hash, [], warnings
+        return None, metadata_hash, [], warnings, {}
 
     if not isinstance(data, dict):
         warnings.append("metadata.json root is not an object")
-        return None, metadata_hash, [], warnings
+        return None, metadata_hash, [], warnings, {}
 
     composes_raw = data.get("composes")
     composes = [c for c in composes_raw if isinstance(c, str)] if isinstance(composes_raw, list) else []
@@ -258,10 +467,10 @@ def _resolve_from_metadata(skill_dir: Path) -> tuple[list[str] | None, str | Non
         # metadata.json exists and is valid JSON but lacks an exports
         # field — fall through to references/ cascade. Carry the hash
         # forward so callers see metadata existed.
-        return None, metadata_hash, composes, warnings
+        return None, metadata_hash, composes, warnings, data
 
     exports = _normalize_exports(data.get("exports"))
-    return exports, metadata_hash, composes, warnings
+    return exports, metadata_hash, composes, warnings, data
 
 
 # --------------------------------------------------------------------------
@@ -338,6 +547,127 @@ def _resolve_from_skill_md(skill_dir: Path) -> list[str]:
 
 
 # --------------------------------------------------------------------------
+# Evidence tier and metadata.json fields
+# --------------------------------------------------------------------------
+
+
+def _bin_count(value):
+    """A confidence_distribution bin's count: a positive finite number, else 0."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0
+    if isinstance(value, float) and not math.isfinite(value):
+        return 0
+    return value if value > 0 else 0
+
+
+def dominant_tier(distribution) -> str:
+    """The tier of the largest bin of a metadata.json confidence_distribution.
+
+    The bins are read from the strongest tier to the weakest and a later bin
+    wins a tie, so a tie resolves toward the weaker tier (T1-low over T1, T2
+    over T1-low, T3 over T2) and the tier never overstates confidence. A bin
+    counts only when it holds a positive number. T1-low when none does: the
+    distribution is absent, not an object or all zero.
+    """
+    tier, best = _NO_EVIDENCE_TIER, 0
+    if isinstance(distribution, dict):
+        for key, bin_tier in _DISTRIBUTION_BINS:
+            count = _bin_count(distribution.get(key))
+            if count and count >= best:
+                tier, best = bin_tier, count
+    return tier
+
+
+def _text(value) -> str | None:
+    """A string with its surrounding whitespace removed, or None when empty or not a string."""
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
+
+
+def _language(value) -> str | list[str] | None:
+    """metadata.json `language`: a string, or the strings of a list (a stack may list several)."""
+    if isinstance(value, list):
+        names = [name for name in (_text(item) for item in value) if name]
+        return names or None
+    return _text(value)
+
+
+def _confidence_tier(value, skill_type: str | None) -> str | None:
+    """metadata.json `confidence_tier` when it belongs to its skill_type's scale."""
+    if skill_type == "stack":
+        allowed = _STACK_TIERS
+    elif skill_type in _SINGLE_SKILL_TYPES:
+        allowed = _FORGE_TIERS
+    else:
+        allowed = _FORGE_TIERS + _STACK_TIERS
+    return value if isinstance(value, str) and value in allowed else None
+
+
+def _whole_number(value) -> int | None:
+    """A non-negative whole number (an integral float too), else None."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    return value if isinstance(value, int) and value >= 0 else None
+
+
+def _last_segment(value: str) -> str | None:
+    """The lower-case last non-empty `/` or `\\` segment, or None when it names no folder."""
+    segments = [segment for segment in _PATH_SEPARATOR_RE.split(value) if segment]
+    if not segments or segments[-1] in (".", ".."):
+        return None
+    return segments[-1].lower()
+
+
+def source_repo_basename(source_repo: str | None) -> str | None:
+    """The repository name a source_repo URL, owner/repo pair or path ends in.
+
+    The last segment, lower case, without a trailing `.git`. None when
+    source_repo is absent, holds no separator (so it is no URL, pair or
+    path), or leaves no name.
+    """
+    if source_repo is None or not _PATH_SEPARATOR_RE.search(source_repo):
+        return None
+    segment = _last_segment(source_repo)
+    if segment is not None and segment.endswith(".git"):
+        segment = segment[:-len(".git")]
+    return segment if segment not in (None, "", ".", "..") else None
+
+
+def source_root_basename(source_root: str | None) -> str | None:
+    """The last folder name of a source_root path, lower case, or None."""
+    return None if source_root is None else _last_segment(source_root)
+
+
+def metadata_fields(metadata: dict) -> dict:
+    """The metadata.json facts a skills[] entry carries besides its exports.
+
+    Each is None when metadata.json lacks it or holds a value of another
+    shape, so a caller never reopens metadata.json to read it.
+    """
+    skill_type = metadata.get("skill_type")
+    if not isinstance(skill_type, str):
+        skill_type = None
+    stats = metadata.get("stats")
+    source_repo = _text(metadata.get("source_repo"))
+    source_root = _text(metadata.get("source_root"))
+    return {
+        "skill_type": skill_type,
+        "language": _language(metadata.get("language")),
+        "confidence_tier": _confidence_tier(metadata.get("confidence_tier"), skill_type),
+        "exports_documented": _whole_number(
+            stats.get("exports_documented") if isinstance(stats, dict) else None),
+        "metadata_schema_version": _text(metadata.get("spec_version")),
+        "source_repo": source_repo,
+        "source_repo_basename": source_repo_basename(source_repo),
+        "source_root": source_root,
+        "source_root_basename": source_root_basename(source_root),
+    }
+
+
+# --------------------------------------------------------------------------
 # Per-skill resolution (cascade orchestrator)
 # --------------------------------------------------------------------------
 
@@ -353,7 +683,7 @@ def resolve_skill(skill_dir: Path, skill_name: str) -> tuple[dict, list[str], li
     warnings: list[str] = []
 
     # 1. metadata.json
-    exports, metadata_hash, composes, meta_warnings = _resolve_from_metadata(skill_dir)
+    exports, metadata_hash, composes, meta_warnings, metadata = _resolve_from_metadata(skill_dir)
     warnings.extend(f"{skill_name}: {w}" for w in meta_warnings)
 
     if exports is not None:
@@ -382,8 +712,10 @@ def resolve_skill(skill_dir: Path, skill_name: str) -> tuple[dict, list[str], li
         "exports": exports,
         "exports_source": source,
         "confidence": _CONFIDENCE_BY_SOURCE[source],
+        "evidence_tier": dominant_tier(metadata.get("confidence_distribution")),
         "metadata_hash": metadata_hash,
     }
+    entry.update(metadata_fields(metadata))
     return entry, composes, warnings
 
 
@@ -456,56 +788,195 @@ def _version_sort_key(name: str) -> tuple:
     return (tuple(nums), 0 if pre == "" else -1, name)
 
 
-def _inner_package(version_dir: Path) -> Path | None:
-    """Within a version directory, return the inner package dir holding SKILL.md.
+# Keep identical to SKF_GENERATORS in skf-skill-inventory.py
+# (test/test-skf-skill-inventory.py pins the copies).
+SKF_GENERATORS = frozenset({"quick-skill", "create-skill", "create-stack-skill"})
 
-    Matches the `{version}/{skill-name}/SKILL.md` shape from
-    knowledge/version-paths.md. Returns None if no inner dir has a SKILL.md.
-    """
+
+# Keep identical to _has_skf_metadata in skf-skill-inventory.py
+# (test/test-skf-skill-inventory.py pins the copies).
+def _has_skf_metadata(path: Path) -> bool:
+    """True when a flat skill's metadata.json carries an SKF marker."""
     try:
-        for inner in sorted(version_dir.iterdir()):
-            if inner.is_dir() and (inner / "SKILL.md").is_file():
-                return inner
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(data, dict):
+        return False
+    generated_by = data.get("generated_by")
+    if isinstance(generated_by, str) and generated_by in SKF_GENERATORS:
+        return True
+    tool_versions = data.get("tool_versions")
+    if isinstance(tool_versions, dict) and "skf" in tool_versions:
+        return True
+    return (data.get("skill_type") in ("single", "individual", "stack")
+            and ("forge_tier" in data or "confidence_tier" in data))
+
+
+# Keep identical to _is_link_or_junction in skf-skill-inventory.py
+# (test/test-skf-skill-inventory.py pins the copies).
+def _is_link_or_junction(p: Path) -> bool:
+    """True for POSIX symlinks AND Windows junctions/symlinks.
+
+    `Path.is_symlink()` is False for Windows junctions; os.readlink succeeds
+    for both symlinks and junctions (since CPython 3.8 on Windows). A regular
+    directory raises OSError on readlink, which is the signal we want to
+    refuse replacement. On Windows, any other reparse point (a cloud-sync
+    placeholder, a deduplicated file, an app execution alias) raises
+    ValueError: it does not redirect to another path, so it is not a link.
+    """
+    if p.is_symlink():
+        return True
+    if not p.exists() and not p.is_symlink():
+        return False
+    try:
+        os.readlink(p)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+# Keep identical to _is_marked_version in skf-skill-inventory.py
+# (test/test-skf-skill-inventory.py pins the copies).
+def _is_marked_version(version_dir: Path, name: str) -> bool:
+    """True when `version_dir/name/metadata.json` carries an SKF marker.
+
+    SKF never links a version folder or the package inside one: a linked
+    one is not its output, whatever the metadata behind the link says.
+    """
+    package = version_dir / name
+    return (not _is_link_or_junction(version_dir) and not _is_link_or_junction(package)
+            and _has_skf_metadata(package / "metadata.json"))
+
+
+# Keep identical to _looks_like_skill in skf-skill-inventory.py
+# (test/test-skf-skill-inventory.py pins the copies).
+def _looks_like_skill(skill_group_dir, skill_name):
+    """True when a group holds a root SKILL.md or a {v}/{name}/ folder."""
+    if (skill_group_dir / "SKILL.md").is_file():
+        return True
+    try:
+        return any(child.is_dir() and (child / skill_name).is_dir()
+                   for child in skill_group_dir.iterdir())
     except OSError:
+        return False
+
+
+def _metadata_problem(package: Path) -> str | None:
+    """What keeps `package/metadata.json` from being read, or None.
+
+    None when the file is absent or holds a JSON object; otherwise the
+    reason, so a corrupt metadata.json on an SKF skill is counted as a
+    warning instead of silently reading as "not SKF output".
+    """
+    meta_path = package / "metadata.json"
+    try:
+        # os.stat, not Path.is_file: from Python 3.14 pathlib reads a file
+        # SKF cannot reach as absent instead of raising.
+        if not stat.S_ISREG(os.stat(meta_path).st_mode):
+            return None
+        data = json.loads(meta_path.read_bytes().decode("utf-8"))
+    except (FileNotFoundError, NotADirectoryError):
         return None
+    except OSError as exc:
+        return f"failed to read ({exc})"
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return f"is not valid JSON ({exc})"
+    if not isinstance(data, dict):
+        return "root is not an object"
     return None
 
 
-def _resolve_package_dir(child: Path) -> Path | None:
-    """Resolve the agentskills package dir (the one containing SKILL.md).
+def _active_version_dir(child: Path) -> Path | None:
+    """The version folder `child/active` names, when it is a folder directly in `child`.
 
-    Supports both layouts defined in knowledge/version-paths.md:
-      - flat:           {child}/SKILL.md
-      - version-nested: {child}/active/{skill-name}/SKILL.md (via the `active`
-                        symlink) or {child}/{version}/{skill-name}/SKILL.md.
-
-    For the nested layout the `active` symlink wins; otherwise the highest
-    version directory by semver precedence is used. Returns None when no
-    SKILL.md is reachable (caller skips the entry as a non-package).
+    `active` as a link counts only when it resolves to a real folder
+    directly in the group whose name holds no `.skf-`; a real `active/`
+    folder counts as itself.
     """
-    # Flat layout — direct SKILL.md.
-    if (child / "SKILL.md").is_file():
-        return child
-
-    # Nested layout — prefer the stable `active` pointer.
     active = child / "active"
-    if active.is_dir():  # is_dir() follows the symlink; False if broken
-        pkg = _inner_package(active)
-        if pkg is not None:
-            return pkg
-
-    # Fallback — highest version directory.
-    try:
-        version_dirs = [
-            d for d in child.iterdir() if d.is_dir() and d.name != "active"
-        ]
-    except OSError:
-        return None
-    for vdir in sorted(version_dirs, key=lambda d: _version_sort_key(d.name), reverse=True):
-        pkg = _inner_package(vdir)
-        if pkg is not None:
-            return pkg
+    if _is_link_or_junction(active):
+        try:
+            target = active.resolve(strict=True)
+            group = child.resolve(strict=True)
+        except (OSError, RuntimeError):
+            return None
+        version = child / target.name
+        if (target.parent != group or ".skf-" in target.name or not target.is_dir()
+                or _is_link_or_junction(version)):
+            return None
+        return version
+    if active.is_dir():
+        return active
     return None
+
+
+def _skf_package(child: Path, name: str) -> tuple[Path | None, list[str]]:
+    """The package SKF generated that a stack roster reads, and what it could not read.
+
+    Candidates, in order: the version `active` names, the version folders
+    from highest to lowest (`active`, links and `.skf-` names aside), then a
+    flat root `SKILL.md`. The first whose `metadata.json` carries an SKF
+    marker wins (`{v}/{name}/metadata.json`, or the root one for the flat
+    layout). Returns (package, problems): package is None when no candidate
+    is marked; problems names each candidate passed over because SKF could
+    not read it, its metadata.json or its version folder. A linked package
+    is never SKF output (`_is_marked_version`), so it is passed over without
+    a problem and its metadata.json is never read.
+    """
+    problems: list[str] = []
+
+    def marked(version: Path) -> bool:
+        package = version / name
+        try:
+            os.listdir(version)  # raises on every Python when SKF cannot search it
+            if _is_marked_version(version, name):
+                return True
+            if _is_link_or_junction(package):
+                return False
+        except OSError as exc:
+            problems.append(f"{name}/{version.name} cannot be read ({exc})")
+            return False
+        problem = _metadata_problem(package)
+        if problem:
+            problems.append(f"{name}/{version.name}/{name}/metadata.json {problem}")
+        return False
+
+    active = _active_version_dir(child)
+    if active is not None and marked(active):
+        return child / "active" / name, problems
+    try:
+        entries = list(child.iterdir())
+    except OSError as exc:
+        entries = []
+        problems.append(f"{name} cannot be listed ({exc})")
+    versions: list[Path] = []
+    for entry in entries:
+        if (entry.name == "active" or ".skf-" in entry.name
+                or (active is not None and entry.name == active.name)):
+            continue
+        try:
+            if _is_link_or_junction(entry) or not entry.is_dir():
+                continue
+            # os.stat raises on every Python when SKF cannot search `entry`;
+            # from 3.14, Path.is_dir would read such a folder as empty.
+            if not stat.S_ISDIR(os.stat(entry / name).st_mode):
+                continue
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+        except OSError:
+            pass  # a folder SKF cannot search may hold a version: marked() names it
+        versions.append(entry)
+    for vdir in sorted(versions, key=lambda d: _version_sort_key(d.name), reverse=True):
+        if marked(vdir):
+            return vdir / name, problems
+    if (child / "SKILL.md").is_file():
+        if _has_skf_metadata(child / "metadata.json"):
+            return child, problems
+        problem = _metadata_problem(child)
+        if problem:
+            problems.append(f"{name}/metadata.json {problem}")
+    return None, problems
 
 
 # --------------------------------------------------------------------------
@@ -515,7 +986,7 @@ def _resolve_package_dir(child: Path) -> Path | None:
 
 def enumerate_stack_skills(skills_root: Path) -> dict:
     """Walk `skills_root`, build inventory, detect cycles, return result."""
-    result: dict = {"skills": [], "cycles": [], "warnings": []}
+    result: dict = {"skills": [], "cycles": [], "warnings": [], "not_skf_output": []}
     compose_graph: dict[str, list[str]] = {}
 
     try:
@@ -528,38 +999,44 @@ def enumerate_stack_skills(skills_root: Path) -> dict:
 
     for child in children:
         name = child.name
-        if name.startswith("."):
-            continue
+        if name.startswith(".") or name == "_batch" or ".skf-" in name:
+            continue  # hidden folders and SKF's own batch and staging names
 
-        # Symlink fallback — a child-level symlink (e.g. a top-level `active`
-        # pointer) must resolve to a readable directory. If it's broken, warn
-        # and skip; otherwise keep the original path so the reported `path`
-        # stays relative to skills_root.
-        if child.is_symlink():
+        # A linked top-level folder is never SKF output: SKF never links a
+        # skill folder. List it when it looks like a skill; a broken link,
+        # or one SKF cannot read through, holds nothing to list.
+        if _is_link_or_junction(child):
             try:
-                target = child.resolve(strict=True)
-            except (FileNotFoundError, RuntimeError, OSError) as exc:
-                result["warnings"].append(
-                    f"{name}: symlink target unreadable ({exc})"
-                )
-                continue
-            if not target.is_dir():
-                result["warnings"].append(
-                    f"{name}: symlink target is not a directory"
-                )
-                continue
-        elif not child.is_dir():
+                if _looks_like_skill(child, name):
+                    result["not_skf_output"].append(name)
+            except OSError:
+                pass
+            continue
+        if not child.is_dir():
             continue
 
-        # Resolve the package dir across flat and version-nested layouts
-        # (knowledge/version-paths.md). Subdirs with no reachable SKILL.md
-        # (e.g. `shared/`, `knowledge/`) are skipped silently — not packages.
         try:
-            skill_dir = _resolve_package_dir(child)
-        except OSError as exc:
+            skill_dir, problems = _skf_package(child, name)
+            foreign = skill_dir is None and not problems and _looks_like_skill(child, name)
+        except Exception as exc:  # noqa: BLE001 — per-skill failures are warnings, not fatal
+            # An unreadable folder raises OSError; a metadata.json nested
+            # too deeply for the JSON parser raises RecursionError.
             result["warnings"].append(f"{name}: failed to resolve package dir ({exc})")
             continue
         if skill_dir is None:
+            if problems:
+                result["warnings"].append(
+                    f"{name}: SKF cannot tell whether it generated this skill: "
+                    + "; ".join(problems))
+            elif foreign:
+                result["not_skf_output"].append(name)
+            continue
+        rel = skill_dir.relative_to(skills_root).as_posix()
+        if problems:
+            result["warnings"].append(
+                f"{name}: " + "; ".join(problems) + f"; read the SKF package at {rel} instead")
+        if not (skill_dir / "SKILL.md").is_file():
+            result["warnings"].append(f"{name}: the SKF package at {rel} has no SKILL.md")
             continue
 
         try:
@@ -568,14 +1045,9 @@ def enumerate_stack_skills(skills_root: Path) -> dict:
             result["warnings"].append(f"{name}: enumeration failed: {exc}")
             continue
 
-        # Reflect the resolved package location (forward-slash, relative to
-        # skills_root) — for the nested layout this is the `{active_skill}`
-        # path, for the flat layout just the skill name.
-        try:
-            entry["path"] = skill_dir.relative_to(skills_root).as_posix()
-        except ValueError:
-            entry["path"] = name
-
+        # The resolved package location, forward-slash and relative to
+        # skills_root: `x/active/x`, `x/{version}/x` or `x` (flat).
+        entry["path"] = rel
         result["skills"].append(entry)
         result["warnings"].extend(skill_warnings)
         compose_graph[name] = composes
@@ -611,6 +1083,36 @@ def compute_pairs(skills: list[dict]) -> list[dict]:
     ]
 
 
+def compute_scope(names: list[str], in_scope: list[str]) -> dict:
+    """Split an inventory's pairs by the skills in scope (`scope`).
+
+    `names` are the inventory's skill names and `in_scope` the names of the
+    skills in scope. The pairs are compute_pairs() over `names`, so they are
+    the ones `--pairs` emitted, in the same order; a pair is in scope when
+    both of its libraries are. See "Scope" in the module docstring for the
+    keys.
+    """
+    known = set(names)
+    unknown: list[str] = []
+    for name in in_scope:
+        if name not in known and name not in unknown:
+            unknown.append(name)
+    kept = {name for name in in_scope if name in known}
+    pairs = compute_pairs([{"name": name} for name in known])
+    inside = [p for p in pairs if p["library_a"] in kept and p["library_b"] in kept]
+    outside = [p for p in pairs if not (p["library_a"] in kept and p["library_b"] in kept)]
+    return {
+        "in_scope": sorted(kept),
+        "out_of_scope": sorted(known - kept),
+        "unknown": unknown,
+        "in_scope_pairs": inside,
+        "out_of_scope_pairs": outside,
+        "pair_count": len(pairs),
+        "in_scope_pair_count": len(inside),
+        "out_of_scope_pair_count": len(outside),
+    }
+
+
 # --------------------------------------------------------------------------
 # Derived output: inventory reliability verdict (--reliability)
 # --------------------------------------------------------------------------
@@ -623,7 +1125,7 @@ def compute_reliability(skill_count: int, warning_count: int) -> dict:
     or 0.0 for an empty inventory (no ZeroDivisionError). The inventory is
     reliable when that ratio is <= RELIABILITY_THRESHOLD (boundary
     inclusive). Emits the raw counts too so a caller's halt message can
-    render "{warning_count}/{skill_count+warning_count}".
+    render "{warning_count} warning(s) across {skill_count} skill(s)".
     """
     total = skill_count + warning_count
     unreliable_ratio = (warning_count / total) if total else 0.0
@@ -636,8 +1138,263 @@ def compute_reliability(skill_count: int, warning_count: int) -> dict:
 
 
 # --------------------------------------------------------------------------
+# Derived output: metadata_hash changes (--expect-hashes)
+# --------------------------------------------------------------------------
+
+
+def load_expected_hashes(text: str) -> dict[str, str | None]:
+    """The metadata_hash recorded for each skill name, from --expect-hashes JSON.
+
+    Takes an enumerate result, whose skills[] entries give each `name` its
+    `metadata_hash`, or an object mapping each skill name to its hash (a
+    string, or null for none). Raises ValueError on anything else.
+    """
+    data = json.loads(text)
+    if not isinstance(data, dict):
+        raise ValueError("the JSON root is not an object")
+    if not isinstance(data.get("skills"), list):
+        if not all(h is None or isinstance(h, str) for h in data.values()):
+            raise ValueError(
+                "expected an enumerate result (with skills[]) or an object "
+                "mapping each skill name to its metadata_hash")
+        return dict(data)
+    expected: dict[str, str | None] = {}
+    for entry in data["skills"]:
+        name = entry.get("name") if isinstance(entry, dict) else None
+        if not isinstance(name, str):
+            raise ValueError("a skills[] entry has no string name")
+        metadata_hash = entry.get("metadata_hash")
+        if metadata_hash is not None and not isinstance(metadata_hash, str):
+            raise ValueError(f"skills[] entry {name!r} has a metadata_hash that is not a string")
+        if name in expected:
+            raise ValueError(f"skills[] lists {name!r} twice")
+        expected[name] = metadata_hash
+    return expected
+
+
+def compare_hashes(skills: list[dict], expected: dict[str, str | None]) -> dict:
+    """Which skills changed against the metadata_hash recorded for them.
+
+    changed_skills: enumerated now with another metadata_hash;
+    missing_skills: recorded but not enumerated now; new_skills: enumerated
+    now but not recorded. Each sorted by name; hashes compare as written.
+    """
+    current = {entry["name"]: entry["metadata_hash"] for entry in skills}
+    return {
+        "changed_skills": sorted(
+            name for name, metadata_hash in expected.items()
+            if name in current and current[name] != metadata_hash),
+        "missing_skills": sorted(name for name in expected if name not in current),
+        "new_skills": sorted(name for name in current if name not in expected),
+    }
+
+
+# --------------------------------------------------------------------------
+# Candidates: pick the compose-mode candidates and gate them (candidates)
+# --------------------------------------------------------------------------
+
+
+def _is_folder_name(skills_root: Path, name: str) -> bool:
+    """True when `name` can name one folder directly in `skills_root`."""
+    folder = skills_root / name
+    return (name not in ("", ".", "..") and "\x00" not in name
+            and folder.parent == skills_root and folder.name == name)
+
+
+def _has_folder(skills_root: Path, name: str) -> bool:
+    """True when `skills_root/name` is a folder, or SKF cannot tell.
+
+    A name that cannot be one folder in the skills root (empty, `.`, `..`, a
+    path) never is. A folder SKF cannot stat counts as present, so a
+    manifest key is never called stale because of a folder SKF only fails to
+    read.
+    """
+    if not _is_folder_name(skills_root, name):
+        return False
+    try:
+        return stat.S_ISDIR(os.stat(skills_root / name).st_mode)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    except OSError:
+        return True
+
+
+def _manifest_keys(skills_root: Path) -> tuple[list[str], str | None]:
+    """The skill names the export manifest lists, and why it could not be read.
+
+    ([], None) when the manifest is absent or lists nothing; ([], reason)
+    when it cannot be read or is not the manifest's shape (an object whose
+    `exports`, when present, is an object).
+    """
+    manifest = skills_root / EXPORT_MANIFEST
+    try:
+        raw = manifest.read_bytes()
+    except FileNotFoundError:
+        return [], None
+    except OSError as exc:
+        return [], f"{EXPORT_MANIFEST} cannot be read ({exc})"
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (ValueError, RecursionError) as exc:  # JSON, UTF-8 or nesting errors
+        return [], f"{EXPORT_MANIFEST} is not valid JSON ({exc})"
+    if not isinstance(data, dict):
+        return [], f"{EXPORT_MANIFEST} root is not an object"
+    exports = data.get("exports")
+    if exports is None:
+        return [], None
+    if not isinstance(exports, dict):
+        return [], f"{EXPORT_MANIFEST} exports is not an object"
+    return list(exports), None
+
+
+def _active_link_candidates(skills_root: Path) -> list[str]:
+    """The top-level folders matching `<skills-root>/*/active/*/SKILL.md`.
+
+    `active` may be a link or a real folder. Dot names never match, as in a
+    glob, and SKF's own `_batch` and `.skf-` names are skipped as the roster
+    skips them.
+    """
+    try:
+        children = list(skills_root.iterdir())
+    except OSError:
+        return []
+    found: list[str] = []
+    for child in children:
+        name = child.name
+        if name.startswith(".") or name == "_batch" or ".skf-" in name:
+            continue
+        active = child / "active"
+        try:
+            packages = os.listdir(active)
+        except OSError:  # no `active`, not a folder, or unreadable
+            continue
+        for package in packages:
+            if package.startswith("."):
+                continue
+            try:
+                if stat.S_ISREG(os.stat(active / package / "SKILL.md").st_mode):
+                    found.append(name)
+                    break
+            except OSError:
+                continue
+    return found
+
+
+def explicit_skill_dir(skills_root: Path, entry: str) -> str | None:
+    """The skill folder an --explicit entry names; None for a path outside `skills_root`.
+
+    An entry with no `/` or `\\` is the folder name itself. Any other entry is
+    a package path, absolute or relative to the current folder, that names
+    the first folder of its path under `skills_root`: compared as written
+    first (so `active/<name>` counts as written), then with links resolved.
+    """
+    if "/" not in entry and "\\" not in entry:
+        return entry
+    path = Path(entry.replace("\\", "/"))
+    for resolve in (False, True):
+        try:
+            if resolve:
+                parts = path.resolve().relative_to(skills_root.resolve()).parts
+            else:
+                parts = Path(os.path.abspath(path)).relative_to(os.path.abspath(skills_root)).parts
+        except (ValueError, OSError, RuntimeError):  # outside, or a path SKF cannot resolve
+            continue
+        if parts:
+            return parts[0]
+    return None
+
+
+def _excluded(skill_dir: str, reason: str, message: str) -> dict:
+    return {"skill_dir": skill_dir, "reason": reason, "message": message}
+
+
+def compute_candidates(skills_root: Path, explicit: list[str] | None = None) -> dict:
+    """Pick the compose-mode candidates and gate them against the roster.
+
+    `explicit` names the candidates when given; else the export manifest
+    keys; else, when the manifest is absent, lists nothing or cannot be
+    read, the folders holding an `active` package. A candidate is kept when
+    the roster has it with skill_type single, individual or null; every
+    other one is excluded with the first reason that applies, except a
+    manifest key with no folder, which is a stale manifest key.
+    """
+    roster = enumerate_stack_skills(skills_root)
+    manifest_parse_error = None
+    outside: list[str] = []
+    if explicit is not None:
+        source, names = CANDIDATES_EXPLICIT, []
+        for entry in explicit:
+            skill_dir = explicit_skill_dir(skills_root, entry)
+            if skill_dir is None:
+                outside.append(entry)
+            else:
+                names.append(skill_dir)
+    else:
+        names, manifest_parse_error = _manifest_keys(skills_root)
+        source = CANDIDATES_MANIFEST
+        if not names:
+            source, names = CANDIDATES_ACTIVE_LINKS, _active_link_candidates(skills_root)
+    # One order for every source and platform: a Path sorts without case on
+    # Windows, a name always with it.
+    names = sorted(set(names))
+
+    by_name = {entry["name"]: entry for entry in roster["skills"]}
+    not_skf_output = set(roster["not_skf_output"])
+    kept: list[dict] = []
+    excluded: list[dict] = []
+    stale: list[str] = []
+    for name in names:
+        entry = by_name.get(name)
+        if entry is not None:
+            if entry["skill_type"] in _SINGLE_SKILL_TYPES:
+                kept.append(entry)
+            else:
+                excluded.append(_excluded(
+                    name, REASON_NOT_A_SKILL,
+                    f"{name}: not a skill (skill_type {entry['skill_type']}), excluding"))
+            continue
+        if name in not_skf_output:
+            excluded.append(_excluded(name, REASON_NOT_SKF_OUTPUT, f"{name}: not SKF output, excluding"))
+            continue
+        named = [w for w in roster["warnings"] if w.startswith(f"{name}: ")]
+        if named:
+            excluded.append(_excluded(name, REASON_ROSTER_WARNING, "; ".join(named)))
+            continue
+        if not _has_folder(skills_root, name):
+            if source == CANDIDATES_MANIFEST:
+                stale.append(name)
+            else:
+                excluded.append(_excluded(
+                    name, REASON_NO_SUCH_FOLDER, f"{name}: no such skill folder, excluding"))
+            continue
+        excluded.append(_excluded(name, REASON_NO_SKF_PACKAGE, f"{name}: no SKF skill package, excluding"))
+    for entry in sorted(set(outside)):
+        excluded.append(_excluded(
+            entry, REASON_OUTSIDE_SKILLS_ROOT, f"{entry}: not inside the skills folder, excluding"))
+    excluded.sort(key=lambda x: x["skill_dir"])
+
+    return {
+        "candidate_source": source,
+        "kept": kept,
+        "excluded": excluded,
+        "stale_manifest_keys": stale,
+        "manifest_parse_error": manifest_parse_error,
+        "cycles": roster["cycles"],
+        "warnings": roster["warnings"],
+        "not_skf_output": roster["not_skf_output"],
+    }
+
+
+# --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
+
+
+def _read_expected_hashes(source: str) -> dict[str, str | None]:
+    """Load the --expect-hashes file (`-` reads stdin). Raises ValueError or OSError."""
+    if source == "-":
+        return load_expected_hashes(sys.stdin.read())
+    return load_expected_hashes(Path(source).read_text(encoding="utf-8"))
 
 
 def _cmd_enumerate(args: argparse.Namespace) -> int:
@@ -648,9 +1405,16 @@ def _cmd_enumerate(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 1
+    expected = None
+    if args.expect_hashes is not None:
+        try:
+            expected = _read_expected_hashes(args.expect_hashes)
+        except (OSError, ValueError, RecursionError) as exc:
+            print(f"error: --expect-hashes {args.expect_hashes}: {exc}", file=sys.stderr)
+            return 1
     result = enumerate_stack_skills(skills_root)
     # Additive derived output — attached only when the flag is set, so the
-    # default shape stays {skills, cycles, warnings} for existing consumers.
+    # default shape stays {skills, cycles, warnings, not_skf_output}.
     if args.pairs:
         result["pairs"] = compute_pairs(result["skills"])
         result["pair_count"] = len(result["pairs"])
@@ -658,7 +1422,43 @@ def _cmd_enumerate(args: argparse.Namespace) -> int:
         result.update(
             compute_reliability(len(result["skills"]), len(result["warnings"]))
         )
+    if expected is not None:
+        result.update(compare_hashes(result["skills"], expected))
     json.dump(result, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    return 0
+
+
+def _parse_explicit(value: str) -> list[str]:
+    """The names of a comma-separated list (--explicit, --skills, --in-scope), trimmed, empty items dropped."""
+    return [name for name in (part.strip() for part in value.split(",")) if name]
+
+
+def _cmd_candidates(args: argparse.Namespace) -> int:
+    skills_root = Path(args.skills_root)
+    if not skills_root.is_dir():
+        print(
+            f"error: skills root not a directory: {skills_root}",
+            file=sys.stderr,
+        )
+        return 1
+    explicit = None
+    if args.explicit is not None:
+        explicit = _parse_explicit(args.explicit)
+        if not explicit:
+            print("error: --explicit names no skill", file=sys.stderr)
+            return 1
+    json.dump(compute_candidates(skills_root, explicit), sys.stdout, indent=2)
+    sys.stdout.write("\n")
+    return 0
+
+
+def _cmd_scope(args: argparse.Namespace) -> int:
+    names = _parse_explicit(args.skills)
+    if not names:
+        print("error: --skills names no skill", file=sys.stderr)
+        return 1
+    json.dump(compute_scope(names, _parse_explicit(args.in_scope)), sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0
 
@@ -680,7 +1480,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p_enum.add_argument(
         "skills_root",
-        help="directory containing skill packages (each subdir has SKILL.md)",
+        help="directory holding skill folders; only packages SKF generated are enumerated",
     )
     p_enum.add_argument(
         "--pairs",
@@ -699,7 +1499,60 @@ def _build_parser() -> argparse.ArgumentParser:
             f"`warning_count`; threshold {RELIABILITY_THRESHOLD})"
         ),
     )
+    p_enum.add_argument(
+        "--expect-hashes",
+        metavar="FILE",
+        help=(
+            "additionally compare each skill's metadata_hash with FILE "
+            "(an earlier enumerate result, or an object mapping each skill "
+            "name to its metadata_hash; `-` reads stdin) and emit "
+            "`changed_skills`, `missing_skills` and `new_skills`"
+        ),
+    )
     p_enum.set_defaults(func=_cmd_enumerate)
+
+    p_cand = sub.add_parser(
+        "candidates",
+        help="pick the compose-mode candidates and gate them against the roster",
+    )
+    p_cand.add_argument(
+        "skills_root",
+        help="directory holding skill folders; only packages SKF generated can be kept",
+    )
+    p_cand.add_argument(
+        "--explicit",
+        metavar="NAMES",
+        help=(
+            "comma-separated skill folder names or package paths to gate, "
+            "instead of the export manifest keys or the folders holding an "
+            "`active` package; a path names its first folder under skills-root"
+        ),
+    )
+    p_cand.set_defaults(func=_cmd_candidates)
+
+    p_scope = sub.add_parser(
+        "scope",
+        help="split the unique pairs of an inventory's skills by the skills in scope",
+    )
+    p_scope.add_argument(
+        "--skills",
+        required=True,
+        metavar="NAMES",
+        help=(
+            "comma-separated names of the inventory's skills (the `name` of "
+            "each skills[] entry of an enumerate result)"
+        ),
+    )
+    p_scope.add_argument(
+        "--in-scope",
+        required=True,
+        metavar="NAMES",
+        help=(
+            "comma-separated names of the skills in scope; a name that is no "
+            "inventory skill is listed in `unknown`"
+        ),
+    )
+    p_scope.set_defaults(func=_cmd_scope)
 
     return parser
 
@@ -710,5 +1563,21 @@ def main(argv: list[str] | None = None) -> int:
     return args.func(args)
 
 
+def _force_utf8(*streams) -> None:
+    """Reconfigure stdout and stderr to UTF-8, keeping each stream's error handler.
+
+    A Windows console pipes them as cp1252, which cannot print every character
+    of the --help text, so --help would stop with UnicodeEncodeError.
+    """
+    for stream in streams:
+        if hasattr(stream, "reconfigure"):
+            errors = getattr(stream, "errors", None)
+            if errors is None:
+                stream.reconfigure(encoding="utf-8")
+            else:
+                stream.reconfigure(encoding="utf-8", errors=errors)
+
+
 if __name__ == "__main__":
+    _force_utf8(sys.stdout, sys.stderr)
     raise SystemExit(main())

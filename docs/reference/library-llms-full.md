@@ -34,10 +34,7 @@ channel pins are gone) and 2026-10-10 (Story 67.9: conda-recipe-manager + dbt-co
 conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
-## To regenerate (any session): ask Claude Code:
-
-> Regenerate `docs/reference/library-llms-full.md` from `pixi.toml`. Read all of `pixi.toml`, then rewrite the catalog keeping the same 18-section structure: envs table, version pins, per-category library entries with version floors + capabilities + platform caveats, the "explicitly NOT available" section from the commented-out deps, the import-name gotchas table, and the quick capability index. Update the Generated date. Verify with `pixi run -e pyforge-guild llms-full-check`.
-
+> Version-floor re-sync: run `python scripts/llms_full_check.py --fix-floors` (deterministic; 2026-10-13). Prose stays hand-written; undocumenteds and ghosts still require a human.
 **Staleness detector:** `pixi run -e pyforge-guild llms-full-check` (script:
 `scripts/llms_full_check.py`) exits non-zero when this catalog drifts from `pixi.toml` —
 undocumented deps, ghost entries, or version-floor drift. Detector finds; the regeneration
@@ -142,19 +139,19 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **pnpm** (>=12.4.1) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`). In the `python` feature since Story 67.1
   (moved from `local-recipes`, one declaration), so it reaches the laptop SBOM.
-- **uv** (>=0.12.19) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
+- **uv** (>=0.13.0) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (>=24.19.0,<27.0,!=25.*; 24.x or 26.x LTS, 25.x excluded as Node's non-LTS release) — `node` / `npm` / `npx`; runtime for the JS tools below.
-- **gh** (>=2.101.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
+- **gh** (>=2.102.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
-- **gitpython** (>=3.1.62) — `import git`; programmatic Git (repos, diffs, commits,
+- **gitpython** (>=3.2.0) — `import git`; programmatic Git (repos, diffs, commits,
   remotes) when shelling out to `git` is awkward.
-- **truststore** (>=0.10.4) — `import truststore; truststore.inject_into_ssl()`; makes
+- **truststore** (>=0.10.5) — `import truststore; truststore.inject_into_ssl()`; makes
   Python TLS use the OS trust store (corporate CAs, JFrog). Set `TRUSTSTORE=1` pattern
   used by the vuln-db tasks.
-- **bmad-method** (>=6.12.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
+- **bmad-method** (>=6.12.2) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=1.0.12) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=1.2.0) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ## 1a. Station manifest mirrors (general Python utilities)
@@ -241,7 +238,7 @@ Environment packaging & interop:
   environment.yml / pyproject.
 - **conda-pack** (>=0.9.2) — bundle a live conda env into a relocatable tarball
   (air-gapped deployment).
-- **conda-pypi** (>=0.12.0) — safer PyPI interop for conda envs (`conda pypi install`).
+- **conda-pypi** (>=0.13.0) — safer PyPI interop for conda envs (`conda pypi install`).
 
 Shell/CI quality:
 - **shellcheck** (>=0.10.0) — static analysis for `build.sh` and all shell scripts.
@@ -272,7 +269,7 @@ All in `local-recipes`. These are CLIs invoked as `pixi-<name>` or `pixi <name>`
 - **pixi-pycharm** (>=0.0.12) — PyCharm/IDE interpreter integration for pixi.
 - **pixi-skills** (>=0.1.6) — manage coding-agent skills using pixi.
 - **nebi-cli** (>=0.14) — `nebi`; local-first workspace management for pixi projects.
-- **pixitainer** (>=0.8.3) — containerize a pixi workspace with a single command.
+- **pixitainer** (>=0.9.0) — containerize a pixi workspace with a single command.
   **`local-recipes` env, linux-64 only** (`[feature.local-recipes.target.linux-64.dependencies]`):
   its own recipe is `build.skip: "not linux"`, so it cannot live in the cross-platform
   dependencies table without breaking the win-64/osx-arm64-min solves. Story 10.2
@@ -299,7 +296,7 @@ All in `local-recipes`.
 - **deptry** (>=0.25.1) — dependency-hygiene checker: finds unused, missing, and
   transitive dependencies in a Python project by comparing imports against the
   declared manifest (core of the pyforge-warden effort).
-- **osv-scanner** (>=2.6.0) — Google's OSV vulnerability scanner (Go binary): scans
+- **osv-scanner** (>=2.7.0) — Google's OSV vulnerability scanner (Go binary): scans
   lockfiles, manifests, SBOMs, and directories against the osv.dev database.
 - **opengrep** (>=1.30.2,<1.31) — `opengrep` CLI; open-source Semgrep-compatible SAST
   engine (rule-based pattern scanning of source code). `pyforge-warden` env, linux-64
@@ -324,7 +321,7 @@ All in `local-recipes`.
 
 ## 5. Project scaffolding & templating
 
-- **copier** (>=9.18.2) — template-based project scaffolding with first-class
+- **copier** (>=9.19.1) — template-based project scaffolding with first-class
   update/recopy support; **pyforge-marshal-only** (Genesis seed installer engine,
   `marshal seed` verbs). Imported only in `seed/engine/copier.py` (P-02).
 - **cookiecutter** (>=2.7.1) — template-based project scaffolding from local or git
@@ -344,9 +341,9 @@ All in `local-recipes`.
 All in `local-recipes`.
 
 Core arrays/frames:
-- **numpy** (>=2.5.3) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
+- **numpy** (>=2.5.4) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
 - **pandas** (>=3.0.6) — DataFrames for tabular data (2.x resolved).
-- **polars** (>=1.44.2) — Rust-backed columnar DataFrames; lazy queries, streaming;
+- **polars** (>=2.0.0) — Rust-backed columnar DataFrames; lazy queries, streaming;
   much faster than pandas for large data.
 - **pyarrow-all** (>=24.0.0) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
   Datasets, Flight RPC, ORC, ADBC-adjacent IO. The interchange layer between pandas,
@@ -377,9 +374,9 @@ SQL engines & tooling:
   `query-plane-boot` task) when `PYFORGE_PLATFORM_STACK_UP` is truthy; the
   in-process library face never needs it. NOTE: the installed server hard-codes
   its listen port to 3000 (no port/host flags; one positional arg, the DB path).
-- **sqlglot** (>=30.19.0) — parse, transpile, optimize SQL across ~30 dialects;
+- **sqlglot** (>=30.22.0) — parse, transpile, optimize SQL across ~30 dialects;
   build/rewrite SQL ASTs programmatically (used for feedstock analysis).
-- **sqlfluff** (>=4.3.0) — SQL linter/formatter, dialect-aware.
+- **sqlfluff** (>=4.4.0) — SQL linter/formatter, dialect-aware.
 - **psycopg2** (>=2.9.10) — real PostgreSQL driver (DB-API).
 - **apsw** (>=3.53.4.0) — thin, full-featured SQLite bindings. **vuln-db env only**
   (backend for the AppThreat vdb).
@@ -417,18 +414,18 @@ Small utilities:
 
 All in `local-recipes`.
 
-- **dagster** (>=1.13.24) — asset-based data orchestrator: software-defined assets,
+- **dagster** (>=1.13.26) — asset-based data orchestrator: software-defined assets,
   schedules, sensors, partitions, type-checked IO.
-- **dagster-webserver** (>=1.13.24) — the Dagster UI (`dagster dev`).
-- **dagster-pipes** (>=1.13.24) — run external-process transform logic (scripts,
+- **dagster-webserver** (>=1.13.26) — the Dagster UI (`dagster dev`).
+- **dagster-pipes** (>=1.13.26) — run external-process transform logic (scripts,
   containers) with structured logging/metadata back into Dagster.
-- **kedro** (>=1.6.0) — opinionated pipeline framework: nodes, pipelines, data
+- **kedro** (>=1.7.0) — opinionated pipeline framework: nodes, pipelines, data
   catalog, config environments. (A Kedro 3.14-compat warning is suppressed via
   `PYTHONWARNINGS` in the env activation.)
 - **kedro-datasets** (>=9.6.0) — all Kedro data connectors (pandas/polars/spark
   datasets, APIs, cloud storage).
-- **kedro-dagster** (>=0.8.0) — deploy Kedro pipelines onto Dagster.
-- **kedro-viz** (>=12.4.0) — interactive browser visualization of Kedro pipelines.
+- **kedro-dagster** (>=0.8.1) — deploy Kedro pipelines onto Dagster.
+- **kedro-viz** (>=12.5.0) — interactive browser visualization of Kedro pipelines.
 - **kedro-mcp** (>=0.1.2) — MCP server exposing Kedro prompts/tools to agents. From conda-forge (run-depends fastmcp, which conda-forge ships at 4.x on mcp 2.x).
 - **kedro-skills** (>=0.1.1) — `kedro skills` CLI: distributes AI coding-agent
   guidance (Markdown) into a Kedro project's `.claude/skills/` / `.agents/skills/`
@@ -436,11 +433,11 @@ All in `local-recipes`.
   env only** (dev/tooling, never a package run-dep); exact-pinned to the audited
   version (no floor) — see the audit at
   `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/kedro-skills-audit-report.md`.
-- **great-expectations** (>=1.23.2) — data-quality contracts: expectations suites,
+- **great-expectations** (>=1.24.0) — data-quality contracts: expectations suites,
   validation, data docs (used inside Kedro nodes).
 - **pandera** (>=0.32.1) — lightweight statistical dataframe validation via typed
   schemas (pandas/dask/spark).
-- **openlineage-python** (>=1.53.0) — `import openlineage.client`; emit OpenLineage
+- **openlineage-python** (>=1.54.0) — `import openlineage.client`; emit OpenLineage
   data-lineage events.
 - **opentelemetry-api / opentelemetry-sdk** (>=1.44.0) — traces/metrics/logs
   instrumentation and export (OTLP).
@@ -464,7 +461,7 @@ All in `local-recipes`.
   dashboards and web apps; works in notebooks and as served apps.
 - **panel-graphic-walker** (>=0.6.5) — embeds Graphic Walker (open-source Tableau
   alternative) as a Panel pane for drag-and-drop exploration.
-- **vizro** (>=0.1.60) — McKinsey's low-code dashboard framework (config-driven, on
+- **vizro** (>=0.1.62) — McKinsey's low-code dashboard framework (config-driven, on
   top of Plotly/Dash).
 - **vizro-ai** (>=0.4.2) — natural-language → Vizro charts/dashboards (LLM-assisted).
 - **vizro-mcp** (>=0.1.4) — MCP server for creating Vizro dashboards from agents.
@@ -489,13 +486,13 @@ to read, convert, and generate documents.
 Any-format → Markdown (LLM ingestion):
 - **markitdown** (>=0.1.8) — Microsoft's converter: PDF, DOCX, XLSX, PPTX, HTML,
   images (w/ OCR), audio → clean Markdown for LLM pipelines. The loaders below back it.
-- **mammoth** (>=1.12.2) — focused, high-fidelity .docx → HTML/Markdown.
+- **mammoth** (>=1.13.0) — focused, high-fidelity .docx → HTML/Markdown.
 - **markdown** (>=3.11) — Markdown → HTML parser.
 - **markdownify** (>=1.2.3) — HTML → Markdown.
 - **beautifulsoup4** (>=4.15.0) — `from bs4 import BeautifulSoup`; forgiving HTML
   parsing/scraping.
 - **lxml** (>=6.1.3) — fast C-backed XML/HTML parsing + XPath.
-- **pandoc** (>=3.11) — `pandoc` CLI; universal document converter (md ↔ docx ↔ html
+- **pandoc** (>=3.12.1) — `pandoc` CLI; universal document converter (md ↔ docx ↔ html
   ↔ latex ↔ epub ↔ rst …).
 
 PDF stack (pick by need):
@@ -505,11 +502,11 @@ PDF stack (pick by need):
   geometry; best for tabular PDFs.
 - **pdfminer.six** (>=20260107) — `import pdfminer`; pure-Python low-level text
   extraction (markitdown's backend).
-- **pypdf** (>=6.19.0) — pure-Python PDF read/write/merge/split/encrypt.
+- **pypdf** (>=6.20.1) — pure-Python PDF read/write/merge/split/encrypt.
 - **pdf2image** (>=1.17.0) — PDF pages → PIL images (Poppler-backed) for vision-model
   input.
 - **poppler** (>=26.9.0) — PDF rendering binaries (`pdftoppm`, `pdftotext`, …).
-- **qpdf** (>=12.4.1) — `qpdf` CLI; PDF transforms: linearize, compress,
+- **qpdf** (>=12.4.2) — `qpdf` CLI; PDF transforms: linearize, compress,
   encrypt/decrypt, split.
 
 Office formats:
@@ -519,7 +516,7 @@ Office formats:
 - **xlrd** (>=2.0.2) — read legacy Excel .xls.
 - **odfpy** (>=1.4.1) — OpenDocument (.odt/.odp/.ods) read/write.
 - **olefile** (>=0.47) — parse legacy OLE2 files (old .doc/.xls containers).
-- **office2pdf** (>=0.7.0) — `office2pdf` CLI; DOCX/XLSX/PPTX → PDF. Pure Rust, so no
+- **office2pdf** (>=0.8.1) — `office2pdf` CLI; DOCX/XLSX/PPTX → PDF. Pure Rust, so no
   LibreOffice/headless-Office dependency. Ships on all three platforms
   (linux-64 / osx-arm64 / win-64), so it is an unconditional `local-recipes` dep.
 - **pptxgenjs** (>=4.0.1) — JavaScript (Node) library for *generating* .pptx decks
@@ -531,7 +528,7 @@ Office formats:
 OCR & images:
 - **tesseract** (>=5.5.3) — Google's OCR engine binary.
 - **pytesseract** (>=0.3.13) — Python wrapper for tesseract (scanned-PDF fallback).
-- **ocrmypdf** (>=17.12.1) — `ocrmypdf` CLI; adds a searchable OCR **text layer** to a
+- **ocrmypdf** (>=17.13.0) — `ocrmypdf` CLI; adds a searchable OCR **text layer** to a
   scanned PDF while keeping the original page images (tesseract-backed).
   **linux-64 ONLY here.** The package itself is `noarch`, but it hard-deps `pngquant`,
   which conda-forge ships only for linux-64/osx-64 — so it is declared under
@@ -576,15 +573,15 @@ Hugging Face stack:
   `HF_HUB_ENABLE_HF_TRANSFER=1`.
 
 Local inference runtimes:
-- **llama.cpp** (>=10751) — `llama-cli` / `llama-server` binaries; GGUF model
+- **llama.cpp** (>=11351) — `llama-cli` / `llama-server` binaries; GGUF model
   inference on CPU/GPU; `llama-server` exposes an OpenAI-compatible API.
 - **ollama** (>=0.32.15) — the Ollama server binary (Go): `ollama serve`,
   `ollama run <model>`; local model registry + OpenAI-compatible endpoint.
-- **ollama-python** (>=0.6.2) — `import ollama`; Python client for that server.
+- **ollama-python** (>=0.6.3) — `import ollama`; Python client for that server.
 - **mlx** (>=0.32.0) — Apple's array framework. **linux-64 + osx-arm64 only** (no
   Windows). Metal-accelerated on M-series (2-3x llama.cpp on some workloads);
   on Linux it runs against BLAS/LAPACK — fine for experimentation, no perf win.
-- **mlx-lm** (>=0.31.3) — `import mlx_lm`; LLM runner on mlx (generate/serve/convert);
+- **mlx-lm** (>=0.32.0) — `import mlx_lm`; LLM runner on mlx (generate/serve/convert);
   preferred local runner on Apple Silicon. Same platform limits as mlx.
 
 Knowledge & indexing for agents:
@@ -611,7 +608,7 @@ Knowledge & indexing for agents:
   so wire `"auto"` always resolves enabled, and without these the wrapper
   crashed the whole dispatch in under 2 seconds (`ModuleNotFoundError:
   openai`) before the harness session ever started.
-- **caveman-installer** (>=2.7.0) — Claude Code output-token compression skill
+- **caveman-installer** (>=4.0.0) — Claude Code output-token compression skill
   installer (`caveman-install`; ~65% output-token cut). Renamed 2026-09-24 from
   `caveman` (a local-only name that never actually existed upstream) to the
   package's correct name now that conda-forge has graduated it under it — the
@@ -639,15 +636,15 @@ This is the stack for *building* agents and agent servers.
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
   prompt caching.
-- **google-genai** (>=2.25.0) — `from google import genai`; Gemini API client.
-- **github-copilot-sdk** (>=1.0.14) — drive GitHub Copilot programmatically from
+- **google-genai** (>=2.30.1) — `from google import genai`; Gemini API client.
+- **github-copilot-sdk** (>=1.0.21) — drive GitHub Copilot programmatically from
   Python.
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
 - **lumen-ai-anthropic** (>=1.3.0) — Anthropic backend for HoloViz Lumen AI
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.51.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.55.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
@@ -655,7 +652,7 @@ Agent frameworks:
 Agentic engines (**`python-agent-platform` env only**, CAP-5, Story 10.2 — the
 "one factory-sourced environment" for running these alongside Django on
 `python 3.12`, distinct from the agent-*building* SDKs above):
-- **langflow** (>=1.12.3) — visual agent/RAG flow builder + runtime (langflow-suite
+- **langflow** (>=1.12.4) — visual agent/RAG flow builder + runtime (langflow-suite
   feedstock, `python_min` 3.11). Pulls in `slowapi` transitively via
   `langflow-base`, which resolves to a `SelfExplainML`-channel 0.1.10 build here
   (see `channel-priority` note on the feature, § "Version pins" above).
@@ -688,10 +685,10 @@ Model Context Protocol (MCP):
   local `kedro-mcp` build are all on the SDK's own `mcp.server.mcpserver.MCPServer`
   (the renamed, current-era successor to `mcp.server.fastmcp.FastMCP`) — not
   third-party fastmcp (2026-08-29).
-- **fastmcp** (>=4.0.10) — decorator-style third-party framework for building
+- **fastmcp** (>=4.1.0) — decorator-style third-party framework for building
   MCP servers fast; kedro-mcp's run-dep. From conda-forge since 4.x shipped
   there on mcp 2.x (2026-09-26); the SelfExplainML channel pin is gone.
-- **fastmcp-slim** (>=4.0.10) — fastmcp's own exact-pinned core dep.
+- **fastmcp-slim** (>=4.1.0) — fastmcp's own exact-pinned core dep.
 - **langchain-mcp-adapters** (>=0.3.1) — expose MCP tools/resources as LangChain
   tools and vice versa.
 - **django-mcp-server** (>=0.5.7) — serve MCP from a Django app.
@@ -700,8 +697,8 @@ Model Context Protocol (MCP):
 Agent2Agent (A2A) & ACP:
 - **a2a-sdk** (>=1.1.2) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
-- **fasta2a** (>=2.0.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.81.2) — bridge the Claude Agent SDK to the Agent Client
+- **fasta2a** (>=2.1.1) — FastAPI-style A2A server implementation.
+- **claude-agent-acp** (>=0.90.0) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -712,7 +709,7 @@ All in `local-recipes` unless noted (bmad-method also in the base `python` featu
 `mybmad-dashboard` is `bmad-ui`-only). These power the planning/dev workflow documented
 in `CLAUDE.md` and `_bmad-output/`.
 
-- **bmad-method** (>=6.12.0) — core installer/CLI: agents (PM, architect, dev, …),
+- **bmad-method** (>=6.12.2) — core installer/CLI: agents (PM, architect, dev, …),
   planning workflows (PRD → architecture → epics → stories), dev execution. 6.10+
   <!-- governance-currency:ignore-start (bmad-dev-auto is the pre-6.11 name of bmad-build-auto, cited historically for what 6.10 added) -->
   gains `bmad-dev-auto`.
@@ -753,7 +750,7 @@ in `CLAUDE.md` and `_bmad-output/`.
   env only, linux-64 only** — not in `local-recipes`, which keeps its own
   explicit member pins instead. Docs: `install-matrix.md`'s Greenfield
   one-pin section.
-- **tmux** (>=3.7b_) — terminal multiplexer; **linux-64 + osx-arm64 only**; required by
+- **tmux** (>=3.8) — terminal multiplexer; **linux-64 + osx-arm64 only**; required by
   bmad-loop session spawning.
 
 ---
@@ -772,7 +769,7 @@ Django stack (LTS-pinned):
   workers > 1), Story 9.5.
 - **wagtail** (7.4 LTS) — Django CMS.
 - **coderedcms** (6.x) — CRX/CodeRed CMS built on Wagtail (marketing-site batteries).
-- **django-lasuite** (>=0.0.29) — common library for La Suite numérique Django
+- **django-lasuite** (>=0.0.30) — common library for La Suite numérique Django
   projects.
 - **bokeh-django** (>=0.2.1) — serve Bokeh apps inside Django.
 - **django-mcp-server** — (§ 11) MCP endpoint inside Django.
@@ -786,7 +783,7 @@ the Django host the § 11 agentic engines mount into, Epic 11):
 - **fastapi** (>=0.141.1) — Story 10.1's ASGI/FastAPI-integration seam; also
   arrives transitively via `langflow-base`'s own `fastapi >=0.135.0,<1.0.0`
   run-dep, so the explicit pin only documents intent.
-- **django-health-check** (>=4.6.1) — Story 10.1's K8s liveness/readiness
+- **django-health-check** (>=4.8.0) — Story 10.1's K8s liveness/readiness
   requirement (CAP-1); needs `django>=5.2`, matching this env's floor. A
   DIFFERENT install from Story 10.1's pip-pinned `django-health-check==3.24.0`
   in `src/platform/requirements/*.txt` — the two are unrelated, differently-scoped
@@ -812,28 +809,28 @@ PROCESSES, not containers or managed services):
   same version, which the solver would otherwise pick. The driver caps sit at the last releases with
   libpq-17 builds: psycopg / psycopg-c 3.2.10, psycopg2 2.9.10 and pgvector 0.8.1, measured
   2026-09-26.
-- **redis-server** (>=8.10.1) — per-user local Redis server (`redis-server` binary).
+- **redis-server** (>=8.10.2) — per-user local Redis server (`redis-server` binary).
   Cache + Celery broker (AD-1). **No native win-64 build** — AD-16's native-Windows
   sub-posture note: `fakeredis` + eager-Celery stand in there, or WSL2/a remote.
 - **kubernetes-helm** (>=4.3.0) — the `helm` CLI, for Epic 12 chart work.
-- **kubernetes-client** (>=1.34.3) — `kubectl`, for the same chart/deploy work.
+- **kubernetes-client** (>=1.37.1) — `kubectl`, for the same chart/deploy work.
 - **django-debug-toolbar** (>=8.0.0) — Story 56.1 / pdl:CAP-1. Required because
   `config.settings.local` always imports `debug_toolbar`. Not on the image env.
 
 Cloud / storage / identity:
-- **google-cloud-bigquery** (>=3.45.2) — `from google.cloud import bigquery`;
+- **google-cloud-bigquery** (>=3.46.1) — `from google.cloud import bigquery`;
   BigQuery client. Used by cf_atlas Phase P (opt-in `PHASE_P_ENABLED=1`); auth via
   ADC creds cached by the `gcloud` env.
-- **google-cloud-sdk** (>=586.0.0) — the `gcloud` CLI. **`gcloud` env only,
+- **google-cloud-sdk** (>=588.0.0) — the `gcloud` CLI. **`gcloud` env only,
   linux/macOS only.** Used once for `gcloud auth application-default login`; after
   that the BigQuery lib picks up cached ADC automatically.
-- **azure-identity** (>=1.25.3) — Azure AD/Entra credential objects for all Azure
+- **azure-identity** (>=1.26.0) — Azure AD/Entra credential objects for all Azure
   SDKs.
 - **msgraph-sdk** (>=1.48.0) — Microsoft Graph API client (M365: mail, files, users).
 - **minio** (>=7.2.20) — Python client SDK for MinIO / any S3-compatible object
   store.
-- **moto** (>=5.2.3) — mock AWS services in tests (S3, EC2, …) without network.
-- **boto3** (>=1.43.102 `platform-ci-test`, >=1.43.75 `python-agent-platform`) — AWS
+- **moto** (>=5.2.4) — mock AWS services in tests (S3, EC2, …) without network.
+- **boto3** (>=1.43.111, >=1.43.75 `python-agent-platform`) — AWS
   SDK; `config.object_storage`'s S3 client construction against the local
   Silo/Garage/SeaweedFS backends or real StorageGRID (Story 50.3); not an AWS
   runtime dependency.
@@ -842,7 +839,7 @@ Cloud / storage / identity:
   since 2026-09-16); Story 50.1's SelfExplainML build is superseded.
 - **garage** (>=2.4.1) — alternative S3-compatible backend; `platform-object-storage`
   env only, linux-64 only (no win-64 conda-forge build).
-- **seaweedfs** (>=4.47) — alternative S3-compatible / distributed storage backend
+- **seaweedfs** (>=4.48) — alternative S3-compatible / distributed storage backend
   (files, Iceberg tables); `platform-object-storage` env only, linux-64 only.
 
 HTTP & APIs:
@@ -862,7 +859,7 @@ HTTP & APIs:
 All in `local-recipes`.
 
 Linters & formatters:
-- **ruff** (>=0.16.9) — extremely fast Python linter + formatter (flake8/isort/black
+- **ruff** (>=0.17.0) — extremely fast Python linter + formatter (flake8/isort/black
   replacement). Default Python QA tool here.
 - **yamllint** (>=1.38.0) — YAML linting.
 - **taplo** (>=0.10.0) — TOML linter/formatter/LSP (use on pixi.toml itself).
@@ -873,25 +870,25 @@ Linters & formatters:
 Type checkers (three available — pick one per task):
 - **pyright** (>=1.1.414) — Microsoft's fast type checker (the default for quick
   checks).
-- **mypy** (>=2.3.1) — the reference type checker (plugin ecosystem).
-- **pyrefly** (>=1.3.1) — Meta's Rust-based checker (fastest on big codebases).
+- **mypy** (>=2.4.0) — the reference type checker (plugin ecosystem).
+- **pyrefly** (>=1.3.2) — Meta's Rust-based checker (fastest on big codebases).
 
 Testing:
 - **pytest** (>=9.1.1) — the test framework (repo suites live under
   `.claude/skills/conda-forge-expert/tests`).
-- **pytest-mock** (>=3.15.1) — `mocker` fixture over unittest.mock.
+- **pytest-mock** (>=3.16.0) — `mocker` fixture over unittest.mock.
 - **pytest-cov** (>=7.1.0) — coverage reporting.
 - **pytest-xdist** (>=3.8.0) — parallel test execution (`-n auto`).
 
 Browser automation:
-- **playwright** (>=1.63.0) — the Node Playwright CLI (browser installs, codegen).
+- **playwright** (>=1.64.0) — the Node Playwright CLI (browser installs, codegen).
 - **playwright-python** (>=1.62.0) — `from playwright.sync_api import ...`; drive
   Chromium/Firefox/WebKit from Python (scraping, E2E, screenshots).
 
 Terminal & CLI building:
 - **rich** (>=14.3.4) — rich terminal output: tables, progress bars, markdown,
   syntax highlighting, tracebacks.
-- **typer** (>=0.27.2) — build CLIs from type-hinted functions (click-based).
+- **typer** (>=0.27.3) — build CLIs from type-hinted functions (click-based).
 
 Node package managers (`pnpm` is in § 1, the `python` feature, since Story 67.1):
 - **yarn** (>=4.18.1) — Yarn Berry.
@@ -908,7 +905,7 @@ First `vdb-refresh` downloads ~600MB to `.claude/data/conda-forge-expert/vdb/`.
   --vdb`, `scan-project`, and cf_atlas Phase G/G'. CISA KEV is fetched out-of-band
   (`fetch-cisa-kev` task) because vdb's aqua source hardcodes KEV exclusion.
 - **apsw** (>=3.53.4.0) — SQLite backend for vdb.
-- **cyclonedx-bom** (>=7.4.0) — `cyclonedx-py` CLI: generate CycloneDX SBOMs from
+- **cyclonedx-bom** (>=7.5.0) — `cyclonedx-py` CLI: generate CycloneDX SBOMs from
   environments/requirements/poetry/pipenv.
 - **cyclonedx-python-lib** (>=11.12.0) — programmatic CycloneDX BOM model
   (read/build/serialize 1.x BOMs; used by universe-sbom / inventory-match tooling).
@@ -928,12 +925,12 @@ CVEs), `inventory-channel` (conda/PyPI/npm/crates mirrors), `detail-cf-atlas[-vd
 
 Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-test.pypi-dependencies]` removed) and OpenFeature/Liquibase landed on the host. **`factory_boy`** and **`django_coverage_plugin`** are the conda names (not `factory-boy` / `django-coverage-plugin`). **`redis-py`** is the Redis client (never the `redis` conda package). OpenFeature quartet is **SelfExplainML**.
 - **argon2-cffi** (>=25.1.0) — password hashing (Django/allauth).
-- **bmad-module-skill-forge** (>=2.2.0) — BMAD Skill Forge module (conda-forge).
+- **bmad-module-skill-forge** (>=3.0.0) — BMAD Skill Forge module (conda-forge).
 - **cachebox** (>=5.2.3) — fast in-process cache.
 - **crispy-bootstrap5** (>=2026.9) — django-crispy-forms Bootstrap 5 template pack.
 - **cron-descriptor** (>=2.1.0) — human-readable cron strings (django-celery-beat).
-- **cryptography** (>=50.0.1) — crypto primitives (Fernet, TLS helpers).
-- **django-allauth** (>=65.19.4) — Django auth (accounts/social/MFA); `platform-ci-test` + host.
+- **cryptography** (>=50.0.2) — crypto primitives (Fernet, TLS helpers).
+- **django-allauth** (>=65.19.7) — Django auth (accounts/social/MFA); `platform-ci-test` + host.
 - **django-anymail** (>=15.2) — Django transactional email backends.
 - **django-appconf** (>=1.2.0) — Django app default-settings helper (compressor).
 - **django-celery-beat** (>=2.9.0) — periodic Celery tasks in Django DB.
@@ -942,59 +939,59 @@ Conda pins added 2026-08-25 when Platform CI left PyPI (`[feature.platform-ci-te
 - **django-debug-toolbar** (>=8.0.0) — Django debug panel (`platform-dev` / `platform-ci-test` / local). Not on `python-agent-platform` (image).
 - **django-environ** (>=0.14.0) — 12-factor env → Django settings.
 - **django-extensions** (>=4.1) — Django management extras.
-- **django-ipware** (>=7.0.1) — client IP from request (wraps python-ipware).
+- **django-ipware** (>=8.0.0) — client IP from request (wraps python-ipware).
 - **django-model-utils** (>=5.0.0) — Django model mixins/utilities.
 - **django-redis** (>=7.0.0) — Django cache backend on Redis.
 - **django-structlog** (>=10.1.0) — structlog integration for Django.
 - **django-stubs** (>=6.1.1) — mypy/django-stubs types (`platform-ci-test`).
 - **django-timezone-field** (>=7.2.2) — timezone model field (celery-beat).
 - **django_coverage_plugin** (>=3.2.2) — coverage.py Django template plugin (conda name).
-- **djlint** (>=1.46.2) — Django/Jinja HTML linter.
+- **djlint** (>=1.46.4) — Django/Jinja HTML linter.
 - **factory_boy** (>=3.3.3) — test fixtures (conda name `factory_boy`, not factory-boy).
 - **fido2** (>=2.2.1) — WebAuthn/FIDO2 (allauth MFA extra).
 - **gunicorn** (>=26.2.0) — WSGI HTTP server.
 - **hiredis** (>=3.4.2) — fast Redis protocol parser (optional redis-py accel).
-- **httptools** (>=0.8.0) — fast HTTP parser (uvicorn[standard]).
+- **httptools** (>=0.9.0) — fast HTTP parser (uvicorn[standard]).
 - **ipdb** (>=0.13.13) — IPython debugger.
 - **liquibase** (>=5.0.4) — DB changelog runner (`python-agent-platform`).
 - **liquibase-postgresql** (>=5.0.4,<42, `channel = "conda-forge"`) — Liquibase's PostgreSQL dialect extension (no driver). `<42` excludes SelfExplainML's retired 42.7.13 build, which was the JDBC driver under this name (Story 27.5).
-- **pgjdbc** (>=42.7.13) — the PostgreSQL JDBC driver (`postgresql.jar` in `share/liquibase/lib`, SCRAM shaded in), vendored for Liquibase. **SelfExplainML** until conda-forge publishes it (staged-recipes #34956); a lock refresh then takes conda-forge's.
-- **mcp-types** (>=2.2.0) — MCP protocol types (host/CI; no fastmcp).
+- **pgjdbc** (>=42.7.14) — the PostgreSQL JDBC driver (`postgresql.jar` in `share/liquibase/lib`, SCRAM shaded in), vendored for Liquibase. **SelfExplainML** until conda-forge publishes it (staged-recipes #34956); a lock refresh then takes conda-forge's.
+- **mcp-types** (>=2.3.0) — MCP protocol types (host/CI; no fastmcp).
 - **openfeature-flagd-api** (>=1.0.0) — OpenFeature flagd API types (conda-forge).
 - **openfeature-flagd-core** (>=1.0.0) — OpenFeature flagd core (**SelfExplainML**).
 - **openfeature-provider-flagd** (>=0.5.2) — OpenFeature flagd provider (**SelfExplainML**); 0.5.2 is protobuf 7, which langflow >=1.12.3 requires (steward 26.5).
 - **openfeature-sdk** (>=0.10.0) — OpenFeature Python SDK (conda-forge).
-- **opentelemetry-exporter-otlp-proto-http** (>=1.44.0) — OTLP HTTP exporter.
-- **opentelemetry-instrumentation-asgi** (>=0.65b0) — OTel ASGI instrumentation.
-- **opentelemetry-instrumentation-celery** (>=0.65b0) — OTel Celery instrumentation.
-- **opentelemetry-instrumentation-django** (>=0.65b0) — OTel Django instrumentation.
-- **opentelemetry-instrumentation-psycopg** (>=0.65b0) — OTel psycopg v3 instrumentation.
-- **opentelemetry-instrumentation-redis** (>=0.65b0) — OTel Redis instrumentation.
-- **opentelemetry-instrumentation-wsgi** (>=0.65b0) — OTel WSGI instrumentation.
-- **pre-commit** (>=4.6.2) — git hook runner (`platform-ci-test`).
+- **opentelemetry-exporter-otlp-proto-http** (>=1.45.1) — OTLP HTTP exporter.
+- **opentelemetry-instrumentation-asgi** (>=0.66) — OTel ASGI instrumentation.
+- **opentelemetry-instrumentation-celery** (>=0.66) — OTel Celery instrumentation.
+- **opentelemetry-instrumentation-django** (>=0.66) — OTel Django instrumentation.
+- **opentelemetry-instrumentation-psycopg** (>=0.66) — OTel psycopg v3 instrumentation.
+- **opentelemetry-instrumentation-redis** (>=0.66) — OTel Redis instrumentation.
+- **opentelemetry-instrumentation-wsgi** (>=0.66) — OTel WSGI instrumentation.
+- **pre-commit** (>=4.7.0) — git hook runner (`platform-ci-test`).
 - **prometheus_client** (>=0.26.0) — Prometheus metrics client; `platform-ci-test`
   + `pyforge-doctor` envs.
 - **pyjwt** (>=2.15.0) — JSON Web Tokens.
 - **pytest-django** (>=4.13.0) — pytest plugin for Django.
 - **pytest-sugar** (>=1.1.1) — prettier pytest progress.
 - **python-crontab** (>=3.4.0) — crontab parse/edit (celery-beat).
-- **python-ipware** (>=3.0.0) — client IP extraction.
+- **python-ipware** (>=4.1.1) — client IP extraction.
 - **python-multipart** (>=0.0.32) — multipart form parser (Starlette/FastAPI).
 - **python-slugify** (>=9.0.0) — slugify strings.
-- **pytz** (>=2026.4.post1) — IANA tz database for `pytz.timezone(...)`; `dbgpt-sidecar` only — `dbgpt_serve` imports it and pandas 3.x no longer pulls it in.
+- **pytz** (>=2026.5) — IANA tz database for `pytz.timezone(...)`; `dbgpt-sidecar` only — `dbgpt_serve` imports it and pandas 3.x no longer pulls it in.
 - **qrcode** (>=8.2) — QR codes (allauth MFA extra).
 - **rcssmin** (>=1.2.2) — CSS minifier (django-compressor).
 - **rjsmin** (>=1.2.5) — JS minifier (django-compressor).
 - **sphinx** (>=9.1.0) — docs generator (`platform-ci-test`).
 - **sphinx-autobuild** (>=2025.8.25) — live-reload Sphinx.
-- **sse-starlette** (>=3.4.11) — Server-Sent Events for Starlette.
+- **sse-starlette** (>=3.5.0) — Server-Sent Events for Starlette.
 - **text-unidecode** (>=1.3) — ASCII transliteration (python-slugify).
 - **uvicorn** (>=0.54.0) — ASGI server.
 - **uvicorn-worker** (>=0.4.0) — gunicorn worker class for uvicorn.
 - **uvloop** (>=0.22.1) — fast asyncio loop (uvicorn[standard], not Windows).
 - **vizro-e2e-flow** (>=0.1.7) — Vizro end-to-end flow helper.
 - **watchfiles** (>=1.3.0) — file watcher (uvicorn reload).
-- **werkzeug** (>=3.1.8) — WSGI utilities (Flask/Django debug).
+- **werkzeug** (>=3.1.9) — WSGI utilities (Flask/Django debug).
 - **whitenoise** (>=6.12.0) — Django static-file serving.
 
 ---

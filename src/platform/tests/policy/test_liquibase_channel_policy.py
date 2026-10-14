@@ -57,13 +57,23 @@ def _assert_analytics_disabled(env: dict[str, Any]) -> None:
     )
 
 
+def _floor_of(spec: Any) -> Version:
+    """The version of a bare ``>=X`` floor; 0 for any other shape, which fails it."""
+    if not isinstance(spec, str):
+        return Version("0")
+    match = re.fullmatch(r">=\s*([0-9][^,\s]*)", spec)
+    return Version(match.group(1)) if match else Version("0")
+
+
 def _assert_liquibase_pins(deps: dict[str, Any]) -> None:
     assert "liquibase" in deps, (
         "pixi.toml [feature.python-agent-platform.dependencies] must pin "
         "liquibase (steward 27.1 / FR-21)"
     )
-    assert deps.get("liquibase") == LIQUIBASE_SPEC, (
-        "liquibase must be pinned "
+    # A floor, not a literal: an estate refresh raises floors to the locked version
+    # (steward 100.7).
+    assert _floor_of(deps.get("liquibase")) >= LIQUIBASE_FLOOR, (
+        "liquibase must be pinned at or above "
         f"{LIQUIBASE_SPEC!r} so 5.0.2/5.0.3 SEARCH_PATH defects are excluded "
         f"(got {deps.get('liquibase')!r})"
     )
@@ -71,8 +81,8 @@ def _assert_liquibase_pins(deps: dict[str, Any]) -> None:
         "pixi.toml [feature.python-agent-platform.dependencies] must pin "
         "pgjdbc (vendored PostgreSQL JDBC driver; air-gap / FR-21)"
     )
-    assert deps.get("pgjdbc") == JDBC_SPEC, (
-        f"pgjdbc must be pinned {JDBC_SPEC!r} (got {deps.get('pgjdbc')!r})"
+    assert _floor_of(deps.get("pgjdbc")) >= JDBC_FLOOR, (
+        f"pgjdbc must be pinned at or above {JDBC_SPEC!r} (got {deps.get('pgjdbc')!r})"
     )
     assert deps.get("liquibase-postgresql") == EXTENSION_SPEC, (
         "liquibase-postgresql must be the conda-forge dialect extension "
@@ -174,6 +184,20 @@ def test_liquibase_spec_below_504_reds() -> None:
     drifted = dict(_platform_deps())
     drifted["liquibase"] = ">=5.0.3"
     with pytest.raises(AssertionError, match="liquibase"):
+        _assert_liquibase_pins(drifted)
+
+
+def test_a_raised_jdbc_floor_passes() -> None:
+    """A refresh raises floors to the locked version; a higher floor still passes."""
+    raised = dict(_platform_deps())
+    raised["pgjdbc"] = ">=42.7.99"
+    _assert_liquibase_pins(raised)
+
+
+def test_jdbc_floor_below_42_7_13_reds() -> None:
+    drifted = dict(_platform_deps())
+    drifted["pgjdbc"] = ">=42.7.12"
+    with pytest.raises(AssertionError, match="pgjdbc"):
         _assert_liquibase_pins(drifted)
 
 

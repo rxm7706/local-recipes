@@ -202,9 +202,63 @@ def _render_upgrade_command(deps: EstateDeps) -> tuple[str, list[str]]:
     return command, shlex.split(command)
 
 
+_ARTIFACT_SUFFIXES = (".conda", ".tar.bz2")
+
+
+def _artifact_version(side: object) -> str:
+    """The version field of a conda artifact URL: ``<name>-<version>-<build><suffix>``.
+
+    Names carry dashes (``gcc_linux-64``, ``clang-18``), so split from the right.
+    """
+    if not isinstance(side, dict):
+        return ""
+    if side.get("version"):
+        return str(side["version"])
+    base = str(side.get("conda") or "").rsplit("/", 1)[-1]
+    for suffix in _ARTIFACT_SUFFIXES:
+        if base.endswith(suffix):
+            parts = base[: -len(suffix)].rsplit("-", 2)
+            return parts[1] if len(parts) == 3 else ""  # noqa: PLR2004
+    return ""
+
+
+def _parse_environment_moves(environments: dict[str, Any]) -> list[dict[str, str]]:
+    """pixi 0.8x shape: ``{"environment": {env: {platform: [{name, before, after, explicit}]}}}``.
+
+    One row per (package, environment, from, to) for the packages the manifest declares
+    (``explicit``); the platforms of one environment collapse into one row.
+    """
+    seen: set[tuple[str, str, str, str]] = set()
+    moves: list[dict[str, str]] = []
+    for env in sorted(environments):
+        platforms = environments[env]
+        if not isinstance(platforms, dict):
+            continue
+        for platform in sorted(platforms):
+            items = platforms[platform]
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if not isinstance(item, dict) or not item.get("explicit"):
+                    continue
+                row = (
+                    str(item.get("name") or ""),
+                    env,
+                    _artifact_version(item.get("before")),
+                    _artifact_version(item.get("after")),
+                )
+                if not row[0] or row in seen:
+                    continue
+                seen.add(row)
+                moves.append({"package": row[0], "feature": row[1], "from": row[2], "to": row[3]})
+    return moves
+
+
 def _parse_pixi_moves(payload: object) -> list[dict[str, str]]:
     """Normalize pixi upgrade --json (or --dry-run --json) into move rows."""
     moves: list[dict[str, str]] = []
+    if isinstance(payload, dict) and isinstance(payload.get("environment"), dict):
+        return _parse_environment_moves(payload["environment"])
     if isinstance(payload, list):
         items = payload
     elif isinstance(payload, dict):
@@ -253,7 +307,17 @@ def _list_journals(root: Path) -> list[Path]:
     directory = _journal_dir(root)
     if not directory.is_dir():
         return []
-    return sorted(directory.glob("*.json"))
+    return sorted(directory.glob("*.json"), key=_journal_order)
+
+
+def _journal_order(path: Path) -> tuple[str, int]:
+    """``2026-10-14.json`` is that day's first journal, ``2026-10-14-2.json`` its second.
+
+    A plain name sort puts ``-2`` before the bare date (``-`` sorts before ``.``).
+    """
+    stem = path.stem
+    day, seq = stem[:10], stem[11:]
+    return day, int(seq) if seq.isdigit() else 1
 
 
 def _days_since_last_journal(root: Path, *, now: datetime) -> int | None:
@@ -427,6 +491,111 @@ def _next_journal_path(root: Path, *, today: date) -> Path:
         suffix += 1
 
 
+_MAX_CONVERGE_ROUNDS = 4
+
+
+class _RefreshRefused(Exception):
+    """A refresh step failed; ``run_refresh`` resets the pixi files and journals the refusal."""
+
+
+def _lowered_floors(deps: EstateDeps, base_sha: str, steps: list[dict]) -> set[str]:
+    argv = [sys.executable, "scripts/pin_policy_check.py", "--diff", base_sha, "--json"]
+    started = time.monotonic()
+    proc = deps.runner(argv, deps.root)
+    _record_step(steps, argv, proc, started)
+    if proc.returncode not in (0, 1):
+        raise _RefreshRefused(f"pin policy diff could not run (exit {proc.returncode})")
+    try:
+        findings = json.loads(proc.stdout or "[]")
+    except json.JSONDecodeError as exc:
+        raise _RefreshRefused("pin policy diff printed no JSON") from exc
+    if not isinstance(findings, list):
+        raise _RefreshRefused("pin policy diff printed no finding list")
+    return {
+        str(f["package"])
+        for f in findings
+        if isinstance(f, dict) and f.get("kind") == "lowered-floor" and f.get("package")
+    }
+
+
+def _reset_pixi_files(deps: EstateDeps, base_sha: str, steps: list[dict]) -> bool:
+    argv = ["git", "checkout", base_sha, "--", "pixi.toml", "pixi.lock"]
+    started = time.monotonic()
+    proc = deps.runner(argv, deps.root)
+    _record_step(steps, argv, proc, started)
+    return proc.returncode == 0
+
+
+def _converge_upgrade(
+    deps: EstateDeps, command_argv: list[str], base_sha: str, steps: list[dict]
+) -> tuple[list[dict], dict[str, Any]]:
+    """Run ``pixi upgrade``; when it lowers a declared floor, exclude that package and rerun.
+
+    ``latest-up`` lowers a floor only when it raised another package to a version the old
+    floor cannot satisfy. ``pin_policy_restore`` would put the floor back and leave
+    ``pixi lock`` unsolvable (Story 100.7: cron-descriptor against django-celery-beat, openai
+    against litellm). Excluding the package that would be lowered keeps its declaration in the
+    solve, so the upgrade picks a version of the other package that fits it. Each retry starts
+    from the base ``pixi.toml`` and ``pixi.lock``. A failed upgrade or reset refuses.
+    """
+    excluded: list[str] = []
+    moves: list[dict] = []
+    for round_no in range(1, _MAX_CONVERGE_ROUNDS + 1):
+        argv = [*command_argv, *(a for pkg in excluded for a in ("--exclude", pkg))]
+        started = time.monotonic()
+        moves, proc = _run_pixi_upgrade_json(deps, argv, dry_run=False)
+        _record_step(steps, [*argv, "--json"], proc, started)
+        if proc.returncode != 0:
+            raise _RefreshRefused(f"pixi upgrade failed in round {round_no} (exit {proc.returncode})")
+        new = sorted(_lowered_floors(deps, base_sha, steps) - set(excluded))
+        if not new:
+            return moves, {"rounds": round_no, "excluded": excluded, "converged": True, "unresolved": []}
+        if round_no == _MAX_CONVERGE_ROUNDS:
+            return moves, {"rounds": round_no, "excluded": excluded, "converged": False, "unresolved": new}
+        if not _reset_pixi_files(deps, base_sha, steps):
+            raise _RefreshRefused("could not reset pixi.toml and pixi.lock to the base commit")
+        excluded.extend(new)
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
+def _refresh_journal(
+    deps: EstateDeps,
+    base_sha: str,
+    command: str,
+    moves: list[dict],
+    converge: dict[str, Any],
+    losses: list[Any],
+    transitive: bool,
+    steps: list[dict],
+    *,
+    realize_due: list[str],
+) -> dict[str, Any]:
+    manifest_path = deps.root / "_bmad" / "_config" / "manifest.yaml"
+    pixi_path = deps.root / "pixi.toml"
+    return {
+        "base_sha": base_sha,
+        "result_sha": "",
+        "platform": deps.platform(),
+        "command": command,
+        "moves": moves,
+        "converge": converge,
+        "losses_restored": losses,
+        "fan_out": {"ok": False, "findings": []},
+        "realize_due": realize_due,
+        "transitive": transitive,
+        "bmad": {
+            "pinned": _bmad_floor_from_pixi(pixi_path, _BMAD_CORE) or "unknown",
+            "installed": _read_manifest_version(manifest_path) or "unknown",
+            "latest": deps.bmad_latest(_BMAD_CORE) or "unknown",
+            "applied": False,
+        },
+        "steps": steps,
+        "realize": {},
+        "reconcile": {},
+        "verify": {},
+    }
+
+
 def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
     refused = _ensure_flag(deps)
     if refused is not None:
@@ -439,41 +608,58 @@ def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
     steps: list[dict] = []
     base_sha = deps.head_sha()
     command, command_argv = _render_upgrade_command(deps)
-    started = time.monotonic()
-    moves, upgrade_proc = _run_pixi_upgrade_json(deps, command_argv, dry_run=False)
-    _record_step(steps, command_argv + ["--json"], upgrade_proc, started)
-
-    if transitive:
-        update_argv = ["pixi", "update"]
-        started = time.monotonic()
-        update_proc = deps.runner(update_argv, deps.root)
-        _record_step(steps, update_argv, update_proc, started)
-
-    diff_argv = [sys.executable, "scripts/pin_policy_check.py", "--diff", base_sha, "--json"]
-    started = time.monotonic()
-    diff_proc = deps.runner(diff_argv, deps.root)
-    _record_step(steps, diff_argv, diff_proc, started)
+    moves: list[dict] = []
+    converge: dict[str, Any] = {"rounds": 0, "excluded": [], "converged": False, "unresolved": []}
     losses: list[Any] = []
-    if diff_proc.returncode != 0 and (diff_proc.stdout or "").strip():
-        try:
-            losses = json.loads(diff_proc.stdout)
-        except json.JSONDecodeError:
-            losses = [{"raw": diff_proc.stdout.strip()}]
-        restore_argv = [sys.executable, "scripts/pin_policy_restore.py", "--from", base_sha]
-        started = time.monotonic()
-        restore_proc = deps.runner(restore_argv, deps.root)
-        _record_step(steps, restore_argv, restore_proc, started)
-        if restore_proc.returncode != 0:
-            return DutyResult(
-                ok=False,
-                summary=f"estate refresh: pin policy restore refused (exit {restore_proc.returncode})",
-                details={"exit_code": EXIT_ESTATE_REFUSAL, "steps": steps},
-            )
+    try:
+        moves, converge = _converge_upgrade(deps, command_argv, base_sha, steps)
+        if converge["excluded"]:
+            command = " ".join([command, *(f"--exclude {pkg}" for pkg in converge["excluded"])])
 
-    lock_argv = ["pixi", "lock"]
-    started = time.monotonic()
-    lock_proc = deps.runner(lock_argv, deps.root)
-    _record_step(steps, lock_argv, lock_proc, started)
+        if transitive:
+            update_argv = ["pixi", "update"]
+            started = time.monotonic()
+            update_proc = deps.runner(update_argv, deps.root)
+            _record_step(steps, update_argv, update_proc, started)
+            if update_proc.returncode != 0:
+                raise _RefreshRefused(f"pixi update failed (exit {update_proc.returncode})")
+
+        diff_argv = [sys.executable, "scripts/pin_policy_check.py", "--diff", base_sha, "--json"]
+        started = time.monotonic()
+        diff_proc = deps.runner(diff_argv, deps.root)
+        _record_step(steps, diff_argv, diff_proc, started)
+        if diff_proc.returncode not in (0, 1):
+            raise _RefreshRefused(f"pin policy diff could not run (exit {diff_proc.returncode})")
+        if diff_proc.returncode != 0 and (diff_proc.stdout or "").strip():
+            try:
+                losses = json.loads(diff_proc.stdout)
+            except json.JSONDecodeError:
+                losses = [{"raw": diff_proc.stdout.strip()}]
+            restore_argv = [sys.executable, "scripts/pin_policy_restore.py", "--from", base_sha]
+            started = time.monotonic()
+            restore_proc = deps.runner(restore_argv, deps.root)
+            _record_step(steps, restore_argv, restore_proc, started)
+            if restore_proc.returncode != 0:
+                raise _RefreshRefused(f"pin policy restore refused (exit {restore_proc.returncode})")
+
+        lock_argv = ["pixi", "lock"]
+        started = time.monotonic()
+        lock_proc = deps.runner(lock_argv, deps.root)
+        _record_step(steps, lock_argv, lock_proc, started)
+        if lock_proc.returncode != 0:
+            raise _RefreshRefused(f"pixi lock failed (exit {lock_proc.returncode})")
+    except _RefreshRefused as refusal:
+        reset_ok = _reset_pixi_files(deps, base_sha, steps)
+        journal = _refresh_journal(deps, base_sha, command, moves, converge, losses, transitive, steps, realize_due=[])
+        journal["refused"] = str(refusal)
+        journal_path = _next_journal_path(deps.root, today=deps.now().date())
+        journal_path.write_text(json.dumps(journal, indent=2) + "\n", encoding="utf-8")
+        tail = "" if reset_ok else "; pixi.toml/pixi.lock could NOT be reset to the base commit"
+        return DutyResult(
+            ok=False,
+            summary=f"estate refresh: {refusal}{tail} (journal → {journal_path.relative_to(deps.root)})",
+            details={"exit_code": EXIT_ESTATE_REFUSAL, "steps": steps, "journal_path": str(journal_path)},
+        )
 
     fan_argv = [sys.executable, "scripts/pin_policy_check.py", "--fan-out", "--json"]
     started = time.monotonic()
@@ -495,33 +681,13 @@ def run_refresh(deps: EstateDeps, *, transitive: bool) -> DutyResult:
         bump_proc = deps.runner(bump_argv, deps.root)
         _record_step(steps, bump_argv, bump_proc, started)
 
-    manifest_path = deps.root / "_bmad" / "_config" / "manifest.yaml"
-    pixi_path = deps.root / "pixi.toml"
-    bmad_block = {
-        "pinned": _bmad_floor_from_pixi(pixi_path, _BMAD_CORE) or "unknown",
-        "installed": _read_manifest_version(manifest_path) or "unknown",
-        "latest": deps.bmad_latest(_BMAD_CORE) or "unknown",
-        "applied": False,
-    }
     from .estate_realize import compute_realize_due_for_refresh
 
     realize_due = compute_realize_due_for_refresh(deps.root, moves)
-    journal = {
-        "base_sha": base_sha,
-        "result_sha": "",
-        "platform": deps.platform(),
-        "command": command,
-        "moves": moves,
-        "losses_restored": losses,
-        "fan_out": {"ok": fan_ok, "findings": fan_findings},
-        "realize_due": realize_due,
-        "transitive": transitive,
-        "bmad": bmad_block,
-        "steps": steps,
-        "realize": {},
-        "reconcile": {},
-        "verify": {},
-    }
+    journal = _refresh_journal(
+        deps, base_sha, command, moves, converge, losses, transitive, steps, realize_due=realize_due
+    )
+    journal["fan_out"] = {"ok": fan_ok, "findings": fan_findings}
     today = deps.now().date()
     journal_path = _next_journal_path(deps.root, today=today)
     journal_path.write_text(json.dumps(journal, indent=2) + "\n", encoding="utf-8")
@@ -587,10 +753,11 @@ class EstateDuty:
         if verb == "refresh":
             return run_refresh(deps, transitive=bool(getattr(ns, "transitive", False)))
         if verb == "reconcile":
-            from .estate_reconcile import ReconcileDeps, run_reconcile
+            from .estate_reconcile import ReconcileDeps, production_reconcile_seams, run_reconcile
 
             rdeps = getattr(ns, "_reconcile_deps", None)
             if rdeps is None:
+                seams = production_reconcile_seams(deps.runner)
                 rdeps = ReconcileDeps(
                     root=deps.root,
                     runner=deps.runner,
@@ -602,6 +769,9 @@ class EstateDuty:
                     bmad_latest=deps.bmad_latest,
                     now=deps.now,
                     enforce_require=deps.enforce_require,
+                    memlog_append=seams.memlog_append,
+                    git_add=seams.git_add,
+                    stamp_spec=seams.stamp_spec,
                 )
             journal_path = getattr(ns, "journal_path", None)
             return run_reconcile(rdeps, journal_path=journal_path)

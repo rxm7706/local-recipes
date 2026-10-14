@@ -135,7 +135,7 @@ Then append/replace the registry entry in forge-tier.yaml. Failures never block 
 
 ### Example 2: Consumer Discovery (audit-skill)
 
-**Context:** Audit-skill needs temporal context for drift detection.
+**Context:** Audit-skill's Deep-tier semantic diff retrieves what the skill documents about each export, then checks each claim against the current source.
 
 **Implementation:** Read `qmd_collections` from forge-tier.yaml. Find entry where `skill_name` matches AND `type` is `"extraction"`. If found, query via qmd_bridge. If not found, log and continue without T2 enrichment — not an error.
 
@@ -143,7 +143,7 @@ Then append/replace the registry entry in forge-tier.yaml. Failures never block 
 
 **Context:** Setup-forge verifies QMD health on every run.
 
-**Implementation:** Cross-reference live QMD collections against registry. Classify as healthy (in both), orphaned (in QMD only), or stale (in registry only). Prompt user before removing orphans. Silently clean stale registry entries.
+**Implementation:** Cross-reference live QMD collections against registry. Classify as healthy (in both), orphaned (in QMD only, and indexed from a folder inside this project: QMD's index is shared by every project on the machine, so another project's collections never count), or stale (in registry only). Prompt user before removing orphans, and check each one's folder again just before removing it. Silently clean stale registry entries.
 
 ## Related Fragments
 

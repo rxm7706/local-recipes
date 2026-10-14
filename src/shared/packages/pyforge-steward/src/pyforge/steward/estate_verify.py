@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 import sys
 import time
 import tomllib
@@ -117,8 +118,18 @@ def _env_supported(document: dict[str, Any], env_name: str, platform: str) -> bo
     return platform in plats
 
 
-def _environment_holding_task(pixi_data: dict[str, Any], task: str, *, root: Path) -> str | None:
-    """Resolve which ``[environments]`` row composes the feature that owns ``task``."""
+def _environment_holding_task(
+    pixi_data: dict[str, Any],
+    task: str,
+    *,
+    root: Path,
+    prefer: tuple[str, ...] = (),
+) -> str | None:
+    """Resolve which ``[environments]`` row composes the feature that owns ``task``.
+
+    A task composed into several envs (the guild tasks reach ``local-recipes`` too) runs in
+    the first ``prefer`` env that holds it, so a register test runs where its row lives.
+    """
     owning_features: set[str] = set()
     for feat_name, feat in pixi_data.get("feature", {}).items():
         tasks = feat.get("tasks") if isinstance(feat, dict) else None
@@ -126,10 +137,15 @@ def _environment_holding_task(pixi_data: dict[str, Any], task: str, *, root: Pat
             owning_features.add(str(feat_name))
     if not owning_features:
         return None
-    for env_name, env_feats in load_pixi_environments(cwd=root).items():
-        if owning_features.intersection(env_feats):
+    holding = [
+        env_name
+        for env_name, env_feats in load_pixi_environments(cwd=root).items()
+        if owning_features.intersection(env_feats)
+    ]
+    for env_name in prefer:
+        if env_name in holding:
             return env_name
-    return None
+    return holding[0] if holding else None
 
 
 def _tier_environments_from_root(root: Path, *, all_envs: bool) -> list[str]:
@@ -218,6 +234,17 @@ class _FakeCompleted:
     returncode: int = 0
     stdout: str = ""
     stderr: str = ""
+
+
+_TAIL_LINES = 15
+
+
+def _output_tail(proc: object) -> str:
+    """The last lines a red step printed, so a journal row says why it failed."""
+    text = "\n".join(
+        part for part in (getattr(proc, "stdout", "") or "", getattr(proc, "stderr", "") or "") if part.strip()
+    )
+    return "\n".join(text.strip().splitlines()[-_TAIL_LINES:])
 
 
 def _row_verdict(exit_code: int, *, special: str | None = None) -> str:
@@ -360,7 +387,9 @@ def run_verify(
             any_red = True
         size_delta: int | None = None
         if env_name == "pyforge-guild":
-            guild_mb = _du_sm_mb(deps.runner, wt / ".pixi", wt)
+            # The env, not .pixi: .pixi/bld holds pixi-build's cache for the path-dependency
+            # packages (about 1 GB), which is not the install footprint CAP-5 bounds.
+            guild_mb = _du_sm_mb(deps.runner, wt / ".pixi" / "envs" / "pyforge-guild", wt)
             if guild_mb is not None:
                 if prev_guild_mb is not None:
                     size_delta = guild_mb - prev_guild_mb
@@ -388,6 +417,7 @@ def run_verify(
                 "seconds": round(seconds, 3),
                 "size_delta_mb": size_delta,
                 "argv": argv,
+                "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
             }
         )
 
@@ -395,7 +425,9 @@ def run_verify(
     pauses = _load_ci_pauses(deps)
     if run_full or lane_filter:
         try:
-            lanes = list_preflight_lanes(pixi_data)
+            # pr-preflight runs from -e pyforge-guild (the pre-push hook); a lane with no
+            # explicit env runs there, not in the pyforge-steward env verify runs from.
+            lanes = list_preflight_lanes(pixi_data, invoking_env="pyforge-guild")
         except Exception:  # noqa: BLE001
             lanes = []
         selection = select_lanes_for_paths(deps.root, lanes, pixi_data, VERIFY_CHANGED_PATHS)
@@ -447,6 +479,7 @@ def run_verify(
                     "exit": proc.returncode,
                     "seconds": round(seconds, 3),
                     "argv": argv,
+                    "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
                 }
             )
 
@@ -466,6 +499,7 @@ def run_verify(
                 "exit": proc.returncode,
                 "seconds": round(seconds, 3),
                 "argv": argv,
+                "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
             }
         )
 
@@ -487,6 +521,7 @@ def run_verify(
                     "exit": proc.returncode,
                     "seconds": round(seconds, 3),
                     "argv": argv,
+                    "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
                 }
             )
 
@@ -506,6 +541,7 @@ def run_verify(
                 "exit": proc.returncode,
                 "seconds": round(seconds, 3),
                 "argv": argv,
+                "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
             }
         )
 
@@ -530,6 +566,13 @@ def run_verify(
         enforce_require=False,
         platform=deps.platform,
     )
+    root_realize = RealizeDeps(
+        root=deps.root,
+        runner=deps.runner,
+        flag_on=deps.flag_on,
+        enforce_require=False,
+        platform=deps.platform,
+    )
     register_path = deps.root / "docs/governance/realization-register.yaml"
     register: dict[str, Any] = {}
     if register_path.is_file():
@@ -541,28 +584,68 @@ def run_verify(
     for pkg, row in sorted(by_pkg.items()):
         if probe_filter and pkg != probe_filter:
             continue
-        state = run_probe(realize, row, package=pkg)
-        if state in ("stale", "missing"):
-            any_red = True
-        rows.append(
-            {
-                "kind": "probe",
-                "name": pkg,
-                "platform": run_platform,
-                "verdict": state,
-                "exit": 0 if state == "live" else 1,
-                "seconds": 0.0,
-            }
-        )
-        for test_name in row.get("test") or []:
+        row_env = str(row.get("env") or "pyforge-guild")
+        # A kit item (the caveman skill, the codegraph index) is state of the checkout,
+        # which a fresh verify worktree never carries: probe it in the real checkout.
+        is_kit = row.get("class") == "kit"
+        probe_deps = root_realize if is_kit else realize
+        probe_root = deps.root if is_kit else wt
+        # An env is installed once pixi wrote its conda-meta history; `pixi run --as-is`
+        # can leave an empty env directory behind without installing anything.
+        if not (probe_root / ".pixi" / "envs" / row_env / "conda-meta" / "history").is_file():
+            # A probe never installs its env (Story 100.7), so a row whose env this
+            # verify did not install cannot read live or stale here: say so, never red.
+            rows.append(
+                {
+                    "kind": "probe",
+                    "name": pkg,
+                    "platform": run_platform,
+                    "verdict": f"skipped: {row_env} not installed (verify --all installs every env)",
+                    "exit": 0,
+                    "seconds": 0.0,
+                }
+            )
+            state = "skipped"
+        else:
+            state = run_probe(probe_deps, row, package=pkg)
+            if state in ("stale", "missing"):
+                any_red = True
+            rows.append(
+                {
+                    "kind": "probe",
+                    "name": pkg,
+                    "platform": run_platform,
+                    "verdict": state,
+                    "exit": 0 if state == "live" else 1,
+                    "seconds": 0.0,
+                }
+            )
+        tests = row.get("test") or []
+        if isinstance(tests, str):
+            tests = [tests]
+        for test_name in tests:
             t = str(test_name)
             if t in tests_seen:
                 continue
             tests_seen.add(t)
             if lane_filter and t != lane_filter:
                 continue
-            argv = ["pixi", "run", "--frozen", "-e", str(row.get("env") or "pyforge-guild"), t]
-            proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
+            words = shlex.split(t)
+            # Run the test in an env that holds its task (pyforge-steward-test is a
+            # pyforge-steward task, platform-ci-local a local-recipes one), preferring the
+            # row's env, then pyforge-guild; a task no env holds runs in the row's env.
+            row_env = str(row.get("env") or "pyforge-guild")
+            test_env = (
+                _environment_holding_task(pixi_data, words[0], root=deps.root, prefer=(row_env, "pyforge-guild"))
+                if words
+                else None
+            )
+            argv = ["pixi", "run", "--frozen", "-e", test_env or row_env, *words]
+            # Kit items (caveman skill, codegraph index) live in the real checkout, as their probes do.
+            test_cwd = deps.root if row.get("class") == "kit" else wt
+            proc, seconds, special = _run_timed(
+                deps, argv, test_cwd, budget_seconds=budget_seconds, started=install_started
+            )
             verdict_s = _row_verdict(proc.returncode, special=special)
             if verdict_s != "ok":
                 any_red = True
@@ -576,6 +659,7 @@ def run_verify(
                     "exit": proc.returncode,
                     "seconds": round(seconds, 3),
                     "argv": argv,
+                    "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
                 }
             )
 
@@ -621,6 +705,24 @@ def _finish_verify(
         or _platform_status(run_platform=run_platform, lock_check_ok=lock_check_ok, lock_sha=lock_sha),
         "rows": rows,
     }
+    from .estate import _list_journals
+
+    journals = _list_journals(deps.root)
+    if journals:
+        # The verify block belongs to the refresh it verifies: the latest journal.
+        journal_path = journals[-1]
+        try:
+            journal = json.loads(journal_path.read_text(encoding="utf-8"))
+        except OSError, json.JSONDecodeError:
+            journal = None
+        if isinstance(journal, dict):
+            journal["verify"] = verify_block
+            journal_path.write_text(json.dumps(journal, indent=2) + "\n", encoding="utf-8")
+            return DutyResult(
+                ok=not any_red,
+                summary=f"{summary}\njournal → {journal_path.relative_to(deps.root)}",
+                details={"journal_path": str(journal_path), "verify": verify_block},
+            )
     journal_path = _next_journal_path(deps.root, today=date.today())
     journal = {
         "base_sha": deps.head_sha(),

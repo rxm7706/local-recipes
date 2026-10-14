@@ -6357,3 +6357,16 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-10 — recorded by the marshal chain that mints Stories 91.1 and 92.1
   status: open
+
+### DW-steward-100-7-1: `estate realize` decides a row is due from the package name alone, and only explicit moves reach it
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-100-7-the-first-refresh-lands-through-the-path.md`
+  summary: Story 100.7's refresh journals one move per (package, env) for the packages the manifest declares (`explicit`). `realize_due_packages` matches a register row by package name across every env. So a row comes due when its package moved in some other env, and its from/to versions come from that env's move. A register package that is only a dependency of a dependency in its own env never comes due at all. Follow-up: match each move to the row's `env`, and keep non-explicit lock moves for packages the register names (the refresh can pass the register's package set to the move parser so the journal stays small).
+  evidence: 2026-10-14 refresh journal `.steward/estate-refresh/2026-10-14.json` on branch `dispatch/pyforge-steward/100.7`: `osv-scanner` stays 2.4.0 -> 2.4.0 in `pyforge-warden` (a transitive there), yet the realize block records 2.6.0 -> 2.7.0 `live`, taken from the `local-recipes` env's move. `pydantic` is declared in no feature, so its row can never come due; `age` and `deptry` come due only through `local-recipes`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/estate.py (`_parse_environment_moves`) and src/shared/packages/pyforge-steward/src/pyforge/steward/estate_realize.py (`realize_due_packages`, `packages_moved_in_journal`)
+  origin: independent review of the Story 100.7 hand fixes, 2026-10-14 (findings 3, 8, 9)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-14 — recorded with the Story 100.7 landing
+  status: open
+  also: (a) `estate plan`'s `held-by` column is always null now that moves carry an env name, not a feature name; (b) `plan` does not converge, so the command it prints differs from the one `refresh` runs once a floor is lowered; (c) the `silo --version` probe reads stale (it prints `RELEASE.<date>`, and the version pattern catches the Go version), and the loose version match at `estate_realize.py` reads a patch-stale version as `live`.

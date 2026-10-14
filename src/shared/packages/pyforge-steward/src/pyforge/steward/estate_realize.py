@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,6 +40,25 @@ class RealizeDeps:
     enforce_require: bool = True
     loop_homes: Callable[[], list[Path]] = field(default=list)
     platform: Callable[[], str] = field(default=lambda: "linux-64")
+    in_linked_worktree: Callable[[], bool] = field(default=lambda: False)
+
+
+def linked_worktree(root: Path) -> bool:
+    """True when ``root`` is a linked worktree, whose git hooks belong to every checkout."""
+
+    def rev_parse(flag: str) -> Path | None:
+        proc = subprocess.run(  # noqa: S603
+            ["git", "-C", str(root), "rev-parse", flag],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            return None
+        return (root / proc.stdout.strip()).resolve()
+
+    git_dir, common = rev_parse("--git-dir"), rev_parse("--git-common-dir")
+    return git_dir is not None and common is not None and git_dir != common
 
 
 def _load_register(root: Path) -> dict[str, Any]:
@@ -115,14 +135,27 @@ def _probe_locked_version_file(root: Path, probe: dict[str, Any], env: str, plat
     return "live" if str(installed) == str(locked) else "stale"
 
 
+def _in_env(env: str, argv: list[Any], *, install: bool = False) -> list[str]:
+    """Run a register argv inside the row's pixi env, as an executable (``-x``), never a task.
+
+    Register steps and probes name bare tools (``osv-scanner``, ``pre-commit``); each row's
+    ``env`` says where they live, and the calling env (pyforge-steward) carries only some.
+    A probe runs ``--as-is``: it never installs or syncs the env, so an env behind its lock
+    reads stale or missing instead of being brought current by the probe itself. A realize
+    step runs ``--frozen`` and may install the env from the lock, which is realizing it.
+    """
+    mode = "--frozen" if install else "--as-is"
+    return ["pixi", "run", mode, "-x", "-e", env, *(str(part) for part in argv)]
+
+
 def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env: str, package: str) -> str:
     cmd = probe.get("command")
     if isinstance(cmd, str):
         cmd = shlex_split(cmd)
     if not isinstance(cmd, list) or not cmd:
         return "missing"
-    proc = deps.runner(list(cmd), deps.root)
-    if proc.returncode != 0:
+    proc = _run_in_env(deps, env, cmd)
+    if proc is None or proc.returncode != 0:
         return "missing"
     out = (proc.stdout or proc.stderr or "").strip()
     locked = _locked_version(deps.root, env, package, deps.platform())
@@ -132,7 +165,7 @@ def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env:
         return "live"
     # semver loose: first token on last line
     m = re.search(r"(\d+\.\d+\.\d+(?:\.\d+)?)", out)
-    if m and m.group(1) == locked.split(".")[0:3]:  # noqa: PLR2004
+    if m and m.group(1) == ".".join(locked.split(".")[0:3]):
         return "live"
     if m and locked.startswith(m.group(1).rsplit(".", 1)[0]):
         return "live"
@@ -159,9 +192,17 @@ def _parse_seed_kit(stdout: str) -> list[dict[str, Any]]:
     return kit if isinstance(kit, list) else []
 
 
-def _probe_kit_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
-    argv = ["pyforge", "marshal", "seed", "check", "--json"]
-    proc = deps.runner(argv, deps.root)
+def _run_in_env(deps: RealizeDeps, env: str, argv: list[Any], *, install: bool = False) -> _Completed | None:
+    try:
+        return deps.runner(_in_env(env, argv, install=install), deps.root)
+    except OSError:
+        return None
+
+
+def _probe_kit_ok(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
+    proc = _run_in_env(deps, env, ["pyforge", "marshal", "seed", "check", "--json"])
+    if proc is None:
+        return "missing"
     kit = _parse_seed_kit(proc.stdout or "")
     if not kit:
         return "missing"
@@ -180,9 +221,10 @@ def _probe_kit_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
     return "missing"
 
 
-def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
-    argv = ["pyforge", "steward", "suite", "pipeline-truth", "--json"]
-    proc = deps.runner(argv, deps.root)
+def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
+    proc = _run_in_env(deps, env, ["pyforge", "steward", "suite", "pipeline-truth", "--json"])
+    if proc is None:
+        return "missing"
     if proc.returncode != 0 and not (proc.stdout or "").strip():
         return "missing"
     try:
@@ -198,6 +240,12 @@ def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
         for stage in stages:
             cell = pkg.get(stage)
             if isinstance(cell, dict):
+                # pipeline-truth's verdict per stage is its `ok`; `value` is the evidence
+                # (a version for installed, present/runnable/wired/n/a for wired).
+                if "ok" in cell:
+                    if cell["ok"] is not True:
+                        return "stale"
+                    continue
                 val = str(cell.get("value") or "").lower()
                 if val not in ("ok", "green", "true", "wired", "installed"):
                     return "stale"
@@ -207,22 +255,25 @@ def _probe_stage_ok(deps: RealizeDeps, probe: dict[str, Any]) -> str:
     return "missing"
 
 
-def _probe_exit_0(deps: RealizeDeps, probe: dict[str, Any]) -> str:
+def _probe_exit_0(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
     cmd = probe.get("command")
     if isinstance(cmd, str):
         cmd = shlex_split(cmd)
-    if not isinstance(cmd, list):
+    if not isinstance(cmd, list) or not cmd:
         return "missing"
-    argv = [sys.executable, *cmd[1:]] if cmd and cmd[0] == "python" else list(cmd)
-    proc = deps.runner(argv, deps.root)
+    proc = _run_in_env(deps, env, cmd)
+    if proc is None:
+        return "missing"
     return "live" if proc.returncode == 0 else "stale"
 
 
-def _probe_import(deps: RealizeDeps, probe: dict[str, Any]) -> str:
+def _probe_import(deps: RealizeDeps, probe: dict[str, Any], env: str) -> str:
     cmd = str(probe.get("command") or "")
     if not cmd:
         return "missing"
-    proc = deps.runner([sys.executable, "-c", cmd], deps.root)
+    proc = _run_in_env(deps, env, ["python", "-c", cmd])
+    if proc is None:
+        return "missing"
     return "live" if proc.returncode == 0 else "missing"
 
 
@@ -235,13 +286,13 @@ def run_probe(deps: RealizeDeps, row: dict[str, Any], *, package: str) -> str:
             return _probe_locked_version_file(deps.root, probe, env, deps.platform(), package=package)
         return _probe_locked_version_command(deps, probe, env, package)
     if expect == "kit-ok":
-        return _probe_kit_ok(deps, probe)
+        return _probe_kit_ok(deps, probe, env)
     if expect == "stage-ok":
-        return _probe_stage_ok(deps, probe)
+        return _probe_stage_ok(deps, probe, env)
     if expect == "exit-0":
-        return _probe_exit_0(deps, probe)
+        return _probe_exit_0(deps, probe, env)
     if expect == "import-probe":
-        return _probe_import(deps, probe)
+        return _probe_import(deps, probe, env)
     return "missing"
 
 
@@ -260,8 +311,14 @@ def _realize_steps_for_row(deps: RealizeDeps, row: dict[str, Any]) -> list[list[
 
 def _run_bmad_preflight(deps: RealizeDeps) -> dict[str, Any]:
     block: dict[str, Any] = {}
-    pre = deps.runner(["pyforge", "steward", "upgrade", "bmad-core"], deps.root)
-    block["preflight_exit"] = pre.returncode
+    target = _locked_version(deps.root, "pyforge-guild", "bmad-method", deps.platform())
+    if target is None:
+        block["preflight_exit"] = None
+        block["preflight_error"] = "bmad-method has no locked version in pyforge-guild"
+    else:
+        pre = _run_in_env(deps, "pyforge-guild", ["pyforge", "steward", "upgrade", "bmad-core", "--target", target])
+        block["preflight_exit"] = None if pre is None else pre.returncode
+        block["preflight_target"] = target
     fan = deps.runner([sys.executable, "scripts/pin_policy_check.py", "--fan-out", "--json"], deps.root)
     block["fan_out_exit"] = fan.returncode
     if (fan.stdout or "").strip():
@@ -321,11 +378,22 @@ def run_realize(
             realize_state = "none"
         elif operator_gate and not yes:
             realize_state = "skipped-operator-gate"
+        elif (row.get("realize") or {}).get("primary_checkout_only") and deps.in_linked_worktree():
+            # git hooks are shared by every checkout; installing them from a worktree points
+            # them at that worktree's interpreter, which a workspace clean then deletes.
+            realize_state = "skipped-worktree"
         else:
             realize_state = "ran"
+            env = str(row.get("env") or "pyforge-guild")
+            locked = _locked_version(deps.root, env, pkg, deps.platform())
             for argv in steps:
-                proc = deps.runner(argv, deps.root)
-                if proc.returncode != 0:
+                if any("{locked}" in str(part) for part in argv):
+                    if locked is None:
+                        realize_state = "failed"
+                        break
+                    argv = [str(part).replace("{locked}", locked) for part in argv]
+                proc = _run_in_env(deps, env, argv, install=True)
+                if proc is None or proc.returncode != 0:
                     realize_state = "failed"
                     break
 
@@ -388,4 +456,5 @@ def production_realize_deps(root: Path) -> RealizeDeps:
         enforce_require=base.enforce_require,
         loop_homes=default_loop_homes,
         platform=base.platform,
+        in_linked_worktree=lambda: linked_worktree(root),
     )
