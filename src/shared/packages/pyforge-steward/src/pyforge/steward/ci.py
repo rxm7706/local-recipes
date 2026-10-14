@@ -503,10 +503,7 @@ def _row_gated_by_master(row: dict[str, Any], uses: list[Any], deps: CiDeps, mas
             return False
         for job in jobs:
             if not any(
-                _var_use_gates_master(u, master)
-                and u.workflow_file == wf
-                and u.job == job
-                and u.step is None
+                _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step is None
                 for u in uses
             ):
                 return False
@@ -514,28 +511,16 @@ def _row_gated_by_master(row: dict[str, Any], uses: list[Any], deps: CiDeps, mas
     if kind == "ci-job":
         job = str(row.get("job") or "")
         return any(
-            _var_use_gates_master(u, master)
-            and u.workflow_file == wf
-            and u.job == job
-            and u.step is None
-            for u in uses
+            _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step is None for u in uses
         )
     if kind == "ci-step":
         job = str(row.get("job") or "")
         step = str(row.get("step") or "")
         step_gate = any(
-            _var_use_gates_master(u, master)
-            and u.workflow_file == wf
-            and u.job == job
-            and u.step == step
-            for u in uses
+            _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step == step for u in uses
         )
         job_gate = any(
-            _var_use_gates_master(u, master)
-            and u.workflow_file == wf
-            and u.job == job
-            and u.step is None
-            for u in uses
+            _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step is None for u in uses
         )
         return step_gate or job_gate
     return False
@@ -547,8 +532,7 @@ def _master_pause_detail(master: str) -> str:
 
 def _master_drift_detail(master: str) -> str:
     return (
-        f"master switch {master} is true: every job that reads it is skipped, "
-        "and the registry declares no master pause"
+        f"master switch {master} is true: every job that reads it is skipped, and the registry declares no master pause"
     )
 
 

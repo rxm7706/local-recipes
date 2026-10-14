@@ -763,8 +763,7 @@ def test_run_status_high_cost_canary_stale_is_stuck(tmp_path: Path) -> None:
 
 _MASTER_UPDATED = "2026-10-14T08:00:00Z"
 _MASTER_DETAIL = (
-    "master switch PAUSE_ALL_CI is true: every job that reads it is skipped, "
-    "and the registry declares no master pause"
+    "master switch PAUSE_ALL_CI is true: every job that reads it is skipped, and the registry declares no master pause"
 )
 _MASTER_PAUSE_DETAIL = "paused by the master switch PAUSE_ALL_CI"
 
@@ -796,74 +795,74 @@ def _minimal_gh_runner(tmp_path: Path, variables: list[dict], fixed_now: datetim
 
 def _master_gating_surfaces(*, include_precedence: bool = False, include_retired: bool = False) -> list[dict]:
     surfaces: list[dict] = [
-            {
-                "id": "wf.all-gated",
-                "workflow": ".github/workflows/wf-all-gated.yml",
-                "kind": "workflow",
-                "switch": "PAUSE_WF_ALL",
-                "switch_class": "pause",
-                "state": "live",
-                "owner": "pyforge-steward",
-            },
-            {
-                "id": "job.gated",
-                "workflow": ".github/workflows/job-gated.yml",
-                "job": "only",
-                "kind": "ci-job",
-                "switch": "PAUSE_JOB_GATED",
-                "switch_class": "pause",
-                "state": "live",
-                "owner": "pyforge-steward",
-            },
-            {
-                "id": "step.gated",
-                "workflow": ".github/workflows/step-gated.yml",
-                "job": "main",
-                "step": "gate-step",
-                "kind": "ci-step",
-                "switch": "PAUSE_STEP_GATED",
-                "switch_class": "pause",
-                "state": "live",
-                "owner": "pyforge-steward",
-            },
-            {
-                "id": "wf.mixed",
-                "workflow": ".github/workflows/wf-mixed.yml",
-                "kind": "workflow",
-                "switch": "PAUSE_WF_MIXED",
-                "switch_class": "pause",
-                "state": "live",
-                "owner": "pyforge-steward",
-            },
-            {
-                "id": "wf.dispatch-only",
-                "workflow": ".github/workflows/wf-dispatch-only.yml",
-                "kind": "workflow",
-                "switch": None,
-                "switch_class": "pause",
-                "state": "live",
-                "owner": "pyforge-steward",
-            },
-            {
-                "id": "row.value",
-                "workflow": ".github/workflows/wf-value.yml",
-                "job": "j",
-                "step": "s",
-                "kind": "value",
-                "switch": "SOME_VALUE",
-                "switch_class": "value",
-                "state": "live",
-                "owner": "pyforge-steward",
-            },
-            {
-                "id": "row.manual",
-                "workflow": ".github/workflows/wf-manual.yml",
-                "kind": "workflow",
-                "switch": None,
-                "switch_class": "pause",
-                "state": "paused-manually",
-                "owner": "pyforge-steward",
-            },
+        {
+            "id": "wf.all-gated",
+            "workflow": ".github/workflows/wf-all-gated.yml",
+            "kind": "workflow",
+            "switch": "PAUSE_WF_ALL",
+            "switch_class": "pause",
+            "state": "live",
+            "owner": "pyforge-steward",
+        },
+        {
+            "id": "job.gated",
+            "workflow": ".github/workflows/job-gated.yml",
+            "job": "only",
+            "kind": "ci-job",
+            "switch": "PAUSE_JOB_GATED",
+            "switch_class": "pause",
+            "state": "live",
+            "owner": "pyforge-steward",
+        },
+        {
+            "id": "step.gated",
+            "workflow": ".github/workflows/step-gated.yml",
+            "job": "main",
+            "step": "gate-step",
+            "kind": "ci-step",
+            "switch": "PAUSE_STEP_GATED",
+            "switch_class": "pause",
+            "state": "live",
+            "owner": "pyforge-steward",
+        },
+        {
+            "id": "wf.mixed",
+            "workflow": ".github/workflows/wf-mixed.yml",
+            "kind": "workflow",
+            "switch": "PAUSE_WF_MIXED",
+            "switch_class": "pause",
+            "state": "live",
+            "owner": "pyforge-steward",
+        },
+        {
+            "id": "wf.dispatch-only",
+            "workflow": ".github/workflows/wf-dispatch-only.yml",
+            "kind": "workflow",
+            "switch": None,
+            "switch_class": "pause",
+            "state": "live",
+            "owner": "pyforge-steward",
+        },
+        {
+            "id": "row.value",
+            "workflow": ".github/workflows/wf-value.yml",
+            "job": "j",
+            "step": "s",
+            "kind": "value",
+            "switch": "SOME_VALUE",
+            "switch_class": "value",
+            "state": "live",
+            "owner": "pyforge-steward",
+        },
+        {
+            "id": "row.manual",
+            "workflow": ".github/workflows/wf-manual.yml",
+            "kind": "workflow",
+            "switch": None,
+            "switch_class": "pause",
+            "state": "paused-manually",
+            "owner": "pyforge-steward",
+        },
     ]
     if include_retired:
         surfaces.append(
@@ -1128,9 +1127,7 @@ def test_master_off_adds_only_master_row_and_flag(tmp_path: Path) -> None:
 
 def test_ci_status_master_on_fixture_checked_in(tmp_path: Path) -> None:
     payload = _run_master_fixture(tmp_path, master_value="true")
-    fixture_path = (
-        Path(__file__).resolve().parent.parent / "fixtures" / "ci_status_master_on.json"
-    )
+    fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / "ci_status_master_on.json"
     canonical = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     if fixture_path.is_file():
         assert canonical == fixture_path.read_text(encoding="utf-8")
@@ -1140,9 +1137,7 @@ def test_ci_status_master_on_fixture_checked_in(tmp_path: Path) -> None:
 
 
 def test_ac6_consumers_read_master_fixture() -> None:
-    fixture_path = (
-        Path(__file__).resolve().parent.parent / "fixtures" / "ci_status_master_on.json"
-    )
+    fixture_path = Path(__file__).resolve().parent.parent / "fixtures" / "ci_status_master_on.json"
     assert fixture_path.is_file(), "run test_ci_status_master_on_fixture_checked_in first"
     repo_root = Path(__file__).resolve().parents[6]
     fixture_s = str(fixture_path)
