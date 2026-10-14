@@ -6370,3 +6370,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-10-14 — recorded with the Story 100.7 landing
   status: open
   also: (a) `estate plan`'s `held-by` column is always null now that moves carry an env name, not a feature name; (b) `plan` does not converge, so the command it prints differs from the one `refresh` runs once a floor is lowered; (c) the `silo --version` probe reads stale (it prints `RELEASE.<date>`, and the version pattern catches the Go version), and the loose version match at `estate_realize.py` reads a patch-stale version as `live`.
+
+### DW-steward-100-7-2: `estate reconcile` commits whatever the network-dependent bmad-suite generator writes
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-100-7-the-first-refresh-lands-through-the-path.md`
+  summary: `estate reconcile` runs `bmad_suite_metapackage.py`, which takes each member's upstream latest and silently falls back to the member recipe's floor when a lookup fails. So the metapackage floors reconcile writes depend on the network at that moment, and reconcile journals only the generator's exit code. Follow-up: reconcile should journal each member's resolved floor and source, and refuse, or name in the journal, a fallback it did not ask for. It should also never raise a floor above what the member recipe builds unless that member moves in the same batch.
+  evidence: Story 100.7 on branch `dispatch/pyforge-steward/100.7`. Commit `fe9679af8d` wrote `bmad-loop >=0.13.2` and TEA `>=2.0.3`; the 2026-10-14 reconcile wrote `>=0.12.0` and `>=1.27.2`. A `bmad_suite_metapackage.py --dry-run` an hour later read `[github]` 0.13.2 and 2.0.3 again. `pixi.lock` held bmad-loop 0.12.0 and TEA 1.27.2 throughout.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/estate_reconcile.py (`_build_generators`, the `generate-bmad-suite` step); .claude/skills/conda-forge-expert/scripts/bmad_suite_metapackage.py (`_resolve_upstream`)
+  origin: Story 100.7 Rule-2 retro (CFE v8.100.3)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-14 — recorded with the CFE retro for Story 100.7
+  status: open
