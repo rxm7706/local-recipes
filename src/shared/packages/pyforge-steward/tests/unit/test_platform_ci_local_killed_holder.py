@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -13,6 +15,8 @@ from pathlib import Path
 
 import pytest
 from test_platform_ci_local_concurrency import (
+    _marker_env,
+    _no_stub_process_outlives_the_test,  # noqa: F401 -- autouse: no test here leaves a process behind (Story 101.1)
     _prepare_stub_root,
     _run_platform_ci_local,
     _write_executable,
@@ -121,6 +125,7 @@ def _kill_and_follow(
             "PLATFORM_CI_STUB_SLOW": "1",
             "PLATFORM_CI_LOCAL_ENGINE": "docker",
             "PLATFORM_CI_STUB_LOG": str(root / "holder-stub.log"),
+            **_marker_env(root),
         }
     )
     env.update(_env_base(root, bin_dir, lock=lock, work=work))
@@ -131,16 +136,24 @@ def _kill_and_follow(
         env=env,
         start_new_session=True,
     )
-    time.sleep(1.5)
-    if kill_mode == "pg_sigkill":
-        os.killpg(holder.pid, signal.SIGKILL)
-    elif kill_mode == "shell_sigkill":
-        os.kill(holder.pid, signal.SIGKILL)
-    elif kill_mode == "pg_sigterm":
-        os.killpg(holder.pid, signal.SIGTERM)
-    else:
-        raise ValueError(kill_mode)
-    holder.wait(timeout=15)
+    try:
+        time.sleep(1.5)
+        if kill_mode == "pg_sigkill":
+            os.killpg(holder.pid, signal.SIGKILL)
+        elif kill_mode == "shell_sigkill":
+            os.kill(holder.pid, signal.SIGKILL)
+        elif kill_mode == "pg_sigterm":
+            os.killpg(holder.pid, signal.SIGTERM)
+        else:
+            raise ValueError(kill_mode)
+        holder.wait(timeout=15)
+    finally:
+        # Story 101.1: stop what is left of the holder's group. A SIGKILL to the shell alone
+        # leaves its slow python stand-in running for up to 8 s. The services it started lead
+        # sessions of their own; the follow run reclaims them.
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(holder.pid, signal.SIGKILL)
+        holder.wait(timeout=15)
     time.sleep(0.5)
     follow = _run_platform_ci_local(
         root,
@@ -222,7 +235,7 @@ def test_never_signals_reused_pid(stub_root: tuple[Path, Path]) -> None:
     work.mkdir(parents=True)
     pgdir = work / "pg"
     pgdir.mkdir()
-    sleeper = subprocess.Popen(["sleep", "999999"])
+    sleeper = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)})
     try:
         (pgdir / "postmaster.pid").write_text(f"{sleeper.pid}\n", encoding="utf-8")
         proc = _run_platform_ci_local(
@@ -239,7 +252,7 @@ def test_never_signals_reused_pid(stub_root: tuple[Path, Path]) -> None:
 
     redis_dir = work / "redis"
     redis_dir.mkdir(exist_ok=True)
-    sleeper2 = subprocess.Popen(["sleep", "999999"])
+    sleeper2 = subprocess.Popen(["sleep", "999999"], env={**os.environ, **_marker_env(root)})
     try:
         (work / "redis.pid").write_text(str(sleeper2.pid), encoding="utf-8")
         proc2 = _run_platform_ci_local(
@@ -270,13 +283,14 @@ def test_lock_wait_names_live_holder_and_stale_record(stub_root: tuple[Path, Pat
             #!/usr/bin/env bash
             exec 9>"{lock}"
             flock 9
-            sleep 999999
+            exec sleep 999999
             """
         ),
     )
     holder = subprocess.Popen(
         ["bash", str(holder_script)],
         cwd=root,
+        env={**os.environ, **_marker_env(root)},
         start_new_session=True,
     )
     time.sleep(0.3)
@@ -298,6 +312,10 @@ def test_lock_wait_names_live_holder_and_stale_record(stub_root: tuple[Path, Pat
         assert "999999" in proc.stderr
         assert "stale" in proc.stderr.lower()
         assert str(holder.pid) in proc.stderr
+        # Story 101.1: the report lists exactly the process holding the lock, never the
+        # waiter or its own helpers (the waiter closes fd 9 before it scans).
+        listed = [int(pid) for pid in re.findall(r"^  pid=(\d+) cmdline=", proc.stderr, re.MULTILINE)]
+        assert listed == [holder.pid], proc.stderr
     finally:
         os.kill(holder.pid, signal.SIGKILL)
         holder.wait(timeout=5)

@@ -2,7 +2,7 @@
 title: "101.1: The `platform-ci-local` stubs leak no process, and the holder scan takes seconds"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: 'e0ad43f18c12c7c6e223c2f44b763c3e529db877'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -85,8 +85,12 @@ wait spends minutes listing who holds the lock, and the tests that check that li
   - An autouse fixture in the concurrency module, imported into the other two, waits up to 5 s after each test for
     the marked set to empty. If a marked process is left, the fixture SIGKILLs only those pids and fails the test,
     naming each one.
-  - The named regression test `test_stub_start_stop_cycle_leaves_no_process` runs one `--test` cycle. It asserts that
-    the stop path logged both stops and that nothing marked is left.
+  - The named regression test `test_stub_start_stop_cycle_leaves_no_process` drives each stand-in directly (start,
+    `/proc/<pid>/comm` reads `sleep`, stop), then runs one `--test` cycle. It asserts that the stop path logged both
+    stops and that nothing marked is left.
+  - The stub `pg_ctl` reads its action as a whole argument (`start` or `stop`), not as a substring of `"$*"`. pytest
+    names a test's tmp dir after the test, so a path holding `start` made a stop call start a second postgres, which
+    leaked too.
   - A zombie has an empty environ, so it never matches. Nothing matches by `pgrep`, a process name or `sleep 999999`.
 - **The holder scan.** `_pids_holding_path` keeps `fuser` when it is on `PATH`. Otherwise it walks
   `/proc/[0-9]*/fd/*` once and keeps a descriptor when `[ "$fd" -ef "$target" ]` holds. That test is a bash builtin
@@ -151,8 +155,8 @@ it started.
   - **Given** the autouse fixture, **When** any test in the three modules finishes, **Then** no process other than
     pytest's own carries the test's marker within 5 s. If one does, the fixture kills those pids, and only those, and
     fails the test naming each pid and its cmdline.
-  - `test_stub_start_stop_cycle_leaves_no_process` runs one start/stop cycle. It asserts both stop lines and an empty
-    marked set.
+  - `test_stub_start_stop_cycle_leaves_no_process` drives each stand-in through start and stop, then runs one `--test`
+    cycle. It asserts both stop lines and an empty marked set.
   - `_kill_and_follow` kills its holder's process group in teardown.
 - **AC3 — The holder scan forks nothing per descriptor, and its contract holds.**
   - `test_pids_holding_path_lists_each_holder_once_sorted` holds a lock file open in two processes, one of them on two
@@ -174,7 +178,9 @@ it started.
   fails:
   - dropping `exec -a "$0 $*"` from either stub fails `test_stub_start_stop_cycle_leaves_no_process` (and the fixture);
   - restoring the `readlink` walk as the fallback fails AC3's no-`fuser` run;
-  - dropping the waiter's `exec 9>&-` fails AC4's exact-holder assertion.
+  - dropping the waiter's `exec 9>&-` fails AC4's exact-holder assertion;
+  - matching the stub `pg_ctl`'s action as a substring of `"$*"` again fails
+    `test_stub_start_stop_cycle_leaves_no_process`.
 - **AC7 — Nothing else moves.**
   - `PLATFORM_CI_LOCAL_LOCK_WAIT` and its 7200 s default, the exit codes, the contention report's lines, the stage
     flags, step names, summary and `--help` text do not change.
@@ -286,3 +292,40 @@ it started.
 - 2026-10-14: minted from the operator's approval "the platform-ci-local test stubs leak processes, and the holder
   scan is slow". `type: fix`, no flag, no CAP. Bound to `spec-pyforge-steward` CAP-152 through Stories 63.7, 89.1 and
   96.1.
+- 2026-10-14 (implementation): the stub `pg_ctl` now reads its action as a whole argument. Writing the regression test
+  showed the substring match on `"$*"` start a second postgres on a stop, whenever the tmp path held `start`. pytest
+  names that test's dir `test_stub_start_stop_cycle_lea0`. That is the same leak in the same stub, so it is fixed
+  here, and AC6 gains its mutation. The regression test also drives each stand-in directly. Status `in-review`: the
+  implementation is complete and verified locally, and review runs separately (AGENTS.md guideline 8).
+
+## Auto Run Result
+
+Status: in-review (implemented by hand in worktree `local-recipes-wt-steward-101-1`, branch
+`chain-steward-101-1-stub-leak`, on `e0ad43f18c`; not pushed).
+
+Verification (2026-10-14):
+- The three `test_platform_ci_local_*` modules: 28 passed in 146 s (25 before, plus the regression test and the two
+  scan cases).
+- AC5, the two lock-wait tests, before and after (`--durations=0`):
+  - `test_lock_wait_timeout_names_holder`: 33.33 s before, 33.49 s after on a quiet host (about 550 processes), and
+    33.07 s with 6,000 extra processes (about 6,550). Its time is the holder's own slow run, which the test joins.
+  - `test_lock_wait_names_live_holder_and_stale_record`: 2.89 s before, 3.03 s after, and 3.11 s under the same load.
+  - The fallback scan case took 0.59 s under that load. The old `readlink` walk took 110.6 s per call there, and the
+    report made two calls.
+- AC8, the leak counts. A process counts if its environment or cmdline names the run's basetemp.
+  - Before the fix: the two lock-wait tests left 3 (`sleep 999999`, found by environment only). They were killed by
+    pid.
+  - After the fix, three modules: 0 before, 0 after.
+  - After the fix, the full suite: 0 before, 0 after.
+- AC6, mutations, each reverted after its run:
+  - no `exec` in the postgres stand-in: `test_stub_start_stop_cycle_leaves_no_process` failed (`'bash' == 'sleep'`),
+    and the fixture failed it and `test_single_run_summary_unchanged`, naming the wrapper and its `sleep`;
+  - no `exec` in the redis stand-in: the same test failed;
+  - the `readlink` walk restored as the fallback: `test_pids_holding_path_lists_each_holder_once_sorted[proc-walk-without-fuser-or-readlink]`
+    failed (empty output);
+  - no `exec 9>&-`: `test_lock_wait_names_live_holder_and_stale_record` failed, listing the waiter and 4 helpers
+    beside the holder;
+  - the substring action match restored: `test_stub_start_stop_cycle_leaves_no_process` failed with the second
+    postgres left running.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: 2601 passed, 2 skipped, exit 0 (457 s).
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
