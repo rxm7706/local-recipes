@@ -2,7 +2,7 @@
 title: '99.2: Every CI job carries its pause switch'
 type: 'feature'
 created: '2026-10-13'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e564ba8d91bc4196c89f93474f3bca253991a067'
 flag-exempt: detector-or-gate   # the gate sweep and its completeness rule; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0

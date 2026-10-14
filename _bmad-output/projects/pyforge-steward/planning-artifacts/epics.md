@@ -6237,7 +6237,7 @@ So that one variable stops any surface, and a manual dispatch still runs it.
 **When** `--render` writes each job's fragment, `github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_<WORKFLOW> != 'true' [&& vars.PAUSE_<WORKFLOW>_<JOB> != 'true'] && (<existing condition>))`, with the job-level term only on a `cost: high` row (ruling Q2) and the six grandfathered names kept where they gate today
 **Then** every push, pull-request and scheduled job in every active workflow carries its fragment with its existing condition unchanged inside it; `--check` gains the completeness rule (an active job with no row, or a row with no fragment, is a finding) and exits 0; `actionlint` and the workflow meta-tests (`test_workflow_path_filters_match.py`, `test_conformance_lane_wired.py`, `test_testing_kit_lane_wired.py`) stay green
 **And** `preflight_ci` resolves each `vars.X` to the registry's declared state (a `paused` row reads `'true'`; any other row and an unregistered name read `''`, GitHub's value for an unset variable), so no site turns `unknown` because of a `vars.*` term and lane selection over the 2026-10-12 fixture diffs is identical before and after the sweep; a fixture with `PAUSE_ALL_CI=true` evaluates every job to skip except under `workflow_dispatch`.
-**Status:** backlog
+**Status:** done
 
 ### Story 99.3: The operator sees the pause state of every CI surface in one command
 
