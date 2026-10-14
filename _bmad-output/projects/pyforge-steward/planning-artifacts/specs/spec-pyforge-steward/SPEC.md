@@ -119,7 +119,12 @@ surface:
   - scripts/guild_image_ci.sh
   - docs/governance/pin-policy.yaml
   - docs/governance/pin-policy.schema.json
+  - docs/governance/ci-surfaces.yaml
+  - docs/governance/ci-surfaces.schema.json
   - scripts/pin_policy_check.py
+  - scripts/ci_surface_gates.py
+  - scripts/_ci_surface_gates_lib.py
+  - tests/scripts/test_ci_surface_gates.py
   - scripts/pin_policy_lib.py
   - scripts/pin_policy_restore.py
   - tests/scripts/test_pin_policy_check.py
