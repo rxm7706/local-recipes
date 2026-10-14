@@ -1,0 +1,22 @@
+{
+  "fetched_at": "2026-10-13T12:00:00Z",
+  "repo": "rxm7706/local-recipes",
+  "rate_limit": {
+    "core_limit": 5000,
+    "core_remaining": 4999
+  },
+  "rows": [
+    {
+      "id": "dashboard.deploy",
+      "switch": null,
+      "declared_state": "live",
+      "live_switch_value": null,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": "pyforge-steward",
+      "last_green_run": "2026-10-01T00:00:00Z",
+      "verdict": "stuck"
+    }
+  ]
+}

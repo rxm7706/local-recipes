@@ -1,0 +1,82 @@
+{
+  "fetched_at": "2026-10-13T12:00:00Z",
+  "repo": "rxm7706/local-recipes",
+  "rate_limit": {
+    "core_limit": 5000,
+    "core_remaining": 4999
+  },
+  "rows": [
+    {
+      "id": "dashboard.build",
+      "switch": null,
+      "declared_state": "live",
+      "live_switch_value": null,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": "pyforge-steward",
+      "last_green_run": "2026-10-12T00:00:00Z",
+      "verdict": "live"
+    },
+    {
+      "id": "pause.guild-container",
+      "switch": "PAUSE_CONTAINER_BUILDS",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-04",
+      "review_by": "2026-11-01",
+      "review_days_left": 19,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "paused"
+    },
+    {
+      "id": "optin.air-gap",
+      "switch": "PLATFORM_CI_AIR_GAP_PARITY",
+      "declared_state": "opt-in-off",
+      "live_switch_value": "false",
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "opt-in-off"
+    },
+    {
+      "id": "kedro-viz-publish",
+      "switch": null,
+      "declared_state": "paused-manually",
+      "live_switch_value": null,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "paused-manually"
+    },
+    {
+      "id": "retired.sample",
+      "switch": "PAUSE_RETIRED",
+      "declared_state": "retired",
+      "live_switch_value": "false",
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "retired"
+    },
+    {
+      "id": "review-today",
+      "switch": "PAUSE_REVIEW_TODAY",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-13",
+      "review_by": "2026-10-13",
+      "review_days_left": 0,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "paused"
+    }
+  ]
+}

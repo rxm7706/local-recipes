@@ -119,6 +119,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.BMAD_METHOD_VERSION_DRIFT: "bmad_method.py",  # Story 10.1 (Epic 10/CAP-1)
     Source.BACKLOG_INTAKE: "backlog_intake.py",  # Story 13.1 (Epic 13/CAP-1)
     Source.SIBLING_DREAMS_DRIFT: "sibling_dreams.py",  # Story 16.1 (Epic 16/CAP-1)
+    Source.CI_PAUSE_DRIFT: "ci_pause_drift.py",  # Story 45.1 (Epic 45 / CAP-89)
     Source.DREAMS_HYGIENE: "chain.py",  # Story 17.2 (Epic 17 / FR-147)
     Source.CHAIN_LAYERS_AUDIT: "board.py",  # Story 17.3 (Epic 17 / FR-150)
     Source.PLATFORM_POLICY_SUITE: "platform_policy.py",  # retro action item 3
