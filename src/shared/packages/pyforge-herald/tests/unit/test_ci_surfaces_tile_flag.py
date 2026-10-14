@@ -24,7 +24,5 @@ def test_on_and_off_trees_read_through_flags_path(tmp_path: Path) -> None:
 def test_on_and_off_trees_read_through_the_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {CI_SURFACES_TILE_FLAG: "on"}, name="on.json")))
     assert ci_surfaces_tile_enabled() is True
-    monkeypatch.setenv(
-        "PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {CI_SURFACES_TILE_FLAG: "off"}, name="off.json"))
-    )
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {CI_SURFACES_TILE_FLAG: "off"}, name="off.json")))
     assert ci_surfaces_tile_enabled() is False

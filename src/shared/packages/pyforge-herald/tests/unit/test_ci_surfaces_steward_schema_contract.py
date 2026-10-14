@@ -4,12 +4,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
-SCHEMA_REL = (
-    "src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json"
-)
+SCHEMA_REL = "src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json"
 
 
 def _repo_root() -> Path:

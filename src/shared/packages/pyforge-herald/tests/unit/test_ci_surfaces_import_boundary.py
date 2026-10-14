@@ -52,9 +52,7 @@ def _forbidden_imports(path: Path) -> list[str]:
                 if alias.name == "pyforge.steward" or alias.name.startswith("pyforge.steward."):
                     hits.append(f"{path}: import {alias.name}")
         elif isinstance(node, ast.ImportFrom):
-            if node.module and (
-                node.module == "pyforge.steward" or node.module.startswith("pyforge.steward.")
-            ):
+            if node.module and (node.module == "pyforge.steward" or node.module.startswith("pyforge.steward.")):
                 hits.append(f"{path}: from {node.module} import ...")
         elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             if isinstance(node.func.value, ast.Name) and node.func.value.id == "subprocess":
