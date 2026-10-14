@@ -106,6 +106,16 @@
         </div>
 {%- endmacro %}
 
+{%- macro ci_surfaces(b) %}
+        <h3><span class="h3-num">A→B.5</span>CI surfaces</h3>
+        <p class="soft-note">Snapshot captured at {{ b.fetched_at | md }}</p>
+        <div class="ci-surfaces-tile prose">
+          {%- for line in b.lines %}
+          <p>{{ line | md }}</p>
+          {%- endfor %}
+        </div>
+{%- endmacro %}
+
 {%- macro engines(b) %}
         <div class="engines">
           {%- for e in b.engines %}
@@ -136,6 +146,7 @@
 {%- elif b.type == 'relations'  %}{{ relations(b) }}
 {%- elif b.type == 'lattice'    %}{{ lattice(b) }}
 {%- elif b.type == 'engines'    %}{{ engines(b) }}
+{%- elif b.type == 'ci_surfaces' %}{{ ci_surfaces(b) }}
 {%- else %}{{ raise_unknown(b.type) }}
 {%- endif -%}
 {%- endmacro -%}
