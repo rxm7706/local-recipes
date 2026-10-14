@@ -1469,7 +1469,7 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   landing-evidence grammar (CAP-126–CAP-129); behind a flag (`pyforge.marshal.landing_ci_pauses` proposed); reads
   steward through the CLI's JSON, never by import; depends on steward's `ci status` landing first; changes no landing
   verdict and waits on no CI. Operator ruling 2026-10-12: the plan's recommended answers Q1–Q8 stand. Owner
-  `spec-pyforge-marshal`.
+  `spec-pyforge-marshal`. → CAP-292 / FR-239, Epic 100 / Story 100.1, specced 2026-10-14 (the entry below).
 - **2026-10-12 (two tests red the local preflight)** — **Found: two marshal tests fail every local `pr-preflight` run
   while CI's `marshal-test` stays green, so every push needs a journaled skip.** On 2026-10-12 the pre-push preflight
   refused four pushes, from two planning-only branches, on the same tests. (1) The NFR-P1 budget tests
@@ -1517,6 +1517,20 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   asks, 2026-10-12: "start the flaky marshal tests fix", then "merge 2171 and rescope 2172". This chain was first
   minted on PR #2172 as two stories. 98.1 fixed the test half, so it is now the product half only. Owner
   `spec-pyforge-marshal`. → Epic 99 / Story 99.1, specced 2026-10-12.
+- **2026-10-14 (ci pauses at merge, specced)** — **What the 2026-10-12 entry waited for has landed: a landing can now
+  ask what was paused.** Steward's Story 99.3 merged on 2026-10-13 (`7ec2ea85f3`), so steward can name every paused
+  CI surface in one answer, and a landing need not guess. Its own switch is still off by default. Two things the
+  earlier entry did not know turned up when the shipped answer was read. A paused surface does not always say
+  `paused`: a pause past its review date says `overdue`, and a pause on a stuck workflow says `stuck`. So the
+  landing must decide what did not run from what was declared and what was switched, not from the one-word verdict.
+  And the switch that pauses everything at once has no line of its own in that answer, so a landing made under it
+  cannot tell yet; that stays an open question for steward. **What it looks like when fixed:** as the 2026-10-12
+  entry says. Every merged story's paper trail names the gates that did not run, says "none" when every gate ran,
+  and says "unknown" with a reason when it could not ask; nothing about the merge itself changes. **Kinships:**
+  `pyforge-steward:CAP-166` (the CI pause control plane whose answer this reads); the plan,
+  `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` § 4.4 and § 6 (its marshal row). Operator direction
+  (2026-10-13): mint the doctor, herald and marshal CI-pause stories only after 99.3 lands. Owner
+  `spec-pyforge-marshal`. → CAP-292 / FR-239, Epic 100 / Story 100.1, specced 2026-10-14.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
