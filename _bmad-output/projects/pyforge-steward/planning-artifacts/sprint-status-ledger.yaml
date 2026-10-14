@@ -32,7 +32,7 @@ development_status:
   100-4-the-refreshed-estate-proves-itself-in-every-environment-and-every-station-suite: done
   100-5-a-moved-pin-is-realized-not-just-locked: done
   100-6-the-hand-sequence-is-retired-by-one-how-to-and-one-pointer: done
-  100-7-the-first-refresh-lands-through-the-path: backlog
+  100-7-the-first-refresh-lands-through-the-path: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
@@ -387,7 +387,7 @@ development_status:
   epic-1-retrospective: optional
   epic-10: done
   epic-10-retrospective: optional
-  epic-100: in-progress
+  epic-100: done
   epic-100-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
