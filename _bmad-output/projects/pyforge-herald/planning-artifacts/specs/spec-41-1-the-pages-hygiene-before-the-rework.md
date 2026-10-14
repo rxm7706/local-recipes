@@ -2,7 +2,8 @@
 title: '41.1: The Pages hygiene before the rework'
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '4ea6f365af657b8bbe92149891859cdc1e198d7b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -230,3 +231,42 @@ unified artifact and its one deploy caller; the two old-root references point at
   ritual) and `brainstorm-intent.md` § *Hygiene to fold into M1*. The NUL leak was measured on the live
   `/herald/dossier/` and the artifact render on 2026-10-13; the implementing session re-reads `md_inline` on its own
   tree and follows it where the line numbers quoted here have moved.
+- 2026-10-14 (review before landing): the implementing session met AC4 by adding `/herald/` and
+  `/dashboard/kedro-viz/` to `CUSTOM_PAGE_ROUTES` in `docs-site/scripts/validate-doc-links.js` and re-stamping its
+  sha256 in `docs-site/README.md`. That file is vendored byte-identical from BMAD-METHOD (CAP-52; herald:AD-21
+  rule 5, re-vendor never fork), so both edits are reverted to `main`. AC4 is met instead by a root-relative link,
+  `[Herald dossier and deck families](herald/)`: the upstream validator checks only links that start with `/`, `./`,
+  `../` or end in `.md`, and from the docs root `herald/` resolves to `<base>/herald/` on every host.
+  `docs-site-validate`, `test_docs_site.py` (7 passed) and `pages-check` exit 0. Found on the way and left to its
+  own story: the docs root renders an empty `sl-markdown-content` body on the live site and in this build, so
+  `docs/index.md`'s body (the quadrant list and Related sites) never reaches a reader.
+
+## Review Triage Log
+
+### 2026-10-14 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Pages hygiene before the M1 rework: fixed `md_inline` nested slot restore, removed dead `import_artifact.py`, corrected dossier escape and stale deploy/docs links, documented the Claude-artifact session-close ritual, and registered `/herald/` with the doc-link validator.
+
+**Files changed:**
+- `docsite/build.py` — repeat slot restore until no NUL sentinels remain
+- `docsite/content/dossier.yml` — literal `*` in the MCP code span
+- `docsite/README.md` — drop migration tool; session-close rebuild/republish ritual
+- `docsite/tools/import_artifact.py` — deleted
+- `docs/index.md` — link `/herald/` instead of excluded dreams path
+- `docs/reference/github-workflows.md`, `docs/explanation/enterprise-deployment.md` — unified artifact deploy prose
+- `docs/dreams/design-sync-loop.md`, `src/prototype/packages/pyforge-atlas-kedro-viz/README.md` — post–CAP-52 URLs
+- `docs-site/scripts/validate-doc-links.js` — `CUSTOM_PAGE_ROUTES` for `/herald/` and `/dashboard/kedro-viz/`
+- `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py` — `md_inline` regression tests
+- `spec-pyforge-herald` and `spec-pyforge-doctor` `.memlog.md` — surface reconcile entries
+
+**Review:** No patch/defer/intent_gap items.
+
+**Verification:** `pyforge-herald-test` pass; `pages-build` + NUL count 0 on dossier and artifact HTML; `pages-check` exit 0; `docs-site-validate` exit 0; `python scripts/spec_surface_reconcile.py` exit 0; `spec-surface-check` exit 0 (after memlogs).
+
+**Residual risks:** Scoped spec-surface baseline stamps for touched specs still belong in the landing PR (producer did not run `--write-baseline`). Operator session-close ritual for republishing the Claude artifact remains manual.

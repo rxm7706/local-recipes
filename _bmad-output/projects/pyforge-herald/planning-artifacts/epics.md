@@ -1928,7 +1928,7 @@ So that M2 and M3 start from a site whose known defects are gone and whose prose
 **When** the story lands
 **Then** `md_inline` restores slots until none remains, a regression test renders an escape inside a code span to its literal text with no `\x00`, and `grep -c $'\x00'` over the built `herald/dossier/index.html` and `herald/artifact/dossier.html` is 0; the needless escape is gone from `dossier.yml`; `import_artifact.py` is deleted and `docsite/README.md` names the refresh ritual (rebuild `dist/artifact/dossier.html`, republish "The PyForge Dossier" at session close) in place of the migration; `docs/index.md` links `/herald/`; the two docs pages describe the unified artifact and its one deploy caller; the two old-root references point at `/herald/infographics/` and `/dashboard/kedro-viz/`
 **And** `pixi run -e site pages-check`, `pixi run -e site docs-site-validate` and `pyforge-herald-test` are green; `spec-surface-check` exits 0 after the memlog reconcile names each path
-**Status:** backlog
+**Status:** done
 
 ## Epic 42: The Pages site shows the fleet and the guild, and builds for any host without a flag (spec-pyforge-herald CAP-60)
 

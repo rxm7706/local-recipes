@@ -356,3 +356,16 @@ def test_check_skips_family_views_when_executive_summary_is_none(build_mod, tmp_
     (out_dir / "decks/pyforge-alpha/executive-summary.html").unlink()
     result["families"][0]["executive_summary"] = None
     assert build_mod.check(out_dir, result) == 0
+
+
+def test_md_inline_escape_inside_code_span(build_mod):
+    out = build_mod.md_inline("`/stations/\\*/mcp`")
+    assert out == "<code>/stations/*/mcp</code>"
+    assert "\x00" not in out
+
+
+def test_md_inline_arrow_inside_code_span(build_mod):
+    out = build_mod.md_inline("`a <<b>> c`")
+    assert "\x00" not in out
+    assert out.count("<code>") == 1
+    assert "a" in out and "b" in out and "c" in out

@@ -44,7 +44,7 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 | workflow | trigger | what it does | why you care |
 |---|---|---|---|
-| **`dashboard.yml`** | `push` to main, `schedule`, dispatch | Regenerates `data.js` from git history + live detectors, deploys to Pages | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the lean `pyforge-ci` env with `--locked`. |
+| **`dashboard.yml`** | `push` to main, `schedule`, dispatch | Builds the unified Pages artifact (`docs-site/build/site/`: Starlight shelf at `/`, dossier under `/herald/`, dashboard under `/dashboard/`) and deploys via the sole `deploy-pages` caller | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the `site` env with `--frozen`. |
 
 ### Explicit-run only (`workflow_dispatch`)
 

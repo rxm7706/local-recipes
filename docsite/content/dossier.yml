@@ -1153,7 +1153,7 @@ sections:
       - MCP hosting
       - '**Two** stations now host a real, confirmed MCP server in their own source: Atlas, and Marshal
         (`mcp/server.py` plus a `marshal-mcp` console script). Herald and Scribe still host none — grepped
-        again this pass, zero server code in either — yet both still have a documented `/stations/\*/mcp`
+        again this pass, zero server code in either — yet both still have a documented `/stations/*/mcp`
         route whose existence is only ever asserted in *other* stations'' test files.'
       - 'Improved but not resolved: the answer to "does this station host an MCP server" now differs per
         station with no rule predicting which, and the phantom routes are unchanged.'

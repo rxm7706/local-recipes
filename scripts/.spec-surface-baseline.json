@@ -1655,8 +1655,8 @@
    "docs-site/src/loaders/shelf-docs-loader.ts": "840e15bccea6f7cc06a61163136543057ec84ede",
    "docs-site/tsconfig.json": "b244dd94369badef85a3bbea8ccceac1c7693e93",
    "docs/404.md": "bf0f4f0121d5986e3c739c9d2ab17e1d7355bf06",
-   "docs/index.md": "0da72393ad36856ece4aa0b7ba26ef12033d8f9a",
-   "docsite/README.md": "469a0c3b49ea60c12608b45b22bf491279603e5e",
+   "docs/index.md": "fd8589462855cb9719d41fc279bb58dbfe12b459",
+   "docsite/README.md": "f03de48f05b2cd51d99ab4ed863cd713d062f4c8",
    "docsite/assets/_dossier.css": "04423f3ad5f8b80b61939908a70806b8e0ede466",
    "docsite/assets/_site-chrome.css": "202b6664975429843f739e3e7d15e0ee72348827",
    "docsite/assets/fonts/OFL-archivo-expanded.txt": "56a8a07d0b23932a3584969fb8f95cc3d9976a94",
@@ -1684,9 +1684,9 @@
    "docsite/assets/fonts/ibm-plex-sans-latin-500-normal.woff2": "4d42c785b645312766d05fffcee5787bed880a5f",
    "docsite/assets/fonts/ibm-plex-sans-latin-600-normal.woff2": "90d9c22697da8cb2722b091ed254ed617a0ed74a",
    "docsite/assets/fonts/ibm-plex-sans-latin-700-normal.woff2": "3e696a9fe381a8b76156470f11ab33cf9102cba6",
-   "docsite/build.py": "489dda1d51f62e1500fcdeba7604e44feab60b81",
+   "docsite/build.py": "6d783a35c342ddaea33ff27bcc7bc414562798f9",
    "docsite/content/ci-status.json": "7e3e672e2afdea4e971fa471adfaf311862288a1",
-   "docsite/content/dossier.yml": "1606968120ce1db248e11b4cf570734074ee44fc",
+   "docsite/content/dossier.yml": "08a6b36b8e78fc21162cffd201898c147bfb0a15",
    "docsite/content/site.yml": "730c8d0eefb288471558de2259d4c92958f27acb",
    "docsite/templates/blocks.html.j2": "0df1a79adb5070bceff9b479bb520feeeb13dbae",
    "docsite/templates/dossier_body.html.j2": "72cc4bf26890af13c93f1b240b61f469a149a73d",
@@ -1701,7 +1701,6 @@
    "docsite/tools/ci_surfaces_tile.py": "86737f9fd626edf1293f997c40676cff28e5d2ef",
    "docsite/tools/export_ci_surfaces_tile_env.py": "4bd514bd21a0693361f63f4ecb0123337f295911",
    "docsite/tools/export_pages_host_env.py": "7c5c15670b9528341c93ca1473a8c2e7feda5663",
-   "docsite/tools/import_artifact.py": "d96625adf4918f6707cdabc7e6184409ee154fa9",
    "docsite/tools/pages_second_host.py": "bf2c095d9920887a66c59f85730a9b3dee740d68",
    "docsite/tools/verify_claims.py": "32f9f47f6f83f220c66c2890742a4fd1d79980a8",
    "presentations/_design-systems/broadsheet/_adherence.oxlintrc.json": "6401822d99082b089fde68ae22d524be044731c4",
@@ -2703,7 +2702,7 @@
    "src/shared/packages/pyforge-herald/tests/unit/test_docs_site_menu.py": "bcd49a1643b82b1a46bcd2b905622bcfd75ab42c",
    "src/shared/packages/pyforge-herald/tests/unit/test_docs_site_shelf_loader.py": "4910628f100690d48847c4a54e7f61edb8219b54",
    "src/shared/packages/pyforge-herald/tests/unit/test_docs_site_sidebar.py": "d61ba7462b5a7518b571fc36e009c7b6efe89383",
-   "src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py": "4443355d78b01e539a6a9d1aa2961833e1675278",
+   "src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py": "874ef33c4a6d405541512d490047bff56561b0fb",
    "src/shared/packages/pyforge-herald/tests/unit/test_dossier_structure.py": "fc63bba1bf609167ea020691a4897a873603f1b0",
    "src/shared/packages/pyforge-herald/tests/unit/test_errors.py": "25bbfc9a6c8bba50c777e4e7b107ab331edc7114",
    "src/shared/packages/pyforge-herald/tests/unit/test_evidence.py": "8d7ce646c74888559b92918e3232c60f774b3fa7",
@@ -2768,7 +2767,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "465ce29d8e569b6fc103f9e2875201b938e5b0df"
+  "memlog": "f5a612df68ab192a04b7ddc38adc12b0e4ee5fb7"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
