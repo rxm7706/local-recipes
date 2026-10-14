@@ -361,6 +361,28 @@ rows:
   owner: pyforge-steward
   authority: fnd:CAP-12
   class: cli
+- package: playwright
+  env: pyforge-atlas
+  realize:
+    # The Node driver sets the browser revision the Python bindings launch; a moved
+    # driver needs its Chromium build downloaded (CI installs one per run).
+    steps:
+    - - python
+      - -m
+      - playwright
+      - install
+      - chromium
+  probe:
+    expect: exit-0
+    command:
+    - python
+    - -c
+    - from playwright.sync_api import sync_playwright; p = sync_playwright().start(); p.chromium.launch().close(); p.stop()
+  test: pyforge-atlas-test
+  owner: pyforge-atlas
+  authority: spec-100-7
+  notes: browser build for atlas's dashboard e2e and herald's browser check
+  class: cli
 - package: age
   env: pyforge-guild
   realize:
