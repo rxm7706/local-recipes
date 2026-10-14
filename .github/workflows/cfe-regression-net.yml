@@ -49,6 +49,13 @@ on:
       - '.claude/skills/conda-forge-expert/**'
       - '.claude/scripts/conda-forge-expert/**'
       - '.claude/tools/conda_forge_server.py'
+      # Repo-root scripts the CFE meta tests load by path (steward Story 104.1). Kept in step with the tests by
+      # src/shared/packages/pyforge-steward/tests/meta/test_cfe_regression_net_paths.py.
+      - 'scripts/fleet_picture.py'
+      - 'scripts/fleet_scan.py'
+      - 'scripts/loop_stall_check.py'
+      - 'scripts/spec_surface_check.py'
+      - 'scripts/unpushed_work_check.py'
       - 'pixi.toml'
       - 'pixi.lock'
       - '.github/workflows/cfe-regression-net.yml'
@@ -58,6 +65,13 @@ on:
       - '.claude/skills/conda-forge-expert/**'
       - '.claude/scripts/conda-forge-expert/**'
       - '.claude/tools/conda_forge_server.py'
+      # Repo-root scripts the CFE meta tests load by path (steward Story 104.1). Kept in step with the tests by
+      # src/shared/packages/pyforge-steward/tests/meta/test_cfe_regression_net_paths.py.
+      - 'scripts/fleet_picture.py'
+      - 'scripts/fleet_scan.py'
+      - 'scripts/loop_stall_check.py'
+      - 'scripts/spec_surface_check.py'
+      - 'scripts/unpushed_work_check.py'
       - 'pixi.toml'
       - 'pixi.lock'
       - '.github/workflows/cfe-regression-net.yml'

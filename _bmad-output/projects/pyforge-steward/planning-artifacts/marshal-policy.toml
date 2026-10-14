@@ -1233,6 +1233,16 @@ verify_commands = [
   "docs/dreams/pyforge-unifying-strategy.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"104" = [  # the CFE regression lane runs when what its tests load changes (fix under spec-pyforge-steward CAP-159; no
+  # CAP, no flag; Story 104.1), added 2026-10-14. The default surface, restated because a declared entry replaces it
+  # outright, plus the workflow whose filters change and every Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  ".github/workflows/cfe-regression-net.yml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
   # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
   # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts
