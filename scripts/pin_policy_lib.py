@@ -4,12 +4,12 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import tomllib
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import tomllib
 import yaml
 from jsonschema import Draft202012Validator
 from packaging.specifiers import InvalidSpecifier, SpecifierSet

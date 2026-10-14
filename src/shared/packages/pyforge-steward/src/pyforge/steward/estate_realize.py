@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,6 +40,25 @@ class RealizeDeps:
     enforce_require: bool = True
     loop_homes: Callable[[], list[Path]] = field(default=list)
     platform: Callable[[], str] = field(default=lambda: "linux-64")
+    in_linked_worktree: Callable[[], bool] = field(default=lambda: False)
+
+
+def linked_worktree(root: Path) -> bool:
+    """True when ``root`` is a linked worktree, whose git hooks belong to every checkout."""
+
+    def rev_parse(flag: str) -> Path | None:
+        proc = subprocess.run(  # noqa: S603
+            ["git", "-C", str(root), "rev-parse", flag],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            return None
+        return (root / proc.stdout.strip()).resolve()
+
+    git_dir, common = rev_parse("--git-dir"), rev_parse("--git-common-dir")
+    return git_dir is not None and common is not None and git_dir != common
 
 
 def _load_register(root: Path) -> dict[str, Any]:
@@ -115,13 +135,17 @@ def _probe_locked_version_file(root: Path, probe: dict[str, Any], env: str, plat
     return "live" if str(installed) == str(locked) else "stale"
 
 
-def _in_env(env: str, argv: list[Any]) -> list[str]:
-    """Run a register argv inside the row's pixi env.
+def _in_env(env: str, argv: list[Any], *, install: bool = False) -> list[str]:
+    """Run a register argv inside the row's pixi env, as an executable (``-x``), never a task.
 
     Register steps and probes name bare tools (``osv-scanner``, ``pre-commit``); each row's
     ``env`` says where they live, and the calling env (pyforge-steward) carries only some.
+    A probe runs ``--as-is``: it never installs or syncs the env, so an env behind its lock
+    reads stale or missing instead of being brought current by the probe itself. A realize
+    step runs ``--frozen`` and may install the env from the lock, which is realizing it.
     """
-    return ["pixi", "run", "--frozen", "-e", env, *(str(part) for part in argv)]
+    mode = "--frozen" if install else "--as-is"
+    return ["pixi", "run", mode, "-x", "-e", env, *(str(part) for part in argv)]
 
 
 def _probe_locked_version_command(deps: RealizeDeps, probe: dict[str, Any], env: str, package: str) -> str:
@@ -168,9 +192,9 @@ def _parse_seed_kit(stdout: str) -> list[dict[str, Any]]:
     return kit if isinstance(kit, list) else []
 
 
-def _run_in_env(deps: RealizeDeps, env: str, argv: list[Any]) -> _Completed | None:
+def _run_in_env(deps: RealizeDeps, env: str, argv: list[Any], *, install: bool = False) -> _Completed | None:
     try:
-        return deps.runner(_in_env(env, argv), deps.root)
+        return deps.runner(_in_env(env, argv, install=install), deps.root)
     except OSError:
         return None
 
@@ -342,11 +366,15 @@ def run_realize(
             realize_state = "none"
         elif operator_gate and not yes:
             realize_state = "skipped-operator-gate"
+        elif (row.get("realize") or {}).get("primary_checkout_only") and deps.in_linked_worktree():
+            # git hooks are shared by every checkout; installing them from a worktree points
+            # them at that worktree's interpreter, which a workspace clean then deletes.
+            realize_state = "skipped-worktree"
         else:
             realize_state = "ran"
             env = str(row.get("env") or "pyforge-guild")
             for argv in steps:
-                proc = _run_in_env(deps, env, argv)
+                proc = _run_in_env(deps, env, argv, install=True)
                 if proc is None or proc.returncode != 0:
                     realize_state = "failed"
                     break
@@ -410,4 +438,5 @@ def production_realize_deps(root: Path) -> RealizeDeps:
         enforce_require=base.enforce_require,
         loop_homes=default_loop_homes,
         platform=base.platform,
+        in_linked_worktree=lambda: linked_worktree(root),
     )

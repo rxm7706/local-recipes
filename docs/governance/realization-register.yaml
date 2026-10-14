@@ -292,6 +292,7 @@ rows:
 - package: pre-commit
   env: pyforge-guild
   realize:
+    primary_checkout_only: true
     steps:
     - - pre-commit
       - install
@@ -411,7 +412,8 @@ rows:
     expect: locked-version
     command:
     - helm
-    - --version
+    - version
+    - --short
   test: platform-ci-local
   owner: platform
   authority: fnd:CAP-12
@@ -423,7 +425,7 @@ rows:
   probe:
     expect: locked-version
     command:
-    - postgresql
+    - postgres
     - --version
   test: platform-ci-local
   owner: platform

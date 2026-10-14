@@ -77,13 +77,19 @@
         "platform": { "type": "string" },
         "command": { "type": "string" },
         "moves": { "type": "array", "items": { "$ref": "#/$defs/move" } },
+        "refused": {
+          "description": "Story 100.7: present only when refresh refused; names the failed step. pixi.toml and pixi.lock were reset to base_sha.",
+          "type": "string"
+        },
         "converge": {
           "description": "Story 100.7: the upgrade reruns, excluding each package whose declared floor it lowered, until no floor is lowered (or the round cap). Optional; older journals omit it.",
           "type": "object",
           "required": ["rounds", "excluded"],
           "properties": {
-            "rounds": { "type": "integer", "minimum": 1 },
-            "excluded": { "type": "array", "items": { "type": "string" } }
+            "rounds": { "type": "integer", "minimum": 0 },
+            "excluded": { "type": "array", "items": { "type": "string" } },
+            "converged": { "type": "boolean" },
+            "unresolved": { "type": "array", "items": { "type": "string" } }
           },
           "additionalProperties": true
         },

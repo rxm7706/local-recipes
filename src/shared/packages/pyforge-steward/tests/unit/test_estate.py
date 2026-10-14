@@ -22,6 +22,7 @@ from pyforge.steward.estate import (
     SCHEMA_RESOURCE,
     EstateDeps,
     EstateDuty,
+    _artifact_version,
     _days_since_last_journal,
     _default_runner,
     _held_by,
@@ -473,12 +474,22 @@ def test_refresh_realize_due_and_fan_json_fallback(tmp_path: Path) -> None:
         json.dumps({"packages": [{"name": "bmad-method", "old": "6.12.0", "new": "6.12.2"}]}),
         "",
     )
-    runner.responses["--diff"] = FakeProc([], 1, "not-json", "")
+    runner.responses["--diff"] = FakeProc([], 0, "[]", "")
     runner.responses["--fan-out"] = FakeProc([], 0, "also-not-json", "")
     result = run_refresh(_deps(root, runner), transitive=False)
     assert result.ok
     assert "realize-due" in result.summary
     assert "bmad-method" in result.summary
+
+
+def test_refresh_refuses_a_diff_that_prints_no_json(tmp_path: Path) -> None:
+    """A broken policy diff is a refusal, never a clean pass (Story 100.7 review)."""
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    runner.responses["--diff"] = FakeProc([], 1, "not-json", "")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert not result.ok
+    assert "printed no JSON" in result.summary
 
 
 def test_status_json_out_and_show_all(tmp_path: Path) -> None:
@@ -581,7 +592,7 @@ def test_refresh_excludes_a_package_whose_floor_the_upgrade_lowered(tmp_path: Pa
     assert ["git", "checkout", "abc123", "--", "pixi.toml", "pixi.lock"] in runner.calls
     assert not any("pin_policy_restore" in " ".join(c) for c in runner.calls)
     doc = json.loads(next((root / ".steward" / "estate-refresh").glob("*.json")).read_text(encoding="utf-8"))
-    assert doc["converge"] == {"rounds": 2, "excluded": ["cron-descriptor"]}
+    assert doc["converge"] == {"rounds": 2, "excluded": ["cron-descriptor"], "converged": True, "unresolved": []}
     assert doc["command"].endswith("--exclude cron-descriptor")
 
 
@@ -598,8 +609,50 @@ def test_refresh_stops_converging_at_the_round_cap(tmp_path: Path) -> None:
             return super().__call__(argv, cwd)
 
     runner = Runner()
-    run_refresh(_deps(root, runner), transitive=False)
+    result = run_refresh(_deps(root, runner), transitive=False)
     upgrades = [c for c in runner.calls if c[:2] == ["pixi", "upgrade"]]
     assert len(upgrades) == 4  # noqa: PLR2004
     reverts = [c for c in runner.calls if c[:2] == ["git", "checkout"]]
     assert len(reverts) == 3  # noqa: PLR2004
+    # the fourth round's lowered floor reaches the restore, which the fake lets pass
+    assert result.ok
+    doc = json.loads(next((root / ".steward" / "estate-refresh").glob("*.json")).read_text(encoding="utf-8"))
+    assert doc["converge"]["converged"] is False
+    assert doc["converge"]["unresolved"] == ["pkg3"]
+    assert doc["converge"]["excluded"] == ["pkg0", "pkg1", "pkg2"]
+
+
+def test_refresh_refuses_when_the_upgrade_fails(tmp_path: Path) -> None:
+    """A failed upgrade resets the pixi files, journals the refusal and exits with the refusal code."""
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    runner.responses["pixi upgrade"] = FakeProc([], 1, "", "solve failed")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert not result.ok
+    assert result.details["exit_code"] == EXIT_ESTATE_REFUSAL
+    assert "pixi upgrade failed in round 1" in result.summary
+    assert runner.calls[-1] == ["git", "checkout", "abc123", "--", "pixi.toml", "pixi.lock"]
+    assert not any(c[:2] == ["pixi", "lock"] for c in runner.calls)
+    doc = json.loads(next((root / ".steward" / "estate-refresh").glob("*.json")).read_text(encoding="utf-8"))
+    assert doc["refused"].startswith("pixi upgrade failed")
+    jsonschema = pytest.importorskip("jsonschema")
+    jsonschema.validate(
+        doc, json.loads(SCHEMA_RESOURCE.read_text(encoding="utf-8")), cls=jsonschema.Draft202012Validator
+    )
+
+
+def test_refresh_refuses_when_the_lock_fails(tmp_path: Path) -> None:
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner()
+    runner.responses["pixi lock"] = FakeProc([], 1, "", "unsolvable")
+    result = run_refresh(_deps(root, runner), transitive=False)
+    assert not result.ok
+    assert "pixi lock failed" in result.summary
+    assert runner.calls[-1][:2] == ["git", "checkout"]
+
+
+def test_parse_pixi_moves_dashed_names() -> None:
+    side = {"conda": "https://conda.anaconda.org/conda-forge/linux-64/gcc_linux-64-14.3.0-h1382650_11.conda"}
+    assert _artifact_version(side) == "14.3.0"
+    assert _artifact_version({"conda": "https://x/linux-64/clang-18-18.1.8-default_h1.conda"}) == "18.1.8"
+    assert _artifact_version({"conda": "https://x/noarch/pip-24.2-pyh8b19718_1.tar.bz2"}) == "24.2"

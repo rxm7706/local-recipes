@@ -14,6 +14,7 @@ from pyforge.steward.estate import ESTATE_FLAG_KEY
 from pyforge.steward.estate_realize import (
     RealizeDeps,
     compute_realize_due_for_refresh,
+    linked_worktree,
     packages_moved_in_journal,
     production_realize_deps,
     realize_due_packages,
@@ -135,7 +136,7 @@ def test_realize_argv_per_moved_class(tmp_path: Path, flag_provider) -> None:  #
     assert "caveman-install --only claude --with-hooks" in joined
     assert "marshal refresh --project loop-home-a" in joined
     precommit = next(c for c in runner.calls if "pre-commit" in c and "install" in c)
-    assert precommit[:5] == ["pixi", "run", "--frozen", "-e", "pyforge-guild"]
+    assert precommit[:6] == ["pixi", "run", "--frozen", "-x", "-e", "pyforge-guild"]
 
 
 def test_probe_never_writes_on_realize_path(tmp_path: Path, flag_provider) -> None:  # noqa: ARG001
@@ -369,7 +370,7 @@ def test_command_probe_runs_inside_the_row_env(monkeypatch: pytest.MonkeyPatch) 
     row = {"env": "pyforge-warden", "probe": {"expect": "locked-version", "command": ["osv-scanner", "--version"]}}
     deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
     assert run_probe(deps, row, package="osv-scanner") == "live"
-    assert runner.calls[-1] == ["pixi", "run", "--frozen", "-e", "pyforge-warden", "osv-scanner", "--version"]
+    assert runner.calls[-1] == ["pixi", "run", "--as-is", "-x", "-e", "pyforge-warden", "osv-scanner", "--version"]
 
 
 def test_command_probe_missing_binary_is_missing_not_a_crash() -> None:
@@ -386,8 +387,57 @@ def test_import_and_kit_probes_run_inside_the_row_env() -> None:
     deps = RealizeDeps(root=REPO_ROOT, runner=runner, flag_on=lambda: True)
     row = {"env": "pyforge-foundry-full", "probe": {"expect": "import-probe", "command": "import httpx"}}
     assert run_probe(deps, row, package="httpx") == "live"
-    assert runner.calls[-1] == ["pixi", "run", "--frozen", "-e", "pyforge-foundry-full", "python", "-c", "import httpx"]
+    assert runner.calls[-1] == [
+        "pixi",
+        "run",
+        "--as-is",
+        "-x",
+        "-e",
+        "pyforge-foundry-full",
+        "python",
+        "-c",
+        "import httpx",
+    ]
     kit_row = {"env": "pyforge-guild", "probe": {"expect": "kit-ok", "item": "ccr-store"}}
     run_probe(deps, kit_row, package="headroom-ai")
-    assert runner.calls[-1][:5] == ["pixi", "run", "--frozen", "-e", "pyforge-guild"]
-    assert runner.calls[-1][5:] == ["pyforge", "marshal", "seed", "check", "--json"]
+    assert runner.calls[-1][:6] == ["pixi", "run", "--as-is", "-x", "-e", "pyforge-guild"]
+    assert runner.calls[-1][6:] == ["pyforge", "marshal", "seed", "check", "--json"]
+
+
+def test_pre_commit_hooks_are_not_installed_from_a_linked_worktree(tmp_path: Path) -> None:
+    """Hooks are shared by every checkout (Story 100.7 review: realize repointed them)."""
+    journal_path = tmp_path / "journal.json"
+    journal_path.write_text(
+        json.dumps({"moves": [{"package": "pre-commit", "from": "1", "to": "2", "feature": "*"}]}),
+        encoding="utf-8",
+    )
+    runner = RecordingRunner()
+    deps = _deps(runner)
+    deps.in_linked_worktree = lambda: True
+    run_realize(deps, plan=False, yes=True, all_rows=False, journal_path=journal_path)
+    assert not any("pre-commit" in c and "install" in c for c in runner.calls)
+    doc = json.loads(journal_path.read_text())
+    assert doc["realize"]["pre-commit"]["realize"] == "skipped-worktree"
+
+
+def test_linked_worktree_detection(tmp_path: Path) -> None:
+    import subprocess
+
+    main = tmp_path / "main"
+    main.mkdir()
+    subprocess.run(["git", "init", "-q", str(main)], check=True)
+    subprocess.run(
+        ["git", "-C", str(main), "commit", "-q", "--allow-empty", "-m", "x"],
+        check=True,
+        env={
+            **__import__("os").environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@x",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@x",
+        },
+    )
+    wt = tmp_path / "wt"
+    subprocess.run(["git", "-C", str(main), "worktree", "add", "-q", str(wt)], check=True)
+    assert linked_worktree(main) is False
+    assert linked_worktree(wt) is True
