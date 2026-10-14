@@ -23,9 +23,7 @@ Subcommands:
 
 The LLM decides *which* files are epics (discovery is judgment); this script
 owns everything after that decision: parsing, key derivation, ordering, status
-preservation (story identity is N.M — an existing key for that number is kept
-when the current title would mint a different slug), story-file detection,
-action-item carry-over, and validation.
+preservation, story-file detection, action-item carry-over, and validation.
 Legacy v6 statuses (drafted, contexted) are normalized on read everywhere, so
 they merge and count by their modern meaning and are reported, never reset.
 """
@@ -64,18 +62,6 @@ RETRO_RANK = {"optional": 0, "done": 1}
 RANKS = {"epic": EPIC_RANK, "story": STORY_RANK, "retro": RETRO_RANK}
 ACTION_STATUSES = ("open", "in-progress", "done")
 
-# Statuses that sit OUTSIDE the progression lattice: they are never computed,
-# and generate must never overwrite one. `blocked` is the operator's dispatch
-# gate -- marshal honours it (core/dispatch_fleet.py NON_IMPLEMENT_STATUSES)
-# and bmad-loop's stories_engine stops a scan on it -- so only an explicit hand
-# flip may clear it. Without this set `blocked` fell through _merge_status's
-# `existing not in rank` branch and was rewritten to the computed default,
-# `backlog`, which is the fail-OPEN direction: it means "dispatch me". That is
-# how 14 deliberately-blocked steward Epic-44 stories (44.3 "open the foundry",
-# 44.9 "mason submits to conda-forge", 44.10 "archive local-recipes" among
-# them) were silently un-blocked by one regenerate on 2026-09-06 (be0a29b320).
-STICKY_STATUSES = {"story": frozenset({"blocked"})}
-
 # v6 wrote these; they still exist in the wild (v6-shims/bmad-create-story
 # actively writes 'contexted'). Normalized on every read so no subcommand ever
 # treats a valid legacy file as illegal or resets its progress.
@@ -104,10 +90,6 @@ Story Status:
   - in-progress: Developer actively working on implementation
   - review: Implementation complete, ready for review
   - done: Story completed
-  - blocked: Held by the operator; NOT a point on the progression. generate
-    never computes it and never overwrites it -- only an explicit hand flip
-    (or --set) clears it. Marshal refuses to dispatch it and bmad-loop stops
-    its scan on it, so losing it silently opens a story for dispatch.
 
 Retrospective Status:
   - optional: Can be completed but not required
@@ -148,77 +130,16 @@ class JsonArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def _slug(text):
+def _slug(text, maxlen=60):
     # Unicode-aware: a non-Latin title must keep its own characters in the key
     # rather than every such story collapsing onto one shared placeholder.
-    # Do not truncate: a 60-char cap mid-word minted a different key on the
-    # next generate and dropped the old row (steward: 13 done keys orphaned).
-    # Identity across regenerates is N.M via _bind_existing_story_keys; the
-    # slug is a sticky suffix, not a rename trigger.
     slug = re.sub(r"[^\w]+", "-", str(text).lower(), flags=re.UNICODE).strip("-")
+    slug = slug[:maxlen].strip("-")
     if not slug:
         # Nothing sluggable (punctuation/emoji only): a short content hash keeps
         # the key deterministic and distinct instead of a bare "untitled".
         slug = hashlib.sha256(str(text).encode("utf-8")).hexdigest()[:8]
     return slug
-
-
-def _story_ident(key):
-    """Return (epic_num, story_num) for a story key, else None.
-
-    story_num includes a split suffix when present (``6a``). This is the
-    stable identity: the descriptive slug after the third hyphen may change
-    when a title is edited or when the slugger's rules change.
-    """
-    m = STORY_KEY_RE.match(key)
-    if not m:
-        return None
-    return int(m.group(1)), f"{m.group(2)}{m.group(3)}"
-
-
-def _bind_existing_story_keys(entries, existing_status):
-    """Keep the ledger's key for story N.M when one already exists.
-
-    parse_epics always mints from the current heading. Without this bind,
-    a title edit or a slugger change looks like a delete+add: the old key
-    becomes dropped_orphans (taking its status with it) and the new key
-    lands as backlog. --fresh skips this because merge_source is empty.
-    """
-    index = {}
-    warnings = []
-    for existing_key in existing_status:
-        ident = _story_ident(existing_key)
-        if ident is None:
-            continue
-        if ident in index and index[ident] != existing_key:
-            warnings.append(
-                f"multiple existing keys for story {ident[0]}.{ident[1]}: "
-                f"keeping '{index[ident]}', '{existing_key}' will orphan"
-            )
-            continue
-        index[ident] = existing_key
-    bound = []
-    seen = set()
-    kept_keys = []
-    for key, kind, epic_num in entries:
-        if kind != "story":
-            bound.append((key, kind, epic_num))
-            continue
-        ident = _story_ident(key)
-        if ident in seen:
-            warnings.append(
-                f"duplicate story heading for {ident[0]}.{ident[1]}; "
-                f"keeping first key '{index.get(ident, key)}'"
-            )
-            continue
-        seen.add(ident)
-        existing_key = index.get(ident)
-        if existing_key and existing_key != key:
-            kept_keys.append({"key": existing_key, "would_mint": key})
-            bound.append((existing_key, kind, epic_num))
-        else:
-            bound.append((key, kind, epic_num))
-    return bound, kept_keys, warnings
 
 
 def classify_key(key):
@@ -246,25 +167,6 @@ def _normalize(raw):
     """Map a raw status through the legacy vocabulary. Returns (status, was_legacy)."""
     status = LEGACY_STATUS.get(raw, raw)
     return status, raw in LEGACY_STATUS
-
-
-def _is_sticky(kind, status):
-    """True when `status` is an out-of-lattice status for `kind` (STICKY_STATUSES)."""
-    return status in STICKY_STATUSES.get(kind, frozenset())
-
-
-def _is_legal(kind, status):
-    """True when `status` is a recognized value for `kind`.
-
-    Legality is the rank table PLUS the sticky statuses, which carry no rank
-    by design -- they are not points on the progression, they are holds on it.
-    """
-    return status in RANKS[kind] or _is_sticky(kind, status)
-
-
-def _legal_statuses(kind):
-    """Every recognized status for `kind`, sorted -- for error messages."""
-    return sorted(set(RANKS[kind]) | set(STICKY_STATUSES.get(kind, frozenset())))
 
 
 def parse_epics(paths):
@@ -317,20 +219,6 @@ def _make_yaml():
     # every write silently de-indents pre-existing, untouched action_items.
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.encoding = "utf-8"
-    # ruamel's default width (80) folds a `key: value` line past 80 columns onto
-    # an indented continuation line. A story key long enough to trip that (a long
-    # slug is not truncated -- see _slug()'s docstring) then reads as ABSENT to
-    # fleet_scan.parse_sprint_status, which is a line-based reader requiring the
-    # whole "  key: value" pair on one line (its _ENTRY regex). Bit once already
-    # (2026-08-31, Story 22.11) and was fixed by hand-reformatting the corrupted
-    # file rather than here; this closes the root cause everywhere this factory
-    # is used (load, dump, verify).
-    yaml.width = 4096
-    # `width` alone is not enough: ruamel separately switches ANY key >=128 chars
-    # to explicit `? key` / `: value` block-mapping form regardless of `width`
-    # (Emitter.MAX_SIMPLE_KEY_LENGTH, a class default of 128) -- also invisible to
-    # the same line-based reader. Raise that ceiling too.
-    yaml.Emitter.MAX_SIMPLE_KEY_LENGTH = 4096
     return yaml
 
 
@@ -359,13 +247,6 @@ def _merge_status(kind, computed, existing_raw, key, warnings, report):
     existing, was_legacy = _normalize(existing_raw)
     if was_legacy:
         report["legacy_mapped"].append({"key": key, "from": existing_raw, "to": existing})
-    # A sticky status outranks nothing and everything: it is a hold placed by
-    # hand, so generate returns it untouched rather than comparing ranks. This
-    # guard MUST precede the `not in rank` check below, which would otherwise
-    # class it illegal and replace it with `computed` (see STICKY_STATUSES).
-    if _is_sticky(kind, existing):
-        report["preserved_sticky"].append({"key": key, "status": existing})
-        return existing
     if existing not in rank:
         warnings.append(f"illegal status '{existing_raw}' on '{key}' replaced with '{computed}'")
         report["illegal"].append({"key": key, "status": existing_raw})
@@ -386,15 +267,7 @@ def build_status(entries, existing_data, stories_dir, warnings):
         "dropped_orphans": [],
         "legacy_mapped": [],
         "illegal": [],
-        "kept_keys": [],
-        "preserved_sticky": [],
     }
-    if existing_status:
-        entries, kept_keys, bind_warnings = _bind_existing_story_keys(
-            entries, existing_status
-        )
-        warnings.extend(bind_warnings)
-        report["kept_keys"] = kept_keys
     # One directory scan instead of a stat() per story.
     story_files = set()
     if stories_dir and Path(stories_dir).is_dir():
@@ -491,10 +364,10 @@ def _parse_sets(pairs, valid_keys):
         if key not in valid_keys:
             _fail(f"--set key '{key}' is not in the generated plan", valid_keys=sorted(valid_keys))
         kind, _ = classify_key(key)
-        if not _is_legal(kind, status):
+        if status not in RANKS[kind]:
             _fail(
                 f"--set status '{status}' is not legal for {kind} '{key}'",
-                legal=_legal_statuses(kind),
+                legal=sorted(RANKS[kind]),
             )
         parsed.append((key, status))
     return parsed
@@ -636,7 +509,7 @@ def cmd_status(args):
         status, was_legacy = _normalize(raw)
         if was_legacy:
             legacy_mapped.append({"key": key, "from": raw, "to": status})
-        if not _is_legal(kind, status):
+        if status not in RANKS[kind]:
             illegal.append({"key": key, "status": raw})
             continue
         counts[kind][status] = counts[kind].get(status, 0) + 1
@@ -763,7 +636,7 @@ def cmd_validate(args):
                 status, was_legacy = _normalize(raw)
                 if was_legacy:
                     legacy_mapped.append({"key": str(key), "from": raw, "to": status})
-                if not _is_legal(kind, status):
+                if status not in RANKS[kind]:
                     problems.append(f"illegal {kind} status {str(raw)!r} on '{key}'")
         elif isinstance(data.get("development_status"), dict):
             problems.append("development_status is empty")
@@ -821,4 +694,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    if sys.platform == "win32":
+        # Piped output on Windows defaults to a legacy code page, not UTF-8.
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
     main()

@@ -10,6 +10,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = REPO_ROOT / "_bmad/skf/shared/scripts/skf-structural-diff.py"
 
 
+_CORE_COUNTS = ("added", "removed", "changed", "moved", "unchanged")
+
+
+def _core(summary: dict) -> dict:
+    """The counts Story 27.1 pins; skf 3.0 adds informational counters beside them."""
+    return {k: summary[k] for k in _CORE_COUNTS}
+
+
 def _load_module():
     spec = importlib.util.spec_from_file_location("skf_structural_diff", _SCRIPT)
     assert spec and spec.loader
@@ -63,8 +71,9 @@ def test_structural_diff_move_plus_signature_change_reports_both():
     baseline = [{"name": "helper", "type": "function", "signature": "(a)", "file": "old.py"}]
     current = [{"name": "helper", "type": "function", "signature": "(a, b)", "file": "new.py"}]
     diff = m.diff_inventories(baseline, current)
-    assert diff["summary"] == {"added": 0, "removed": 0, "changed": 1, "moved": 1, "unchanged": 0}
-    assert diff["changed"] == [{
+    assert _core(diff["summary"]) == {"added": 0, "removed": 0, "changed": 1, "moved": 1, "unchanged": 0}
+    # skf 3.0 adds the export's current file, line and confidence to each changed row.
+    assert [{k: row[k] for k in ("name", "field", "baseline_value", "current_value")} for row in diff["changed"]] == [{
         "name": "helper",
         "field": "signature",
         "baseline_value": "(a)",
@@ -77,7 +86,7 @@ def test_structural_diff_pure_move_counts_unchanged_as_main_did():
     baseline = [{"name": "helper", "type": "function", "file": "old.py", "line": 1}]
     current = [{"name": "helper", "type": "function", "file": "new.py", "line": 1}]
     diff = m.diff_inventories(baseline, current)
-    assert diff["summary"] == {"added": 0, "removed": 0, "changed": 0, "moved": 1, "unchanged": 1}
+    assert _core(diff["summary"]) == {"added": 0, "removed": 0, "changed": 0, "moved": 1, "unchanged": 1}
 
 
 def test_structural_diff_counts_each_changed_same_named_export():
@@ -103,10 +112,10 @@ def test_structural_diff_mixed_shape_file_on_one_side_reports_unchanged():
     baseline = [{"name": "main", "type": "function", "line": 1}]
     current = [{"name": "main", "type": "function", "file": "a.py", "line": 1}]
     diff = m.diff_inventories(baseline, current)
-    assert diff["summary"] == {"added": 0, "removed": 0, "changed": 0, "moved": 0, "unchanged": 1}
+    assert _core(diff["summary"]) == {"added": 0, "removed": 0, "changed": 0, "moved": 0, "unchanged": 1}
 
     reverse = m.diff_inventories(current, baseline)
-    assert reverse["summary"] == {"added": 0, "removed": 0, "changed": 0, "moved": 0, "unchanged": 1}
+    assert _core(reverse["summary"]) == {"added": 0, "removed": 0, "changed": 0, "moved": 0, "unchanged": 1}
 
 
 def test_structural_diff_lists_order_by_export_name_not_by_file():

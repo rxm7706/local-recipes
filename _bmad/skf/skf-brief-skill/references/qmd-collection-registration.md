@@ -1,6 +1,6 @@
 # QMD Collection Registration (Deep Tier)
 
-Loaded by step 5 §5 only when forge tier is Deep AND QMD is available. Skipped silently otherwise.
+Loaded by step 5 §3b (which step-auto-validate.md §3 also runs for an `[auto]` brief) only when forge tier is Deep AND QMD is available, before the run builds its result envelope. Skipped silently otherwise.
 
 Index the skill brief into a QMD collection so portfolio-level searches can find existing briefs and avoid duplicate skill creation across large monorepos.
 
@@ -31,17 +31,13 @@ After `qmd embed` completes, verify the collection was embedded:
 
 ## Registry Update (Delegated to Script)
 
-Build the entry JSON and pipe it to the `register-qmd-collection` subcommand:
+Stage the entry in the run folder through a quoted heredoc, then run the `register-qmd-collection` subcommand on the file. Add `"status": "pending"` to the object only when embed verification failed:
 
 ```bash
-echo '{
-  "name": "{skill-name}-brief",
-  "type": "brief",
-  "source_workflow": "brief-skill",
-  "skill_name": "{skill-name}",
-  "created_at": "{current ISO date}"
-  // include "status": "pending" only when embed verification failed
-}' | uv run {forgeTierRwHelper} register-qmd-collection --target {forgeTierFile}
+cat > "{run_dir}/qmd-entry.json" <<'SKF_JSON'
+{"name": "{skill-name}-brief", "type": "brief", "source_workflow": "brief-skill", "skill_name": "{skill-name}", "created_at": "{current ISO date}"}
+SKF_JSON
+uv run {forgeTierRwHelper} register-qmd-collection --target {forgeTierFile} < "{run_dir}/qmd-entry.json"
 ```
 
 The script handles the upsert deterministically (replace existing entry with same `name`, else append) and preserves all other forge-tier state (tools, tier, ccc_index, ccc_index_registry, other qmd_collections entries) — no need to reason about YAML re-rendering or section comments.
@@ -50,3 +46,4 @@ The script handles the upsert deterministically (replace existing entry with sam
 
 - If `qmd embed` or `qmd collection add` fails: log the error. Do NOT fail the workflow — the brief file was already written successfully.
 - If the `register-qmd-collection` script call fails: log the error JSON, continue. The brief is the user-visible artifact; the registry entry is a portfolio-search optimisation.
+- If `{forgeTierRwHelper}` has no path (step 5 §3b found no `skf-forge-tier-rw.py`): skip the Registry Update. Step 5 §3b has added the warning to `workflow_warnings[]`.

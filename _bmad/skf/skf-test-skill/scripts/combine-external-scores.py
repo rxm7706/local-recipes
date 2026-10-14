@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = []
 # ///
 """Deterministic combined external-validation score.
@@ -13,12 +13,12 @@ run-to-run (an odd-sum average such as (80 + 73) / 2 = 76.5 is exactly where an
 in-prompt round swings).
 
 Rule (external-validators.md §4):
-  * both tools ran  -> mean of skill-check + tessl review scores
+  * both tools ran  -> mean of the skill-check and Tessl Review scores
   * one tool ran    -> that tool's score
   * neither ran     -> null (scoring step redistributes the external weight)
 
-Both scores are on the same 0-100 scale (skill-check quality score; tessl review
-percentage). Rounding matches compute-score.py (JS-compatible half-up) so the
+Both scores are on the same 0-100 scale (skill-check's quality score; the Tessl
+Review score, `review_score` from skf-tessl-review.py, when the user opted in). Rounding matches compute-score.py (JS-compatible half-up) so the
 number this script emits and the one compute-score.py weights agree to the digit.
 
 Input schema (one JSON object; a tool that did not run is null or omitted):
@@ -40,6 +40,10 @@ CLI usage (mirrors compute-score.py):
   uv run combine-external-scores.py --json-input '<JSON>'     # explicit flag
   cat input.json | uv run combine-external-scores.py --stdin  # piped input
 
+--output <file> also writes the result to a file (UTF-8 JSON), the one
+compute-score.py --external reads; a refused input removes a file left
+there earlier.
+
 Exit codes:
   0  — score emitted successfully
   1  — no input / input could not be parsed as JSON
@@ -52,6 +56,7 @@ import argparse
 import json
 import math
 import sys
+from pathlib import Path
 
 SKILL_CHECK = "skill-check"
 TESSL = "tessl"
@@ -121,8 +126,8 @@ def _build_parser():
         prog="combine-external-scores",
         description=(
             "Deterministic combined external-validation score "
-            "(external-validators.md §4). Averages the skill-check and tessl "
-            "review scores (or passes a single available score through) into the "
+            "(external-validators.md §4). Averages the skill-check and Tessl "
+            "Review scores (or passes a single available score through) into the "
             "`externalValidation` scoring input."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -148,7 +153,17 @@ def _build_parser():
         action="store_true",
         help="Read the JSON object from stdin.",
     )
+    parser.add_argument("--output", metavar="PATH", help="also write the result to this file")
     return parser
+
+
+def _write_output(path, result):
+    target = Path(path)
+    if result.get("code") == "INVALID_INPUT":
+        target.unlink(missing_ok=True)
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes((json.dumps(result, indent=2) + "\n").encode("utf-8"))
 
 
 def _resolve_input(args):
@@ -180,6 +195,8 @@ def main(argv=None):
         return 1
 
     result = combine(data)
+    if args.output:
+        _write_output(args.output, result)
     print(json.dumps(result, indent=2))
     if isinstance(result, dict) and result.get("code") == "INVALID_INPUT":
         return 2

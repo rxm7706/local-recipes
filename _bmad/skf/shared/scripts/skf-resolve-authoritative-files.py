@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["pyyaml"]
 # ///
 """SKF Resolve Authoritative Files — §2a deterministic pre-prompt pipeline.
@@ -27,7 +27,7 @@ drift-prone parts. The helper consolidates them into one `resolve` call.
 
 Subcommand:
   resolve --source-root <path> --brief <brief.yaml-path>
-          [--preview-lines 20]
+          [--preview-lines 20] [--provenance-map <provenance-map.json>]
 
 Output JSON (stdout):
 
@@ -35,10 +35,14 @@ Output JSON (stdout):
     "status": "no-candidates" | "candidates-found",
     "summary": {
       "candidates_total":       N,
+      "already_tracked_count":  N,
       "already_in_scope_count": N,
       "pre_decided_count":      N,
       "unresolved_count":       N
     },
+    "already_tracked": [
+      {"path": "...", "heuristic": "llms.txt"}
+    ],
     "already_in_scope": [
       {"path": "...", "heuristic": "llms.txt", "size_bytes": N,
        "line_count": N, "content_hash": "sha256:..."}
@@ -53,12 +57,20 @@ Output JSON (stdout):
       {"path": "...", "heuristic": "...", "size_bytes": N,
        "line_count": N, "content_hash": "sha256:...",
        "preview": "<first N lines as a string>",
-       "excluded_by_pattern": "<glob>" | "not matched by any scope.include"}
+       "excluded_by_pattern": "<glob>" | "not matched by any scope.include",
+       "prior_action": null | "deferred-headless"}
     ]
   }
 
 Paths are emitted relative to `source-root`, forward-slash form
 (cross-platform JSON convention — same as skf-detect-scripts-assets.py).
+
+`already_tracked` semantics (update-skill's mirror of this protocol):
+with `--provenance-map`, a candidate the map already names, in
+`entries[].source_file` or `file_entries[].source_file`, is tracked:
+change detection handles it, so it is listed here, with no hash, and in
+no other bucket. Without `--provenance-map` the list is empty.
+`candidates_total` counts every candidate, tracked ones included.
 
 `pre_decided` semantics:
   - `prior_action="promoted"` AND `should_add_to_promoted_docs=true` →
@@ -68,9 +80,18 @@ Paths are emitted relative to `source-root`, forward-slash form
   - `prior_action="skipped"` → the user previously declined; caller
     does nothing. Hash/size/lines are null (no need to read the file).
 
+`unresolved` semantics: nobody has decided the path yet, so an
+interactive run asks. `prior_action="deferred-headless"` means a headless
+run already met the path and left the decision to the next interactive
+run (an amendment with `action: "deferred-headless"`); a headless run
+does not record it again. A `skipped` amendment whose reason is the
+headless default, "headless: no user to prompt", was written that way by
+a headless run before `deferred-headless` existed: no person declined
+the file, so it counts as `deferred-headless` too.
+
 Exit codes:
-  0  — operation succeeded (any status)
-  1  — user error (paths invalid, brief unparseable)
+  0  operation succeeded (any status)
+  1  user error (paths invalid, brief or provenance map unparseable)
 """
 
 from __future__ import annotations
@@ -84,6 +105,12 @@ from pathlib import Path
 from typing import Iterable
 
 import yaml
+
+
+# skf-classify-changed-files.py loads this file for load_brief,
+# extract_scope, glob_match, scope_match, normalize_rel_path and
+# EXCLUDED_DIR_NAMES, and skf-detect-registry.py for glob_match, load_brief
+# and extract_scope: keep those names and what they take and return.
 
 
 # --------------------------------------------------------------------------
@@ -267,7 +294,8 @@ def extract_scope(brief: dict) -> tuple[list[str], list[str], dict[str, list[str
 
     amendments_by_path maps each path to a list of actions seen, in the
     order they appear in the brief (so reconcile() can pick most-recent
-    by iterating in reverse).
+    by iterating in reverse). A legacy headless skip is listed as
+    'deferred-headless' (see _amendment_action).
     """
     scope = brief.get("scope") if isinstance(brief.get("scope"), dict) else {}
     includes = scope.get("include") if isinstance(scope.get("include"), list) else []
@@ -279,14 +307,56 @@ def extract_scope(brief: dict) -> tuple[list[str], list[str], dict[str, list[str
         if not isinstance(amend, dict):
             continue
         path = amend.get("path")
-        action = amend.get("action")
-        if isinstance(path, str) and isinstance(action, str):
+        action = _amendment_action(amend)
+        if isinstance(path, str) and action is not None:
             by_path.setdefault(path, []).append(action)
 
     # filter to strings only — schema requires strings but defensively guard
     includes = [p for p in includes if isinstance(p, str)]
     excludes = [p for p in excludes if isinstance(p, str)]
     return includes, excludes, by_path
+
+
+# --------------------------------------------------------------------------
+# Provenance map: the files it already tracks
+# --------------------------------------------------------------------------
+
+
+def normalize_rel_path(path: str) -> str:
+    """A provenance or brief path in the form this helper emits: forward
+    slashes, no leading `./`."""
+    path = path.strip().replace("\\", "/")
+    while path.startswith("./"):
+        path = path[2:]
+    return path
+
+
+def load_tracked_files(provenance_path: Path) -> set[str]:
+    """Every `entries[].source_file` and `file_entries[].source_file` of a
+    provenance map. Raises ValueError when the map cannot be read."""
+    try:
+        data = json.loads(provenance_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ValueError(f"cannot read provenance map at {provenance_path}: {exc}") from exc
+    except ValueError as exc:
+        raise ValueError(
+            f"provenance map at {provenance_path} is not valid JSON: {exc}"
+        ) from exc
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"provenance map at {provenance_path} must be a JSON object; got "
+            f"{type(data).__name__}"
+        )
+    tracked: set[str] = set()
+    for key in ("entries", "file_entries"):
+        rows = data.get(key)
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            source = row.get("source_file") if isinstance(row, dict) else None
+            if isinstance(source, str) and source.strip():
+                tracked.add(normalize_rel_path(source))
+    return tracked
 
 
 # --------------------------------------------------------------------------
@@ -338,13 +408,28 @@ def load_preview(path: Path, *, max_lines: int) -> str:
 
 _PROMOTED = "promoted"
 _SKIPPED = "skipped"
+_DEFERRED = "deferred-headless"
+# The reason a headless run gave its automatic skip before deferred-headless
+# existed. Such a skip was never a person's decision.
+_LEGACY_HEADLESS_REASON = "headless: no user to prompt"
+
+
+def _amendment_action(amend: dict) -> str | None:
+    """The action an amendment records, reading a legacy headless skip as a deferral."""
+    action = amend.get("action")
+    if not isinstance(action, str):
+        return None
+    reason = amend.get("reason")
+    if action == _SKIPPED and isinstance(reason, str) and reason.strip() == _LEGACY_HEADLESS_REASON:
+        return _DEFERRED
+    return action
 
 
 def _latest_action(actions: list[str]) -> str | None:
     """Most-recent matching amendment wins. Returns 'promoted', 'skipped',
-    or None if no recognized action was seen."""
+    'deferred-headless', or None if no recognized action was seen."""
     for action in reversed(actions):
-        if action in (_PROMOTED, _SKIPPED):
+        if action in (_PROMOTED, _SKIPPED, _DEFERRED):
             return action
     return None
 
@@ -354,17 +439,25 @@ def resolve(
     brief_path: Path,
     *,
     preview_lines: int = 20,
+    provenance_map: Path | None = None,
 ) -> dict:
     """Run the §2a deterministic pipeline. See module docstring for output shape."""
     brief = load_brief(brief_path)
     includes, excludes, amendments_by_path = extract_scope(brief)
+    tracked = load_tracked_files(provenance_map) if provenance_map is not None else set()
 
+    already_tracked: list[dict] = []
     already_in_scope: list[dict] = []
     pre_decided: list[dict] = []
     unresolved: list[dict] = []
 
     for file_path, heuristic in iter_auth_doc_files(source_root):
         rel = file_path.relative_to(source_root).as_posix()
+        if rel in tracked:
+            # The provenance map already names it: change detection handles
+            # it, and no decision is asked for.
+            already_tracked.append({"path": rel, "heuristic": heuristic})
+            continue
         in_scope, excluded_by = scope_match(rel, includes, excludes)
         prior_action = _latest_action(amendments_by_path.get(rel, []))
 
@@ -398,6 +491,7 @@ def resolve(
             continue
 
         if prior_action == _SKIPPED:
+            # A person declined the file; a headless deferral never lands here.
             pre_decided.append({
                 "path": rel,
                 "heuristic": heuristic,
@@ -409,7 +503,8 @@ def resolve(
             })
             continue
 
-        # No prior amendment and out of scope → unresolved
+        # Out of scope and undecided (no amendment, or a headless deferral
+        # that waits for the next interactive run) → unresolved
         unresolved.append({
             "path": rel,
             "heuristic": heuristic,
@@ -418,24 +513,28 @@ def resolve(
             "content_hash": sha256_of_file(file_path),
             "preview": load_preview(file_path, max_lines=preview_lines),
             "excluded_by_pattern": excluded_by,
+            "prior_action": prior_action,
         })
 
     # Deterministic ordering for stable diffs / cache keys
+    already_tracked.sort(key=lambda r: r["path"])
     already_in_scope.sort(key=lambda r: r["path"])
     pre_decided.sort(key=lambda r: r["path"])
     unresolved.sort(key=lambda r: r["path"])
 
     candidates_total = (
-        len(already_in_scope) + len(pre_decided) + len(unresolved)
+        len(already_tracked) + len(already_in_scope) + len(pre_decided) + len(unresolved)
     )
     return {
         "status": "candidates-found" if candidates_total > 0 else "no-candidates",
         "summary": {
             "candidates_total": candidates_total,
+            "already_tracked_count": len(already_tracked),
             "already_in_scope_count": len(already_in_scope),
             "pre_decided_count": len(pre_decided),
             "unresolved_count": len(unresolved),
         },
+        "already_tracked": already_tracked,
         "already_in_scope": already_in_scope,
         "pre_decided": pre_decided,
         "unresolved": unresolved,
@@ -461,8 +560,17 @@ def _cmd_resolve(args: argparse.Namespace) -> int:
     if args.preview_lines < 1:
         print("error: --preview-lines must be >= 1", file=sys.stderr)
         return 1
+    provenance_map = Path(args.provenance_map) if args.provenance_map else None
+    if provenance_map is not None and not provenance_map.is_file():
+        print(f"error: provenance map not found: {provenance_map}", file=sys.stderr)
+        return 1
     try:
-        result = resolve(source_root, brief_path, preview_lines=args.preview_lines)
+        result = resolve(
+            source_root,
+            brief_path,
+            preview_lines=args.preview_lines,
+            provenance_map=provenance_map,
+        )
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -489,6 +597,13 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=20,
         help="number of lines to capture for the prompt preview (default: 20)",
+    )
+    p.add_argument(
+        "--provenance-map",
+        help=(
+            "path to provenance-map.json: candidates it already tracks are "
+            "listed in already_tracked and in no other bucket"
+        ),
     )
     p.set_defaults(func=_cmd_resolve)
     return parser

@@ -1,21 +1,30 @@
 # /// script
-# requires-python = ">=3.9"
+# requires-python = ">=3.11"
 # dependencies = ["pyyaml"]
 # ///
-"""Campaign Provenance — verify repo access and record commit SHAs for all targets.
+"""Campaign Provenance: verify repo access and record commit SHAs for all targets.
 
 Replaces the step-04 prose that asked the LLM to string-munge each repo_url
-("handle trailing .git or slashes"), run `gh repo view` + `gh api commits/{ref}`
-per target, and aggregate failures across 15+ targets in-context. All of that
-is deterministic; doing it by hand is both token-expensive and a fragile-parse
-risk. This script owns the parse, the gh calls, and the aggregation, and — when
-every (or nearly every) target fails the same way — collapses the wall of
-near-identical errors into a single actionable root-cause hint instead of N
-independent failures.
+("handle trailing .git or slashes"), call `gh` per target, and aggregate
+failures across 15+ targets in-context. All of that is deterministic; doing
+it by hand is both token-expensive and a fragile-parse risk. This script
+owns the parse, the gh calls, and the aggregation, and, when every target
+fails the same way, adds a single actionable root-cause hint above the
+per-repo errors.
 
-For each skill it resolves `{owner}/{repo}` from the brief's repo_url, picks the
-ref (the skill's pin, or the repo default branch), verifies access, and records
-the commit SHA.
+For each skill it resolves `{owner}/{repo}` from the brief's repo_url, reads
+the repository with one REST call, `gh api repos/{owner}/{repo}` (which
+proves access and gives the default branch), picks the ref (the skill's pin,
+or that default branch), and records the commit SHA from
+`gh api repos/{owner}/{repo}/commits/{ref}`.
+
+A failed call is classified by gh's exit code and the `(HTTP nnn)` code gh
+prints on stderr, as skf-github-probe.py does: exit 4 or HTTP 401
+`unauthenticated`, 404 or 422 (no such repository or ref) `not-found`, 429
+or a 403 that names a rate limit `rate-limited`, any other 403 (an SSO or
+SAML policy, a token without the scope) `forbidden`, and anything else
+`network`. A target the script cannot even look up (no repo_url in the
+brief, an unparseable URL) is `other`.
 
 CLI:
   uv run campaign-provenance.py --state-file <path> --brief-file <path>
@@ -25,17 +34,24 @@ Output (JSON on stdout):
     "results": [
       {"name": "...", "repo_url": "...", "owner": "...", "repo": "...",
        "ref": "...", "commit_sha": "..." | null,
-       "status": "accessible" | "inaccessible", "error": "..." | null}
+       "status": "accessible" | "inaccessible", "error": "..." | null,
+       "error_class": "unauthenticated" | "not-found" | "rate-limited"
+                      | "forbidden" | "network" | "other" | null}
     ],
     "all_accessible": bool,
     "inaccessible_count": N,
     "systemic_hint": "..." | null
   }
 
+  systemic_hint is one root-cause line when every target failed with the
+  same class (unauthenticated, rate-limited, forbidden or network), else
+  null. It sums up results[]; each result keeps its own error.
+
 Exit codes:
   0  all targets accessible
   1  one or more targets inaccessible
-  2  error (missing files, bad YAML, gh not installed)
+  2  error (missing files, bad YAML, gh not installed), or INVALID_BRIEF: a
+     brief that is no mapping, or a target with no name or no repo_url
 """
 
 from __future__ import annotations
@@ -63,6 +79,25 @@ def _emit_error(message: str, code: str) -> None:
 def _load_yaml(path: Path) -> Any:
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def _malformed_target(targets: List[Any]) -> Optional[str]:
+    """Why the first brief target with no name or no repo_url is unusable, or None.
+
+    Names the target by its 1-based number, and by its name when it has one,
+    and says which key it lacks.
+    """
+    for number, target in enumerate(targets, start=1):
+        if not isinstance(target, dict):
+            return f"Brief target {number} is not a mapping"
+        missing = [
+            key for key in ("name", "repo_url")
+            if not (isinstance(target.get(key), str) and target[key].strip())
+        ]
+        if missing:
+            named = "" if "name" in missing else f" ({target['name']})"
+            return f"Brief target {number}{named} has no {' and no '.join(missing)}"
+    return None
 
 
 def parse_owner_repo(repo_url: str) -> Optional[Tuple[str, str]]:
@@ -94,24 +129,34 @@ def _default_runner(args: List[str]) -> Tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def _classify_error(stderr: str) -> str:
-    """Bucket a gh failure so systemic root causes can be detected."""
-    low = stderr.lower()
-    if "authentication" in low or "gh auth" in low or "not logged" in low or "401" in low:
-        return "auth"
-    if "could not resolve" in low or "network" in low or "timeout" in low or "dial tcp" in low:
-        return "network"
-    if "rate limit" in low or "403" in low:
-        return "rate-limit"
-    if "not found" in low or "404" in low:
+# gh prints the REST status code of a failed call as "(HTTP 404)" on stderr.
+_HTTP_CODE_RE = re.compile(r"\(HTTP (\d{3})\)")
+
+
+def _classify_error(returncode: int, stderr: str) -> str:
+    """Bucket a failed gh call so a systemic root cause can be detected."""
+    if returncode == 4:  # gh: authentication required
+        return "unauthenticated"
+    match = _HTTP_CODE_RE.search(stderr or "")
+    code = int(match.group(1)) if match else None
+    if code == 401:
+        return "unauthenticated"
+    if code in (404, 422):
         return "not-found"
-    return "other"
+    if code == 429 or (code == 403 and "rate limit" in stderr.lower()):
+        return "rate-limited"
+    if code == 403:
+        return "forbidden"
+    return "network"
 
 
 _SYSTEMIC_HINTS = {
-    "auth": "All targets failed authentication — run `gh auth status` / `gh auth login`, then `campaign resume`.",
-    "network": "All targets failed with network errors — check connectivity, then `campaign resume`.",
-    "rate-limit": "All targets hit GitHub rate limiting — wait for the limit to reset, then `campaign resume`.",
+    "unauthenticated": "Every target failed authentication: run `gh auth status` (or `gh auth login`), "
+                       "then `campaign resume`.",
+    "network": "Every target failed to reach GitHub: check the connection, then `campaign resume`.",
+    "rate-limited": "Every target hit GitHub's rate limit: wait for it to reset, then `campaign resume`.",
+    "forbidden": "GitHub refused every target (HTTP 403): authorize your token for the organization's "
+                 "SSO, or give it access to these repositories, then `campaign resume`.",
 }
 
 
@@ -144,9 +189,16 @@ def run(state_file: str, brief_file: str, runner: Runner = _default_runner) -> i
     if not isinstance(skills, list):
         _emit_error("State file 'skills' is not an array", "INVALID_STATE")
         return 2
+    if not isinstance(brief, dict):
+        _emit_error("Brief file is not a YAML mapping", "INVALID_BRIEF")
+        return 2
     targets = brief.get("targets", [])
     if not isinstance(targets, list):
         _emit_error("Brief file 'targets' is not an array", "INVALID_BRIEF")
+        return 2
+    malformed = _malformed_target(targets)
+    if malformed is not None:
+        _emit_error(malformed, "INVALID_BRIEF")
         return 2
 
     name_to_repo: Dict[str, str] = {t["name"]: t["repo_url"] for t in targets}
@@ -166,47 +218,38 @@ def run(state_file: str, brief_file: str, runner: Runner = _default_runner) -> i
             "commit_sha": None,
             "status": "inaccessible",
             "error": None,
+            "error_class": None,
         }
-        if repo_url is None:
-            record["error"] = f"Skill '{name}' has no repo_url in brief targets"
-            error_classes.append("other")
+
+        def fail(message: str, error_class: str) -> None:
+            record["error"] = message
+            record["error_class"] = error_class
+            error_classes.append(error_class)
             results.append(record)
+
+        if repo_url is None:
+            fail(f"Skill '{name}' has no repo_url in brief targets", "other")
             continue
 
         parsed = parse_owner_repo(repo_url)
         if parsed is None:
-            record["error"] = f"Could not parse owner/repo from '{repo_url}'"
-            error_classes.append("other")
-            results.append(record)
+            fail(f"Could not parse owner/repo from '{repo_url}'", "other")
             continue
         owner, repo = parsed
         record["owner"], record["repo"] = owner, repo
 
-        rc, _out, err = runner(["gh", "repo", "view", f"{owner}/{repo}", "--json", "name"])
+        # One REST call proves access and names the default branch.
+        rc, out, err = runner(["gh", "api", f"repos/{owner}/{repo}", "--jq", ".default_branch"])
         if rc != 0:
-            record["error"] = err.strip() or "gh repo view failed"
-            error_classes.append(_classify_error(err))
-            results.append(record)
+            fail(err.strip() or f"gh api repos/{owner}/{repo} failed", _classify_error(rc, err))
             continue
 
-        ref = skill.get("pin")
-        if not ref:
-            rc, out, err = runner(
-                ["gh", "repo", "view", f"{owner}/{repo}", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"]
-            )
-            if rc != 0:
-                record["error"] = err.strip() or "could not resolve default branch"
-                error_classes.append(_classify_error(err))
-                results.append(record)
-                continue
-            ref = out.strip()
+        ref = skill.get("pin") or out.strip()
         record["ref"] = ref
 
         rc, out, err = runner(["gh", "api", f"repos/{owner}/{repo}/commits/{ref}", "--jq", ".sha"])
         if rc != 0:
-            record["error"] = err.strip() or f"could not resolve commit for ref '{ref}'"
-            error_classes.append(_classify_error(err))
-            results.append(record)
+            fail(err.strip() or f"could not resolve commit for ref '{ref}'", _classify_error(rc, err))
             continue
 
         record["commit_sha"] = out.strip()

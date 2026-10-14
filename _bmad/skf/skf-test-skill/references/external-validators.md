@@ -1,7 +1,27 @@
 ---
 nextStepFile: 'step-hard-gate.md'
-outputFile: '{forge_version}/test-report-{skill_name}-{run_id}.md'
+outputFile: '{report_file}'
 externalScoreScript: 'scripts/combine-external-scores.py'
+outputFormatsFile: 'assets/output-section-formats.md'
+scoringRulesFile: 'references/scoring-rules.md'
+# §5b records the validators' findings in the run's gap ledger, which the
+# hard gate (step 4c) reads and the Gap Report is rendered from.
+ledgerFile: '{forge_version}/test-findings-{run_id}.json'
+gapLedgerScript: 'scripts/gap-ledger.py'
+# Resolve `{tesslReviewHelper}` by probing `{tesslReviewProbeOrder}` in order
+# (installed SKF module path first, src/ dev-checkout fallback); first existing
+# path wins. If neither path exists, §3 records that Tessl Review did not run
+# and continues: the review is optional and never gates the workflow.
+tesslReviewProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-tessl-review.py'
+  - '{project-root}/src/shared/scripts/skf-tessl-review.py'
+# Resolve `{tesslReviewRules}` the same way. §3 loads it after a completed
+# review to mark the suggestions SKF does not follow; without it the
+# suggestions are listed unmarked.
+tesslReviewRulesProbeOrder:
+  - '{project-root}/_bmad/skf/shared/references/tessl-review.md'
+  - '{project-root}/src/shared/references/tessl-review.md'
+preferencesFile: '{sidecar_path}/preferences.yaml'
 ---
 
 <!-- Config: communicate in {communication_language}. -->
@@ -10,40 +30,23 @@ externalScoreScript: 'scripts/combine-external-scores.py'
 
 ## STEP GOAL:
 
-Run external validation tools (`skill-check` and `tessl`) against the skill directory, capture their scores and findings, and append results to the test report. These tools catch complementary issues that internal coverage and coherence checks miss: `skill-check` validates spec compliance while `tessl` evaluates content quality and actionability.
+Run the external validators (`skill-check` whenever it is installed, and Tessl Review when the user opted in) against the skill directory, capture their scores and findings, and write their results into the test report. These tools catch complementary issues that internal coverage and coherence checks miss: `skill-check` validates spec compliance, while Tessl Review's AI judges score the description and the content of the whole skill folder.
+
+**Halt envelope.** Every HALT in this step names its `halt_reason` and phase and carries exit code 1. It releases the run lock first, whatever the release prints: from `{project-root}`, run `uv run {runLockHelper} release --lock "{forge_version}/.test-skill.lock" --owner "{run_owner}"` (SKILL.md Workflow Rules). In headless mode it then writes `{"phase": "<phase>", "reason": "<the halt message>", "halt_reason": "<halt_reason>", "skill_name": "{skill_name}", "report_path": "{report_file}"}`, adding `"path"` when the halt names one, to `{run_dir}/halt.json` and runs:
+
+```bash
+uv run {emitEnvelopeHelper} emit-halt --workflow skf-test-skill --run-dir "{run_dir}" --target stderr < "{run_dir}/halt.json"
+```
+
+Display the line it prints, as the run's last line, then stop. If the emitter exits non-zero or prints no line, display the halt message alone. An interactive HALT displays its message and emits nothing.
 
 ### 1. Resolve Skill Directory
 
 Read {outputFile} frontmatter to get the skill directory path (`skillDir`).
 
-### 1b. Check for Recent Validation Results (Auto-Reuse)
-
-Before running external validators, check if `{forge_data_folder}/{skill_name}/evidence-report.md` contains validation results (a `## Validation Results` section with quality scores).
-
-**Staleness check:** Determine whether SKILL.md has changed since the evidence report was generated. Walk through these checks in order:
-
-**Pre-check (untracked or staged-only file):** Run `git ls-files --error-unmatch {skillDir}/SKILL.md 2>/dev/null`.
-- If the command fails (exit code non-zero) or git is not available, the file is either **untracked** (new, never committed) or we're in a **non-git environment**:
-  - Check if `{skillDir}/metadata.json` exists and has a `generation_date` field
-  - Compare `metadata.json` `generation_date` against the evidence report's generation date (from its frontmatter `generated` field or the `## Validation Results` timestamp)
-  - **Precision guard (mirror of the git-path Primary-cross check):** date-granularity equality is not proof of same-session generation. A same-day `update-skill` that regenerates SKILL.md *after* the cached evidence report was produced yields the same calendar date (e.g. `metadata.generation_date: 2026-05-23T00:00:00Z` vs evidence `generated: 2026-05-23`), so reusing on date-equality alone would publish pre-update scores for post-update content. Auto-reuse is safe **only** when both timestamps carry a real time-of-day component — neither a date-only string (`2026-05-23`) nor a midnight-coerced `…T00:00:00Z` — AND they match to the minute. In that case auto-reuse: the evidence report was generated from the same SKILL.md content.
-  - Otherwise — if either timestamp is date-only or midnight-coerced, if they differ, or if `metadata.json` is missing or has no `generation_date` — treat as stale and proceed to section 2 for a fresh run. Forcing a fresh run on ambiguous precision matches the git path's bias toward freshness over reusing possibly-stale scores.
-  - Note: "Staleness check: SKILL.md is untracked/non-git — using metadata.json timestamp comparison (date-only/midnight timestamps force a fresh run)."
-- If the command succeeds (file is tracked by git), continue to Primary check below.
-
-**Primary (git-tracked):** Run `git log -1 --format=%cI -- {skillDir}/SKILL.md` to get the last commit date of SKILL.md. Compare against the evidence report's generation date (from its frontmatter or the `## Validation Results` timestamp). If SKILL.md's last commit is newer, results are stale.
-
-**Primary-cross (single-commit bundle detection):** The git-commit-timestamp comparison can return a false "fresh" when `update-skill` commits a regenerated SKILL.md alongside an unchanged `evidence-report.md` in the same commit — both files share the same `%cI` even though the cached validation results inside the evidence report were produced during an earlier run. To catch this, after the Primary check also compare `{skillDir}/metadata.json`'s `generation_date` field against the evidence report's internal `## Validation Results` timestamp (or its frontmatter `generated` field). If `metadata.json.generation_date` is strictly newer than the evidence report's internal validation timestamp, treat results as stale regardless of git commit parity — SKILL.md was regenerated after the cached validation ran, so the scores no longer reflect current content. If `metadata.json` is missing or has no `generation_date`, skip this cross-check and rely on the git comparison alone.
-
-**Secondary (uncommitted changes):** Run `git diff --name-only -- {skillDir}/SKILL.md`. If output is non-empty, SKILL.md has uncommitted changes — treat results as stale regardless of commit dates. Also check `git diff --cached --name-only -- {skillDir}/SKILL.md` for staged-but-uncommitted changes — if non-empty, SKILL.md has been staged since last commit, treat results as stale.
-
-If SKILL.md was modified after the evidence report was generated (e.g., after update-skill), the cached results are stale — skip auto-reuse and proceed to section 2 for a fresh run.
-
-If recent, non-stale results exist (from a create-skill run that just completed), auto-reuse them — skip re-running validators and use the existing scores. Record: "External validation: reused from create-skill evidence report." Skip to section 5 (append results).
-
-If no evidence report exists, it contains no validation section, or results are stale, proceed to section 2 (fresh run).
-
 ### 2. Run skill-check
+
+Run skill-check fresh on every test: a score cached in an evidence report can predate the SKILL.md under test, so no earlier result is reused.
 
 **Check availability (short probe — 15s timeout):**
 
@@ -77,69 +80,52 @@ Store in context: `skill_check_score`, `skill_check_diagnostics`
 
 **If skill-check fails entirely:** Record `skill_check_score: N/A`, log warning, continue.
 
-### 3. Run tessl
+### 3. Run Tessl Review (optional)
 
-**Check availability (short probe — 15s timeout):**
+Tessl Review (`tessl review run`, which the helper below runs on a copy of `{skillDir}`) scores the skill on Tessl's servers with validation checks and two AI judges, one for the description and one for the content. It runs only when the user opted in by setting `tessl_review_workspace` in `{preferencesFile}` to a Tessl workspace name, because it needs a Tessl account, uploads the skill's files to that workspace's review history and spends Tessl credits. The helper applies that setting and every other condition, so run it whenever this section is reached and let it decide; `{tesslReviewRules}` explains what is uploaded and what each result means. It never halts the workflow.
 
-```bash
-timeout 15s npx --no-install -y tessl --version 2>/dev/null
-```
-
-Same rationale as the skill-check probe above: `--no-install` + `timeout 15s`
-prevent a cold-cache fetch from stalling the workflow. If the probe exits
-non-zero OR the 15s timeout trips (exit code `124`), record
-`tessl_score: N/A` and skip to section 4.
-
-**Run review (120s timeout):**
-
-The §2 probe (`npx --no-install -y tessl --version`) already resolved tessl via the caller's npm cache or a locally-installed binary on `$PATH`. Invoke the same binary for the review — do not re-pin to a registry-published version.
+Resolve `{tesslReviewHelper}` ← first existing path in `{tesslReviewProbeOrder}`. If neither path exists, set `{tessl_summary}` to `not run — skf-tessl-review.py is missing` and `{tessl_warnings}` to the one line `Tessl Review: {tessl_summary}`, log that line as a warning, set `{tessl_review_score}` to null and go to section 4. Otherwise submit the review:
 
 ```bash
-# Use the tessl binary the §2 probe just verified. `--no-install` keeps
-# the review execution path identical to the probe; no fresh registry
-# fetch needed.
-timeout 120s npx --no-install -y tessl skill review {skillDir}
+uv run {tesslReviewHelper} submit "{skillDir}" --preferences "{preferencesFile}"
 ```
 
-Timeout handling mirrors skill-check: exit `124` → `tessl_score: N/A` with reason `timeout-120s`. If the percentage regex (`/(Description|Content|Review Score):\s*(\d+)%/`) returns fewer than three matches, record `tessl_score: N/A` with reason `parse-failure` and include the first 200 chars of output in evidence-report for debugging.
+A review takes Tessl about two minutes, so no call waits for all of it. When the review is on, `submit` sends a copy of the skill to Tessl and returns `pending` with Tessl's run id as soon as Tessl accepts it; when it is off or cannot run, `submit` returns that result instead. While `{tessl_status}` is `pending`, collect the review, at most six times, and add `--final` to the sixth call, which turns a review still running into `timeout`:
 
-**Registry-404 branch:** if the invocation emits `npm error 404 Not Found` or the npx wrapper exits with a not-found condition, record `tessl_score: N/A` with reason `pin-not-on-registry` and continue. tessl has historically shipped under shifting scope/tag combinations, so a missing registry entry does not HALT the workflow.
+```bash
+uv run {tesslReviewHelper} collect "{tessl_run_id}" --workspace "{tessl_workspace}" --tessl-version "{tessl_version}"
+```
 
-**Parse the output** to extract:
-- `description_score` — percentage (e.g., 100%)
-- `content_score` — percentage (e.g., 45%)
-- `review_score` — percentage (e.g., 73%)
-- `validation_result` — PASSED/FAILED
-- `judge_suggestions[]` — list of improvement suggestions
+Each call ends within two minutes (a `collect` checks the review for up to 90 seconds, then returns `pending` again or the result), so run each one with your shell tool's default time limit. If the shell tool stops a call before it prints its JSON, or it prints none, make that the last call: set `{tessl_status}` to `failed`, `{tessl_summary}` to `failed — stopped before skf-tessl-review.py reported a result` and `{tessl_warnings}` to the one line `Tessl Review: {tessl_summary}`, keep `{tessl_run_id}` and the other values the calls before it bound, log that line as a warning, set `{tessl_review_score}` to null and go to section 4. Otherwise rely on the JSON, not the exit code, and bind these from the `submit` JSON and again from each `collect` JSON, whose values replace the earlier ones:
 
-The tessl output is human-readable text, not JSON. Parse the percentage values from lines like "Description: 100%", "Content: 45%", "Review Score: 73%".
+- `{tessl_status}` ← `status`
+- `{tessl_summary}` ← `summary`
+- `{tessl_warnings}` ← `warnings`
+- `{tessl_workspace}` ← `workspace`
+- `{tessl_version}` ← `tessl_version`
+- `{tessl_run_id}` ← `run_id`
+- `{tessl_review_score}` ← `review_score`
+- `{tessl_description_score}` ← `description_score`
+- `{tessl_content_score}` ← `content_score`
+- `{tessl_validation}` ← `validation`
+- `{tessl_description_suggestions}` ← `description_suggestions`
+- `{tessl_content_suggestions}` ← `content_suggestions`
 
-Store in context: `tessl_description_score`, `tessl_content_score`, `tessl_review_score`, `tessl_suggestions`
-
-**If tessl content score < 70%:** Flag a warning:
-
-"**Content quality warning:** tessl scored content at {score}%. This often indicates SKILL.md lacks inline actionable content (e.g., after split-body). If this is a split-body skill, the score drop is expected — tessl evaluates only SKILL.md body, not `references/*.md` (see scoring-rules.md). Consider using selective split to keep actionable content inline."
-
-**If tessl fails entirely:** Record `tessl_score: N/A`, log warning, continue.
+Every key is always present: the scores and `{tessl_validation}` are null and the suggestion lists are empty unless `{tessl_status}` is `reviewed`, and `{tessl_run_id}` is null until Tessl has accepted the review, so section 4 receives a null `{tessl_review_score}` whenever Tessl Review produced no score. After the last call, log each entry of `{tessl_warnings}` as a warning: a score below 60%, validation errors or, for any status other than `reviewed` and `off`, why the review produced no score. When `{tessl_status}` is `reviewed`, resolve `{tesslReviewRules}` ← first existing path in `{tesslReviewRulesProbeOrder}`, load it, and mark each entry of `{tessl_content_suggestions}` that one of its rules matches with `(not applicable: <rule-id>)`; if neither path exists, list the suggestions unmarked.
 
 ### 4. Calculate Combined External Score
 
-The combined external score feeds `externalValidation` into the scoring script (step 5), so its mean is computed by a script, not in-prompt. Both scores are on the same 0-100 scale (skill-check quality score; tessl review percentage). Pass each score, or `null` when its tool did not run or returned N/A (`{externalScoreScript}` resolves relative to the skill root):
+The combined external score feeds `externalValidation` into the scoring script (step 5), so its mean is computed by a script, not in-prompt. Both scores are on the same 0-100 scale (skill-check's quality score; the Tessl Review score). Pass `skill_check_score` as `skillCheckScore` and `{tessl_review_score}` as `tesslReviewScore`, each `null` when its tool produced no score (`{externalScoreScript}` resolves relative to the skill root):
 
 ```bash
-echo '{"skillCheckScore": <score or null>, "tesslReviewScore": <score or null>}' | uv run {externalScoreScript} --stdin
+echo '{"skillCheckScore": <score or null>, "tesslReviewScore": <score or null>}' | uv run {externalScoreScript} --stdin --output "{run_dir}/external.json"
 ```
 
-Read the result — do not re-average by hand:
+`--output` also writes the result to the run folder, where step 5 hands it to the scoring script; run the command even when neither tool produced a score. Read the result: do not re-average by hand. Bind `{external_score}` ← `externalScore` (the mean when both tools produced a score, the single score when one did, or `null` when neither did: the scoring step then redistributes the external-validation weight) and `{external_tools_used}` ← `toolsUsed` (`skill-check`, and `tessl` for Tessl Review). Record `external_score: N/A` when `{external_score}` is null.
 
-- `externalScore` — the combined score: the mean when both tools ran, the single score when one ran, or `null` when neither ran (the scoring step redistributes the external-validation weight on `null`).
-- `toolsUsed[]` — the tools that contributed.
+### 5. Write the External Validation Section
 
-Record `external_score: N/A` when `externalScore` is `null`.
-
-### 5. Append External Validation to Output
-
-Append to `{outputFile}`:
+Write this section in place of the template's `## External Validation` heading and the placeholder comment under it, in `{outputFile}`:
 
 ```markdown
 ## External Validation
@@ -151,23 +137,49 @@ Append to `{outputFile}`:
 - **Warnings:** {count}
 - **Diagnostics:** {list or "none"}
 
-### tessl
-- **Available:** {yes/no}
-- **Validation:** {PASSED/FAILED}
-- **Description Score:** {score}%
-- **Content Score:** {score}%
-- **Review Score:** {score}%
-- **Suggestions:**
-{bulleted list of judge suggestions}
+### Tessl Review
+- **Result:** {tessl_summary}
+- **Review Score:** {tessl_review_score}%
+- **Description Score:** {tessl_description_score}%
+- **Content Score:** {tessl_content_score}%
+- **Validation Findings:** {each {tessl_validation} finding as `name (status): message`, or "none"}
+- **Run:** {tessl_run_id} in workspace `{tessl_workspace}` (tessl {tessl_version})
+- **Description Suggestions** (edit the description in the brief to act on one): {each of {tessl_description_suggestions}, or "none"}
+- **Content Suggestions** (advisory): {each of {tessl_content_suggestions} with its `(not applicable: <rule-id>)` mark, or "none"}
 
 ### Combined External Score
 - **External Validation Score:** {external_score}%
-- **Tools used:** {list of tools that ran}
+- **Tools used:** {external_tools_used}
 ```
+
+When `{tessl_status}` is not `reviewed`, the Tessl Review block holds only its Result line and, when `{tessl_run_id}` is set, its Run line, so the report names the run of a review that may still finish.
+
+### 5b. Record the External Validation Gaps
+
+Record the validators' findings in the gap ledger `{ledgerFile}`, so the Gap Report lists them beside the coverage and coherence gaps. Each is one record in the Ledger Record Format of `{outputFormatsFile}`, with the severity and category the Gap Severity table (`{scoringRulesFile}`) gives it:
+
+- each entry of `skill_check_diagnostics`: a Low `external-validator` gap, with the file and line it names as its Source (else `SKILL.md`) and its message as the Issue;
+- each `{tessl_validation}` finding: a Low `external-validator` gap, titled `Tessl Review: {name}`, with `SKILL.md` as its Source and its message as the Issue;
+- each of `{tessl_description_suggestions}`: a Low `description` gap titled with the suggestion, with the SKILL.md frontmatter `description` as its Source;
+- each of `{tessl_content_suggestions}` not marked `(not applicable: <rule-id>)`: an Info `external-validator` gap titled with the suggestion, with `SKILL.md` as its Source.
+
+Write the records as one JSON array on the lines between the two markers, exactly as they are: the quoted marker hands them to the script unchanged, quotes, apostrophes and `$` included. Run the command even when the array is empty (`[]`), as it is when neither validator ran: the hard gate refuses to decide until every stage before it has recorded, with gaps or without (`{gapLedgerScript}` resolves relative to the skill root).
+
+```bash
+uv run {gapLedgerScript} append --ledger "{ledgerFile}" --stage external-validators <<'SKF_GAPS'
+<the records, one JSON array>
+SKF_GAPS
+```
+
+Rely on its JSON:
+
+- Exit 0: the records are in the ledger. `appended` names the id each new record received, and `duplicates` the ones a rerun of this step had already recorded.
+- Exit 2 (`INVALID_RECORD` or `INVALID_INPUT`): nothing was written. Correct each record `errors[]` names (its `index` counts from 0) and run the command again.
+- Exit 1: HALT with the script's `error` (`halt_reason: "helper-failed"`, phase `external-validators:ledger`).
 
 ### 6. Report Results
 
-Report the external validation result to the user: the per-tool scores and availability (skill-check out of 100, tessl as a percentage average, each `available` or `skipped`), the combined external score, and a content-quality warning if tessl content is below 70%. Then proceed to scoring.
+Report the external validation result to the user: skill-check's score out of 100 (or `skipped`), the line `Tessl Review: {tessl_summary}`, the combined external score, and each entry of `{tessl_warnings}` as a warning. Then proceed to the hard gate.
 
-Update stepsCompleted, then load and execute {nextStepFile}.
+Append `'external-validators'` to `stepsCompleted` in the `{outputFile}` frontmatter, then load and execute {nextStepFile}.
 

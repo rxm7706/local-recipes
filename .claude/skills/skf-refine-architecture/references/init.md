@@ -1,14 +1,19 @@
 ---
 nextStepFile: 'gap-analysis.md'
 refinementRulesData: '{refinementRulesPath}'
-# Resolve `{enumerateStackSkillsHelper}` by probing
-# `{enumerateStackSkillsProbeOrder}` in order (installed SKF module path
-# first, src/ dev-checkout fallback); first existing path wins. §2 calls
-# it for the deterministic skill inventory (cascade-resolved exports,
-# metadata-hash, confidence-tier mapping).
+# The findings a step 5 review dropped from an earlier refinement (compile.md §8).
+dismissedFile: '{outputFolderPath}/.ra-dismissed-{arch_project_name}.json'
+# Each probe order resolves to its first existing path.
 enumerateStackSkillsProbeOrder:
   - '{project-root}/_bmad/skf/shared/scripts/skf-enumerate-stack-skills.py'
   - '{project-root}/src/shared/scripts/skf-enumerate-stack-skills.py'
+validateFeasibilityReportProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-validate-feasibility-report.py'
+  - '{project-root}/src/shared/scripts/skf-validate-feasibility-report.py'
+preservationScript: 'scripts/skf-check-preservation.py'
+emitEnvelopeProbeOrder:
+  - '{project-root}/_bmad/skf/shared/scripts/skf-emit-result-envelope.py'
+  - '{project-root}/src/shared/scripts/skf-emit-result-envelope.py'
 ---
 
 <!-- Config: communicate in {communication_language}. -->
@@ -22,80 +27,108 @@ Load the architecture document (required), scan the skills folder to build a ski
 ## Rules
 
 - Focus only on loading inputs, scanning skills, and validating prerequisites — do not perform analysis
-- Present a clear initialization summary so downstream steps have validated inputs
 
 ## MANDATORY SEQUENCE
 
+**Halt envelope.** Every HALT in this step names its exit code, `halt_reason` and phase. In headless mode, stage `{run_dir}/halt.json` as `{"phase": "<phase>", "reason": "<the halt message>", "halt_reason": "<halt_reason>"}`, adding `"path"` when the halt names one, resolve `{emitEnvelopeHelper}` from `{emitEnvelopeProbeOrder}` if it is not bound (first existing path wins), then run:
+
+```bash
+uv run {emitEnvelopeHelper} emit-halt --workflow skf-refine-architecture --run-dir "{run_dir}" --target stderr < "{run_dir}/halt.json"
+```
+
+Display the line it prints, then stop with the halt's exit code (`references/exit-codes.md` describes the envelope). If no candidate exists, or the emitter exits non-zero or prints no line, display the halt message alone. An interactive HALT displays its message and emits nothing.
+
+**Recording a decision or a warning.** A gate below that picks its default for a headless run records that decision in the run sink the moment it decides: stage the decision it shows as `{run_dir}/decision.json`, then run the first command. A warning goes in with the second:
+
+```bash
+uv run {emitEnvelopeHelper} record --workflow skf-refine-architecture --run-dir "{run_dir}" --decision < "{run_dir}/decision.json"
+uv run {emitEnvelopeHelper} record --run-dir "{run_dir}" --warning '<the warning>'
+```
+
 ### 1. Accept Input Documents
 
-"**Refine Architecture — Evidence-Backed Refinement** (additive — never deletes original content).
+`--architecture-doc <path>` and `--vs-report-path <path>` apply in every mode, as the SKILL.md Invocation Contract says: each one answers its question below, which is then not asked, in an interactive run as in headless.
+
+**Refine without a report.** `--vs-report-path none` answers the report question as typing `none` at the prompt does, in every mode: skip the probe and the path mode below, use no report, and say "VS report skipped (--vs-report-path none)." (in headless, log it).
+
+**Find the [VS] report first.** Unless `--vs-report-path none` was passed, resolve `{validateFeasibilityReportHelper}` from `{validateFeasibilityReportProbeOrder}`; first existing path wins. If no candidate exists, or `uv` cannot start it, HALT (exit code 3, `halt_reason: "resolution-failure"`) at phase `init:feasibility-validator`: "Refine Architecture cannot read a [VS] report: `skf-validate-feasibility-report.py` is not installed. Re-install SKF (`npx bmad-module-skill-forge install`), or refine without a report with `--vs-report-path none`."
+
+Unless `--vs-report-path` was passed, run the probe (the first command) before asking anything: it reads the `-latest` report [VS] wrote for `{project_name}`, whose file name the helper builds. A path from `--vs-report-path`, or one typed at the prompt, goes through the path mode (the second), which checks and reads that file exactly as `--locate` does and prints the same JSON:
+
+```bash
+uv run {validateFeasibilityReportHelper} --locate "{forge_data_folder}" --project-name "{project_name}"
+uv run {validateFeasibilityReportHelper} "{vs_report_path}"
+```
+
+Each checks the report against the shared feasibility-report schema and prints one JSON (its module docstring lists every key). Branch on its exit code:
+
+- **0 with `status: "ok"`:** the report to use. The probe's becomes the report question's default below.
+- **0 with `status: "not-found"`** (the probe only): there is no [VS] report for this project, so the question has no default.
+- **1** (the report breaks the contract), or **2** with a JSON from the probe (the report exists but could not be read): HALT as **Unusable VS report** says below.
+- **2** with a JSON from the path mode (the file is missing or could not be read; its `error` says which): in an interactive run, show `error`, run the probe above if it has not run, and ask the report question again. In headless, log "headless: VS report not read at {vs_report_path} ({error}); probing for the [VS] report instead", record the decision `{"gate": "init.vs-report-unreadable", "default_action": "probe", "taken_action": "probe", "reason": "<the line logged>", "evidence": {"given": "<vs_report_path>", "error": "<error>"}}`, then run the probe above and take its outcome as if `--vs-report-path` had not been passed.
+- **2 with no JSON** on stdout: argparse refused the call itself (its usage error is on stderr). It says nothing about the report: fix the call and run it again.
+
+**Unusable VS report.** A report that breaks the contract is never interpreted: HALT (exit code 2, `halt_reason: "input-invalid"`) at phase `init:vs-report`, with `"path"` set to the report's `path`. Name the report's `path` and each problem its JSON shows: a `schemaVersion` other than `1.0` (`schemaVersionOk` is false), sections missing or out of order (`missingHeadings`, `orderViolations`), no verdict table (`verdictTableFound` is false), a second verdict table (at line `duplicateVerdictTableLine`), each entry of `unknownTokens`, or the `error` of a report that could not be read. End with: "Re-run [VS] to write a current report, pass another one with `--vs-report-path <path>`, or refine without one with `--vs-report-path none`."
+
+**Ask for the inputs.** Ask only for what no flag answered:
+
+"**Refine Architecture: Evidence-Backed Refinement** (additive: never deletes original content).
 
 If you wanted to *verify* the stack first, type `cancel` and run `[VS] Verify Stack`; if no skills exist yet, run `[CS] Create Skill`. Otherwise, please provide the following:
-1. **Architecture document path** (REQUIRED) — your project's architecture doc to refine
-2. **VS feasibility report path** (OPTIONAL) — from a previous [VS] Verify Stack run, for additional context
+1. **Architecture document path** (REQUIRED): your project's architecture doc to refine
+2. **VS feasibility report path** (OPTIONAL): {IF the probe found a report:}Found the [VS] report from {vs_report_date}: press Enter to use it, or give another path.{ELSE:}From a previous [VS] Verify Stack run, for additional context.{END IF} Type `none` to refine without a report.
 
 Or type `cancel` / `exit` / `:q` at any prompt to abort cleanly."
 
-Wait for user input. Store the validated architecture document path as `architecture_doc`. **GATE [default: use args]** — If `{headless_mode}` and `--architecture-doc` was provided: use that path and auto-proceed, log: "headless: using provided architecture path". If `--vs-report-path` was provided, consume it at the VS validation below. If `--architecture-doc` is absent in headless: HALT (exit code 2, `halt_reason: "input-missing"`) and emit the error envelope.
+`{vs_report_date}` is the date in the probe's `generatedAt`, or the file name of its `path` when `generatedAt` is null.
 
-- If the user enters `cancel`, `exit`, `[X]`, `q`, or `:q` at any sub-prompt: Display "Cancelled — no refinement was performed." and HALT (exit code 6, `halt_reason: "user-cancelled"`).
+Wait for user input. Store the validated architecture document path as `architecture_doc`. **GATE [default: use args]:** a question a flag answered is not asked, and headless answers the rest with their defaults. If `{headless_mode}` and `--architecture-doc` was provided: use that path and auto-proceed, log: "headless: using provided architecture path". If `--architecture-doc` is absent in headless: HALT (exit code 2, `halt_reason: "input-missing"`) at phase `init:inputs`. The report question's default is the probe's report when its `status` is `ok`: with no `--vs-report-path`, headless takes it and logs "headless: using the [VS] report found at {path}", or logs "headless: no [VS] report for {project_name}; issue detection will use skill data only" when the probe found none.
 
-**Validate architecture document:**
-- Confirm the file exists and is readable
-- If missing or unreadable: "Architecture document not found at `{path}`. Provide a valid path."
-- HALT (exit code 2, `halt_reason: "input-invalid"`) if the user cannot provide a valid path. In headless, emit the error envelope per SKILL.md "Result Contract (Headless)" immediately.
+A headless run that answered the report question this way (no `--vs-report-path`, or one it could not read) records the decision: `{"gate": "init.vs-report", "default_action": "use-found-report", "taken_action": "use-found-report", "reason": "<the line logged>", "evidence": {"vs_report_path": "<path>"}}` when the probe found a report, or `{"gate": "init.vs-report", "default_action": "no-report", "taken_action": "no-report", "reason": "<the line logged>"}` when it found none.
 
-**Resolve `{arch_project_name}` (names the refined output file):** Read the architecture document's YAML frontmatter. If it declares a `project_name`, store that value as `{arch_project_name}`; otherwise fall back to the config `{project_name}` resolved at activation. Stash `{arch_project_name}` as a workflow-context variable — `compile.md` and `report.md` resolve `{outputFile}` from it. This makes a producer-side refine of a consumer's architecture doc (the producer/consumer forge split) name the proposal after the doc's own project rather than the forge workspace config. Producer-side working state (`ra-state-{project_name}.md`) and the VS report auto-probe stay keyed on the config `{project_name}`.
+- If the user enters `cancel`, `exit`, `[X]`, `q`, or `:q` at any sub-prompt: Display "Cancelled: no refinement was performed." and HALT (exit code 6, `halt_reason: "user-cancelled"`) at phase `init:inputs`.
 
-**Validate VS report (if provided via `--vs-report-path` or interactive input):**
-- Confirm the file exists and is readable
-- If missing at user-provided path: attempt auto-probe (below) before giving up
-- Store VS report availability as `vs_report_available: true|false` and `vs_report_path`
+**Validate the architecture document:** when the file is missing or unreadable, say "Architecture document not found at `{path}`. Provide a valid path." and HALT (exit code 2, `halt_reason: "input-invalid"`) at phase `init:architecture-doc`, with `"path"` set to the path given, if the user cannot provide one (a headless run, at once).
 
-**Scope hint (optional, `--scope-skills`):** If `--scope-skills <names>` was provided, store the parsed comma-separated list as `{scope_skills}` — gap analysis (Step 02 §2b) uses it as the authoritative in-scope skill set. If absent, leave `{scope_skills}` empty; Step 02 derives scope from the architecture document instead.
+**Resolve `{arch_project_name}`**, which names the refined output file: the `project_name` the architecture document's YAML frontmatter declares, else the config `{project_name}`. The RA state file and the VS report probe stay keyed on the config `{project_name}`.
+
+**Record the VS report.** Cache the JSON of the report this run uses as `{vs_report}`: no step reads the report file by hand. Set `vs_report_available` to true when there is one (its `status` is `ok`), and to false when the probe found none or `none` was typed or passed with `--vs-report-path`; set `vs_report_path` to its `path`.
+
+**Scope hint (optional, `--scope-skills`):** If `--scope-skills <names>` was provided, store the comma-separated names as `{scope_skills}`, as given: Step 02 §2b takes them as the in-scope skill set, and Step 02 §3 checks each against the inventory. If absent, leave `{scope_skills}` empty.
+
+### 1b. Set Aside an Earlier Refinement Pass
+
+Before §3c resets the state file, set aside any earlier Refine Architecture pass, whose annotations are not the user's text:
+
+```bash
+uv run {preservationScript} inspect --doc "{architecture_doc}" --stripped "{run_dir}/analysis-doc.md" -o "{run_dir}/inspect.json"
+```
+
+Bind `{analysis_doc}` ← `{run_dir}/analysis-doc.md`, the document with any earlier pass set aside: Steps 02 to 04 read the architecture document only through it, while Step 05 builds from `{architecture_doc}` itself. Bind `{previous_pass}` ← `previous_pass`. Then act on the script's exit code:
+
+- **0** with `previous_pass` true: say "This document holds an earlier Refine Architecture pass ({signals}): its RA blocks ({marked_blocks} marked, {legacy_blocks} unmarked) are set aside, and this run writes one current set in their place. Refinements you moved into your own prose stay as they are." (in headless, log it). An unmarked block runs to the next heading, so it can hold text of yours: when `set_aside` holds a `legacy` entry, list each one's `start`-`end` lines and `first_line`, say "Text of your own in these lines is neither analyzed nor kept in the refined document: move it above the RA heading and re-run [RA] to keep it.", and record the warning `legacy_blocks_set_aside: lines <each start-end, comma-separated>`. When `malformed_markers` is not empty (an RA marker without its pair, kept with the text around it as the user's), name those lines and record the warning `malformed_ra_markers: lines <the lines, comma-separated>`.
+- **0** with `previous_pass` false: nothing to set aside; the analysis copy equals the document.
+- **2** with a JSON: the document cannot be read as UTF-8 text: HALT (exit code 2, `halt_reason: "input-invalid"`) at phase `init:previous-pass`, naming its `error`, with `"path"` set to `{architecture_doc}`. **2 with no JSON:** a malformed call: fix it and run it again.
+- **3:** the analysis copy could not be written: HALT (exit code 4, `halt_reason: "write-failed"`) at phase `init:previous-pass`, naming its `error`.
+- If `uv` cannot start the script: HALT (exit code 3, `halt_reason: "resolution-failure"`) at phase `init:previous-pass`.
+
+**Findings an earlier review dropped.** When `{previous_pass}` is true and `{dismissedFile}` exists, read it as `{dismissed_findings}`: the list of `{kind, skills, anchor, title, capability}` records Step 05 writes when its review drops a finding, which Steps 02 to 04 match as `references/finding-storage.md` says. Otherwise `{dismissed_findings}` is empty. A file that is not such a JSON list leaves it empty too: say "The record of findings dropped at an earlier review cannot be read ({reason}): they may come back in this run." (in headless, log it).
 
 ### 2. Scan Skills Folder
 
-**Resolve `{enumerateStackSkillsHelper}`** from `{enumerateStackSkillsProbeOrder}`; first existing path wins.
-
-**Primary path — deterministic enumeration via shared helper:**
+**Resolve `{enumerateStackSkillsHelper}`** from `{enumerateStackSkillsProbeOrder}`; first existing path wins. If no candidate exists, `uv` cannot start it, or the command below exits non-zero (a `{skills_output_folder}` that does not exist, say), HALT (exit code 3, `halt_reason: "resolution-failure"`) at phase `init:inventory`: "Refine Architecture cannot list the skills: {its first stderr line, or with no candidate: `skf-enumerate-stack-skills.py` is not installed. Re-install SKF (`npx bmad-module-skill-forge install`).}" No step walks `{skills_output_folder}` by hand.
 
 ```bash
-python3 {enumerateStackSkillsHelper} enumerate {skills_output_folder} --pairs --reliability
+uv run {enumerateStackSkillsHelper} enumerate "{skills_output_folder}" --pairs --reliability > "{run_dir}/skill-inventory.json"
 ```
 
-The helper walks `{skills_output_folder}`, reads each `metadata.json`, applies the version-aware resolution (export-manifest → `active` symlink → flat fallback), captures the exports cascade (metadata → references → SKILL.md), maps `confidence_tier`, and emits structured JSON with one entry per skill plus a top-level `warnings[]` array. Cache the result as `skill_inventory`.
+The helper reads only the skills SKF generated. Each `skills[]` entry has `name`, `path`, `exports`, `exports_source`, `confidence` (from the exports source, not metadata's `confidence_tier`), and the `language`, `source_repo_basename` and `source_root_basename` Step 02 reads, so no step opens `metadata.json`; `warnings[]` names per-skill problems, each starting `<name>: `. `--pairs` adds `pairs`, every unique `{library_a, library_b}` pair of the skills SKF generated, which Step 02 never re-derives, and `--reliability` adds `inventory_reliable` with the counts behind it. Read the JSON it writes to `{run_dir}/skill-inventory.json` as `skill_inventory` (Step 02 §4 and Step 03 §3 read each skill's `exports[]` from that file), and bind `{not_skf_output}` ← `not_skf_output`, `{inventory_reliable}` ← `inventory_reliable`, `{warning_count}` ← `warning_count`, `{skill_count}` ← `skill_count`, `{inventory_warnings}` ← `warnings`, `{pairs}` ← `pairs` and `{pair_count}` ← `pair_count`. When `{not_skf_output}` is non-empty, display it once: "Skipped (not SKF output): {not_skf_output}". Those folders count toward neither `{skill_count}` nor `{warning_count}`.
 
-`--pairs` additionally attaches `skill_inventory.pairs` — the complete, deterministic set of unique `{library_a, library_b}` combinations over the skill names (`itertools.combinations`, sorted-name order, `pair_count == N*(N-1)/2`) — plus `skill_inventory.pair_count`. Cache both alongside the inventory. This is the exact pair set Step 02 (gap analysis) iterates; the helper owns the combinatorics, so a pair can never be silently dropped or duplicated at larger N and downstream steps read the set rather than re-deriving it.
-
-Each helper-emitted entry includes: `skill_name`, `version`, `language`, `confidence_tier`, `exports_documented`, `source_repo`, `source_root`, and a `metadata_hash` for change-detection across runs. The helper's `warnings[]` carries per-skill skip reasons (missing SKILL.md/metadata.json, non-symlink `active`, orphan-versions, schema-version violations).
-
-**Failure-budget guard:** `--reliability` attaches the helper-computed verdict — `inventory_reliable` (boolean), `unreliable_ratio`, `skill_count`, `warning_count` — so the reliability threshold lives in one unit-tested place and this step reads a boolean rather than re-deriving a ratio. If `inventory_reliable` is false, HALT (exit code 7, `halt_reason: "inventory-unreliable"`) with: "Inventory scan unreliable — {warning_count}/{skill_count + warning_count} skills returned skip warnings. Re-run [RA] after skills stabilize." In headless, emit the error envelope.
-
-**Fallback path — graceful degradation when the helper is unavailable:** If `{enumerateStackSkillsHelper}` has no existing candidate, fall through to the LLM-driven inventory: walk `{skills_output_folder}` and for each `{skill_package}` read `metadata.json` and extract `name`, `language`, `confidence_tier`, `stats.exports_documented`, `source_repo`/`source_root`. Skip packages missing SKILL.md or metadata.json with a logged warning. On this degraded path only — with no helper to consult — treat the run as unreliable and HALT the same way if skip warnings exceed one in five of the scanned packages.
+**Failure-budget guard:** If `{inventory_reliable}` is false, HALT (exit code 7, `halt_reason: "inventory-unreliable"`) at phase `init:inventory` with: "Inventory scan unreliable: {warning_count} warning(s) across {skill_count} skill(s) SKF generated: {inventory_warnings}. Fix the skills named there (re-save an unreadable `metadata.json` as plain UTF-8 JSON or restore it from version control, and regenerate a skill whose exports are missing), then re-run [RA]."
 
 ### 3. Validate Minimum Requirements
 
-**Check skill count:**
-- At least 1 valid skill must exist
-- If no skills found: "**Cannot proceed.** No skills found in `{skills_output_folder}`. Generate skills with [CS] Create Skill or [QS] Quick Skill, then re-run [RA]."
-- HALT (exit code 5, `halt_reason: "insufficient-skills"`). In headless, emit the error envelope.
-- If exactly 1 valid skill found: "⚠️ Proceeding with 1 skill. Note: gap analysis will find no gaps — pairwise analysis requires at least 2 skills. Step 02 will still execute and issue an appropriate notice. Issue detection and improvement detection will proceed normally."
-
-**Output paths (`{outputFolderPath}`, `forge_data_folder`):** both were asserted non-empty (config-completeness → exit 3, `output-folder-unconfigured` / `forge-folder-unconfigured`) and then probed for writability (→ exit 4, `write-failed`) at On-Activation §5. If either was unconfigured or unwritable the run already halted there, so both are guaranteed present and writable here — no re-check needed.
-
-**Check architecture document:**
-- Confirm it was loaded successfully in section 1
-- If not: HALT with error (should not reach here if section 1 validation passed)
-
-### 3b. Auto-Probe VS Report
-
-**Auto-probe VS report (if not provided by user in section 1, OR if user-provided path was invalid):**
-- Only attempt if `forge_data_folder` is non-empty and the directory exists (validated above); otherwise skip probe and set `vs_report_available: false`
-- Check for `{forge_data_folder}/feasibility-report-{project_name}.md`
-- If found: "Auto-discovered VS report at `{path}`. Loading for additional context."
-- Store `vs_report_available: true` and `vs_report_path`
-- If not found: `vs_report_available: false` — "Proceeding without VS report — issue detection will rely on skill data only."
+When `{skill_count}` is 0, say "**Cannot proceed.** No skill SKF generated was found in `{skills_output_folder}`. Generate skills with [CS] Create Skill or [QS] Quick Skill, then re-run [RA]." (appending "Skipped (not SKF output): {not_skf_output}." when `{not_skf_output}` is non-empty) and HALT (exit code 5, `halt_reason: "insufficient-skills"`) at phase `init:skills`. When it is 1, say "⚠️ Proceeding with 1 skill: gap analysis needs at least 2 and will find no gaps; issue and improvement detection run normally."
 
 ### 3c. Reset RA State File
 
@@ -105,15 +138,22 @@ Create (or overwrite) `{forge_data_folder}/ra-state-{project_name}.md` with a fr
 <!-- RA state for {project_name} — generated {current_date} -->
 ```
 
-This ensures steps 02-04 append to a clean slate and context recovery in step 5 never loads stale findings from a prior run.
+Then append a `<!-- [RA-VS] ... -->` block: the `path`, `generatedAt`, `coveragePercentage` and `coverageMeasured` of `{vs_report}` when `vs_report_available` is true, or `none`. Step 03 reads the report again from that `path` and checks its `generatedAt`, and Step 05 reads the block back if context degrades on a long run.
 
-On any write failure (read-only mount, disk full, permissions denied): HALT (exit code 4, `halt_reason: "write-failed"`) with the captured error and emit the error envelope. The On-Activation §5 probe should have caught this earlier — if it surfaces here, the filesystem state changed mid-workflow.
+Then append `<!-- [RA-RUN] run_dir={run_dir} timestamp={timestamp} architecture_doc={architecture_doc} arch_project_name={arch_project_name} -->`: Steps 05 and 06 read these bindings back when context degrades, since the run's records live in `{run_dir}`.
 
-### 4. Load Refinement Rules
+On a write failure: HALT (exit code 4, `halt_reason: "write-failed"`) at phase `init:state-file`, with `"path"` set to the state file, naming the captured error.
 
-Load `{refinementRulesData}` for reference by downstream steps.
+### 4. Check the Refinement Rules
 
-Extract: gap detection rules, issue detection rules, improvement detection rules, citation format, and preservation rules.
+`{refinementRulesData}` holds the house-style rules Steps 02 to 05 classify with: the bundled `references/refinement-rules.md`, or the copy `workflow.refinement_rules_path` names. The preservation script checks that it holds the six tables the steps read and that its tiers follow the rules the file's first section states, so the Refinement Summary can count each tier:
+
+```bash
+uv run {preservationScript} rules --rules "{refinementRulesData}"
+```
+
+- **0:** bind `{rule_tiers}` ← `tiers`, the tiers of the Issue Severity and Improvement Value tables in their order, which Step 05 writes into its plan.
+- **1** (`status: "violations"`: it lacks a table or breaks a tier rule), or **2** with a JSON (`error` says why the file cannot be read): HALT (exit code 3, `halt_reason: "resolution-failure"`) at phase `init:rules`, with `"path"` set to it: "The refinement rules at `{refinementRulesData}` {cannot be read: {error} | break these rules: {the `detail` of each of its `violations`}}. Fix the copy `refinement_rules_path` names, starting again from the bundled `references/refinement-rules.md`, or remove that override." **2 with no JSON:** a malformed call: fix it and run it again.
 
 ### 5. Display Initialization Summary
 
@@ -122,14 +162,15 @@ Extract: gap detection rules, issue detection rules, improvement detection rules
 | Field | Value |
 |-------|-------|
 | **Architecture Doc** | {architecture_doc} |
-| **VS Report** | {vs_report_path or 'Not provided — issue detection will use skill data only'} |
+| **VS Report** | {vs_report_path, or 'None: issue detection will use skill data only'} |
+| **Earlier RA pass** | {IF previous_pass: set aside ({signals}), replaced by this run ELSE: none} |
 | **Skills Loaded** | {skill_count} |
 
 **Skill Inventory:**
 
-| Skill | Language | Tier | Exports |
-|-------|----------|------|---------|
-| {skill_name} | {language} | {confidence_tier} | {exports_documented} |
+| Skill | Exports | Exports source | Confidence |
+|-------|---------|----------------|------------|
+| {name} | {number of exports} | {exports_source} | {confidence} |
 
 **Proceeding to gap analysis...**"
 

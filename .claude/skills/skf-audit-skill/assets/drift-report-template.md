@@ -8,6 +8,28 @@ skill_name: ''
 skill_path: ''
 source_path: ''
 forge_tier: ''
+# Run context, written as each value is known (init §6, re-index §5,
+# structural-diff §6), so later steps read it from this file.
+audited_version: ''
+audited_version_reason: ''
+manifest_version: ''
+docs_only_skill: ''
+provenance_map: ''
+provenance_generated_at: ''
+provenance_age_days: ''
+baseline_ref: ''
+baseline_commit: ''
+audit_ref: ''
+audit_ref_source: ''
+audit_commit: ''
+latest_tag: ''
+remote_head: ''
+upstream_fetch: ''
+upstream_moved: ''
+upstream_ref: ''
+source_tree: ''
+ast_fallback_files: []
+applied_transforms: []
 drift_score: ''
 nextWorkflow: ''
 previousWorkflow: 'create-skill'
@@ -17,7 +39,6 @@ previousWorkflow: 'create-skill'
 
 ## Audit Summary
 
-**Confidence Mode:** {confidence_mode}
 **Skill:** {skill_name}
 **Source:** {source_path}
 **Tier:** {forge_tier}
@@ -36,7 +57,10 @@ previousWorkflow: 'create-skill'
 
 ## Structural Drift
 
-<!-- Appended by structural-diff -->
+<!-- Appended by structural-diff, or for a compose-mode stack by constituent-freshness -->
+<!-- Constituent Freshness (compose-mode stacks): drifted, missing and not-compared constituents; each drifted (HIGH) or missing (MEDIUM) one is a finding -->
+<!-- Provenance label differences (not drift): informational table, rendered only when label_changes[] is non-empty and excluded from Total Drift Items -->
+<!-- Off the public surface (not drift): a note under the Summary naming a public-api skill's new exports off its public surface (not_public[]), rendered only when summary.not_public is above 0 and excluded from Total Drift Items -->
 
 ---
 
@@ -54,13 +78,14 @@ previousWorkflow: 'create-skill'
 
 ## Documentation Drift
 
-<!-- Appended by step-doc-drift -->
+<!-- Appended by doc-drift -->
 
 ---
 
 ## Remediation Suggestions
 
 <!-- Appended by report -->
+<!-- Out-of-Scope New Public API: one row per file outside the skill's scope whose public API a package entry point exports (the snapshot's outside_scope), which update-skill's scope reconciliation reads; left out when there is none -->
 
 ---
 
