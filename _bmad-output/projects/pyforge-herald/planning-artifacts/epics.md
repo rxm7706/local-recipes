@@ -1399,7 +1399,7 @@ So that `herald deck pull` can prove a deck again and a bundle carries every fac
 **When** each Archivo deck depends on `@fontsource-variable/archivo` in place of the phantom package, drops the three `archivo-expanded` imports, declares `'Archivo Expanded'` once in `src/index.css` as the variable face at `font-stretch: 125%` (the declaration `docsite/assets/fonts/fonts.css` carries), and every lock is regenerated from the registry with no local shim
 **Then** `npm ci --no-audit --no-fund` and `npm run build` exit 0 in all 14 decks; a built bundle carries `archivo-latin-wdth-normal-*.woff2` and a `@font-face` for `Archivo Expanded` with `font-stretch:125%`, and `pyforge.herald.twins.scan_tree` finds no other origin in it; no `package.json` line other than the one dependency moves, and no deck's content, weights or `index.html` change
 **And** `tests/meta/test_deck_lockfiles_current.py` reads every `presentations/*/package.json` against its lock offline: a declared dependency with no `node_modules/<name>` lock entry, or a lock root that disagrees with the manifest, fails that deck's case (14/14 fail on `846d8383f5`'s locks and pass after); `pyforge-herald-test` is green, every Spec `spec-surface-check` names is reconciled and stamped scoped, and `dist/`, `node_modules/` and every font binary stay untracked
-**Status:** backlog
+**Status:** done
 
 ## Epic 31: The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56)
 
