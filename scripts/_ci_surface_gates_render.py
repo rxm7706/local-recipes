@@ -326,22 +326,31 @@ def render_workflow_file(
     if not job_plans:
         return False
     changed = False
+    in_jobs = False
     i = 0
     while i < len(lines):
+        if re.match(r"^jobs:\s*$", lines[i]):
+            in_jobs = True
+            i += 1
+            continue
+        if not in_jobs:
+            i += 1
+            continue
         m = re.match(r"^  ([\w-]+):\s*$", lines[i])
         if not m or m.group(1) not in job_plans:
             i += 1
             continue
         job_id = m.group(1)
+        job_line_idx = i
         plan = job_plans[job_id]
-        indent = _job_block_indent(lines, i)
+        indent = _job_block_indent(lines, job_line_idx)
         child_indent = indent + "  "
         new_if = build_fragment(
             inner=plan.inner,
             workflow_switch=plan.workflow_switch,
             job_switch=plan.job_switch,
         )
-        if_range = _find_job_if_range(lines, i, indent)
+        if_range = _find_job_if_range(lines, job_line_idx, indent)
         comment_lines = [
             ln + ("\n" if not ln.endswith("\n") else "")
             for ln in _render_comment_lines(child_indent, plan.row_id)
@@ -366,7 +375,9 @@ def render_workflow_file(
             if old_block != new_text:
                 lines[drop:end] = new_block
                 changed = True
-            i = drop + len(new_block)
+            i = job_line_idx + 1
+            while i < len(lines) and not re.match(r"^  [\w-]+:\s*$", lines[i]):
+                i += 1
             continue
         # Insert if: as the first key under the job (before runs-on, needs, steps, …).
         child_indent = indent + "  "
@@ -388,7 +399,9 @@ def render_workflow_file(
         insert_block = comment_lines + [if_line]
         lines[insert_at:insert_at] = insert_block
         changed = True
-        i = insert_at + len(insert_block)
+        i = job_line_idx + 1
+        while i < len(lines) and not re.match(r"^  [\w-]+:\s*$", lines[i]):
+            i += 1
     if changed and not dry_run:
         path.write_text("".join(lines), encoding="utf-8")
     return changed
