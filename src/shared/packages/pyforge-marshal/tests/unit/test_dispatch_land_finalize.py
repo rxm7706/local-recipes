@@ -717,7 +717,9 @@ def test_main_parses_argv_and_forwards_the_optional_worktree(monkeypatch, tmp_pa
 
     seen: list[tuple] = []
     monkeypatch.setattr(
-        mod, "finalize_dispatch_land", lambda slug, key, worktree: seen.append((slug, key, worktree)) or 0
+        mod,
+        "finalize_dispatch_land",
+        lambda slug, key, worktree, **kwargs: seen.append((slug, key, worktree)) or 0,
     )
     assert mod.main(["pyforge-marshal", "53.2"]) == 0
     assert mod.main(["pyforge-marshal", "53.2", str(tmp_path)]) == 0
@@ -3086,9 +3088,18 @@ def test_main_forwards_the_follow_up_flags_and_only_them(monkeypatch, tmp_path: 
             "pyforge-marshal",
             "51.2",
             tmp_path,
-            {"followup_review_id": "DW-FRR-51-2", "landing": "Merge pyforge-marshal/51-2 into main"},
+            {
+                "followup_review_id": "DW-FRR-51-2",
+                "landing": "Merge pyforge-marshal/51-2 into main",
+                "ci_pauses_at_merge": None,
+            },
         ),
-        ("pyforge-marshal", "51.2", tmp_path, {"followup_review_id": "DW-FRR-51-2", "landing": None}),
+        (
+            "pyforge-marshal",
+            "51.2",
+            tmp_path,
+            {"followup_review_id": "DW-FRR-51-2", "landing": None, "ci_pauses_at_merge": None},
+        ),
     ]
 
 

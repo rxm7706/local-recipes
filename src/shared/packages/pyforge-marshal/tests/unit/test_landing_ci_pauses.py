@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
 from typing import Any
@@ -30,14 +31,22 @@ from pyforge.marshal.core.model import Severity
 from pyforge.marshal.dispatch_land import _dispatch_pr_body, execute_dispatch_land
 from pyforge.marshal.ports.forge import ForgeCommandError
 
-from .test_dispatch_landing import (
-    FakeProcess,
-    FakeVcs,
-    _FakeClock,
-    _ChecksForge,
-    _GREEN,
-    _install_fake_spec_surface,
-)
+def _load_dispatch_landing_harness():
+    path = Path(__file__).with_name("test_dispatch_landing.py")
+    spec = importlib.util.spec_from_file_location("_dispatch_landing_harness", path)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_lh = _load_dispatch_landing_harness()
+FakeProcess = _lh.FakeProcess
+FakeVcs = _lh.FakeVcs
+_FakeClock = _lh._FakeClock
+_ChecksForge = _lh._ChecksForge
+_GREEN = _lh._GREEN
+_install_fake_spec_surface = _lh._install_fake_spec_surface
 
 _FLAG = LANDING_CI_PAUSES_FLAG_KEY
 
