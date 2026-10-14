@@ -15,7 +15,6 @@ from pyforge.marshal.adapters.steward_cli import StewardCli
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
-from pyforge.marshal.core.egress import to_redacted_text
 from pyforge.marshal.core.journal import CI_PAUSES_AT_MERGE_FIELD
 from pyforge.marshal.core.landing_checks import CheckRun
 from pyforge.marshal.core.landing_ci_pauses import (
@@ -212,16 +211,18 @@ def test_ac7_flag_on_records_and_updates_pr_body(
     clock = _FakeClock()
     result, envelope = _land_with_ci_pauses(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.LANDED
-    base_text = to_redacted_text(_dispatch_pr_body(normalize("80-1-example")))
+    base_text = _dispatch_pr_body(normalize("80-1-example")).text
     if enabled:
         assert envelope.data[CI_PAUSES_AT_MERGE_FIELD]["state"] == "read"
         assert len(envelope.data[CI_PAUSES_AT_MERGE_FIELD]["surfaces"]) == 4
-        assert forge.bodies[-1] == append_ci_pauses_line_to_pr_body(
-            base_text, envelope.data[CI_PAUSES_AT_MERGE_FIELD]
-        )
+        last_body = forge.bodies[-1]
+        last_text = last_body.text if hasattr(last_body, "text") else last_body
+        assert last_text == append_ci_pauses_line_to_pr_body(base_text, envelope.data[CI_PAUSES_AT_MERGE_FIELD])
     else:
         assert CI_PAUSES_AT_MERGE_FIELD not in envelope.data
-        assert all("CI paused at merge" not in b for b in forge.bodies)
+        assert all(
+            "CI paused at merge" not in (b.text if hasattr(b, "text") else b) for b in forge.bodies
+        )
 
 
 def test_ac3_unknown_on_steward_refusal_still_lands(tmp_path: Path, monkeypatch) -> None:
@@ -235,7 +236,8 @@ def test_ac3_unknown_on_steward_refusal_still_lands(tmp_path: Path, monkeypatch)
     result, envelope = _land_with_ci_pauses(tmp_path, forge, clock, monkeypatch)
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert envelope.data[CI_PAUSES_AT_MERGE_FIELD]["state"] == "unknown"
-    assert "CI paused at merge: unknown" in forge.bodies[-1]
+    last = forge.bodies[-1]
+    assert "CI paused at merge: unknown" in (last.text if hasattr(last, "text") else last)
 
 
 def test_ac4_update_pr_failure_warns_and_lands(tmp_path: Path, monkeypatch) -> None:

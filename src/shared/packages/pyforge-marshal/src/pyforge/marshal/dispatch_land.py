@@ -129,7 +129,7 @@ def _record_ci_pauses_at_merge_before_merge(
     """One steward read per landing; writes ``ci_pauses_at_merge`` and updates the PR body."""
     record = StewardCli(process).ci_status_record(repo_root=repo_root)
     data[CI_PAUSES_AT_MERGE_FIELD] = record
-    body_text = append_ci_pauses_line_to_pr_body(to_redacted_text(_dispatch_pr_body(key)), record)
+    body_text = append_ci_pauses_line_to_pr_body(_dispatch_pr_body(key).text, record)
     title = _dispatch_pr_title(project_slug, key)
     try:
         forge.update_pr(repo_ref, pr_number, title, Redacted(body_text))
