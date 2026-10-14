@@ -1135,6 +1135,17 @@ def verify_fix_loop_enabled(*, repo_root: Path) -> tuple[bool, str | None]:
         return False, str(exc)
 
 
+def landing_ci_pauses_enabled(*, repo_root: Path) -> tuple[bool, str | None]:
+    """Read ``pyforge.marshal.landing_ci_pauses``; unreadable tree reads as off."""
+    from .core.landing_ci_pauses import LANDING_CI_PAUSES_FLAG_KEY
+
+    flags_path = repo_root / "src/platform/config/flags.json"
+    try:
+        return read_boolean(LANDING_CI_PAUSES_FLAG_KEY, default=False, flags_path=flags_path), None
+    except FlagConfigError as exc:
+        return False, str(exc)
+
+
 def _is_zombie(pid: int) -> bool:
     """``True`` when ``/proc`` reports ``pid`` exited and awaiting its parent's reap (state ``Z``)."""
     try:

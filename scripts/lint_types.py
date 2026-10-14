@@ -44,7 +44,6 @@ NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = {
     "django-marshal": frozenset({"ruff", "ruff-format"}),
     "django-mason": frozenset({"ruff"}),
     "django-pyforge": frozenset({"ruff"}),
-    "django-scribe": frozenset({"ruff"}),
 }
 
 # Live map — only shrinks; fix stories remove entries here and in NOT_YET_CLEAN_CEILING together.
