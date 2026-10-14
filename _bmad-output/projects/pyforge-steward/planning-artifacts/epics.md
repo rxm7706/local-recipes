@@ -6282,7 +6282,7 @@ So that the local twin judges a branch the way CI will, and a paused surface is 
 **When** `pr-preflight` selects lanes with the flag on
 **Then** a snapshot no older than 24 h wins over the declared state, a stale or absent one falls back to it, and the banner names the source used; each lane skipped for a pause is journaled `skipped: paused in CI (<SWITCH> since <date>, review_by <date>)`; a banner before the run lists every paused lane; `--ignore-ci-pauses` runs them and journals that it did (ruling Q3)
 **And** the `pre-push` hook prints the same banner; `platform-ci-local` and `pyforge-steward-guild-image-build` print it for their paused CI twin and still run every requested stage; with the flag off, selection is Story 99.2's declared-state resolution with no snapshot and no banner.
-**Status:** backlog
+**Status:** done
 
 ### Story 99.6: A paused expensive build still runs once a week
 
