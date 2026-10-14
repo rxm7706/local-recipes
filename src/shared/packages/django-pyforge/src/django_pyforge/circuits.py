@@ -11,8 +11,7 @@ import inspect
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
-from typing import Callable
+from typing import Any, Callable
 
 FAIL_MAX = 5
 FAIL_FAST_SECONDS = 0.5

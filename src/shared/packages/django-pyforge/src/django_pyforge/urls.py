@@ -6,8 +6,7 @@ AppConfig discovery, never from a host-side roster.
 
 from __future__ import annotations
 
-from django.urls import include
-from django.urls import path
+from django.urls import include, path
 
 from django_pyforge.discovery import iter_portal_configs
 

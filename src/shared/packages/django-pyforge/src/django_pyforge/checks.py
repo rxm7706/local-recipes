@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from django.core.checks import CheckMessage
-from django.core.checks import Error
-from django.core.checks import register
+from django.core.checks import CheckMessage, Error, register
 
-from django_pyforge.portals import PortalConfig
 from django_pyforge.discovery import iter_portal_configs
+from django_pyforge.portals import PortalConfig
 
 CHROME_FIELDS = (
     "station_name",
