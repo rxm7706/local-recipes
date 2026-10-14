@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: ccc127deb6948796
+source_fingerprint: bf503ee3a5904cb8
 story_count: 454
-test_file_count: 266
+test_file_count: 268
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-marshal`
 - **Stories parsed:** 454
 - **Epics parsed:** 98
-- **Test files inventoried:** 266 under `src/shared/packages/pyforge-marshal/tests/`
+- **Test files inventoried:** 268 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `ccc127deb6948796`
+- **Source fingerprint:** `bf503ee3a5904cb8`
 
 ## Risk Assessment
 
@@ -184,6 +184,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/meta/test_manifest_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_no_engine_or_scribe_internals_import.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_no_loop_home_run_state_read.py` | meta | none observed |
+| `src/shared/packages/pyforge-marshal/tests/meta/test_no_steward_internals_import.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_p01_write_primitives_only_in_fs.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_p02_copier_sole_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-marshal/tests/meta/test_p03_detect_is_pure.py` | meta | none observed |
@@ -303,6 +304,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_land_epic_rollups.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing_checks.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_landing_ci_pauses.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_landing_evidence_conformance.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_layer_savings_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_local_branch_refs.py` | unit | none observed |

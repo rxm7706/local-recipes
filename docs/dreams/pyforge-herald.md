@@ -116,6 +116,80 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-13 (the Pages deployment, redesigned) — Ruled: one holistic Pages site, built by one generator, deployed by
+  one steward-owned workflow only when its inputs change.** Operator ask 2026-10-13: "redesign and rework the entire
+  deployment at github pages", analysed through the CIS module (`bmad-brainstorming`, `bmad-cis-design-thinking`).
+  Measured that day (API `total_count`, `git log --first-parent`, live `curl`): `dashboard.yml` ran 1,342 times since
+  2026-09-13 (720 deploys, 621 cancelled, 1 failure, about 24 deploys a day) because it fires on every push to `main`
+  (about 1,330 pushes in 30 days, up to 176 a day); a published-inputs path filter would have deployed 132 times; the
+  site is four separately minted mechanisms glued by 3,830 bespoke lines (Jinja `docsite/` 2026-09-13, Starlight
+  `docs-site/` 2026-10-05, the Kedro-Viz export committed to `docs/dashboard/kedro-viz/` since 2026-08-15 with its
+  producer disabled since 2026-08-24, and `assemble_pages.py` with its own link, origin and redirect logic);
+  `verify_claims.py` reports 17 drifted dossier claims as an advisory nobody reads; the deploy sat in `waiting` from
+  2026-10-06 to 2026-10-12 unseen. The "two docs sites" the operator first named is the symptom; the four mechanisms
+  are the problem. The analysis, 118 ideas, convergence and the target site map are in
+  `_bmad-output/projects/pyforge-herald/planning-artifacts/design-thinking-pyforge-herald-pages-redesign-2026-10-13.md`
+  and `_bmad-output/brainstorming/brainstorm-pages-deployment-redesign-2026-10-13/brainstorm-intent.md`.
+  **What it looks like when real** (operator rulings 2026-10-13; staged, each stage shippable alone):
+  - **M1, trigger, cost and hygiene (one fix story, herald).** The deploy workflow fires only on the published inputs
+    (`docs/{tutorials,how-to,reference,explanation}/**`, `docs/index.md`, `docs/404.md`, `docs/map.yaml`,
+    `docs/dashboard/**`, `docs-site/**`, `docsite/**`, `presentations/**`, the workflow itself), on `workflow_dispatch`
+    and on a weekly schedule; `fetch-depth: 1` and a sparse checkout; the deploy job skips when the built tree hash
+    equals the last deployed one; `docsite/tools/import_artifact.py` (a one-time migration, done) is deleted; the dead
+    `dreams/pyforge-herald.md` link in `docs/index.md`, the stale deploy prose in `docs/reference/github-workflows.md`
+    and `docs/explanation/enterprise-deployment.md`, and the two old-root URL references
+    (`docs/dreams/design-sync-loop.md`, `src/prototype/packages/pyforge-atlas-kedro-viz/README.md`) are corrected, and
+    doctor's `docs/MAP.md` names `docsite/` and `docs-site/` side by side (the clash is accepted until M3 ends it).
+    Found while republishing the artifact: `md_inline` in `docsite/build.py` lifts escapes into NUL-delimited slots
+    before code spans, so an escape inside a code span (`dossier.yml:1151`, `` `/stations/\*/mcp` ``) leaves a
+    literal `\x000\x00` in `/herald/dossier/` and the artifact render today; the slot restore becomes iterative and
+    the one needless escape goes.
+    Done when deploys per 30 days fall under 150 and no cancelled streak reaches five.
+  - **M2, one workflow in upstream shape (one epic; steward leads the duct, herald the content).** `dashboard.yml`
+    becomes `pages.yml` in BMAD-METHOD `docs.yaml`'s shape (build on `pull_request` and `push`, deploy on `main` only),
+    superseding the 2026-09-27 ruling that the file keeps its `dashboard.yml` path; `docsite-check.yml` folds in; the
+    Kedro-Viz export arrives as a workflow artifact from atlas's producer and the mount is skipped, never failed, when
+    none exists; the `pyforge.herald.pages_second_host` flag retires and `actions/configure-pages` is authoritative on
+    every host; the same artifact is zipped as a release asset for the air-gapped host; the fleet board (`/status/`)
+    and guild status (`/status/ci/`) render at build from `sprint-ledger-query --format json`,
+    `scripts/fleet_picture.py` and `steward ci status --json`, refreshed per deploy and by a six-hourly schedule that
+    deploys only when the fleet moved. Done when no commit by `github-actions[bot]` lands on `main` for Pages and one
+    workflow touches Pages.
+  - **M3, one generator (one epic, herald).** Astro renders the dossier from `dossier.yml` through a content
+    collection (the 14 block macros become 14 components), the gallery and the deck family pages as Astro pages over
+    `presentations/` and `facts.yaml`, the design twins and the dashboard through `publicDir`, the 44 legacy redirects
+    as an `astro.config` map (kept; no sunset), fonts through `@fontsource`; Pagefind indexes the whole artifact;
+    `/llms.txt`, `/llms-full.txt` and `/facts.json` exist; every dossier stat with `check:` is computed at build and
+    every page carries a built-from footer; `/status/runs/` (`marshal status --format json`, `herald progress --json`)
+    and `/changes/` (a 30-day merge-subject window with RSS until a CalVer tag exists) land; `build.py`,
+    `assemble_pages.py`, the Jinja templates and `docsite/` retire, the dossier content moving to
+    `docs-site/src/content/dossier/` and the herald pages to `docs-site/src/pages/herald/`, so the `docsite` /
+    `docs-site` name clash ends without a rename story. Done when `docsite/` is gone and the bespoke Python under
+    `docs-site/` is under 300 lines.
+  - **The Claude-artifact render stays and is refreshed.** `herald/artifact/dossier.html` republishes "The PyForge
+    Dossier" (`claude.ai/artifact/RcpHNycoHqxv98YCmV8Zmt`), last refreshed 2026-09-13 until this session republished it
+    on 2026-10-13; the refresh is a session-close ritual line in `docsite/README.md` now and a scheduled routine once
+    the stats are computed.
+
+  **Placement rule (binds every future surface; amends AD-21):** dynamic, authenticated or per-user → Lane 1
+  `/console/`; static, public and build-time → Pages. Pages renders only tracked files and public API JSON, never
+  Tier-3, Lane 1 data or warden findings. Applied the same day: MyBMAD (`bmad-code-org/bmad-method-ui` `web/`: Next.js
+  `output: "standalone"`, PostgreSQL + Prisma, Better Auth sessions, Server Actions, API routes) cannot run on Pages,
+  and an iframe to its hosted instance is a cross-origin load AD-21 forbids; it may run as a Lane 1 sidecar; its Pages
+  twin is the fleet board. New sections take new prefixes (`/status/`, `/changes/`); `/dashboard/kedro-viz/` keeps its
+  URL and Vizro boards go beside it under `/dashboard/vizro/`.
+  **Constraints:** one `deploy-pages` caller; zero third-party origins (AD-21); `docs/` never moves; the five vendored
+  files under `docs-site/` stay hash-pinned to upstream; every Pages capability stays `mode: rebuild` for the foundry;
+  Actions minutes are budget; no bot commits on `main`.
+  **Kinships:** [[pyforge-steward]] (the duct: `pages.yml`, the budget, the CI-surfaces registry row, `ledger-query`),
+  [[pyforge-atlas]] (the Kedro-Viz producer artifact, Vizro static boards), [[pyforge-doctor]] (`map.yaml` orders the
+  whole site, a liveness probe), [[pyforge-marshal]] (`status --format json`), [[pyforge-unifying-strategy]]
+  (`fnd:CAP-14`: the dossier stays the cutover's control plane; the Actions budget). Owner `spec-pyforge-herald`
+  (CAP-44, CAP-49, CAP-52, CAP-56 and CAP-58 amended; new CAPs for M2 and M3; M1 a fix). → CAP-60 / CAP-61, FR-12.1–12.5,
+  AD-21 amended and AD-23 added; Epic 41 (fix) / 42 / 43, Stories 41.1, 42.1–42.3, 43.1–43.7, specced 2026-10-14; steward
+  CAP-168 / Epic 102, atlas CAP-62–63 / Epic 30 and doctor CAP-90–91 / Epic 48 minted the same day on their own Dreams.
+  Herald Epic 41 lands first, the steward surface move (102.1) opens M2.
+
 - **2026-10-12 (the docs home leads to the herald pages) — Wanted: a reader who lands on the Pages root can reach the
   dossier, the infographics, the decks and the Kedro-Viz pipelines without knowing their URLs.** Since the unified
   Pages artifact (CAP-52, AD-21, 2026-10-08) the root is the Starlight docs shelf, and docsite's whole output moved

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: a37ad1af9878d564
-story_count: 134
+source_fingerprint: 3f52dca93f4849f8
+story_count: 145
 test_file_count: 93
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 134
-- **Epics parsed:** 40
+- **Stories parsed:** 145
+- **Epics parsed:** 43
 - **Test files inventoried:** 93 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a37ad1af9878d564`
+- **Source fingerprint:** `3f52dca93f4849f8`
 
 ## Risk Assessment
 
@@ -67,6 +67,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 37: The host's Django pages load without herald installed
 - Epic 38: django-herald passes the lint gate
 - Epic 39: The dossier shows which CI surfaces are not live (spec-pyforge-herald CAP-59)
+- Epic 41: Pages hygiene before the rework (fix under spec-pyforge-herald CAP-52 and CAP-44; no CAP)
+- Epic 42: The Pages site shows the fleet and the guild, and builds for any host without a flag (spec-pyforge-herald CAP-60)
 
 ### Low-risk epics
 
@@ -76,6 +78,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 27: The docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52)
 - Epic 31: The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56)
 - Epic 40: The docs site and the herald pages share one menu (spec-pyforge-herald CAP-58)
+- Epic 43: One generator renders the whole Pages site (spec-pyforge-herald CAP-61)
 
 ## Test Inventory
 
@@ -313,6 +316,17 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 38.1 | django-herald is lint-clean and leaves the not-yet-clean list | none observed |
 | 39.1 | The dossier tile shows every CI surface that is not live | none observed |
 | 40.1 | The docs home links the herald pages from its left menu and a shared top menu | none observed |
+| 41.1 | The Pages hygiene before the rework | none observed |
+| 42.1 | The fleet board and guild status pages render at build | none observed |
+| 42.2 | The Kedro-Viz mount is an artifact handoff that tolerates absence | none observed |
+| 42.3 | The second host needs no flag | none observed |
+| 43.1 | Astro renders the dossier from dossier.yml | none observed |
+| 43.2 | The overview, gallery and deck family pages are Astro pages | none observed |
+| 43.3 | Astro assembles the artifact: mounts, redirects and search | none observed |
+| 43.4 | Fonts and theme come from one design system | none observed |
+| 43.5 | Every number is measured, and every page says what built it | none observed |
+| 43.6 | Agents and the changes feed read the site | none observed |
+| 43.7 | docsite/ retires and one generator remains | none observed |
 
 ## Quality Gates
 

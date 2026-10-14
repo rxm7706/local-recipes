@@ -248,6 +248,33 @@ harness_preference = ["cursor"]
   # co-governor reconciles
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"30" = [  # the DAG export and the Vizro boards reach Pages as workflow artifacts (features under spec-pyforge-atlas
+  # CAP-62 and CAP-63, FR-70 and FR-71; flags pyforge.atlas.viz_export_artifact and pyforge.atlas.vizro_static_boards;
+  # Stories 30.1 and 30.2), added 2026-10-14. The default surface, restated because a declared entry replaces it
+  # outright, plus: atlas's producer workflow (the upload steps, the CI-pause fragment, permissions), the pixi tasks
+  # (viz-publish-stage, vizro-static-export), the committed export that leaves git and the gitignored staging paths
+  # under docs/dashboard/, the dashboard README, the flag tree, its overlay and atlas's flag inventory, the
+  # CI-surfaces registry row's switch (steward's co-governed edit, pyforge-steward:CAP-166), the ledger, and every
+  # Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+  ".github/workflows/kedro-viz-publish.yml",
+  "docs/dashboard/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/governance/flag-inventory/pyforge-atlas.md",
+  "docs/governance/ci-surfaces.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)

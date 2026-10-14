@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-13"   # RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-14"   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3176,3 +3176,73 @@ amended, and no FR moves.*
   FRs that proof validates read as written.
 
 **Content changed:** this section only. `updated:` bumped. No FR added, amended or removed.
+
+## Currency reconciliation — 2026-10-14
+
+*Trigger: the chain-currency `spec→prd` edge — `spec-pyforge-atlas` gained CAP-62 and CAP-63 on 2026-10-14, decomposing
+the station Dream's entry of 2026-10-13 (*the DAG export reaches Pages as an artifact*: the operator ruling carried from
+the herald Dream's same-day entry *the Pages deployment, redesigned*), while this PRD sat at 2026-10-13. Each FR derives
+from its CAP (`one-chain-per-station`).*
+
+The measured facts the chain carries (2026-10-13, re-measured 2026-10-14 where marked): `docs/dashboard/kedro-viz/` is
+11 MB and 215 tracked files, last written 2026-08-15 (`6a1ba53a13`); `kedro-viz-publish.yml` has been
+`disabled_manually` since 2026-08-24 with no recorded reason (registry row `kedro-viz-publish`: `paused-manually`,
+`switch: null`, `review_by: 2026-11-01`); 23 first-parent merges since then touched the paths it watches (23 again on
+`origin/main` 2026-10-14); its builds took 92 to 137 s. Steward Epic 99 is done, so every job gets a `PAUSE_*` switch
+and a `docs/governance/ci-surfaces.yaml` row by the Story 99.2 convention.
+
+### The FR space: FR-70 and FR-71 registered
+
+This file's ids run FR-1..FR-69 across the primary PRD and the two satellite sections (the fr-without-cap baseline reads
+them as one space), so the next free ids are FR-70 and FR-71.
+
+#### FR-70: The DAG export reaches Pages as a workflow artifact ← CAP-62 (amends CAP-41; FR-62's producer)
+
+Atlas's producer workflow builds the real DAG's Kedro-Viz export on every DAG change and hands it to the Pages build as
+a workflow artifact that carries its own commit and date. The published graph stops lagging its DAG, and no bot commit
+carries export bytes onto `main`.
+
+**Consequences (testable):**
+- `.github/workflows/kedro-viz-publish.yml` keeps its path filter and `workflow_dispatch`, keeps the stub
+  `conf/local/credentials.yml` step, runs `viz-publish-stage`, and uploads the staged tree as the workflow artifact
+  `kedro-viz-export` (`retention-days: 90`). No step commits or pushes; `permissions.contents` is `read`.
+- `viz-publish-stage` writes `manifest.json` beside `index.html`: `export_commit` (40-hex; `GITHUB_SHA` when set, else
+  `git rev-parse HEAD`), `export_date` (that commit's committer date, ISO 8601 UTC), `kedro_viz_version` (equal to the
+  `version` in `build/api/deploy-viz-metadata`). The normalizer still strips checkout paths and the wall-clock timestamp
+  (AD-17: provenance as data, reproducible bytes).
+- The committed `docs/dashboard/kedro-viz/` tree leaves git in the same story; the staging path is gitignored.
+- The job carries the CI-pause fragment reading `vars.PAUSE_KEDRO_VIZ_PUBLISH`; the registry row names that switch
+  (steward's co-governed edit). Its move from `paused-manually` to `live` is the operator's gate, through steward's `ci`
+  duty, after the hand-disabled workflow is re-enabled — never a blocked row.
+- The consumer is steward Story 102.4 on the renamed `pages.yml` (steward 102.2): the newest successful artifact lands
+  at `/dashboard/kedro-viz/` (the URL keeps), the mount is skipped and the tile hidden when none exists, and the page
+  shows the manifest's commit and date.
+- Flag `pyforge.atlas.viz_export_artifact`; off, today's staging, no manifest, no upload.
+- Decomposes into **Epic 30**, Story 30.1 (M).
+
+#### FR-71: Vizro boards publish as static exports under `/dashboard/vizro/` ← CAP-63
+
+The 34-page BSL-driven Vizro dashboard that `dashboard-dryrun` already builds without a server is exported offline, one
+static page per board, and handed to the Pages build as a workflow artifact. The live Vizro server stays Lane 1.
+
+**Consequences (testable):**
+- A `vizro-static-export` task in `-e local-recipes` builds the same `Dashboard` object (`build_dashboard`) and writes
+  `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, and `manifest.json` (`exported_at`,
+  `export_commit`, `boards[]` with `id`, `title`, `path`, `data_build_timestamp` — the page's own AD-17 stamp).
+- Every Plotly figure is rendered with `include_plotlyjs` pointing at ONE vendored `assets/plotly.min.js` copied from
+  plotly's own `package_data`; never `'cdn'` (herald AD-21: zero third-party origins). `pages-check` judges the mount
+  with no `VENDORED_ROOTS` exemption.
+- Controls that submit work (`scan-project`, `env-inspect`) are not exported; the page shows the latest cached result
+  and says so. No filter is emulated client-side.
+- A board with a declared access column is refused before any write (`sld:AD-10`, the rule `steward deploy static`
+  already applies); proven on a fixture, since no page declares one today.
+- The producer job uploads `docs/dashboard/vizro/` as `vizro-static-export` (`retention-days: 90`); the Pages build
+  consumes it as it consumes `kedro-viz-export` (steward 102.4's step; herald CAP-61 (M3) `publicDir` mounts).
+- Flag `pyforge.atlas.vizro_static_boards`; off, the task refuses and writes nothing.
+- Decomposes into **Epic 30**, Story 30.2 (L, Deps S-30.1).
+
+**ONE FR space now FR-1..FR-71** (FR-72 = next free id).
+
+**Content changed:** this section added (FR-70, FR-71 registered). No FR renumbered or removed. The spine amends AD-21
+(every static surface atlas publishes reaches Pages as a workflow artifact); see its § Currency reconciliation —
+2026-10-14. § 7 Success Metrics is unchanged. `updated:` bumped.
