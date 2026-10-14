@@ -11,6 +11,8 @@ import yaml
 _RENDER_CMD = "python scripts/ci_surface_gates.py --render"
 _RENDER_MARKER = "ci-surfaces:"
 _FRAGMENT_DISPATCH = "github.event_name == 'workflow_dispatch'"
+# Regex for a single-line ``if: ${{ … }}`` (avoid ``}}`` inside rf-strings — it closes format fields).
+_RE_IF_EXPRESSION = r"\$\{\{.*?\}\}"
 _MASTER_CMP = "vars.PAUSE_ALL_CI != 'true'"
 _VAR_PAUSE = re.compile(r"vars\.([A-Z0-9_]+)\s*!=\s*['\"]true['\"]")
 
@@ -366,23 +368,39 @@ def render_workflow_file(
             pattern = (
                 rf"(    # {_RENDER_MARKER} {re.escape(plan.row_id)}\n"
                 rf"    # render: {re.escape(_RENDER_CMD)}\n"
-                rf"    if: )(\$\{{\{{.*?\}}\}} *\n)"
+                rf"    if: )("
+                + _RE_IF_EXPRESSION
+                + r" *\n)"
             )
             m = re.search(pattern, text, flags=re.DOTALL)
             if m and _normalize_if_text(m.group(2)) == _normalize_if_text(new_if):
                 continue
-            new_text, n = re.subn(pattern, rf"\1{new_if}\n", text, count=1, flags=re.DOTALL)
+            new_text, n = re.subn(
+                pattern,
+                lambda m, _if=new_if: f"{m.group(1)}{_if}\n",
+                text,
+                count=1,
+                flags=re.DOTALL,
+            )
             if n and new_text != text:
                 text = new_text
                 changed = True
             continue
-        # Replace an existing job if: (single-line ${{ }} or folded >- block).
+        # Replace an existing job if: (folded >-, expression, or plain scalar).
         if_pat = (
             rf"(  {re.escape(job_id)}:\n"
             rf"(?:    #[^\n]*\n)*"
-            rf"    if: (?:>\-\n(?:      .+\n)+?|\$\{{\{{[^{{}}]*\}}\}} *\n))"
+            rf"    if: (?:>\-\n(?:      .+\n)+?|"
+            + _RE_IF_EXPRESSION
+            + r" *|[^\n]+)\n)"
         )
-        new_text, n = re.subn(if_pat, rf"  {job_id}:\n{block}", text, count=1)
+        new_text, n = re.subn(
+            if_pat,
+            lambda _m, _jid=job_id, _block=block: f"  {_jid}:\n{_block}",
+            text,
+            count=1,
+            flags=re.DOTALL,
+        )
         if n:
             text = new_text
             changed = True
@@ -393,7 +411,12 @@ def render_workflow_file(
             rf"((?:    #[^\n]*\n)*)"
             rf"(    (?:name|runs-on|needs|if|steps|strategy|env|timeout-minutes):)"
         )
-        new_text, n = re.subn(insert_pat, rf"\1\2{block}\3", text, count=1)
+        new_text, n = re.subn(
+            insert_pat,
+            lambda m, _block=block: f"{m.group(1)}{m.group(2)}{_block}{m.group(3)}",
+            text,
+            count=1,
+        )
         if n:
             text = new_text
             changed = True

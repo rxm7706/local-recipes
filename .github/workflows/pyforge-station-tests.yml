@@ -476,7 +476,7 @@ jobs:
   core-test:
     # ci-surfaces: pyforge-station-tests.core-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.core == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.core == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -500,7 +500,7 @@ jobs:
     # kit's `tests/meta/test_testing_kit_lane_wired.py`.
     # ci-surfaces: pyforge-station-tests.testing-kit-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.testing_kit == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.testing_kit == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -515,7 +515,7 @@ jobs:
   atlas-test:
     # ci-surfaces: pyforge-station-tests.atlas-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.atlas == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.atlas == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -554,7 +554,7 @@ jobs:
   doctor-test:
     # ci-surfaces: pyforge-station-tests.doctor-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.doctor == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.doctor == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -569,7 +569,7 @@ jobs:
   herald-test:
     # ci-surfaces: pyforge-station-tests.herald-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.herald == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.herald == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -595,7 +595,7 @@ jobs:
   marshal-test:
     # ci-surfaces: pyforge-station-tests.marshal-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.marshal == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.marshal == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -615,7 +615,7 @@ jobs:
   mason-test:
     # ci-surfaces: pyforge-station-tests.mason-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.mason == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.mason == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -637,7 +637,7 @@ jobs:
   scribe-test:
     # ci-surfaces: pyforge-station-tests.scribe-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.scribe == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.scribe == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -675,7 +675,7 @@ jobs:
   steward-test:
     # ci-surfaces: pyforge-station-tests.steward-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.steward == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.steward == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -690,7 +690,7 @@ jobs:
   warden-test:
     # ci-surfaces: pyforge-station-tests.warden-test
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (((needs.changes.outputs.warden == 'true')))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PYFORGE_STATION_TESTS != 'true' && (needs.changes.outputs.warden == 'true')) }}
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
