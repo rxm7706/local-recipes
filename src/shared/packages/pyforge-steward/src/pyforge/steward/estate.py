@@ -307,7 +307,17 @@ def _list_journals(root: Path) -> list[Path]:
     directory = _journal_dir(root)
     if not directory.is_dir():
         return []
-    return sorted(directory.glob("*.json"))
+    return sorted(directory.glob("*.json"), key=_journal_order)
+
+
+def _journal_order(path: Path) -> tuple[str, int]:
+    """``2026-10-14.json`` is that day's first journal, ``2026-10-14-2.json`` its second.
+
+    A plain name sort puts ``-2`` before the bare date (``-`` sorts before ``.``).
+    """
+    stem = path.stem
+    day, seq = stem[:10], stem[11:]
+    return day, int(seq) if seq.isdigit() else 1
 
 
 def _days_since_last_journal(root: Path, *, now: datetime) -> int | None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 import sys
 import time
 import tomllib
@@ -220,6 +221,17 @@ class _FakeCompleted:
     stderr: str = ""
 
 
+_TAIL_LINES = 15
+
+
+def _output_tail(proc: object) -> str:
+    """The last lines a red step printed, so a journal row says why it failed."""
+    text = "\n".join(
+        part for part in (getattr(proc, "stdout", "") or "", getattr(proc, "stderr", "") or "") if part.strip()
+    )
+    return "\n".join(text.strip().splitlines()[-_TAIL_LINES:])
+
+
 def _row_verdict(exit_code: int, *, special: str | None = None) -> str:
     if special:
         return special
@@ -388,6 +400,7 @@ def run_verify(
                 "seconds": round(seconds, 3),
                 "size_delta_mb": size_delta,
                 "argv": argv,
+                "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
             }
         )
 
@@ -395,7 +408,9 @@ def run_verify(
     pauses = _load_ci_pauses(deps)
     if run_full or lane_filter:
         try:
-            lanes = list_preflight_lanes(pixi_data)
+            # pr-preflight runs from -e pyforge-guild (the pre-push hook); a lane with no
+            # explicit env runs there, not in the pyforge-steward env verify runs from.
+            lanes = list_preflight_lanes(pixi_data, invoking_env="pyforge-guild")
         except Exception:  # noqa: BLE001
             lanes = []
         selection = select_lanes_for_paths(deps.root, lanes, pixi_data, VERIFY_CHANGED_PATHS)
@@ -447,6 +462,7 @@ def run_verify(
                     "exit": proc.returncode,
                     "seconds": round(seconds, 3),
                     "argv": argv,
+                    "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
                 }
             )
 
@@ -466,6 +482,7 @@ def run_verify(
                 "exit": proc.returncode,
                 "seconds": round(seconds, 3),
                 "argv": argv,
+                "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
             }
         )
 
@@ -487,6 +504,7 @@ def run_verify(
                     "exit": proc.returncode,
                     "seconds": round(seconds, 3),
                     "argv": argv,
+                    "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
                 }
             )
 
@@ -506,6 +524,7 @@ def run_verify(
                 "exit": proc.returncode,
                 "seconds": round(seconds, 3),
                 "argv": argv,
+                "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
             }
         )
 
@@ -554,14 +573,17 @@ def run_verify(
                 "seconds": 0.0,
             }
         )
-        for test_name in row.get("test") or []:
+        tests = row.get("test") or []
+        if isinstance(tests, str):
+            tests = [tests]
+        for test_name in tests:
             t = str(test_name)
             if t in tests_seen:
                 continue
             tests_seen.add(t)
             if lane_filter and t != lane_filter:
                 continue
-            argv = ["pixi", "run", "--frozen", "-e", str(row.get("env") or "pyforge-guild"), t]
+            argv = ["pixi", "run", "--frozen", "-e", str(row.get("env") or "pyforge-guild"), *shlex.split(t)]
             proc, seconds, special = _run_timed(deps, argv, wt, budget_seconds=budget_seconds, started=install_started)
             verdict_s = _row_verdict(proc.returncode, special=special)
             if verdict_s != "ok":
@@ -576,6 +598,7 @@ def run_verify(
                     "exit": proc.returncode,
                     "seconds": round(seconds, 3),
                     "argv": argv,
+                    "output_tail": _output_tail(proc) if proc.returncode != 0 else None,
                 }
             )
 
@@ -621,6 +644,24 @@ def _finish_verify(
         or _platform_status(run_platform=run_platform, lock_check_ok=lock_check_ok, lock_sha=lock_sha),
         "rows": rows,
     }
+    from .estate import _list_journals
+
+    journals = _list_journals(deps.root)
+    if journals:
+        # The verify block belongs to the refresh it verifies: the latest journal.
+        journal_path = journals[-1]
+        try:
+            journal = json.loads(journal_path.read_text(encoding="utf-8"))
+        except OSError, json.JSONDecodeError:
+            journal = None
+        if isinstance(journal, dict):
+            journal["verify"] = verify_block
+            journal_path.write_text(json.dumps(journal, indent=2) + "\n", encoding="utf-8")
+            return DutyResult(
+                ok=not any_red,
+                summary=f"{summary}\njournal → {journal_path.relative_to(deps.root)}",
+                details={"journal_path": str(journal_path), "verify": verify_block},
+            )
     journal_path = _next_journal_path(deps.root, today=date.today())
     journal = {
         "base_sha": deps.head_sha(),

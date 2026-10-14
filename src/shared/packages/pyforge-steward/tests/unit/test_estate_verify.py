@@ -473,3 +473,87 @@ def test_scoped_env_and_lane_skips_probes(tmp_path: Path, monkeypatch: pytest.Mo
         budget_minutes=None,
     )
     assert not any(r.get("kind") == "probe" for r in result.details["verify"]["rows"])
+
+
+def _verify(root: Path, runner: RecordingRunner, **kwargs: object):
+    args = {
+        "env_filter": None,
+        "lane_filter": None,
+        "probe_filter": None,
+        "all_envs": False,
+        "keep": False,
+        "ignore_ci_pauses": False,
+        "budget_minutes": None,
+    }
+    args.update(kwargs)
+    return run_verify(_deps(root, runner), **args)  # type: ignore[arg-type]
+
+
+def test_register_test_given_as_a_string_is_one_test(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A `test:` string is one lane, not one lane per character (Story 100.7 live run)."""
+    root = _fixture_root(tmp_path)
+    reg = root / "docs/governance/realization-register.yaml"
+    reg.write_text(reg.read_text(encoding="utf-8").replace("test: [bmad-drift-check]", "test: marshal seed check"))
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    runner = RecordingRunner(root=root)
+    result = _verify(root, runner, probe_filter="bmad-method")
+    tests = [r for r in result.details["verify"]["rows"] if r.get("kind") == "register-test"]
+    assert [r["name"] for r in tests] == ["marshal seed check"]
+    assert tests[0]["argv"][-3:] == ["marshal", "seed", "check"]
+
+
+def test_lanes_resolve_from_the_pr_preflight_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A lane with no explicit env runs where pr-preflight runs (pyforge-guild), not in the verify env."""
+    root = _fixture_root(tmp_path)
+    import pyforge.steward.estate_verify as ev
+
+    seen: dict[str, object] = {}
+
+    def _lanes(pixi_data, **kwargs):
+        seen.update(kwargs)
+        return []
+
+    monkeypatch.setattr(ev, "list_preflight_lanes", _lanes)
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    _verify(root, RecordingRunner(root=root))
+    assert seen.get("invoking_env") == "pyforge-guild"
+
+
+def test_verify_writes_into_the_latest_refresh_journal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The verify block lands in the refresh it verifies; a same-day second journal is the latest."""
+    root = _fixture_root(tmp_path)
+    jdir = root / ".steward/estate-refresh"
+    for name in ("2026-10-14.json", "2026-10-14-2.json"):
+        (jdir / name).write_text(json.dumps({"base_sha": name, "verify": {}}), encoding="utf-8")
+    monkeypatch.setattr("pyforge.steward.estate_realize._locked_version", lambda *a, **k: "6.12.0")
+    result = _verify(root, RecordingRunner(root=root), probe_filter="bmad-method")
+    assert sorted(p.name for p in jdir.glob("*.json")) == ["2026-10-14-2.json", "2026-10-14.json"]
+    assert json.loads((jdir / "2026-10-14-2.json").read_text())["verify"]["rows"]
+    assert json.loads((jdir / "2026-10-14.json").read_text())["verify"] == {}
+    assert result.details["journal_path"].endswith("2026-10-14-2.json")
+
+
+def test_red_lane_keeps_its_output_tail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _fixture_root(tmp_path)
+    runner = RecordingRunner(
+        root=root,
+        responses={
+            "pixi run --frozen --skip-deps -e pyforge-guild lint-types": FakeProc([], 1, "", "boom: lint failed")
+        },
+    )
+    import pyforge.steward.estate_verify as ev
+
+    monkeypatch.setattr(
+        ev,
+        "select_lanes_for_paths",
+        lambda *_a, **_k: Selection(
+            base_ref="refs/remotes/origin/main",
+            all_reason=None,
+            changed_paths=("pixi.toml",),
+            dirty_paths=(),
+            verdicts=(LaneVerdict("lint-types", "pyforge-guild", True, "fixture"),),
+        ),
+    )
+    result = _verify(root, runner, lane_filter="lint-types")
+    lane = next(r for r in result.details["verify"]["rows"] if r.get("name") == "lint-types")
+    assert lane["output_tail"] == "boom: lint failed"
