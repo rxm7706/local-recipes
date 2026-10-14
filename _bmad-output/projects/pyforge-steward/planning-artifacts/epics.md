@@ -6494,7 +6494,7 @@ duty, the budget, the registry row and the preflight that reads it. **HARD bound
   artifact's content (`docsite/**`, `docs-site/**`, `pages-build`, `pages-check`, `/herald/`); atlas keeps the
   Kedro-Viz producer (Story 30.1); doctor keeps `map.yaml`. No story here edits `docsite/**` or `docs-site/**` beyond
   a file name.
-- One `deploy-pages` caller (herald AD-21); no bot commit on `main`; nothing outward beyond this repository's own
+- One `deploy-pages` caller (herald herald:AD-21); no bot commit on `main`; nothing outward beyond this repository's own
   Pages, release and Actions. Steward reaches `gh`, `git`, `curl` and the build tasks by subprocess (AD-1); `main()`
   keeps every exit code (AD-8); the duty-count assertions move with the duty (AD-7).
 - No job loses its CAP-166 fragment; `workflow_dispatch` ignores every pause; no workflow step or test writes a
@@ -6510,7 +6510,7 @@ I want the Pages workflow on steward's surface as `pages.yml`, firing only when 
 shallow sparse checkout,
 So that a Dream or governance edit costs no build, no deploy and no cancelled run, and the duct has one owner.
 
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41), extending CAP-166, with CAP-159; AD-4 (amended 2026-10-14), AD-1; herald AD-21 kept • Dream 2026-10-13 (the Pages duct) • operator rulings 2026-10-13
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41), extending CAP-166, with CAP-159; AD-4 (amended 2026-10-14), AD-1; herald herald:AD-21 kept • Dream 2026-10-13 (the Pages duct) • operator rulings 2026-10-13
 **Flag:** flag-exempt `detector-or-gate` (a workflow's `on:` block, checkout depth and sparse paths are evaluated by GitHub before any step can read a flag; the 99.2 / 99.6 precedent; the flag `pyforge.steward.pages_duty` is minted by 102.2)
 **Surface:** `.github/workflows/dashboard.yml` → `.github/workflows/pages.yml` (a `git mv`; `name`, header, `on:`, the checkout), `docs/governance/ci-surfaces.yaml` (the three `dashboard*` rows' `workflow:` field), `scripts/pixi_version_registry.py` (the setup-pixi site), `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py`, `tests/unit/test_preflight_selection.py` (a new case), every tracked file that names the old path as current (`docs/MAP.md`, `docs/dashboard/README.md`, `docs/explanation/enterprise-deployment.md`, `docs/how-to/README.md`, `docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md`, `docs/how-to/github-actions-recipe-ci.md`, `docs/how-to/presentation-deck.md`, `docs/reference/github-workflows.md`, `docs/governance/flag-inventory/pyforge-herald.md`, the comments of `docsite-check.yml`, `kedro-viz-publish.yml` and `platform-ci.yml`, `docsite/tools/pages_second_host.py`, `src/platform/tests/test_console_parity_homes.py`, `pyforge-herald`'s `webhook.py` and `test_pages_artifact.py` — each a co-governor reconcile), `spec-pyforge-steward` and `spec-pyforge-herald` memlogs (the surface move)
 **Spec:** `planning-artifacts/specs/spec-102-1-the-pages-workflow-is-steward-s-and-fires-only-on-the-published-inputs.md`
@@ -6562,7 +6562,7 @@ I want the Pages build to pull atlas's newest `kedro-viz-export` artifact into t
 none,
 So that no DAG bytes live in git, the graph is as fresh as atlas's last run, and an absent export never reds the site.
 
-**Type:** feature • **Effort:** S • **Deps:** S-102.2; atlas Story 30.1 (the producer uploads `kedro-viz-export` and deletes `docs/dashboard/kedro-viz/`); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absence) (the assembler skips an absent mount and hides the tile; the coordinator fills the key) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8; herald AD-21 (the mount's URL) • Dream 2026-10-13 (the Pages duct) • operator ruling 2026-10-13 (skipped, never failed)
+**Type:** feature • **Effort:** S • **Deps:** S-102.2; atlas Story 30.1 (the producer uploads `kedro-viz-export` and deletes `docs/dashboard/kedro-viz/`); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absence) (the assembler skips an absent mount and hides the tile; the coordinator fills the key) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8; herald herald:AD-21 (the mount's URL) • Dream 2026-10-13 (the Pages duct) • operator ruling 2026-10-13 (skipped, never failed)
 **Flag:** `pyforge.steward.pages_duty` (Story 102.2's; off, no artifact is downloaded)
 **Surface:** `.github/workflows/pages.yml` (the download step before `pages-check`, `actions: read` on `build`, the `KEDRO_VIZ_EXPORT*` env, `docs/dashboard/**` leaving both `paths:` lists), `src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py` (`newest_export_run`), `tests/unit/test_pages_export.py` and `test_pages_export_flag_states.py` (new), `.gitignore` (`docs/dashboard/kedro-viz/`), `docs/dashboard/README.md` (where the export comes from)
 **Spec:** `planning-artifacts/specs/spec-102-4-the-pages-build-mounts-atlas-s-kedro-viz-export-from-a-workflow-artifact-and-tolerates-its-absence.md`
@@ -6580,7 +6580,7 @@ publish the deployed bytes as `pages-site.zip` on a release,
 So that every host serves the same reviewed artifact and the how-to shrinks to Settings → Pages → GitHub Actions and
 a download.
 
-**Type:** feature • **Effort:** S • **Deps:** S-102.2; herald Story 42.3 (CAP-60, the second host needs no flag) (the reader of `pyforge.herald.pages_second_host` retires; the coordinator fills the key) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8, AD-9; herald AD-21 (one artifact, N hosts); CAP-165 (protected refs, untouched) • Dream 2026-10-13 (the Pages duct) • operator ruling 2026-10-13 (`configure-pages` authoritative; the zip for the air-gapped host)
+**Type:** feature • **Effort:** S • **Deps:** S-102.2; herald Story 42.3 (CAP-60, the second host needs no flag) (the reader of `pyforge.herald.pages_second_host` retires; the coordinator fills the key) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8, AD-9; herald herald:AD-21 (one artifact, N hosts); CAP-165 (protected refs, untouched) • Dream 2026-10-13 (the Pages duct) • operator ruling 2026-10-13 (`configure-pages` authoritative; the zip for the air-gapped host)
 **Flag:** `pyforge.steward.pages_duty` (Story 102.2's; off, no release asset; the host-env drop is not gated — it removes a step)
 **Surface:** `.github/workflows/pages.yml` (the `export_pages_host_env.py` line leaves the flags step; `SITE_URL` from `steps.pages.outputs.base_url`; the `deploy` job's `contents: write` and the asset step), `src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py` (the step's gating helper), `tests/unit/test_pages_release.py` and `test_pages_release_flag_states.py` (new), `docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md` (§ 4 and the Story 31.1 sentence go; *Pull the zip* added — a co-governor reconcile on `spec-pyforge-doctor`)
 **Spec:** `planning-artifacts/specs/spec-102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset.md`

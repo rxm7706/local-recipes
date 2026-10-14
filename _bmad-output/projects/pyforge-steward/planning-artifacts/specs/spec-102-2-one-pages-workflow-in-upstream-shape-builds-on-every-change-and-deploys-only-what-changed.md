@@ -111,7 +111,7 @@ Type / Effort / Deps: feature / M / S-102.1.
   **AD-1**: `curl`, `pixi` and `gh` by subprocess; no second build. **AD-8**: the stamp script owns its exit code
   (0 on a decision, 1 on a hashing failure), the duty boundary is untouched here.
 - **canopy:AD-11** (one flag tree); `feature-flag-governance:CAP-1` (the flag rule), `:CAP-4` (the two-state test).
-- **herald AD-21**: one `deploy-pages` caller; `spec-pyforge-herald:CAP-49` (the PR gate) is realized by the fold,
+- **herald herald:AD-21**: one `deploy-pages` caller; `spec-pyforge-herald:CAP-49` (the PR gate) is realized by the fold,
   the herald SPEC's wording is the coordinator's.
 - **Origin.** The Dream's 2026-10-13 (the Pages duct) entry; the herald Dream's M2; brainstorm-intent § M2 and
   § Constraints; design thinking P-A and Key Feature 6 (the hash excludes the footer); operator rulings 2026-10-13.

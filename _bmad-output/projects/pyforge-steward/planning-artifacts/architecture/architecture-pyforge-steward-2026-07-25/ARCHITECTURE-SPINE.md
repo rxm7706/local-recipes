@@ -2397,14 +2397,14 @@ written:
   `EXIT_CI_REFUSAL`; the stamp script is a `scripts/` tool with its own 0/1 domain and the workflow reads it as a
   step exit.
 - **AD-9 (enterprise routing inherited).** No new endpoint: `gh` reads the repository's own host; `configure-pages`
-  is each host's authority, realizing herald AD-21's one-artifact-N-hosts amendment without a flag once herald
+  is each host's authority, realizing herald herald:AD-21's one-artifact-N-hosts amendment without a flag once herald
   CAP-60 retires `pyforge.herald.pages_second_host`.
 - **CAP-166's one write path holds.** The no-op skip reads the live `build.json`; no repository variable is written
   from a workflow step or a test; the `dashboard*` rows are renamed `pages*` and `docsite-check*` retire by Story
   99.7's convention; every job keeps its fragment as the first term of its `if:`.
 - **Boundaries.** The artifact's content stays herald's (`docsite/**`, `docs-site/**`, `pages-build`, `pages-check`,
   `/herald/`), the export atlas's (Story 30.1 produces `kedro-viz-export`; herald's M2 story tolerates its absence),
-  `map.yaml` doctor's; the GHE how-to is doctor's co-governance; herald AD-21's one `deploy-pages` caller is kept.
+  `map.yaml` doctor's; the GHE how-to is doctor's co-governance; herald herald:AD-21's one `deploy-pages` caller is kept.
 - **A/B.** The capability is A-side, `rebuild` in `docs/foundry/capability-ledger.yaml`; B rebuilds the duct from
   the Spec under its own CI; no B surface, `docs/foundry/PIN.md` untouched.
 

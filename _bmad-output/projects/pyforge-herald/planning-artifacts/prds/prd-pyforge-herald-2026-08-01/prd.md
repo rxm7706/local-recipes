@@ -1530,8 +1530,8 @@ same day (the station Dream's entry *the Pages deployment, redesigned*; the brai
 station's planning artifacts). Measured: `dashboard.yml` ran 1,342 times since 2026-09-13 (720 deploys, 621 cancelled)
 on an unconditional push trigger; the site is four separately minted mechanisms glued by 3,830 bespoke lines; the
 deploy sat in `waiting` for six days unseen. The trigger, cost and workflow clauses are steward's (`pyforge-steward:CAP-168`,
-Epic 102), the export producer atlas's (`pyforge-atlas:CAP-62`, CAP-63; Epic 30), the registry and the liveness probe
-doctor's (`pyforge-doctor:CAP-90`, CAP-91; Epic 48). Herald's share is Feature Group 12.
+Epic 102), the export producer atlas's (`pyforge-atlas:CAP-62`, pyforge-atlas:CAP-63; Epic 30), the registry and the liveness probe
+doctor's (`pyforge-doctor:CAP-90`, pyforge-doctor:CAP-91; Epic 48). Herald's share is Feature Group 12.
 
 ### Feature Group 12: The Pages site, redesigned (registered 2026-10-14)
 

@@ -867,7 +867,7 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
   is amended, not reversed: the deploy stays CLI-invoked reconciliation — `steward pages deploy` triggers one run of
   one workflow, and the deploy job's hash compare is the no-diff gate (zero deploys when nothing changed) — while
   PRD D6's "no new GitHub Actions workflow" clause is retired by the 2026-10-13 ruling, since the workflow already
-  exists and moves here. One `deploy-pages` caller (herald AD-21). Nothing outward beyond this repository's own
+  exists and moves here. One `deploy-pages` caller (herald herald:AD-21). Nothing outward beyond this repository's own
   Pages, release and Actions: no second repository, no bot commit on `main`, no cross-origin load. No job loses its
   existing `if:`; `workflow_dispatch` ignores every pause (CAP-166). The hash comparison reads the live site and
   writes no repository variable: `gh variable set` stays CAP-166's one write path. The registry rows under

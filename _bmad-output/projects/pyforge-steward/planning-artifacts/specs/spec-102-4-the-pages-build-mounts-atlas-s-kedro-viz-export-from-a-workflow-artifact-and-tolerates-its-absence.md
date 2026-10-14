@@ -82,7 +82,7 @@ tree is deleted); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absen
 - **AD-1**: `gh` by subprocess; the selection logic is the only code, and it reads recorded JSON. **AD-8**: the step's
   exit is 0 on present and absent alike; a `gh` failure that is not "none found" fails the step (a real error is never
   read as absence).
-- **herald AD-21**: the mount prefix `/dashboard/kedro-viz/` keeps its URL; the content is atlas's, served by herald's
+- **herald herald:AD-21**: the mount prefix `/dashboard/kedro-viz/` keeps its URL; the content is atlas's, served by herald's
   assembler. **spec-pyforge-atlas** (Story 30.1): the producer and the artifact name `kedro-viz-export` are atlas's
   contract; steward reads them.
 - **Flag:** `pyforge.steward.pages_duty` (Story 102.2's).
@@ -152,7 +152,7 @@ tree is deleted); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absen
 ## Binding
 
 - Parent Spec capability: `spec-pyforge-steward` CAP-168 (FR-41), minted 2026-10-14.
-- Architecture: AD-1, AD-8; herald AD-21 (the mount's URL).
+- Architecture: AD-1, AD-8; herald herald:AD-21 (the mount's URL).
 - Dream: `docs/dreams/pyforge-steward.md` § Realization log, the 2026-10-13 (the Pages duct) entry.
 - Epic: Epic 102, Story 102.4.
 - Ledger key: `102-4-the-pages-build-mounts-atlas-s-kedro-viz-export-from-a-workflow-artifact-and-tolerates-its-absence`.
@@ -164,7 +164,7 @@ tree is deleted); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absen
 
 ## Epic excerpt
 
-**Type:** feature • **Effort:** S • **Deps:** S-102.2; atlas Story 30.1; herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absence) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8; herald AD-21 • flag: `pyforge.steward.pages_duty` (Story 102.2's)
+**Type:** feature • **Effort:** S • **Deps:** S-102.2; atlas Story 30.1; herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absence) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8; herald herald:AD-21 • flag: `pyforge.steward.pages_duty` (Story 102.2's)
 
 **Given** a Kedro-Viz export committed since 2026-08-15 and copied into the artifact, and an assembler that exits 1 when
 the mount is missing

@@ -86,7 +86,7 @@ Type / Effort / Deps: feature / S / S-102.2; herald Story 42.3 (CAP-60, the seco
 - **AD-1**: `gh` and `zip` by subprocess in a workflow step; no code beyond the YAML and one shell block. **AD-8**: a
   failed upload fails the step (the deploy already succeeded; the step's failure is visible, never silent). **AD-9**:
   no new outbound endpoint; `gh` reads the repository's own host.
-- **herald AD-21** (one artifact, N hosts, 2026-09-28 amendment): the asset is that artifact, carried; `spec-pyforge-herald:CAP-56`
+- **herald herald:AD-21** (one artifact, N hosts, 2026-09-28 amendment): the asset is that artifact, carried; `spec-pyforge-herald:CAP-56`
   (the second host) is realized by `configure-pages` alone once herald CAP-60 retires the flag.
 - **spec-pyforge-steward CAP-165** (protected refs): the rolling tag is outside every protected pattern; the roster's
   `session_denials` are not touched.
@@ -157,7 +157,7 @@ Type / Effort / Deps: feature / S / S-102.2; herald Story 42.3 (CAP-60, the seco
 ## Binding
 
 - Parent Spec capability: `spec-pyforge-steward` CAP-168 (FR-41), minted 2026-10-14.
-- Architecture: AD-1, AD-8, AD-9; herald AD-21 (one artifact, N hosts); CAP-165 (protected refs, untouched).
+- Architecture: AD-1, AD-8, AD-9; herald herald:AD-21 (one artifact, N hosts); CAP-165 (protected refs, untouched).
 - Dream: `docs/dreams/pyforge-steward.md` § Realization log, the 2026-10-13 (the Pages duct) entry.
 - Epic: Epic 102, Story 102.5.
 - Ledger key: `102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset`.
@@ -169,7 +169,7 @@ Type / Effort / Deps: feature / S / S-102.2; herald Story 42.3 (CAP-60, the seco
 
 ## Epic excerpt
 
-**Type:** feature • **Effort:** S • **Deps:** S-102.2; herald Story 42.3 (CAP-60, the second host needs no flag) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8, AD-9; herald AD-21 • flag: `pyforge.steward.pages_duty` (Story 102.2's)
+**Type:** feature • **Effort:** S • **Deps:** S-102.2; herald Story 42.3 (CAP-60, the second host needs no flag) • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41); AD-1, AD-8, AD-9; herald herald:AD-21 • flag: `pyforge.steward.pages_duty` (Story 102.2's)
 
 **Given** a build job that takes the deploying host's URL only through herald's `pages_second_host` flag, a how-to that
 asks the enterprise operator to flip it, and an air-gapped host that must rebuild behind a mirror

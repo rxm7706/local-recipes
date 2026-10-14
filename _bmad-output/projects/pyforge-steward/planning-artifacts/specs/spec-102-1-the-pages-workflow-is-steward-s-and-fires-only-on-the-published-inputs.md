@@ -47,7 +47,7 @@ thinking P-C).
 
 - **The rename.** `git mv .github/workflows/dashboard.yml .github/workflows/pages.yml`; `name: Pages`; the header
   comment says what the file is now: steward's duct (this Spec, CAP-168), herald's content (`pages-build`,
-  `pages-check`, `docsite/`, `docs-site/`, `/herald/`), the one `deploy-pages` caller (herald AD-21), no bot commit
+  `pages-check`, `docsite/`, `docs-site/`, `/herald/`), the one `deploy-pages` caller (herald herald:AD-21), no bot commit
   on `main`. The jobs, their CAP-166 fragments (`vars.PAUSE_DASHBOARD`), the `Resolve Pages host env` step and the
   deploy job are not otherwise changed in this story: Story 102.2 reshapes the jobs and renames the switch, 102.5
   drops the host-env step.
@@ -107,7 +107,7 @@ Type / Effort / Deps: feature / S / —.
   travel with the file); works with CAP-159 (the lane selection reads the workflows, never a second list).
 - **AD-4 as amended 2026-10-14**: the deploy's mutation is one `deploy-pages` run of this workflow; nothing else in
   this story touches the duty. **AD-1**: no new logic — a rename, a filter, a checkout shape.
-- **herald AD-21** (one Pages artifact, one deploy caller): kept; `spec-pyforge-herald:CAP-52` and `:CAP-56` are the
+- **herald herald:AD-21** (one Pages artifact, one deploy caller): kept; `spec-pyforge-herald:CAP-52` and `:CAP-56` are the
   content owner's and are not edited.
 - **Origin.** Dream `docs/dreams/pyforge-steward.md`, the 2026-10-13 (the Pages duct) entry; the herald Dream's
   2026-10-13 lead entry (M1 trigger, M2 ownership); operator rulings 2026-10-13 (memlog, decision by user 2026-10-14).
@@ -193,7 +193,7 @@ Type / Effort / Deps: feature / S / —.
 
 ## Epic excerpt
 
-**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41), extending CAP-166, with CAP-159; AD-4 (amended 2026-10-14), AD-1; herald AD-21 kept • flag-exempt `detector-or-gate`
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-168 (FR-41), extending CAP-166, with CAP-159; AD-4 (amended 2026-10-14), AD-1; herald herald:AD-21 kept • flag-exempt `detector-or-gate`
 
 **Given** `dashboard.yml` on herald's surface, firing on every push to `main` (720 deploys, 621 cancelled in 30 days)
 with a full-history checkout
