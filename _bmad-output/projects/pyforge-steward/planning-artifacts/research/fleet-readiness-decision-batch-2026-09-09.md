@@ -227,7 +227,7 @@ pass found twelve more `done`-but-not-in-effect capabilities with no vessel:
 | `atlas-query-dashboards` (C1) | atlas | — |
 | `secure-live-dashboards` Django half (`pyforge.steward.dashboard` in no `INSTALLED_APPS`; `AuditEntry` has no table; 6 of 9 modules 0 consumers) | steward | `base.py` grep empty |
 | `unified-container` (root `Containerfile` built by no workflow or pixi task; the container gates invoked by nothing) | steward | `platform-ci.yml:280,289` build other files |
-| `ocp-as-a-portability-profile` / air-gap CI proofs (12.2/12.3/12.9 gated on repo variables that are not set) | steward | `gh variable list` = `ACTIONS_ENABLED=false` only |
+| `ocp-as-a-portability-profile` / air-gap CI proofs (12.2/12.3/12.9 gated on repo variables that are not set) | steward | ~~`gh variable list` = `ACTIONS_ENABLED=false` only~~ (variable deleted 2026-10-12; today only the two `PAUSE_*` container pauses) |
 | `developer-machine-bootstrap` (no clean-container run) | steward | Class B |
 | herald live backend (100/100 failed runs, workflow disabled), deck-QA gate (called by nothing), pptx pipeline (never rendered a station deck) | herald | herald headline |
 | `pyforge-mason` recipe verb family (`unavailable_verbs: ('recipe',)`) | mason | mason-B5 |
@@ -520,7 +520,7 @@ trigger. A hypothesis until 33.1 reports a measured baseline.
 still `0.2.0` · `views/` imported only by its own tests (retired Story 25.1) · `[feature.pyforge-mason.dependencies]`
 two lines, no floor deps · root `Containerfile` unreferenced (platform-ci builds `src/platform/Containerfile`
 + dbgpt sidecar) · `pyforge.steward.dashboard` absent from `base.py` · `gh variable list` =
-`ACTIONS_ENABLED=false`; secrets = `ANACONDA_API_TOKEN`, `HERALD_WEBHOOK_SECRET` · verify-promotion
+~~`ACTIONS_ENABLED=false`~~ (deleted 2026-10-12); secrets = `ANACONDA_API_TOKEN`, `HERALD_WEBHOOK_SECRET` · verify-promotion
 referenced only by two workflows · platform env path deps = `pyforge-steward` only ·
 `sibling_dreams.py:118,155` keyed on title · `classify_review_tier`/`resolve_review_cycles` no
 callers outside `gate.py` + tests · marshal `epics.md` tops at Epic 32 · `driver.py:198` `total_cost_usd`.
