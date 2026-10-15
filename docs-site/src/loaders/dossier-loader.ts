@@ -57,7 +57,7 @@ async function applyCiSurfacesAsync(doc: Record<string, unknown>): Promise<void>
 export function dossierLoader(): Loader {
   return {
     name: 'dossier-yml-loader',
-    load: async ({ store, logger, parseData }) => {
+    load: async ({ store, logger }) => {
       if (process.env.PYFORGE_PAGES_ONE_GENERATOR !== '1') {
         logger.info('dossier collection skipped (PYFORGE_PAGES_ONE_GENERATOR off)');
         return;
@@ -65,13 +65,9 @@ export function dossierLoader(): Loader {
       const raw = await fs.readFile(DOSSIER_YML, 'utf8');
       const doc = parseYaml(raw) as Record<string, unknown>;
       await applyCiSurfacesAsync(doc);
-      const parsed = await parseData({
-        id: 'dossier',
-        ...doc,
-      });
       store.set({
         id: 'dossier',
-        data: parsed,
+        data: doc,
         body: '',
       });
     },

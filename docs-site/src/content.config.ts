@@ -5,7 +5,7 @@ import { docsSchema, i18nSchema } from '@astrojs/starlight/schema';
 import { dossierLoader } from './loaders/dossier-loader';
 import { shelfDocsLoader } from './loaders/shelf-docs-loader';
 
-const EPIC_BLOCK_TYPES = [
+const EPIC_BLOCK_TYPES = new Set([
   'lede',
   'prose',
   'h3',
@@ -21,13 +21,21 @@ const EPIC_BLOCK_TYPES = [
   'note',
   'verify',
   'ci_surfaces',
-] as const;
+]);
 
 const blockSchema = z
   .object({
-    type: z.enum(EPIC_BLOCK_TYPES),
+    type: z.string(),
   })
-  .passthrough();
+  .passthrough()
+  .superRefine((block, ctx) => {
+    if (!EPIC_BLOCK_TYPES.has(block.type)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `unknown dossier block type ${JSON.stringify(block.type)}`,
+      });
+    }
+  });
 
 const sectionSchema = z
   .object({
@@ -36,12 +44,8 @@ const sectionSchema = z
   })
   .passthrough();
 
-const dossierSchema = z
-  .object({
-    title: z.string(),
-    sections: z.array(sectionSchema),
-  })
-  .passthrough();
+/** Loader validates block types; keep the collection schema loose for YAML shape drift. */
+const dossierSchema = z.object({ title: z.string() }).passthrough();
 
 const pagesOneGenerator = process.env.PYFORGE_PAGES_ONE_GENERATOR === '1';
 
