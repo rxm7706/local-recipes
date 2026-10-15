@@ -2,7 +2,7 @@
 title: '30.2: Vizro boards publish as static exports under /dashboard/vizro/'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e134549afcbdcc5b55b35f291464ac60d6685243'
 flag:
   key: pyforge.atlas.vizro_static_boards          # new; minted by this story

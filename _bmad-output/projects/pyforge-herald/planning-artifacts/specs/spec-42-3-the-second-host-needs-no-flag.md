@@ -2,7 +2,7 @@
 title: '42.3: The second host needs no flag'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 flag-exempt: flag-infrastructure   # the story retires a flag, pyforge.herald.pages_second_host (spec-feature-flag-governance Q2)
 retires-flag: pyforge.herald.pages_second_host   # read by the flag gate and the flag inventory (scripts/flag_gate_check.py RETIRES_FIELD)
 review_loop_iteration: 0

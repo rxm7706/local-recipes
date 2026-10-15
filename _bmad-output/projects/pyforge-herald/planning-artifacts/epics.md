@@ -1960,7 +1960,7 @@ So that the holistic view the operator asked for exists where the docs and the d
 **When** the site builds with `pyforge.herald.status_pages` on and a `fleet-status.json` input present
 **Then** `status/index.html` shows one row per station (epics, done/total, in progress, backlog, blocked, a bar whose width is done over total), an attention block listing each `blocked` and `backlog` key, the snapshot time and a link to Lane 1 `/console/`; `status/ci/index.html` lists every row of the snapshot with id, verdict, switch, `paused_since`, `review_by`, owner and detail, ordered as CAP-59's tile orders them; both pages carry the shared top menu, which gains Status
 **And** `pages-check` exits 1 on an input missing `stations` or a station missing `done` or `total`, naming the file; with the flag off no `/status/` page renders and no other page changes; a fixture with the 2026-10-14 counts renders the bar widths 99, 100, 100, 99, 98, 100, 95, 100 for atlas, doctor, herald, marshal, mason, scribe, steward, warden; an import-boundary test finds no `pyforge.steward` import in herald or docsite code; `pyforge-herald-test` is green with the flag test running both states
-**Status:** backlog
+**Status:** done
 
 ### Story 42.2: The Kedro-Viz mount is an artifact handoff that tolerates absence
 
@@ -1995,7 +1995,7 @@ can go.
 **When** steward Story 102.5 has removed the host-env step and this story lands
 **Then** `pages_second_host.py` combines the two `configure-pages` values into `SITE_URL` whenever both are set and falls back to the public github.io URL otherwise, with no flag read; `pages_host.py`'s flag reader, `export_pages_host_env.py` and the `pyforge.herald.pages_second_host` key in `flags.json` and `flag-overlays.json` are gone and the flag inventory regenerates; the how-to has no flag step
 **And** `pages-check` with `PAGES_HOST_BASE_URL=https://pages.ghe.example PAGES_HOST_BASE_PATH=/org/local-recipes` builds every href under that base and CAP-56's origin check still passes; `grep -rn pages_second_host` over tracked files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
-**Status:** backlog
+**Status:** done
 
 ## Epic 43: One generator renders the whole Pages site (spec-pyforge-herald CAP-61)
 
@@ -2043,7 +2043,7 @@ So that CAP-35's and CAP-53's pages need no second renderer.
 **When** the site builds with the flag on
 **Then** the three page kinds are Astro pages: the gallery lists the ten infographics in `site.yml`'s order with their titles and lazy previews; each family page shows the poster, the Infographic Deck and the Executive Summary in view and offers the PPTX and Marp sources as downloads, each stamped as today; a parity test compares the set of links and download names per family between the two paths
 **And** the published twins are copied, never edited (the backbar is injected by the wrapper page, not into the file); with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 43.3: Astro assembles the artifact: mounts, redirects and search
 
@@ -2059,7 +2059,7 @@ So that `assemble_pages.py`'s 720 lines have nothing left to do.
 **When** the site builds with the flag on
 **Then** every redirect path in `redirects.json` resolves to its `/herald/` or `/dashboard/` target in the built artifact, a collision between a redirect and a page fails the build naming the path, the twins and exports are served from `publicDir`, the Pagefind index contains a dossier page and a deck family page, and the origin check (under 40 lines) finds no absolute URL off the configured origin, the vendored Kedro-Viz bundle exempted by name as today
 **And** `pages-check` exits 1 when a planted twin names `fonts.googleapis.com`; `docs-site-validate` is green; `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 43.4: Fonts and theme come from one design system
 
@@ -2075,7 +2075,7 @@ So that the site reads as one place and no font file is a hand-vendored artifact
 **When** the site builds with the flag on
 **Then** every herald page loads its faces from `@fontsource` imports bundled by Astro, the computed `font-family` of the dossier's headings and body match the Jinja path's, dark mode follows Starlight's theme toggle on herald pages, and the origin check finds no font loaded from another origin
 **And** the five vendored upstream files are byte-identical to their recorded hashes; `pages-check` and `pyforge-herald-test` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 43.5: Every number is measured, and every page says what built it
 
@@ -2092,7 +2092,7 @@ So that a stale site tells on itself and the 17 drifted claims of 2026-10-13 can
 **When** the site builds with the flag on
 **Then** every stat with a `check:` key shows the measurer's value, a stat without `check:` shows its typed value, each dossier section shows "measured on <date>" from its `measured:` field, and every page's footer names the first seven characters of `GITHUB_SHA`, the build time and the run id (or `local build` when unset)
 **And** a fixture tree with a known line count renders that count; `site-verify` reports 0 drifted claims on the built page; `pages-check` and `pyforge-herald-test` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 43.6: Agents and the changes feed read the site
 
@@ -2109,7 +2109,7 @@ So that the site serves machines as well as people and Herald's Moments 2 to 4 h
 **When** the site builds with the flag on and the three inputs present
 **Then** `/llms.txt` lists every shelf and herald page with its URL and `/llms-full.txt` holds their text; `/facts.json` is valid JSON holding one object per deck family; `/changes/` lists the input's merges newest first with date, station and subject and `/changes/rss.xml` validates as RSS 2.0 with the same items; `/status/runs/` shows one row per loop home from `marshal-status.json` and the latest progress record per station from `herald-progress.json`, each page naming its snapshot time
 **And** with an input missing the page says so in one line and the build exits 0; a fixture with five merges renders five items; `pages-check` and `pyforge-herald-test` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 43.7: docsite/ retires and one generator remains
 
@@ -2126,7 +2126,7 @@ So that one generator and under 300 lines of bespoke Python describe the whole s
 **When** the story lands
 **Then** `docsite/` does not exist; the dossier and site content live under `docs-site/src/content/`; the nav of every prefix comes from `docs/map.yaml`; no `site`, `site-check`, `site-verify` or `site-serve` task remains and `pages-check` is the one build check; the flag and its reader are gone; `wc -l` over `docs-site/**/*.py` is under 300; the five vendored files keep their hashes
 **And** the built artifact holds every URL the 2026-10-13 artifact held plus the new prefixes (CAP-61's success list); `AGENTS.md` cites the dossier at its new path; `spec-surface-check`, `governance-currency`, `pages-check`, `docs-site-validate` and `pyforge-herald-test` exit 0; `scribe`'s instruction-surface parity test is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 44: Every docs page renders its body and its links resolve (fix under spec-pyforge-herald CAP-52; no CAP)
 

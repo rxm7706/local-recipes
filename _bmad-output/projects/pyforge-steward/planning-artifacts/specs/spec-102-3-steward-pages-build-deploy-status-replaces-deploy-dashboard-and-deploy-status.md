@@ -2,7 +2,7 @@
 title: '102.3: `steward pages build|deploy|status` replaces `deploy dashboard` and `deploy status`'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
 flag:
   key: pyforge.steward.pages_duty                 # Story 102.2's; this story adds the duty behind it

@@ -36,9 +36,9 @@ development_status:
   101-1-the-platform-ci-local-stubs-leak-no-process-and-the-holder-scan-takes-seconds: done
   102-1-the-pages-workflow-is-steward-s-and-fires-only-on-the-published-inputs: done
   102-2-one-pages-workflow-in-upstream-shape-builds-on-every-change-and-deploys-only-what-changed: done
-  102-3-steward-pages-build-deploy-status-replaces-deploy-dashboard-and-deploy-status: backlog
-  102-4-the-pages-build-mounts-atlas-s-kedro-viz-export-from-a-workflow-artifact-and-tolerates-its-absence: backlog
-  102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset: backlog
+  102-3-steward-pages-build-deploy-status-replaces-deploy-dashboard-and-deploy-status: done
+  102-4-the-pages-build-mounts-atlas-s-kedro-viz-export-from-a-workflow-artifact-and-tolerates-its-absence: done
+  102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset: done
   103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses: done
   103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network: done
   103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say: backlog
@@ -406,7 +406,7 @@ development_status:
   epic-100-retrospective: optional
   epic-101: done
   epic-101-retrospective: optional
-  epic-102: in-progress
+  epic-102: done
   epic-102-retrospective: optional
   epic-103: in-progress
   epic-103-retrospective: optional

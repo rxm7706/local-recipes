@@ -2,7 +2,7 @@
 title: '34.7: A retired flag leaves the tree only by its owner, and never while read'
 type: 'feature'
 created: '2026-10-15'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'b673b9b1ee50e232bddb26ca9124bc1c225375c8'
 flag-exempt: detector-or-gate   # the flag gate itself; a gated gate reports a silent green (spec-feature-flag-governance Q2 and its Constraint "a flag-OFF check is never a silent green ... gates themselves are exempt"), the rule 34.2, 34.3 and 34.5 followed
 review_loop_iteration: 2

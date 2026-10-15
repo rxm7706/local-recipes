@@ -4,7 +4,7 @@ status: ready
 owner-dream: docs/dreams/pyforge-testing-charter.md
 surface:
   - _bmad/scripts/bmad_tea_playwright.py
-  - pyforge.doctor.sources.fleet_scan
+  - scripts/fleet_scan.py    # the file doctor loads as pyforge.doctor.sources.fleet_scan (sources/board.py); re-pointed 2026-10-15
   - src/shared/packages/pyforge-testing-kit/**    # net-new, not yet created
   # scripts/coverage_gates_ci.py and scripts/run_station_coverage_gate.py (Story
   # 19.3/FR-131, added 2026-08-29) handed over 2026-09-24 (doctor Story 24.3) to

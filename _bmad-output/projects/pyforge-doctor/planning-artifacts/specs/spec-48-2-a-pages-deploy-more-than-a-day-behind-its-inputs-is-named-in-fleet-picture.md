@@ -2,7 +2,7 @@
 title: '48.2: A Pages deploy more than a day behind its inputs is named in fleet-picture'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e134549afcbdcc5b55b35f291464ac60d6685243'
 flag-exempt: detector-or-gate   # a check that judges; gating it off would bring back the silent-off surface it names, the 2026-10-06 deploy (spec-feature-flag-governance Q2; bmad-spec ruling 2026-10-14, memlog)
 review_loop_iteration: 0

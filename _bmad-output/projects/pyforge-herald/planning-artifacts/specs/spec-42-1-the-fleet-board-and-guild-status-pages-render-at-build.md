@@ -2,7 +2,7 @@
 title: '42.1: The fleet board and guild status pages render at build'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 flag:
   key: pyforge.herald.status_pages               # new; minted by this story
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)

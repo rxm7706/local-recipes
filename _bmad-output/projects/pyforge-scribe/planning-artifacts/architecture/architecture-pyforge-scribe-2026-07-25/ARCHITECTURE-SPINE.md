@@ -7,7 +7,7 @@ paradigm: 'event-sourced capture with a derived, rebuildable read-model (CQRS-li
 scope: 'Scribe capture/promotion (Wave 1, FR-1..FR-8) + graph compile/recall (Wave 2, FR-9..FR-13) + package/CLI surface (FR-14/FR-15)'
 status: final
 created: '2026-07-25'
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 26, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (prd -> spine) after the 2026-09-28 PRD re-stamp; no AD change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
+updated: "2026-10-15"   # RE-STAMPED 2026-10-15: prd->arch cascade after the 2026-10-15 PRD re-stamp (a stale surface glob re-pointed); no AD amended. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 26, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (prd -> spine) after the 2026-09-28 PRD re-stamp; no AD change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold remint; no AD added or changed."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15]
 sources:
@@ -353,5 +353,14 @@ the instruction surface; no AD added, changed or removed. `updated:` bumped.
 against every AD: each fix lands inside the module that already owns the behaviour, behind the ports and boundaries
 the spine already draws; no port, adapter or package boundary moves, and `src/platform/` still imports no
 `pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-15
+
+*`prd→arch` cascade after the PRD re-stamp of 2026-10-15.* The Spec's surface now names
+`src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py` for the portal recall argv in place of a
+never-created platform test; the test lives inside the package boundary the spine already draws, and `src/platform/`
+still imports no `pyforge.*`. Checked against every AD: no port, adapter or package boundary moves.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

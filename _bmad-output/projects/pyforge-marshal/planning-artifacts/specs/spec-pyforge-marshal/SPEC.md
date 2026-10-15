@@ -93,9 +93,6 @@ surface:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/marshal-policy.toml
   - _bmad-output/projects/pyforge-warden/planning-artifacts/marshal-policy.toml
   - _bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml
-  - pyforge.doctor.sources.fleet_scan
-  - docs/dashboard/index.html
-  - docs/dashboard/data.js
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/tier_routing.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_cost.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py
@@ -109,7 +106,6 @@ surface:
   - src/shared/packages/pyforge-marshal/tests/unit/test_spin.py
   - .claude/skills/conda-forge-expert/tests/meta/
   - docs/dashboard/README.md
-  - docs/dashboard/kedro-viz/**
   - scripts/fleet_scan.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/planning.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/chain_regen.py
@@ -202,7 +198,6 @@ surface-drift-exclude:
   - src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_spin.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_tier_routing.py
-  - docs/dashboard/kedro-viz/**
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml

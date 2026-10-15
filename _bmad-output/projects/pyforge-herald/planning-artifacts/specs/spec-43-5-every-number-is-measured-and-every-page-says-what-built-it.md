@@ -2,7 +2,7 @@
 title: '43.5: Every number is measured, and every page says what built it'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 flag:
   key: pyforge.herald.pages_one_generator        # Story 43.1's; shared across Epic 43 (one flag per CAP, Q6), not minted here
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)

@@ -6569,7 +6569,7 @@ So that the duct is driven and read through one CLI and nothing steward runs com
 **When** `steward pages build` runs `pixi run --frozen -e site pages-check` by subprocess and reports its exit and the tree hash, `pages deploy` runs `gh workflow run pages.yml --ref main` then `gh run list` and names the run (`--dry-run` prints the argv and runs nothing; `--wait` watches), and `pages status` prints the live root's `last-modified` and `build.json`, the last `pages.yml` run and the `pages` row's verdict from `ci.py`'s reader (unavailable, not red, without an authenticated `gh`), each verb refusing first when the flag is off
 **Then** fake-subprocess fixtures assert each verb's argv and that a refusal makes no call; `steward deploy dashboard` and `deploy status` are argparse usage errors; `grep` finds none of the deleted functions under `src/`; `len(DUTIES) == 30` in both assertions and `restore` stays index 13; `steward pages` with no verb names the three verbs; `deploy static` and `deploy perimeter` tests pass
 **And** `test_pages_duty_flag_states.py` runs `build --dry-run` in both states with `flag_states`; no test calls a live `gh`, `curl` or `pixi`; `git grep` for the retired verbs hits only dated logs and atlas's producer (a `DW-steward-102-3-1` row if that call remains); `pyforge-steward-test`, `flag-gate-check` and `lint-types` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 102.4: The Pages build mounts atlas's Kedro-Viz export from a workflow artifact and tolerates its absence
 
@@ -6586,7 +6586,7 @@ So that no DAG bytes live in git, the graph is as fresh as atlas's last run, and
 **When** the `build` job, with `actions: read`, selects atlas's newest successful run whose `kedro-viz-export` artifact is unexpired (`newest_export_run` over `gh` JSON; amended 2026-10-15 by the story's re-review: chosen from the artifact listing by name, not a window of recent runs — see the story spec's AC1), downloads it into `docs/dashboard/kedro-viz/` before `pages-check`, exports `KEDRO_VIZ_EXPORT=present|absent`, `KEDRO_VIZ_EXPORT_RUN` and `KEDRO_VIZ_EXPORT_AT`, and exits 0 on absence; and `docs/dashboard/**` leaves the filter once `git ls-files docs/dashboard/kedro-viz` is empty
 **Then** `newest_export_run` on recorded JSON picks the newest success with an unexpired artifact and returns `None` for none, failed runs or an expired one; a fake `gh` run with an artifact records the download argv and exports `present`; one without exports `absent` and no download; a `gh` API error fails the step naming the argv, never `absent`; a workflow test finds `actions: read` on `build` only and the step before `pages-check`
 **And** `test_pages_export_flag_states.py` runs the selection in both states (off: no call); one dispatched run with the artifact and one without are recorded once atlas 30.1 and herald's half are on `main`; `pyforge-steward-test`, `flag-gate-check` and `ci_surface_gates.py --check` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 102.5: `configure-pages` is authoritative on every host and the artifact ships as a release asset
 
@@ -6604,7 +6604,7 @@ a download.
 **When** the `export_pages_host_env.py` line leaves the step, the `build` job sets `SITE_URL` from `configure-pages` on every event, the `deploy` job (`contents: write`, the only job with it) zips the build job's `pages-site` artifact with `build.json` inside and publishes it as `pages-site.zip` on a rolling `pages-site` pre-release re-pointed at the deploying commit after each `deploy-pages` success (gated on the flag and on non-PR events), and the how-to loses its flag section and gains *Pull the zip*
 **Then** a workflow test finds no `export_pages_host_env.py` step, `SITE_URL` from `steps.pages.outputs.base_url`, `contents: write` on `deploy` only, and the asset step after `deploy-pages` with its two gates; the how-to has no `pages_second_host`, names `gh release download pages-site -p pages-site.zip` and `build.json`, and `docs-site-validate` exits 0; `pages-site` matches no protected-refs pattern and `protected_refs_ruleset_check.py` exits 0
 **And** `test_pages_release_flag_states.py` runs the gating helper in both states; after one deploy from `main`, `gh release view pages-site` shows the deploying commit and one `pages-site.zip` listing `build.json` (recorded, with a second deploy moving the tag); `pyforge-steward-test` and `flag-gate-check` are green and the `spec-pyforge-doctor` memlog reconciles the how-to before its scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 103: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167, CAP-5 and CAP-159; one CAP-159 feature)
 
