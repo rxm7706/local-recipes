@@ -54,6 +54,14 @@ def _first_stderr_line(stderr: str) -> str:
     return "<no stderr>"
 
 
+def _stdout_envelope(stdout: str | None) -> dict[str, object] | None:
+    try:
+        parsed = json.loads((stdout or "").strip())
+    except json.JSONDecodeError:
+        return None
+    return parsed if envelope_is_valid(parsed) else None
+
+
 class StewardCli:
     def __init__(self, process: ProcessPort) -> None:
         self._process = process
@@ -105,6 +113,10 @@ class StewardCli:
             )
         stderr_first = _first_stderr_line(result.stderr or "")
         if result.returncode == 1:
+            # Steward 103.7: a partial read prints its envelope, with ``partial: true``, on stdout; stderr is never parsed.
+            partial_envelope = _stdout_envelope(result.stdout)
+            if partial_envelope is not None:
+                return StewardCiStatusOutcome(ok=True, envelope=partial_envelope, argv=argv)
             return StewardCiStatusOutcome(
                 ok=False,
                 argv=argv,

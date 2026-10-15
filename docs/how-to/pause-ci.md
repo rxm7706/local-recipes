@@ -5,7 +5,7 @@ sources:
   - scripts/ci_surface_gates.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py
-verified: 2026-10-14
+verified: 2026-10-15
 ---
 
 # How to pause and resume CI surfaces
@@ -52,6 +52,11 @@ pixi run -e pyforge-steward pyforge steward ci status --json
 The duty merges the registry with live `gh variable list` and GitHub Actions workflow state. Verdicts
 include `live`, `paused`, `opt-in-off`, `paused-manually`, `retired`, `drift`, `stuck`, and
 `overdue`. It refuses to report success on an unauthenticated GitHub probe at 0/60 rate limit.
+
+It exits 0 when every surface was read, with the `--json` envelope on stdout. A `retired` row's runs are never read,
+so its `last_green_run` is empty. When a live surface's run list cannot be read, the read is partial: the exit code
+is 1, that row's `last_green_run` reads `unknown`, and the `--json` envelope still prints on stdout with
+`partial: true` and one `run_list_errors` entry per failed workflow. Exit 3 is a refusal, with one line on stderr.
 
 Refresh the local variable snapshot used by preflight (stale after 24 hours):
 

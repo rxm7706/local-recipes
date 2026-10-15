@@ -365,3 +365,29 @@ def test_surfaces_from_envelope_never_uses_verdict_alone() -> None:
         "rows": [{"id": "x", "declared_state": "opt-in-off", "live_switch_value": "false", "verdict": "paused"}],
     }
     assert surfaces_from_envelope(env) == []
+
+
+def test_steward_cli_partial_envelope_on_stdout_is_a_read_carrying_partial() -> None:
+    """Steward Story 103.7 AC5: exit 1 with a valid envelope on stdout is a partial read, not unknown."""
+    complete = _sample_envelope()
+    partial = {**complete, "partial": True, "run_list_errors": [".github/workflows/x.yml: HTTP 404"]}
+
+    read = StewardCli(_StewardProcess(stdout=json.dumps(complete))).ci_status_record(repo_root=Path("/tmp"))
+    assert read["state"] == "read"
+    assert "partial" not in read
+
+    partial_read = StewardCli(_StewardProcess(returncode=1, stdout=json.dumps(partial))).ci_status_record(
+        repo_root=Path("/tmp")
+    )
+    assert partial_read["state"] == "read"
+    assert partial_read["partial"] is True
+    assert partial_read["surfaces"] == read["surfaces"]
+    assert render_ci_pauses_pr_line(partial_read) == render_ci_pauses_pr_line(read)
+
+    on_stderr_only = StewardCli(_StewardProcess(returncode=1, stderr=json.dumps(partial))).ci_status_record(
+        repo_root=Path("/tmp")
+    )
+    assert on_stderr_only["state"] == "unknown"
+    assert "partial read (exit 1)" in on_stderr_only["reason"]
+    not_envelope = StewardCli(_StewardProcess(returncode=1, stdout="{}")).ci_status_record(repo_root=Path("/tmp"))
+    assert not_envelope["state"] == "unknown"

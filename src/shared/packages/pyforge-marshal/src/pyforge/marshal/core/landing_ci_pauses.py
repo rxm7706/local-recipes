@@ -61,11 +61,14 @@ def envelope_is_valid(envelope: object) -> bool:
 
 
 def record_from_envelope(envelope: dict[str, Any]) -> dict[str, Any]:
-    return {
+    record: dict[str, Any] = {
         "state": "read",
         "surfaces": surfaces_from_envelope(envelope),
         "fetched_at": envelope["fetched_at"],
     }
+    if envelope.get("partial") is True:
+        record["partial"] = True  # steward 103.7: some run lists failed; the switch values were all read
+    return record
 
 
 def unknown_record(reason: str) -> dict[str, str]:

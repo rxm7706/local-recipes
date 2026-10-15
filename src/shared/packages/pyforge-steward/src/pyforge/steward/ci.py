@@ -226,6 +226,10 @@ def _fetch_pending_deployments(deps: CiDeps, run_id: int) -> bool:
     return False
 
 
+def _is_retired(row: dict[str, Any]) -> bool:
+    return str(row.get("state") or "") == "retired"
+
+
 def _collect_snapshot(deps: CiDeps, registry: dict[str, Any]) -> tuple[_GhSnapshot | None, DutyResult | None]:
     ok, err, rl = _check_rate_limit(deps)
     if not ok:
@@ -239,9 +243,12 @@ def _collect_snapshot(deps: CiDeps, registry: dict[str, Any]) -> tuple[_GhSnapsh
     if wf_states is None:
         return None, _refusal(f"ci: {werr}")
 
+    # A retired row's runs are never read (Story 103.7). Its workflow file is gone, and GitHub keeps no record for a
+    # deleted workflow that never ran on its own (a reusable or dispatch-only file), so the fetch 404s and would make
+    # every read partial.
     workflow_files: set[str] = set()
     for row in registry.get("surfaces") or []:
-        if isinstance(row, dict) and row.get("workflow"):
+        if isinstance(row, dict) and row.get("workflow") and not _is_retired(row):
             workflow_files.add(str(row["workflow"]))
 
     runs_by_wf: dict[str, list[dict[str, Any]]] = {}
@@ -720,9 +727,10 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
         if paused_since is None and row.get("paused_since"):
             paused_since = str(row.get("paused_since"))
 
-        runs = snap.runs_by_workflow.get(wf, [])
-        last_green = _last_green(runs)
-        if snap.run_list_errors and any(wf in e for e in snap.run_list_errors):
+        retired = _is_retired(row)
+        runs = [] if retired else snap.runs_by_workflow.get(wf, [])
+        last_green = None if retired else _last_green(runs)
+        if not retired and any(e.startswith(f"{wf}: ") for e in snap.run_list_errors):
             last_green = "unknown"
 
         state_v = _state_verdict(
@@ -865,12 +873,17 @@ def _status_payload(
     snap: _GhSnapshot,
     rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    return {
+    payload: dict[str, Any] = {
         "fetched_at": deps.now().isoformat(),
         "repo": deps.repo,
         "rate_limit": snap.rate_limit,
         "rows": rows,
     }
+    if snap.run_list_errors:
+        # Additive (Story 103.7): only a partial read carries these, so a complete envelope is unchanged.
+        payload["partial"] = True
+        payload["run_list_errors"] = list(snap.run_list_errors)
+    return payload
 
 
 def run_status(deps: CiDeps, *, json_out: bool) -> DutyResult:
@@ -893,6 +906,10 @@ def run_status(deps: CiDeps, *, json_out: bool) -> DutyResult:
     details: dict[str, object] = {"payload": payload, "partial": partial}
     if partial:
         details["run_list_errors"] = snap.run_list_errors
+        if json_out:
+            # A partial read still prints its envelope on stdout (Story 103.7), so a reader gets every row it could
+            # read; the envelope's ``partial`` names what it could not, and the exit code stays 1.
+            details["summary_stream"] = "stdout"
     return DutyResult(ok=ok, summary=summary, details=details)
 
 

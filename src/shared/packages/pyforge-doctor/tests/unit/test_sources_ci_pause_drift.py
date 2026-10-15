@@ -236,3 +236,24 @@ def test_mutation_partial_as_unobserved_would_drop_row_findings(monkeypatch, tmp
 
 def test_source_is_ci_pause_drift() -> None:
     assert Source.CI_PAUSE_DRIFT.value == "ci-pause-drift"
+
+
+def test_partial_read_on_stdout(monkeypatch, tmp_path: Path) -> None:
+    """Steward Story 103.7: a partial read prints its report, with partial and run_list_errors, on stdout."""
+    payload = {
+        **_load_fixture("partial_with_drift.json"),
+        "partial": True,
+        "run_list_errors": [".github/workflows/platform-ci.yml: HTTP 404"],
+    }
+    assert not list(_VALIDATOR.iter_errors(payload))
+    text = json.dumps(payload)
+
+    def _run(argv, *, cwd, timeout=120.0):
+        assert argv[-3:] == ["ci", "status", "--json"]
+        return 1, text, ""
+
+    monkeypatch.setattr(cli_bridge, "run_argv", _run)
+    findings = ci_pause_drift.gather(tmp_path)
+    assert "ci-pause-drift" in _warn_checks(findings)
+    assert "ci-pause-partial" in _warn_checks(findings)
+    assert "ci-pause-unobserved" not in _checks(findings)
