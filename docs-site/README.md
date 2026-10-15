@@ -42,9 +42,10 @@ These files are maintained in this repository and are **not** byte-identical to 
   `_astro/`; `src/pages/herald/[fonts].css.ts` serves the faces at `/herald/fonts.css` for the twins and reader pages
 - `redirects.json` — the frozen root redirects: the 44 legacy paths and `/kedro-viz/` (Story 43.3; never hand-grown)
 - `src/lib/redirects.ts` — writes the legacy redirects into the build with the flag on, refusing a path the build
-  already holds
+  already holds, and fails the build when a route's output is a file `public/` serves (Astro itself only warns)
 - `scripts/populate-public.ts` — the only writer of `public/` (gitignored), run at every build's start: with the flag
-  on, the twins, the family downloads and the dashboard exports in `docs/dashboard/`; off, empty
+  on, the twins, the family downloads and every entry of `docs/dashboard/` but its README (an export only when
+  present); off, empty
 - `scripts/origin_check.py` — `pages-check`'s origin rule with the flag on (under 40 lines; AD-21)
 - `src/lib/agent-surface.ts`, `src/lib/agent-data.ts` and the pages `src/pages/[llms].txt.ts`, `src/pages/[facts].json.ts`,
   `src/pages/changes/` and `src/pages/status/runs/` — herald Story 43.6's machine surfaces: `/llms.txt` and

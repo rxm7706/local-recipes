@@ -241,6 +241,62 @@ lines) finds no absolute URL off the configured origin, the vendored Kedro-Viz b
 
 ## Spec Change Log
 
+- 2026-10-15 (independent review, iteration 1: FAIL, 3 should-fix and 10 nits; resolved on the tree as the lane B and
+  lane C merges left it, after Story 43.4):
+  - **The origin check catches what the old scanner caught (should-fix 1).** `docs-site/scripts/origin_check.py`
+    (39 lines) now reads every loading tag (`link` with a loading `rel`, now `modulepreload` and `prerender` too;
+    `script`, `img`, `iframe`, `frame`, `source`, `video`, `audio`, `track`, `embed`, `input`, `object`, and SVG
+    `image` and `use`) and judges each `src`, `srcset` candidate, `poster`, `data`, `href` and `xlink:href` on its own,
+    so a second attribute or a second candidate behind a same-origin one is judged; attribute values are read with
+    HTML entities decoded, quoted `>` no longer ends a tag, the text loads (`url()`, `@import`, `fetch`, XHR `.open`,
+    `import()`, `importScripts`, `.src =`, `setAttribute('src')`) are read with entities and JS's `\/` unescaped, and
+    a host or port that does not parse is its own origin -- a finding naming the URL, never a traceback. The review's
+    probes each have a case in `test_43_3_ac5_pages_check_names_a_planted_load` (13 new). Its new
+    `plotly.min.js/x.js` case found one more fault: a directory whose name ends `.js` was read as a file
+    (`IsADirectoryError`); the check now reads files only. Still not read, as the review found of both checks:
+    `imagesrcset`, string `image-set()`, `<meta http-equiv=refresh>`, a static `import ... from "https://..."` and
+    `new Worker(url)`; the CSP meta blocks each of them in the browser.
+  - **`/dashboard/` is the whole tracked tree (should-fix 2).** With the flag on, `populate-public.ts` mounts every
+    entry of `docs/dashboard/` but its `README.md` -- steward's `deploy static` boards with the two exports, each
+    export only when present -- as the flag-off `_copy_dashboard` copies it; the assembler's `_dashboard_entries` is
+    the one rule both states read, and a directory mounts only when it holds a file. `fixture_tree(exports=True)`
+    gains a board and AC3's expected set holds it.
+  - **A mount collision fails the build (should-fix 3), and this spec's Approach was wrong about Astro.** "A duplicate
+    route surfaces as Astro's own build error" does not hold in Astro 7.3.2: `checkPublicConflict` logs "Skipping ...
+    because a file with the same name exists in the public folder" and the public file wins. The `herald-artifact`
+    integration now keeps the files `populatePublic` wrote and, at `astro:build:done`, `refusePublicCollisions`
+    (`src/lib/redirects.ts`, node builtins only, beside the redirect writer's own refusal) throws naming every route
+    output that is one of them (`test_43_3_a_route_over_a_public_file_fails_the_build`; by hand, a route planted at
+    `src/pages/herald/twins/infographics/atlas.html.ts` made the flag-on build exit 1 naming
+    `herald/twins/infographics/atlas.html`). With the flag on, `assemble` no longer takes any `dashboard/` as Astro's:
+    `_check_astro_dashboard` refuses an entry the input does not mount (another writer) and an input entry Astro did
+    not mount, before the herald build runs (`test_43_3_the_flag_on_dashboard_is_the_input_and_nothing_else`,
+    `test_43_3_assemble_refuses_a_dashboard_it_did_not_expect`).
+  - **Nits resolved.** `_astro_dossier_preexists` is deleted, and with it `pages_one_generator.DOSSIER_ARTIFACT_REL`,
+    which nothing else read. The parity test's name reads `..._on_a_fixture_tree` again. Three siblings of the
+    exempt `plotly.min.js` (`.js.mjs`, `plotly.min.js/x.js`, `Plotly.min.js`) are judged
+    (`test_43_3_ac5_a_sibling_of_the_exempt_file_is_judged`). The built-artifact test now asserts the CSP names no
+    host (each source a keyword, a hash or `data:`) and that its hash is the sha256 of the rendered, HTML-unescaped
+    preview `onload`. `_check_legacy_redirects` has a synthetic-tree test that runs where docs-site is not installed
+    (`test_43_3_pages_check_lands_every_legacy_redirect`). With the flag on the Kedro-Viz export is validated, and
+    handed to the herald build's pipelines page, from what Astro mounted (`dashboard/kedro-viz/` in the artifact),
+    not from the input.
+  - **43.2's back-bar rule needs no new guard (nit 9).** `pages-check` with the flag on reads every twin against its
+    tracked file through `_check_herald_parity`'s `_font_vendoring_only`, where a back-bar is a gained line and fails
+    it; the always-run `back-bar` case of `test_43_2_the_twin_diff_allows_only_the_font_vendoring` pins that.
+  - **Recorded, not changed.** The root `.gitignore` gained `docs-site/public/` in this story: an edit outside Epic
+    43's surface (`marshal-policy.toml` `[epic_surfaces]."43"`), for the coordinator's reconcile. Story 43.7's budget
+    reads `wc -l docs-site/**/*.py` yet puts "the `publicDir` population script inside the same 300": the script is
+    TypeScript (`populate-public.ts`, 86 lines here), so 43.7 either counts it beside the Python or rewords to
+    Python only -- its call when it is picked up. Nit 10 (each `needs_astro` test and `astro dev` leave or read a
+    stale `docs-site/public/`) and nit 8's build-hook wiring stay manual: no CI lane installs docs-site.
+  - **Gates (2026-10-15, on `120fb29f27` plus this change).** The Pages, parity, 43.6, zero-origin, validator, imports,
+    site-URL, build and flag-state test files -- exit 0, 249 passed, none skipped (docs-site installed); the herald
+    suite -- exit 0, 2124 passed, 5 skipped; `lint-types`, `docs-site-validate`, steward's trigger map -- exit 0;
+    `pages-check` with both flags off -- exit 0; with `pyforge.herald.pages_one_generator` and
+    `pyforge.herald.status_pages` on and the 42.1 and 43.6 fixtures copied into `docsite/content/` (removed after) --
+    exit 0; the CAP-56 host (`PAGES_HOST_BASE_URL=https://pages.example.test`, `PAGES_HOST_BASE_PATH=/local-recipes`,
+    both flags on) -- exit 0, the docs-row finding gone with lane B's merge.
 - 2026-10-15: implemented (lane A of the one-PR Pages redesign); status `in-review`. Deviations and rulings, each for
   the reviewer and the operator to keep or overturn:
   - **The legacy redirects are written by the build, not Astro's `redirects`.** Astro writes every `redirects` key as

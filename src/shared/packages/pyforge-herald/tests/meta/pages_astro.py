@@ -73,7 +73,8 @@ POSTER = """<!DOCTYPE html>
 def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False) -> Path:
     """Two families and a third deck with no poster: Alpha with every view, a stamped Infographic Deck and
     a stamped PPTX; Beta with no Executive Summary, no PPTX and no sidecar; Gamma with only a facts.yaml.
-    ``exports`` adds a Kedro-Viz and a Vizro export to the build input, ``docs/dashboard/``."""
+    ``exports`` adds a Kedro-Viz and a Vizro export to the build input, ``docs/dashboard/``, and one board as steward's
+    ``deploy static`` publishes it there (Story 43.3's review: the tree AD-21 gives ``/dashboard/`` mounts whole)."""
     site = site_yml(REPO_ROOT)
     site["infographics"] = {
         "include": [
@@ -136,6 +137,7 @@ def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False
             "/* plotly */ fetch('https://cdn.plot.ly/un/world_110m.json');\n",
         )
         write(dashboard / "vizro" / "manifest.json", json.dumps({**manifest, "boards": []}))
+        write(dashboard / "fleet-board" / "index.html", "<!doctype html><title>Fleet board</title><p>board</p>\n")
     return root
 
 

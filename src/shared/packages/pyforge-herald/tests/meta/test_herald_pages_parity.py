@@ -176,7 +176,7 @@ def test_ac3_the_model_matches_the_jinja_path_on_the_tracked_tree(build_mod) -> 
 
 
 @needs_node
-def test_ac3_the_model_matches_the_jinja_path_on_afixture_tree(build_mod, tmp_path: Path) -> None:
+def test_ac3_the_model_matches_the_jinja_path_on_a_fixture_tree(build_mod, tmp_path: Path) -> None:
     ts = _assert_model_parity(build_mod, fixture_tree(tmp_path))
     assert [(i["title"], i["outName"]) for i in ts["infographics"]] == [
         ("Beta & Co", "beta-co.html"),

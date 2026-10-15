@@ -7,11 +7,13 @@
  * its target by a relative URL (any host, any base path). `kedro-viz` stays an Astro redirect (Story 42.2).
  *
  * One owner per path: a stub whose path the build already holds -- a page, or a file from `public/` -- fails the
- * build naming it, never overwrites it. Node builtins only (the herald suite runs this module with node).
+ * build naming it, never overwrites it; so does a route whose output is a file `public/` serves, which Astro itself
+ * only warns about (Story 43.3's review). Node builtins only (the herald suite runs this module with node).
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export interface RedirectsFile {
   legacy: Record<string, string>;
@@ -66,4 +68,19 @@ export function writeLegacyRedirects(outDir: string, legacy: Record<string, stri
     fs.writeFileSync(dest, redirectHtml(path.posix.relative(path.posix.dirname(from), to)), 'utf8');
   }
   return entries.map(([from]) => from);
+}
+
+/**
+ * AD-21 rule 1, one owner per path: throw, naming each, when a route's output (`astro:build:done`'s `assets`, recorded
+ * before Astro skips a page for a `public/` file of the same name) is a file `populatePublic` wrote (`written`,
+ * relative to the public directory and so to the build's `outDir`; `scripts/populate-public.ts`).
+ */
+export function refusePublicCollisions(outDir: string, written: string[], assets: Map<string, URL[]>): void {
+  const served = new Set(written);
+  const emitted = [...assets.values()].flat().map((url) => path.relative(outDir, fileURLToPath(url)));
+  const taken = [...new Set(emitted.map((rel) => rel.split(path.sep).join('/')).filter((rel) => served.has(rel)))];
+  if (taken.length > 0) {
+    const names = taken.sort().join(', ');
+    throw new Error(`route output(s) already served from docs-site/public/ (AD-21 rule 1, one owner): ${names}`);
+  }
 }

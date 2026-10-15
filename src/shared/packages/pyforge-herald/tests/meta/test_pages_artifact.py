@@ -18,6 +18,7 @@ from __future__ import annotations
 import base64
 import gzip
 import hashlib
+import html
 import importlib.util
 import json
 import re
@@ -718,6 +719,18 @@ def test_43_3_ac1_ac5_the_built_artifact(tmp_path: Path, monkeypatch: pytest.Mon
     assert len(pages) > 40
     for built in pages:
         assert built.read_text(encoding="utf-8").count('http-equiv="Content-Security-Policy"') == 1, built
+    # Story 43.3's review: the CSP names no host -- each source a keyword, a hash or data: -- and the hash it gives the
+    # preview handler is the sha256 of the handler as the gallery renders it
+    gallery = (artifact / "herald" / "infographics" / "index.html").read_text(encoding="utf-8")
+    csp = html.unescape(re.search(r'http-equiv="Content-Security-Policy" content="([^"]+)"', gallery).group(1))
+    for directive in csp.split(";"):
+        for source in directive.split()[1:]:
+            assert source in ("'self'", "'none'", "'unsafe-inline'", "'unsafe-hashes'", "data:") or re.fullmatch(
+                r"'sha256-[A-Za-z0-9+/]+=*'", source
+            ), f"CSP source {source!r} names a host"
+    onload = html.unescape(re.search(r'onload="([^"]+)"', gallery).group(1))
+    digest = base64.b64encode(hashlib.sha256(onload.encode("utf-8")).digest()).decode("ascii")
+    assert f"'sha256-{digest}'" in csp
     origin_check = _origin_check()
     assert origin_check.findings(artifact, origin_check.site_origin("http://localhost:3000")) == []
     (artifact / "herald" / "artifact" / "dossier.html").unlink()
@@ -785,7 +798,11 @@ def test_43_3_ac3_public_dir_serves_the_twins_downloads_and_exports(
         ),
         "herald/decks/fx-beta/downloads/fx-beta-2026-02-02.md": src.format("fx-beta", "marp/fx-beta-2026-02-02.md"),
     }
-    for name in ("kedro-viz", "vizro"):
+    for name in (
+        "kedro-viz",
+        "vizro",
+        "fleet-board",
+    ):  # the review: every entry of docs/dashboard/, not the exports only
         source = root / "docs" / "dashboard" / name
         for path in source.rglob("*"):
             if path.is_file():
@@ -838,6 +855,53 @@ def test_43_3_ac5_the_origin_check_is_small() -> None:
         ("herald/assets/site.css", "@import url('https://fonts.googleapis.com/css2');", "fonts.googleapis.com"),
         ("_astro/app.js", 'fetch("https://api.example.com/x")', "api.example.com"),
         ("_astro/map.js", "icon.src = `https://cdn.jsdelivr.net/npm/maki/${p}.svg`", "cdn.jsdelivr.net"),
+        # Story 43.3's review: each hole the old scanner caught and the first origin check missed, and two crashes
+        ("_astro/xhr.js", 'x.open("GET", "https://api.example.com/x")', "api.example.com"),
+        ("herald/index.html", '<svg><image href="https://img.example.com/i.png"/></svg>', "img.example.com"),
+        ("herald/index.html", '<svg><image xlink:href="https://img.example.com/i.png"/></svg>', "img.example.com"),
+        (
+            "herald/index.html",
+            '<img src="https://rxm7706.github.io/a.png" srcset="https://img.example.com/b.png 2x">',
+            "img.example.com",
+        ),
+        (
+            "herald/index.html",
+            '<video poster="https://rxm7706.github.io/p.png" src="https://media.example.com/v.mp4"></video>',
+            "media.example.com",
+        ),
+        (
+            "herald/index.html",
+            '<img srcset="https://rxm7706.github.io/a.png 1x, https://img.example.com/b.png 2x">',
+            "img.example.com",
+        ),
+        ("herald/index.html", '<img src="https&#58;//img.example.com/a.png">', "img.example.com"),
+        ("herald/index.html", '<script>fetch("https:\\/\\/api.example.com\\/x")</script>', "api.example.com"),
+        ("herald/index.html", '<img/src="https://img.example.com/a.png">', "img.example.com"),
+        ("herald/index.html", '<link rel="prerender" href="https://next.example.com/">', "next.example.com"),
+        ("herald/index.html", '<img alt="a&gt;b" src="https://img.example.com/a.png">', "img.example.com"),
+        ("herald/index.html", '<img src="https://[img.example.com/a.png">', "https://[img.example.com/a.png"),
+        ("herald/index.html", '<img src="https://img.example.com:abc/a.png">', "img.example.com:abc"),
+    ],
+    ids=[
+        "twin-font-link",
+        "script",
+        "protocol-relative",
+        "css-import",
+        "fetch",
+        "dynamic-src",
+        "xhr-open",
+        "svg-image-href",
+        "svg-image-xlink-href",
+        "second-attribute",
+        "poster-then-src",
+        "second-srcset-candidate",
+        "entity-encoded",
+        "js-escaped-slashes",
+        "img-slash-src",
+        "rel-prerender",
+        "gt-in-an-earlier-attribute",
+        "malformed-host",
+        "malformed-port",
     ],
 )
 def test_43_3_ac5_pages_check_names_a_planted_load(tmp_path: Path, capsys, rel: str, body: str, finding: str) -> None:
@@ -865,6 +929,23 @@ def test_43_3_ac5_the_vendored_bundles_are_exempt_by_name(tmp_path: Path, capsys
     with pytest.raises(SystemExit):
         assemble_pages._check_origins(tmp_path, _SITE_URL)
     assert "dashboard/vizro/assets/other.js" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "rel",
+    [
+        "dashboard/vizro/assets/plotly.min.js.mjs",
+        "dashboard/vizro/assets/plotly.min.js/x.js",
+        "dashboard/vizro/assets/Plotly.min.js",
+    ],
+)
+def test_43_3_ac5_a_sibling_of_the_exempt_file_is_judged(tmp_path: Path, capsys, rel: str) -> None:
+    """Story 43.3's review: the exemption names one file exactly -- a path sharing its prefix, or its name in another
+    case, is judged like any other."""
+    write(tmp_path / rel, 'fetch("https://cdn.plot.ly/un/world_110m.json")')
+    with pytest.raises(SystemExit):
+        _load_assemble_pages()._check_origins(tmp_path, _SITE_URL)
+    assert f"{rel}: loads 'https://cdn.plot.ly/un/world_110m.json'" in capsys.readouterr().err
 
 
 def test_43_3_ac5_the_second_host_refuses_a_link_to_the_public_host(tmp_path: Path, capsys) -> None:
@@ -919,9 +1000,11 @@ def test_43_3_the_assembler_hands_mounts_and_redirects_to_astro(
     monkeypatch.setenv("PYFORGE_CI_SURFACES_TILE", "0")
     artifact = tmp_path / "site"
     artifact.mkdir()
-    if on:
+    export = _fixture_export(tmp_path / "export")
+    if on:  # Astro served the export from docs-site/public/; the assembler judges what it mounted
+        shutil.copytree(export, artifact / "dashboard" / "kedro-viz")
         write(artifact / "dashboard" / "kedro-viz" / "index.html", "<html>Astro served the export</html>")
-    src = _dashboard_src(tmp_path, _fixture_export(tmp_path / "export"))
+    src = _dashboard_src(tmp_path, export)
     _load_assemble_pages().assemble(
         artifact, repo_root=_repo_root(), dashboard_src=src, skip_docs_site_build=True, site_url=_SITE_URL
     )
@@ -935,6 +1018,107 @@ def test_43_3_the_assembler_hands_mounts_and_redirects_to_astro(
     assert served == "<html>Astro served the export</html>"
     assert sorted(p.name for p in (artifact / "herald").iterdir()) == [".nojekyll", "artifact", "assets"]
     assert (artifact / "dashboard" / "index.html").is_file()  # herald's pipelines page, still Jinja's
+
+
+def _board_input(tmp_path: Path) -> Path:
+    """``docs/dashboard/`` with its README, the Kedro-Viz export, an empty ``vizro/`` and one steward board."""
+    src = _dashboard_src(tmp_path, _fixture_export(tmp_path / "export"))
+    (src / "vizro").mkdir()
+    write(src / "fleet-board" / "index.html", "<html>a deploy-static board</html>")
+    return src
+
+
+@pytest.mark.parametrize(
+    ("served", "finding"),
+    [
+        (("kedro-viz", "fleet-board"), None),
+        (("kedro-viz", "fleet-board", "stray"), "collision at dashboard/: ['stray'] not in"),
+        (("kedro-viz",), "entries not mounted at dashboard/: ['fleet-board']"),
+        (("kedro-viz", "fleet-board", "vizro"), "collision at dashboard/: ['vizro'] not in"),
+    ],
+    ids=["as-mounted", "another-writer", "board-not-mounted", "absent-export-served"],
+)
+def test_43_3_the_flag_on_dashboard_is_the_input_and_nothing_else(
+    tmp_path: Path, capsys, served: tuple[str, ...], finding: str | None
+) -> None:
+    """Story 43.3's review (AD-21 rule 1): with the flag on, ``dashboard/`` holds exactly what the tracked
+    ``docs/dashboard/`` mounts -- every entry but the README, an export only when present -- and Astro only warns on a
+    path two writers share, so an entry from anywhere else is a collision and a missing board a missing mount."""
+    src = _board_input(tmp_path)
+    artifact = tmp_path / "site"
+    for name in served:
+        write(artifact / "dashboard" / name / "index.html", "<html>served</html>")
+    assemble_pages = _load_assemble_pages()
+    if finding is None:
+        assemble_pages._check_astro_dashboard(src, artifact)
+        return
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages._check_astro_dashboard(src, artifact)
+    assert exc.value.code == 1
+    assert finding in capsys.readouterr().err
+
+
+def test_43_3_assemble_refuses_a_dashboard_it_did_not_expect(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """With the flag on the assembler takes ``dashboard/`` as Astro's only when it is the input's mount: a pre-existing
+    file there that the input does not hold exits 1 before the herald build runs (Story 43.3's review)."""
+    monkeypatch.setenv("PYFORGE_PAGES_ONE_GENERATOR", "1")
+    monkeypatch.setenv("PYFORGE_STATUS_PAGES", "0")
+    src = _dashboard_src(tmp_path, None)
+    artifact = tmp_path / "site"
+    write(artifact / "dashboard" / "leftover.html", "<html>an earlier writer</html>")
+    with pytest.raises(SystemExit) as exc:
+        _load_assemble_pages().assemble(
+            artifact, repo_root=_repo_root(), dashboard_src=src, skip_docs_site_build=True, site_url=_SITE_URL
+        )
+    assert exc.value.code == 1
+    assert "collision at dashboard/: ['leftover.html']" in capsys.readouterr().err
+    assert not (artifact / "herald").exists()
+
+
+@needs_node
+def test_43_3_a_route_over_a_public_file_fails_the_build(tmp_path: Path) -> None:
+    """Story 43.3's review (AD-21 rule 1): Astro 7 only warns when a route emits a path ``public/`` serves and keeps the
+    public file; the build-end hook refuses it, naming each path, and passes when no route output is a public file."""
+    lib = json.dumps((DOCS_SITE / "src" / "lib" / "redirects.ts").as_uri())
+    out = tmp_path / "out"
+    written = ["herald/twins/infographics/atlas.html", "dashboard/kedro-viz/index.html"]
+    routes = {
+        "/herald/twins/[x]": [(out / "herald/twins/infographics/atlas.html").as_uri()],
+        "/herald": [(out / "herald/index.html").as_uri()],
+    }
+    script = (
+        f"import {{ refusePublicCollisions }} from {lib};"
+        f"const assets = new Map(Object.entries({json.dumps(routes)}).map(([k, v]) => [k, v.map((u) => new URL(u))]));"
+        f"try {{ refusePublicCollisions({json.dumps(str(out))}, {json.dumps(written)}, assets); process.exit(0); }}"
+        "catch (exc) { process.stdout.write(String(exc.message)); process.exit(3); }"
+    )
+    run = [NODE or "node", "--experimental-strip-types", "--input-type=module", "-e"]
+    done = subprocess.run([*run, script], capture_output=True, text=True, check=False)
+    assert done.returncode == 3, done.stderr
+    assert "herald/twins/infographics/atlas.html" in done.stdout and "one owner" in done.stdout
+    assert "dashboard/kedro-viz" not in done.stdout
+    clean = script.replace(json.dumps(written), json.dumps(written[1:]))
+    done = subprocess.run([*run, clean], capture_output=True, text=True, check=False)
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
+def test_43_3_pages_check_lands_every_legacy_redirect(tmp_path: Path, capsys) -> None:
+    """AC1 in CI: ``_check_legacy_redirects`` on a synthetic tree -- every frozen legacy path a stub landing on its
+    target passes; a stub pointing elsewhere exits 1 naming it (the built-artifact test needs docs-site installed)."""
+    assemble_pages = _load_assemble_pages()
+    for source, target in _REDIRECTS["legacy"].items():
+        stub, landing = tmp_path / source.lstrip("/"), tmp_path / target.lstrip("/")
+        write(landing, "<html>the herald page</html>")
+        write(stub, assemble_pages.redirect_html(assemble_pages._relative_url(stub, landing)))
+    assemble_pages._check_legacy_redirects(tmp_path)
+    source = sorted(_REDIRECTS["legacy"])[0]
+    write(tmp_path / source.lstrip("/"), assemble_pages.redirect_html("nowhere.html"))
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages._check_legacy_redirects(tmp_path)
+    assert exc.value.code == 1
+    assert f"legacy redirect {source} does not land on" in capsys.readouterr().err
 
 
 # --- Story 43.2 (independent review): the one-writer gate, the twin and reader-page exemptions, the parity check --

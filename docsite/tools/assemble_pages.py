@@ -23,11 +23,12 @@ either flag state, naming it; the twins are raw exports (no menu, no legacy redi
 that the origin check still reads.
 
 Story 43.3 (CAP-61): with the flag on, the Astro build also serves the twins, the downloads and the
-dashboard exports (``docs/dashboard/kedro-viz/`` and ``docs/dashboard/vizro/``, each when present) from
-``docs-site/public/`` and writes the root redirects from ``docs-site/redirects.json``; this assembler
-then mounts, copies and redirects nothing, and ``check`` judges the frozen redirects, one CSP meta per
-herald page and the small origin check (``docs-site/scripts/origin_check.py``) in place of the scanner
-below. Off, it does all of that as before.
+tracked ``docs/dashboard/`` tree (every entry but its README; ``kedro-viz/`` and ``vizro/`` each when
+present) from ``docs-site/public/`` and writes the root redirects from ``docs-site/redirects.json``; this
+assembler then mounts, copies and redirects nothing -- it refuses a ``dashboard/`` that is not exactly the
+input's mount -- and ``check`` judges the frozen redirects, one CSP meta per herald page and the small
+origin check (``docs-site/scripts/origin_check.py``) in place of the scanner below. Off, it does all of
+that as before.
 
 Story 43.4 (CAP-61): with the flag on, ``check`` also holds every herald page and twin to the one design system:
 its faces come from the @fontsource files Astro bundles under ``_astro/``, nothing links the Jinja path's
@@ -55,7 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import kedro_viz_export as kv  # noqa: E402
 import status_pages as sp  # noqa: E402
-from pages_one_generator import DOSSIER_ARTIFACT_REL, enabled_from_env  # noqa: E402
+from pages_one_generator import enabled_from_env  # noqa: E402
 from pages_site_url import (  # noqa: E402
     SITE_URL_MARKER,
     resolve_from_process_environment,
@@ -229,11 +230,6 @@ def _run_docs_site_build(repo_root: Path, site_url: str) -> None:
     )
 
 
-def _astro_dossier_preexists(artifact_root: Path) -> bool:
-    path = artifact_root / DOSSIER_ARTIFACT_REL
-    return path.is_file() and path.stat().st_size > 0
-
-
 def _remove_empty_astro_dossier(artifact_root: Path) -> None:
     """Drop Astro's zero-byte dossier stub when the one-generator flag is off."""
     dossier_dir = artifact_root / HERALD_PREFIX / "dossier"
@@ -275,6 +271,36 @@ def _load_kedro_viz(export_dir: Path, repo_root: Path | None) -> dict[str, str] 
         raise SystemExit(1) from exc
 
 
+def _dashboard_entries(dashboard_src: Path) -> list[Path]:
+    """What the tracked ``docs/dashboard/`` tree mounts at ``/dashboard/`` (AD-21): every entry but its README, a
+    directory -- an export (Story 42.2; atlas Story 30.2) or a board -- only when present (non-empty). The one rule
+    both flag states follow (Story 43.3's review); ``docs-site/scripts/populate-public.ts`` mounts the same files."""
+    return [
+        item
+        for item in (sorted(dashboard_src.iterdir()) if dashboard_src.is_dir() else [])
+        if item.name != "README.md" and not (item.is_dir() and not kv.is_present(item))
+    ]
+
+
+def _check_astro_dashboard(dashboard_src: Path, artifact_root: Path, *, repo_root: Path | None = None) -> None:
+    """Story 43.3's review (flag on): Astro mounted ``/dashboard/`` from ``docs-site/public/`` and only warns when a
+    route and a public file share a path, so a ``dashboard/`` entry the input does not mount -- another writer -- is
+    a collision (AD-21 rule 1), and an entry the input mounts but the artifact lacks is a missing mount."""
+    label = _input_label(dashboard_src, repo_root) if repo_root is not None else str(dashboard_src)
+    mounted = artifact_root / DASHBOARD_PREFIX
+    found = {child.name for child in mounted.iterdir()} if mounted.is_dir() else set()
+    expected = {item.name for item in _dashboard_entries(dashboard_src)}
+    problems = []
+    if found - expected:
+        problems.append(f"collision at {DASHBOARD_PREFIX}/: {sorted(found - expected)} not in {label}")
+    if expected - found:
+        problems.append(f"{label} entries not mounted at {DASHBOARD_PREFIX}/: {sorted(expected - found)}")
+    for line in problems:
+        print(f"assemble_pages: {line}", file=sys.stderr)
+    if problems:
+        raise SystemExit(1)
+
+
 def _copy_dashboard(dashboard_src: Path, artifact_root: Path, *, repo_root: Path | None = None) -> bool:
     """Copy ``dashboard_src`` (minus its README) under ``dashboard/``; True when Kedro-Viz was mounted.
 
@@ -287,15 +313,7 @@ def _copy_dashboard(dashboard_src: Path, artifact_root: Path, *, repo_root: Path
     export_dir = dashboard_src / "kedro-viz"
     label = _input_label(export_dir, repo_root) if repo_root is not None else str(export_dir)
     export = _load_kedro_viz(export_dir, repo_root)
-    vizro_dir = dashboard_src / "vizro"
-    items = [
-        item
-        for item in (sorted(dashboard_src.iterdir()) if dashboard_src.is_dir() else [])
-        if item.name != "README.md"
-        and not (item == export_dir and export is None)
-        and not (item == vizro_dir and not kv.is_present(vizro_dir))
-    ]
-    for item in items:
+    for item in _dashboard_entries(dashboard_src):
         target = dest / item.name
         dest.mkdir(parents=True, exist_ok=True)
         if item.is_dir():
@@ -1430,8 +1448,9 @@ def assemble(
     _write_site_url_marker(artifact_root, site_url)
 
     one_generator = enabled_from_env()
-    # With the flag on, Astro has already written /herald/ and served /dashboard/'s exports from
-    # docs-site/public/ (Story 43.3); the one-writer check judges every herald page afterwards.
+    # With the flag on, Astro has already written /herald/ and served /dashboard/ from docs-site/public/
+    # (Story 43.3); the one-writer check judges every herald page afterwards, and _check_astro_dashboard
+    # refuses a dashboard/ entry the input does not mount (Story 43.3's review).
     astro_owned = (f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/") if one_generator else ()
     mounts = [f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", *([f"{STATUS_PREFIX}/"] if status_on else [])]
     for mount in mounts:
@@ -1444,8 +1463,11 @@ def assemble(
 
     if status_on:  # before anything is mounted; off, the input is never opened
         _check_fleet_status_input(fleet_status, repo_root)
-    if one_generator:  # the export is Astro's static files; it is only validated here (Story 42.2)
-        mounted = _load_kedro_viz(dashboard_src / "kedro-viz", repo_root) is not None
+    export_dir = dashboard_src / "kedro-viz"
+    if one_generator:  # the exports are Astro's static files: judged as mounted, never copied (Story 42.2)
+        _check_astro_dashboard(dashboard_src, artifact_root, repo_root=repo_root)
+        export_dir = artifact_root / KEDRO_VIZ_MOUNT  # what Astro mounted, not the input (Story 43.3's review)
+        mounted = _load_kedro_viz(export_dir, repo_root) is not None
         print(f"assemble_pages: Kedro-Viz export {'mounted' if mounted else 'absent'} (docs-site/public/)", flush=True)
     else:
         mounted = _copy_dashboard(dashboard_src, artifact_root, repo_root=repo_root)
@@ -1453,7 +1475,7 @@ def assemble(
         _build_herald(
             herald_out,
             repo_root,
-            kedro_viz_export=dashboard_src / "kedro-viz",
+            kedro_viz_export=export_dir,
             dashboard_out=(artifact_root / DASHBOARD_PREFIX) if mounted else None,
             status_out=(artifact_root / STATUS_PREFIX) if status_on else None,
             fleet_status=fleet_status if status_on else None,

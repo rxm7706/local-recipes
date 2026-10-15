@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 
 ENV_PAGES_ONE_GENERATOR = "PYFORGE_PAGES_ONE_GENERATOR"
-DOSSIER_ARTIFACT_REL = "herald/dossier/index.html"
 
 
 def enabled_from_env() -> bool:

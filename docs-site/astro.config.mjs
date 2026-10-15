@@ -10,7 +10,7 @@ import rehypeShelfLinks from './src/rehype-shelf-links.js';
 import rehypeMarkdownLinks from './src/rehype-markdown-links.js';
 import rehypeBasePaths from './src/rehype-base-paths.js';
 import { getSiteUrl } from './src/lib/site-url.mjs';
-import { readRedirects, writeLegacyRedirects } from './src/lib/redirects.ts';
+import { readRedirects, refusePublicCollisions, writeLegacyRedirects } from './src/lib/redirects.ts';
 import { pagesOneGenerator } from './src/loaders/herald-pages-loader.ts';
 import { populatePublic } from './scripts/populate-public.ts';
 
@@ -93,14 +93,17 @@ export default defineConfig({
 /**
  * Story 43.3 (CAP-61): with pyforge.herald.pages_one_generator on, the build assembles the herald side of the
  * artifact itself -- public/ written from scratch before the build (twins, downloads, dashboard exports), and the
- * legacy root redirects written into it after, refusing any path the build already holds (AD-21 rule 1). Off,
- * public/ is emptied and the Jinja path's assembler does both, as before.
+ * legacy root redirects written into it after, refusing any path the build already holds (AD-21 rule 1); a route
+ * whose output is a file public/ already serves fails the build too (Astro itself only warns). Off, public/ is
+ * emptied and the Jinja path's assembler does both, as before.
  *
  * Story 43.4: off, no herald page renders, so the herald stylesheet and its faces load empty and the build emits none
  * of their files; the Jinja path serves its own, as before.
  */
 function heraldArtifact() {
   const oneGenerator = pagesOneGenerator();
+  /** @type {string[]} the files populatePublic wrote, judged against the routes' output at build end */
+  let served = [];
   const heraldStyles = /[\\/]src[\\/]styles[\\/]herald(?:-fonts)?\.css$/;
   return {
     name: 'herald-artifact',
@@ -112,9 +115,10 @@ function heraldArtifact() {
         }
       },
       'astro:build:start': () => {
-        populatePublic(path.join(__dirname, 'public'), oneGenerator);
+        served = populatePublic(path.join(__dirname, 'public'), oneGenerator);
       },
-      'astro:build:done': ({ dir }) => {
+      'astro:build:done': ({ dir, assets }) => {
+        refusePublicCollisions(fileURLToPath(dir), served, assets);
         if (oneGenerator) {
           writeLegacyRedirects(fileURLToPath(dir), siteRedirects.legacy);
         }
