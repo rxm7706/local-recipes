@@ -205,9 +205,12 @@ These parts do not transfer to this estate:
     key and silence the check. Code still calling `read_boolean` on the key then silently reads the
     default. An independent review proved it.
   - **Operator ruling (2026-10-15):** a doctor story in the same PR carries the gate change. CAP-2
-    gains the retirement path (Spec memlog). A `done` spec's key may leave the tree only when a
-    story of the key's owning station declares `retires-flag: <key>`. The gate reds a retirement
-    declared by another station, and `flag-retired-still-read` while any reader still names a
-    retired key. The inventory names the retiring story.
+    gains the retirement path (Spec memlog; the contract is the orchestrator's, under that ruling).
+    A `done` spec's key may leave the tree only when a story of the key's owning station declares
+    `retires-flag: <key>`. The gate reds a retirement declared by another station, and
+    `flag-retired-still-read` while a tracked file it can see still names a declared key. The
+    inventory names the retiring story. The review of 34.7 scoped the claims: a key built from
+    parts, an environment stand-in, and a key no `done` block names stay out of the gate's sight,
+    named and deferred on the story.
   - **The mechanism** is doctor Story 34.7, added to Epic 34, which reopens under Story 41.5's rule.
     The Dream stays `specified`.
