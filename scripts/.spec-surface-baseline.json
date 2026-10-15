@@ -435,6 +435,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/singularity/test_one_duckdb_server_launch_site.py": "80094e0b52b4cabb6d5a67fdfe91d73bf2fb6da2",
    "src/shared/packages/pyforge-atlas/tests/unit/test_admission.py": "b0691e20bd9a4040fdf696f3b5395f09588ee02d",
    "src/shared/packages/pyforge-atlas/tests/unit/test_cap18_kedro_hook_map.py": "755feb4758e5fce578959684b73dd3aa5bc52076",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_static_export.py": "ffe1051212dfe3b7cb119ab95614a59a83c2935f",
    "src/shared/packages/pyforge-atlas/tests/unit/test_duckdb_boundary.py": "af889a8dab88de7dfd93d1a2b731a09316477a87",
    "src/shared/packages/pyforge-atlas/tests/unit/test_estate_cache_bsl.py": "a09651ac128df861ee2e8e3d8b05ea1b8ccaab36",
    "src/shared/packages/pyforge-atlas/tests/unit/test_hooks.py": "19db6df0dd343ff37b48cb585e56f2044fc33419",
@@ -482,7 +483,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "525c55ff1ec8a295232b892e62e89294131ec09b"
+  "memlog": "ccc197ecc81512d4e64584d5523d10764e622f59"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
