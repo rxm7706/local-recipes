@@ -91,9 +91,9 @@ Retirement (memlog, 2026-10-15):
 
 - **CAP-1 — the rule and its block.**
   - *intent:* Every story spec of `type: feature` minted on or after 2026-09-28 carries one of two
-    things. The first is a `flag:` block: the key, the provider (the one OpenFeature tree), the
-    default per environment, the scope (`global` in v1), the fallback (the legacy behaviour) and a
-    cleanup date. The second is a `flag-exempt:` value from a closed list in
+    things. The first is a `flag:` block: the key (`pyforge.<station>.<capability>`), the provider
+    (the one OpenFeature tree), the default per environment, the scope (`global` in v1), the
+    fallback (the legacy behaviour) and a cleanup date. The second is a `flag-exempt:` value from a closed list in
     `docs/governance/guild-roster.json`.
   - *success:*
     - The roster carries `flag_exemptions` holding exactly `flag-infrastructure`, `docs-only`,
@@ -123,8 +123,8 @@ Retirement (memlog, 2026-10-15):
 
     A retirement declared while the key is still in the tree changes nothing. Out of the gate's
     sight: a key no `done` spec's block names (it can leave the tree with no declaration), a reader
-    that builds the key from parts, and an environment stand-in for a flag. The retiring story
-    removes those by hand.
+    that builds the key from parts, an environment stand-in for a flag, and a reader inside a class
+    the gate never reads.
   - *success:* `detectors-ci` runs the gate from the rule date. No `pyforge.<station>` module hosts
     it, and a meta-test or import-linter contract pins that. A key that a `done` spec's block names
     leaves the tree with no finding only through its owner's retirement story, once no reader the

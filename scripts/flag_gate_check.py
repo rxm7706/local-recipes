@@ -63,18 +63,23 @@ retirement path, memlog 2026-10-15): a story spec declares ``retires-flag: <key>
   and is not judged.
 - **No reader may stay.** Every declared key the tree no longer holds, whoever declared it, is looked for in
   every tracked file that can act on a flag: code, configuration, workflows, templates and site content
-  (``reader_files``). Not readers: prose (``*.md``), tests (``tests``/``test`` folders and ``test_*.py``,
-  ``*_test.py``, ``*.test.*``, ``*.spec.*``, ``conftest.py``), binary files, the planning and history record
-  (``_bmad-output/``, ``archive/``, ``docs/dreams/``, ``presentations/``, ``.claude/memory/``), the recipe
-  factory (``recipes/``), the spec-surface baseline, and the tree and its overlays. A retiring story's own
-  absence test is therefore never a reader. The key counts as a whole token (one boundary, ``_KEY_BEFORE`` /
-  ``_KEY_AFTER``, shared with the two-state reader), and a module path named like the key on an import line or
-  in ``import_module("...")`` is not a read. Each file that still names the key is ``flag-retired-still-read``:
+  (``reader_files``). Every mention counts, comments and docstrings included. Not readers: prose (``*.md``),
+  tests (``tests``/``test`` folders, ``test_*.py``, ``*_test.py``, ``conftest.py``, and JS/TS test code
+  ``*.test.<js|ts…>`` / ``*.spec.<js|ts…>``), binary files, the planning and history record (``_bmad-output/``,
+  ``archive/``, ``docs/dreams/``, ``presentations/``, ``.claude/memory/``), the recipe factory (``recipes/``),
+  the spec-surface baseline, and the tree and its overlays. One exception inside ``_bmad-output/``: each
+  station's ``planning-artifacts/marshal-policy.toml`` is runtime config (dispatch runs its ``verify_commands``),
+  so its values are read; its comments are the planning record and are not. A retiring story's own absence test
+  is therefore never a reader. The key counts as a whole token (one boundary, ``_KEY_BEFORE`` / ``_KEY_AFTER``,
+  shared with the two-state reader), and a module path named like the key on an import line or in
+  ``import_module("...")`` is not a read. Each file that still names the key is ``flag-retired-still-read``:
   ``read_boolean`` on a missing key returns its default with a warning, never an error, so a reader left behind
   would silently read off.
 - **What the walk cannot see.** A key built from parts (an f-string, ``+``) or read through an environment
-  stand-in (``PYFORGE_*``, exported by a script that reads the flag): the block page makes removing those the
-  retiring story's own duty. A key no ``done`` spec's block names can leave the tree with no declaration at all.
+  stand-in (``PYFORGE_*``, exported by a script that reads the flag), and a reader hidden in a class the walk
+  never reads (build code under ``presentations/``, config in ``*.md`` frontmatter, a runtime module in a
+  ``test``-named folder, UTF-16 text): the block page makes removing those the retiring story's own duty. A key
+  no ``done`` spec's block names can leave the tree with no declaration at all.
 
 A retirement declared while the key is still in the tree changes nothing.
 
@@ -99,7 +104,8 @@ import os
 import re
 import subprocess
 import sys
-from collections.abc import Collection, Iterable, Mapping, Sequence
+import tomllib
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from dataclasses import field as dataclass_field
 from datetime import date
@@ -134,6 +140,12 @@ _RETIRED_READ_SKIPPED_ROOTS = (
     "recipes/",
 )
 _TEST_FOLDERS = frozenset({"tests", "test"})
+# A test file by its name: the Python conventions, and the JS/TS ones only for code (``*.test.ts``, ``*.spec.jsx``):
+# a ``board.spec.json`` is data, so the walk reads it. Narrower than ``_TEST_NAME``, which the two-state reader uses.
+_WALK_TEST_NAME = re.compile(r"^(?:test_.*\.py|.*_test\.py|.*\.(?:test|spec)\.[cm]?[jt]sx?)$")
+# Marshal's per-station policy is runtime config under the skipped planning tree (dispatch runs its
+# ``verify_commands``), so the walk reads it -- its values only: its comments are the planning record.
+_POLICY_FILE = re.compile(r"^_bmad-output/projects/[^/]+/planning-artifacts/marshal-policy\.toml$")
 _BINARY_PROBE = 8192
 
 # One definition of "names the key" for the whole gate (Story 34.5's two-state reader, Story 34.7's retired-read
@@ -290,13 +302,36 @@ def _is_retired_reader_candidate(rel: str) -> bool:
     """True for a tracked path the retired-read walk reads (Story 34.7; the module docstring names the rule)."""
     if rel in (TREE_REL.as_posix(), OVERLAYS_REL.as_posix(), SURFACE_BASELINE_REL):
         return False
+    if _POLICY_FILE.match(rel):
+        return True
     if rel.startswith(_RETIRED_READ_SKIPPED_ROOTS):
         return False
     parts = rel.split("/")
     name = parts[-1]
     if any(part in _TEST_FOLDERS for part in parts[:-1]):
         return False
-    return not (name.endswith(".md") or name == "conftest.py" or _TEST_NAME.match(name))
+    return not (name.endswith(".md") or name == "conftest.py" or _WALK_TEST_NAME.match(name))
+
+
+def _toml_strings(value: Any) -> Iterator[str]:
+    """Every string a parsed TOML document holds, table keys included."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            yield key
+            yield from _toml_strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _toml_strings(item)
+
+
+def _policy_values(text: str) -> str:
+    """A marshal policy's values, one per line; the whole text when it does not parse (never a silent skip)."""
+    try:
+        return "\n".join(_toml_strings(tomllib.loads(text)))
+    except tomllib.TOMLDecodeError:
+        return text
 
 
 def reader_files(root: Path, keys: Iterable[str]) -> dict[str, list[str]]:
@@ -321,6 +356,9 @@ def reader_files(root: Path, keys: Iterable[str]) -> dict[str, list[str]]:
             continue
         text = data.decode("utf-8", "replace")
         named = [key for key in patterns if key in text]  # a plain substring first: most files name no key
+        if named and _POLICY_FILE.match(rel):
+            text = _policy_values(text)
+            named = [key for key in named if key in text]
         if not named:
             continue
         text = _MODULE_PATH_SITES.sub(lambda match: match.group("lead"), text)
@@ -640,7 +678,7 @@ def judge_tree_metadata(flags: Mapping[str, Any], overlays: Mapping[str, Any], *
                     "story can retire it",
                     path=TREE_REL.as_posix(),
                     key=key,
-                    station=station,
+                    station=f"pyforge-{station}",
                 )
             )
         on_date = flag_rule.parse_metadata_date(values["on_everywhere"])

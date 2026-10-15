@@ -56,7 +56,10 @@ SPECS_DIR = "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs"
 def _spec(tmp_path: Path, frontmatter: str, name: str = "spec-1-1-a-story.md") -> Path:
     path = tmp_path / SPECS_DIR / name
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(f"---\ntitle: a story\ntype: feature\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+    path.write_text(
+        f"---\ntitle: a story\ntype: feature\n{frontmatter}---\n\nbody\n",
+        encoding="utf-8",
+    )
     return path
 
 
@@ -64,9 +67,13 @@ def _repo(tmp_path: Path, exemptions=("alpha", "beta"), baseline=None) -> Path:
     """A tmp repo root with its own roster and (optionally) baseline."""
     gov = tmp_path / "docs" / "governance"
     gov.mkdir(parents=True, exist_ok=True)
-    (gov / "guild-roster.json").write_text(json.dumps({"flag_exemptions": list(exemptions)}), encoding="utf-8")
+    (gov / "guild-roster.json").write_text(
+        json.dumps({"flag_exemptions": list(exemptions)}), encoding="utf-8"
+    )
     if baseline is not None:
-        (gov / "flag-rule-baseline.json").write_text(json.dumps({"specs": list(baseline)}), encoding="utf-8")
+        (gov / "flag-rule-baseline.json").write_text(
+            json.dumps({"specs": list(baseline)}), encoding="utf-8"
+        )
     return tmp_path
 
 
@@ -74,14 +81,18 @@ def _repo(tmp_path: Path, exemptions=("alpha", "beta"), baseline=None) -> Path:
 
 
 def test_roster_flag_exemptions_are_the_five_of_q2_in_order():
-    roster = json.loads((REPO_ROOT / "docs/governance/guild-roster.json").read_text(encoding="utf-8"))
+    roster = json.loads(
+        (REPO_ROOT / "docs/governance/guild-roster.json").read_text(encoding="utf-8")
+    )
 
     assert roster["flag_exemptions"] == Q2_EXEMPTIONS
     assert list(flag_rule.load_exemptions()) == Q2_EXEMPTIONS
 
 
 def test_roster_comment_names_a_change_a_governance_act():
-    roster = json.loads((REPO_ROOT / "docs/governance/guild-roster.json").read_text(encoding="utf-8"))
+    roster = json.loads(
+        (REPO_ROOT / "docs/governance/guild-roster.json").read_text(encoding="utf-8")
+    )
 
     assert "governance act" in " ".join(roster["$comment_flag_exemptions"])
 
@@ -107,9 +118,15 @@ def test_the_live_atlas_block_is_flag():
     assert flag_rule.classify(atlas).verdict == flag_rule.FLAG
 
 
-def test_a_block_missing_cleanup_and_fallback_is_neither_with_one_reason_each(tmp_path: Path):
+def test_a_block_missing_cleanup_and_fallback_is_neither_with_one_reason_each(
+    tmp_path: Path,
+):
     root = _repo(tmp_path)
-    block = "".join(ln for ln in FLAG_BLOCK.splitlines(keepends=True) if "fallback" not in ln and "cleanup" not in ln)
+    block = "".join(
+        ln
+        for ln in FLAG_BLOCK.splitlines(keepends=True)
+        if "fallback" not in ln and "cleanup" not in ln
+    )
 
     result = flag_rule.classify(_spec(root, block), repo_root=root)
 
@@ -137,8 +154,32 @@ def test_an_empty_field_is_a_reason_but_a_scalar_off_default_is_a_value(tmp_path
     # YAML 1.1 reads an unquoted `off` as False; that is a value, not an empty field.
     off = FLAG_BLOCK.replace("{production: off, staging: on, dev: on}", "off")
 
-    assert flag_rule.classify(_spec(root, empty), repo_root=root).reasons == ("`flag:` block field `scope` is empty",)
-    assert flag_rule.classify(_spec(root, off), repo_root=root).verdict == flag_rule.FLAG
+    assert flag_rule.classify(_spec(root, empty), repo_root=root).reasons == (
+        "`flag:` block field `scope` is empty",
+    )
+    assert (
+        flag_rule.classify(_spec(root, off), repo_root=root).verdict == flag_rule.FLAG
+    )
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["pyforge.cutover_root", "pyforge.herald.", "pyforge..x", "other.herald.x", "solo"],
+)
+def test_a_block_key_with_no_station_prefix_is_neither_naming_the_key(
+    tmp_path: Path, key: str
+):
+    """doctor Story 34.7: the block's key is `pyforge.<station>.<capability>`. A key with no station segment has no
+    owner once it leaves the tree, so its `done` spec could never be retired; the block is refused at the rule."""
+    root = _repo(tmp_path)
+    block = FLAG_BLOCK.replace("pyforge.atlas.dependency_history", key)
+
+    result = flag_rule.classify(_spec(root, block), repo_root=root)
+
+    assert result.verdict == flag_rule.NEITHER
+    assert result.reasons == (
+        f"`flag:` block key `{key}` has no `pyforge.<station>.` prefix",
+    )
 
 
 def test_a_flag_that_is_not_a_mapping_is_neither(tmp_path: Path):
@@ -152,7 +193,9 @@ def test_a_flag_that_is_not_a_mapping_is_neither(tmp_path: Path):
 
 @pytest.mark.parametrize("value", flag_rule.load_exemptions())
 def test_every_listed_exemption_is_exempt(tmp_path: Path, value: str):
-    result = flag_rule.classify(_spec(tmp_path, f"flag-exempt: {value}   # a trailing comment\n"))
+    result = flag_rule.classify(
+        _spec(tmp_path, f"flag-exempt: {value}   # a trailing comment\n")
+    )
 
     assert result == (flag_rule.EXEMPT, ())
 
@@ -173,8 +216,12 @@ def test_an_empty_exemption_is_neither(tmp_path: Path):
     assert len(result.reasons) == 1
 
 
-def test_a_block_and_an_exemption_together_is_neither_naming_the_conflict(tmp_path: Path):
-    result = flag_rule.classify(_spec(tmp_path, FLAG_BLOCK + "flag-exempt: docs-only\n"))
+def test_a_block_and_an_exemption_together_is_neither_naming_the_conflict(
+    tmp_path: Path,
+):
+    result = flag_rule.classify(
+        _spec(tmp_path, FLAG_BLOCK + "flag-exempt: docs-only\n")
+    )
 
     assert result.verdict == flag_rule.NEITHER
     assert len(result.reasons) == 1
@@ -199,7 +246,9 @@ def test_a_spec_with_neither_is_neither(tmp_path: Path):
         ("---\nkey: [unclosed\n---\n", "not valid YAML"),
     ],
 )
-def test_a_spec_without_usable_frontmatter_is_neither_never_a_crash(tmp_path: Path, text: str, reason: str):
+def test_a_spec_without_usable_frontmatter_is_neither_never_a_crash(
+    tmp_path: Path, text: str, reason: str
+):
     path = tmp_path / "spec-1-1-x.md"
     path.write_text(text, encoding="utf-8")
 
@@ -219,7 +268,10 @@ def test_a_missing_spec_file_is_neither_never_a_crash(tmp_path: Path):
 def test_an_impossible_frontmatter_date_is_neither_never_a_raise(tmp_path: Path):
     # yaml.safe_load builds the date eagerly: `2026-02-30` raises ValueError, not YAMLError.
     path = tmp_path / "spec-1-1-x.md"
-    path.write_text("---\ntype: feature\ncreated: 2026-02-30\nflag-exempt: docs-only\n---\n", encoding="utf-8")
+    path.write_text(
+        "---\ntype: feature\ncreated: 2026-02-30\nflag-exempt: docs-only\n---\n",
+        encoding="utf-8",
+    )
 
     result = flag_rule.classify(path)
 
@@ -232,7 +284,10 @@ def test_a_relative_path_is_read_against_the_repo_root(tmp_path: Path):
     root = _repo(tmp_path)
     spec = _spec(root, FLAG_BLOCK)
 
-    assert flag_rule.classify(spec.relative_to(root), repo_root=root).verdict == flag_rule.FLAG
+    assert (
+        flag_rule.classify(spec.relative_to(root), repo_root=root).verdict
+        == flag_rule.FLAG
+    )
 
 
 def test_read_frontmatter_returns_the_mapping_for_a_readable_spec(tmp_path: Path):
@@ -247,7 +302,9 @@ def test_read_frontmatter_returns_the_mapping_for_a_readable_spec(tmp_path: Path
     assert mapping["flag"]["key"] == "pyforge.atlas.dependency_history"
 
 
-def test_read_frontmatter_takes_a_repo_relative_path_against_the_repo_root(tmp_path: Path):
+def test_read_frontmatter_takes_a_repo_relative_path_against_the_repo_root(
+    tmp_path: Path,
+):
     root = _repo(tmp_path)
     spec = _spec(root, "flag-exempt: alpha\n")
 
@@ -264,7 +321,9 @@ def test_read_frontmatter_feeds_the_same_verdict_as_classify(tmp_path: Path):
     mapping, _ = flag_rule.read_frontmatter(spec)
 
     assert mapping is not None
-    assert flag_rule.classify_frontmatter(mapping, ("alpha",)) == flag_rule.classify(spec, exemptions=("alpha",))
+    assert flag_rule.classify_frontmatter(mapping, ("alpha",)) == flag_rule.classify(
+        spec, exemptions=("alpha",)
+    )
     assert flag_rule.in_scope(mapping) is flag_rule.in_scope(spec)
 
 
@@ -277,7 +336,9 @@ def test_read_frontmatter_feeds_the_same_verdict_as_classify(tmp_path: Path):
         ("---\ncreated: 2026-02-30\n---\n", "not valid YAML"),
     ],
 )
-def test_read_frontmatter_reports_why_it_is_unreadable_and_never_raises(tmp_path: Path, text: str, reason: str):
+def test_read_frontmatter_reports_why_it_is_unreadable_and_never_raises(
+    tmp_path: Path, text: str, reason: str
+):
     path = tmp_path / "spec-1-1-x.md"
     path.write_text(text, encoding="utf-8")
 
@@ -297,8 +358,13 @@ def test_read_frontmatter_of_a_missing_file_is_unreadable_never_a_raise(tmp_path
 def test_the_roster_is_the_only_source_of_the_exemption_list(tmp_path: Path):
     root = _repo(tmp_path, exemptions=("alpha", "beta"))
 
-    assert flag_rule.classify(_spec(root, "flag-exempt: beta\n"), repo_root=root).verdict == flag_rule.EXEMPT
-    result = flag_rule.classify(_spec(root, "flag-exempt: docs-only\n", "spec-1-2-x.md"), repo_root=root)
+    assert (
+        flag_rule.classify(_spec(root, "flag-exempt: beta\n"), repo_root=root).verdict
+        == flag_rule.EXEMPT
+    )
+    result = flag_rule.classify(
+        _spec(root, "flag-exempt: docs-only\n", "spec-1-2-x.md"), repo_root=root
+    )
     assert result.verdict == flag_rule.NEITHER
     assert "alpha, beta" in result.reasons[0]
 
@@ -307,7 +373,10 @@ def test_passed_exemptions_skip_the_roster_read(tmp_path: Path):
     # No roster under tmp_path: with `exemptions` given, classify never reads it.
     spec = _spec(tmp_path, "flag-exempt: whatever\n")
 
-    assert flag_rule.classify(spec, exemptions=("whatever",), repo_root=tmp_path).verdict == flag_rule.EXEMPT
+    assert (
+        flag_rule.classify(spec, exemptions=("whatever",), repo_root=tmp_path).verdict
+        == flag_rule.EXEMPT
+    )
 
 
 # --- an unreadable roster or baseline (named errors, never exit codes) ---------------------
@@ -320,8 +389,19 @@ def test_a_missing_roster_raises_a_named_error(tmp_path: Path):
     assert isinstance(info.value, flag_rule.FlagRuleError)
 
 
-@pytest.mark.parametrize("content", ["not json", "[]", '{"other": 1}', '{"flag_exemptions": []}', '{"flag_exemptions": [1]}'])
-def test_a_roster_without_a_usable_list_raises_a_named_error(tmp_path: Path, content: str):
+@pytest.mark.parametrize(
+    "content",
+    [
+        "not json",
+        "[]",
+        '{"other": 1}',
+        '{"flag_exemptions": []}',
+        '{"flag_exemptions": [1]}',
+    ],
+)
+def test_a_roster_without_a_usable_list_raises_a_named_error(
+    tmp_path: Path, content: str
+):
     gov = tmp_path / "docs" / "governance"
     gov.mkdir(parents=True)
     (gov / "guild-roster.json").write_text(content, encoding="utf-8")
@@ -345,8 +425,12 @@ def test_a_missing_baseline_raises_a_named_error(tmp_path: Path):
     assert isinstance(info.value, flag_rule.FlagRuleError)
 
 
-@pytest.mark.parametrize("content", ["not json", "[]", '{"specs": "a"}', '{"specs": [1]}'])
-def test_a_baseline_without_a_usable_list_raises_a_named_error(tmp_path: Path, content: str):
+@pytest.mark.parametrize(
+    "content", ["not json", "[]", '{"specs": "a"}', '{"specs": [1]}']
+)
+def test_a_baseline_without_a_usable_list_raises_a_named_error(
+    tmp_path: Path, content: str
+):
     gov = tmp_path / "docs" / "governance"
     gov.mkdir(parents=True)
     (gov / "flag-rule-baseline.json").write_text(content, encoding="utf-8")
@@ -364,7 +448,9 @@ def test_a_baselined_spec_is_pre_rule_and_any_other_is_post_rule(tmp_path: Path)
 
     assert flag_rule.is_post_rule(old, repo_root=root) is False
     assert flag_rule.is_post_rule(root / old, repo_root=root) is False
-    assert flag_rule.is_post_rule(f"{SPECS_DIR}/spec-1-2-new.md", repo_root=root) is True
+    assert (
+        flag_rule.is_post_rule(f"{SPECS_DIR}/spec-1-2-new.md", repo_root=root) is True
+    )
     assert flag_rule.is_post_rule("./" + old, repo_root=root) is False
 
 
@@ -454,7 +540,9 @@ def test_no_exemption_value_is_hard_coded_in_the_scripts():
 
     for script in ("flag_rule.py", "flag_rule_baseline.py"):
         source = (_SCRIPTS_DIR / script).read_text(encoding="utf-8")
-        assert _hardcoded(source, values) == [], f"{script} holds a copy of the roster's exemption list"
+        assert _hardcoded(source, values) == [], (
+            f"{script} holds a copy of the roster's exemption list"
+        )
 
 
 def test_the_hard_coded_scan_catches_a_copy():
@@ -473,7 +561,9 @@ def test_the_scripts_import_no_station_module():
             if isinstance(node, (ast.Import, ast.ImportFrom))
             for alias in (node.names if isinstance(node, ast.Import) else [node])
         ]
-        assert not [m for m in imported if m == "pyforge" or m.startswith("pyforge.")], script
+        assert not [
+            m for m in imported if m == "pyforge" or m.startswith("pyforge.")
+        ], script
 
 
 def test_flag_rule_never_exits():
@@ -487,7 +577,9 @@ def test_flag_rule_never_exits():
 
 
 def _git(repo: Path, *args: str) -> str:
-    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
+    return subprocess.run(
+        ["git", *args], cwd=repo, capture_output=True, text=True, check=True
+    ).stdout.strip()
 
 
 def _init_repo(repo: Path) -> None:
@@ -519,7 +611,12 @@ def stamped_repo(tmp_path: Path):
     one more story spec committed after it."""
     repo = tmp_path / "repo"
     _init_repo(repo)
-    for rel in (f"{SPECS_DIR}/spec-1-1-old.md", ACCENTED, f"{SPECS_DIR}/spec-1-1-old.memlog.md", "docs/readme.md"):
+    for rel in (
+        f"{SPECS_DIR}/spec-1-1-old.md",
+        ACCENTED,
+        f"{SPECS_DIR}/spec-1-1-old.memlog.md",
+        "docs/readme.md",
+    ):
         _touch(repo, rel)
     sha = _commit_all(repo, "the ruling commit")
     _touch(repo, f"{SPECS_DIR}/spec-2-1-minted-after.md")
@@ -548,22 +645,41 @@ def test_main_snapshots_once_and_refuses_a_second(stamped_repo, capsys):
     baseline = repo / flag_rule.BASELINE_REL
     baseline.parent.mkdir(parents=True, exist_ok=True)
 
-    assert flag_rule_baseline.main(["--snapshot", "--ruling-sha", sha], repo_root=repo) == 0
+    assert (
+        flag_rule_baseline.main(["--snapshot", "--ruling-sha", sha], repo_root=repo)
+        == 0
+    )
     written = baseline.read_text(encoding="utf-8")
-    assert flag_rule_baseline.main(["--snapshot", "--ruling-sha", sha], repo_root=repo) == 1
+    assert (
+        flag_rule_baseline.main(["--snapshot", "--ruling-sha", sha], repo_root=repo)
+        == 1
+    )
     assert "refusing" in capsys.readouterr().out
     assert baseline.read_text(encoding="utf-8") == written
-    assert flag_rule_baseline.main(["--snapshot", "--force", "--ruling-sha", sha], repo_root=repo) == 0
+    assert (
+        flag_rule_baseline.main(
+            ["--snapshot", "--force", "--ruling-sha", sha], repo_root=repo
+        )
+        == 0
+    )
 
     assert flag_rule.load_baseline(repo) == {f"{SPECS_DIR}/spec-1-1-old.md", ACCENTED}
-    assert flag_rule.is_post_rule(f"{SPECS_DIR}/spec-2-1-minted-after.md", repo_root=repo) is True
+    assert (
+        flag_rule.is_post_rule(f"{SPECS_DIR}/spec-2-1-minted-after.md", repo_root=repo)
+        is True
+    )
 
 
 def test_main_reports_a_sha_it_cannot_resolve(stamped_repo):
     repo, _ = stamped_repo
     (repo / flag_rule.BASELINE_REL).parent.mkdir(parents=True, exist_ok=True)
 
-    assert flag_rule_baseline.main(["--snapshot", "--ruling-sha", "0" * 40], repo_root=repo) == 2
+    assert (
+        flag_rule_baseline.main(
+            ["--snapshot", "--ruling-sha", "0" * 40], repo_root=repo
+        )
+        == 2
+    )
 
 
 def test_prune_only_removes_a_path_that_no_longer_exists(stamped_repo, capsys):
@@ -578,7 +694,12 @@ def test_prune_only_removes_a_path_that_no_longer_exists(stamped_repo, capsys):
     (repo / f"{SPECS_DIR}/spec-1-1-old.md").unlink()
     assert flag_rule_baseline.main(["--prune"], repo_root=repo) == 0
     assert flag_rule.load_baseline(repo) == {ACCENTED}
-    assert json.loads((repo / flag_rule.BASELINE_REL).read_text(encoding="utf-8"))["ruling_sha"] == sha
+    assert (
+        json.loads((repo / flag_rule.BASELINE_REL).read_text(encoding="utf-8"))[
+            "ruling_sha"
+        ]
+        == sha
+    )
 
 
 def test_prune_never_adds_a_path(stamped_repo):
@@ -612,21 +733,35 @@ def test_the_live_baseline_records_the_ruling_sha_and_a_sorted_story_spec_popula
 def test_the_committed_baseline_matches_the_ruling_commits_tree():
     data = flag_rule.read_baseline()
     sha = flag_rule_baseline.RULING_SHA
-    if subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"], cwd=REPO_ROOT, capture_output=True).returncode:
+    if subprocess.run(
+        ["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+    ).returncode:
         pytest.skip(f"ruling commit {sha} is not in this clone")
 
     population = set(flag_rule_baseline.snapshot(REPO_ROOT)["specs"])
 
     assert set(data["specs"]) <= population, "a baseline entry was hand-added"
-    hand_deleted = [rel for rel in sorted(population - set(data["specs"])) if (REPO_ROOT / rel).exists()]
-    assert hand_deleted == [], "a baseline entry was hand-deleted (only --prune may, and only a vanished path)"
+    hand_deleted = [
+        rel
+        for rel in sorted(population - set(data["specs"]))
+        if (REPO_ROOT / rel).exists()
+    ]
+    assert hand_deleted == [], (
+        "a baseline entry was hand-deleted (only --prune may, and only a vanished path)"
+    )
 
 
 def test_the_reference_pages_yaml_examples_classify_as_written(tmp_path: Path):
-    page = (REPO_ROOT / "docs/reference/story-spec-flag-block.md").read_text(encoding="utf-8")
+    page = (REPO_ROOT / "docs/reference/story-spec-flag-block.md").read_text(
+        encoding="utf-8"
+    )
     blocks = re.findall(r"```yaml\n(.*?)```", page, flags=re.DOTALL)
     # doctor Story 34.7 added the third: a removal story, itself exempt, that names the key it retires
-    assert len(blocks) == 3, "the page carries one flagged, one exempt and one retiring example"
+    assert len(blocks) == 3, (
+        "the page carries one flagged, one exempt and one retiring example"
+    )
 
     verdicts = []
     for i, block in enumerate(blocks):
@@ -635,7 +770,13 @@ def test_the_reference_pages_yaml_examples_classify_as_written(tmp_path: Path):
         assert flag_rule.in_scope(path) is True
         verdicts.append(flag_rule.classify(path))
 
-    assert verdicts == [(flag_rule.FLAG, ()), (flag_rule.EXEMPT, ()), (flag_rule.EXEMPT, ())]
-    retiring, _why = flag_rule.read_frontmatter(tmp_path / "spec-1-2-example.md", repo_root=tmp_path)
+    assert verdicts == [
+        (flag_rule.FLAG, ()),
+        (flag_rule.EXEMPT, ()),
+        (flag_rule.EXEMPT, ()),
+    ]
+    retiring, _why = flag_rule.read_frontmatter(
+        tmp_path / "spec-1-2-example.md", repo_root=tmp_path
+    )
     assert retiring is not None
     assert str(retiring.get("retires-flag", "")).startswith("pyforge.")
