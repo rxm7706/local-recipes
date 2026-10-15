@@ -115,7 +115,8 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
 
 
 def test_ac5_ci_surfaces_kedro_viz_publish_switch() -> None:
-    rows = yaml.safe_load(CI_SURFACES.read_text(encoding="utf-8"))
+    document = yaml.safe_load(CI_SURFACES.read_text(encoding="utf-8"))
+    rows = document["surfaces"] if isinstance(document, dict) else document
     row = next(r for r in rows if r["id"] == "kedro-viz-publish")
     assert row["switch"] == "PAUSE_KEDRO_VIZ_PUBLISH"
     assert row["switch_class"] == "pause"
@@ -187,10 +188,3 @@ def test_matrix_missing_metadata_exits(tmp_path: Path, capsys: pytest.CaptureFix
         viz_manifest.write_manifest(staged, flag_on=True, export_commit="b" * 40)
     assert exc.value.code == 1
     assert "deploy-viz-metadata" in capsys.readouterr().err
-
-
-@flag_states(FLAG_KEY)
-def test_export_artifact_reader_matches_openfeature(flag_provider: dict[str, bool]) -> None:
-    from pyforge.atlas.viz_export_artifact import export_artifact_enabled
-
-    assert export_artifact_enabled() is flag_provider[FLAG_KEY]

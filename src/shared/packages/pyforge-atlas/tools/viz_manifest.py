@@ -101,12 +101,13 @@ def write_manifest(
     if not flag_on:
         return 0
     staged_dir = staged_dir.resolve()
-    sha = _resolve_export_commit(export_commit)
     metadata_path = staged_dir / "api" / "deploy-viz-metadata"
+    kedro_viz_version = _read_kedro_viz_version(metadata_path)
+    sha = _resolve_export_commit(export_commit)
     payload = {
         "export_commit": sha,
         "export_date": _committer_date_iso_utc(sha),
-        "kedro_viz_version": _read_kedro_viz_version(metadata_path),
+        "kedro_viz_version": kedro_viz_version,
     }
     out_path = staged_dir / "manifest.json"
     out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
