@@ -2,7 +2,8 @@
 title: '30.1: The DAG export reaches Pages as a workflow artifact'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag:
   key: pyforge.atlas.viz_export_artifact          # new; minted by this story
@@ -259,3 +260,40 @@ filter and the stub-credentials step unchanged, and a job `if:` carrying `PAUSE_
   (`run_resume`, lines 1067–1090). The implementing session reads the CI-pause fragment steward Story 99.2 rendered on
   another workflow and copies its shape; where the landed code differs from the shape quoted here, the landed code wins
   and the deviation is recorded in this log.
+- 2026-10-15: landed Story 30.1 — `normalize_viz_build.py` repo-root marker is `docs/dashboard/README.md` (not
+  `kedro-viz/index.html`) so CI can normalize on a fresh clone after the export leaves git.
+
+## Review Triage Log
+
+### 2026-10-15 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[reject]` `actions/upload-artifact@v4` while `pages.yml` uses `@v7` — versions differ by workflow age; upload shape matches AC4.
+  - `[false]` `[reject]` Stub-credentials heredoc drift claim — byte match to baseline workflow preserved.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Kedro-Viz publish now stages locally, optionally writes `manifest.json` when `pyforge.atlas.viz_export_artifact` is on, and uploads `kedro-viz-export` (90 days) instead of committing. The tracked export tree was removed from git and gitignored; CI pause switch `PAUSE_KEDRO_VIZ_PUBLISH` was wired on the registry row and job `if:`.
+
+Files changed (high level):
+- `.github/workflows/kedro-viz-publish.yml` — artifact upload, read-only permissions, pause fragment, flag-gated upload
+- `src/shared/packages/pyforge-atlas/tools/{viz_manifest,viz_publish_finish,print_viz_export_flag}.py` — manifest + flag wiring
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/viz_export_artifact.py` — `read_boolean` reader
+- `tests/unit/test_viz_export_artifact.py` — AC1–AC7 + matrix rows
+- `docs/dashboard/README.md`, `.gitignore`, `docs/governance/ci-surfaces.yaml`, flag tree + overlays, `pixi.toml` task chain
+- Removed tracked `docs/dashboard/kedro-viz/**`
+
+Review: 0 patches applied; 0 deferred.
+
+Verification:
+- `pytest …/test_viz_export_artifact.py` — 8 passed
+- `kedro-catalog-check` — 69 passed
+- `python scripts/spec_surface_reconcile.py` — OK (memlogs on spec-pyforge-atlas, spec-pyforge-steward, spec-pyforge-core, spec-pyforge-unifying-strategy, spec-pyforge-pages, spec-pyforge-marshal, spec-pixi-candidate-currency)
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0
+- `pixi run --frozen -e pyforge-guild flag-gate-check` — exit 0 (1 unrelated pre-existing steward spec fail outside this story)
+
+Residual risks: Operator must re-enable `kedro-viz-publish.yml` on GitHub and flip registry `paused-manually → live` (Named, not fixed here). Steward 102.4 consumes the artifact.
+
+followup_review_recommended: false
