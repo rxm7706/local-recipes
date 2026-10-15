@@ -2,7 +2,7 @@
 title: '30.1: The DAG export reaches Pages as a workflow artifact'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 followup_review_recommended: false
 baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag:
