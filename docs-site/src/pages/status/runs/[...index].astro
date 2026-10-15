@@ -1,0 +1,119 @@
+---
+/**
+ * `/status/runs/` (Story 43.6, spec-pyforge-herald CAP-61, on CAP-11): what the loops are doing and what each
+ * station last reported, from two build inputs a Guild step writes -- `marshal-status.json`
+ * (`marshal status --format json`, one row per loop home) and `herald-progress.json` (`herald progress --json`,
+ * the latest record per station). Each block names its snapshot time; the live view is Lane 1's, linked only once
+ * `site.yml`'s `lane1.href` is an absolute URL (Story 42.1's rule). An absent input is one line. Only the fields
+ * shown here are read: no Tier-3 path reaches Pages. Emitted only with `pyforge.herald.pages_one_generator` and
+ * `pyforge.herald.status_pages` both on (the second owns the `/status/` prefix).
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+import { heraldProgressInput, lane1, marshalStatusInput } from '../../../lib/agent-data.ts';
+import { HERALD_PROGRESS_INPUT, MARSHAL_STATUS_INPUT, pagesOneGenerator, statusPages } from '../../../lib/agent-surface.ts';
+
+export function getStaticPaths() {
+  return pagesOneGenerator() && statusPages() ? [{ params: { index: undefined } }] : [];
+}
+
+const marshal = marshalStatusInput();
+const progress = heraldProgressInput();
+const live = lane1();
+const dash = '—';
+const num = (value: number | null, digits = 0) => (value === null ? dash : value.toFixed(digits));
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Runs and progress',
+    description: 'One row per loop home and the latest progress record per station; a build-time snapshot.',
+  }}
+>
+  <p class="runs-intro">
+    A snapshot: nothing on this page is live. <a href="../">Fleet board</a> &middot; <a href="../ci/">Guild CI status</a>
+    {live && (<> &middot; <a href={live.href}>{live.label}</a></>)}
+  </p>
+
+  <h2 id="loop-homes">Loop homes</h2>
+  {
+    marshal.present ? (
+      <>
+        <p class="runs-snapshot">
+          {marshal.value.generatedAt ? (
+            <>Snapshot taken <time datetime={marshal.value.generatedAt}>{marshal.value.generatedAt}</time>.</>
+          ) : (
+            <>Snapshot time not recorded in the input.</>
+          )}
+        </p>
+        {marshal.value.homes.length === 0 ? (
+          <p class="runs-empty">No loop home is attached.</p>
+        ) : (
+          <table class="runs-homes">
+            <thead>
+              <tr><th>Home</th><th>Branch</th><th>State</th><th>Story</th><th>Elapsed (s)</th><th>Budget</th><th>Budget (USD)</th></tr>
+            </thead>
+            <tbody>
+              {marshal.value.homes.map((home) => (
+                <tr data-home={home.slug}>
+                  <td>{home.slug}</td>
+                  <td>{home.branch ?? dash}</td>
+                  <td>{home.state}</td>
+                  <td>{home.currentStory ?? dash}</td>
+                  <td>{num(home.elapsedSeconds)}</td>
+                  <td>{num(home.budgetConsumed, 2)}</td>
+                  <td>{num(home.budgetConsumedUsd, 2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </>
+    ) : (
+      <p class="runs-absent" data-input-absent={MARSHAL_STATUS_INPUT}>
+        No loop-home status in this build: the <code>{MARSHAL_STATUS_INPUT}</code> build input is absent.
+      </p>
+    )
+  }
+
+  <h2 id="progress">Progress by station</h2>
+  {
+    progress.present ? (
+      <>
+        <p class="runs-snapshot">
+          {progress.value.generatedAt ? (
+            <>Snapshot taken <time datetime={progress.value.generatedAt}>{progress.value.generatedAt}</time>.</>
+          ) : (
+            <>Snapshot time not recorded in the input.</>
+          )}
+        </p>
+        {progress.value.latest.length === 0 ? (
+          <p class="runs-empty">No progress record yet.</p>
+        ) : (
+          <table class="runs-progress">
+            <thead>
+              <tr><th>Station</th><th>Date</th><th>Shipped</th><th>Compute (h)</th><th>Tokens</th><th>Wall clock (h)</th><th>Unblocked</th></tr>
+            </thead>
+            <tbody>
+              {progress.value.latest.map((record) => (
+                <tr data-station={record.station}>
+                  <td>{record.station}</td>
+                  <td>{record.date}</td>
+                  <td>{record.shippedCapabilities.length ? record.shippedCapabilities.join(', ') : dash}</td>
+                  <td>{num(record.computeHours, 1)}</td>
+                  <td>{num(record.tokenSpend)}</td>
+                  <td>{num(record.wallClockHours, 1)}</td>
+                  <td>{record.unblockNarrative || dash}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </>
+    ) : (
+      <p class="runs-absent" data-input-absent={HERALD_PROGRESS_INPUT}>
+        No progress records in this build: the <code>{HERALD_PROGRESS_INPUT}</code> build input is absent.
+      </p>
+    )
+  }
+</StarlightPage>

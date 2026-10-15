@@ -50,6 +50,11 @@ PIPELINES_PAGE = f"{DASHBOARD_PREFIX}/index.html"
 #: Herald's status pages (Story 42.1); written only with pyforge.herald.status_pages on.
 STATUS_PREFIX = sp.STATUS_PREFIX
 STATUS_PAGES = (sp.BOARD_PAGE, sp.GUILD_PAGE)
+#: The agent surface and the changes feed (Story 43.6, CAP-61): Astro emits these only with
+#: pyforge.herald.pages_one_generator on, and the runs page only with pyforge.herald.status_pages on too.
+AGENT_SURFACE_FILES = ("llms.txt", "llms-full.txt", "facts.json", "changes/index.html", "changes/rss.xml")
+RUNS_DIR = "runs"
+RUNS_PAGE = f"{STATUS_PREFIX}/{RUNS_DIR}/index.html"
 
 # Vendored roots the cross-origin check does not judge (AD-21 rule 5, "re-vendor, never fork"):
 # a vendored upstream bundle stays byte-identical to its recorded build, so pages-check cannot
@@ -883,6 +888,33 @@ def _check_status_menu_entry(expected: list[tuple[str, str]]) -> None:
     _menu_failure(f"pyforge.herald.status_pages is on but the shared menu has no entry linking {board} (site.yml nav)")
 
 
+def _astro_runs_only(artifact_root: Path) -> bool:
+    """``status/`` holds only Astro's runs page (Story 43.6): the herald build then adds the board and
+    the guild page beside it, as ``herald/`` takes the Astro dossier."""
+    status = artifact_root / STATUS_PREFIX
+    return status.is_dir() and [child.name for child in status.iterdir()] == [RUNS_DIR]
+
+
+def _check_agent_surface(artifact_root: Path, *, one_generator: bool, status_on: bool) -> None:
+    """Story 43.6 AC7: with pyforge.herald.pages_one_generator on, the agent files, the changes page and its
+    feed exist (and the runs page with pyforge.herald.status_pages on too); off, none of them and no
+    ``changes/`` path exists."""
+    paths = [*AGENT_SURFACE_FILES, RUNS_PAGE]
+    if one_generator:
+        for rel in AGENT_SURFACE_FILES + ((RUNS_PAGE,) if status_on else ()):
+            if not (artifact_root / rel).is_file():
+                print(f"assemble_pages: missing required path {rel}", file=sys.stderr)
+                raise SystemExit(1)
+        return
+    present = [rel for rel in [*paths, "changes"] if (artifact_root / rel).exists()]
+    if present:
+        print(
+            f"assemble_pages: {', '.join(present)} exist in the artifact but pyforge.herald.pages_one_generator is off",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+
 def _check_no_status_paths(artifact_root: Path) -> None:
     """With pyforge.herald.status_pages off no ``status/`` path exists in the artifact (Story 42.1 AC7)."""
     if (artifact_root / STATUS_PREFIX).exists():
@@ -995,6 +1027,7 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
             )
             raise SystemExit(1)
 
+    _check_agent_surface(artifact_root, one_generator=enabled_from_env(), status_on=status_on)
     _check_href_resolution(artifact_root, site_url=site_url)
     _check_shelf_pages(artifact_root, site_url)
     _check_cross_origin_and_hosts(artifact_root, site_url)
@@ -1039,6 +1072,8 @@ def assemble(
                 and _astro_dossier_preexists(artifact_root)
             ):
                 continue
+            if mount == f"{STATUS_PREFIX}/" and one_generator and _astro_runs_only(artifact_root):
+                continue  # Story 43.6: Astro's /status/runs/; the herald build adds the board beside it
             print(f"assemble_pages: collision at {mount}", file=sys.stderr)
             raise SystemExit(1)
 

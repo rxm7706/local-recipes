@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-10-15T09:00:00+00:00",
+  "window_days": 30,
+  "source": "git log --first-parent refs/remotes/origin/main --since=30.days (fixture)",
+  "merges": [
+    {"date": "2026-10-13T16:20:00+00:00", "station": "pyforge-doctor", "subject": "Merge pyforge-doctor/48-1 into main", "sha": "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c"},
+    {"date": "2026-10-15T08:10:00+00:00", "station": "pyforge-marshal", "subject": "Merge pyforge-marshal/102-1 into main", "sha": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e"},
+    {"date": "2026-09-20T11:00:00+00:00", "station": "pyforge-atlas", "subject": "Merge pyforge-atlas/30-1 into main", "sha": "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a"},
+    {"date": "2026-10-14T12:00:00+00:00", "station": "pyforge-herald", "subject": "Merge pyforge-herald/42-1 into main <status & ci>", "sha": "4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d"},
+    {"date": "2026-10-01T10:30:00+00:00", "station": "pyforge-steward", "subject": "Merge pyforge-steward/102-2 into main", "sha": "2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b"}
+  ]
+}

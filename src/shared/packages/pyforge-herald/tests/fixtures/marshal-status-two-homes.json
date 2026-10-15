@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-10-15T09:05:00+00:00",
+  "schema_version": 1,
+  "command": "status",
+  "status": "ok",
+  "verdict": "pass",
+  "data": {
+    "project": null,
+    "homes": [
+      {"slug": "pyforge-marshal", "branch": "loop/pyforge-marshal", "state": "running", "current_story": "102-2-the-runs-page", "elapsed_seconds": 5400, "budget_consumed": 12.5, "budget_consumed_usd": 3.75, "layer_savings": null, "escalation_reason": null, "escalation_artifact": null, "parked_stories": [], "unpushed_work": null, "failed_patches": []},
+      {"slug": "pyforge-doctor", "branch": "loop/pyforge-doctor", "state": "paused-on-escalation", "current_story": "48-3-a-probe", "elapsed_seconds": 120, "budget_consumed": null, "budget_consumed_usd": null, "escalation_reason": "spec contradiction", "escalation_artifact": "_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-48-3.md", "parked_stories": [], "unpushed_work": null, "failed_patches": [".bmad-loop/runs/r1/failed/48-3/changes.patch"]}
+    ]
+  },
+  "data_version": 1,
+  "findings": [],
+  "assumptions": []
+}

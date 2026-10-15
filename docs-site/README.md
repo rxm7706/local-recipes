@@ -33,6 +33,14 @@ These files are maintained in this repository and are **not** byte-identical to 
 - `src/loaders/shelf-docs-loader.ts` — titles from frontmatter or first `#` heading; `README.md` → quadrant index; heading deduplication; renders each page's markdown with the project's rehype plugins (Story 44.1: before it, every page body rendered empty)
 - `src/lib/shelf.mjs` — the one rule for which `docs/` files are pages, read by the loader and the link plugin
 - `src/rehype-shelf-links.js` — runs before the two vendored link plugins: points `README.md` links at the directory index and sends links to repo files the shelf does not publish (`docs/MAP.md`, `docs/governance/**`, anything outside `docs/`) to their repository page
+- `src/lib/agent-surface.ts`, `src/lib/agent-data.ts` and the pages `src/pages/[llms].txt.ts`, `src/pages/[facts].json.ts`,
+  `src/pages/changes/` and `src/pages/status/runs/` — herald Story 43.6's machine surfaces: `/llms.txt` and
+  `/llms-full.txt` (`docs/map.yaml`'s pages and its `herald` section), `/facts.json` (every
+  `presentations/<slug>/facts.yaml`), `/changes/` with `/changes/rss.xml`, and `/status/runs/`. Emitted only with
+  `PYFORGE_PAGES_ONE_GENERATOR=1` (the runs page also needs `PYFORGE_STATUS_PAGES=1`). The changes and runs pages
+  read three gitignored build inputs under `docsite/content/` (`changes.json`, `marshal-status.json`,
+  `herald-progress.json`; `PAGES_BUILD_INPUTS_DIR` points elsewhere); an absent input is one line on the page,
+  a malformed one fails the build naming the file
 
 ## Layout
 

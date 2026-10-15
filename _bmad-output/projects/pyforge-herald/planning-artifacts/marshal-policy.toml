@@ -577,6 +577,10 @@ verify_commands = [
   "src/platform/config/flag-overlays.json",
   "docs/governance/flag-inventory/pyforge-herald.md",
   "AGENTS.md",
+  # Story 43.6: the three build inputs it reads are gitignored beside 42.1's, and the Guild steps that would
+  # write them are a steward deferred-work row.
+  ".gitignore",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 

@@ -6510,3 +6510,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-43-6-1: No Guild step writes herald 43.6's three build inputs (`changes.json`, `marshal-status.json`, `herald-progress.json`), so `/changes/` and `/status/runs/` publish "input absent"
+
+- source_spec: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-43-6-agents-and-the-changes-feed-read-the-site.md`
+  summary: Herald Story 43.6 renders `/changes/` (and `/changes/rss.xml`) from `docsite/content/changes.json` and `/status/runs/` from `docsite/content/marshal-status.json` and `docsite/content/herald-progress.json`, gitignored build inputs its spec assigns to Guild steps of steward's Pages workflow (spec-43-6 § Named, not fixed here, "steward Story 102.2"). Steward 102.2 landed without them and no steward story (102.2–102.5) names them, so `pages.yml` writes none of the three: with `pyforge.herald.pages_one_generator` on, both pages publish their one-line "input absent" note and the feed an empty channel. That is a normal build (43.6 AC6), not a failure, but the pages say nothing until the steps exist.
+  evidence: `git grep -n "changes.json\|marshal-status.json\|herald-progress.json" -- .github/workflows` finds nothing (2026-10-15, lane B, after herald 43.6); `pixi run --frozen -e site pages-check` with both flags on and the inputs absent exits 0 and the built `changes/index.html` and `status/runs/index.html` carry `data-input-absent` for all three (43.6's Verification run).
+  location: .github/workflows/pages.yml (the build job, beside "Write the fleet board's build input")
+  origin: herald Story 43.6, 2026-10-15 (orchestrator ruling: the Guild steps are steward's, recorded as a steward row)
+  fix: a steward story adds three Guild steps before `pages-check`, as steward 102.3 did for `fleet-status.json`: (1) `changes.json` -- `{"generated_at", "window_days": 30, "merges": [{"date", "station", "subject", "sha"}]}` from `git log --first-parent --since=30.days` on `main` (the station read from the merge subject `Merge <station>/<E-S> into main`); the checkout is `fetch-depth: 1` today, so the step needs the 30-day history (a deeper fetch or `git fetch --shallow-since`); (2) `marshal-status.json` -- `pyforge marshal status --format json`, with a top-level `generated_at` added; (3) `herald-progress.json` -- `herald progress --json` (NDJSON is accepted), or `{"generated_at", "records": [...]}`. Shapes: `docs-site/src/lib/agent-surface.ts` (`parseChanges`, `parseMarshalStatus`, `parseHeraldProgress`); fixtures under `src/shared/packages/pyforge-herald/tests/fixtures/`. Decide whether a CI runner has any loop home or progress store to report (both read local state); if not, the runs page's inputs come from wherever the operator's estate publishes them, or the runs page stays a local-build view.
+  severity: medium
+  promoted: 2026-10-15 — herald Story 43.6 (Pages redesign chain)
+  status: open
