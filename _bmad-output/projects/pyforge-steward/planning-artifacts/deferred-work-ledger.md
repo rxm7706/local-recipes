@@ -6431,3 +6431,39 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-15 — recorded with Story 103.4's review
   status: open
+
+### DW-steward-103-6-1: A pending preflight lane whose dependency is absent from the run set spins the scheduler forever
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-6-a-touched-scope-preflight-leaves-the-other-lanes-to-ci-and-verify-deferred-catches-up.md`
+  summary: In `run_preflight`, a lane whose dependency has no result and is neither pending nor running is never ready: `_mark_dependency_blocked` skips it while any dependency lacks a result, and `_deps_all_ok` stays false. With no future in flight, the loop's `if not pending or stopped: break` is false, so it `continue`s forever. Today's selection selects a task's `depends-on` closure together, so no run reaches it, but a CI pause on a dependency alone, or a cut that dropped one, would. Follow-up: `_mark_dependency_blocked` treats a dependency absent from the run set as blocked (journaled `cancelled`, or `not-run` under `--keep-going`, naming it). Pre-existing since Story 88.1; recorded only.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py:1154`-`:1166` (`_mark_dependency_blocked`: `if any(completed.get(dep_key) is None ...): continue`), `:1209`-`:1211` (`if not pending or stopped: break` / `continue`), `_deps_all_ok` (about `:794`). Read at `6741848367`, not run.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py (`run_preflight`, `_mark_dependency_blocked`)
+  origin: Story 103.6 independent review, 2026-10-15 (no implementation)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-15 — recorded with Story 103.6's review
+  status: open
+
+### DW-steward-103-6-2: The touched cut's fast-core filter would drop a fast-core task's own dependencies
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-6-a-touched-scope-preflight-leaves-the-other-lanes-to-ci-and-verify-deferred-catches-up.md`
+  summary: `touched_cut` builds the fast core with `_fast_core_lanes`, which closes over each task's `depends-on`, then keeps only lanes not already in the run list. A fast-core task that gained a dependency already among the lanes, but not kept, would run without it, or never become ready. None of the five has a `depends-on` today. Follow-up: `_fast_core_lanes` refuses a fast-core task that has dependencies (`PreflightConfigError`, exit 2), as it refuses a missing one. Recorded only.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py:286`-`:294` (`_fast_core_lanes` via `_ensure_lane`), `:338`-`:340` (`if _lane_key(extra) not in by_key`). Read at `6741848367`, not run.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py (`_fast_core_lanes`, `touched_cut`)
+  origin: Story 103.6 independent review, 2026-10-15 (no implementation)
+  owner: steward
+  severity: low
+  promoted: 2026-10-15 — recorded with Story 103.6's review
+  status: open
+
+### DW-steward-103-6-3: `verify-deferred` lists deferred runs from every head but verifies only the current HEAD
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-6-a-touched-scope-preflight-leaves-the-other-lanes-to-ci-and-verify-deferred-catches-up.md`
+  summary: `verify_deferred` prints every journaled run since `--since` that deferred lanes, on any branch or head, then runs the full preflight on HEAD alone. A run whose head is not an ancestor of HEAD (another branch, or a rewritten one) reads as verified when it was not. Follow-up: mark each listed run whose `head_sha` is not an ancestor of HEAD (`git merge-base --is-ancestor`), and say the full run does not cover it. Recorded only.
+  evidence: `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py:91` (`deferred_runs` reads `head_sha` and lists it), `:173`-`:200` (`verify_deferred` runs `PREFLIGHT_ARGV` once on HEAD). Read at `6741848367`, not run.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_verify.py (`verify_deferred`)
+  origin: Story 103.6 independent review, 2026-10-15 (no implementation)
+  owner: steward
+  severity: low
+  promoted: 2026-10-15 — recorded with Story 103.6's review
+  status: open

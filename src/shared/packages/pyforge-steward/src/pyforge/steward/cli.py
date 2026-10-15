@@ -10,8 +10,10 @@ failed, which is exactly the false signal a gate must not emit.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from collections.abc import Sequence
+from datetime import date
 
 from pyforge.core.flags import FlagConfigError, FlagOff, disabled_help
 
@@ -34,6 +36,8 @@ EXIT_INTERNAL = 70  # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 # meaningful, just distinct and documented.
 EXIT_BUDGET_NOT_CONFIGURED = 3
 
+_ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+
 # The eight duties — all real as of this story. `keys` (Epic 1), `deploy`
 # (Epic 2), `provision` (Epic 3), `budget` (Epic 4, complete as of Story 4.3),
 # `sync` (Epic 8, Story 8.1), `workspace` (Epic 13, Stories 13.1–13.2),
@@ -51,6 +55,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `session` (Epic 63, Story 63.4 — one verdict for the session preconditions, run from every entry point).
 # `deck-drift` (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5 — flags silent
 #   size/etag drift on a pulled Design deck artifact; Herald owns the pull itself).
+# `preflight` (Epic 103, Story 103.6 / CAP-159 — verify-deferred, the catch-up for a touched-scope preflight).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -81,6 +86,7 @@ DUTIES: tuple[str, ...] = (
     "deck-drift",
     "estate",
     "ci",
+    "preflight",
 )
 
 _HELP = {
@@ -196,6 +202,11 @@ _HELP = {
         "CI pause visibility — status (one table/json of every surface) and vars (gitignored snapshot) "
         "behind pyforge.steward.ci_pause_control (Story 99.3 / CAP-166 FR-39)"
     ),
+    "preflight": (
+        "the pre-push preflight's catch-up — verify-deferred lists every run that left lanes to CI "
+        "(scope touched: PYFORGE_PREFLIGHT_SCOPE, or pyforge.steward.preflight_ci_arbitrates) or skipped "
+        "the preflight, then runs the full preflight on HEAD (Story 103.6 / CAP-159)"
+    ),
 }
 
 
@@ -273,6 +284,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_estate_subparsers(duty_parser)
         elif name == "ci":
             _add_ci_subparsers(duty_parser)
+        elif name == "preflight":
+            _add_preflight_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
             duty_parser.add_argument(
                 "--json",
@@ -1219,6 +1232,34 @@ def _add_ci_subparsers(ci_parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _since_date(text: str) -> date:
+    """``--since``: a date, exactly ``YYYY-MM-DD`` (AGENTS.md § Dates); anything else is a usage error."""
+    if not _ISO_DATE.fullmatch(text):
+        raise argparse.ArgumentTypeError(f"{text!r} is not a YYYY-MM-DD date")
+    try:
+        return date.fromisoformat(text)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a date: {exc}") from exc
+
+
+def _add_preflight_subparsers(preflight_parser: argparse.ArgumentParser) -> None:
+    preflight_subs = preflight_parser.add_subparsers(dest="preflight_verb", required=True)
+    verify = preflight_subs.add_parser(
+        "verify-deferred",
+        help=(
+            "list the runs that deferred lanes to CI and the pushes that skipped the preflight, "
+            "then run the full preflight on HEAD (exit 0 green, 1 red, 3 could not run)"
+        ),
+    )
+    verify.add_argument(
+        "--since",
+        type=_since_date,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="list only runs and pushes on or after this UTC date (default: every one journaled)",
+    )
+
+
 def _add_estate_subparsers(estate_parser: argparse.ArgumentParser) -> None:
     estate_subs = estate_parser.add_subparsers(
         dest="estate_verb",
@@ -1739,6 +1780,10 @@ def resolve_duty(name: str) -> Duty:
         from .ci import CiDuty
 
         return CiDuty()
+    if name == "preflight":
+        from .preflight_verify import PreflightDuty
+
+        return PreflightDuty()
     return NullDuty(name)
 
 

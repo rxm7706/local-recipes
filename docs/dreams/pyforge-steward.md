@@ -1828,6 +1828,24 @@ Drift — orphaned between stations.
     and each writes its own log. **Constraints:** a fix under CAP-159, with no CAP and no flag; the journal changes
     only additively; no assertion weakens; no `pixi.toml` or workflow change (atlas 31.1 owns its lane). Owner
     `spec-pyforge-steward`. → Story 103.5, specced 2026-10-14.
+  - **Added 2026-10-15 (CI arbitrates the deferred lanes) — Ruled: a push waits only on the lanes its diff touches.**
+    The operator ruled 2026-10-15: "can we turn off chain_currency_sweep_check too -- we can turn and verify
+    everything at the end - think deeply to see whatelse we can turn off to merge faster", then "cant we make this a
+    flag / enviornment variable too", then "chain it now and I'll mint the story chain and implement it - we need the
+    speed to market before we move to wave 2". Measured 2026-10-14/15: the local `pr-preflight` lanes run in parallel
+    and finish in about 10 min on a quiet host. Under host load 29–114 they took 13–28 min and timed out:
+    `chain_currency_sweep_check` passed its 300 s limit though it takes 75 s alone, and atlas's e2e port binds passed
+    their 60 s limit. The slowest lanes were `pyforge-steward-test` and the steward coverage gate (9.7–17.9 min each),
+    `test-ci` (13–28 min) and `detectors-ci` (6–11 min). GitHub runs the same lanes in about 10 min. **What it looks
+    like when real:** a flag, `pyforge.steward.preflight_ci_arbitrates` (on in dev), and an override,
+    `PYFORGE_PREFLIGHT_SCOPE=full|touched`, choose a touched scope. In it `pr-preflight` runs only the lanes of the
+    station packages and paths the diff changes, five cheap planning detectors in place of `detectors-ci`, and lint and
+    types when Python under `src/` changed. Every other lane CI would run is deferred: named on stdout, and journaled
+    with the reason "CI arbitrates". `pyforge steward preflight verify-deferred [--since]` lists every run that
+    deferred lanes or skipped the preflight, then runs the full preflight on HEAD. **Constraints:** it extends
+    CAP-159, with no CAP and no `SPEC.md` change. `PYFORGE_PREFLIGHT_SKIP=1` keeps its meaning and its precedence, and
+    an unknown scope refuses. The journal changes only additively, and the pre-push hook and `pixi.toml` do not
+    change. Owner `spec-pyforge-steward`. → Story 103.6, specced 2026-10-15.
   - **Added 2026-10-15 (ci status retired rows) — Found: every landing records the CI pauses as `unknown`.** Marshal
     100.1's landing line reads `pyforge steward ci status --json` and records `unknown` on exit 1, and the herald 43.1,
     doctor 48.1 and atlas 30.1 landings of 2026-10-15 all did. The operator first read the cause as the three `stuck`
