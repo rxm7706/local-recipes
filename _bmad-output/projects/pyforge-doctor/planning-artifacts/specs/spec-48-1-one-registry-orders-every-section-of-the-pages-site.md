@@ -256,3 +256,25 @@ untouched, and `pyforge-doctor-test` and `detectors-ci` are green
   the 2026-10-13 rulings and herald's Epic 43 (Story 43.7's Deps). `type: feature`, `flag-exempt: docs-only` by the
   coordinator's assignment (memlog 2026-10-14). The Dream's two stories (the registry in M2, the MAP rows in M1) are this
   one story: same two files, one check that reads both.
+
+## Review Triage Log
+
+### 2026-10-15 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract AC1–AC10 on local verification)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added optional `sections:` to the docs map schema and registry (herald + pipelines rows), extended `docs-map-hygiene` with WARN-only `sections` and `unnamed-top-level` classes, and updated hand-authored `docs/MAP.md` (Publish roots, site mount rows, Sections paragraph). Herald `docsite/` / `docs-site/` paths untouched.
+
+Files changed:
+- `docs/map.yaml` — mint section rows
+- `docs/MAP.md` — Outside table + Sections paragraph; registry re-rendered for map sort
+- `docs-map-schema.json`, `docs_map_hygiene.py`, `test_sources_docs_map_hygiene.py` — schema + hygiene + tests
+- `spec-pyforge-doctor/.memlog.md` — surface reconcile entry (Story 48.1)
+
+Verification: `pyforge-doctor-test` 3684 passed; `docs-map-hygiene-check` ok (`sections_count: 2`, `unnamed_top_level: []`); `docs-map-render` + clean MAP diff after render; `docs-currency-check` exit 0 (pre-existing stale warns only); `python scripts/spec_surface_reconcile.py` exit 0 after memlog; AC8 empty diff for docs-site/docsite.
+
+followup_review_recommended: false
