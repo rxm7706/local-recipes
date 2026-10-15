@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 
-from pyforge.steward.pages import build_json, decide_deploy
 from pyforge.testing_kit import make_flag_provider_fixture
 from pyforge.testing_kit.flags import flag_states
+
+from pyforge.steward.pages import build_json, decide_deploy
 
 flag_provider = make_flag_provider_fixture()
 

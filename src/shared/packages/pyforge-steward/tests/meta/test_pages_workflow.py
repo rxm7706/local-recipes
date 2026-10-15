@@ -94,7 +94,9 @@ def test_pages_yml_pr_artifact_upload_shape() -> None:
     document = _load()
     steps = document["jobs"]["build"]["steps"]
     upload_pages = next(s for s in steps if isinstance(s, dict) and "upload-pages-artifact" in str(s.get("uses", "")))
-    upload_pr = next(s for s in steps if isinstance(s, dict) and s.get("uses", "").startswith("actions/upload-artifact@"))
+    upload_pr = next(
+        s for s in steps if isinstance(s, dict) and s.get("uses", "").startswith("actions/upload-artifact@")
+    )
     assert "pull_request" in upload_pages["if"]
     assert upload_pages["if"].strip() == "${{ github.event_name != 'pull_request' }}"
     assert upload_pr["if"].strip() == "${{ github.event_name == 'pull_request' }}"
@@ -105,4 +107,3 @@ def test_pages_yml_runs_docs_site_validate_in_build() -> None:
     text = PAGES_WORKFLOW.read_text(encoding="utf-8")
     assert "docs-site-validate" in text
     assert re.search(r"jobs:\s*\n\s*build:", text)
-
