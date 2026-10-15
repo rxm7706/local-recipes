@@ -2,7 +2,7 @@
 title: '42.2: The Kedro-Viz mount is an artifact handoff that tolerates absence'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 flag-exempt: docs-only   # the documentation site's own build assembly; no CLI verb, portal or runtime path (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false

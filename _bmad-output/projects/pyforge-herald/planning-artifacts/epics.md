@@ -1977,7 +1977,7 @@ So that a paused producer never breaks the site and a stale export can no longer
 **When** the site builds with a downloaded export (a tree plus `manifest.json` naming commit, date and kedro-viz version) in the build input, and again with none
 **Then** with the export the mount is written under `/dashboard/kedro-viz/`, the `/kedro-viz/` redirect exists, and the pipelines page and the nav tile name the manifest's commit and date; with no export the build exits 0, no `/dashboard/kedro-viz/` path and no `/kedro-viz/` redirect are written, and no page links them
 **And** `pages-check` exits 1 on an export whose `manifest.json` is missing or lacks `commit` or `date`; `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done (landed with atlas 30.1 in PR #2236, merge 10ed86d0bc, 2026-10-15)
 
 ### Story 42.3: The second host needs no flag
 
