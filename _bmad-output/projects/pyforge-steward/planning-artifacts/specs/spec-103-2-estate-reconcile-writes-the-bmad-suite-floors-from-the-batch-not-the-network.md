@@ -2,8 +2,8 @@
 title: "103.2: `estate reconcile` writes the bmad-suite floors from the batch, not the network"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
+status: 'in-progress'
+baseline_revision: '85f242b606'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
