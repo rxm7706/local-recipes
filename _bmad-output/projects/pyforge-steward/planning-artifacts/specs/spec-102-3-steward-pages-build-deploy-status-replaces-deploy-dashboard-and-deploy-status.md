@@ -389,3 +389,10 @@ atlas's producer calls the retired verbs
   - **`DEPLOY_JOB` is pinned to `pages.yml`.** `gh run view --json jobs` names a job by its `name:`, else its id, so
     `test_pages_duty.py::test_the_deploy_job_the_duty_reads_is_pages_yml_s_deploy_job` asserts the deploy job carries
     no other `name:` and is the one that runs `actions/deploy-pages`.
+- 2026-10-15 (landing preflight, orchestrator): the first full-scope `pr-preflight` of the one-PR branch crashed in
+  `preflight_ci._registry_row_for_lane` with `IndexError` — most `ci-surfaces.yaml` rows declare no `local_twin`,
+  and `str(row.get("local_twin") or "").split()[0]` raised on the first such row whenever a lane was deselected
+  only by a live pause switch (the operator's 2026-10-15 CI pauses made that the normal case). The same code is on
+  `origin/main` (Story 99.5), so this was a latent defect, fixed here as healed tissue in a module this story's
+  review fixes already edit: an absent or blank twin now matches no lane. Test:
+  `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py::test_a_row_without_a_local_twin_matches_no_lane`.

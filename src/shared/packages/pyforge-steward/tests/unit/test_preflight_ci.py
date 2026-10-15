@@ -225,3 +225,21 @@ def test_ignore_ci_pauses_journals_override(
     journal = (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8")
     assert "ci_pause_override" in journal
     assert "--ignore-ci-pauses" in journal
+
+
+def test_a_row_without_a_local_twin_matches_no_lane() -> None:
+    """Most registry rows declare no local twin; the lookup skips them instead of raising IndexError.
+
+    Found 2026-10-15 by a full-scope pr-preflight with CI pauses on: the first paused-only lane reached a
+    row with no `local_twin` and `"".split()[0]` crashed the whole run.
+    """
+    registry = {
+        "surfaces": [
+            {"id": "no-twin"},
+            {"id": "blank-twin", "local_twin": "   "},
+            {"id": "null-twin", "local_twin": None},
+            {"id": "image", "local_twin": "platform-ci-local --images"},
+        ]
+    }
+    assert preflight_ci._registry_row_for_lane(registry, "test-ci") is None
+    assert preflight_ci._registry_row_for_lane(registry, "platform-ci-local") == registry["surfaces"][3]

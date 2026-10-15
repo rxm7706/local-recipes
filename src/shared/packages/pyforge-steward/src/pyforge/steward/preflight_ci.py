@@ -695,8 +695,9 @@ def _registry_row_for_lane(registry: Mapping[str, Any], lane_task: str) -> dict[
     for row in registry.get("surfaces") or []:
         if not isinstance(row, dict):
             continue
-        twin = str(row.get("local_twin") or "").split()[0]
-        if twin == lane_task:
+        # Most rows declare no local twin; an absent or blank one matches no lane.
+        twin_words = str(row.get("local_twin") or "").split()
+        if twin_words and twin_words[0] == lane_task:
             return row
     return None
 
