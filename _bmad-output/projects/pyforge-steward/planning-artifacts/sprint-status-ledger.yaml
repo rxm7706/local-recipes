@@ -43,7 +43,7 @@ development_status:
   103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network: done
   103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say: backlog
   103-4-the-ci-surface-gates-tests-write-their-fixtures-under-tmp-path: done
-  103-5-the-preflight-keys-each-lane-by-its-task-and-its-environment: backlog
+  103-5-the-preflight-keys-each-lane-by-its-task-and-its-environment: done
   104-1-cfe-regression-net-runs-when-a-script-its-tests-load-changes: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
