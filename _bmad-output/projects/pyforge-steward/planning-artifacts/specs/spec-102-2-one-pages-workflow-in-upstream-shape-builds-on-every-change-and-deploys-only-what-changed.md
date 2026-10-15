@@ -2,7 +2,7 @@
 title: '102.2: One Pages workflow in upstream shape builds on every change and deploys only what changed'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: '22e5c19c285e722bcf7d58203689d57e9cc4dd55'
 flag:
   key: pyforge.steward.pages_duty                 # new; minted by this story (102.3, 102.4 and 102.5 reuse it)
