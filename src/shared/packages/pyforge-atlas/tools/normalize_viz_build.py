@@ -65,15 +65,15 @@ _TIMESTAMP_PATTERN = re.compile(r'"timestamp":\s*"[^"]*"')
 # `deploy.py::repo_root()` (review pass 3: a two-condition AND-marker is
 # unnecessary complexity here since this exact marker is already proven
 # unique in this repo).
-_REPO_ROOT_MARKER = Path("docs/dashboard/kedro-viz/index.html")
+_REPO_ROOT_MARKER = Path("docs/dashboard/README.md")
 
 
 def repo_root() -> Path:
     """Return the local-recipes checkout root.
 
     Walks up from this file's own resolved location looking for
-    `docs/dashboard/kedro-viz/index.html` -- mirrors `pyforge-steward`'s
-    `deploy.py::repo_root()` convention exactly (same marker file).
+    `docs/dashboard/README.md` — the export under ``kedro-viz/`` is gitignored
+    (Story 30.1), so the tracked README is the durable repo-root marker.
     """
     here = Path(__file__).resolve()
     for ancestor in here.parents:

@@ -2881,7 +2881,7 @@ env = { PYTHONHASHSEED = "0" }
 [feature.pyforge-atlas.tasks.viz-publish-stage]
 description = "Epic 12/FR-62: normalize the just-built `build/` output (strips the checkout-anchored absolute path baked into ~53 file-backed dataset nodes under build/api/nodes/*, and fixes the literal build-timestamp in build/api/deploy-viz-metadata -- see tools/normalize_viz_build.py) THEN stages it to docs/dashboard/kedro-viz/, replacing whatever was there. Depends on viz-build so a failed build never stages stale/partial output."
 depends-on = ["viz-build"]
-cmd = "python src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py && rm -rf docs/dashboard/kedro-viz && cp -r src/shared/packages/pyforge-atlas/build docs/dashboard/kedro-viz"
+cmd = "python src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py && rm -rf docs/dashboard/kedro-viz && cp -r src/shared/packages/pyforge-atlas/build docs/dashboard/kedro-viz && python src/shared/packages/pyforge-atlas/tools/viz_publish_finish.py"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"

@@ -10,9 +10,15 @@ the Starlight shelf (`/`) and the herald dossier mount (`/herald/`). The
 PyForge site is built by `docsite/build.py` into that `herald/` prefix; legacy
 HTML URLs at the old root paths are redirect stubs in the unified artifact.
 
-Today the only board tracked here is atlas Kedro-Viz, under `kedro-viz/`; that
-name stays as-is. Rebuild with `pixi run -e pyforge-atlas viz-publish-stage`,
-then `steward deploy dashboard` (see `.github/workflows/kedro-viz-publish.yml`).
+The Kedro-Viz board is staged locally under `kedro-viz/` (gitignored). CI
+builds it with `pixi run -e pyforge-atlas viz-publish-stage`, then uploads the
+tree as the GitHub Actions workflow artifact **`kedro-viz-export`** (see
+`.github/workflows/kedro-viz-publish.yml`). When the
+`pyforge.atlas.viz_export_artifact` flag is on, the staged tree includes
+**`manifest.json`** beside `index.html` (`export_commit`, `export_date`,
+`kedro_viz_version`). Steward's Pages workflow downloads the newest successful
+artifact into the site mount (Story 102.4).
+
 Deploy is `.github/workflows/pages.yml`, which uploads `docs-site/build/site`.
 
 Vizro is a separate dashboard product from Kedro-Viz. If a Vizro board is

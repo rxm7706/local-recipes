@@ -3,7 +3,7 @@ title: '30.1: The DAG export reaches Pages as a workflow artifact'
 type: 'feature'
 created: '2026-10-14'
 status: 'in-progress'
-baseline_revision: 'f7be77efad8c0e8f0e8f0e8f0e8f0e8f0e8f0e8f'
+baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag:
   key: pyforge.atlas.viz_export_artifact          # new; minted by this story
   provider: openfeature-file                      # the one tree, src/platform/config/flags.json (canopy:AD-11)
