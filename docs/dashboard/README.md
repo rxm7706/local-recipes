@@ -43,7 +43,7 @@ deploys only when the built tree changed, a dispatch included),
 `main`.
 
 The Vizro boards (atlas Story 30.2) are staged locally under `vizro/`
-(gitignored) by `pixi run -e local-recipes vizro-static-export` when the
+(gitignored) by `pixi run -e pyforge-atlas vizro-static-export` when the
 `pyforge.atlas.vizro_static_boards` flag is on: one static page per board at
 `vizro/<page-id>/index.html`, the board index at `vizro/index.html`, one
 vendored `vizro/assets/plotly.min.js` (copied from the env's plotly, never a
