@@ -61,10 +61,7 @@ def _render_ts(block: dict) -> str:
         "node",
         "--experimental-strip-types",
         "-e",
-        (
-            "import { renderBlock } from './src/lib/dossier-blocks.ts';"
-            f"process.stdout.write(renderBlock({payload}));"
-        ),
+        (f"import {{ renderBlock }} from './src/lib/dossier-blocks.ts';process.stdout.write(renderBlock({payload}));"),
     ]
     proc = subprocess.run(
         cmd,
