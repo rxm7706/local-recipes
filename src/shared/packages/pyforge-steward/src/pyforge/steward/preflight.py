@@ -1,11 +1,14 @@
 """Concurrent ``pr-preflight`` runner with per-lane journaling (Stories 71.1–71.3, CAP-159).
 
-Reads ``pr-preflight-lanes`` from ``pixi.toml``, builds one lane per task with a
-``cmd`` and dependency edges from ``depends-on``, selects the lanes CI would run
-for the diff (Story 71.2,
+Reads ``pr-preflight-lanes`` from ``pixi.toml``, builds one lane per
+``(task, environment)`` with a ``cmd`` and dependency edges from ``depends-on``,
+selects the lanes CI would run for the diff (Story 71.2,
 ``preflight_ci``: read from ``.github/workflows/*.yml`` at run time), installs
 each needed environment serially, runs selected lanes in a pool bounded by
 ``--jobs``, and appends JSON lines to ``.steward/preflight-runs.jsonl``.
+A lane is its task and its environment wherever the runner keeps per-lane state —
+results, scratch, logs, stop marks, journal extras, worker shares (Story 103.5):
+one task may run in two environments.
 Not a steward CLI duty — ``main()`` owns the exit code (AD-8).
 """
 
@@ -54,6 +57,15 @@ class Lane:
     depends_on: tuple[LaneKey, ...] = ()
 
 
+def lane_label(task: str, environment: str) -> str:
+    """A lane's name in its scratch directory, its log and the budget lines: ``<task>@<environment>``.
+
+    Pixi environment names hold only lowercase letters, digits and hyphens, so the label is unique per
+    lane even when ``pr-preflight-lanes`` names one task in two environments (Story 103.5).
+    """
+    return f"{task}@{environment}"
+
+
 @dataclass(frozen=True)
 class LaneRunContext:
     lane: Lane
@@ -73,6 +85,10 @@ class LaneResult:
     journal_extra: dict[str, Any] | None = None
     cancelled_by: str | None = None
     blocked_by: str | None = None
+    # The environment of the lane named by ``cancelled_by`` / ``blocked_by``; ``None`` when the cause is
+    # not a lane (``interrupt``). Journaled only when set: additive to the record (Story 103.5).
+    cancelled_by_environment: str | None = None
+    blocked_by_environment: str | None = None
 
 
 class PreflightConfigError(Exception):
@@ -281,18 +297,41 @@ class _RunCoordinator:
     service_locks: dict[str, threading.Lock] = field(default_factory=dict)
     active_procs: list[tuple[subprocess.Popen[Any], int]] = field(default_factory=list)
     proc_lock: threading.Lock = field(default_factory=threading.Lock)
-    red_lanes: list[str] = field(default_factory=list)
-    stop_trigger: str | None = None
-    terminated_lane_tasks: set[str] = field(default_factory=set)
-    proc_lane_task: dict[int, str] = field(default_factory=dict)
+    red_lanes: list[LaneKey] = field(default_factory=list)
+    # What stopped the run: the red lane's (task, environment), or ("interrupt", None). One
+    # tuple, so a reader never sees a trigger without its environment; set only through
+    # set_stop_cause, which checks and sets under stop_lock, so the first cause wins.
+    stop_cause: tuple[str, str | None] | None = None
+    # Reentrant: the SIGINT handler sets the cause on the main thread and may re-enter itself.
+    stop_lock: threading.RLock = field(default_factory=threading.RLock)
+    terminated_lanes: set[LaneKey] = field(default_factory=set)
+    proc_lane: dict[int, LaneKey] = field(default_factory=dict)
+    # Keyed by task, not lane: the plan is derived from the pixi task definition, which has no
+    # environment, so every lane of a task reads its task's plan. The reduction is therefore
+    # applied by task across environments (build_suite_lane_overrides pairs pyforge-<s>-test
+    # with pyforge-<s>-coverage-gate by name). It would matter if one station test ran in two
+    # environments while its gate ran in one: the other environment's lane would skip tests
+    # the gate never ran there. No lane list does that today; the plan would then need a lane key.
     suite_lane_plan: dict[str, preflight_suite_reduction.SuiteLaneOverride | dict[str, Any]] = field(
         default_factory=dict
     )
-    suite_reduction_runtime_journal: dict[str, dict[str, Any]] = field(default_factory=dict)
-    xdist_workers: dict[str, int] = field(default_factory=dict)
+    suite_reduction_runtime_journal: dict[LaneKey, dict[str, Any]] = field(default_factory=dict)
+    xdist_workers: dict[LaneKey, int] = field(default_factory=dict)
     subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None
     before_popen: Callable[[LaneRunContext], None] | None = None
     between_segments: Callable[[LaneRunContext, int], None] | None = None
+
+    @property
+    def stop_trigger(self) -> str | None:
+        """The journaled ``cancelled_by`` of a stop: the red lane's task, or ``interrupt``."""
+        cause = self.stop_cause
+        return cause[0] if cause is not None else None
+
+    def set_stop_cause(self, cause: tuple[str, str | None]) -> None:
+        """Record what stopped the run; the first cause wins (checked and set under ``stop_lock``)."""
+        with self.stop_lock:
+            if self.stop_cause is None:
+                self.stop_cause = cause
 
     def service_lock(self, key: str | None) -> threading.Lock | None:
         if key is None:
@@ -301,14 +340,14 @@ class _RunCoordinator:
             self.service_locks[key] = threading.Lock()
         return self.service_locks[key]
 
-    def register_proc(self, proc: subprocess.Popen[Any], lane_task: str) -> None:
+    def register_proc(self, proc: subprocess.Popen[Any], lane: LaneKey) -> None:
         with self.proc_lock:
             if self.cancel.is_set() or (self.stop_on_red.is_set() and not self.keep_going):
-                self.terminated_lane_tasks.add(lane_task)
+                self.terminated_lanes.add(lane)
                 late_proc = proc
             else:
                 self.active_procs.append((proc, proc.pid))
-                self.proc_lane_task[proc.pid] = lane_task
+                self.proc_lane[proc.pid] = lane
                 late_proc = None
         if late_proc is not None:
             _terminate_proc_group(late_proc)
@@ -316,7 +355,7 @@ class _RunCoordinator:
     def unregister_proc(self, proc: subprocess.Popen[Any]) -> None:
         with self.proc_lock:
             self.active_procs = [(p, pid) for p, pid in self.active_procs if p is not proc]
-            self.proc_lane_task.pop(proc.pid, None)
+            self.proc_lane.pop(proc.pid, None)
 
     def terminate_children(self) -> None:
         with self.proc_lock:
@@ -325,10 +364,16 @@ class _RunCoordinator:
             if proc.poll() is not None:
                 continue
             with self.proc_lock:
-                lane_task = self.proc_lane_task.get(proc.pid)
-                if lane_task is not None:
-                    self.terminated_lane_tasks.add(lane_task)
+                lane = self.proc_lane.get(proc.pid)
+                if lane is not None:
+                    self.terminated_lanes.add(lane)
             _terminate_proc_group(proc)
+
+
+def _stop_cause(coord: _RunCoordinator, default: str) -> tuple[str, str | None]:
+    """The stop's ``(cancelled_by, cancelled_by_environment)``, or ``(default, None)`` before one is set."""
+    cause = coord.stop_cause
+    return cause if cause is not None else (default, None)
 
 
 def _terminate_proc_group(proc: subprocess.Popen[Any]) -> None:
@@ -371,7 +416,7 @@ def _run_pixi_argv(
         stderr=subprocess.STDOUT,
         start_new_session=True,
     )
-    coord.register_proc(proc, ctx.lane.task)
+    coord.register_proc(proc, _lane_key(ctx.lane))
     try:
         return int(proc.wait())
     finally:
@@ -384,6 +429,7 @@ def _subprocess_reduced_suite_lane(
     override: preflight_suite_reduction.SuiteLaneOverride,
 ) -> int:
     ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
+    key = _lane_key(ctx.lane)
     segment_rows: list[dict[str, Any]] = []
     task_collect_exit: int | None = None
     lane_exit = 0
@@ -403,7 +449,7 @@ def _subprocess_reduced_suite_lane(
     def _run_stopped_before_segment(index: int) -> bool:
         if coord.cancel.is_set() or (coord.stop_on_red.is_set() and not coord.keep_going):
             _append_not_run(index)
-            coord.terminated_lane_tasks.add(ctx.lane.task)
+            coord.terminated_lanes.add(key)
             return True
         return False
 
@@ -415,7 +461,7 @@ def _subprocess_reduced_suite_lane(
                 break
             cmd = [*prefix, *segment.argv]
             code = _run_pixi_argv(coord, ctx, cmd, log_handle)
-            if ctx.lane.task in coord.terminated_lane_tasks:
+            if key in coord.terminated_lanes:
                 segment_rows.append(
                     {
                         "label": segment.label,
@@ -478,7 +524,7 @@ def _subprocess_reduced_suite_lane(
     journal_extra["suite_reduction_segments"] = segment_rows
     if task_collect_exit is not None:
         journal_extra["suite_reduction_task_collect_exit"] = task_collect_exit
-    coord.suite_reduction_runtime_journal[ctx.lane.task] = journal_extra
+    coord.suite_reduction_runtime_journal[key] = journal_extra
     return lane_exit
 
 
@@ -525,11 +571,11 @@ def _print_lane_log(log_path: Path) -> None:
         sys.stdout.flush()
 
 
-def _lane_journal_extra(coord: _RunCoordinator, task: str) -> dict[str, Any] | None:
-    runtime = coord.suite_reduction_runtime_journal.get(task)
+def _lane_journal_extra(coord: _RunCoordinator, lane: Lane) -> dict[str, Any] | None:
+    runtime = coord.suite_reduction_runtime_journal.get(_lane_key(lane))
     if runtime is not None:
         return dict(runtime)
-    entry = coord.suite_lane_plan.get(task)
+    entry = coord.suite_lane_plan.get(lane.task)
     if isinstance(entry, preflight_suite_reduction.SuiteLaneOverride):
         return dict(entry.journal)
     if isinstance(entry, dict):
@@ -537,15 +583,16 @@ def _lane_journal_extra(coord: _RunCoordinator, task: str) -> dict[str, Any] | N
     return None
 
 
+_OPTIONAL_RESULT_KEYS = ("cancelled_by", "cancelled_by_environment", "blocked_by", "blocked_by_environment")
+
+
 def _lane_result_dict(result: LaneResult) -> dict[str, Any]:
     payload = asdict(result)
     extra = payload.pop("journal_extra", None)
-    cancelled_by = payload.pop("cancelled_by", None)
-    blocked_by = payload.pop("blocked_by", None)
-    if cancelled_by is not None:
-        payload["cancelled_by"] = cancelled_by
-    if blocked_by is not None:
-        payload["blocked_by"] = blocked_by
+    for name in _OPTIONAL_RESULT_KEYS:
+        value = payload.pop(name, None)
+        if value is not None:
+            payload[name] = value
     if extra:
         payload.update(extra)
     return payload
@@ -555,20 +602,25 @@ def _lane_key(lane: Lane) -> LaneKey:
     return (lane.task, lane.environment)
 
 
-def _dependency_blocker(lane: Lane, completed: dict[LaneKey, LaneResult]) -> str | None:
-    """Return the red lane task that blocks ``lane``, or ``None`` when every dependency is ``ok``."""
+def _lane_log_path(scratch_root: Path, task: str, environment: str) -> Path:
+    return scratch_root / f"{lane_label(task, environment)}.log"
+
+
+def _dependency_blocker(lane: Lane, completed: dict[LaneKey, LaneResult]) -> tuple[str, str | None] | None:
+    """Return the ``(task, environment)`` of the red lane that blocks ``lane`` (environment ``None`` when the
+    cause is no lane), or ``None`` when every dependency is ``ok``."""
     for dep_key in lane.depends_on:
         result = completed.get(dep_key)
         if result is None:
             return None
         if result.status == "red":
-            return result.task
+            return (result.task, result.environment)
         if result.status == "cancelled" and result.cancelled_by is not None:
-            return result.cancelled_by
+            return (result.cancelled_by, result.cancelled_by_environment)
         if result.status == "not-run" and result.blocked_by is not None:
-            return result.blocked_by
+            return (result.blocked_by, result.blocked_by_environment)
         if result.status != "ok":
-            return result.task
+            return (result.task, result.environment)
     return None
 
 
@@ -595,7 +647,8 @@ def _skip_lane_on_red_stop(coord: _RunCoordinator, lane: Lane, pending: dict[Lan
     return not _needed_by_pending_dependent(lane, pending)
 
 
-def _blocked_lane_result(lane: Lane, blocker: str, *, keep_going: bool) -> LaneResult:
+def _blocked_lane_result(lane: Lane, blocker: tuple[str, str | None], *, keep_going: bool) -> LaneResult:
+    name, environment = blocker
     if keep_going:
         return LaneResult(
             lane.task,
@@ -604,7 +657,8 @@ def _blocked_lane_result(lane: Lane, blocker: str, *, keep_going: bool) -> LaneR
             0,
             "not-run",
             0.0,
-            blocked_by=blocker,
+            blocked_by=name,
+            blocked_by_environment=environment,
         )
     return LaneResult(
         lane.task,
@@ -613,7 +667,8 @@ def _blocked_lane_result(lane: Lane, blocker: str, *, keep_going: bool) -> LaneR
         0,
         "cancelled",
         0.0,
-        cancelled_by=blocker,
+        cancelled_by=name,
+        cancelled_by_environment=environment,
     )
 
 
@@ -626,10 +681,11 @@ def _run_lane_in_pool(
     use_subprocess: bool,
     pending: dict[LaneKey, Lane],
 ) -> LaneResult:
+    key = _lane_key(lane)
     if coord.cancel.is_set():
         return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
     if _skip_lane_on_red_stop(coord, lane, pending):
-        trigger = coord.stop_trigger or "red"
+        trigger, trigger_env = _stop_cause(coord, "red")
         return LaneResult(
             lane.task,
             lane.environment,
@@ -638,6 +694,7 @@ def _run_lane_in_pool(
             "cancelled",
             0.0,
             cancelled_by=trigger,
+            cancelled_by_environment=trigger_env,
         )
 
     service_lock = coord.service_lock(service_key)
@@ -647,7 +704,7 @@ def _run_lane_in_pool(
         if coord.cancel.is_set():
             return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
         if _skip_lane_on_red_stop(coord, lane, pending):
-            trigger = coord.stop_trigger or "red"
+            trigger, trigger_env = _stop_cause(coord, "red")
             return LaneResult(
                 lane.task,
                 lane.environment,
@@ -656,12 +713,13 @@ def _run_lane_in_pool(
                 "cancelled",
                 0.0,
                 cancelled_by=trigger,
+                cancelled_by_environment=trigger_env,
             )
 
-        lane_dir = scratch_root / lane.task
-        log_path = scratch_root / f"{lane.task}.log"
+        lane_dir = scratch_root / lane_label(lane.task, lane.environment)
+        log_path = _lane_log_path(scratch_root, lane.task, lane.environment)
         env = _lane_scratch_env(lane_dir)
-        workers = coord.xdist_workers.get(lane.task)
+        workers = coord.xdist_workers.get(key)
         if workers is not None:
             env["PYTEST_XDIST_AUTO_NUM_WORKERS"] = str(workers)
         ctx = LaneRunContext(lane=lane, scratch_dir=lane_dir, log_path=log_path, env=env)
@@ -676,9 +734,9 @@ def _run_lane_in_pool(
         elapsed = time.monotonic() - lane_start
         _print_lane_log(log_path)
 
-        journal_extra = _lane_journal_extra(coord, lane.task)
-        if lane.task in coord.terminated_lane_tasks:
-            trigger = coord.stop_trigger or "interrupt"
+        journal_extra = _lane_journal_extra(coord, lane)
+        if key in coord.terminated_lanes:
+            trigger, trigger_env = _stop_cause(coord, "interrupt")
             return LaneResult(
                 lane.task,
                 lane.environment,
@@ -688,13 +746,13 @@ def _run_lane_in_pool(
                 start_offset,
                 journal_extra,
                 cancelled_by=trigger,
+                cancelled_by_environment=trigger_env,
             )
         if code == 0:
             return LaneResult(lane.task, lane.environment, elapsed, 0, "ok", start_offset, journal_extra)
-        coord.red_lanes.append(lane.task)
+        coord.red_lanes.append(key)
         if not coord.keep_going:
-            if coord.stop_trigger is None:
-                coord.stop_trigger = lane.task
+            coord.set_stop_cause(key)
             coord.stop_on_red.set()
             coord.terminate_children()
         return LaneResult(lane.task, lane.environment, elapsed, code, "red", start_offset, journal_extra)
@@ -742,6 +800,8 @@ def run_preflight(
     if flag_on:
         surface_paused = preflight_ci.list_paused_ci_surfaces(repo_root, resolution)
         lane_paused = preflight_ci.discover_paused_lanes(repo_root, lanes, pixi_data, resolution)
+        # The banner prints CI surfaces, and a registry row names no environment, so its lines
+        # de-duplicate by task; which lanes run is decided per (task, environment) below.
         banner_lines: dict[str, preflight_ci.PausedLane] = {entry.task: entry for entry in surface_paused}
         for entry in lane_paused:
             banner_lines.setdefault(entry.task, entry)
@@ -749,13 +809,13 @@ def run_preflight(
         if paused_lanes:
             preflight_ci.print_ci_pause_banner(repo_root, paused_lanes, resolution=resolution)
         paused_lanes = lane_paused
-        paused_tasks = {entry.task for entry in paused_lanes}
+        paused_keys = {(entry.task, entry.environment) for entry in paused_lanes}
         run_lanes = [lane for lane in lanes if selection.is_selected(lane)]
-        if ignore_ci_pauses and paused_tasks:
+        if ignore_ci_pauses and paused_keys:
             for lane in lanes:
-                if lane.task in paused_tasks and lane not in run_lanes:
+                if _lane_key(lane) in paused_keys and lane not in run_lanes:
                     run_lanes.append(lane)
-        elif paused_tasks:
+        elif paused_keys:
             for entry in paused_lanes:
                 paused_results.append(
                     LaneResult(
@@ -768,7 +828,7 @@ def run_preflight(
                         {"verdict": entry.journal_verdict()},
                     )
                 )
-            run_lanes = [lane for lane in run_lanes if lane.task not in paused_tasks]
+            run_lanes = [lane for lane in run_lanes if _lane_key(lane) not in paused_keys]
         lanes = run_lanes
     else:
         lanes = [lane for lane in lanes if selection.is_selected(lane)]
@@ -854,7 +914,7 @@ def run_preflight(
         return EXIT_CONFIG
 
     xdist_workers = preflight_xdist.lane_xdist_worker_map(
-        lane_tasks=[lane.task for lane in lanes],
+        lanes=[_lane_key(lane) for lane in lanes],
         pixi_data=pixi_data,
         logical_cores=_logical_core_count(),
         pool_jobs=worker_count,
@@ -882,13 +942,12 @@ def run_preflight(
 
     def _on_sigint(_signum: int, _frame: object | None) -> None:
         coord.cancel.set()
-        if coord.stop_trigger is None:
-            coord.stop_trigger = "interrupt"
+        coord.set_stop_cause(("interrupt", None))
         coord.terminate_children()
 
     signal.signal(signal.SIGINT, _on_sigint)
 
-    results_by_task: dict[str, LaneResult] = {}
+    results_by_key: dict[LaneKey, LaneResult] = {}
     pending: dict[LaneKey, Lane] = {_lane_key(lane): lane for lane in lanes}
     completed: dict[LaneKey, LaneResult] = {}
     try:
@@ -897,7 +956,7 @@ def run_preflight(
 
             def _record_done(lane: Lane, result: LaneResult) -> None:
                 completed[_lane_key(lane)] = result
-                results_by_task[lane.task] = result
+                results_by_key[_lane_key(lane)] = result
 
             def _mark_dependency_blocked() -> None:
                 for key in list(pending.keys()):
@@ -987,8 +1046,8 @@ def run_preflight(
         total_seconds = time.monotonic() - t0
         ordered: list[LaneResult] = []
         for lane in lanes:
-            if lane.task in results_by_task:
-                ordered.append(results_by_task[lane.task])
+            if _lane_key(lane) in results_by_key:
+                ordered.append(results_by_key[_lane_key(lane)])
             else:
                 ordered.append(LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0))
         _append_journal(
@@ -1014,8 +1073,8 @@ def run_preflight(
     ordered_results: list[LaneResult] = []
     exit_code = EXIT_OK
     for lane in lanes:
-        if lane.task in results_by_task:
-            result = results_by_task[lane.task]
+        if _lane_key(lane) in results_by_key:
+            result = results_by_key[_lane_key(lane)]
         elif coord.stop_on_red.is_set() and not coord.keep_going:
             result = LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
         else:
@@ -1023,7 +1082,7 @@ def run_preflight(
         ordered_results.append(result)
         if result.status == "red":
             exit_code = EXIT_LANE_RED
-            lane_log = scratch_root / f"{lane.task}.log"
+            lane_log = _lane_log_path(scratch_root, lane.task, lane.environment)
             print(
                 f"preflight: lane {lane.task!r} in environment {lane.environment!r} "
                 f"exited {result.exit_code} (log: {lane_log})",
@@ -1032,9 +1091,12 @@ def run_preflight(
 
     if keep_going and coord.red_lanes:
         exit_code = EXIT_LANE_RED
-        for name in coord.red_lanes:
-            lane_log = scratch_root / f"{name}.log"
-            print(f"preflight: red lane {name!r} (log: {lane_log})", file=sys.stderr)
+        for task, environment in coord.red_lanes:
+            lane_log = _lane_log_path(scratch_root, task, environment)
+            print(
+                f"preflight: red lane {task!r} in environment {environment!r} (log: {lane_log})",
+                file=sys.stderr,
+            )
 
     total_seconds = time.monotonic() - t0
     verdict = "ok" if exit_code == EXIT_OK else "red"

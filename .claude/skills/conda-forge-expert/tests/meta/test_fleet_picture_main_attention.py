@@ -12,6 +12,12 @@ The bmad-core probe returns findings tagged `bmad-channel-drift` and
 `bmad-recipe-upstream-drift` (Story 15.2's two ambient checks): this is the
 fleet-picture layer naming them, not only the generic warn filter
 (DW-FU-15-2-2).
+
+`_PROBES` lists every probe `main()` calls, in its call order. A probe added
+to `main()` and left out here is not stubbed, so it reads the faked
+`subprocess.run` and degrades to its own "could not check" line in every test:
+doctor Story 45.1 added `ci_pause_drift_findings` that way, and the three
+tests went red until mason Story 31.1 listed it.
 """
 import importlib.util
 import sys
@@ -50,6 +56,7 @@ _PROBES = (
     "bmad_core_drift_findings",
     "verification_staleness_findings",
     "dream_chain_gap_findings",
+    "ci_pause_drift_findings",
     "sibling_dreams_drift_findings",
     "capability_effect_findings",
     "status_body_consistency_findings",
@@ -101,6 +108,10 @@ def test_every_probe_result_reaches_needs_or_watch(mod, monkeypatch, capsys):
     monkeypatch.setattr(mod, "dream_chain_gap_findings", lambda: ["gap"])
     monkeypatch.setattr(mod, "_dream_chain_watch_lines", lambda findings: [f"dream chain: {findings[0]}"])
     monkeypatch.setattr(
+        mod, "ci_pause_drift_findings",
+        lambda: [_finding("ci-pause-drift", "dashboard.deploy switch drifted")],
+    )
+    monkeypatch.setattr(
         mod, "sibling_dreams_drift_findings",
         lambda: [_finding("sibling-dreams-drift", "title X differs")],
     )
@@ -125,6 +136,7 @@ def test_every_probe_result_reaches_needs_or_watch(mod, monkeypatch, capsys):
         "bmad-recipe-upstream-drift: recipe 1.1 behind upstream 1.2",
         "3 rows due",
         "dream chain: gap",
+        "ci-pause-drift: dashboard.deploy switch drifted",
         "sibling-dreams-drift: title X differs",
         "capability-effect: CAP-9 has no effect",
         "status-body-consistency: body says done (precision=0.500)",
@@ -174,6 +186,7 @@ def test_every_failing_probe_degrades_to_its_own_watch_line(mod, monkeypatch, ca
         "could not check bmad-method core version drift",
         "could not check verification staleness",
         "could not check dream-chain gaps",
+        "could not check CI pauses",
         "could not check sibling-dreams drift",
         "could not check capability-effect",
         "could not check status-body-consistency",

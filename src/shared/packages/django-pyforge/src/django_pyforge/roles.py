@@ -18,9 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Callable
-from collections.abc import Iterable
-from collections.abc import Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 

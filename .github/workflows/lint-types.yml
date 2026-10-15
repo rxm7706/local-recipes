@@ -8,6 +8,10 @@
 # `mypy`, `target-version-check` and `precommit-config-check`; each package's own [tool.ruff] /
 # [tool.mypy] is what the tools read. src/platform keeps its own platform-ci lane.
 #
+# Story 31.1: the job also runs the existing `mypy` task in `pyforge-foundry-full` (real Vizro,
+# Dagster, Kedro, Bokeh, … types). Guild mypy alone misses those libraries; this second leg keeps
+# CI aligned with `sbom-laptop-gate`.
+#
 # The setup-pixi pin below is a registered site of scripts/pixi_version_registry.py
 # (`lint-types.yml setup-pixi`); bump it with `pixi run -e local-recipes bump-pixi-version`.
 name: Lint and types
@@ -48,8 +52,10 @@ jobs:
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.80.0
-          environments: pyforge-guild
+          environments: pyforge-guild pyforge-foundry-full
           locked: true
           cache: true
       - name: lint-types (ruff, ruff-format, mypy, target-version-check, precommit-config-check)
         run: pixi run --frozen -e pyforge-guild lint-types
+      - name: mypy (pyforge-foundry-full — real atlas runtime libraries)
+        run: pixi run --frozen -e pyforge-foundry-full mypy

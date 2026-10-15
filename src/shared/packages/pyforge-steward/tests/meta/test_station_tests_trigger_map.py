@@ -1191,6 +1191,10 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
         ("pixi.toml", "_bmad/**", ".claude/skills/**", "recipes/bmad-suite/**", ".pre-commit-config.yaml"),
         "the session start gatherers read the bmad estate and hooks from the root",
     ),
+    "CI_STATUS_CONSUMERS": (
+        ("pixi.toml", "src/shared/packages/pyforge-steward/tests/**"),
+        "Story 103.1 AC6: consumer subprocess proofs run pixi from the repo root; the checked-in master fixture lives under steward tests",
+    ),
 }
 
 ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
@@ -1288,6 +1292,7 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py": _H["GIT_PLATFORM_DIFF"],
         "src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py": _H["GIT_PLATFORM_DIFF"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py": _H["CI_STATUS_CONSUMERS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py": _H["BOOTSTRAP_INPUTS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py": _H["BOOTSTRAP_INPUTS"],
         "src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup_flow.py": _H["BOOTSTRAP_INPUTS"],

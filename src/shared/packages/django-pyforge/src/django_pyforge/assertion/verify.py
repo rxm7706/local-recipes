@@ -16,25 +16,26 @@ and the Django-free claim schema only. The caller supplies the public key.
 from __future__ import annotations
 
 import jwt
-from jwt.exceptions import ExpiredSignatureError
-from jwt.exceptions import InvalidAudienceError
-from jwt.exceptions import InvalidSignatureError
-from jwt.exceptions import PyJWTError
+from jwt.exceptions import ExpiredSignatureError, InvalidAudienceError, InvalidSignatureError, PyJWTError
 
-from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.exceptions import BadSignatureError
-from django_pyforge.assertion.exceptions import ExpiredAssertionError
-from django_pyforge.assertion.exceptions import WrongAudienceError
-from django_pyforge.assertion.schema import ALG
-from django_pyforge.assertion.schema import AUDIENCE_PREFIX
-from django_pyforge.assertion.schema import CLAIM_AUD
-from django_pyforge.assertion.schema import CLAIM_DELEGATED_BY
-from django_pyforge.assertion.schema import CLAIM_EXP
-from django_pyforge.assertion.schema import CLAIM_IAT
-from django_pyforge.assertion.schema import CLAIM_ROLES
-from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.assertion.schema import DELEGATED_BY
-from django_pyforge.assertion.schema import MAX_TTL_SECONDS
+from django_pyforge.assertion.exceptions import (
+    AssertionRefusedError,
+    BadSignatureError,
+    ExpiredAssertionError,
+    WrongAudienceError,
+)
+from django_pyforge.assertion.schema import (
+    ALG,
+    AUDIENCE_PREFIX,
+    CLAIM_AUD,
+    CLAIM_DELEGATED_BY,
+    CLAIM_EXP,
+    CLAIM_IAT,
+    CLAIM_ROLES,
+    CLAIM_SUB,
+    DELEGATED_BY,
+    MAX_TTL_SECONDS,
+)
 
 REQUIRED_CLAIMS = (
     CLAIM_SUB,

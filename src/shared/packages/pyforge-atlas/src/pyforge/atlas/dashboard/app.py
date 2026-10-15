@@ -517,11 +517,12 @@ def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool, prov
     chart = _declared_chart(page, key)
     if chart is not None:
         components.append(chart)
+    page_controls: list[vm.Filter | vm.ControlGroup] = [f for f in controls]
     return vm.Page(
         id=page.id,
         title=page.title,
         components=components,
-        controls=controls,
+        controls=page_controls,
     )
 
 
@@ -545,9 +546,12 @@ def _scan_action(page: PageDef, data_root: Path) -> vm.Action:
         submission = _scan.submit_scan(page_id, path_value, data_root=data_root)
         if submission.frame is None:
             return f"**{submission.status}** — {submission.message}", no_update
+        grid_model = model_manager[grid_id]
+        if not isinstance(grid_model, vm.AgGrid):
+            raise TypeError(f"expected AgGrid model at {grid_id!r}, got {type(grid_model).__name__}")
         return (
             f"**{submission.status}** — {submission.message}",
-            model_manager[grid_id](data_frame=submission.frame),
+            grid_model(data_frame=submission.frame),
         )
 
     return vm.Action(
@@ -753,12 +757,13 @@ class LandmarkDashboard(vm.Dashboard):
         layout = super()._arrange_page(outer_page=outer_page)
         layout["right-side"].role = "main"
         nav_control_panel = layout["nav-control-panel"]
+        aria_nav: dict[str, Any] = {"aria-label": "Dashboard pages"}
         nav_control_panel.children = [
             html.Nav(
                 id="pyforge-nav",
                 role="navigation",
                 children=nav_control_panel.children,
-                **{"aria-label": "Dashboard pages"},
+                **aria_nav,
             )
         ]
         return layout

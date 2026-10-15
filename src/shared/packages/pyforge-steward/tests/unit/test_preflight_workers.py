@@ -49,7 +49,7 @@ cmd = "pytest t -q"
     )
     assert (
         preflight_xdist.lane_xdist_worker_map(
-            lane_tasks=["plain"],
+            lanes=[("plain", "pyforge-guild")],
             pixi_data=pixi,
             logical_cores=8,
             pool_jobs=2,
@@ -96,19 +96,19 @@ cmd = "pytest pkg/tests -q -n auto --dist loadgroup"
 """
     )
     mapping = preflight_xdist.lane_xdist_worker_map(
-        lane_tasks=[
-            "pyforge-marshal-test",
-            "pyforge-doctor-test",
-            "pyforge-warden-test",
+        lanes=[
+            ("pyforge-marshal-test", "pyforge-marshal"),
+            ("pyforge-doctor-test", "pyforge-doctor"),
+            ("pyforge-warden-test", "pyforge-warden"),
         ],
         pixi_data=pixi,
         logical_cores=16,
         pool_jobs=3,
     )
     assert set(mapping) == {
-        "pyforge-marshal-test",
-        "pyforge-doctor-test",
-        "pyforge-warden-test",
+        ("pyforge-marshal-test", "pyforge-marshal"),
+        ("pyforge-doctor-test", "pyforge-doctor"),
+        ("pyforge-warden-test", "pyforge-warden"),
     }
     assert sum(mapping.values()) <= 16
     assert all(v >= 1 for v in mapping.values())

@@ -146,6 +146,12 @@ def selected_tasks(selection: preflight_ci.Selection) -> set[str]:
     return {v.task for v in selection.verdicts if v.selected}
 
 
+def selected_lanes(selection: preflight_ci.Selection) -> list[preflight.LaneKey]:
+    """The selected lanes, each its ``(task, environment)``: one task may run in two environments
+    (atlas Story 31.1's second ``mypy``), so a count of lanes never collapses to task names (Story 103.5)."""
+    return [(v.task, v.environment) for v in selection.verdicts if v.selected]
+
+
 def verdict(selection: preflight_ci.Selection, task: str) -> preflight_ci.LaneVerdict:
     return next(v for v in selection.verdicts if v.task == task)
 
@@ -277,7 +283,9 @@ def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane
     repo = make_repo(tmp_path, {"src/shared/packages/pyforge-marshal/src/x.py": "x = 1\n"})
     journal = select(repo).to_journal()
     skipped = {entry["lane"]: entry for entry in journal["skipped"]}
-    assert len(journal["selected"]) + len(skipped) == len(lanes_and_pixi(repo)[0])
+    # Count lanes, each its (task, environment), never task names (Story 103.5).
+    journaled = [(e["lane"], e["environment"]) for e in [*journal["selected"], *journal["skipped"]]]
+    assert len(set(journaled)) == len(journaled) == len(lanes_and_pixi(repo)[0])
     assert all(entry["workflow"] and entry["rule"] for entry in skipped.values())
     assert skipped[suite("warden")]["workflow"] == "pyforge-station-tests.yml"
     assert "needs.changes.outputs.warden" in skipped[suite("warden")]["rule"]
@@ -721,23 +729,25 @@ def test_gitignored_files_do_not_count_as_dirty(tmp_path: Path) -> None:
 def test_run_preflight_runs_selected_lanes_in_order_and_journals_the_selection(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, MARSHAL_ONLY)
     lanes, _ = lanes_and_pixi(repo)
-    ran: list[str] = []
+    ran: list[preflight.LaneKey] = []
 
     def fake_run(lane: preflight.Lane) -> int:
-        ran.append(lane.task)
+        ran.append((lane.task, lane.environment))
         return 0
 
     code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=fake_run, **_SERIAL)
     assert code == preflight.EXIT_OK
-    expected = selected_tasks(select(repo))
-    assert set(ran) == expected
-    assert ran == [lane.task for lane in lanes if lane.task in expected]  # declaration order kept
+    expected = selected_lanes(select(repo))
+    assert len(set(expected)) == len(expected)  # each lane once, a task in two environments twice
+    assert set(ran) == set(expected)
+    # declaration order kept
+    assert ran == [(lane.task, lane.environment) for lane in lanes if (lane.task, lane.environment) in expected]
 
     record = _run_journal_record(repo)
-    assert [entry["task"] for entry in record["lanes"]] == ran
+    assert [(entry["task"], entry["environment"]) for entry in record["lanes"]] == ran
     selection = record["selection"]
     assert selection["mode"] == "diff"
-    assert {e["lane"] for e in selection["selected"]} == expected
+    assert [(e["lane"], e["environment"]) for e in selection["selected"]] == expected
     assert len(selection["skipped"]) == len(lanes) - len(expected)
     assert all(e["workflow"] and e["rule"] for e in selection["skipped"])
 

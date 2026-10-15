@@ -51,11 +51,7 @@ def _marshal_watch_job(
     del assertion
     data = payload if isinstance(payload, dict) else {}
     pyforge = shutil.which("pyforge")
-    argv = (
-        [pyforge, "marshal", "watch", "--format", "json"]
-        if pyforge
-        else ["marshal", "watch", "--format", "json"]
-    )
+    argv = [pyforge, "marshal", "watch", "--format", "json"] if pyforge else ["marshal", "watch", "--format", "json"]
     project = data.get("project")
     run = data.get("run")
     if project:
@@ -78,7 +74,6 @@ def _marshal_watch_job(
         "stderr": completed.stderr,
         "stdout": completed.stdout,
     }
-
 
 
 def ensure_marshal_runner() -> None:

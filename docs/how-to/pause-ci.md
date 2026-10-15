@@ -33,7 +33,11 @@ from `scripts/ci_surface_gates.py --render`. `detectors-ci` runs `--check` so dr
 merge.
 
 **Master switch:** `PAUSE_ALL_CI` — when `true`, every gated job skips unless the run is
-`workflow_dispatch`.
+`workflow_dispatch`. `pyforge steward ci status --json` always includes a `master:PAUSE_ALL_CI`
+row: while the master is on it reads `drift` (undeclared pause), and every workflow job whose
+`if:` reads the master reads `paused` with `paused_by_master: true` on that surface row (the
+machine-readable flag; `detail` carries the human text). Surfaces the master does not gate, and
+rows whose own switch already pauses them, keep their previous verdict.
 
 **Dispatch carve-out:** `workflow_dispatch` runs ignore pause variables by design (operator
 intentional runs). Scheduled and PR/push runs honor pauses.

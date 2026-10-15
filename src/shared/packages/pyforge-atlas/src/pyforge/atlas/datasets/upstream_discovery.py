@@ -142,14 +142,17 @@ def parse_trending_html(html: str, *, period: str) -> list[dict]:
         link = h2.find("a", href=True) if h2 is not None else None
         if link is None:
             continue
-        repo_full_name = (link.get("href") or "").strip("/").strip()
+        href = link.get("href")
+        if not isinstance(href, str):
+            continue
+        repo_full_name = href.strip("/").strip()
         if not repo_full_name or not _REPO_FULL_NAME_RE.fullmatch(repo_full_name):
             continue
 
         desc_tag = article.find("p")
         description = desc_tag.get_text(strip=True) if desc_tag is not None else None
 
-        lang_tag = article.find(attrs={"itemprop": "programmingLanguage"})
+        lang_tag = article.find(None, {"itemprop": "programmingLanguage"})
         language = (lang_tag.get_text(strip=True) if lang_tag is not None else None) or None
 
         stars_tag = article.select_one('a[href$="/stargazers"]')

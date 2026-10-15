@@ -6,10 +6,8 @@ import jwt
 from django.conf import settings
 from jwt.exceptions import PyJWTError
 
-from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.exceptions import VerifierNotConfiguredError
-from django_pyforge.assertion.jwks import get_jwks_key_set
-from django_pyforge.assertion.jwks import jwks_url_scheme_is_allowed
+from django_pyforge.assertion.exceptions import AssertionRefusedError, VerifierNotConfiguredError
+from django_pyforge.assertion.jwks import get_jwks_key_set, jwks_url_scheme_is_allowed
 from django_pyforge.assertion.schema import CLAIM_SUB
 
 _JWT_COMPACT_SEGMENTS = 3
