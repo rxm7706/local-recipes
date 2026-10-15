@@ -1,0 +1,56 @@
+---
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+/** Same rel prefix as docsite/templates/shell_page.html.j2 for the dossier page. */
+const rel = '../';
+const nav = [
+  { label: 'Docs', href: `${rel}../`, key: 'docs' },
+  { label: 'Overview', href: `${rel}index.html`, key: 'index' },
+  { label: 'Dossier', href: `${rel}dossier/index.html`, key: 'dossier' },
+  { label: 'Infographics', href: `${rel}infographics/index.html`, key: 'gallery' },
+  { label: 'Decks', href: `${rel}decks/index.html`, key: 'decks' },
+  { label: 'Kedro-Viz', href: `${rel}../dashboard/kedro-viz/`, key: 'kedro' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content="Astro" />
+    <link rel="stylesheet" href={`${rel}assets/fonts/fonts.css`} />
+    <link rel="stylesheet" href={`${rel}assets/site.css`} />
+  </head>
+  <body>
+    <header class="site-nav">
+      <div class="site-nav-inner">
+        <a class="site-brand" href={`${rel}index.html`}><span class="spark"></span>PyForge</a>
+        <ul>
+          {
+            nav.map((item) => (
+              <li>
+                <a
+                  class="nav-link"
+                  data-pf-menu-link
+                  href={item.href}
+                  aria-current={item.key === 'dossier' ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <span class="nav-spacer"></span>
+      </div>
+    </header>
+    <slot />
+  </body>
+</html>

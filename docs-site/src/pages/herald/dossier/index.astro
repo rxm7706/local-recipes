@@ -1,0 +1,22 @@
+---
+import { getEntry } from 'astro:content';
+
+import DossierBody from '../../../components/dossier/DossierBody.astro';
+import HeraldDossierLayout from '../../../layouts/HeraldDossierLayout.astro';
+
+export const prerender = process.env.PYFORGE_PAGES_ONE_GENERATOR === '1';
+
+const entry = prerender ? await getEntry('dossier', 'dossier') : null;
+if (prerender && !entry) {
+  throw new Error('dossier collection entry missing while PYFORGE_PAGES_ONE_GENERATOR=1');
+}
+const doc = entry?.data as Record<string, unknown> | undefined;
+---
+
+{
+  prerender && doc ? (
+    <HeraldDossierLayout title={doc.title as string} description={doc.summary as string}>
+      <DossierBody doc={doc} />
+    </HeraldDossierLayout>
+  ) : null
+}

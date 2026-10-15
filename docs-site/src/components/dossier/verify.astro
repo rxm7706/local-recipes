@@ -1,0 +1,8 @@
+---
+import { renderBlock } from '../../lib/dossier-blocks';
+const { block } = Astro.props;
+if (block.type !== 'verify') {
+  throw new Error(`expected block type verify, got ${block.type}`);
+}
+---
+<div set:html={renderBlock(block)} />
