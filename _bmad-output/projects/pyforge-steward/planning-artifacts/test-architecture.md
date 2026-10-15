@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 24d72024acae3049
+source_fingerprint: f82481eff0727a24
 story_count: 383
-test_file_count: 131
+test_file_count: 133
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-steward`
 - **Stories parsed:** 383
 - **Epics parsed:** 104
-- **Test files inventoried:** 131 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 133 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `24d72024acae3049`
+- **Source fingerprint:** `f82481eff0727a24`
 
 ## Risk Assessment
 
@@ -232,9 +232,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_verify_deferred.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_env.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_install_class_playbook.py` | unit | none observed |

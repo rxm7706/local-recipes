@@ -1555,3 +1555,115 @@ def service_mutex_keys(
     except _SelectAll:
         return {(lane.task, lane.environment): None for lane in lanes}
     return {(lane.task, lane.environment): _service_mutex_key_from_states(states, lane) for lane in lanes}
+
+
+# ---------------------------------------------------------------------------
+# The touched scope (Story 103.6): does the diff itself change what a lane checks?
+# ---------------------------------------------------------------------------
+
+LINT_TYPES_TASK = "lint-types"
+STATION_PACKAGES = "src/shared/packages"
+_STATION_ENVIRONMENT_PREFIX = "pyforge-"
+_STATION_PACKAGE_PREFIXES = ("pyforge-", "django-")
+_PYTHON_SUFFIXES = (".py", ".pyi")
+
+
+@dataclass(frozen=True)
+class TouchVerdict:
+    """Whether the diff changes what one lane checks, and which rule said so."""
+
+    touched: bool
+    reason: str = ""
+
+
+def touched_paths(selection: Selection) -> tuple[str, ...]:
+    """The paths the selection read: the committed diff, then the working tree's, each once."""
+    return tuple(dict.fromkeys([*selection.changed_paths, *selection.dirty_paths]))
+
+
+def _under(path: str, root: str) -> bool:
+    return path == root or path.startswith(root.rstrip("/") + "/")
+
+
+def station_package_dirs(repo_root: Path, environment: str) -> tuple[str, ...]:
+    """The station packages of a lane in environment ``pyforge-<x>``: ``src/shared/packages/pyforge-<x>`` and
+    ``src/shared/packages/django-<x>``, each only when the directory exists. Any other environment has none."""
+    if not environment.startswith(_STATION_ENVIRONMENT_PREFIX):
+        return ()
+    name = environment[len(_STATION_ENVIRONMENT_PREFIX) :]
+    if not name:
+        return ()
+    found: list[str] = []
+    for prefix in _STATION_PACKAGE_PREFIXES:
+        relative = f"{STATION_PACKAGES}/{prefix}{name}"
+        if (repo_root / relative).is_dir():
+            found.append(relative)
+    return tuple(found)
+
+
+def command_paths(repo_root: Path, pixi_data: Mapping[str, Any], task: str) -> tuple[str, ...]:
+    """The repository paths a task's own ``cmd`` names, as POSIX paths relative to the root.
+
+    Each word of the command is read relative to the task's ``cwd`` (the root when it has none), and counts when
+    it names an existing file or directory inside the repository other than the root itself. A pytest node id
+    counts as its file. Options, ``$`` expansions and the ``cwd`` itself are not paths the command names.
+    """
+    definition = _task_def(pixi_data, task)
+    if definition is None:
+        return ()
+    cmd = definition.get("cmd")
+    if isinstance(cmd, list):
+        cmd = " ".join(str(part) for part in cmd)
+    if not isinstance(cmd, str):
+        return ()
+    cwd = definition.get("cwd")
+    base = cwd if isinstance(cwd, str) and cwd else "."
+    try:
+        words = shlex.split(cmd)
+    except ValueError:
+        words = cmd.split()
+    found: list[str] = []
+    for word in words:
+        if word in _SEPARATORS or word.startswith("-") or "$" in word:
+            continue
+        candidate = word.split("::", 1)[0]
+        relative = os.path.normpath(os.path.join(base, candidate)).replace(os.sep, "/")
+        if relative in (".", "") or relative == ".." or relative.startswith("../") or os.path.isabs(relative):
+            continue
+        if (repo_root / relative).exists() and relative not in found:
+            found.append(relative)
+    return tuple(found)
+
+
+def lint_types_tasks(pixi_data: Mapping[str, Any]) -> frozenset[str]:
+    """The tasks of the ``lint-types`` lane, read from its ``depends-on`` closure in ``pixi.toml``."""
+    if _task_def(pixi_data, LINT_TYPES_TASK) is None:
+        return frozenset()
+    return frozenset(_closure(pixi_data, LINT_TYPES_TASK) - {LINT_TYPES_TASK})
+
+
+def touch_verdict(
+    repo_root: Path,
+    lane: LaneLike,
+    pixi_data: Mapping[str, Any],
+    changed: Sequence[str],
+    *,
+    lint_tasks: frozenset[str] | None = None,
+) -> TouchVerdict:
+    """Whether ``changed`` touches ``lane`` (Story 103.6): its station package, a path its command names, or --
+    for a lane of the ``lint-types`` closure -- a Python file under ``src/``. The lane is its task and its
+    environment: a station's lanes are told apart by environment alone (each coverage gate runs one command)."""
+    for package in station_package_dirs(repo_root, lane.environment):
+        hit = next((path for path in changed if _under(path, package)), None)
+        if hit is not None:
+            return TouchVerdict(True, f"its station package {package}/ changed ({hit})")
+    for named in command_paths(repo_root, pixi_data, lane.task):
+        hit = next((path for path in changed if _under(path, named)), None)
+        if hit is not None:
+            return TouchVerdict(True, f"its command names {named}, which changed ({hit})")
+    tasks = lint_types_tasks(pixi_data) if lint_tasks is None else lint_tasks
+    if lane.task in tasks:
+        hit = next((path for path in changed if path.startswith("src/") and path.endswith(_PYTHON_SUFFIXES)), None)
+        if hit is not None:
+            return TouchVerdict(True, f"lint and types: Python under src/ changed ({hit})")
+    return TouchVerdict(False)

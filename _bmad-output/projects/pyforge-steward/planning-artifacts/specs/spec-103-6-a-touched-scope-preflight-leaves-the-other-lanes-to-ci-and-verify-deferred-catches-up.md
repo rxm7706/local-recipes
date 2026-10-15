@@ -2,7 +2,7 @@
 title: "103.6: A touched-scope preflight leaves the other lanes to CI, and `verify-deferred` catches up"
 type: 'feature'
 created: '2026-10-15'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: 'fccf4f3ee78b1d7280bfe8101617d75afc579447'
 flag:
   key: pyforge.steward.preflight_ci_arbitrates    # new; minted by this story
