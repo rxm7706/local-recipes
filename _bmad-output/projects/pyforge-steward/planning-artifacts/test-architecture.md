@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 9a1a9aee5ee0a524
-story_count: 381
-test_file_count: 128
+source_fingerprint: f5d6d59a9084f68a
+story_count: 382
+test_file_count: 129
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 381
+- **Stories parsed:** 382
 - **Epics parsed:** 104
-- **Test files inventoried:** 128 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 129 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9a1a9aee5ee0a524`
+- **Source fingerprint:** `f5d6d59a9084f68a`
 
 ## Risk Assessment
 
@@ -152,6 +152,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_marp_in_guild_env_story_63_8.py` | meta | 63.8 |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
@@ -553,6 +554,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 63.5 | `pyforge-foundry-full` — the fleet's whole dependency closure is one locked a... | none observed |
 | 63.6 | No station code assumes the `local-recipes` environment at runtime | none observed |
 | 63.7 | Two `platform-ci-local` runs at once never share services or a work dir | none observed |
+| 63.8 | `marp` resolves in the Guild env, so `deck-export` runs where every agent runs | `src/shared/packages/pyforge-steward/tests/meta/test_marp_in_guild_env_story_63_8.py` |
 | 64.1 | The nine Frames go bare `type: frame` and the README pins the upstream heads | none observed |
 | 64.2 | PyForge publishes its Frame conformance profile | none observed |
 | 65.1 | Reusable, pluggable, feature-flagged estate sprint ledger query module & BMAD... | none observed |

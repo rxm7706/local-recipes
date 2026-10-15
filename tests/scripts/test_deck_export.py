@@ -455,3 +455,18 @@ def test_chrome_available_false_when_nothing_is_found(monkeypatch):
     monkeypatch.setattr(deck_export.shutil, "which", lambda name: None)
     monkeypatch.delenv("CHROME_PATH", raising=False)
     assert deck_export.chrome_available() is False
+
+
+# ------------------------------------------------------------- steward Story 63.8
+
+
+def test_run_marp_hint_names_the_guild_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Steward Story 63.8 (spec-pyforge-steward CAP-5): ``marp`` resolves in ``pyforge-guild``,
+    the session default, so the missing-binary hint sends the operator there -- never to
+    ``-e local-recipes``, the Guild-task / local-recipes mix-up the session hook refuses."""
+    monkeypatch.setattr(deck_export.shutil, "which", lambda _name: None)
+    with pytest.raises(SystemExit) as excinfo:
+        deck_export.run_marp(["--html"])
+    message = str(excinfo.value.code)
+    assert "pixi run -e pyforge-guild deck-export" in message
+    assert "local-recipes" not in message
