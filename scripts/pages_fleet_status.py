@@ -45,6 +45,10 @@ def main(argv: list[str] | None = None) -> int:
         help="the snapshot time the board names (default: the ledger payload's generated_at)",
     )
     args = parser.parse_args(argv)
+    if args.generated_at is not None and not args.generated_at.strip():
+        # `--generated-at "$(git log …)"` with a failed git: never fall back to the query time silently.
+        print("pages_fleet_status: --generated-at is empty", file=sys.stderr)
+        return 1
 
     try:
         payload = json.loads(args.ledger.read_text(encoding="utf-8"))

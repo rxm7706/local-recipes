@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -222,6 +223,29 @@ def test_ac2_deploy_waits_for_the_dispatched_run_to_be_listed(tmp_path: Path) ->
     assert runner.calls.count(list(DEPLOY_LIST_ARGV)) == 2
 
 
+def test_ac2_deploy_names_no_run_when_none_is_listed(tmp_path: Path) -> None:
+    runner = FakeRunner({DISPATCH_ARGV: _Proc(0), DEPLOY_LIST_ARGV: _Proc(0, "[]")})
+    result = run_deploy(_deps(tmp_path, runner))
+    assert result.ok is False
+    assert "listed no run" in result.summary
+    assert runner.calls.count(list(DEPLOY_LIST_ARGV)) == 5  # noqa: PLR2004 -- every attempt
+
+
+def test_ac2_deploy_names_the_newest_earlier_dispatch_with_a_note(tmp_path: Path) -> None:
+    earlier = {**_RUN, "databaseId": 4100, "createdAt": "2026-10-14T08:00:00Z"}
+    runner = FakeRunner({DISPATCH_ARGV: _Proc(0), DEPLOY_LIST_ARGV: _Proc(0, json.dumps([earlier]))})
+    result = run_deploy(_deps(tmp_path, runner))
+    assert result.ok is True
+    assert "run 4100" in result.summary and "newest earlier dispatch" in result.summary
+
+
+def test_ac2_deploy_run_list_failure_names_the_argv(tmp_path: Path) -> None:
+    runner = FakeRunner({DISPATCH_ARGV: _Proc(0), DEPLOY_LIST_ARGV: _Proc(1, stderr="HTTP 502")})
+    result = run_deploy(_deps(tmp_path, runner))
+    assert result.ok is False
+    assert "`gh run list --workflow pages.yml" in result.summary and "HTTP 502" in result.summary
+
+
 def test_ac2_deploy_gh_failure_names_argv_and_stderr(tmp_path: Path) -> None:
     runner = FakeRunner({DISPATCH_ARGV: _Proc(1, stderr="HTTP 403: Resource not accessible")})
     result = run_deploy(_deps(tmp_path, runner))
@@ -353,6 +377,19 @@ def test_ac3_json_emits_the_three_blocks(tmp_path: Path) -> None:
     assert payload["registry"] == {"surface": "pages", "verdict": "live"}
 
 
+def test_status_with_every_gh_call_failing_reads_unavailable_and_fails(tmp_path: Path) -> None:
+    """A really unauthenticated `gh`: the site lookup, the run list and the ci reader all fail. The
+    lines say so; the run list is the duty's own fact, so `ok` is false (the spec's matrix row)."""
+    runner = FakeRunner({("gh",): _Proc(4, stderr="gh auth login required")})
+    result = run_status(_deps(tmp_path, runner, verdict=(None, "ci: gh api rate_limit failed: gh auth login required")))
+    assert result.ok is False
+    live, run, registry = result.summary.splitlines()
+    assert live.startswith("live root: unavailable (`gh api repos/{owner}/{repo}/pages --jq .html_url` exited 4")
+    assert run.startswith("last run: `gh run list --workflow pages.yml") and "auth login" in run
+    assert registry.startswith("registry verdict: unavailable (")
+    assert not [argv for argv in runner.calls if argv[0] == "curl"]
+
+
 def test_status_cannot_read_the_last_run(tmp_path: Path) -> None:
     runner = _status_runner()
     runner.responses[STATUS_RUN_ARGV] = _Proc(4, stderr="gh: not logged in")
@@ -441,7 +478,9 @@ def test_ac6_pages_follows_ci_and_restore_keeps_its_slot() -> None:
 
 def test_ac6_help_lists_pages(capsys) -> None:
     assert main(["--help"]) == EXIT_OK
-    assert "pages" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert ",ci,pages,preflight}" in out  # the duty choices line, not deploy's help text
+    assert any(line.strip().startswith("pages ") for line in out.splitlines())
 
 
 def test_ac6_bare_pages_names_the_three_verbs(capsys) -> None:
@@ -501,6 +540,28 @@ def test_write_fleet_status_reads_the_tracked_ledgers(tmp_path: Path) -> None:
         ("2.1", "backlog"),
     }
     assert document["generated_at"]
+
+
+def test_write_fleet_status_stamps_head_commit_time(tmp_path: Path) -> None:
+    """Local == CI: the snapshot time is HEAD's commit time, as the workflow's `--generated-at` passes."""
+    import subprocess
+
+    station = tmp_path / "_bmad-output" / "projects" / "pyforge-demo" / "planning-artifacts"
+    station.mkdir(parents=True)
+    (station / "epics.md").write_text(_EPICS, encoding="utf-8")
+    (station / "sprint-status-ledger.yaml").write_text(_LEDGER, encoding="utf-8")
+    env = {"GIT_AUTHOR_DATE": "2026-10-14T01:56:19+00:00", "GIT_COMMITTER_DATE": "2026-10-14T01:56:19+00:00"}
+    for argv in (
+        ["git", "init", "-q"],
+        ["git", "add", "."],
+        ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "ledgers"],
+    ):
+        subprocess.run(argv, cwd=tmp_path, check=True, capture_output=True, env={**os.environ, **env})
+    assert pages_duty.head_commit_time(tmp_path) == "2026-10-14T01:56:19+00:00"
+    document = json.loads(pages_duty.write_fleet_status(tmp_path).read_text(encoding="utf-8"))
+    assert document["generated_at"] == "2026-10-14T01:56:19+00:00"
+    assert "next_running" not in document["stations"][0]
+    assert pages_duty.head_commit_time(tmp_path / "not-a-repo") is None
 
 
 def test_the_fleet_status_document_is_the_shape_herald_reads() -> None:

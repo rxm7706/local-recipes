@@ -32,7 +32,8 @@ build carries on: no mount, no redirect, and no Kedro-Viz entry in the menus or
 the overview tiles.
 
 Deploy is `.github/workflows/pages.yml`, which uploads `docs-site/build/site`.
-`pixi run -e pyforge-guild pyforge steward pages deploy` triggers one run of it on `main`,
+`pixi run -e pyforge-guild pyforge steward pages deploy` triggers one run of it on `main` (which
+deploys only when the built tree changed, a dispatch included),
 `steward pages status` reads the live root, the last run and the `pages` registry verdict, and
 `steward pages build` rehearses the build locally (steward Story 102.3). No verb commits to
 `main`.

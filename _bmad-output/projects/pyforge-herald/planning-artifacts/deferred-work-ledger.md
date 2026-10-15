@@ -1538,3 +1538,15 @@ deployment.
   severity: low
   promoted: 2026-10-11 — herald Story 19.2 landing review
   status: open
+
+### DW-herald-102-3-1: The steward deck family still presents `steward deploy dashboard`, `deploy status` and the deleted tracked-ledger refusal as current
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-102-3-steward-pages-build-deploy-status-replaces-deploy-dashboard-and-deploy-status.md`
+  summary: steward Story 102.3 retired `steward deploy dashboard` / `deploy status` and deleted the tracked-ledger refusal; the steward deck family's current surfaces still name them as live. `presentations/pyforge-steward/project/PyForge Steward - Infographic Deck.dc.html:206,688,734,737,780,877,1018`, `…/PyForge Steward - Infographic.dc.html:193,631,671,674,716,812,942`, `…/PyForge Steward Infographic standalone.html:190,628,668,671,713,809,939`, `…/PyForge Steward.dc.html:140` and `presentations/pyforge-steward/src/slides/manifest.json:47` ("Publish the dashboard · `pyforge steward deploy dashboard`", "Kedro-Viz via steward deploy dashboard", the deleted dry-run / status / ledger-refusal tests). The dated Marp sources (`src/marp/pyforge-steward-deck-2026-09-15.md:104`, `…-narration-2026-07-31.md:35`) carry the same line.
+  evidence: steward Story 102.3 independent review (2026-10-15, AC7 / S3); `git grep -n "deploy dashboard\|deploy status\|ledger refusal" -- presentations/pyforge-steward` lists the lines above. Not hand-edited: `docs/how-to/presentation-deck.md` puts deck content in the Design prototype and derives every export from it (edit in Design, `herald deck pull`, `npm run extract`, then `pixi run -e pyforge-guild deck-export pyforge-steward`); a hand edit would diverge from Design and be reverted by the next pull.
+  location: presentations/pyforge-steward/
+  origin: steward Story 102.3 review, 2026-10-15 (prose outside steward's surface; the dossier half, `docsite/content/dossier.yml`, was fixed in the same chain)
+  fix: a steward deck refresh through the claude-design bridge: replace the retired verb with `steward pages build|deploy|status` (the Pages workflow builds and deploys; no verb commits to `main`) in the three Design files, pull, re-extract, and re-run `deck-export pyforge-steward` so the Marp sources, the poster and both PPTX follow. Operator-owned: it writes to the operator's Design project.
+  severity: low
+  promoted: 2026-10-15 — steward Story 102.3 review (Pages redesign chain)
+  status: open

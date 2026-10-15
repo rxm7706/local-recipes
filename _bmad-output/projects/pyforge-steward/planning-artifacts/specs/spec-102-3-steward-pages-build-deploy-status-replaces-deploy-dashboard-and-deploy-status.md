@@ -165,7 +165,8 @@ Type / Effort / Deps: feature / M / S-102.2.
 | deploy, gh fails | `gh workflow run` exit 1 | `ok=False`, argv and stderr | `EXIT_FAILED` |
 | deploy, wait | `--wait` | `gh run watch <id> --exit-status` recorded; page url reported | child exit propagates to `ok` |
 | status, live site down | `curl` exit 22 | line 1 reads `unreachable`; lines 2–3 still print | `ok=True` (a fact) |
-| status, gh unauthenticated | `ci` reader refuses | line 3 `unavailable (<reason>)` | `ok=True` |
+| status, ci reader refuses | `ci` reader refuses (flag off, rate limit); `gh run list` reads | line 3 `unavailable (<reason>)` | `ok=True` |
+| status, gh unauthenticated | every `gh` call fails | line 1 `unavailable (…)`, line 2 names the `gh run list` error, line 3 `unavailable (…)` | `ok=False`, exit 1 (the run list is the duty's own fact; corrected 2026-10-15) |
 | flag off | tree default | refusal naming the flag before any call | exit 3 |
 | retired verb | `steward deploy dashboard` | argparse usage error | exit 2 |
 | bare duty | `steward pages` | names the three verbs | exit 0 |
@@ -309,3 +310,41 @@ atlas's producer calls the retired verbs
   - **Found while running the steward suite:** herald 42.1's `test_status_pages_flag_states.py` hands the repo root to
     the herald build and was not declared in `test_station_tests_trigger_map.py`'s `ROOT_HANDOFF_INPUTS`; it is now
     (`docsite/**`, `presentations/**`, as `test_pages_artifact.py` is).
+- 2026-10-15 (the independent review, `review-102-3`, verdict FAIL on four should-fix items; resolved here):
+  - **S1 — a dispatch no longer redeploys an identical tree.** AD-4 as amended 2026-10-14 reads "an equal hash
+    performs zero deploys" with no dispatch exception, so the code changes, not the contract. The gate renderer
+    (`scripts/_ci_surface_gates_render.py`) gains a per-row `dispatch: pause-only` (schema
+    `docs/governance/ci-surfaces.schema.json`): such a row renders `(dispatch || (pause switches)) && (inner)` where
+    every other row keeps `dispatch || (pause switches && inner)` (the operator's escape hatch; the registry's
+    `dispatch_ignores_pauses` convention). Only `pages.deploy` sets it. Its inner condition is now
+    `github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.build.outputs.changed == 'true'`
+    (the duplicated pause group 102.2 left inside it is gone), rendered by `python scripts/ci_surface_gates.py
+    --render`, which is idempotent on every other workflow. `pages_duty.py`'s docstring, the workflow header and
+    `docs/dashboard/README.md` say so. Tests: `tests/scripts/test_ci_surface_gates.py` (the shape, its parse round
+    trip, a fixture render that a second render leaves unchanged, the live registry choosing it for `pages.deploy`
+    only) and `test_pages_workflow.py::test_a_dispatch_bypasses_only_the_pause_switches_of_the_deploy`.
+  - **S2.** `DW-9-7-1`, `DW-9-7-2` and `DW-FU-9-1-6` are closed as obsolete in steward's deferred-work ledger, citing
+    this story's deletions.
+  - **S3 / AC7, restated.** No executable caller of `deploy dashboard` or `deploy status` remains. The prose: herald's
+    dossier (`docsite/content/dossier.yml`, the steward paragraph and the two passages about the deleted ledger
+    guard) is corrected; the steward deck family is herald's deferred-work row `DW-herald-102-3-1` (a deck refresh
+    through the claude-design bridge plus `deck-export`, operator-owned). The generated
+    `docs/reference/station-cheat-sheet.md`, `planning-artifacts/test-architecture.md` and
+    `planning-artifacts/test-design-qa.md` still name the retired verbs and the five deleted test modules; the
+    coordinating session regenerates them after the chain's lanes merge.
+  - **S4.** `marshal-policy.toml`'s Epic 102 surface now lists `scripts/pages_fleet_status.py` (this story),
+    `scripts/pages_artifact_download.py` (102.4), the gate renderer and the registry schema, herald's dossier, docsite
+    README and deferred-work ledger, each with its reason in the entry's comment.
+  - **Nits.** The fleet input carries only the station fields herald reads (`station`, `epics`, `total`, `done`,
+    `in_progress`, `backlog`, `blocked`): no `next_running`, so no live `marshal watch` fact reaches it, and
+    `write_fleet_status` stamps HEAD's commit time (`head_commit_time`), so a local `steward pages build` writes the CI
+    run's file. `scripts/pages_fleet_status.py` refuses an empty `--generated-at`. New tests: the production flag read
+    through a flagd tree under `flag_states`, the help's duty choices line, a status where every `gh` call fails (the
+    matrix row above is corrected), the stamp script's liveness wiring through a `file://` live `build.json` (a
+    mutation that drops the two keywords fails it), and the deploy poll's no-run, earlier-dispatch and list-failure
+    paths. The workflow header and `docs/reference/github-workflows.md`'s Kedro-Viz row are current (atlas 30.1
+    removed the commit step; 102.4 mounts the artifact). The reformat of `scripts/pages_build_stamp.py` (N9) is kept:
+    it is the repo-root ruff config's format, and the file is executable like its sibling scripts.
+  - **N7, for herald 43.5.** The board's `generated_at` is the built commit's time, so `/status/` changes on every
+    `main` commit even when the ledgers did not move; with the build-date footer it forces at most one re-hash a day.
+    Herald 43.5 owns that interaction with the tree-hash deploy rule.

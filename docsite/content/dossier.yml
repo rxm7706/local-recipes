@@ -701,8 +701,8 @@ sections:
     - glyph: ←
       md: '**Doctor** — judged, structurally, per Doctor''s own §D above.'
     - glyph: →
-      md: '**Steward** — Steward''s own dashboard refuses to publish when Marshal''s sprint ledger is
-        missing or stale, rather than deriving a status of its own.'
+      md: '**Steward** — Steward reads Marshal''s tracked sprint ledgers as they stand (`ledger-query`, which
+        also feeds the Pages fleet board) and never derives a story status of its own.'
   - type: verify
     md: The installed skill file documents 4 subcommands out of 21 top-level groups and 55 total parser
       registrations. 61 distinct `AD-N` identifiers appear in source, reaching AD-72, though the registry
@@ -893,9 +893,9 @@ sections:
     body:
     - 'There is no literal CMS anywhere in Steward''s source. What it actually owns is **Lane 1 `/console/`**
       — an operator dashboard that replaced an earlier generator script. And it doesn''t compute its own
-      status: a precondition guard refuses to publish the dashboard at all when Marshal''s tracked sprint
-      ledger is missing, unreadable, or malformed, and separately wraps Doctor''s own fleet-scan output
-      rather than deriving anything itself. Steward''s console performs zero status derivation of its
+      status: it reads Marshal''s tracked sprint ledgers as they stand (`steward ledger-query`, which also
+      writes the Pages fleet board''s input) and wraps Doctor''s own fleet-scan output rather than deriving
+      anything itself. Steward''s console performs zero status derivation of its
       own — it''s a read surface over what Marshal and Doctor already produced.'
   - type: h3
     num: St.1

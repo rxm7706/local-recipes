@@ -31,6 +31,9 @@ KEDRO_VIZ_DEST_REL = "docs/dashboard/kedro-viz"
 LIVENESS_MAX_AGE = timedelta(hours=24)
 #: The story fields the board's attention block reads; the rest of steward's row stays out of the input.
 _FLEET_STORY_FIELDS = ("story_id", "station", "epic_id", "title", "status")
+#: The per-station counts herald's board reads (herald 42.1 ``COUNT_KEYS`` plus ``done``); nothing else of
+#: ``StationProgress`` reaches the input -- ``next_running`` carries the live ``marshal watch`` fact.
+_FLEET_STATION_COUNTS = ("done", "in_progress", "backlog", "blocked")
 
 # Relative paths excluded from tree_hash (never hashed silently — each entry documents why).
 # Herald M3 footer paths join this list when that footer ships (design-thinking P-A).
@@ -150,9 +153,11 @@ def decide_deploy(
 def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str | None = None) -> dict[str, Any]:
     """``sprint-ledger-query --format json`` reshaped as herald's fleet-status input.
 
-    ``stations`` is the payload's ``summary.stations`` as a list in station order, each
-    ``StationProgress`` row plus ``total`` (its ``total_stories``) and ``epics`` (how many of the
-    payload's ``epics`` rows name that station); ``stories`` keeps each story row's
+    ``stations`` is the payload's ``summary.stations`` as a list in station order, each row
+    ``station``, ``epics`` (how many of the payload's ``epics`` rows name that station), ``total`` (its
+    ``total_stories``) and the ``done`` / ``in_progress`` / ``backlog`` / ``blocked`` counts it gives --
+    nothing else of ``StationProgress``, so no live ``marshal watch`` fact reaches the input (the CI
+    run and a local ``steward pages build`` write the same file for one commit); ``stories`` keeps each story row's
     ``story_id``, ``station``, ``epic_id``, ``title`` and ``status``. ``generated_at`` is the snapshot
     time the board names: the payload's own unless the caller passes a steadier one (the workflow
     passes the built commit's time, so a scheduled build of an unmoved tree hashes the same and
@@ -172,14 +177,13 @@ def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str |
         if not isinstance(progress, dict):
             msg = f"sprint-ledger-query payload: summary.stations[{name!r}] is not an object"
             raise ValueError(msg)
-        rows.append(
-            {
-                **progress,
-                "station": progress.get("station", name),
-                "total": progress.get("total_stories", 0),
-                "epics": epics_per_station.get(name, 0),
-            }
-        )
+        row: dict[str, Any] = {
+            "station": progress.get("station", name),
+            "epics": epics_per_station.get(name, 0),
+            "total": progress.get("total_stories", 0),
+        }
+        row.update({key: progress[key] for key in _FLEET_STATION_COUNTS if key in progress})
+        rows.append(row)
     stories = [
         {field: story.get(field) for field in _FLEET_STORY_FIELDS}
         for story in ledger_payload.get("stories") or []

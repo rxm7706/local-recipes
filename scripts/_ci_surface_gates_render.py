@@ -1,4 +1,11 @@
-"""Render and completeness checks for CI pause fragments (Story 99.2 / CAP-166)."""
+"""Render and completeness checks for CI pause fragments (Story 99.2 / CAP-166).
+
+A fragment puts the pause switches in front of a job's own condition (its *inner*):
+``dispatch || (master && workflow [&& job] && (inner))`` -- a ``workflow_dispatch`` run is the operator's
+escape hatch and bypasses the inner condition too. A registry row with ``dispatch: pause-only`` (steward
+Story 102.3, first for ``pages.deploy``) renders ``(dispatch || (master && workflow [&& job])) && (inner)``
+instead: a dispatch bypasses only the pause switches and the job's own condition still holds.
+"""
 from __future__ import annotations
 
 import re
@@ -105,11 +112,28 @@ def _unwrap_redundant_parens(expr: str) -> str:
     return expr
 
 
+def _is_pause_group(text: str) -> bool:
+    """``(dispatch || (master && <pause terms>))``: the leading group of a pause-only fragment."""
+    group = text.strip()
+    if not (group.startswith("(") and group.endswith(")")) or _unwrap_redundant_parens(group) == group:
+        return False
+    or_parts = _split_top_level(_unwrap_redundant_parens(group), "||")
+    if len(or_parts) != 2 or or_parts[0].strip() != _FRAGMENT_DISPATCH:
+        return False
+    terms = _split_top_level(_unwrap_redundant_parens(or_parts[1]), "&&")
+    return bool(terms) and terms[0] == _MASTER_CMP and all(
+        term == _MASTER_CMP or _VAR_PAUSE.fullmatch(term.replace('"', "'")) for term in terms
+    )
+
+
 def parse_fragment_inner(if_text: str) -> str | None:
     """Extract the job's inner condition from a rendered fragment, or ``None`` if not a fragment."""
     raw = strip_expression_wrappers(_normalize_if_text(if_text))
     if _FRAGMENT_DISPATCH not in raw:
         return None
+    and_parts = _split_top_level(raw, "&&")
+    if len(and_parts) >= 2 and _is_pause_group(and_parts[0]):  # the pause-only shape
+        return _unwrap_redundant_parens(" && ".join(and_parts[1:]))
     or_parts = _split_top_level(raw, "||")
     if len(or_parts) < 2:
         return None
@@ -152,6 +176,7 @@ class JobRenderPlan:
     workflow_switch: str
     job_switch: str | None
     inner: str
+    dispatch_pause_only: bool = False
 
 
 def _registry_index(registry: dict[str, Any]) -> tuple[dict[str, str], dict[tuple[str, str], dict[str, Any]]]:
@@ -182,12 +207,17 @@ def _active_workflow_states(registry: dict[str, Any]) -> dict[str, str]:
     return states
 
 
-def build_fragment(*, inner: str, workflow_switch: str, job_switch: str | None) -> str:
+def build_fragment(
+    *, inner: str, workflow_switch: str, job_switch: str | None, dispatch_pause_only: bool = False
+) -> str:
     pause_terms = [_MASTER_CMP, f"vars.{workflow_switch} != 'true'"]
     if job_switch:
         compact_inner = inner.replace(" ", "").replace('"', "'")
         if f"vars.{job_switch}" not in compact_inner:
             pause_terms.append(f"vars.{job_switch} != 'true'")
+    if inner and dispatch_pause_only:
+        expr = f"({_FRAGMENT_DISPATCH} || ({' && '.join(pause_terms)})) && ({inner})"
+        return f"${{{{ {expr} }}}}"
     if inner:
         body = " && ".join([*pause_terms, f"({inner})"])
     else:
@@ -261,6 +291,7 @@ def plan_renders(
                     workflow_switch=wf_var,
                     job_switch=job_switch,
                     inner=inner,
+                    dispatch_pause_only=bool(row) and row.get("dispatch") == "pause-only",
                 )
             )
     return plans
@@ -330,7 +361,7 @@ def _find_job_if_range(lines: list[str], job_line_idx: int, indent: str) -> tupl
                 if not nxt.strip():
                     i += 1
                     continue
-                if nxt.startswith(child_indent + " ") or nxt.startswith(child_indent + "\t"):
+                if nxt.startswith((child_indent + " ", child_indent + "\t")):
                     i += 1
                     continue
                 break
@@ -360,6 +391,7 @@ def _render_block_for_plan(plan: JobRenderPlan) -> str:
         inner=plan.inner,
         workflow_switch=plan.workflow_switch,
         job_switch=plan.job_switch,
+        dispatch_pause_only=plan.dispatch_pause_only,
     )
     lines = _render_comment_lines(child_indent, plan.row_id) + [f"{child_indent}if: {new_if}"]
     return "\n".join(lines) + "\n"
@@ -382,6 +414,7 @@ def render_workflow_file(
             inner=plan.inner,
             workflow_switch=plan.workflow_switch,
             job_switch=plan.job_switch,
+            dispatch_pause_only=plan.dispatch_pause_only,
         )
         block = _render_block_for_plan(plan)
         marker_line = f"    # {_RENDER_MARKER} {plan.row_id}\n"

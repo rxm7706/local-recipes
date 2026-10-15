@@ -5,9 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import make_flag_provider_fixture
-from pyforge.testing_kit.flags import flag_states
+from pyforge.testing_kit.flags import flag_states, flagd_tree
 
+from pyforge.steward import pages_duty
 from pyforge.steward.pages_duty import BUILD_ARGV, EXIT_PAGES_REFUSAL, PagesDeps, run_build
 
 _FLAG = "pyforge.steward.pages_duty"
@@ -47,3 +49,15 @@ def test_build_dry_run_follows_the_flag(flag_provider: dict[str, bool], tmp_path
         assert result.ok is False
         assert result.details["exit_code"] == EXIT_PAGES_REFUSAL
         assert _FLAG in result.summary
+
+
+@flag_states("pyforge.steward.pages_duty")
+def test_the_production_flag_read_follows_the_tree(
+    flag_provider: dict[str, bool], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The duty's real read (`_production_deps`, `read_boolean` over the flagd tree), not a lambda."""
+    enabled = flag_provider["pyforge.steward.pages_duty"]
+    tree = flagd_tree(tmp_path, {"pyforge.steward.pages_duty": "on" if enabled else "off"})
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    assert pages_duty._production_deps(tmp_path).flag_on() is enabled
