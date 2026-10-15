@@ -1205,6 +1205,8 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         ],
         "src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-atlas/tests/unit/catalog/test_credential_scoping.py": _H["GITIGNORE_STATE"],
+        # Story 30.1 AC1: `git ls-files` / `git check-ignore` prove the export left git.
+        "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": _H["GITIGNORE_STATE"],
     },
     "doctor": {
         "src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py": _H["GIT_PLATFORM_DIFF"],
@@ -1240,6 +1242,10 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py": _H["DOCS_SITE"],
         "src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py": _H["DOCS_SITE"],
+        "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": (
+            ("docsite/**", "presentations/**"),
+            "Story 42.2: pages-build runs the real herald build from the root around a fixture Kedro-Viz export",
+        ),
         "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py": _H["PRESENTATIONS"],

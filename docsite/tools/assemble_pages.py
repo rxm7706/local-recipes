@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Assemble one GitHub Pages artifact: Starlight + herald dossier + dashboard."""
+"""Assemble one GitHub Pages artifact: Starlight + herald dossier + dashboard.
+
+Story 42.2 (CAP-60): the Kedro-Viz mount is an artifact handoff that tolerates absence. Its one
+build input is ``docs/dashboard/kedro-viz/`` (atlas's ``kedro-viz-export`` workflow artifact, or a
+local ``viz-publish-stage``; ``kedro_viz_export.py``). Present, it is mounted verbatim at
+``/dashboard/kedro-viz/`` with the ``/kedro-viz/`` redirect and herald's pipelines page at
+``/dashboard/index.html``; absent, none of the three is written, the shared menu and the overview
+tiles drop Kedro-Viz, and ``check`` refuses any page that still links either path."""
 
 from __future__ import annotations
 
@@ -16,6 +23,7 @@ from urllib.parse import unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import kedro_viz_export as kv  # noqa: E402
 from pages_one_generator import DOSSIER_ARTIFACT_REL, enabled_from_env  # noqa: E402
 from pages_second_host import (  # noqa: E402
     SITE_URL_MARKER,
@@ -26,16 +34,19 @@ from pages_second_host import (  # noqa: E402
 HERALD_PREFIX = "herald"
 DASHBOARD_PREFIX = "dashboard"
 ROOT_HERALD_INDEX = f"{HERALD_PREFIX}/index.html"
+KEDRO_VIZ_MOUNT = kv.MOUNT_REL
 KEDRO_VIZ_REDIRECT = "kedro-viz/index.html"
+#: Herald's pipelines page in front of the mount (Story 42.2); written only with the export.
+PIPELINES_PAGE = f"{DASHBOARD_PREFIX}/index.html"
 
 # Vendored roots the cross-origin check does not judge (AD-21 rule 5, "re-vendor, never fork"):
 # a vendored upstream bundle stays byte-identical to its recorded build, so pages-check cannot
 # ask it to drop its own third-party references. Each root is named here with its reason --
 # never a blanket skip -- and `check` reports every root it exempted and what it found there.
 VENDORED_ROOTS: dict[str, str] = {
-    f"{DASHBOARD_PREFIX}/kedro-viz/": (
-        "Kedro-Viz static build, vendored from atlas viz-publish-stage "
-        "via docs/dashboard/kedro-viz/"
+    f"{KEDRO_VIZ_MOUNT}/": (
+        "Kedro-Viz static build: atlas's kedro-viz-export artifact (viz-publish-stage), "
+        "mounted verbatim from docs/dashboard/kedro-viz/"
     ),
 }
 
@@ -190,22 +201,54 @@ def _read_site_url_for_check(artifact_root: Path) -> str:
     return resolve_from_process_environment()
 
 
-def _copy_dashboard(dashboard_src: Path, artifact_root: Path) -> None:
+def _input_label(path: Path, repo_root: Path) -> str:
+    try:
+        return path.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _copy_dashboard(dashboard_src: Path, artifact_root: Path, *, repo_root: Path | None = None) -> bool:
+    """Copy ``dashboard_src`` (minus its README) under ``dashboard/``; True when Kedro-Viz was mounted.
+
+    The Kedro-Viz input is validated first: a present export whose ``index.html`` or
+    ``manifest.json`` is missing or malformed exits 1 naming the input path; an absent (missing or
+    empty) one is skipped, and nothing is written for it (Story 42.2)."""
     dest = artifact_root / DASHBOARD_PREFIX
-    mount = f"{DASHBOARD_PREFIX}/"
-    _refuses_collision(artifact_root, mount)
-    dest.mkdir(parents=True, exist_ok=True)
-    for item in dashboard_src.iterdir():
-        if item.name == "README.md":
-            continue
+    _refuses_collision(artifact_root, f"{DASHBOARD_PREFIX}/")
+    export_dir = dashboard_src / "kedro-viz"
+    label = _input_label(export_dir, repo_root) if repo_root is not None else str(export_dir)
+    try:
+        export = kv.load(export_dir, label=label)
+    except kv.ExportShapeError as exc:
+        print(f"assemble_pages: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    items = [
+        item
+        for item in (sorted(dashboard_src.iterdir()) if dashboard_src.is_dir() else [])
+        if item.name != "README.md" and not (item == export_dir and export is None)
+    ]
+    for item in items:
         target = dest / item.name
+        dest.mkdir(parents=True, exist_ok=True)
         if item.is_dir():
             shutil.copytree(item, target, dirs_exist_ok=True)
         else:
             shutil.copy2(item, target)
+    if export is None:
+        print(f"assemble_pages: no Kedro-Viz export at {label}: mount, redirect and menu entry skipped", flush=True)
+    else:
+        print(f"assemble_pages: Kedro-Viz export {export['commit'][:12]} ({export['date']}) mounted", flush=True)
+    return export is not None
 
 
-def _build_herald(herald_out: Path, repo_root: Path) -> None:
+def _build_herald(
+    herald_out: Path,
+    repo_root: Path,
+    *,
+    kedro_viz_export: Path | None = None,
+    dashboard_out: Path | None = None,
+) -> None:
     herald_out.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable,
@@ -214,12 +257,22 @@ def _build_herald(herald_out: Path, repo_root: Path) -> None:
         str(herald_out),
         "--check",
     ]
+    if kedro_viz_export is not None:
+        cmd += ["--kedro-viz-export", str(kedro_viz_export)]
+    if dashboard_out is not None:
+        cmd += ["--dashboard-out", str(dashboard_out)]
     subprocess.run(cmd, cwd=repo_root, check=True)
 
 
 def _iter_herald_html(artifact_root: Path) -> list[Path]:
     herald_root = artifact_root / HERALD_PREFIX
     return sorted(p for p in herald_root.rglob("*.html") if p.is_file())
+
+
+def _iter_herald_rendered_html(artifact_root: Path) -> list[Path]:
+    """Herald's pages under ``/herald/``, plus the pipelines page it renders under ``/dashboard/``."""
+    pipelines = artifact_root / PIPELINES_PAGE
+    return [*_iter_herald_html(artifact_root), *([pipelines] if pipelines.is_file() else [])]
 
 
 def _iter_checkable_files(artifact_root: Path) -> list[Path]:
@@ -253,15 +306,16 @@ def _write_dossier_redirects(artifact_root: Path) -> None:
 
 
 def _ensure_kedro_viz_redirect(artifact_root: Path) -> None:
-    """Write kedro-viz redirect unless Starlight already emitted one."""
+    """Write the ``/kedro-viz/`` redirect from the mount's presence, unless Starlight already emitted one.
+
+    No mount, no redirect (Story 42.2): ``check`` refuses a ``kedro-viz/`` path without the mount."""
     rel = KEDRO_VIZ_REDIRECT
     path = artifact_root / rel
     if path.exists():
         return
-    dashboard_index = artifact_root / DASHBOARD_PREFIX / "kedro-viz" / "index.html"
+    dashboard_index = artifact_root / KEDRO_VIZ_MOUNT / "index.html"
     if not dashboard_index.is_file():
-        print(f"assemble_pages: missing mount {dashboard_index}", file=sys.stderr)
-        raise SystemExit(1)
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     target = _relative_url(path, dashboard_index)
     path.write_text(redirect_html(target), encoding="utf-8")
@@ -519,7 +573,7 @@ def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
 
 def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
     base_path = _base_path(site_url)
-    for page in _iter_herald_html(artifact_root):
+    for page in _iter_herald_rendered_html(artifact_root):
         rel_page = _artifact_path(page, artifact_root)
         if not _should_check_page_links(rel_page):
             continue
@@ -666,12 +720,15 @@ def _base_path(site_url: str) -> str:
     return path if path.endswith("/") else f"{path}/"
 
 
-def _expected_menu() -> list[tuple[str, str]]:
-    """herald's one navigation list, ``docsite/content/site.yml``: (label, href) in menu order."""
+def _expected_menu(*, kedro_viz: bool = True) -> list[tuple[str, str]]:
+    """herald's one navigation list, ``docsite/content/site.yml``: (label, href) in menu order.
+
+    ``kedro_viz=False`` drops the entries that need the Kedro-Viz mount (Story 42.2)."""
     import yaml  # the ``site`` env carries PyYAML (docsite/build.py reads the same file)
 
     data = yaml.safe_load((_repo_root() / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
-    return [(item["label"], item["href"]) for item in [*data["nav"], *(data.get("neighbours") or [])]]
+    entries = kv.menu_entries([*data["nav"], *(data.get("neighbours") or [])], present=kedro_viz)
+    return [(item["label"], item["href"]) for item in entries]
 
 
 def _menu_target(page: Path, raw: str, artifact_root: Path, base_path: str) -> Path | None:
@@ -704,8 +761,9 @@ def _carries_the_menu(rel_page: str, text: str) -> bool:
     """Every navigable page carries the shared menu: all docs pages and herald's shell pages.
 
     Not the Kedro-Viz export, not a redirect stub, and not a raw infographic or deck export
-    (the pages ``_should_check_page_links`` already leaves out)."""
-    if rel_page.startswith(f"{DASHBOARD_PREFIX}/"):
+    (the pages ``_should_check_page_links`` already leaves out). Herald's pipelines page under
+    ``/dashboard/`` is a shell page and carries it (Story 42.2)."""
+    if rel_page.startswith(f"{DASHBOARD_PREFIX}/") and rel_page != PIPELINES_PAGE:
         return False
     if 'http-equiv="refresh"' in text:
         return False
@@ -743,23 +801,100 @@ def _check_menu_links(artifact_root: Path, site_url: str, expected: list[tuple[s
             _menu_failure(f"docs root has no Herald sidebar link for {label} ({raw!r})")
 
 
-def _required_paths() -> list[str]:
-    return [
+def _required_paths(*, kedro_viz: bool = True) -> list[str]:
+    """The artifact's required files; the Kedro-Viz three only when the export is mounted."""
+    paths = [
         "index.html",
         "404.html",
         ROOT_HERALD_INDEX,
         f"{HERALD_PREFIX}/dossier/index.html",
-        f"{DASHBOARD_PREFIX}/kedro-viz/index.html",
-        KEDRO_VIZ_REDIRECT,
     ]
+    if kedro_viz:
+        paths += [f"{KEDRO_VIZ_MOUNT}/index.html", KEDRO_VIZ_REDIRECT, PIPELINES_PAGE]
+    return paths
+
+
+def _kedro_viz_path(rel: str) -> bool:
+    return rel in (KEDRO_VIZ_MOUNT, "kedro-viz") or rel.startswith((f"{KEDRO_VIZ_MOUNT}/", "kedro-viz/"))
+
+
+def _check_no_kedro_viz_paths(artifact_root: Path, site_url: str) -> None:
+    """With no export mounted, no ``/kedro-viz/`` path exists and no page links it or the mount.
+
+    The link walk reads every ``href``/``src`` of every HTML page in the artifact (Story 42.2 AC2)."""
+    if (artifact_root / "kedro-viz").exists():
+        print(
+            "assemble_pages: kedro-viz/ exists in the artifact but no Kedro-Viz export is mounted "
+            f"at {KEDRO_VIZ_MOUNT}/",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    base_path = _base_path(site_url)
+    root = artifact_root.resolve()
+    for page in sorted(artifact_root.rglob("*.html")):
+        text = page.read_text(encoding="utf-8", errors="replace")
+        for match in _HREF_SRC.finditer(text):
+            raw = match.group(1)
+            target = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
+            if target is None or target == Path("/"):
+                continue
+            rel = target.relative_to(root).as_posix()
+            if _kedro_viz_path(rel):
+                print(
+                    f"assemble_pages: link to the absent Kedro-Viz mount: "
+                    f"{_artifact_path(page, artifact_root)} -> {raw!r}",
+                    file=sys.stderr,
+                )
+                raise SystemExit(1)
+
+
+_REFRESH_URL = re.compile(r"""http-equiv=["']refresh["'][^>]*content=["'][^"']*url=([^"']+)["']""", re.IGNORECASE)
+
+
+def _check_kedro_viz_redirect(artifact_root: Path, site_url: str) -> None:
+    """The ``/kedro-viz/`` stub lands on the mount under this host's base path.
+
+    Whoever wrote it (Starlight's redirects map or ``_ensure_kedro_viz_redirect``), a root-absolute
+    target outside the base path leaves the site: until 2026-10-15 the live stub sent
+    ``/local-recipes/kedro-viz/`` to ``/dashboard/kedro-viz/`` on the user site's root."""
+    stub = artifact_root / KEDRO_VIZ_REDIRECT
+    match = _REFRESH_URL.search(stub.read_text(encoding="utf-8", errors="replace"))
+    target = match.group(1).strip() if match else ""
+    base_path = _base_path(site_url)
+    if target.startswith("/"):
+        resolved = (
+            (artifact_root / target[len(base_path) :]).resolve() if target.startswith(base_path) else None
+        )
+    elif target and not urlparse(target).scheme and not target.startswith("//"):
+        resolved = (stub.parent / target).resolve()
+    else:
+        resolved = None
+    mount = (artifact_root / KEDRO_VIZ_MOUNT).resolve()
+    if resolved not in (mount, mount / "index.html"):
+        print(
+            f"assemble_pages: {KEDRO_VIZ_REDIRECT} redirects to {target!r}, not to {KEDRO_VIZ_MOUNT}/ "
+            f"under the base path {base_path}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
 
 
 def check(artifact_root: Path, *, site_url: str | None = None) -> None:
     site_url = site_url or _read_site_url_for_check(artifact_root)
-    for rel in _required_paths():
+    mounted = (artifact_root / KEDRO_VIZ_MOUNT).exists()
+    for rel in _required_paths(kedro_viz=mounted):
         if not (artifact_root / rel).is_file():
             print(f"assemble_pages: missing required path {rel}", file=sys.stderr)
             raise SystemExit(1)
+    if mounted:
+        try:
+            kv.read_manifest(artifact_root / KEDRO_VIZ_MOUNT, label=KEDRO_VIZ_MOUNT)
+        except kv.ExportShapeError as exc:
+            print(f"assemble_pages: {exc}", file=sys.stderr)
+            raise SystemExit(1) from exc
+        _check_kedro_viz_redirect(artifact_root, site_url)
+    else:
+        _check_no_kedro_viz_paths(artifact_root, site_url)
 
     herald_htmls = _iter_herald_html(artifact_root)
     for herald_html in herald_htmls:
@@ -778,7 +913,7 @@ def check(artifact_root: Path, *, site_url: str | None = None) -> None:
     _check_href_resolution(artifact_root, site_url=site_url)
     _check_shelf_pages(artifact_root, site_url)
     _check_cross_origin_and_hosts(artifact_root, site_url)
-    _check_menu_links(artifact_root, site_url)
+    _check_menu_links(artifact_root, site_url, _expected_menu(kedro_viz=mounted))
 
 
 def assemble(
@@ -815,9 +950,14 @@ def assemble(
             print(f"assemble_pages: collision at {mount}", file=sys.stderr)
             raise SystemExit(1)
 
+    mounted = _copy_dashboard(dashboard_src, artifact_root, repo_root=repo_root)
     if not skip_herald_build:
-        _build_herald(herald_out, repo_root)
-    _copy_dashboard(dashboard_src, artifact_root)
+        _build_herald(
+            herald_out,
+            repo_root,
+            kedro_viz_export=dashboard_src / "kedro-viz",
+            dashboard_out=(artifact_root / DASHBOARD_PREFIX) if mounted else None,
+        )
     _write_dossier_redirects(artifact_root)
     _ensure_kedro_viz_redirect(artifact_root)
     return site_url

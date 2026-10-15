@@ -1021,7 +1021,7 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         help=(
             "prove the documented fresh-clone class-path (install-class CAP-3): "
             "method core, loop --runner, skill-forge own installer, labs plugin "
-            "docs, steward deploy dashboard / Kedro-Viz, template N/A"
+            "docs, the Kedro-Viz producer (kedro-viz-export artifact), template N/A"
         ),
     )
     provision_parser.add_argument(

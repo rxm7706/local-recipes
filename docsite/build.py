@@ -14,7 +14,13 @@ Reads the content model in docsite/content/ and renders:
     dist/artifact/dossier.html       single-file build for the Artifact tool
     dist/.nojekyll                   stop GitHub Pages running Jekyll over it
 
-Nothing here reaches the network and nothing is written outside dist/.
+Story 42.2: when atlas's Kedro-Viz export is in the build input (``docs/dashboard/kedro-viz/``,
+see ``docsite/tools/kedro_viz_export.py``), the overview tile and the shared menu carry Kedro-Viz and
+the tile names the export's commit and date; with ``--dashboard-out DIR`` the pipelines page is
+written to ``DIR/index.html`` (the Pages build passes the artifact's ``dashboard/``). With no
+export, the tile, the menu entry and the pipelines page are left out.
+
+Nothing here reaches the network and nothing is written outside dist/ (and ``--dashboard-out``).
 
     python docsite/build.py                 # build into dist/
     python docsite/build.py --out _site     # build somewhere else
@@ -562,6 +568,14 @@ def _pages_one_generator_from_env() -> bool:
     return enabled_from_env()
 
 
+def _kedro_viz_export():
+    if str(_TOOLS) not in sys.path:
+        sys.path.insert(0, str(_TOOLS))
+    import kedro_viz_export  # noqa: E402
+
+    return kedro_viz_export
+
+
 def _apply_ci_surfaces(doc: dict) -> None:
     if str(_TOOLS) not in sys.path:
         sys.path.insert(0, str(_TOOLS))
@@ -570,8 +584,21 @@ def _apply_ci_surfaces(doc: dict) -> None:
     apply_ci_surfaces_blocks(doc, content_dir=CONTENT)
 
 
-def build(out_dir: Path, repo_root: Path) -> dict:
+def build(
+    out_dir: Path,
+    repo_root: Path,
+    *,
+    kedro_viz_export: Path | None = None,
+    dashboard_out: Path | None = None,
+) -> dict:
+    """Render the site into ``out_dir``. ``kedro_viz_export`` is the Kedro-Viz build input (default
+    ``<repo_root>/docs/dashboard/kedro-viz``); a present export without a well-formed manifest raises
+    ``kedro_viz_export.ExportShapeError`` naming the path, before anything is written."""
+    kv = _kedro_viz_export()
+    export_dir = kedro_viz_export if kedro_viz_export is not None else kv.input_dir(repo_root)
+    export = kv.load(export_dir)
     site_cfg = yaml.safe_load((CONTENT / "site.yml").read_text(encoding="utf-8"))
+    site_cfg["neighbours"] = kv.neighbours(site_cfg.get("neighbours"), export)
     doc = yaml.safe_load((CONTENT / "dossier.yml").read_text(encoding="utf-8"))
     _apply_ci_surfaces(doc)
 
@@ -746,12 +773,33 @@ def build(out_dir: Path, repo_root: Path) -> dict:
         encoding="utf-8",
     )
 
+    pipelines_page = None
+    if dashboard_out is not None and export is not None:
+        neighbour = next(n for n in site_cfg["neighbours"] if n.get(kv.MOUNT_KEY) == kv.MOUNT_NAME)
+        dashboard_out.mkdir(parents=True, exist_ok=True)
+        pipelines_page = dashboard_out / "index.html"
+        rel = os.path.relpath(out_dir, start=dashboard_out).replace(os.sep, "/") + "/"
+        pipelines_page.write_text(
+            env.get_template("page_pipelines.html.j2").render(
+                page_title=f"{neighbour['label']} — {site_cfg['name']}",
+                page_description=strip_tags(neighbour.get("blurb") or neighbour["label"]),
+                page_key="pipelines",
+                rel=rel,
+                neighbour=neighbour,
+                export=export,
+                **shared,
+            ),
+            encoding="utf-8",
+        )
+
     return {
         "infographics": infographics,
         "families": families,
         "out": out_dir,
         "commit": commit,
         "built_at": built_at,
+        "kedro_viz_export": export,
+        "pipelines_page": pipelines_page,
     }
 
 
@@ -876,15 +924,40 @@ def main() -> int:
     ap.add_argument("--out", default="dist", help="output directory (default: dist)")
     ap.add_argument("--repo-root", default=None, help="repository root the infographic globs resolve against")
     ap.add_argument("--check", action="store_true", help="verify the build after writing it")
+    ap.add_argument(
+        "--kedro-viz-export",
+        default=None,
+        help="the Kedro-Viz build input (default: <repo-root>/docs/dashboard/kedro-viz); absent or empty = no mount",
+    )
+    ap.add_argument(
+        "--dashboard-out",
+        default=None,
+        help="write the pipelines page to DIR/index.html when the Kedro-Viz export is present",
+    )
     args = ap.parse_args()
 
     out_dir = (Path.cwd() / args.out).resolve()
     repo_root = Path(args.repo_root).resolve() if args.repo_root else ROOT
+    export_dir = (Path.cwd() / args.kedro_viz_export).resolve() if args.kedro_viz_export else None
+    dashboard_out = (Path.cwd() / args.dashboard_out).resolve() if args.dashboard_out else None
 
-    result = build(out_dir, repo_root)
+    try:
+        result = build(out_dir, repo_root, kedro_viz_export=export_dir, dashboard_out=dashboard_out)
+    except _kedro_viz_export().ExportShapeError as exc:
+        print(f"build: {exc}", file=sys.stderr)
+        return 1
 
     total = sum(len(list(p.rglob("*"))) for p in [out_dir] if p.exists())
     print(f"built {out_dir}  ({total} files, commit {result['commit'] or 'n/a'}, {result['built_at']})")
+    export = result["kedro_viz_export"]
+    if export is None:
+        print("  kedro-viz    absent: no tile, no menu entry, no pipelines page (Story 42.2)")
+    else:
+        page = result["pipelines_page"]
+        print(
+            f"  kedro-viz    present: export {export['commit'][:12]} from {export['date']}"
+            + (f"; pipelines page {page}" if page else "")
+        )
     for item in result["infographics"]:
         print(f"  infographic  {item['out_name']:<46} {item['bytes'] // 1024:>5} KB  {item['source']}")
     for fam in result["families"]:

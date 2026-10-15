@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -14,8 +15,24 @@ from pyforge.atlas.viz_export_artifact import FLAG_KEY
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "kedro-viz-publish.yml"
-BASELINE_REVISION = "e134549afcbdcc5b55b35f291464ac60d6685243"
 STAGED_RELATIVE = Path("docs/dashboard/kedro-viz")
+# AC4 compares the workflow with its shape at the story's baseline_revision (e134549afc). The baseline
+# is pinned here, not read with `git show`: CI checks out one commit (`fetch-depth: 1`), so the old
+# revision is not there to read and the test died with CalledProcessError on PR #2236.
+BASELINE_ON_BLOCK = {
+    "push": {
+        "branches": ["main"],
+        "paths": [
+            "src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**",
+            "src/shared/packages/pyforge-atlas/conf/base/catalog.yml",
+            "src/shared/packages/pyforge-atlas/conf/base/globals.yml",
+            "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/**",
+        ],
+    },
+    "workflow_dispatch": None,
+}
+# sha256 of the baseline's "Materialize stub credentials" step `run:` text (byte-for-byte, AC4).
+BASELINE_STUB_RUN_SHA256 = "cf84a9860fb3cb7910940fe596c968a96f444e78d342754d500a7fd6b2e6d505"
 CI_SURFACES = REPO_ROOT / "docs/governance/ci-surfaces.yaml"
 README = REPO_ROOT / "docs/dashboard/README.md"
 
@@ -23,17 +40,6 @@ _TOOLS = REPO_ROOT / "src/shared/packages/pyforge-atlas/tools"
 if str(_TOOLS) not in __import__("sys").path:
     __import__("sys").path.insert(0, str(_TOOLS))
 import viz_manifest  # noqa: E402
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _ensure_kedro_viz_untracked_from_index() -> None:
-    """Re-apply index removals; other tests may refresh the index from HEAD."""
-    subprocess.run(
-        ["git", "rm", "-r", "--cached", "docs/dashboard/kedro-viz"],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        check=False,
-    )
 
 
 def _load_workflow() -> dict:
@@ -47,18 +53,6 @@ def _workflow_on(document: dict) -> dict:
         block = document.get(True)
     assert isinstance(block, dict)
     return block
-
-
-def _baseline_on_block() -> dict:
-    proc = subprocess.run(
-        ["git", "show", f"{BASELINE_REVISION}:.github/workflows/kedro-viz-publish.yml"],
-        capture_output=True,
-        text=True,
-        check=True,
-        cwd=REPO_ROOT,
-    )
-    baseline = yaml.safe_load(proc.stdout)
-    return _workflow_on(baseline)
 
 
 def test_ac1_kedro_viz_export_not_tracked_and_gitignored() -> None:
@@ -82,7 +76,7 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
     assert document["permissions"]["contents"] == "read"
     assert "write" not in document.get("permissions", {})
     on_block = _workflow_on(document)
-    assert on_block == _baseline_on_block()
+    assert on_block == BASELINE_ON_BLOCK
     assert "workflow_dispatch" in on_block
 
     job = document["jobs"]["publish"]
@@ -99,6 +93,7 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
         assert forbidden not in run_text
 
     stub = next(s for s in steps if isinstance(s, dict) and "Materialize stub credentials" in s.get("name", ""))
+    assert hashlib.sha256(stub["run"].encode("utf-8")).hexdigest() == BASELINE_STUB_RUN_SHA256
     assert "credentials.yml" in stub["run"]
     assert "bigquery_adc" in stub["run"] and "github_token" in stub["run"]
 

@@ -2,7 +2,7 @@
 title: '42.2: The Kedro-Viz mount is an artifact handoff that tolerates absence'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 flag-exempt: docs-only   # the documentation site's own build assembly; no CLI verb, portal or runtime path (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -120,6 +120,13 @@ Type / Effort / Deps: feature / S / steward 102.4 (downloads `kedro-viz-export` 
 - Do not hand-keep a list of redirects (AD-21 rule 1); the `/kedro-viz/` redirect is written from the mount's presence.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
 
+**Landed with atlas 30.1 in one PR, operator 2026-10-15** (rxm7706/local-recipes#2236): marshal refused this
+story's own dispatch (`MRS-DISP-034`, surface overlap with herald 43.1), and atlas 30.1's removal of the tracked
+export reds the Pages build without this story, so the two land together with the fixes for 30.1's other consumers
+(steward's class-path proof and `deploy.py` marker, Platform CI's and steward's "Kedro-Viz kept" invariants, atlas's
+own AC4 test). This story's half is the Pages build: `docsite/` and the three `docs-site/` files the menus and the
+redirect need (§ Spec Change Log, 2026-10-15).
+
 ## I/O & Edge-Case Matrix
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
@@ -187,6 +194,16 @@ the pipelines page and the nav tile name the manifest's commit and date; with no
 - Drop `date` from the manifest — expected: exit 1 naming the path.
 - Leave a hardcoded Kedro-Viz link in a template and build without the export — expected: the link walk fails naming the page.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e site pages-check` — exit 0 with no build input; exit 0 with a real `viz-publish-stage`
+  export (commit `ec31b9ae32`, kedro-viz 12.5.0); both again with `PYFORGE_PAGES_ONE_GENERATOR=1` (the Astro dossier).
+- Mutations, each restored: manifest deleted → exit 1 `docs/dashboard/kedro-viz/manifest.json: missing from the
+  Kedro-Viz export`; `export_date` dropped → exit 1 `...manifest.json: lacks 'export_date'`; a leftover Kedro-Viz
+  link built without the export → exit 1 naming the page (test); the pre-fix Astro stub → exit 1 `kedro-viz/index.html
+  redirects to '/dashboard/kedro-viz/'`.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — green.
+
 ## Named, not fixed here
 
 - **The producer** (`kedro-viz-export` with its manifest, the export's version key, retention) and the removal of
@@ -204,3 +221,41 @@ the pipelines page and the nav tile name the manifest's commit and date; with no
   2026-10-13 entry. The build-input location (`docsite/content/kedro-viz-export/`) follows Story 42.1's
   `docsite/content/fleet-status.json`; the implementing session reads atlas Story 30.1's landed manifest first and
   follows it where it differs from the two-key shape quoted here, recording the keys on the Spec memlog.
+- 2026-10-15 (implemented; landed with atlas 30.1 in one PR, operator 2026-10-15). Where the landed code differs
+  from the text above, the code is the contract and each difference is recorded here:
+  - **The build input** is `docs/dashboard/kedro-viz/` (gitignored), not `docsite/content/kedro-viz-export/`:
+    atlas 30.1 keeps that staging path "so a local `viz-publish-stage` and the consumer's download agree on one
+    path", and steward 102.4's own spec downloads into it. One helper, `docsite/tools/kedro_viz_export.py`, decides
+    presence for `build.py`, `assemble_pages.py` and `docs-site/scripts/sidebar_from_map.py` (present = the
+    directory holds anything; an empty one is absent).
+  - **The manifest keys** are atlas 30.1's landed `export_commit`, `export_date` and `kedro_viz_version`; the two
+    the page names and `pages-check` requires are `export_commit` and `export_date` (AC4 reads "commit"/"date" as
+    those keys). Extra keys are ignored. The pages show the short commit and the date, with the full values in
+    `title`/`datetime` and `data-export-*` attributes.
+  - **What waits on steward 102.4.** The download step has not landed, so in CI the build input is always absent
+    and the production build takes the absent path: no mount, no `/kedro-viz/`, no tile, no menu entry. That is
+    the case that must work now, and it does (`pages-check` exit 0 with no input). The present path is proven on a
+    fixture export in `test_pages_artifact.py` and on a real local `viz-publish-stage` export; it reaches production
+    only when 102.4 downloads the artifact (and atlas's flag lets the producer upload one).
+  - **The pipelines page** is rendered by `docsite/build.py --dashboard-out` into the artifact's `dashboard/`
+    (`docsite/templates/page_pipelines.html.j2`, provenance line `kedro_viz_export.html.j2`), only with the export.
+    It is a herald shell page: `pages-check` now requires the shared menu on it and resolves its links.
+  - **The shape refusals** fire twice: `pages-build` refuses the build input (naming
+    `docs/dashboard/kedro-viz/manifest.json`) before anything is mounted, and `pages-check --check` refuses the
+    mounted copy (naming `dashboard/kedro-viz/manifest.json`).
+  - **The link walk** (AC2) reads every `href`/`src` of every HTML page in the artifact when nothing is mounted,
+    and refuses a stray `kedro-viz/` path.
+  - **Beyond Epic 42's declared surface** (`docsite/**`): `docs-site/astro.config.mjs` (the redirect is conditional,
+    read from the generated top menu's `mount` marker), `docs-site/scripts/sidebar_from_map.py` (both docs-side
+    menus follow the input) and `docs-site/src/layouts/HeraldDossierLayout.astro` (Story 43.1's Astro dossier page
+    hardcoded the six-entry menu; it now reads `topnav.generated.json` as `SiteTitle.astro` does), and
+    `docs/index.md` (its body linked `dashboard/kedro-viz/` unconditionally, which the shelf check would fail when
+    absent; the line now names Kedro-Viz without linking it).
+  - **A live bug fixed on the way.** The Astro `/kedro-viz/` redirect's destination carried no base path, so the
+    live `/local-recipes/kedro-viz/` sent readers to `/dashboard/kedro-viz/` on the host's root (verified with
+    `curl` 2026-10-15). The destination is now `${basePath}dashboard/kedro-viz/`, and `pages-check` refuses a
+    `/kedro-viz/` stub whose target is not the mount under the base path.
+  - **Docs** that described a tracked export now say it is mounted when present: `docsite/README.md` (also
+    `docsite-check.yml` → `pages.yml`, the workflow it was folded into), `docs/MAP.md`,
+    `docs/explanation/enterprise-deployment.md`, and atlas's `docs/dashboard/README.md`.
+

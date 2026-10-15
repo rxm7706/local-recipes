@@ -221,6 +221,8 @@ jobs:
             _bmad/custom/bmad-cis-design-thinking.toml
             _bmad/scripts/resolve_customization.py
             _bmad/skf
+            docs/dashboard/README.md
+            docs/governance/ci-surfaces.yaml
             docs/reference
             recipes
             scripts

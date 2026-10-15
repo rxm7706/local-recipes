@@ -12,4 +12,6 @@ This site publishes the Diátaxis shelf from the repository's `docs/` tree: task
 ## Related sites on Pages
 
 - [Herald dossier and deck families](herald/) — infographics, dossier, and presentation tooling
-- [Kedro-Viz pipelines](dashboard/kedro-viz/) — the pyforge-atlas Kedro pipeline graph, exported from the DAG
+- Kedro-Viz pipelines — the pyforge-atlas Kedro pipeline graph, exported from the DAG as atlas's
+  `kedro-viz-export` artifact; when an export is mounted it is in the top menu and the Herald sidebar
+  group, and its overview tile names the commit and date it was exported from

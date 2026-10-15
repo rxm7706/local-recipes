@@ -2,7 +2,7 @@
 title: '30.1: The DAG export reaches Pages as a workflow artifact'
 type: 'feature'
 created: '2026-10-14'
-status: 'done'
+status: 'in-review'
 followup_review_recommended: false
 baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag:
@@ -160,6 +160,26 @@ Type / Effort / Deps: feature / M / — (cross-station, prose: steward 102.2 and
   in `tools/`, outside the package the no-inline-IO gate scans, or go through `pyforge.core.process`).
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
 
+**The consumers the removal breaks (landed with herald 42.2 in one PR, operator 2026-10-15):**
+AC1's removal of the tracked export breaks every reader that required `docs/dashboard/kedro-viz/` on a
+fresh clone. PR #2236 lands this story together with herald Story 42.2 and the fix for each, so `main`
+never holds the removal without its consumers (operator rulings 2026-10-15, recorded on
+`spec-pyforge-atlas` and `spec-pyforge-herald`):
+1. **The Pages build** (`docsite/tools/assemble_pages.py`, herald's): `missing required path
+   dashboard/kedro-viz/index.html`. Fixed by herald Story 42.2 — the mount reads this story's
+   `manifest.json` when the export is present and is skipped, with the tile hidden, when it is absent.
+2. **Steward's fresh-clone class-path proof** (`fresh_clone.py`, `test_fresh_clone_class_path.py`, the
+   `pip-install` lane) and **`deploy.py`'s repo-root marker**: both keyed on the export's `index.html`.
+   The `bmad-dashboard` class is now runnable when the producer is wired (`viz-publish-stage` plus this
+   workflow's `kedro-viz-export` upload); the marker is the tracked `docs/dashboard/README.md`.
+3. **Platform CI** (`src/platform/tests/test_console_parity_homes.py::test_generator_gone_kedro_viz_kept`)
+   and **steward's twin invariant** (`tests/meta/test_invariants.py::test_guildhall_generator_stays_deleted`):
+   "Kedro-Viz kept" now means kept as this workflow's artifact, not as a tracked directory.
+4. **`atlas-test`** (this story's own `test_viz_export_artifact.py`): AC4 read the baseline with
+   `git show <baseline_revision>`, which a `fetch-depth: 1` checkout cannot answer; the baseline's `on:`
+   block and the stub step's digest are pinned in the test instead, and the module fixture that ran
+   `git rm --cached` against the repository index is gone.
+
 ## I/O & Edge-Case Matrix
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
@@ -263,6 +283,20 @@ filter and the stub-credentials step unchanged, and a job `if:` carrying `PAUSE_
   and the deviation is recorded in this log.
 - 2026-10-15: landed Story 30.1 — `normalize_viz_build.py` repo-root marker is `docs/dashboard/README.md` (not
   `kedro-viz/index.html`) so CI can normalize on a fresh clone after the export leaves git.
+- 2026-10-15 (amendment; landed with herald 42.2 in one PR, operator 2026-10-15): PR #2236 at `bc968a4c68` went red
+  on four lanes because AC1's removal had consumers this spec did not name — Pages `build` (`assemble_pages:
+  missing required path dashboard/kedro-viz/index.html`), `pip-install` and `steward-test` (the class-path proof and
+  `deploy.py`'s marker), Platform CI `test` (`test_generator_gone_kedro_viz_kept`), and `atlas-test` (AC4's `git show`
+  of the baseline on a shallow checkout). Marshal refused a separate 42.2 dispatch (`MRS-DISP-034`, surface overlap
+  with herald 43.1); the operator ruled "bring herald 42.2 forward" and then "combine 2236 - to include - Held: atlas
+  30.1 (rxm7706/local-recipes#2236). Its removal of the Kedro-Viz export breaks four consumers, so its spec needs
+  amending first, together with herald 42.2." Boundaries now name the four consumers and their fixes. Two `Never`
+  items stand for this story's own diff but not for the PR: the combined PR edits `docsite/` and `docs-site/` (herald
+  42.2's half) and steward's `deploy.py` marker (a consumer fix, not a change to any `deploy` duty's behaviour); this
+  story's files are unchanged in scope. The steward station-tests trigger map also gains this test's two root reads
+  (`docs/dashboard/README.md`, `docs/governance/ci-surfaces.yaml`) and its `git check-ignore` handoff. Status back to
+  `in-review` for the combined review; the ledger key stays `backlog` until the operator finalizes on merge
+  (`dispatch_land_finalize`).
 
 ## Review Triage Log
 

@@ -134,9 +134,18 @@ def _minimal_artifact(artifact: Path, site_url: str, *, herald_index_body: str) 
     _write_shared_menu(artifact, assemble_pages._base_path(site_url), herald_index_extra=herald_index_body)
     # The former-root redirect stub for every herald page (CAP-52), as pages-build writes them.
     assemble_pages._write_dossier_redirects(artifact)
+    # A mounted Kedro-Viz export (Story 42.2): the bundle, its manifest, and herald's pipelines page.
     dashboard = artifact / "dashboard" / "kedro-viz"
     dashboard.mkdir(parents=True)
     (dashboard / "index.html").write_text("<html></html>", encoding="utf-8")
+    (dashboard / "manifest.json").write_text(
+        json.dumps({"export_commit": "0" * 40, "export_date": "2026-10-15T09:23:50Z"}), encoding="utf-8"
+    )
+    pipelines_menu = "".join(
+        f'<a data-pf-menu-link href="{"kedro-viz/" if label == "Kedro-Viz" else "../herald/" + href}">{label}</a>'
+        for label, _, href in _SHARED_MENU
+    )
+    (artifact / "dashboard" / "index.html").write_text(f"<html>{pipelines_menu}</html>", encoding="utf-8")
     (artifact / "kedro-viz").mkdir(parents=True, exist_ok=True)
     (artifact / "kedro-viz" / "index.html").write_text(
         assemble_pages.redirect_html("../dashboard/kedro-viz/index.html"),
