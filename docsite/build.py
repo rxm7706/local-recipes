@@ -790,12 +790,10 @@ def check(out_dir: Path, result: dict) -> int:
         if tag in artifact.lower():
             problems.append(f"artifact build must not contain {tag!r} — the Artifact host supplies it")
 
-    if skip_dossier:
-        return _finish_check(problems, result, required)
-
-    dossier = (out_dir / "dossier" / "index.html").read_text(encoding="utf-8")
-    if "{{" in dossier or "{%" in dossier:
-        problems.append("unrendered Jinja delimiters in dossier output")
+    if not skip_dossier:
+        dossier = (out_dir / "dossier" / "index.html").read_text(encoding="utf-8")
+        if "{{" in dossier or "{%" in dossier:
+            problems.append("unrendered Jinja delimiters in dossier output")
 
     for item in result["infographics"]:
         p = out_dir / "infographics" / item["out_name"]

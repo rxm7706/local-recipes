@@ -3,7 +3,7 @@
  * Shapes mirror docsite/templates/blocks.html.j2 (Epic 43 fourteen types + ci_surfaces).
  */
 
-import { cssVar, mdInline } from './md-inline';
+import { cssVar, mdInline } from './md-inline.ts';
 
 export type DossierBlock = Record<string, unknown> & { type: string };
 
