@@ -2,7 +2,7 @@
 title: "103.6: A touched-scope preflight leaves the other lanes to CI, and `verify-deferred` catches up"
 type: 'feature'
 created: '2026-10-15'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'fccf4f3ee78b1d7280bfe8101617d75afc579447'
 flag:
   key: pyforge.steward.preflight_ci_arbitrates    # new; minted by this story
@@ -269,11 +269,12 @@ fixture `pixi.toml` files, fixture repositories and injected lane runners. None 
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass. This is the station's
   `verify_commands` (MRS-GATE-010 binding). It runs `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py`,
   which runs the key `pyforge.steward.preflight_ci_arbitrates` in both states with
-  `pyforge.testing_kit.flags.flag_states` (AC1-AC5), and
+  `pyforge.testing_kit.flags.flag_states` (AC1, AC3-AC5), and
   `src/shared/packages/pyforge-steward/tests/unit/test_preflight_verify_deferred.py` (AC6-AC8).
 
 **Run before the push (not dispatch gates):**
 - `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py src/shared/packages/pyforge-steward/tests/unit/test_preflight_verify_deferred.py -q` — expected: exit 0.
+- `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_lint_types_gate.py -q` — expected: exit 0 (AC2, the hook's two tests; amended in implementation).
 - The AC11 mutations, one at a time, re-running the named test each time — expected: each fails the named test. Revert each.
 - `pixi run -e pyforge-steward pyforge-steward-coverage-gate` — expected: exit 0.
 - `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: exit 0 (`src/shared/packages/pyforge-core/tests/unit/test_flags.py`, AC9).
@@ -282,3 +283,67 @@ fixture `pixi.toml` files, fixture repositories and injected lane runners. None 
 - `pixi run --frozen -e pyforge-guild flag-gate-check` and `pixi run --frozen -e pyforge-guild flag-inventory` — expected: exit 0, and the inventory lists the key on CAP-159 (AC9).
 - `pixi run --frozen -e pyforge-guild governance-currency` and `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` — expected: exit 0 (AC10).
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC12).
+
+## Implementation Result
+
+Hand-implemented on branch `chain-steward-103-6-preflight-ci-arbitrates-2026-10-15`, from baseline `fccf4f3ee7`.
+The diff is for an independent review against this spec, not against this summary.
+
+- **The scope** (`preflight.py`): `resolve_scope` reads `PYFORGE_PREFLIGHT_SCOPE`, and the flag only when the
+  variable is unset. `main` resolves it and refuses a bad value or a flag-tree error with exit 2.
+  `run_preflight(scope=..., scope_source=...)` defaults to `full` and refuses an unknown scope with exit 2.
+- **The cut**:
+  - `preflight_ci.touch_verdict` applies the three rules (station package, a path the command names, lint and
+    types). `touched_paths`, `station_package_dirs`, `command_paths` and `lint_types_tasks` derive their input from
+    the selection, the environment name and `pixi.toml`.
+  - `preflight.touched_cut` keeps the touched lanes and their dependencies, and puts the fast core in
+    `detectors-ci`'s place and environment. Everything else is deferred.
+  - On the live lane list, with all 37 lanes selected:
+    - a change to `preflight.py` keeps 8 (the steward test and gate, and the six `lint-types` lanes, `mypy` in
+      `pyforge-foundry-full` among them) and adds the five detectors;
+    - a `pixi.toml`-only change runs the five detectors alone;
+    - `docs-site/scripts/validate-doc-links.js` keeps `docs-site-validate-links@site`;
+    - `tests/scripts/test_docs_map_render.py` keeps `pyforge-doctor-scripts-test@pyforge-ci` and
+      `docs-map-render-test@pyforge-guild`;
+    - a CFE test change keeps `test-ci@local-recipes`.
+- **The journal:** the run record and the interrupted record gain `mode` and `deferred`. The stdout block names the
+  scope, its source, the fast core and every deferred lane. The stderr count line adds the deferred count.
+- **The duty:** `preflight_verify.py`'s `PreflightDuty` and `verify_deferred`; `cli.py` registers `preflight` as
+  the thirtieth duty, with `verify-deferred --since`.
+- **The flag:** `flags.json`, `flag-overlays.json`, `test_flags.py` (`_SHIPPED_CLOCKS`, the per-environment
+  table), `test_openfeature_file_flags.py` (`_SHIPPED_BOOLEANS`), and steward's flag inventory, regenerated, where
+  CAP-159 lists the key. `test_console_parity_homes.py` registers no flag and was not changed. Only steward's
+  inventory was kept; the other seven stations' regenerated reports were restored, since their drift is theirs.
+- **Tests:** `test_preflight_scope.py` (AC1, AC3-AC5) and `test_preflight_verify_deferred.py` (AC6-AC8).
+  - *Amended in implementation:* AC2's two hook tests live in `tests/scripts/test_lint_types_gate.py`, beside the
+    hook's other tests. In steward's suite, a read of `scripts/pre_push_preflight.sh` fails
+    `test_station_tests_trigger_map.py`, because that path does not fire steward's CI job. A live-lane-list test
+    failed it the same way, since it handed the repository root to the code under test. It was dropped; the
+    live-list examples above were measured by hand.
+- **AC11:** each mutation failed named tests in `test_preflight_scope.py`:
+  - reading the flag while the variable is set failed all four `test_the_variable_wins_and_the_flag_is_not_read`
+    cases;
+  - falling back to `full` on an unknown value failed the four `test_an_unknown_scope_refuses` cases and
+    `test_main_refuses_an_unknown_scope_and_starts_no_lane`;
+  - dropping the station-package rule failed `test_a_station_package_change_keeps_that_stations_lanes`,
+    `test_the_portal_package_is_the_stations_too` and `test_a_touched_run_runs_the_cut_and_journals_what_it_deferred`;
+  - journaling no `deferred` entry failed `test_a_touched_run_runs_the_cut_and_journals_what_it_deferred` and
+    `test_an_interrupted_touched_run_journals_its_scope_and_what_it_deferred`.
+- **Green**, each read from its own exit code:
+  - `pyforge-steward-coverage-gate`: exit 0, 2708 unit tests passed. Touched modules: `cli.py` 99%, `preflight.py`
+    94%, `preflight_ci.py` 82%, `preflight_verify.py` 97%.
+  - `pyforge-core-test`: exit 0 (2461 passed).
+  - `test_openfeature_file_flags.py` in `platform-ci-test`: exit 0 (52 passed).
+  - `test_lint_types_gate.py` in `pyforge-ci`: exit 0 (30 passed).
+  - `lint-types`, `flag-gate-check`, `governance-currency`, `test_instruction_surface_parity.py` and the planning
+    checks: exit 0.
+  - `pyforge-steward-test` is recorded on the PR.
+
+## Spec Change Log
+
+- 2026-10-15: minted from the Dream's 2026-10-15 addition (CI arbitrates the deferred lanes), under the operator's
+  three rulings of that day. `type: feature`, behind the new flag `pyforge.steward.preflight_ci_arbitrates`; no CAP.
+  Bound to `spec-pyforge-steward` CAP-159.
+- 2026-10-15 (implementation): AC2's hook tests moved to `tests/scripts/test_lint_types_gate.py`, since the
+  station-test trigger map refuses a steward test that reads the hook script (Implementation Result, amended). No AC
+  changed.
