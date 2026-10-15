@@ -333,10 +333,76 @@ Type / Effort / Deps: fix / M / —.
   marshal: a landing re-verification setting". `type: fix`, no flag, no CAP.
 - 2026-10-15: implemented and moved to `in-review`. The git reads and the narrow re-check sit in `dispatch_verify.py`,
   not a new top-level module (see Adjustments), so no import contract or package `pyproject.toml` moves.
+- 2026-10-15: the independent review passed with one should-fix and five nits, all resolved on the branch (see
+  Review); two deferrals ingested (`DW-marshal-102-1`, `DW-marshal-102-1-2`). Status stays `in-review`.
+
+## Review
+
+Independent review of PR #2238 at `8a60bfb8e4` (2026-10-15): **PASS**, no blocker. The reviewer's adversarial probes
+(`probe.py`, ten real-git scenarios) found three exempt moves that should decline. Resolved on the branch in
+`b7a2741173`, after `c2709ae8a7` merged `origin/main` with steward 103.6. Each fix has a named test:
+
+- **should-fix 1: the gate set could change unnoticed** (`core/dispatch_reverify.py`, `cli/dispatch.py`). Reuse never
+  checked whether the gates moved since V; a merge of main editing a `marshal-policy.toml` was exempt (probe 5), and
+  a gate added on main between V and the re-land went unrun.
+  - Every full OUTCOME now journals `gate_digest`, the digest of `verify_gate_set(effective, changed_files)`: the
+    station's and the derived commands, then the cross-surface rules. `evaluate_dispatch_verification` records it in
+    its envelope data.
+  - `_consider_verdict_reuse` digests the set a fresh verification would run now (this policy, the worktree's diff
+    against `origin/main`), and `attempt_verdict_reuse` declines `gate-set-changed` on any difference or missing
+    digest.
+  - A merge whose first-parent diff touches any `marshal-policy.toml` declines `merge-touches-policy`.
+  - Tests: `test_a_changed_gate_set_declines_the_reuse_and_re_verifies_in_full`,
+    `test_a_verdict_without_a_gate_digest_is_never_reused`,
+    `test_a_full_verification_journals_the_digest_of_the_gates_it_ran`,
+    `test_the_gate_digest_is_stable_and_moves_with_the_gate_set`,
+    `test_a_merge_of_main_that_changes_a_station_policy_re_verifies`.
+  - Mutations: dropping the digest comparison fails the first two (exit 1); dropping the policy check fails the
+    last (exit 1).
+- **nit 3: second parent on main's first-parent chain** (`dispatch_verify.py`). `_on_first_parent_chain` replaces
+  the bare ancestor test (`test_a_merge_of_a_commit_off_main_s_first_parent_line_re_verifies`; mutation back to
+  ancestor-only fails it, exit 1).
+  - Probe 6's reverted commit is itself a first-parent commit of main, so this alone does not decline it. A merge
+    now also declines `merge-stale-against-main` when a non-planning path it brought no longer reads current
+    `origin/main`'s content.
+  - Tests: `test_a_merge_of_a_main_commit_main_later_reverted_re_verifies`, and the conservative side,
+    `test_a_path_main_moved_again_after_the_merge_re_verifies`. Mutation: dropping the staleness check fails both,
+    exit 1.
+- **nit 4: anchored planning paths** (`core/dispatch_reverify.py`).
+  - Planning is anywhere under exactly `_bmad-output/projects/<one segment>/planning-artifacts/`, under
+    `docs/dreams/` or `.claude/memory/`, a `docs/governance/` memlog, or the baseline.
+  - Never planning: a Python file, or a path with an empty, `.` or `..` segment.
+  - Tests: `test_the_planning_rule_is_anchored`, and probe 7 as
+    `test_a_conftest_under_a_nested_planning_artifacts_directory_re_verifies`.
+- **nit 5: a reused verdict's base must hold up** (`latest_reusable_verdict`). The base must be present, `verified`
+  and `mode: full`, with `head_sha` equal to `reused_head_sha`, or there is no candidate. Tests:
+  `test_a_reuse_whose_base_does_not_hold_up_is_never_a_candidate` (5 cases),
+  `test_a_reuse_with_a_sound_base_carries_the_base_s_gate_digest`.
+- **nit 6: fail closed on an unresolvable story spec** (`_consider_verdict_reuse`). The reuse declines
+  `no-story-spec` (`test_a_story_without_a_tracked_spec_declines_and_re_verifies_in_full`).
+- **The residual-risk text** said every landing awaits CI. Corrected: a head with no check runs proceeds after the
+  120 s grace (`dispatch_land.py:1068`). It also names review finding 8: 17 doctor, 9 steward and 4 herald test files
+  read live planning paths, so a planning-only change can redden a suite the reuse skips, with CI as the backstop.
+- **Deferred, open in `deferred-work-ledger.md`:**
+  - `DW-marshal-102-1` (pre-existing, medium): refuse an empty check set when `verification_mode == reused`. AC9 keeps
+    `dispatch_land.py` out of this story.
+  - `DW-marshal-102-1-2` (low): read the head before and after verification, and record it only when both match and
+    the tree is clean (`cli/dispatch.py:1308`, `dispatch_supervisor/__main__.py:2662`).
+- **CI at `8a60bfb8e4`:**
+  - core-test: `test_exception_root_sole_ownership` reddened on `_GitReadError(Exception)`, now
+    `(PyforgeError, Exception)`.
+  - steward-test: `test_station_tests_trigger_map` derived a read of `scripts/commit_msg_hook.py` from a string
+    literal in `test_dispatch_reverify.py`. The test writes a stub of that name into its scratch repo and never reads
+    the tracked file, so the stub's path is now built from its segments.
+- **The probes re-run** (`probe.py` against the fixed code): all ten read as expected. Probes 5, 6 and 7 now decline
+  (`merge-touches-policy`, `merge-stale-against-main`, `story-commit`), and the control probe 8 stays exempt.
+  Replayed again, steward 102.1's real branch `fbb3ee095b → b937a1371e` still reads exempt.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-15 — Independent review
+- verdict: PASS, no blocker; findings: should-fix 1, nits 3-6 and the residual-risk text (resolved on the branch);
+  deferred 2 (`DW-marshal-102-1`, `DW-marshal-102-1-2`); finding 8 recorded as residual risk.
 
 ## Auto Run Result
 
@@ -356,7 +422,8 @@ dispatch-block comments: the block has eight keys, not five); tests `tests/unit/
 gain `mode`); the four stations' `marshal-policy.toml`.
 
 Verification (solo lanes, each exit code read from `$?`):
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — exit 0 (13139 passed, 20 skipped).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — exit 0 (13139 passed, 20 skipped; after the review
+  fixes 13169 passed, 20 skipped).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — exit 0 (130 passed, 3 skipped).
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` — exit 0 (6 touched modules ≥ 80%:
   `core/dispatch_reverify.py` 97%, `dispatch_verify.py` 93%, `dispatch_verification_journal.py` 98%,
