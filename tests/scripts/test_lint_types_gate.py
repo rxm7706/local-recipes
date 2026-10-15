@@ -349,3 +349,35 @@ def test_pre_push_hook_precommit_branch_with_proof_still_runs_preflight(tmp_path
     )
     assert proc.returncode == 1
     assert "PREFLIGHT-RAN" in proc.stderr
+
+
+# Steward Story 103.6 (spec-pyforge-steward CAP-159): the preflight resolves its own scope, so the hook does not
+# change. The skip still comes first -- a skipped push never reads PYFORGE_PREFLIGHT_SCOPE, however bad its value --
+# and a push that runs passes the variable through to pr-preflight.
+def test_pre_push_hook_skip_comes_before_any_preflight_scope(tmp_path: Path) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    proc = _run_hook(
+        repo,
+        env,
+        extra={
+            "PYFORGE_PREFLIGHT_SKIP": "1",
+            "PYFORGE_PREFLIGHT_SKIP_REASON": "ci arbitrates",
+            "PYFORGE_PREFLIGHT_SCOPE": "bogus",
+        },
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "PREFLIGHT-RAN" not in proc.stderr
+    (row,) = _journal(repo)
+    assert row[3] == "ci arbitrates"
+
+
+@pytest.mark.parametrize("scope", ["touched", "full"])
+def test_pre_push_hook_passes_the_preflight_scope_through(tmp_path: Path, scope: str) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    (tmp_path / "bin" / "pixi").write_text(
+        '#!/usr/bin/env bash\necho "PREFLIGHT-RAN scope=${PYFORGE_PREFLIGHT_SCOPE-unset}" >&2\nexit 0\n',
+        encoding="utf-8",
+    )
+    proc = _run_hook(repo, env, extra={"PYFORGE_PREFLIGHT_SCOPE": scope})
+    assert proc.returncode == 0, proc.stderr
+    assert f"PREFLIGHT-RAN scope={scope}" in proc.stderr
