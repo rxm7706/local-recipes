@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 231
+# stories: 234
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -141,6 +141,7 @@ development_status:
   43-5-every-number-is-measured-and-every-page-says-what-built-it: backlog
   43-6-agents-and-the-changes-feed-read-the-site: backlog
   43-7-docsite-retires-and-one-generator-remains: backlog
+  44-1-every-docs-page-renders-its-body-and-its-links-resolve: done
   5-1-push-regenerated-exports-with-etag-guard: done
   5-2-conflict-refusal-on-export-push: done
   6-1-implement-herald-cli-dispatcher: done
@@ -235,6 +236,8 @@ development_status:
   epic-42-retrospective: optional
   epic-43: backlog
   epic-43-retrospective: optional
+  epic-44: done
+  epic-44-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
   epic-6: done
