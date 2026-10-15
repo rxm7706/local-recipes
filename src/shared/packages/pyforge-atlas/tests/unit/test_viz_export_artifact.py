@@ -26,6 +26,17 @@ if str(_TOOLS) not in __import__("sys").path:
 import viz_manifest  # noqa: E402
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _ensure_kedro_viz_untracked_from_index() -> None:
+    """Re-apply index removals; other tests may refresh the index from HEAD."""
+    subprocess.run(
+        ["git", "rm", "-r", "--cached", "docs/dashboard/kedro-viz"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=False,
+    )
+
+
 def _load_workflow() -> dict:
     assert WORKFLOW.is_file()
     return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
