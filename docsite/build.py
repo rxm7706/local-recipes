@@ -1047,19 +1047,25 @@ def check(out_dir: Path, result: dict) -> int:
                 elif dp.stat().st_size != d["bytes"]:
                     problems.append(f"{slug}: download size mismatch: {d['name']}")
 
-    for path in sorted(out_dir.rglob("*")):
-        if not path.is_file():
-            continue
+    def owned(pattern: str) -> list[Path]:
+        """This build's files; with the one-generator flag on, only its own outputs -- Astro's pages, twins and
+        faces (``fonts.css`` names base-absolute ``_astro/`` URLs) are pages-check's to judge (Stories 43.3, 43.4)."""
+        paths = sorted(p for p in out_dir.rglob(pattern) if p.is_file())
+        if not one_gen:
+            return paths
+        return [p for p in paths if p.relative_to(out_dir).parts[0] in ONE_GENERATOR_OWNED_OUTPUTS]
+
+    for path in owned("*"):
         if path.suffix.lower() not in {".html", ".css"}:
             continue
         rel = str(path.relative_to(out_dir))
         text = path.read_text(encoding="utf-8", errors="replace")
         problems.extend(scan_external_origins(text, rel))
 
-    for path in sorted(out_dir.rglob("*.css")):
+    for path in owned("*.css"):
         problems.extend(_unresolved_font_urls(path.read_text(encoding="utf-8"), path, out_dir))
 
-    for path in sorted(out_dir.rglob("*.html")):
+    for path in owned("*.html"):
         text = path.read_text(encoding="utf-8", errors="replace")
         for style in re.findall(r"<style[^>]*>(.*?)</style>", text, re.I | re.DOTALL):
             problems.extend(_unresolved_font_urls(style, path, out_dir))

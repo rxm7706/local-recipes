@@ -2,7 +2,7 @@
 title: '43.4: Fonts and theme come from one design system'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 flag:
   key: pyforge.herald.pages_one_generator        # Story 43.1's; shared across Epic 43 (one flag per CAP, Q6), not minted here
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -173,6 +173,47 @@ the origin check finds no font loaded from another origin
 - Remove the `[data-theme='dark']` block — expected: AC3's test fails.
 - Plant a `fonts.googleapis.com` link — expected: `pages-check` exits 1.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py -q`
+  — exit 0, 14 passed (the `test_43_4_*` tests: AC2 every family the Jinja stylesheets name, body and headings
+  included; AC3 the token blocks, the theme script against Starlight's store and the CSP hash; AC4 the grep, the five
+  packages in `package.json` and resolved in the lock; AC5 a planted Google Fonts link on a herald page; AC6 every
+  row of `docs-site/README.md`'s table, the five named files among them).
+- `pixi run --frozen -e pyforge-herald python -m pytest` over `test_pages_artifact.py`, `test_herald_pages_parity.py`,
+  `test_docsite_zero_origin.py`, `test_docs_site_validators.py`, `test_docs_site_imports_tracked.py` — exit 0, 109
+  passed, none skipped (docs-site installed): AC1/AC3/AC4 on a flag-on Astro build of the tracked tree
+  (`test_43_4_ac1_ac3_ac4_the_built_herald_pages_share_one_design_system`) and pages-check's new guard on five
+  fixture cases.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0, 2042 passed, 5 skipped (the live Design and
+  webhook smokes).
+- `pixi run --frozen -e site pages-check`: flag on (`PYFORGE_PAGES_ONE_GENERATOR=1`, public host) — exit 0 (the
+  design-system guard, the parity over 10 families and 30 twins, the origin check); flag off — exit 0. With the
+  flag off the Astro output is byte-identical to `792382d970`'s (`git archive` of the base built with the same
+  `node_modules`: `diff -r` exit 0 over 176 files; `_astro/` holds no herald face). CAP-56 fixture host
+  (`PYFORGE_PAGES_APPLY_HOST=1 PAGES_HOST_BASE_URL=https://pages.example.test PAGES_HOST_BASE_PATH=/local-recipes`,
+  flag on) — exit 1 on the one finding Story 43.3 recorded on its base, `reference/github-workflows/index.html`
+  linking the public host (lane B's 42.3 / 102.5 rewrite it); the faces there name `/local-recipes/_astro/...` and
+  the design-system guard passes.
+- `pixi run --frozen -e site docs-site-validate` — exit 0. `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+  Steward's `tests/meta/test_station_tests_trigger_map.py` — exit 0, 45 passed (no new root-handing test file).
+- `grep -rn "assets/fonts" docs-site/src` — exit 1, nothing found.
+- Browser (the flag-on artifact served under `/local-recipes/`): `/herald/dossier/` light, then the docs header's
+  toggle set to Dark on `/how-to/`, then `/herald/dossier/` and `/herald/infographics/` dark — `data-theme` follows
+  the toggle; the dossier's computed `font-family` is `"IBM Plex Sans", system-ui, -apple-system, sans-serif` (body)
+  and `"Big Shoulders Display", "IBM Plex Sans", sans-serif` (h1), as on the Jinja path; every font request is
+  `/local-recipes/_astro/*.woff2`, none off-origin; no console error (no CSP violation) on the overview, the dossier,
+  the gallery or a reader page. A reader page's twin loads Archivo 400–900 and Archivo Expanded (700–900, 125%) from
+  `/herald/fonts.css`. The two 404s on a family page are the `.dc.html` twins' own `./support.js`, as `build.py`
+  documents. The docs page keeps Starlight's system font (see the change log: the I/O matrix's docs row).
+- Mutations, each restored: the body `font-family` changed in `styles/herald.css` only — AC2's test fails
+  (`('Archivo', ...) == ('IBM Plex Sans', ...)`); the `[data-theme='dark']` block removed — AC3's test fails
+  ("expected one `:root[data-theme='dark']` block, found 0"); a `fonts.googleapis.com` stylesheet link planted in the
+  built `herald/dossier/index.html` — `assemble_pages.py --check` (flag on) exit 1, `herald/dossier/index.html: loads
+  'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans' from another origin`; restored, exit 0.
+- Not run here: the memlog reconcile, the scoped stamps, `detectors-ci` and `pr-preflight` (the coordinating session
+  runs them once for the branch).
+
 ## Named, not fixed here
 
 - **The retirement** of `docsite/assets/fonts/`, the sha256 table and `_dossier.css` / `_site-chrome.css` with the
@@ -183,6 +224,57 @@ the origin check finds no font loaded from another origin
 
 ## Spec Change Log
 
+- 2026-10-15: implemented (lane A of the one-PR Pages redesign); status `in-review`. Deviations and readings, each for
+  the reviewer and the operator to keep or overturn:
+  - **The twins and the reader pages take the same faces from one fixed URL.** The twins are static files in
+    `public/` and the reader pages are endpoints, so neither can import a stylesheet Astro bundles under a hashed
+    name. `src/pages/herald/[fonts].css.ts` serves `styles/herald-fonts.css` as Vite builds it (`?inline`) at
+    `/herald/fonts.css`; every face it names is an `@fontsource` file under `_astro/`, the same files the layouts'
+    bundle names. The twin's one vendored line (Story 43.2's ruling) now links `../../fonts.css` instead of the
+    Jinja path's `assets/fonts/fonts.css`; `assemble_pages._VENDORED_FONT_LINK`, the twin diff's oracle, follows, and
+    the old href is now refused (a `jinja-fonts` case). `HERALD_FONTS` in `src/lib/herald-pages.ts` names the path.
+  - **"Maps onto Starlight's theme variables" is read as Starlight's theme selector and store, not its `--sl-*`
+    values.** The tokens keep the dossier's own palette (AC3 asks for the dossier's tokens in two blocks; the test
+    pins them to the Jinja values), defined light under `:root` and dark under `:root[data-theme='dark']`, the
+    attribute the docs toggle sets. The herald pages carry no toggle and no store (Boundaries): `THEME_SCRIPT`,
+    inline in each layout's head and allowed by its hash in `HERALD_CSP`, reads `localStorage['starlight-theme']`
+    and resolves "auto" from the system scheme exactly as Starlight's `ThemeProvider` does. The Jinja path's
+    `prefers-color-scheme` block is not ported (the script resolves auto; with scripts off a page is light), and
+    each block sets `color-scheme` so form controls and scrollbars follow.
+  - **The docs pages keep Starlight's typography and palette (the I/O matrix's docs row, "unchanged Starlight theme;
+    fonts unaffected").** So the Approach's "one typography ... across every prefix" and the Verification's "showing
+    one typography" screenshot are not reached between the docs and the dossier: the herald prefixes share one face
+    set, one stylesheet and the docs' dark mode; the docs body stays Starlight's system stack. Taking the herald faces
+    and palette onto the docs is one `customCss` entry pointing at `styles/herald.css`'s tokens, against that matrix
+    row — **an open question for the operator**, not done here.
+  - **The stylesheet** (`src/styles/herald.css`) is `_dossier.css`, `build.py`'s inline content-model additions and
+    `_site-chrome.css` ported as they are, with the token blocks above; the back-bar's rules are left out (the reader
+    pages carry their own inline `BACKBAR_STYLE`), and AC2's all-selector parity excludes them by name. Its copy of
+    the Jinja CSS lives until Story 43.7 retires the originals.
+  - **The faces** are the packages' own latin-subset declarations (`@fontsource/<family>/latin-<weight>`; the
+    package export map resolves the specifier without `.css`), so each face also emits its `.woff` fallback: 18 woff2,
+    18 woff and the variable wdth woff2 under `_astro/` (with the CSS, 808 KB). Archivo Expanded is the one face
+    declared by hand -- npm publishes no package of that name -- from `@fontsource-variable/archivo`'s
+    `archivo-latin-wdth-normal.woff2` at `font-stretch: 125%`, as `fonts.css` and Story 30.3's decks declare it. Of the 19
+    vendored woff2 files (Story 31.3, from the 5.2.x packages), 16 are byte-identical to the 5.3.0 packages'; the
+    three IBM Plex Mono weights differ in bytes (5.2.5 against 5.3.0), same family, weights and subset.
+  - **Flag off, nothing changes.** Astro emits a page module's imports whether or not a route renders, so the first
+    flag-off build carried 38 unreferenced herald files in `_astro/`; the `herald-artifact` integration now loads the
+    two herald stylesheets empty with the flag off (a Vite `load` hook), and the flag-off output is byte-identical
+    to the base (Verification run).
+  - **`pages-check` enforces AC1, AC3 and AC4 on the real artifact** (`assemble_pages._check_one_design_system`, flag
+    on): each `@font-face` in a stylesheet a herald page or twin links names a file under `_astro/`, nothing links
+    `herald/assets/`, and no herald page but a twin carries a custom property in a `<style>` of its own. The herald
+    lane installs no docs-site, so the Astro-built test skips there, as Story 43.2's review found for the parity.
+  - **`docsite/build.py --check` with the flag on judges only its own outputs** (`.nojekyll`, `assets/`, `artifact/`):
+    Astro's `herald/fonts.css` names base-absolute `_astro/` URLs the Jinja check cannot resolve (pages-check judges
+    them). Flag off it reads every file, as before (`test_43_4_with_one_generator_check_judges_only_its_own_outputs`).
+  - **`build.py` still writes `herald/assets/`** (`site.css`, the vendored fonts) with the flag on: the Jinja-rendered
+    status and pipelines pages link it (Stories 42.1 and 43.6 move them); no herald page does now (AC4).
+  - Smaller: `test_docs_site_imports_tracked.py` drops a Vite query (`?inline`) before resolving an import; AC6's test
+    reads every row of `docs-site/README.md`'s table (seven, the five named among them); `docs-site/README.md` lists
+    the new local files and the font packages, and `docsite/README.md` notes that the flag-on herald pages no longer
+    use `assets/fonts/`.
 - 2026-10-14: specced at mint from Epic 43's Story 43.4 text, `spec-pyforge-herald` CAP-61, FR-12.4 and the Dream's
   2026-10-13 entry (M3), against `docsite/assets/` and `docs-site/package.json` as they stand on 2026-10-14. The five
   `@fontsource` package names are Epic 43's.

@@ -22,7 +22,8 @@ Vendored byte-identically from [bmad-code-org/BMAD-METHOD](https://github.com/bm
 
 These files are maintained in this repository and are **not** byte-identical to upstream:
 
-- `package.json` / `package-lock.json` — trimmed scripts; same Astro/Starlight dependency ranges
+- `package.json` / `package-lock.json` — trimmed scripts; same Astro/Starlight dependency ranges; the five `@fontsource`
+  packages the herald pages' faces come from (Story 43.4)
 - `astro.config.mjs` — `SITE_URL`/`base`, the generated sidebar (four quadrants from `docs/map.yaml`, then a Herald
   group from `docsite/content/site.yml`), the `SiteTitle` override, no locales
 - `src/components/SiteTitle.astro` — the site title plus the top menu shared with the herald pages (Story 40.1),
@@ -36,6 +37,9 @@ These files are maintained in this repository and are **not** byte-identical to 
 - `src/pages/herald/`, `src/layouts/Herald*.astro`, `src/components/{dossier,herald}/`, `src/lib/herald-pages.ts`,
   `src/loaders/{dossier,herald-pages}-loader.ts` — the herald pages (Epic 43), emitted only with
   `pyforge.herald.pages_one_generator` on (`PYFORGE_PAGES_ONE_GENERATOR=1`); off, `docsite/` renders them
+- `src/styles/herald.css`, `src/styles/herald-fonts.css` — the herald pages' one stylesheet and their `@fontsource`
+  faces (Story 43.4): the dossier's tokens light and under Starlight's `[data-theme='dark']`, bundled by Astro under
+  `_astro/`; `src/pages/herald/[fonts].css.ts` serves the faces at `/herald/fonts.css` for the twins and reader pages
 - `redirects.json` — the frozen root redirects: the 44 legacy paths and `/kedro-viz/` (Story 43.3; never hand-grown)
 - `src/lib/redirects.ts` — writes the legacy redirects into the build with the flag on, refusing a path the build
   already holds

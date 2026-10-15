@@ -24,16 +24,36 @@ import path from 'node:path';
 /** Where each twin is served under the `/herald/` mount with the flag on (`scripts/populate-public.ts`, Story 43.3). */
 export const TWINS_DIR = 'twins';
 
+/**
+ * The herald pages' faces, served at `/herald/<HERALD_FONTS>` (`pages/herald/[fonts].css.ts`, Story 43.4) for the
+ * pages Astro does not style: the twins (the one line `vendorFontLinks` gives them) and the reader pages.
+ */
+export const HERALD_FONTS = 'fonts.css';
+
 /** The preview frame's load handler (`components/herald/Shot.astro`), allowed by hash in the CSP below. */
 export const PREVIEW_ONLOAD = "this.parentElement.classList.add('is-loaded')";
 
 /**
+ * The herald pages follow the docs header's theme toggle (Story 43.4): Starlight's toggle keeps its choice under
+ * `starlight-theme` ('light', 'dark', or '' for auto) and sets `data-theme` on `<html>`. This script, inline in each
+ * herald layout's head so no page paints in the other theme first, reads that key and resolves auto from the system
+ * scheme as Starlight's ThemeProvider does; `styles/herald.css` keys the dark tokens to `[data-theme='dark']`. No
+ * second toggle and no second store. Allowed by hash in the CSP below.
+ */
+export const THEME_SCRIPT =
+  "try{var t=localStorage.getItem('starlight-theme')}catch(e){}" +
+  "document.documentElement.dataset.theme=(t||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'))==='light'?'light':'dark'";
+
+const sha256 = (text: string): string => `'sha256-${createHash('sha256').update(text).digest('base64')}'`;
+
+/**
  * The `Content-Security-Policy` every Astro herald page carries (Story 43.3, AD-21): nothing loads from another
- * origin. Inline styles are the dossier's accents and the back-bar's; the one inline script is the preview handler.
+ * origin. Inline styles are the dossier's accents and the back-bar's; the inline scripts are the preview handler
+ * and the theme script.
  */
 export const HERALD_CSP = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-hashes' 'sha256-${createHash('sha256').update(PREVIEW_ONLOAD).digest('base64')}'`,
+  `script-src 'self' 'unsafe-hashes' ${sha256(PREVIEW_ONLOAD)} ${sha256(THEME_SCRIPT)}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
@@ -49,6 +69,7 @@ const GOOGLE_FONT_IMPORT = /@import\s+url\(['"]?https:\/\/fonts\.googleapis\.com
 /**
  * A twin as the site serves it: Google Fonts links and imports dropped and one link to the site's own fonts added,
  * as `docsite/build.py`'s `rewrite_google_font_links` (Story 31.3) -- the one transformation a twin gets (AD-21).
+ * Since Story 43.4 the link names the @fontsource faces at `HERALD_FONTS`, not the Jinja path's vendored files.
  */
 export function vendorFontLinks(html: string, stylesheetHref: string): string {
   const out = html.replace(GOOGLE_FONT_LINK, '').replace(GOOGLE_FONT_IMPORT, '');
@@ -624,7 +645,7 @@ export function twinWrapperHtml(options: { title: string; backbar: string; rel: 
 <title>${escapeText(title)}</title>
 <meta name="generator" content="Astro">
 <meta http-equiv="Content-Security-Policy" content="${HERALD_CSP}">
-<link rel="stylesheet" href="${escapeAttr(`${rel}assets/fonts/fonts.css`)}">
+<link rel="stylesheet" href="${escapeAttr(`${rel}${HERALD_FONTS}`)}">
 <style>
 html,body{margin:0;height:100%;background:#12161a}
 body{box-sizing:border-box}

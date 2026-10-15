@@ -3,9 +3,11 @@
  * The shared menu is herald's one navigation list (docsite/content/site.yml), read through the
  * generated top-menu JSON exactly as SiteTitle.astro reads it (Story 40.1, CAP-58) -- so an entry
  * that needs the Kedro-Viz mount drops out here too when no export is mounted (Story 42.2, CAP-60). The page
- * carries the herald Content-Security-Policy (Story 43.3, AD-21).
+ * carries the herald Content-Security-Policy (Story 43.3, AD-21), and its faces, tokens and rules come from the one
+ * herald stylesheet, bundled by Astro, with the theme the docs header's toggle chose (Story 43.4).
  */
-import { HERALD_CSP } from '../lib/herald-pages';
+import { HERALD_CSP, THEME_SCRIPT } from '../lib/herald-pages';
+import '../styles/herald.css';
 import topnav from '../topnav.generated.json';
 
 interface Props {
@@ -31,8 +33,7 @@ const nav = topnav.map((item) => ({ label: item.label, href: `${toRoot}${item.pa
     <meta name="description" content={description} />
     <meta name="generator" content="Astro" />
     <meta http-equiv="Content-Security-Policy" content={HERALD_CSP} />
-    <link rel="stylesheet" href={`${rel}assets/fonts/fonts.css`} />
-    <link rel="stylesheet" href={`${rel}assets/site.css`} />
+    <script is:inline set:html={THEME_SCRIPT} />
   </head>
   <body>
     <header class="site-nav">

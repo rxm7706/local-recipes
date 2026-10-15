@@ -95,12 +95,22 @@ export default defineConfig({
  * artifact itself -- public/ written from scratch before the build (twins, downloads, dashboard exports), and the
  * legacy root redirects written into it after, refusing any path the build already holds (AD-21 rule 1). Off,
  * public/ is emptied and the Jinja path's assembler does both, as before.
+ *
+ * Story 43.4: off, no herald page renders, so the herald stylesheet and its faces load empty and the build emits none
+ * of their files; the Jinja path serves its own, as before.
  */
 function heraldArtifact() {
   const oneGenerator = pagesOneGenerator();
+  const heraldStyles = /[\\/]src[\\/]styles[\\/]herald(?:-fonts)?\.css$/;
   return {
     name: 'herald-artifact',
     hooks: {
+      'astro:config:setup': ({ updateConfig }) => {
+        if (!oneGenerator) {
+          const load = (id) => (heraldStyles.test(id.split('?')[0]) ? '' : undefined);
+          updateConfig({ vite: { plugins: [{ name: 'herald-styles-off', enforce: 'pre', load }] } });
+        }
+      },
       'astro:build:start': () => {
         populatePublic(path.join(__dirname, 'public'), oneGenerator);
       },

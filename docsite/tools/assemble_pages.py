@@ -27,7 +27,11 @@ dashboard exports (``docs/dashboard/kedro-viz/`` and ``docs/dashboard/vizro/``, 
 ``docs-site/public/`` and writes the root redirects from ``docs-site/redirects.json``; this assembler
 then mounts, copies and redirects nothing, and ``check`` judges the frozen redirects, one CSP meta per
 herald page and the small origin check (``docs-site/scripts/origin_check.py``) in place of the scanner
-below. Off, it does all of that as before."""
+below. Off, it does all of that as before.
+
+Story 43.4 (CAP-61): with the flag on, ``check`` also holds every herald page and twin to the one design system:
+its faces come from the @fontsource files Astro bundles under ``_astro/``, nothing links the Jinja path's
+``herald/assets/``, and no herald page carries an inline theme of its own."""
 
 from __future__ import annotations
 
@@ -692,6 +696,51 @@ def _check_csp(artifact_root: Path) -> None:
             raise SystemExit(1)
 
 
+_FONT_FACE = re.compile(r"@font-face\s*\{([^}]*)\}", re.IGNORECASE)
+_CSS_URL = re.compile(r"""url\(\s*["']?([^"')\s]+)""", re.IGNORECASE)
+_STYLESHEET = re.compile(
+    r"""<link\b(?=[^>]*\brel\s*=\s*["']?stylesheet)[^>]*\bhref\s*=\s*["']?([^"'\s>]+)""", re.IGNORECASE
+)
+_STYLE_BODY = re.compile(r"<style\b[^>]*>(.*?)</style>", re.IGNORECASE | re.DOTALL)
+_CUSTOM_PROPERTY = re.compile(r"(?<![\w-])--[\w-]+\s*:")
+
+
+def _check_one_design_system(artifact_root: Path, site_url: str) -> None:
+    """Story 43.4 (flag on): every herald page and twin takes its faces from the bundle -- each ``@font-face`` in a
+    stylesheet it links names a file under the artifact's ``_astro/`` -- and links nothing under ``herald/assets/``
+    (the Jinja path's stylesheet and vendored fonts); a herald page carries no inline theme, no custom property in a
+    ``<style>`` of its own (a twin, a Design export, keeps its own)."""
+    base_path = _base_path(site_url)
+    bundle = (artifact_root / "_astro").resolve()
+    jinja_assets = (artifact_root / HERALD_PREFIX / "assets").resolve()
+    problems: list[str] = []
+    for page in sorted((artifact_root / HERALD_PREFIX).rglob("*.html")):
+        rel = _artifact_path(page, artifact_root)
+        if rel == ARTIFACT_DOSSIER:
+            continue
+        text = page.read_text(encoding="utf-8", errors="replace")
+        for raw in _HREF_SRC.findall(text):
+            target = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
+            if target is not None and jinja_assets in (target, *target.parents):
+                problems.append(f"{rel} links {raw!r} under {HERALD_PREFIX}/assets/, the Jinja path's")
+        for raw in _STYLESHEET.findall(text):
+            sheet = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
+            if sheet is None or not sheet.is_file():
+                continue  # the origin check and the link walk judge it
+            for face in _FONT_FACE.findall(sheet.read_text(encoding="utf-8", errors="replace")):
+                for url in _CSS_URL.findall(face):
+                    font = _resolve_in_artifact(sheet, url, artifact_root, base_path=base_path)
+                    if font is None or bundle not in font.parents or not font.is_file():
+                        where = _artifact_path(sheet, artifact_root)
+                        problems.append(f"{rel}: {where} names a face {url!r} that is not a file under _astro/")
+        if not rel.startswith(TWINS_PREFIX) and any(_CUSTOM_PROPERTY.search(s) for s in _STYLE_BODY.findall(text)):
+            problems.append(f"{rel} carries an inline theme (a custom property in a <style> of its own)")
+    for line in problems:
+        print(f"assemble_pages: {line}", file=sys.stderr)
+    if problems:
+        raise SystemExit(1)
+
+
 def _check_legacy_redirects(artifact_root: Path) -> None:
     """Story 43.3 (flag on): every legacy path of ``docs-site/redirects.json`` is a redirect landing on its target."""
     data = json.loads((_repo_root() / REDIRECTS_JSON).read_text(encoding="utf-8"))
@@ -718,8 +767,9 @@ def _check_vizro_mount(artifact_root: Path) -> None:
         raise SystemExit(1)
 
 
-#: Story 43.2 (review): the one line a twin gains -- a link to the site's own fonts (Story 31.3's vendoring).
-_VENDORED_FONT_LINK = re.compile(rb'<link rel="stylesheet" href="(?:\.\./)+assets/fonts/fonts\.css">')
+#: Story 43.2 (review): the one line a twin gains -- a link to the site's own fonts (Story 31.3's vendoring); since
+#: Story 43.4 the @fontsource faces Astro serves at ``/herald/fonts.css``.
+_VENDORED_FONT_LINK = re.compile(rb'<link rel="stylesheet" href="(?:\.\./)+fonts\.css">')
 _GOOGLE_FONT_ORIGINS = (b"fonts.googleapis.com", b"fonts.gstatic.com")
 
 
@@ -1262,6 +1312,7 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
     if one_generator:  # Story 43.3: the frozen set, written by the Astro build
         _check_legacy_redirects(artifact_root)
         _check_csp(artifact_root)
+        _check_one_design_system(artifact_root, site_url)
         _check_herald_parity(artifact_root)  # Story 43.2's review: while both generators exist
     herald_htmls = [] if one_generator else _iter_herald_html(artifact_root)
     for herald_html in herald_htmls:

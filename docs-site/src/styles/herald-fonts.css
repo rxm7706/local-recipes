@@ -1,0 +1,38 @@
+/*
+ * The herald pages' faces (Story 43.4, spec-pyforge-herald CAP-61; AD-21, AD-23): the five families the dossier,
+ * its shell and the Design twins name, from the @fontsource packages in docs-site/package.json. Astro bundles each
+ * face into the artifact's own _astro/ path, so no font loads from another origin and no font file is vendored by hand.
+ * The latin subset and the weights are the ones the Jinja path vendors by hand (Story 31.3) until Story 43.7.
+ */
+
+@import '@fontsource/big-shoulders-display/latin-600';
+@import '@fontsource/big-shoulders-display/latin-700';
+@import '@fontsource/big-shoulders-display/latin-800';
+@import '@fontsource/big-shoulders-display/latin-900';
+
+@import '@fontsource/ibm-plex-sans/latin-400';
+@import '@fontsource/ibm-plex-sans/latin-500';
+@import '@fontsource/ibm-plex-sans/latin-600';
+@import '@fontsource/ibm-plex-sans/latin-700';
+@import '@fontsource/ibm-plex-sans/latin-400-italic';
+
+@import '@fontsource/ibm-plex-mono/latin-400';
+@import '@fontsource/ibm-plex-mono/latin-500';
+@import '@fontsource/ibm-plex-mono/latin-600';
+
+@import '@fontsource/archivo/latin-400';
+@import '@fontsource/archivo/latin-500';
+@import '@fontsource/archivo/latin-600';
+@import '@fontsource/archivo/latin-700';
+@import '@fontsource/archivo/latin-800';
+@import '@fontsource/archivo/latin-900';
+
+/* Archivo Expanded is the 125% width of the variable Archivo; npm publishes no package of that name. */
+@font-face {
+  font-family: 'Archivo Expanded';
+  font-style: normal;
+  font-weight: 700 900;
+  font-stretch: 125%;
+  font-display: swap;
+  src: url('@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2') format('woff2-variations');
+}

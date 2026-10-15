@@ -263,7 +263,7 @@ def _assert_twins_wrapped_never_edited(build_mod, astro: Path, root: Path, infog
     assert readers
     for reader, twin, source in readers:
         rel = twin.relative_to(astro).as_posix()
-        fonts = "../" * rel.count("/") + "assets/fonts/fonts.css"
+        fonts = "../" * rel.count("/") + "fonts.css"  # Story 43.4: the @fontsource faces
         want = build_mod.rewrite_google_font_links(source.read_text(encoding="utf-8", errors="replace"), fonts)
         got = twin.read_bytes()
         assert hashlib.sha256(got).hexdigest() == hashlib.sha256(want.encode("utf-8")).hexdigest(), (
@@ -366,11 +366,11 @@ def test_ac4_the_vendoring_changes_only_font_links_on_every_tracked_twin(build_m
     ``assemble_pages._font_vendoring_only``, a line diff that knows nothing of either implementation: the only lines
     lost name a Google Fonts origin, the only lines gained are one vendored font link and blank lines."""
     igs = build_mod.collect_infographics(site_yml(REPO_ROOT), REPO_ROOT)
-    jobs = [(str(ig["path"]), "../../assets/fonts/fonts.css") for ig in igs]
+    jobs = [(str(ig["path"]), "../../fonts.css") for ig in igs]
     for fam in build_mod.collect_families(igs, REPO_ROOT, ""):
         for key in ("infographic_deck", "executive_summary"):
             if fam[key] is not None:
-                jobs.append((str(fam[key]["path"]), "../../../assets/fonts/fonts.css"))
+                jobs.append((str(fam[key]["path"]), "../../../fonts.css"))
     assert len(jobs) > len(igs), "no family view to read"
     script = _VENDOR_SCRIPT % {"lib": json.dumps(HERALD_PAGES_TS.as_uri()), "jobs": json.dumps(jobs)}
     done = subprocess.run(

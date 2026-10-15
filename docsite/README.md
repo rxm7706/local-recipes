@@ -108,6 +108,11 @@ Outputs land in `dist/` (gitignored):
 Every face the shells and published Design-twin copies use is self-hosted here. The build
 copies this directory into `dist/assets/fonts/` and never fetches at build time.
 
+With `pyforge.herald.pages_one_generator` on, the Astro herald pages, their reader pages and the twins
+take the same faces from the `@fontsource` packages in `docs-site/package.json` instead (Story 43.4);
+this directory then serves only the pages this build still renders (the status and pipelines pages)
+until Story 43.7 retires it and this table.
+
 | File | Source | Licence | sha256 |
 |------|--------|---------|--------|
 | `assets/fonts/big-shoulders-display-latin-600-normal.woff2` | `@fontsource/big-shoulders-display@5.2.5` | OFL-1.1 | `448000586ef3a91726a8de46e2948e7426d693d57a568a188006407d24409845` |

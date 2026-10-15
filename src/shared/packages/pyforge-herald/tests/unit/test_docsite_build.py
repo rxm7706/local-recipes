@@ -339,6 +339,22 @@ def test_check_external_origin_and_font_face(build_mod, tmp_path: Path, capsys, 
         assert needle in err
 
 
+def test_43_4_with_one_generator_check_judges_only_its_own_outputs(build_mod, tmp_path: Path, capsys):
+    """Story 43.4: with pyforge.herald.pages_one_generator on, Astro's ``herald/fonts.css`` names base-absolute
+    ``_astro/`` faces this build cannot resolve; ``pages-check`` judges them, and this check reads only what the
+    build wrote -- a face missing under ``assets/`` still fails it."""
+    out_dir, result = _green_check_tree(tmp_path)
+    (out_dir / "fonts.css").write_text(
+        "@font-face{font-family:Archivo;src:url(/local-recipes/_astro/archivo.woff2)}", encoding="utf-8"
+    )
+    assert build_mod.check(out_dir, result) == 1  # off: every file is this build's
+    assert "fonts.css: unresolved font url('/local-recipes/_astro/archivo.woff2')" in capsys.readouterr().err
+    assert build_mod.check(out_dir, {**result, "one_generator": True}) == 0
+    (out_dir / "assets/bad.css").write_text("@font-face{font-family:X;src:url('./missing.woff2');}", encoding="utf-8")
+    assert build_mod.check(out_dir, {**result, "one_generator": True}) == 1
+    assert "assets/bad.css: missing font file './missing.woff2'" in capsys.readouterr().err
+
+
 def test_rewrite_google_font_links_inserts_vendored_stylesheet(build_mod):
     raw = (
         "<html><head>"

@@ -70,3 +70,23 @@ def test_vendored_validators_match_readme_sha256() -> None:
         assert name in expected
         path = root / "docs-site" / name
         assert _sha256(path) == expected[name], name
+
+
+#: Story 43.4 AC6 (AD-21 rule 5, AD-23): the five files vendored from BMAD-METHOD's docs-site/ that the epic names.
+_VENDORED_UPSTREAM = (
+    ".nvmrc",
+    "scripts/fix-doc-links.js",
+    "scripts/validate-doc-links.js",
+    "scripts/validate-sidebar-order.js",
+    "src/lib/site-url.mjs",
+)
+
+
+def test_43_4_ac6_the_vendored_upstream_files_match_readme_sha256() -> None:
+    """AC6: the five vendored upstream files -- and every other row of docs-site/README.md's table -- stay
+    byte-identical to their recorded hashes; the fonts' move to @fontsource touches none of them."""
+    root = _repo_root()
+    expected = _parse_readme_checksums((root / "docs-site" / "README.md").read_text(encoding="utf-8"))
+    assert set(_VENDORED_UPSTREAM) <= set(expected)
+    for name, want in expected.items():
+        assert _sha256(root / "docs-site" / name) == want, name

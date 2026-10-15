@@ -4,7 +4,8 @@
  *
  * With pyforge.herald.pages_one_generator on it holds, for Astro to serve as static files:
  * - each twin the herald pages frame, at `herald/twins/...`, with Story 31.3's font-link vendoring as its one change
- *   (AD-21; the ruling of 2026-10-15 on Story 43.2);
+ *   (AD-21; the ruling of 2026-10-15 on Story 43.2), the link naming the @fontsource faces at `/herald/fonts.css`
+ *   (Story 43.4);
  * - each family download, byte for byte, at `herald/decks/<slug>/downloads/<name>`;
  * - each dashboard export in the build input, byte for byte, at `dashboard/<name>/`: `docs/dashboard/kedro-viz/`
  *   (Story 42.2) and `docs/dashboard/vizro/` (atlas Story 30.2), each mounted only when present (a non-empty
@@ -16,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { vendorFontLinks } from '../src/lib/herald-pages.ts';
+import { HERALD_FONTS, vendorFontLinks } from '../src/lib/herald-pages.ts';
 import { heraldPagesRoot, loadHeraldPages, pagesOneGenerator } from '../src/loaders/herald-pages-loader.ts';
 
 /** The dashboard exports mounted from `docs/dashboard/<name>/` at `/dashboard/<name>/`. */
@@ -44,7 +45,7 @@ export function populatePublic(
     written.push(rel);
   };
   const twin = (source: string, rel: string): void => {
-    const fonts = `${'../'.repeat(rel.split('/').length - 1)}assets/fonts/fonts.css`;
+    const fonts = `${'../'.repeat(rel.split('/').length - 1)}${HERALD_FONTS}`;
     put(`herald/${rel}`, vendorFontLinks(fs.readFileSync(path.join(repoRoot, source), 'utf8'), fonts));
   };
 
