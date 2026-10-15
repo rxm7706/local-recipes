@@ -18,7 +18,6 @@ _EXPECTED_PATHS = {
     "docs/index.md",
     "docs/404.md",
     "docs/map.yaml",
-    "docs/dashboard/**",
     "docs-site/**",
     "docsite/**",
     "presentations/**",

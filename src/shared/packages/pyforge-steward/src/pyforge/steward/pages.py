@@ -1,6 +1,7 @@
 """Pages deploy duty: tree hash, build.json, and deploy-when-changed (Story 102.2 / CAP-168).
 
-Story 102.3 adds the fleet board's build input: :func:`fleet_status_document` reshapes
+Story 102.4 adds :func:`newest_export_run`, the selection behind the Pages build's artifact download
+(``scripts/pages_artifact_download.py``). Story 102.3 adds the fleet board's build input: :func:`fleet_status_document` reshapes
 ``sprint-ledger-query --format json`` into the ``docsite/content/fleet-status.json`` herald's board
 reads (herald Story 42.1, ``docsite/tools/status_pages.py``). Pure functions only: the workflow runs
 them through ``scripts/pages_fleet_status.py``, ``steward pages build`` in-process.
@@ -10,7 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,11 @@ PAGES_DUTY_FLAG = "pyforge.steward.pages_duty"
 SITE_ROOT_REL = "docs-site/build/site"
 #: The fleet board's build input herald reads (gitignored), relative to the repository root.
 FLEET_STATUS_REL = "docsite/content/fleet-status.json"
+#: Atlas's Kedro-Viz producer and the artifact it uploads (atlas Story 30.1); the mount source the
+#: Pages build reads (herald Story 42.2). Story 102.4 downloads one into the other.
+KEDRO_VIZ_WORKFLOW = "kedro-viz-publish.yml"
+KEDRO_VIZ_ARTIFACT = "kedro-viz-export"
+KEDRO_VIZ_DEST_REL = "docs/dashboard/kedro-viz"
 #: An identical tree still deploys once the live build is older than this and its commit moved
 #: (doctor 48.2's review): at most one extra deploy a day keeps the live ``last-modified`` honest.
 LIVENESS_MAX_AGE = timedelta(hours=24)
@@ -185,3 +191,31 @@ def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str |
         "stations": rows,
         "stories": stories,
     }
+
+
+def newest_export_run(
+    runs_json: Iterable[Mapping[str, Any]],
+    artifacts_json: Mapping[Any, Mapping[str, Any]],
+    *,
+    artifact: str = KEDRO_VIZ_ARTIFACT,
+) -> int | None:
+    """The newest successful producer run whose ``artifact`` is listed and not expired (Story 102.4).
+
+    ``runs_json`` is ``gh run list --json databaseId,createdAt,conclusion``; ``artifacts_json`` maps a
+    run id to that run's ``gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts`` payload (a run
+    missing from it has not been read and is passed over). A run whose ``conclusion`` is not
+    ``success`` is ignored. ``None``: no run, no artifact of that name, or only expired ones."""
+    successful = [
+        run
+        for run in runs_json
+        if isinstance(run, Mapping) and run.get("conclusion") == "success" and isinstance(run.get("databaseId"), int)
+    ]
+    for run in sorted(successful, key=lambda r: str(r.get("createdAt") or ""), reverse=True):
+        run_id = run["databaseId"]
+        payload = artifacts_json.get(run_id, artifacts_json.get(str(run_id)))
+        if not isinstance(payload, Mapping):
+            continue
+        for item in payload.get("artifacts") or []:
+            if isinstance(item, Mapping) and item.get("name") == artifact and item.get("expired") is False:
+                return run_id
+    return None

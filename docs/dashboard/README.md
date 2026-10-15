@@ -17,9 +17,12 @@ tree as the GitHub Actions workflow artifact **`kedro-viz-export`** (see
 `.github/workflows/kedro-viz-publish.yml`). When the
 `pyforge.atlas.viz_export_artifact` flag is on, the staged tree includes
 **`manifest.json`** beside `index.html` (`export_commit`, `export_date`,
-`kedro_viz_version`). Steward's Pages workflow is to download the newest
-successful artifact here (steward Story 102.4, not landed as of 2026-10-15:
-until it does, the Pages build in CI takes the absent path below). The Pages
+`kedro_viz_version`). Steward's Pages workflow downloads the newest successful,
+unexpired artifact here before `pages-check` (steward Story 102.4,
+`scripts/pages_artifact_download.py`, behind `pyforge.steward.pages_duty`) and
+exports `KEDRO_VIZ_EXPORT=present|absent` with the run id and date; with no
+artifact it takes the absent path below. Nothing published is tracked here, so
+this directory is not in `pages.yml`'s path filter. The Pages
 build mounts whatever is here at
 `/dashboard/kedro-viz/` (herald Story 42.2): with an export present it also
 writes the `/kedro-viz/` redirect and herald's pipelines page at `/dashboard/`,
