@@ -409,7 +409,11 @@ def _unnamed_fixture_tree(tmp_path: Path, *, map_extra: str = "") -> None:
         "|-------|-------|--------------|\n"
         f"| Docs | `docs/` | root |\n{map_extra}"
     )
-    _write_page(docs, "MAP.md", map_body + "\n| Page | Role |\n|---|---|\n| [`how-to/pixi-tasks.md`](how-to/pixi-tasks.md) | x |\n")
+    _write_page(
+        docs,
+        "MAP.md",
+        map_body + "\n| Page | Role |\n|---|---|\n| [`how-to/pixi-tasks.md`](how-to/pixi-tasks.md) | x |\n",
+    )
     _write_map_yaml(docs, sections=[])
     (tmp_path / "docsite" / "x.html").parent.mkdir(parents=True)
     (tmp_path / "docsite" / "x.html").write_text("x\n", encoding="utf-8")
@@ -522,8 +526,16 @@ def test_load_map_yaml_refuses_malformed_section(tmp_path: Path):
     docs.mkdir()
     bad_cases = [
         {"schema_version": 1, "pages": [], "sections": [{"label": "x", "href": "x/", "owner": "h", "order": 1}]},
-        {"schema_version": 1, "pages": [], "sections": [{"key": "x", "label": "x", "href": "x/", "owner": "h", "order": "1"}]},
-        {"schema_version": 1, "pages": [], "sections": [{"key": "Bad", "label": "x", "href": "x/", "owner": "h", "order": 1}]},
+        {
+            "schema_version": 1,
+            "pages": [],
+            "sections": [{"key": "x", "label": "x", "href": "x/", "owner": "h", "order": "1"}],
+        },
+        {
+            "schema_version": 1,
+            "pages": [],
+            "sections": [{"key": "Bad", "label": "x", "href": "x/", "owner": "h", "order": 1}],
+        },
         {
             "schema_version": 1,
             "pages": [],

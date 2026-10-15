@@ -186,10 +186,7 @@ def _sections_warnings(target: Path) -> tuple[list[Finding], int]:
                         source=Source.DOCS_MAP_HYGIENE,
                         check=_CHECK_ID,
                         status=DoctorStatus.WARN,
-                        message=(
-                            f"sections: section {key!r} entry {entry_key!r} "
-                            f"href {entry['href']!r}: {defect}"
-                        ),
+                        message=(f"sections: section {key!r} entry {entry_key!r} href {entry['href']!r}: {defect}"),
                         evidence={
                             "class": "sections",
                             "section_key": key,
