@@ -218,6 +218,8 @@ filter and the stub-credentials step unchanged, and a job `if:` carrying `PAUSE_
   import-direction and no-inline-IO meta-tests, which must stay green with the manifest tool in `tools/`).
 
 **Run before the push (not dispatch gates):**
+- `src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py` — expected: pass (AC1–AC7; runs
+  `pyforge.atlas.viz_export_artifact` in both states through `pyforge.testing_kit.flags.flag_states`).
 - `pixi run -e pyforge-atlas pyforge-atlas-test -k "viz_manifest or kedro_viz_publish or viz_export_artifact"` — expected:
   pass (AC1–AC7; the flag test through `pyforge.testing_kit.flags.flag_states`).
 - `pixi run -e pyforge-atlas viz-publish-stage` on a checkout with the flag on, then
