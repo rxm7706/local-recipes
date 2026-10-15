@@ -1212,9 +1212,8 @@ verify_commands = [
   "docs/how-to/**",
   "docs/reference/github-workflows.md",
   "docs/explanation/enterprise-deployment.md",
-  "docsite/tools/pages_site_url.py",  # was pages_second_host.py (herald 42.3 renamed it; 42.3 + 102.5 review)
-  "docsite/content/dossier.yml",
-  "docsite/README.md",
+  # 2026-10-15: the three docsite/ paths (pages_site_url.py, content/dossier.yml, README.md) left this list when
+  # herald Story 43.7 deleted docsite/ (its independent review, part B); their successors are herald's (Epic 43).
   "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
   "src/platform/tests/test_console_parity_homes.py",
   "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py",

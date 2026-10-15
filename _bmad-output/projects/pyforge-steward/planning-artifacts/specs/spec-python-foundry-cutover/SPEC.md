@@ -4,7 +4,7 @@ spec: python-foundry-cutover
 status: ready
 chain: pyforge-unifying-strategy
 created: "2026-09-04"
-updated: "2026-10-10"
+updated: "2026-10-15"
 owner-dream: docs/dreams/pyforge-unifying-strategy.md
 extends: spec-pyforge-unifying-strategy  # cite this file's ids as fnd:CAP-N outside it; Unifying CAP-1..19 and pap:CAP-1..6 are different sets — never collapse
 surface: []
@@ -176,11 +176,11 @@ laptop, the claim surface and the agents all describe the same two-root estate.
 
 - **CAP-14 — The dossier is the cutover's control plane.**
   - **intent:** Operators and Smiths read the A→B cutover's state in one place.
-  - **success:** `docsite/content/dossier.yml` carries Estate, Foundation,
+  - **success:** `docs-site/src/content/dossier/dossier.yml` (`docsite/content/` until herald Story 43.7, 2026-10-15) carries Estate, Foundation,
     Synthesis and Verified sections stating the A/B roles, the modes (never
     `move`), `pyforge.cutover_root`, the four campaign verbs each with a done /
     not-done line, and SBOM claims labelled A-side; every Verified claim cites the
-    capability ledger, the case list or a CI run; herald's `site-check` is green.
+    capability ledger, the case list or a CI run; herald's `pages-check` is green.
 
 - **CAP-15 — The instruction surface names the estate first.**
   - **intent:** Every harness reads first what this repository is and how A and B
