@@ -270,6 +270,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.herald.pages_one_generator": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "herald",
+        "story": "43-1-astro-renders-the-dossier-from-dossier-yml",
+        "created": "2026-10-14",
+        "on_everywhere": "",
+        "cleanup_by": "43-7-docsite-retires-and-one-generator-remains"
+      }
+    },
     "pyforge.herald.deck_export_native": {
       "state": "ENABLED",
       "variants": {

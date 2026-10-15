@@ -2,7 +2,8 @@
 title: '43.1: Astro renders the dossier from dossier.yml'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag:
   key: pyforge.herald.pages_one_generator        # new; minted by this story; shared by Stories 43.2-43.6 (one flag per CAP, Q6); retired by 43.7
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)

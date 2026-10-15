@@ -18,6 +18,7 @@
     "pyforge.herald.deck_publish": "on",
     "pyforge.herald.pages_second_host": "on",
     "pyforge.herald.ci_surfaces_tile": "on",
+    "pyforge.herald.pages_one_generator": "on",
     "pyforge.herald.deck_export_native": "on",
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.fleet_scan": "on",
