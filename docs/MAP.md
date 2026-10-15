@@ -31,7 +31,10 @@ general documentation:
 | Governance | `docs/governance/` | Policy corpus; cross-cutting, not Diátaxis-quadrant material |
 | Foundry | `docs/foundry/` | Foundry registry, frames and guards — machine-read by detectors, not authored documentation |
 | Station/package docs | `src/shared/packages/pyforge-*/README.md`, skill dirs | Station-scoped; link *into* this map where general |
-| Publish roots (generated) | `docs/dashboard/` | GitHub Pages upload root, not authored documentation — one subfolder per published dashboard board (see [`docs/dashboard/README.md`](dashboard/README.md)). The PyForge dossier/infographic site (`docsite/build.py`, deployed by `pages.yml`) is the one exception, publishing directly at this root rather than its own subfolder. Today only `kedro-viz/` (atlas Kedro-Viz) publishes as a subfolder; a subfolder for another board is created only when that board actually publishes, never minted empty ahead of time |
+| Publish roots (generated) | `docs/dashboard/` | One Pages artifact assembled at `docs-site/build/site/` — the Starlight shelf at `/`, herald's dossier site under `/herald/`, Kedro-Viz under `/dashboard/kedro-viz/` copied from `docs/dashboard/kedro-viz/` — deployed by `pages.yml`, the sole `deploy-pages` caller (see [`docs/dashboard/README.md`](dashboard/README.md)) |
+| Herald site sources | `docsite/` | Herald's Jinja dossier and infographic site, built by `docsite/build.py`; dissolves into `docs-site/` under pyforge-herald CAP-61 Story 43.7 |
+| Pages shelf + assembler | `docs-site/` | The Starlight shelf and the Pages assembler output root (`docsite/tools/assemble_pages.py`); never renamed |
+| Deck sources | `presentations/` | Herald's deck sources and `facts.yaml`, published under `/herald/`; not documentation |
 
 ## One-chain operator layer (2026-09-17)
 
@@ -173,6 +176,16 @@ Every documentation file relocated from `src/platform/` to align with the centra
 |-------|-------------------|
 | **22.5** | Populated `docs/tutorials/` and `docs/how-to/`; executed mixed-file splits and pending relocations (done) |
 | **22.6** | Corrects `README.md`, `CLAUDE.md`, `AGENTS.md` pointers; fixes broken internal links after relocation |
+
+## Sections (site mounts)
+
+The optional `sections:` list in [`docs/map.yaml`](map.yaml) orders every non-docs mount on the
+GitHub Pages site. Each section requires five fields: `key` (slug), `label`, `href`
+(site-root-relative directory with trailing slash), `owner` (station slug), and `order`
+(integer). Optional `entries` carry `{key, label, href}` sub-items. A row is added when its
+section publishes, by the station that publishes it, through the same surface reconcile that
+adds a `pages:` row (the Publish roots rule). Herald Story 43.7 reads this list into the
+sidebar and retires `docsite/content/site.yml`'s nav.
 
 ## Page registry (generated)
 

@@ -304,3 +304,27 @@ pages:
     quadrant: explanation
     owner: fleet
     kind: authored
+sections:
+  - key: herald
+    label: Herald
+    href: herald/
+    owner: herald
+    order: 10
+    entries:
+      - key: overview
+        label: Overview
+        href: herald/
+      - key: dossier
+        label: Dossier
+        href: herald/dossier/
+      - key: infographics
+        label: Infographics
+        href: herald/infographics/
+      - key: decks
+        label: Decks
+        href: herald/decks/
+  - key: pipelines
+    label: Kedro-Viz
+    href: dashboard/kedro-viz/
+    owner: atlas
+    order: 30
