@@ -3232,7 +3232,8 @@ static page per board, and handed to the Pages build as a workflow artifact. The
   `export_commit`, `boards[]` with `id`, `title`, `path`, `data_build_timestamp` — the page's own AD-17 stamp).
 - Every Plotly figure is rendered with `include_plotlyjs` pointing at ONE vendored `assets/plotly.min.js` copied from
   plotly's own `package_data`; never `'cdn'` (herald AD-21: zero third-party origins). `pages-check` judges every
-  exported page; the one `VENDORED_ROOTS` entry under the mount is the exact file `dashboard/vizro/assets/plotly.min.js`
+  exported page; the one vendored entry under the mount (`docs-site/scripts/pages.mts`'s `VENDORED` map since herald
+  Story 43.7) is the exact file `dashboard/vizro/assets/plotly.min.js`
   (herald:AD-21 rule 5, a vendored upstream bundle), never the tree (amended 2026-10-15; was "no `VENDORED_ROOTS`
   exemption").
 - Controls that submit work (`scan-project`, `env-inspect`) are not exported; the page shows the latest cached result
@@ -3260,9 +3261,14 @@ static page per board, and handed to the Pages build as a workflow artifact. The
   job's `setup-pixi` names `pyforge-atlas`. `-e local-recipes` is over 10 GB and is not a station job's env.
 - **The exemption (ruling 2026-10-15, kept by the operator).** plotly's own `plotly.min.js`, vendored byte for byte,
   names third-party origins (`cdn.plot.ly/un/` for geo traces, which the export refuses; a maplibre icon template),
-  so `VENDORED_ROOTS` holds the exact file `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5) and every
+  so the vendored list holds the exact file `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5) and every
   exported page stays judged.
 
 **Content changed:** FR-71's first two consequences, amended in place and marked; this section. No FR added,
 renumbered or removed; no AD moves (the spine's AD-21 amendment of 2026-10-14 reads as written: plotly.js is vendored
 once, never `'cdn'`). `updated:` bumped.
+
+*Later the same day:* herald Story 43.7 (`pyforge-herald:CAP-61`) retired `docsite/`, so the vendored list moved from
+`docsite/tools/assemble_pages.py`'s `VENDORED_ROOTS` to `docs-site/scripts/pages.mts`'s `VENDORED` map, which `pages-check`
+hands to `docs-site/scripts/origin_check.py`. CAP-63 is re-derived to name it, and FR-71's second consequence follows.
+No FR moves.

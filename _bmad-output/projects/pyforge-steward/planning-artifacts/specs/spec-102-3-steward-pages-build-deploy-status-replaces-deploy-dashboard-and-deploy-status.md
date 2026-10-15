@@ -207,8 +207,9 @@ atlas's producer calls the retired verbs
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`;
   MRS-GATE-010 binding; it runs `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py` (AC1–AC3, AC5,
   AC6), `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py`, which runs the key
-  `pyforge.steward.pages_duty` in both states with `pyforge.testing_kit.flags.flag_states` (AC4), `tests/unit/test_cli.py`
-  and `tests/unit/test_restore_duty.py` (AC6)).
+  `pyforge.steward.pages_duty` in both states with `pyforge.testing_kit.flags.flag_states` (AC4),
+  `src/shared/packages/pyforge-steward/tests/unit/test_cli.py` and
+  `src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py` (AC6)).
 
 **Run before the push (not dispatch gates):**
 - `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py src/shared/packages/pyforge-steward/tests/unit/test_cli.py src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py -q` — expected: pass.
@@ -255,6 +256,11 @@ atlas's producer calls the retired verbs
 
 ## Spec Change Log
 
+- 2026-10-15 (the Pages one-PR endgame, pass 2a): the Verification command's two package-relative test paths
+  (`tests/unit/test_cli.py`, `tests/unit/test_restore_duty.py`) are written from the repo root. At `done`,
+  `flag_gate_check.py` reads every test file a flagged spec's Verification names from the repo root, and the bare
+  paths failed it with `flag-test-file-missing` (found by herald 43.7's independent review, part B, simulating the
+  promotion). No AC, test or command changes.
 - 2026-10-14: specced at mint from Epic 102's Story 102.3 text, `spec-pyforge-steward` CAP-168 and the live `deploy.py`
   / `cli.py` (`DUTIES` 29, `restore` at index 13). The implementing session reads the landed Story 102.2 `pages.py`
   first and follows it where it differs from the shape quoted here.

@@ -1551,14 +1551,15 @@ deployment.
   promoted: 2026-10-15 — steward Story 102.3 review (Pages redesign chain)
   status: open
 
-### DW-herald-42-1-1: operator: set an absolute Lane 1 URL in `docsite/content/site.yml` `lane1.href`
+### DW-herald-42-1-1: operator: set an absolute Lane 1 URL in `docs-site/src/content/site.yml` `lane1.href`
 
 - source_spec: `planning-artifacts/specs/spec-42-1-the-fleet-board-and-guild-status-pages-render-at-build.md`
-  summary: The fleet board (`/status/`) and the guild status page (`/status/ci/`) are build-time snapshots that link the live view on Lane 1 from `site.yml`'s `lane1.href`. That href is `/console/`, a root-absolute path: Lane 1 is served by the platform, not by Pages, so on the Pages origin it 404s. The Pages build resolves flags as `dev` (`pages.yml` sets no `PYFORGE_ENVIRONMENT`), where `pyforge.herald.status_pages` is on, so the pages publish when this chain lands. Until the operator names Lane 1's absolute URL, both pages leave the Lane 1 link out (`status_pages.lane1_link`; orchestrator ruling 2026-10-15); with an absolute `http(s)://` URL in `lane1.href` they render it with no other edit.
-  evidence: herald 42.1 re-review (2026-10-15, `rereview-group1`, should-fix 2); `git grep -n PYFORGE_ENVIRONMENT -- .github/workflows` finds nothing; `src/platform/config/flag-overlays.json` dev `pyforge.herald.status_pages: on`; `test_status_pages_flag_states.py::test_ac3_a_root_absolute_lane1_href_carries_no_link` and `::test_ac3_an_absolute_lane1_url_is_one_link_on_each_page`.
-  location: docsite/content/site.yml
+  summary: The fleet board (`/status/`) and the guild status page (`/status/ci/`) are build-time snapshots that link the live view on Lane 1 from `site.yml`'s `lane1.href`. That href is `/console/`, a root-absolute path: Lane 1 is served by the platform, not by Pages, so on the Pages origin it 404s. The Pages build resolves flags as `dev` (`pages.yml` sets no `PYFORGE_ENVIRONMENT`), where `pyforge.herald.status_pages` is on, so the pages publish when this chain lands. Until the operator names Lane 1's absolute URL, both pages leave the Lane 1 link out (`lane1Link` in `docs-site/src/lib/agent-surface.ts` since herald Story 43.7 ported `status_pages.lane1_link`; orchestrator ruling 2026-10-15); with an absolute `http(s)://` URL in `lane1.href` they render it with no other edit.
+  evidence: herald 42.1 re-review (2026-10-15, `rereview-group1`, should-fix 2); `git grep -n PYFORGE_ENVIRONMENT -- .github/workflows` finds nothing; `src/platform/config/flag-overlays.json` dev `pyforge.herald.status_pages: on`; `test_status_pages_flag_states.py::test_ac3_lane1_is_linked_only_by_an_absolute_url` (Story 43.7 folded the two earlier tests, `test_ac3_a_root_absolute_lane1_href_carries_no_link` and `test_ac3_an_absolute_lane1_url_is_one_link_on_each_page`, into it); `docs-site/src/content/site.yml:20` cites this row.
+  location: docs-site/src/content/site.yml (moved from `docsite/content/site.yml` by herald Story 43.7, 2026-10-15)
   origin: herald Story 42.1 re-review, 2026-10-15 (an operator decision: which host serves Lane 1 to Pages readers)
-  fix: set `lane1.href` to Lane 1's absolute URL (for example `https://<platform host>/console/`) in `docsite/content/site.yml`; the next Pages build links it on both status pages, and `pages-check` passes (a navigation link to another origin loads nothing). No code change.
+  fix: set `lane1.href` to Lane 1's absolute URL (for example `https://<platform host>/console/`) in `docs-site/src/content/site.yml`; the next Pages build links it on both status pages, and `pages-check` passes (a navigation link to another origin loads nothing). No code change.
   severity: low
   promoted: 2026-10-15 — herald Story 42.1 re-review (Pages redesign chain)
+  note: re-pointed 2026-10-15 — herald Story 43.7 retired `docsite/` (its independent review, part B, should-fix 2): the location, the fix, the reader and the test ids follow; the decision itself is unchanged
   status: open
