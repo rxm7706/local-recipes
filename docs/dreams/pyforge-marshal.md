@@ -1547,6 +1547,28 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   itself; steward stays the one reader of the pause state. It waits on steward 103.1, a cross-station gate the
   operator flips. **Kinships:** `pyforge-steward:CAP-166` and steward Story 103.1 (the field this reads). Operator
   ask, 2026-10-14: "chain it here". Owner `spec-pyforge-marshal`. → Epic 101 / Story 101.1, specced 2026-10-14.
+- **2026-10-15 (a landing re-verifies when only main moved)** — **Found: a re-landing re-runs every gate even when the
+  story's code has not changed.** When a dispatch's PR conflicts with main, someone merges main into the branch, the
+  head moves, and the land-only path re-runs the station's whole `verify_commands` before it waits for CI again.
+  Steward's journals of 2026-10-14 show the cost. Steward 99.6 was verified at 06:29, its landing refused on a memlog
+  conflict (MRS-DISP-038) at 06:31, and after main was merged in, its two re-verifications took 19 and 27 minutes and
+  both refused on load-sensitive commands. Steward 102.1 was verified at 20:35, and after that only planning commits
+  and a merge of main reached its branch before its story fix (`fbb3ee095b` → `b937a1371e`): two marshal reconcile
+  stamps, then the merge, whose one conflict was a herald memlog. Steward 103.1's re-verification took about 52
+  minutes and then hit a load flake. Every landing makes every other open branch stale, so serial landing multiplies
+  the cost. **What it looks like when fixed:** a station can opt in to reuse its verified verdict. A re-landing then
+  skips the full re-verification when the story's own code is byte-identical to what was verified: every commit since
+  the verified head is a merge of main or touches planning files only, no merge touched a non-planning file of the
+  story's own diff, and no merge had a conflict or a hand-made change outside planning files. A narrow re-check of the
+  planning surface still runs, the journal says the verdict was reused and from which one, and GitHub CI is still
+  awaited, red checks refusing as before. Anything else re-verifies in full, as today. **Constraints:** a fix under
+  CAP-161 (the driver verifies before any landing), with no CAP and no flag; a policy key that defaults to today's
+  behaviour, opted into by the four Pages stations; never a landing on self-report, since the reused verdict is
+  marshal's own independent verification of exactly the story's code. **Kinships:** steward 103.6 (the preflight fast
+  mode, the same speed ask on the push side). Operator rulings, 2026-10-15: "chain it now and I'll mint the story
+  chain and implement it - we need the speed to market before we move to wave 2", and "make sure we include this -
+  Optional, marshal: a landing re-verification setting - that saves time too". Owner `spec-pyforge-marshal`.
+  → Epic 102 / Story 102.1, specced 2026-10-15.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

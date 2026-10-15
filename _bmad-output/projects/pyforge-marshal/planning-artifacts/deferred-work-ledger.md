@@ -9117,3 +9117,25 @@ status: open
   resolved: 2026-10-12
   resolution: Story 99.1 — referenced_dep_findings runs Doctor delegation and CLI probes concurrently; CLI timeouts report explicitly. NFR-P1 fixture run_check with real probes ~2.9 s before (serial, c447946b3f) → ~1.7 s after (parallel, measured 2026-10-12 pyforge-marshal env).
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/referenced_deps.py
+
+### DW-marshal-102-1: A landing whose PR head reports no check runs proceeds after the 120 s grace, even when its verdict was reused, so a reused verdict can land with no CI having judged the combined tree.
+
+- source_spec: `planning-artifacts/specs/spec-102-1-a-landing-reuses-its-verified-verdict-when-only-a-merge-of-main-moved-the-branch.md`
+  summary: A landing whose PR head reports no check runs proceeds after the 120 s grace, even when its verdict was reused, so a reused verdict can land with no CI having judged the combined tree.
+  evidence: Pre-existing, found by the independent review of PR #2238 (2026-10-15). dispatch_land.py _wait_for_landing_checks (:1068) returns _CHECKS_NO_RUNS, with no finding, once a head that reports no check run has waited landing_check_grace_seconds (default 120). Story 102.1's safety argument for a reused verdict leans on GitHub CI judging the combined tree; on an empty check set that judge is absent. Fix: refuse an empty check set (a new MRS-DISP code) when the verdict handed to execute_dispatch_land was reused (verification_mode == reused). Kept out of Story 102.1 by its AC9 (dispatch_land.py is not edited).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:1068
+  origin: spec-deferred 9eadfae4e0d0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-102-1-2: The head a verdict judged is read once, after the verification, so a commit landing in the worktree while the verification ran would be recorded as the verified head.
+
+- source_spec: `planning-artifacts/specs/spec-102-1-a-landing-reuses-its-verified-verdict-when-only-a-merge-of-main-moved-the-branch.md`
+  summary: The head a verdict judged is read once, after the verification, so a commit landing in the worktree while the verification ran would be recorded as the verified head.
+  evidence: Found by the independent review of PR #2238 (2026-10-15). cli/dispatch.py _verification_verdict_for_cap4 (verification_head_sha after evaluate_dispatch_verification, :1308) and dispatch_supervisor/__main__.py _run_and_journal_verification (:2662) read HEAD and the dirty state once, after the gates ran. A commit made in the worktree during a long verification would be journaled as the head the verdict judged, and a later reuse would trust it. Fix: read the head before and after the verification and record head_sha only when both reads match and the tree is clean.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:1308
+  origin: spec-deferred b2fb78fc98c1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

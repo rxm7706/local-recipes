@@ -1,6 +1,10 @@
 """Shared ``dispatch-verification`` journal payload builder (Story 22.17).
 
 One OUTCOME shape for supervisor and harness-done land-only paths.
+
+Story 102.1 (CAP-161): every OUTCOME also says how the verdict was reached (``mode``: ``full`` or ``reused``) and,
+when the worktree was clean, which ``head_sha`` it judged -- the fact a later re-landing reads to decide whether the
+verdict still describes the branch. A reused OUTCOME names the full verdict it reused and the exempt-file evidence.
 """
 
 from __future__ import annotations
@@ -12,6 +16,14 @@ from pathlib import Path
 from .core import dispatch as dispatch_core
 from .core import gate as gate_core
 from .core import policy
+from .core.dispatch_reverify import (
+    GATE_DIGEST_FIELD,
+    HEAD_SHA_FIELD,
+    MODE_FIELD,
+    MODE_FULL,
+    REUSE_DECLINED_FIELD,
+    REUSE_EVIDENCE_FIELD,
+)
 from .core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
@@ -58,8 +70,19 @@ def build_dispatch_verification_journal_entries(
     writer_id: str,
     counter: int,
     ts: str,
+    mode: str = MODE_FULL,
+    head_sha: str | None = None,
+    reuse: Mapping[str, object] | None = None,
+    reuse_declined: Mapping[str, object] | None = None,
+    carried_scope_advisories: tuple[Mapping[str, object], ...] | None = None,
 ) -> DispatchVerificationJournalEntries:
-    """Build the supervisor's ``dispatch-verification`` INTENT/OUTCOME pair."""
+    """Build the supervisor's ``dispatch-verification`` INTENT/OUTCOME pair.
+
+    Story 102.1: ``mode`` and ``head_sha`` (omitted when ``None``) ride every OUTCOME, and so does the
+    ``gate_digest`` a full verification's ``verify_data`` carries (review fix 1); ``reuse`` carries a reused
+    verdict's ``reused_verification_id``, ``reused_head_sha`` and ``reuse_evidence`` onto it, and
+    ``carried_scope_advisories`` replaces the advisories the (narrow) findings would give with the reused verdict's
+    own; ``reuse_declined`` names why a full verification ran when a reuse was considered."""
     verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=findings))
     failed = primary_gate_failure(findings)
     record_failed_commands = (
@@ -83,11 +106,13 @@ def build_dispatch_verification_journal_entries(
             if item.gate is not None:
                 row["gate"] = item.gate
             failed_commands_payload.append(row)
-    scope_advisories = [
+    scope_advisories: list[object] = [
         {"code": finding.code, "path": finding.path}
         for finding in findings
         if finding.code in gate_core._SCOPE_VIOLATION_ADVISORY_CODES.values()
     ]
+    if carried_scope_advisories is not None:
+        scope_advisories = [dict(item) for item in carried_scope_advisories]
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=ts,
@@ -116,13 +141,22 @@ def build_dispatch_verification_journal_entries(
             "failed_message": failed.message if failed is not None else None,
             "scope_violation_advisories": scope_advisories,
             **({VERIFY_FAILED_COMMANDS_FIELD: failed_commands_payload} if record_failed_commands else {}),
+            MODE_FIELD: mode,
+            **({HEAD_SHA_FIELD: head_sha} if head_sha is not None else {}),
+            **(
+                {GATE_DIGEST_FIELD: verify_data[GATE_DIGEST_FIELD]}
+                if isinstance(verify_data.get(GATE_DIGEST_FIELD), str)
+                else {}
+            ),
+            **(dict(reuse) if reuse is not None else {}),
+            **({REUSE_DECLINED_FIELD: dict(reuse_declined)} if reuse_declined is not None else {}),
         },
     )
     counter += 1
     offload_fields = (
-        frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD, VERIFY_FAILED_COMMANDS_FIELD})
+        frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD, VERIFY_FAILED_COMMANDS_FIELD, REUSE_EVIDENCE_FIELD})
         if record_failed_commands
-        else frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD})
+        else frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD, REUSE_EVIDENCE_FIELD})
     )
     return DispatchVerificationJournalEntries(
         intent_entry=intent_entry,
@@ -142,8 +176,9 @@ def build_dispatch_verification_journal_entries_from_envelope(
     writer_id: str,
     counter: int,
     ts: str,
+    head_sha: str | None = None,
 ) -> DispatchVerificationJournalEntries:
-    """Convenience wrapper when independent verify produced a full envelope."""
+    """Convenience wrapper when independent verify produced a full envelope (``mode: full``)."""
     return build_dispatch_verification_journal_entries(
         findings=envelope.findings,
         gate_envelope_verdict=envelope.verdict.value,
@@ -154,4 +189,5 @@ def build_dispatch_verification_journal_entries_from_envelope(
         writer_id=writer_id,
         counter=counter,
         ts=ts,
+        head_sha=head_sha,
     )
