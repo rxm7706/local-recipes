@@ -111,6 +111,7 @@ h3 .h3-num { color: var(--sl-color-text-accent); margin-right: 8px; }
 .callout { border-left: 3px solid var(--amber); background: var(--paper-raised); padding: 15px 20px; margin: 18px 0; max-width: 70ch; border-radius: 0 4px 4px 0; }
 .callout p { font-size: 0.96rem; color: var(--ink-soft); }
 .callout .label { font-family: var(--sl-font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sl-color-text-accent); display: block; margin-bottom: 6px; }
+/* a tone as small text: mixed 75% toward the ink, as cssTextTone() in src/lib/md-inline.ts mixes a station's */
 .callout.red { border-left-color: var(--red); } .callout.red .label { color: color-mix(in srgb, var(--red) 75%, var(--ink)); }
 .callout.green { border-left-color: var(--green); } .callout.green .label { color: color-mix(in srgb, var(--green) 75%, var(--ink)); }
 

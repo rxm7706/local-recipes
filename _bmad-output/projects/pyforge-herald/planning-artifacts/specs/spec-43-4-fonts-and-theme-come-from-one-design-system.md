@@ -10,7 +10,7 @@ flag:
   scope: global                                  # v1 is global only
   fallback: 'the Jinja path serves its own stylesheet and the vendored woff2 files exactly as it does today'
   cleanup: retired by Story 43.7 with the Jinja path (spec-feature-flag-governance Q4)
-review_loop_iteration: 2
+review_loop_iteration: 3
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -239,6 +239,32 @@ follow here are the first implementation's run, kept as its record.
 
 ## Spec Change Log
 
+- 2026-10-15 (second re-review, iteration 3: NOT RESOLVED, 1 should-fix and 5 nits -- every earlier finding resolved;
+  resolved here, `review_loop_iteration` 3):
+  - **Should-fix, the guard's reach.** `test_43_4_no_source_names_a_font_or_colour_outside_the_theme` now also refuses
+    (a) any `--sl-*` declaration outside `theme.css`, in CSS or a `style` attribute -- `theme.css` is the contract's
+    only writer, so `body { --sl-font: "Comic Sans MS" }` or `.x { --sl-font-x: Georgia; font-family:
+    var(--sl-font-x) }` fail; (b) a declaration beside a nested rule: a stylesheet or `<style>` body is read rule by
+    rule with nested blocks cut out (`_css_bodies`; a grouping at-rule's block holds rules, `@font-face` / `@property`
+    / `@page` ones declarations), so `.a { color: red; .b { ... } }` fails; (c) colours and faces in a tag's
+    attributes in any non-CSS source: SVG `fill` / `stroke` / `stop-color` / `flood-color` / `lighting-color`, `color`,
+    `bgcolor`, `<font face>` and the `theme-color` meta's `content`, through `_colour_literals` (`currentColor`, `none`
+    and `url()` pass); an attribute bound to an expression other than `cssVar()` / `cssTextTone()` is unreadable, so a
+    finding. A `<style>` body with an interpolation is unreadable too. Fourteen new `_GUARD_MUTATIONS` cases, one per
+    probe -- each fails the guard naming the file and the finding.
+  - **Nits.** 1: the trusted interpolation is the whole `${cssVar(...)}` / `${cssTextTone(...)}` with no parenthesis
+    inside (`\([^()`{}]*\)`), so `${cssVar(a) || ('#c00')}` is unreadable; `style\s*=` matches in any case;
+    `_declaration_lists`' docstring and `docs-site/README.md` name what stays out of reach (concatenation or a
+    variable, `el.style` / `setAttribute`, `<style set:html>`, an escaped quote in a TS string, CSS escapes, an SVG
+    data URI). 2: the 75% ink mix is cross-referenced at its three sites (`cssTextTone()` and the two callout labels).
+    3: the inline-code contrast figure is corrected above (8.21 / 6.97). 4: the built test's docs/herald equality
+    includes `--sl-color-text-accent`, the one link colour. 5: AC3's test asserts `theme.css`'s only top-level rules
+    are the light `:root`, the docs' heading rule and Story 43.5's `.built-from`.
+  - **Gates (2026-10-15, on `fac3eec3ed` plus this change).** The zero-origin file -- exit 0, 43 passed; the Pages,
+    parity, 43.6, zero-origin, validator, imports, site-URL, build, flag-state, golden and emit test files -- exit 0, 398
+    passed, none skipped; the herald suite -- exit 0, 2188 passed, 5 skipped; `lint-types` -- exit 0; `pages-check` with
+    both flags on and the 42.1 and 43.6 fixtures (removed after) -- exit 0. The steward suite, run whole once for the
+    coordinating session after Story 43.5's trigger-map fix -- exit 0, 2812 passed, 2 skipped.
 - 2026-10-15 (re-review, iteration 2: NOT RESOLVED, 3 new should-fix and 9 nits; resolved here, `review_loop_iteration`
   2):
   - **Should-fix 1, print.** `theme.css`'s dark block now sits under `@media screen`, and its scripts-off twin under
@@ -298,7 +324,9 @@ follow here are the first implementation's run, kept as its record.
   - **Contrast, from the built values** (the flag-on `_astro/herald.*.css` and the docs bundle, `color-mix()` resolved
     in sRGB; light / dark; AA = 4.5, 3 for large bold). Docs: body `gray-2` on bg 8.93 / 9.75; headings 14.74 / 15.08;
     links on bg 6.52 / 7.59, on the nav and sidebar 5.72 / 7.01; sidebar current (`text-invert` on `text-accent`)
-    6.52 / 5.66; "On this page" `gray-3` 5.25 / 6.70 (4.61 / 6.19 on the nav); inline code 13.55 / 10.78. Herald: ink
+    6.52 / 5.66; "On this page" `gray-3` 5.25 / 6.70 (4.61 / 6.19 on the nav); inline code 8.21 / 6.97 (paragraph
+    code inherits `gray-2`; the earlier 13.55 / 10.78 measured `white`, which only code in a heading or `strong` takes --
+    corrected at the second re-review). Herald: ink
     on paper 14.74 / 15.08; ink-soft on paper 8.93 / 9.75 and on paper-raised 8.21 / 9.01; links and amber labels on
     paper 6.52 / 7.59; callout labels on paper-raised 5.99 / 7.01 (red 7.10 / 6.83, green 5.63 / 8.58); rail on paper
     5.25 / 6.70 and on paper-raised 4.82 / 6.19; code 8.21 / 9.01; station pill and finding-label text 4.97-7.81 /

@@ -67,7 +67,8 @@ export function cssVar(token: string | undefined): string {
 
 /**
  * A station or tone token used as small text (a station pill, a finding label): the hue mixed 75% toward the ink, so
- * it reads AA on the paper in both themes (Story 43.4's re-review) and still names no colour of its own.
+ * it reads AA on the paper in both themes (Story 43.4's re-review) and still names no colour of its own. The same 75%
+ * mixes the red and green callout labels in `styles/herald.css` (`.callout.red .label`); change the three together.
  */
 export function cssTextTone(token: string | undefined): string {
   const value = cssVar(token);

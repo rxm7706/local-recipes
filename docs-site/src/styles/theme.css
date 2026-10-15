@@ -10,7 +10,8 @@
  * link, the herald's small amber labels). `--sl-font-heading` is this site's one addition to the contract (Starlight has no headings face):
  * the herald display face, which the docs' headings take below and the herald pages read with `--sl-font` as fallback.
  *
- * To re-theme the whole site, replace this file or add a Starlight theme plugin; nothing else names a font or colour.
+ * To re-theme the whole site, replace this file or add a Starlight theme plugin; nothing else names a font or colour
+ * or sets a --sl-* variable (test_docsite_zero_origin.py; docs-site/README.md names what that test cannot read).
  */
 
 @import './herald-fonts.css';

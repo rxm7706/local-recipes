@@ -1476,7 +1476,7 @@ def test_43_4_ac1_ac3_ac4_the_built_pages_share_one_theme(
     docs_theme, herald_theme = _page_theme(artifact, shelf), _page_theme(artifact, dossier)
     for mode in ("light", "dark"):
         names = [n for n in docs_theme[mode] if n.startswith(("--sl-font", "--sl-color-accent", "--sl-color-gray"))]
-        names += ["--sl-color-white", "--sl-color-black"]
+        names += ["--sl-color-white", "--sl-color-black", "--sl-color-text-accent"]  # the one link colour (default i)
         assert len(names) > 12
         assert {n: docs_theme[mode][n] for n in names} == {n: herald_theme[mode].get(n) for n in names}, mode
     assert (

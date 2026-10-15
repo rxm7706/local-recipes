@@ -240,6 +240,13 @@ def test_43_4_ac3_the_theme_is_light_and_under_starlights_dark_selector() -> Non
     assert contexts[_DARK] == ("@media screen",)
     assert contexts[_NO_SCRIPT] == ("@media screen and (prefers-color-scheme: dark)",)
     assert all("print" not in at and at.startswith("@media screen") for at in (*contexts[_DARK], *contexts[_NO_SCRIPT]))
+    # and nothing else sets a theme at the top level (the second re-review's nit 5): the light block, the docs' heading
+    # face and Story 43.5's built-from line are theme.css's only unconditional rules
+    assert [selector for context, selector in _at_rules(css) if context == ()] == [
+        _LIGHT,
+        ":where(h1#_top), .sl-markdown-content :where(h1, h2, h3, h4):not(:where(.not-content *))",
+        ".built-from",
+    ]
 
     herald = HERALD_CSS.read_text(encoding="utf-8")
     tokens = _tokens(herald, _LIGHT)
@@ -261,10 +268,21 @@ def test_43_4_ac3_the_theme_is_light_and_under_starlights_dark_selector() -> Non
 
 _THEME_SOURCES = {"styles/theme.css", "styles/herald-fonts.css"}  # the theme and the faces it imports
 _STYLE_ATTRIBUTE = re.compile(
-    r"""\bstyle=(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\}|\{\s*'([^']*)'\s*\}|\{\s*"([^"]*)"\s*\}|\{\{(.*?)\}\}|(\{[^}]*\}))""",
-    re.DOTALL,
+    r"""\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\}|\{\s*'([^']*)'\s*\}|\{\s*"([^"]*)"\s*\}|\{\{(.*?)\}\}|(\{[^}]*\}))""",
+    re.DOTALL | re.IGNORECASE,
 )
-_TRUSTED_INTERPOLATION = re.compile(r"\$\{\s*(?:cssVar|cssTextTone)\([^`{}]*\)\s*\}")
+_TRUSTED_INTERPOLATION = re.compile(r"\$\{\s*(?:cssVar|cssTextTone)\([^()`{}]*\)\s*\}")
+#: Story 43.4's second re-review: the presentation attributes that take a colour (SVG and legacy HTML), the legacy
+#: ``<font face>`` and the ``theme-color`` meta, read inside each tag of a non-CSS source.
+_TAG = re.compile(r"<[a-zA-Z][\w:.-]*\b[^<>]*>")
+_COLOUR_ATTRIBUTE = re.compile(
+    r"""\s(fill|stroke|stop-color|flood-color|lighting-color|color|bgcolor|face|content)\s*=\s*"""
+    r"""(?:"([^"]*)"|'([^']*)'|\{([^{}]*)\})""",
+    re.IGNORECASE,
+)
+_TRUSTED_ATTRIBUTE = re.compile(r"\s*(?:cssVar|cssTextTone)\([^()`{}]*\)\s*")
+#: at-rules whose block holds declarations; every other one (``@media``, ``@supports``, ``@layer`` ...) holds rules
+_DECLARATION_AT_RULES = ("@font-face", "@property", "@page", "@counter-style", "@font-palette-values")
 _FONT_KEYWORDS = frozenset(
     "normal italic oblique bold bolder lighter small-caps ultra-condensed extra-condensed condensed semi-condensed "
     "semi-expanded expanded extra-expanded ultra-expanded xx-small x-small small medium large x-large xx-large "
@@ -314,15 +332,67 @@ def _font_findings(prop: str, value: str) -> list[str]:
     return [f"font {value!r}"] if literal or not families else []
 
 
+def _css_bodies(css: str) -> list[str]:
+    """Each rule's own declarations with its nested rules cut out (CSS nesting: ``.a { color: red; .b { ... } }`` reads
+    ``color: red``); a grouping at-rule's block (``@media``, ``@supports``, ``@layer`` ...) holds rules, not
+    declarations, and only its rules are read."""
+    frames: list[tuple[str, list[str]]] = [("", [])]
+    out, buf = [], ""
+    for char in _COMMENT.sub("", css):
+        if char == "{":
+            head, _, prelude = buf.rpartition(";")
+            frames[-1][1].append(f"{head};" if head else "")
+            frames.append((prelude.strip(), []))
+            buf = ""
+        elif char == "}" and len(frames) > 1:
+            prelude, own = frames.pop()
+            own.append(buf)
+            if not prelude.startswith("@") or prelude.lower().startswith(_DECLARATION_AT_RULES):
+                out.append("".join(own))
+            buf = ""
+        else:
+            buf += char
+    return out
+
+
+def _attribute_findings(text: str) -> list[str]:
+    """The colours and faces a non-CSS source's tags name outside CSS: a colour attribute (``fill``, ``stroke``, ...,
+    ``color``, ``bgcolor``), the ``theme-color`` meta's ``content`` and any ``<font face>``; an attribute bound to an
+    expression other than ``cssVar()`` / ``cssTextTone()`` is unreadable, so a finding too."""
+    findings = []
+    for tag in _TAG.findall(text):
+        theme_meta = re.match(r"<meta\b", tag, re.IGNORECASE) and re.search(
+            r"""\bname\s*=\s*["']theme-color""", tag, re.I
+        )
+        for name, double, single, expression in _COLOUR_ATTRIBUTE.findall(f" {tag[1:]}"):
+            name = name.lower()
+            if name == "content" and not theme_meta:
+                continue
+            value = double or single
+            if expression and not _TRUSTED_ATTRIBUTE.fullmatch(expression):
+                findings.append(f"an attribute the guard cannot read, {name}={{{expression}}}")
+            elif name == "face" and value.strip():
+                findings.append(f"font face {value!r}")
+            else:
+                findings += [f"colour {c!r} in the {name} attribute" for c in _colour_literals(value)]
+    return findings
+
+
 def _declaration_lists(path: Path) -> tuple[list[str], list[str]]:
     """The CSS a source declares, as declaration lists: a stylesheet's rule bodies; else each ``<style>`` body's and
-    each ``style`` attribute's (double- or single-quoted, a template literal, a string expression or an Astro object).
-    Template interpolations are trusted only through ``cssVar()`` / ``cssTextTone()``, which take a theme token alone;
-    any other interpolation, and a ``style={expression}``, is a finding of its own: the guard cannot read it."""
+    each ``style`` attribute's (double- or single-quoted, a template literal, a string expression or an Astro object;
+    ``style`` in any case, spaces around ``=`` allowed). Template interpolations are trusted only as a whole
+    ``${cssVar(...)}`` / ``${cssTextTone(...)}``, which take a theme token alone; any other interpolation, and a
+    ``style={expression}``, is a finding of its own: the guard cannot read it. Out of its reach, named so nobody
+    reads more into it: a style string built by concatenation or held in a variable, ``el.style`` /
+    ``setAttribute('style', ...)`` in a script, ``<style set:html>``, an escaped quote (``style=\\"...\\"`` inside
+    a TS string), CSS escapes (``\\72 ed``) and an SVG data URI inside ``url()``."""
     text = path.read_text(encoding="utf-8", errors="replace")
-    sheets = [text] if path.suffix == ".css" else re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL)
-    lists = [body for sheet in sheets for body in re.findall(r"\{([^{}]*)\}", _COMMENT.sub("", sheet))]
-    unreadable: list[str] = []
+    sheets = [text] if path.suffix == ".css" else re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL | re.I)
+    unreadable: list[str] = [
+        f"a <style> body with an interpolation, {sheet[:60]!r}" for sheet in sheets if "${" in sheet
+    ]
+    lists = [body for sheet in sheets if "${" not in sheet for body in _css_bodies(sheet)]
     for match in _STYLE_ATTRIBUTE.finditer(text):
         *strings, astro_object, expression = match.groups()
         if expression is not None:
@@ -350,18 +420,23 @@ def _declaration_lists(path: Path) -> tuple[list[str], list[str]]:
 
 
 def _literal_findings(src: Path) -> list[str]:
-    """Each literal colour or font family the sources under ``src`` declare outside the theme."""
+    """Each literal colour or font family the sources under ``src`` declare outside the theme, and each theme
+    variable (``--sl-*``) they set: theme.css is the contract's only writer."""
     findings = []
     for path in _scanned_sources(src):
         lists, unreadable = _declaration_lists(path)
         rel = path.relative_to(src).as_posix()
         findings += [f"{rel}: a style the guard cannot read, {what}" for what in unreadable]
+        if path.suffix != ".css":
+            findings += [f"{rel}: {what}" for what in _attribute_findings(path.read_text("utf-8", errors="replace"))]
         for declarations in lists:
             for declaration in declarations.split(";"):
                 prop, colon, value = declaration.partition(":")
                 prop = prop.strip().lower()
                 if not colon or not re.fullmatch(r"-{0,2}[\w-]+", prop):
                     continue
+                if prop.startswith("--sl-"):
+                    findings.append(f"{rel}: sets the theme variable {prop} (theme.css is its only writer)")
                 findings += [f"{rel}: colour {c!r} in {prop}" for c in _colour_literals(value)]
                 if prop in ("font", "font-family"):
                     findings += [f"{rel}: {f}" for f in _font_findings(prop, value)]
@@ -372,8 +447,10 @@ def test_43_4_no_source_names_a_font_or_colour_outside_the_theme() -> None:
     """The theme contract (operator ruling 2026-10-15; the re-review's should-fix 2): outside theme.css, the faces it
     imports and the docs content, no file under ``docs-site/src`` -- herald CSS, layouts, components, pages, endpoint
     output, libraries -- declares a literal colour (hex, a colour function, a CSS named or system colour in any case)
-    or a literal font in ``font-family`` or the ``font`` shorthand: each is one of Starlight's variables, or a token
-    derived from them, so replacing theme.css re-themes every page."""
+    or a literal font in ``font-family`` or the ``font`` shorthand, sets a theme variable (``--sl-*``), or names a
+    colour or face in a tag's attributes (SVG ``fill`` / ``stroke`` ..., ``<font>``, the ``theme-color`` meta): each
+    is one of Starlight's variables, or a token derived from them, so replacing theme.css re-themes every page. What
+    stays out of its reach is named in ``_declaration_lists``."""
     sources = _scanned_sources(DOCS_SITE / "src")
     assert len(sources) > 40 and any(p.suffix == ".astro" for p in sources) and any(p.suffix == ".ts" for p in sources)
     assert _literal_findings(DOCS_SITE / "src") == []
@@ -422,6 +499,54 @@ _GUARD_MUTATIONS = [  # (file under docs-site/src, the text to find, its replace
         "export function cssVar",
         "const S = '<style>.x{color:hsl(0 0% 0%)}</style>';\nexport function cssVar",
     ),
+    # the second re-review's probes: a theme variable set outside theme.css, a nested rule's sibling declaration,
+    # colour attributes, <font>, the theme-color meta, a widened trusted interpolation and the attribute's spelling
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        '* { box-sizing: border-box; }\nbody { --sl-font: "Comic Sans MS"; }',
+    ),
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        "* { box-sizing: border-box; }\n.x { --sl-font-x: Georgia; font-family: var(--sl-font-x); }",
+    ),
+    ("lib/dossier-blocks.ts", '`<div class="chips">', '`<div class="chips" style="--sl-font: Georgia">'),
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        "* { box-sizing: border-box; }\n.a { color: red; .b { margin: 0; } }",
+    ),
+    (
+        "components/SiteTitle.astro",
+        "  .pf-top-menu {\n",
+        "  .pf-x { color: tomato; & a { margin: 0; } }\n  .pf-top-menu {\n",
+    ),
+    (
+        "pages/herald/[...index].astro",
+        '<div class="station-rail">',
+        '<div class="station-rail"><svg><rect fill="#c00" /></svg>',
+    ),
+    ("lib/dossier-blocks.ts", '`<div class="chips">', '`<div class="chips"><svg><path stroke="red"/></svg>'),
+    ("layouts/HeraldLayout.astro", "<body>", '<body><font color="red">x</font>'),
+    ("layouts/HeraldLayout.astro", "<body>", '<body><font face="Comic Sans MS">x</font>'),
+    (
+        "layouts/HeraldLayout.astro",
+        '<meta charset="utf-8" />',
+        '<meta charset="utf-8" /><meta name="theme-color" content="#c00" />',
+    ),
+    (
+        "pages/herald/[...index].astro",
+        '<div class="station-rail">',
+        '<div class="station-rail"><svg fill={railColour} />',
+    ),
+    (
+        "lib/dossier-blocks.ts",
+        'style="color:${cssTextTone(accent)}"',
+        "style=\"color:${cssTextTone(accent) || ('#c00')}\"",
+    ),
+    ("pages/herald/[...index].astro", '<div class="station-rail">', '<div class="station-rail" STYLE="color:red">'),
+    ("pages/herald/[...index].astro", '<div class="station-rail">', '<div class="station-rail" style = "color: red">'),
 ]
 
 

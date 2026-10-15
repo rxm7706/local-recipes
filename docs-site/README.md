@@ -83,8 +83,13 @@ One theme for every page of the site (operator ruling 2026-10-15), with `pyforge
   stock theme and the Jinja path its own stylesheet.
 - **Re-theming the site** is editing or replacing `theme.css`: change its values, keeping the variable names, and the
   docs and the herald pages follow together; a test (`test_docsite_zero_origin.py`) fails if any file under `src/`
-  but `theme.css`, `herald-fonts.css` and `content/` names a font or colour of its own, and `cssVar()`
-  (`src/lib/md-inline.ts`) refuses a YAML colour that is not a theme token. To use a Starlight theme plugin instead, add it to `starlight({ plugins: [...] })` for
+  but `theme.css`, `herald-fonts.css` and `content/` names a font or colour of its own -- in a CSS declaration (nested
+  rules included), a `<style>` body, a `style` attribute, a colour attribute (SVG `fill` / `stroke` ..., `color`,
+  `bgcolor`), a `<font face>` or the `theme-color` meta -- or sets a `--sl-*` variable (`theme.css` is the contract's
+  only writer); and `cssVar()` (`src/lib/md-inline.ts`) refuses a YAML colour that is not a theme token. Out of the
+  test's reach, so a reviewer reads these: a style built by string concatenation or held in a variable,
+  `el.style` / `setAttribute('style', ...)` in a script, `<style set:html>`, an escaped quote inside a TS string, CSS
+  escapes and an SVG data URI. To use a Starlight theme plugin instead, add it to `starlight({ plugins: [...] })` for
   the docs and replace `theme.css`'s two blocks with the values the plugin sets: the herald pages do not load
   Starlight's stylesheets, so they read the variables from `theme.css` alone.
 - **Fonts.** Big Shoulders Display, IBM Plex Sans, IBM Plex Mono and Archivo (with Archivo Expanded, the 125% width of
