@@ -408,4 +408,15 @@ states
   place, as Story 30.2's text in `epics.md` is, and `spec-pyforge-atlas` CAP-63 and FR-71 are re-derived to the same two
   rulings (the Spec memlog's decision of 2026-10-15). `docs/dashboard/README.md` names `-e pyforge-atlas` too. No AC
   changes; status stays `in-review`.
+- 2026-10-15 (landing preflight: unit coverage for static_export (the touched-module gate measures unit only)):
+  the full-scope `pr-preflight` went red on `pyforge-atlas-coverage-gate` (`scripts/coverage_gates_ci.py --suites
+  unit`, the local twin of `coverage-gates.yml`'s named-module gate), which measures `tests/unit` and `tests/meta`
+  only: `pyforge.atlas.dashboard.static_export` read 0.0% against the 80% floor, because every test of it sat under
+  `tests/integration/dashboard/`. `tests/unit/test_dashboard_static_export.py` (52 tests) now drives the module's
+  helpers, and `export_boards` over a two-board dashboard built from small frames (`build_dashboard` patched to
+  return it): the Card Markdown subset and its escaping of hostile text, grids as HTML tables with hostile cells and
+  column names, the data-root scrub's whole-path boundary (symlinked, escaped and relative roots), the
+  `THIRD_PARTY_TRACE_TYPES` refusal, `PLOTLY_CONFIG`, the manifest's keys, the atomic swap and its rollback,
+  `exported_at` from the export commit's committer time as the staleness clock, and the `access_column` refusal.
+  The module reads 100% on the unit suite (245 statements, 68 branches). No source, floor or exclusion changed.
 
