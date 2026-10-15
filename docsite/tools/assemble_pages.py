@@ -48,6 +48,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -809,6 +810,34 @@ def _check_legacy_redirects(artifact_root: Path) -> None:
             raise SystemExit(1)
 
 
+#: Story 43.5: the line every page carries saying what built it (``docs-site/src/lib/built-from.ts``, and
+#: ``status_pages.built_from_html`` for the Jinja status pages): one plain-text element, which steward's tree hash
+#: reads without its text. A twin, the artifact build, a dashboard mount and a redirect stub carry none.
+_BUILT_FROM = re.compile(r'<p class="built-from" data-pages-built-from data-pagefind-ignore>([^<]+)</p>')
+_BUILT_FROM_EXEMPT = (TWINS_PREFIX, f"{HERALD_PREFIX}/artifact/", f"{DASHBOARD_PREFIX}/", "pagefind/")
+
+
+def _check_built_from(artifact_root: Path) -> None:
+    """Story 43.5 AC4 (flag on): every other HTML page carries exactly one built-from line, all naming one build."""
+    problems: list[str] = []
+    lines: set[str] = set()
+    for page in sorted(artifact_root.rglob("*.html")):
+        rel = _artifact_path(page, artifact_root)
+        text = page.read_text(encoding="utf-8", errors="replace")
+        if rel.startswith(_BUILT_FROM_EXEMPT) or _REFRESH_URL.search(text):
+            continue
+        found = _BUILT_FROM.findall(text)
+        if len(found) != 1:
+            problems.append(f"{rel} carries {len(found)} built-from lines, not one")
+        lines.update(found)
+    if len(lines) > 1:
+        problems.append(f"the pages name {len(lines)} builds: {sorted(lines)}")
+    for line in problems:
+        print(f"assemble_pages: {line}", file=sys.stderr)
+    if problems:
+        raise SystemExit(1)
+
+
 def _check_vizro_mount(artifact_root: Path) -> None:
     """Story 43.3: a mounted Vizro export (atlas Story 30.2) carries its index and its manifest; none is fine."""
     mount = artifact_root / VIZRO_MOUNT
@@ -1424,6 +1453,7 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
         _check_legacy_redirects(artifact_root)
         _check_csp(artifact_root)
         _check_one_design_system(artifact_root, site_url)
+        _check_built_from(artifact_root)
         _check_herald_parity(artifact_root)  # Story 43.2's review: while both generators exist
     herald_htmls = [] if one_generator else _iter_herald_html(artifact_root)
     for herald_html in herald_htmls:
@@ -1463,6 +1493,8 @@ def assemble(
     fleet_status: Path | None = None,
 ) -> str:
     repo_root = repo_root or _repo_root()
+    # Story 43.5: one build time for every page's built-from line, Astro's and the Jinja status pages' alike.
+    os.environ.setdefault("PAGES_BUILT_AT", datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ"))
     status_on = sp.enabled_from_env()
     fleet_status = fleet_status or _fleet_status_input(repo_root)
     dashboard_src = dashboard_src or (repo_root / "docs" / "dashboard")

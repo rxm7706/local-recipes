@@ -275,7 +275,8 @@ follow here are the first implementation's run, kept as its record.
     in `herald.css` (the eyebrows, the kicker, section and h3 numbers, callout labels, card eyebrows and the amber
     hovers) and the back-bar's link hover read `--sl-color-text-accent`, and on the lattice's amber exit chip the
     amber is the accent text's (`.rung .exit { --amber: var(--sl-color-text-accent) }`, so `exit_tone: --amber` reads
-    6.5:1). The builder's readings, to keep or overturn with these: **(iii)** `--sl-color-text-accent` is the darker
+    6.5:1). The builder's readings, accepted by the coordinating session as orchestrator defaults on 2026-10-15 (the
+    operator may overturn them with the two above): **(iii)** `--sl-color-text-accent` is the darker
     amber on light (`accent-high`, 6.5:1) and the amber itself on dark (`accent`, 7.6:1), set in both dark blocks --
     Starlight's dark default is `accent-high`, so the docs' dark links move from `#f2cf98` to the herald amber
     `#dd9a3f`, and the herald's dark labels keep their amber rather than turning pale; one accent-text colour per theme

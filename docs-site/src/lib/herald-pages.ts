@@ -21,6 +21,8 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { builtFromHtml } from './built-from.ts';
+
 /** Where each twin is served under the `/herald/` mount with the flag on (`scripts/populate-public.ts`, Story 43.3). */
 export const TWINS_DIR = 'twins';
 
@@ -647,7 +649,8 @@ function escapeAttr(text: string): string {
  * The reader's page around one twin (CAP-55: wrap, never edit): the back-bar, then the twin the build
  * copied, in a frame filling the rest of the viewport. `rel` climbs from the page to the `/herald/`
  * mount; `twin` is the twin's path under it. The page runs the theme script and links the site theme, so its
- * back-bar follows the docs toggle (Story 43.4's review); the twin keeps its own design.
+ * back-bar follows the docs toggle (Story 43.4's review); the twin keeps its own design. Below the frame, the line
+ * saying what built the page (Story 43.5).
  */
 export function twinWrapperHtml(options: { title: string; backbar: string; rel: string; twin: string }): string {
   const { title, backbar, rel, twin } = options;
@@ -665,10 +668,12 @@ export function twinWrapperHtml(options: { title: string; backbar: string; rel: 
 html,body{margin:0;height:100%;background:var(--sl-color-black)}
 body{box-sizing:border-box}
 .ig-twin{display:block;width:100%;height:calc(100vh - 32px);border:0;background:var(--sl-color-black)}
+.built-from{padding:0 16px 16px}
 </style>
 </head>
 <body>
 ${backbar}<iframe class="ig-twin" src="${escapeAttr(`${rel}${twin}`)}" title="${escapeAttr(title)}"></iframe>
+${builtFromHtml()}
 </body>
 </html>
 `;

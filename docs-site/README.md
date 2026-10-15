@@ -40,6 +40,14 @@ These files are maintained in this repository and are **not** byte-identical to 
 - `src/styles/theme.css`, `src/styles/herald-fonts.css`, `src/styles/herald.css` — the site theme, its faces and the
   herald pages' stylesheet (Story 43.4 and its review; see *Theme and fonts* below); `src/pages/herald/[sheet].css.ts`
   serves the faces at `/herald/fonts.css` (the twins' one link) and the theme at `/herald/theme.css` (the reader pages)
+- `src/lib/built-from.ts`, `src/components/Footer.astro` — the line every page carries saying what built it (Story
+  43.5): `GITHUB_SHA`'s first seven, the build time (`PAGES_BUILT_AT`, which the assembler sets once per build) and
+  `GITHUB_RUN_ID`, or `local build`; the docs take it under Starlight's footer (the override is registered with the
+  flag on only), the herald layouts and reader pages below the page. Steward's Pages tree hash reads every HTML file
+  without that element's text, so a rebuild of an unmoved tree deploys nothing.
+- `src/loaders/dossier-loader.ts` also runs `docsite/tools/verify_claims.py --emit` (Story 43.5; `$PYTHON`, else the
+  `python` on `PATH` with PyYAML, as the `site` env provides): every `check:` stat shows the measured value, and each
+  section's required `measured:` date renders as "measured on"
 - `redirects.json` — the frozen root redirects: the 44 legacy paths and `/kedro-viz/` (Story 43.3; never hand-grown)
 - `src/lib/redirects.ts` — writes the legacy redirects into the build with the flag on, refusing a path the build
   already holds, and fails the build when a route's output is a file `public/` serves (Astro itself only warns)

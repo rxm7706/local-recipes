@@ -14,8 +14,15 @@ what a number should say is an editorial act, not a mechanical one.
     python docsite/tools/verify_claims.py               # human-readable
     python docsite/tools/verify_claims.py --format github   # CI annotations
     python docsite/tools/verify_claims.py --json        # machine-readable
+    python docsite/tools/verify_claims.py --emit -      # the measured values, as JSON
 
 Exit status is 1 when any claim has drifted, 0 when all are current.
+
+Story 43.5 (CAP-61): ``--emit`` writes what ``measure()`` counts for every ``check:`` key the dossier uses
+(one JSON key per check key, one entry per section), which the Astro dossier shows in place of the typed
+values; an unknown check key or a missing package exits 2 naming it. With
+``pyforge.herald.pages_one_generator`` on, the compare reads the stats the built dossier shows
+(``--page``, by default the Pages build's), so it judges the page, not the YAML's typed values.
 """
 
 from __future__ import annotations
@@ -24,9 +31,13 @@ import argparse
 import json
 import re
 import sys
+from html import unescape
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pages_one_generator import enabled_from_env  # noqa: E402 -- after the path insert
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 PACKAGES = ROOT / "src" / "shared" / "packages"
@@ -47,6 +58,11 @@ STATION_PACKAGE = {
 TOLERANCE = 0.05
 
 _NUM = re.compile(r"(\d[\d,]*)")
+#: the check keys a section's stats may carry, and the one the hero's total may carry (Story 43.5)
+SECTION_CHECKS = ("src_lines", "test_lines", "python_floor")
+FLEET_CHECK = "fleet_src_lines"
+#: the dossier as the Pages build renders it with pyforge.herald.pages_one_generator on
+BUILT_DOSSIER = ROOT / "docs-site" / "build" / "site" / "herald" / "dossier" / "index.html"
 
 
 def measure(pkg_dir: Path) -> dict:
@@ -96,7 +112,7 @@ def drifted(claim: int, actual: int) -> bool:
     return abs(claim - actual) / actual > TOLERANCE
 
 
-def check(doc: dict) -> list[dict]:
+def check(doc: dict, packages: Path = PACKAGES) -> list[dict]:
     findings: list[dict] = []
     measured: dict[str, dict] = {}
 
@@ -104,7 +120,7 @@ def check(doc: dict) -> list[dict]:
         pkg_name = STATION_PACKAGE.get(section["id"])
         if not pkg_name:
             continue
-        pkg_dir = PACKAGES / pkg_name
+        pkg_dir = packages / pkg_name
         if not pkg_dir.exists():
             findings.append(
                 {"station": section["id"], "claim": "package exists", "stated": pkg_name,
@@ -186,6 +202,72 @@ def check(doc: dict) -> list[dict]:
     return findings
 
 
+def emit(doc: dict, packages: Path = PACKAGES) -> dict[str, dict[str, dict]]:
+    """The measured value of every ``check:`` stat, shaped as the dossier shows it: ``{check key: {section id:
+    {"value": ..., "files": ...}}}`` (``fleet`` for the hero's total). Raises ``ValueError`` naming an unknown
+    key or a section whose package is missing -- a number the measurer cannot produce never reaches the page."""
+    memo: dict[str, dict] = {}
+
+    def facts(section_id: str, kind: str) -> dict:
+        pkg_dir = packages / STATION_PACKAGE.get(section_id, "?")
+        if not pkg_dir.is_dir():
+            raise ValueError(f"check {kind!r} in section {section_id!r}: no package {pkg_dir} to measure")
+        return memo.setdefault(section_id, measure(pkg_dir))
+
+    out: dict[str, dict[str, dict]] = {}
+    for section in doc["sections"]:
+        blocks = [b for b in section.get("blocks", []) if b.get("type") == "stats"]
+        for kind in [s["check"] for b in blocks for s in b.get("stats", []) if s.get("check")]:
+            if kind not in SECTION_CHECKS:
+                raise ValueError(f"unknown check {kind!r} in section {section['id']!r}")
+            m = facts(section["id"], kind)
+            floor = re.search(r"\d+\.\d+", m["requires_python"])
+            shown = {"src_lines": f"{m['src_lines']:,}", "test_lines": f"{m['test_lines']:,}",
+                     "python_floor": f"py{floor.group(0)}" if floor else m["requires_python"]}[kind]
+            files = {"files": m["src_files"]} if kind == "src_lines" else {}
+            out.setdefault(kind, {})[section["id"]] = {"value": shown, **files}
+    for kind in [s["check"] for s in doc.get("stats", []) if s.get("check")]:
+        if kind != FLEET_CHECK:
+            raise ValueError(f"unknown check {kind!r} in the hero stats")
+        stations = [section["id"] for section in doc["sections"] if section["id"] in STATION_PACKAGE]
+        total = sum(facts(section_id, kind)["src_lines"] for section_id in stations)  # as the compare sums it
+        out[kind] = {"fleet": {"value": f"~{round(total / 1000)}K"}}
+    return out
+
+
+def _text(fragment: str) -> str:
+    return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", fragment))).strip()
+
+
+def page_stats(html: str) -> dict[str, list[tuple[str, str]]]:
+    """The ``(value, label)`` stats the built dossier shows, per section id ("" for the hero), in page order."""
+    hero = re.findall(r'<span class="n"[^>]*>(.*?)</span>\s*<span class="l"[^>]*>(.*?)</span>',
+                      html.split("<section", 1)[0], re.DOTALL)
+    out = {"": [(_text(v), _text(lab)) for v, lab in hero]}
+    for sid, body in re.findall(r'<section id="([^"]+)"[^>]*>(.*?)</section>', html, re.DOTALL):
+        stats = re.findall(r'<div class="s"><b>(.*?)</b><span>(.*?)</span></div>', body, re.DOTALL)
+        out[sid] = [(_text(v), _text(lab)) for v, lab in stats]
+    return out
+
+
+def with_page_values(doc: dict, html: str) -> dict:
+    """``doc`` with every stat's value and label as the built page shows them (stats matched in order)."""
+    shown = page_stats(html)
+    hero = doc.get("stats", [])
+    if len(shown[""]) != len(hero):
+        raise ValueError(f"the page shows {len(shown[''])} hero stats, dossier.yml has {len(hero)}")
+    for stat, (value, label) in zip(hero, shown[""], strict=True):
+        stat.update(value=value, label=label)
+    for section in doc["sections"]:
+        stats = [s for b in section.get("blocks", []) if b.get("type") == "stats" for s in b.get("stats", [])]
+        page = shown.get(section["id"], [])
+        if len(page) != len(stats):
+            raise ValueError(f"section {section['id']!r}: the page shows {len(page)} stats, dossier.yml has {len(stats)}")
+        for stat, (value, label) in zip(stats, page, strict=True):
+            stat.update(value=value, label=label)
+    return doc
+
+
 def _floor_gap_marked_closed(doc: dict) -> bool:
     """True once the convention-gap table records the floor gap as resolved."""
     for section in doc["sections"]:
@@ -204,10 +286,29 @@ def main() -> int:
     ap.add_argument("--format", choices=["text", "github"], default="text")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--content", default=str(ROOT / "docsite" / "content" / "dossier.yml"))
+    ap.add_argument("--root", type=Path, default=ROOT, help="the tree to measure (default: this repository)")
+    ap.add_argument("--emit", metavar="PATH", help="write the measured values as JSON to PATH ('-': stdout)")
+    ap.add_argument("--page", type=Path, help="compare the stats this built dossier page shows")
     args = ap.parse_args()
 
     doc = yaml.safe_load(Path(args.content).read_text(encoding="utf-8"))
-    findings = check(doc)
+    packages = args.root / "src" / "shared" / "packages"
+    if args.emit:
+        try:
+            payload = json.dumps(emit(doc, packages), indent=2, sort_keys=True) + "\n"
+        except ValueError as exc:
+            print(f"verify_claims: {exc}", file=sys.stderr)
+            return 2
+        sys.stdout.write(payload) if args.emit == "-" else Path(args.emit).write_text(payload, encoding="utf-8")
+        return 0
+    page = args.page or (BUILT_DOSSIER if enabled_from_env() else None)
+    if page is not None:
+        try:
+            doc = with_page_values(doc, page.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            print(f"verify_claims: the built dossier {page} (pages-build writes it): {exc}", file=sys.stderr)
+            return 2
+    findings = check(doc, packages)
 
     if args.json:
         print(json.dumps(findings, indent=2))
@@ -215,7 +316,7 @@ def main() -> int:
         for f in findings:
             level = "notice" if f["kind"] == "gap-closed" else "warning"
             print(
-                f"::{level} file=docdocsite/content/dossier.yml::"
+                f"::{level} file=docsite/content/dossier.yml::"
                 f"{f['station']}: {f['claim']} — dossier says {f['stated']}, source says {f['actual']}"
             )
         print(f"\n{len(findings)} claim(s) drifted from the source tree.")

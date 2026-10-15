@@ -90,6 +90,8 @@ export default defineConfig({
       customCss: oneGenerator ? ['./src/styles/theme.css'] : [],
       components: {
         SiteTitle: './src/components/SiteTitle.astro',
+        // Story 43.5: the built-from line under Starlight's footer, with the flag on only.
+        ...(oneGenerator ? { Footer: './src/components/Footer.astro' } : {}),
       },
     }),
     heraldArtifact(),

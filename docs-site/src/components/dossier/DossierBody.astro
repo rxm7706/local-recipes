@@ -67,6 +67,9 @@ const footer = doc.footer as { note: string; date: string } | undefined;
                 <h2 set:html={mdInline(s.title as string)} />
               </div>
             )}
+            <p class="measured-on">
+              Measured on <time datetime={s.measured as string}>{s.measured as string}</time>
+            </p>
             {((s.blocks as Array<Record<string, unknown>>) ?? []).map((b) => (
               <DossierBlock block={b} />
             ))}

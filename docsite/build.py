@@ -650,11 +650,14 @@ def render_status_pages(
     built_at: str,
     commit: str,
     env: Environment | None = None,
+    built_from: str | None = None,
 ) -> list[Path] | None:
     """Story 42.1 (CAP-60): the fleet board at ``status_out/index.html`` and the guild status page at
     ``status_out/ci/index.html``, or ``None`` with the flag off -- then neither input is opened and
     nothing is written. ``herald_out`` is where the herald pages are (the menu's ``rel`` climbs
-    there). A malformed input raises ``FleetStatusShapeError`` / ``CiStatusShapeError`` naming it."""
+    there). A malformed input raises ``FleetStatusShapeError`` / ``CiStatusShapeError`` naming it.
+    ``built_from`` (Story 43.5, with pyforge.herald.pages_one_generator on) is the built-from line each page
+    carries under its footer; ``None`` adds nothing."""
     if not flag_enabled:
         return None
     sp = _status_pages()
@@ -665,6 +668,7 @@ def render_status_pages(
     site = {**site_cfg, "nav": sp.menu_entries(site_cfg["nav"], enabled=True)}
     # Lane 1's live view is linked only when site.yml names it by an absolute URL (status_pages.lane1_link).
     shared = {"site": site, "built_at": built_at, "commit": commit, "lane1": sp.lane1_link(site_cfg.get("lane1"))}
+    shared["built_from"] = built_from
 
     _clean_status_out(status_out)
     ci_out = status_out / "ci"
@@ -935,6 +939,7 @@ def build(
             built_at=built_at,
             commit=commit,
             env=env,
+            built_from=_status_pages().built_from_html() if one_gen else None,
         )
 
     return {

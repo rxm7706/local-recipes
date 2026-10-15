@@ -1545,3 +1545,36 @@ def test_43_4_ac1_ac3_ac4_the_built_pages_share_one_theme(
     with pytest.raises(SystemExit):
         assemble_pages._check_one_design_system(artifact, "http://localhost:3000")
     assert "herald/dossier/index.html carries an inline theme" in capsys.readouterr().err
+
+
+# --- Story 43.5: every page says what built it ---------------------------------------------------------------------
+
+
+def test_43_5_pages_check_holds_every_page_to_one_built_from_line(tmp_path: Path, capsys) -> None:
+    """AC4 on the artifact (flag on): every HTML page but a twin, the artifact build, a dashboard mount and a redirect
+    stub carries exactly one built-from line, and every page names the same build."""
+    assemble_pages = _load_assemble_pages()
+    line = '<p class="built-from" data-pages-built-from data-pagefind-ignore>{}</p>'
+    ci = line.format("Built from 0123456 · 2026-10-15 14:03 UTC · run 4242")
+    pages = {
+        "index.html": f"<main>docs</main>{ci}",
+        "herald/dossier/index.html": f"<main>dossier</main>{ci}",
+        "status/index.html": f"<main>board</main>{ci}",
+        "herald/twins/infographics/atlas.html": "<p>a Design export, never edited</p>",
+        "herald/artifact/dossier.html": "<p>the artifact build</p>",
+        "dashboard/vizro/index.html": "<p>a mounted export</p>",
+        "infographics/index.html": '<meta http-equiv="refresh" content="0; url=../herald/infographics/index.html">',
+    }
+    for rel, text in pages.items():
+        write(tmp_path / rel, f"<html><body>{text}</body></html>")
+    assemble_pages._check_built_from(tmp_path)
+
+    write(tmp_path / "herald/index.html", "<html><body><main>overview</main></body></html>")
+    write(tmp_path / "how-to/index.html", f"<html><body>{ci}{ci}</body></html>")
+    write(tmp_path / "status/ci/index.html", f"<html><body>{line.format('local build')}</body></html>")
+    with pytest.raises(SystemExit):
+        assemble_pages._check_built_from(tmp_path)
+    err = capsys.readouterr().err
+    assert "herald/index.html carries 0 built-from lines, not one" in err
+    assert "how-to/index.html carries 2 built-from lines, not one" in err
+    assert "the pages name 2 builds" in err

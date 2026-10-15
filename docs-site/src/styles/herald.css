@@ -100,6 +100,9 @@ section { margin-bottom: 80px; scroll-margin-top: 24px; }
 .section-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: 26px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
 .section-num { font-family: var(--sl-font-heading, var(--sl-font)); font-weight: 800; font-size: 1.05rem; color: var(--sl-color-text-accent); flex: none; }
 .section-head h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); line-height: 0.95; }
+/* Story 43.5: the day each section's prose was last checked against the tree */
+.measured-on { font-family: var(--sl-font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rail); margin: -12px 0 22px; }
+.station-head + .measured-on { margin-top: 10px; }
 .lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 70ch; margin-bottom: 26px; }
 .prose { max-width: 70ch; } .prose p + p { margin-top: 14px; } .prose + .prose { margin-top: 14px; }
 h3 { font-size: 1.1rem; letter-spacing: 0.02em; margin: 30px 0 12px; color: var(--ink); }
@@ -347,6 +350,9 @@ a.shot:hover { border-color: var(--amber); transform: translateY(-2px); }
 .empty-state p { font-size: 0.94rem; color: var(--ink-soft); }
 .empty-state p + p { margin-top: 9px; }
 .empty-state code { word-break: break-all; }
+
+/* Story 43.5: the built-from line, under the page (theme.css styles its text) */
+body > .built-from { max-width: 1220px; margin: -64px auto 0; padding: 0 clamp(20px, 4vw, 56px) 32px; }
 
 @media print {
   .site-nav { display: none !important; }

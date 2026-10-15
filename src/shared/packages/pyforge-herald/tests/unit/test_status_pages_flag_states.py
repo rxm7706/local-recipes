@@ -641,3 +641,75 @@ def test_ac8_no_steward_import_and_no_gh_call(path: Path) -> None:
             assert not (node.module or "").startswith("pyforge.steward"), path
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             assert node.value != "gh", f"{path}: a literal 'gh' argument"
+
+
+# --- Story 43.5: the built-from line on the Jinja status pages ----------------------------------------------------
+
+_BUILT_FROM_ENVS = [
+    {},
+    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "2026-10-15T14:03:09Z"},
+    {"GITHUB_SHA": "fedcba9876543210", "GITHUB_RUN_ID": "4242", "PAGES_BUILT_AT": "2026-10-15T23:59:59+00:00"},
+]
+_BUILT_FROM_PROBE = """
+import { builtFromHtml } from %s;
+process.stdout.write(JSON.stringify(%s.map((env) => builtFromHtml(env))));
+"""
+
+
+def test_43_5_the_status_pages_carry_the_line_only_when_given(build_mod, tmp_path: Path) -> None:
+    """Story 43.5: with pyforge.herald.pages_one_generator on, ``build.py`` hands each status page the built-from
+    line; off (``None``), nothing is added and the pages are as before."""
+    status_pages, _ = _tools()
+    line = status_pages.built_from_html(
+        {"GITHUB_SHA": "0123456789abcdef", "GITHUB_RUN_ID": "7", "PAGES_BUILT_AT": "2026-10-15T09:00:00Z"}
+    )
+    assert (
+        line
+        == '<p class="built-from" data-pages-built-from data-pagefind-ignore>Built from 0123456 · 2026-10-15 09:00 UTC · run 7</p>'
+    )
+    status_out, _ = _render(build_mod, tmp_path / "off", flag_enabled=True)
+    for page in (status_out / "index.html", status_out / "ci" / "index.html"):
+        assert "data-pages-built-from" not in page.read_text(encoding="utf-8")
+    on = tmp_path / "on" / "site" / "status"
+    build_mod.render_status_pages(
+        flag_enabled=True,
+        status_out=on,
+        herald_out=tmp_path / "on" / "site" / "herald",
+        fleet_status=_FLEET,
+        ci_status=_CI,
+        site_cfg=_site_cfg(),
+        built_at="2026-10-15",
+        commit="abc1234",
+        built_from=line,
+    )
+    for page, before in (
+        (on / "index.html", status_out / "index.html"),
+        (on / "ci" / "index.html", status_out / "ci" / "index.html"),
+    ):
+        text = page.read_text(encoding="utf-8")
+        assert text.count(line) == 1 and text.replace(f"\n    {line}", "") == before.read_text(encoding="utf-8")
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH")
+def test_43_5_the_python_line_is_the_typescript_one(tmp_path: Path) -> None:
+    """``status_pages.built_from_html`` renders ``docs-site/src/lib/built-from.ts``'s ``builtFromHtml`` byte for byte,
+    so the Jinja status pages and the Astro pages name one build alike (``pages-check`` refuses two)."""
+    import subprocess
+
+    status_pages, _ = _tools()
+    module = (REPO_ROOT / "docs-site" / "src" / "lib" / "built-from.ts").as_uri()
+    done = subprocess.run(
+        [
+            "node",
+            "--experimental-strip-types",
+            "--input-type=module",
+            "-e",
+            _BUILT_FROM_PROBE % (json.dumps(module), json.dumps(_BUILT_FROM_ENVS)),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    assert json.loads(done.stdout) == [status_pages.built_from_html(env) for env in _BUILT_FROM_ENVS]
+    assert json.loads(done.stdout)[0].endswith(">local build</p>")

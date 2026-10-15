@@ -137,3 +137,11 @@
 .sl-markdown-content :where(h1, h2, h3, h4):not(:where(.not-content *)) {
   font-family: var(--sl-font-heading);
 }
+
+/* Story 43.5: the line every page carries saying what built it (src/lib/built-from.ts). */
+.built-from {
+  margin: 1.5rem 0 0;
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  color: var(--sl-color-gray-3);
+}

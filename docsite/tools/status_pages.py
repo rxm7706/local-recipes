@@ -310,6 +310,27 @@ def board(data: dict[str, Any]) -> dict[str, Any]:
 GUILD_FIELDS: tuple[str, ...] = ("id", "verdict", "switch", "paused_since", "review_by", "owner", "detail")
 
 
+def built_from_html(env: dict[str, str] | None = None) -> str:
+    """Story 43.5 (CAP-61): the line saying what built the page, for the status pages while ``build.py`` renders
+    them (until Story 43.7) -- ``docs-site/src/lib/built-from.ts``'s ``builtFromHtml``, element for element (a test
+    holds the two equal): ``GITHUB_SHA``'s first seven, ``PAGES_BUILT_AT`` (else now) to the minute in UTC and
+    ``GITHUB_RUN_ID``; ``local build`` with no ``GITHUB_SHA``. Steward's ``tree_hash`` reads it without its text."""
+    from datetime import UTC, datetime
+    from html import escape
+
+    env = dict(os.environ) if env is None else env
+    sha = env.get("GITHUB_SHA", "").strip()
+    if sha:
+        raw = env.get("PAGES_BUILT_AT", "").strip()
+        at = datetime.fromisoformat(raw) if raw else datetime.now(tz=UTC)
+        run = env.get("GITHUB_RUN_ID", "").strip()
+        parts = [f"Built from {sha[:7]}", at.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC"), *([f"run {run}"] if run else [])]
+        text = " · ".join(parts)
+    else:
+        text = "local build"
+    return f'<p class="built-from" data-pages-built-from data-pagefind-ignore>{escape(text, quote=False)}</p>'
+
+
 def guild_rows(ordered_rows: Iterable[dict[str, Any]]) -> list[dict[str, str]]:
     """The guild status page's rows: ``ci-status.json``'s rows as ``ci_surfaces_tile.order_rows``
     validated and ordered them (the tile's verdict order, ``live`` last), each field as text."""

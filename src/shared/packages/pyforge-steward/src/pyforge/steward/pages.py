@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -44,16 +45,21 @@ _FLEET_STORY_FIELDS = ("story_id", "station", "epic_id", "title", "status")
 _FLEET_STATION_COUNTS = ("done", "in_progress", "backlog", "blocked")
 
 # Relative paths excluded from tree_hash (never hashed silently — each entry documents why).
-# Herald M3 footer paths join this list when that footer ships (design-thinking P-A).
 HASH_EXCLUDE_RELATIVE: frozenset[str] = frozenset(
     {
         "build.json",  # written after hash; must not feed back into itself
     }
 )
+#: Herald Story 43.5's built-from line (design-thinking P-A): every HTML page carries one element of plain text
+#: naming the commit, the build time and the run id -- build provenance, not content, and on every page rather than
+#: at a path, so tree_hash reads each ``.html`` file with that element's text dropped (the element itself still
+#: counts). A rebuild of an unmoved tree then hashes the same and skips its deploy, and the liveness rule below
+#: (:data:`LIVENESS_MAX_AGE`) keeps the live build honest; a commit that moves the content still changes the hash.
+BUILT_FROM_TEXT = re.compile(rb"(<[a-z]+\b[^>]*\bdata-pages-built-from\b[^>]*>)[^<]*(</[a-z]+>)")
 
 
 def tree_hash(root: Path, *, exclude: Iterable[str] | None = None) -> str:
-    """SHA-256 over sorted relative paths and file bytes under ``root``."""
+    """SHA-256 over sorted relative paths and file bytes under ``root``, each HTML file's built-from text dropped."""
     if not root.is_dir():
         msg = f"tree_hash root is not a directory: {root}"
         raise ValueError(msg)
@@ -68,9 +74,12 @@ def tree_hash(root: Path, *, exclude: Iterable[str] | None = None) -> str:
             continue
         paths.append(rel)
     for rel in paths:
+        data = (root / rel).read_bytes()
+        if rel.endswith(".html"):
+            data = BUILT_FROM_TEXT.sub(rb"\1\2", data)
         digest.update(rel.encode("utf-8"))
         digest.update(b"\0")
-        digest.update((root / rel).read_bytes())
+        digest.update(data)
         digest.update(b"\0")
     return digest.hexdigest()
 

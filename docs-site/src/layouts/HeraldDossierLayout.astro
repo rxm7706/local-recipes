@@ -6,6 +6,7 @@
  * carries the herald Content-Security-Policy (Story 43.3, AD-21), and its faces, tokens and rules come from the one
  * herald stylesheet, bundled by Astro, with the theme the docs header's toggle chose (Story 43.4).
  */
+import { builtFromHtml } from '../lib/built-from';
 import { HERALD_CSP, THEME_SCRIPT } from '../lib/herald-pages';
 import '../styles/herald.css';
 import topnav from '../topnav.generated.json';
@@ -59,5 +60,6 @@ const nav = topnav.map((item) => ({ label: item.label, href: `${toRoot}${item.pa
       </div>
     </header>
     <slot />
+    <Fragment set:html={builtFromHtml()} />
   </body>
 </html>

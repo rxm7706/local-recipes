@@ -32,6 +32,35 @@ def test_tree_hash_stable_and_excludes_build_json(tmp_path: Path) -> None:
     assert tree_hash(root) == first
 
 
+def test_tree_hash_ignores_the_built_from_text_but_not_the_content(tmp_path: Path) -> None:
+    """Herald Story 43.5: the built-from line (commit, build time, run id) changes on every build; the hash reads
+    each HTML page without its text, so a rebuild of an unmoved tree hashes the same and deploys nothing, while a
+    content change, the line's removal, or the same text outside an ``.html`` file still moves the hash."""
+    from pyforge.steward.pages import tree_hash
+
+    root = _fixture_tree(tmp_path)
+    page = root / "index.html"
+
+    def line(text: str) -> str:
+        return f'<html><main>hello</main><p class="built-from" data-pages-built-from data-pagefind-ignore>{text}</p></html>'
+
+    page.write_text(line("Built from 0123456 · 2026-10-15 09:00 UTC · run 1"), encoding="utf-8")
+    first = tree_hash(root)
+    page.write_text(line("Built from 89abcde · 2026-10-16 11:42 UTC · run 2"), encoding="utf-8")
+    assert tree_hash(root) == first
+    page.write_text(line("local build"), encoding="utf-8")
+    assert tree_hash(root) == first
+    page.write_text(line("local build").replace("hello", "hello, world"), encoding="utf-8")
+    assert tree_hash(root) != first
+    page.write_text("<html><main>hello</main></html>", encoding="utf-8")
+    assert tree_hash(root) != first
+    page.write_text(line("local build"), encoding="utf-8")
+    (root / "assets" / "app.css").write_text("/* data-pages-built-from>x</p> */", encoding="utf-8")
+    second = tree_hash(root)
+    (root / "assets" / "app.css").write_text("/* data-pages-built-from>y</p> */", encoding="utf-8")
+    assert tree_hash(root) != second
+
+
 def test_decide_deploy_matrix() -> None:
     from pyforge.steward.pages import build_json, decide_deploy
 

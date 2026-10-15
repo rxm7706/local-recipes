@@ -45,6 +45,9 @@
   <footer>
     <span>Rendered from the committed <code>ci-status.json</code> snapshot (<code>pyforge steward ci status --json</code>); the verdicts are steward's.</span>
     <span>Site rebuilt {{ built_at }}</span>
+    {%- if built_from %}
+    {{ built_from }}
+    {%- endif %}
   </footer>
 
 </div>

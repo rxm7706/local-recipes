@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path, PurePosixPath
@@ -32,6 +33,7 @@ from pages_astro import (
     needs_node,
     page,
     site_yml,
+    station_packages,
     write,
 )
 from pyforge.testing_kit import make_flag_provider_fixture
@@ -332,6 +334,8 @@ def test_ac6_flag_off_astro_emits_none_of_the_three_page_kinds(tmp_path: Path) -
     assert not [p.name for p in bundle.iterdir() if p.suffix in (".woff", ".woff2") or p.name.startswith("herald")]
     css = "".join(p.read_text(encoding="utf-8") for p in bundle.glob("*.css"))
     assert "--sl-font-heading" not in css and "@font-face" not in css
+    # Story 43.5 AC7: off, no page gains the built-from line (Starlight keeps its own footer)
+    assert not [p for p in (tmp_path / "astro").rglob("*.html") if "data-pages-built-from" in p.read_text("utf-8")]
 
 
 @flag_states(_FLAG)
@@ -394,3 +398,125 @@ def test_ac4_the_vendoring_changes_only_font_links_on_every_tracked_twin(build_m
         raw = published.encode("utf-8")
         assert assemble_pages._font_vendoring_only(raw, Path(file).read_bytes()) == [], file
         assert b"fonts.googleapis.com" not in raw and b"fonts.gstatic.com" not in raw, file
+
+
+# --- Story 43.5: every number is measured, and every page says what built it ---------------------------------------
+
+_CI_ENV = {"GITHUB_SHA": "0123456789abcdef0123", "GITHUB_RUN_ID": "4242", "PAGES_BUILT_AT": "2026-10-15T14:03:09Z"}
+_CI_LINE = "Built from 0123456 · 2026-10-15 14:03 UTC · run 4242"
+
+
+def _verify_claims():
+    spec = importlib.util.spec_from_file_location(
+        "verify_claims_43_5", REPO_ROOT / "docsite" / "tools" / "verify_claims.py"
+    )
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@needs_astro
+def test_43_5_ac1_to_ac5_the_dossier_shows_what_the_measurer_counted_and_every_page_its_build(tmp_path: Path) -> None:
+    """Over a fixture tree whose station packages have known line counts: AC1, every ``check:`` stat shows the
+    measured value (and a ``src_lines`` label the measured file count), the hero's total too, the typed values
+    ignored; AC2, a stat without ``check:`` shows its typed value; AC3, every section says when it was measured;
+    AC4, under CI's environment every page of the build carries one line naming the commit's first seven, the build
+    time and the run id; AC5, the compare over the built page reports no drift."""
+    root = fixture_tree(tmp_path / "tree")
+    counts = station_packages(root)
+    done = astro_build(tmp_path / "astro", flag=True, root=root, extra_env=_CI_ENV)
+    assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
+    built = tmp_path / "astro" / "herald" / "dossier" / "index.html"
+    html = built.read_text(encoding="utf-8")
+    import yaml
+
+    doc = yaml.safe_load((root / "docsite" / "content" / "dossier.yml").read_text(encoding="utf-8"))
+    shown = _verify_claims().page_stats(html)
+    total = sum(c["src_lines"] for c in counts.values())
+    assert shown[""][[s.get("check") for s in doc["stats"]].index("fleet_src_lines")][0] == f"~{round(total / 1000)}K"
+    checked = typed = 0
+    for section in doc["sections"]:
+        stats = [st for b in section["blocks"] if b["type"] == "stats" for st in b["stats"]]
+        for stat, (value, label) in zip(stats, shown[section["id"]], strict=True):
+            if stat.get("check") == "src_lines":
+                want = counts[section["id"]]
+                assert (value, label.split("·")[-1].strip()[:3]) == (f"{want['src_lines']:,}", f"{want['src_files']} f")
+                assert value != str(stat["value"]), "the typed value reached the page"
+                checked += 1
+            elif stat.get("check") == "test_lines":
+                assert value == f"{counts[section['id']]['test_lines']:,}"
+                checked += 1
+            else:
+                assert (value, label) == (str(stat["value"]), re.sub(r"[`*]", "", str(stat["label"])))
+                typed += 1
+    assert checked >= 10 and typed >= 10
+    dates = [section["measured"] for section in doc["sections"]]
+    assert html.count('<p class="measured-on">') == len(dates) == 12
+    for date in set(dates):
+        assert f'Measured on <time datetime="{date}">{date}</time>' in html
+
+    line = f'<p class="built-from" data-pages-built-from data-pagefind-ignore>{_CI_LINE}</p>'
+    for rel in (
+        "herald/dossier/index.html",
+        "herald/index.html",
+        "herald/infographics/alpha.html",
+        "how-to/index.html",
+    ):
+        assert (tmp_path / "astro" / rel).read_text(encoding="utf-8").count(line) == 1, rel
+    _load_assemble_pages()._check_built_from(tmp_path / "astro")  # every other page too, one build named
+
+    compare = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "docsite" / "tools" / "verify_claims.py"),
+            "--page",
+            str(built),
+            "--root",
+            str(root),
+            "--content",
+            str(root / "docsite" / "content" / "dossier.yml"),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert compare.returncode == 0, compare.stdout + compare.stderr
+
+
+@needs_astro
+def test_43_5_ac4_a_build_without_github_sha_says_local_build(tmp_path: Path) -> None:
+    root = fixture_tree(tmp_path / "tree")
+    done = astro_build(tmp_path / "astro", flag=True, root=root)
+    assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
+    line = '<p class="built-from" data-pages-built-from data-pagefind-ignore>local build</p>'
+    for rel in ("herald/dossier/index.html", "how-to/index.html", "herald/decks/fx-alpha/index.html"):
+        assert line in (tmp_path / "astro" / rel).read_text(encoding="utf-8"), rel
+
+
+@needs_astro
+@pytest.mark.parametrize(
+    ("edit", "named"),
+    [
+        ("drop-measured", 'dossier section "herald" has no measured: date'),
+        ("unknown-check", "unknown check 'moons' in section 'atlas'"),
+    ],
+)
+def test_43_5_ac3_ac6_the_build_refuses_a_section_without_a_date_and_an_unknown_check(
+    tmp_path: Path, edit: str, named: str
+) -> None:
+    import yaml
+
+    root = fixture_tree(tmp_path / "tree")
+    dossier = root / "docsite" / "content" / "dossier.yml"
+    doc = yaml.safe_load(dossier.read_text(encoding="utf-8"))
+    sections = {section["id"]: section for section in doc["sections"]}
+    if edit == "drop-measured":
+        del sections["herald"]["measured"]
+    else:
+        stats = next(b for b in sections["atlas"]["blocks"] if b["type"] == "stats")["stats"]
+        stats[0]["check"] = "moons"
+    dossier.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    done = astro_build(tmp_path / "astro", flag=True, root=root)
+    assert done.returncode != 0
+    assert named in done.stdout + done.stderr

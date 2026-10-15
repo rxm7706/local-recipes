@@ -2,7 +2,10 @@
 # Edit this file; `python docsite/build.py` re-renders the site and the artifact.
 # Figures re-verified against the working tree 2026-10-14; run
 # `python docsite/tools/verify_claims.py` to check them again.
-# A stat carrying `check:` is machine-verified against the source tree.
+# A stat carrying `check:` is machine-verified against the source tree. With
+# pyforge.herald.pages_one_generator on, the Astro dossier shows the measured value of each `check:` stat
+# (`verify_claims.py --emit`; the typed value is ignored there) and each section's `measured:` date, the day
+# its prose was last checked against the tree (Story 43.5).
 
 title: The PyForge Dossier
 eyebrow: INTERNAL CONTROL PLANE — A→B CUTOVER — 2026-10-14
@@ -17,6 +20,7 @@ stats:
   label: Stations
 - value: ~261K
   label: Lines of source
+  check: fleet_src_lines
 - value: '1'
   label: Shared leaf package
 - value: 4×
@@ -77,6 +81,7 @@ sections:
   num: A→B
   title: The A→B cutover — control plane
   kind: section
+  measured: '2026-10-14'
   blocks:
   - type: lede
     md: '**A** (`local-recipes`, this repository) is the control plane and the oracle, and the root of
@@ -197,6 +202,7 @@ sections:
   num: '00'
   title: The shared spine
   kind: section
+  measured: '2026-10-14'
   blocks:
   - type: lede
     md: 'Every station sits on one package that depends on none of them: `pyforge-core`, a deliberately
@@ -314,6 +320,7 @@ sections:
   accent: --st-atlas
   title: Atlas
   role: The intelligence layer — data, not verdicts
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"Atlas provides data… Warden uses that data… the only code edge between them points the other
@@ -423,6 +430,7 @@ sections:
   accent: --st-doctor
   title: Doctor
   role: Advisory diagnostics — and the one station that judges Marshal
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"Charter §6, ratified 2026-07-28: the Doctor holds the verdict on the Marshal''s own conformance
@@ -498,6 +506,7 @@ sections:
   accent: --st-herald
   title: Herald
   role: The Dream-to-deck bridge, and the fleet's comms desk
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"Dream-to-deck bridge CLI — seeds, pulls, and syncs Claude Design decks via the herald deck subcommands."'
@@ -564,6 +573,7 @@ sections:
   accent: --st-marshal
   title: Marshal
   role: Deterministic BMAD-loop supervisor
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"Deterministic BMAD-loop supervisor: wraps bmad-loop with gates-as-objects, run supervision,
@@ -715,6 +725,7 @@ sections:
   accent: --st-mason
   title: Mason
   role: The Artisan Builder — a CLI front door onto conda-forge-expert
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"…wrap the conda-forge-expert craft by subprocess rather than reimplement it — the skill stays
@@ -775,6 +786,7 @@ sections:
   accent: --st-scribe
   title: Scribe
   role: The append-only write path for checked-in team memory
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"Direct-capture CLI for checked-in team memory (.claude/memory/) — the append-only write path
@@ -853,6 +865,7 @@ sections:
   accent: --st-steward
   title: Steward
   role: The Provisioner — credentials, deployment, and the platform layer
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"A result is evidence, not a scratchpad." — `DutyResult`''s own docstring'
@@ -917,6 +930,7 @@ sections:
   accent: --st-warden
   title: Warden
   role: The compliance gate — dependency hygiene, licenses, and CVEs
+  measured: '2026-10-14'
   blocks:
   - type: quote
     md: '"Unified dependency-hygiene + vulnerability scanner… emitting one schema-validated ComplianceReport
@@ -1017,6 +1031,7 @@ sections:
   num: 09
   title: Cross-fleet synthesis
   kind: section
+  measured: '2026-10-14'
   blocks:
   - type: lede
     md: Investigating all eight stations in one pass surfaces things no single-station read would — patterns
@@ -1354,6 +1369,7 @@ sections:
   num: '10'
   title: What's verified, what isn't
   kind: section
+  measured: '2026-10-14'
   blocks:
   - type: lede
     md: Only what the case list, the capability ledger and CI prove is listed here; each row names its

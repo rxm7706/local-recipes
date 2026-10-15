@@ -219,6 +219,19 @@ never blocks a deploy, because deciding what a number should *say* is
 editorial — but noticing that it is wrong no longer depends on anyone
 remembering to look.
 
+With `pyforge.herald.pages_one_generator` on (Story 43.5), the Astro dossier
+shows what the measurer counts instead of the typed value:
+`verify_claims.py --emit -` writes the measured value of every `check:` stat
+(plus `check: fleet_src_lines`, the hero's total) and the dossier loader reads
+it at build, so a `check:` key the measurer does not know, or a station package
+it cannot find, fails the build naming it. Each section's `measured:` date
+(required) is the day its prose was last checked against the tree, shown as
+"measured on". The compare then judges the built page: it reads the stats
+`docs-site/build/site/herald/dossier/index.html` shows (`--page` names
+another), so `site-verify` after a flag-on build reports 0 drifted claims. The
+typed values stay in `dossier.yml` for the Jinja path until Story 43.7 retires
+it.
+
 ## How a refresh actually happens
 
 1. **Code changes.** Someone ships a story; the stations grow.

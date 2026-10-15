@@ -70,6 +70,27 @@ POSTER = """<!DOCTYPE html>
 """
 
 
+#: Story 43.5: the stations the dossier's ``check:`` stats measure, each fixture package with a known line count.
+STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
+
+
+def station_packages(root: Path) -> dict[str, dict[str, int]]:
+    """A package per station under ``root/src/shared/packages/`` with known counts, for ``verify_claims.py``'s
+    measurer (Story 43.5): station ``i`` has ``1000 + 7 * i`` source lines in ``2 + i`` files and ``500 + i`` test
+    lines. Returns ``{station: {"src_lines", "src_files", "test_lines"}}``."""
+    counts = {}
+    for i, station in enumerate(STATIONS):
+        pkg = root / "src" / "shared" / "packages" / f"pyforge-{station}"
+        src_lines, files = 1000 + 7 * i, 2 + i
+        for n in range(files):
+            lines = src_lines - (files - 1) if n == 0 else 1
+            write(pkg / "src" / "pyforge" / station / f"mod{n}.py", "x = 1\n" * lines)
+        write(pkg / "tests" / "test_mod.py", "y = 2\n" * (500 + i))
+        write(pkg / "pyproject.toml", '[project]\nrequires-python = ">=3.14"\n')
+        counts[station] = {"src_lines": src_lines, "src_files": files, "test_lines": 500 + i}
+    return counts
+
+
 def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False) -> Path:
     """Two families and a third deck with no poster: Alpha with every view, a stamped Infographic Deck and
     a stamped PPTX; Beta with no Executive Summary, no PPTX and no sidecar; Gamma with only a facts.yaml.
@@ -96,6 +117,7 @@ def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False
     content = root / "docsite" / "content"
     write(content / "site.yml", yaml.safe_dump(site, sort_keys=False, allow_unicode=True))
     shutil.copy2(REPO_ROOT / "docsite" / "content" / "dossier.yml", content / "dossier.yml")
+    station_packages(root)  # Story 43.5: the dossier's measured stats count these
 
     alpha = root / "presentations" / "fx-alpha"
     write(alpha / "project" / "Alpha Infographic standalone.html", POSTER.format(title="Alpha poster", body="a" * 400))
@@ -142,10 +164,19 @@ def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False
     return root
 
 
-def astro_build(out: Path, *, flag: bool, root: Path | None = None) -> subprocess.CompletedProcess[str]:
+#: The environment a build reads its built-from line from (Story 43.5): a test sets it only through ``extra_env``,
+#: so a build under CI's ``GITHUB_SHA`` renders what a local one does.
+BUILT_FROM_ENV = ("GITHUB_SHA", "GITHUB_RUN_ID", "PAGES_BUILT_AT")
+
+
+def astro_build(
+    out: Path, *, flag: bool, root: Path | None = None, extra_env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     """``astro build`` into ``out`` with pyforge.herald.pages_one_generator ``flag``, over ``root`` when given."""
-    env = {k: v for k, v in os.environ.items() if k not in ("HERALD_PAGES_REPO_ROOT", "PYTEST_ADDOPTS")}
+    drop = ("HERALD_PAGES_REPO_ROOT", "PYTEST_ADDOPTS", *BUILT_FROM_ENV)
+    env = {k: v for k, v in os.environ.items() if k not in drop}
     env.update({"PYFORGE_PAGES_ONE_GENERATOR": "1" if flag else "0", "PYFORGE_CI_SURFACES_TILE": "0"})
+    env.update(extra_env or {})
     env["PYFORGE_STATUS_PAGES"] = "0"
     if root is not None:
         env["HERALD_PAGES_REPO_ROOT"] = str(root)

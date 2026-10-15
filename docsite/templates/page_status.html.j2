@@ -66,6 +66,9 @@
   <footer>
     <span>Rendered from <code>fleet-status.json</code>, which a Guild step of steward's Pages workflow writes from <code>sprint-ledger-query --format json</code>; the counts are steward's.</span>
     <span>Site rebuilt {{ built_at }}</span>
+    {%- if built_from %}
+    {{ built_from }}
+    {%- endif %}
   </footer>
 
 </div>
