@@ -37,6 +37,9 @@ Waves map 1:1 to epics: Epic 1 = Wave 0 · 2 = A · 3 = B · 4 = C · 5 = D · 6
 | 9 | H | this directory (`epic-9-wave-h-karpathy-wiki.md`), written 2026-08-02, plus the CFE Rule-2 retro — skill v8.78.0→v8.79.0, PR #103. The two are complementary, not duplicative: Rule-2 covers skill/phase-engineering guidance, this directory covers epic execution quality. `sprint-status.yaml` recorded Epic 9's retro `done` on the Rule-2 retro alone before the epic-format one existed — the 11-day gap between them is the currency finding that prompted writing it. |
 | 10 | I | this directory (`epic-10-wave-i-post-audit-truth-up.md`), written 2026-08-02 (epic shipped 2026-07-29) |
 | 12–19 + canopy CAP-19 slice | post-migration growth window | this directory (`retro-pyforge-atlas-2026-08-26.md`), written 2026-08-26 as one station retro covering 2026-08-02 → 2026-08-26 (chain-currency sweep; the per-epic-retro convention resumes for future epics) |
+| 19–23 + Epic 24 at 3 of 4 (pre-rekey 20–25) | the turn-on window | this directory (`retro-pyforge-atlas-2026-09-14.md`), one station retro covering 2026-08-26 → 2026-09-14 (chain-currency sweep); written under the numbering before the 2026-09-17 rekey |
+| — | the fleet lint / type gate | this directory (`retro-pyforge-atlas-2026-09-20.md`), what steward Story 66.1's first run found in this station |
+| 25–29, 31 | fixes, a new dataset and a second type gate | this directory (`retro-pyforge-atlas-2026-10-15.md`), one station retro covering 2026-09-20 → 2026-10-15 (chain-currency `code→retro`); moved the `epic-N-retrospective` keys for 25–29 and 31 to `done` |
 
 Epics 1–8 written 2026-07-25, one week after ship (2026-07-18), on the
 operator's decision to run rather than waive them. Epics 9–10 written
