@@ -22,6 +22,7 @@ _GENERATOR = REPO_ROOT / "docs-site" / "scripts" / "sidebar_from_map.py"
 _ASSEMBLER = REPO_ROOT / "docsite" / "tools" / "assemble_pages.py"
 _SITE_YML = REPO_ROOT / "docsite" / "content" / "site.yml"
 _SITE_TITLE = REPO_ROOT / "docs-site" / "src" / "components" / "SiteTitle.astro"
+_DOSSIER_LAYOUT = REPO_ROOT / "docs-site" / "src" / "layouts" / "HeraldDossierLayout.astro"
 _ASTRO_CONFIG = REPO_ROOT / "docs-site" / "astro.config.mjs"
 
 
@@ -122,27 +123,64 @@ def test_a_new_site_yml_entry_appears_in_every_menu(gen, tmp_path: Path):
     assert 'data-pf-menu-link href="fixture/index.html">Fixture page</a>' in rendered
 
 
-def test_generator_writes_the_top_menu_json(gen, tmp_path: Path):
+def _export_input(tmp_path: Path, present: bool) -> Path:
+    export = tmp_path / "kedro-viz"
+    if present:
+        export.mkdir()
+        (export / "index.html").write_text("<html></html>", encoding="utf-8")
+    return export
+
+
+@pytest.mark.parametrize("present", [True, False], ids=["export-present", "export-absent"])
+def test_generator_writes_the_top_menu_json(gen, tmp_path: Path, present: bool):
+    """Story 42.2 AC3: the docs side's menus follow the Kedro-Viz build input, as the herald side does."""
     out = tmp_path / "sidebar.json"
     topnav = tmp_path / "topnav.json"
-    assert gen.main(["-o", str(out), "--topnav-output", str(topnav)]) == 0
-    assert [item["label"] for item in json.loads(topnav.read_text(encoding="utf-8"))] == _LABELS
-    assert json.loads(out.read_text(encoding="utf-8"))[-1]["label"] == "Herald"
+    export = _export_input(tmp_path, present)
+    assert gen.main(["-o", str(out), "--topnav-output", str(topnav), "--kedro-viz-export", str(export)]) == 0
+    menu = json.loads(topnav.read_text(encoding="utf-8"))
+    labels = _LABELS if present else _LABELS[:-1]
+    assert [item["label"] for item in menu] == labels
+    # The Astro config writes the /kedro-viz/ redirect only from this marker (astro.config.mjs).
+    assert [item.get("mount") for item in menu if item.get("mount")] == (["kedro-viz"] if present else [])
+    herald = json.loads(out.read_text(encoding="utf-8"))[-1]
+    assert herald["label"] == "Herald"
+    assert [item["label"] for item in herald["items"]] == labels[1:]
+
+
+def test_without_the_export_neither_docs_menu_names_kedro_viz(gen):
+    menu = gen.load_site_menu(_SITE_YML, kedro_viz=False)
+    assert [item["label"] for item in gen.top_menu(menu)] == _LABELS[:-1]
+    assert "dashboard/kedro-viz/" not in json.dumps(gen.herald_sidebar_group(menu))
+    sidebar, errors = gen.build_sidebar(REPO_ROOT / "docs" / "map.yaml", REPO_ROOT / "docs", _SITE_YML, kedro_viz=False)
+    assert errors == []
+    assert "Kedro-Viz" not in json.dumps(sidebar)
+
+
+def test_the_astro_redirect_follows_the_mount_and_keeps_the_base_path():
+    config = _ASTRO_CONFIG.read_text(encoding="utf-8")
+    assert "item.mount === 'kedro-viz'" in config
+    assert "redirects: kedroVizMounted ? { '/kedro-viz/': `${basePath}dashboard/kedro-viz/` } : {}" in config
 
 
 def test_the_docs_site_hardcodes_no_menu_label_or_target():
     """The top menu component takes every label and target from the generated list; the config
     names no menu label and no host base (its /kedro-viz/ redirect is CAP-52's, not the menu)."""
     menu = _SITE_TITLE.read_text(encoding="utf-8")
+    layout = _DOSSIER_LAYOUT.read_text(encoding="utf-8")
     config = _ASTRO_CONFIG.read_text(encoding="utf-8")
     for label in _LABELS:
-        for text in (menu, config):
+        for text in (menu, layout, config):
             assert f">{label}<" not in text and f"'{label}'" not in text and f'"{label}"' not in text, label
     for path in _PATHS[1:]:
         assert path not in menu, path
-    for text in (menu, config):
+    assert "kedro-viz" not in layout  # the dossier page names only its own path, for aria-current
+    for text in (menu, layout, config):
         assert "/local-recipes/" not in text
+    # Story 42.2: the Astro dossier page (Story 43.1) reads the same generated list, so its menu
+    # drops Kedro-Viz with the mount too.
     assert "topnav.generated.json" in menu
+    assert "topnav.generated.json" in layout
 
 
 def _render_shell(data: dict, *, rel: str, page_key: str) -> str:

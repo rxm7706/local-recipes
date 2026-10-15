@@ -1,0 +1,6 @@
+{#- Story 42.2 (CAP-60): the line that names the Kedro-Viz export's commit and date, read from the
+    export's manifest.json (atlas Story 30.1). The values are artifact data, so each is escaped; the
+    full commit and timestamp ride in title/datetime, the short forms in the text. -#}
+{%- macro provenance(export) -%}
+<p class="kv-provenance" data-export-commit="{{ export.commit | e }}" data-export-date="{{ export.date | e }}">Exported from commit <code title="{{ export.commit | e }}">{{ export.commit[:12] | e }}</code> on <time datetime="{{ export.date | e }}">{{ export.date[:10] | e }}</time>{% if export.version %} &middot; kedro-viz {{ export.version | e }}{% endif %}</p>
+{%- endmacro -%}

@@ -2272,7 +2272,7 @@ So that the published graph stops lagging its DAG by months and no bot commit ca
 **When** the story's tree is built with the flag on
 **Then** `git ls-files docs/dashboard/kedro-viz` lists nothing and the path is gitignored; `viz-publish-stage` leaves `manifest.json` beside `index.html` with `export_commit` (40-hex, equal to `git rev-parse HEAD`), `export_date` (ISO 8601 UTC) and `kedro_viz_version` (equal to `deploy-viz-metadata`'s `version`); the workflow has one `actions/upload-artifact` step (`name: kedro-viz-export`, `retention-days: 90`, the staged path), no `steward deploy dashboard`, `git checkout -B main` or `git config user.name` step, `permissions.contents: read`, the path filter, `workflow_dispatch` and the stub-credentials step unchanged, and its job `if:` carries `PAUSE_KEDRO_VIZ_PUBLISH`
 **And** the registry row `kedro-viz-publish` names `switch: PAUSE_KEDRO_VIZ_PUBLISH` (its `paused-manually → live` move is the operator's, through steward's `ci` duty, after the workflow is re-enabled on GitHub); `docs/dashboard/README.md` names the artifact and no longer names `steward deploy dashboard`; with the flag off no manifest is written and the staged tree is byte-identical to today's; `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in both states with `pyforge.testing_kit.flags.flag_states`
-**Status:** backlog
+**Status:** done
 
 ### Story 30.2: Vizro boards publish as static exports under /dashboard/vizro/
 

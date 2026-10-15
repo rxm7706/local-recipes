@@ -82,7 +82,10 @@ from .interfaces import DutyResult
 # `http_bridge()` and `cli.py`'s `resolve_duty` still imports it lazily, so an
 # unrelated duty has no reason to import it eagerly) ──
 
-_DASHBOARD_GENERATE_MARKER = Path("docs/dashboard/kedro-viz/index.html")
+# The tracked README of the publish root. Atlas Story 30.1 took the Kedro-Viz export
+# (`docs/dashboard/kedro-viz/`) out of git -- it arrives as the `kedro-viz-export` workflow
+# artifact -- so the export's `index.html` is no longer on a fresh clone and cannot mark the root.
+_DASHBOARD_GENERATE_MARKER = Path("docs/dashboard/README.md")
 _DASHBOARD_RELATIVE_PATH = Path("docs/dashboard")
 
 
@@ -90,9 +93,9 @@ def repo_root() -> Path:
     """Return the local-recipes checkout root.
 
     Walks up from this file's own resolved location looking for
-    `docs/dashboard/kedro-viz/index.html` — robust to whatever depth the installed/
-    editable `pyforge-steward` package ends up at relative to the repo root,
-    same rationale as `keys.py`'s `locate_http_module`.
+    `docs/dashboard/README.md` (tracked; the Kedro-Viz export beside it is not) — robust
+    to whatever depth the installed/editable `pyforge-steward` package ends up at
+    relative to the repo root, same rationale as `keys.py`'s `locate_http_module`.
     """
     here = Path(__file__).resolve()
     for ancestor in here.parents:

@@ -101,7 +101,7 @@ development_status:
   3-7-extend-the-universal-sbom-intake-resolver-formats-universe-bom-buckets: done
   3-8-basilisk-conda-native-vulnerability-ingestion: done
   3-9-release-to-availability-velocity-columns: done
-  30-1-the-dag-export-reaches-pages-as-a-workflow-artifact: backlog
+  30-1-the-dag-export-reaches-pages-as-a-workflow-artifact: done
   30-2-vizro-boards-publish-as-static-exports-under-dashboard-vizro: backlog
   31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so: done
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
@@ -168,7 +168,7 @@ development_status:
   epic-29-retrospective: done
   epic-3: done
   epic-3-retrospective: done
-  epic-30: backlog
+  epic-30: in-progress
   epic-30-retrospective: optional
   epic-31: done
   epic-31-retrospective: done

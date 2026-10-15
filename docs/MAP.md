@@ -31,7 +31,7 @@ general documentation:
 | Governance | `docs/governance/` | Policy corpus; cross-cutting, not Diátaxis-quadrant material |
 | Foundry | `docs/foundry/` | Foundry registry, frames and guards — machine-read by detectors, not authored documentation |
 | Station/package docs | `src/shared/packages/pyforge-*/README.md`, skill dirs | Station-scoped; link *into* this map where general |
-| Publish roots (generated) | `docs/dashboard/` | One Pages artifact assembled at `docs-site/build/site/` — the Starlight shelf at `/`, herald's dossier site under `/herald/`, Kedro-Viz under `/dashboard/kedro-viz/` copied from `docs/dashboard/kedro-viz/` — deployed by `pages.yml`, the sole `deploy-pages` caller (see [`docs/dashboard/README.md`](dashboard/README.md)) |
+| Publish roots (generated) | `docs/dashboard/` | One Pages artifact assembled at `docs-site/build/site/` — the Starlight shelf at `/`, herald's dossier site under `/herald/`, Kedro-Viz under `/dashboard/kedro-viz/` mounted from `docs/dashboard/kedro-viz/` (gitignored: atlas's `kedro-viz-export` workflow artifact, skipped and hidden when absent) — deployed by `pages.yml`, the sole `deploy-pages` caller (see [`docs/dashboard/README.md`](dashboard/README.md)) |
 | Herald site sources | `docsite/` | Herald's Jinja dossier and infographic site, built by `docsite/build.py`; dissolves into `docs-site/` under pyforge-herald CAP-61 Story 43.7 |
 | Pages shelf + assembler | `docs-site/` | The Starlight shelf and the Pages assembler output root (`docsite/tools/assemble_pages.py`); never renamed |
 | Deck sources | `presentations/` | Herald's deck sources and `facts.yaml`, published under `/herald/`; not documentation |
