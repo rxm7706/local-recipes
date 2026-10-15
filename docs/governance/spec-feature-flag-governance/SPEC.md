@@ -35,7 +35,7 @@ open_questions: []
 > **Canonical contract.** Seeded 2026-09-28 from `.memlog.md`, the decision of record, and from the
 > Dream in `sources:`. It was ruled the same session and is now the complete contract for what to
 > build, test and validate. The Dream in the frontmatter is for traceability only. Re-derived
-> 2026-10-15 for CAP-2's retirement path.
+> 2026-10-15 for CAP-2's retirement path, and again the same day after its independent review.
 
 # SPEC — every capability ships behind a flag, and a gate no station owns checks that it does
 
@@ -82,9 +82,10 @@ The seven open questions (memlog 23):
 
 Retirement (memlog, 2026-10-15):
 
-- **A flag leaves the tree only through its owner's retirement story, and never while read.**
-  The first retirement (herald Story 42.3) changed the gate from inside the judged story. The
-  operator ruled that a Doctor story carries the gate change, and CAP-2 gains the retirement path.
+- **A flag key that a `done` spec's block names leaves the tree only through its owner's retirement
+  story, and the gate reds every reader it can see that still names the key.** The first retirement
+  (herald Story 42.3) changed the gate from inside the judged story. The operator ruled that a
+  Doctor story carries the gate change; the contract below is the orchestrator's, under that ruling.
 
 ## Capabilities — chosen 2026-09-28
 
@@ -111,17 +112,23 @@ Retirement (memlog, 2026-10-15):
     It warns, and never reds, on stories minted before the rule date.
 
     **Retirement.** A story spec retires a flag with `retires-flag: <key>`. The key's owning station
-    is its `pyforge.<station>.` prefix, else the tree's `metadata.owner`. The gate reds two more
-    cases:
-    - a `retires-flag:` declared by a story spec of another station, at any status; it never
-      counts as a retirement;
-    - a retired key, gone from the tree, that a reader under `src/` or `scripts/` still names.
+    is its `pyforge.<station>.` prefix, else the tree's `metadata.owner` while the tree holds the key;
+    the two must agree. Only the owner's declaration retires the key. The gate reds three more cases:
+    - a `retires-flag:` declared by a story spec of another station, at any status, when the key's
+      owner is known; it never counts as a retirement;
+    - a declared key, gone from the tree, that a tracked file able to act on a flag still names
+      (code, configuration, workflows, site content; not prose, tests or the planning record),
+      whoever declared it;
+    - a tree flag whose `metadata.owner` names a station other than its prefix.
 
-    A retirement declared while the key is still in the tree changes nothing.
+    A retirement declared while the key is still in the tree changes nothing. Out of the gate's
+    sight: a key no `done` spec's block names (it can leave the tree with no declaration), a reader
+    that builds the key from parts, and an environment stand-in for a flag. The retiring story
+    removes those by hand.
   - *success:* `detectors-ci` runs the gate from the rule date. No `pyforge.<station>` module hosts
-    it, and a meta-test or import-linter contract pins that. A key leaves the tree with no finding
-    only through its owner's retirement story, once no reader names it. *Mechanism stories:
-    Doctor's.*
+    it, and a meta-test or import-linter contract pins that. A key that a `done` spec's block names
+    leaves the tree with no finding only through its owner's retirement story, once no reader the
+    gate can see names it. *Mechanism stories: Doctor's.*
 - **CAP-3 — dispatch refuses before the session, not after.**
   - *intent:* Marshal consults the CAP-2 gate during dispatch preflight and refuses a story the gate
     would red, with a named MRS code, before any session starts. MRS-GATE-010 refuses only after
@@ -205,8 +212,9 @@ Retirement (memlog, 2026-10-15):
   after it went ON everywhere.
 - After the retrofit, every station's runtime CAPs sit behind default-ON flags. The gate's backlog
   warnings read zero.
-- A flag removed from the tree passes the gate only with its owner's `retires-flag:` story and no
-  reader left. A reader left behind, or another station's declaration, reds.
+- A flag key that a `done` spec's block names passes the gate, once removed from the tree, only with
+  its owner's `retires-flag:` story and no reader the gate can see left. A reader left behind, or
+  another station's declaration, reds.
 
 ## Open Questions
 

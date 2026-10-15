@@ -15,10 +15,10 @@ Tree mode (no arguments) walks every tracked
                                 owning station retired it (``retires-flag:``, Story 34.7)
     FAIL  flag-retirement-not-owner
                                 a ``retires-flag:`` key declared by a story spec (any status) of a station
-                                that does not own the key; it never counts as a retirement (Story 34.7)
+                                other than the key's known owner; it never counts as a retirement (Story 34.7)
     FAIL  flag-retired-still-read
-                                a retired key, gone from the tree, that a reader file under ``src/`` or
-                                ``scripts/`` still names -- named per file (Story 34.7)
+                                a declared-retired key, gone from the tree, that a tracked reader file still
+                                names -- named per file, whoever declared the retirement (Story 34.7)
     FAIL  flag-key-orphan       a tree key that no tracked file under ``src/`` or ``scripts/`` reads
     FAIL  flag-verification-names-no-test
                                 a ``done`` post-rule flagged spec whose ``## Verification`` names no test file
@@ -27,6 +27,8 @@ Tree mode (no arguments) walks every tracked
     FAIL  flag-test-not-two-state
                                 the same, when no test file it names runs the spec's key in both states
     FAIL  flag-metadata-missing a tree flag whose ``metadata.owner`` or ``metadata.story`` is missing or empty
+    FAIL  flag-owner-mismatch   a ``pyforge.<station>.<name>`` tree flag whose ``metadata.owner`` names another
+                                station (Story 34.7: the prefix and the clock's addressee must agree)
     FAIL  flag-clock-overdue    a tree flag whose ``on_everywhere`` date is more than 90 days before the run date
     FAIL  flag-default-env-mismatch
                                 a ``done`` flagged spec whose declared ``default`` for an environment disagrees
@@ -50,14 +52,31 @@ shape. A spec still in backlog, and an exempt one, is never judged on it (its te
 carries no flag).
 
 A flag leaves the tree through a retirement (doctor Story 34.7, ``spec-feature-flag-governance`` CAP-2's
-retirement path, memlog 2026-10-15): a story spec of the key's owning station declares ``retires-flag: <key>``
-(one key or a list). The owning station is the key's ``pyforge.<station>.`` prefix, else the tree's
-``metadata.owner`` while the tree holds the key; a story spec's station is its project folder. Once the tree no
-longer holds a key its owner retired, a ``done`` spec naming the key is the flag's history (no
-``flag-key-not-in-tree``, no two-state test asked for), and every reader file that still names the key is a
-``flag-retired-still-read`` FAIL: ``read_boolean`` on a missing key returns its default with a warning, never an
-error, so a reader left behind would silently read off. Another station's declaration counts for nothing and is
-itself a FAIL. A retirement declared while the key is still in the tree changes nothing.
+retirement path, memlog 2026-10-15): a story spec declares ``retires-flag: <key>`` (one key or a list).
+
+- **The owner.** The key's owning station is its ``pyforge.<station>.`` prefix, else the tree's
+  ``metadata.owner`` (normalised: ``pyforge-steward`` reads ``steward``) while the tree holds the key; a story
+  spec's station is its project folder. Only the owner's declaration retires the key: once the tree no longer
+  holds it, a ``done`` spec naming the key is the flag's history (no ``flag-key-not-in-tree``, no two-state test
+  asked for). A declaration from another station, when the owner is known, is ``flag-retirement-not-owner`` and
+  retires nothing; when no owner is known (a key with no station segment, gone from the tree) it retires nothing
+  and is not judged.
+- **No reader may stay.** Every declared key the tree no longer holds, whoever declared it, is looked for in
+  every tracked file that can act on a flag: code, configuration, workflows, templates and site content
+  (``reader_files``). Not readers: prose (``*.md``), tests (``tests``/``test`` folders and ``test_*.py``,
+  ``*_test.py``, ``*.test.*``, ``*.spec.*``, ``conftest.py``), binary files, the planning and history record
+  (``_bmad-output/``, ``archive/``, ``docs/dreams/``, ``presentations/``, ``.claude/memory/``), the recipe
+  factory (``recipes/``), the spec-surface baseline, and the tree and its overlays. A retiring story's own
+  absence test is therefore never a reader. The key counts as a whole token (one boundary, ``_KEY_BEFORE`` /
+  ``_KEY_AFTER``, shared with the two-state reader), and a module path named like the key on an import line or
+  in ``import_module("...")`` is not a read. Each file that still names the key is ``flag-retired-still-read``:
+  ``read_boolean`` on a missing key returns its default with a warning, never an error, so a reader left behind
+  would silently read off.
+- **What the walk cannot see.** A key built from parts (an f-string, ``+``) or read through an environment
+  stand-in (``PYFORGE_*``, exported by a script that reads the flag): the block page makes removing those the
+  retiring story's own duty. A key no ``done`` spec's block names can leave the tree with no declaration at all.
+
+A retirement declared while the key is still in the tree changes nothing.
 
 Lives outside every ``pyforge.<station>`` package (Charter section 6): this check can red any
 station's pull request, so no station it judges may host it, and it imports no station module. A
@@ -103,6 +122,31 @@ READER_ROOTS = ("src", "scripts")
 # A file that reads a flag is code. These parts and names mark files that only *mention* a key.
 _NON_READER_PARTS = frozenset({"tests", "test", "docs", "fixtures"})
 
+# Story 34.7: the retired-read walk reads every tracked file except these (see the module docstring). Wider than
+# the orphan check's roots on purpose: there a root it skips can only cause a false red, here a silent green.
+SURFACE_BASELINE_REL = "scripts/.spec-surface-baseline.json"
+_RETIRED_READ_SKIPPED_ROOTS = (
+    "_bmad-output/",
+    "archive/",
+    "docs/dreams/",
+    "presentations/",
+    ".claude/memory/",
+    "recipes/",
+)
+_TEST_FOLDERS = frozenset({"tests", "test"})
+_BINARY_PROBE = 8192
+
+# One definition of "names the key" for the whole gate (Story 34.5's two-state reader, Story 34.7's retired-read
+# walk): not after a word character, a dot or a dash, and not before one, nor before a dotted extension
+# (``<key>.head`` is another name, not the key).
+_KEY_BEFORE = r"(?<![\w.-])"
+_KEY_AFTER = r"(?![\w-]|\.\w)"
+# A module path named like a key is not a read of it: blanked on import lines and in ``import_module("...")``.
+_MODULE_PATH_SITES = re.compile(
+    r"""(?P<lead>^[ \t]*from[ \t]+|^[ \t]*import[ \t]+|import_module\([ \t]*['"])[\w.]+""",
+    re.MULTILINE,
+)
+
 FAIL = "fail"
 WARN = "warn"
 
@@ -119,13 +163,14 @@ K_CLOCK_OVERDUE = "flag-clock-overdue"
 K_DEFAULT_ENV = "flag-default-env-mismatch"
 K_RETIRE_NOT_OWNER = "flag-retirement-not-owner"
 K_RETIRED_STILL_READ = "flag-retired-still-read"
+K_OWNER_MISMATCH = "flag-owner-mismatch"
 
 # A flag's retirement (spec-feature-flag-governance Q4: the owning station files the removal story; CAP-2's
 # retirement path, doctor Story 34.7) is declared by that story: ``retires-flag: <key>`` (one key or a list) in
-# its frontmatter. It counts only from a story spec of the key's owning station. Once the tree no longer holds
-# the key, a `done` spec that declared the key is the flag's history: the key is not judged missing from the
-# tree, its two-state test is not asked for, and any reader left behind is a finding. herald Story 42.3 was the
-# first retirement; nothing changes for a key still in the tree.
+# its frontmatter. It retires the key only from a story spec of the key's owning station. Once the tree no longer
+# holds the key, a `done` spec that declared the key is the flag's history: the key is not judged missing from
+# the tree and its two-state test is not asked for. Any reader left behind is a finding whoever declared the
+# retirement. herald Story 42.3 was the first retirement; nothing changes for a key still in the tree.
 RETIRES_FIELD = "retires-flag"
 
 # Story 34.6: epic and story numbers from ``spec-<epic>-<story>-*.md`` (integer order, not text).
@@ -235,31 +280,52 @@ def orphan_keys(root: Path, keys: Iterable[str]) -> list[str]:
     return sorted(remaining)
 
 
-def _whole_key(key: str) -> re.Pattern[bytes]:
-    """``key`` as a whole token: not part of a longer key (``pyforge.a.b`` never matches ``pyforge.a.b_c``)."""
-    return re.compile(rb"(?<![A-Za-z0-9_.])" + re.escape(key.encode("utf-8")) + rb"(?![A-Za-z0-9_])")
+def key_pattern(key: str) -> re.Pattern[str]:
+    """``key`` as a whole name (``_KEY_BEFORE`` / ``_KEY_AFTER``): ``pyforge.a.b`` never matches ``pyforge.a.b_c``,
+    ``pyforge.a.b-c`` or ``pyforge.a.b.head``, and does match ``"pyforge.a.b"`` or ``pyforge.a.b.`` at a sentence end."""
+    return re.compile(_KEY_BEFORE + re.escape(key) + _KEY_AFTER)
+
+
+def _is_retired_reader_candidate(rel: str) -> bool:
+    """True for a tracked path the retired-read walk reads (Story 34.7; the module docstring names the rule)."""
+    if rel in (TREE_REL.as_posix(), OVERLAYS_REL.as_posix(), SURFACE_BASELINE_REL):
+        return False
+    if rel.startswith(_RETIRED_READ_SKIPPED_ROOTS):
+        return False
+    parts = rel.split("/")
+    name = parts[-1]
+    if any(part in _TEST_FOLDERS for part in parts[:-1]):
+        return False
+    return not (name.endswith(".md") or name == "conftest.py" or _TEST_NAME.match(name))
 
 
 def reader_files(root: Path, keys: Iterable[str]) -> dict[str, list[str]]:
-    """Each key -> the tracked reader files under ``src/`` or ``scripts/`` that still name it (Story 34.7).
+    """Each key -> the tracked files that still name it, a read site for each (Story 34.7).
 
-    The orphan check's reader walk, inverted: the same tracked files and the same non-readers (the tree, its
-    overlays, tests, docs, fixtures, ``*.md``), but every file is read, and a key counts only as a whole token.
-    A key no reader names is absent from the result.
+    Walks every tracked file ``_is_retired_reader_candidate`` admits, skipping binary files. Before matching, a
+    module path on an import line or in ``import_module("...")`` is blanked, so a module named like a key is not a
+    read. A key no reader names is absent from the result.
     """
-    patterns = {key: _whole_key(key) for key in keys}
+    patterns = {key: key_pattern(key) for key in keys}
     if not patterns:
         return {}
     hits: dict[str, list[str]] = {}
-    for rel in _list_files(root, READER_ROOTS):
-        if not _is_reader_candidate(rel):
+    for rel in _list_files(root, (".",)):
+        if not _is_retired_reader_candidate(rel):
             continue
         try:
             data = (root / rel).read_bytes()
         except OSError:
             continue
-        for key, pattern in patterns.items():
-            if pattern.search(data):
+        if b"\0" in data[:_BINARY_PROBE]:
+            continue
+        text = data.decode("utf-8", "replace")
+        named = [key for key in patterns if key in text]  # a plain substring first: most files name no key
+        if not named:
+            continue
+        text = _MODULE_PATH_SITES.sub(lambda match: match.group("lead"), text)
+        for key in named:
+            if patterns[key].search(text):
                 hits.setdefault(key, []).append(rel)
     return hits
 
@@ -346,21 +412,35 @@ def retired_by(frontmatter: Mapping[str, Any] | None) -> list[str]:
     return [value.strip() for value in values if isinstance(value, str) and value.strip()]
 
 
+def normalise_owner(value: Any) -> str:
+    """A ``metadata.owner`` value as a station token: trimmed, lower case, ``pyforge-`` dropped (Story 34.7)."""
+    if not isinstance(value, str):
+        return ""
+    owner = value.strip().lower()
+    return owner[len("pyforge-") :] if owner.startswith("pyforge-") else owner
+
+
+def prefix_station(key: str) -> str:
+    """The ``<station>`` of a ``pyforge.<station>.<name>`` key, else ``""`` (a key with no station segment)."""
+    parts = key.split(".")
+    return parts[1] if len(parts) >= 3 and parts[0] == "pyforge" and parts[1] else ""
+
+
 def owning_station(key: str, tree: Mapping[str, Any]) -> str:
     """The station that owns a flag key (Story 34.7), or ``""`` when nothing says.
 
     The key's ``pyforge.<station>.<name>`` prefix first: the name outlives the key's tree entry, so the
-    answer does not change when the key leaves the tree. Else, for a key with no station segment (the
-    estate-wide cutover string flag is one), the tree's ``metadata.owner`` while the tree holds the key. This
-    module names no live key, so it never reads one.
+    answer does not change when the key leaves the tree (``flag-owner-mismatch`` keeps the tree's
+    ``metadata.owner`` in agreement with it). Else, for a key with no station segment (the estate-wide cutover
+    string flag is one), the tree's normalised ``metadata.owner`` while the tree holds the key. This module
+    names no live key, so it never reads one.
     """
-    parts = key.split(".")
-    if len(parts) >= 3 and parts[0] == "pyforge" and parts[1]:
-        return parts[1]
+    station = prefix_station(key)
+    if station:
+        return station
     entry = tree.get(key)
     metadata = entry.get("metadata") if isinstance(entry, Mapping) else None
-    owner = metadata.get("owner") if isinstance(metadata, Mapping) else None
-    return owner.strip() if isinstance(owner, str) else ""
+    return normalise_owner(metadata.get("owner")) if isinstance(metadata, Mapping) else ""
 
 
 def declared_by_owner(rel: str, key: str, tree: Mapping[str, Any]) -> bool:
@@ -369,38 +449,45 @@ def declared_by_owner(rel: str, key: str, tree: Mapping[str, Any]) -> bool:
     return bool(owner) and station_of(rel) == f"pyforge-{owner}"
 
 
-def retired_keys(root: Path, tree: Mapping[str, Any], spec_rels: Sequence[str] | None = None) -> dict[str, str]:
-    """Every key its owning station retired -> the first retiring story spec of that station, in path order.
+def retirement_declarations(
+    root: Path, tree: Mapping[str, Any], spec_rels: Sequence[str] | None = None
+) -> tuple[dict[str, str], dict[str, str]]:
+    """(retired, declared), each key -> a story spec, the first in path order (Story 34.7).
 
-    A ``retires-flag:`` from any other station is not a retirement (``judge_retirements`` reds it).
+    ``retired`` holds the keys a story spec of the owning station declares; only these lift
+    ``flag-key-not-in-tree`` and the two-state test. ``declared`` holds every declared key, whoever declared
+    it: the retired-read walk judges each one the tree no longer holds, since that check only ever adds a FAIL.
     """
     retired: dict[str, str] = {}
+    declared: dict[str, str] = {}
     for rel in spec_rels if spec_rels is not None else story_specs(root):
         frontmatter, _why = flag_rule.read_frontmatter(rel, repo_root=root)
         for key in retired_by(frontmatter):
+            declared.setdefault(key, rel)
             if declared_by_owner(rel, key, tree):
                 retired.setdefault(key, rel)
-    return retired
+    return retired, declared
 
 
 def judge_retirements(rel: str, frontmatter: Mapping[str, Any], tree: Mapping[str, Any]) -> list[Finding]:
-    """One FAIL per ``retires-flag:`` key the spec at ``rel`` does not own, whatever its status (Story 34.7)."""
+    """One FAIL per ``retires-flag:`` key whose known owner is not the spec's station, at any status (Story 34.7).
+
+    A key with no known owner (no station segment, and the tree no longer holds it) is not judged here: its
+    declaration retires nothing, and the retired-read walk still judges its readers.
+    """
     findings: list[Finding] = []
     station = station_of(rel)
     for key in retired_by(frontmatter):
-        if declared_by_owner(rel, key, tree):
-            continue
         owner = owning_station(key, tree)
-        owner_text = (
-            f"`pyforge-{owner}`" if owner else "unknown (no `pyforge.<station>.` prefix and no tree `metadata.owner`)"
-        )
+        if not owner or station == f"pyforge-{owner}":
+            continue
         findings.append(
             Finding(
                 K_RETIRE_NOT_OWNER,
                 FAIL,
                 f"`{RETIRES_FIELD}: {key}` is declared by a story spec of `{station or '(no project)'}`, but the "
-                f"key's owning station is {owner_text}: only a story of the owning station retires its flag, so "
-                "this declaration retires nothing",
+                f"key's owning station is `pyforge-{owner}`: only a story of the owning station retires its flag, "
+                "so this declaration retires nothing",
                 path=rel,
                 station=station,
                 key=key,
@@ -539,6 +626,23 @@ def judge_tree_metadata(flags: Mapping[str, Any], overlays: Mapping[str, Any], *
                         key=key,
                     )
                 )
+        # Story 34.7: the clock names metadata.owner as the station that removes the flag, and only the prefix
+        # station's story retires it, so the two must agree.
+        station = prefix_station(key)
+        owner = normalise_owner(values["owner"])
+        if station and owner and owner != station:
+            findings.append(
+                Finding(
+                    K_OWNER_MISMATCH,
+                    FAIL,
+                    f"tree flag `{key}` metadata.owner is {values['owner']!r}, but its `pyforge.<station>.` prefix "
+                    f"names `{station}`: the station the 90-day clock asks to remove the flag must be the one whose "
+                    "story can retire it",
+                    path=TREE_REL.as_posix(),
+                    key=key,
+                    station=station,
+                )
+            )
         on_date = flag_rule.parse_metadata_date(values["on_everywhere"])
         if on_date is None:
             continue
@@ -668,7 +772,7 @@ def _read_test(root: Path, named: str) -> str | None:
 
 
 def _names_key(text: str, key: str) -> bool:
-    return re.search(rf"(?<![\w.-]){re.escape(key)}(?![\w-]|\.\w)", text) is not None
+    return key_pattern(key).search(text) is not None
 
 
 def _call_arguments(text: str, opening: int) -> str:
@@ -773,11 +877,18 @@ class Inputs:
     #: Flag key its owning station retired -> that station's first retiring story spec (``retires-flag:``,
     #: Story 34.7). Another station's declaration is never here.
     retired: dict[str, str] = dataclass_field(default_factory=dict)
+    #: Every declared ``retires-flag:`` key -> the first story spec declaring it, whoever it is (Story 34.7).
+    declared: dict[str, str] = dataclass_field(default_factory=dict)
 
     @property
     def retired_gone(self) -> frozenset[str]:
         """The retired keys the tree no longer holds: a `done` spec naming one is the flag's history."""
         return frozenset(key for key in self.retired if key not in self.tree)
+
+    @property
+    def declared_gone(self) -> frozenset[str]:
+        """Every declared key the tree no longer holds: the retired-read walk judges each one."""
+        return frozenset(key for key in self.declared if key not in self.tree)
 
 
 def load_inputs(root: Path, *, run_date: date | None = None) -> Inputs:
@@ -788,6 +899,7 @@ def load_inputs(root: Path, *, run_date: date | None = None) -> Inputs:
     overlays = flag_rule.load_overlays(root)
     rule_date = document.get("rule_date")
     resolved_run = run_date if run_date is not None else date.today()
+    retired, declared = retirement_declarations(root, tree)
     return Inputs(
         exemptions,
         frozenset(document["specs"]),
@@ -795,7 +907,8 @@ def load_inputs(root: Path, *, run_date: date | None = None) -> Inputs:
         tree,
         overlays,
         resolved_run,
-        retired_keys(root, tree),
+        retired,
+        declared,
     )
 
 
@@ -835,21 +948,22 @@ def judge_one(
 
 
 def judge_retired_reads(root: Path, inputs: Inputs, keys: Iterable[str]) -> list[Finding]:
-    """One FAIL per (retired key gone from the tree, reader file that still names it) -- Story 34.7.
+    """One FAIL per (declared-retired key gone from the tree, reader file that still names it) -- Story 34.7.
 
-    Only ``keys`` its owning station retired and the tree no longer holds are judged: a key still in the tree
-    is judged as any tree key is, and another station's declaration is ``judge_retirements``' finding.
+    Every declared key the tree no longer holds is judged, whoever declared it: the check only ever adds a FAIL,
+    so it needs no owner (a key with no station segment has none once it leaves the tree). A key still in the
+    tree is judged as any tree key is. The retiring spec named is the owner's when there is one.
     """
-    gone = sorted(set(keys) & inputs.retired_gone)
+    gone = sorted(set(keys) & inputs.declared_gone)
     findings: list[Finding] = []
     for key, files in sorted(reader_files(root, gone).items()):
-        retiring = inputs.retired[key]
+        retiring = inputs.retired.get(key) or inputs.declared[key]
         for rel in files:
             findings.append(
                 Finding(
                     K_RETIRED_STILL_READ,
                     FAIL,
-                    f"flag key `{key}` is retired (`{RETIRES_FIELD}:` in {retiring}) and gone from "
+                    f"flag key `{key}` is declared retired (`{RETIRES_FIELD}:` in {retiring}) and gone from "
                     f"{TREE_REL.as_posix()}, but {rel} still names it: a read of a missing key silently returns "
                     "its default, so remove the reader with the flag",
                     path=rel,
@@ -865,7 +979,7 @@ def judge_tree(root: Path, inputs: Inputs) -> tuple[int, list[Finding]]:
     specs = story_specs(root)
     env_targets = env_default_judge_targets(root, inputs.exemptions, specs)
     findings = [f for rel in specs for f in judge_one(root, inputs, rel, env_default_targets=env_targets)]
-    findings += judge_retired_reads(root, inputs, inputs.retired_gone)
+    findings += judge_retired_reads(root, inputs, inputs.declared_gone)
     findings += judge_tree_metadata(inputs.tree, inputs.overlays, run_date=inputs.run_date)
     for key in orphan_keys(root, inputs.tree):
         findings.append(
@@ -909,11 +1023,10 @@ def run_spec(root: Path, raw: str, *, run_date: date | None = None) -> int:
             raise flag_rule.FlagRuleError(f"cannot read {rel}: no such file")
         env_targets = env_default_judge_targets(root, inputs.exemptions, story_specs(root))
         findings = judge_one(root, inputs, rel, env_default_targets=env_targets)
-        # Story 34.7: a retiring spec is red while a reader still names a key it retired (tree mode reports the
+        # Story 34.7: a declaring spec is red while a reader still names a key it declared retired (tree mode reports the
         # same findings once, from the tree).
         frontmatter, _why = flag_rule.read_frontmatter(rel, repo_root=root)
-        own = [key for key in retired_by(frontmatter) if declared_by_owner(rel, key, inputs.tree)]
-        findings += judge_retired_reads(root, inputs, own)
+        findings += judge_retired_reads(root, inputs, retired_by(frontmatter))
     except flag_rule.FlagRuleError as exc:
         _emit_json({"verdict": "unknown", "spec": rel, "rule_date": rule_date, "findings": [], "error": str(exc)})
         print(f"[flag-gate] unknown -- {exc}", file=sys.stderr)
