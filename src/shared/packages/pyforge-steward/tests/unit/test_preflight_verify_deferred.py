@@ -254,9 +254,9 @@ def test_the_duty_finds_the_repository_root_when_nothing_is_injected(
 # ---- AC8: the CLI --------------------------------------------------------------------------------
 
 
-def test_preflight_is_the_thirtieth_duty() -> None:
+def test_preflight_is_the_last_duty() -> None:
     assert DUTIES[-1] == "preflight"
-    assert len(DUTIES) == 30  # noqa: PLR2004
+    assert len(DUTIES) == 31  # noqa: PLR2004 -- + pages (Story 102.3), before preflight
     assert isinstance(resolve_duty("preflight"), PreflightDuty)
     ns = build_parser().parse_args(["preflight", "verify-deferred", "--since", "2026-10-01"])
     assert (ns.duty, ns.preflight_verb, ns.since) == ("preflight", "verify-deferred", date(2026, 10, 1))

@@ -7,8 +7,8 @@ conformance-tier shape (direct `DeployDuty().run(...)` / `main([...])`
 invocation, no subprocess), section-comment-divided: validation -> refusal
 -> rendering -> atomicity -> CLI.
 
-`_run_static` never touches git; unlike `test_deploy_reconcile.py` this file
-needs no real scratch git repo, only a scratch directory standing in for
+`_run_static` writes no git state; apart from the gitignore checks below this
+file needs no real scratch git repo, only a scratch directory standing in for
 `repo_root()` (monkeypatched), with `docs/dashboard/` pre-created to mirror
 this repo's own real, permanent layout.
 """
@@ -30,7 +30,6 @@ from pyforge.steward.deploy import (
     StaticPanel,
     _is_board_output_dir_safe_to_write,
     _is_valid_board_slug,
-    dashboard_diff,
     render_static_index,
 )
 
@@ -640,7 +639,7 @@ def test_bare_deploy_names_static_among_available_verbs():
 
 
 def _git_repo_with_ignore(tmp_path: Path, monkeypatch, ignore: str) -> Path:
-    """A REAL scratch git repo (like `test_deploy_reconcile.py`'s) — the
+    """A REAL scratch git repo — the
     gitignore interaction cannot be exercised against this file's usual
     non-git scratch dir, which is exactly why the gap survived six review
     passes: every existing test here monkeypatches `repo_root()` to a
@@ -656,7 +655,7 @@ def _git_repo_with_ignore(tmp_path: Path, monkeypatch, ignore: str) -> Path:
 def test_static_refuses_a_board_slug_a_gitignore_rule_would_swallow(tmp_path, monkeypatch):
     """`build` is a valid `^[A-Za-z0-9_-]+$` slug, and a bare `build/` rule
     matches at ANY depth — so `docs/dashboard/build/index.html` is ignored,
-    `git add` skips it, `dashboard_diff()` never sees it, and the board
+    `git add` skips it, `git status` never sees it, and the board
     silently never publishes while the run reports success."""
     root = _git_repo_with_ignore(tmp_path, monkeypatch, "build/\ndist/\n")
     panel = tmp_path / "panel.html"
@@ -672,8 +671,8 @@ def test_static_refuses_a_board_slug_a_gitignore_rule_would_swallow(tmp_path, mo
 
 def test_static_publishes_a_board_git_can_actually_see(tmp_path, monkeypatch):
     """The control for the test above, and the story's end-to-end claim:
-    a non-ignored board is written AND is visible to `dashboard_diff()`,
-    the gate `steward deploy dashboard` keys off before committing."""
+    a non-ignored board is written AND is visible to git as a new file, so
+    the pull request that lands it carries it (Story 102.3: no verb pushes)."""
     root = _git_repo_with_ignore(tmp_path, monkeypatch, "build/\n")
     panel = tmp_path / "panel.html"
     panel.write_text("<div>publishable</div>")
@@ -682,7 +681,14 @@ def test_static_publishes_a_board_git_can_actually_see(tmp_path, monkeypatch):
 
     assert result.ok is True
     assert (_board_dir(root, "demo") / "index.html").exists()
-    assert dashboard_diff(cwd=root).strip() != ""
+    seen = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", "docs/dashboard"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "docs/dashboard/demo/index.html" in seen
 
 
 def test_static_refuses_a_non_utf8_panel_label_without_crashing(fake_repo, tmp_path):

@@ -2,7 +2,7 @@
 title: '102.3: `steward pages build|deploy|status` replaces `deploy dashboard` and `deploy status`'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
 flag:
   key: pyforge.steward.pages_duty                 # Story 102.2's; this story adds the duty behind it
@@ -222,6 +222,29 @@ atlas's producer calls the retired verbs
 - `pixi run --frozen -e pyforge-guild pyforge steward pages status`, then `pages deploy --wait` once, then `status`
   again — expected: the second `status` names the run and a newer `built_from`; recorded in this spec.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py src/shared/packages/pyforge-steward/tests/unit/test_cli.py src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py -q`
+  — exit 0, 76 passed (AC1–AC6; every verb on a fake subprocess, no live `gh`, `curl` or `pixi`).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 2722 passed, 2 skipped (no xdist in the env; serial).
+- `grep -rn "build_dashboard\|dashboard_diff\|commit_and_push_dashboard\|last_deploy_commit" src/shared/packages/pyforge-steward/src`
+  — exit 1 (nothing). `git grep -n "steward deploy dashboard\|steward deploy status" -- ':(exclude)_bmad-output'
+  ':(exclude)docs/dreams' ':(exclude).claude/memory'` — only herald's deck exports under
+  `presentations/pyforge-steward/` (two of them dated Marp sources) and the two tests that assert the string's
+  absence (atlas `test_viz_export_artifact.py`, steward `test_fresh_clone_class_path.py`); `kedro-viz-publish.yml`
+  no longer calls the verb (atlas 30.1 landed), so `DW-steward-102-3-1` is not needed (AC7).
+- `pixi run --frozen -e pyforge-guild flag-gate-check` — exit 0. `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+  `python scripts/ci_surface_gates.py --check` — exit 0. `pixi run --frozen -e site docs-site-validate` — exit 0.
+- The real CLI: `steward pages` names the three verbs (exit 0); `pages build --dry-run` and `pages deploy --dry-run
+  --wait` print their argv (exit 0); `steward deploy dashboard` — exit 2 (argparse). `PYFORGE_STATUS_PAGES=1 steward
+  pages build` — exit 0: it wrote `docsite/content/fleet-status.json` from the eight tracked ledgers (1,473 stories),
+  `pages-check` passed with herald's board rendering from it (bar widths 98/99/94/99/98/100/95/100, 31 attention
+  keys), tree `c98000f029a6…`. The workflow's two commands (`sprint-ledger-query -- --format json --output …`, then
+  `scripts/pages_fleet_status.py --generated-at "$(git log -1 --format=%cI HEAD)"`) rehearsed locally give the same
+  stations, read cleanly by herald's `status_pages.load_fleet_status`.
+- Not run here: the memlog reconciles, the scoped stamps, `detectors-ci` and `pr-preflight` (the coordinating session
+  runs them for the branch); the operator's authenticated `status` / `deploy --wait` / `status` after landing.
+
 ## Named, not fixed here
 
 - The `--json` block shapes (no external consumer yet; freeze a schema only when one appears, as `ci-status-schema.json`
@@ -234,3 +257,55 @@ atlas's producer calls the retired verbs
 - 2026-10-14: specced at mint from Epic 102's Story 102.3 text, `spec-pyforge-steward` CAP-168 and the live `deploy.py`
   / `cli.py` (`DUTIES` 29, `restore` at index 13). The implementing session reads the landed Story 102.2 `pages.py`
   first and follows it where it differs from the shape quoted here.
+- 2026-10-15 (implemented, in review; one branch with the rest of the Pages redesign chain). Where the landed code
+  differs from the text above, the code is the contract:
+  - **`DUTIES` is 31, not 30.** `preflight` (Story 103.6) landed after the mint; `pages` sits after `ci`, before
+    `preflight` (still last). Every count assertion moved to 31 (`test_cli.py`, `test_restore_duty.py`, and the two
+    the mint did not name, `test_estate.py` and `test_preflight_verify_deferred.py`); `restore` stays index 13.
+  - **The duty module is `pages_duty.py`**, beside 102.2's pure `pages.py` (which `scripts/pages_build_stamp.py`
+    imports and so stays free of the duty's imports). `EXIT_PAGES_REFUSAL = 3` lives there and is documented in
+    `cli.py` beside `ci.EXIT_CI_REFUSAL`.
+  - **`build` writes the fleet board's input first** (in-process: the ledger engine's `--format json` export, without
+    the live `marshal watch` call, reshaped by `pages.fleet_status_document`), so the one recorded subprocess is still
+    exactly `pixi run --frozen -e site pages-check` (AC1). It gained `--dry-run` (AC4's `build --dry-run`: prints the
+    argv, runs and writes nothing) and `--site-url` for `--stamp`, which runs `scripts/pages_build_stamp.py` through
+    the Guild env as the workflow does.
+  - **`deploy` lists only dispatched runs** (`gh run list … --event workflow_dispatch … --json
+    databaseId,url,status,event,createdAt`) and looks for the run it started up to five times, three seconds apart,
+    until one created at or after the dispatch is listed (else it names the newest with a note): a bare `--limit 1`
+    right after `gh workflow run` names the previous run. `--wait`'s page url is `gh api repos/{owner}/{repo}/pages
+    --jq .html_url` (the url the deploy job's environment reports).
+  - **`status`'s `ok`.** An unreachable site (`curl` exit or an HTTP status ≥ 400) and an unavailable registry
+    verdict are facts (`ok` true); a `gh run list` that cannot be read is not (`ok` false, the line names the error).
+    The registry verdict is `ci.run_status(…, json_out=True)`'s `pages` row; any refusal or failure of that reader
+    reads `unavailable (<reason>)`.
+  - **Closes the 102.2 gap herald 42.1's spec assigns to steward's deploy workflow.** 102.2 landed without the Guild
+    step that writes `docsite/content/fleet-status.json`, and without the `PYFORGE_STATUS_PAGES` export. `pages.yml`
+    now runs `docsite/tools/export_status_pages_env.py >> "$GITHUB_ENV"` with the other exports, and a step before
+    `pages-check` runs `sprint-ledger-query -- --format json --output "$RUNNER_TEMP/sprint-ledger.json"` then
+    `scripts/pages_fleet_status.py` (the same `pages.fleet_status_document` reshape) into the input, in the shape
+    herald's reader documents (`stations` a list of `StationProgress` rows plus `total` and `epics`; `stories` rows
+    with `story_id`, `station`, `epic_id`, `title`, `status`). The snapshot time is the built commit's
+    (`git log -1 --format=%cI HEAD`), not the query's, so a scheduled build of an unmoved tree hashes the same and
+    skips its deploy. `steward pages build` writes the same input locally. The station-tests trigger list gains
+    `scripts/pages_fleet_status.py`.
+  - **From the doctor 48.2 review; keeps Pages liveness honest when builds are identical.** `pages.decide_deploy` also
+    deploys an identical tree when the live `build.json`'s `built_at` is more than 24 hours old
+    (`LIVENESS_MAX_AGE`) and this build's commit differs from the live `built_from` (a full and an abbreviated SHA of
+    one commit compare equal): at most one extra deploy a day, so an input commit that builds an identical site (once
+    herald 43.5 drops the built-from footer from the hash) still moves the live `last-modified` doctor's liveness
+    probe reads. Without `built_from` and `now` (102.2's call shape) the branch does not apply; a live document
+    without a readable `built_at` never triggers it. `scripts/pages_build_stamp.py` passes both.
+  - **Callers.** `kedro-viz-publish.yml` no longer calls the verb (atlas 30.1), so no deferred-work row is recorded.
+    `docs/reference/github-workflows.md` (both rows), `docs/dashboard/README.md`, `scripts/fleet_scan.py`'s message and
+    `normalize_viz_build.py`'s docstring name the Pages workflow and `steward pages`; `fresh_clone.py` already did.
+    Left for their owners: herald's deck exports under `presentations/pyforge-steward/` and the dossier line in
+    `docsite/content/dossier.yml` (herald's; this story may not edit `docsite/**`), and the generated
+    `docs/reference/station-cheat-sheet.md` (doctor's generator; already stale before this story, no gate reads it).
+  - **Retired-test references.** `test_deploy_static.py` asserted visibility through the deleted diff helper; it now
+    asks `git status` directly. Docstrings in `test_provision_env.py`, `test_provision_verify.py`,
+    `test_deploy_perimeter.py` and `test_deploy_static.py` that cited the deleted modules no longer do (no assertion
+    changed in the perimeter tests).
+  - **Found while running the steward suite:** herald 42.1's `test_status_pages_flag_states.py` hands the repo root to
+    the herald build and was not declared in `test_station_tests_trigger_map.py`'s `ROOT_HANDOFF_INPUTS`; it is now
+    (`docsite/**`, `presentations/**`, as `test_pages_artifact.py` is).

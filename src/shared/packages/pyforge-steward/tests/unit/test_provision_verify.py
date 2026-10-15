@@ -2,7 +2,7 @@
 
 The real `pixi project export conda-environment -e build` invocation is
 never exercised here — `subprocess.run` is monkeypatched to return a fixed
-export string, mirroring `test_deploy_build.py`'s own rationale, so both
+export string (the real export is slow and environment-dependent), so both
 matrix rows (clean/drift) are driven deterministically.
 """
 

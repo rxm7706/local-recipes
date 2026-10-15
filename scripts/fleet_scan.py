@@ -3401,7 +3401,7 @@ def _resolve_roster_slugs() -> tuple[int, int]:
 def main() -> int:
     print(
         "retired: Guildhall generate.py is gone (steward 30.2). "
-        "Use Lane 1 /console/ and steward deploy dashboard for Kedro-Viz.",
+        "Use Lane 1 /console/; Kedro-Viz rides the Pages build (steward pages build|deploy|status).",
         file=sys.stderr,
     )
     return 2

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write ``build.json`` and decide deploy for the Pages workflow (Story 102.2)."""
+"""Write ``build.json`` and decide deploy for the Pages workflow (Stories 102.2, 102.3)."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ for _pkg in ("pyforge-core", "pyforge-steward"):
     if str(_src) not in sys.path:
         sys.path.insert(0, str(_src))
 
-from pyforge.core.flags import read_boolean  # noqa: E402
-from pyforge.steward.pages import (  # noqa: E402
+from pyforge.core.flags import read_boolean
+from pyforge.steward.pages import (
     PAGES_DUTY_FLAG,
     build_json,
     decide_deploy,
@@ -42,8 +42,15 @@ def _fetch_live_text(url: str) -> str | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Stamp build.json and print deploy decision outputs.")
-    parser.add_argument("--root", type=Path, required=True, help="Built site root (docs-site/build/site)")
+    parser = argparse.ArgumentParser(
+        description="Stamp build.json and print deploy decision outputs."
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        required=True,
+        help="Built site root (docs-site/build/site)",
+    )
     parser.add_argument(
         "--live-url",
         required=True,
@@ -59,14 +66,19 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     digest = tree_hash(root)
-    built_at = datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(tz=UTC)
+    built_at = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     document = build_json(digest, args.built_from, args.run_id, built_at)
     out_path = root / "build.json"
     out_path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
 
     flag_on = read_boolean(PAGES_DUTY_FLAG, default=False)
     live_text = _fetch_live_text(args.live_url)
-    changed = decide_deploy(digest, live_text, flag_on=flag_on)
+    # Read the live document before this run's build.json is uploaded: an identical tree still
+    # deploys once the live one is over a day old and its commit moved (Story 102.3).
+    changed = decide_deploy(
+        digest, live_text, flag_on=flag_on, built_from=args.built_from, now=now
+    )
 
     print(f"tree_hash={digest}")
     print(f"changed={'true' if changed else 'false'}")

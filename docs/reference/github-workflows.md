@@ -17,7 +17,7 @@ Workflows landed after the original audit and this table never caught up (one, `
 | workflow | trigger | what it does |
 |---|---|---|
 | **`detectors.yml`** | `pull_request`, `push` to main, dispatch | Runs the `detectors-ci` scope=repo subset of the doctor-sources detector suite. Added 2026-07-31 specifically because it *hadn't* existed: this repo had 9 detectors, 7 pixi tasks, 3 dashboard rows, and zero automatic invocation — every green was hand-run by whoever remembered, and PR #170 merged green while breaking `spec_surface_check` because nothing else ran it. |
-| **`kedro-viz-publish.yml`** | `push` to main (path-filtered to `pyforge-atlas`'s pipelines), dispatch | Epic 12/FR-62: builds and publishes the real pyforge-atlas Kedro DAG's static kedro-viz export via `steward deploy dashboard`, reusing Steward's own reconciled-push logic rather than a bespoke commit step or the dormant third-party `publish-kedro-viz` Action. |
+| **`kedro-viz-publish.yml`** | `push` to main (path-filtered to `pyforge-atlas`'s pipelines), dispatch | Epic 12/FR-62, atlas Story 30.1: builds the real pyforge-atlas Kedro DAG's static kedro-viz export and uploads it as the workflow artifact `kedro-viz-export`; it never commits to git (its old commit-to-`main` step, the retired `deploy dashboard` verb, went with steward Story 102.3). The Pages build mounts the artifact (steward Story 102.4). |
 | **`platform-ci.yml`** | `pull_request`/`push`, path-filtered to `src/platform/**` + the shared packages/pixi files it builds from | Story 10.1: CI for the separately-built Django platform host (`src/platform/`) — ruff/mypy/pytest + a two-engine container build matrix, cost-isolated from the conda-forge factory's own detector/linter CI via the path filter. |
 
 **2026-10-11 (Story 36.1):** Story 13.6's retired CI live-demo workflow moved to `archive/.github/workflows/herald-live-demo.yml` (byte-identical `git mv`; GitHub no longer loads it). Live webhook proof superseded by Story 19.2's [`docs/how-to/run-herald-live-backend-locally.md`](../how-to/run-herald-live-backend-locally.md).
@@ -44,7 +44,7 @@ addendum rather than re-deriving these tables to merge them in.)*
 
 | workflow | trigger | what it does | why you care |
 |---|---|---|---|
-| **`pages.yml`** | `push` to main, `schedule`, dispatch | Builds the unified Pages artifact (`docs-site/build/site/`: Starlight shelf at `/`, dossier under `/herald/`, dashboard under `/dashboard/`) and deploys via the sole `deploy-pages` caller | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the `site` env with `--frozen`. |
+| **`pages.yml`** | `pull_request`/`push` to main (one path filter), six-hourly `schedule`, dispatch | Builds the unified Pages artifact (`docs-site/build/site/`: Starlight shelf at `/`, dossier under `/herald/`, dashboard under `/dashboard/`, the fleet board under `/status/` when herald's flag is on, from the `docsite/content/fleet-status.json` a Guild step writes) and deploys via the sole `deploy-pages` caller, only on `main` and only when the built tree's hash differs from the live `build.json` | Publishes <https://rxm7706.github.io/local-recipes/>. Uses the `site` env with `--frozen`. Steward's file (Stories 102.1–102.3); `steward pages build\|deploy\|status` triggers and reads it. |
 
 ### Explicit-run only (`workflow_dispatch`)
 
