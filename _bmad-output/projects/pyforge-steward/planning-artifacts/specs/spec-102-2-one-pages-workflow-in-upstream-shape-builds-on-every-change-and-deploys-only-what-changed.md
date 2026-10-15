@@ -222,7 +222,8 @@ and `flag-gate-check` exit 0
   MRS-GATE-010 binding; it runs `src/shared/packages/pyforge-steward/tests/unit/test_pages.py` (AC3, AC4) and
   `src/shared/packages/pyforge-steward/tests/unit/test_pages_flag_states.py`, which runs the key
   `pyforge.steward.pages_duty` in both states with `pyforge.testing_kit.flags.flag_states` (AC7), the workflow shape
-  test (AC1, AC2), `test_preflight_selection.py` (AC5) and `test_ci_status.py` (AC6)).
+  test (AC1, AC2), `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` (AC5) and
+  `src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py` (AC6)).
 
 **Run before the push (not dispatch gates):**
 - `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_pages.py src/shared/packages/pyforge-steward/tests/unit/test_pages_flag_states.py -q` — expected: pass.
