@@ -33,6 +33,11 @@ on:
       - 'docs/index.md'
       - 'docs/404.md'
       - 'docs/map.yaml'
+      # Tracked `steward deploy static` boards publish from docs/dashboard/<board>/ (the downloaded
+      # exports under it are gitignored); the build's own scripts and steward's pages module too.
+      - 'docs/dashboard/**'
+      - 'scripts/pages_*.py'
+      - 'src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py'
       - 'docs-site/**'
       - 'docsite/**'
       - 'presentations/**'
@@ -55,11 +60,11 @@ jobs:
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true') }}
     runs-on: ubuntu-latest
-    # actions: read (Story 102.4) lets the job list another workflow's runs and download its artifact.
+    # actions: read (Story 102.4) lets the job list another workflow's runs and download its artifact;
+    # pages: read is all configure-pages needs. pages: write and id-token: write stay with deploy.
     permissions:
       contents: read
-      pages: write
-      id-token: write
+      pages: read
       actions: read
     timeout-minutes: 20
     concurrency:
@@ -98,19 +103,35 @@ jobs:
           PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
           PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
 
-      # The Kedro-Viz mount's build input (Story 102.4): atlas's newest unexpired kedro-viz-export,
-      # into docs/dashboard/kedro-viz/. Absent (no run, no artifact, expired) is a normal build: it
-      # exports KEDRO_VIZ_EXPORT=absent and herald's assembler skips the mount; a gh error fails the
-      # step. Another artifact mount is a copy of this step with its own --workflow, --artifact,
-      # --dest and --env-prefix.
+      # The Kedro-Viz mount's build input (Story 102.4): atlas's newest unexpired kedro-viz-export
+      # from a run on main, into docs/dashboard/kedro-viz/. Absent (no run, no artifact, expired) is
+      # a normal build: it exports KEDRO_VIZ_EXPORT=absent and herald's assembler skips the mount; a
+      # gh error fails the step. GH_ENTERPRISE_TOKEN authenticates gh on a GitHub Enterprise Server
+      # copy of this workflow. Another artifact mount is a copy of this step with its own --workflow,
+      # --artifact, --dest and --env-prefix.
       - name: Download the Kedro-Viz export artifact
         if: ${{ env.PYFORGE_PAGES_DUTY == '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_ENTERPRISE_TOKEN: ${{ github.token }}
         run: >-
           pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py
           --workflow kedro-viz-publish.yml --artifact kedro-viz-export
-          --dest docs/dashboard/kedro-viz --env-prefix KEDRO_VIZ_EXPORT
+          --dest docs/dashboard/kedro-viz --env-prefix KEDRO_VIZ_EXPORT --branch main
+
+      # Atlas Story 30.2's consumer (its review moved it here): the Vizro boards' static export,
+      # uploaded as vizro-static-export by a second job of kedro-viz-publish.yml, into
+      # docs/dashboard/vizro/, which the assembler copies under /dashboard/vizro/. Same gate, same
+      # tokens, same absent path.
+      - name: Download the Vizro static export artifact
+        if: ${{ env.PYFORGE_PAGES_DUTY == '1' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+        run: >-
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py
+          --workflow kedro-viz-publish.yml --artifact vizro-static-export
+          --dest docs/dashboard/vizro --env-prefix VIZRO_EXPORT --branch main
 
       # Herald's fleet board reads this input when pyforge.herald.status_pages is on (herald
       # Story 42.1); it is written on every build so the flag can flip without a workflow edit.

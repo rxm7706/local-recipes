@@ -6473,3 +6473,16 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-15 — recorded with Story 103.6's review
   status: open
+
+### DW-steward-102-4-1: Story 102.4's AC7 `present` record waits on atlas's producer, which is paused
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-102-4-the-pages-build-mounts-atlas-s-kedro-viz-export-from-a-workflow-artifact-and-tolerates-its-absence.md`
+  summary: AC7 needs one dispatched `pages.yml` run whose download step finds a live `kedro-viz-export` and whose `pages-check` exits 0 with `/dashboard/kedro-viz/` in the artifact. No such artifact exists: the producer's newest successful run is `31905522038` (2026-08-15, before it uploaded artifacts), and `.github/workflows/kedro-viz-publish.yml` is `paused-manually` (`docs/governance/ci-surfaces.yaml` row `kedro-viz-publish`, `review_by` 2026-11-01). The `absent` record is the chain PR's own `pages.yml` pull_request run.
+  evidence: steward Story 102.4 independent review, 2026-10-15 (AC7 finding); `gh run list --repo rxm7706/local-recipes --workflow kedro-viz-publish.yml --status success --limit 10` read 2026-10-15 (exit 0, six runs, none with an artifact).
+  location: .github/workflows/pages.yml (the "Download the Kedro-Viz export artifact" step)
+  origin: steward Story 102.4 review, 2026-10-15
+  owner: operator
+  fix: resume the producer (`pyforge steward ci resume kedro-viz-publish --yes`) with `pyforge.atlas.viz_export_artifact` on, let it run once on `main`, then `pyforge steward pages deploy --wait`; record that run's id in the 102.4 spec (the download step's `KEDRO_VIZ_EXPORT=present` line and the green `pages-check`) and close this row. The same run shows atlas 30.2's `vizro-static-export` step once that producer job lands.
+  severity: low
+  promoted: 2026-10-15 — recorded with Story 102.4's review (Pages redesign chain)
+  status: open

@@ -4,15 +4,19 @@
 The Pages workflow runs this before ``pages-check`` (CAP-168). With the defaults it fetches atlas's
 ``kedro-viz-export`` (atlas Story 30.1's ``kedro-viz-publish.yml``) into ``docs/dashboard/kedro-viz/``,
 the path herald's assembler mounts at ``/dashboard/kedro-viz/`` (herald Story 42.2). Another artifact
-mount is the same step with its own ``--workflow``, ``--artifact``, ``--dest`` and ``--env-prefix``.
+mount is the same step with its own ``--workflow``, ``--artifact``, ``--dest`` and ``--env-prefix``
+(atlas 30.2's ``vizro-static-export`` into ``docs/dashboard/vizro/`` is the second).
 
 * Present: ``gh run download <id> -n <artifact> -D <dest>``; ``<PREFIX>=present``, ``<PREFIX>_RUN``
   and ``<PREFIX>_AT`` (the run's ``createdAt``) are written to ``$GITHUB_ENV`` (or ``--github-env``,
   else stdout). Exit 0.
 * Absent (no successful run, no artifact of that name, or only expired ones): prints
   ``<artifact>: none found; mount skipped``, writes ``<PREFIX>=absent``. Exit 0: absence is a normal build.
-* A ``gh`` error is never read as absence: it exits 1 naming the argv. So does a ``--dest`` that already
-  holds files (nothing is deleted).
+* A ``gh`` error is never read as absence: a failing call, a missing ``gh``, invalid JSON or a payload
+  of the wrong shape exits 1 naming the argv. So does a ``--dest`` that already holds files (nothing is
+  deleted).
+* Only a run on ``--branch`` (default ``main``) is eligible: a producer dispatched on an unmerged branch
+  never reaches the production Pages origin.
 * ``pyforge.steward.pages_duty`` off: returns before any ``gh`` call; ``--flag-env`` prints
   ``PYFORGE_PAGES_DUTY=1|0`` for the workflow step's ``if:``.
 
@@ -37,8 +41,10 @@ for _pkg in ("pyforge-core", "pyforge-steward"):
         sys.path.insert(0, str(_src))
 
 from pyforge.steward.pages import (
+    EXPORT_BRANCH,
     KEDRO_VIZ_ARTIFACT,
     KEDRO_VIZ_DEST_REL,
+    KEDRO_VIZ_ENV_PREFIX,
     KEDRO_VIZ_WORKFLOW,
     PAGES_DUTY_FLAG,
     newest_export_run,
@@ -57,27 +63,34 @@ def _runner_at(root: Path) -> Runner:
     return _run
 
 
-def _failure(argv: Sequence[str], proc: subprocess.CompletedProcess[str]) -> int:
-    detail = (proc.stderr or proc.stdout or "").strip()
-    print(
-        f"pages_artifact_download: `{' '.join(argv)}` exited {proc.returncode}: {detail}",
-        file=sys.stderr,
-    )
-    return 1
+class GhError(Exception):
+    """A ``gh`` call that failed, or answered in a shape this step cannot read; never absence."""
 
 
-def _gh_json(runner: Runner, argv: list[str]) -> tuple[Any, int]:
-    proc = runner(argv)
-    if proc.returncode != 0:
-        return None, _failure(argv, proc)
+def _call(runner: Runner, argv: list[str]) -> subprocess.CompletedProcess[str]:
     try:
-        return json.loads(proc.stdout or "null"), 0
+        proc = runner(argv)
+    except (
+        FileNotFoundError
+    ) as exc:  # no `gh` on the runner: name the argv, never a traceback
+        raise GhError(f"`{' '.join(argv)}` could not run: {exc}") from exc
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        raise GhError(f"`{' '.join(argv)}` exited {proc.returncode}: {detail}")
+    return proc
+
+
+def _gh_json(runner: Runner, argv: list[str], *, shape: type) -> Any:
+    proc = _call(runner, argv)
+    try:
+        payload = json.loads(proc.stdout or "null")
     except json.JSONDecodeError as exc:
-        print(
-            f"pages_artifact_download: `{' '.join(argv)}` gave invalid JSON: {exc}",
-            file=sys.stderr,
+        raise GhError(f"`{' '.join(argv)}` gave invalid JSON: {exc}") from exc
+    if not isinstance(payload, shape):
+        raise GhError(
+            f"`{' '.join(argv)}` gave {type(payload).__name__}, not a JSON {shape.__name__}"
         )
-        return None, 1
+    return payload
 
 
 def _write_env(lines: list[str], github_env: str | None) -> None:
@@ -112,7 +125,12 @@ def main(
         help="the mount source, relative to the repo root",
     )
     parser.add_argument(
-        "--env-prefix", default="KEDRO_VIZ_EXPORT", help="names the three env lines"
+        "--env-prefix", default=KEDRO_VIZ_ENV_PREFIX, help="names the three env lines"
+    )
+    parser.add_argument(
+        "--branch",
+        default=EXPORT_BRANCH,
+        help="only a producer run on this branch is mounted (default main)",
     )
     parser.add_argument(
         "--limit", type=int, default=10, help="producer runs to scan (default 10)"
@@ -138,46 +156,44 @@ def main(
         return 0
     root = root or REPO_ROOT
     runner = runner or _runner_at(root)
-    prefix = args.env_prefix
+    try:
+        return _download(args, runner, root)
+    except GhError as exc:
+        print(f"pages_artifact_download: {exc}", file=sys.stderr)
+        return 1
 
+
+def _download(args: argparse.Namespace, runner: Runner, root: Path) -> int:
+    prefix = args.env_prefix
     list_argv = [
         "gh",
         "run",
         "list",
         "--workflow",
         args.workflow,
+        "--branch",
+        args.branch,
         "--status",
         "success",
         "--limit",
         str(args.limit),
         "--json",
-        "databaseId,createdAt,conclusion",
+        "databaseId,createdAt,conclusion,headBranch",
     ]
-    runs, failed = _gh_json(runner, list_argv)
-    if failed:
-        return failed
-    runs = runs if isinstance(runs, list) else []
-    fetched: dict[int, Any] = {}
-    chosen = None
-    for run in sorted(
-        (r for r in runs if isinstance(r, dict) and r.get("conclusion") == "success"),
-        key=lambda r: str(r.get("createdAt") or ""),
-        reverse=True,
-    ):
-        run_id = run.get("databaseId")
-        if not isinstance(run_id, int):
-            continue
-        payload, failed = _gh_json(
-            runner,
-            ["gh", "api", f"repos/{{owner}}/{{repo}}/actions/runs/{run_id}/artifacts"],
-        )
-        if failed:
-            return failed
-        fetched[run_id] = payload
-        chosen = newest_export_run(runs, fetched, artifact=args.artifact)
-        if chosen is not None:
-            break
+    runs = _gh_json(runner, list_argv, shape=list)
 
+    def fetch(run_id: int) -> dict[str, Any]:
+        argv = [
+            "gh",
+            "api",
+            f"repos/{{owner}}/{{repo}}/actions/runs/{run_id}/artifacts",
+        ]
+        payload = _gh_json(runner, argv, shape=dict)
+        if not isinstance(payload.get("artifacts"), list):
+            raise GhError(f"`{' '.join(argv)}` gave no artifacts list")
+        return payload
+
+    chosen = newest_export_run(runs, fetch, artifact=args.artifact, branch=args.branch)
     if chosen is None:
         print(f"{args.artifact}: none found; mount skipped")
         _write_env([f"{prefix}=absent"], args.github_env)
@@ -190,21 +206,16 @@ def main(
             file=sys.stderr,
         )
         return 1
-    download_argv = [
-        "gh",
-        "run",
-        "download",
-        str(chosen),
-        "-n",
-        args.artifact,
-        "-D",
-        args.dest,
-    ]
-    proc = runner(download_argv)
-    if proc.returncode != 0:
-        return _failure(download_argv, proc)
+    _call(
+        runner,
+        ["gh", "run", "download", str(chosen), "-n", args.artifact, "-D", args.dest],
+    )
     created = next(
-        (str(r.get("createdAt") or "") for r in runs if r.get("databaseId") == chosen),
+        (
+            str(r.get("createdAt") or "")
+            for r in runs
+            if isinstance(r, dict) and r.get("databaseId") == chosen
+        ),
         "",
     )
     print(f"{args.artifact}: run {chosen} ({created}) downloaded into {args.dest}")

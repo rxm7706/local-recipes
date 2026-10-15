@@ -18,6 +18,9 @@ _EXPECTED_PATHS = {
     "docs/index.md",
     "docs/404.md",
     "docs/map.yaml",
+    "docs/dashboard/**",  # tracked `deploy static` boards publish from here (102.4's review kept it)
+    "scripts/pages_*.py",
+    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
     "docs-site/**",
     "docsite/**",
     "presentations/**",

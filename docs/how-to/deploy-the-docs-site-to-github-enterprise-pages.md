@@ -5,7 +5,7 @@ Use this procedure on the **enterprise copy** of this repository (`ghe.example` 
 ## Prerequisites
 
 - An enterprise GitHub host (for example `https://ghe.example`) with a mirror or fork of `rxm7706/local-recipes` that you keep current with `main` on the public upstream.
-- GitHub Actions enabled for that repository, with a runner that can execute `pages.yml` (Ubuntu, `pixi`, and network access to your internal conda channel — not the public internet).
+- GitHub Actions enabled for that repository, with a runner that can execute `pages.yml` (Ubuntu, `pixi`, the GitHub CLI `gh`, and network access to your internal conda channel — not the public internet). `gh` downloads the Kedro-Viz and Vizro export artifacts before the build (steward Story 102.4); the workflow hands it the job's token as both `GH_TOKEN` and `GH_ENTERPRISE_TOKEN`, so it authenticates against your enterprise host. A runner without `gh` fails that step naming the command.
 - The internal conda mirror and channel configuration from [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md) (follow that guide; do not duplicate its steps here).
 
 ## 1. Keep the enterprise repository aligned with `main`

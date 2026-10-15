@@ -23,9 +23,9 @@ _SCRIPT = REPO_ROOT / "scripts" / "pages_artifact_download.py"
 PAGES_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "pages.yml"
 
 _RUNS = [
-    {"databaseId": 303, "createdAt": "2026-10-15T09:00:00Z", "conclusion": "success"},
-    {"databaseId": 302, "createdAt": "2026-10-14T09:00:00Z", "conclusion": "success"},
-    {"databaseId": 301, "createdAt": "2026-10-13T09:00:00Z", "conclusion": "success"},
+    {"databaseId": 303, "createdAt": "2026-10-15T09:00:00Z", "conclusion": "success", "headBranch": "main"},
+    {"databaseId": 302, "createdAt": "2026-10-14T09:00:00Z", "conclusion": "success", "headBranch": "main"},
+    {"databaseId": 301, "createdAt": "2026-10-13T09:00:00Z", "conclusion": "success", "headBranch": "main"},
 ]
 
 
@@ -62,6 +62,27 @@ def test_ac1_a_run_that_did_not_succeed_is_ignored() -> None:
     runs = [{**_RUNS[0], "conclusion": "failure"}, *_RUNS[1:]]
     by_run = {303: _artifacts(), 302: _artifacts()}
     assert newest_export_run(runs, by_run) == 302  # noqa: PLR2004
+
+
+def test_ac1_a_run_on_another_branch_is_never_mounted() -> None:
+    """102.4's review: the producer accepts a dispatch on any ref, so an unmerged branch's export must
+    never reach the production Pages origin."""
+    runs = [{**_RUNS[0], "headBranch": "feature/unreviewed"}, *_RUNS[1:]]
+    by_run = {r["databaseId"]: _artifacts() for r in _RUNS}
+    assert newest_export_run(runs, by_run) == 302  # noqa: PLR2004
+    assert newest_export_run(runs, by_run, branch=None) == 303  # noqa: PLR2004 -- None takes any branch
+    assert newest_export_run([{**_RUNS[0], "headBranch": None}], by_run) is None
+
+
+def test_ac1_a_fetch_callable_is_read_newest_first_and_stops_at_the_first_match() -> None:
+    read: list[int] = []
+
+    def fetch(run_id: int) -> dict:
+        read.append(run_id)
+        return _artifacts(expired=run_id == 303)  # noqa: PLR2004
+
+    assert newest_export_run(list(reversed(_RUNS)), fetch) == 302  # noqa: PLR2004
+    assert read == [303, 302]
 
 
 def test_ac1_order_is_by_created_at_not_listing_order() -> None:
@@ -123,12 +144,14 @@ def test_ac2_present_downloads_into_the_mount_source_and_exports_the_run(tmp_pat
         "list",
         "--workflow",
         "kedro-viz-publish.yml",
+        "--branch",
+        "main",
         "--status",
         "success",
         "--limit",
         "10",
         "--json",
-        "databaseId,createdAt,conclusion",
+        "databaseId,createdAt,conclusion,headBranch",
     ]
     assert gh.calls[-1] == ["gh", "run", "download", "303", "-n", "kedro-viz-export", "-D", "docs/dashboard/kedro-viz"]
     assert env_file.read_text(encoding="utf-8").splitlines() == [
@@ -226,7 +249,8 @@ def test_a_second_artifact_mount_is_the_same_step_with_its_own_arguments(tmp_pat
 def test_ac5_the_build_job_reads_actions_and_downloads_before_pages_check() -> None:
     document = yaml.safe_load(PAGES_WORKFLOW.read_text(encoding="utf-8"))
     build = document["jobs"]["build"]
-    assert build["permissions"] == {"contents": "read", "pages": "write", "id-token": "write", "actions": "read"}
+    # 102.4's review: least privilege; pages: write and id-token: write belong to deploy.
+    assert build["permissions"] == {"contents": "read", "pages": "read", "actions": "read"}
     assert "actions" not in document["jobs"]["deploy"].get("permissions", {})
     assert "actions" not in document.get("permissions", {})
     runs = [str(step.get("run", "")) for step in build["steps"] if isinstance(step, dict)]
@@ -237,3 +261,88 @@ def test_ac5_the_build_job_reads_actions_and_downloads_before_pages_check() -> N
     step = [s for s in build["steps"] if isinstance(s, dict)][download]
     assert step["if"] == "${{ env.PYFORGE_PAGES_DUTY == '1' }}"
     assert "--artifact kedro-viz-export" in runs[download] and "--dest docs/dashboard/kedro-viz" in runs[download]
+
+
+@pytest.mark.parametrize(
+    ("answers", "named"),
+    [
+        ({"gh run list": _ok(None)}, "gh run list"),  # empty stdout parses as null
+        ({"gh run list": _ok({"runs": []})}, "gh run list"),
+        ({"gh run list": _ok(_RUNS), "gh api": _ok([])}, "gh api"),
+        ({"gh run list": _ok(_RUNS), "gh api": _ok({"total_count": 0})}, "gh api"),
+    ],
+    ids=["list-null", "list-object", "artifacts-list", "artifacts-no-key"],
+)
+def test_a_wrong_shape_answer_fails_naming_the_argv(tmp_path: Path, capsys, answers: dict, named: str) -> None:
+    code, env_file = _run_script(tmp_path, FakeGh(answers))
+    assert code == 1
+    assert f"`{named}" in capsys.readouterr().err
+    assert not env_file.exists()
+
+
+def test_no_gh_on_the_runner_fails_naming_the_argv(tmp_path: Path, capsys) -> None:
+    def missing(argv: list[str]) -> subprocess.CompletedProcess[str]:
+        raise FileNotFoundError(2, "No such file or directory", "gh")
+
+    code = _load_script().main(["--github-env", str(tmp_path / "env")], runner=missing, flag_on=True, root=tmp_path)
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "`gh run list --workflow kedro-viz-publish.yml" in err and "could not run" in err
+
+
+def test_the_script_reads_the_pages_duty_flag_itself(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    """With no injected state the script's own `read_boolean` decides; that read feeds the step's `if:`."""
+    import pyforge.core.flags as flags
+
+    seen: list[str] = []
+
+    def read_boolean(key: str, default: bool = False, **_: object) -> bool:
+        seen.append(key)
+        return False
+
+    monkeypatch.setattr(flags, "read_boolean", read_boolean)
+    assert _load_script().main(["--flag-env"], root=tmp_path) == 0
+    assert seen == ["pyforge.steward.pages_duty"]
+    assert "PYFORGE_PAGES_DUTY=0" in capsys.readouterr().out
+
+
+def test_a_second_artifact_is_downloaded_under_its_own_names(tmp_path: Path) -> None:
+    """Atlas 30.2's consumer: the same step with its own artifact, destination and prefix."""
+    gh = FakeGh(
+        {
+            "gh run list": _ok(_RUNS),
+            "gh api": _ok(_artifacts(name="vizro-static-export")),
+            "gh run download": subprocess.CompletedProcess([], 0, "", ""),
+        }
+    )
+    code, env_file = _run_script(
+        tmp_path,
+        gh,
+        extra=["--artifact", "vizro-static-export", "--dest", "docs/dashboard/vizro", "--env-prefix", "VIZRO_EXPORT"],
+    )
+    assert code == 0
+    assert gh.calls[-1] == ["gh", "run", "download", "303", "-n", "vizro-static-export", "-D", "docs/dashboard/vizro"]
+    assert env_file.read_text(encoding="utf-8").splitlines() == [
+        "VIZRO_EXPORT=present",
+        "VIZRO_EXPORT_RUN=303",
+        "VIZRO_EXPORT_AT=2026-10-15T09:00:00Z",
+    ]
+
+
+def test_the_workflow_mounts_the_vizro_export_the_same_way() -> None:
+    steps = [
+        s
+        for s in yaml.safe_load(PAGES_WORKFLOW.read_text(encoding="utf-8"))["jobs"]["build"]["steps"]
+        if isinstance(s, dict)
+    ]
+    runs = [" ".join(str(s.get("run", "")).split()) for s in steps]
+    kedro = next(i for i, run in enumerate(runs) if "--artifact kedro-viz-export" in run)
+    vizro = next(i for i, run in enumerate(runs) if "--artifact vizro-static-export" in run)
+    check = next(i for i, run in enumerate(runs) if "pages-check" in run)
+    assert kedro < vizro < check
+    assert "--workflow kedro-viz-publish.yml" in runs[vizro]
+    assert "--dest docs/dashboard/vizro --env-prefix VIZRO_EXPORT --branch main" in runs[vizro]
+    assert "--branch main" in runs[kedro]
+    for index in (kedro, vizro):
+        assert steps[index]["if"] == "${{ env.PYFORGE_PAGES_DUTY == '1' }}"
+        assert steps[index]["env"] == {"GH_TOKEN": "${{ github.token }}", "GH_ENTERPRISE_TOKEN": "${{ github.token }}"}

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -26,6 +26,11 @@ FLEET_STATUS_REL = "docsite/content/fleet-status.json"
 KEDRO_VIZ_WORKFLOW = "kedro-viz-publish.yml"
 KEDRO_VIZ_ARTIFACT = "kedro-viz-export"
 KEDRO_VIZ_DEST_REL = "docs/dashboard/kedro-viz"
+#: Names the three env lines the download writes (``<PREFIX>``, ``<PREFIX>_RUN``, ``<PREFIX>_AT``).
+KEDRO_VIZ_ENV_PREFIX = "KEDRO_VIZ_EXPORT"
+#: Only a run on this branch is mounted: a producer dispatched on an unmerged branch never reaches the
+#: production Pages origin (102.4's review).
+EXPORT_BRANCH = "main"
 #: An identical tree still deploys once the live build is older than this and its commit moved
 #: (doctor 48.2's review): at most one extra deploy a day keeps the live ``last-modified`` honest.
 LIVENESS_MAX_AGE = timedelta(hours=24)
@@ -199,24 +204,34 @@ def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str |
 
 def newest_export_run(
     runs_json: Iterable[Mapping[str, Any]],
-    artifacts_json: Mapping[Any, Mapping[str, Any]],
+    artifacts_json: Mapping[Any, Mapping[str, Any]] | Callable[[int], Mapping[str, Any] | None],
     *,
     artifact: str = KEDRO_VIZ_ARTIFACT,
+    branch: str | None = EXPORT_BRANCH,
 ) -> int | None:
-    """The newest successful producer run whose ``artifact`` is listed and not expired (Story 102.4).
+    """The newest successful producer run on ``branch`` whose ``artifact`` is listed and not expired
+    (Story 102.4).
 
-    ``runs_json`` is ``gh run list --json databaseId,createdAt,conclusion``; ``artifacts_json`` maps a
-    run id to that run's ``gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts`` payload (a run
-    missing from it has not been read and is passed over). A run whose ``conclusion`` is not
-    ``success`` is ignored. ``None``: no run, no artifact of that name, or only expired ones."""
-    successful = [
+    ``runs_json`` is ``gh run list --json databaseId,createdAt,conclusion,headBranch``. ``artifacts_json``
+    is either a mapping from a run id to that run's ``gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts``
+    payload (a run missing from it is passed over) or a ``fetch(run_id)`` callable this function calls
+    newest-first, stopping at the first match (the download script's lazy read). A run whose
+    ``conclusion`` is not ``success``, or whose ``headBranch`` is not ``branch`` (``None`` takes any), is
+    ignored. ``None``: no such run, no artifact of that name, or only expired ones."""
+    eligible = [
         run
         for run in runs_json
-        if isinstance(run, Mapping) and run.get("conclusion") == "success" and isinstance(run.get("databaseId"), int)
+        if isinstance(run, Mapping)
+        and run.get("conclusion") == "success"
+        and isinstance(run.get("databaseId"), int)
+        and (branch is None or run.get("headBranch") == branch)
     ]
-    for run in sorted(successful, key=lambda r: str(r.get("createdAt") or ""), reverse=True):
+    for run in sorted(eligible, key=lambda r: str(r.get("createdAt") or ""), reverse=True):
         run_id = run["databaseId"]
-        payload = artifacts_json.get(run_id, artifacts_json.get(str(run_id)))
+        if callable(artifacts_json):
+            payload = artifacts_json(run_id)
+        else:
+            payload = artifacts_json.get(run_id, artifacts_json.get(str(run_id)))
         if not isinstance(payload, Mapping):
             continue
         for item in payload.get("artifacts") or []:

@@ -264,3 +264,43 @@ with and one without the artifact are recorded
     flag on, and that workflow is `paused-manually` (registry row `kedro-viz-publish`, `review_by` 2026-11-01). The
     `absent` record above stands for the second AC7 run; the `present` run is the operator's after resuming the
     producer.
+- 2026-10-15 (the independent review, `review-102-4`, verdict FAIL on five should-fix items; resolved here; where this
+  entry and the one above disagree, this one holds):
+  - **The filter keeps `docs/dashboard/**` (AC6 reversed).** The mint's premise, "nothing published lives there any
+    more", is false against the landed code: `steward deploy static` writes tracked `docs/dashboard/<board>/index.html`,
+    the assembler copies it into the artifact, and without the entry a board PR ran no `pages-check` in CI or in
+    `pr-preflight` (CAP-159 selects lanes from these paths). The Boundaries' rule that landed facts win applies, so the
+    entry stays in both lists and in `test_pages_workflow.py`'s `_EXPECTED_PATHS`; the downloaded exports under it are
+    gitignored, so no diff ever touches them. The filter also gains `scripts/pages_*.py` and steward's
+    `pyforge/steward/pages.py` (the build runs them; a PR touching only them ran no Pages build). `docs/dashboard/README.md`
+    no longer says the directory left the filter.
+  - **Only a run on `main` is mounted.** `gh run list` gains `--branch main` and `headBranch`, the script `--branch`
+    (default `main`, the `pages.EXPORT_BRANCH` constant), and `newest_export_run` passes over a run on any other branch:
+    the producer accepts a dispatch on any ref, and its HTML/JS is published verbatim on the production origin. AC1
+    gains the case. `newest_export_run` now also takes a `fetch(run_id)` callable and owns the success filter, the
+    branch filter and the newest-first order, so the script no longer repeats them.
+  - **GitHub Enterprise.** The download steps hand `gh` the job token as `GH_ENTERPRISE_TOKEN` beside `GH_TOKEN`; a
+    runner without `gh` fails the step naming the command (a `FileNotFoundError` is mapped, never a traceback); the GHE
+    how-to lists `gh` as a runner prerequisite. Steward 102.5 (the other lane) leaves this step and the script alone.
+  - **AC7.** The local rehearsal recorded above is not the dispatched `absent` record: it never exercised the job's
+    `actions: read`, the token wiring, `gh`'s repository resolution on a runner or the step's `if:`. The `absent`
+    record is the chain PR's own `pages.yml` pull_request run (the PR changes `pages.yml`, so the build runs both
+    download steps); the coordinating session fills its id at PR time. The `present` run is steward deferred-work row
+    `DW-steward-102-4-1`, keyed to resuming atlas's producer (`kedro-viz-publish`, `paused-manually`, `review_by`
+    2026-11-01).
+  - **Surface.** `scripts/pages_artifact_download.py` and `docsite/README.md` are on Epic 102's surface
+    (`marshal-policy.toml`, widened in 102.3's review). The script's place on spec-pyforge-steward's own surface comes
+    with the chain's `bmad-spec` re-derive, beside `scripts/pages_fleet_status.py`.
+  - **Nits.** The `build` job's permissions are `contents: read`, `pages: read`, `actions: read` (`configure-pages`
+    reads the site; `pages: write` and `id-token: write` belong to `deploy`); the chain PR's run confirms
+    `configure-pages` under it. An exit-0 `gh` answer of the wrong shape (a run list that is not a list, an artifacts
+    payload that is not an object or has no `artifacts` list) fails naming the argv instead of reading as `absent`. New
+    tests: the script's own `read_boolean` (no injected state), the second artifact's present path (`-n`, `-D`,
+    `_RUN`), a missing `gh`, the four wrong shapes. `--env-prefix` defaults to `pages.KEDRO_VIZ_ENV_PREFIX`.
+    `docs/reference/github-workflows.md`'s `pages.yml` row names 102.4, the downloads and the permissions.
+  - **Atlas 30.2's consumer step, per 30.2's review.** A second download step, the same script with
+    `--workflow kedro-viz-publish.yml --artifact vizro-static-export --dest docs/dashboard/vizro --env-prefix VIZRO_EXPORT
+    --branch main`, the same `if:` and both tokens, runs after the Kedro-Viz step and before `pages-check`
+    (`test_pages_export.py::test_the_workflow_mounts_the_vizro_export_the_same_way`). Until atlas 30.2's producer job
+    uploads the artifact it takes the absent path. The mount itself is herald's: `assemble_pages.py` copies
+    `docs/dashboard/vizro/` under `/dashboard/vizro/` with no vendored-root exemption, as 30.2 asks.
