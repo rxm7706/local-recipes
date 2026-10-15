@@ -174,6 +174,9 @@ def _remove_empty_astro_dossier(artifact_root: Path) -> None:
     index = dossier_dir / "index.html"
     if index.is_file() and index.stat().st_size == 0:
         shutil.rmtree(dossier_dir)
+    herald = artifact_root / HERALD_PREFIX
+    if herald.is_dir() and not any(herald.iterdir()):
+        herald.rmdir()
 
 
 def _write_site_url_marker(artifact_root: Path, site_url: str) -> None:
