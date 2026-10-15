@@ -20,9 +20,12 @@ const MEASURER = path.join(REPO_ROOT, 'docsite/tools/verify_claims.py');
 type Stat = { value: string; label: string; check?: string };
 type Measured = Record<string, Record<string, { value: string; files?: number }>>;
 
-/** `verify_claims.py --emit` over `DATA_ROOT`: a failure (an unknown `check:` key, a missing package) fails the build. */
+/**
+ * `verify_claims.py --emit` over `DATA_ROOT` with `HERALD_PYTHON`, else the `python` on `PATH` (it needs PyYAML, as the
+ * `site` env provides): a failure (an unknown `check:` key, a missing package) fails the build.
+ */
 function measure(): Measured {
-  const python = process.env.PYTHON ?? 'python';
+  const python = process.env.HERALD_PYTHON || 'python';
   try {
     const out = execFileSync(python, [MEASURER, '--emit', '-', '--root', DATA_ROOT, '--content', DOSSIER_YML], {
       encoding: 'utf8',

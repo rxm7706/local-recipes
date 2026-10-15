@@ -216,9 +216,10 @@ def _refuses_collision(artifact_root: Path, rel_path: str) -> None:
         raise SystemExit(1)
 
 
-def _run_docs_site_build(repo_root: Path, site_url: str) -> None:
+def _run_docs_site_build(repo_root: Path, site_url: str, built_at: str) -> None:
     env = os.environ.copy()
     env["SITE_URL"] = site_url
+    env["PAGES_BUILT_AT"] = built_at  # Story 43.5: the one build time, in the subprocess's env only (its review)
     if enabled_from_env():
         env.setdefault("PYFORGE_PAGES_ONE_GENERATOR", "1")
     else:
@@ -339,6 +340,7 @@ def _build_herald(
     dashboard_out: Path | None = None,
     status_out: Path | None = None,
     fleet_status: Path | None = None,
+    built_at: str | None = None,
 ) -> None:
     herald_out.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -356,7 +358,8 @@ def _build_herald(
         cmd += ["--status-out", str(status_out)]
     if fleet_status is not None:
         cmd += ["--fleet-status", str(fleet_status)]
-    subprocess.run(cmd, cwd=repo_root, check=True)
+    env = {**os.environ, **({"PAGES_BUILT_AT": built_at} if built_at else {})}
+    subprocess.run(cmd, cwd=repo_root, check=True, env=env)
 
 
 def _iter_herald_html(artifact_root: Path) -> list[Path]:
@@ -1493,8 +1496,9 @@ def assemble(
     fleet_status: Path | None = None,
 ) -> str:
     repo_root = repo_root or _repo_root()
-    # Story 43.5: one build time for every page's built-from line, Astro's and the Jinja status pages' alike.
-    os.environ.setdefault("PAGES_BUILT_AT", datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    # Story 43.5: one build time for every page's built-from line, Astro's and the Jinja status pages' alike, handed to
+    # each build's environment (never this process's: an in-process assemble() leaks nothing into later callers).
+    built_at = os.environ.get("PAGES_BUILT_AT") or datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     status_on = sp.enabled_from_env()
     fleet_status = fleet_status or _fleet_status_input(repo_root)
     dashboard_src = dashboard_src or (repo_root / "docs" / "dashboard")
@@ -1503,7 +1507,7 @@ def assemble(
     site_url = site_url or resolve_from_process_environment()
 
     if not skip_docs_site_build:
-        _run_docs_site_build(repo_root, site_url)
+        _run_docs_site_build(repo_root, site_url, built_at)
         if not enabled_from_env():
             _remove_empty_astro_dossier(artifact_root)
     _write_site_url_marker(artifact_root, site_url)
@@ -1540,6 +1544,7 @@ def assemble(
             dashboard_out=(artifact_root / DASHBOARD_PREFIX) if mounted else None,
             status_out=(artifact_root / STATUS_PREFIX) if status_on else None,
             fleet_status=fleet_status if status_on else None,
+            built_at=built_at,
         )
     if not one_generator:  # Story 43.3: on, the Astro build writes both from docs-site/redirects.json
         _write_dossier_redirects(artifact_root)

@@ -12,6 +12,8 @@
  */
 
 const LOADED_AT = new Date();
+/** The one `PAGES_BUILT_AT` form both twins accept: an ISO 8601 date-time with seconds and an explicit offset. */
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 /** `YYYY-MM-DD HH:MM UTC`. */
 function utcMinute(value: Date): string {
@@ -26,8 +28,8 @@ export function builtFromText(env: Record<string, string | undefined> = process.
   }
   const raw = (env.PAGES_BUILT_AT ?? '').trim();
   const at = raw ? new Date(raw) : LOADED_AT;
-  if (Number.isNaN(at.getTime())) {
-    throw new Error(`PAGES_BUILT_AT is not an ISO 8601 time: ${JSON.stringify(raw)}`);
+  if (raw && (!ISO_INSTANT.test(raw) || Number.isNaN(at.getTime()))) {
+    throw new Error(`PAGES_BUILT_AT is not an ISO 8601 time with an offset: ${JSON.stringify(raw)}`);
   }
   const run = (env.GITHUB_RUN_ID ?? '').trim();
   return [`Built from ${sha.slice(0, 7)}`, utcMinute(at), ...(run ? [`run ${run}`] : [])].join(' · ');

@@ -45,7 +45,7 @@ These files are maintained in this repository and are **not** byte-identical to 
   `GITHUB_RUN_ID`, or `local build`; the docs take it under Starlight's footer (the override is registered with the
   flag on only), the herald layouts and reader pages below the page. Steward's Pages tree hash reads every HTML file
   without that element's text, so a rebuild of an unmoved tree deploys nothing.
-- `src/loaders/dossier-loader.ts` also runs `docsite/tools/verify_claims.py --emit` (Story 43.5; `$PYTHON`, else the
+- `src/loaders/dossier-loader.ts` also runs `docsite/tools/verify_claims.py --emit` (Story 43.5; `$HERALD_PYTHON`, else the
   `python` on `PATH` with PyYAML, as the `site` env provides): every `check:` stat shows the measured value, and each
   section's required `measured:` date renders as "measured on"
 - `redirects.json` — the frozen root redirects: the 44 legacy paths and `/kedro-viz/` (Story 43.3; never hand-grown)

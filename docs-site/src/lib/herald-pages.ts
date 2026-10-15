@@ -293,10 +293,6 @@ export function gitCommit(repoRoot: string): string {
   }
 }
 
-/** The build date, as `build.py`'s `built_at` (UTC, `YYYY-MM-DD`). */
-export function builtAt(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
-}
 
 /**
  * An artifact's provenance stamp, as `build.py`'s `_artifact_stamp`: the `<file>.stamp.json` sidecar's
@@ -667,8 +663,8 @@ export function twinWrapperHtml(options: { title: string; backbar: string; rel: 
 <style>
 html,body{margin:0;height:100%;background:var(--sl-color-black)}
 body{box-sizing:border-box}
-.ig-twin{display:block;width:100%;height:calc(100vh - 32px);border:0;background:var(--sl-color-black)}
-.built-from{padding:0 16px 16px}
+.ig-twin{display:block;width:100%;height:calc(100vh - 32px - 1.5rem);border:0;background:var(--sl-color-black)}
+.built-from{box-sizing:border-box;height:1.5rem;margin:0;padding:0 16px;line-height:1.5rem;overflow:hidden;white-space:nowrap}
 </style>
 </head>
 <body>

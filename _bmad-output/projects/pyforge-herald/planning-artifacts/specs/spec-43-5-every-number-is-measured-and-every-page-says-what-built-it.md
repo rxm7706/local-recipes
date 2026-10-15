@@ -10,7 +10,7 @@ flag:
   scope: global                                  # v1 is global only
   fallback: 'the Jinja dossier shows its hand-typed stat values, no measured-on line and no built-from footer, and site-verify stays the advisory it is today'
   cleanup: retired by Story 43.7 with the Jinja path (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -164,7 +164,8 @@ page; `pages-check` and `pyforge-herald-test` are green
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/unit/test_verify_claims_emit.py src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py -q` — expected: pass (AC1–AC4, AC6).
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/unit/test_verify_claims_emit.py src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_parity.py src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py src/shared/packages/pyforge-herald/tests/unit/test_status_pages_flag_states.py -q -k 43_5` — expected: pass (AC1–AC6: the emit and compare on a fixture tree, the built dossier and footer over a fixture tree, `pages-check`'s built-from check, the status pages' line and its TypeScript twin; corrected at the review -- `test_dossier_golden.py` is Story 43.1's block parity and checks none of them).
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py -q` — expected: pass (the dossier's blocks unchanged).
 - `pixi run --frozen -e site pages-check` with the flag on and off — expected: exit 0 both times (AC7, AC8).
 - `pixi run --frozen -e site site-verify` after a flag-on build — expected: 0 drifted claims, exit 0 (AC5).
 - `GITHUB_SHA=0123456789abcdef GITHUB_RUN_ID=1 pixi run --frozen -e site pages-build`, then `grep -c 0123456 docs-site/build/site/herald/dossier/index.html` — expected: at least 1 (AC4).
@@ -235,6 +236,56 @@ On `f8d99e0c84` plus this change (lane A of the one-PR Pages redesign); every ve
 
 ## Spec Change Log
 
+- 2026-10-15 (independent review, iteration 1: FAIL, 4 should-fix and 7 nits; resolved, with the coordinating
+  session's rule that a finding in a file Story 43.7 deletes or ports -- the Jinja templates, `build.py`, the
+  assembler -- is fixed where 43.7 leaves the behaviour, carried into its spec, not fixed twice):
+  - **Should-fix 1 (steward carry-in), fixed.** `pyforge.steward.pages.BUILT_FROM_TEXT` matches only the exact element
+    herald emits and `pages-check` enforces, `<p class="built-from" data-pages-built-from data-pagefind-ignore>[^<]*</p>`:
+    a value that mentions the name (`href="#data-pages-built-from"`), a longer name (`data-pages-built-from-x`),
+    another attribute order or another tag keeps its text in the hash -- a change there over-deploys, never hides.
+    Steward's `test_tree_hash_drops_only_the_exact_built_from_element` covers the five shapes, and the earlier test a
+    content change beside the element.
+  - **Should-fix 2 (`_BUILT_FROM_EXEMPT` exempts all of `dashboard/`), carried into Story 43.7.** Herald's pipelines
+    page `dashboard/index.html` is a Jinja page (`page_pipelines.html.j2`, rendered by `build.py` when the Kedro-Viz
+    export is mounted), and both it and `assemble_pages.py`'s check retire with 43.7; narrowing the exemption now
+    would red `pages-check` until that page carried the line, which is a template 43.7 deletes. 43.7's spec carries:
+    its pipelines page (if it keeps one) carries the line, and its built-from check exempts only the mounted exports
+    (`dashboard/kedro-viz/`, `dashboard/vizro/`, any other mounted board), with a test. **Why `herald/artifact/` is
+    exempt** (recorded here, as the review asked): it is CAP-47's artifact build, the dossier as one self-contained
+    file republished to Claude Design by its ritual (`docsite/README.md`), a deliverable copied out of the site as a
+    twin is -- not a page of it -- so a per-build line would change the deliverable on every build.
+  - **Should-fix 3 (a wall-clock date stays in the hash), fixed where it lives on.** The Astro herald pages held two:
+    the shell's nav stamp ("Built <date> · <commit>") and "Site rebuilt <date>" in the overview, gallery and deck
+    footers. Both are gone with the flag on (the only state these pages exist in): the built-from line below each page
+    is the one place a build's time and commit appear, and `herald-pages.ts`'s `builtAt()` and the loader's `builtAt`
+    field leave with them. `test_43_5_a_build_two_days_later_of_an_unmoved_tree_differs_only_in_the_built_from_line`
+    builds the fixture tree twice, the second with node's clock shifted two days, another run id and another
+    `PAGES_BUILT_AT`, and finds every file byte-identical once the line's text is dropped (a wall-clock stamp planted
+    in the shell fails it: five pages differ). The Jinja `/status/`, `/status/ci/` and pipelines footers keep
+    "Site rebuilt <date>" until Story 43.7 ports them; its spec carries the requirement (the line in place of the
+    date, and the two-day proof over the whole artifact with the status pages on). Flag off, nothing changes.
+  - **Should-fix 4 (two-state coverage), fixed.** `@flag_states("pyforge.herald.pages_one_generator")`:
+    `test_43_5_the_build_hands_the_status_pages_the_line_only_with_the_flag_on` runs `build()` with the status pages
+    and finds the line exactly when the flag is on; `test_43_5_ac5_with_the_flag_on_site_verify_reads_the_built_page_by_default`
+    runs `verify_claims.main()` (which now takes `argv`) without `--page` -- on, exit 2 naming the default built page
+    when absent and 0 over a measured one; off, the YAML compare (exit 1 on the fixture's stale values).
+  - **Nits.** 5: a reader page's frame is `calc(100vh - 32px - 1.5rem)` and its built-from line a fixed 1.5rem, so the
+    page does not scroll (checked in the browser at 1280x900 and 390x844 on an infographic and a deck view:
+    `scrollHeight == innerHeight`). 6: both twins accept one `PAGES_BUILT_AT` form, an ISO 8601 date-time with seconds
+    and an offset, and refuse a date alone, a naive time or anything else (the TypeScript twin throws, the Python one
+    raises); the parity test adds an offset that crosses the UTC date and the three refusals. 7: `assemble()` no longer
+    sets `os.environ`; it hands `PAGES_BUILT_AT` to the Astro and the herald builds' environments. 8: the measurer
+    runs under `HERALD_PYTHON || 'python'`. 9: "Measured on" is left as AC3 words it (the coordinating session takes
+    the wording to the operator). 10: § Verification now credits the AC tests, not the golden; 43.7's spec carries
+    `verify_claims.py`'s 338 lines into its budget. 11: `pages.yml`'s push filter (steward's) does not list
+    `src/shared/packages/**`, which the measured stats now read, so a commit touching only station code refreshes the
+    dossier's numbers at the next six-hourly scheduled build, not on push; named here for steward (`pyforge-steward:
+    CAP-168`), no edit made.
+  - **Gates (2026-10-15, on `a680b61d54` plus this change).** The Pages, parity, 43.6, zero-origin, validator, imports,
+    site-URL, build, flag-state, golden and emit test files -- exit 0, 403 passed, none skipped; the herald suite --
+    exit 0, 2193 passed, 5 skipped; the steward suite -- exit 0, 2813 passed, 2 skipped; `lint-types` -- exit 0;
+    `pages-check` with both flags off, with both on and the 42.1 and 43.6 fixtures under `GITHUB_SHA` / `GITHUB_RUN_ID`
+    (fixtures removed after), and on the CAP-56 host -- exit 0 each.
 - 2026-10-15: implemented (lane A of the one-PR Pages redesign); status `in-review`. Deviations and readings, each for
   the reviewer and the operator to keep or overturn:
   - **The typed values stay in `dossier.yml`** (the Approach said the `check:` stats lose them): AC7 holds the Jinja

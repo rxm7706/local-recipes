@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -322,6 +323,8 @@ def built_from_html(env: dict[str, str] | None = None) -> str:
     sha = env.get("GITHUB_SHA", "").strip()
     if sha:
         raw = env.get("PAGES_BUILT_AT", "").strip()
+        if raw and not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", raw):
+            raise ValueError(f"PAGES_BUILT_AT is not an ISO 8601 time with an offset: {raw!r}")
         at = datetime.fromisoformat(raw) if raw else datetime.now(tz=UTC)
         run = env.get("GITHUB_RUN_ID", "").strip()
         parts = [f"Built from {sha[:7]}", at.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC"), *([f"run {run}"] if run else [])]

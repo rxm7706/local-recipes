@@ -7,6 +7,7 @@ fixture tree with known line counts, never this repository."""
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -15,9 +16,13 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 VERIFY = REPO_ROOT / "docsite" / "tools" / "verify_claims.py"
+_FLAG = "pyforge.herald.pages_one_generator"
+flag_provider = make_flag_provider_fixture()
 
 #: station -> (source lines, source files, test lines, Python floor) of its fixture package; the floors differ, so
 #: the compare's fleet-wide floor-gap check has nothing to report
@@ -154,3 +159,41 @@ def test_43_5_ac5_the_compare_judges_the_built_page_and_keeps_exit_1_on_drift(tm
     assert refused.returncode == 2 and "section 'mason': the page shows 2 stats, dossier.yml has 3" in refused.stderr
     missing = _run("--page", str(tmp_path / "absent.html"), "--root", str(root), "--content", str(content))
     assert missing.returncode == 2 and "pages-build writes it" in missing.stderr
+
+
+@flag_states(_FLAG)
+def test_43_5_ac5_with_the_flag_on_site_verify_reads_the_built_page_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys, flag_provider: dict[str, bool]
+) -> None:
+    """``site-verify`` passes no ``--page``: with pyforge.herald.pages_one_generator on, the compare reads the Pages
+    build's dossier (``BUILT_DOSSIER``) -- exit 2 naming it when no build is there, 0 over a page showing the measured
+    values; off, it compares the YAML's typed values as before (exit 1 on the fixture's stale ones)."""
+    on = flag_provider[_FLAG]
+    monkeypatch.setenv("PYFORGE_PAGES_ONE_GENERATOR", "1" if on else "0")  # as the Guild step exports it
+    spec = importlib.util.spec_from_file_location("verify_claims_flag_states", VERIFY)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    built = tmp_path / "site" / "herald" / "dossier" / "index.html"
+    monkeypatch.setattr(mod, "BUILT_DOSSIER", built)
+    root, content = _tree(tmp_path)
+    argv = ["--root", str(root), "--content", str(content)]
+    if not on:
+        assert mod.main(argv) == 1
+        assert "drifted" in capsys.readouterr().out
+        return
+    assert mod.main(argv) == 2
+    assert str(built) in capsys.readouterr().err
+    built.parent.mkdir(parents=True)
+    built.write_text(
+        _page(
+            {
+                "": [("~94K", "Lines of source"), ("8", "Stations")],
+                "atlas": [("41,234", "Lines · 3 files"), ("8 / 11", "Pipelines")],
+                "mason": [("52,345", "Source lines · 2 files"), ("7,000", "Test lines"), ("py3.14", "Floor")],
+                "synthesis": [("17", "Claims")],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert mod.main(argv) == 0

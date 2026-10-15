@@ -281,7 +281,7 @@ def _floor_gap_marked_closed(doc: dict) -> bool:
     return False
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--format", choices=["text", "github"], default="text")
     ap.add_argument("--json", action="store_true")
@@ -289,7 +289,7 @@ def main() -> int:
     ap.add_argument("--root", type=Path, default=ROOT, help="the tree to measure (default: this repository)")
     ap.add_argument("--emit", metavar="PATH", help="write the measured values as JSON to PATH ('-': stdout)")
     ap.add_argument("--page", type=Path, help="compare the stats this built dossier page shows")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     doc = yaml.safe_load(Path(args.content).read_text(encoding="utf-8"))
     packages = args.root / "src" / "shared" / "packages"

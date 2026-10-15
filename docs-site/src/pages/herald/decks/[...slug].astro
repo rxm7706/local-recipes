@@ -40,8 +40,6 @@ const groups: Array<{ heading: string; none: string; items: Download[] }> = fami
 const shell = {
   favicon: site.favicon,
   shortName: site.short_name ?? site.name,
-  builtAt: pages.builtAt,
-  commit: pages.commit,
   current: 'herald/decks/',
 };
 ---
@@ -123,7 +121,6 @@ const shell = {
           <span>
             <a href="../../decks/index.html">&larr; All decks</a>
           </span>
-          <span>Site rebuilt {pages.builtAt}</span>
         </footer>
       </div>
     </HeraldLayout>
@@ -174,7 +171,6 @@ const shell = {
             Built from each deck's own standard export set (<code>presentations/&lt;slug&gt;/</code>) &mdash; nothing
             here is hand-maintained.
           </span>
-          <span>Site rebuilt {pages.builtAt}</span>
         </footer>
       </div>
     </HeraldLayout>

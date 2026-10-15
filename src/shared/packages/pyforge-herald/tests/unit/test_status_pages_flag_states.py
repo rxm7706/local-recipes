@@ -649,11 +649,24 @@ _BUILT_FROM_ENVS = [
     {},
     {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "2026-10-15T14:03:09Z"},
     {"GITHUB_SHA": "fedcba9876543210", "GITHUB_RUN_ID": "4242", "PAGES_BUILT_AT": "2026-10-15T23:59:59+00:00"},
+    {"GITHUB_SHA": "fedcba9876543210", "PAGES_BUILT_AT": "2026-10-15T23:59:59.5-05:00"},  # crosses the UTC date
+    # the review's divergences, now refused by both: a date alone, a naive time, not a time at all
+    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "2026-10-15"},
+    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "2026-10-15T14:03:09"},
+    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "Thu, 15 Oct 2026 14:03:09 GMT"},
 ]
 _BUILT_FROM_PROBE = """
 import { builtFromHtml } from %s;
-process.stdout.write(JSON.stringify(%s.map((env) => builtFromHtml(env))));
+const lines = %s.map((env) => { try { return builtFromHtml(env); } catch { return 'refused'; } });
+process.stdout.write(JSON.stringify(lines));
 """
+
+
+def _python_line(status_pages, env: dict[str, str]) -> str:
+    try:
+        return status_pages.built_from_html(env)
+    except ValueError:
+        return "refused"
 
 
 def test_43_5_the_status_pages_carry_the_line_only_when_given(build_mod, tmp_path: Path) -> None:
@@ -711,5 +724,7 @@ def test_43_5_the_python_line_is_the_typescript_one(tmp_path: Path) -> None:
         check=False,
     )
     assert done.returncode == 0, done.stderr
-    assert json.loads(done.stdout) == [status_pages.built_from_html(env) for env in _BUILT_FROM_ENVS]
-    assert json.loads(done.stdout)[0].endswith(">local build</p>")
+    lines = json.loads(done.stdout)
+    assert lines == [_python_line(status_pages, env) for env in _BUILT_FROM_ENVS]
+    assert lines[0].endswith(">local build</p>") and "2026-10-16 04:59 UTC" in lines[3]
+    assert lines[4:] == ["refused"] * 3

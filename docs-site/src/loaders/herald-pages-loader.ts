@@ -13,7 +13,6 @@ import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 
 import {
-  builtAt,
   collectFamilies,
   collectInfographics,
   gitCommit,
@@ -30,7 +29,6 @@ export interface HeraldPages {
   infographics: Infographic[];
   families: Family[];
   commit: string;
-  builtAt: string;
 }
 
 /** `pyforge.herald.pages_one_generator` (Story 43.1), read by the docs-site's one flag reader (`src/lib/flags.ts`). */
@@ -82,7 +80,6 @@ export function loadHeraldPages(): HeraldPages {
     infographics,
     families: collectFamilies(infographics, repoRoot, commit, (slug) => readFacts(repoRoot, slug)),
     commit,
-    builtAt: builtAt(),
   };
   return loaded;
 }

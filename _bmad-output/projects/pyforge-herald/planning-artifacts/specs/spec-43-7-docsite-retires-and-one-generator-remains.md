@@ -240,6 +240,31 @@ the five vendored files keep their hashes
 
 ## Spec Change Log
 
+- 2026-10-15 (carry-ins from Story 43.5 and its review; the coordinating session's rule: a finding in a file this
+  story deletes or ports is fixed in the port, not twice):
+  - **The built-from line on the ported pages.** Story 43.5 puts one plain-text line on every page,
+    `<p class="built-from" data-pages-built-from data-pagefind-ignore>...</p>` (`docs-site/src/lib/built-from.ts`;
+    `docsite/tools/status_pages.built_from_html` is its Python twin for the Jinja status pages and retires here). When
+    `/status/`, `/status/ci/` and the pipelines page (`dashboard/index.html`, if a Pipelines page stays) move to Astro,
+    each carries the line **in place of** its "Site rebuilt <date>" span -- no page keeps a wall-clock date of its own,
+    or the Pages tree hash moves every UTC day.
+  - **The two-day proof over the whole artifact.** Extend 43.5's
+    `test_43_5_a_build_two_days_later_of_an_unmoved_tree_differs_only_in_the_built_from_line` (Astro only today) to
+    the artifact with `pyforge.herald.status_pages` on: two builds two days and two runs apart are byte-identical
+    once the line's text is dropped.
+  - **The built-from check** (`assemble_pages._check_built_from` today; it moves wherever `pages-check`'s checks land)
+    exempts only the twins, `herald/artifact/` (CAP-47's self-contained artifact build, a deliverable copied out of the
+    site), redirect stubs and the mounted exports -- `dashboard/kedro-viz/`, `dashboard/vizro/` and any other mounted
+    board -- **not** all of `dashboard/`; a test covers the pipelines page.
+  - **One build time per build.** `PAGES_BUILT_AT` (ISO 8601 with seconds and an offset; both twins refuse anything
+    else) is set once per build and handed to the build's environment, never written into `os.environ` by an
+    in-process helper (43.5's review, nit 7; `assemble()` does that today).
+  - **The budget.** `docsite/tools/verify_claims.py` is 338 lines after 43.5 (the Approach's 237 is the mint-day
+    figure), over the 300-line budget on its own: its `--page` compare (roughly 100 lines with `page_stats` and
+    `with_page_values`) leaves with the `site-verify` task this story retires, if the advisory retires with it.
+  - **What the measured dossier reads.** The Astro dossier runs `verify_claims.py --emit` at build
+    (`docs-site/src/loaders/dossier-loader.ts`, under `HERALD_PYTHON || 'python'`); moving the script to
+    `docs-site/scripts/` moves the loader's `MEASURER` path with it.
 - 2026-10-15 (carry-in from Story 43.4's re-review, nit 6): **the OFL-1.1 licence text stays in the artifact.** The five
   `@fontsource` packages are OFL-1.1 (`docs-site/README.md` § *Theme and fonts*); until this story the artifact carries
   the licence text only through the Jinja path's `herald/assets/fonts/OFL-*.txt`. Deleting `docsite/assets/fonts/`

@@ -38,8 +38,6 @@ const description = mdInline(doc.summary as string).replace(/<[^>]+>/g, '');
   current="herald/"
   favicon={site.favicon}
   shortName={site.short_name ?? site.name}
-  builtAt={pages.builtAt}
-  commit={pages.commit}
 >
   <div class="page">
     <div class="lander">
@@ -129,7 +127,6 @@ const description = mdInline(doc.summary as string).replace(/<[^>]+>/g, '');
 
     <footer>
       <span set:html={mdInline(footer?.note ?? '')} />
-      <span>Site rebuilt {pages.builtAt}</span>
     </footer>
   </div>
 </HeraldLayout>

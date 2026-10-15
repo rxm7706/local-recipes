@@ -55,7 +55,10 @@ HASH_EXCLUDE_RELATIVE: frozenset[str] = frozenset(
 #: at a path, so tree_hash reads each ``.html`` file with that element's text dropped (the element itself still
 #: counts). A rebuild of an unmoved tree then hashes the same and skips its deploy, and the liveness rule below
 #: (:data:`LIVENESS_MAX_AGE`) keeps the live build honest; a commit that moves the content still changes the hash.
-BUILT_FROM_TEXT = re.compile(rb"(<[a-z]+\b[^>]*\bdata-pages-built-from\b[^>]*>)[^<]*(</[a-z]+>)")
+#: Only the exact element herald emits and its ``pages-check`` enforces is read (its review): an attribute value that
+#: mentions the name, a longer attribute name or another attribute order drops nothing, so it over-deploys, never
+#: hides a change.
+BUILT_FROM_TEXT = re.compile(rb'(<p class="built-from" data-pages-built-from data-pagefind-ignore>)[^<]*(</p>)')
 
 
 def tree_hash(root: Path, *, exclude: Iterable[str] | None = None) -> str:

@@ -26,8 +26,6 @@ const globs = site.infographics.include.length;
   current="herald/infographics/"
   favicon={site.favicon}
   shortName={site.short_name ?? site.name}
-  builtAt={pages.builtAt}
-  commit={pages.commit}
 >
   <div class="page">
     <div class="lander">
@@ -67,7 +65,6 @@ const globs = site.infographics.include.length;
         Published from the repository &mdash; each page frames its file under a thin back-link bar; the file is copied
         with only its font links pointed at the site's own fonts.
       </span>
-      <span>Site rebuilt {pages.builtAt}</span>
     </footer>
   </div>
 </HeraldLayout>

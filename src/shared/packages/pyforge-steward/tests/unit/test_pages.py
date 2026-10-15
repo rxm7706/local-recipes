@@ -56,6 +56,10 @@ def test_tree_hash_ignores_the_built_from_text_but_not_the_content(tmp_path: Pat
     assert tree_hash(root) != first
     page.write_text(line("local build"), encoding="utf-8")
     (root / "assets" / "app.css").write_text("/* data-pages-built-from>x</p> */", encoding="utf-8")
+    third = tree_hash(root)
+    page.write_text(line("local build") + "<p>more content</p>", encoding="utf-8")  # a change beside the line
+    assert tree_hash(root) != third
+    page.write_text(line("local build"), encoding="utf-8")
     second = tree_hash(root)
     (root / "assets" / "app.css").write_text("/* data-pages-built-from>y</p> */", encoding="utf-8")
     assert tree_hash(root) != second
@@ -262,3 +266,25 @@ def test_pages_build_stamp_wires_the_liveness_branch(tmp_path: Path) -> None:
     assert "changed=true" in moved.stdout
     same = _stamp_with_live(tmp_path / "same", live=old, built_from="a" * 40)
     assert "changed=false" in same.stdout
+
+
+def test_tree_hash_drops_only_the_exact_built_from_element(tmp_path: Path) -> None:
+    """Herald Story 43.5's review: only the element herald emits (and ``pages-check`` enforces) loses its text. An
+    element that merely mentions the name in a value, carries a longer attribute name, or orders its attributes
+    otherwise keeps its text in the hash -- a change there redeploys rather than hiding."""
+    from pyforge.steward.pages import tree_hash
+
+    root = _fixture_tree(tmp_path)
+    page = root / "index.html"
+    shapes = [
+        '<a href="#data-pages-built-from">{}</a>',
+        '<p title="see data-pages-built-from">{}</p>',
+        '<p class="built-from" data-pages-built-from-x data-pagefind-ignore>{}</p>',
+        '<p data-pages-built-from class="built-from" data-pagefind-ignore>{}</p>',
+        '<span class="built-from" data-pages-built-from data-pagefind-ignore>{}</span>',
+    ]
+    for shape in shapes:
+        page.write_text(f"<html>{shape.format('REAL TEXT')}</html>", encoding="utf-8")
+        before = tree_hash(root)
+        page.write_text(f"<html>{shape.format('OTHER TEXT')}</html>", encoding="utf-8")
+        assert tree_hash(root) != before, shape

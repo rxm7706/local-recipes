@@ -520,3 +520,79 @@ def test_43_5_ac3_ac6_the_build_refuses_a_section_without_a_date_and_an_unknown_
     done = astro_build(tmp_path / "astro", flag=True, root=root)
     assert done.returncode != 0
     assert named in done.stdout + done.stderr
+
+
+@flag_states(_FLAG)
+def test_43_5_the_build_hands_the_status_pages_the_line_only_with_the_flag_on(
+    build_mod, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flag_provider: dict[str, bool]
+) -> None:
+    """Story 43.5's review: ``build()`` gives the Jinja status pages the built-from line exactly when
+    pyforge.herald.pages_one_generator is on; off, they carry none (the fallback: the Jinja pages as before)."""
+    on = flag_provider[_FLAG]
+    monkeypatch.setenv("GITHUB_SHA", "0123456789abcdef")
+    monkeypatch.setenv("PAGES_BUILT_AT", "2026-10-15T09:00:00Z")
+    status_out = tmp_path / "status"
+    fleet = Path(__file__).resolve().parents[1] / "fixtures" / "fleet-status-2026-10-14.json"
+    build_mod.build(
+        tmp_path / "herald", REPO_ROOT, status_out=status_out, fleet_status=fleet, status_pages=True, one_generator=on
+    )
+    line = (
+        '<p class="built-from" data-pages-built-from data-pagefind-ignore>Built from 0123456 · 2026-10-15 09:00 UTC</p>'
+    )
+    for status_page in (status_out / "index.html", status_out / "ci" / "index.html"):
+        text = status_page.read_text(encoding="utf-8")
+        assert text.count(line) == (1 if on else 0), status_page
+        assert ("data-pages-built-from" in text) is on, status_page
+
+
+#: Shifts node's clock two days ahead (Story 43.5's review): every ``Date`` the build makes, ``Date.now()`` included.
+_TWO_DAYS_LATER = """
+const offset = 2 * 24 * 3600 * 1000;
+const RealDate = Date;
+class ShiftedDate extends RealDate {
+  constructor(...args) { super(...(args.length ? args : [RealDate.now() + offset])); }
+  static now() { return RealDate.now() + offset; }
+}
+globalThis.Date = ShiftedDate;
+"""
+_BUILT_FROM_TEXT = re.compile(rb'(<p class="built-from" data-pages-built-from data-pagefind-ignore>)[^<]*(</p>)')
+
+
+@needs_astro
+def test_43_5_a_build_two_days_later_of_an_unmoved_tree_differs_only_in_the_built_from_line(tmp_path: Path) -> None:
+    """Story 43.5's review (should-fix 3): with the flag on, the herald and docs pages hold no wall-clock date of their
+    own -- the build's time lives only in the built-from line, whose text steward's tree hash drops -- so two builds
+    of one tree, two days and two runs apart, are byte-identical once that text is dropped. (The Jinja ``/status/``
+    and pipelines pages keep a dated footer until Story 43.7 ports them, which carries this requirement.)"""
+    root = fixture_tree(tmp_path / "tree")
+    later = write(tmp_path / "later.mjs", _TWO_DAYS_LATER)
+    ci = {"GITHUB_SHA": "0123456789abcdef0123", "GITHUB_RUN_ID": "111", "PAGES_BUILT_AT": "2026-10-15T09:00:00Z"}
+    first = astro_build(tmp_path / "first", flag=True, root=root, extra_env=ci)
+    assert first.returncode == 0, first.stdout[-3000:] + first.stderr[-3000:]
+    second = astro_build(
+        tmp_path / "second",
+        flag=True,
+        root=root,
+        extra_env={
+            **ci,
+            "GITHUB_RUN_ID": "222",
+            "PAGES_BUILT_AT": "2026-10-17T21:30:00Z",
+            "NODE_OPTIONS": f"--import={later.as_uri()}",
+        },
+    )
+    assert second.returncode == 0, second.stdout[-3000:] + second.stderr[-3000:]
+
+    def tree(out: Path) -> dict[str, bytes]:
+        return {
+            p.relative_to(out).as_posix(): _BUILT_FROM_TEXT.sub(rb"\1\2", p.read_bytes())
+            if p.suffix == ".html"
+            else p.read_bytes()
+            for p in sorted(out.rglob("*"))
+            if p.is_file()
+        }
+
+    one, two = tree(tmp_path / "first"), tree(tmp_path / "second")
+    assert one.keys() == two.keys()
+    assert [rel for rel in one if one[rel] != two[rel]] == []
+    raw = (tmp_path / "second" / "herald" / "index.html").read_text(encoding="utf-8")
+    assert "Built from 0123456 · 2026-10-17 21:30 UTC · run 222" in raw  # the line itself did move
