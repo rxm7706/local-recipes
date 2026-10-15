@@ -104,6 +104,13 @@ from ..core.dispatch_retry import (
     prune_blocked_stories_merged_on_main,
     verification_refusal_head_unchanged,
 )
+from ..core.dispatch_reverify import (
+    MODE_FULL,
+    MODE_REUSED,
+    REUSE_EVIDENCE_FIELD,
+    REUSED_HEAD_SHA_FIELD,
+    REUSED_VERIFICATION_ID_FIELD,
+)
 from ..core.dispatch_supervisor_finalize import (
     finalize_attempt_failed,
     finalize_attempt_journaled,
@@ -152,12 +159,15 @@ from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..dispatch_verification_journal import build_dispatch_verification_journal_entries
 from ..dispatch_verify import (
+    VerdictReuse,
     _verify_commands_with_surface_guard,
+    attempt_verdict_reuse,
     evaluate_dispatch_verification,
     findings_for_spec_frontmatter_refusals,
     run_dispatch_environment_yaml_before_verify,
     run_dispatch_ruff_format_before_verify,
     run_dispatch_spec_frontmatter_before_verify,
+    verification_head_sha,
 )
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
@@ -322,12 +332,19 @@ _LAND_ONLY_SPEC_GATE_REFUSED = "MRS-DISP-063"
 
 @dataclass(frozen=True)
 class Cap4VerificationResult:
-    """Independent verify outcome for the harness-done land-only path (Story 22.17)."""
+    """Independent verify outcome for the harness-done land-only path (Story 22.17).
+
+    Story 102.1 (CAP-161): ``mode`` is ``full`` or ``reused``; ``head_sha`` is the head the verdict stands for (the
+    clean worktree's ``HEAD``, else ``None``); ``reuse`` is the reuse attempt when the station's policy asked for one
+    (``None`` under ``landing_reverify = "always"``)."""
 
     verdict: DispatchVerificationVerdict
     findings: tuple[Finding, ...]
     gate_envelope_verdict: str
     verify_data: dict[str, object]
+    mode: str = MODE_FULL
+    head_sha: str | None = None
+    reuse: VerdictReuse | None = None
 
 
 def _now_utc() -> datetime:
@@ -1192,8 +1209,16 @@ def _verification_verdict_for_cap4(
     spec_text: str,
     process: ProcessPort,
     vcs: CommittingVcs,
+    fs: FsPort | None = None,
+    latest_run_dir: Path | None = None,
 ) -> Cap4VerificationResult:
-    """Independent verify only — never a harness self-report (CAP-3)."""
+    """Independent verify only — never a harness self-report (CAP-3).
+
+    Story 102.1 (CAP-161): under ``dispatch.landing_reverify = "on-code-change"`` the run's own latest full verified
+    verdict is reused, after the three pre-verify passes and a narrow re-check, when only merges of main and
+    planning-only commits moved the branch since the head it judged (``dispatch_verify.attempt_verdict_reuse``).
+    Anything else -- the default ``"always"`` included -- runs ``evaluate_dispatch_verification`` in full, as
+    before."""
     if callable(getattr(vcs, "commit_paths", None)):
         run_dispatch_ruff_format_before_verify(
             worktree=worktree,
@@ -1221,6 +1246,28 @@ def _verification_verdict_for_cap4(
                 gate_envelope_verdict="gate-failed",
                 verify_data={"spec_frontmatter_collapse": {"ok": False}},
             )
+    reuse = _consider_verdict_reuse(
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=repo_root,
+        effective_policy=effective_policy,
+        process=process,
+        vcs=vcs,
+        fs=fs,
+        latest_run_dir=latest_run_dir,
+    )
+    if reuse is not None and reuse.reused:
+        reused_findings = tuple(reuse.findings)
+        return Cap4VerificationResult(
+            verdict=judge_dispatch_verification(DispatchVerificationInput(findings=reused_findings)),
+            findings=reused_findings,
+            gate_envelope_verdict=compute_verdict(reused_findings).value,
+            verify_data=dict(reuse.verify_data),
+            mode=MODE_REUSED,
+            head_sha=reuse.current_head,
+            reuse=reuse,
+        )
     try:
         envelope = evaluate_dispatch_verification(
             project_slug=slug,
@@ -1244,6 +1291,7 @@ def _verification_verdict_for_cap4(
             findings=(finding,),
             gate_envelope_verdict="gate-failed",
             verify_data={},
+            reuse=reuse,
         )
     verdict = judge_dispatch_verification(DispatchVerificationInput(findings=tuple(envelope.findings)))
     return Cap4VerificationResult(
@@ -1251,6 +1299,56 @@ def _verification_verdict_for_cap4(
         findings=tuple(envelope.findings),
         gate_envelope_verdict=envelope.verdict.value,
         verify_data=dict(envelope.data),
+        head_sha=verification_head_sha(vcs, worktree),
+        reuse=reuse,
+    )
+
+
+def _consider_verdict_reuse(
+    *,
+    slug: str,
+    story_key: StoryKey,
+    worktree: Path,
+    repo_root: Path,
+    effective_policy: policy.EffectivePolicy,
+    process: ProcessPort,
+    vcs: CommittingVcs,
+    fs: FsPort | None,
+    latest_run_dir: Path | None,
+) -> VerdictReuse | None:
+    """Story 102.1 (CAP-161): the reuse attempt, or ``None`` when none is made -- the station's policy reads
+    ``"always"`` (no git read at all), or there is no run journal to reuse from."""
+    if policy.resolve_landing_reverify(effective_policy) != policy.LANDING_REVERIFY_ON_CODE_CHANGE:
+        return None
+    if fs is None or latest_run_dir is None:
+        return None
+    reader: FsPort = fs
+    run_dir: Path = latest_run_dir
+
+    def _read(relative: str) -> str | None:
+        try:
+            return reader.read_text(run_dir / relative)
+        except FsError:
+            return None
+
+    lines = (_read(_JOURNAL_FILENAME) or "").splitlines()
+    sidecars = sidecar_texts_for_lines(lines, read_sidecar=_read)
+    spec_path = dispatch_core.resolve_story_spec_path(worktree, slug, render_feed_key(story_key))
+    story_spec_rel: str | None = None
+    if spec_path is not None:
+        try:
+            story_spec_rel = spec_path.relative_to(dispatch_core.canonical_repo_root(worktree)).as_posix()
+        except ValueError:
+            story_spec_rel = None
+    return attempt_verdict_reuse(
+        folded=fold(lines, sidecars=sidecars),
+        run_id=run_dir.name,
+        worktree=worktree,
+        repo_root=repo_root,
+        story_spec_rel=story_spec_rel,
+        process=process,
+        vcs=vcs,
+        sidecars=sidecars,
     )
 
 
@@ -1263,7 +1361,25 @@ def _journal_cap4_verification(
     repo_root: Path,
     effective_policy: policy.EffectivePolicy,
 ) -> Finding | None:
-    """Append land-only ``dispatch-verification`` to the story's latest run dir (Story 22.17)."""
+    """Append land-only ``dispatch-verification`` to the story's latest run dir (Story 22.17).
+
+    Story 102.1 (CAP-161): a reused verdict's OUTCOME names the full verdict it reused, that verdict's head and the
+    exempt-file evidence, and carries its scope advisories; a full verification that followed a declined reuse names
+    the reason."""
+    reuse_payload: dict[str, object] | None = None
+    carried_advisories: tuple[Mapping[str, object], ...] | None = None
+    reuse_declined: dict[str, object] | None = None
+    if cap4.reuse is not None:
+        candidate = cap4.reuse.candidate
+        if cap4.mode == MODE_REUSED and candidate is not None:
+            reuse_payload = {
+                REUSED_VERIFICATION_ID_FIELD: candidate.id_payload(),
+                REUSED_HEAD_SHA_FIELD: candidate.head_sha,
+                REUSE_EVIDENCE_FIELD: dict(cap4.reuse.decision.evidence),
+            }
+            carried_advisories = candidate.scope_advisories
+        else:
+            reuse_declined = cap4.reuse.declined_payload()
     built = build_dispatch_verification_journal_entries(
         findings=cap4.findings,
         gate_envelope_verdict=cap4.gate_envelope_verdict,
@@ -1274,6 +1390,11 @@ def _journal_cap4_verification(
         writer_id=_land_only_verification_writer_id(),
         counter=0,
         ts=_format_entry_ts(_now_utc()),
+        mode=cap4.mode,
+        head_sha=cap4.head_sha,
+        reuse=reuse_payload,
+        reuse_declined=reuse_declined,
+        carried_scope_advisories=carried_advisories,
     )
     try:
         _append_entry(fs, run_dir, built.intent_entry, fsync=True)
@@ -1324,6 +1445,8 @@ def _attempt_harness_done_cap4(
         spec_text=spec_text,
         process=process,
         vcs=vcs,
+        fs=fs,
+        latest_run_dir=latest_run_dir,
     )
     journal_findings: list[Finding] = []
     if latest_run_dir is not None:
@@ -1357,10 +1480,15 @@ def _attempt_harness_done_cap4(
     if named is None:
         named = str(worktree)
     merged_findings = tuple(cap4.findings) + tuple(journal_findings) + tuple(envelope.findings)
+    merged_data = dict(envelope.data)
+    # Story 102.1 (CAP-161): say how the verdict the landing used was reached.
+    merged_data["verification_mode"] = cap4.mode
+    if cap4.mode == MODE_REUSED and cap4.reuse is not None and cap4.reuse.candidate is not None:
+        merged_data["reused_verification_id"] = cap4.reuse.candidate.id_payload()
     merged = build_envelope(
         command=envelope.command,
         verdict=compute_verdict(merged_findings),
-        data=envelope.data,
+        data=merged_data,
         findings=merged_findings,
     )
     return result.verdict, str(named), merged
@@ -3473,6 +3601,9 @@ def dispatch_once(
         )
         data["land_verdict"] = land_verdict.value
         data["land_named_target"] = named_target
+        # Story 102.1 (CAP-161): ``full`` or ``reused``.
+        if isinstance(land_envelope, Envelope) and "verification_mode" in land_envelope.data:
+            data["verification_mode"] = land_envelope.data["verification_mode"]
         # Story 80.1 (CAP-284): the check wait's record -- a refused landing is re-run through this path.
         land_checks = land_envelope.data.get(LANDING_CHECKS_FIELD) if isinstance(land_envelope, Envelope) else None
         if land_checks is not None:

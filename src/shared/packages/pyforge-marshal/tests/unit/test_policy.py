@@ -671,6 +671,8 @@ _DISPATCH_DEFAULTS = {
     "max_followup_reviews_per_campaign": 2,
     "verify_fix_output_tail_bytes": 8192,
     "verify_fix_wall_clock_minutes": 15,
+    # Story 102.1 (CAP-161): a re-landing re-verifies in full unless a station opts in.
+    "landing_reverify": "always",
 }
 
 
@@ -801,6 +803,84 @@ def test_resolve_landing_check_settings_never_raises_on_a_value_that_bypassed_va
     assert policy.resolve_landing_check_settings(forged) == policy.LandingCheckSettings(
         poll_seconds=60.0, timeout_minutes=45.0, grace_seconds=120.0
     )
+
+
+# --- Story 102.1 (CAP-161): the dispatch block's landing_reverify -------------------------------------------------
+
+
+def test_landing_reverify_defaults_to_always():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert policy.DEFAULT_LANDING_REVERIFY == policy.LANDING_REVERIFY_ALWAYS == "always"
+    assert dict(effective.dispatch.value)["landing_reverify"] == "always"
+    assert policy.resolve_landing_reverify(effective) == "always"
+
+
+@pytest.mark.parametrize("mode", ["always", "on-code-change"])
+def test_landing_reverify_accepts_both_values(mode):
+    effective, findings = compose(project_slug="acme", project={"dispatch": {"landing_reverify": mode}}, flags={})
+    assert findings == ()
+    assert effective.dispatch.layer is PolicyLayer.PROJECT
+    assert dict(effective.dispatch.value) == {"landing_reverify": mode}
+    assert policy.resolve_landing_reverify(effective) == mode
+    assert policy.LANDING_REVERIFY_MODES == frozenset({"always", "on-code-change"})
+
+
+def test_a_block_omitting_landing_reverify_reads_always_at_the_consumer():
+    effective, findings = compose(project_slug="acme", project={"dispatch": {"max_parallel": 2}}, flags={})
+    assert findings == ()
+    assert policy.resolve_landing_reverify(effective) == "always"
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["never", "", "On-Code-Change", "on_code_change", " always", True, False, 1, None, ["always"]],
+)
+def test_an_unknown_landing_reverify_value_is_a_named_policy_finding_and_falls_back(bad):
+    """An unknown value refuses the WHOLE block with MRS-POLICY-002 naming ``dispatch``; the layer below stands,
+    here a valid repo-defaults block, and below that Marshal's own ``"always"``."""
+    effective, findings = compose(project_slug="acme", project={"dispatch": {"landing_reverify": bad}}, flags={})
+    assert [f.code for f in findings] == ["MRS-POLICY-002"]
+    assert "dispatch" in findings[0].message
+    assert effective.dispatch.layer is PolicyLayer.DEFAULT
+    assert policy.resolve_landing_reverify(effective) == "always"
+    layered, layered_findings = compose(
+        project_slug="acme",
+        repo_defaults={"dispatch": {"landing_reverify": "on-code-change"}},
+        project={"dispatch": {"landing_reverify": bad}},
+        flags={},
+    )
+    assert [f.code for f in layered_findings] == ["MRS-POLICY-002"]
+    assert layered.dispatch.layer is PolicyLayer.REPO_DEFAULTS
+    assert policy.resolve_landing_reverify(layered) == "on-code-change"
+
+
+def test_the_landing_reverify_resolver_never_raises_on_a_value_that_bypassed_validation():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    for garbage in ({"landing_reverify": "never"}, {"landing_reverify": 1}, "not-a-mapping"):
+        forged = dataclasses.replace(effective, dispatch=PolicyField(value=garbage, layer="project", raw_source={}))
+        assert policy.resolve_landing_reverify(forged) == "always"
+
+
+_PAGES_STATIONS = ("pyforge-herald", "pyforge-steward", "pyforge-atlas", "pyforge-doctor")
+_DEFAULT_STATIONS = ("pyforge-marshal", "pyforge-mason", "pyforge-scribe", "pyforge-warden")
+
+
+@pytest.mark.parametrize("slug", _PAGES_STATIONS + _DEFAULT_STATIONS)
+def test_the_tracked_station_policies_opt_in_exactly_the_four_pages_stations(slug):
+    """Story 102.1: herald, steward, atlas and doctor declare ``on-code-change`` and compose with no
+    ``MRS-POLICY-002``; every other station keeps ``always``. Steward's 45-minute fix turn survives beside it."""
+    repo_root = Path(__file__).resolve().parents[6]
+    policy_path = repo_root / f"_bmad-output/projects/{slug}/planning-artifacts/marshal-policy.toml"
+    if not policy_path.is_file():
+        pytest.fail(f"{policy_path} is missing")
+    parsed = tomllib.loads(policy_path.read_text(encoding="utf-8"))
+    effective, findings = compose(project_slug=slug, project=parsed, flags={})
+    assert "MRS-POLICY-002" not in {f.code for f in findings}
+    expected = "on-code-change" if slug in _PAGES_STATIONS else "always"
+    assert policy.resolve_landing_reverify(effective) == expected
+    if slug == "pyforge-steward":
+        assert policy.resolve_verify_fix_settings(effective).wall_clock_minutes == 45.0
 
 
 # --- Story 73.2 (CAP-281): the dispatch block's per-campaign follow-up review cap -----------------------

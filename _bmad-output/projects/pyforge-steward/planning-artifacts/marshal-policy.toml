@@ -1399,6 +1399,10 @@ verify_commands = [
 [dispatch]
 max_parallel = 1
 verify_fix_wall_clock_minutes = 45
+# landing_reverify (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's
+# own verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
+# after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask).
+landing_reverify = "on-code-change"
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).

@@ -595,6 +595,13 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+# dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
+# verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
+# after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The
+# block's other keys keep their defaults: each is read at the consumer when a block omits it.
+[dispatch]
+landing_reverify = "on-code-change"
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

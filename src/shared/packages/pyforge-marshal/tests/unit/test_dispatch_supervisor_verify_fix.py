@@ -51,8 +51,9 @@ _FLAG_KEY = "pyforge.marshal.verify_fix_loop"
 _COMMAND = "pixi run --frozen -e pyforge-marshal pyforge-marshal-test"
 _SHORT_TAIL = "E501 line too long (101 > 100)\n"
 _LONG_TAIL = "x" * 9000  # past the 4 KB output-tail bound and the journal's sidecar threshold
-#: ``main``'s verification OUTCOME keys (Story 22.3 + Story 28.15), the flag-off shape.
-_MAIN_OUTCOME_KEYS = {"verdict", "ok", "failed_gate", "failed_message", "scope_violation_advisories"}
+#: ``main``'s verification OUTCOME keys (Story 22.3 + Story 28.15; Story 102.1 adds ``mode``), the flag-off shape.
+#: ``head_sha`` rides only a clean tree, and this file's fake worktree is dirty.
+_MAIN_OUTCOME_KEYS = {"verdict", "ok", "failed_gate", "failed_message", "scope_violation_advisories", "mode"}
 
 
 @pytest.fixture(autouse=True)

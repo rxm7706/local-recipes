@@ -2,7 +2,7 @@
 title: "102.1: A landing reuses its verified verdict when only a merge of main moved the branch"
 type: 'fix'
 created: '2026-10-15'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -84,8 +84,8 @@ GitHub CI again, even when not one byte of the story's own code changed. Line nu
   `no-verified-verdict`, `dirty-worktree`, `no-story-diff`, `not-on-first-parent-chain`, `story-commit`,
   `octopus-merge`, `merge-not-of-main`, `merge-conflict-outside-planning`, `merge-touches-story-file`,
   `merge-resolution-outside-planning`, `git-read-failed`.
-- **The git reads (`dispatch_reverify.py`, beside `dispatch_verify.py`).** Read-only `git` through the `ProcessPort`
-  seam, as `check_branch_commit_attribution` reads: one `rev-list --first-parent --parents V..H`, the story diff,
+- **The git reads (`dispatch_verify.py`, beside the commit checks).** Read-only `git` through the `ProcessPort`
+  seam, as `check_branch_commit_attribution` reads (`gather_reuse_facts`): one `rev-list --first-parent --parents V..H`, the story diff,
   and per chain commit its first-parent diff, plus, for a merge, `merge-base --is-ancestor`, `merge-tree` and a tree
   diff. A walk longer than 64 commits, or one that does not end on V, is `not-on-first-parent-chain`.
 - **The narrow re-check.** When exempt, the land-only path runs the full verification's own planning-surface commands
@@ -144,6 +144,12 @@ arbitrates that, as the operator ruled for this push path.
   then flakes and refuses a verified story. Under `spec-feature-flag-governance` Q1 a `fix` carries no flag, and the
   operator ruled "this story adds no flag; use a marshal policy key". The key's default keeps today's behaviour.
 - **No SKILL.md edit.** `.claude/skills/pyforge-marshal` documents no landing.
+- **The git reads live in `dispatch_verify.py`, not a new top-level module** (decided while implementing). A new
+  `pyforge.marshal.*` module must be listed in the AD-3 import contract in the package `pyproject.toml`
+  (`test_ad3_source_modules_cover_every_submodule_except_adapters`), and a `pyproject.toml` change moves the chain's
+  code stage past the PRD, the spine and the last retro (`chain-currency-sweep-check`: `behind-code` for the PRD and
+  spine, the code→retro edge). `dispatch_verify.py` already holds the verify-command runner and both commit checks the
+  narrow re-check runs, so the reads sit beside them and no contract or chain stage moves.
 
 **Rejected:**
 - **Diffing `V..H` alone.** A merge of main changes hundreds of files; the diff cannot tell main's changes from a

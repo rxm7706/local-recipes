@@ -129,6 +129,7 @@ from ..dispatch_verify import (
     run_dispatch_ruff_format_before_verify,
     run_dispatch_spec_frontmatter_before_verify,
     terminate_process_group,
+    verification_head_sha,
     verify_fix_loop_enabled,
     wait_for_process,
 )
@@ -2656,6 +2657,9 @@ def _run_and_journal_verification(
         writer_id=writer_id,
         counter=counter,
         ts=_format_entry_ts(_now_utc()),
+        # Story 102.1 (CAP-161): the head this verdict judged (None on a dirty tree), so a later re-landing can tell
+        # whether the verdict still describes the branch.
+        head_sha=verification_head_sha(vcs, worktree),
     )
     intent_entry = built.intent_entry
     outcome_entry = built.outcome_entry

@@ -456,6 +456,17 @@ DEFAULT_LANDING_CHECK_GRACE_SECONDS = 120
 # block that declares only `max_parallel` reads this default.
 DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN = 2
 MAX_FOLLOWUP_REVIEWS_KEY = "max_followup_reviews_per_campaign"
+# Story 102.1 (spec-pyforge-marshal CAP-161): whether a re-landing re-runs the full
+# verification or may reuse its run's verified verdict when only a merge of main (and
+# planning-only commits) moved the branch. `"always"` is today's behaviour and the
+# default; `"on-code-change"` lets the land-only path reuse a verdict whose story code is
+# unchanged (`dispatch_verify.attempt_verdict_reuse`). Read at the consumer (`resolve_landing_reverify`) like
+# the `landing_check_*` knobs: `_merge_field` replaces a `dispatch` block whole.
+LANDING_REVERIFY_KEY = "landing_reverify"
+LANDING_REVERIFY_ALWAYS = "always"
+LANDING_REVERIFY_ON_CODE_CHANGE = "on-code-change"
+LANDING_REVERIFY_MODES: frozenset[str] = frozenset({LANDING_REVERIFY_ALWAYS, LANDING_REVERIFY_ON_CODE_CHANGE})
+DEFAULT_LANDING_REVERIFY = LANDING_REVERIFY_ALWAYS
 _DISPATCH_BLOCK_KEYS: frozenset[str] = frozenset(
     {
         "max_parallel",
@@ -466,6 +477,8 @@ _DISPATCH_BLOCK_KEYS: frozenset[str] = frozenset(
         # Story 85.1 (CAP-286): bounded fix turn after verification refusal.
         "verify_fix_output_tail_bytes",
         "verify_fix_wall_clock_minutes",
+        # Story 102.1 (CAP-161): re-landing verification reuse.
+        LANDING_REVERIFY_KEY,
     }
 )
 DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES = 8192
@@ -692,6 +705,8 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # waits for its PR head's check runs (see DEFAULT_LANDING_CHECK_* above).
     # Story 73.2 (CAP-281) adds `max_followup_reviews_per_campaign`: at most 2
     # follow-up reviews per drain campaign (0 = off).
+    # Story 102.1 (CAP-161) adds `landing_reverify`: `"always"`, so a re-landing
+    # re-verifies in full until a station's own policy opts in.
     "dispatch": {
         "max_parallel": 1,
         "landing_check_poll_seconds": DEFAULT_LANDING_CHECK_POLL_SECONDS,
@@ -700,6 +715,7 @@ DEFAULT_POLICY: Mapping[str, object] = {
         MAX_FOLLOWUP_REVIEWS_KEY: DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN,
         "verify_fix_output_tail_bytes": DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES,
         "verify_fix_wall_clock_minutes": DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES,
+        LANDING_REVERIFY_KEY: DEFAULT_LANDING_REVERIFY,
     },
     # Story 87.6's `protected_ref_prefixes` (CAP-287): no addition until a
     # layer declares one -- the code floor (`protected_refs.protected_floor()`)
@@ -1009,7 +1025,9 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
     ``landing_check_grace_seconds`` (``_valid_landing_grace_seconds``: ``0`` is a real
     "no grace", and a magnitude too large for ``float()`` is rejected) and the drain's
     ``max_followup_reviews_per_campaign`` (``_valid_followup_review_cap``: ``0`` turns
-    follow-up scheduling off). Any NON-EMPTY subset of the five keys is valid --
+    follow-up scheduling off) and (Story 102.1, CAP-161) ``landing_reverify``
+    (``_valid_landing_reverify``: ``"always"`` or ``"on-code-change"``, nothing else). Any
+    NON-EMPTY subset of the block's keys is valid --
     ``_merge_field`` replaces a block whole, and the tracked ``marshal-policy.toml``
     declares only ``max_parallel``, so a key a block omits reads as its default at the
     consumer (``resolve_landing_check_settings``, ``resolve_followup_review_cap``),
@@ -1027,6 +1045,7 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
         MAX_FOLLOWUP_REVIEWS_KEY: _valid_followup_review_cap,
         "verify_fix_output_tail_bytes": _valid_positive_number,
         "verify_fix_wall_clock_minutes": _valid_positive_number,
+        LANDING_REVERIFY_KEY: _valid_landing_reverify,
     }
     validated: dict[str, object] = {}
     for key in value:
@@ -1428,6 +1447,17 @@ def _valid_scope_violation_mode(value: object) -> str | None:
     mode``, a separate function per the ``_valid_landing_base_branch``
     "unrelated questions" precedent."""
     if isinstance(value, str) and value in _SCOPE_VIOLATION_MODES:
+        return value
+    return None
+
+
+def _valid_landing_reverify(value: object) -> str | None:
+    """``dispatch.landing_reverify`` (Story 102.1, CAP-161): the closed
+    ``LANDING_REVERIFY_MODES`` vocabulary, exact spelling only -- same shape as
+    ``_valid_scope_violation_mode``. A bool, another case or an empty string is
+    refused, so the ``dispatch`` block is ``MRS-POLICY-002`` and the layer below
+    (floored at ``"always"``) stands."""
+    if isinstance(value, str) and value in LANDING_REVERIFY_MODES:
         return value
     return None
 
@@ -2233,6 +2263,18 @@ def resolve_followup_review_cap(effective: EffectivePolicy) -> int:
     block: Mapping[str, object] = declared if isinstance(declared, Mapping) else {}
     cap = _valid_followup_review_cap(block.get(MAX_FOLLOWUP_REVIEWS_KEY, DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN))
     return cap if cap is not None else DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN
+
+
+def resolve_landing_reverify(effective: EffectivePolicy) -> str:
+    """Story 102.1 (CAP-161): ``"always"`` or ``"on-code-change"``, from the ``dispatch``
+    block. A block that omits the key -- or a value that fails its validator, which
+    ``compose`` already refused (``MRS-POLICY-002``) so it cannot normally reach here --
+    reads ``DEFAULT_LANDING_REVERIFY`` (``"always"``), so a re-landing re-verifies in full
+    unless a valid policy says otherwise; never raises."""
+    declared = effective.dispatch.value
+    block: Mapping[str, object] = declared if isinstance(declared, Mapping) else {}
+    mode = _valid_landing_reverify(block.get(LANDING_REVERIFY_KEY, DEFAULT_LANDING_REVERIFY))
+    return mode if mode is not None else DEFAULT_LANDING_REVERIFY
 
 
 def resolve_compression_escalation_threshold(effective: EffectivePolicy) -> float:

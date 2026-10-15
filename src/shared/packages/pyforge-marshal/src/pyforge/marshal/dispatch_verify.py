@@ -15,13 +15,13 @@ import signal
 import sys
 import time
 import tomllib
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from pyforge.core.flags import FlagConfigError, read_boolean
-from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, ProcessResult
 
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from .adapters.session_group_psutil import PsutilSessionGroup, process_cmdline
@@ -38,6 +38,20 @@ from .core.dispatch_cfe_commit import (
 from .core.dispatch_environment_yaml import (
     DispatchEnvironmentYamlResult,
     apply_dispatch_environment_yaml_before_verify,
+)
+from .core.dispatch_reverify import (
+    MAX_CHAIN_COMMITS,
+    REASON_DIRTY_WORKTREE,
+    REASON_GIT_READ_FAILED,
+    REASON_NO_VERIFIED_VERDICT,
+    REASON_RECHECK_FAILED,
+    ChainCommit,
+    ReuseCandidate,
+    ReuseDecision,
+    ReuseFacts,
+    declined,
+    judge_verdict_reuse,
+    latest_reusable_verdict,
 )
 from .core.dispatch_ruff_format import (
     DispatchRuffFormatResult,
@@ -57,6 +71,7 @@ from .core.dispatch_verify_fix import VERIFY_FIX_LOOP_FLAG_KEY
 from .core.egress import to_redacted_text
 from .core.harness_profile import HarnessProfileError, load_profiles
 from .core.identity import StoryKey, render_feed_key
+from .core.journal import FoldResult, JournalEntry, resolve_scope_violation_advisories_from_payload
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
 from .core.refs import ORIGIN_MAIN
@@ -1460,4 +1475,313 @@ def terminate_process_group(
         signalled_kill=signalled_kill,
         reaped=reaped,
         returncode=code,
+    )
+
+
+# --- Story 102.1 (spec-pyforge-marshal CAP-161): landing verdict reuse -------------------------------------------
+#
+# ``core.dispatch_reverify`` judges whether a re-landing may reuse its run's verified verdict; the functions below
+# gather what that judgement reads and run what an exempt reuse still checks. They read git through the
+# ``ProcessPort`` seam, as ``check_branch_commit_attribution`` above does, and every git call is a read:
+# ``merge-tree --write-tree`` writes only unreferenced objects, as the landing's own merge preview already does. Only
+# ``cli/dispatch.py``'s land-only path consults them, and only under the station policy
+# ``dispatch.landing_reverify = "on-code-change"``; the supervisor reads ``verification_head_sha`` alone, to journal
+# the head every verdict judged.
+
+#: The narrow re-check's commands: the full verification's own planning-surface checks -- the S-13.7 guard (the
+#: same ``gather_spec_surface`` verdict as ``spec-surface-check``) and ``deferred-work-check`` -- plus
+#: ``story-status-check``. Never a station suite: those are what a reuse skips.
+STORY_STATUS_CHECK_COMMAND = "pixi run --frozen -e pyforge-guild story-status-check"
+REUSE_RECHECK_COMMANDS: tuple[str, ...] = (
+    _SURFACE_RECONCILE_COMMAND,
+    STORY_STATUS_CHECK_COMMAND,
+    _DEFERRED_WORK_CHECK_COMMAND,
+)
+
+_GIT_TIMEOUT_S = 120.0
+
+
+class _GitReadError(Exception):
+    """A git read this module needs did not answer; the reuse is declined (``git-read-failed``)."""
+
+
+def _git(process: ProcessPort, worktree: Path, *args: str, ok_codes: tuple[int, ...] = (0,)) -> ProcessResult:
+    argv = ["git", "-C", str(worktree), *args]
+    try:
+        result = process.run(argv, cwd=worktree, timeout_s=_GIT_TIMEOUT_S)
+    except ProcessError as exc:
+        raise _GitReadError(f"git {' '.join(args[:2])} could not run: {exc}") from exc
+    if result.returncode not in ok_codes:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise _GitReadError(f"git {' '.join(args[:2])} exited {result.returncode}: {detail}")
+    return result
+
+
+def _z_paths(stdout: str) -> tuple[str, ...]:
+    return tuple(sorted({path for path in stdout.split("\0") if path}))
+
+
+def _paths_between(process: ProcessPort, worktree: Path, old: str, new: str) -> tuple[str, ...]:
+    """Every path that differs between two tree-ishes, both ends of a rename named (``--no-renames``)."""
+    return _z_paths(_git(process, worktree, "diff", "--name-only", "--no-renames", "-z", old, new).stdout)
+
+
+def _is_ancestor(process: ProcessPort, worktree: Path, ancestor: str, descendant: str) -> bool:
+    result = _git(process, worktree, "merge-base", "--is-ancestor", ancestor, descendant, ok_codes=(0, 1))
+    return result.returncode == 0
+
+
+def _replay_merge(process: ProcessPort, worktree: Path, first: str, second: str) -> tuple[str, tuple[str, ...]]:
+    """The merge replayed: its tree's oid and the paths git reports conflicted (content, modify/delete and add/add
+    alike). Exit 0 is clean and 1 conflicted, each with the tree oid first; a conflict that names no path cannot be
+    judged, so it is a read failure, never a clean merge."""
+    result = _git(
+        process,
+        worktree,
+        "merge-tree",
+        "--write-tree",
+        "--name-only",
+        "-z",
+        "--no-messages",
+        first,
+        second,
+        ok_codes=(0, 1),
+    )
+    fields = result.stdout.split("\0")
+    tree = fields[0].strip()
+    if not tree:
+        raise _GitReadError(f"git merge-tree {first} {second} printed no tree")
+    conflicts = tuple(sorted({path for path in fields[1:] if path}))
+    if result.returncode == 1 and not conflicts:
+        raise _GitReadError(f"git merge-tree {first} {second} reported a conflict that names no path")
+    return tree, conflicts
+
+
+def _first_parent_chain(
+    process: ProcessPort, worktree: Path, verified_head: str, current_head: str, *, max_commits: int
+) -> list[tuple[str, tuple[str, ...]]] | None:
+    """``current_head``'s first-parent chain down to ``verified_head``, newest first, each ``(sha, parents)``; ``None``
+    when ``verified_head`` is not on it or the chain is longer than ``max_commits``."""
+    stdout = _git(
+        process, worktree, "rev-list", "--first-parent", "--parents", f"{verified_head}..{current_head}"
+    ).stdout
+    chain: list[tuple[str, tuple[str, ...]]] = []
+    for line in stdout.splitlines():
+        parts = line.split()
+        if not parts:
+            continue
+        chain.append((parts[0], tuple(parts[1:])))
+        if len(chain) > max_commits:
+            return None
+    if not chain or not chain[-1][1] or chain[-1][1][0] != verified_head:
+        return None
+    return chain
+
+
+def gather_reuse_facts(
+    *,
+    process: ProcessPort,
+    worktree: Path,
+    verified_head: str,
+    current_head: str,
+    story_spec_rel: str | None,
+    base: str = ORIGIN_MAIN,
+    max_commits: int = MAX_CHAIN_COMMITS,
+) -> ReuseFacts:
+    """What git says about the move from ``verified_head`` to ``current_head`` in ``worktree``.
+
+    Raises ``_GitReadError`` when a read fails; ``attempt_verdict_reuse`` turns that into a declined reuse."""
+    story_paths = _z_paths(
+        _git(process, worktree, "diff", "--name-only", "--no-renames", "-z", f"{base}...{verified_head}").stdout
+    )
+    if verified_head == current_head:
+        return ReuseFacts(
+            verified_head=verified_head,
+            current_head=current_head,
+            story_paths=story_paths,
+            chain=(),
+            story_spec_rel=story_spec_rel,
+        )
+    walked = _first_parent_chain(process, worktree, verified_head, current_head, max_commits=max_commits)
+    if walked is None:
+        return ReuseFacts(
+            verified_head=verified_head,
+            current_head=current_head,
+            story_paths=story_paths,
+            chain=None,
+            story_spec_rel=story_spec_rel,
+        )
+    chain: list[ChainCommit] = []
+    for sha, parents in walked:
+        changed = _paths_between(process, worktree, parents[0], sha)
+        if len(parents) != 2:
+            chain.append(ChainCommit(sha=sha, parents=parents, changed_paths=changed))
+            continue
+        on_main = _is_ancestor(process, worktree, parents[1], base)
+        conflicts: tuple[str, ...] = ()
+        resolution: tuple[str, ...] = ()
+        if on_main:
+            replay_tree, conflicts = _replay_merge(process, worktree, parents[0], parents[1])
+            resolution = _paths_between(process, worktree, replay_tree, sha)
+        chain.append(
+            ChainCommit(
+                sha=sha,
+                parents=parents,
+                changed_paths=changed,
+                second_parent_on_main=on_main,
+                replay_conflicts=conflicts,
+                resolution_paths=resolution,
+            )
+        )
+    return ReuseFacts(
+        verified_head=verified_head,
+        current_head=current_head,
+        story_paths=story_paths,
+        chain=tuple(chain),
+        story_spec_rel=story_spec_rel,
+    )
+
+
+def verification_head_sha(vcs: object, worktree: Path) -> str | None:
+    """The worktree ``HEAD`` a verification just judged, or ``None`` when the tree is dirty (the verdict then judged
+    files no commit holds) or either read fails. Duck-typed on ``worktree_head_sha`` and
+    ``has_uncommitted_changes`` so a port without them records no head instead of failing a verification."""
+    head_of = getattr(vcs, "worktree_head_sha", None)
+    dirty_of = getattr(vcs, "has_uncommitted_changes", None)
+    if not callable(head_of) or not callable(dirty_of):
+        return None
+    try:
+        if dirty_of(worktree):
+            return None
+        head = head_of(worktree)
+    except Exception:  # a head we cannot read is a head we do not record, never a failed verdict
+        return None
+    return head if isinstance(head, str) and head else None
+
+
+@dataclass(frozen=True)
+class VerdictReuse:
+    """One reuse attempt. ``reused`` is true only for an exempt decision whose narrow re-check was green; then
+    ``candidate`` is the full verdict reused and ``current_head`` the head it now stands for. ``findings`` and
+    ``verify_data`` are the narrow re-check's."""
+
+    decision: ReuseDecision
+    candidate: ReuseCandidate | None = None
+    current_head: str | None = None
+    findings: tuple[Finding, ...] = ()
+    verify_data: Mapping[str, object] = field(default_factory=dict)
+    recheck_green: bool = False
+
+    @property
+    def reused(self) -> bool:
+        return self.decision.exempt and self.recheck_green and self.candidate is not None
+
+    def declined_payload(self) -> dict[str, object] | None:
+        """``{"reason", "detail"}`` for a declined reuse, else ``None``."""
+        if self.reused:
+            return None
+        if self.decision.exempt:
+            return {"reason": REASON_RECHECK_FAILED, "detail": _first_failure(self.findings)}
+        return {"reason": self.decision.reason, "detail": self.decision.detail}
+
+
+def _first_failure(findings: tuple[Finding, ...]) -> str:
+    for finding in findings:
+        if status_for(compute_verdict((finding,))) is not Status.OK:
+            return f"{finding.code}: {finding.message}"
+    return ""
+
+
+def run_reuse_recheck(
+    *,
+    process: ProcessPort,
+    worktree: Path,
+    repo_root: Path,
+    base: str = ORIGIN_MAIN,
+) -> tuple[tuple[Finding, ...], dict[str, object]]:
+    """The narrow re-check an exempt reuse still runs: the two commit checks over ``base...HEAD`` (the merge commits
+    are new, and no reused verdict judged their messages or files) and ``REUSE_RECHECK_COMMANDS`` in the worktree."""
+    findings: list[Finding] = []
+    data: dict[str, object] = {}
+    cfe_findings, cfe_report = check_unsanctioned_cfe_commits(worktree=worktree, process=process, base=base)
+    findings.extend(cfe_findings)
+    data["cfe_unsanctioned_commits_check"] = cfe_report
+    attribution_findings, attribution_report = check_branch_commit_attribution(
+        worktree=worktree, process=process, repo_root=repo_root, base=base
+    )
+    findings.extend(attribution_findings)
+    data["commit_attribution_check"] = attribution_report
+    reports: list[dict[str, object]] = []
+    for command in REUSE_RECHECK_COMMANDS:
+        report, finding = _run_verify_command(command, process=process, worktree=worktree)
+        reports.append(report)
+        if finding is not None:
+            findings.append(finding)
+    data["commands"] = reports
+    return tuple(findings), data
+
+
+def attempt_verdict_reuse(
+    *,
+    folded: FoldResult,
+    run_id: str,
+    worktree: Path,
+    repo_root: Path,
+    story_spec_rel: str | None,
+    process: ProcessPort,
+    vcs: object,
+    sidecars: Mapping[str, str | None] | None = None,
+    base: str = ORIGIN_MAIN,
+    recheck: Callable[..., tuple[tuple[Finding, ...], dict[str, object]]] | None = None,
+) -> VerdictReuse:
+    """Story 102.1: whether this re-landing may reuse the run's verified verdict, and the narrow re-check if so.
+
+    Declines (the caller re-verifies in full) on no reusable verdict, a dirty worktree, an unreadable head or git
+    fact, any non-exempt move, or a red narrow re-check. Never raises for a git read; ``recheck`` defaults to
+    ``run_reuse_recheck``."""
+    resolved_sidecars = sidecars or {}
+
+    def _advisories_of(entry: JournalEntry) -> tuple[Mapping[str, object], ...]:
+        return tuple(resolve_scope_violation_advisories_from_payload(entry.payload, sidecars=resolved_sidecars))
+
+    candidate = latest_reusable_verdict(folded, run_id, advisories_of=_advisories_of)
+    if candidate is None:
+        return VerdictReuse(
+            decision=declined(
+                REASON_NO_VERIFIED_VERDICT,
+                "the run's latest verification OUTCOME is not a verified verdict with a recorded head",
+            )
+        )
+    current_head = verification_head_sha(vcs, worktree)
+    if current_head is None:
+        return VerdictReuse(
+            decision=declined(REASON_DIRTY_WORKTREE, f"worktree {worktree} is dirty or its head is unreadable"),
+            candidate=candidate,
+        )
+    try:
+        facts = gather_reuse_facts(
+            process=process,
+            worktree=worktree,
+            verified_head=candidate.head_sha,
+            current_head=current_head,
+            story_spec_rel=story_spec_rel,
+            base=base,
+        )
+    except _GitReadError as exc:
+        return VerdictReuse(
+            decision=declined(REASON_GIT_READ_FAILED, str(exc)), candidate=candidate, current_head=current_head
+        )
+    decision = judge_verdict_reuse(facts)
+    if not decision.exempt:
+        return VerdictReuse(decision=decision, candidate=candidate, current_head=current_head)
+    run_recheck = recheck if recheck is not None else run_reuse_recheck
+    findings, data = run_recheck(process=process, worktree=worktree, repo_root=repo_root, base=base)
+    green = status_for(compute_verdict(tuple(findings))) is Status.OK
+    return VerdictReuse(
+        decision=decision,
+        candidate=candidate,
+        current_head=current_head,
+        findings=tuple(findings),
+        verify_data=data,
+        recheck_green=green,
     )

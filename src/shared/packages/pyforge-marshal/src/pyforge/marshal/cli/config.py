@@ -123,10 +123,11 @@ _PROJECT_POLICY_ONLY_KEYS = frozenset(
         # Story 28.10's `model_cost_catalog` (SPEC-marshal-token-economy
         # CAP-11) -- mapping-typed declared price table; project layer only.
         "model_cost_catalog",
-        # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284; Story 73.2, CAP-281)
-        # -- mapping-typed factory-dispatch block of five keys: the wave cap
-        # `max_parallel`, the three `landing_check_*` knobs and
-        # `max_followup_reviews_per_campaign`; project layer only.
+        # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284; Story 73.2, CAP-281;
+        # Story 85.1, CAP-286; Story 102.1, CAP-161) -- mapping-typed factory-dispatch
+        # block of eight keys: the wave cap `max_parallel`, the three `landing_check_*`
+        # knobs, `max_followup_reviews_per_campaign`, the two `verify_fix_*` knobs and
+        # `landing_reverify`; project layer only.
         "dispatch",
     }
 )
@@ -218,10 +219,11 @@ _UNSETTABLE_KEYS = frozenset(
         # Story 28.10's `model_cost_catalog` (CAP-11) -- nested mapping of
         # provider/model prices, same exclusion reason as `context`.
         "model_cost_catalog",
-        # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284; Story 73.2, CAP-281)
-        # -- nested mapping of five keys (`max_parallel`, the three
-        # `landing_check_*` ones and `max_followup_reviews_per_campaign`), same
-        # exclusion reason as `context`.
+        # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284; Story 73.2, CAP-281;
+        # Story 85.1, CAP-286; Story 102.1, CAP-161) -- nested mapping of eight keys
+        # (`max_parallel`, the three `landing_check_*` ones,
+        # `max_followup_reviews_per_campaign`, the two `verify_fix_*` ones and
+        # `landing_reverify`), same exclusion reason as `context`.
         "dispatch",
         # Story 87.6's `protected_ref_prefixes` (CAP-287) -- a tuple of refname
         # prefixes, the same "no string value could ever satisfy this
@@ -274,9 +276,11 @@ _FIELD_ORDER: tuple[str, ...] = (
     # Story 28.10's `model_cost_catalog` (CAP-11) -- declared price table,
     # `marshal-policy.toml`/repo-defaults only, no `--set` surface.
     "model_cost_catalog",
-    # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284; Story 73.2, CAP-281)
-    # -- the factory wave cap, the landing's check-wait bounds and the drain's
-    # per-campaign follow-up review cap (a five-key block),
+    # Story 33.8's `dispatch` (CAP-6; Story 80.1, CAP-284; Story 73.2, CAP-281;
+    # Story 85.1, CAP-286; Story 102.1, CAP-161) -- the factory wave cap, the
+    # landing's check-wait bounds, the drain's per-campaign follow-up review cap,
+    # the fix turn's bounds and the re-landing's verification reuse (an eight-key
+    # block),
     # `marshal-policy.toml`/repo-defaults only, no `--set` surface.
     "dispatch",
     # Story 87.6's `protected_ref_prefixes` (CAP-287) -- the policy layers'

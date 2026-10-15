@@ -675,7 +675,7 @@ verify_commands = [
 ]
 "102" = [  # a re-landing does not re-verify from scratch when only main moved (a fix under spec-pyforge-marshal
   # CAP-161, no CAP; Story 102.1), added 2026-10-15. The default surface, restated because a declared entry replaces
-  # it outright; its package glob covers core/policy.py, core/dispatch_reverify.py, dispatch_reverify.py, the journal
+  # it outright; its package glob covers core/policy.py, core/dispatch_reverify.py, dispatch_verify.py, the journal
   # builder, the land-only path, the supervisor and their tests. Plus every Spec memlog (marshal's src/ is co-governed
   # by spec-pyforge-core) and the four Pages stations' marshal-policy.toml, which opt in to the setting.
   "src/shared/packages/pyforge-marshal/**",
