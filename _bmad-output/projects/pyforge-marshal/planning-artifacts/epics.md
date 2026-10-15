@@ -9956,10 +9956,11 @@ So that whoever reads the landing knows which gates did not run.
 
 Minted 2026-10-14 from the station Dream's entry of the same date (the master switch's surfaces at merge), at the
 operator's ask "chain it here". Story 100.1 lists a surface from its declared state and its own switch, so a landing
-made while `PAUSE_ALL_CI` is on names the master (once steward Story 103.1 gives it a row) and none of the surfaces it
+made while `PAUSE_ALL_CI` is on names the master (steward Story 103.1 gives it a row) and none of the surfaces it
 skipped. Steward 103.1 marks each of those surfaces `paused`, with `paused_by_master: true`, and this epic reads that
 field. A fix under CAP-292, so no CAP is minted and no flag is added. It is a new epic because Epic 100 is `done`. Its
-one story waits on steward 103.1, a cross-station gate held as its `blocked` ledger row.
+one story waits on steward 103.1, a cross-station gate held as its `blocked` ledger row; 103.1 merged
+(`a6cf663539`) while this chain was open, so the operator's flip can follow this chain's merge.
 **HARD boundaries:**
 - Steward stays the one reader of the pause state: marshal never reads `PAUSE_ALL_CI`, the registry or a workflow
   file, and derives no gating of its own.
@@ -9977,7 +9978,7 @@ So that a landing made under the master shows each skipped gate, as one made und
 **Flag:** none (`spec-feature-flag-governance` Q1, a fix; the steward read stays behind Story 100.1's `pyforge.marshal.landing_ci_pauses`)
 **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/landing_ci_pauses.py` (`row_counts_as_paused_at_merge`); `src/shared/packages/pyforge-marshal/tests/unit/test_landing_ci_pauses.py`
 **Spec:** `planning-artifacts/specs/spec-101-1-the-landing-line-lists-every-surface-the-ci-master-switch-pauses.md`
-**Given** `22e5c19c28`, where `row_counts_as_paused_at_merge` (`core/landing_ci_pauses.py:28`) reads only a row's `id`, `declared_state` and `live_switch_value`, and steward Story 103.1, once landed, adds a `master:PAUSE_ALL_CI` row and a boolean `paused_by_master` on every row: true, while the master is on, for each surface whose jobs read it, the seven opt-in surfaces among them
+**Given** `22e5c19c28`, where `row_counts_as_paused_at_merge` (`core/landing_ci_pauses.py:28`) reads only a row's `id`, `declared_state` and `live_switch_value`, and steward Story 103.1 (merged `a6cf663539`) adds a `master:PAUSE_ALL_CI` row and a boolean `paused_by_master` on every row: true, while the master is on, for each surface whose jobs read it, the seven opt-in surfaces among them
 **When** a dispatch landing reads `pyforge steward ci status --json` while `PAUSE_ALL_CI` is `true`
 **Then** `ci_pauses_at_merge.surfaces` and the `CI paused at merge:` line name `master:PAUSE_ALL_CI` and every row whose `paused_by_master` is the JSON boolean `true`, except a row declared `opt-in-off` whose own switch is not `true`; every row Story 100.1's rule lists stays listed, sorted and once; an envelope with no `paused_by_master` gives exactly 100.1's list
 **And** each of these fails a named test (mutation): ignoring `paused_by_master`, listing an opt-in that is off, accepting the string `"true"` for the field, dropping an opt-in that is on; a marshal test fed steward's checked-in `ci_status_master_on.json` lists the master and every gated `paused` row; Story 100.1's tests pass unedited

@@ -33,8 +33,8 @@ does the `spec-pyforge-marshal` memlog's 2026-10-14 decision on CAP-292's open q
   `retired`, and lists any other row whose `live_switch_value`, stripped and lower-cased, is `true`.
   `surfaces_from_envelope` (`:42`) sorts the ids. By CAP-292's design it reads no `verdict`, and it reads no master
   state.
-- **Steward's answer.** Steward Story 103.1 (its spec is `ready-for-dev`; its key is `backlog` on `main`) gives
-  `steward ci status --json` two things:
+- **Steward's answer.** Steward Story 103.1 gives `steward ci status --json` two things. Its key read `backlog` at
+  `22e5c19c28`; it merged on 2026-10-14 as `a6cf663539`, while this chain was open:
   - one row, `master:PAUSE_ALL_CI`, with `declared_state` `live`, `live_switch_value` the variable's value, and
     `verdict` `drift` while it is `true`;
   - one optional boolean row property, `paused_by_master`. It is `true` when the master is `true` and the row is
@@ -44,8 +44,12 @@ does the `spec-pyforge-marshal` memlog's 2026-10-14 decision on CAP-292's open q
     `paused-manually` row carry `false`.
 
   A gated row that would otherwise read `live` reads `paused`, and `drift`, `stuck` and `overdue` keep their
-  precedence. The verdict enum does not change. On `main` today `data/ci-status-schema.json` has no
-  `paused_by_master`.
+  precedence. The verdict enum does not change. At `22e5c19c28` `data/ci-status-schema.json` had no
+  `paused_by_master`; since `a6cf663539` it carries it as an optional boolean. Read at `a6cf663539`,
+  `_row_gated_by_master` (`ci.py:493`) leaves out only `value` rows, `paused-manually` rows and a row whose workflow
+  has no jobs, and `_apply_master_overlay` (`:539`) sets `paused_by_master` whatever the verdict but turns only a
+  `live` verdict into `paused`. Its checked-in `tests/fixtures/ci_status_master_on.json` holds three gated `paused`
+  rows, two ungated `live` workflow rows, a `value` row, a `paused-manually` row and the master row.
 - **What 100.1 makes of it.** With 103.1 alone, the master row is declared `live` with the value `true`, so 100.1's
   rule lists `master:PAUSE_ALL_CI`. It lists no gated row, because each one's own switch is off. 103.1's own Residual
   risk names this gap as marshal's.
@@ -200,9 +204,10 @@ row).
 - Ledger key: `101-1-the-landing-line-lists-every-surface-the-ci-master-switch-pauses`.
 - Ledger status at mint: `blocked`. It is a cross-station gate on steward Story 103.1
   (`103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses`): the field and the fixture this
-  story reads exist only once 103.1 lands. Marshal's `Deps:` parser is station-local, so the gate is this ledger row.
-  The operator flips it to `backlog` once 103.1 is `done` on `main` (precedents: marshal 74.2, herald 38.1, doctor
-  42.1).
+  story reads exist only from 103.1 on. Marshal's `Deps:` parser is station-local, so the gate is this ledger row,
+  and the operator flips it to `backlog` once 103.1 is `done` on `main` (precedents: marshal 74.2, herald 38.1,
+  doctor 42.1). 103.1 merged on 2026-10-14 (`a6cf663539`) while this chain was open, so the flip can follow this
+  chain's merge.
 - Deps: — (cross-station, see above).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."101"`, added with this mint.
 - Minted 2026-10-14 in one chain commit.
