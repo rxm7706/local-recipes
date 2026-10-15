@@ -48,9 +48,7 @@ import re
 import tempfile
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any
-from typing import BinaryIO
-from typing import Final
+from typing import Any, BinaryIO, Final
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured

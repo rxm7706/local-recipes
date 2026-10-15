@@ -38,13 +38,7 @@ PACKAGES_DIR = ROOT / "src" / "shared" / "packages"
 
 # Seeded from measurement on Story 93.1's base (2026-10-11). Only shrinks — each
 # station's fix story removes its own entry; never re-add a package or verb.
-NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = {
-    "django-atlas": frozenset({"ruff", "ruff-format"}),
-    "django-doctor": frozenset({"ruff"}),
-    "django-marshal": frozenset({"ruff", "ruff-format"}),
-    "django-mason": frozenset({"ruff"}),
-    "django-pyforge": frozenset({"ruff"}),
-}
+NOT_YET_CLEAN_CEILING: dict[str, frozenset[str]] = {}
 
 # Live map — only shrinks; fix stories remove entries here and in NOT_YET_CLEAN_CEILING together.
 NOT_YET_CLEAN: dict[str, frozenset[str]] = {

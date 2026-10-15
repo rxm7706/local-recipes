@@ -2,8 +2,8 @@
 title: "103.2: `estate reconcile` writes the bmad-suite floors from the batch, not the network"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
+status: 'in-review'
+baseline_revision: '85f242b606'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -231,6 +231,12 @@ steward test runs reconcile against a fake runner and a tmp tree.
 - Surface: `marshal-policy.toml` `[epic_surfaces]."103"` (added with this mint) covers the generator, its CLI wrapper,
   its tests and the skill files.
 - Minted 2026-10-14 in one chain commit.
+
+## Auto Run Result
+
+Status: in-review
+
+Implementation complete pending final review pass. Batch mode (`--journal`, `--json`) in `bmad_suite_metapackage.py`; `estate reconcile` invokes it, journals `reconcile.bmad_suite`, fails closed on bad generator output. CFE retro v8.101.0. Verified: batch + rewrite tests (local-recipes), `test_estate_reconcile.py` (14 passed), `python scripts/spec_surface_reconcile.py` (exit 0), `spec-surface-check` (exit 0 after memlogs + scoped stamps on pyforge-steward/spec-pyforge-steward, pyforge-marshal/spec-pyforge-core, pyforge-mason/spec-conda-forge-expert-rebuild, pyforge-mason/spec-packaging-factory). Uncommitted: CFE retro files + story status line.
 
 ## Verification
 

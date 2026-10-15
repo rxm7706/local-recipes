@@ -1,12 +1,10 @@
-from django.http import HttpRequest
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.roles import claims_from_request
-from django_pyforge.roles import roles_from_request
+from django_pyforge.roles import claims_from_request, roles_from_request
 
 
 def _operator_sub(request: HttpRequest) -> str:

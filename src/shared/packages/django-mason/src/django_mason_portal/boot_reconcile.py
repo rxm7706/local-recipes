@@ -10,7 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from django.db import connection
-
 from pyforge.mason.boot import reconcile_boot
 
 _CREATE_INDEX = """

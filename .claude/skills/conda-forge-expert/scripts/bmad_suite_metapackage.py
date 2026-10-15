@@ -167,6 +167,68 @@ def _fetch_github_latest(owner_repo: str) -> str | None:
         return None
 
 
+def _version_max(a: str, b: str) -> str:
+    if PkgVersion is not None:
+        try:
+            return str(max(PkgVersion(a), PkgVersion(b)))
+        except Exception:
+            pass
+    return a if a >= b else b
+
+
+def _load_journal_moves(journal_path: Path) -> dict[str, str]:
+    """Highest ``to`` per package where ``from`` != ``to`` (estate refresh journal)."""
+    raw = json.loads(journal_path.read_text(encoding="utf-8"))
+    best: dict[str, str] = {}
+    for entry in raw.get("moves") or []:
+        if not isinstance(entry, dict):
+            continue
+        pkg = str(entry.get("package") or "").strip()
+        if not pkg:
+            continue
+        fr = entry.get("from")
+        to = entry.get("to")
+        if fr is None or to is None or str(fr) == str(to):
+            continue
+        moved_to = str(to).strip()
+        prev = best.get(pkg)
+        if prev is None:
+            best[pkg] = moved_to
+        else:
+            best[pkg] = _version_max(moved_to, prev)
+    return best
+
+
+def _batch_floor(
+    *,
+    recipe_version: str,
+    suite_floor: str | None,
+    moved_to: str | None,
+) -> tuple[str, str]:
+    if moved_to is not None:
+        floor = _version_max(moved_to, suite_floor) if suite_floor is not None else moved_to
+        return floor, "batch-move"
+    if suite_floor is None:
+        return recipe_version, "member-recipe"
+    if PkgVersion is not None:
+        try:
+            if PkgVersion(suite_floor) >= PkgVersion(recipe_version):
+                return suite_floor, "suite-floor"
+        except Exception:
+            pass
+    elif suite_floor >= recipe_version:
+        return suite_floor, "suite-floor"
+    return recipe_version, "member-recipe"
+
+
+def _fallback_from_source(source: str, registry: str, *, offline: bool) -> bool:
+    if offline:
+        return False
+    if source in ("recipe-floor", "npm-fallback", "github-fallback"):
+        return True
+    return registry == "pypi" and source == "npm"
+
+
 def _prefer_floor(floor: str, candidate: str | None) -> tuple[str, str]:
     """Never pin below the member recipe's declared floor; prefer the higher release."""
     if candidate is None:
@@ -182,13 +244,13 @@ def _prefer_floor(floor: str, candidate: str | None) -> tuple[str, str]:
 
 def _resolve_upstream(
     package: str, recipe: dict[str, Any], *, offline: bool
-) -> tuple[str, str]:
+) -> tuple[str, str, bool]:
     registry = _member_registry(recipe)
     upstream_name = _member_upstream_name(recipe, package)
     floor = _member_floor(recipe)
 
     if offline:
-        return floor, "offline"
+        return floor, "offline", False
 
     resolved: str | None = None
     source = "recipe-floor"
@@ -219,7 +281,8 @@ def _resolve_upstream(
         source = f"{source}+floor"
     elif final == floor:
         source = "recipe-floor"
-    return final, source
+    fallback = _fallback_from_source(source, registry, offline=offline)
+    return final, source, fallback
 
 
 def _calver_stamp(when: date | None = None) -> str:
@@ -333,65 +396,106 @@ def generate(
     *,
     dry_run: bool = False,
     offline: bool = False,
-) -> tuple[list[MemberPin], list[ManifestMember]]:
+    journal: Path | None = None,
+    as_json: bool = False,
+) -> tuple[list[MemberPin], list[ManifestMember], dict[str, Any] | None]:
     members = _load_manifest(root)
     deprecated = [m for m in members if m.deprecated]
+    batch_moves = _load_journal_moves(journal) if journal is not None else {}
+
+    recipe_path = root / "recipes" / "bmad-suite" / "recipe.yaml"
+    old_text = recipe_path.read_text(encoding="utf-8")
+    old_pins = _parse_existing_pins(old_text)
+    version_before = re.search(r'version:\s*"([^"]+)"', old_text).group(1)  # type: ignore[union-attr]
+
     pins: list[MemberPin] = []
+    member_rows: list[dict[str, Any]] = []
     for member in members:
         if member.deprecated:
             continue
         name = member.name
         recipe = _read_member_recipe(root, name)
-        floor, source = _resolve_upstream(name, recipe, offline=offline)
+        recipe_version = _member_floor(recipe)
+        registry = _member_registry(recipe)
+        floor_before = old_pins.get(name)
+        moved_to = batch_moves.get(name) if journal is not None else None
+        fallback = False
+        if journal is not None:
+            floor, source = _batch_floor(
+                recipe_version=recipe_version,
+                suite_floor=floor_before,
+                moved_to=moved_to,
+            )
+        else:
+            floor, source, fallback = _resolve_upstream(name, recipe, offline=offline)
         pins.append(
             MemberPin(
                 name=name,
                 floor=floor,
-                registry=_member_registry(recipe),
-                upstream=floor if source != "recipe-floor" else None,
+                registry=registry,
+                upstream=floor if source not in ("recipe-floor", "offline") else None,
                 source=source,
                 description=member.description,
                 urls=member.urls,
             )
         )
+        if as_json:
+            member_rows.append(
+                {
+                    "name": name,
+                    "registry": registry,
+                    "recipe_version": recipe_version,
+                    "moved_to": moved_to,
+                    "floor_before": floor_before,
+                    "floor": floor,
+                    "source": source,
+                    "fallback": fallback,
+                }
+            )
 
-    recipe_path = root / "recipes" / "bmad-suite" / "recipe.yaml"
-    old_text = recipe_path.read_text(encoding="utf-8")
-    old_pins = _parse_existing_pins(old_text)
     new_pin_map = {p.name: p.floor for p in pins}
     bump_version = new_pin_map != old_pins
-    version = _calver_stamp() if bump_version else re.search(
-        r'version:\s*"([^"]+)"', old_text
-    ).group(1)  # type: ignore[union-attr]
+    version = _calver_stamp() if bump_version else version_before
 
     run_lines = _format_run_lines(pins)
     before, after = _rewrite_recipe(recipe_path, run_lines=run_lines, version=version)
-
-    print("bmad-suite metapackage refresh")
-    print("=" * 60)
-    print("active (recipe.yaml run deps):")
-    for pin in pins:
-        old = old_pins.get(pin.name, "—")
-        changed = " *" if old != pin.floor else ""
-        print(
-            f"  {pin.name:42} {old:>16} -> {pin.floor:<16} "
-            f"[{pin.source}]{changed}"
-        )
-    if deprecated:
-        print("\ndeprecated (manifest only — skipped in recipe.yaml):")
-        for member in deprecated:
-            note = f" — {member.notes}" if member.notes else ""
-            print(f"  {member.name}{note}")
-    print(f"\nmetapackage version: {version}")
-    if dry_run:
-        print("\n(dry-run — recipe.yaml not written)")
-        return pins, deprecated
-    if after != before:
+    written = not dry_run and after != before
+    if written:
         recipe_path.write_text(after, encoding="utf-8")
-        print(f"\nWrote {recipe_path}")
+
+    report: dict[str, Any] | None = None
+    if as_json:
+        report = {
+            "version_before": version_before,
+            "version": version,
+            "written": written,
+            "members": member_rows,
+        }
+        print(json.dumps(report, indent=2))
     else:
-        print("\nNo changes.")
-    return pins, deprecated
+        print("bmad-suite metapackage refresh")
+        print("=" * 60)
+        print("active (recipe.yaml run deps):")
+        for pin in pins:
+            old = old_pins.get(pin.name, "—")
+            changed = " *" if old != pin.floor else ""
+            print(
+                f"  {pin.name:42} {old:>16} -> {pin.floor:<16} "
+                f"[{pin.source}]{changed}"
+            )
+        if deprecated:
+            print("\ndeprecated (manifest only — skipped in recipe.yaml):")
+            for member in deprecated:
+                note = f" — {member.notes}" if member.notes else ""
+                print(f"  {member.name}{note}")
+        print(f"\nmetapackage version: {version}")
+        if dry_run:
+            print("\n(dry-run — recipe.yaml not written)")
+        elif written:
+            print(f"\nWrote {recipe_path}")
+        else:
+            print("\nNo changes.")
+    return pins, deprecated, report
 
 
 def main() -> None:
@@ -403,9 +507,24 @@ def main() -> None:
         action="store_true",
         help="Use each member recipe's context.version (no network)",
     )
+    parser.add_argument(
+        "--journal",
+        type=Path,
+        default=None,
+        help="Estate refresh journal: batch mode (no upstream lookups)",
+    )
+    parser.add_argument("--json", action="store_true", dest="as_json", help="Emit machine-readable report")
     args = parser.parse_args()
     root = _repo_root(args.repo_root)
-    pins, deprecated = generate(root, dry_run=args.dry_run, offline=args.offline)
+    if args.journal is not None and args.offline:
+        raise SystemExit("--journal and --offline are mutually exclusive")
+    generate(
+        root,
+        dry_run=args.dry_run,
+        offline=args.offline,
+        journal=args.journal,
+        as_json=args.as_json,
+    )
 
 
 if __name__ == "__main__":

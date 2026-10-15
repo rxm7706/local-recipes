@@ -7,15 +7,16 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from django_pyforge.events import DLQ
-from django_pyforge.events import list_quarantined
-from django_pyforge.events.constants import DLQ_ATTEMPTS_FIELD
-from django_pyforge.events.constants import DLQ_ERROR_FIELD
-from django_pyforge.events.constants import DLQ_GROUP_FIELD
-from django_pyforge.events.constants import DLQ_QUARANTINED_AT_FIELD
-from django_pyforge.events.constants import DLQ_REASON_FIELD
-from django_pyforge.events.constants import DLQ_STREAM_ID_FIELD
-from django_pyforge.events.constants import EVENT_FIELD
+from django_pyforge.events import DLQ, list_quarantined
+from django_pyforge.events.constants import (
+    DLQ_ATTEMPTS_FIELD,
+    DLQ_ERROR_FIELD,
+    DLQ_GROUP_FIELD,
+    DLQ_QUARANTINED_AT_FIELD,
+    DLQ_REASON_FIELD,
+    DLQ_STREAM_ID_FIELD,
+    EVENT_FIELD,
+)
 
 # Story 42.3: the metadata every quarantine writes next to the event.
 _META_FIELDS = (
