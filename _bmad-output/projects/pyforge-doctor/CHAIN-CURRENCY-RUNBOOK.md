@@ -277,3 +277,13 @@ Regenerating a board view is optional confirmation, not the measure.
   33.1 and 37.1 landed, co-governor surface reconciles); no FR or AD change. Epics sat at 2026-10-12, inside the window.
   Deviation: a dispatched landing (46.1) appended to the memlog and left `main` red on this check; the landing did not
   run the reconciler.
+
+- **Run 2026-10-15 (atlas) — 1 finding cleared, single station.** Entry: pyforge-atlas `staleness`, `feeds code→retro`
+  (Story 31.1 moved the package `pyproject.toml` to 2026-10-14; the last retro was 2026-09-20). Exit:
+  `chain_currency_sweep_check.py --project pyforge-atlas` exit 0, fleet-wide exit 0. Remedy: a station retro over Epics
+  25–29 and 31 (`planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`), seven deferred-work rows, and the six
+  covered `epic-N-retrospective` keys moved to `done` through a worktree-local feed and `sprint-ledger-sync`; no other
+  edge fired. Deviation: written by hand, not `bmad-retrospective -H`, because that skill reviews one epic and writes
+  Tier 3. The truth-up found three gaps the finding did not name, recorded as rows and not repaired: `pyforge-deps-test`
+  runs for no atlas change, `steward-test` misses the station `src/` its guild-env test reads, and the two `mypy` lanes
+  share one cache.
