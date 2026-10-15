@@ -1,21 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import type { Loader } from 'astro/loaders';
+import type { Loader, LoaderContext } from 'astro/loaders';
 
-const QUADRANTS = new Set(['tutorials', 'how-to', 'reference', 'explanation']);
+import { isPublished } from '../lib/shelf.mjs';
 
+// Which files are pages: one rule, shared with the link plugin (src/lib/shelf.mjs).
 function isIncluded(relativePath: string): boolean {
-  const norm = relativePath.replace(/\\/g, '/');
-  if (norm === 'index.md' || norm === '404.md') {
-    return true;
-  }
-  const top = norm.split('/')[0];
-  if (!QUADRANTS.has(top)) {
-    return false;
-  }
-  return norm.endsWith('.md') || norm.endsWith('.mdx');
+  return isPublished(relativePath);
 }
 
 function parseFrontmatter(raw: string): { data: Record<string, unknown>; body: string } {
@@ -78,9 +71,10 @@ function generateId(relativePath: string): string {
 async function walkDocs(
   root: string,
   store: {
-    set: (entry: { id: string; data: Record<string, unknown>; body: string; filePath?: string }) => void;
+    set: LoaderContext['store']['set'];
   },
   siteRoot: string,
+  renderMarkdown: LoaderContext['renderMarkdown'],
   prefix = '',
 ): Promise<void> {
   const entries = await fs.readdir(root, { withFileTypes: true });
@@ -88,7 +82,7 @@ async function walkDocs(
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
     const full = path.join(root, entry.name);
     if (entry.isDirectory()) {
-      await walkDocs(full, store, siteRoot, rel);
+      await walkDocs(full, store, siteRoot, renderMarkdown, rel);
       continue;
     }
     if (!isIncluded(rel)) {
@@ -118,6 +112,10 @@ async function walkDocs(
       id,
       data: entryData,
       body,
+      // Render the body here: an entry stored without `rendered` shows an empty page body
+      // (every shelf page did so until 2026-10-14). The file URL lets the rehype link plugins
+      // resolve relative links against the page's own location.
+      rendered: await renderMarkdown(body, { fileURL: pathToFileURL(full) }),
       filePath: path.relative(siteRoot, full).replace(/\\/g, '/'),
     });
   }
@@ -126,10 +124,10 @@ async function walkDocs(
 export function shelfDocsLoader(): Loader {
   return {
     name: 'shelf-docs-loader',
-    async load({ store, config }) {
+    async load({ store, config, renderMarkdown }) {
       const root = fileURLToPath(new URL('../content/docs', import.meta.url));
       const siteRoot = fileURLToPath(config.root);
-      await walkDocs(root, store, siteRoot);
+      await walkDocs(root, store, siteRoot, renderMarkdown);
     },
   };
 }
