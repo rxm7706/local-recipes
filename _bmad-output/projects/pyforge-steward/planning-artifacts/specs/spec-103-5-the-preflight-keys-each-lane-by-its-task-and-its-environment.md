@@ -2,7 +2,7 @@
 title: "103.5: The preflight keys each lane by its task and its environment"
 type: 'fix'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: '22e5c19c285e722bcf7d58203689d57e9cc4dd55'
 review_loop_iteration: 0
 followup_review_recommended: false

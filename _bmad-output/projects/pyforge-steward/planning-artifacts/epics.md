@@ -6717,7 +6717,7 @@ So that two lanes of one task in two environments both run, each is journaled wi
 **When** `pr-preflight-lanes` names one task in two environments
 **Then** each lane keeps its own selection verdict, both lanes run, each in its own scratch directory and log named `<task>@<environment>`, and each is journaled with its environment, status, exit code and seconds; a lane that stops or blocks another is journaled with its environment too (`cancelled_by_environment`, `blocked_by_environment`, both optional); a CI pause on one lane never drops the other; the budget check counts and names lanes by `(task, environment)`, and the xdist share map is keyed by lane; a `pixi run` step still matches a lane by its task, since a bare lane's environment is the one `pr-preflight` is invoked from (amended in implementation, 2026-10-14)
 **And** `test_preflight_selection.py` counts lanes by `(task, environment)`; a new regression test proves two lanes of one task both run, journal their own results and write their own logs; with atlas 31.1's `pixi.toml` and `lint-types.yml` checked out (never committed) `pyforge-steward-test` passes; no existing assertion weakens; the journal record changes only by the two optional fields; four mutations fail named tests; `pyforge-steward-test`, the steward coverage gate and `lint-types` are green, and each governing Spec's memlog reconciles the changed paths before its scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
