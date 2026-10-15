@@ -263,15 +263,15 @@ def _unnamed_top_level_warnings(
     """WARN findings for tracked top-level dirs not named in MAP or allow-list."""
     allow = infrastructure_dirs if infrastructure_dirs is not None else _INFRASTRUCTURE_DIRS
     dirs, error = _tracked_top_level_dirs(target)
-    if error is not None:
+    if error is not None or dirs is None:
         return (
             [
                 Finding(
                     source=Source.DOCS_MAP_HYGIENE,
                     check=_CHECK_ID,
                     status=DoctorStatus.WARN,
-                    message=f"unnamed-top-level: cannot read git index: {error}",
-                    evidence={"class": "unnamed-top-level", "error": error},
+                    message=f"unnamed-top-level: cannot read git index: {error or 'no directories'}",
+                    evidence={"class": "unnamed-top-level", "error": error or "no directories"},
                 )
             ],
             [],
