@@ -22,9 +22,7 @@ def repo_root() -> Path:
     for ancestor in here.parents:
         if (ancestor / _REPO_ROOT_MARKER).is_file():
             return ancestor
-    raise RuntimeError(
-        f"viz_manifest: could not locate {_REPO_ROOT_MARKER} by walking up from {here}"
-    )
+    raise RuntimeError(f"viz_manifest: could not locate {_REPO_ROOT_MARKER} by walking up from {here}")
 
 
 def _resolve_export_commit(explicit: str | None) -> str:

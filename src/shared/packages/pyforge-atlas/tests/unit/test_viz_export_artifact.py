@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import json
 import subprocess
-import textwrap
 from pathlib import Path
 
 import pytest
 import yaml
+from pyforge.testing_kit.flags import flag_states
 
 from pyforge.atlas.viz_export_artifact import FLAG_KEY
-from pyforge.testing_kit.flags import flag_states
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "kedro-viz-publish.yml"
@@ -99,11 +98,7 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
     ):
         assert forbidden not in run_text
 
-    stub = next(
-        s
-        for s in steps
-        if isinstance(s, dict) and "Materialize stub credentials" in s.get("name", "")
-    )
+    stub = next(s for s in steps if isinstance(s, dict) and "Materialize stub credentials" in s.get("name", ""))
     assert "credentials.yml" in stub["run"]
     assert "bigquery_adc" in stub["run"] and "github_token" in stub["run"]
 
@@ -112,11 +107,7 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
     assert "pyforge-atlas" in envs
     assert "pyforge-steward" not in envs
 
-    uploads = [
-        s
-        for s in steps
-        if isinstance(s, dict) and str(s.get("uses", "")).startswith("actions/upload-artifact")
-    ]
+    uploads = [s for s in steps if isinstance(s, dict) and str(s.get("uses", "")).startswith("actions/upload-artifact")]
     assert len(uploads) == 1
     upload = uploads[0]
     assert upload["with"]["name"] == "kedro-viz-export"

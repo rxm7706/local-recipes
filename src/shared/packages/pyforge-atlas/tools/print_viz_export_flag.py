@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import sys
-
 from pyforge.atlas.viz_export_artifact import export_artifact_enabled
 
 

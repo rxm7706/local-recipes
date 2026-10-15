@@ -47,6 +47,7 @@ from anywhere:
 
     python src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py
 """
+
 from __future__ import annotations
 
 import re
@@ -134,9 +135,7 @@ def _assert_anchor_handled(build_dir: Path, anchor: str, files_changed: int) -> 
 
 def _normalize_timestamp(metadata_path: Path) -> int:
     if not metadata_path.is_file():
-        raise RuntimeError(
-            f"normalize_viz_build: expected metadata file not found: {metadata_path}"
-        )
+        raise RuntimeError(f"normalize_viz_build: expected metadata file not found: {metadata_path}")
     text = metadata_path.read_text(encoding="utf-8")
     normalized, n_subs = _TIMESTAMP_PATTERN.subn('"timestamp": "unset"', text)
     if n_subs == 0:
@@ -155,10 +154,7 @@ def main() -> int:
     build_dir = root / _BUILD_RELATIVE
 
     if not build_dir.is_dir():
-        raise RuntimeError(
-            f"normalize_viz_build: {build_dir} does not exist -- run the "
-            f"`viz-build` pixi task first."
-        )
+        raise RuntimeError(f"normalize_viz_build: {build_dir} does not exist -- run the `viz-build` pixi task first.")
 
     files_changed = _strip_anchor(build_dir, anchor)
     _assert_anchor_handled(build_dir, anchor, files_changed)

@@ -10,9 +10,9 @@ _TOOLS = Path(__file__).resolve().parent
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
-from pyforge.atlas.viz_export_artifact import export_artifact_enabled  # noqa: E402
-
 import viz_manifest  # noqa: E402
+
+from pyforge.atlas.viz_export_artifact import export_artifact_enabled  # noqa: E402
 
 
 def main() -> int:
