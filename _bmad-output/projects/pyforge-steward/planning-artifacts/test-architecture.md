@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 1e1d218b9ad8068b
-story_count: 379
+source_fingerprint: e71350c7e669e6a4
+story_count: 380
 test_file_count: 127
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 379
+- **Stories parsed:** 380
 - **Epics parsed:** 104
 - **Test files inventoried:** 127 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1e1d218b9ad8068b`
+- **Source fingerprint:** `e71350c7e669e6a4`
 
 ## Risk Assessment
 
@@ -655,6 +655,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.1 | `steward ci status` reports the master switch, and every surface it pauses | none observed |
 | 103.2 | `estate reconcile` writes the bmad-suite floors from the batch, not the network | none observed |
 | 103.3 | `pyforge-ci` is stdlib-only, as its tasks say | none observed |
+| 103.4 | The `ci-surface-gates` tests write their fixtures under `tmp_path` | none observed |
 | 104.1 | cfe-regression-net runs when a script its tests load changes | none observed |
 
 ## Quality Gates

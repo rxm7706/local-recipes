@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 587
+# stories: 588
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -39,9 +39,10 @@ development_status:
   102-3-steward-pages-build-deploy-status-replaces-deploy-dashboard-and-deploy-status: backlog
   102-4-the-pages-build-mounts-atlas-s-kedro-viz-export-from-a-workflow-artifact-and-tolerates-its-absence: backlog
   102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset: backlog
-  103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses: backlog
+  103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses: done
   103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network: backlog
   103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say: backlog
+  103-4-the-ci-surface-gates-tests-write-their-fixtures-under-tmp-path: done
   104-1-cfe-regression-net-runs-when-a-script-its-tests-load-changes: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
@@ -403,7 +404,7 @@ development_status:
   epic-101-retrospective: optional
   epic-102: in-progress
   epic-102-retrospective: optional
-  epic-103: backlog
+  epic-103: in-progress
   epic-103-retrospective: optional
   epic-104: done
   epic-104-retrospective: optional

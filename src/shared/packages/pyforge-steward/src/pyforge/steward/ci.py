@@ -460,6 +460,132 @@ def _live_switch_value(
     return live, paused_since
 
 
+def _collect_var_uses(deps: CiDeps) -> list[Any]:
+    loader_root = deps.root
+    scripts = loader_root / "scripts"
+    if not (scripts / "_ci_surface_gates_lib.py").is_file():
+        loader_root = repo_root()
+        scripts = loader_root / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from _ci_surface_gates_lib import collect_var_uses  # noqa: PLC0415
+
+    return collect_var_uses(deps.root)
+
+
+def _workflow_job_names(deps: CiDeps, workflow_rel: str) -> set[str]:
+    loader_root = deps.root
+    scripts = loader_root / "scripts"
+    if not (scripts / "_ci_surface_gates_lib.py").is_file():
+        loader_root = repo_root()
+        scripts = loader_root / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from _ci_surface_gates_lib import _workflow_jobs  # noqa: PLC0415
+
+    return _workflow_jobs(deps.root, workflow_rel, None)
+
+
+def _var_use_gates_master(use: Any, master: str) -> bool:
+    return bool(use.in_if and use.name == master and use.comparison == "!= 'true'")
+
+
+def _row_gated_by_master(row: dict[str, Any], uses: list[Any], deps: CiDeps, master: str) -> bool:
+    kind = str(row.get("kind") or "workflow")
+    if kind in ("value", "retired") or str(row.get("state") or "") == "paused-manually":
+        return False
+    wf = str(row.get("workflow") or "")
+    if not wf:
+        return False
+    if kind == "workflow":
+        jobs = _workflow_job_names(deps, wf)
+        if not jobs:
+            return False
+        for job in jobs:
+            if not any(
+                _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step is None
+                for u in uses
+            ):
+                return False
+        return True
+    if kind == "ci-job":
+        job = str(row.get("job") or "")
+        return any(
+            _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step is None for u in uses
+        )
+    if kind == "ci-step":
+        job = str(row.get("job") or "")
+        step = str(row.get("step") or "")
+        step_gate = any(
+            _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step == step for u in uses
+        )
+        job_gate = any(
+            _var_use_gates_master(u, master) and u.workflow_file == wf and u.job == job and u.step is None for u in uses
+        )
+        return step_gate or job_gate
+    return False
+
+
+def _master_pause_detail(master: str) -> str:
+    return f"paused by the master switch {master}"
+
+
+def _master_drift_detail(master: str) -> str:
+    return (
+        f"master switch {master} is true: every job that reads it is skipped, and the registry declares no master pause"
+    )
+
+
+def _apply_master_overlay(
+    row_dict: dict[str, Any],
+    *,
+    master: str,
+    master_on: bool,
+    master_updated: str | None,
+    gated: bool,
+    live_val: str | None,
+) -> None:
+    paused_by_master = master_on and gated
+    row_dict["paused_by_master"] = paused_by_master
+    if not paused_by_master:
+        return
+    verdict = str(row_dict.get("verdict") or "")
+    if verdict != "live":
+        return
+    row_dict["verdict"] = "paused"
+    row_dict["detail"] = _master_pause_detail(master)
+    if not _truthy(live_val) and master_updated:
+        row_dict["paused_since"] = master_updated
+
+
+def _build_master_row(master: str, snap: _GhSnapshot) -> dict[str, Any]:
+    live_val, paused_since = _live_switch_value(master, snap.variables)
+    if _truthy(live_val):
+        verdict = "drift"
+        detail = _master_drift_detail(master)
+        ps = paused_since
+    else:
+        verdict = "live"
+        detail = ""
+        ps = None
+    out: dict[str, Any] = {
+        "id": f"master:{master}",
+        "switch": master,
+        "declared_state": "live",
+        "live_switch_value": live_val,
+        "paused_since": ps,
+        "review_by": None,
+        "review_days_left": None,
+        "owner": None,
+        "last_green_run": None,
+        "verdict": verdict,
+        "paused_by_master": False,
+    }
+    if detail:
+        out["detail"] = detail
+    return out
+
+
 def _state_verdict(
     row: dict[str, Any],
     *,
@@ -570,6 +696,13 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
     pause_prefix = str((registry.get("conventions") or {}).get("pause_prefix") or "PAUSE_")
     enable_prefix = str((registry.get("conventions") or {}).get("enable_prefix") or "ENABLE_")
     grandfather = _grandfathered(registry)
+    master_name = str((registry.get("conventions") or {}).get("master") or "")
+    var_uses = _collect_var_uses(deps) if master_name else []
+    master_on = False
+    master_updated: str | None = None
+    if master_name:
+        master_live, master_updated = _live_switch_value(master_name, snap.variables)
+        master_on = _truthy(master_live)
 
     for row in registry.get("surfaces") or []:
         if not isinstance(row, dict):
@@ -621,21 +754,32 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
         elif str(row.get("state") or "") == "paused" and _truthy(live_val):
             verdict = "paused"
 
-        rows_out.append(
-            {
-                "id": row_id,
-                "switch": switch_s,
-                "declared_state": str(row.get("state") or "live"),
-                "live_switch_value": live_val,
-                "paused_since": paused_since,
-                "review_by": review_s,
-                "review_days_left": days_left,
-                "owner": row.get("owner"),
-                "last_green_run": last_green,
-                "verdict": verdict,
-                **({"detail": detail} if detail else {}),
-            }
-        )
+        row_dict: dict[str, Any] = {
+            "id": row_id,
+            "switch": switch_s,
+            "declared_state": str(row.get("state") or "live"),
+            "live_switch_value": live_val,
+            "paused_since": paused_since,
+            "review_by": review_s,
+            "review_days_left": days_left,
+            "owner": row.get("owner"),
+            "last_green_run": last_green,
+            "verdict": verdict,
+            **({"detail": detail} if detail else {}),
+        }
+        if master_name:
+            gated = _row_gated_by_master(row, var_uses, deps, master_name)
+            _apply_master_overlay(
+                row_dict,
+                master=master_name,
+                master_on=master_on,
+                master_updated=master_updated,
+                gated=gated,
+                live_val=live_val,
+            )
+        else:
+            row_dict["paused_by_master"] = False
+        rows_out.append(row_dict)
 
     # Unregistered variables that look like CI switches.
     for name, (value, _updated) in snap.variables.items():
@@ -657,6 +801,7 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
                 "last_green_run": None,
                 "verdict": "drift",
                 "detail": f"repository variable {name} is not declared in the CI surface registry",
+                "paused_by_master": False,
             }
         )
 
@@ -682,8 +827,12 @@ def _build_rows(registry: dict[str, Any], snap: _GhSnapshot, deps: CiDeps) -> li
                 "last_green_run": None,
                 "verdict": "drift",
                 "detail": f"workflow {base} is disabled_manually on GitHub but has no paused-manually registry row",
+                "paused_by_master": False,
             }
         )
+
+    if master_name:
+        rows_out.append(_build_master_row(master_name, snap))
 
     return rows_out
 

@@ -1201,13 +1201,14 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "103" = [  # steward's CI, estate and environment reports say what is true (fixes under spec-pyforge-steward
-  # CAP-166, CAP-167 and CAP-5; Stories 103.1-103.3), added 2026-10-14. The default surface, restated because a
+  # CAP-166, CAP-167 and CAP-5; Stories 103.1-103.4), added 2026-10-14. The default surface, restated because a
   # declared entry replaces it outright, plus: the pause how-to (103.1); the conda-forge-expert bmad-suite generator,
   # its CLI wrapper, its test and the skill files its retro edits (103.2; the skill's own rule, AGENTS.md); the
   # Detectors workflow, the repo-root scripts tests, the library catalog and every derived surface estate reconcile
   # regenerates -- the generated environments and pixi-tasks docs, the docs map and the env-matrix block in the
   # unifying-strategy Dream (103.3); and every Spec memlog. pixi.toml, pixi.lock and environment.yaml are the default
-  # surface; 103.3 is the one story that moves them. No consumer station's package is on it.
+  # surface; 103.3 is the one story that moves them. No consumer station's package is on it. Story 103.4 (added
+  # 2026-10-14: the ci-surface-gates tests and the generated fixtures they leave git) sits under tests/scripts/**.
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
