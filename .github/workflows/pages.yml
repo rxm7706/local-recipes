@@ -185,8 +185,10 @@ jobs:
         with:
           path: docs-site/build/site
 
-      # Every event (Story 102.5): a PR's review copy, and on main the deploy job's release asset.
+      # Story 102.5: a PR's review copy, and on a changed tree the deploy job's release asset. A build
+      # whose tree did not change deploys nothing, so it uploads no copy either (102.5's review).
       - name: Upload the site artifact (pages-site)
+        if: ${{ github.event_name == 'pull_request' || steps.stamp.outputs.changed == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: pages-site
@@ -218,6 +220,10 @@ jobs:
       # Story 102.5: the deployed bytes as pages-site.zip (build.json inside) on the rolling
       # `pages-site` pre-release, moved to the deploying commit. Not a version and outside every
       # protected tag pattern. Skipped with steward's duty flag off; a pull_request never deploys.
+      # The release is kept across deploys (102.5's review): its tag moves to the deploying commit
+      # (and the release's target with it) and `--clobber` replaces the asset, so no deploy leaves the
+      # repository without the release, as delete-then-create did when create failed. A clone that
+      # fetched the tag earlier sees it rejected as moved on `git fetch --tags`; nothing reads it.
       - name: Download the deployed site
         if: ${{ needs.build.outputs.pages_duty == '1' && github.event_name != 'pull_request' }}
         uses: actions/download-artifact@v8
@@ -237,9 +243,12 @@ jobs:
           export GH_HOST="${GITHUB_SERVER_URL#*://}"
           test -f pages-site/build.json
           (cd pages-site && zip -qr "$RUNNER_TEMP/pages-site.zip" .)
+          notes="built_from $GITHUB_SHA, run $GITHUB_RUN_ID"
           if gh release view pages-site >/dev/null 2>&1; then
-            gh release delete pages-site --cleanup-tag --yes
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/pages-site" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+            gh release edit pages-site --target "$GITHUB_SHA" --notes "$notes"
+          else
+            gh release create pages-site --prerelease --target "$GITHUB_SHA" \
+              --title "Pages site (rolling)" --notes "$notes"
           fi
-          gh release create pages-site --prerelease --target "$GITHUB_SHA" \
-            --title "Pages site (rolling)" --notes "built_from $GITHUB_SHA, run $GITHUB_RUN_ID"
           gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber

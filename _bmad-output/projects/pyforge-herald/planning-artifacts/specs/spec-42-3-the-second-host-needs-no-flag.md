@@ -244,3 +244,33 @@ files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
   - **AC1's enterprise `pages-check` was red on base** on one absolute link to the public host in
     `docs/reference/github-workflows.md` (`<https://rxm7706.github.io/local-recipes/>`, the `pages.yml` row). The row
     now names the host in code and describes 102.5's behaviour.
+- 2026-10-15 (the independent review, `review-42-3-102-5`; the 42.3 items are resolved here, where this entry and an
+  earlier one disagree, this one holds):
+  - **The blocker is not this story's any more.** The flag gate's and the flag inventory's retirement rule
+    (`scripts/flag_gate_check.py`, `scripts/flag_inventory.py`, their tests, the `retires-flag:` field and
+    `docs/reference/story-spec-flag-block.md`) moved to a new doctor story, built in its own worktree, by operator
+    ruling 2026-10-15; the review's should-fix on that rule (a retired key whose reader lives) goes with it. This
+    story's `retires-flag:` frontmatter stays as built until that story lands.
+  - **A root-hosted site builds for its own origin (should-fix; AC2 and the matrix amended).** `configure-pages` gives
+    `base_path: ""` for a site served at its host's root (a custom domain, a root-hosted Pages host), and the old
+    "both values, else public" rule built such a host for the public github.io URL; `assemble_pages` then overwrote
+    the workflow's correct `SITE_URL` with that. `pages_site_url.resolve_build_site_url` now decides on the base URL
+    alone: with one, `combine_pages_host(base_url, base_path)`, which already maps an empty or `/` path to the origin;
+    with none, `public_site_url()`. AC2 now reads: given no `PAGES_HOST_BASE_URL` (whatever the base path), the
+    build's `SITE_URL` is the public github.io URL; given a base URL with an empty base path, it is that origin. The
+    matrix rows "root base path" (`PAGES_HOST_BASE_PATH=""` or `/` → the origin alone) and "only one variable"
+    (base URL alone → its origin; base path alone → the public URL) read the same. The `empty-path` case now expects
+    `https://pages.ghe.example`, and `custom-domain-root`, `empty-url` and `url-only` cases join it
+    (`test_the_base_url_alone_decides_and_an_empty_path_is_the_origin`). The how-to's § 5 sentence says the same.
+  - **The test file is renamed and spells the key outright (nit; AC5 amended).** `tests/meta/test_pages_second_host.py`
+    is now `tests/meta/test_pages_site_url.py`, after the module it tests; it is AC3's and AC4's absence test, so it
+    names `pyforge.herald.pages_second_host` plainly instead of in pieces. AC5's command now excludes it by path, and
+    uses git's long pathspec form, because the short form as written fails before searching (`git grep ...
+    ':!_bmad-output'` exits 128, "Unimplemented pathspec magic '_'"): `git grep -l pages_second_host -- .
+    ':(exclude)_bmad-output' ':(exclude)docs/dreams' ':(exclude)archive' ':(exclude)scripts/.spec-surface-baseline.json'
+    ':(exclude)src/shared/packages/pyforge-herald/tests/meta/test_pages_site_url.py'` prints nothing (run 2026-10-15,
+    exit 1, no output). The gate script's `*_second_host` comment is the doctor story's file.
+  - **The how-to index (should-fix).** `docs/how-to/README.md` describes the page as "`configure-pages` host values +
+    the `pages-site` release zip", not "Story 31.1 flag + `pages.yml`".
+  - **The surfaces (nit).** `marshal-policy.toml`'s steward "102" surface names `docsite/tools/pages_site_url.py`, and
+    herald's "42" comment names it too.

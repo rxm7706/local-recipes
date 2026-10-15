@@ -63,7 +63,7 @@ export PAGES_HOST_BASE_PATH="/org/local-recipes"
 pixi run --frozen -e site pages-check
 ```
 
-With both variables set, every link in the built artifact resolves under `https://pages.ghe.example/org/local-recipes/`; with either missing, the build is for the public github.io URL.
+With both variables set, every link in the built artifact resolves under `https://pages.ghe.example/org/local-recipes/`. An empty base path (`configure-pages` gives `""` for a site served at its host's root, such as a custom domain) builds for that origin alone; with no base URL the build is for the public github.io URL.
 
 `pages-check` fails if any script, stylesheet, font, image, `fetch(`, or XHR in the artifact names an origin other than the configured site.
 
@@ -73,7 +73,7 @@ When both checks pass, the enterprise copy is serving a fully static site for it
 
 ## 6. Pull the zip for a host that cannot build
 
-A host whose runners cannot reach a conda mirror can skip sections 1–4 and take the bytes the public site deployed. After every deploy from `main`, the public repository's `pages.yml` attaches the deployed site, `pages-site.zip`, to a rolling pre-release tagged `pages-site` that moves to the deploying commit (steward Story 102.5). The zip is the exact tree that was deployed, with its `build.json` (`tree_hash`, `built_from`, `run_id`, `built_at`) inside.
+A host whose runners cannot reach a conda mirror can skip sections 1–4 and take the bytes the public site deployed. After every deploy from `main`, the public repository's `pages.yml` attaches the deployed site, `pages-site.zip`, to a rolling pre-release tagged `pages-site` that moves to the deploying commit (steward Story 102.5). The release step runs only while steward's flag `pyforge.steward.pages_duty` reads on in the deploying environment (the public CI resolves the `dev` overlay, where it is on); with it off, no asset is attached. The zip is the deployed tree, with its `build.json` (`tree_hash`, `built_from`, `run_id`, `built_at`) inside. `tree_hash` cannot be recomputed from the zip: it covers the build tree's hidden files too (`.pages-build-site-url`, `herald/.nojekyll`), which GitHub's artifact uploads leave out of both the Pages artifact and the zip. The integrity check is `built_from`, below.
 
 1. On a machine with access to github.com, download it:
 

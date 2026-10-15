@@ -105,8 +105,9 @@ def test_pages_yml_concurrency_and_timeouts() -> None:
 
 
 def test_pages_yml_pr_artifact_upload_shape() -> None:
-    """The Pages artifact uploads off pull requests; the ``pages-site`` copy uploads on every event
-    (Story 102.5: a PR's review copy, and on main the deploy job's release asset)."""
+    """The Pages artifact uploads off pull requests; the ``pages-site`` copy uploads for a pull request
+    or a changed tree (Story 102.5 and its review: a PR's review copy, and the deploy job's release
+    asset; an unchanged tree deploys nothing)."""
     document = _load()
     steps = document["jobs"]["build"]["steps"]
     upload_pages = next(s for s in steps if isinstance(s, dict) and "upload-pages-artifact" in str(s.get("uses", "")))
@@ -115,7 +116,7 @@ def test_pages_yml_pr_artifact_upload_shape() -> None:
     )
     assert "pull_request" in upload_pages["if"]
     assert upload_pages["if"].strip() == "${{ github.event_name != 'pull_request' }}"
-    assert "if" not in upload_site
+    assert upload_site["if"] == "${{ github.event_name == 'pull_request' || steps.stamp.outputs.changed == 'true' }}"
     assert upload_site["with"]["name"] == "pages-site"
 
 

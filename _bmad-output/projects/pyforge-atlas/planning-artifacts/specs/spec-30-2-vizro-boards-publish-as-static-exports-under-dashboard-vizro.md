@@ -324,6 +324,8 @@ states
     two `setup-pixi` pins in `kedro-viz-publish.yml`.
 - 2026-10-15 (fixed while building herald 42.3 + steward 102.5; this story's spec status unchanged):
   - `StaticExportError` gains `PyforgeError` as a base, as `pyforge-core`'s exception-root meta-test requires.
+    *(42.3 + 102.5's review, 2026-10-15: the second base `Exception` was redundant, since `PyforgeError` subclasses
+    it; the class is now `StaticExportError(PyforgeError)`, as `pyforge-core`'s own errors are.)*
   - The flag key is registered in the core and platform tree-wide flag tests, which list every key the tree holds;
     both were red at `73ae4f1180`.
   - `test_vizro_static_export.py` no longer computes a repository root. `MEMBER_DIR.parents[2]` was `src/`, and steward's

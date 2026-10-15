@@ -6486,3 +6486,27 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-15 — recorded with Story 102.4's review (Pages redesign chain)
   status: open
+
+### DW-steward-102-5-1: None of the four declared protected-refs rulesets exists on live GitHub, so archive/preserve/rescue tags are unprotected
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset.md`
+  summary: `docs/governance/rulesets/protected-refs.json` (roster-derived, CAP-165 / Story 85.2) declares four rulesets: `protected-refs-attempt-preserve-branches`, `protected-refs-loop-branches`, `protected-refs-tags` (`refs/tags/archive/**`, `refs/tags/preserve/**`, `refs/tags/rescue/**`) and `protected-refs-restrict-preserve-branch-creation`. Live GitHub has none of them and one undeclared ruleset, `protected-refs-no-deletion`. So the tags the preserved-work flow pushes are not protected by a server ruleset, and AGENTS.md's "the server rulesets remain the guarantee" does not hold live; the session hook is the only guard, and only for agents behind it.
+  evidence: `pixi run --frozen -e pyforge-guild python scripts/protected_refs_ruleset_check.py` exit 1, read 2026-10-15 in the Pages redesign chain's lane-B worktree: "missing live ruleset named 'protected-refs-attempt-preserve-branches'", "… 'protected-refs-loop-branches'", "… 'protected-refs-restrict-preserve-branch-creation'", "… 'protected-refs-tags'", "extra live ruleset named 'protected-refs-no-deletion'". Story 102.5's AC6 recorded the same red as drift its diff does not touch; the independent review of herald 42.3 + steward 102.5 (2026-10-15) asked for this row. DW-steward-85-2 is a different item (a mocked ruleset test).
+  location: docs/governance/rulesets/protected-refs.json
+  origin: steward Story 102.5 review, 2026-10-15 (an outward, operator-only act: applying repository rulesets)
+  owner: operator
+  fix: apply the four rulesets in `docs/governance/rulesets/protected-refs.json` to `rxm7706/local-recipes` (repository Settings → Rules → Rulesets, or `gh api -X POST repos/rxm7706/local-recipes/rulesets` with each document), decide whether `protected-refs-no-deletion` stays (declare it in the roster and regenerate the document with `--write-document`) or goes, then re-run `protected_refs_ruleset_check.py` to exit 0 and close this row citing that run.
+  severity: high
+  promoted: 2026-10-15 — steward Story 102.5 review (Pages redesign chain); `scribe capture --type project` by the coordinating session at close
+  status: open
+
+### DW-steward-102-5-2: The how-to's second air-gapped option is not available: an enterprise host cannot publish the pulled pages-site.zip through its own GitHub Pages, because pages.yml has no input that takes a prebuilt tree in place of a build.
+
+- source_spec: `planning-artifacts/specs/spec-102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset.md`
+  summary: The how-to's second air-gapped option is not available: an enterprise host cannot publish the pulled pages-site.zip through its own GitHub Pages, because pages.yml has no input that takes a prebuilt tree in place of a build.
+  evidence: Story 102.5's Approach names two air-gapped paths (serve the unzipped tree, or upload it as the enterprise Pages artifact through the mirror's pages.yml). Only the first exists: the build job always runs pages-check and uploads what it built. The how-to's Pull the zip section says so and recommends serving the tree as static files; sections 1-4 (rebuild on the mirror) remain the GitHub Actions path. Recorded as frontmatter by the 42.3 + 102.5 review (2026-10-15) so deferred_work_intake promotes it.
+  location: .github/workflows/pages.yml (a workflow_dispatch input such as a release tag or artifact to deploy instead of building) and docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md section 6
+  origin: spec-deferred 80f9834962ea — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

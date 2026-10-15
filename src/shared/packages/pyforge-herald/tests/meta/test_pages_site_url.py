@@ -1,10 +1,11 @@
 """Story 31.1: Pages artifact builds for the deploying host (CAP-56).
 
 Story 42.3 (CAP-60): ``actions/configure-pages`` is authoritative on every host, so the build takes
-``PAGES_HOST_BASE_URL`` and ``PAGES_HOST_BASE_PATH`` whenever both are set and the public github.io URL
-otherwise, with no flag. The resolver is ``docsite/tools/pages_site_url.py``; the flag, its reader
-(``pyforge/herald/pages_host.py``) and the workflow exporter (``docsite/tools/export_pages_host_env.py``)
-are gone, and the retired key is spelled here only in pieces so a tracked-file grep for it stays empty.
+``PAGES_HOST_BASE_URL`` (joined with ``PAGES_HOST_BASE_PATH``; an empty base path is a root-hosted site)
+whenever a base URL is set and the public github.io URL otherwise, with no flag. The resolver is
+``docsite/tools/pages_site_url.py``; the flag, its reader (``pyforge/herald/pages_host.py``) and the
+workflow exporter (``docsite/tools/export_pages_host_env.py``) are gone. This file is the absence test, so
+it names the retired key outright; 42.3's AC5 grep excludes it by path (42.3's review).
 """
 
 from __future__ import annotations
@@ -17,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-#: The retired key, assembled so this file does not itself carry the string AC5 greps for.
-RETIRED_FLAG = "pyforge.herald." + "pages" + "_second_host"
+#: The retired key (AC4). AC5's tracked-file grep excludes this file by path.
+RETIRED_FLAG = "pyforge.herald.pages_second_host"
 ENTERPRISE_SITE = "https://pages.ghe.example/org/local-recipes"
 ENTERPRISE_BASE_PATH = "/org/local-recipes/"
 
@@ -77,20 +78,28 @@ def test_both_host_values_set_are_the_site_url(monkeypatch: pytest.MonkeyPatch) 
     assert psh.resolve_from_process_environment() == "https://pages.ghe.example/org/local-recipes"
 
 
+_PUBLIC = "https://rxm7706.github.io/local-recipes"
+
+
 @pytest.mark.parametrize(
-    ("base_url", "base_path"),
+    ("base_url", "base_path", "expected"),
     [
-        (None, None),
-        ("https://pages.ghe.example", None),
-        (None, "/org/local-recipes"),
-        ("https://pages.ghe.example", ""),
+        (None, None, _PUBLIC),
+        (None, "/org/local-recipes", _PUBLIC),
+        ("", "/org/local-recipes", _PUBLIC),
+        ("https://pages.ghe.example", "", "https://pages.ghe.example"),
+        ("https://docs.example.com", "", "https://docs.example.com"),
+        ("https://pages.ghe.example", None, "https://pages.ghe.example"),
     ],
-    ids=["neither", "url-only", "path-only", "empty-path"],
+    ids=["neither", "path-only", "empty-url", "empty-path", "custom-domain-root", "url-only"],
 )
-def test_one_value_or_none_falls_back_to_the_public_url(
-    monkeypatch: pytest.MonkeyPatch, base_url: str | None, base_path: str | None
+def test_the_base_url_alone_decides_and_an_empty_path_is_the_origin(
+    monkeypatch: pytest.MonkeyPatch, base_url: str | None, base_path: str | None, expected: str
 ) -> None:
-    """AC2: neither variable, or only one, builds for the public github.io URL."""
+    """AC2 as amended by 42.3's review: no base URL builds for the public github.io URL, whatever the
+    base path; a base URL with an empty base path is a host served at its root, so the site URL is that
+    origin. ``configure-pages`` emits ``base_path: ""`` for a custom domain or a root-hosted Pages site,
+    and the old "both values or public" rule built such a host for the public URL."""
     psh = _site_url()
     monkeypatch.setenv("GITHUB_REPOSITORY", "rxm7706/local-recipes")
     for name, value in (("PAGES_HOST_BASE_URL", base_url), ("PAGES_HOST_BASE_PATH", base_path)):
@@ -98,7 +107,7 @@ def test_one_value_or_none_falls_back_to_the_public_url(
             monkeypatch.delenv(name, raising=False)
         else:
             monkeypatch.setenv(name, value)
-    assert psh.resolve_from_process_environment() == "https://rxm7706.github.io/local-recipes"
+    assert psh.resolve_from_process_environment() == expected
 
 
 @pytest.mark.parametrize(
@@ -118,7 +127,7 @@ def test_resolve_build_site_url_combines_without_a_flag(base_url: str, base_path
 def test_no_flag_read_in_docsite_and_the_reader_is_gone() -> None:
     """AC3."""
     root = _repo_root()
-    pattern = re.compile("|".join(["pages_" + "second_host", "PYFORGE_PAGES_" + "APPLY_HOST", "read_" + "boolean"]))
+    pattern = re.compile("pages_second_host|PYFORGE_PAGES_APPLY_HOST|read_boolean")
     hits = [
         f"{path.relative_to(root)}:{number}"
         for path in sorted((root / "docsite").rglob("*"))
@@ -140,7 +149,7 @@ def test_the_retired_key_is_gone_from_the_tree_and_every_overlay() -> None:
     for environment, values in overlays.items():
         assert RETIRED_FLAG not in values, environment
     inventory = (root / "docs/governance/flag-inventory/pyforge-herald.md").read_text(encoding="utf-8")
-    assert "pages_" + "second_host" not in inventory
+    assert "pages_second_host" not in inventory
 
 
 # Story 40.1 (FR-8.6): pages-check requires herald's shared menu, exactly as docsite/content/site.yml

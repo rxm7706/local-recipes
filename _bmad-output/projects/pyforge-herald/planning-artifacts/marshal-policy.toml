@@ -546,7 +546,7 @@ verify_commands = [
 "42" = [  # the Pages site shows the fleet and the guild, and builds for any host without a flag (feature under CAP-60,
   # FR-12.1..FR-12.3; flags pyforge.herald.status_pages new and pyforge.herald.pages_second_host retired; Stories
   # 42.1-42.3), added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus
-  # docsite/ (build.py, the status templates, the build inputs, site.yml, assemble_pages.py, pages_second_host.py), the
+  # docsite/ (build.py, the status templates, the build inputs, site.yml, assemble_pages.py, pages_site_url.py), the
   # flag tree, its overlay and herald's flag inventory, the GHE how-to, and every Spec memlog a reconcile names
   # (spec-pyforge-steward co-governs the workflow that writes the inputs; herald never edits pages.yml).
   "src/shared/packages/pyforge-herald/**",

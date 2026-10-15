@@ -131,7 +131,7 @@ _PAGE_TEMPLATE = """<!DOCTYPE html>
 """
 
 
-class StaticExportError(PyforgeError, Exception):
+class StaticExportError(PyforgeError):
     """The export could not run; nothing was written. The message names the cause."""
 
 
