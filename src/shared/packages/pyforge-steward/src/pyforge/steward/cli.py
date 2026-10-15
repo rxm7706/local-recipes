@@ -1034,7 +1034,7 @@ def _add_provision_subparsers(provision_parser: argparse.ArgumentParser) -> None
         help=(
             "prove the documented fresh-clone class-path (install-class CAP-3): "
             "method core, loop --runner, skill-forge own installer, labs plugin "
-            "docs, steward deploy dashboard / Kedro-Viz, template N/A"
+            "docs, the Kedro-Viz producer (kedro-viz-export artifact), template N/A"
         ),
     )
     provision_parser.add_argument(
@@ -1799,7 +1799,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         # payload elsewhere (`ledger-query --output`) must leave stdout EMPTY
         # for machine consumers, not hand them a lone newline.
         if result.summary:
-            print(result.summary, file=sys.stderr if not result.ok else sys.stdout)
+            # A failed duty prints to stderr unless it asks for stdout: a machine payload whose exit code says the
+            # read was partial (`ci status --json`, Story 103.7).
+            to_stdout = result.ok or result.details.get("summary_stream") == "stdout"
+            print(result.summary, file=sys.stdout if to_stdout else sys.stderr)
         # A duty never calls sys.exit() (AD-8) — but it may name a specific
         # documented exit code (e.g. budget.EXIT_BUDGET_NOT_CONFIGURED) via
         # `DutyResult.details["exit_code"]` when the plain ok/not-ok binary

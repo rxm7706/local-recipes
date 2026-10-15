@@ -43,11 +43,19 @@ pixi run -e site pages-check   # pages-build + verify redirects and in-artifact 
 ```
 
 Published layout: Starlight docs at `/`, the dossier site at `/herald/…`, Kedro-Viz at
-`/dashboard/kedro-viz/`, and HTML redirect stubs at the old dossier root paths (for example
-`/dossier/` → `/herald/dossier/`).
+`/dashboard/kedro-viz/` with herald's pipelines page at `/dashboard/`, and HTML redirect stubs at
+the old dossier root paths (for example `/dossier/` → `/herald/dossier/`).
+
+The Kedro-Viz mount is an artifact handoff that tolerates absence (Story 42.2). Its one build
+input is `docs/dashboard/kedro-viz/` (gitignored): atlas's `kedro-viz-export` workflow artifact,
+or a local `pixi run -e pyforge-atlas viz-publish-stage`. Present, it is mounted verbatim, the
+`/kedro-viz/` redirect is written, and the overview tile and the pipelines page name the commit
+and date from its `manifest.json`; a present export whose `manifest.json` is missing, not JSON,
+or lacks `export_commit` or `export_date` fails `pages-check` naming the file. Absent, the build
+exits 0 with no mount, no redirect, and no Kedro-Viz entry in the menus or the tiles.
 
 A PR touching `docs/**`, `docs-site/**`, `docsite/**`, `docs/dashboard/**`, `presentations/**`
-or `pixi.toml` runs `pages-check` in CI (`.github/workflows/docsite-check.yml`);
+or `pixi.toml` runs `pages-check` in CI (the `build` job of `.github/workflows/pages.yml`, which folded `docsite-check.yml`);
 `pixi run -e pyforge-guild pr-preflight` still runs the local `dist/` `site-check` leg unchanged.
 
 Or without pixi:

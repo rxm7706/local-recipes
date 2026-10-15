@@ -1846,6 +1846,18 @@ Drift — orphaned between stations.
     CAP-159, with no CAP and no `SPEC.md` change. `PYFORGE_PREFLIGHT_SKIP=1` keeps its meaning and its precedence, and
     an unknown scope refuses. The journal changes only additively, and the pre-push hook and `pixi.toml` do not
     change. Owner `spec-pyforge-steward`. → Story 103.6, specced 2026-10-15.
+  - **Added 2026-10-15 (ci status retired rows) — Found: every landing records the CI pauses as `unknown`.** Marshal
+    100.1's landing line reads `pyforge steward ci status --json` and records `unknown` on exit 1, and the herald 43.1,
+    doctor 48.1 and atlas 30.1 landings of 2026-10-15 all did. The operator first read the cause as the three `stuck`
+    container-build rows; a `stuck` verdict never fails the read. The cause is the retired rows. `ci status` asks GitHub
+    for the run list of every registry row's workflow, retired rows included, and the two `staged-recipes-linter`
+    reusable files Story 99.7 deleted never ran as workflows of their own, so GitHub keeps no record of them and both
+    fetches 404. That makes the read partial: exit 1, with the envelope on stderr and stdout empty. **What it looks
+    like when fixed:** a retired row's runs are never read, so the read exits 0 with the envelope on stdout; a genuine
+    partial read still exits 1, prints its envelope on stdout as well, and says `partial` inside it, and marshal and
+    doctor read it as a partial read. **Constraints:** a fix under CAP-166, with no CAP and no flag; the envelope
+    changes only additively; the consumer edits stay a few lines each; nothing outward. Operator ruling 2026-10-15
+    ("fix this now"). Owner `spec-pyforge-steward`. → Story 103.7, specced 2026-10-15.
 
 - **2026-10-14 (the CFE regression lane runs when what its tests load changes)** — **Found: `cfe-regression-net` never
   ran when doctor Story 45.1 changed `scripts/fleet_picture.py`, and three conda-forge-expert meta tests went red unseen.**

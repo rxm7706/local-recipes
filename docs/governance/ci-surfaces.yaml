@@ -95,7 +95,7 @@ surfaces:
   kind: workflow
   cost: low
   gate: false
-  switch: null
+  switch: PAUSE_KEDRO_VIZ_PUBLISH
   switch_class: pause
   state: paused-manually
   owner: pyforge-steward

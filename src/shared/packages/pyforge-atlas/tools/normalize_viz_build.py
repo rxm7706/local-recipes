@@ -47,6 +47,7 @@ from anywhere:
 
     python src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py
 """
+
 from __future__ import annotations
 
 import re
@@ -65,15 +66,15 @@ _TIMESTAMP_PATTERN = re.compile(r'"timestamp":\s*"[^"]*"')
 # `deploy.py::repo_root()` (review pass 3: a two-condition AND-marker is
 # unnecessary complexity here since this exact marker is already proven
 # unique in this repo).
-_REPO_ROOT_MARKER = Path("docs/dashboard/kedro-viz/index.html")
+_REPO_ROOT_MARKER = Path("docs/dashboard/README.md")
 
 
 def repo_root() -> Path:
     """Return the local-recipes checkout root.
 
     Walks up from this file's own resolved location looking for
-    `docs/dashboard/kedro-viz/index.html` -- mirrors `pyforge-steward`'s
-    `deploy.py::repo_root()` convention exactly (same marker file).
+    `docs/dashboard/README.md` — the export under ``kedro-viz/`` is gitignored
+    (Story 30.1), so the tracked README is the durable repo-root marker.
     """
     here = Path(__file__).resolve()
     for ancestor in here.parents:
@@ -134,9 +135,7 @@ def _assert_anchor_handled(build_dir: Path, anchor: str, files_changed: int) -> 
 
 def _normalize_timestamp(metadata_path: Path) -> int:
     if not metadata_path.is_file():
-        raise RuntimeError(
-            f"normalize_viz_build: expected metadata file not found: {metadata_path}"
-        )
+        raise RuntimeError(f"normalize_viz_build: expected metadata file not found: {metadata_path}")
     text = metadata_path.read_text(encoding="utf-8")
     normalized, n_subs = _TIMESTAMP_PATTERN.subn('"timestamp": "unset"', text)
     if n_subs == 0:
@@ -155,10 +154,7 @@ def main() -> int:
     build_dir = root / _BUILD_RELATIVE
 
     if not build_dir.is_dir():
-        raise RuntimeError(
-            f"normalize_viz_build: {build_dir} does not exist -- run the "
-            f"`viz-build` pixi task first."
-        )
+        raise RuntimeError(f"normalize_viz_build: {build_dir} does not exist -- run the `viz-build` pixi task first.")
 
     files_changed = _strip_anchor(build_dir, anchor)
     _assert_anchor_handled(build_dir, anchor, files_changed)

@@ -1,7 +1,0 @@
-{
-  "parameters": {
-    "artifactory": {
-      "virtual_repos": []
-    }
-  }
-}

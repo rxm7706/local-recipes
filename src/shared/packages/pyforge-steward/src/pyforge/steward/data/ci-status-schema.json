@@ -26,6 +26,15 @@
     "rows": {
       "type": "array",
       "items": { "$ref": "#/$defs/row" }
+    },
+    "partial": {
+      "type": "boolean",
+      "description": "Present, and true, only on a partial read: one or more surfaces' run lists could not be read, and those rows read last_green_run \"unknown\". Absent on a complete read. The exit code is 1 (Story 103.7)."
+    },
+    "run_list_errors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "One \"<workflow>: <gh error>\" entry per run list that could not be read; present only with partial (Story 103.7)."
     }
   },
   "additionalProperties": false,

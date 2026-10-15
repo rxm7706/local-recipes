@@ -2,8 +2,11 @@
 
 A recorded/scripted walk, never a chat transcript driving npm Installer
 classes. Native commands must appear in install-matrix.md. After 30.2 the
-dashboard class path is Kedro-Viz / ``steward deploy dashboard`` (operator
-console is Lane 1 ``/console/``), not Guildhall generate.py.
+dashboard class path is Kedro-Viz (operator console is Lane 1 ``/console/``),
+not Guildhall generate.py. After atlas Story 30.1 the Kedro-Viz export is a
+build product, never tracked: it is produced by ``viz-publish-stage`` and
+reaches Pages as the ``kedro-viz-export`` workflow artifact, so the class is
+runnable when that producer is wired -- a fresh clone has no export to find.
 """
 
 from __future__ import annotations
@@ -12,6 +15,8 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+
+import yaml
 
 from .suite import (
     INSTALL_CLASS_PLAYBOOK_REL,
@@ -33,6 +38,11 @@ _DELETED_DASHBOARD_TASKS = (
     "dashboard-check",
     "dashboard-drift-check",
 )
+#: The Kedro-Viz producer (atlas Story 30.1): the pixi task that stages the export and the
+#: workflow that uploads it. The bmad-dashboard class is runnable when both are wired.
+_KEDRO_VIZ_STAGE_TASK = "[feature.pyforge-atlas.tasks.viz-publish-stage]"
+_KEDRO_VIZ_WORKFLOW_REL = ".github/workflows/kedro-viz-publish.yml"
+_KEDRO_VIZ_ARTIFACT = "kedro-viz-export"
 _SIX = (
     "bmad-method",
     "bmad-loop",
@@ -140,16 +150,49 @@ def _scan_improvised(section: str) -> list[str]:
     return failures
 
 
+def _uploads_artifact(workflow: Path, name: str) -> bool:
+    """True when ``workflow`` has an ``actions/upload-artifact`` step uploading ``name``."""
+    try:
+        document = yaml.safe_load(workflow.read_text(encoding="utf-8"))
+    except OSError, yaml.YAMLError:
+        return False
+    jobs = document.get("jobs") if isinstance(document, dict) else None
+    for job in (jobs or {}).values():
+        for step in (job or {}).get("steps") or []:
+            if (
+                isinstance(step, dict)
+                and str(step.get("uses", "")).startswith("actions/upload-artifact")
+                and (step.get("with") or {}).get("name") == name
+            ):
+                return True
+    return False
+
+
+def _kedro_viz_producer_failures(repo: Path, pixi: str) -> list[str]:
+    """Why the Kedro-Viz producer is not wired; empty when it is (atlas Story 30.1)."""
+    failures: list[str] = []
+    if _KEDRO_VIZ_STAGE_TASK not in pixi:
+        failures.append(f"pixi task table {_KEDRO_VIZ_STAGE_TASK} missing (the Kedro-Viz producer)")
+    workflow = repo / _KEDRO_VIZ_WORKFLOW_REL
+    if not workflow.is_file():
+        failures.append(f"{_KEDRO_VIZ_WORKFLOW_REL} missing (the Kedro-Viz producer)")
+    elif not _uploads_artifact(workflow, _KEDRO_VIZ_ARTIFACT):
+        failures.append(f"{_KEDRO_VIZ_WORKFLOW_REL} uploads no {_KEDRO_VIZ_ARTIFACT} artifact")
+    return failures
+
+
 def _dashboard_runnable(repo: Path, playbook: str, pixi: str) -> ClassOutcome:
+    """Runnable when the playbook documents the Kedro-Viz path and its producer is wired.
+
+    The export itself (``docs/dashboard/kedro-viz/``) is a gitignored build product since atlas
+    Story 30.1, so a fresh clone never has it and the proof never asks for it."""
     probe = probe_wired(repo, next(p for p in SUITE_PACKAGES if p.name == "bmad-dashboard"))
     failures: list[str] = []
-    if "steward deploy dashboard" not in playbook:
-        failures.append("playbook does not name steward deploy dashboard")
+    if _KEDRO_VIZ_ARTIFACT not in playbook:
+        failures.append(f"playbook does not name the {_KEDRO_VIZ_ARTIFACT} workflow artifact")
     if "/console/" not in playbook:
         failures.append("playbook does not name Lane 1 /console/")
-    kedro = repo / "docs" / "dashboard" / "kedro-viz" / "index.html"
-    if not kedro.is_file():
-        failures.append("docs/dashboard/kedro-viz/index.html missing")
+    failures.extend(_kedro_viz_producer_failures(repo, pixi))
     for task in _DELETED_DASHBOARD_TASKS:
         if _pixi_task_table_present(pixi, task):
             failures.append(f"resurrected pixi task table {task}")
@@ -160,7 +203,9 @@ def _dashboard_runnable(repo: Path, playbook: str, pixi: str) -> ClassOutcome:
     return ClassOutcome(
         name="bmad-dashboard",
         expected="runnable",
-        actual="runnable" if ok else (probe.value or "missing"),
+        # Never "runnable" on a failure: the probe's own value is "runnable" whenever its pixi
+        # task exists, which made the CI line read "expected 'runnable' got 'runnable'".
+        actual="runnable" if ok else "not-runnable",
         ok=ok,
         detail=detail,
     )
@@ -201,8 +246,8 @@ def prove(repo: Path | None = None) -> FreshCloneReport:
                 failures.append(f"invented native fragment {fragment!r} not in install-matrix.md")
         if "steward provision --runner bmad-loop" not in section:
             failures.append("class-path does not cite steward provision --runner bmad-loop")
-        if "steward deploy dashboard" not in section:
-            failures.append("class-path does not cite steward deploy dashboard")
+        if _KEDRO_VIZ_ARTIFACT not in section:
+            failures.append(f"class-path does not cite the {_KEDRO_VIZ_ARTIFACT} workflow artifact (Kedro-Viz)")
         if "npx bmad-module-skill-forge install" not in section:
             failures.append("class-path does not cite skill-forge's own installer")
 

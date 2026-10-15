@@ -1033,7 +1033,8 @@ src/shared/packages/pyforge-steward/catalog/snapshot/
 # governed by a spec surface -- never git-tracked.
 forge-data/
 
-# docs/dashboard/ holds the tracked Kedro-Viz export (kedro-viz/) plus README.
+# docs/dashboard/ holds README (tracked); atlas stages Kedro-Viz under kedro-viz/ (gitignored).
+docs/dashboard/kedro-viz/
 
 # Story 27.1: Starlight docs-site build outputs (local-only).
 docs-site/node_modules/

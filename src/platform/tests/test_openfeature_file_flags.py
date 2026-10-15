@@ -639,6 +639,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.atlas.viz_export_artifact": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.warden.fix_target_resolution": {
         "dev": True,
         "staging": True,

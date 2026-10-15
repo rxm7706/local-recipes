@@ -1,5 +1,6 @@
 {% extends "shell_page.html.j2" %}
 {%- import "blocks.html.j2" as B with context -%}
+{%- import "kedro_viz_export.html.j2" as KV -%}
 {% block body %}
 <div class="page">
 
@@ -39,6 +40,9 @@
       <span class="card-eyebrow">{{ n.eyebrow }}</span>
       <h3>{{ n.label }}</h3>
       <p>{{ n.blurb }}</p>
+      {%- if n.export %}
+      {{ KV.provenance(n.export) }}
+      {%- endif %}
       <span class="card-go">Open {{ n.label }} &rarr;</span>
     </a>
     {%- endfor %}

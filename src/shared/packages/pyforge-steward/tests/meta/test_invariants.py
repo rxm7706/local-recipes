@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 PKG_ROOT = Path(__file__).resolve().parents[2] / "src" / "pyforge"
 
 
@@ -884,7 +886,11 @@ def test_dashboard_extra_pins_match_pixi_feature_pins():
 
 
 def test_guildhall_generator_stays_deleted():
-    """Steward 30.2 / FR-7: generator, data.js, four pixi tasks, cron are gone."""
+    """Steward 30.2 / FR-7: generator, data.js, four pixi tasks, cron are gone.
+
+    Kedro-Viz stays -- since atlas Story 30.1 as the ``kedro-viz-export`` workflow artifact, not a
+    tracked ``docs/dashboard/kedro-viz/`` tree: the producer uploads it, git ignores the staging path,
+    and the publish root keeps only its tracked README."""
     repo = Path(__file__).resolve()
     while repo != repo.parent:
         if (repo / "pixi.toml").is_file() and (repo / "docs" / "dashboard").is_dir():
@@ -895,7 +901,15 @@ def test_guildhall_generator_stays_deleted():
     dashboard = repo / "docs" / "dashboard"
     assert not (dashboard / "generate.py").is_file()
     assert not (dashboard / "data.js").is_file()
-    assert (dashboard / "kedro-viz").is_dir()
+    assert (dashboard / "README.md").is_file()
+    assert "docs/dashboard/kedro-viz/" in (repo / ".gitignore").read_text(encoding="utf-8").splitlines()
+    producer = yaml.safe_load((repo / ".github" / "workflows" / "kedro-viz-publish.yml").read_text(encoding="utf-8"))
+    uploads = [
+        step["with"]
+        for step in producer["jobs"]["publish"]["steps"]
+        if str(step.get("uses", "")).startswith("actions/upload-artifact")
+    ]
+    assert [(u["name"], u["path"]) for u in uploads] == [("kedro-viz-export", "docs/dashboard/kedro-viz/")]
     pixi = (repo / "pixi.toml").read_text(encoding="utf-8")
     for task in (
         "dashboard-gen",
