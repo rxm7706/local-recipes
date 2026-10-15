@@ -7081,6 +7081,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_data.py": "8a27b25b5838e48e259a1a778d76578139ca9dcd",
    "src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_factory_status.py": "a051cea2b65de22f6c8b4512dc36eba2347a43e9",
    "src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_identity_gist.py": "5fd6a30d9fe6772b955e8bf63ab86ec786f4d3ea",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_static_export.py": "ffe1051212dfe3b7cb119ab95614a59a83c2935f",
    "src/shared/packages/pyforge-atlas/tests/unit/test_duckdb_boundary.py": "af889a8dab88de7dfd93d1a2b731a09316477a87",
    "src/shared/packages/pyforge-atlas/tests/unit/test_estate_cache_bsl.py": "a09651ac128df861ee2e8e3d8b05ea1b8ccaab36",
    "src/shared/packages/pyforge-atlas/tests/unit/test_hooks.py": "19db6df0dd343ff37b48cb585e56f2044fc33419",
@@ -7229,7 +7230,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "8d425d7bef78992b913df981892e1bf06032b3cb"
+  "memlog": "da91db161e75072e553849ea69ab0c54af57e804"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
