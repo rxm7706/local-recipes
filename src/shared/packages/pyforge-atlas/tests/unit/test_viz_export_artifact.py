@@ -31,6 +31,14 @@ def _load_workflow() -> dict:
     return yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
 
 
+def _workflow_on(document: dict) -> dict:
+    block = document.get("on")
+    if block is None:
+        block = document.get(True)
+    assert isinstance(block, dict)
+    return block
+
+
 def _baseline_on_block() -> dict:
     proc = subprocess.run(
         ["git", "show", f"{BASELINE_REVISION}:.github/workflows/kedro-viz-publish.yml"],
@@ -40,7 +48,7 @@ def _baseline_on_block() -> dict:
         cwd=REPO_ROOT,
     )
     baseline = yaml.safe_load(proc.stdout)
-    return baseline["on"]
+    return _workflow_on(baseline)
 
 
 def test_ac1_kedro_viz_export_not_tracked_and_gitignored() -> None:
@@ -63,8 +71,9 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
     document = _load_workflow()
     assert document["permissions"]["contents"] == "read"
     assert "write" not in document.get("permissions", {})
-    assert document["on"] == _baseline_on_block()
-    assert "workflow_dispatch" in document["on"]
+    on_block = _workflow_on(document)
+    assert on_block == _baseline_on_block()
+    assert "workflow_dispatch" in on_block
 
     job = document["jobs"]["publish"]
     assert "PAUSE_KEDRO_VIZ_PUBLISH" in job["if"]
