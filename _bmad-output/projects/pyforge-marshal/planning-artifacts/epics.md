@@ -10013,7 +10013,7 @@ So that a conflict with `main` costs a narrow re-check and a CI wait, not a full
 **When** a station's policy sets `[dispatch] landing_reverify = "on-code-change"` and its re-landed branch moved since its latest full verified verdict only by merges of `main` and planning-only commits, with no conflict, story-file overlap or hand-made change outside planning paths
 **Then** the land-only path runs only the narrow re-check (the S-13.7 guard, `story-status-check`, `deferred-work-check` and the two commit checks), journals `verdict: verified`, `mode: reused`, the reused verdict's id and head and the exempt-file evidence, and lands through `execute_dispatch_land` with its CI wait unchanged; anything else, a red narrow re-check included, re-verifies in full with the declined reason journaled
 **And** `"always"` (the default) is today's behaviour exactly; an unknown value is `MRS-POLICY-002`; dropping the replayed conflict check, treating a story-file commit as exempt and ignoring the mode each fail a named test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

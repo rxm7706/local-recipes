@@ -2,7 +2,7 @@
 title: "102.1: A landing reuses its verified verdict when only a merge of main moved the branch"
 type: 'fix'
 created: '2026-10-15'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
