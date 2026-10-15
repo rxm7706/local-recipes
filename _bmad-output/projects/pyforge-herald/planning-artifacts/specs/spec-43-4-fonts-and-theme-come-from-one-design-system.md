@@ -252,7 +252,7 @@ the origin check finds no font loaded from another origin
     `theme.css` carrying its values for the herald pages, which load no Starlight stylesheet): `docs-site/README.md` §
     *Theme and fonts*. The Approach, the Always line, AC2's and AC3's wording and the docs-page I/O row are amended to
     match; the ACs' oracles are unchanged in kind.
-  - **Readings of the ruling, for the operator to keep or overturn.** (a) The headings face is the dossier's, Big
+  - **Readings of the ruling** (accepted as the defaults by the coordinating session, 2026-10-15; the operator may still overturn them). (a) The headings face is the dossier's, Big
     Shoulders Display, as `--sl-font-heading` -- this site's one addition to the contract, since Starlight has no
     headings variable; `theme.css` applies it to Starlight's page title and content headings (`h1#_top`,
     `.sl-markdown-content` h1-h4), and herald reads it with `--sl-font` as fallback. Archivo Expanded, which the

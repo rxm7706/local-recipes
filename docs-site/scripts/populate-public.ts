@@ -10,8 +10,8 @@
  * - each family download, byte for byte, at `herald/decks/<slug>/downloads/<name>`;
  * - every entry of the tracked `docs/dashboard/` tree but its `README.md`, byte for byte, at `dashboard/` -- the tree
  *   AD-21 gives `/dashboard/`, as the Jinja path's assembler copies it: steward's `deploy static` boards, and the two
- *   exports, `kedro-viz/` (Story 42.2) and `vizro/` (atlas Story 30.2), each mounted only when present (a non-empty
- *   directory), never failing the build when absent.
+ *   exports, `kedro-viz/` (Story 42.2) and `vizro/` (atlas Story 30.2), each mounted only when it holds a file, never
+ *   failing the build when absent; dot-entries (staging leftovers) never mount.
  * Off, it is empty: the Jinja path's assembler mounts and copies everything as before.
  *
  * Astro lets a `public/` file win over a route that emits the same path and only warns (`checkPublicConflict`), so
@@ -29,8 +29,10 @@ import { heraldPagesRoot, loadHeraldPages, pagesOneGenerator } from '../src/load
 /** The dashboard exports in `docs/dashboard/<name>/`, mounted at `/dashboard/<name>/` only when present. */
 export const DASHBOARD_EXPORTS = ['kedro-viz', 'vizro'];
 
-function isPresent(dir: string): boolean {
-  return fs.existsSync(dir) && fs.statSync(dir).isDirectory() && fs.readdirSync(dir).length > 0;
+/** A directory holding a file: the one presence rule, as the assembler's `_dashboard_entries` reads it. */
+function holdsAFile(dir: string): boolean {
+  const entries = fs.statSync(dir).isDirectory() ? fs.readdirSync(dir, { recursive: true, encoding: 'utf8' }) : [];
+  return entries.some((rel) => fs.statSync(path.join(dir, rel)).isFile());
 }
 
 /** Rewrite `publicDir` for this build; returns the files written, relative to it, in order. */
@@ -71,7 +73,11 @@ export function populatePublic(
   const entries = fs.existsSync(dashboard) ? fs.readdirSync(dashboard, { recursive: true, encoding: 'utf8' }) : [];
   for (const rel of entries.sort()) {
     const [top] = rel.split(path.sep);
-    const skipped = top === 'README.md' || (DASHBOARD_EXPORTS.includes(top) && !isPresent(path.join(dashboard, top)));
+    // the README and dot-entries (gitignored `.vizro-*` staging leftovers) never mount; an export, only with a file
+    const skipped =
+      top === 'README.md' ||
+      top.startsWith('.') ||
+      (DASHBOARD_EXPORTS.includes(top) && !holdsAFile(path.join(dashboard, top)));
     if (!skipped && fs.statSync(path.join(dashboard, rel)).isFile()) {
       put(`dashboard/${rel.split(path.sep).join('/')}`, fs.readFileSync(path.join(dashboard, rel)));
     }

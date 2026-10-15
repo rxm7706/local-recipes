@@ -569,8 +569,19 @@ def test_one_flag_reader_accepts_the_python_sides_values() -> None:
 
 
 def test_only_the_flag_reader_reads_the_flag_environment() -> None:
-    """One reader (the lane merge, 43.6 review M5): no other docs-site file reads either flag's variable."""
-    pattern = re.compile(r"process\.env(?:\.|\[\s*['\"])(PYFORGE_PAGES_ONE_GENERATOR|PYFORGE_STATUS_PAGES)")
+    """One reader (the lane merge, 43.6 review M5): no other docs-site file reads either flag's variable -- by member
+    or index access on ``process.env`` or ``import.meta.env``, or by destructuring either (43.3's second review)."""
+    env, names = r"(?:process\.env|import\.meta\.env)", r"(?:PYFORGE_PAGES_ONE_GENERATOR|PYFORGE_STATUS_PAGES)"
+    pattern = re.compile(
+        rf"""{env}\s*(?:\?\.|\.|\[\s*['"`])\s*{names}|\{{[^{{}}]*\b{names}\b[^{{}}]*\}}\s*=\s*{env}\b"""
+    )
+    planted = (
+        "const { PYFORGE_PAGES_ONE_GENERATOR: on } = process.env;",
+        "const on = import.meta.env.PYFORGE_STATUS_PAGES;",
+        "const on = process.env['PYFORGE_PAGES_ONE_GENERATOR'];",
+    )
+    assert all(pattern.search(line) for line in planted)
+    assert not pattern.search("throw new Error('missing while PYFORGE_PAGES_ONE_GENERATOR=1');")
     sources = [DOCS_SITE / "astro.config.mjs", *(DOCS_SITE / "src").rglob("*"), *(DOCS_SITE / "scripts").rglob("*")]
     readers = sorted(
         path.relative_to(DOCS_SITE).as_posix()

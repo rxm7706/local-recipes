@@ -278,6 +278,11 @@ states
   `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5), holds one reference, `https://cdn.jsdelivr.net`
   (maplibre's icon template), and all 34 pages pass judged. The export was removed afterwards. AC7 is met; this
   story's status stays `in-review` until the chain's endgame flips it.
+  *Re-verified 2026-10-15 by herald 43.3's second review fix, on the rewritten origin check (`html.parser`, code read
+  only from scripts, styles and .css/.js files):* a fresh real export (34 boards, 37 files, `export_commit`
+  `ee4d754fd437`) in `docs/dashboard/vizro/` -- `pages-check` exit 0 with `pyforge.herald.pages_one_generator` and
+  `pyforge.herald.status_pages` on and the 42.1 and 43.6 fixtures present; the artifact held all 37 files under
+  `dashboard/vizro/`, `plotly.min.js` exempt by name and every page judged. The export was removed afterwards.
 - `pixi run -e pyforge-atlas pyforge-atlas-test -k "kedro_viz_publish or vizro_static"` — expected: pass (AC8 and the
   unit-level tests).
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.

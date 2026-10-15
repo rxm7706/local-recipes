@@ -138,6 +138,7 @@ def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False
         )
         write(dashboard / "vizro" / "manifest.json", json.dumps({**manifest, "boards": []}))
         write(dashboard / "fleet-board" / "index.html", "<!doctype html><title>Fleet board</title><p>board</p>\n")
+        write(dashboard / ".vizro-staging" / "index.html", "<p>a gitignored staging leftover: never mounted</p>\n")
     return root
 
 

@@ -272,13 +272,16 @@ def _load_kedro_viz(export_dir: Path, repo_root: Path | None) -> dict[str, str] 
 
 
 def _dashboard_entries(dashboard_src: Path) -> list[Path]:
-    """What the tracked ``docs/dashboard/`` tree mounts at ``/dashboard/`` (AD-21): every entry but its README, a
-    directory -- an export (Story 42.2; atlas Story 30.2) or a board -- only when present (non-empty). The one rule
-    both flag states follow (Story 43.3's review); ``docs-site/scripts/populate-public.ts`` mounts the same files."""
+    """What the tracked ``docs/dashboard/`` tree mounts at ``/dashboard/`` (AD-21): every entry but its README and a
+    dot-entry (a gitignored ``.vizro-*`` staging leftover), a directory -- an export (Story 42.2; atlas Story 30.2) or
+    a board -- only when it holds a file. The one rule both flag states follow (Story 43.3's reviews);
+    ``docs-site/scripts/populate-public.ts`` mounts the same files."""
     return [
         item
         for item in (sorted(dashboard_src.iterdir()) if dashboard_src.is_dir() else [])
-        if item.name != "README.md" and not (item.is_dir() and not kv.is_present(item))
+        if item.name != "README.md"
+        and not item.name.startswith(".")
+        and not (item.is_dir() and not any(p.is_file() for p in item.rglob("*")))
     ]
 
 

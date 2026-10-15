@@ -25,6 +25,7 @@ import re
 import shutil
 import subprocess
 import sys
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -839,7 +840,36 @@ def test_43_3_ac4_search_holds_a_dossier_page_and_a_family_page(tmp_path: Path) 
 
 
 def test_43_3_ac5_the_origin_check_is_small() -> None:
-    assert len((DOCS_SITE / "scripts" / "origin_check.py").read_text(encoding="utf-8").splitlines()) < 40
+    """AC5's "under 40 lines" held until the second review (2026-10-15): reading the page with ``html.parser`` -- so
+    attribute values decode, code samples load nothing and no attribute hides a later one -- with every line within
+    120 columns takes 64 (the 43.3 change log; Story 43.7 measures the bespoke-Python budget). It does not grow."""
+    assert len((DOCS_SITE / "scripts" / "origin_check.py").read_text(encoding="utf-8").splitlines()) <= 64
+
+
+#: Story 31.1's non-loading snippets (``test_pages_site_url.py``), and an Expressive Code copy button's ``data-code``
+#: naming an absolute fetch and @import -- text and attributes that load nothing.
+_NON_LOADING = [
+    '<a href="https://docs.python.org/3/">Python docs</a>',
+    '<a href="https://github.com/rxm7706/local-recipes">repo</a>',
+    '<area href="https://docs.python.org/3/" alt="docs">',
+    '<link rel="canonical" href="https://docs.python.org/3/">',
+    '<link rel="alternate" type="application/rss+xml" href="https://docs.python.org/3/feed.xml">',
+    '<meta property="og:image" content="https://docs.python.org/3/og.png">',
+    "<pre><code>fetch(&quot;https://platform.example/api&quot;)</code></pre>",
+    '<div class="expressive-code"><button data-code="fetch(&#x22;https://api.example.com/x&#x22;)&#x7f;'
+    '@import url(&#x27;https://fonts.googleapis.com/css2&#x27;);">Copy</button></div>',
+    '<p><code>fetch("https://platform.example/api")</code></p>',
+    "<script>let ready = true;</script><p>fetch(&quot;https://platform.example/api&quot;)</p>",
+]
+
+
+@pytest.mark.parametrize("snippet", _NON_LOADING)
+def test_43_3_the_flag_on_origin_check_passes_what_loads_nothing(tmp_path: Path, snippet: str) -> None:
+    """Story 43.3's second review: the flag-on check reads loads from loading attributes and from code a browser runs
+    (script and style bodies, style attributes, .css and .js files), never from text or a data attribute, so a docs
+    code sample or a copy button's ``data-code`` is not a load -- as the flag-off scanner already judged."""
+    write(tmp_path / "how-to" / "x" / "index.html", f"<html><body>{snippet}</body></html>")
+    _load_assemble_pages()._check_origins(tmp_path, _SITE_URL)
 
 
 @pytest.mark.parametrize(
@@ -881,6 +911,13 @@ def test_43_3_ac5_the_origin_check_is_small() -> None:
         ("herald/index.html", '<img alt="a&gt;b" src="https://img.example.com/a.png">', "img.example.com"),
         ("herald/index.html", '<img src="https://[img.example.com/a.png">', "https://[img.example.com/a.png"),
         ("herald/index.html", '<img src="https://img.example.com:abc/a.png">', "img.example.com:abc"),
+        ("herald/index.html", """<img data-x='a src="' src="https://img.example.com/x.png">""", "img.example.com"),
+        ("herald/index.html", """<img alt=don't src="https://img.example.com/x.png">""", "img.example.com"),
+        (
+            "herald/index.html",
+            '<div style="background:url(&quot;https://img.example.com/b.png&quot;)">',
+            "img.example.com",
+        ),
     ],
     ids=[
         "twin-font-link",
@@ -902,6 +939,9 @@ def test_43_3_ac5_the_origin_check_is_small() -> None:
         "gt-in-an-earlier-attribute",
         "malformed-host",
         "malformed-port",
+        "quote-in-an-earlier-attribute",
+        "apostrophe-in-an-unquoted-value",
+        "style-attribute",
     ],
 )
 def test_43_3_ac5_pages_check_names_a_planted_load(tmp_path: Path, capsys, rel: str, body: str, finding: str) -> None:
@@ -1025,6 +1065,8 @@ def _board_input(tmp_path: Path) -> Path:
     src = _dashboard_src(tmp_path, _fixture_export(tmp_path / "export"))
     (src / "vizro").mkdir()
     write(src / "fleet-board" / "index.html", "<html>a deploy-static board</html>")
+    (src / "empty-board" / "assets").mkdir(parents=True)  # holds no file: mounts nothing (the second review)
+    write(src / ".vizro-staging" / "index.html", "<html>a gitignored staging leftover</html>")  # a dot-entry
     return src
 
 
@@ -1056,6 +1098,36 @@ def test_43_3_the_flag_on_dashboard_is_the_input_and_nothing_else(
         assemble_pages._check_astro_dashboard(src, artifact)
     assert exc.value.code == 1
     assert finding in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(("planted", "refused"), [("status/runs/index.html", False), ("status/index.html", True)])
+def test_43_3_assemble_with_both_flags_takes_only_astros_runs_page_under_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys, planted: str, refused: bool
+) -> None:
+    """The merged collision loop (lanes A and B; 43.3's second review): with both flags on, ``status/`` may pre-exist
+    only as Astro's ``status/runs/`` (Story 43.6), beside which the herald build adds the board; anything else there
+    is another writer and exits 1 before any mount."""
+    monkeypatch.setenv("PYFORGE_PAGES_ONE_GENERATOR", "1")
+    monkeypatch.setenv("PYFORGE_STATUS_PAGES", "1")
+    artifact = tmp_path / "site"
+    write(artifact / planted, "<html>a page</html>")
+    run = partial(
+        _load_assemble_pages().assemble,
+        artifact,
+        repo_root=_repo_root(),
+        dashboard_src=_dashboard_src(tmp_path, None),
+        skip_docs_site_build=True,
+        skip_herald_build=True,
+        site_url=_SITE_URL,
+        fleet_status=_FLEET_FIXTURE,
+    )
+    if not refused:
+        run()
+        return
+    with pytest.raises(SystemExit) as exc:
+        run()
+    assert exc.value.code == 1
+    assert "collision at status/" in capsys.readouterr().err
 
 
 def test_43_3_assemble_refuses_a_dashboard_it_did_not_expect(
