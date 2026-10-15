@@ -274,3 +274,9 @@ files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
     the `pages-site` release zip", not "Story 31.1 flag + `pages.yml`".
   - **The surfaces (nit).** `marshal-policy.toml`'s steward "102" surface names `docsite/tools/pages_site_url.py`, and
     herald's "42" comment names it too.
+- 2026-10-15 (independent review, lane C): the gate and inventory change this story carried (`RETIRES_FIELD` in
+  `scripts/flag_gate_check.py`, the retired cell in `scripts/flag_inventory.py` and their tests) is now owned by doctor
+  Story 34.7, under `spec-feature-flag-governance` CAP-2's retirement path (operator ruling 2026-10-15). 34.7 adds the
+  owner rule (only a story of the key's owning station retires it) and `flag-retired-still-read` (a reader left on a
+  retired key reds). This spec's `retires-flag: pyforge.herald.pages_second_host` line stands: herald owns
+  `pyforge.herald.*`, and no reader names the key.

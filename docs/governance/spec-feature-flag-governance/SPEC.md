@@ -8,13 +8,15 @@ status: ready   # 2026-09-28 — seeded `draft` from the intake triage (docs/dre
                 # instance of the Charter §5 shape, after coverage-gate-independence and
                 # one-chain-per-station.
 created: "2026-09-28"
-updated: "2026-09-28"
+updated: "2026-10-15"   # CAP-2 gains the retirement path (memlog, operator ruling 2026-10-15)
 owner-dream: docs/dreams/feature-flag-governance.md
 fold-exemption: governance   # a gate over every Smith's stories (Charter §5, the 2026-09-14 shape); chain-sprawl-check reads it here too
-surface: []     # Deliberately empty until the mechanism stories land. The gate will be a scripts/
-                # check, declared here when it exists, the way coverage-gate-independence declares
-                # its evaluator. The flag platform (CAP-5) stays under spec-pyforge-steward's surface,
-                # and the testing-kit fixture (CAP-4) under spec-pyforge-testing-charter's.
+surface: []     # Empty by construction: spec-surface-check reads only planning-artifacts Specs
+                # (scripts/spec_surface_check.py SPEC_GLOB), so this guild Spec cannot declare one.
+                # The gate's scripts carry lines in scripts/spec_surface_allowlist.txt, and doctor
+                # Epic 34's [epic_surfaces] admits the paths its stories touch. The flag platform
+                # (CAP-5) stays under spec-pyforge-steward's surface, and the testing-kit fixture
+                # (CAP-4) under spec-pyforge-testing-charter's.
 companions: []
 sources:
   - ../../../docs/dreams/feature-flag-governance.md
@@ -32,7 +34,8 @@ open_questions: []
 
 > **Canonical contract.** Seeded 2026-09-28 from `.memlog.md`, the decision of record, and from the
 > Dream in `sources:`. It was ruled the same session and is now the complete contract for what to
-> build, test and validate. The Dream in the frontmatter is for traceability only.
+> build, test and validate. The Dream in the frontmatter is for traceability only. Re-derived
+> 2026-10-15 for CAP-2's retirement path.
 
 # SPEC — every capability ships behind a flag, and a gate no station owns checks that it does
 
@@ -77,6 +80,12 @@ The seven open questions (memlog 23):
 - **Q6:** the retrofit uses one flag per CAP.
 - **Q7:** from the rule date, `detectors-ci` reds and Marshal refuses on the same day.
 
+Retirement (memlog, 2026-10-15):
+
+- **A flag leaves the tree only through its owner's retirement story, and never while read.**
+  The first retirement (herald Story 42.3) changed the gate from inside the judged story. The
+  operator ruled that a Doctor story carries the gate change, and CAP-2 gains the retirement path.
+
 ## Capabilities — chosen 2026-09-28
 
 - **CAP-1 — the rule and its block.**
@@ -95,13 +104,24 @@ The seven open questions (memlog 23):
   - *intent:* A check in `scripts/`, in the `scripts/coverage_gate.py` shape, reds five cases:
     - a post-rule-date `type: feature` story spec with neither a block nor an exemption;
     - an exemption value not on the closed list;
-    - a flag key that is not in the tree;
+    - a flag key that is not in the tree, unless a story of the key's owning station retired it;
     - a key in the tree that no code reads;
     - a flag still in the tree 90 days after it went ON in every environment.
 
     It warns, and never reds, on stories minted before the rule date.
+
+    **Retirement.** A story spec retires a flag with `retires-flag: <key>`. The key's owning station
+    is its `pyforge.<station>.` prefix, else the tree's `metadata.owner`. The gate reds two more
+    cases:
+    - a `retires-flag:` declared by a story spec of another station, at any status; it never
+      counts as a retirement;
+    - a retired key, gone from the tree, that a reader under `src/` or `scripts/` still names.
+
+    A retirement declared while the key is still in the tree changes nothing.
   - *success:* `detectors-ci` runs the gate from the rule date. No `pyforge.<station>` module hosts
-    it, and a meta-test or import-linter contract pins that. *Mechanism stories: Doctor's.*
+    it, and a meta-test or import-linter contract pins that. A key leaves the tree with no finding
+    only through its owner's retirement story, once no reader names it. *Mechanism stories:
+    Doctor's.*
 - **CAP-3 — dispatch refuses before the session, not after.**
   - *intent:* Marshal consults the CAP-2 gate during dispatch preflight and refuses a story the gate
     would red, with a named MRS code, before any session starts. MRS-GATE-010 refuses only after
@@ -137,7 +157,8 @@ The seven open questions (memlog 23):
 - **CAP-7 — the retrofit.**
   - *intent:*
     - Doctor inventories each station's existing CAPs whose code is reachable at runtime (portal,
-      REST, MCP tools and CLI verbs) against the tree.
+      REST, MCP tools and CLI verbs) against the tree. A key its owner retired (CAP-2) reads as
+      retired, named by the retiring story, never as a missing key.
     - Each Smith then mints its own retrofit stories, one flag per CAP, defaulting ON so each flag
       works as a kill switch.
     - Every pre-rule-date backlog story gains a block or an exemption.
@@ -184,6 +205,8 @@ The seven open questions (memlog 23):
   after it went ON everywhere.
 - After the retrofit, every station's runtime CAPs sit behind default-ON flags. The gate's backlog
   warnings read zero.
+- A flag removed from the tree passes the gate only with its owner's `retires-flag:` story and no
+  reader left. A reader left behind, or another station's declaration, reds.
 
 ## Open Questions
 

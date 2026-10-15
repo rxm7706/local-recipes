@@ -477,8 +477,10 @@ def _gating_flags(
 
 
 def flag_cell(keys: Iterable[str], tree: Mapping[str, Any], retired: Mapping[str, str] | None = None) -> str:
-    """The flag column: the gating keys the tree holds; else why none does. A key a story spec retired
-    (``retires-flag:``, ``flag_gate_check.RETIRES_FIELD``) is named by its retiring story, not by the key."""
+    """The flag column: the gating keys the tree holds; else why none does. A key its owning station retired
+    (``retires-flag:``, ``flag_gate_check.RETIRES_FIELD``; ``retired`` is ``Inputs.retired``, owner retirements
+    only, doctor Story 34.7) is named by its retiring story, not by the key; another station's declaration
+    leaves the key reading "not in tree"."""
     retired = retired or {}
     present = sorted(k for k in set(keys) if k in tree)
     missing = sorted(k for k in set(keys) if k not in tree)

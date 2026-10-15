@@ -113,6 +113,38 @@ code: every station's frozen exit-code domain holds in both flag states. The sto
 `## Verification` names a test that runs both states and, for such a verb, asserts the listing
 and the refusal.
 
+## Retiring a flag: `retires-flag:`
+
+A flag leaves the tree 90 days after it is ON in every environment, and its owning station files
+the removal story (Q4). That story names the key it removes in its frontmatter, beside its own
+`flag-exempt:` value:
+
+```yaml
+---
+title: 'A story that removes a flag'
+type: 'feature'
+flag-exempt: flag-infrastructure
+retires-flag: pyforge.atlas.old_capability   # one key, or a list of keys
+---
+```
+
+- **Only the owner retires a key.** The key's owning station is its `pyforge.<station>.` prefix,
+  or, for a key with no station segment, the tree's `metadata.owner` while the tree holds the
+  key. A story spec's station is its project folder. A `retires-flag:` in a story spec of any
+  other station, at any status, is a defect that names the spec, and it retires nothing.
+- **The key's history stays.** Once the owner retires the key and it leaves the tree, a `done`
+  spec whose `flag:` block names it is history: the gate no longer asks for the key in the tree
+  or for its two-state test. The spec is never rewritten.
+- **No reader may stay.** A retired key that a file under `src/` or `scripts/` still names is a
+  defect that names the file. The flag's reader and its tests leave with the flag; a read of a
+  missing key would silently return its default.
+- **A key still in the tree** is judged as any tree key is. Declaring its retirement early
+  changes nothing.
+
+The flag inventory names a retired key by its retiring story, never by the key. The rule is
+`docs/governance/spec-feature-flag-governance/SPEC.md` CAP-2's retirement path (doctor Story
+34.7).
+
 ## How a machine reads it
 
 `scripts/flag_rule.py` is the pure reader: `classify(path)` returns `flag`, `exempt` or
