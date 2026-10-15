@@ -16,7 +16,13 @@ pytest.importorskip("openfeature")
 
 from pyforge.testing_kit.flags import flag_states, flagd_tree  # noqa: E402
 
-from .test_vizro_static_export import FIXTURE_ROOT, _page_ids, assert_export_shape, cli  # noqa: E402
+from .test_vizro_static_export import (  # noqa: E402
+    FIXTURE_ROOT,
+    _fake_committer_time,
+    _page_ids,
+    assert_export_shape,
+    cli,
+)
 
 _FLAG = "pyforge.atlas.vizro_static_boards"
 
@@ -29,6 +35,7 @@ def test_ac9_the_export_in_both_flag_states(
     tree = flagd_tree(tmp_path, {_FLAG: "on" if flag_on else "off"})
     out = tmp_path / "vizro"
     monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    _fake_committer_time(monkeypatch, "c" * 40)
     code = cli.main(["--out", str(out), "--flags-path", str(tree), "--data-root", FIXTURE_ROOT])
     if not flag_on:
         assert code == 2

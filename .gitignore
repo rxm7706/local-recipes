@@ -1037,6 +1037,8 @@ forge-data/
 # and the static Vizro boards under vizro/ (Story 30.2; gitignored, shipped as a workflow artifact).
 docs/dashboard/kedro-viz/
 docs/dashboard/vizro/
+# the Vizro export's staging and swap-aside siblings (.vizro-*, .vizro-old-*), left only by a killed run
+docs/dashboard/.vizro-*/
 
 # Story 42.1: the fleet board's build input, written by a Guild step of steward's Pages workflow
 # (docsite/tools/status_pages.py); a fixture lives under pyforge-herald's tests/fixtures/.

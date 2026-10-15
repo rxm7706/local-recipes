@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from pyforge.testing_kit.flags import flagd_tree
 
@@ -46,6 +47,19 @@ LIVE_SCAN_PAGES = ("scan-project", "env-inspect")
 SHELL_PAGES = ("behind-upstream", "whodepends")
 # The page template's stamp line; the Card's own line is checked separately (`_card_shows`).
 _STAMP_IN_PAGE = re.compile(r"Data build stamp \(AD-17\): (\S+?)\. Filters")
+
+
+COMMIT_TIME = "2026-10-15T09:30:00Z"
+
+
+def _fake_committer_time(monkeypatch: pytest.MonkeyPatch, sha: str) -> None:
+    """A fake ``GITHUB_SHA`` has no commit to read a committer time from; answer for it."""
+
+    def committer_time(commit: str) -> str:
+        assert commit == sha
+        return COMMIT_TIME
+
+    monkeypatch.setattr(cli.viz_manifest, "_committer_date_iso_utc", committer_time)
 
 
 def _page_ids() -> list[str]:
@@ -126,6 +140,9 @@ def assert_export_shape(out: Path, page_ids: list[str]) -> dict:
     assert bundles[0].read_bytes() == _plotly_bytes()
     assert sorted(p.parent.name for p in out.glob("*/index.html")) == sorted(page_ids)
     assert {p.name for p in out.iterdir()} == {*page_ids, "assets", "index.html", "manifest.json"}
+    assert sorted(p.name for p in (out / "assets").iterdir()) == [
+        "plotly.min.js"
+    ]  # the bundle's exemption is this file
 
     # AC2 -- no third-party origin in any page; every load resolves inside the export.
     for page in _html_files(out):
@@ -346,9 +363,11 @@ def test_the_task_writes_the_export_and_names_github_sha(tmp_path: Path, monkeyp
     out = tmp_path / "vizro"
     tree = flagd_tree(tmp_path, {FLAG: "on"})
     monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    _fake_committer_time(monkeypatch, "b" * 40)
     assert cli.main(["--out", str(out), "--flags-path", str(tree), "--data-root", FIXTURE_ROOT]) == 0
     manifest = assert_export_shape(out, _page_ids())
     assert manifest["export_commit"] == "b" * 40
+    assert manifest["exported_at"] == COMMIT_TIME
     assert "wrote" in capsys.readouterr().out
 
 
@@ -358,8 +377,14 @@ def test_without_github_sha_the_task_names_head(tmp_path: Path, monkeypatch) -> 
     monkeypatch.delenv("GITHUB_SHA", raising=False)
     monkeypatch.chdir(MEMBER_DIR)  # any directory inside the checkout answers `git rev-parse HEAD`
     head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    committed = subprocess.run(
+        ["git", "show", "-s", "--format=%cI", head], capture_output=True, text=True, check=True
+    ).stdout.strip()
     assert cli.main(["--out", str(out), "--flags-path", str(tree), "--data-root", FIXTURE_ROOT]) == 0
-    assert json.loads((out / "manifest.json").read_text())["export_commit"] == head
+    manifest = json.loads((out / "manifest.json").read_text())
+    assert manifest["export_commit"] == head
+    # exported_at is the export commit's committer time, so one commit's export is reproducible.
+    assert datetime.fromisoformat(manifest["exported_at"]) == datetime.fromisoformat(committed)
 
 
 def test_an_unresolvable_export_commit_refuses_and_writes_nothing(tmp_path: Path, monkeypatch, capsys) -> None:
@@ -402,3 +427,123 @@ def test_export_commit_must_be_forty_hex(tmp_path: Path, bmad_fixture: dict) -> 
     with pytest.raises(static_export.StaticExportError, match="export_commit"):
         _export(out, bmad_fixture, export_commit="abc")
     assert not out.exists()
+
+
+def test_an_unreadable_committer_time_refuses_and_writes_nothing(tmp_path: Path, monkeypatch, capsys) -> None:
+    out = tmp_path / "vizro"
+    tree = flagd_tree(tmp_path, {FLAG: "on"})
+    monkeypatch.setenv("GITHUB_SHA", "d" * 40)
+
+    def no_commit(commit: str) -> str:
+        raise SystemExit(1)
+
+    monkeypatch.setattr(cli.viz_manifest, "_committer_date_iso_utc", no_commit)
+    assert cli.main(["--out", str(out), "--flags-path", str(tree), "--data-root", FIXTURE_ROOT]) == 1
+    assert "exported_at" in capsys.readouterr().err
+    assert not out.exists()
+
+
+def test_one_commits_export_is_byte_identical_on_every_run(tmp_path: Path, monkeypatch) -> None:
+    """The Pages build hashes the tree: the same commit and data must export the same bytes."""
+    tree = flagd_tree(tmp_path, {FLAG: "on"})
+    monkeypatch.setenv("GITHUB_SHA", "e" * 40)
+    _fake_committer_time(monkeypatch, "e" * 40)
+    first, second = tmp_path / "first", tmp_path / "second"
+    for out in (first, second):
+        assert cli.main(["--out", str(out), "--flags-path", str(tree), "--data-root", FIXTURE_ROOT]) == 0
+    files = sorted(p.relative_to(first) for p in first.rglob("*") if p.is_file())
+    assert files == sorted(p.relative_to(second) for p in second.rglob("*") if p.is_file())
+    assert [f for f in files if (first / f).read_bytes() != (second / f).read_bytes()] == []
+
+
+# --- the review's guards (third-party traces, Chart Studio links, the data-root scrub, escaping) ---
+
+
+def test_every_exported_chart_draws_no_third_party_trace_and_links_no_chart_studio(
+    exported: tuple[Path, dict],
+) -> None:
+    """The vendored bundle's map and geo URLs are reachable only through these trace types and the
+    Chart Studio links; the export refuses the first and writes the second off."""
+    out, _ = exported
+    dashboard = app.build_dashboard(build_stamp=EXPORTED_TEXT, data_root=FIXTURE_ROOT, now=NOW)
+    charts = [c for page in dashboard.pages for c in page.components if isinstance(c, static_export.vm.Graph)]
+    assert charts
+    for chart in charts:
+        frame = static_export.data_manager[chart.figure["data_frame"]].load()
+        types = {trace.type for trace in chart.figure(data_frame=frame).data}
+        assert types and not types & static_export.THIRD_PARTY_TRACE_TYPES, chart.id
+    assert static_export.PLOTLY_CONFIG["showLink"] is False
+    assert static_export.PLOTLY_CONFIG["showEditInChartStudio"] is False
+    for page in _html_files(out):
+        text = page.read_text(encoding="utf-8")
+        if "Plotly.newPlot" in text:
+            assert '"showLink": false' in text and '"showEditInChartStudio": false' in text, page
+            assert '"showLink": true' not in text and "plotlyServerURL" not in text, page
+
+
+# plotly 7 no longer builds the *mapbox traces (a board drawing one shows its "could not be drawn" line
+# and fetches nothing); the guard keeps them for an older plotly.
+@pytest.mark.parametrize("trace_type", ["choropleth", "choroplethmap", "densitymap", "scattergeo", "scattermap"])
+def test_a_chart_drawing_a_third_party_trace_refuses_the_export(trace_type: str) -> None:
+    import plotly.graph_objects as go
+
+    frames = {"data::probe": pd.DataFrame({"a": [1]})}
+    figure = _Figure(lambda data_frame: go.Figure(data=[{"type": trace_type}]), "data::probe")
+    with pytest.raises(static_export.StaticExportError, match=trace_type):
+        static_export._render_chart(_Component("probe--chart", figure), frames, board="probe")
+
+
+class _Figure:
+    """A captured-callable stand-in: subscriptable for ``data_frame`` and callable with a frame."""
+
+    def __init__(self, build, key: str) -> None:
+        self._build = build
+        self._key = key
+
+    def __getitem__(self, name: str) -> str:
+        assert name == "data_frame"
+        return self._key
+
+    def __call__(self, *, data_frame):
+        return self._build(data_frame)
+
+
+class _Component:
+    def __init__(self, component_id: str, figure: object) -> None:
+        self.id = component_id
+        self.figure = figure
+
+
+def test_the_scrub_replaces_only_the_absolute_root_as_a_whole_path() -> None:
+    scrub = static_export._data_root_scrubber(Path("/data"))
+    text = '/database and /data/x and "/data" and /data'
+    assert scrub(text) == '/database and &lt;data-root&gt;/x and "&lt;data-root&gt;" and &lt;data-root&gt;'
+
+
+def test_a_relative_data_root_leaves_the_figures_json_intact(
+    tmp_path: Path, bmad_fixture: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``--data-root data`` (the member-relative convention) once rewrote every ``"data"`` key."""
+    monkeypatch.chdir(tmp_path)
+    out = tmp_path / "vizro"
+    _export(out, bmad_fixture, data_root="data")
+    charted = [page.id for page in app.PAGE_INVENTORY if page.chart is not None]
+    for page_id in charted:
+        text = (out / page_id / "index.html").read_text(encoding="utf-8")
+        assert '"data":' in text or '"data": ' in text, page_id
+        assert "&lt;data-root&gt;" not in text, page_id
+    assert "backing file not found: data/" in (out / "feedstock-health" / "index.html").read_text()
+
+
+def test_hostile_cells_columns_ids_and_card_text_are_escaped() -> None:
+    hostile = '</td><script>alert("x")</script>'
+    frames = {"data::hostile": pd.DataFrame({'col"><img src=x onerror=alert(1)>': [hostile, "a & b"]})}
+    table = static_export._render_table(_Component('grid"><script>', _Figure(None, "data::hostile")), frames)
+    assert "<script>" not in table and "<img" not in table
+    assert "&lt;/td&gt;&lt;script&gt;" in table and "a &amp; b" in table
+    assert 'id="grid&quot;&gt;&lt;script&gt;"' in table
+    card = static_export._markdown(
+        "### <img src=x onerror=alert(1)>\n\n**<b>bold</b>** `<i>code</i>`\n\n| <x> | y |\n|---|---|\n| <script> | z |"
+    )
+    assert "<img" not in card and "<script>" not in card and "<b>" not in card and "<i>" not in card
+    assert "&lt;img src=x onerror=alert(1)&gt;" in card and "<strong>&lt;b&gt;bold&lt;/b&gt;</strong>" in card

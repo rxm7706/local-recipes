@@ -1679,11 +1679,6 @@ description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashb
 cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/integration/dashboard -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src:src/shared/packages/pyforge-testing-kit/src" }
 
-[feature.local-recipes.tasks.vizro-static-export]
-description = "Story 30.2 (spec-pyforge-atlas CAP-63): export the Vizro boards as static pages to docs/dashboard/vizro/ (gitignored) -- the same Dashboard object dashboard-dryrun builds offline (build_dashboard, no server), one <page-id>/index.html per board, the board index, ONE vendored assets/plotly.min.js copied from the env's plotly package_data (never a CDN), and manifest.json (exported_at, export_commit, boards[] with each page's AD-17 data_build_timestamp). The path field and Run button of scan-project/env-inspect and every filter are not exported. Refuses before writing when a board declares an access column (sld:AD-10, exit 1). Flag pyforge.atlas.vizro_static_boards: off, it refuses with the flag-off message, exit 2, nothing written. The producer job on kedro-viz-publish.yml uploads the tree as the vizro-static-export artifact."
-cmd = "python src/shared/packages/pyforge-atlas/tools/vizro_static_export.py"
-env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
-
 [feature.local-recipes.tasks.vizro-ai-dryrun]
 description = "Wave D verify gate (Story D3, FR-9 / AD-7 / AD-8 / Q3 §11): vizro-ai-dryrun — offline, no-network, no-live-LLM. Asserts the query_vizro_ai MCP tool is registered (FastMCP server + audit + package export) and callable; with NO backend env configured returns the structured 'backend not configured — attended Q3 bring-up (DW-D3)' advisory (no network, no crash, no fabricated chart); the backend resolver reads the endpoint from repo model-backend config (OPENAI_BASE_URL/ANTHROPIC_BASE_URL env) with NO hardcoded public host baked in (Q3 §11 load-bearing invariant); the tool body stays AD-7-thin (only the _nl seam); and the NL query is grounded in the D1 BSL models (AD-8). The live NL->chart invocation + the dashboard NL query field are the attended Q3 event (DW-D3). Offline, --frozen."
 cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/unit/nl -q"
@@ -2882,6 +2877,10 @@ description = "Epic 12/FR-62: static `kedro viz build` of the REAL atlas DAG (ne
 cmd = "rm -rf build && kedro viz build"
 cwd = "src/shared/packages/pyforge-atlas"
 env = { PYTHONHASHSEED = "0" }
+
+[feature.pyforge-atlas.tasks.vizro-static-export]
+description = "Story 30.2 (spec-pyforge-atlas CAP-63): export the Vizro boards as static pages to docs/dashboard/vizro/ (gitignored) -- the same Dashboard object dashboard-dryrun builds offline (build_dashboard, no server), one <page-id>/index.html per board, the board index, ONE vendored assets/plotly.min.js copied from the env's plotly package_data (never a CDN), and manifest.json (exported_at = the export commit's committer time, export_commit, boards[] with each page's AD-17 data_build_timestamp). The path field and Run button of scan-project/env-inspect and every filter are not exported, and a chart that draws a geo or map trace (which fetches from a third-party origin) refuses the export. Refuses before writing when a board declares an access column (sld:AD-10, exit 1). Flag pyforge.atlas.vizro_static_boards: off, it refuses with the flag-off message, exit 2, nothing written. Runs in pyforge-atlas (vizro + plotly; orchestrator ruling 2026-10-15), whose vizro job on kedro-viz-publish.yml uploads the tree as the vizro-static-export artifact."
+cmd = "python src/shared/packages/pyforge-atlas/tools/vizro_static_export.py"
 
 [feature.pyforge-atlas.tasks.viz-publish-stage]
 description = "Epic 12/FR-62: normalize the just-built `build/` output (strips the checkout-anchored absolute path baked into ~53 file-backed dataset nodes under build/api/nodes/*, and fixes the literal build-timestamp in build/api/deploy-viz-metadata -- see tools/normalize_viz_build.py) THEN stages it to docs/dashboard/kedro-viz/, replacing whatever was there. Depends on viz-build so a failed build never stages stale/partial output."

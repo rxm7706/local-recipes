@@ -53,7 +53,9 @@ __all__ = (
     "ASSET_DIR",
     "MANIFEST_NAME",
     "PLOTLY_ASSET",
+    "PLOTLY_CONFIG",
     "STATIC_SCAN_NOTICE",
+    "THIRD_PARTY_TRACE_TYPES",
     "UNAVAILABLE",
     "AccessColumnRefusedError",
     "StaticExportError",
@@ -77,6 +79,25 @@ STATIC_SCAN_NOTICE = (
     "Latest cached result only: a static page cannot start a scan. Run a new one from the live dashboard or the CLI."
 )
 _LIVE_SCAN_KIND = "live-scan-artifact"
+#: plotly.js trace types that fetch from a third-party origin at runtime: geo traces load topojson from
+#: ``cdn.plot.ly``; map/mapbox traces load tiles, fonts, sprites and icons from map providers. The
+#: vendored bundle carries those URLs, so a board drawing one of these is refused (herald AD-21: no
+#: runtime cross-origin call), and the bundle's exemption in ``pages-check`` rests on this refusal.
+THIRD_PARTY_TRACE_TYPES = frozenset(
+    {
+        "scattergeo",
+        "choropleth",
+        "scattermap",
+        "choroplethmap",
+        "densitymap",
+        "scattermapbox",
+        "choroplethmapbox",
+        "densitymapbox",
+    }
+)
+#: The figure config every chart is written with: no plotly logo link, and no Chart Studio links
+#: (``showLink`` / ``showEditInChartStudio`` would point at ``cloud.plotly.com``).
+PLOTLY_CONFIG = {"displaylogo": False, "showLink": False, "showEditInChartStudio": False}
 _SUBMISSION_COMPONENTS = (vm.UserInput, vm.Button, vm.Text)
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _PAGE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -231,18 +252,25 @@ def export_boards(
 
 
 def _data_root_scrubber(root: Path) -> Callable[[str], str]:
-    """Replace the data root's absolute spellings in a page's HTML with :data:`DATA_ROOT_TOKEN`.
+    """Replace the data root's absolute path in a page's HTML with :data:`DATA_ROOT_TOKEN`.
 
     An honest-empty page names the file it did not find (``provenance.resolve_for_file``); on a
-    static page that path would publish the exporting host's checkout path."""
-    raw = {str(root), str(root.resolve())} - {"", "."}
+    static page an absolute root would publish the exporting host's checkout path. Only an absolute
+    spelling is replaced, and only as a whole path -- followed by ``/``, a quote, ``<``, whitespace
+    or the end -- so a relative root (``data``) never rewrites the word ``data`` in a figure's JSON,
+    and ``/data`` never rewrites ``/database``. A relative root prints relative, leaking nothing."""
+    resolved = str(root.resolve())
+    raw = {resolved, *([str(root)] if root.is_absolute() else [])} - {"", "/"}
+    if not raw:
+        return lambda text: text
     spellings = sorted(raw | {_esc(spelling) for spelling in raw}, key=len, reverse=True)
+    pattern = re.compile(
+        "(?:" + "|".join(re.escape(spelling) for spelling in spellings) + r")(?=/|&quot;|&#x27;|\"|'|<|\s|$)"
+    )
     token = _esc(DATA_ROOT_TOKEN)
 
     def scrub(text: str) -> str:
-        for spelling in spellings:
-            text = text.replace(spelling, token)
-        return text
+        return pattern.sub(token, text)
 
     return scrub
 
@@ -273,7 +301,7 @@ def _render_board(
         elif isinstance(component, (vm.AgGrid, vm.Table)):
             parts.append(_render_table(component, frames))
         elif isinstance(component, vm.Graph):
-            parts.append(_render_chart(component, frames))
+            parts.append(_render_chart(component, frames, board=page.id))
         elif live_scan and isinstance(component, _SUBMISSION_COMPONENTS):
             continue  # the path field, Run button and its status line submit work: not exported
         else:
@@ -363,7 +391,7 @@ def _cell(value: Any) -> str:
     return str(value)
 
 
-def _render_chart(component: Any, frames: dict[str, Any]) -> str:
+def _render_chart(component: Any, frames: dict[str, Any], *, board: str = "") -> str:
     frame = _frame_for(component, frames)
     if isinstance(frame, BaseException):
         return _read_error(component, frame)
@@ -374,6 +402,12 @@ def _render_chart(component: Any, frames: dict[str, Any]) -> str:
             f'<p class="read-error" role="alert" id="{_esc(component.id)}">Chart could not be drawn at export '
             f"time ({_esc(type(exc).__name__)}: {_esc(str(exc))}).</p>"
         )
+    third_party = sorted({str(trace.type) for trace in figure.data} & THIRD_PARTY_TRACE_TYPES)
+    if third_party:
+        raise StaticExportError(
+            f"board {board or component.id!r}: chart {component.id!r} draws {', '.join(third_party)}, which loads "
+            "from a third-party origin at runtime; nothing written"
+        )
     return str(
         figure.to_html(
             full_html=False,
@@ -381,7 +415,7 @@ def _render_chart(component: Any, frames: dict[str, Any]) -> str:
             div_id=component.id,
             default_height="420px",
             default_width="100%",
-            config={"displaylogo": False},
+            config=dict(PLOTLY_CONFIG),
         )
     )
 
@@ -419,7 +453,11 @@ def _write_tree(
     manifest: dict[str, Any],
     bundle: bytes,
 ) -> None:
-    """Write everything to a sibling temporary directory, then swap it in for ``out_dir``."""
+    """Write everything to a sibling temporary directory, then swap it in for ``out_dir``.
+
+    The previous tree is renamed aside before the new one is renamed into place, and put back if that
+    rename fails, so a failed swap never loses the previous export. Both sibling names start with
+    ``.<out_dir name>-`` (gitignored beside ``docs/dashboard/vizro/``)."""
     out_dir.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{out_dir.name}-", dir=out_dir.parent))
     try:
@@ -431,12 +469,23 @@ def _write_tree(
         (staging / INDEX_NAME).write_text(index_html, encoding="utf-8")
         (staging / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         staging.chmod(0o755)  # mkdtemp's 0700 would ride the swap into the artifact
-        if out_dir.exists():
-            shutil.rmtree(out_dir)
-        staging.rename(out_dir)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
+    previous: Path | None = None
+    if out_dir.exists():
+        previous = Path(tempfile.mkdtemp(prefix=f".{out_dir.name}-old-", dir=out_dir.parent))
+        previous.rmdir()
+        out_dir.rename(previous)
+    try:
+        staging.rename(out_dir)
+    except BaseException:
+        if previous is not None:
+            previous.rename(out_dir)
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    if previous is not None:
+        shutil.rmtree(previous, ignore_errors=True)
 
 
 # --- the Card markdown subset -------------------------------------------------------------------

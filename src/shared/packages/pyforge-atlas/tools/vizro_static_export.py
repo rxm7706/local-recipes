@@ -8,7 +8,8 @@ Order, every step before anything is written:
 2. the access-column refusal (``sld:AD-10``: exit 1 naming the board);
 3. plotly's ``package_data/plotly.min.js`` in this env (missing: exit 1 naming it);
 4. ``export_commit`` through Story 30.1's helper (``GITHUB_SHA``, else ``git rev-parse HEAD``;
-   unresolved: exit 1 naming the field);
+   unresolved: exit 1 naming the field), and ``exported_at`` as that commit's committer time (the same
+   helper's ``git show``), so the export of one commit is byte-identical on every run with the same data;
 5. ``dashboard.static_export.export_boards`` renders every board in memory and swaps the
    finished tree in for ``docs/dashboard/vizro/``.
 
@@ -20,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
 
 _TOOLS = Path(__file__).resolve().parent
@@ -55,6 +57,13 @@ def _resolve_export_commit(explicit: str | None) -> str | None:
         return None
 
 
+def _resolve_exported_at(export_commit: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(viz_manifest._committer_date_iso_utc(export_commit))
+    except SystemExit:
+        return None
+
+
 def _run(args: argparse.Namespace) -> int:
     from pyforge.atlas.vizro_static_boards import FLAG_KEY, boards_enabled
 
@@ -84,9 +93,20 @@ def _run(args: argparse.Namespace) -> int:
         )
         return EXIT_REFUSED
 
+    exported_at = _resolve_exported_at(export_commit)
+    if exported_at is None:
+        print(
+            f"{_PREFIX}: exported_at could not be resolved (no committer time for export_commit "
+            f"{export_commit[:12]}); nothing written",
+            file=sys.stderr,
+        )
+        return EXIT_REFUSED
+
     out_dir = args.out if args.out is not None else viz_manifest.repo_root() / STAGED_RELATIVE
     try:
-        manifest = static_export.export_boards(out_dir, export_commit=export_commit, data_root=args.data_root)
+        manifest = static_export.export_boards(
+            out_dir, export_commit=export_commit, exported_at=exported_at, data_root=args.data_root
+        )
     except static_export.StaticExportError as exc:
         print(f"{_PREFIX}: {exc}", file=sys.stderr)
         return EXIT_REFUSED

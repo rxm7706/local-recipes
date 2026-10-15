@@ -1,7 +1,7 @@
 """Story 30.2 (CAP-63): the Vizro producer job, the flag and the task -- no vizro needed.
 
 AC8 reads ``.github/workflows/kedro-viz-publish.yml`` as YAML: the second job, ``vizro``, runs
-``vizro-static-export`` in ``-e local-recipes`` and uploads ``docs/dashboard/vizro`` as the
+``vizro-static-export`` in ``-e pyforge-atlas`` (orchestrator ruling 2026-10-15) and uploads ``docs/dashboard/vizro`` as the
 ``vizro-static-export`` artifact (90 days), never commits, and runs only on its own paths
 through the ``changes`` job. The export itself is proven in
 ``tests/integration/dashboard/test_vizro_static_export.py``.
@@ -10,6 +10,8 @@ through the ``changes`` job. The export itself is proven in
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -56,7 +58,7 @@ def test_ac8_the_vizro_job_uploads_the_export_and_never_commits() -> None:
 
     steps = _steps(job)
     pixi = next(step for step in steps if "setup-pixi" in str(step.get("uses", "")))
-    assert pixi["with"]["environments"].split() == ["local-recipes"]
+    assert pixi["with"]["environments"].split() == ["pyforge-atlas"]
 
     uploads = [step for step in steps if str(step.get("uses", "")).startswith("actions/upload-artifact")]
     assert len(uploads) == 1
@@ -67,7 +69,7 @@ def test_ac8_the_vizro_job_uploads_the_export_and_never_commits() -> None:
     flag_step = next(step for step in steps if step.get("id") == "vizro_flag")
     assert "vizro_static_export.py --print-flag" in flag_step["run"].replace("\\\n", " ").replace("  ", " ")
     export = next(step for step in steps if "vizro-static-export" in step.get("run", ""))
-    assert export["run"].strip() == "pixi run --frozen -e local-recipes vizro-static-export"
+    assert export["run"].strip() == "pixi run --frozen -e pyforge-atlas vizro-static-export"
     assert export["if"] == upload["if"]
 
 
@@ -91,6 +93,9 @@ def test_ac8_the_vizro_job_runs_on_its_own_paths() -> None:
     paths_step = next(step for step in _steps(changes) if step.get("id") == "paths")
     assert paths_step["env"]["VIZRO_PATHS"].split() == VIZRO_PATHS
     assert changes["outputs"]["vizro"] == "${{ steps.paths.outputs.vizro }}"
+    # A `git diff` error runs the producer: --quiet's exit code is read, never empty output.
+    assert "git diff --quiet" in paths_step["run"] and "rc=$?" in paths_step["run"]
+    assert "--name-only" not in paths_step["run"]
     # Every pathspec either producer filters on is in the workflow trigger.
     for spec in [*paths_step["env"]["VIZRO_PATHS"].split(), *paths_step["env"]["KEDRO_VIZ_PATHS"].split()]:
         assert spec in trigger or f"{spec}/**" in trigger, spec
@@ -125,8 +130,35 @@ def test_the_task_flag_off_refuses_before_importing_the_dashboard(tmp_path: Path
     assert not out.exists()
 
 
-def test_the_pixi_task_runs_the_tool_in_local_recipes_with_the_serve_pythonpath() -> None:
-    tasks = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]["local-recipes"]["tasks"]
-    task = tasks["vizro-static-export"]
+def test_flag_off_never_imports_the_dashboard_or_vizro(tmp_path: Path) -> None:
+    """In a fresh interpreter: with the flag off, the task returns before ``dashboard.static_export``
+    (and so vizro) is ever imported."""
+    tree = flagd_tree(tmp_path, {FLAG: "off"})
+    probe = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(TOOLS)!r})\n"
+        "import vizro_static_export as cli\n"
+        f"code = cli.main(['--out', {str(tmp_path / 'vizro')!r}, '--flags-path', {str(tree)!r}])\n"
+        "loaded = sorted(m for m in sys.modules if m == 'vizro' or m.startswith(('vizro.', 'pyforge.atlas.dashboard')))\n"
+        "print(code, loaded)\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
+    proc = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, env=env, check=False)
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "2 []"
+
+
+def test_the_pixi_task_runs_the_tool_in_pyforge_atlas() -> None:
+    """Orchestrator ruling 2026-10-15: the export runs in pyforge-atlas (vizro + plotly), not local-recipes."""
+    features = tomllib.loads(PIXI.read_text(encoding="utf-8"))["feature"]
+    task = features["pyforge-atlas"]["tasks"]["vizro-static-export"]
     assert task["cmd"] == "python src/shared/packages/pyforge-atlas/tools/vizro_static_export.py"
-    assert task["env"]["PYTHONPATH"] == tasks["dashboard-serve"]["env"]["PYTHONPATH"]
+    assert "vizro-static-export" not in features["local-recipes"]["tasks"]
+
+
+def test_every_producer_job_carries_its_own_render_marker() -> None:
+    """``ci_surface_gates --render`` finds a job's ``if:`` by its marker; ``publish`` once carried the
+    workflow row's id and would have gained a second ``if:`` when the row went live."""
+    text = WORKFLOW.read_text(encoding="utf-8")
+    for job in ("changes", "publish", "vizro"):
+        assert f"  {job}:\n    # ci-surfaces: kedro-viz-publish.{job}\n" in text, job
