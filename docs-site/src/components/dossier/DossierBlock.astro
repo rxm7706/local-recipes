@@ -1,0 +1,12 @@
+---
+import { renderBlock, type DossierBlock } from '../../lib/dossier-blocks';
+
+interface Props {
+  block: DossierBlock;
+}
+
+const { block } = Astro.props;
+const html = renderBlock(block);
+---
+
+<div set:html={html} />

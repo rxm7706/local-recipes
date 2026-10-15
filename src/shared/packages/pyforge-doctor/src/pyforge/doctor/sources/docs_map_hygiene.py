@@ -8,7 +8,7 @@ map itself governs -- ``docs/tutorials``, ``docs/how-to``, ``docs/reference``,
 station READMEs, skill dirs, ``_bmad-output``) is out of scope by
 construction, so the detector cannot contradict the map's own scope.
 
-Two checks, one Finding per class:
+Checks:
 
 * ``missing`` -- a ``.md`` link in MAP.md that resolves under ``docs/`` but
   does not exist on disk -> ``FAIL`` (a broken map is never acceptable).
@@ -19,14 +19,18 @@ Two checks, one Finding per class:
   map.yaml's page set, so a quadrant page absent from MAP.md is, by
   construction, also absent from map.yaml; the comparison target in this
   module needed no change).
+* ``sections`` (Story 48.1 / CAP-90) -- duplicate ``key``/``order``, malformed
+  ``href`` on a section or entry -> ``WARN`` (one finding per defect).
+* ``unnamed-top-level`` (Story 48.1) -- tracked top-level directory neither
+  allow-listed nor named in MAP.md § Outside this map -> ``WARN``.
 
 Section index pages -- a ``README.md`` directly inside a quadrant directory
 -- are exempt from ``unmapped``; deeper ``README.md`` files (e.g.
 ``docs/reference/sync-jira-github-workflow-templates/README.md``) still
 count. Links whose ``../`` escapes ``docs/`` are ignored: the map may point
 at ``README.md`` / ``AGENTS.md`` / archive paths, which are not its
-responsibility to keep alive. When both classes are empty one ``OK`` finding
-carries ``mapped_count``.
+responsibility to keep alive. When every class is quiet one ``OK`` finding
+carries ``mapped_count``, ``sections_count``, and ``unnamed_top_level``.
 """
 
 from __future__ import annotations
@@ -34,8 +38,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import jsonschema
+
+from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
+from .docs_currency import load_map_yaml
 
 __all__ = ("gather",)
 
@@ -47,6 +55,25 @@ _QUADRANTS: tuple[str, ...] = ("tutorials", "how-to", "reference", "explanation"
 # Match Markdown links whose target ends in .md: [text](path.md). An optional
 # fragment (`#section`) is tolerated and stripped.
 _MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+?\.md)(?:#[^)]*)?\)")
+
+_OUTSIDE_MAP_HEADING_RE = re.compile(r"^## Outside this map\b", re.MULTILINE)
+_BACKTICK_PATH_RE = re.compile(r"`([^`]+)`")
+
+_INFRASTRUCTURE_DIRS = frozenset(
+    {
+        "_bmad",
+        "_bmad-output",
+        "_skf-learn",
+        "archive",
+        "conf",
+        "evals",
+        "helm",
+        "recipes",
+        "scripts",
+        "src",
+        "tests",
+    }
+)
 
 
 def _mapped_paths(map_path: Path, docs_dir: Path) -> set[str]:
@@ -79,6 +106,200 @@ def _quadrant_pages(docs_dir: Path) -> set[str]:
                 continue  # section index page, exempt
             pages.add(page.relative_to(docs_dir).as_posix())
     return pages
+
+
+def _href_defect_messages(href: str) -> list[str]:
+    """Human-readable defect phrases for a site-root-relative ``href``."""
+    defects: list[str] = []
+    if href.startswith("/"):
+        defects.append("leading slash")
+    if "://" in href:
+        defects.append("absolute URL")
+    if ".." in href:
+        defects.append("parent segment (..)")
+    if not href.endswith("/"):
+        defects.append("missing trailing slash")
+    return defects
+
+
+def _sections_warnings(target: Path) -> tuple[list[Finding], int]:
+    """WARN findings for ``sections:`` hygiene; returns (findings, sections_count)."""
+    try:
+        map_data = load_map_yaml(target)
+    except (ValueError, jsonschema.ValidationError) as exc:
+        return (
+            [
+                Finding(
+                    source=Source.DOCS_MAP_HYGIENE,
+                    check=_CHECK_ID,
+                    status=DoctorStatus.WARN,
+                    message=f"docs/map.yaml schema error: {exc}",
+                    evidence={"class": "sections", "error": str(exc)},
+                )
+            ],
+            0,
+        )
+
+    sections: list[dict] = map_data.get("sections") or []
+    findings: list[Finding] = []
+
+    seen_keys: dict[str, int] = {}
+    seen_orders: dict[int, list[str]] = {}
+    for section in sections:
+        key = section["key"]
+        if key in seen_keys:
+            findings.append(
+                Finding(
+                    source=Source.DOCS_MAP_HYGIENE,
+                    check=_CHECK_ID,
+                    status=DoctorStatus.WARN,
+                    message=(f"sections: duplicate key {key!r}"),
+                    evidence={"class": "sections", "key": key, "defect": "duplicate-key"},
+                )
+            )
+        seen_keys[key] = seen_keys.get(key, 0) + 1
+
+        order = section["order"]
+        seen_orders.setdefault(order, []).append(key)
+
+        for defect in _href_defect_messages(section["href"]):
+            findings.append(
+                Finding(
+                    source=Source.DOCS_MAP_HYGIENE,
+                    check=_CHECK_ID,
+                    status=DoctorStatus.WARN,
+                    message=(f"sections: section {key!r} href {section['href']!r}: {defect}"),
+                    evidence={
+                        "class": "sections",
+                        "section_key": key,
+                        "href": section["href"],
+                        "defect": defect,
+                    },
+                )
+            )
+
+        for entry in section.get("entries") or []:
+            entry_key = entry["key"]
+            for defect in _href_defect_messages(entry["href"]):
+                findings.append(
+                    Finding(
+                        source=Source.DOCS_MAP_HYGIENE,
+                        check=_CHECK_ID,
+                        status=DoctorStatus.WARN,
+                        message=(f"sections: section {key!r} entry {entry_key!r} href {entry['href']!r}: {defect}"),
+                        evidence={
+                            "class": "sections",
+                            "section_key": key,
+                            "entry_key": entry_key,
+                            "href": entry["href"],
+                            "defect": defect,
+                        },
+                    )
+                )
+
+    for order, keys in seen_orders.items():
+        if len(keys) > 1:
+            findings.append(
+                Finding(
+                    source=Source.DOCS_MAP_HYGIENE,
+                    check=_CHECK_ID,
+                    status=DoctorStatus.WARN,
+                    message=(f"sections: duplicate order {order} for keys {keys!r}"),
+                    evidence={
+                        "class": "sections",
+                        "order": order,
+                        "keys": keys,
+                        "defect": "duplicate-order",
+                    },
+                )
+            )
+
+    return findings, len(sections)
+
+
+def _outside_map_named_segments(map_path: Path) -> set[str]:
+    """First path segment of each backticked path under § Outside this map."""
+    text = map_path.read_text(encoding="utf-8")
+    match = _OUTSIDE_MAP_HEADING_RE.search(text)
+    if match is None:
+        return set()
+    rest = text[match.start() :]
+    # Stop at the next ## heading (same or higher level).
+    next_heading = re.search(r"\n## [^#]", rest[len(match.group(0)) :])
+    section_text = rest if next_heading is None else rest[: len(match.group(0)) + next_heading.start()]
+
+    named: set[str] = set()
+    for path in _BACKTICK_PATH_RE.findall(section_text):
+        path = path.strip()
+        if "/" not in path:
+            continue
+        segment = path.split("/", 1)[0]
+        if segment:
+            named.add(segment)
+    return named
+
+
+def _tracked_top_level_dirs(target: Path) -> tuple[list[str] | None, str | None]:
+    """Top-level directory names from ``git ls-files -z``, or (None, error)."""
+    try:
+        listing = run_git(target, ["-c", "core.quotePath=false", "ls-files", "-z"])
+    except CliBridgeError as exc:
+        return None, str(exc)
+
+    dirs: set[str] = set()
+    for entry in listing.split("\0"):
+        if not entry or "/" not in entry:
+            continue
+        dirs.add(entry.split("/", 1)[0])
+    return sorted(dirs), None
+
+
+def _unnamed_top_level_warnings(
+    target: Path,
+    map_path: Path,
+    *,
+    infrastructure_dirs: frozenset[str] | None = None,
+) -> tuple[list[Finding], list[str]]:
+    """WARN findings for tracked top-level dirs not named in MAP or allow-list."""
+    allow = infrastructure_dirs if infrastructure_dirs is not None else _INFRASTRUCTURE_DIRS
+    dirs, error = _tracked_top_level_dirs(target)
+    if error is not None or dirs is None:
+        return (
+            [
+                Finding(
+                    source=Source.DOCS_MAP_HYGIENE,
+                    check=_CHECK_ID,
+                    status=DoctorStatus.WARN,
+                    message=f"unnamed-top-level: cannot read git index: {error or 'no directories'}",
+                    evidence={"class": "unnamed-top-level", "error": error or "no directories"},
+                )
+            ],
+            [],
+        )
+
+    named_in_map = _outside_map_named_segments(map_path)
+    unnamed: list[str] = []
+    findings: list[Finding] = []
+    for name in dirs:
+        if name == "docs":
+            continue
+        if name.startswith("."):
+            continue
+        if name in allow:
+            continue
+        if name in named_in_map:
+            continue
+        unnamed.append(name)
+        findings.append(
+            Finding(
+                source=Source.DOCS_MAP_HYGIENE,
+                check=_CHECK_ID,
+                status=DoctorStatus.WARN,
+                message=(f"unnamed-top-level: tracked directory {name!r} is not named in docs/MAP.md"),
+                evidence={"class": "unnamed-top-level", "directory": name},
+            )
+        )
+    return findings, unnamed
 
 
 def _gather_all(target: Path) -> tuple[Finding, ...]:
@@ -125,13 +346,24 @@ def _gather_all(target: Path) -> tuple[Finding, ...]:
     if findings:
         return tuple(findings)
 
+    section_warns, sections_count = _sections_warnings(target)
+    unnamed_warns, unnamed_dirs = _unnamed_top_level_warnings(target, map_path)
+    extra_warns = section_warns + unnamed_warns
+    if extra_warns:
+        return tuple(extra_warns)
+
     return (
         Finding(
             source=Source.DOCS_MAP_HYGIENE,
             check=_CHECK_ID,
             status=DoctorStatus.OK,
             message=("docs/MAP.md links every quadrant page and every link resolves"),
-            evidence={"mapped_count": len(mapped), "page_count": len(pages)},
+            evidence={
+                "mapped_count": len(mapped),
+                "page_count": len(pages),
+                "sections_count": sections_count,
+                "unnamed_top_level": unnamed_dirs,
+            },
         ),
     )
 
