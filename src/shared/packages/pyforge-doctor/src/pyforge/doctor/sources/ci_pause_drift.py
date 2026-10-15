@@ -61,7 +61,8 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     if code == 0:
         payload = _parse_payload(stdout)
     elif partial:
-        payload = _parse_payload(stderr)
+        # Steward 103.7 prints a partial read's report on stdout; an older steward printed it on stderr.
+        payload = _parse_payload(stdout) or _parse_payload(stderr)
     else:
         first_line = (stderr or stdout).strip().splitlines()
         hint = first_line[0] if first_line else "(no stderr)"

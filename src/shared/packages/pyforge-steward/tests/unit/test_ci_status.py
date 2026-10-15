@@ -1197,3 +1197,146 @@ assert "master:PAUSE_ALL_CI" in surfaces_from_envelope(payload)
         cwd=repo_root,
         check=True,
     )
+
+
+# --- Story 103.7: a retired row reads no runs, and a partial read keeps stdout ---------------------------------------
+
+_RETIRED_GONE_WF = ".github/workflows/retired-gone.yml"
+
+
+def _registry_with_retired_gone(root: Path) -> Path:
+    """The fixture registry plus a retired row whose workflow file is not in the tree (Story 99.7's deleted files)."""
+    _write_fixture_tree(root)
+    reg = _fixture_registry()
+    reg["surfaces"].append(
+        {
+            "id": "retired.gone",
+            "workflow": _RETIRED_GONE_WF,
+            "kind": "workflow",
+            "switch": None,
+            "switch_class": "pause",
+            "state": "retired",
+            "owner": "pyforge-steward",
+        }
+    )
+    reg_path = root / "docs" / "governance" / "ci-surfaces.yaml"
+    reg_path.write_text(yaml.safe_dump(reg), encoding="utf-8")
+    return reg_path
+
+
+def _run_list_workflows(recorded: list[list[str]]) -> list[str]:
+    return [argv[argv.index("--workflow") + 1] for argv in recorded if argv[:3] == ["gh", "run", "list"]]
+
+
+def test_retired_row_reads_no_runs_and_the_read_is_complete(tmp_path: Path) -> None:
+    """AC1: GitHub 404s a deleted workflow that never ran on its own; a retired row never asks for its runs."""
+    reg_path = _registry_with_retired_gone(tmp_path)
+    recorded: list[list[str]] = []
+    fixed_now = datetime(2026, 10, 15, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_make_runner(tmp_path, recorded, fixed_now, fail_run_for=_RETIRED_GONE_WF),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    result = run_status(deps, json_out=True)
+    assert result.ok is True
+    assert result.details["partial"] is False
+    payload = result.details["payload"]
+    assert "partial" not in payload and "run_list_errors" not in payload
+    by_id = {r["id"]: r for r in payload["rows"]}
+    assert by_id["retired.gone"]["verdict"] == "retired"
+    assert by_id["retired.gone"]["last_green_run"] is None
+    assert by_id["retired.sample"]["last_green_run"] is None
+    fetched = _run_list_workflows(recorded)
+    assert _RETIRED_GONE_WF not in fetched
+    assert ".github/workflows/retired-sample.yml" not in fetched
+    assert ".github/workflows/pages.yml" in fetched
+
+
+def test_live_row_failed_fetch_is_partial_and_the_envelope_names_it(tmp_path: Path) -> None:
+    """AC2 and AC4: a live row's failed run list still makes the read partial, and the envelope says so."""
+    import jsonschema
+
+    reg_path = _registry_with_retired_gone(tmp_path)
+    fixed_now = datetime(2026, 10, 15, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_make_runner(tmp_path, [], fixed_now, fail_run_for=".github/workflows/platform-ci.yml"),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    result = run_status(deps, json_out=True)
+    assert result.ok is False
+    assert result.details["summary_stream"] == "stdout"
+    payload = json.loads(result.summary)
+    assert payload["partial"] is True
+    assert payload["run_list_errors"] == [".github/workflows/platform-ci.yml: run list failed"]
+    by_id = {r["id"]: r for r in payload["rows"]}
+    assert by_id["pause.platform-container"]["last_green_run"] == "unknown"
+    assert by_id["optin.air-gap"]["last_green_run"] == "unknown"
+    assert by_id["pause.guild-container"]["last_green_run"] == "2026-10-01T00:00:00Z"
+    assert by_id["retired.gone"]["last_green_run"] is None
+    schema_text = (
+        resources.files("pyforge.steward").joinpath("data", "ci-status-schema.json").read_text(encoding="utf-8")
+    )
+    jsonschema.validate(payload, json.loads(schema_text))
+
+    table = run_status(deps, json_out=False)
+    assert table.ok is False
+    assert "summary_stream" not in table.details
+
+
+def _patch_production_deps(monkeypatch: pytest.MonkeyPatch, deps: CiDeps) -> None:
+    import pyforge.steward.ci as ci_mod
+
+    monkeypatch.setattr(ci_mod, "_production_deps", lambda _root: deps)
+
+
+def test_main_complete_read_exits_zero_with_the_envelope_on_stdout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AC1 through the CLI: the retired rows that 404'd every live read on 2026-10-15 leave exit 0 and stdout."""
+    reg_path = _registry_with_retired_gone(tmp_path)
+    fixed_now = datetime(2026, 10, 15, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_make_runner(tmp_path, [], fixed_now, fail_run_for=_RETIRED_GONE_WF),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    _patch_production_deps(monkeypatch, deps)
+    assert main(["ci", "status", "--json"]) == 0
+    out, err = capsys.readouterr()
+    assert err == ""
+    assert "partial" not in json.loads(out)
+
+
+def test_main_partial_read_prints_the_envelope_on_stdout_and_exits_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AC3: exit 1 says partial; the --json envelope stays on stdout, and the table keeps stderr."""
+    reg_path = _registry_with_retired_gone(tmp_path)
+    fixed_now = datetime(2026, 10, 15, 12, 0, 0, tzinfo=timezone.utc)
+    deps = CiDeps(
+        root=tmp_path,
+        runner=_make_runner(tmp_path, [], fixed_now, fail_run_for=".github/workflows/platform-ci.yml"),
+        registry_path=reg_path,
+        flag_on=lambda: True,
+        now=lambda: fixed_now,
+    )
+    _patch_production_deps(monkeypatch, deps)
+    assert main(["ci", "status", "--json"]) == 1
+    out, err = capsys.readouterr()
+    assert err == ""
+    envelope = json.loads(out)
+    assert envelope["partial"] is True
+    assert envelope["rows"]
+
+    assert main(["ci", "status"]) == 1
+    out, err = capsys.readouterr()
+    assert out == ""
+    assert err.startswith("id\tverdict")

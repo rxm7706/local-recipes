@@ -2,7 +2,7 @@
 title: "103.7: `steward ci status` reads no runs for a retired row, so a landing records the CI pauses"
 type: 'fix'
 created: '2026-10-15'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: 'f3cab009ecb460495d4a443423d1bbbb62e46227'
 review_loop_iteration: 0
 followup_review_recommended: false
