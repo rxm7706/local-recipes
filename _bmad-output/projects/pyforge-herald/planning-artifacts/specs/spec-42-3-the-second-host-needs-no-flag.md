@@ -2,8 +2,9 @@
 title: '42.3: The second host needs no flag'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 flag-exempt: flag-infrastructure   # the story retires a flag, pyforge.herald.pages_second_host (spec-feature-flag-governance Q2)
+retires-flag: pyforge.herald.pages_second_host   # read by the flag gate and the flag inventory (scripts/flag_gate_check.py RETIRES_FIELD)
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -220,3 +221,26 @@ files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
   2026-10-13 entry, against `pages_second_host.py`, `pages_host.py` and `export_pages_host_env.py` as they stand on
   2026-10-14. AC5's grep is scoped to code, tests, configuration, workflows and docs because the planning record and the
   Dream keep the flag's history by design.
+- 2026-10-15 (built with steward 102.5 in one commit, lane B; status `in-review`). Where the landed code differs:
+  - **The module is renamed.** AC3's `grep -rn "pages_second_host" docsite/` cannot pass while `assemble_pages.py`
+    imports a module of that name, so `docsite/tools/pages_second_host.py` is now `docsite/tools/pages_site_url.py`
+    (same functions: `combine_pages_host`, `public_site_url`, `site_origin`, `resolve_build_site_url` without
+    `apply_second_host`, `resolve_from_process_environment` reading the two variables only). The test file keeps its
+    name and spells the retired key in pieces. The Surface line in `epics.md` names the new path.
+  - **The first flag retirement needed the gate to know about retirements.** With the key gone, `flag-gate-check`
+    redded the `done` 31.1 spec (key not in the tree, its deleted test missing), and the regenerated inventory kept
+    printing the key from 31.1's flag block (AC4, AC5). This spec now carries `retires-flag:
+    pyforge.herald.pages_second_host`. `scripts/flag_gate_check.py` (`RETIRES_FIELD`) leaves a `done` spec whose key
+    is declared retired *and* gone from the tree unjudged, and `scripts/flag_inventory.py` prints "none (retired by
+    <story>)" instead of the key. A key still in the tree is judged as before. Tests are in
+    `tests/scripts/test_flag_gate_check.py` and `test_flag_inventory.py`. This changes the flag governance mechanism
+    (spec-feature-flag-governance Q4), so it needs that Spec's review.
+  - **The example key.** `test_flags.py` (core) and `test_openfeature_file_flags.py` (platform) list every key the tree
+    holds rather than using one as an example, so the key's rows are removed, not moved. The same lists lacked atlas
+    30.2's `pyforge.atlas.vizro_static_boards` (red at `73ae4f1180`), which is now added.
+  - **AC5 is checked by the spec's command, not by a test.** A herald test that ran `git grep` over the repo root
+    would hand the root to code, and steward's station-tests trigger map would then have to fire herald's job on every
+    path. AC3 and AC4 are tests.
+  - **AC1's enterprise `pages-check` was red on base** on one absolute link to the public host in
+    `docs/reference/github-workflows.md` (`<https://rxm7706.github.io/local-recipes/>`, the `pages.yml` row). The row
+    now names the host in code and describes 102.5's behaviour.

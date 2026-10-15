@@ -19,6 +19,11 @@ name: Pages
 # (docsite/content/fleet-status.json, from sprint-ledger-query --format json) before
 # every build, and the build env carries PYFORGE_STATUS_PAGES (herald Story 42.1's
 # flag); `steward pages build|deploy|status` is the duty that speaks to this workflow.
+# Story 102.5: actions/configure-pages is authoritative on every host -- its base_url and
+# base_path reach the build (SITE_URL, PAGES_HOST_BASE_URL, PAGES_HOST_BASE_PATH) with no flag
+# (herald Story 42.3 retires the second-host flag) -- and after each deploy the
+# deployed site ships as pages-site.zip on the rolling `pages-site` pre-release, for a host that
+# cannot reach github.io and pulls reviewed bytes instead of rebuilding behind a mirror.
 
 on:
   pull_request:
@@ -65,6 +70,7 @@ jobs:
     outputs:
       changed: ${{ steps.stamp.outputs.changed }}
       tree_hash: ${{ steps.stamp.outputs.tree_hash }}
+      pages_duty: ${{ steps.duty.outputs.pages_duty }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -84,16 +90,17 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v6
 
-      - name: Resolve Pages host env (flag + configure-pages)
+      - name: Resolve build env (flags)
         run: |
-          pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python docsite/tools/export_ci_surfaces_tile_env.py >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_one_generator_env.py >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python docsite/tools/export_status_pages_env.py >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --flag-env >> "$GITHUB_ENV"
-        env:
-          PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
-          PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      # Story 102.5: the deploy job's release-asset step reads steward's duty flag from here.
+      - name: Carry the duty flag to the deploy job
+        id: duty
+        run: echo "pages_duty=${PYFORGE_PAGES_DUTY:-0}" >> "$GITHUB_OUTPUT"
 
       # The Kedro-Viz mount's build input (Story 102.4): atlas's newest unexpired kedro-viz-export,
       # into docs/dashboard/kedro-viz/. Absent (no run, no artifact, expired) is a normal build: it
@@ -121,7 +128,13 @@ jobs:
             --generated-at "$(git log -1 --format=%cI HEAD)" \
             --out docsite/content/fleet-status.json
 
+      # configure-pages is authoritative on every host (Story 102.5, herald Story 42.3): the
+      # deploying host's base URL and path reach pages-check and the Astro build, no flag.
       - name: Build and verify the unified Pages artifact
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: pixi run --frozen -e site pages-check
 
       - name: Validate docs-site (PR gate folded from docsite-check.yml)
@@ -145,8 +158,8 @@ jobs:
         with:
           path: docs-site/build/site
 
-      - name: Upload PR review artifact
-        if: ${{ github.event_name == 'pull_request' }}
+      # Every event (Story 102.5): a PR's review copy, and on main the deploy job's release asset.
+      - name: Upload the site artifact (pages-site)
         uses: actions/upload-artifact@v7
         with:
           name: pages-site
@@ -163,9 +176,43 @@ jobs:
     concurrency:
       group: pages
       cancel-in-progress: false
+    # contents: write is this job's alone (Story 102.5): the release asset. The build job keeps read.
+    permissions:
+      pages: write
+      id-token: write
+      contents: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+      # Story 102.5: the deployed bytes as pages-site.zip (build.json inside) on the rolling
+      # `pages-site` pre-release, moved to the deploying commit. Not a version and outside every
+      # protected tag pattern. Skipped with steward's duty flag off; a pull_request never deploys.
+      - name: Download the deployed site
+        if: ${{ needs.build.outputs.pages_duty == '1' && github.event_name != 'pull_request' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: pages-site
+          path: pages-site
+
+      - name: Publish the site as the pages-site release asset
+        if: ${{ needs.build.outputs.pages_duty == '1' && github.event_name != 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # gh talks to the host that ran this workflow (github.com or a GitHub Enterprise host).
+          export GH_HOST="${GITHUB_SERVER_URL#*://}"
+          test -f pages-site/build.json
+          (cd pages-site && zip -qr "$RUNNER_TEMP/pages-site.zip" .)
+          if gh release view pages-site >/dev/null 2>&1; then
+            gh release delete pages-site --cleanup-tag --yes
+          fi
+          gh release create pages-site --prerelease --target "$GITHUB_SHA" \
+            --title "Pages site (rolling)" --notes "built_from $GITHUB_SHA, run $GITHUB_RUN_ID"
+          gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber

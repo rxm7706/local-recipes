@@ -43,6 +43,7 @@ from typing import Any
 
 import pandas as pd
 import vizro.models as vm
+from pyforge.core.errors import PyforgeError
 from vizro.managers import data_manager
 
 from . import app as _app
@@ -109,7 +110,7 @@ _PAGE_TEMPLATE = """<!DOCTYPE html>
 """
 
 
-class StaticExportError(Exception):
+class StaticExportError(PyforgeError, Exception):
     """The export could not run; nothing was written. The message names the cause."""
 
 

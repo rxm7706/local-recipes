@@ -1,4 +1,4 @@
-"""Story 102.1–102.3 (CAP-168): pages.yml trigger, build, and deploy shape."""
+"""Story 102.1–102.3 and 102.5 (CAP-168): pages.yml trigger, build, and deploy shape."""
 
 from __future__ import annotations
 
@@ -90,16 +90,18 @@ def test_pages_yml_concurrency_and_timeouts() -> None:
 
 
 def test_pages_yml_pr_artifact_upload_shape() -> None:
+    """The Pages artifact uploads off pull requests; the ``pages-site`` copy uploads on every event
+    (Story 102.5: a PR's review copy, and on main the deploy job's release asset)."""
     document = _load()
     steps = document["jobs"]["build"]["steps"]
     upload_pages = next(s for s in steps if isinstance(s, dict) and "upload-pages-artifact" in str(s.get("uses", "")))
-    upload_pr = next(
+    upload_site = next(
         s for s in steps if isinstance(s, dict) and s.get("uses", "").startswith("actions/upload-artifact@")
     )
     assert "pull_request" in upload_pages["if"]
     assert upload_pages["if"].strip() == "${{ github.event_name != 'pull_request' }}"
-    assert upload_pr["if"].strip() == "${{ github.event_name == 'pull_request' }}"
-    assert upload_pr["with"]["name"] == "pages-site"
+    assert "if" not in upload_site
+    assert upload_site["with"]["name"] == "pages-site"
 
 
 def test_pages_yml_runs_docs_site_validate_in_build() -> None:

@@ -396,14 +396,15 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     SourceRegistration(
         source=Source.PAGES_LIVENESS,
         scope="runtime",
-        subject_station="herald",
+        subject_station="steward",
         owning_station="doctor",
     ),  # Story 48.2 (Epic 48 / CAP-91) -- sources/pages_liveness.py. One live
     # HTTP read of the Pages root's last-modified against the latest
     # published-input commit on refs/remotes/origin/main; warn-only;
     # fleet-picture ATTENTION probe; not in ``doctor check``'s default set
-    # (NFR-4) or detectors-ci. Subject herald: the site's content is herald's
-    # (the label follows the deploy duct, steward's pages.yml, on M2's reconcile).
+    # (NFR-4) or detectors-ci. Subject steward: it judges whether the deploy
+    # duct (pages.yml, steward's since M2) kept the site current; the label
+    # moved from herald with M2's closing pair (herald 42.3 + steward 102.5).
     SourceRegistration(
         source=Source.DREAMS_HYGIENE,
         scope="repo",

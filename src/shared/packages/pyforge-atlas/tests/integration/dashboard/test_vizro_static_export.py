@@ -31,7 +31,6 @@ from .test_dashboard_provenance import NO_FILE_PAGES, PAGE_PARQUET_CONSTANT, TWO
 stamped_root = _provenance.stamped_root
 
 MEMBER_DIR = Path(__file__).resolve().parents[3]
-REPO_ROOT = MEMBER_DIR.parents[2]
 TOOLS = MEMBER_DIR / "tools"
 if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
@@ -357,7 +356,7 @@ def test_without_github_sha_the_task_names_head(tmp_path: Path, monkeypatch) -> 
     out = tmp_path / "vizro"
     tree = flagd_tree(tmp_path, {FLAG: "on"})
     monkeypatch.delenv("GITHUB_SHA", raising=False)
-    monkeypatch.chdir(REPO_ROOT)
+    monkeypatch.chdir(MEMBER_DIR)  # any directory inside the checkout answers `git rev-parse HEAD`
     head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
     assert cli.main(["--out", str(out), "--flags-path", str(tree), "--data-root", FIXTURE_ROOT]) == 0
     assert json.loads((out / "manifest.json").read_text())["export_commit"] == head

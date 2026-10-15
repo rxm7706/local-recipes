@@ -219,3 +219,20 @@ def newest_export_run(
             if isinstance(item, Mapping) and item.get("name") == artifact and item.get("expired") is False:
                 return run_id
     return None
+
+
+#: Story 102.5: the rolling pre-release that carries the deployed site after each deploy, and its
+#: one asset (the build job's ``pages-site`` artifact, zipped, ``build.json`` inside). The tag is not
+#: a version (CalVer tags are) and sits outside every protected tag pattern.
+RELEASE_TAG = "pages-site"
+RELEASE_ASSET = "pages-site.zip"
+#: The ``if:`` of the deploy job's two release-asset steps in ``pages.yml``, held here so a test reads
+#: the workflow against it and :func:`release_asset_runs` evaluates the same condition.
+RELEASE_ASSET_IF = "${{ needs.build.outputs.pages_duty == '1' && github.event_name != 'pull_request' }}"
+
+
+def release_asset_runs(*, pages_duty: str, event_name: str) -> bool:
+    """:data:`RELEASE_ASSET_IF` for one deploy: ``pages_duty`` is the build job's exported duty flag
+    (``PYFORGE_PAGES_DUTY``, ``"1"`` when ``pyforge.steward.pages_duty`` reads on), ``event_name`` the
+    triggering event. A pull request never publishes, whatever the flag."""
+    return pages_duty == "1" and event_name != "pull_request"

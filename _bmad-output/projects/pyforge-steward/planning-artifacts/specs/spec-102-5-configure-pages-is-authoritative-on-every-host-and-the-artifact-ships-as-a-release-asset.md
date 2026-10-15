@@ -2,7 +2,7 @@
 title: '102.5: `configure-pages` is authoritative on every host and the artifact ships as a release asset'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
 flag:
   key: pyforge.steward.pages_duty                 # Story 102.2's; the release-asset step reads its exported state
@@ -220,3 +220,22 @@ deploy's release is recorded with its asset
   not a CalVer tag) is the 2026-10-14 design decision on the Spec's memlog; whether the asset also attaches to a CalVer
   release once one exists is the Spec's open question for the operator. The implementing session reads herald CAP-60's
   landed story first.
+- 2026-10-15 (built with herald 42.3 in one commit, lane B; status `in-review`). Where the landed code differs:
+  - **Where `SITE_URL` is set.** A job-level `env:` cannot read `steps.*`, so `SITE_URL` (from `base_url`) and herald's
+    reader inputs `PAGES_HOST_BASE_URL` / `PAGES_HOST_BASE_PATH` (from `base_url` / `base_path`) sit on the
+    `pages-check` step, as AC1 allows. The flag step is `Resolve build env (flags)` and no longer carries host env.
+  - **The flag reaches the deploy job** through a new build-job output `pages_duty`, written by a `Carry the duty
+    flag to the deploy job` step from `PYFORGE_PAGES_DUTY`. The two asset steps are gated on
+    `pages.RELEASE_ASSET_IF`, which `pages.release_asset_runs` evaluates for AC4's two-state test.
+  - **Rolling release.** If the release exists it is deleted (`--cleanup-tag`), then `gh release create pages-site
+    --prerelease --target $GITHUB_SHA`, then `gh release upload … --clobber`. `gh` targets the running host:
+    `GH_HOST` comes from `GITHUB_SERVER_URL`, and `GH_ENTERPRISE_TOKEN` is set beside `GH_TOKEN`.
+  - **The how-to's second air-gapped option is not available yet.** `pages.yml` has no input that takes a prebuilt
+    tree in place of a build. *Pull the zip* recommends serving the unzipped tree as static files, says the zip is
+    built for the public base path, and names sections 1–4 (rebuild on the mirror) as the GitHub Actions path. Feeding
+    the zip to the enterprise `pages.yml` is named, not fixed.
+  - **102.2's test.** `tests/meta/test_pages_workflow.py`'s PR-upload test now expects `pages-site` on every event.
+  - **AC6.** `scripts/protected_refs_ruleset_check.py` exits 1 today on live-ruleset drift that this diff does not
+    touch ("missing live ruleset named 'protected-refs-tags'" and three more, plus one extra). The test over
+    `protected-refs.json` shows `refs/tags/pages-site` matches no protected pattern.
+  - **AC3** (the recorded upload) is the operator's, after landing.

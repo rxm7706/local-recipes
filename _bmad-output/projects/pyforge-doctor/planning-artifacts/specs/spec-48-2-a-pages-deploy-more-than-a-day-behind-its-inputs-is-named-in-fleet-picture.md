@@ -274,6 +274,13 @@ WARN and the degrade line when the probe raises, the sole-subprocess meta-test s
   - The rule never consults the clock (finding 3): `DW-doctor-48-2-1` in the doctor deferred-work ledger, for a
     `bmad-spec` change to CAP-91. The identical-build case (the builder's open question) is a "Named, not fixed here"
     line above (finding 2).
+- 2026-10-15 (M2's reconcile, with herald 42.3 + steward 102.5): the `REGISTRY` row's `subject_station` moves from
+  `herald` to `steward`, as the Intent's Model bullet foresaw ("the label follows the duct to steward on M2's
+  reconcile"): steward owns the deploy duct (`pages.yml`) since M2, and that pair closes M2. AC7's "subject `herald`" and
+  the Auto Run Result's wording record the row as first landed.
+- 2026-10-15 (same pass): steward's station-tests trigger map reads this story's pinned `PUBLISHED_INPUTS` strings as
+  reads, so `.github/workflows/pyforge-station-tests.yml`'s doctor job now also fires on `docs/index.md`,
+  `docs/404.md` and `docs/map.yaml`. It was red at `73ae4f1180`.
 
 ## Auto Run Result
 

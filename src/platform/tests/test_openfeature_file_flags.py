@@ -644,6 +644,11 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    "pyforge.atlas.vizro_static_boards": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.warden.fix_target_resolution": {
         "dev": True,
         "staging": True,
@@ -742,11 +747,6 @@ _SHIPPED_BOOLEANS = {
     },
     # Story 30.2 deck-twins HTTP routes gate on the same key (CAP-55 FR-10.4).
     "pyforge.herald.deck_viewer": {
-        "dev": True,
-        "staging": True,
-        "production": False,
-    },
-    "pyforge.herald.pages_second_host": {
         "dev": True,
         "staging": True,
         "production": False,

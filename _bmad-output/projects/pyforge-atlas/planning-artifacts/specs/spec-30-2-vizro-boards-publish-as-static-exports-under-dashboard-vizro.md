@@ -305,3 +305,9 @@ states
     (`LandmarkDashboard` now finds the nav container in 0.1.60 and 0.1.62). AC9's two-state test needs
     `openfeature`, so it runs in `-e pyforge-atlas` and skips in `-e local-recipes`. The pixi-version registry counts
     two `setup-pixi` pins in `kedro-viz-publish.yml`.
+- 2026-10-15 (fixed while building herald 42.3 + steward 102.5; this story's spec status unchanged):
+  - `StaticExportError` gains `PyforgeError` as a base, as `pyforge-core`'s exception-root meta-test requires.
+  - The flag key is registered in the core and platform tree-wide flag tests, which list every key the tree holds;
+    both were red at `73ae4f1180`.
+  - `test_vizro_static_export.py` no longer computes a repository root. `MEMBER_DIR.parents[2]` was `src/`, and steward's
+    station-tests trigger map read that as a read of all of `src/`. The HEAD check runs from the member directory.

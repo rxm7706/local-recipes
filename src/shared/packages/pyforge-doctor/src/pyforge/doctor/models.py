@@ -223,8 +223,8 @@ class Source(StrEnum):
     # root's ``last-modified`` against the latest published-input commit on
     # ``refs/remotes/origin/main``; a deploy more than 24 hours behind its
     # inputs is one WARN, an unreadable side is one WARN and never an OK.
-    # fleet-picture ATTENTION probes this DISPATCH name. Subject herald (the
-    # site's content); see sources/pages_liveness.py.
+    # fleet-picture ATTENTION probes this DISPATCH name. Subject steward (the
+    # deploy duct, pages.yml); see sources/pages_liveness.py.
     PAGES_LIVENESS = "pages-liveness"
     # Story 17.2 (Epic 17 / FR-147): Dream-tier hygiene mode on the
     # dream-chain surface — frontmatter validity (status vocab, owner in

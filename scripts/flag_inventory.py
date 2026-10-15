@@ -476,13 +476,23 @@ def _gating_flags(
     return cited
 
 
-def flag_cell(keys: Iterable[str], tree: Mapping[str, Any]) -> str:
+def flag_cell(keys: Iterable[str], tree: Mapping[str, Any], retired: Mapping[str, str] | None = None) -> str:
+    """The flag column: the gating keys the tree holds; else why none does. A key a story spec retired
+    (``retires-flag:``, ``flag_gate_check.RETIRES_FIELD``) is named by its retiring story, not by the key."""
+    retired = retired or {}
     present = sorted(k for k in set(keys) if k in tree)
     missing = sorted(k for k in set(keys) if k not in tree)
     if present:
         return ", ".join(f"`{k}`" for k in present)
     if missing:
-        return f"{NO_FLAG} (key {', '.join(missing)} not in tree)"
+        reasons = []
+        unretired = [k for k in missing if k not in retired]
+        if unretired:
+            reasons.append(f"key {', '.join(unretired)} not in tree")
+        retiring = sorted({story_key(retired[k]) for k in missing if k in retired})
+        if retiring:
+            reasons.append(f"retired by {', '.join(retiring)}")
+        return f"{NO_FLAG} ({'; '.join(reasons)})"
     return NO_FLAG
 
 
@@ -528,7 +538,7 @@ def build_station(
         for cap in sorted(join.parse_declared_cap_ids(text)):
             klass, reach = classify_cap(join, root, station, project, slug, cap, surface_by_cap)
             keys = gating.get((slug, cap), ())
-            flag = flag_cell(keys, inputs.tree)
+            flag = flag_cell(keys, inputs.tree, inputs.retired)
             if klass != RUNTIME and flag == NO_FLAG:
                 flag = NOT_APPLICABLE
             rows.append(CapRow(slug, cap, klass, reach, flag))

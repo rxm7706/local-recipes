@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kedro_viz_export as kv  # noqa: E402
 import status_pages as sp  # noqa: E402
 from pages_one_generator import DOSSIER_ARTIFACT_REL, enabled_from_env  # noqa: E402
-from pages_second_host import (  # noqa: E402
+from pages_site_url import (  # noqa: E402
     SITE_URL_MARKER,
     resolve_from_process_environment,
     site_origin,
@@ -549,7 +549,7 @@ def cross_origin_findings(
     Returns ``(findings, exempt)``: ``findings`` are report lines; ``exempt`` maps each
     :data:`VENDORED_ROOTS` entry to ``(files seen, cross-origin URLs found there)``.
     """
-    from pages_second_host import public_site_url
+    from pages_site_url import public_site_url
 
     configured_origin = site_origin(site_url)
     public_origin = site_origin(public_site_url())

@@ -460,12 +460,12 @@ def test_mutation_no_finding_is_ever_fail(monkeypatch: pytest.MonkeyPatch, tmp_p
 # --- AC7: wired ---------------------------------------------------------------------------------
 
 
-def test_the_source_is_registered_runtime_with_subject_herald_and_owner_doctor() -> None:
+def test_the_source_is_registered_runtime_with_subject_steward_and_owner_doctor() -> None:
     (registration,) = [r for r in REGISTRY if r.source is Source.PAGES_LIVENESS]
     assert Source.PAGES_LIVENESS.value == "pages-liveness"
     assert (registration.scope, registration.subject_station, registration.owning_station) == (
         "runtime",
-        "herald",
+        "steward",
         "doctor",
     )
     assert dispatch.DISPATCH["pages-liveness"] is pages_liveness.gather

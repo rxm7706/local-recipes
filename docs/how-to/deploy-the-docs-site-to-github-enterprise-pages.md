@@ -1,6 +1,6 @@
 # Deploy the docs site to GitHub Enterprise Pages
 
-Use this procedure on the **enterprise copy** of this repository (`ghe.example` in the examples below) so the same unified Pages artifact Story 27.2 builds also publishes to an internal GitHub Enterprise Pages host. Story 31.1 makes the build take the deploying host's site URL and base path from `actions/configure-pages` when `pyforge.herald.pages_second_host` is ON; this page documents only the enterprise-side steps — it does not add a second workflow, artifact, or deploy caller.
+Use this procedure on the **enterprise copy** of this repository (`ghe.example` in the examples below) so the same unified Pages artifact Story 27.2 builds also publishes to an internal GitHub Enterprise Pages host. The build takes the deploying host's site URL and base path from `actions/configure-pages` on every host, with nothing to turn on; this page documents only the enterprise-side steps — it does not add a second workflow, artifact, or deploy caller. A host that cannot build at all pulls the public deploy's bytes instead ([section 6](#6-pull-the-zip-for-a-host-that-cannot-build)).
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ git merge upstream/main
 git push origin main
 ```
 
-Repeat the fetch, merge, and push whenever you want the internal site to pick up upstream doc changes. The enterprise repo runs the same `.github/workflows/pages.yml` as upstream; it must contain the Story 31.1 flag and `export_pages_host_env.py` wiring.
+Repeat the fetch, merge, and push whenever you want the internal site to pick up upstream doc changes. The enterprise repo runs the same `.github/workflows/pages.yml` as upstream, unchanged: nothing in it is specific to either host.
 
 ## 2. Enable GitHub Enterprise Pages with GitHub Actions as the source
 
@@ -31,6 +31,8 @@ In the enterprise repository on `ghe.example`:
 1. Open **Settings → Pages**.
 2. Under **Build and deployment**, set **Source** to **GitHub Actions** (not "Deploy from a branch").
 3. Save. No custom workflow file is required — `pages.yml` is already the sole `actions/deploy-pages` caller.
+
+`actions/configure-pages` (the `pages` step of the `build` job) supplies this host's site URL and base path, and the workflow hands them to `pages-check` and the Astro build as `PAGES_HOST_BASE_URL` and `PAGES_HOST_BASE_PATH`. There is no flag to flip and no file to edit for the enterprise copy.
 
 ## 3. Point CI runners at the internal conda mirror
 
@@ -47,50 +49,49 @@ Confirm a dry run succeeds on a runner:
 pixi run --frozen -e site pages-check
 ```
 
-## 4. Turn `pyforge.herald.pages_second_host` on for the enterprise copy
+## 4. Deploy
 
-On the **enterprise** repository only (leave the public upstream copy at `defaultVariant: "off"`), edit `src/platform/config/flags.json` so the flag resolves to **on**:
+Push to `main` on the enterprise repository (or run **Actions → Pages → Run workflow**). The `build` job uploads `docs-site/build/site`; the `deploy` job publishes to the `github-pages` environment.
 
-```json
-"pyforge.herald.pages_second_host": {
-  "state": "ENABLED",
-  "variants": { "on": true, "off": false },
-  "defaultVariant": "on",
-  ...
-}
-```
+## 5. Verify the deployed site makes no request to another origin
 
-Commit and push that change to `main` on `ghe.example`. The `Resolve Pages host env` step in `pages.yml` runs:
-
-```bash
-pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"
-```
-
-with `PAGES_HOST_BASE_URL` and `PAGES_HOST_BASE_PATH` from `actions/configure-pages`. When the flag is on, those values flow into `SITE_URL` for `pages-check` and the Astro build.
-
-To test the same resolution locally before pushing:
+**Automated check (same as CI):** with this host's `configure-pages` values in the environment, `pages-check` must exit 0. To run it on a workstation before pushing:
 
 ```bash
 export PAGES_HOST_BASE_URL="https://pages.ghe.example"
 export PAGES_HOST_BASE_PATH="/org/local-recipes"
-pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py
 pixi run --frozen -e site pages-check
 ```
 
-## 5. Deploy
-
-Push to `main` on the enterprise repository (or run **Actions → Dashboard (GitHub Pages) → Run workflow**). The `build` job uploads `docs-site/build/site`; the `deploy` job publishes to the `github-pages` environment.
-
-## 6. Verify the deployed site makes no request to another origin
-
-**Automated check (same as CI):** with the enterprise `configure-pages` outputs and the flag on, `pages-check` must exit 0:
-
-```bash
-pixi run --frozen -e site pages-check
-```
+With both variables set, every link in the built artifact resolves under `https://pages.ghe.example/org/local-recipes/`; with either missing, the build is for the public github.io URL.
 
 `pages-check` fails if any script, stylesheet, font, image, `fetch(`, or XHR in the artifact names an origin other than the configured site.
 
 **Browser check on an air-gapped workstation:** open the internal Pages URL from a browser that has **no route to the public internet** (no split tunnel, no corporate proxy to github.io). Open developer tools → **Network**, reload the docs home page and one nested route (for example a herald dossier page under `/herald/`). Confirm every request stays on the `ghe.example` host (or your internal mirror hostnames documented in [`air-gapped-mirror-setup.md`](air-gapped-mirror-setup.md)). There must be no failed requests to `github.io`, `github.com`, or other external origins for assets required to render the page. Plain navigation links to external sites are allowed; cross-origin **loads** are not.
 
 When both checks pass, the enterprise copy is serving a fully static site for its own host, matching Story 31.1's contract.
+
+## 6. Pull the zip for a host that cannot build
+
+A host whose runners cannot reach a conda mirror can skip sections 1–4 and take the bytes the public site deployed. After every deploy from `main`, the public repository's `pages.yml` attaches the deployed site, `pages-site.zip`, to a rolling pre-release tagged `pages-site` that moves to the deploying commit (steward Story 102.5). The zip is the exact tree that was deployed, with its `build.json` (`tree_hash`, `built_from`, `run_id`, `built_at`) inside.
+
+1. On a machine with access to github.com, download it:
+
+   ```bash
+   gh release download pages-site --repo rxm7706/local-recipes -p pages-site.zip
+   ```
+
+   (or use the asset's link on the repository's **Releases** page).
+2. Carry `pages-site.zip` across to the internal network the way your site moves reviewed files.
+3. Unzip it and check where it was built from:
+
+   ```bash
+   unzip -q pages-site.zip -d pages-site
+   python -c "import json; print(json.load(open('pages-site/build.json'))['built_from'])"
+   git -C /path/to/the/mirrored/local-recipes merge-base --is-ancestor <built_from> main && echo "on main"
+   ```
+
+   The `built_from` commit must be on your mirrored `main`; a zip built from a commit your mirror does not hold is not the reviewed tree.
+4. Serve the `pages-site/` tree as static files from any internal web server. This is the recommended path: nothing is rebuilt, so the bytes are the ones the public deploy published.
+
+The zip is built for the public github.io URL, so its absolute internal links carry the `/local-recipes/` base path: serve it at that path (for example `https://docs.internal.example/local-recipes/`). To publish the same tree through the enterprise host's own GitHub Pages instead, `pages.yml` would need an input that takes a prebuilt tree in place of a build; it has none today, so on a host that can run the workflow, sections 1–4 (which rebuild for the host's own URL) are the GitHub Actions path.

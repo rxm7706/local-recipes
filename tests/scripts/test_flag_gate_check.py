@@ -434,6 +434,62 @@ def test_a_done_flagged_spec_whose_key_the_tree_lacks_is_one_fail_naming_the_key
     assert "`pyforge.test.landed`" in finding["message"]
 
 
+def test_a_retired_key_gone_from_the_tree_leaves_its_done_spec_unjudged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """herald Story 42.3, the first retirement: a story spec declares `retires-flag: <key>`; with the key out of
+    the tree, the `done` spec that introduced it is history -- no not-in-tree finding and no missing-test finding
+    (its tests left with the flag)."""
+    root = _fixture(tmp_path, tree_keys=["pyforge.test.other"])
+    _write(root, "src/pkg/reader.py", 'flag("pyforge.test.other")\n')
+    landed = _spec(
+        root,
+        FLAG_BLOCK.format(key="pyforge.test.retired"),
+        name="spec-1-1-landed.md",
+        status="done",
+        body=_verification("tests/test_gone_with_the_flag.py"),
+    )
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == ["flag-key-not-in-tree", "flag-test-file-missing"]
+    assert {f["path"] for f in payload["findings"]} == {landed}
+
+    _spec(
+        root,
+        "flag-exempt: alpha\nretires-flag: pyforge.test.retired\n",
+        name="spec-1-2-retire.md",
+        status="backlog",
+    )
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 0
+    assert payload["findings"] == []
+
+
+def test_a_retirement_declared_while_the_key_is_still_in_the_tree_changes_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _landed_root(tmp_path)
+    rel = _landed_spec(root, _verification("tests/test_absent.py"))
+    _spec(root, f"flag-exempt: alpha\nretires-flag: [{KEY}]\n", name="spec-1-2-retire.md")
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-test-file-missing"]
+    assert payload["findings"][0]["path"] == rel
+
+
+def test_retired_by_reads_a_string_or_a_list() -> None:
+    assert flag_gate_check.retired_by({"retires-flag": " pyforge.a.b "}) == ["pyforge.a.b"]
+    assert flag_gate_check.retired_by({"retires-flag": ["pyforge.a.b", "", 3, "pyforge.c.d"]}) == [
+        "pyforge.a.b",
+        "pyforge.c.d",
+    ]
+    assert flag_gate_check.retired_by({}) == []
+    assert flag_gate_check.retired_by(None) == []
+
+
 def test_the_same_spec_at_backlog_has_no_finding_and_a_done_spec_with_its_key_in_the_tree_passes(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):

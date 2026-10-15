@@ -64,7 +64,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Collection, Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -99,6 +99,13 @@ K_NOT_TWO_STATE = "flag-test-not-two-state"
 K_METADATA_MISSING = "flag-metadata-missing"
 K_CLOCK_OVERDUE = "flag-clock-overdue"
 K_DEFAULT_ENV = "flag-default-env-mismatch"
+
+# A flag's retirement (spec-feature-flag-governance Q4: the owning station files the removal story) is
+# declared by that story: ``retires-flag: <key>`` (one key or a list) in its frontmatter. Once the tree no
+# longer holds the key, a `done` spec that declared it is the flag's history: its key is not judged missing
+# from the tree, and its two-state test is not asked for (the reader and its tests leave with the flag).
+# herald Story 42.3 is the first (pyforge.herald.*_second_host); nothing else changes for a key still in the tree.
+RETIRES_FIELD = "retires-flag"
 
 # Story 34.6: epic and story numbers from ``spec-<epic>-<story>-*.md`` (integer order, not text).
 _STORY_KEY_RE = re.compile(r"^spec-(\d+)-(\d+)-")
@@ -282,6 +289,23 @@ def env_default_judge_targets(
     return frozenset(winners)
 
 
+def retired_by(frontmatter: Mapping[str, Any] | None) -> list[str]:
+    """The flag keys one story spec declares it retires (``retires-flag:``, a string or a list)."""
+    raw = frontmatter.get(RETIRES_FIELD) if frontmatter else None
+    values = [raw] if isinstance(raw, str) else raw if isinstance(raw, list) else []
+    return [value.strip() for value in values if isinstance(value, str) and value.strip()]
+
+
+def retired_keys(root: Path, spec_rels: Sequence[str] | None = None) -> dict[str, str]:
+    """Every retired flag key -> the repo-relative story spec that retires it (the first, in path order)."""
+    retired: dict[str, str] = {}
+    for rel in spec_rels if spec_rels is not None else story_specs(root):
+        frontmatter, _why = flag_rule.read_frontmatter(rel, repo_root=root)
+        for key in retired_by(frontmatter):
+            retired.setdefault(key, rel)
+    return retired
+
+
 def judge_spec(
     rel: str,
     frontmatter: Mapping[str, Any] | None,
@@ -290,6 +314,7 @@ def judge_spec(
     exemptions: Sequence[str],
     post_rule: bool,
     tree_keys: Collection[str],
+    retired_gone: Collection[str] = (),
 ) -> list[Finding]:
     """The findings for one story spec. ``frontmatter`` None (with ``why``) reads as ``neither``,
     in scope: a spec whose frontmatter cannot be read is never silently out of the rule."""
@@ -340,7 +365,13 @@ def judge_spec(
     if frontmatter is not None:
         key = _flag_key(frontmatter)
         # Only a landed story is judged: a story still in backlog has not added its key to the tree yet.
-        if key and str(frontmatter.get("status", "")).strip().lower() == "done" and key not in tree_keys:
+        # A retired key (``retired_gone``: declared retired and gone from the tree) is the flag's history.
+        if (
+            key
+            and str(frontmatter.get("status", "")).strip().lower() == "done"
+            and key not in tree_keys
+            and key not in retired_gone
+        ):
             findings.append(
                 Finding(
                     K_NOT_IN_TREE,
@@ -569,7 +600,12 @@ def runs_both_states(text: str, key: str) -> bool:
 
 
 def judge_two_state(
-    root: Path, rel: str, frontmatter: Mapping[str, Any], *, exemptions: Sequence[str]
+    root: Path,
+    rel: str,
+    frontmatter: Mapping[str, Any],
+    *,
+    exemptions: Sequence[str],
+    retired_gone: Collection[str] = (),
 ) -> list[Finding]:
     """The two-state-test findings for one story spec (Story 34.5, CAP-4's gate clause).
 
@@ -582,7 +618,7 @@ def judge_two_state(
     if flag_rule.classify_frontmatter(frontmatter, exemptions).verdict != flag_rule.FLAG:
         return []
     key = _flag_key(frontmatter)
-    if not key:
+    if not key or key in retired_gone:
         return []
     station = station_of(rel)
     try:
@@ -630,6 +666,13 @@ class Inputs:
     tree: dict[str, Any]
     overlays: dict[str, Any]
     run_date: date
+    #: Retired flag key -> the story spec that retires it (``retires-flag:``).
+    retired: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def retired_gone(self) -> frozenset[str]:
+        """The retired keys the tree no longer holds: a `done` spec naming one is the flag's history."""
+        return frozenset(key for key in self.retired if key not in self.tree)
 
 
 def load_inputs(root: Path, *, run_date: date | None = None) -> Inputs:
@@ -647,6 +690,7 @@ def load_inputs(root: Path, *, run_date: date | None = None) -> Inputs:
         tree,
         overlays,
         resolved_run,
+        retired_keys(root),
     )
 
 
@@ -666,6 +710,7 @@ def judge_one(
         exemptions=inputs.exemptions,
         post_rule=post_rule,
         tree_keys=inputs.tree,
+        retired_gone=inputs.retired_gone,
     )
     if frontmatter is not None:
         findings += judge_spec_env_defaults(
@@ -677,7 +722,9 @@ def judge_one(
             env_default_targets=env_default_targets,
         )
     if post_rule and frontmatter is not None:
-        findings += judge_two_state(root, rel, frontmatter, exemptions=inputs.exemptions)
+        findings += judge_two_state(
+            root, rel, frontmatter, exemptions=inputs.exemptions, retired_gone=inputs.retired_gone
+        )
     return findings
 
 
