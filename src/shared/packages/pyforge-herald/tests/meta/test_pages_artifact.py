@@ -1421,29 +1421,36 @@ def test_43_4_pages_check_holds_the_herald_pages_to_one_design_system(
     assert finding in capsys.readouterr().err
 
 
-def _top_level_rules(css: str) -> list[tuple[str, str]]:
-    """``(selector, body)`` of each rule outside every at-rule (Starlight's own theme sits in ``@layer`` blocks)."""
+def _top_level_rules(css: str, medium: str = "screen") -> list[tuple[str, str]]:
+    """``(selector, body)`` of each rule outside every at-rule but a bare ``@media <medium>`` query (Starlight's own
+    theme sits in ``@layer`` blocks; a media query with a condition, e.g. the system scheme, is not the toggle's)."""
     rules, i = [], 0
     while (j := css.find("{", i)) >= 0:
-        head, depth, k = css[i:j].split(";")[-1].strip(), 1, j + 1
+        head, depth, k = css[i:j].split(";")[-1].split("}")[-1].strip(), 1, j + 1
         while depth and k < len(css):
             depth += {"{": 1, "}": -1}.get(css[k], 0)
             k += 1
         if not head.startswith("@"):
             rules.append((head, css[j + 1 : k - 1]))
+        elif re.fullmatch(rf"@media\s+(?:only\s+)?{medium}", head):
+            rules += _top_level_rules(css[j + 1 : k - 1], medium)
         i = k
     return rules
 
 
-def _page_theme(artifact: Path, page: Path) -> dict[str, dict[str, str]]:
+def _page_theme(artifact: Path, page: Path, medium: str = "screen") -> dict[str, dict[str, str]]:
     """The site theme's variables -- each ``--sl-*`` an unlayered ``:root`` or ``[data-theme=dark]`` rule sets -- in
-    the stylesheets ``page`` links, light and dark."""
+    the stylesheets ``page`` links for ``medium`` (a ``media="print"`` link only in print), light and dark."""
     light: dict[str, str] = {}
     dark: dict[str, str] = {}
-    for href in re.findall(r'<link rel="stylesheet" href="([^"]+)"', page.read_text(encoding="utf-8")):
+    for link in re.findall(r'<link rel="stylesheet" href="[^"]+"[^>]*>', page.read_text(encoding="utf-8")):
+        href = re.search(r'href="([^"]+)"', link).group(1)
+        media = re.search(r'\bmedia="([^"]+)"', link)
+        if media and media.group(1) not in ("all", medium):
+            continue
         sheet = (artifact / href.lstrip("/")) if href.startswith("/") else (page.parent / href)
-        for selector, body in _top_level_rules(sheet.read_text(encoding="utf-8")):
-            values = dict(re.findall(r"(--sl-[\w-]+)\s*:\s*([^;]+)", body))
+        for selector, body in _top_level_rules(sheet.read_text(encoding="utf-8"), medium):
+            values = dict(re.findall(r"(--sl-[\w-]+)\s*:\s*([^;}]+)", body))
             if selector == ":root":
                 light.update(values)
             elif selector in (":root[data-theme=dark]", ":root[data-theme='dark']"):
@@ -1474,6 +1481,16 @@ def test_43_4_ac1_ac3_ac4_the_built_pages_share_one_theme(
         assert {n: docs_theme[mode][n] for n in names} == {n: herald_theme[mode].get(n) for n in names}, mode
     assert (
         docs_theme["light"]["--sl-color-accent"] == "#b06a13" and docs_theme["dark"]["--sl-color-accent"] == "#dd9a3f"
+    )
+    # Dark is a screen theme (the re-review's should-fix 1): in print no dark rule applies to either page, so a page
+    # printed in dark mode reads light -- theme.css's light block (on the docs it follows Starlight's print sheet).
+    for page, screen in ((shelf, docs_theme), (dossier, herald_theme)):
+        printed = _page_theme(artifact, page, "print")
+        assert printed["dark"] == printed["light"], page
+        assert printed["dark"]["--sl-color-white"] != screen["dark"]["--sl-color-white"], page
+    assert (
+        _page_theme(artifact, dossier, "print")["light"]["--sl-color-white"]
+        == herald_theme["light"]["--sl-color-white"]
     )
     assert docs_theme["light"]["--sl-font"].startswith('"IBM Plex Sans"')
     shelf_css = "".join(

@@ -10,7 +10,7 @@ flag:
   scope: global                                  # v1 is global only
   fallback: 'the Jinja path serves its own stylesheet and the vendored woff2 files exactly as it does today'
   cleanup: retired by Story 43.7 with the Jinja path (spec-feature-flag-governance Q4)
-review_loop_iteration: 0
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -183,6 +183,9 @@ the origin check finds no font loaded from another origin
 
 ## Verification run (2026-10-15)
 
+The latest run is the Spec Change Log's newest **Gates** bullet (the re-review's resolution, below); the bullets that
+follow here are the first implementation's run, kept as its record.
+
 - `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py -q`
   — exit 0, 14 passed (the `test_43_4_*` tests: AC2 every family the Jinja stylesheets name, body and headings
   included; AC3 the token blocks, the theme script against Starlight's store and the CSP hash; AC4 the grep, the five
@@ -191,7 +194,7 @@ the origin check finds no font loaded from another origin
 - `pixi run --frozen -e pyforge-herald python -m pytest` over `test_pages_artifact.py`, `test_herald_pages_parity.py`,
   `test_docsite_zero_origin.py`, `test_docs_site_validators.py`, `test_docs_site_imports_tracked.py` — exit 0, 109
   passed, none skipped (docs-site installed): AC1/AC3/AC4 on a flag-on Astro build of the tracked tree
-  (`test_43_4_ac1_ac3_ac4_the_built_herald_pages_share_one_design_system`) and pages-check's new guard on five
+  (`test_43_4_ac1_ac3_ac4_the_built_pages_share_one_theme`, renamed at iteration 1) and pages-check's new guard on five
   fixture cases.
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0, 2042 passed, 5 skipped (the live Design and
   webhook smokes).
@@ -236,6 +239,84 @@ the origin check finds no font loaded from another origin
 
 ## Spec Change Log
 
+- 2026-10-15 (re-review, iteration 2: NOT RESOLVED, 3 new should-fix and 9 nits; resolved here, `review_loop_iteration`
+  2):
+  - **Should-fix 1, print.** `theme.css`'s dark block now sits under `@media screen`, and its scripts-off twin under
+    `@media screen and (prefers-color-scheme: dark)`, so no dark value reaches paper: a page printed in dark mode reads
+    the light block (on the docs Starlight's print sheet forces light too; its link precedes the bundle, so the light
+    block is what prints). AC3's test asserts the light block at the top level and both dark blocks under exactly
+    those screen-only queries; the built test reads every linked sheet for `print` (a `media="print"` link only there)
+    and asserts no dark rule applies to the docs shelf or the dossier in print, the dossier printing the light block.
+    Mutation: the dark block unwrapped -- both tests fail.
+  - **Should-fix 2, the no-literal guard** (`test_43_4_no_source_names_a_font_or_colour_outside_the_theme`, replacing
+    `..._no_herald_stylesheet_names_...`). It scans every file under `docs-site/src` but `styles/theme.css`,
+    `styles/herald-fonts.css` and `content/` (51 files): a stylesheet's rule bodies; elsewhere each `<style>` body and
+    each `style` attribute -- double- or single-quoted, a template literal, a string expression or an Astro
+    `style={{...}}` object (camelCase keys mapped). In every declaration value it refuses a hex, a colour function
+    (`rgb`/`hsl`/`hwb`/`lab`/`lch`/`oklab`/`oklch`/`color`/`light-dark`/`device-cmyk`) and the 148 CSS named colours and
+    the system colours in any case (`transparent`, `currentColor`, `inherit` pass; quoted strings and `url()` are not
+    colours); in `font-family` and the `font` shorthand every family must be a `var(--sl-...)` whose fallback is one too.
+    An interpolation is trusted only through `cssVar()` / `cssTextTone()` (which take a theme token alone, nit 3); any
+    other interpolation and a `style={expression}` are findings of their own. A parametrized test plants each of the
+    re-review's probes in a copy of the sources and asserts the guard names it (18 cases): `color: red`, `border: 1px
+    solid white`, `color: White`, `outline: 2px solid navy`, `teal` inside `--st-atlas`'s `color-mix()`, the `font`
+    shorthand, `var(--sl-font-mono), "Comic Sans MS"`, a literal family as a `var()` fallback, ``style={`color:#c00`}``
+    in `pages/herald/[...index].astro`, Astro objects with a colour and with a `fontFamily`, a single-quoted style, a
+    `style={railStyle}` expression, `style="background:#c00"` and an unvetted `${...}` in `lib/dossier-blocks.ts`, a
+    literal family in `lib/herald-pages.ts`'s back-bar, `GrayText` in `components/SiteTitle.astro`, and an `hsl()` in a
+    `<style>` string in `lib/md-inline.ts` -- each fails it. AC3's derived-token check uses the same colour matcher.
+  - **Should-fix 3, light `--sl-color-gray-3`** is `#58676f` (5.25:1 on the paper, 4.82 on paper-raised, 4.61 on the
+    light nav), so the docs' "On this page" links and herald's `--rail` (table heads, stat labels, footer, the back-bar
+    title, the rail exit chip) read AA. `--rail` joins AC3's "nearest" set (its light value is no longer the Jinja
+    `#62727a`; dark is unchanged), so reading (b) now counts 23 exact aliases.
+  - **Orchestrator defaults, 2026-10-15 (the re-review's nits 4 and 5; the operator may overturn them).** (i) **One link
+    colour across docs and herald:** the accent the docs use, `--sl-color-text-accent`; `herald.css`'s `a` drops the
+    dossier's `--blue`. (ii) **Small amber label text takes the AA-passing darker amber:** every `color: var(--amber)`
+    in `herald.css` (the eyebrows, the kicker, section and h3 numbers, callout labels, card eyebrows and the amber
+    hovers) and the back-bar's link hover read `--sl-color-text-accent`, and on the lattice's amber exit chip the
+    amber is the accent text's (`.rung .exit { --amber: var(--sl-color-text-accent) }`, so `exit_tone: --amber` reads
+    6.5:1). The builder's readings, to keep or overturn with these: **(iii)** `--sl-color-text-accent` is the darker
+    amber on light (`accent-high`, 6.5:1) and the amber itself on dark (`accent`, 7.6:1), set in both dark blocks --
+    Starlight's dark default is `accent-high`, so the docs' dark links move from `#f2cf98` to the herald amber
+    `#dd9a3f`, and the herald's dark labels keep their amber rather than turning pale; one accent-text colour per theme
+    for every link and label. **(iv)** The same rule for the other hues used as small text: a station colour as text
+    (the overview's station pills -- links -- and the dossier's finding labels) and the red and green callout labels
+    read the hue mixed 75% toward the ink (`cssTextTone()` in `src/lib/md-inline.ts`; `color-mix()` in `herald.css`),
+    which lifts the marshal pill from 3.82 and mason from 4.497 to 5.40 / 6.11 in light and keeps every station
+    distinct; the dots, borders and marks keep the pure hue. The station marks (large bold, 3:1) were already AA.
+  - **Nits.** 1: the docs heading rule is `:where(h1#_top), .sl-markdown-content :where(h1, h2, h3, h4):not(:where(
+    .not-content *))` -- class specificity at most, and a `.not-content` heading keeps Starlight's face. 2: the flag-off
+    emptying hook is anchored to this directory's `src/styles/` (`path.join(__dirname, 'src', 'styles')`, posix-
+    normalized), so a dependency's `src/styles/*.css` is never emptied. 3: `cssVar()` throws on any value that is not a
+    `--custom-property` name (an absent value is still `''`), so a literal colour in `dossier.yml` / `site.yml` fails
+    the build naming it; `test_43_4_css_var_takes_a_theme_token_alone` probes `#c00`, `red`, `var(--amber)` and
+    `--x;color:red`. 4 and 5: the defaults above. 6: Story 43.7's change log carries the OFL-1.1 licence carry-over.
+    7: this frontmatter's `review_loop_iteration` is 2 and § *Verification run* points here. 8: the Spec memlog
+    decision is already written (skipped, as the coordinating session directed). 9: Story 43.3's change log carries one
+    line for its Approach edit.
+  - **Contrast, from the built values** (the flag-on `_astro/herald.*.css` and the docs bundle, `color-mix()` resolved
+    in sRGB; light / dark; AA = 4.5, 3 for large bold). Docs: body `gray-2` on bg 8.93 / 9.75; headings 14.74 / 15.08;
+    links on bg 6.52 / 7.59, on the nav and sidebar 5.72 / 7.01; sidebar current (`text-invert` on `text-accent`)
+    6.52 / 5.66; "On this page" `gray-3` 5.25 / 6.70 (4.61 / 6.19 on the nav); inline code 13.55 / 10.78. Herald: ink
+    on paper 14.74 / 15.08; ink-soft on paper 8.93 / 9.75 and on paper-raised 8.21 / 9.01; links and amber labels on
+    paper 6.52 / 7.59; callout labels on paper-raised 5.99 / 7.01 (red 7.10 / 6.83, green 5.63 / 8.58); rail on paper
+    5.25 / 6.70 and on paper-raised 4.82 / 6.19; code 8.21 / 9.01; station pill and finding-label text 4.97-7.81 /
+    6.83-9.51 (lowest: marshal on paper-raised, 4.97); lattice exit chips red 5.91 / 5.76, amber 6.52 / 7.59, rail 5.25
+    / 6.70, green 4.53 / 7.82; station marks (large bold) 3.82-6.19 / 5.76-8.07. Every body-text and link pair is at
+    least 4.5:1 in both themes.
+  - **Gates (2026-10-15, on `bc980633f7` plus this change).** The Pages, parity, 43.6, zero-origin, validator, imports,
+    site-URL, build, flag-state and golden test files -- exit 0, 373 passed, none skipped (docs-site installed); the
+    herald suite -- exit 0, 2163 passed, 5 skipped (the live Design and webhook smokes); `lint-types`,
+    `docs-site-validate`, steward's trigger map (45 passed) -- exit 0; `pages-check` with both flags off -- exit 0; with
+    `pyforge.herald.pages_one_generator` and `pyforge.herald.status_pages` on and the 42.1 and 43.6 fixtures in
+    `docsite/content/` (removed after) -- exit 0 (10 families, 30 twins); the CAP-56 host
+    (`https://pages.example.test/local-recipes`, both flags on) -- exit 0.
+  - **Browser** (headless Chromium through the `pyforge-herald` env's Playwright, the CAP-56 artifact served under
+    `/local-recipes/`; the docs shelf `/how-to/`, the dossier and the overview, each in light and dark, on screen and
+    with print media emulated): screen light and dark read Plex Sans body and Big Shoulders headings on every page, the
+    paper / dark backgrounds, links and labels `#7d4b0d` light and `#dd9a3f` dark on docs and herald alike; in print
+    every page -- the dark ones included -- resolves `--sl-color-white` `#1a2024` on `#f1f3ef`, the light block; no
+    console error; every font request is `/local-recipes/_astro/*.woff2`.
 - 2026-10-15 (independent review, iteration 1: FAIL, 2 should-fix and 9 nits; and the operator's ruling on should-fix
   2, the same day):
   - **Operator ruling 2026-10-15 (should-fix 2, typography): one typography and palette across all of GitHub Pages.**

@@ -48,9 +48,28 @@ export function mdInline(text: string | null | undefined): string {
   return raw;
 }
 
+const TOKEN = /^--[\w-]+$/;
+
+/**
+ * A theme token from dossier.yml / site.yml (``accent``, ``tone``, ``exit_tone``) as ``var(<token>)``. Only a custom
+ * property name is accepted -- a literal colour there would reach an inline ``style=`` past the one theme contract
+ * (Story 43.4's re-review) -- so anything else fails the build naming the value; an absent value is ''.
+ */
 export function cssVar(token: string | undefined): string {
-  if (token && token.startsWith('--')) {
-    return `var(${token})`;
+  if (token == null || token === '') {
+    return '';
   }
-  return token ?? '';
+  if (!TOKEN.test(token)) {
+    throw new Error(`cssVar: ${JSON.stringify(token)} is not a theme token (a --custom-property name)`);
+  }
+  return `var(${token})`;
+}
+
+/**
+ * A station or tone token used as small text (a station pill, a finding label): the hue mixed 75% toward the ink, so
+ * it reads AA on the paper in both themes (Story 43.4's re-review) and still names no colour of its own.
+ */
+export function cssTextTone(token: string | undefined): string {
+  const value = cssVar(token);
+  return value ? `color-mix(in srgb, ${value} 75%, var(--ink))` : '';
 }

@@ -240,6 +240,11 @@ the five vendored files keep their hashes
 
 ## Spec Change Log
 
+- 2026-10-15 (carry-in from Story 43.4's re-review, nit 6): **the OFL-1.1 licence text stays in the artifact.** The five
+  `@fontsource` packages are OFL-1.1 (`docs-site/README.md` § *Theme and fonts*); until this story the artifact carries
+  the licence text only through the Jinja path's `herald/assets/fonts/OFL-*.txt`. Deleting `docsite/assets/fonts/`
+  must carry the text into the artifact from each package's own `LICENSE` (no hand-vendored copy), and the
+  `test_ofl_sidecars_present` check follows it there.
 - 2026-10-14: specced at mint from Epic 43's Story 43.7 text, `spec-pyforge-herald` CAP-61, FR-12.4, AD-23 and the
   Dream's 2026-10-13 entry (M3), against the tree of 2026-10-14 (`docsite/` 4,543 lines across `build.py`, the tools,
   the content and the templates; `docs-site/scripts/sidebar_from_map.py` 297 lines). The 300-line budget's arithmetic

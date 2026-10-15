@@ -242,6 +242,10 @@ lines) finds no absolute URL off the configured origin, the vendored Kedro-Viz b
 
 ## Spec Change Log
 
+- 2026-10-15 (Story 43.4's re-review, nit 9): the Approach's **Mounts** bullet carries a one-line correction pointing
+  at this log (Astro 7.3.2 only warns on a route over a public file; the build-end hook refuses it -- the
+  independent review's should-fix 3 below). The edit was made in Story 43.4's unit and logged there; this line keeps
+  this spec self-describing.
 - 2026-10-15 (re-review of the merge and of the first fix: the merge CLEAN, every should-fix RESOLVED, one new
   regression; fixed):
   - **Text and code samples load nothing again (should-fix).** The first fix decoded HTML entities across the whole page

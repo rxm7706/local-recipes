@@ -601,7 +601,7 @@ font-size:12px;padding:7px 16px;display:flex;align-items:center;gap:14px;
 color:var(--sl-color-white);box-sizing:border-box;border-bottom:1px solid var(--sl-color-gray-5)}
 .ig-backbar a{color:var(--sl-color-white);text-decoration:none;
 border-bottom:1px solid color-mix(in srgb,var(--sl-color-white) 40%,transparent)}
-.ig-backbar a:hover{border-bottom-color:var(--sl-color-accent);color:var(--sl-color-accent)}
+.ig-backbar a:hover{border-bottom-color:var(--sl-color-accent);color:var(--sl-color-text-accent)}
 .ig-backbar .ig-title{color:var(--sl-color-gray-3);margin-left:auto;text-align:right;
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body{padding-top:32px!important}

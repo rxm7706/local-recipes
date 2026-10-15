@@ -63,8 +63,10 @@ One theme for every page of the site (operator ruling 2026-10-15), with `pyforge
 - **The contract is Starlight's theme variables.** `src/styles/theme.css` sets `--sl-font`, `--sl-font-mono`, the
   `--sl-color-accent-*`, `--sl-color-gray-*`, `--sl-color-white` / `--sl-color-black` scales and the orange, green,
   blue, purple and red ones, light under `:root` and dark under `[data-theme='dark']` (the attribute Starlight's theme
-  toggle sets; with scripts off the system scheme picks), plus this site's one addition, `--sl-font-heading`, the
-  display face for headings. It imports the faces, `src/styles/herald-fonts.css`.
+  toggle sets; with scripts off the system scheme picks), the dark blocks for the screen only so a page prints light,
+  plus this site's one addition, `--sl-font-heading`, the display face for headings. `--sl-color-text-accent` is the
+  one accent text colour, every link and the herald's small amber labels alike (the darker amber on light, the amber
+  on dark; AA on both). It imports the faces, `src/styles/herald-fonts.css`.
 - **Who reads it.** The docs, through Starlight's `customCss` (`astro.config.mjs`); the herald pages, through
   `src/styles/herald.css`, which imports it and declares no font or colour of its own -- the dossier's tokens are
   derived from the `--sl-*` variables; the reader pages, through `/herald/theme.css`. The herald pages read the toggle's
@@ -72,8 +74,9 @@ One theme for every page of the site (operator ruling 2026-10-15), with `pyforge
   and take only the faces (`/herald/fonts.css`). With the flag off, none of this is built: the docs keep Starlight's
   stock theme and the Jinja path its own stylesheet.
 - **Re-theming the site** is editing or replacing `theme.css`: change its values, keeping the variable names, and the
-  docs and the herald pages follow together; a test (`test_docsite_zero_origin.py`) fails if a herald stylesheet names
-  a font or colour of its own. To use a Starlight theme plugin instead, add it to `starlight({ plugins: [...] })` for
+  docs and the herald pages follow together; a test (`test_docsite_zero_origin.py`) fails if any file under `src/`
+  but `theme.css`, `herald-fonts.css` and `content/` names a font or colour of its own, and `cssVar()`
+  (`src/lib/md-inline.ts`) refuses a YAML colour that is not a theme token. To use a Starlight theme plugin instead, add it to `starlight({ plugins: [...] })` for
   the docs and replace `theme.css`'s two blocks with the values the plugin sets: the herald pages do not load
   Starlight's stylesheets, so they read the variables from `theme.css` alone.
 - **Fonts.** Big Shoulders Display, IBM Plex Sans, IBM Plex Mono and Archivo (with Archivo Expanded, the 125% width of

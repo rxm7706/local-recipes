@@ -109,13 +109,19 @@ export default defineConfig({
 function heraldArtifact() {
   /** @type {string[]} the files populatePublic wrote, judged against the routes' output at build end */
   let served = [];
-  const heraldStyles = /[\\/]src[\\/]styles[\\/][^\\/]+\.css$/;
+  // This site's own src/styles/*.css, anchored to this directory (Vite ids use forward slashes on every OS), so a
+  // dependency's node_modules/<pkg>/src/styles/ is never emptied.
+  const stylesDir = `${path.join(__dirname, 'src', 'styles').split(path.sep).join('/')}/`;
+  const isHeraldStyle = (id) => {
+    const file = id.split('?')[0].split(path.sep).join('/');
+    return file.startsWith(stylesDir) && file.endsWith('.css') && !file.slice(stylesDir.length).includes('/');
+  };
   return {
     name: 'herald-artifact',
     hooks: {
       'astro:config:setup': ({ updateConfig }) => {
         if (!oneGenerator) {
-          const load = (id) => (heraldStyles.test(id.split('?')[0]) ? '' : undefined);
+          const load = (id) => (isHeraldStyle(id) ? '' : undefined);
           updateConfig({ vite: { plugins: [{ name: 'herald-styles-off', enforce: 'pre', load }] } });
         }
       },

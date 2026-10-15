@@ -104,8 +104,60 @@ _COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 _RULE = re.compile(r"([^{}@;]+)\{([^{}]*)\}")
 _DECLARATION = re.compile(r"(?:^|;)\s*([\w-]+)\s*:\s*([^;]+)")
 _VAR = re.compile(r"var\(\s*(--[\w-]+)\s*(?:,\s*((?:[^()]|\([^()]*\))*))?\)")
-_LITERAL_COLOUR = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(|:\s*(?:white|black)\b")
+# Every CSS named colour (CSS Color 4, 148 names) and system colour, matched in any case; ``transparent``,
+# ``currentColor`` and ``inherit`` are not a colour of their own and pass.
+_NAMED_COLOURS = """
+aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood
+cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray
+darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen
+darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue
+firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew
+hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan
+lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray
+lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue
+mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred
+midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid
+palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple
+rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue
+slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow
+yellowgreen
+accentcolor accentcolortext activetext buttonborder buttonface buttontext canvas canvastext field fieldtext graytext
+highlight highlighttext linktext mark marktext selecteditem selecteditemtext visitedtext
+""".split()
+_LITERAL_COLOUR = re.compile(
+    r"#[0-9a-f]{3,8}\b"
+    r"|(?<![\w-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|light-dark|device-cmyk)\("
+    rf"|(?<![\w.#-])(?:{'|'.join(_NAMED_COLOURS)})(?![\w(-])",
+    re.IGNORECASE,
+)
 _LIGHT, _DARK, _NO_SCRIPT = ":root", ":root[data-theme='dark']", ":root:not([data-theme])"
+
+
+def _colour_literals(value: str) -> list[str]:
+    """The literal colours in one declaration value: quoted strings and ``url()`` are not colours."""
+    value = re.sub(r"url\([^)]*\)|'[^']*'|\"[^\"]*\"", "", value)
+    return [m.group(0) for m in _LITERAL_COLOUR.finditer(value)]
+
+
+def _at_rules(css: str) -> list[tuple[tuple[str, ...], str]]:
+    """Each rule as ``(enclosing at-rule preludes, selector)``, innermost last; comments dropped."""
+    css, out = _COMMENT.sub("", css), []
+
+    def walk(text: str, context: tuple[str, ...]) -> None:
+        i = 0
+        while (j := text.find("{", i)) >= 0:
+            head, depth, k = text[i:j].split(";")[-1].split("}")[-1].strip(), 1, j + 1
+            while depth and k < len(text):
+                depth += {"{": 1, "}": -1}.get(text[k], 0)
+                k += 1
+            if head.startswith("@media") or head.startswith("@supports") or head.startswith("@layer"):
+                walk(text[j + 1 : k - 1], (*context, " ".join(head.split())))
+            else:
+                out.append((context, " ".join(head.replace('"', "'").split())))
+            i = k
+
+    walk(css, ())
+    return out
 
 
 def _rules(css: str) -> list[tuple[str, dict[str, str]]]:
@@ -181,6 +233,13 @@ def test_43_4_ac3_the_theme_is_light_and_under_starlights_dark_selector() -> Non
     assert {f"--sl-color-gray-{n}" for n in range(1, 8)} <= set(dark) <= set(light)
     assert all(light[name] != value for name, value in dark.items()), "a dark value equals its light one"
     assert _tokens(css, _NO_SCRIPT) == dark
+    # Dark is a screen theme (the re-review): both dark blocks sit under a screen-only query, so in print Starlight's
+    # print stylesheet and the light block keep the page light; the light block is at the top level, every medium.
+    contexts = {selector: context for context, selector in _at_rules(css)}
+    assert contexts[_LIGHT] == ()
+    assert contexts[_DARK] == ("@media screen",)
+    assert contexts[_NO_SCRIPT] == ("@media screen and (prefers-color-scheme: dark)",)
+    assert all("print" not in at and at.startswith("@media screen") for at in (*contexts[_DARK], *contexts[_NO_SCRIPT]))
 
     herald = HERALD_CSS.read_text(encoding="utf-8")
     tokens = _tokens(herald, _LIGHT)
@@ -190,46 +249,240 @@ def test_43_4_ac3_the_theme_is_light_and_under_starlights_dark_selector() -> Non
     jinja_light, jinja_dark = _tokens(jinja, _LIGHT), _tokens(jinja, _DARK)
     assert set(tokens) == set(jinja_light) and len(tokens) > 30
     for name, value in tokens.items():
-        assert "var(--sl-" in value and not _LITERAL_COLOUR.search(value), f"{name}: {value}"
-    nearest = {"--rail-faint", "--code-bg", "--st-doctor", "--st-doctor-soft"}  # the theme's nearest, not equal
+        assert "var(--sl-" in value and not _colour_literals(value), f"{name}: {value}"
+    # the theme's nearest, not equal: --rail since the re-review (light gray-3 darkened to read AA, 5.25:1)
+    nearest = {"--rail", "--rail-faint", "--code-bg", "--st-doctor", "--st-doctor-soft"}
     exact = [n for n, value in tokens.items() if re.fullmatch(r"var\(--sl-[\w-]+\)", value) and n not in nearest]
-    assert len(exact) == 24  # the other six -- three station accents, their softs -- are mixes of two
+    assert len(exact) == 23  # the other six -- three station accents, their softs -- are mixes of two
     for name in exact:
         assert _resolve(tokens[name], _theme(False)) == jinja_light[name], name
         assert _resolve(tokens[name], _theme(True)) == jinja_dark[name], name
 
 
-_STYLE_SOURCES = ("styles/herald.css", "lib/herald-pages.ts", "layouts", "components/herald", "components/dossier")
+_THEME_SOURCES = {"styles/theme.css", "styles/herald-fonts.css"}  # the theme and the faces it imports
+_STYLE_ATTRIBUTE = re.compile(
+    r"""\bstyle=(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\}|\{\s*'([^']*)'\s*\}|\{\s*"([^"]*)"\s*\}|\{\{(.*?)\}\}|(\{[^}]*\}))""",
+    re.DOTALL,
+)
+_TRUSTED_INTERPOLATION = re.compile(r"\$\{\s*(?:cssVar|cssTextTone)\([^`{}]*\)\s*\}")
+_FONT_KEYWORDS = frozenset(
+    "normal italic oblique bold bolder lighter small-caps ultra-condensed extra-condensed condensed semi-condensed "
+    "semi-expanded expanded extra-expanded ultra-expanded xx-small x-small small medium large x-large xx-large "
+    "xxx-large smaller larger".split()
+)
+_GLOBAL_KEYWORDS = frozenset({"inherit", "initial", "unset", "revert", "revert-layer"})
 
 
-def _style_text(path: Path) -> str:
-    """The CSS a herald source declares: a stylesheet whole; else its ``<style>`` bodies and ``style`` attributes."""
-    text = path.read_text(encoding="utf-8")
-    if path.suffix == ".css":
-        return _COMMENT.sub("", text)
-    bodies = re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL)
-    attributes = re.findall(r"""\bstyle=(?:\{`([^`]*)`\}|"([^"]*)")""", text)
-    return "\n".join([*bodies, *("".join(a) for a in attributes)])
-
-
-def test_43_4_no_herald_stylesheet_names_a_font_or_colour_of_its_own() -> None:
-    """The theme contract (operator ruling 2026-10-15): outside theme.css and the faces it imports, no herald stylesheet,
-    inline style or reader page declares a literal font family or colour -- each is one of Starlight's variables, or a
-    token derived from them -- so replacing theme.css re-themes every page."""
-    sources = [
+def _scanned_sources(src: Path) -> list[Path]:
+    """Every file under ``docs-site/src`` but the theme, its faces and the docs content (the shelf's markdown)."""
+    return sorted(
         path
-        for rel in _STYLE_SOURCES
-        for path in ([DOCS_SITE / "src" / rel] if "." in rel else sorted((DOCS_SITE / "src" / rel).rglob("*")))
-        if path.is_file() and (not path.name.endswith(".astro") or "Herald" in path.name or "layouts" not in path.parts)
-    ]
-    assert len(sources) > 10
+        for path in src.rglob("*")
+        if path.is_file()
+        and path.relative_to(src).parts[0] != "content"
+        and path.relative_to(src).as_posix() not in _THEME_SOURCES
+    )
+
+
+def _top_level_split(value: str) -> list[str]:
+    parts, depth, current = [], 0, ""
+    for char in value:
+        depth += {"(": 1, ")": -1}.get(char, 0)
+        if char == "," and depth == 0:
+            parts.append(current.strip())
+            current = ""
+        else:
+            current += char
+    return [*parts, current.strip()]
+
+
+def _theme_font(entry: str) -> bool:
+    """``var(--sl-…)``, whose fallback (if any) is itself one or a list of them."""
+    match = re.fullmatch(r"var\(\s*--sl-[\w-]+\s*(?:,(.*))?\)", entry.strip(), re.DOTALL)
+    return bool(match) and (match.group(1) is None or all(_theme_font(e) for e in _top_level_split(match.group(1))))
+
+
+def _font_findings(prop: str, value: str) -> list[str]:
+    value = " ".join(value.split())
+    if value.lower() in _GLOBAL_KEYWORDS:
+        return []
+    if prop == "font-family":
+        return [f"font-family {value!r}"] if not all(_theme_font(e) for e in _top_level_split(value)) else []
+    families = re.findall(r"var\(\s*--sl-(?:[^()]|\([^()]*\))*\)", value)  # the shorthand's family list
+    rest = re.sub(r"var\(\s*--sl-(?:[^()]|\([^()]*\))*\)", " ", value).replace("/", " ").replace(",", " ")
+    literal = [t for t in rest.split() if t.lower() not in _FONT_KEYWORDS and not re.fullmatch(r"[\d.]+[a-z%]*", t)]
+    return [f"font {value!r}"] if literal or not families else []
+
+
+def _declaration_lists(path: Path) -> tuple[list[str], list[str]]:
+    """The CSS a source declares, as declaration lists: a stylesheet's rule bodies; else each ``<style>`` body's and
+    each ``style`` attribute's (double- or single-quoted, a template literal, a string expression or an Astro object).
+    Template interpolations are trusted only through ``cssVar()`` / ``cssTextTone()``, which take a theme token alone;
+    any other interpolation, and a ``style={expression}``, is a finding of its own: the guard cannot read it."""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    sheets = [text] if path.suffix == ".css" else re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL)
+    lists = [body for sheet in sheets for body in re.findall(r"\{([^{}]*)\}", _COMMENT.sub("", sheet))]
+    unreadable: list[str] = []
+    for match in _STYLE_ATTRIBUTE.finditer(text):
+        *strings, astro_object, expression = match.groups()
+        if expression is not None:
+            unreadable.append(f"style={expression}")
+        elif astro_object is not None:
+            declarations = []
+            for entry in _top_level_split(astro_object):
+                if not entry:
+                    continue
+                key, _, raw = entry.partition(":")
+                literal = re.fullmatch(r"""\s*(?:'([^']*)'|"([^"]*)"|`([^`$]*)`|([\d.]+))\s*""", raw)
+                if literal is None:
+                    unreadable.append(f"style={{{{{entry.strip()}}}}}")
+                    continue
+                prop = re.sub(r"[A-Z]", lambda m: "-" + m.group(0).lower(), key.strip().strip("'\""))
+                declarations.append(f"{prop}: {next(v for v in literal.groups() if v is not None)}")
+            lists.append("; ".join(declarations))
+        else:
+            value = next(v for v in strings if v is not None)
+            value = _TRUSTED_INTERPOLATION.sub("var(--sl-interpolated)", value)
+            if "${" in value:
+                unreadable.append(f"style={value!r}")
+            lists.append(value)
+    return lists, unreadable
+
+
+def _literal_findings(src: Path) -> list[str]:
+    """Each literal colour or font family the sources under ``src`` declare outside the theme."""
     findings = []
-    for path in sources:
-        css = _style_text(path)
-        findings += [f"{path.name}: colour {m.group(0)!r}" for m in _LITERAL_COLOUR.finditer(css)]
-        families = re.findall(r"font-family\s*:\s*([^;}`\n]+)", css)
-        findings += [f"{path.name}: font-family {value.strip()!r}" for value in families if "var(--sl-" not in value]
-    assert findings == []
+    for path in _scanned_sources(src):
+        lists, unreadable = _declaration_lists(path)
+        rel = path.relative_to(src).as_posix()
+        findings += [f"{rel}: a style the guard cannot read, {what}" for what in unreadable]
+        for declarations in lists:
+            for declaration in declarations.split(";"):
+                prop, colon, value = declaration.partition(":")
+                prop = prop.strip().lower()
+                if not colon or not re.fullmatch(r"-{0,2}[\w-]+", prop):
+                    continue
+                findings += [f"{rel}: colour {c!r} in {prop}" for c in _colour_literals(value)]
+                if prop in ("font", "font-family"):
+                    findings += [f"{rel}: {f}" for f in _font_findings(prop, value)]
+    return findings
+
+
+def test_43_4_no_source_names_a_font_or_colour_outside_the_theme() -> None:
+    """The theme contract (operator ruling 2026-10-15; the re-review's should-fix 2): outside theme.css, the faces it
+    imports and the docs content, no file under ``docs-site/src`` -- herald CSS, layouts, components, pages, endpoint
+    output, libraries -- declares a literal colour (hex, a colour function, a CSS named or system colour in any case)
+    or a literal font in ``font-family`` or the ``font`` shorthand: each is one of Starlight's variables, or a token
+    derived from them, so replacing theme.css re-themes every page."""
+    sources = _scanned_sources(DOCS_SITE / "src")
+    assert len(sources) > 40 and any(p.suffix == ".astro" for p in sources) and any(p.suffix == ".ts" for p in sources)
+    assert _literal_findings(DOCS_SITE / "src") == []
+
+
+_GUARD_MUTATIONS = [  # (file under docs-site/src, the text to find, its replacement) -- the re-review's probes
+    ("styles/herald.css", "a { color: var(--sl-color-text-accent); }", "a { color: red; }"),
+    ("styles/herald.css", "border-bottom: 3px solid var(--ink); }", "border-bottom: 3px solid white; }"),
+    ("styles/herald.css", "a { color: var(--sl-color-text-accent); }", "a { color: White; }"),
+    ("styles/herald.css", "outline: 2px solid var(--focus);", "outline: 2px solid navy;"),
+    ("styles/herald.css", "55%, var(--sl-color-blue));", "55%, teal);"),
+    ("styles/herald.css", "font-size: 17px; line-height", "font: 17px/1.65 Georgia, serif; line-height"),
+    (
+        "styles/herald.css",
+        "code, .mono { font-family: var(--sl-font-mono);",
+        'code, .mono { font-family: var(--sl-font-mono), "Comic Sans MS";',
+    ),
+    (
+        "styles/herald.css",
+        "code, .mono { font-family: var(--sl-font-mono);",
+        "code, .mono { font-family: var(--sl-font-mono, Courier);",
+    ),
+    ("pages/herald/[...index].astro", '<div class="station-rail">', '<div class="station-rail" style={`color:#c00`}>'),
+    (
+        "pages/herald/[...index].astro",
+        '<div class="station-rail">',
+        "<div class=\"station-rail\" style={{ color: 'rebeccapurple' }}>",
+    ),
+    (
+        "pages/herald/[...index].astro",
+        '<div class="station-rail">',
+        "<div class=\"station-rail\" style={{ fontFamily: 'Arial' }}>",
+    ),
+    (
+        "pages/herald/[...index].astro",
+        '<div class="station-rail">',
+        "<div class=\"station-rail\" style='background:#c00'>",
+    ),
+    ("pages/herald/[...index].astro", '<div class="station-rail">', '<div class="station-rail" style={railStyle}>'),
+    ("lib/dossier-blocks.ts", '`<div class="chips">', '`<div class="chips" style="background:#c00">'),
+    ("lib/dossier-blocks.ts", '`<div class="chips">', '`<div class="chips" style="color:${block.colour}">'),
+    ("lib/herald-pages.ts", "font-family:var(--sl-font-mono);", "font-family:monospace;"),
+    ("components/SiteTitle.astro", "color: var(--sl-color-gray-2);", "color: GrayText;"),
+    (
+        "lib/md-inline.ts",
+        "export function cssVar",
+        "const S = '<style>.x{color:hsl(0 0% 0%)}</style>';\nexport function cssVar",
+    ),
+]
+
+
+@pytest.mark.parametrize(("rel", "find", "plant"), _GUARD_MUTATIONS)
+def test_43_4_each_literal_the_re_review_planted_fails_the_guard(
+    tmp_path: Path, rel: str, find: str, plant: str
+) -> None:
+    """Each mutation the re-review showed passing the old guard -- a named colour in any case or inside a derived
+    token's ``color-mix()``, the ``font`` shorthand, a literal family after a theme variable or as its fallback, a
+    style in a page, a library or an endpoint, an Astro object or single-quoted style, an unreadable style
+    expression -- now fails it, planted in a copy of the sources."""
+    src = tmp_path / "src"
+    for path in _scanned_sources(DOCS_SITE / "src"):
+        target = src / path.relative_to(DOCS_SITE / "src")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(path, target)
+    assert _literal_findings(src) == []
+    text = (src / rel).read_text(encoding="utf-8")
+    assert find in text, (rel, find)
+    (src / rel).write_text(text.replace(find, plant, 1), encoding="utf-8")
+    findings = _literal_findings(src)
+    assert findings and all(f.startswith(f"{rel}: ") for f in findings), findings
+
+
+_CSS_VAR_PROBE = """
+import { cssTextTone, cssVar } from %s;
+const out = {};
+for (const value of ['--amber', '--st-marshal', '', undefined, '#c00', 'red', 'var(--amber)', '--x;color:red']) {
+  try { out[String(value)] = cssVar(value); } catch (error) { out[String(value)] = 'throws: ' + error.message; }
+}
+out.tone = cssTextTone('--st-marshal');
+out.noTone = cssTextTone(undefined);
+process.stdout.write(JSON.stringify(out));
+"""
+
+
+@pytest.mark.skipif(NODE is None, reason="node is not on PATH")
+def test_43_4_css_var_takes_a_theme_token_alone() -> None:
+    """The re-review's nit 3: a value from dossier.yml / site.yml reaches an inline ``style=`` only through
+    ``cssVar()`` (or ``cssTextTone()``, built on it), which takes a ``--custom-property`` name alone and fails the build
+    on anything else -- so a literal colour in the YAML cannot pass the theme contract that the source guard reads."""
+    done = subprocess.run(
+        [
+            NODE or "node",
+            "--experimental-strip-types",
+            "--input-type=module",
+            "-e",
+            _CSS_VAR_PROBE % json.dumps((DOCS_SITE / "src" / "lib" / "md-inline.ts").as_uri()),
+        ],
+        cwd=DOCS_SITE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    out = json.loads(done.stdout)
+    assert out["--amber"] == "var(--amber)" and out["--st-marshal"] == "var(--st-marshal)"
+    assert out[""] == "" and out["undefined"] == "" and out["noTone"] == ""
+    for literal in ("#c00", "red", "var(--amber)", "--x;color:red"):
+        assert out[literal].startswith("throws: cssVar:") and "is not a theme token" in out[literal], literal
+    assert out["tone"] == "color-mix(in srgb, var(--st-marshal) 75%, var(--ink))"
 
 
 _THEME_PROBE = """

@@ -8,7 +8,7 @@
 import { getEntry } from 'astro:content';
 
 import HeraldLayout from '../../layouts/HeraldLayout.astro';
-import { cssVar, mdInline } from '../../lib/md-inline';
+import { cssTextTone, cssVar, mdInline } from '../../lib/md-inline';
 import { loadHeraldPages, pagesOneGenerator } from '../../loaders/herald-pages-loader';
 
 export function getStaticPaths() {
@@ -118,7 +118,7 @@ const description = mdInline(doc.summary as string).replace(/<[^>]+>/g, '');
           <a
             class="station-pill"
             href={`dossier/index.html#${s.id as string}`}
-            style={`color:${cssVar(s.accent as string)}`}
+            style={`color:${cssTextTone(s.accent as string)}`}
           >
             <span class="dot" style={`background:${cssVar(s.accent as string)}`} />
             <span set:html={mdInline(s.title as string)} />
