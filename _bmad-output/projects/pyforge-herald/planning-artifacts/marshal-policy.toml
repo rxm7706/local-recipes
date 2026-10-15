@@ -580,6 +580,21 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"44" = [  # every docs page renders its body and its links resolve (fix under CAP-52; no CAP, no flag; Story 44.1),
+  # added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus docs-site/ (the
+  # loader, the link plugins, the config, README, package files), the Pages assembler, the two shelf pages it corrects,
+  # and every Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docs-site/**",
+  "docsite/**",
+  "docs/index.md",
+  "docs/reference/developer-guide.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
 # context (Story 28.34, token-economy CAP-3): this station declares NO

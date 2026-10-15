@@ -12,7 +12,7 @@ import subprocess
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -516,6 +516,106 @@ def _check_href_resolution(artifact_root: Path) -> None:
                 raise SystemExit(1)
 
 
+
+#: The Starlight container that holds a shelf page's rendered markdown (docs-site, CAP-52).
+_SHELF_CONTAINER = "sl-markdown-content"
+#: Elements in a shelf body whose URL the browser follows or loads.
+_SHELF_URL_ATTRS = {"a": "href", "img": "src", "source": "src", "video": "src", "audio": "src", "iframe": "src"}
+
+
+class _ShelfBody(HTMLParser):
+    """Exactly the markdown container of one shelf page: its words and the URLs inside it. Depth is
+    tracked on ``div`` so the page's footer (Starlight's Previous/Next links) is never counted as body
+    (Story 44.1 review)."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.found = False
+        self.depth = 0
+        self.words: list[str] = []
+        self.urls: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = {name: value for name, value in attrs if value is not None}
+        if self.depth:
+            if tag == "div":
+                self.depth += 1
+            attr = _SHELF_URL_ATTRS.get(tag)
+            if attr and values.get(attr):
+                self.urls.append(values[attr])
+            return
+        if not self.found and tag == "div" and _SHELF_CONTAINER in values.get("class", "").split():
+            self.found = True
+            self.depth = 1
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag == "div" and self.depth > 1:
+            self.depth -= 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if self.depth and tag == "div":
+            self.depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self.depth:
+            self.words.extend(data.split())
+
+
+def _iter_shelf_pages(artifact_root: Path) -> list[Path]:
+    """Every Starlight shelf page: the HTML outside the herald and dashboard mounts that carries
+    a markdown body container (legacy redirect stubs have none)."""
+    pages = []
+    for page in sorted(artifact_root.rglob("*.html")):
+        rel = _artifact_path(page, artifact_root)
+        if rel.startswith((f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/")):
+            continue
+        if _SHELF_CONTAINER in page.read_text(encoding="utf-8", errors="replace"):
+            pages.append(page)
+    return pages
+
+
+def _shelf_failure(message: str) -> None:
+    print(f"assemble_pages: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def _check_shelf_pages(artifact_root: Path, site_url: str) -> None:
+    """Each shelf page renders a non-empty body, and every local URL in that body resolves to a file
+    inside the artifact (Story 44.1: until 2026-10-14 every shelf body rendered empty, and no check
+    looked at shelf links). The 404 page is served at any missing path, so its links must be
+    absolute."""
+    base_path = _base_path(site_url)
+    root = artifact_root.resolve()
+    pages = _iter_shelf_pages(artifact_root)
+    if not pages:
+        _shelf_failure("no shelf page found")
+    for page in pages:
+        rel_page = _artifact_path(page, artifact_root)
+        body = _ShelfBody()
+        body.feed(page.read_text(encoding="utf-8", errors="replace"))
+        body.close()
+        if not body.found or not body.words:
+            _shelf_failure(f"empty shelf page body: {rel_page}")
+        for raw in body.urls:
+            url = raw.split("#", 1)[0].split("?", 1)[0]
+            if not url or urlparse(url).scheme or url.startswith(("//", "mailto:", "tel:")):
+                continue
+            path = unquote(url)
+            if path.startswith("/"):
+                if not path.startswith(base_path):
+                    _shelf_failure(f"shelf link outside the base path: {rel_page} -> {raw!r} (base {base_path})")
+                target = root / path[len(base_path) :]
+            elif rel_page == "404.html":
+                _shelf_failure(f"relative link on the 404 page (served at any path): {rel_page} -> {raw!r}")
+            else:
+                target = page.parent.resolve() / path
+            target = target.resolve()
+            if target != root and root not in target.parents:
+                _shelf_failure(f"shelf link escapes the artifact: {rel_page} -> {raw!r}")
+            if not (target.is_file() or (target / "index.html").is_file()):
+                _shelf_failure(f"broken shelf link: {rel_page} -> {raw!r}")
+
 #: A menu link carries this attribute: the docs top menu (docs-site/src/components/SiteTitle.astro)
 #: and the herald shell (docsite/templates/shell_page.html.j2). Story 40.1, CAP-58.
 _MENU_LINK = re.compile(
@@ -639,6 +739,7 @@ def check(artifact_root: Path, *, site_url: str | None = None) -> None:
             raise SystemExit(1)
 
     _check_href_resolution(artifact_root)
+    _check_shelf_pages(artifact_root, site_url)
     _check_cross_origin_and_hosts(artifact_root, site_url)
     _check_menu_links(artifact_root, site_url)
 

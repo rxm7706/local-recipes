@@ -9982,7 +9982,7 @@ So that a landing made under the master shows each skipped gate, as one made und
 **When** a dispatch landing reads `pyforge steward ci status --json` while `PAUSE_ALL_CI` is `true`
 **Then** `ci_pauses_at_merge.surfaces` and the `CI paused at merge:` line name `master:PAUSE_ALL_CI` and every row whose `paused_by_master` is the JSON boolean `true`, except a row declared `opt-in-off` whose own switch is not `true`; every row Story 100.1's rule lists stays listed, sorted and once; an envelope with no `paused_by_master` gives exactly 100.1's list
 **And** each of these fails a named test (mutation): ignoring `paused_by_master`, listing an opt-in that is off, accepting the string `"true"` for the field, dropping an opt-in that is on; a marshal test fed steward's checked-in `ci_status_master_on.json` lists the master and every gated `paused` row; Story 100.1's tests pass unedited
-**Status:** blocked (cross-station gate: steward 103.1; the operator flips it)
+**Status:** backlog (steward 103.1 landed on `main` 2026-10-14, `a6cf663539`, PR #2223; flipped from `blocked` on the operator's 2026-10-15 approval "yes")
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

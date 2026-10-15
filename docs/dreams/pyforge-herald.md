@@ -116,6 +116,28 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-14 (every docs page is empty) — Found: the docs shelf on Pages has published 70 pages (69 and the 404 page) with no body since
+  2026-10-08.** Measured on the live site the same day: the Starlight markdown container of `/`, `/how-to/pixi-tasks/`,
+  `/explanation/the-detector-framework/` and `/tutorials/getting-started/` holds 0 words, and the first sentence of
+  `docs/how-to/pixi-tasks.md` appears nowhere in its page. Cause: `docs-site/src/loaders/shelf-docs-loader.ts` stores each
+  page's markdown as `body` but never renders it, and Starlight shows only an entry's `rendered` HTML. Nothing noticed:
+  `pages-check` walks links on herald pages only, and no check reads a shelf page's body. Rendering the bodies also
+  exposes their links: 678 in the 70 page bodies, which point at `.md` paths, `README.md` (published as a directory index),
+  and repo files the shelf does not publish (`docs/MAP.md`, `docs/governance/**`); upstream BMAD-METHOD rewrites links
+  with two rehype plugins this repo never vendored. Four GitHub Actions badge images in
+  `docs/reference/developer-guide.md` would also load from github.com, which herald:AD-21 forbids. **What it looks like
+  when fixed:** the loader renders each body with the project's rehype plugins; `rehype-markdown-links.js` and
+  `rehype-base-paths.js` are vendored byte-identical from upstream at the recorded commit and pinned in
+  `docs-site/README.md`; one local plugin points `README.md` links at the directory index and sends links to repo files
+  the shelf does not publish to their repository page; the badge images become text links; `pages-check` fails an empty
+  shelf body, a shelf link that does not resolve inside the artifact, and a shelf link missing the base path. Measured
+  on the fixed build: 70 pages, 678 body links, 0 dead, 0 empty, 19 sent to their repository page; an
+  independent review before commit found the first body check counted Starlight's footer, and it now parses the
+  container alone. **Constraints:** a `fix`
+  under CAP-52 (no CAP, no FR, no flag); the five files already vendored stay byte-identical (Story 41.1's review);
+  no page moves. Asked by the operator in session ("Fix the docs root rendering an empty body"). Owner
+  `spec-pyforge-herald`. → Epic 44 / Story 44.1, specced and fixed 2026-10-14.
+
 - **2026-10-13 (the Pages deployment, redesigned) — Ruled: one holistic Pages site, built by one generator, deployed by
   one steward-owned workflow only when its inputs change.** Operator ask 2026-10-13: "redesign and rework the entire
   deployment at github pages", analysed through the CIS module (`bmad-brainstorming`, `bmad-cis-design-thinking`).

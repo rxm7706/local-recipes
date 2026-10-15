@@ -11,16 +11,13 @@ from collections.abc import Mapping
 from typing import Any
 
 from django.core.cache import cache
-from django.http import HttpRequest
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_GET
-from pyforge.steward.dashboard.cache import get_master_dataset
-from pyforge.steward.dashboard.declarations import AccessDeclaration
-from pyforge.steward.dashboard.filtering import filter_by_role
-from pyforge.steward.dashboard.filtering import search
-
 from django_pyforge.access import require_station_role
 from django_pyforge.roles import tenant_from_request
+from pyforge.steward.dashboard.cache import get_master_dataset
+from pyforge.steward.dashboard.declarations import AccessDeclaration
+from pyforge.steward.dashboard.filtering import filter_by_role, search
 
 BOARD_CACHE_KEY = "atlas-board-master"
 BOARD_DECLARATION = AccessDeclaration(access_column="tenant", roles=("east", "west"))

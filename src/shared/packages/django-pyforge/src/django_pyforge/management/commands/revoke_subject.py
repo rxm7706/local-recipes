@@ -11,8 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from django.core.management.base import BaseCommand
-from django.core.management.base import CommandError
+from django.core.management.base import BaseCommand, CommandError
 
 from django_pyforge.supervisor import revoke_subject
 

@@ -1810,6 +1810,20 @@ Drift — orphaned between stations.
     only additively; no assertion weakens; no `pixi.toml` or workflow change (atlas 31.1 owns its lane). Owner
     `spec-pyforge-steward`. → Story 103.5, specced 2026-10-14.
 
+- **2026-10-14 (the CFE regression lane runs when what its tests load changes)** — **Found: `cfe-regression-net` never
+  ran when doctor Story 45.1 changed `scripts/fleet_picture.py`, and three conda-forge-expert meta tests went red unseen.**
+  The workflow fires on the skill tree, `.claude/scripts/conda-forge-expert/**`, the MCP server and the pixi files. The
+  CFE meta tests also load five repo-root scripts by path (`REPO_ROOT / "scripts" / ...`): `fleet_picture.py`,
+  `fleet_scan.py`, `loop_stall_check.py`, `spec_surface_check.py`, `unpushed_work_check.py`. 45.1 landed at 7c6dac8c07
+  and the lane stayed silent until steward 102.1 touched `pixi.toml` (PR #2220); mason Story 31.1 fixed the tests (CFE
+  v8.100.4). **What it looks like when fixed:** both of the workflow's path filters list the five scripts, and a steward
+  meta test derives the list from the tests' own source (the AST joins onto the repository root) and fails when a filter
+  misses one, as Story 98.1 does for the station suites; pr-preflight's lane selection (Story 71.2) follows the filters
+  with no other change. **Constraints:** a `fix` under CAP-159 (no CAP, no flag); data the tests read (`recipes/**`,
+  `conda_build_config.yaml`) stays out of the filter, because it would run the lane on every recipe PR; the CI-surfaces
+  registry row is unchanged. Operator ask in session ("Widen cfe-regression-net's path filter to the scripts its tests
+  load"). Owner `spec-pyforge-steward`. → Epic 104 / Story 104.1, specced and fixed 2026-10-14.
+
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
 Steward rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-steward]]` banners. Exempted chains (Guild unifying-strategy; foundry regenerate / capability-ledger / cutover) keep their folders with `fold-exemption`.
