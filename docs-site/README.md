@@ -109,13 +109,15 @@ pixi run -e site docs-site-validate   # the vendored link and sidebar-order vali
 dossier and every page's CSP.
 
 `pages-check` judges the artifact: every path it must hold (`/`, `/herald/` with its dossier, gallery, decks and
-artifact build, `/llms.txt`, `/llms-full.txt`, `/facts.json`, `/changes/` and its feed, and `/status/`, `/status/ci/`
-and `/status/runs/` exactly with `pyforge.herald.status_pages` on); `dashboard/` exactly the build input's mount, a
-mounted Kedro-Viz export with its manifest and its `/kedro-viz/` redirect under the base path, a mounted Vizro export
-with its index and manifest; the 44 legacy redirects landing on their targets; one `Content-Security-Policy` meta and
-one built-from line on every page, all naming one build; the feed and `facts.json` parsing; every local link of every
-page resolving inside the artifact under the base path (the 404 page's links absolute); a non-empty body on every
-shelf page; the same menu on every navigable page; every face a file under `_astro/`; and nothing loading from
+artifact build, every family page the decks index links, `/llms.txt`, `/llms-full.txt`, `/facts.json`, `/changes/`
+and its feed, and `/status/`, `/status/ci/` and `/status/runs/` exactly with `pyforge.herald.status_pages` on);
+`dashboard/` exactly the build input's mount, a mounted Kedro-Viz export with its manifest and its `/kedro-viz/`
+redirect under the base path, a mounted Vizro export with its index and manifest; the 44 legacy redirects landing on
+their targets; one `Content-Security-Policy` meta on every page that allows each of the page's inline scripts and
+`on*=` handlers, no `javascript:` URL, and one built-from line on every page, all naming one build; the feed and
+`facts.json` parsing; every local link of every page resolving inside the artifact under the base path (the 404
+page's links absolute); at least one shelf page and a non-empty body on each; the same menu on every navigable page,
+each menu link landing on a file of the artifact; every face a file under `_astro/`; and nothing loading from
 another origin (`scripts/origin_check.py`; the vendored Kedro-Viz root and the Vizro export's `plotly.min.js` exempt
 by name, AD-21 rule 5).
 
@@ -123,6 +125,10 @@ by name, AD-21 rule 5).
 (`src/lib/herald-pages.ts`'s `cspWith`); every Starlight page -- the shelf, `/changes/`, `/status/**`, the 404 -- gets
 the same policy at build end, its own inline scripts allowed by hash and `'wasm-unsafe-eval'` for the Pagefind search
 (`src/lib/artifact.ts`). Redirect stubs, the twins, the artifact build and the mounted `dashboard/` tree carry none.
+`pages-check` holds every page to its own policy (`scripts/pages.mts`'s `blockedScripts`), within two limits: an
+attribute's character references are decoded for XML's five named ones and numeric ones only, not HTML5's full table
+(a handler written with `&lpar;` is hashed undecoded and fails loud), and `'strict-dynamic'` is not modelled (no
+policy here emits it).
 
 **The artifact build** `herald/artifact/dossier.html` (CAP-47) is the built dossier page made single-file for the
 Claude Artifact tool: its title, its stylesheets inlined with the three faces it reads as data URIs, and its body.

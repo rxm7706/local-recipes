@@ -130,6 +130,12 @@ function files(root: string): string[] {
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
+/**
+ * An attribute value's character references decoded -- XML's five named ones and numeric ones only, not HTML5's full
+ * table: a handler written with another named reference (`&lpar;`) is hashed undecoded, which fails loud against a
+ * hash of the decoded text (no page writes one). The CSP check models hashes, `'unsafe-hashes'` and
+ * `'unsafe-inline'`; it does not model `'strict-dynamic'`, which no policy of this site emits (Story 43.7's re-review).
+ */
 function unescapeAttr(value: string): string {
   return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, ref: string) => {
     if (ref[0] === '#') {
@@ -144,11 +150,15 @@ export interface Tag {
   attrs: Record<string, string>;
 }
 
-/** The attributes of a tag's attribute text, names lower-cased, values unescaped. */
+/** The attributes of a tag's attribute text, names lower-cased, values unescaped; of a name given twice the first
+ * counts, as a browser keeps it (`<a onclick="x()" ONCLICK="y()">` runs `x()`). */
 function attributes(text: string): Record<string, string> {
   const attrs: Record<string, string> = {};
   for (const a of text.matchAll(/([^\s=/>"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g)) {
-    attrs[a[1].toLowerCase()] = unescapeAttr(a[2] ?? a[3] ?? a[4] ?? '');
+    const name = a[1].toLowerCase();
+    if (!Object.hasOwn(attrs, name)) {
+      attrs[name] = unescapeAttr(a[2] ?? a[3] ?? a[4] ?? '');
+    }
   }
   return attrs;
 }
@@ -306,6 +316,24 @@ export const REQUIRED = [
 ];
 export const STATUS_PAGES = ['status/index.html', 'status/ci/index.html', 'status/runs/index.html'];
 const DECKS_INDEX = 'herald/decks/index.html';
+
+/** The attributes that take a URL a browser would run as script when it names the `javascript:` scheme. */
+const URL_ATTRIBUTES = ['href', 'xlink:href', 'src', 'action', 'formaction'];
+
+/**
+ * Each `javascript:` URL a page names in a link, a frame or image source, or a form's target, one line each: an inline
+ * script by a third route, which no page's CSP allows (none carries `'unsafe-inline'`), so a dead control in the
+ * browser that the link walk, skipping every scheme, never sees (Story 43.7's re-review). The scheme is read as a
+ * browser reads it: any case, leading spaces and control characters dropped, tabs and newlines inside ignored.
+ */
+export function javascriptUrls(html: string): string[] {
+  return tags(html).flatMap((tag) =>
+    URL_ATTRIBUTES.filter((key) => {
+      const url = (tag.attrs[key] ?? '').replace(/[\t\n\r]/g, '').replace(/^[\u0000-\u0020]+/, '');
+      return Object.hasOwn(tag.attrs, key) && /^javascript:/i.test(url);
+    }).map((key) => `a javascript: URL in <${tag.name} ${key}> (${JSON.stringify(tag.attrs[key])})`),
+  );
+}
 
 /** The family pages the decks index links (`<slug>/index.html`, relative or under the base), as artifact paths. */
 export function familyPages(html: string, base: string): string[] {
@@ -499,6 +527,7 @@ export function check(root: string, options: CheckOptions = {}): string[] {
       out.push(`${rel} carries ${lines.length} built-from lines, not one`);
     }
     lines.forEach((line) => builds.add(line));
+    out.push(...javascriptUrls(html).map((line) => `${rel} carries ${line}`));
     for (const raw of urls(html)) {
       const landed = resolveLink(root, rel, raw, base);
       if (landed && 'problem' in landed) {

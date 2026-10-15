@@ -103,7 +103,9 @@ Type / Effort / Deps: feature / M / 43.2, 43.3, 43.4, 43.5, 43.6, doctor 48.1 (`
 
 ## Acceptance Criteria
 
-- **AC1 — `docsite/` is gone.** `test -e docsite; echo $?` prints 1; `git ls-files docsite | wc -l` prints 0.
+- **AC1 — `docsite/` is gone** (oracle amended 2026-10-15, the independent review). `git ls-files docsite | wc -l`
+  and `git ls-files --others --exclude-standard docsite | wc -l` each print 0, and `.gitignore` holds `/docsite/`: a
+  checkout that merged the deletion keeps its ignored leftovers, so `test -e docsite` no longer judges it.
 - **AC2 — The content lives beside the generator.** `docs-site/src/content/dossier/` holds the dossier YAML and the
   Story 43.1 loader reads it there; `grep -rn "docsite/" docs-site/src docs-site/scripts docs-site/astro.config.mjs`
   finds nothing.

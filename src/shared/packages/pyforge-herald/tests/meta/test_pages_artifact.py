@@ -381,6 +381,37 @@ def test_43_7_allowed_scripts_and_data_blocks_pass(site: Path, policy: str, body
     assert pages_check(site, origins=False) == []
 
 
+def test_43_7_of_a_handler_given_twice_the_first_is_judged(site: Path) -> None:
+    """A browser keeps the first of two same-named attributes (the 43.7 re-review): a blocked first ``onclick``
+    followed by an allowed duplicate is a finding; the same pair the other way round passes."""
+    policy = f"default-src 'self'; script-src 'self' 'unsafe-hashes' {_sha('allowed()')}"
+    meta = f'<meta http-equiv="Content-Security-Policy" content="{html.escape(policy)}">'
+    body = '<b onclick="blocked()" ONCLICK="allowed()">x</b>'
+    write(site / "changes/index.html", _page("changes/index.html", body=body, shelf=True).replace(CSP, meta))
+    _one(pages_check(site, origins=False), f"an inline onclick= handler its CSP blocks ({_sha('blocked()')}")
+    body = '<b onclick="allowed()" ONCLICK="blocked()">x</b>'
+    write(site / "changes/index.html", _page("changes/index.html", body=body, shelf=True).replace(CSP, meta))
+    assert pages_check(site, origins=False) == []
+
+
+@pytest.mark.parametrize(
+    ("rel", "body", "named"),
+    [
+        ("changes/index.html", '<a href="javascript:void(0)">x</a>', '<a href> ("javascript:void(0)")'),
+        ("herald/index.html", '<iframe src="JavaScript:alert(1)"></iframe>', "<iframe src>"),
+        ("index.html", '<form action=" javascript:go()"></form>', "<form action>"),
+        ("herald/decks/index.html", '<button formaction="java&#x09;script:go()">x</button>', "<button formaction>"),
+        ("changes/index.html", '<svg><a xlink:href="javascript:go()">x</a></svg>', "<a xlink:href>"),
+    ],
+    ids=["href", "iframe-src-any-case", "form-action-leading-space", "formaction-tab-inside", "svg-xlink-href"],
+)
+def test_43_7_a_javascript_url_is_named(site: Path, rel: str, body: str, named: str) -> None:
+    """A ``javascript:`` URL is an inline script by a third route, which no page's CSP allows (the 43.7 re-review): the
+    link walk skips every scheme, so ``pages-check`` names it on its own, read as a browser reads the scheme."""
+    write(site / rel, _page(rel, body=body, shelf=not rel.startswith("herald/")))
+    _one(pages_check(site, origins=False), f"{rel} carries a javascript: URL in {named}")
+
+
 def test_43_7_stubs_twins_the_artifact_build_and_mounts_carry_no_csp_or_line(site: Path, tmp_path: Path) -> None:
     write(site / "herald/twins/infographics/alpha.html", "<html><body><p>a Design export</p></body></html>")
     write(site / "herald/artifact/dossier.html", "<title>t</title><p>no head, no line</p>")

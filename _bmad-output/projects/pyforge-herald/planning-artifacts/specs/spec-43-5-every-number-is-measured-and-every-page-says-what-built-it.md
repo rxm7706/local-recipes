@@ -236,6 +236,10 @@ On `f8d99e0c84` plus this change (lane A of the one-PR Pages redesign); every ve
 
 ## Spec Change Log
 
+- 2026-10-15 (Story 43.7's re-review): AC5's command, `pixi run --frozen -e site site-verify`, retired with Story
+  43.7 -- the `site-verify` task, the workflow's advisory step and `verify_claims.py`'s compare mode (`--page`,
+  `page_stats`, `with_page_values`) left with the Jinja path, and the dossier's figures are measured at build
+  (`--emit`); AC5 and its Verification line stand as the record of the run on 2026-10-15.
 - 2026-10-15 (re-review of the review resolution: RESOLVED, 5 nits; swept after Story 43.7):
   - **Nit 3, the build time.** `built-from.ts` refuses what the retired Python twin (`datetime.fromisoformat`)
     refused and `Date` accepts: an impossible calendar date (`2026-02-30`, a common year's `02-29`), year `0000` and a
