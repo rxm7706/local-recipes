@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-10-14"   # RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-15"   # RE-STAMPED 2026-10-15: CAP-63 amended (the vizro-static-export task and job run in -e pyforge-atlas; the vendored plotly.min.js is the one exact-file VENDORED_ROOTS entry); FR-71 follows in place, no FR added or removed, no AD moved. See § Currency reconciliation — 2026-10-15. Prior: RE-STAMPED 2026-10-14: chain-currency cascade (spec -> PRD) for CAP-62 and CAP-63 (Epic 30): FR-70 and FR-71 registered (the Kedro-Viz DAG export reaches Pages as a workflow artifact, amending CAP-41 / FR-62's producer; Vizro boards publish as static exports under /dashboard/vizro/). See § Currency reconciliation — 2026-10-14. Prior: RE-STAMPED 2026-10-13: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-13 entries (Story 28.1 landed; Epic 29 / Story 29.1 minted and implemented, a fix under CAP-16 -- the range test server records each response before writing it); no CAP added or amended, no FR moved. See § Currency reconciliation — 2026-10-13. Prior: RE-STAMPED 2026-10-10: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-10 entry (Story 25.1's gate cleared, its key flipped blocked -> backlog by operator ruling); no FR registered. See § Currency reconciliation — 2026-10-10. Prior: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3226,12 +3226,15 @@ The 34-page BSL-driven Vizro dashboard that `dashboard-dryrun` already builds wi
 static page per board, and handed to the Pages build as a workflow artifact. The live Vizro server stays Lane 1.
 
 **Consequences (testable):**
-- A `vizro-static-export` task in `-e local-recipes` builds the same `Dashboard` object (`build_dashboard`) and writes
+- A `vizro-static-export` task in `-e pyforge-atlas` (amended 2026-10-15; was `-e local-recipes`) builds the same
+  `Dashboard` object (`build_dashboard`) and writes
   `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, and `manifest.json` (`exported_at`,
   `export_commit`, `boards[]` with `id`, `title`, `path`, `data_build_timestamp` — the page's own AD-17 stamp).
 - Every Plotly figure is rendered with `include_plotlyjs` pointing at ONE vendored `assets/plotly.min.js` copied from
-  plotly's own `package_data`; never `'cdn'` (herald AD-21: zero third-party origins). `pages-check` judges the mount
-  with no `VENDORED_ROOTS` exemption.
+  plotly's own `package_data`; never `'cdn'` (herald AD-21: zero third-party origins). `pages-check` judges every
+  exported page; the one `VENDORED_ROOTS` entry under the mount is the exact file `dashboard/vizro/assets/plotly.min.js`
+  (herald:AD-21 rule 5, a vendored upstream bundle), never the tree (amended 2026-10-15; was "no `VENDORED_ROOTS`
+  exemption").
 - Controls that submit work (`scan-project`, `env-inspect`) are not exported; the page shows the latest cached result
   and says so. No filter is emulated client-side.
 - A board with a declared access column is refused before any write (`sld:AD-10`, the rule `steward deploy static`
@@ -3246,3 +3249,20 @@ static page per board, and handed to the Pages build as a workflow artifact. The
 **Content changed:** this section added (FR-70, FR-71 registered). No FR renumbered or removed. The spine amends AD-21
 (every static surface atlas publishes reaches Pages as a workflow artifact); see its § Currency reconciliation —
 2026-10-14. § 7 Success Metrics is unchanged. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-15
+
+*Trigger: `spec-pyforge-atlas` CAP-63 amended on 2026-10-15 (its memlog decision of that date and the re-derived
+`SPEC.md`), to the two rulings Story 30.2 landed under. FR-71 derives from CAP-63, so it follows in place.*
+
+- **The env (orchestrator ruling 2026-10-15; operator may override).** The `vizro-static-export` task lands under
+  `[feature.pyforge-atlas.tasks]` and runs in `-e pyforge-atlas`, which carries vizro and plotly 7.1.0; the producer
+  job's `setup-pixi` names `pyforge-atlas`. `-e local-recipes` is over 10 GB and is not a station job's env.
+- **The exemption (ruling 2026-10-15, kept by the operator).** plotly's own `plotly.min.js`, vendored byte for byte,
+  names third-party origins (`cdn.plot.ly/un/` for geo traces, which the export refuses; a maplibre icon template),
+  so `VENDORED_ROOTS` holds the exact file `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5) and every
+  exported page stays judged.
+
+**Content changed:** FR-71's first two consequences, amended in place and marked; this section. No FR added,
+renumbered or removed; no AD moves (the spine's AD-21 amendment of 2026-10-14 reads as written: plotly.js is vendored
+once, never `'cdn'`). `updated:` bumped.

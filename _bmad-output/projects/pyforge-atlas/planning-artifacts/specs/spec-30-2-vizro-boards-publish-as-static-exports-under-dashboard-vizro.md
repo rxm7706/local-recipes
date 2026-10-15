@@ -242,12 +242,13 @@ CAP-40, CAP-42, CAP-50 and CAP-62; AD-21 (amended 2026-10-14), AD-17, AD-8, AD-1
 
 **Given** the 34-page BSL-driven `Dashboard` object `dashboard-dryrun` builds offline in `-e local-recipes`, each page
 carrying its own AD-17 stamp, and the archived intake workaround whose `include_plotlyjs='cdn'` herald AD-21 forbids
-**When** `pixi run -e local-recipes vizro-static-export` runs with the flag on against the fixture data root
+**When** `pixi run -e pyforge-atlas vizro-static-export` runs with the flag on against the fixture data root *(amended 2026-10-15, orchestrator ruling; operator may override)*
 **Then** it exits 0 and writes the board index, one page per board, exactly one `assets/plotly.min.js` and
 `manifest.json` (`exported_at`, `export_commit`, `boards[]` with `id`, `title`, `path`, `data_build_timestamp`); no
 `cdn.plot.ly` reference exists and every script resolves to the vendored file; the Run controls are absent
 **And** a declared access column refuses and writes nothing; flag off refuses and writes nothing; `pages-check` exits 0
-with the export mounted and `VENDORED_ROOTS` unchanged; the producer job uploads `vizro-static-export` (90 days) with no
+with the export mounted and the exact file `dashboard/vizro/assets/plotly.min.js` the one `VENDORED_ROOTS` entry
+under it (herald:AD-21 rule 5; amended 2026-10-15, was "`VENDORED_ROOTS` unchanged"); the producer job uploads `vizro-static-export` (90 days) with no
 commit step; `dashboard-dryrun`, `kedro-test` and `kedro-catalog-check` are green and the flag test runs the key in both
 states
 
@@ -402,4 +403,9 @@ states
     `src/shared/packages/pyforge-core/tests/unit/test_flags.py`).
 - 2026-10-15 (the lane-B → lane-A merge): AC7's evidence, recorded by herald 43.3 with a real 34-board export, is copied
   into the Verification section beside AC7's command. Status stays `in-review`.
+- 2026-10-15 (the Pages one-PR endgame, pass 1b): the Epic excerpt above still read `pixi run -e local-recipes
+  vizro-static-export` and "`VENDORED_ROOTS` unchanged", against AC1, AC7, AC8 and Always as amended. It is amended in
+  place, as Story 30.2's text in `epics.md` is, and `spec-pyforge-atlas` CAP-63 and FR-71 are re-derived to the same two
+  rulings (the Spec memlog's decision of 2026-10-15). `docs/dashboard/README.md` names `-e pyforge-atlas` too. No AC
+  changes; status stays `in-review`.
 
