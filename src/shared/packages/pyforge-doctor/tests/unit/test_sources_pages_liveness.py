@@ -10,7 +10,9 @@ from __future__ import annotations
 import ast
 import email.message
 import http.client
+import io
 import json
+import re
 import socket
 import urllib.error
 import urllib.request
@@ -180,7 +182,7 @@ def test_site_newer_than_its_inputs_is_one_ok_row_naming_the_url_and_both_dates(
     assert [f.status for f in findings] == [DoctorStatus.OK]
     message = findings[0].message
     assert _URL in message
-    assert "2026-10-14T15:46:03+00:00" in message
+    assert "2026-10-14T15:46:03Z" in message
     assert "2026-10-14T14:00:00+00:00" in message
     assert recorder.methods == ["HEAD"]
 
@@ -188,7 +190,7 @@ def test_site_newer_than_its_inputs_is_one_ok_row_naming_the_url_and_both_dates(
 def test_a_commit_23_hours_newer_is_one_ok_row(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     findings, _, _ = _gather(monkeypatch, tmp_path, "commit_23_hours_newer.json")
     assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
-    assert "2026-10-13T12:00:00+00:00" in findings[0].message
+    assert "2026-10-13T12:00:00Z" in findings[0].message
     assert "2026-10-14T11:00:00+00:00" in findings[0].message
 
 
@@ -203,10 +205,11 @@ def test_a_commit_25_hours_newer_is_one_stale_warn_naming_both_dates_the_sha_and
     message = findings[0].message
     sha, _, commit_date = case["git_log"].partition(" ")
     assert _URL in message
-    assert "2026-10-13T12:00:00+00:00" in message
+    assert "2026-10-13T12:00:00Z" in message
     assert commit_date in message
     assert sha in message
     assert "25 hours" in message
+    assert "more than" not in message  # a whole 25 hours reads exactly
     assert findings[0].evidence["commit"] == sha
 
 
@@ -229,8 +232,38 @@ def test_the_2026_10_06_replay_is_stale_by_its_own_figure(monkeypatch: pytest.Mo
     assert findings[0].evidence["lag_hours"] == 65
     assert findings[0].evidence["lag_hours"] >= 24
     assert "65 hours" in findings[0].message
-    assert "2026-10-06T03:12:00+00:00" in findings[0].message
+    assert "2026-10-06T03:12:00Z" in findings[0].message
     assert "2026-10-08T15:30:00-05:00" in findings[0].message
+
+
+def test_a_stale_lag_never_reads_as_the_threshold(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """24 h 30 min is stale, and its message says "more than 24 hours", never "24 hours" next to a
+    rule of "more than 24"."""
+    case = {
+        **_load("commit_25_hours_newer.json"),
+        "git_log": "c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7 2026-10-14T12:30:00+00:00",
+    }
+    _install(monkeypatch, case)
+    findings = pages_liveness.gather(tmp_path)
+    assert [(f.check, f.status) for f in findings] == [("pages-liveness-stale", DoctorStatus.WARN)]
+    message = findings[0].message
+    assert "more than 24 hours behind" in message
+    assert not re.search(r"(?<!than )\b24 hours", message)
+    assert findings[0].evidence["lag_hours"] == 24
+
+
+def test_the_stale_line_keeps_its_evidence_inside_fleet_pictures_cut(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """fleet-picture prints a WARN's first 110 characters: the lag and both dates lead, the URL is last."""
+    findings, _, case = _gather(monkeypatch, tmp_path, "replay_2026_10_06.json")
+    message = findings[0].message
+    cut = message[:110]
+    assert "more than 65 hours" in cut
+    assert "2026-10-06T03:12:00Z" in cut
+    assert "2026-10-08T15:30:00-05:00" in cut
+    assert message.endswith(_URL)
+    assert case["git_log"].split()[0] in message
 
 
 # --- AC4: HEAD then GET -------------------------------------------------------------------------
@@ -321,6 +354,29 @@ def test_a_head_405_then_get_url_error_is_unavailable(monkeypatch: pytest.Monkey
     assert "GET https://rxm7706.github.io/local-recipes/: URLError: connection reset" in findings[0].message
 
 
+def test_an_http_error_response_is_closed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """HEAD 405 raises an HTTPError carrying the response; the source closes it explicitly (not
+    only when the exception is collected) and asks with GET."""
+    _install(monkeypatch, _load("head_405_get_200.json"))
+    closed: list[int] = []
+    fake_urlopen = pages_liveness.urlopen
+
+    class _RecordingHTTPError(urllib.error.HTTPError):
+        def close(self) -> None:
+            closed.append(self.code)
+            super().close()
+
+    def _urlopen(req: urllib.request.Request, timeout: float | None = None) -> Any:
+        if req.get_method() == "HEAD":
+            raise _RecordingHTTPError(req.full_url, 405, "Method Not Allowed", _headers({}), io.BytesIO(b"no"))
+        return fake_urlopen(req, timeout=timeout)
+
+    monkeypatch.setattr(pages_liveness, "urlopen", _urlopen)
+    findings = pages_liveness.gather(tmp_path)
+    assert [(f.check, f.status) for f in findings] == [("pages-liveness", DoctorStatus.OK)]
+    assert closed == [405]
+
+
 def test_a_dropped_connection_is_unavailable(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _install(monkeypatch, _load("site_newer_than_commit.json"))
 
@@ -351,7 +407,7 @@ def test_a_zoneless_http_date_reads_as_utc(monkeypatch: pytest.MonkeyPatch, tmp_
     _install(monkeypatch, case)
     findings = pages_liveness.gather(tmp_path)
     assert findings[0].check == "pages-liveness-stale"
-    assert findings[0].evidence["last_modified"] == "2026-10-13T12:00:00+00:00"
+    assert findings[0].evidence["last_modified"] == "2026-10-13T12:00:00Z"
 
 
 def test_a_response_without_a_status_attribute_reads_its_code(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -425,7 +481,7 @@ def test_mutation_the_git_argv_names_the_full_refname_never_a_bare_main(
     _, recorder, _ = _gather(monkeypatch, tmp_path, "site_newer_than_commit.json")
     (argv,) = recorder.git_argvs
     assert ORIGIN_MAIN == "refs/remotes/origin/main"
-    assert argv[:4] == ["log", "-1", "--format=%H %cI", "refs/remotes/origin/main"]
+    assert argv[:5] == ["log", "-1", "--first-parent", "--format=%H %cI", "refs/remotes/origin/main"]
     assert "main" not in argv
     assert "origin/main" not in argv
     assert not [arg for arg in argv if arg.startswith("origin/")]

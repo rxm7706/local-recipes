@@ -17,10 +17,11 @@ _STALE = {
     "source": "pages-liveness",
     "check": "pages-liveness-stale",
     "status": "warn",
+    # The source's own shape (doctor 48.2 review): the lag and both dates first, the URL last.
     "message": (
-        "Pages deploy 65 hours behind its inputs: https://rxm7706.github.io/local-recipes/ last-modified "
-        "2026-10-06T03:12:00+00:00, published-input commit d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708 on "
-        "origin/main at 2026-10-08T15:30:00-05:00"
+        "Pages deploy more than 65 hours behind: last-modified 2026-10-06T03:12:00Z, inputs "
+        "2026-10-08T15:30:00-05:00 (published-input commit d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708 on "
+        "origin/main), https://rxm7706.github.io/local-recipes/"
     ),
     "evidence": {"lag_hours": 65},
 }
@@ -118,6 +119,10 @@ def test_main_prints_one_watch_line_per_warn(monkeypatch, capsys, tmp_path):
         f"- pages-liveness-unavailable: {_UNAVAILABLE['message'][:110]}",
     ]
     assert "could not check Pages liveness" not in out
+    # The 110-character cut keeps the evidence: the lag and both dates.
+    stale_line = lines[0]
+    for evidence in ("more than 65 hours", "2026-10-06T03:12:00Z", "2026-10-08T15:30:00-05:00"):
+        assert evidence in stale_line
 
 
 def test_main_prints_no_pages_line_when_the_site_is_current(monkeypatch, capsys, tmp_path):

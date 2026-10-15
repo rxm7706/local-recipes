@@ -241,6 +241,14 @@ WARN and the degrade line when the probe raises, the sole-subprocess meta-test s
 - **A schedule.** `fleet-picture`'s cadence is the operator's; a scheduled probe is outward work.
 - **The lag's cause.** This source says the site is behind; CAP-89's `ci-pause-stuck` and steward's `ci status` say
   why from GitHub's side. The two are read together in `fleet-picture`'s ATTENTION block.
+- **The identical-build case** (added 2026-10-15 by the independent review). `pages.yml` deploys only when the built
+  tree's hash differs from the live `build.json` (steward 102.2), so a published-input commit whose build is
+  byte-identical to the live tree (a comment-only edit to `docs/map.yaml`) is not deployed, `last-modified` stays at
+  the earlier deploy, and this rule would read `pages-liveness-stale` a day later with nothing stuck. Today herald's
+  build stamp (`Built <date> · <sha7>`) makes every new commit's tree hash differently, so it does not occur. Steward
+  102.3's `decide_deploy` daily refresh keeps it from occurring once the hash stops seeing the stamp: it deploys an
+  identical tree when the live `built_at` is more than 24 hours old and the commit differs from the live
+  `built_from`, so the lag this rule reads cannot pass 24 hours on a healthy duct. Not this source's to fix.
 
 ## Spec Change Log
 
@@ -249,6 +257,23 @@ WARN and the degrade line when the probe raises, the sole-subprocess meta-test s
   `flag-exempt: detector-or-gate` by `bmad-spec` ruling (memlog 2026-10-14). The live `last-modified` header was
   measured on 2026-10-14 before the mint; the 2026-10-06 replay's timestamps are the fixture's, chosen inside the
   incident window, not recovered from GitHub.
+- 2026-10-15 (independent review, iteration 1 fixes):
+  - argv adds `--first-parent`: the landing commit's date is when main's inputs changed. Without it, history
+    simplification answered with a commit from the merged branch, dated up to 7 hours (and, for a long branch, days)
+    before its landing, which reads the site fresher than it is (finding 1). The argv still names
+    `refs/remotes/origin/main` and fetches nothing (AC8).
+  - The stale message leads with the lag and both dates and names the commit and the URL last, so `fleet-picture`'s
+    110-character ATTENTION line keeps the evidence (finding 5). A lag that is not a whole number of hours reads
+    "more than N hours", so a stale lag never prints as the 24-hour threshold itself (finding 4). `last-modified`
+    prints as `YYYY-MM-DDTHH:MM:SSZ` in the message and the evidence.
+  - An `HTTPError` (the response to a HEAD answered outside 2xx) is closed explicitly (finding 6).
+  - The deploy workflow is now `pages.yml` (steward 102.1 / 102.2), whose `paths:` filter is exactly
+    `PUBLISHED_INPUTS` plus the workflow file itself. The Intent, the Epic excerpt's Given and "Named, not fixed here"
+    item 2 above still describe `dashboard.yml` firing on every push with no filter; they are kept as minted. Spec
+    open question 2 (a doctor meta-test pinning `PUBLISHED_INPUTS` to that filter) is now cheap (finding 7).
+  - The rule never consults the clock (finding 3): `DW-doctor-48-2-1` in the doctor deferred-work ledger, for a
+    `bmad-spec` change to CAP-91. The identical-build case (the builder's open question) is a "Named, not fixed here"
+    line above (finding 2).
 
 ## Auto Run Result
 
@@ -286,11 +311,8 @@ no HTTP request; a transport failure (URLError, timeout, dropped connection) on 
 (only an HTTP status outside 2xx earns the GET); a `last-modified` without a zone reads as UTC; a git line whose date
 does not parse or carries no zone is unavailable.
 
-Open question for review (not changed here): the Intent assumed `dashboard.yml` deploys on every push to `main`.
-Steward Story 102.2, already on this branch, has `pages.yml` deploy only when the built tree's hash differs from the
-live `build.json`. A published-input commit whose build is byte-identical to the live tree (for example a
-comment-only edit to `docs/map.yaml`) is never deployed, so `last-modified` stays at the earlier deploy and this
-source reads `pages-liveness-stale` once that commit is a day old, though nothing is stuck.
-`PUBLISHED_INPUTS` also now equals `pages.yml`'s `paths` filter minus the workflow itself (Spec open question 2).
+The builder's open question (a byte-identical build is never deployed under steward 102.2) was ruled by the
+independent review, 2026-10-15: accept, recorded as "Named, not fixed here" (the identical-build case); its fixes are
+in the Spec Change Log.
 
 followup_review_recommended: false

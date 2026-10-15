@@ -93,9 +93,9 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         return _unavailable(str(exc))
 
     lag = commit_date - last_modified
-    lag_hours = int(lag.total_seconds() // 3600)
+    lag_hours, remainder = divmod(int(lag.total_seconds()), 3600)
     shown_ref = display_ref(ORIGIN_MAIN)
-    last_modified_text = last_modified.isoformat()
+    last_modified_text = last_modified.strftime("%Y-%m-%dT%H:%M:%SZ")
     evidence: dict[str, Any] = {
         "url": PAGES_ROOT_URL,
         "last_modified": last_modified_text,
@@ -107,14 +107,18 @@ def _gather(target: Path) -> tuple[Finding, ...]:
         "requests": requests,
     }
     if lag > STALE_AFTER:
+        # Whole hours, never rounded down into reading as the threshold itself: a lag of 24 h 30 min
+        # is "more than 24 hours". The lag and both dates lead, so fleet-picture's 110-character
+        # ATTENTION line keeps the evidence; the commit and the URL follow.
+        lag_text = f"{lag_hours} hours" if remainder == 0 else f"more than {lag_hours} hours"
         return (
             Finding(
                 source=Source.PAGES_LIVENESS,
                 check=_CHECK_STALE,
                 status=DoctorStatus.WARN,
                 message=(
-                    f"Pages deploy {lag_hours} hours behind its inputs: {PAGES_ROOT_URL} last-modified "
-                    f"{last_modified_text}, published-input commit {sha} on {shown_ref} at {commit_text}"
+                    f"Pages deploy {lag_text} behind: last-modified {last_modified_text}, inputs {commit_text} "
+                    f"(published-input commit {sha} on {shown_ref}), {PAGES_ROOT_URL}"
                 ),
                 evidence=evidence,
             ),
@@ -136,8 +140,13 @@ def _gather(target: Path) -> tuple[Finding, ...]:
 
 def _latest_input_commit(target: Path) -> tuple[str, str, datetime]:
     """``(sha, committer date as git printed it, aware datetime)`` of the latest commit on
-    ``refs/remotes/origin/main`` that touched a published input. No fetch."""
-    argv = ["log", "-1", "--format=%H %cI", ORIGIN_MAIN, "--", *PUBLISHED_INPUTS]
+    ``refs/remotes/origin/main`` that touched a published input. No fetch.
+
+    ``--first-parent`` reads main's own history: every landing is a merge (``gh pr merge
+    --merge``), and without it history simplification can answer with a commit from the merged
+    branch, dated before the inputs changed on main -- an early date that reads fresher than the
+    site is."""
+    argv = ["log", "-1", "--first-parent", "--format=%H %cI", ORIGIN_MAIN, "--", *PUBLISHED_INPUTS]
     try:
         stdout = cli_bridge.run_git(target, argv)
     except CliBridgeError as exc:
@@ -193,7 +202,10 @@ def _request(method: str) -> tuple[int, Any]:
                 status = resp.getcode()
             return int(status), resp.headers
     except urllib.error.HTTPError as exc:
-        return int(exc.code), exc.headers
+        # The error carries the response; its body is never read, and it is closed here.
+        status, headers = int(exc.code), exc.headers
+        exc.close()
+        return status, headers
     except urllib.error.URLError as exc:
         raise _Unavailable(f"{method} {PAGES_ROOT_URL}: URLError: {exc.reason}") from exc
     except (OSError, http.client.HTTPException) as exc:
