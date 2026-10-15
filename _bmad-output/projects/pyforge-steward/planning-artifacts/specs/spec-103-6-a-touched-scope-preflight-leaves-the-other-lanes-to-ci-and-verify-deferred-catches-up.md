@@ -227,6 +227,14 @@ fixture `pixi.toml` files, fixture repositories and injected lane runners. None 
   changes with it.
 - `preflight_budget` judges a touched run by its CI selection, not by the lanes it ran. A follow-up may teach it the
   scope.
+- Measured by the independent review (2026-10-15), each accepted under the operator's "CI arbitrates" ruling and
+  listed in the I/O matrix:
+  - a `pyforge-core` or `pyforge-testing-kit` `src/` change runs that package's test, the lint lanes and the fast
+    core, and defers all 8 station suites and gates, although CI's shared-surface rule fires them all;
+  - a change under `.claude/skills/conda-forge-expert/scripts/` defers `test-ci`;
+  - a `.pre-commit-config.yaml` change defers `precommit-config-check`;
+  - a package `pyproject.toml` change (`[tool.mypy]`, `[tool.ruff]`, `requires-python`) defers every lint-types lane;
+  - a deletion in one station that breaks another's tests (the atlas 30.1 pattern) defers the broken station.
 - `pixi.toml`'s `pr-preflight` description still says it runs the same lanes as `pr-preflight-lanes`, which has not
   been true since Story 71.2. It is not edited here, because a `pixi.toml` change fires every station suite in CI and
   needs an `environment.yaml` re-export.
@@ -245,6 +253,11 @@ fixture `pixi.toml` files, fixture repositories and injected lane runners. None 
 | diff to `scripts/lint_types.py` | lint lanes and the rest selected | the lint lanes, fast core |
 | diff unreadable (no `origin/main`) | every lane | every lane, said on stdout |
 | a journal record without `mode` | — | read as `full`, nothing deferred |
+| diff under `pyforge-core` or `pyforge-testing-kit` `src/` | every station suite and gate (CI's shared-surface rule) | that package's test, lint and types, fast core; the 8 station suites and gates deferred |
+| diff under `.claude/skills/conda-forge-expert/scripts/` | `test-ci` | fast core only; `test-ci` deferred |
+| diff to `.pre-commit-config.yaml` | `precommit-config-check` | fast core only; `precommit-config-check` deferred |
+| diff to a package `pyproject.toml` (`[tool.mypy]`, `[tool.ruff]`, `requires-python`) | the lint-types lanes | that station's suite and gate, fast core; every lint-types lane deferred |
+| a deletion in one station that breaks another's tests | both stations' suites | the deleting station's suite; the broken station's deferred |
 
 </intent-contract>
 
@@ -339,6 +352,32 @@ The diff is for an independent review against this spec, not against this summar
     checks: exit 0.
   - `pyforge-steward-test` is recorded on the PR.
 
+## Review
+
+The independent review (2026-10-15) of PR #2237 at `6741848367` returned **PASS**, with no blockers, two
+should-fixes and four nits. Each has its resolution here; the fixes land on the same branch.
+
+- **1 (should-fix) — AGENTS.md said things the flag made false.** `dev` is the default environment
+  (`pyforge.core.flags.DEFAULT_ENVIRONMENT`), and the flag is on there, so a bare `pr-preflight` on a laptop runs
+  the touched scope.
+  **Resolution:** Pre-PR item 2 now names `PYFORGE_PREFLIGHT_SCOPE=full pixi run -e pyforge-guild pr-preflight` (or
+  `verify-deferred`) as the full local twin. The governance-currency line says a *full-scope* `pr-preflight` runs
+  it. § Running and verifying says `full` is every lane CI selects for the diff. `governance-currency` and
+  `test_instruction_surface_parity.py` exit 0.
+- **2 (should-fix) — The spec did not name the deferrals the reviewer measured.**
+  **Resolution:** five rows in the I/O matrix and the Residual risk list name them, each accepted under the ruling.
+  They are pyforge-core and testing-kit `src`, the CFE scripts, `.pre-commit-config.yaml`, a package `pyproject.toml`,
+  and a cross-station deletion.
+- **3 (nit, fixed) — The shipped-tree test accepted either scope.** A `_scope_flag_on`-always-False mutant survived.
+  **Resolution:** `test_the_shipped_flag_reads_from_the_tree` now asserts `touched` under `PYFORGE_ENVIRONMENT=dev`
+  and `full` under `staging` and `production`. The mutant now fails its `dev-touched` case.
+- **4 (pre-existing, recorded) — A lane whose dependency is absent from the run set spins forever**
+  (`preflight.py:1154`-`:1210`). Recorded as `DW-steward-103-6-1`.
+- **5 (nit, recorded) — The fast-core filter would drop a fast-core task's own dependencies** (`preflight.py:339`).
+  Recorded as `DW-steward-103-6-2`.
+- **6 (nit, recorded) — `verify-deferred` verifies only HEAD, but lists runs from every head.** Recorded as
+  `DW-steward-103-6-3`.
+
 ## Spec Change Log
 
 - 2026-10-15: minted from the Dream's 2026-10-15 addition (CI arbitrates the deferred lanes), under the operator's
@@ -347,3 +386,5 @@ The diff is for an independent review against this spec, not against this summar
 - 2026-10-15 (implementation): AC2's hook tests moved to `tests/scripts/test_lint_types_gate.py`, since the
   station-test trigger map refuses a steward test that reads the hook script (Implementation Result, amended). No AC
   changed.
+- 2026-10-15 (review): PASS, with two should-fixes and four nits. The should-fixes and nit 3 are resolved on the
+  branch; nits 4-6 are recorded as `DW-steward-103-6-1`..`-3` (§ Review). No AC changed.

@@ -159,11 +159,16 @@ def test_an_unknown_scope_refuses(value: str) -> None:
     assert preflight.SCOPE_FULL in message and preflight.SCOPE_TOUCHED in message
 
 
-def test_the_shipped_flag_reads_from_the_tree() -> None:
-    """The default reader is the one flag tree; with no variable set it decides the scope."""
+@pytest.mark.parametrize(
+    ("environment", "scope"),
+    [("dev", preflight.SCOPE_TOUCHED), ("staging", preflight.SCOPE_FULL), ("production", preflight.SCOPE_FULL)],
+)
+def test_the_shipped_flag_reads_from_the_tree(monkeypatch: pytest.MonkeyPatch, environment: str, scope: str) -> None:
+    """The default reader is the one flag tree, as each environment renders it: on in dev, off elsewhere."""
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", environment)
     choice = preflight.resolve_scope({})
-    assert choice.scope in preflight.SCOPES
-    assert choice.source.startswith(f"flag {preflight.SCOPE_FLAG_KEY} ")
+    assert choice.scope == scope
+    assert choice.source == f"flag {preflight.SCOPE_FLAG_KEY} {'on' if scope == preflight.SCOPE_TOUCHED else 'off'}"
 
 
 def test_main_refuses_an_unknown_scope_and_starts_no_lane(

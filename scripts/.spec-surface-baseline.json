@@ -5625,7 +5625,7 @@
    ".cursorrules": "7116ec0f9c0cfab974c6c3de7ba8ef973e02ec36",
    ".gemini/settings.json": "0e37d00cae3c091c91cd7a53792762eb300fa527",
    ".github/copilot-instructions.md": "9b6735392a0561c1b34d4c8c025998ff179bb71f",
-   "AGENTS.md": "f463bf862534fd2a6fc39f75e4fd6f1be06e2575",
+   "AGENTS.md": "ad977bdc24c581f08987bd25156318f9721c47e4",
    "CLAUDE.md": "b33a436429dd7ee6fed499526ac99a5e677cc02d",
    "GEMINI.md": "c4766a51e9cadecf25618732601e4374c27bf1b3",
    "scripts/bmad_estate_check.py": "71122d85b48fc0a9b9e6496be5e4f4015430cada",
@@ -5688,7 +5688,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "81d96843e529234ed3c5510086dfe0ecafbd196f"
+  "memlog": "024dbb60a84d7a17e27cb2fed82b17ab23605507"
  },
  "pyforge-scribe/spec-pyforge-scribe-team-memory": {
   "files": {},
@@ -6204,7 +6204,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py": "dfa303606fad0bbb9b0a660de612a1902fc38bf4",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py": "c08ecc5a871c1ffdd122a2b76125ab9c625663bc",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py": "322aadb37083a94bb8365a64a5abcffe6b84d21f",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py": "53e3ea9085fc85a03e63f2fa1c2c9e70da23b5d4",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py": "c2b092d7fa8bd87880862b2bc6a971e74816d5bf",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": "a95ab6413b677f629a5319574e4dafb78a6aa58d",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py": "6b4e2a1de2abd3b691233ec6a3b9da282f2b7982",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": "92a59965e82a6f9fcb2978f794c692c03fd8bd19",
@@ -6261,7 +6261,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "9a2f15383bb3c0fd810bede39028b340572e85a7"
+  "memlog": "5dda80278ac58204e06fb6846b148b9cdc06a251"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
