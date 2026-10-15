@@ -3336,7 +3336,7 @@ So that one file orders the sidebar, the top menu and the home tiles, and a new 
 **When** the story lands
 **Then** `load_map_yaml` accepts the `sections:` list (`herald`: Overview, Dossier, Infographics, Decks; `pipelines`: `dashboard/kedro-viz/`) and refuses an entry missing `key`, `label`, `href`, `owner` or `order`; `docs-map-hygiene` yields one `sections` WARN for a duplicate `key` or `order` or an `href` that is absolute, carries `://` or `..`, or does not end in `/`, and one `unnamed-top-level` WARN for a tracked top-level directory that is not `docs`, a dot-directory, one of the eleven allow-listed infrastructure directories or the first segment of a backticked path in the table; both WARN, never FAIL
 **And** on the story's tree `pixi run --frozen -e pyforge-guild docs-map-hygiene-check` exits 0 with only the OK row; `docs-map-render` leaves `docs/MAP.md` byte-identical and `docs-currency-check` stays green; `docs/MAP.md`'s Publish roots row names the Starlight shelf at `/`, herald under `/herald/`, Kedro-Viz under `/dashboard/kedro-viz/` and `dashboard.yml` as the one deploy caller, and the table names `docsite/`, `docs-site/` and `presentations/`; `docs-site/scripts/sidebar_from_map.py` and `docsite/content/site.yml` are unchanged; `pyforge-doctor-test` and `detectors-ci` are green; each of these fails a named test (mutation): a `sections` or `unnamed-top-level` finding emitted as FAIL, a dot-directory reported, a duplicate `order` passed
-**Status:** backlog
+**Status:** done
 
 ### Story 48.2: A Pages deploy more than a day behind its inputs is named in fleet-picture
 
