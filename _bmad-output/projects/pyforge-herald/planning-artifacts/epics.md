@@ -2026,7 +2026,7 @@ So that the dossier and the shelf share one build, one search and one theme.
 **When** the site builds with `pyforge.herald.pages_one_generator` on
 **Then** `/herald/dossier/` is an Astro page whose sections and blocks come from the `dossier` collection; for every block type a golden test renders one fixture block through the Jinja macro and through the Astro component and finds the same text content and the same block order; the inline vocabulary (`` `code` ``, bold, em, link, `<<arrow>>`, backslash escapes) renders alike, an escape inside a code span included; the page carries `data-pagefind-body`
 **And** with the flag off the Jinja dossier renders as before and no Astro dossier page is emitted; `pages-check` exits 0 in both states; `pyforge-herald-test` is green with the flag test running both states
-**Status:** backlog
+**Status:** done
 
 ### Story 43.2: The overview, gallery and deck family pages are Astro pages
 

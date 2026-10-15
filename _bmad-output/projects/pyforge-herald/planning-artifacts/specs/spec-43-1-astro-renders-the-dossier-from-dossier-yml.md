@@ -2,7 +2,8 @@
 title: '43.1: Astro renders the dossier from dossier.yml'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag:
   key: pyforge.herald.pages_one_generator        # new; minted by this story; shared by Stories 43.2-43.6 (one flag per CAP, Q6); retired by 43.7
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -231,8 +232,14 @@ backslash escapes) renders alike, an escape inside a code span included; the pag
   dossier's move** to `docs-site/src/content/dossier/`, the Jinja path's retirement and the flag's removal: Story 43.7.
 - **The overview, gallery and family pages**: Story 43.2; **mounts, redirects and search**: Story 43.3.
 
+## Auto Run Result
+
+Status: in-review  
+Implementation landed in worktree `dispatch/pyforge-herald/43.1`: flag `pyforge.herald.pages_one_generator`, Astro dossier collection and page, Jinja skip when flag on, golden tests green, `pages-check` green in both flag states (dev overlay on / explicit off). Surface reconcile memlogs on `spec-pyforge-herald`, `spec-pyforge-unifying-strategy`, `spec-pyforge-steward`, `spec-pyforge-core`; `python scripts/spec_surface_reconcile.py` OK (no baseline stamp). **ci_surfaces (CAP-59):** fifteenth block rendered on the Astro path via `dossier-blocks.ts` / loader snapshot injection (same as Jinja `apply_ci_surfaces_blocks`).
+
 ## Spec Change Log
 
+- 2026-10-15: implementation session — ci_surfaces on Astro path via shared `ci_surfaces` block renderer (see Auto Run Result).
 - 2026-10-14: specced at mint from Epic 43's Story 43.1 text, `spec-pyforge-herald` CAP-61, FR-12.4, AD-23 and the
   Dream's 2026-10-13 entry (M3), against `dossier.yml`, `blocks.html.j2` and `content.config.ts` as they stand on
   2026-10-14. The flag is minted here and shared by the rest of Epic 43 under Q6.

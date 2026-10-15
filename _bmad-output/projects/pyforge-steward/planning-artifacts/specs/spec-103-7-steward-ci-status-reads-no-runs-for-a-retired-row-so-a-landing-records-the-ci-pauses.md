@@ -2,7 +2,7 @@
 title: "103.7: `steward ci status` reads no runs for a retired row, so a landing records the CI pauses"
 type: 'fix'
 created: '2026-10-15'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'f3cab009ecb460495d4a443423d1bbbb62e46227'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -228,6 +228,48 @@ pattern in `test_ci_status.py`). None calls GitHub, except AC9's live run.
 - `pixi run --frozen -e pyforge-steward pyforge-steward-coverage-gate`, `pixi run --frozen -e pyforge-marshal pyforge-marshal-test`, `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild lint-types` and `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC10).
+
+## Auto Run Result
+
+Status: in-review (implemented by hand on the chain branch; the adversarial review is a separate session)
+
+Summary: a retired row's run list is never fetched, so `steward ci status --json` exits 0 with its envelope on stdout;
+a genuine partial read still exits 1 and now prints its envelope on stdout with `partial: true` and `run_list_errors`;
+marshal's adapter and doctor's source read that envelope.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/ci.py` — `_is_retired`; `_collect_snapshot` skips retired rows; `_build_rows` gives them no runs and `last_green_run` null, and matches a run-list error by its `"<workflow>: "` prefix; `_status_payload` adds `partial` and `run_list_errors` only on a partial read; `run_status` requests stdout for a partial `--json` read
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` — `main` honours `details["summary_stream"] == "stdout"`
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/data/ci-status-schema.json` — two optional top-level properties
+- `src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py` — four tests (AC1-AC4)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/steward_cli.py`, `core/landing_ci_pauses.py`, `tests/unit/test_landing_ci_pauses.py` — AC5
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ci_pause_drift.py`, `tests/unit/test_sources_ci_pause_drift.py` — AC6
+- `docs/how-to/pause-ci.md` — the read path's exit codes and partial envelope; `verified: 2026-10-15`
+- Memlogs and scoped stamps: `spec-pyforge-steward`, `spec-pyforge-marshal`, `spec-pyforge-core`, `spec-pyforge-doctor`
+
+Verification (exit codes read directly, 2026-10-15):
+- AC9 live: before, at `f3cab009ec`, exit 1 with stdout empty; after, exit 0 with the JSON envelope on stdout (64 rows,
+  stderr empty; the six retired rows read `last_green_run` null). Marshal's adapter run against the live command
+  records `state: read` with 10 surfaces.
+- AC7: herald's `validate_ci_status_envelope` accepts the master-on fixture with `partial` and `run_list_errors` added,
+  and `build_tile_block_payload` renders it; no herald or `docsite/` file changed.
+- `pyforge-steward-test` 0 (2649 passed), `pyforge-marshal-test` 0 (13044 passed), `pyforge-doctor-test` 0 (3685 passed).
+- `pyforge-steward-coverage-gate` 0, `pyforge-marshal-coverage-gate` 0, `pyforge-doctor-coverage-gate` 0 (every touched module at or above 80%).
+- `lint-types` 0, `flag-gate-check` 0, `spec-surface-check` 0, `ad-citation-check` 0; chain-completeness, dream-chain,
+  dreams-hygiene, deferred-work, ledger-regression, story-status and tea-playwright checks 0.
+- After merging `origin/main` (herald 43.1): the three touched test files re-run 0, and the four Specs are re-stamped.
+
+Mutations (AC8), each reverted after the run:
+- reading retired rows' run lists again: `test_retired_row_reads_no_runs_and_the_read_is_complete` and
+  `test_main_complete_read_exits_zero_with_the_envelope_on_stdout` fail;
+- dropping the `summary_stream` request: `test_live_row_failed_fetch_is_partial_and_the_envelope_names_it` and
+  `test_main_partial_read_prints_the_envelope_on_stdout_and_exits_one` fail;
+- `cli.main` ignoring the request: `test_main_partial_read_prints_the_envelope_on_stdout_and_exits_one` fails;
+- marshal treating every exit 1 as unknown: `test_steward_cli_partial_envelope_on_stdout_is_a_read_carrying_partial` fails;
+- doctor parsing stderr only on exit 1: `test_partial_read_on_stdout` fails.
+
+Residual risks: as the Boundaries section names. Herald's committed `docsite/content/ci-status.json` snapshot is the
+operator's to refresh.
 
 ## Spec Change Log
 

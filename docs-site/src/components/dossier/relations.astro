@@ -1,0 +1,8 @@
+---
+import { renderBlock } from '../../lib/dossier-blocks';
+const { block } = Astro.props;
+if (block.type !== 'relations') {
+  throw new Error(`expected block type relations, got ${block.type}`);
+}
+---
+<div set:html={renderBlock(block)} />
