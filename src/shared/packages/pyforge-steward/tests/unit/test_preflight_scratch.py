@@ -213,10 +213,12 @@ def test_red_run_keeps_scratch_and_names_logs(tmp_path: Path, capsys) -> None:
     assert code == preflight.EXIT_LANE_RED
     root = kept[0]
     assert root.is_dir()
-    assert (root / "a.log").is_file()
+    # A lane's log is named by its task and its environment (Story 103.5).
+    log_name = f"{preflight.lane_label('a', preflight._invoking_environment())}.log"  # noqa: SLF001
+    assert (root / log_name).is_file()
     err = capsys.readouterr().err
     assert "lane logs and scratch kept at" in err
-    assert str(root / "a.log") in err
+    assert str(root / log_name) in err
 
 
 def test_scratch_inside_checkout_exits_2_before_lanes(tmp_path: Path, capsys) -> None:

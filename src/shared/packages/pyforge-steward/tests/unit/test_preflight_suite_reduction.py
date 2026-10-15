@@ -164,7 +164,7 @@ def _run_reduced_lane_via_preflight(
 
     with patch.object(preflight, "_run_pixi_argv", side_effect=_direct_pixi_argv):
         code = preflight._subprocess_reduced_suite_lane(coord, ctx, override)
-    extra = coord.suite_reduction_runtime_journal[task]
+    extra = coord.suite_reduction_runtime_journal[(task, env)]
     return code, extra
 
 

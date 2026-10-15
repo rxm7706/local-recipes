@@ -12,13 +12,10 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from pyforge.core.client import API_VERSION_HEADER, PyForgeStationClient, StationClientError, Transport
+
 from django_pyforge.assertion.client import PortalClient
-from django_pyforge.circuits import CircuitBreaker
-from django_pyforge.circuits import Degraded
-from pyforge.core.client import API_VERSION_HEADER
-from pyforge.core.client import PyForgeStationClient
-from pyforge.core.client import StationClientError
-from pyforge.core.client import Transport
+from django_pyforge.circuits import CircuitBreaker, Degraded
 
 __all__ = [
     "API_VERSION_HEADER",
@@ -91,8 +88,7 @@ def _urllib_transport() -> Transport:
 
 def _resolve_transport(transport: Transport | None) -> Transport | None:
     if transport is None:
-        from django_pyforge.station_port import default_transport
-        from django_pyforge.station_port import is_station_remote
+        from django_pyforge.station_port import default_transport, is_station_remote
 
         transport = default_transport()
         if transport is None and is_station_remote():

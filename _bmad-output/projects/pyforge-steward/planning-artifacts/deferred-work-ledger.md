@@ -6419,3 +6419,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-14 — recorded with Story 103.3's chain
   status: open
+
+### DW-steward-103-4-1: `test_six_fixture_rules_together_six_findings` asserts nothing, so Story 99.1 AC2 has no test
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-4-the-ci-surface-gates-tests-write-their-fixtures-under-tmp-path.md`
+  summary: Story 99.1's AC2 says the six fixture rules together yield six findings. `tests/scripts/test_ci_surface_gates.py::test_six_fixture_rules_together_six_findings` takes the `len()` of a six-item literal set and asserts it is 6, so it can never fail and no test runs the six defects together. Follow-up: build the six defect cases in one `tmp_path` tree (six workflow files and one registry, with `PAUSE_KNOWN` and `PAUSE_FOO` grandfathered as the cases need), run the detector's `--check` once, assert exit 1, and assert exactly six findings, one per rule token (unregistered `PAUSE_FOO`, `PAUSE_OTHER`, `SKIP_FOO`, `== 'false'`, `ghost`, `review_by`). Recorded only: Story 103.4's AC5 freezes the file's existing assertions.
+  evidence: Story 103.4 independent review 1, finding 2 (2026-10-14), read at `6e1918fea2`; the test body is unchanged by Story 103.4.
+  location: tests/scripts/test_ci_surface_gates.py (`test_six_fixture_rules_together_six_findings`)
+  origin: Story 103.4 independent review, 2026-10-14 (finding 2; no implementation)
+  owner: steward
+  severity: medium
+  promoted: 2026-10-15 — recorded with Story 103.4's review
+  status: open

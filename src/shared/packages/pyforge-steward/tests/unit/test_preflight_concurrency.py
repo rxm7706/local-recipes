@@ -66,6 +66,16 @@ def _run_record(repo: Path) -> dict:
     return next(record for record in reversed(_run_records(repo)) if "lanes" in record)
 
 
+def _key(task: str) -> preflight.LaneKey:
+    """A bare lane's ``(task, environment)``: it runs in the invoking environment (Story 103.5)."""
+    return (task, preflight._invoking_environment())  # noqa: SLF001
+
+
+def _lane_dir(task: str) -> str:
+    """A bare lane's scratch directory name, ``<task>@<environment>`` (Story 103.5)."""
+    return preflight.lane_label(*_key(task))
+
+
 def test_three_sleeping_lanes_finish_under_two_seconds_with_overlapping_offsets(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -351,7 +361,7 @@ def _after_peer_started(peer: str, then: str) -> str:
     """A lane script: wait (10 s at most) for lane `peer`'s `started` marker, then run `then`."""
     return (
         "import os, sys, time\n"
-        f"marker = os.path.join(os.path.dirname(os.environ['TMPDIR']), {peer!r}, 'started')\n"
+        f"marker = os.path.join(os.path.dirname(os.environ['TMPDIR']), {_lane_dir(peer)!r}, 'started')\n"
         "deadline = time.monotonic() + 10\n"
         "while not os.path.exists(marker) and time.monotonic() < deadline:\n"
         "    time.sleep(0.02)\n"
@@ -374,7 +384,7 @@ def _scratch_root(tmp_path: Path) -> Path:
 
 
 def _assert_group_gone(scratch_root: Path, task: str) -> None:
-    pgid = int((scratch_root / task / "pgid").read_text(encoding="utf-8"))
+    pgid = int((scratch_root / _lane_dir(task) / "pgid").read_text(encoding="utf-8"))
     with pytest.raises(ProcessLookupError):
         os.killpg(pgid, 0)
 
@@ -384,7 +394,7 @@ def _send_sigint_once_started(scratch_parent: Path, tasks: tuple[str, ...]) -> t
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
             roots = list(scratch_parent.glob("pyforge-preflight-*"))
-            if roots and all((roots[0] / task / "started").is_file() for task in tasks):
+            if roots and all((roots[0] / _lane_dir(task) / "started").is_file() for task in tasks):
                 os.kill(os.getpid(), signal.SIGINT)
                 return
             time.sleep(0.05)
@@ -425,10 +435,12 @@ def test_real_subprocess_red_lane_cancels_running_peer(
     assert by_task["sleep"]["exit_code"] < 0
     assert by_task["sleep"]["seconds"] > 0
     assert by_task["sleep"]["cancelled_by"] == "fail"
+    assert by_task["sleep"]["cancelled_by_environment"] == _key("fail")[1]  # the red lane's environment (Story 103.5)
     (coord,) = coords
-    assert coord.red_lanes == ["fail"]
-    assert coord.terminated_lane_tasks == {"sleep"}
+    assert coord.red_lanes == [_key("fail")]
+    assert coord.terminated_lanes == {_key("sleep")}
     assert coord.stop_trigger == "fail"
+    assert coord.stop_cause == _key("fail")
     err = capsys.readouterr().err
     assert "lane 'fail' in environment" in err
     assert "lane 'sleep'" not in err
@@ -463,7 +475,7 @@ def test_terminated_lane_that_exits_zero_is_cancelled_not_ok(tmp_path: Path, mon
     assert by_task["graceful"]["seconds"] > 0
     assert by_task["graceful"]["cancelled_by"] == "fail"
     (coord,) = coords
-    assert coord.red_lanes == ["fail"]
+    assert coord.red_lanes == [_key("fail")]
 
 
 def test_lane_that_exits_on_its_own_during_a_stop_stays_red(
@@ -489,7 +501,7 @@ def test_lane_that_exits_on_its_own_during_a_stop_stays_red(
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
-        coord.register_proc(proc, ctx.lane.task)
+        coord.register_proc(proc, preflight._lane_key(ctx.lane))  # noqa: SLF001
         try:
             code = proc.wait()
             own_exited.set()
@@ -517,8 +529,8 @@ def test_lane_that_exits_on_its_own_during_a_stop_stays_red(
     assert "cancelled_by" not in by_task["fail"]
     assert "cancelled_by" not in by_task["own"]
     (coord,) = coords
-    assert coord.red_lanes == ["fail", "own"]
-    assert coord.terminated_lane_tasks == set()
+    assert coord.red_lanes == [_key("fail"), _key("own")]
+    assert coord.terminated_lanes == set()
     assert coord.stop_trigger == "fail"
     err = capsys.readouterr().err
     assert "lane 'fail' in environment" in err
@@ -585,9 +597,11 @@ def test_sigint_cancels_real_subprocess_lanes(tmp_path: Path, monkeypatch: pytes
         assert entry["exit_code"] < 0
         assert entry["seconds"] > 0
         assert entry["cancelled_by"] == "interrupt"
+        assert "cancelled_by_environment" not in entry  # an interrupt is no lane (Story 103.5 AC4)
     (coord,) = coords
     assert coord.red_lanes == []
     assert coord.stop_trigger == "interrupt"
+    assert coord.stop_cause == ("interrupt", None)
     scratch_root = _scratch_root(tmp_path)
     _assert_group_gone(scratch_root, "sleep-a")
     _assert_group_gone(scratch_root, "sleep-b")
@@ -644,8 +658,8 @@ def test_terminate_children_marks_only_a_process_it_signals(tmp_path: Path) -> N
         jobs=1,
         keep_going=False,
     )
-    coord.register_proc(exited, "culprit")
-    coord.register_proc(running, "running")
+    coord.register_proc(exited, ("culprit", "env"))
+    coord.register_proc(running, ("running", "env"))
     try:
         coord.terminate_children()
         assert running.wait(timeout=5) < 0
@@ -653,7 +667,7 @@ def test_terminate_children_marks_only_a_process_it_signals(tmp_path: Path) -> N
         if running.poll() is None:
             running.kill()
             running.wait(timeout=5)
-    assert coord.terminated_lane_tasks == {"running"}
+    assert coord.terminated_lanes == {("running", "env")}
     assert exited.returncode == 2
 
 
@@ -703,7 +717,7 @@ def test_reduced_lane_cancelled_mid_segment(tmp_path: Path) -> None:
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
-        coord.register_proc(proc, ctx.lane.task)
+        coord.register_proc(proc, preflight._lane_key(ctx.lane))  # noqa: SLF001
         try:
             return int(proc.wait())
         finally:
@@ -760,7 +774,7 @@ def _run_pixi_argv_after_dash(coord: Any, ctx: preflight.LaneRunContext, argv: l
         stderr=subprocess.STDOUT,
         start_new_session=True,
     )
-    coord.register_proc(proc, ctx.lane.task)
+    coord.register_proc(proc, preflight._lane_key(ctx.lane))  # noqa: SLF001
     try:
         return int(proc.wait())
     finally:
@@ -801,9 +815,9 @@ def test_late_lane_killed_at_registration_after_stop_on_red(tmp_path: Path, monk
     assert by_task["late"]["exit_code"] < 0
     assert by_task["late"]["cancelled_by"] == "fail"
     (coord,) = coords
-    assert coord.red_lanes == ["fail"]
+    assert coord.red_lanes == [_key("fail")]
     _assert_group_gone(_scratch_root(tmp_path), "peer")
-    late_pgid = _scratch_root(tmp_path) / "late" / "pgid"
+    late_pgid = _scratch_root(tmp_path) / _lane_dir("late") / "pgid"
     if late_pgid.is_file():
         _assert_group_gone(_scratch_root(tmp_path), "late")
 
@@ -842,7 +856,7 @@ def test_late_lane_killed_at_registration_after_sigint(tmp_path: Path, monkeypat
     late = next(entry for entry in record["lanes"] if entry["task"] == "late")
     assert late["status"] == "cancelled"
     assert late["cancelled_by"] == "interrupt"
-    late_pgid = _scratch_root(tmp_path) / "late" / "pgid"
+    late_pgid = _scratch_root(tmp_path) / _lane_dir("late") / "pgid"
     if late_pgid.is_file():
         _assert_group_gone(_scratch_root(tmp_path), "late")
 

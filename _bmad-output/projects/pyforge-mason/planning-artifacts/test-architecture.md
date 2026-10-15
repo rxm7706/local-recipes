@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: a855c673ed3ad976
-story_count: 112
+source_fingerprint: 248c35e6a2351f28
+story_count: 113
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 112
-- **Epics parsed:** 30
+- **Stories parsed:** 113
+- **Epics parsed:** 31
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a855c673ed3ad976`
+- **Source fingerprint:** `248c35e6a2351f28`
 
 ## Risk Assessment
 
@@ -63,6 +63,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 28: The CFE-rebuild guard reads a SHA field whatever type YAML gives it (spec-pyforge-mason CAP-16)
 - Epic 29: pwndbg's pip check holds: a local pwntools carries the upstream unicorn fix (fix under spec-pyforge-mason CAP-18 and CAP-23)
 - Epic 30: Recipes that import playwright depend on playwright-python (fix under spec-pyforge-mason CAP-18 and CAP-23)
+- Epic 31: CFE's fleet-picture ATTENTION test stubs the CI-pause probe (fix under spec-pyforge-mason CAP-23)
 
 ### Low-risk epics
 
@@ -232,6 +233,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 28.1 | The rebuild guard reads a SHA field whatever type YAML gives it | none observed |
 | 29.1 | pwndbg passes pip check with a local pwntools that carries the upstream unico... | none observed |
 | 30.1 | Recipes that import playwright depend on playwright-python | none observed |
+| 31.1 | The fleet-picture ATTENTION test stubs the CI-pause probe | none observed |
 
 ## Quality Gates
 

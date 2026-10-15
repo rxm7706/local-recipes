@@ -7,9 +7,7 @@ Default (co-located): in-process ASGI via ``pyforge.core.station_port``.
 from __future__ import annotations
 
 from pyforge.core.client import Transport
-from pyforge.core.station_port import invoke_in_process
-from pyforge.core.station_port import is_station_remote
-from pyforge.core.station_port import register_in_process_invoker
+from pyforge.core.station_port import invoke_in_process, is_station_remote, register_in_process_invoker
 
 __all__ = [
     "default_transport",

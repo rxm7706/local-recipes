@@ -3506,6 +3506,45 @@ depends on it; the 15 named upstreams list PyPI `playwright` in `requires_dist`;
 
 **Status:** done
 
+## Epic 31: CFE's fleet-picture ATTENTION test stubs the CI-pause probe (fix under spec-pyforge-mason CAP-23)
+
+Minted 2026-10-14 from the station Dream's entry of the same date, on a test failure measured on clean `main`: doctor
+Story 45.1 (`pyforge-doctor:CAP-89`) added `ci_pause_drift_findings()` to `scripts/fleet_picture.py`'s `main()`, and
+`tests/meta/test_fleet_picture_main_attention.py` did not stub it. The fix was implemented before the chain was
+written, so the story is minted at `done`, as Story 24.1 was (operator ruling 2026-09-29). **HARD boundaries:**
+- The story goes through `conda-forge-expert` (Rule 1).
+- Its test change, `CHANGELOG.md` entry and version carriers land in one `retro(cfe):` commit (Rule 2).
+- Tests only: `scripts/fleet_picture.py` and every CFE script stay unchanged.
+- It touches no `src/shared/packages/pyforge-mason/`, `pixi.toml`, `pixi.lock` or `recipes/**` file.
+- 31.1 is a fix and carries no flag (`spec-feature-flag-governance` CAP-1, Q1).
+
+### Story 31.1: The fleet-picture ATTENTION test stubs the CI-pause probe
+
+As a maintainer whose PR runs the CFE regression lane,
+I want the fleet-picture ATTENTION test to stub every probe `main()` calls,
+So that a probe another station adds to `main()` does not turn the lane red on every PR.
+
+**Type:** fix • **Effort:** XS • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-23 (no new CAP; a fix carries no
+flag, `spec-feature-flag-governance` Q1); AD-1; AD-15; CFE Rule 1 + Rule 2
+**Surface:** `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py` and the CFE version
+carriers (`.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml}`), all in
+one `retro(cfe): …` commit.
+**Spec:** `planning-artifacts/specs/spec-31-1-the-fleet-picture-attention-test-stubs-the-ci-pause-probe.md`
+**Given** `main()` calls `ci_pause_drift_findings()` between the dream-chain and sibling-dreams probes and appends
+`could not check CI pauses` when it raises, and the test's `_PROBES` tuple does not list it, so all three tests fail on
+clean `main`
+**When** `_PROBES` lists `ci_pause_drift_findings` in `main()`'s call order, the sentinel test stubs it with one
+`ci-pause-drift` finding, and both expected `watch` lists name its line in that order
+**Then** the three tests pass, and the CFE meta suite passes
+**And:**
+- No assertion is skipped, marked `xfail` or weakened.
+- Dropping the CI-pause `watch.append` from `main()` fails the sentinel test, and renaming its degrade line fails the
+  raising test.
+- The `retro(cfe):` commit lands a CFE `CHANGELOG.md` PATCH entry (v8.100.4).
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
+
+**Status:** done
+
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
 Validated against the architecture spine as re-stamped today (its § Currency

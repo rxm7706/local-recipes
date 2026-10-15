@@ -1,7 +1,6 @@
 from django.urls import path
 
-from django_atlas_portal import board
-from django_atlas_portal import views
+from django_atlas_portal import board, views
 
 urlpatterns = [
     path("", views.chrome_home, name="atlas-home"),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from pyforge.steward import preflight_suite_reduction as psr
@@ -45,20 +46,24 @@ def allocate_xdist_worker_counts(*, lane_count: int, logical_cores: int) -> list
 
 def lane_xdist_worker_map(
     *,
-    lane_tasks: list[str],
+    lanes: Sequence[tuple[str, str]],
     pixi_data: dict[str, Any],
     logical_cores: int,
     pool_jobs: int,
-) -> dict[str, int]:
-    """Map each selected lane task that uses ``-n auto`` to its worker share."""
-    xdist_tasks = [t for t in lane_tasks if task_cmd_uses_xdist_auto(pixi_data, t)]
-    if not xdist_tasks:
+) -> dict[tuple[str, str], int]:
+    """Map each selected lane ``(task, environment)`` whose task uses ``-n auto`` to its worker share.
+
+    Keyed by lane, not task: one task may run in two environments, and each lane is its own
+    concurrent xdist run (Story 103.5).
+    """
+    xdist_lanes = [lane for lane in lanes if task_cmd_uses_xdist_auto(pixi_data, lane[0])]
+    if not xdist_lanes:
         return {}
-    concurrent = min(max(1, pool_jobs), len(xdist_tasks))
+    concurrent = min(max(1, pool_jobs), len(xdist_lanes))
     shares = allocate_xdist_worker_counts(lane_count=concurrent, logical_cores=logical_cores)
     # Every xdist lane gets the minimum slot so any ``concurrent``-wide batch sums ≤ cores.
     share = min(shares) if shares else 1
-    return {task: share for task in xdist_tasks}
+    return {lane: share for lane in xdist_lanes}
 
 
 def pytest_xdist_argv_from_cmd(cmd: str) -> list[str]:

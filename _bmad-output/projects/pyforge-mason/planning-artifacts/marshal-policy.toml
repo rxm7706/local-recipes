@@ -353,6 +353,18 @@ verify_commands = [
   ".claude/skills/conda-forge-expert/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"31" = [  # CFE's fleet-picture ATTENTION test stubs the CI-pause probe (fix under spec-pyforge-mason CAP-23), added 2026-10-14
+  # The station's planning and package paths, plus Story 31.1's one retro(cfe) commit (the fleet-picture ATTENTION
+  # test and the CFE version carriers) and every Spec memlog a surface reconcile names (spec-packaging-factory and
+  # spec-conda-forge-expert-rebuild govern the CFE surface; spec-pyforge-marshal co-governs the test).
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  ".claude/skills/conda-forge-expert/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",

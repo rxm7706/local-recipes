@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.100.3
+version: 8.101.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -548,7 +548,9 @@ extra:
 
 **`cfe-upstream-registry` must name the registry the package actually publishes to** — it is not decoration: `bmad_suite_metapackage.py` resolves suite pins through it (`[npm+floor]` vs `[github+floor]`), `github_updater.py` / the MCP `update_recipe*` tools route through it, and a wrong value fails *silently as "upstream unknown"*. Live case: `recipes/bmad-method` carried `cfe-upstream-registry: pypi` (+ a `pkg:pypi/bmad-method` purl) for a package that only exists on npm; the generator's `generate failed rc=1` note sat in the recipe's CFE comments for weeks because the PyPI lookup 404'd. Check the purl and the registry agree with `source.url` before stamping the block (corrected to `npm` 2026-09-05).
 
-**`bmad_suite_metapackage.py` is network-dependent, so its output is not reproducible.** Each member's floor is the upstream latest from its registry. When a lookup fails, the generator falls back to the member recipe's own floor, and only the `[source]` column of `--dry-run` shows it. `pyforge steward estate reconcile` runs the generator, so two reconcile runs can write different floors into `recipes/bmad-suite/recipe.yaml`. Steward Story 100.7 (2026-10-14) shows it. One reconcile wrote `bmad-loop >=0.13.2` and TEA `>=2.0.3` (`[github]`). The next wrote `>=0.12.0` and `>=1.27.2`, the member-recipe floors. A `--dry-run` an hour later read `[github]` 0.13.2 and 2.0.3 again. The lock held bmad-loop 0.12.0 and TEA 1.27.2 throughout. Before committing a regenerated metapackage, run `--dry-run` and read each changed row's source. Commit a floor only when its source is a registry, not a silent fallback. Commit a floor above what the member recipe builds only together with that member's version bump.
+**`bmad_suite_metapackage.py` — hand path vs reconcile batch path.** Without flags, the generator resolves upstream latest (network-dependent) and prints the human table; `--json` adds a machine-readable report with per-member `source` and `fallback` (`true` when the floor did not come from the member's declared registry — failed lookup, npm answering a `pypi` member, or undeclared-registry fallbacks; `--offline` is never a fallback). Before committing a **hand** regeneration, run `--dry-run` (or `--json`) and read each changed row: commit a floor only when its source is a registry, not a silent fallback; commit a floor above what the member recipe builds only together with that member's version bump (Steward Story 100.7, v8.100.3).
+
+**`--journal <estate-refresh.json>` is what `pyforge steward estate reconcile` uses (Story 103.2).** Batch mode makes **no upstream lookup**. Floors come from the journal's `moves` (highest `to` when a member moves) and from the existing suite pins / member recipes when it does not — never below the current suite floor, and above the member recipe only when that member moved in the batch. Reconcile invokes `--journal … --json` and journals the report under `reconcile.bmad_suite`. The v8.100.3 hand rule holds by construction there; the hand path above is unchanged for suite advance and member-recipe bumps.
 
 The `# CFE comments` block mirrors the recipe's structure (location keys `build` / `context` / `host` / `run` / `requirements` / `about` / `tests`) so each parked note shows where it would belong if promoted. Both the `# CFE metadata` and `# CFE comments` sections are CFE-local-only and are **stripped before any push** (along with `extra.cfe-*` keys). `recipe-generator.py` must emit new rationale into this block, never inline.
 
@@ -4553,6 +4555,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.101.0** (Oct 14, 2026) — **steward Story 103.2 Rule-2 retro: batch mode for estate reconcile; `bmad_suite_metapackage.py --journal` writes floors from the batch, not the network (MINOR).** See `CHANGELOG.md`.
+- **v8.100.4** (Oct 14, 2026) — **mason Story 31.1 Rule-2 retro: the fleet-picture ATTENTION test stubs the CI-pause probe doctor Story 45.1 added (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.100.3** (Oct 14, 2026) — **steward Story 100.7 Rule-2 retro: the bmad-suite generator's floors depend on the network (PATCH).** See `CHANGELOG.md`.
 - **v8.100.2** (Oct 13, 2026) — **steward Story 100.6 Rule-2 retro: G117 names the estate refresh path, not a hand exclude list (PATCH).** See `CHANGELOG.md`.
 - **v8.100.1** (Oct 13, 2026) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted, and the generator path that spread it is named (PATCH).** See `CHANGELOG.md`.

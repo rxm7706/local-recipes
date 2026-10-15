@@ -1531,6 +1531,22 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `docs/intake/ci-pause-control-plane/PLAN-2026-10-12.md` § 4.4 and § 6 (its marshal row). Operator direction
   (2026-10-13): mint the doctor, herald and marshal CI-pause stories only after 99.3 lands. Owner
   `spec-pyforge-marshal`. → CAP-292 / FR-239, Epic 100 / Story 100.1, specced 2026-10-14.
+- **2026-10-14 (the master switch's surfaces at merge)** — **Found: while the master switch is on, a landing names
+  the master but not the gates it stopped.** Story 100.1 (#2213) lists a surface from its declared state and its own
+  switch, and never from steward's verdict. Steward Story 103.1, specced the same day, gives `steward ci status
+  --json` one `master:PAUSE_ALL_CI` row and marks every surface whose jobs read the master `paused`, with a new
+  `paused_by_master` field set to true. 100.1's rule reads neither. So a landing made under the master will say
+  `CI paused at merge: master:PAUSE_ALL_CI` and nothing of the jobs it skipped, across the 13 workflows that read it.
+  100.1's spec names this as its own follow-up. One more thing turned up: the seven opt-in surfaces sit in jobs that
+  read the master too, so steward will mark them paused by it even while nobody has switched them on, and they would
+  not have run anyway. **What it looks like when fixed:** with the master on, the record and the PR-body line name
+  the master and every surface it paused, read from steward's answer. An opt-in that is off is not called paused,
+  and one that is on is. With the master off, or from a steward older than the field, the record is exactly what
+  100.1 writes. **Constraints:** a fix under CAP-292, no CAP, no flag of its own (it rides
+  `pyforge.marshal.landing_ci_pauses`). Marshal still never reads the master, the registry or the workflow files
+  itself; steward stays the one reader of the pause state. It waits on steward 103.1, a cross-station gate the
+  operator flips. **Kinships:** `pyforge-steward:CAP-166` and steward Story 103.1 (the field this reads). Operator
+  ask, 2026-10-14: "chain it here". Owner `spec-pyforge-marshal`. → Epic 101 / Story 101.1, specced 2026-10-14.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint

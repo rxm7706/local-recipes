@@ -1,10 +1,8 @@
 from http import HTTPStatus
 
-from django.http import HttpRequest
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_GET
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_GET, require_http_methods
 
 from django_pyforge.access import require_station_role
 from django_pyforge.form_errors import PydanticFormErrorBridge

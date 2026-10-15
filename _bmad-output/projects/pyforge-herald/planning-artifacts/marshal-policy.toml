@@ -367,6 +367,11 @@ verify_commands = [
   "presentations/**",
   "scripts/deck_export.py",
   "tests/scripts/test_deck_export.py",
+  # 30.3 (fix under CAP-55, added 2026-10-14): the 14 decks' package.json, package-lock.json, src/main.jsx and
+  # src/index.css (under presentations/** above), tests/meta/test_deck_lockfiles_current.py (under the herald
+  # package above), the deck how-to, and every Spec memlog a reconcile names (spec-modernist-identity co-governs
+  # presentations/**).
+  "docs/how-to/presentation-deck.md",
   "src/platform/config/flags.json",
   "src/platform/tests/test_herald_portal_deck_viewer.py",
   # the flag reader, if steward 75.1 has not landed (added in pyforge.core in 75.1's shape)
@@ -572,6 +577,21 @@ verify_commands = [
   "src/platform/config/flag-overlays.json",
   "docs/governance/flag-inventory/pyforge-herald.md",
   "AGENTS.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
+"44" = [  # every docs page renders its body and its links resolve (fix under CAP-52; no CAP, no flag; Story 44.1),
+  # added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus docs-site/ (the
+  # loader, the link plugins, the config, README, package files), the Pages assembler, the two shelf pages it corrects,
+  # and every Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "scripts/.spec-surface-baseline.json",
+  "docs-site/**",
+  "docsite/**",
+  "docs/index.md",
+  "docs/reference/developer-guide.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
