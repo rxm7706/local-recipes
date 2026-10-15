@@ -4,21 +4,19 @@ import { getEntry } from 'astro:content';
 import DossierBody from '../../../components/dossier/DossierBody.astro';
 import HeraldDossierLayout from '../../../layouts/HeraldDossierLayout.astro';
 
-export function getStaticPaths() {
-  if (process.env.PYFORGE_PAGES_ONE_GENERATOR !== '1') {
-    return [];
-  }
-  return [{}];
-}
+export const prerender = process.env.PYFORGE_PAGES_ONE_GENERATOR === '1';
 
-const entry = await getEntry('dossier', 'dossier');
-if (!entry) {
+const entry = prerender ? await getEntry('dossier', 'dossier') : null;
+if (prerender && !entry) {
   throw new Error('dossier collection entry missing while PYFORGE_PAGES_ONE_GENERATOR=1');
 }
-const doc = entry.data as Record<string, unknown>;
-const summary = doc.summary as string;
+const doc = entry?.data as Record<string, unknown> | undefined;
 ---
 
-<HeraldDossierLayout title={doc.title as string} description={summary}>
-  <DossierBody doc={doc} />
-</HeraldDossierLayout>
+{
+  prerender && doc ? (
+    <HeraldDossierLayout title={doc.title as string} description={doc.summary as string}>
+      <DossierBody doc={doc} />
+    </HeraldDossierLayout>
+  ) : null
+}
