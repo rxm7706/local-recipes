@@ -19,8 +19,13 @@ surfaces:
   gate: false
   switch: PAUSE_CFE_REGRESSION_NET
   switch_class: pause
-  state: live
+  state: paused
   owner: pyforge-steward
+  paused_since: '2026-10-15'
+  paused_by: t
+  reason: 'operator 2026-10-15: paused while the Pages chain lands (slowest lane on
+    pixi.toml PRs, locally and in CI); unpause when herald 43.7 lands'
+  review_by: '2026-10-22'
 - id: copilot-setup-steps
   workflow: .github/workflows/copilot-setup-steps.yml
   kind: workflow
@@ -37,8 +42,13 @@ surfaces:
   gate: false
   switch: PAUSE_CI_CANARY
   switch_class: pause
-  state: live
+  state: paused
   owner: pyforge-steward
+  paused_since: '2026-10-15'
+  paused_by: t
+  reason: 'operator 2026-10-15: all Docker CI builds off to cut wall time while the
+    Pages chain lands'
+  review_by: '2026-11-01'
 - id: coverage-gates
   workflow: .github/workflows/coverage-gates.yml
   kind: workflow
@@ -225,7 +235,11 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: live
+  state: paused-manually
+  paused_since: '2026-10-15'
+  paused_by: t
+  reason: 'operator 2026-10-15: all Docker CI builds off to cut wall time while the Pages chain lands (recipe builds run in conda-forge Docker images); the workflow has no switch, so it is disabled with gh workflow disable'
+  review_by: '2026-11-01'
   owner: pyforge-steward
 - id: test-macos
   workflow: .github/workflows/test-macos.yml
