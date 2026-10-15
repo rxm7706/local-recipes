@@ -1036,6 +1036,10 @@ forge-data/
 # docs/dashboard/ holds README (tracked); atlas stages Kedro-Viz under kedro-viz/ (gitignored).
 docs/dashboard/kedro-viz/
 
+# Story 42.1: the fleet board's build input, written by a Guild step of steward's Pages workflow
+# (docsite/tools/status_pages.py); a fixture lives under pyforge-herald's tests/fixtures/.
+docsite/content/fleet-status.json
+
 # Story 27.1: Starlight docs-site build outputs (local-only).
 docs-site/node_modules/
 docs-site/build/

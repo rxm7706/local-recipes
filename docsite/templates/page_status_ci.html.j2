@@ -1,0 +1,50 @@
+{% extends "shell_page.html.j2" %}
+{#- Story 42.1 (CAP-60): /status/ci/index.html, the guild status page. Every row of CAP-59's
+    committed ci-status.json snapshot, live rows included, in the order ci_surfaces_tile.order_rows
+    gives the tile (docsite/tools/ci_surfaces_tile.py). The verdicts are steward's data, so every
+    value is escaped. `rel` climbs from /status/ci/ back to the /herald/ mount. -#}
+{% block head_extra %}
+<style>
+.status-snapshot { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; color: var(--rail); margin-top: 14px; }
+.status-table td { vertical-align: top; }
+.status-verdict { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 6px; border-radius: 3px; background: var(--amber-soft); color: var(--amber); white-space: nowrap; }
+.status-verdict.live { background: var(--green-soft); color: var(--green); }
+.status-verdict.drift, .status-verdict.stuck, .status-verdict.overdue { background: var(--red-soft); color: var(--red); }
+</style>
+{%- endblock %}
+{% block body %}
+<div class="page">
+
+  <div class="lander">
+    <div class="kicker"><span class="dot"></span>Guild status</div>
+    <h1>CI surfaces</h1>
+    <p class="blurb">Every CI surface the registry declares, with the verdict steward's <code>ci status</code> gave it when the snapshot was captured. A snapshot: nothing on this page is live.</p>
+    <p class="status-snapshot">Snapshot captured <time datetime="{{ fetched_at | e }}">{{ fetched_at | e }}</time> &middot; <a href="{{ lane1.href | e }}">{{ lane1.label | e }}</a> &middot; <a href="../index.html">Fleet board</a></p>
+  </div>
+
+  <div class="table-wrap">
+    <table class="status-table">
+      <thead><tr><th>Surface</th><th>Verdict</th><th>Switch</th><th>Paused since</th><th>Review by</th><th>Owner</th><th>Detail</th></tr></thead>
+      <tbody>
+        {%- for r in rows %}
+        <tr data-surface="{{ r.id | e }}" data-verdict="{{ r.verdict | e }}">
+          <td class="mono">{{ r.id | e }}</td>
+          <td><span class="status-verdict {{ r.verdict | e }}">{{ r.verdict | e }}</span></td>
+          <td class="mono">{{ r.switch | e }}</td>
+          <td>{{ r.paused_since | e }}</td>
+          <td>{{ r.review_by | e }}</td>
+          <td>{{ r.owner | e }}</td>
+          <td>{{ r.detail | e }}</td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    <span>Rendered from the committed <code>ci-status.json</code> snapshot (<code>pyforge steward ci status --json</code>); the verdicts are steward's.</span>
+    <span>Site rebuilt {{ built_at }}</span>
+  </footer>
+
+</div>
+{% endblock %}

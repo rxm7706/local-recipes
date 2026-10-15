@@ -6,13 +6,21 @@ build input is ``docs/dashboard/kedro-viz/`` (atlas's ``kedro-viz-export`` workf
 local ``viz-publish-stage``; ``kedro_viz_export.py``). Present, it is mounted verbatim at
 ``/dashboard/kedro-viz/`` with the ``/kedro-viz/`` redirect and herald's pipelines page at
 ``/dashboard/index.html``; absent, none of the three is written, the shared menu and the overview
-tiles drop Kedro-Viz, and ``check`` refuses any page that still links either path."""
+tiles drop Kedro-Viz, and ``check`` refuses any page that still links either path.
+
+Story 42.1 (CAP-60): ``/status/`` is herald's second prefix, mounted beside ``/herald/`` under the
+same collision rule. With ``pyforge.herald.status_pages`` on (``PYFORGE_STATUS_PAGES``) the build input
+``docsite/content/fleet-status.json`` is validated before anything is mounted (a missing or malformed
+input exits 1 naming the file), herald writes the fleet board and the guild status page under
+``status/``, and the shared menu carries Status. Off, the input is never opened, no ``status/`` path
+may exist, and the menus are as before (``status_pages.py``)."""
 
 from __future__ import annotations
 
 import argparse
 import html
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -24,6 +32,7 @@ from urllib.parse import unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import kedro_viz_export as kv  # noqa: E402
+import status_pages as sp  # noqa: E402
 from pages_one_generator import DOSSIER_ARTIFACT_REL, enabled_from_env  # noqa: E402
 from pages_second_host import (  # noqa: E402
     SITE_URL_MARKER,
@@ -38,6 +47,9 @@ KEDRO_VIZ_MOUNT = kv.MOUNT_REL
 KEDRO_VIZ_REDIRECT = "kedro-viz/index.html"
 #: Herald's pipelines page in front of the mount (Story 42.2); written only with the export.
 PIPELINES_PAGE = f"{DASHBOARD_PREFIX}/index.html"
+#: Herald's status pages (Story 42.1); written only with pyforge.herald.status_pages on.
+STATUS_PREFIX = sp.STATUS_PREFIX
+STATUS_PAGES = (sp.BOARD_PAGE, sp.GUILD_PAGE)
 
 # Vendored roots the cross-origin check does not judge (AD-21 rule 5, "re-vendor, never fork"):
 # a vendored upstream bundle stays byte-identical to its recorded build, so pages-check cannot
@@ -248,6 +260,8 @@ def _build_herald(
     *,
     kedro_viz_export: Path | None = None,
     dashboard_out: Path | None = None,
+    status_out: Path | None = None,
+    fleet_status: Path | None = None,
 ) -> None:
     herald_out.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -261,6 +275,10 @@ def _build_herald(
         cmd += ["--kedro-viz-export", str(kedro_viz_export)]
     if dashboard_out is not None:
         cmd += ["--dashboard-out", str(dashboard_out)]
+    if status_out is not None:
+        cmd += ["--status-out", str(status_out)]
+    if fleet_status is not None:
+        cmd += ["--fleet-status", str(fleet_status)]
     subprocess.run(cmd, cwd=repo_root, check=True)
 
 
@@ -270,9 +288,19 @@ def _iter_herald_html(artifact_root: Path) -> list[Path]:
 
 
 def _iter_herald_rendered_html(artifact_root: Path) -> list[Path]:
-    """Herald's pages under ``/herald/``, plus the pipelines page it renders under ``/dashboard/``."""
-    pipelines = artifact_root / PIPELINES_PAGE
-    return [*_iter_herald_html(artifact_root), *([pipelines] if pipelines.is_file() else [])]
+    """Herald's pages under ``/herald/``, plus the pipelines page it renders under ``/dashboard/``
+    and the status pages under ``/status/`` (Story 42.1)."""
+    others = [artifact_root / rel for rel in (PIPELINES_PAGE, *STATUS_PAGES)]
+    return [*_iter_herald_html(artifact_root), *(page for page in others if page.is_file())]
+
+
+def _lane1_href() -> str:
+    """The Lane 1 live-view link the status pages carry (``site.yml`` ``lane1.href``). Lane 1 is
+    served by the platform, not by Pages, so the link is never resolved inside the artifact."""
+    import yaml  # the ``site`` env carries PyYAML (docsite/build.py reads the same file)
+
+    data = yaml.safe_load((_repo_root() / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
+    return str(data["lane1"]["href"])
 
 
 def _iter_checkable_files(artifact_root: Path) -> list[Path]:
@@ -573,6 +601,7 @@ def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
 
 def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
     base_path = _base_path(site_url)
+    lane1 = _lane1_href()
     for page in _iter_herald_rendered_html(artifact_root):
         rel_page = _artifact_path(page, artifact_root)
         if not _should_check_page_links(rel_page):
@@ -580,6 +609,8 @@ def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
         text = page.read_text(encoding="utf-8", errors="replace")
         for match in _HREF_SRC.finditer(text):
             raw = match.group(1)
+            if raw == lane1:  # the live view on Lane 1 (Story 42.1): another host's path
+                continue
             resolved = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
             if resolved is None:
                 continue
@@ -659,7 +690,7 @@ def _iter_shelf_pages(artifact_root: Path) -> list[Path]:
     pages = []
     for page in sorted(artifact_root.rglob("*.html")):
         rel = _artifact_path(page, artifact_root)
-        if rel.startswith((f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/")):
+        if rel.startswith((f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", f"{STATUS_PREFIX}/")):
             continue
         if _SHELF_CONTAINER in page.read_text(encoding="utf-8", errors="replace"):
             pages.append(page)
@@ -720,14 +751,17 @@ def _base_path(site_url: str) -> str:
     return path if path.endswith("/") else f"{path}/"
 
 
-def _expected_menu(*, kedro_viz: bool = True) -> list[tuple[str, str]]:
+def _expected_menu(*, kedro_viz: bool = True, status_pages: bool | None = None) -> list[tuple[str, str]]:
     """herald's one navigation list, ``docsite/content/site.yml``: (label, href) in menu order.
 
-    ``kedro_viz=False`` drops the entries that need the Kedro-Viz mount (Story 42.2)."""
+    ``kedro_viz=False`` drops the entries that need the Kedro-Viz mount (Story 42.2); ``status_pages``
+    (default: ``PYFORGE_STATUS_PAGES``) keeps or drops the flag-gated Status entry (Story 42.1)."""
     import yaml  # the ``site`` env carries PyYAML (docsite/build.py reads the same file)
 
     data = yaml.safe_load((_repo_root() / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
-    entries = kv.menu_entries([*data["nav"], *(data.get("neighbours") or [])], present=kedro_viz)
+    enabled = sp.enabled_from_env() if status_pages is None else status_pages
+    gated = sp.menu_entries([*data["nav"], *(data.get("neighbours") or [])], enabled=enabled)
+    entries = kv.menu_entries(gated, present=kedro_viz)
     return [(item["label"], item["href"]) for item in entries]
 
 
@@ -801,8 +835,9 @@ def _check_menu_links(artifact_root: Path, site_url: str, expected: list[tuple[s
             _menu_failure(f"docs root has no Herald sidebar link for {label} ({raw!r})")
 
 
-def _required_paths(*, kedro_viz: bool = True) -> list[str]:
-    """The artifact's required files; the Kedro-Viz three only when the export is mounted."""
+def _required_paths(*, kedro_viz: bool = True, status_pages: bool = False) -> list[str]:
+    """The artifact's required files; the Kedro-Viz three only when the export is mounted, the two
+    status pages only with pyforge.herald.status_pages on."""
     paths = [
         "index.html",
         "404.html",
@@ -811,7 +846,47 @@ def _required_paths(*, kedro_viz: bool = True) -> list[str]:
     ]
     if kedro_viz:
         paths += [f"{KEDRO_VIZ_MOUNT}/index.html", KEDRO_VIZ_REDIRECT, PIPELINES_PAGE]
+    if status_pages:
+        paths += list(STATUS_PAGES)
     return paths
+
+
+def _fleet_status_input(repo_root: Path) -> Path:
+    return repo_root / sp.INPUT_REL
+
+
+def _check_fleet_status_input(fleet_status: Path, repo_root: Path) -> None:
+    """The shape check (Story 42.1 AC5): with the flag on, the build input must load; exit 1 naming it."""
+    try:
+        sp.load_fleet_status(fleet_status)
+    except sp.FleetStatusShapeError as exc:
+        label = _input_label(fleet_status, repo_root)
+        message = str(exc)
+        if message.startswith(str(fleet_status)):
+            message = label + message[len(str(fleet_status)) :]
+        print(f"assemble_pages: {message}", file=sys.stderr)
+        raise SystemExit(1) from exc
+
+
+def _check_status_menu_entry(expected: list[tuple[str, str]]) -> None:
+    """With the flag on, the shared menu links the fleet board (Story 42.1 AC6): a site.yml nav that
+    lost its Status entry would otherwise build seven pages' worth of consistent, Status-less menus."""
+    board = sp.BOARD_PAGE
+    for _, href in expected:
+        target = posixpath.normpath(posixpath.join(HERALD_PREFIX, href.split("#", 1)[0]))
+        if target in (board, posixpath.dirname(board)):
+            return
+    _menu_failure(f"pyforge.herald.status_pages is on but the shared menu has no entry linking {board} (site.yml nav)")
+
+
+def _check_no_status_paths(artifact_root: Path) -> None:
+    """With pyforge.herald.status_pages off no ``status/`` path exists in the artifact (Story 42.1 AC7)."""
+    if (artifact_root / STATUS_PREFIX).exists():
+        print(
+            f"assemble_pages: {STATUS_PREFIX}/ exists in the artifact but pyforge.herald.status_pages is off",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
 
 
 def _kedro_viz_path(rel: str) -> bool:
@@ -879,10 +954,16 @@ def _check_kedro_viz_redirect(artifact_root: Path, site_url: str) -> None:
         raise SystemExit(1)
 
 
-def check(artifact_root: Path, *, site_url: str | None = None) -> None:
+def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Path | None = None) -> None:
     site_url = site_url or _read_site_url_for_check(artifact_root)
     mounted = (artifact_root / KEDRO_VIZ_MOUNT).exists()
-    for rel in _required_paths(kedro_viz=mounted):
+    status_on = sp.enabled_from_env()
+    if status_on:
+        repo_root = _repo_root()
+        _check_fleet_status_input(fleet_status or _fleet_status_input(repo_root), repo_root)
+    else:
+        _check_no_status_paths(artifact_root)
+    for rel in _required_paths(kedro_viz=mounted, status_pages=status_on):
         if not (artifact_root / rel).is_file():
             print(f"assemble_pages: missing required path {rel}", file=sys.stderr)
             raise SystemExit(1)
@@ -913,7 +994,10 @@ def check(artifact_root: Path, *, site_url: str | None = None) -> None:
     _check_href_resolution(artifact_root, site_url=site_url)
     _check_shelf_pages(artifact_root, site_url)
     _check_cross_origin_and_hosts(artifact_root, site_url)
-    _check_menu_links(artifact_root, site_url, _expected_menu(kedro_viz=mounted))
+    expected = _expected_menu(kedro_viz=mounted, status_pages=status_on)
+    if status_on:
+        _check_status_menu_entry(expected)
+    _check_menu_links(artifact_root, site_url, expected)
 
 
 def assemble(
@@ -924,8 +1008,11 @@ def assemble(
     skip_herald_build: bool = False,
     skip_docs_site_build: bool = False,
     site_url: str | None = None,
+    fleet_status: Path | None = None,
 ) -> str:
     repo_root = repo_root or _repo_root()
+    status_on = sp.enabled_from_env()
+    fleet_status = fleet_status or _fleet_status_input(repo_root)
     dashboard_src = dashboard_src or (repo_root / "docs" / "dashboard")
     artifact_root = artifact_root.resolve()
     herald_out = artifact_root / HERALD_PREFIX
@@ -938,7 +1025,8 @@ def assemble(
     _write_site_url_marker(artifact_root, site_url)
 
     one_generator = enabled_from_env()
-    for mount in (f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/"):
+    mounts = [f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", *([f"{STATUS_PREFIX}/"] if status_on else [])]
+    for mount in mounts:
         existing = artifact_root / mount.rstrip("/")
         if existing.exists():
             if (
@@ -950,6 +1038,8 @@ def assemble(
             print(f"assemble_pages: collision at {mount}", file=sys.stderr)
             raise SystemExit(1)
 
+    if status_on:  # before anything is mounted; off, the input is never opened
+        _check_fleet_status_input(fleet_status, repo_root)
     mounted = _copy_dashboard(dashboard_src, artifact_root, repo_root=repo_root)
     if not skip_herald_build:
         _build_herald(
@@ -957,6 +1047,8 @@ def assemble(
             repo_root,
             kedro_viz_export=dashboard_src / "kedro-viz",
             dashboard_out=(artifact_root / DASHBOARD_PREFIX) if mounted else None,
+            status_out=(artifact_root / STATUS_PREFIX) if status_on else None,
+            fleet_status=fleet_status if status_on else None,
         )
     _write_dossier_redirects(artifact_root)
     _ensure_kedro_viz_redirect(artifact_root)

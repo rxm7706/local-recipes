@@ -8,6 +8,7 @@ docsite/
   content/
     dossier.yml        ← the dossier itself. This is the source of truth.
     ci-status.json     ← committed stdout of `pyforge steward ci status --json` (Story 39.1)
+    fleet-status.json  ← the fleet board's build input, written by steward's workflow (gitignored; Story 42.1)
     site.yml           ← which infographics to publish, nav, artifact URL
   templates/           ← Jinja2: one macro per content block type
   assets/              ← the dossier stylesheet + the site-only chrome
@@ -53,6 +54,23 @@ or a local `pixi run -e pyforge-atlas viz-publish-stage`. Present, it is mounted
 and date from its `manifest.json`; a present export whose `manifest.json` is missing, not JSON,
 or lacks `export_commit` or `export_date` fails `pages-check` naming the file. Absent, the build
 exits 0 with no mount, no redirect, and no Kedro-Viz entry in the menus or the tiles.
+
+The status pages (Story 42.1) are herald's second prefix, `/status/`, mounted beside `/herald/`:
+the fleet board at `/status/` (one row per station with a done bar, and an attention block of every
+blocked and backlog story) and the guild status page at `/status/ci/` (every row of
+`content/ci-status.json`, in the dossier tile's order with `live` last). Both are build-time
+snapshots: each names its snapshot time and links the live view on Lane 1 (`site.yml` `lane1`).
+They render only with `pyforge.herald.status_pages` on, which reaches the `site` build as
+`PYFORGE_STATUS_PAGES` (`tools/export_status_pages_env.py`, run in the Guild env); on, the menus
+gain Status and the build input `content/fleet-status.json` (gitignored, written by a Guild step of
+steward's workflow from `sprint-ledger-query --format json`; its shape is in `tools/status_pages.py`)
+must carry `stations`, a list, each with `done` and `total`, or `pages-check` exits 1 naming the
+file. Off, the input is never opened and no other page changes. A local run with the flag on:
+
+```bash
+cp src/shared/packages/pyforge-herald/tests/fixtures/fleet-status-2026-10-14.json docsite/content/fleet-status.json
+PYFORGE_STATUS_PAGES=1 pixi run -e site pages-check
+```
 
 A PR touching `docs/**`, `docs-site/**`, `docsite/**`, `docs/dashboard/**`, `presentations/**`
 or `pixi.toml` runs `pages-check` in CI (the `build` job of `.github/workflows/pages.yml`, which folded `docsite-check.yml`);

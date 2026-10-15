@@ -20,7 +20,15 @@ the tile names the export's commit and date; with ``--dashboard-out DIR`` the pi
 written to ``DIR/index.html`` (the Pages build passes the artifact's ``dashboard/``). With no
 export, the tile, the menu entry and the pipelines page are left out.
 
-Nothing here reaches the network and nothing is written outside dist/ (and ``--dashboard-out``).
+Story 42.1: with ``pyforge.herald.status_pages`` on (``PYFORGE_STATUS_PAGES``, see
+``docsite/tools/status_pages.py``) the shared menu carries Status, the build refuses a
+``fleet-status.json`` input that is missing or malformed (naming the file) before anything is written,
+and with ``--status-out DIR`` the fleet board is written to ``DIR/index.html`` and the guild status page
+to ``DIR/ci/index.html`` (the Pages build passes the artifact's ``status/``). Off, the input is never
+opened and nothing of the status pages is rendered.
+
+Nothing here reaches the network and nothing is written outside dist/ (and ``--dashboard-out``,
+``--status-out``).
 
     python docsite/build.py                 # build into dist/
     python docsite/build.py --out _site     # build somewhere else
@@ -30,6 +38,7 @@ Nothing here reaches the network and nothing is written outside dist/ (and ``--d
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
 import hashlib
 import html
@@ -41,8 +50,6 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
-
-import base64
 from urllib.parse import urlparse
 
 import yaml
@@ -584,24 +591,23 @@ def _apply_ci_surfaces(doc: dict) -> None:
     apply_ci_surfaces_blocks(doc, content_dir=CONTENT)
 
 
-def build(
-    out_dir: Path,
-    repo_root: Path,
-    *,
-    kedro_viz_export: Path | None = None,
-    dashboard_out: Path | None = None,
-) -> dict:
-    """Render the site into ``out_dir``. ``kedro_viz_export`` is the Kedro-Viz build input (default
-    ``<repo_root>/docs/dashboard/kedro-viz``); a present export without a well-formed manifest raises
-    ``kedro_viz_export.ExportShapeError`` naming the path, before anything is written."""
-    kv = _kedro_viz_export()
-    export_dir = kedro_viz_export if kedro_viz_export is not None else kv.input_dir(repo_root)
-    export = kv.load(export_dir)
-    site_cfg = yaml.safe_load((CONTENT / "site.yml").read_text(encoding="utf-8"))
-    site_cfg["neighbours"] = kv.neighbours(site_cfg.get("neighbours"), export)
-    doc = yaml.safe_load((CONTENT / "dossier.yml").read_text(encoding="utf-8"))
-    _apply_ci_surfaces(doc)
+def _ci_surfaces_tile():
+    if str(_TOOLS) not in sys.path:
+        sys.path.insert(0, str(_TOOLS))
+    import ci_surfaces_tile  # noqa: E402
 
+    return ci_surfaces_tile
+
+
+def _status_pages():
+    if str(_TOOLS) not in sys.path:
+        sys.path.insert(0, str(_TOOLS))
+    import status_pages  # noqa: E402
+
+    return status_pages
+
+
+def _jinja_env() -> Environment:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES)),
         undefined=StrictUndefined,
@@ -610,6 +616,114 @@ def build(
         autoescape=False,  # content is trusted, first-party, and pre-escaped by md_inline
     )
     env.filters["md"] = md_inline
+    return env
+
+
+def _clean_status_out(status_out: Path) -> None:
+    """Remove only what the status pages write under ``status_out`` (an allow-list, as OWNED_OUTPUTS)."""
+    for name in ("index.html", "ci"):
+        target = status_out / name
+        if target.is_dir():
+            shutil.rmtree(target)
+        elif target.exists():
+            target.unlink()
+
+
+def render_status_pages(
+    *,
+    flag_enabled: bool,
+    status_out: Path,
+    herald_out: Path,
+    fleet_status: Path,
+    ci_status: Path,
+    site_cfg: dict,
+    built_at: str,
+    commit: str,
+    env: Environment | None = None,
+) -> list[Path] | None:
+    """Story 42.1 (CAP-60): the fleet board at ``status_out/index.html`` and the guild status page at
+    ``status_out/ci/index.html``, or ``None`` with the flag off -- then neither input is opened and
+    nothing is written. ``herald_out`` is where the herald pages are (the menu's ``rel`` climbs
+    there). A malformed input raises ``FleetStatusShapeError`` / ``CiStatusShapeError`` naming it."""
+    if not flag_enabled:
+        return None
+    sp = _status_pages()
+    cst = _ci_surfaces_tile()
+    board = sp.board(sp.load_fleet_status(fleet_status))
+    snapshot = cst.load_ci_status_snapshot(ci_status)
+    env = env or _jinja_env()
+    site = {**site_cfg, "nav": sp.menu_entries(site_cfg["nav"], enabled=True)}
+    shared = {"site": site, "built_at": built_at, "commit": commit, "lane1": site_cfg["lane1"]}
+
+    _clean_status_out(status_out)
+    ci_out = status_out / "ci"
+    ci_out.mkdir(parents=True, exist_ok=True)
+    board_page = status_out / "index.html"
+    ci_page = ci_out / "index.html"
+    stations = len(board["stations"])
+    board_page.write_text(
+        env.get_template("page_status.html.j2").render(
+            page_title=f"Status — {site['name']}",
+            page_description=f"The fleet board: {stations} station{'' if stations == 1 else 's'} "
+            f"from the sprint ledgers, a build-time snapshot.",
+            page_key="status",
+            rel=os.path.relpath(herald_out, start=status_out).replace(os.sep, "/") + "/",
+            board=board,
+            **shared,
+        ),
+        encoding="utf-8",
+    )
+    ci_page.write_text(
+        env.get_template("page_status_ci.html.j2").render(
+            page_title=f"Guild CI status — {site['name']}",
+            page_description="Every CI surface and the verdict steward gave it, a build-time snapshot.",
+            page_key="status-ci",
+            rel=os.path.relpath(herald_out, start=ci_out).replace(os.sep, "/") + "/",
+            fetched_at=str(snapshot["fetched_at"]),
+            rows=sp.guild_rows(cst.order_rows(snapshot["rows"])),
+            **shared,
+        ),
+        encoding="utf-8",
+    )
+    return [board_page, ci_page]
+
+
+def build(
+    out_dir: Path,
+    repo_root: Path,
+    *,
+    kedro_viz_export: Path | None = None,
+    dashboard_out: Path | None = None,
+    status_out: Path | None = None,
+    fleet_status: Path | None = None,
+    status_pages: bool | None = None,
+) -> dict:
+    """Render the site into ``out_dir``. ``kedro_viz_export`` is the Kedro-Viz build input (default
+    ``<repo_root>/docs/dashboard/kedro-viz``); a present export without a well-formed manifest raises
+    ``kedro_viz_export.ExportShapeError`` naming the path, before anything is written.
+
+    ``status_pages`` is the ``pyforge.herald.status_pages`` state (default: ``PYFORGE_STATUS_PAGES``).
+    On, ``fleet_status`` (default ``docsite/content/fleet-status.json``) and the ``ci-status.json``
+    snapshot are validated before anything is written (``FleetStatusShapeError`` /
+    ``CiStatusShapeError`` naming the file), the menus carry Status, and with ``status_out`` the two
+    status pages are rendered there (Story 42.1)."""
+    kv = _kedro_viz_export()
+    sp = _status_pages()
+    export_dir = kedro_viz_export if kedro_viz_export is not None else kv.input_dir(repo_root)
+    export = kv.load(export_dir)
+    status_on = sp.enabled_from_env() if status_pages is None else status_pages
+    fleet_status_path = fleet_status if fleet_status is not None else sp.input_path(CONTENT)
+    ci_status_path = CONTENT / _ci_surfaces_tile().SNAPSHOT_NAME
+    if status_on:  # refuse a malformed input before anything is written; off, it is never opened
+        sp.load_fleet_status(fleet_status_path)
+        _ci_surfaces_tile().load_ci_status_snapshot(ci_status_path)
+    site_cfg = yaml.safe_load((CONTENT / "site.yml").read_text(encoding="utf-8"))
+    site_cfg["nav"] = sp.menu_entries(site_cfg["nav"], enabled=status_on)
+    site_cfg["neighbours"] = kv.neighbours(site_cfg.get("neighbours"), export)
+    doc = yaml.safe_load((CONTENT / "dossier.yml").read_text(encoding="utf-8"))
+    _apply_ci_surfaces(doc)
+
+    env = _jinja_env()
 
     css = "\n".join(
         [
@@ -792,6 +906,20 @@ def build(
             encoding="utf-8",
         )
 
+    status_written = None
+    if status_out is not None:
+        status_written = render_status_pages(
+            flag_enabled=status_on,
+            status_out=status_out,
+            herald_out=out_dir,
+            fleet_status=fleet_status_path,
+            ci_status=ci_status_path,
+            site_cfg=site_cfg,
+            built_at=built_at,
+            commit=commit,
+            env=env,
+        )
+
     return {
         "infographics": infographics,
         "families": families,
@@ -800,6 +928,8 @@ def build(
         "built_at": built_at,
         "kedro_viz_export": export,
         "pipelines_page": pipelines_page,
+        "status_pages_enabled": status_on,
+        "status_pages": status_written,
     }
 
 
@@ -934,16 +1064,41 @@ def main() -> int:
         default=None,
         help="write the pipelines page to DIR/index.html when the Kedro-Viz export is present",
     )
+    ap.add_argument(
+        "--status-out",
+        default=None,
+        help="with pyforge.herald.status_pages on, write the fleet board to DIR/index.html and the guild "
+        "status page to DIR/ci/index.html",
+    )
+    ap.add_argument(
+        "--fleet-status",
+        default=None,
+        help="the fleet board's build input (default: docsite/content/fleet-status.json)",
+    )
     args = ap.parse_args()
 
     out_dir = (Path.cwd() / args.out).resolve()
     repo_root = Path(args.repo_root).resolve() if args.repo_root else ROOT
     export_dir = (Path.cwd() / args.kedro_viz_export).resolve() if args.kedro_viz_export else None
     dashboard_out = (Path.cwd() / args.dashboard_out).resolve() if args.dashboard_out else None
+    status_out = (Path.cwd() / args.status_out).resolve() if args.status_out else None
+    fleet_status = (Path.cwd() / args.fleet_status).resolve() if args.fleet_status else None
 
+    shape_errors = (
+        _kedro_viz_export().ExportShapeError,
+        _status_pages().FleetStatusShapeError,
+        _ci_surfaces_tile().CiStatusShapeError,
+    )
     try:
-        result = build(out_dir, repo_root, kedro_viz_export=export_dir, dashboard_out=dashboard_out)
-    except _kedro_viz_export().ExportShapeError as exc:
+        result = build(
+            out_dir,
+            repo_root,
+            kedro_viz_export=export_dir,
+            dashboard_out=dashboard_out,
+            status_out=status_out,
+            fleet_status=fleet_status,
+        )
+    except shape_errors as exc:
         print(f"build: {exc}", file=sys.stderr)
         return 1
 
@@ -958,6 +1113,12 @@ def main() -> int:
             f"  kedro-viz    present: export {export['commit'][:12]} from {export['date']}"
             + (f"; pipelines page {page}" if page else "")
         )
+    if not result["status_pages_enabled"]:
+        print("  status       off: no /status/ pages, fleet-status.json not opened (Story 42.1)")
+    elif result["status_pages"]:
+        print(f"  status       on: fleet board and guild status page under {result['status_pages'][0].parent}")
+    else:
+        print("  status       on: input checked; no --status-out, so no /status/ pages written")
     for item in result["infographics"]:
         print(f"  infographic  {item['out_name']:<46} {item['bytes'] // 1024:>5} KB  {item['source']}")
     for fam in result["families"]:

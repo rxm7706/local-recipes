@@ -1,7 +1,10 @@
 """Story 27.2: unified GitHub Pages artifact (Starlight + herald + dashboard).
 
 Story 42.2 (CAP-60): the Kedro-Viz mount is an artifact handoff that tolerates absence -- the
-``test_42_2_*`` tests below build the real herald site around a fixture export, and around none."""
+``test_42_2_*`` tests below build the real herald site around a fixture export, and around none.
+
+Story 42.1 (CAP-60): the fleet board and guild status pages under ``/status/`` -- the ``test_42_1_*``
+tests build the real herald site with ``pyforge.herald.status_pages`` on (a fixture input) and off."""
 
 from __future__ import annotations
 
@@ -49,13 +52,20 @@ _SHARED_MENU = [
 ]
 
 
-def _menu(kedro_viz: bool) -> list[tuple[str, str, str]]:
-    return [entry for entry in _SHARED_MENU if kedro_viz or entry[0] != "Kedro-Viz"]
+#: Story 42.1: with pyforge.herald.status_pages on, the one nav list gains Status after Decks.
+_STATUS_ENTRY = ("Status", "status/", "../status/index.html")
 
 
-def _write_docs_pages(artifact: Path, base: str, *, kedro_viz: bool = True) -> None:
+def _menu(kedro_viz: bool, status: bool = False) -> list[tuple[str, str, str]]:
+    menu = [entry for entry in _SHARED_MENU if kedro_viz or entry[0] != "Kedro-Viz"]
+    if status:
+        menu.insert(5, _STATUS_ENTRY)
+    return menu
+
+
+def _write_docs_pages(artifact: Path, base: str, *, kedro_viz: bool = True, status: bool = False) -> None:
     """The docs root and 404 with the top menu and the Herald sidebar links, as Starlight renders them."""
-    menu = _menu(kedro_viz)
+    menu = _menu(kedro_viz, status)
     top = "".join(f'<a data-pf-menu-link href="{base}{path}">{label}</a>' for label, path, _ in menu)
     sidebar = "".join(f'<a href="{base}{path}">{label}</a>' for label, path, _ in menu[1:])
     for rel in ("index.html", "404.html"):
@@ -257,20 +267,31 @@ def _dashboard_src(tmp_path: Path, export: Path | None, *, empty_input: bool = F
 
 
 def _assemble(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, export: Path | None, *, empty_input: bool = False
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    export: Path | None,
+    *,
+    empty_input: bool = False,
+    status: bool = False,
+    fleet_status: Path | None = None,
 ) -> Path:
-    """pages-build around a synthetic docs shelf: the real herald build, the real mount and redirects."""
+    """pages-build around a synthetic docs shelf: the real herald build, the real mount and redirects.
+
+    ``status`` sets pyforge.herald.status_pages (``PYFORGE_STATUS_PAGES``); ``fleet_status`` is the
+    fleet board's build input (Story 42.1)."""
     monkeypatch.setenv("PYFORGE_PAGES_ONE_GENERATOR", "0")
+    monkeypatch.setenv("PYFORGE_STATUS_PAGES", "1" if status else "0")
     assemble_pages = _load_assemble_pages()
     artifact = tmp_path / "site"
     artifact.mkdir()
-    _write_docs_pages(artifact, _BASE, kedro_viz=export is not None)
+    _write_docs_pages(artifact, _BASE, kedro_viz=export is not None, status=status)
     assemble_pages.assemble(
         artifact,
         repo_root=_repo_root(),
         dashboard_src=_dashboard_src(tmp_path, export, empty_input=empty_input),
         skip_docs_site_build=True,
         site_url=_SITE_URL,
+        fleet_status=fleet_status,
     )
     return artifact
 
@@ -448,3 +469,137 @@ def test_42_2_the_kedro_viz_redirect_stays_under_the_base_path(tmp_path: Path, c
         assemble_pages.check(artifact, site_url=_SITE_URL)
     assert exc.value.code == 1
     assert f"kedro-viz/index.html redirects to {target!r}" in capsys.readouterr().err
+
+
+# --- Story 42.1 (CAP-60): the fleet board and guild status pages render at build -----------------
+
+_FLEET_FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "fleet-status-2026-10-14.json"
+_STATUS_LABELS = ["Docs", "Overview", "Dossier", "Infographics", "Decks", "Status"]
+
+
+def test_42_1_ac6_the_flag_on_artifact_passes_pages_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    artifact = _assemble(tmp_path, monkeypatch, None, status=True, fleet_status=_FLEET_FIXTURE)
+    assemble_pages = _load_assemble_pages()
+    assemble_pages.check(artifact, site_url=_SITE_URL, fleet_status=_FLEET_FIXTURE)
+
+    for page in ("status/index.html", "status/ci/index.html"):
+        assert (artifact / page).is_file(), page
+    # Every docs page and every herald shell page, the two status pages among them, carries Status.
+    for page in (
+        "index.html",
+        "herald/index.html",
+        "herald/decks/index.html",
+        "status/index.html",
+        "status/ci/index.html",
+    ):
+        assert _menu_labels(artifact / page) == _STATUS_LABELS, page
+    board = (artifact / "status/index.html").read_text(encoding="utf-8")
+    assert board.count('href="/console/"') == 1  # the live view on Lane 1: another host, never resolved here
+    assert not (artifact / "herald" / "status").exists()
+
+
+def test_42_1_ac6_a_status_page_without_its_menu_fails_pages_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    artifact = _assemble(tmp_path, monkeypatch, None, status=True, fleet_status=_FLEET_FIXTURE)
+    page = artifact / "status" / "ci" / "index.html"
+    page.write_text(page.read_text(encoding="utf-8").replace(">Status</a>", ">State</a>"), encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        _load_assemble_pages().check(artifact, site_url=_SITE_URL, fleet_status=_FLEET_FIXTURE)
+    assert exc.value.code == 1
+    assert "shared menu on status/ci/index.html" in capsys.readouterr().err
+
+
+def _bad_fleet(tmp_path: Path, case: str) -> Path:
+    path = tmp_path / "inputs" / "fleet-status.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if case == "absent":
+        return path
+    if case == "not-json":
+        path.write_text("{stations: [", encoding="utf-8")
+        return path
+    payload = json.loads(_FLEET_FIXTURE.read_text(encoding="utf-8"))
+    if case == "no-stations":
+        del payload["stations"]
+    elif case == "stations-not-a-list":
+        payload["stations"] = {}
+    else:
+        del payload["stations"][3][case.removeprefix("station-without-")]
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+_BAD_FLEET_CASES = {
+    "absent": "fleet-status input missing",
+    "not-json": "not valid JSON",
+    "no-stations": "missing stations",
+    "stations-not-a-list": "stations is not a list",
+    "station-without-done": "station 3 (pyforge-marshal) missing done",
+    "station-without-total": "station 3 (pyforge-marshal) missing total",
+}
+
+
+@pytest.mark.parametrize("case", sorted(_BAD_FLEET_CASES))
+def test_42_1_ac5_pages_build_refuses_the_input_before_mounting(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys, case: str
+) -> None:
+    fleet = _bad_fleet(tmp_path, case)
+    with pytest.raises(SystemExit) as exc:
+        _assemble(tmp_path, monkeypatch, None, status=True, fleet_status=fleet)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert f"assemble_pages: {fleet}: {_BAD_FLEET_CASES[case]}" in err
+    for mount in ("herald", "status", "dashboard"):
+        assert not (tmp_path / "site" / mount).exists(), mount
+
+
+def test_42_1_ac5_pages_check_alone_refuses_the_input(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    artifact = _assemble(tmp_path, monkeypatch, None, status=True, fleet_status=_FLEET_FIXTURE)
+    fleet = _bad_fleet(tmp_path, "station-without-total")
+    with pytest.raises(SystemExit) as exc:
+        _load_assemble_pages().check(artifact, site_url=_SITE_URL, fleet_status=fleet)
+    assert exc.value.code == 1
+    assert f"{fleet}: station 3 (pyforge-marshal) missing total" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("case", ["absent", "not-json", "valid"])
+def test_42_1_ac7_flag_off_writes_no_status_path_and_opens_no_input(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    fleet = _FLEET_FIXTURE if case == "valid" else _bad_fleet(tmp_path, case)
+    artifact = _assemble(tmp_path, monkeypatch, None, status=False, fleet_status=fleet)
+    _load_assemble_pages().check(artifact, site_url=_SITE_URL, fleet_status=fleet)
+    assert not (artifact / "status").exists()
+    for page in ("index.html", "herald/index.html", "herald/dossier/index.html"):
+        assert "Status" not in _menu_labels(artifact / page), page
+    assert [raw for _, raw in _hrefs(artifact) if "status/" in raw] == []
+
+
+def test_42_1_ac7_a_status_path_with_the_flag_off_fails_pages_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    artifact = _assemble(tmp_path, monkeypatch, None, status=False)
+    (artifact / "status").mkdir()
+    (artifact / "status" / "index.html").write_text("<html></html>", encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        _load_assemble_pages().check(artifact, site_url=_SITE_URL)
+    assert exc.value.code == 1
+    assert "status/ exists in the artifact but pyforge.herald.status_pages is off" in capsys.readouterr().err
+
+
+def test_42_1_the_status_mount_refuses_a_collision(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYFORGE_STATUS_PAGES", "1")
+    monkeypatch.setenv("PYFORGE_PAGES_ONE_GENERATOR", "0")
+    artifact = tmp_path / "site"
+    (artifact / "status").mkdir(parents=True)
+    with pytest.raises(SystemExit) as exc:
+        _load_assemble_pages().assemble(
+            artifact,
+            repo_root=_repo_root(),
+            dashboard_src=_dashboard_src(tmp_path, None),
+            skip_docs_site_build=True,
+            skip_herald_build=True,
+            site_url=_SITE_URL,
+            fleet_status=_FLEET_FIXTURE,
+        )
+    assert exc.value.code == 1

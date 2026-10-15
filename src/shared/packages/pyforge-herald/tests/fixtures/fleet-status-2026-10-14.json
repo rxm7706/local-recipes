@@ -1,0 +1,314 @@
+{
+  "source": "steward sprint-ledger-query --format json, reshaped (herald Story 42.1 fixture): the eight tracked ledgers at 0627eb9077, 2026-10-14T01:56:19Z",
+  "generated_at": "2026-10-14T01:56:19+00:00",
+  "stations": [
+    {
+      "station": "pyforge-atlas",
+      "epics": 29,
+      "total": 105,
+      "done": 104,
+      "in_progress": 0,
+      "backlog": 0,
+      "blocked": 1,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 99.0476
+    },
+    {
+      "station": "pyforge-doctor",
+      "epics": 45,
+      "total": 152,
+      "done": 152,
+      "in_progress": 0,
+      "backlog": 0,
+      "blocked": 0,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 100.0
+    },
+    {
+      "station": "pyforge-herald",
+      "epics": 39,
+      "total": 132,
+      "done": 132,
+      "in_progress": 0,
+      "backlog": 0,
+      "blocked": 0,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 100.0
+    },
+    {
+      "station": "pyforge-marshal",
+      "epics": 97,
+      "total": 453,
+      "done": 452,
+      "in_progress": 0,
+      "backlog": 0,
+      "blocked": 1,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 99.7792
+    },
+    {
+      "station": "pyforge-mason",
+      "epics": 30,
+      "total": 112,
+      "done": 110,
+      "in_progress": 0,
+      "backlog": 0,
+      "blocked": 2,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 98.2143
+    },
+    {
+      "station": "pyforge-scribe",
+      "epics": 26,
+      "total": 48,
+      "done": 48,
+      "in_progress": 0,
+      "backlog": 0,
+      "blocked": 0,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 100.0
+    },
+    {
+      "station": "pyforge-steward",
+      "epics": 100,
+      "total": 369,
+      "done": 351,
+      "in_progress": 0,
+      "backlog": 9,
+      "blocked": 9,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 95.122
+    },
+    {
+      "station": "pyforge-warden",
+      "epics": 18,
+      "total": 62,
+      "done": 62,
+      "in_progress": 0,
+      "backlog": 0,
+      "blocked": 0,
+      "optional": 0,
+      "in_review": 0,
+      "completion_pct": 100.0
+    }
+  ],
+  "stories": [
+    {
+      "story_id": "1.1",
+      "station": "pyforge-atlas",
+      "epic_id": "1",
+      "title": "Generate legacy contextual skill",
+      "status": "done"
+    },
+    {
+      "story_id": "24.2",
+      "station": "pyforge-atlas",
+      "epic_id": "24",
+      "title": "Materialize cap 8 s canonical parquets one recorded run",
+      "status": "blocked"
+    },
+    {
+      "story_id": "1.1",
+      "station": "pyforge-doctor",
+      "epic_id": "1",
+      "title": "Package scaffold frozen finding doctorreport contract exit code module",
+      "status": "done"
+    },
+    {
+      "story_id": "1.1",
+      "station": "pyforge-herald",
+      "epic_id": "1",
+      "title": "Package scaffold for pyforge herald",
+      "status": "done"
+    },
+    {
+      "story_id": "1.1",
+      "station": "pyforge-marshal",
+      "epic_id": "1",
+      "title": "Package spine verdict lattice findings registry and the meta tests that enforce them",
+      "status": "done"
+    },
+    {
+      "story_id": "33.11",
+      "station": "pyforge-marshal",
+      "epic_id": "33",
+      "title": "Attribution becomes unforgeable before the track serves a second principal",
+      "status": "blocked"
+    },
+    {
+      "story_id": "1.1",
+      "station": "pyforge-mason",
+      "epic_id": "1",
+      "title": "Workspace member scaffold and dual artifact build",
+      "status": "done"
+    },
+    {
+      "story_id": "22.3",
+      "station": "pyforge-mason",
+      "epic_id": "22",
+      "title": "Ctng compilers loses its sentinel key once rattler build renders its output graph",
+      "status": "blocked"
+    },
+    {
+      "story_id": "22.4",
+      "station": "pyforge-mason",
+      "epic_id": "22",
+      "title": "Vc loses its sentinel key once rattler build can emit its vc14 track feature",
+      "status": "blocked"
+    },
+    {
+      "story_id": "1.1",
+      "station": "pyforge-scribe",
+      "epic_id": "1",
+      "title": "Package scaffold direct capture into team memory",
+      "status": "done"
+    },
+    {
+      "story_id": "1.1",
+      "station": "pyforge-steward",
+      "epic_id": "1",
+      "title": "Steward exists as an installable cli",
+      "status": "done"
+    },
+    {
+      "story_id": "100.7",
+      "station": "pyforge-steward",
+      "epic_id": "100",
+      "title": "The first refresh lands through the path",
+      "status": "backlog"
+    },
+    {
+      "story_id": "44.1",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "The capability ledger and the move list manifest",
+      "status": "blocked"
+    },
+    {
+      "story_id": "44.10",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Archive local recipes",
+      "status": "blocked"
+    },
+    {
+      "story_id": "44.11",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Windows native estate",
+      "status": "blocked"
+    },
+    {
+      "story_id": "44.14",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Rebuild harness and oracle gate",
+      "status": "blocked"
+    },
+    {
+      "story_id": "44.15",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Actions minutes metering",
+      "status": "blocked"
+    },
+    {
+      "story_id": "44.2",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "The red team document fixes",
+      "status": "blocked"
+    },
+    {
+      "story_id": "44.4",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Fold the packages",
+      "status": "backlog"
+    },
+    {
+      "story_id": "44.5",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Move the estate",
+      "status": "backlog"
+    },
+    {
+      "story_id": "44.6",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Cfe comes home",
+      "status": "backlog"
+    },
+    {
+      "story_id": "44.8",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "The working set",
+      "status": "blocked"
+    },
+    {
+      "story_id": "44.9",
+      "station": "pyforge-steward",
+      "epic_id": "44",
+      "title": "Mason submits to conda forge",
+      "status": "blocked"
+    },
+    {
+      "story_id": "87.2",
+      "station": "pyforge-steward",
+      "epic_id": "87",
+      "title": "The platform host boots without langflow and the full stack env runs it",
+      "status": "blocked"
+    },
+    {
+      "story_id": "99.3",
+      "station": "pyforge-steward",
+      "epic_id": "99",
+      "title": "The operator sees the pause state of every ci surface in one command",
+      "status": "backlog"
+    },
+    {
+      "story_id": "99.4",
+      "station": "pyforge-steward",
+      "epic_id": "99",
+      "title": "The operator pauses and resumes a ci surface through one journaled path",
+      "status": "backlog"
+    },
+    {
+      "story_id": "99.5",
+      "station": "pyforge-steward",
+      "epic_id": "99",
+      "title": "The preflight honors what ci will skip and says so",
+      "status": "backlog"
+    },
+    {
+      "story_id": "99.6",
+      "station": "pyforge-steward",
+      "epic_id": "99",
+      "title": "A paused expensive build still runs once a week",
+      "status": "backlog"
+    },
+    {
+      "story_id": "99.7",
+      "station": "pyforge-steward",
+      "epic_id": "99",
+      "title": "The hand disabled workflows are retired or parked and the convention is documented",
+      "status": "backlog"
+    },
+    {
+      "story_id": "1.1",
+      "station": "pyforge-warden",
+      "epic_id": "1",
+      "title": "Frozen contract verdict lattice projection safety",
+      "status": "done"
+    }
+  ]
+}
