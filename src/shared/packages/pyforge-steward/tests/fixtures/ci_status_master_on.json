@@ -1,0 +1,118 @@
+{
+  "fetched_at": "2026-10-14T12:00:00+00:00",
+  "rate_limit": {
+    "core_limit": 5000,
+    "core_remaining": 4999
+  },
+  "repo": "rxm7706/local-recipes",
+  "rows": [
+    {
+      "declared_state": "live",
+      "detail": "paused by the master switch PAUSE_ALL_CI",
+      "id": "wf.all-gated",
+      "last_green_run": null,
+      "live_switch_value": null,
+      "owner": "pyforge-steward",
+      "paused_by_master": true,
+      "paused_since": "2026-10-14T08:00:00Z",
+      "review_by": null,
+      "review_days_left": null,
+      "switch": "PAUSE_WF_ALL",
+      "verdict": "paused"
+    },
+    {
+      "declared_state": "live",
+      "detail": "paused by the master switch PAUSE_ALL_CI",
+      "id": "job.gated",
+      "last_green_run": null,
+      "live_switch_value": null,
+      "owner": "pyforge-steward",
+      "paused_by_master": true,
+      "paused_since": "2026-10-14T08:00:00Z",
+      "review_by": null,
+      "review_days_left": null,
+      "switch": "PAUSE_JOB_GATED",
+      "verdict": "paused"
+    },
+    {
+      "declared_state": "live",
+      "detail": "paused by the master switch PAUSE_ALL_CI",
+      "id": "step.gated",
+      "last_green_run": null,
+      "live_switch_value": null,
+      "owner": "pyforge-steward",
+      "paused_by_master": true,
+      "paused_since": "2026-10-14T08:00:00Z",
+      "review_by": null,
+      "review_days_left": null,
+      "switch": "PAUSE_STEP_GATED",
+      "verdict": "paused"
+    },
+    {
+      "declared_state": "live",
+      "id": "wf.mixed",
+      "last_green_run": null,
+      "live_switch_value": null,
+      "owner": "pyforge-steward",
+      "paused_by_master": false,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "switch": "PAUSE_WF_MIXED",
+      "verdict": "live"
+    },
+    {
+      "declared_state": "live",
+      "id": "wf.dispatch-only",
+      "last_green_run": null,
+      "live_switch_value": null,
+      "owner": "pyforge-steward",
+      "paused_by_master": false,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "switch": null,
+      "verdict": "live"
+    },
+    {
+      "declared_state": "live",
+      "id": "row.value",
+      "last_green_run": null,
+      "live_switch_value": null,
+      "owner": "pyforge-steward",
+      "paused_by_master": false,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "switch": "SOME_VALUE",
+      "verdict": "live"
+    },
+    {
+      "declared_state": "paused-manually",
+      "id": "row.manual",
+      "last_green_run": null,
+      "live_switch_value": null,
+      "owner": "pyforge-steward",
+      "paused_by_master": false,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "switch": null,
+      "verdict": "paused-manually"
+    },
+    {
+      "declared_state": "live",
+      "detail": "master switch PAUSE_ALL_CI is true: every job that reads it is skipped, and the registry declares no master pause",
+      "id": "master:PAUSE_ALL_CI",
+      "last_green_run": null,
+      "live_switch_value": "true",
+      "owner": null,
+      "paused_by_master": false,
+      "paused_since": "2026-10-14T08:00:00Z",
+      "review_by": null,
+      "review_days_left": null,
+      "switch": "PAUSE_ALL_CI",
+      "verdict": "drift"
+    }
+  ]
+}
