@@ -1247,7 +1247,7 @@ def test_43_2_pages_check_compares_the_astro_pages_with_the_jinja_path(
     assert "herald/twins/infographics/herald.html: gained" in err
 
 
-# --- Story 43.4: fonts and theme come from one design system ------------------------------------------------------
+# --- Story 43.4: fonts and theme come from one design system; its review: one theme contract across Pages --------
 
 _FACES = '@font-face{font-family:IBM Plex Sans;src:url(/local-recipes/_astro/plex.woff2)format("woff2")}'
 
@@ -1255,15 +1255,16 @@ _FACES = '@font-face{font-family:IBM Plex Sans;src:url(/local-recipes/_astro/ple
 def _design_system_fixture(root: Path) -> Path:
     """A flag-on artifact in miniature: a bundled stylesheet and face, a herald page, a twin and a reader page."""
     write(root / "_astro" / "plex.woff2", b"wOF2")
-    write(root / "_astro" / "herald.css", _FACES + ":root{--paper:#f1f3ef}:root[data-theme='dark']{--paper:#12161a}")
+    write(root / "_astro" / "herald.css", _FACES + ":root{--paper:var(--sl-color-black)}")
     write(root / "herald" / "fonts.css", _FACES)
+    write(root / "herald" / "theme.css", _FACES + ":root{--sl-color-black:#f1f3ef}")
     write(root / "herald" / "assets" / "site.css", "body{}")  # the Jinja path's, still built with the flag on
     write(root / "herald" / "artifact" / "dossier.html", "<style>:root{--paper:#fff}</style>")  # Jinja's, exempt
     head = '<link rel="stylesheet" href="/local-recipes/_astro/herald.css"><script>/* theme */</script>'
     write(root / "herald" / "dossier" / "index.html", f'<html><head>{head}</head><body style="color:var(--ink)">')
     write(
         root / "herald" / "infographics" / "x.html",
-        '<html><head><link rel="stylesheet" href="../fonts.css"><style>html,body{margin:0}</style></head></html>',
+        '<html><head><link rel="stylesheet" href="../theme.css"><style>html,body{margin:0}</style></head></html>',
     )
     write(
         root / "herald" / "twins" / "infographics" / "x.html",
@@ -1282,14 +1283,34 @@ def _design_system_fixture(root: Path) -> Path:
             "herald/index.html links 'assets/site.css' under herald/assets/",
         ),
         (
+            "herald/index.html",
+            "<html><head><link rel=stylesheet href=assets/site.css></head></html>",
+            "herald/index.html links 'assets/site.css' under herald/assets/",
+        ),
+        (
             "herald/fonts.css",
             "@font-face{font-family:Archivo;src:url(assets/fonts/archivo.woff2)}",
-            "herald/infographics/x.html: herald/fonts.css names a face 'assets/fonts/archivo.woff2'",
+            "herald/twins/infographics/x.html loads a face '/local-recipes/herald/assets/fonts/archivo.woff2' under",
         ),
         (
             "_astro/herald.css",
             "@font-face{font-family:X;src:url(data:font/woff2;base64,AAAA)}",
-            "herald/dossier/index.html: _astro/herald.css names a face 'data:font/woff2;base64,AAAA'",
+            "herald/dossier/index.html loads a face 'data:font/woff2;base64,AAAA' that is not a file under _astro/",
+        ),
+        (
+            "herald/decks/index.html",
+            "<html><head><style>@font-face{font-family:X;src:url(../assets/fonts/x.woff2)}</style></head></html>",
+            "herald/decks/index.html loads a face '../assets/fonts/x.woff2' under herald/assets/",
+        ),
+        (
+            "herald/decks/index.html",
+            "<html><head><style>@import url(../assets/site.css);</style></head></html>",
+            "herald/decks/index.html imports '../assets/site.css' under herald/assets/",
+        ),
+        (
+            "_astro/herald.css",
+            "@import url(/local-recipes/_astro/more.css);",
+            "herald/dossier/index.html loads a face '/local-recipes/herald/assets/fonts/y.woff2' under",
         ),
         (
             "herald/decks/index.html",
@@ -1297,14 +1318,26 @@ def _design_system_fixture(root: Path) -> Path:
             "herald/decks/index.html carries an inline theme",
         ),
     ],
-    ids=["one-design-system", "jinja-stylesheet", "vendored-face", "inline-face", "inline-theme"],
+    ids=[
+        "one-design-system",
+        "jinja-stylesheet",
+        "jinja-stylesheet-unquoted",
+        "vendored-face",
+        "inline-face",
+        "face-in-a-style-body",
+        "import-in-a-style-body",
+        "face-one-import-down",
+        "inline-theme",
+    ],
 )
 def test_43_4_pages_check_holds_the_herald_pages_to_one_design_system(
     tmp_path: Path, capsys, rel: str | None, text: str | None, finding: str | None
 ) -> None:
-    """AC1, AC3, AC4 in ``pages-check`` (flag on): every face a herald page or twin loads is a file under
-    ``_astro/``, nothing links ``herald/assets/``, and no herald page carries an inline theme; a twin keeps its own."""
+    """AC1, AC3, AC4 in ``pages-check`` (flag on): every face a herald page or twin loads -- from a sheet it links,
+    quoted or not, a ``<style>`` of its own, or a sheet either imports -- is a file under ``_astro/``, nothing links or
+    imports ``herald/assets/``, and no herald page carries an inline theme; a twin keeps its own."""
     root = _design_system_fixture(tmp_path)
+    write(root / "_astro" / "more.css", "@font-face{font-family:Y;src:url(../herald/assets/fonts/y.woff2)}")
     assemble_pages = _load_assemble_pages()
     if rel is None:
         assemble_pages._check_one_design_system(root, _SITE_URL)
@@ -1316,34 +1349,98 @@ def test_43_4_pages_check_holds_the_herald_pages_to_one_design_system(
     assert finding in capsys.readouterr().err
 
 
+def _top_level_rules(css: str) -> list[tuple[str, str]]:
+    """``(selector, body)`` of each rule outside every at-rule (Starlight's own theme sits in ``@layer`` blocks)."""
+    rules, i = [], 0
+    while (j := css.find("{", i)) >= 0:
+        head, depth, k = css[i:j].split(";")[-1].strip(), 1, j + 1
+        while depth and k < len(css):
+            depth += {"{": 1, "}": -1}.get(css[k], 0)
+            k += 1
+        if not head.startswith("@"):
+            rules.append((head, css[j + 1 : k - 1]))
+        i = k
+    return rules
+
+
+def _page_theme(artifact: Path, page: Path) -> dict[str, dict[str, str]]:
+    """The site theme's variables -- each ``--sl-*`` an unlayered ``:root`` or ``[data-theme=dark]`` rule sets -- in
+    the stylesheets ``page`` links, light and dark."""
+    light: dict[str, str] = {}
+    dark: dict[str, str] = {}
+    for href in re.findall(r'<link rel="stylesheet" href="([^"]+)"', page.read_text(encoding="utf-8")):
+        sheet = (artifact / href.lstrip("/")) if href.startswith("/") else (page.parent / href)
+        for selector, body in _top_level_rules(sheet.read_text(encoding="utf-8")):
+            values = dict(re.findall(r"(--sl-[\w-]+)\s*:\s*([^;]+)", body))
+            if selector == ":root":
+                light.update(values)
+            elif selector in (":root[data-theme=dark]", ":root[data-theme='dark']"):
+                dark.update(values)
+    return {"light": light, "dark": {**light, **dark}}
+
+
 @needs_astro
-def test_43_4_ac1_ac3_ac4_the_built_herald_pages_share_one_design_system(
+def test_43_4_ac1_ac3_ac4_the_built_pages_share_one_theme(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    """AC1: every face a herald page, reader page or twin loads is an @fontsource file under the artifact's
-    ``_astro/``, and the five families are there. AC3: each shell page runs the theme script, allowed by the CSP,
-    before its stylesheet, and carries no inline theme. AC4: no page references a ``.woff2`` under ``herald/assets/``."""
+    """The theme contract on the built artifact (operator ruling 2026-10-15): a docs shelf page and a herald page
+    resolve the same Starlight font, accent and gray values in both themes, from theme.css; the herald-only rules never
+    reach the shelf. AC1: every face a herald page, reader page or twin loads is an @fontsource woff2 under ``_astro/``,
+    and the five families are there. AC3: each herald page runs the theme script, allowed by the CSP, before its
+    stylesheet, and carries no inline theme. AC4: no page references a ``.woff2`` under ``herald/assets/``."""
     monkeypatch.setenv("SITE_URL", "http://localhost:3000")
     artifact = _astro_artifact(tmp_path, monkeypatch)
     assemble_pages = _load_assemble_pages()
     assemble_pages._check_one_design_system(artifact, "http://localhost:3000")
+
+    shelf, dossier = artifact / "how-to" / "index.html", artifact / "herald" / "dossier" / "index.html"
+    docs_theme, herald_theme = _page_theme(artifact, shelf), _page_theme(artifact, dossier)
+    for mode in ("light", "dark"):
+        names = [n for n in docs_theme[mode] if n.startswith(("--sl-font", "--sl-color-accent", "--sl-color-gray"))]
+        names += ["--sl-color-white", "--sl-color-black"]
+        assert len(names) > 12
+        assert {n: docs_theme[mode][n] for n in names} == {n: herald_theme[mode].get(n) for n in names}, mode
+    assert (
+        docs_theme["light"]["--sl-color-accent"] == "#b06a13" and docs_theme["dark"]["--sl-color-accent"] == "#dd9a3f"
+    )
+    assert docs_theme["light"]["--sl-font"].startswith('"IBM Plex Sans"')
+    shelf_css = "".join(
+        (artifact / href.lstrip("/")).read_text(encoding="utf-8")
+        for href in re.findall(r'<link rel="stylesheet" href="([^"]+)"', shelf.read_text(encoding="utf-8"))
+    )
+    assert "_astro/herald." not in shelf.read_text(encoding="utf-8")
+    for herald_only in (".station-mark", ".site-nav-inner", ".hero-eyebrow", "text-transform:uppercase"):
+        assert herald_only not in shelf_css, f"{herald_only} reached the docs"
+    assert "font-family:IBM Plex Sans" in shelf_css.replace('"', "")  # the faces the theme intends
+
     families: set[str] = set()
-    for sheet in [artifact / "herald" / "fonts.css", *(artifact / "_astro").glob("*.css")]:
+    sheets = [
+        artifact / "herald" / "fonts.css",
+        artifact / "herald" / "theme.css",
+        *(artifact / "_astro").glob("*.css"),
+    ]
+    for sheet in sheets:
         for face in re.findall(r"@font-face\{([^}]*)\}", sheet.read_text(encoding="utf-8")):
             families.add(re.search(r"font-family:\s*['\"]?([^;'\"]+)", face).group(1))
             for url in re.findall(r"url\(([^)]+)\)", face):
-                assert url.startswith("/_astro/") and (artifact / url.lstrip("/")).is_file(), (sheet.name, url)
+                assert url.startswith("/_astro/") and url.endswith(".woff2"), (sheet.name, url)
+                assert (artifact / url.lstrip("/")).is_file(), (sheet.name, url)
     assert families == {"Big Shoulders Display", "IBM Plex Sans", "IBM Plex Mono", "Archivo", "Archivo Expanded"}
+    assert not list((artifact / "_astro").glob("*.woff"))
+
     shells = [
         artifact / "herald" / rel for rel in ("index.html", "dossier/index.html", "decks/pyforge-herald/index.html")
     ]
-    for page in shells:
+    reader = artifact / "herald/infographics/atlas.html"
+    for page in [*shells, reader]:
         text = page.read_text(encoding="utf-8")
         script = re.search(r"<script>(.*?)</script>", text).group(1)
         assert "starlight-theme" in script, page
         digest = base64.b64encode(hashlib.sha256(script.encode("utf-8")).digest()).decode("ascii")
         assert f"'sha256-{digest}'" in text, f"{page}: the CSP does not allow the theme script"
         assert text.index(script) < text.index('rel="stylesheet"'), page
+    for page in shells:
+        text = page.read_text(encoding="utf-8")
         assert re.findall(r'<link rel="stylesheet" href="([^"]+)"', text) == [
             re.search(r'href="(/_astro/herald\.[^"]+\.css)"', text).group(1)
         ], page
@@ -1351,10 +1448,8 @@ def test_43_4_ac1_ac3_ac4_the_built_herald_pages_share_one_design_system(
         if "artifact" not in page.relative_to(artifact).parts:
             assert not re.search(r"assets/[^\"']*\.woff2", page.read_text(encoding="utf-8")), page
     twin = (artifact / "herald/twins/infographics/atlas.html").read_text(encoding="utf-8")
-    reader = (artifact / "herald/infographics/atlas.html").read_text(encoding="utf-8")
     assert '<link rel="stylesheet" href="../../fonts.css">' in twin
-    assert '<link rel="stylesheet" href="../fonts.css">' in reader
-    dossier = artifact / "herald/dossier/index.html"
+    assert '<link rel="stylesheet" href="../theme.css">' in reader.read_text(encoding="utf-8")
     dossier.write_text(
         dossier.read_text(encoding="utf-8").replace("</head>", "<style>:root{--paper:#000}</style></head>"), "utf-8"
     )

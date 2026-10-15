@@ -25,24 +25,34 @@ import path from 'node:path';
 export const TWINS_DIR = 'twins';
 
 /**
- * The herald pages' faces, served at `/herald/<HERALD_FONTS>` (`pages/herald/[fonts].css.ts`, Story 43.4) for the
- * pages Astro does not style: the twins (the one line `vendorFontLinks` gives them) and the reader pages.
+ * The herald faces at one fixed URL, `/herald/<HERALD_FONTS>` (`pages/herald/[sheet].css.ts`, Story 43.4), for the
+ * pages Astro does not bundle a stylesheet into: each twin's one vendored line (`vendorFontLinks`) links it.
  */
 export const HERALD_FONTS = 'fonts.css';
+
+/**
+ * The site theme -- Starlight's variables filled with the herald look, and the faces (`styles/theme.css`) -- at
+ * `/herald/<HERALD_THEME>` (Story 43.4's review), for the reader pages, whose back-bar reads only those variables.
+ */
+export const HERALD_THEME = 'theme.css';
 
 /** The preview frame's load handler (`components/herald/Shot.astro`), allowed by hash in the CSP below. */
 export const PREVIEW_ONLOAD = "this.parentElement.classList.add('is-loaded')";
 
 /**
- * The herald pages follow the docs header's theme toggle (Story 43.4): Starlight's toggle keeps its choice under
- * `starlight-theme` ('light', 'dark', or '' for auto) and sets `data-theme` on `<html>`. This script, inline in each
- * herald layout's head so no page paints in the other theme first, reads that key and resolves auto from the system
- * scheme as Starlight's ThemeProvider does; `styles/herald.css` keys the dark tokens to `[data-theme='dark']`. No
- * second toggle and no second store. Allowed by hash in the CSP below.
+ * The herald pages follow the docs header's theme toggle (Story 43.4 and its review): Starlight's toggle keeps its
+ * choice under `starlight-theme` ('light', 'dark', or '' for auto) and sets `data-theme` on `<html>`, which
+ * `styles/theme.css` keys the dark values to. This script, inline in each herald page's head so no page paints in the
+ * other theme first, reads that key and resolves auto from the system scheme as Starlight's ThemeProvider does, then
+ * again when the system scheme changes (as Starlight's ThemeSelect does) and when the page is shown from the
+ * back-forward cache after a toggle elsewhere. No second toggle, no second store, no global name. Allowed by hash in
+ * the CSP below.
  */
 export const THEME_SCRIPT =
-  "try{var t=localStorage.getItem('starlight-theme')}catch(e){}" +
-  "document.documentElement.dataset.theme=(t||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'))==='light'?'light':'dark'";
+  "(()=>{const r=document.documentElement,m=matchMedia('(prefers-color-scheme: light)');" +
+  "const s=()=>{try{return localStorage.getItem('starlight-theme')}catch(e){return null}};" +
+  "const a=()=>{r.dataset.theme=(s()||(m.matches?'light':'dark'))==='light'?'light':'dark'};" +
+  "a();m.addEventListener('change',a);addEventListener('pageshow',a)})()";
 
 const sha256 = (text: string): string => `'sha256-${createHash('sha256').update(text).digest('base64')}'`;
 
@@ -582,14 +592,17 @@ function escapeText(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** The back-bar's rules: Starlight's theme variables only (`styles/theme.css`, linked by the reader page). */
 const BACKBAR_STYLE = `<style>
-.ig-backbar{position:fixed;top:0;left:0;right:0;z-index:2147483000;background:rgba(18,22,26,.86);
--webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:"IBM Plex Mono",ui-monospace,
-SFMono-Regular,Menlo,monospace;font-size:12px;padding:7px 16px;display:flex;align-items:center;gap:14px;
-color:#e7ebe6;box-sizing:border-box}
-.ig-backbar a{color:#e7ebe6;text-decoration:none;border-bottom:1px solid rgba(231,235,230,.4)}
-.ig-backbar a:hover{border-bottom-color:#dd9a3f;color:#dd9a3f}
-.ig-backbar .ig-title{color:rgba(231,235,230,.62);margin-left:auto;text-align:right;
+.ig-backbar{position:fixed;top:0;left:0;right:0;z-index:2147483000;
+background:color-mix(in srgb,var(--sl-color-black) 86%,transparent);
+-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:var(--sl-font-mono);
+font-size:12px;padding:7px 16px;display:flex;align-items:center;gap:14px;
+color:var(--sl-color-white);box-sizing:border-box;border-bottom:1px solid var(--sl-color-gray-5)}
+.ig-backbar a{color:var(--sl-color-white);text-decoration:none;
+border-bottom:1px solid color-mix(in srgb,var(--sl-color-white) 40%,transparent)}
+.ig-backbar a:hover{border-bottom-color:var(--sl-color-accent);color:var(--sl-color-accent)}
+.ig-backbar .ig-title{color:var(--sl-color-gray-3);margin-left:auto;text-align:right;
 overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body{padding-top:32px!important}
 @media print{.ig-backbar{display:none!important}body{padding-top:0!important}}
@@ -633,7 +646,8 @@ function escapeAttr(text: string): string {
 /**
  * The reader's page around one twin (CAP-55: wrap, never edit): the back-bar, then the twin the build
  * copied, in a frame filling the rest of the viewport. `rel` climbs from the page to the `/herald/`
- * mount; `twin` is the twin's path under it.
+ * mount; `twin` is the twin's path under it. The page runs the theme script and links the site theme, so its
+ * back-bar follows the docs toggle (Story 43.4's review); the twin keeps its own design.
  */
 export function twinWrapperHtml(options: { title: string; backbar: string; rel: string; twin: string }): string {
   const { title, backbar, rel, twin } = options;
@@ -645,11 +659,12 @@ export function twinWrapperHtml(options: { title: string; backbar: string; rel: 
 <title>${escapeText(title)}</title>
 <meta name="generator" content="Astro">
 <meta http-equiv="Content-Security-Policy" content="${HERALD_CSP}">
-<link rel="stylesheet" href="${escapeAttr(`${rel}${HERALD_FONTS}`)}">
+<script>${THEME_SCRIPT}</script>
+<link rel="stylesheet" href="${escapeAttr(`${rel}${HERALD_THEME}`)}">
 <style>
-html,body{margin:0;height:100%;background:#12161a}
+html,body{margin:0;height:100%;background:var(--sl-color-black)}
 body{box-sizing:border-box}
-.ig-twin{display:block;width:100%;height:calc(100vh - 32px);border:0;background:#fff}
+.ig-twin{display:block;width:100%;height:calc(100vh - 32px);border:0;background:var(--sl-color-black)}
 </style>
 </head>
 <body>

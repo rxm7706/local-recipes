@@ -725,16 +725,40 @@ def _check_csp(artifact_root: Path) -> None:
 
 _FONT_FACE = re.compile(r"@font-face\s*\{([^}]*)\}", re.IGNORECASE)
 _CSS_URL = re.compile(r"""url\(\s*["']?([^"')\s]+)""", re.IGNORECASE)
-_STYLESHEET = re.compile(
-    r"""<link\b(?=[^>]*\brel\s*=\s*["']?stylesheet)[^>]*\bhref\s*=\s*["']?([^"'\s>]+)""", re.IGNORECASE
-)
+_CSS_IMPORT = re.compile(r"""@import\s+(?:url\(\s*)?["']?([^"')\s;]+)""", re.IGNORECASE)
+_ATTR_VALUE = r"""\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))"""
+_HREF_OR_SRC = re.compile(rf"""\b(?:href|src){_ATTR_VALUE}""", re.IGNORECASE)
+_STYLESHEET = re.compile(rf"""<link\b(?=[^>]*\brel\s*=\s*["']?stylesheet)[^>]*\bhref{_ATTR_VALUE}""", re.IGNORECASE)
 _STYLE_BODY = re.compile(r"<style\b[^>]*>(.*?)</style>", re.IGNORECASE | re.DOTALL)
 _CUSTOM_PROPERTY = re.compile(r"(?<![\w-])--[\w-]+\s*:")
 
 
+def _sheet_refs(css: str, base: Path, artifact_root: Path, base_path: str, depth: int = 1) -> list[tuple[str, str]]:
+    """``(kind, url)`` for every ``@font-face`` source in ``css`` and every sheet it ``@import``s, and, while ``depth``
+    is left, the same in those sheets (one level by default); URLs are as written, relative to ``base``."""
+    refs = [("face", url) for face in _FONT_FACE.findall(css) for url in _CSS_URL.findall(face)]
+    for url in _CSS_IMPORT.findall(css):
+        refs.append(("import", url))
+        sheet = _resolve_in_artifact(base, url, artifact_root, base_path=base_path)
+        if depth and sheet is not None and sheet.is_file():
+            text = sheet.read_text(encoding="utf-8", errors="replace")
+            nested = _sheet_refs(text, sheet, artifact_root, base_path, depth - 1)
+            refs += [(kind, _artifact_url(sheet, ref, artifact_root, base_path)) for kind, ref in nested]
+    return refs
+
+
+def _artifact_url(sheet: Path, url: str, artifact_root: Path, base_path: str) -> str:
+    """``url``, written in ``sheet``, as a base-absolute URL, so it resolves from any file of the artifact."""
+    target = _resolve_in_artifact(sheet, url, artifact_root, base_path=base_path)
+    if target is None or target == Path("/"):
+        return url
+    return base_path + target.relative_to(artifact_root.resolve()).as_posix()
+
+
 def _check_one_design_system(artifact_root: Path, site_url: str) -> None:
-    """Story 43.4 (flag on): every herald page and twin takes its faces from the bundle -- each ``@font-face`` in a
-    stylesheet it links names a file under the artifact's ``_astro/`` -- and links nothing under ``herald/assets/``
+    """Story 43.4 and its review (flag on): every herald page and twin takes its faces from the bundle -- each
+    ``@font-face`` in a stylesheet it links (quoted or not), in a ``<style>`` of its own, or in a sheet either
+    ``@import``s, names a file under the artifact's ``_astro/`` -- and links or imports nothing under ``herald/assets/``
     (the Jinja path's stylesheet and vendored fonts); a herald page carries no inline theme, no custom property in a
     ``<style>`` of its own (a twin, a Design export, keeps its own)."""
     base_path = _base_path(site_url)
@@ -746,21 +770,23 @@ def _check_one_design_system(artifact_root: Path, site_url: str) -> None:
         if rel == ARTIFACT_DOSSIER:
             continue
         text = page.read_text(encoding="utf-8", errors="replace")
-        for raw in _HREF_SRC.findall(text):
-            target = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
+        styles = _STYLE_BODY.findall(text)
+        refs = [("link", "".join(groups)) for groups in _HREF_OR_SRC.findall(text)]
+        refs += [ref for css in styles for ref in _sheet_refs(css, page, artifact_root, base_path)]
+        for groups in _STYLESHEET.findall(text):
+            sheet = _resolve_in_artifact(page, "".join(groups), artifact_root, base_path=base_path)
+            if sheet is not None and sheet.is_file():  # else the origin check and the link walk judge it
+                css = sheet.read_text(encoding="utf-8", errors="replace")
+                found = _sheet_refs(css, sheet, artifact_root, base_path)
+                refs += [(kind, _artifact_url(sheet, url, artifact_root, base_path)) for kind, url in found]
+        for kind, url in refs:
+            verb = {"link": "links", "import": "imports", "face": "loads a face"}[kind]
+            target = _resolve_in_artifact(page, url, artifact_root, base_path=base_path)
             if target is not None and jinja_assets in (target, *target.parents):
-                problems.append(f"{rel} links {raw!r} under {HERALD_PREFIX}/assets/, the Jinja path's")
-        for raw in _STYLESHEET.findall(text):
-            sheet = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
-            if sheet is None or not sheet.is_file():
-                continue  # the origin check and the link walk judge it
-            for face in _FONT_FACE.findall(sheet.read_text(encoding="utf-8", errors="replace")):
-                for url in _CSS_URL.findall(face):
-                    font = _resolve_in_artifact(sheet, url, artifact_root, base_path=base_path)
-                    if font is None or bundle not in font.parents or not font.is_file():
-                        where = _artifact_path(sheet, artifact_root)
-                        problems.append(f"{rel}: {where} names a face {url!r} that is not a file under _astro/")
-        if not rel.startswith(TWINS_PREFIX) and any(_CUSTOM_PROPERTY.search(s) for s in _STYLE_BODY.findall(text)):
+                problems.append(f"{rel} {verb} {url!r} under {HERALD_PREFIX}/assets/, the Jinja path's")
+            elif kind == "face" and (target is None or bundle not in target.parents or not target.is_file()):
+                problems.append(f"{rel} {verb} {url!r} that is not a file under _astro/")
+        if not rel.startswith(TWINS_PREFIX) and any(_CUSTOM_PROPERTY.search(css) for css in styles):
             problems.append(f"{rel} carries an inline theme (a custom property in a <style> of its own)")
     for line in problems:
         print(f"assemble_pages: {line}", file=sys.stderr)

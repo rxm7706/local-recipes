@@ -319,11 +319,19 @@ def test_ac5_the_build_fails_naming_both_dated_files(tmp_path: Path) -> None:
 
 @needs_astro
 def test_ac6_flag_off_astro_emits_none_of_the_three_page_kinds(tmp_path: Path) -> None:
+    """Off, Astro emits no herald page -- and (Story 43.4's review) none of the herald stylesheets, faces or theme:
+    no ``herald/fonts.css`` or ``herald/theme.css``, no font under ``_astro/``, no ``_astro/herald*.css``, and the docs
+    keep Starlight's stock theme (no theme.css variable in any stylesheet)."""
     done = astro_build(tmp_path / "astro", flag=False)
     assert done.returncode == 0, done.stderr[-3000:]
     herald = tmp_path / "astro" / "herald"
     emitted = sorted(PurePosixPath(p.relative_to(herald).as_posix()) for p in herald.rglob("*") if p.is_file())
     assert not [p for p in emitted if p.parts[0] in ("infographics", "decks") or str(p) == "index.html"], emitted
+    assert not [p for p in emitted if p.suffix == ".css"], emitted
+    bundle = tmp_path / "astro" / "_astro"
+    assert not [p.name for p in bundle.iterdir() if p.suffix in (".woff", ".woff2") or p.name.startswith("herald")]
+    css = "".join(p.read_text(encoding="utf-8") for p in bundle.glob("*.css"))
+    assert "--sl-font-heading" not in css and "@font-face" not in css
 
 
 @flag_states(_FLAG)

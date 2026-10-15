@@ -11,7 +11,7 @@ import rehypeMarkdownLinks from './src/rehype-markdown-links.js';
 import rehypeBasePaths from './src/rehype-base-paths.js';
 import { getSiteUrl } from './src/lib/site-url.mjs';
 import { readRedirects, refusePublicCollisions, writeLegacyRedirects } from './src/lib/redirects.ts';
-import { pagesOneGenerator } from './src/loaders/herald-pages-loader.ts';
+import { pagesOneGenerator } from './src/lib/flags.ts';
 import { populatePublic } from './scripts/populate-public.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -37,6 +37,11 @@ const kedroVizMounted = JSON.parse(fs.readFileSync(topnavGenerated, 'utf8')).som
 
 // Story 43.3 (CAP-61): the root redirects -- the frozen legacy set and /kedro-viz/ -- read from one file.
 const siteRedirects = readRedirects(path.join(__dirname, 'redirects.json'));
+
+// Story 43.4's review (operator ruling 2026-10-15): with pyforge.herald.pages_one_generator on, one theme across the
+// site -- Starlight's variables filled with the herald look (src/styles/theme.css), which the docs take through
+// customCss and the herald pages through their own stylesheet. Off, Starlight's stock theme, as before.
+const oneGenerator = pagesOneGenerator();
 
 const siteUrl = getSiteUrl();
 const urlParts = new URL(siteUrl);
@@ -82,6 +87,7 @@ export default defineConfig({
         },
       },
       sidebar,
+      customCss: oneGenerator ? ['./src/styles/theme.css'] : [],
       components: {
         SiteTitle: './src/components/SiteTitle.astro',
       },
@@ -97,14 +103,13 @@ export default defineConfig({
  * whose output is a file public/ already serves fails the build too (Astro itself only warns). Off, public/ is
  * emptied and the Jinja path's assembler does both, as before.
  *
- * Story 43.4: off, no herald page renders, so the herald stylesheet and its faces load empty and the build emits none
- * of their files; the Jinja path serves its own, as before.
+ * Story 43.4 and its review: off, no herald page renders and the docs keep Starlight's stock theme, so every
+ * stylesheet under src/styles/ loads empty and the build emits none of their files; the Jinja path serves its own.
  */
 function heraldArtifact() {
-  const oneGenerator = pagesOneGenerator();
   /** @type {string[]} the files populatePublic wrote, judged against the routes' output at build end */
   let served = [];
-  const heraldStyles = /[\\/]src[\\/]styles[\\/]herald(?:-fonts)?\.css$/;
+  const heraldStyles = /[\\/]src[\\/]styles[\\/][^\\/]+\.css$/;
   return {
     name: 'herald-artifact',
     hooks: {

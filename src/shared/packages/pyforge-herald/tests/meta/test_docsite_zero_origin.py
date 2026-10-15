@@ -88,11 +88,13 @@ def test_ofl_sidecars_present() -> None:
         assert "SIL OPEN FONT LICENSE" in path.read_text(encoding="utf-8").upper()
 
 
-# --- Story 43.4: fonts and theme come from one design system ---------------------------------------------------
+# --- Story 43.4: fonts and theme come from one design system; its review: one theme contract across Pages -------
 
 DOCS_SITE = REPO_ROOT / "docs-site"
-HERALD_CSS = DOCS_SITE / "src" / "styles" / "herald.css"
-HERALD_FONTS_CSS = DOCS_SITE / "src" / "styles" / "herald-fonts.css"
+STYLES = DOCS_SITE / "src" / "styles"
+HERALD_CSS = STYLES / "herald.css"
+HERALD_FONTS_CSS = STYLES / "herald-fonts.css"
+THEME_CSS = STYLES / "theme.css"
 JINJA_CSS = REPO_ROOT / "docsite" / "assets" / "_dossier.css"
 JINJA_CHROME_CSS = REPO_ROOT / "docsite" / "assets" / "_site-chrome.css"
 HERALD_PAGES_TS = DOCS_SITE / "src" / "lib" / "herald-pages.ts"
@@ -101,6 +103,9 @@ NODE = shutil.which("node")
 _COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 _RULE = re.compile(r"([^{}@;]+)\{([^{}]*)\}")
 _DECLARATION = re.compile(r"(?:^|;)\s*([\w-]+)\s*:\s*([^;]+)")
+_VAR = re.compile(r"var\(\s*(--[\w-]+)\s*(?:,\s*((?:[^()]|\([^()]*\))*))?\)")
+_LITERAL_COLOUR = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(|:\s*(?:white|black)\b")
+_LIGHT, _DARK, _NO_SCRIPT = ":root", ":root[data-theme='dark']", ":root:not([data-theme])"
 
 
 def _rules(css: str) -> list[tuple[str, dict[str, str]]]:
@@ -112,15 +117,6 @@ def _rules(css: str) -> list[tuple[str, dict[str, str]]]:
     return out
 
 
-def _families(css: str) -> dict[str, tuple[str, ...]]:
-    """The font-family list each selector declares, quotes dropped."""
-    return {
-        selector: tuple(part.strip().strip("'\"") for part in decl["font-family"].split(","))
-        for selector, decl in _rules(css)
-        if "font-family" in decl
-    }
-
-
 def _tokens(css: str, selector: str) -> dict[str, str]:
     """The custom properties one selector's block defines."""
     blocks = [decl for sel, decl in _rules(css) if sel == selector]
@@ -128,33 +124,112 @@ def _tokens(css: str, selector: str) -> dict[str, str]:
     return {name: value for name, value in blocks[0].items() if name.startswith("--")}
 
 
-def test_43_4_ac2_the_astro_stylesheet_names_the_jinja_families() -> None:
-    """AC2: the dossier's headings and body -- and every other rule of the Jinja stylesheets that names a family --
-    resolve to the same font-family on the Astro path. The back-bar's rules are the reader pages' own inline style."""
-    astro, jinja = _families(HERALD_CSS.read_text(encoding="utf-8")), _families(JINJA_CSS.read_text(encoding="utf-8"))
-    assert astro["body"] == jinja["body"] == ("IBM Plex Sans", "system-ui", "-apple-system", "sans-serif")
-    assert (
-        astro["h1, h2, h3, h4"] == jinja["h1, h2, h3, h4"] == ("Big Shoulders Display", "IBM Plex Sans", "sans-serif")
-    )
-    chrome = _families(JINJA_CHROME_CSS.read_text(encoding="utf-8"))
-    expected = {**jinja, **{sel: fam for sel, fam in chrome.items() if not sel.startswith(".ig-backbar")}}
-    assert len(expected) > 20
-    assert {sel: astro.get(sel) for sel in expected} == expected
+def _theme(dark: bool) -> dict[str, str]:
+    """The site theme's variables as a page in that theme sees them: the light block, then the dark one over it."""
+    css = THEME_CSS.read_text(encoding="utf-8")
+    return {**_tokens(css, _LIGHT), **(_tokens(css, _DARK) if dark else {})}
 
 
-def test_43_4_ac3_the_tokens_are_defined_light_and_under_starlights_dark_selector() -> None:
-    """AC3: the shared stylesheet defines every dossier token under the light root and again under Starlight's
-    ``[data-theme='dark']``, with the Jinja path's values, and the two blocks differ; there is no herald-only dark mode
-    (no ``prefers-color-scheme`` block: the theme script resolves "auto" as Starlight's own does)."""
-    css = HERALD_CSS.read_text(encoding="utf-8")
+def _resolve(value: str, scope: dict[str, str]) -> str:
+    """``value`` with every ``var()`` replaced by its value in ``scope`` (or its fallback), recursively."""
+    for _ in range(10):
+        resolved = _VAR.sub(lambda m: scope.get(m.group(1), m.group(2) or m.group(0)), value)
+        if resolved == value:
+            return " ".join(resolved.split())
+        value = resolved
+    raise AssertionError(f"var() cycle in {value!r}")
+
+
+def _family_list(value: str) -> tuple[str, ...]:
+    return tuple(part.strip().strip("'\"") for part in value.split(","))
+
+
+def _families(css: str, scope: dict[str, str]) -> dict[str, tuple[str, ...]]:
+    """The font-family list each selector declares, resolved through ``scope``, quotes dropped."""
+    return {
+        selector: _family_list(_resolve(decl["font-family"], scope))
+        for selector, decl in _rules(css)
+        if "font-family" in decl
+    }
+
+
+def test_43_4_ac2_the_herald_pages_resolve_the_jinja_families() -> None:
+    """AC2, under the theme contract (operator ruling 2026-10-15): the dossier's body and headings resolve, through the
+    site theme's variables, to exactly the Jinja path's font-family; every other rule of the Jinja stylesheets that
+    names a family resolves to the same face first (the theme carries one mono fallback list). The back-bar's rules are
+    the reader pages' own."""
+    jinja = _families(JINJA_CSS.read_text(encoding="utf-8"), {})
+    for dark in (False, True):
+        astro = _families(HERALD_CSS.read_text(encoding="utf-8"), _theme(dark))
+        assert astro["body"] == jinja["body"] == ("IBM Plex Sans", "system-ui", "-apple-system", "sans-serif")
+        heading = ("Big Shoulders Display", "IBM Plex Sans", "sans-serif")
+        assert astro["h1, h2, h3, h4"] == jinja["h1, h2, h3, h4"] == heading
+        chrome = _families(JINJA_CHROME_CSS.read_text(encoding="utf-8"), {})
+        expected = {**jinja, **{sel: fam for sel, fam in chrome.items() if not sel.startswith(".ig-backbar")}}
+        assert len(expected) > 20
+        assert {sel: astro.get(sel, ("?",))[0] for sel in expected} == {sel: fam[0] for sel, fam in expected.items()}
+
+
+def test_43_4_ac3_the_theme_is_light_and_under_starlights_dark_selector() -> None:
+    """AC3, under the theme contract: theme.css fills Starlight's variables light under ``:root`` and dark under
+    ``[data-theme='dark']`` (the two differ), and the scripts-off fallback repeats the dark block exactly; herald.css
+    defines the dossier's tokens once, from Starlight's variables only, so they take the dark values with no block of
+    their own -- and the plain aliases resolve to the Jinja path's values in both themes."""
+    css = THEME_CSS.read_text(encoding="utf-8")
+    light, dark = _tokens(css, _LIGHT), _tokens(css, _DARK)
+    assert {"--sl-font", "--sl-font-mono", "--sl-color-accent", "--sl-color-black", "--sl-color-white"} <= set(light)
+    assert {f"--sl-color-gray-{n}" for n in range(1, 8)} <= set(dark) <= set(light)
+    assert all(light[name] != value for name, value in dark.items()), "a dark value equals its light one"
+    assert _tokens(css, _NO_SCRIPT) == dark
+
+    herald = HERALD_CSS.read_text(encoding="utf-8")
+    tokens = _tokens(herald, _LIGHT)
+    assert [sel for sel, _ in _rules(herald) if "data-theme" in sel] == []
+    assert "prefers-color-scheme" not in _COMMENT.sub("", herald)
     jinja = JINJA_CSS.read_text(encoding="utf-8")
-    light, dark = _tokens(css, ":root"), _tokens(css, ":root[data-theme='dark']")
-    jinja_light, jinja_dark = _tokens(jinja, ":root"), _tokens(jinja, ":root[data-theme='dark']")
-    assert len(jinja_light) > 30
-    assert light == jinja_light
-    assert dark == jinja_dark
-    assert set(dark) == set(light) and dark != light
-    assert "prefers-color-scheme" not in _COMMENT.sub("", css)
+    jinja_light, jinja_dark = _tokens(jinja, _LIGHT), _tokens(jinja, _DARK)
+    assert set(tokens) == set(jinja_light) and len(tokens) > 30
+    for name, value in tokens.items():
+        assert "var(--sl-" in value and not _LITERAL_COLOUR.search(value), f"{name}: {value}"
+    nearest = {"--rail-faint", "--code-bg", "--st-doctor", "--st-doctor-soft"}  # the theme's nearest, not equal
+    exact = [n for n, value in tokens.items() if re.fullmatch(r"var\(--sl-[\w-]+\)", value) and n not in nearest]
+    assert len(exact) == 24  # the other six -- three station accents, their softs -- are mixes of two
+    for name in exact:
+        assert _resolve(tokens[name], _theme(False)) == jinja_light[name], name
+        assert _resolve(tokens[name], _theme(True)) == jinja_dark[name], name
+
+
+_STYLE_SOURCES = ("styles/herald.css", "lib/herald-pages.ts", "layouts", "components/herald", "components/dossier")
+
+
+def _style_text(path: Path) -> str:
+    """The CSS a herald source declares: a stylesheet whole; else its ``<style>`` bodies and ``style`` attributes."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix == ".css":
+        return _COMMENT.sub("", text)
+    bodies = re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL)
+    attributes = re.findall(r"""\bstyle=(?:\{`([^`]*)`\}|"([^"]*)")""", text)
+    return "\n".join([*bodies, *("".join(a) for a in attributes)])
+
+
+def test_43_4_no_herald_stylesheet_names_a_font_or_colour_of_its_own() -> None:
+    """The theme contract (operator ruling 2026-10-15): outside theme.css and the faces it imports, no herald stylesheet,
+    inline style or reader page declares a literal font family or colour -- each is one of Starlight's variables, or a
+    token derived from them -- so replacing theme.css re-themes every page."""
+    sources = [
+        path
+        for rel in _STYLE_SOURCES
+        for path in ([DOCS_SITE / "src" / rel] if "." in rel else sorted((DOCS_SITE / "src" / rel).rglob("*")))
+        if path.is_file() and (not path.name.endswith(".astro") or "Herald" in path.name or "layouts" not in path.parts)
+    ]
+    assert len(sources) > 10
+    findings = []
+    for path in sources:
+        css = _style_text(path)
+        findings += [f"{path.name}: colour {m.group(0)!r}" for m in _LITERAL_COLOUR.finditer(css)]
+        families = re.findall(r"font-family\s*:\s*([^;}`\n]+)", css)
+        findings += [f"{path.name}: font-family {value.strip()!r}" for value in families if "var(--sl-" not in value]
+    assert findings == []
 
 
 _THEME_PROBE = """
@@ -166,7 +241,8 @@ process.stdout.write(JSON.stringify({ csp: HERALD_CSP, theme: THEME_SCRIPT }));
 @pytest.mark.skipif(NODE is None, reason="node is not on PATH")
 def test_43_4_ac3_the_theme_follows_the_docs_toggle_and_the_csp_allows_it() -> None:
     """AC3: the herald pages read the docs header's toggle from Starlight's own store (``starlight-theme``) and set
-    Starlight's ``data-theme`` -- no second toggle or store -- and the CSP allows that one inline script by hash."""
+    Starlight's ``data-theme`` -- no second toggle or store -- again on a system-scheme change and a back-forward-cache
+    restore, in an IIFE that leaves no global; the CSP allows that one inline script by hash."""
     done = subprocess.run(
         [
             NODE or "node",
@@ -183,8 +259,10 @@ def test_43_4_ac3_the_theme_follows_the_docs_toggle_and_the_csp_allows_it() -> N
     assert done.returncode == 0, done.stderr
     probe = json.loads(done.stdout)
     theme = probe["theme"]
+    assert theme.startswith("(()=>{") and theme.endswith("})()") and "var " not in theme
     assert "localStorage.getItem('starlight-theme')" in theme
-    assert "document.documentElement.dataset.theme=" in theme and "prefers-color-scheme: light" in theme
+    assert "r.dataset.theme=" in theme and "prefers-color-scheme: light" in theme
+    assert "addEventListener('change',a)" in theme and "addEventListener('pageshow',a)" in theme
     digest = base64.b64encode(hashlib.sha256(theme.encode("utf-8")).digest()).decode("ascii")
     assert f"'sha256-{digest}'" in probe["csp"]
     provider = DOCS_SITE / "node_modules/@astrojs/starlight/dist/components/ThemeProvider.astro"
@@ -193,8 +271,8 @@ def test_43_4_ac3_the_theme_follows_the_docs_toggle_and_the_csp_allows_it() -> N
 
 
 def test_43_4_ac4_the_astro_path_names_no_vendored_font() -> None:
-    """AC4: ``grep -rn "assets/fonts" docs-site/src`` finds nothing, and the herald faces are imported from the
-    @fontsource packages ``package.json`` lists, never a URL or a file under ``docsite/``."""
+    """AC4: ``grep -rn "assets/fonts" docs-site/src`` finds nothing, and every face is a woff2 file of an @fontsource
+    package ``package.json`` lists (resolved in the lock), imported by theme.css, which herald.css imports."""
     hits = [
         f"{path.relative_to(REPO_ROOT)}:{n}"
         for path in sorted((DOCS_SITE / "src").rglob("*"))
@@ -204,9 +282,10 @@ def test_43_4_ac4_the_astro_path_names_no_vendored_font() -> None:
     ]
     assert hits == []
     fonts = _COMMENT.sub("", HERALD_FONTS_CSS.read_text(encoding="utf-8"))
-    imports = re.findall(r"@import\s+'([^']+)';", fonts)
     urls = re.findall(r"url\(\s*'([^']+)'\s*\)", fonts)
-    packages = {spec.split("/")[0] + "/" + spec.split("/")[1] for spec in [*imports, *urls]}
+    assert len(urls) == 19 and all(url.endswith(".woff2") and "/files/" in url for url in urls)
+    assert "@import" not in fonts
+    packages = {"/".join(url.split("/")[:2]) for url in urls}
     manifest = json.loads((DOCS_SITE / "package.json").read_text(encoding="utf-8"))["devDependencies"]
     assert packages == {
         "@fontsource/big-shoulders-display",
@@ -220,7 +299,8 @@ def test_43_4_ac4_the_astro_path_names_no_vendored_font() -> None:
     for package in packages:  # npm ci installs from the lock: each package resolved there
         entry = lock["packages"].get(f"node_modules/{package}", {})
         assert entry.get("resolved", "").startswith("https://registry.npmjs.org/") and entry.get("integrity"), package
-    assert "@import './herald-fonts.css';" in HERALD_CSS.read_text(encoding="utf-8")
+    assert "@import './herald-fonts.css';" in THEME_CSS.read_text(encoding="utf-8")
+    assert "@import './theme.css';" in HERALD_CSS.read_text(encoding="utf-8")
 
 
 def _load_assemble_pages():

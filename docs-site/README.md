@@ -22,8 +22,8 @@ Vendored byte-identically from [bmad-code-org/BMAD-METHOD](https://github.com/bm
 
 These files are maintained in this repository and are **not** byte-identical to upstream:
 
-- `package.json` / `package-lock.json` — trimmed scripts; same Astro/Starlight dependency ranges; the five `@fontsource`
-  packages the herald pages' faces come from (Story 43.4)
+- `package.json` / `package-lock.json` — trimmed scripts; same Astro/Starlight dependency ranges; the five
+  `@fontsource` packages the site's faces come from (Story 43.4; OFL-1.1, see *Theme and fonts* below)
 - `astro.config.mjs` — `SITE_URL`/`base`, the generated sidebar (four quadrants from `docs/map.yaml`, then a Herald
   group from `docsite/content/site.yml`), the `SiteTitle` override, no locales
 - `src/components/SiteTitle.astro` — the site title plus the top menu shared with the herald pages (Story 40.1),
@@ -37,9 +37,9 @@ These files are maintained in this repository and are **not** byte-identical to 
 - `src/pages/herald/`, `src/layouts/Herald*.astro`, `src/components/{dossier,herald}/`, `src/lib/herald-pages.ts`,
   `src/loaders/{dossier,herald-pages}-loader.ts` — the herald pages (Epic 43), emitted only with
   `pyforge.herald.pages_one_generator` on (`PYFORGE_PAGES_ONE_GENERATOR=1`); off, `docsite/` renders them
-- `src/styles/herald.css`, `src/styles/herald-fonts.css` — the herald pages' one stylesheet and their `@fontsource`
-  faces (Story 43.4): the dossier's tokens light and under Starlight's `[data-theme='dark']`, bundled by Astro under
-  `_astro/`; `src/pages/herald/[fonts].css.ts` serves the faces at `/herald/fonts.css` for the twins and reader pages
+- `src/styles/theme.css`, `src/styles/herald-fonts.css`, `src/styles/herald.css` — the site theme, its faces and the
+  herald pages' stylesheet (Story 43.4 and its review; see *Theme and fonts* below); `src/pages/herald/[sheet].css.ts`
+  serves the faces at `/herald/fonts.css` (the twins' one link) and the theme at `/herald/theme.css` (the reader pages)
 - `redirects.json` — the frozen root redirects: the 44 legacy paths and `/kedro-viz/` (Story 43.3; never hand-grown)
 - `src/lib/redirects.ts` — writes the legacy redirects into the build with the flag on, refusing a path the build
   already holds, and fails the build when a route's output is a file `public/` serves (Astro itself only warns)
@@ -55,6 +55,33 @@ These files are maintained in this repository and are **not** byte-identical to 
   read three gitignored build inputs under `docsite/content/` (`changes.json`, `marshal-status.json`,
   `herald-progress.json`; `PAGES_BUILD_INPUTS_DIR` points elsewhere); an absent input is one line on the page,
   a malformed one fails the build naming the file
+
+## Theme and fonts
+
+One theme for every page of the site (operator ruling 2026-10-15), with `pyforge.herald.pages_one_generator` on:
+
+- **The contract is Starlight's theme variables.** `src/styles/theme.css` sets `--sl-font`, `--sl-font-mono`, the
+  `--sl-color-accent-*`, `--sl-color-gray-*`, `--sl-color-white` / `--sl-color-black` scales and the orange, green,
+  blue, purple and red ones, light under `:root` and dark under `[data-theme='dark']` (the attribute Starlight's theme
+  toggle sets; with scripts off the system scheme picks), plus this site's one addition, `--sl-font-heading`, the
+  display face for headings. It imports the faces, `src/styles/herald-fonts.css`.
+- **Who reads it.** The docs, through Starlight's `customCss` (`astro.config.mjs`); the herald pages, through
+  `src/styles/herald.css`, which imports it and declares no font or colour of its own -- the dossier's tokens are
+  derived from the `--sl-*` variables; the reader pages, through `/herald/theme.css`. The herald pages read the toggle's
+  choice from Starlight's own store (`THEME_SCRIPT`, `src/lib/herald-pages.ts`). The Design twins keep their own design
+  and take only the faces (`/herald/fonts.css`). With the flag off, none of this is built: the docs keep Starlight's
+  stock theme and the Jinja path its own stylesheet.
+- **Re-theming the site** is editing or replacing `theme.css`: change its values, keeping the variable names, and the
+  docs and the herald pages follow together; a test (`test_docsite_zero_origin.py`) fails if a herald stylesheet names
+  a font or colour of its own. To use a Starlight theme plugin instead, add it to `starlight({ plugins: [...] })` for
+  the docs and replace `theme.css`'s two blocks with the values the plugin sets: the herald pages do not load
+  Starlight's stylesheets, so they read the variables from `theme.css` alone.
+- **Fonts.** Big Shoulders Display, IBM Plex Sans, IBM Plex Mono and Archivo (with Archivo Expanded, the 125% width of
+  the variable Archivo) come from `@fontsource/big-shoulders-display`, `@fontsource/ibm-plex-sans`,
+  `@fontsource/ibm-plex-mono`, `@fontsource/archivo` and `@fontsource-variable/archivo` 5.3.0, latin woff2 files only,
+  bundled under `_astro/`. All five are under the SIL Open Font License 1.1 (each package's `LICENSE`). The artifact
+  carries the OFL text today only through the Jinja path's `herald/assets/fonts/OFL-*.txt`; Story 43.7, which retires
+  that directory, carries the licence text into the artifact.
 
 ## Layout
 

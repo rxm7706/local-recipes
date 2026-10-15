@@ -52,7 +52,8 @@ Astro's with the flag on, so the mounts, redirects and checks are what is left.
   the export's presence as Story 42.2 made it.
 - **Mounts.** The twins (Story 43.2) and the downloaded exports (Story 42.2's `kedro-viz-export`) are served from
   `publicDir` (`docs-site/public/`), populated by one small script from the tracked twins and the build input; a
-  duplicate route surfaces as Astro's own build error.
+  duplicate route surfaces as Astro's own build error. (Corrected 2026-10-15: Astro 7.3.2 only warns and keeps the
+  public file; the build-end hook refuses it -- see the change log, the independent review's should-fix 3.)
 - **Search.** Starlight's Pagefind indexes the whole artifact: herald pages carry `data-pagefind-body` (Story 43.1's
   dossier already does), so one index covers docs and herald pages alike.
 - **The origin rule.** One check under 40 lines: every absolute URL in the artifact's HTML, CSS and JS shares the

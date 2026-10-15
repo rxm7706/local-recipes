@@ -49,10 +49,13 @@ reads", and the cure as structural: fonts through npm, a CSP meta.
 - **Fonts through `@fontsource`.** `docs-site/package.json` gains `@fontsource/big-shoulders-display`,
   `@fontsource/ibm-plex-sans`, `@fontsource/ibm-plex-mono`, `@fontsource/archivo` and `@fontsource-variable/archivo`;
   the herald pages import the faces they use and Astro bundles them into the artifact, on the configured origin.
-- **One stylesheet.** A shared stylesheet under `docs-site/src/` maps the dossier's tokens (the custom properties
-  `_dossier.css` and `_site-chrome.css` define) onto Starlight's theme variables, with a dark block under Starlight's
-  `[data-theme='dark']` selector, so the herald pages follow the toggle the docs header already has and read as one
-  place with the shelf.
+- **One theme contract** (amended 2026-10-15 by the operator's ruling; change log). Starlight's theme variables are
+  the single contract, filled with the herald look in one file, `docs-site/src/styles/theme.css`: `--sl-font`,
+  `--sl-font-mono`, a headings face and the accent, gray, white, black and hue scales, light under `:root` and dark
+  under Starlight's `[data-theme='dark']`. The docs take it through Starlight's `customCss`; the herald pages through
+  their one stylesheet, which declares no font or colour of its own and derives the dossier's tokens (the custom
+  properties `_dossier.css` and `_site-chrome.css` define) from those variables. So the docs and the herald prefixes
+  read as one place, follow the toggle the docs header already has, and re-theme together by replacing `theme.css`.
 - **Parity with the Jinja path.** The `font-family` the dossier's headings and body resolve to on the Astro path equals
   the Jinja path's (the declarations in `_dossier.css` for the same selectors).
 - **What stays and what leaves.** The five vendored upstream files keep their recorded hashes (`docs-site/README.md`).
@@ -82,10 +85,12 @@ Type / Effort / Deps: feature / S / 43.1.
   load names a `src` under the artifact's own `_astro/` (or configured assets) path, and `package.json` lists the five
   `@fontsource` packages with `package-lock.json` resolved.
 - **AC2 — Same families.** A test reads the `font-family` declarations for the dossier's heading and body selectors in
-  the Astro stylesheet and in `docsite/assets/_dossier.css` and finds them equal.
+  the Astro stylesheet and in `docsite/assets/_dossier.css` and finds them equal (since the 2026-10-15 ruling, the
+  Astro side resolved through `theme.css`'s variables).
 - **AC3 — Dark mode.** The shared stylesheet defines the dossier tokens under the light root and again under
   `[data-theme='dark']`, and the two blocks differ; a herald page built with the flag on carries no inline theme of
-  its own.
+  its own. (Since the 2026-10-15 ruling the two blocks are `theme.css`'s, of Starlight's variables, and the dossier
+  tokens derive from them once.)
 - **AC4 — No vendored font on the Astro path.** `grep -rn "assets/fonts" docs-site/src` finds nothing, and no herald
   page built with the flag on references a `.woff2` under `herald/assets/`.
 - **AC5 — The origin rule.** `pages-check`'s origin check finds no font loaded from another origin; a planted
@@ -100,7 +105,9 @@ Type / Effort / Deps: feature / S / 43.1.
 
 **Always:**
 - Load every font from the artifact's own origin (AD-21); `@fontsource` through `package.json`, never a URL.
-- Map onto Starlight's theme variables; never a second toggle, a second theme store or a herald-only dark mode.
+- Fill Starlight's theme variables once (`theme.css`) and read them on every page; never a second toggle, a second
+  theme store, a herald-only dark mode, or a font or colour a herald stylesheet names outside `theme.css` (amended
+  2026-10-15, the operator's ruling).
 - Keep `package-lock.json` resolved and committed with `package.json`; `npm ci` is what `test_docs_site.py` pins.
 - Keep the five vendored files byte-identical (AD-21 rule 5).
 - Read every verdict from the exit code, never through a pipe.
@@ -119,7 +126,8 @@ Type / Effort / Deps: feature / S / 43.1.
 |----------|--------------|---------------------------|----------------|
 | flag on | herald pages | fonts from the bundle, one stylesheet, dark block present | exit 0 |
 | flag off | herald pages | today's `_dossier.css`, `_site-chrome.css` and vendored woff2 | exit 0 |
-| docs page | any | unchanged Starlight theme; fonts unaffected | exit 0 |
+| docs page | flag on (amended 2026-10-15) | the herald theme through `theme.css`: same fonts, accent and grays as a herald page | exit 0 |
+| docs page | flag off | Starlight's stock theme, byte-identical to before | exit 0 |
 | planted Google Fonts link | a herald page | — | `pages-check` exit 1 |
 | second host | CAP-56 fixture | font `src` under that origin | exit 0 |
 | `package.json` without the lock refreshed | regression | — | `npm ci` fails in the build |
@@ -220,10 +228,80 @@ the origin check finds no font loaded from another origin
   Jinja path: Story 43.7 (CAP-61's success: "no `.woff2` file or sha256 row remains under `docsite/`").
 - **The CSP meta** and the under-40-line origin check: Story 43.3.
 - **The design system's name and token set** beyond the dossier's (a site-wide palette for `/status/` and `/changes/`):
-  Stories 42.1 and 43.6 use the shared stylesheet as this story leaves it.
+  Stories 42.1 and 43.6 use the shared stylesheet as this story leaves it. Since the 2026-10-15 ruling `/changes/` and
+  `/status/runs/`, Starlight pages, take `theme.css` through `customCss`; the Jinja `/status/` pages move with 43.7.
+- **The OFL-1.1 licence text in the artifact.** The five font packages are OFL-1.1 (`docs-site/README.md`); today the
+  artifact carries the licence text only through the Jinja path's `herald/assets/fonts/OFL-*.txt`. Story 43.7, which
+  retires that directory, carries the licence text into the artifact (each package ships its `LICENSE`).
 
 ## Spec Change Log
 
+- 2026-10-15 (independent review, iteration 1: FAIL, 2 should-fix and 9 nits; and the operator's ruling on should-fix
+  2, the same day):
+  - **Operator ruling 2026-10-15 (should-fix 2, typography): one typography and palette across all of GitHub Pages.**
+    Starlight's `--sl-*` variables are the single theme contract, filled with the herald look; the coordinating
+    session writes the Spec memlog entry at the reconcile. As built, with `pyforge.herald.pages_one_generator` on:
+    `docs-site/src/styles/theme.css` sets `--sl-font`, `--sl-font-mono`, the accent, gray (1-7), white and black
+    scales and the orange, green, blue, purple and red ones to the herald faces and palette, light under `:root` and
+    dark under `[data-theme='dark']`, and imports the faces. Starlight loads it through `customCss`, gated in
+    `astro.config.mjs` on the flag through `src/lib/flags.ts`, so the docs adopt it; `herald.css` imports it and
+    declares no font or colour of its own -- the dossier's tokens derive from `--sl-*` in one block, so they follow the
+    toggle with no dark block of their own; the reader pages link `/herald/theme.css` (the endpoint, renamed
+    `[sheet].css.ts`, now serves `fonts.css` and `theme.css`) and their back-bar reads only `--sl-*`; the twins keep
+    their own design and take only the faces. Re-theming is replacing `theme.css` (or a Starlight theme plugin with
+    `theme.css` carrying its values for the herald pages, which load no Starlight stylesheet): `docs-site/README.md` §
+    *Theme and fonts*. The Approach, the Always line, AC2's and AC3's wording and the docs-page I/O row are amended to
+    match; the ACs' oracles are unchanged in kind.
+  - **Readings of the ruling, for the operator to keep or overturn.** (a) The headings face is the dossier's, Big
+    Shoulders Display, as `--sl-font-heading` -- this site's one addition to the contract, since Starlight has no
+    headings variable; `theme.css` applies it to Starlight's page title and content headings (`h1#_top`,
+    `.sl-markdown-content` h1-h4), and herald reads it with `--sl-font` as fallback. Archivo Expanded, which the
+    coordinator's note named, is the Design twins' display face, and the twins are frozen exports, so it is not
+    mapped. (b) Exact values: 24 of the dossier's 34 tokens are plain aliases resolving to the Jinja values in both
+    themes; `--rail-faint`, `--code-bg`, `--st-doctor` and `--st-doctor-soft` take the nearest scale entry (a few
+    units off); `--st-atlas` (green and blue), `--st-herald` (red and orange) and `--st-steward` (green and orange) are
+    `color-mix()`es of two Starlight colours, and their softs a 16% tint over the page -- the eight station accents stay
+    distinct (checked in the browser) but three move a little. (c) Light-mode docs links take
+    `--sl-color-text-accent: var(--sl-color-accent-high)` (6.5:1 on the paper) because the herald amber reads 3.8:1;
+    dark links already take the high accent. (d) `--sl-color-gray-7`, Starlight's light nav background, is the
+    dossier's sunken paper, darker than gray-6.
+  - **Should-fix 1, the untested matrix rows.** Flag off: `test_ac6_flag_off_astro_emits_none_of_the_three_page_kinds`
+    now also asserts no herald stylesheet under `herald/`, no `.woff`/`.woff2` and no `herald*` file under `_astro/`,
+    and no theme variable or `@font-face` in any stylesheet (Starlight's stock theme); disabling the emptying hook
+    fails it (19 fonts listed). By hand, a flag-off `astro build` of this tree against `627c751b19`'s (`git archive`,
+    the same `node_modules`): `diff -r` exit 0 over 177 files. Docs page, flag on: the built test
+    (`test_43_4_ac1_ac3_ac4_the_built_pages_share_one_theme`) reads the unlayered `:root` and
+    `[data-theme=dark]` rules of every stylesheet a shelf page (`how-to/`) and the dossier link and asserts the same
+    `--sl-font*`, accent, gray, white and black values in both themes, and that no herald-only rule (`.station-mark`,
+    `.site-nav-inner`, `.hero-eyebrow`, `text-transform:uppercase`) and no `_astro/herald.*.css` reaches the shelf.
+  - **Nits.** 3: `_check_one_design_system` also reads each `<style>` body's faces and `@import`s, follows one
+    `@import` level in a linked sheet, and reads unquoted `href`/`src`; four new fixture cases. A `style="--x:..."`
+    attribute is still not judged (no page writes one). 4: `THEME_SCRIPT` is an IIFE with no global; the CSP hash
+    follows the constant. 5: `theme.css` repeats the dark block under `@media (prefers-color-scheme: dark)
+    { :root:not([data-theme]) }`, so with scripts off every page follows the system scheme (a test pins the two
+    blocks equal). 6: the script re-applies on a system-scheme change and on `pageshow` (a back-forward-cache restore),
+    as Starlight's ThemeSelect does; checked in the browser by emulating the scheme with the store on auto. 7: the
+    flag-off emptying is keyed on the `src/styles/` directory, so `theme.css` and any later sheet there are emptied
+    too. 8: the faces are declared by hand, woff2 only, from each package's `files/` (19 files; no `.woff` is emitted,
+    roughly half the earlier weight). 9: `docs-site/README.md` records the five packages as OFL-1.1, and "Named, not
+    fixed here" gives the licence text's carry-over to 43.7. 10: the endpoint comment no longer says "rest-shaped".
+    11 (no automated base-path build): unchanged; the CAP-56 host `pages-check` exercises `/local-recipes/` faces.
+  - **Story 43.3's Approach** carries a one-line pointer to its change-log correction (Astro only warns on a route over
+    a public file), folded into this unit at the coordinator's request.
+  - **Gates (2026-10-15, on `627c751b19` plus this change).** The Pages, parity, 43.6, zero-origin, validator,
+    imports, site-URL, build and flag-state test files -- exit 0, 254 passed, none skipped (docs-site installed); the
+    herald suite -- exit 0, 2129 passed, 5 skipped; `lint-types`, `docs-site-validate`, steward's trigger map -- exit
+    0; `pages-check` with both flags off -- exit 0; with `pyforge.herald.pages_one_generator` and
+    `pyforge.herald.status_pages` on and the 42.1 and 43.6 fixtures in `docsite/content/` (removed after) -- exit 0;
+    the CAP-56 host (`https://pages.example.test/local-recipes`, both flags on) -- exit 0. Mutations, each restored: a
+    literal colour in `herald.css` fails the no-literal test; `theme.css` without its dark block fails AC3's; the
+    dossier body on `--sl-font-mono` fails AC2's; the flag-off emptying hook disabled fails the flag-off test (19
+    fonts); a `fonts.googleapis.com` link planted in the built dossier -- `assemble_pages.py --check` exit 1 naming it,
+    exit 0 restored. Browser, the flag-on build under `/local-recipes/`: a docs page (`/how-to/`) and the dossier in
+    light and dark read Plex Sans body, Big Shoulders headings, the paper or dark background and the amber accent
+    (`#b06a13` / `#dd9a3f`) alike; the docs toggle set Dark and the dossier, overview and a reader page followed; with
+    the store on auto, emulating the system scheme flipped a reader page live; every font request is
+    `/local-recipes/_astro/*.woff2`; no console error on the docs page, the dossier, the overview or a reader page.
 - 2026-10-15: implemented (lane A of the one-PR Pages redesign); status `in-review`. Deviations and readings, each for
   the reviewer and the operator to keep or overturn:
   - **The twins and the reader pages take the same faces from one fixed URL.** The twins are static files in
