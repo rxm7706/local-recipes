@@ -36,7 +36,7 @@ development_status:
   10-8-manifest-declared-writable-artifacts-are-exempt-from-their-own-never-write-collision: done
   100-1-a-landing-records-which-ci-surfaces-were-paused-when-it-merged: done
   101-1-the-landing-line-lists-every-surface-the-ci-master-switch-pauses: backlog
-  102-1-a-landing-reuses-its-verified-verdict-when-only-a-merge-of-main-moved-the-branch: backlog
+  102-1-a-landing-reuses-its-verified-verdict-when-only-a-merge-of-main-moved-the-branch: done
   11-1-neutral-contract-and-agent-adapter-fan-out: done
   11-2-projects-md-index-and-artifact-symlink-derivation: done
   11-3-migration-registry-and-runner: done
@@ -478,7 +478,7 @@ development_status:
   epic-100-retrospective: optional
   epic-101: backlog
   epic-101-retrospective: optional
-  epic-102: backlog
+  epic-102: done
   epic-102-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
