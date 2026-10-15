@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 735f33856514c4ed
+source_fingerprint: 0f46ea750efad08c
 story_count: 379
-test_file_count: 126
+test_file_count: 127
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-steward`
 - **Stories parsed:** 379
 - **Epics parsed:** 103
-- **Test files inventoried:** 126 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 127 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `735f33856514c4ed`
+- **Source fingerprint:** `0f46ea750efad08c`
 
 ## Risk Assessment
 
@@ -226,6 +226,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` | unit | none observed |

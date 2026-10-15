@@ -1790,8 +1790,8 @@ Drift — orphaned between stations.
     (Story 71.1, CAP-159) already lists a lane per `(task, environment)`, but it keeps each lane's result, scratch
     directory, log, terminated mark and journal extras by the task name alone. So one lane's result replaces the
     other's, the journal lists the survivor twice, and both lanes write one `<task>.log`. Reproduced at `22e5c19c28`:
-    a green lane and a red lane of one task were journaled as the red lane twice. A CI step that runs the task in one
-    environment also counts as running it in every other, and the budget check counts station lanes by name.
+    a green lane and a red lane of one task were journaled as the red lane twice. The budget check counts station
+    lanes by name.
     **What it looks like when fixed:** a lane is its task and its environment wherever the preflight selects, runs,
     orders, journals, logs and budgets lanes; both lanes run, each is journaled with its own environment and result,
     and each writes its own log. **Constraints:** a fix under CAP-159, with no CAP and no flag; the journal changes

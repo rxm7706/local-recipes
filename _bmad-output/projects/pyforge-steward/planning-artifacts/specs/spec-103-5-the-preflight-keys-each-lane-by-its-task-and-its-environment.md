@@ -2,7 +2,7 @@
 title: "103.5: The preflight keys each lane by its task and its environment"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '22e5c19c285e722bcf7d58203689d57e9cc4dd55'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -49,9 +49,9 @@ lanes. Atlas Story 31.1 (PR #2221, branch `dispatch/pyforge-atlas/31.1`) adds `{
   - the CI-pause filter (`:752`-`:771`) drops every lane whose task is paused, so a pause on one lane drops its twin
     from the run and from the journal.
 - **Selection.** `_step_matches` (`preflight_ci.py:455`) matches a `pixi run` step by the depends-on closure of its
-  task (`_closure`, `:322`) and ignores the step's `-e`, so a step that runs `mypy` in one environment counts as
-  running it in every other. The command-line match beside it (`_segment_in_run`, `:416`) already compares the
-  environment (`:428`-`:430`).
+  task (`_closure`, `:322`) and ignores the step's `-e`; the command-line match beside it (`_segment_in_run`, `:416`)
+  compares the environment (`:428`-`:430`). The verdicts, `is_selected` and the journal's `selection` block are
+  already per lane. *(Amended in implementation, 2026-10-14: the task match stays as it is; see Approach.)*
 - **Budgeting.** `preflight_budget._selection_selected_lanes` (`:101`) returns a set of names, so two station-test
   lanes of one task count once in `is_single_station_budget` (`:112`); `_lane_timings` (`:121`) labels each lane by
   its task alone. `preflight_xdist.lane_xdist_worker_map` (`:46`) returns a share per task name.
@@ -78,11 +78,17 @@ logs and budgets lanes.
   only when the cause is a lane (never for `interrupt`). Every existing key keeps its name and meaning.
 - **The pause filter** keys paused lanes by `(task, environment)`. The pause banner still de-duplicates by task: its
   lines are CI surfaces from the registry, which names no environment.
-- **Selection.** `_closure` returns `(task, environment)` pairs: a bare `depends-on` entry inherits its parent's
-  environment and a `{ task, environment }` entry takes its own, as pixi runs them. `_step_matches` counts a `pixi
-  run` step for a lane when the pair's environment is the lane's, unknown (no `-e`) or dynamic (`${{ … }}`) — the
-  rule `_segment_in_run` already applies. On `22e5c19c28` this changes no step match for any of the 36 lanes; with
-  31.1's files it attributes each `mypy` lane to its own step, in the same `lint-types` job.
+- **Selection keeps its per-lane verdicts and its task match.** Each lane gets its own verdict, `is_selected`
+  reads `(task, environment)`, and the journal's `selected` and `skipped` entries carry the environment; the tests
+  now count them that way. A `pixi run <task>` step still matches by task whatever its `-e` (Story 71.2's "the
+  lane's own task"): a bare `depends-on` lane runs in the environment `pr-preflight` is invoked from (the Guild or
+  `local-recipes`), which need not be CI's. `_step_matches` says so in its docstring.
+  - *Amended in implementation, 2026-10-14.* The mint planned an environment-aware closure (a step counting only in
+    its own environment, an unstated or a dynamic one). It changed no match on `22e5c19c28`, and with 31.1's files it
+    only re-attributed each `mypy` lane to its own step in the same `lint-types` job, so no verdict moved. But it
+    failed `test_service_lanes_never_overlap`: lanes invoked from one environment lost their CI step in another, and
+    with it the service mutex that keeps two Postgres lanes apart. The same would hit every bare lane of a
+    `pixi run -e local-recipes pr-preflight`. So it was dropped; the `spec-pyforge-steward` memlog records why.
 - **Budget.** `_selection_selected_lanes` returns `(lane, environment)` pairs and the single-station rule counts
   station-test lanes by pair; `_lane_timings` labels a lane `<task>@<environment>` when the journal entry carries an
   environment, and by its task alone when an older entry does not.
@@ -99,6 +105,8 @@ logs and budgets lanes.
 - **De-duplicating `pr-preflight-lanes` by task.** CAP-159 reads the lane list from `pixi.toml` and never edits it;
   31.1's second lane is the point of that story.
 - **Renaming `cancelled_by` to carry `task@environment`.** It would change the meaning of an existing journal field.
+- **An environment-aware CI-counterpart match.** See the Approach's amendment: it moved no verdict and dropped the
+  service mutex for lanes invoked from another environment.
 
 Ledger key: `103-5-the-preflight-keys-each-lane-by-its-task-and-its-environment`.
 Type / Effort / Deps: fix / S / none.
@@ -134,10 +142,11 @@ injected lane runners or `subprocess_argv_for_lane` scripts. None runs pixi.
   environment.
 - **AC5 — A pause drops only its lane.** With CI pauses on and only `a` in `other` paused, `a` in the invoking
   environment runs and `a` in `other` is journaled `not-run` with its pause verdict.
-- **AC6 — Selection matches the environment.** `_step_matches` holds for a lane only on a `pixi run` step whose
-  closure runs the task in the lane's environment, in no stated environment, or in a dynamic one; a `{ task,
-  environment }` depends-on entry runs its task in that environment. `test_step_matches_task_closure_or_own_command_line`
-  gains those cases, and every existing case keeps its expected value.
+- **AC6 — Selection decides each lane alone.** Given one verdict selecting `a` in the invoking environment and one
+  skipping `a` in `other`, only the first runs, and the journal's `selected` and `skipped` entries name each with its
+  environment. `_step_matches` keeps its task match, and every case of
+  `test_step_matches_task_closure_or_own_command_line` keeps its expected value. *(Amended in implementation,
+  2026-10-14; see the Approach.)*
 - **AC7 — The selection tests count lanes.** `test_preflight_selection.py`'s journal and run-order checks count lanes
   by `(task, environment)`, and `test_run_preflight_runs_selected_lanes_in_order_and_journals_the_selection` passes
   with atlas 31.1's lane list.
@@ -153,8 +162,8 @@ injected lane runners or `subprocess_argv_for_lane` scripts. None runs pixi.
 - **AC11 — Mutation.** Each change below fails a named test, and the Auto Run Result records which:
   - keying `results_by_key` by the task again (AC2);
   - naming the lane log `<task>.log` again (AC3);
-  - letting a closure match ignore the environment again (AC6);
-  - filtering paused lanes by task again (AC5).
+  - filtering paused lanes by task again (AC5);
+  - dropping the red blocker's environment (AC4). *(Replaces the closure mutation, whose design was dropped.)*
 - **AC12 — Green, and the surface reconciled.** `pixi run --frozen -e pyforge-steward pyforge-steward-test`, `pixi
   run -e pyforge-steward pyforge-steward-coverage-gate` and `pixi run --frozen -e pyforge-guild lint-types` exit 0.
   Each changed governed path gets a surface-reconcile entry on the memlog of every Spec that governs it
@@ -189,8 +198,8 @@ injected lane runners or `subprocess_argv_for_lane` scripts. None runs pixi.
 | a stop terminates one of the two | both marked terminated (by task) | only the terminated lane is cancelled |
 | a dependent of the red twin | `cancelled_by: a` | `cancelled_by: a`, `cancelled_by_environment: other` |
 | a pause on one of the two | both dropped; only the paused one journaled | the other runs |
-| a step `pixi run -e E mypy` | counts for `mypy` in every environment | counts for `mypy` in `E` only |
-| a step `pixi run mypy` (no `-e`) or `-e ${{ … }}` | counts for every environment | counts for every environment |
+| a step `pixi run -e E mypy` | counts for `mypy` in every environment | unchanged: a bare lane's environment is the invoking one |
+| one verdict selects `a`@`inv`, one skips `a`@`other` | both dropped or both kept by any task-keyed filter | only `a`@`inv` runs; both journaled with their environment |
 | budget, one station test in two environments | one station lane | two lanes |
 | an old journal entry without `environment` | labelled by task | labelled by task |
 
@@ -225,7 +234,45 @@ injected lane runners or `subprocess_argv_for_lane` scripts. None runs pixi.
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC12).
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0.
 
+## Implementation Result
+
+Hand-implemented on branch `chain-steward-103-5-preflight-lane-identity-2026-10-14`, from baseline `22e5c19c28`.
+The diff is for an independent review against this spec, not against this summary.
+
+- **Per-lane state** (`preflight.py`):
+  - `results_by_key` replaces `results_by_task`, and `lane_label` names each lane's scratch directory and log.
+  - `_RunCoordinator.red_lanes`, `terminated_lanes`, `proc_lane`, `suite_reduction_runtime_journal` and
+    `xdist_workers` are keyed by lane. `stop_cause` holds the cause, and `stop_trigger` is now a read-only property.
+  - `LaneResult` adds `cancelled_by_environment` and `blocked_by_environment`.
+  - The pause filter checks `paused_keys`. The banner still de-duplicates by task, and the code says why.
+- **Budget and xdist:** `preflight_budget.py` keys and labels lanes by pair, and `preflight_xdist.py` keys shares by
+  lane.
+- **Selection:** `_step_matches` changed only its docstring (Approach, amended).
+- **Tests:** the new `test_preflight_lane_identity.py` (AC1-AC6, AC8, AC10). Existing checks moved from task names to
+  lane keys and labels in `test_preflight_selection.py` (AC7), `test_preflight_concurrency.py`,
+  `test_preflight_scratch.py`, `test_preflight_suite_reduction.py`, `test_preflight_workers.py` and
+  `test_preflight_ci.py`.
+  - Two `if late_pgid.is_file()` guards now point at the lane label, so they keep asserting.
+  - `test_preflight_ci.py`'s two pause tests now run in the environment their paused lane names. Task keying had hidden
+    that mismatch.
+- **AC9:** with `origin/dispatch/pyforge-atlas/31.1`'s `pixi.toml` and `.github/workflows/lint-types.yml` checked out,
+  `pixi run --frozen -e pyforge-steward pyforge-steward-test` exited 0: 2616 passed, 2 skipped. Both files were then
+  restored, and `git status` showed neither.
+- **AC11:** each mutation failed named tests in `test_preflight_lane_identity.py`:
+  - results keyed by task failed `test_both_lanes_of_one_task_run_and_journal_their_own_results`,
+    `test_each_lane_of_one_task_writes_its_own_log` and both `test_a_stop_names_the_environment_of_the_lane_that_caused_it`
+    cases;
+  - `<task>.log` failed the first two of those;
+  - the pause filter by task failed `test_a_pause_on_one_lane_leaves_its_twin_running`;
+  - dropping the blocker's environment failed both `test_a_stop_names_the_environment_of_the_lane_that_caused_it` cases.
+- **Green:**
+  - `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0, 2616 passed, 2 skipped.
+  - `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+  - The coverage gate and `pr-preflight` are recorded on the PR.
+
 ## Spec Change Log
 
 - 2026-10-14: minted from the Dream's preflight lane identity addition, under the operator's standing direction of
   2026-10-14. `type: fix`, no flag, no CAP. Bound to `spec-pyforge-steward` CAP-159.
+- 2026-10-14 (implementation): the environment-aware CI-counterpart match was dropped (Approach, amended; AC6
+  restated; AC11's closure mutation replaced). It moved no verdict and failed `test_service_lanes_never_overlap`.
