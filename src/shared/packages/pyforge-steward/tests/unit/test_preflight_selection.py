@@ -850,3 +850,89 @@ def test_a_repository_without_workflows_still_selects_every_lane(tmp_path: Path)
         == 0
     )
     assert ran == ["a", "b"]
+
+
+# --- the pause-only gate shape (steward 102.3's re-review) ----------------------------------------
+
+
+class _GateState:
+    """The two readers ``_eval_ci_if_expression`` reaches: the CI variables and a ``needs`` output."""
+
+    def __init__(self, ci_vars: Mapping[str, str], outputs: Mapping[str, str]) -> None:
+        self._vars = ci_vars
+        self._outputs = outputs
+
+    def ci_var_lookup(self, name: str) -> str:
+        return self._vars.get(name, "")
+
+    def _needs_output(self, workflow, job, dep: str, name: str) -> str:
+        return self._outputs[f"{dep}.{name}"]
+
+
+def _pages_deploy_if() -> str:
+    """The live ``pages.deploy`` gate, as the renderer writes it (``dispatch: pause-only``)."""
+    workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8"))
+    return preflight_ci._normalize_condition(workflow["jobs"]["deploy"]["if"])
+
+
+def _gate(text: str, *, event: str = "pull_request", ci_vars: Mapping[str, str] | None = None, changed: str = "true"):
+    return preflight_ci._eval_ci_if_expression(
+        text,
+        registry={},
+        context={"github.event_name": event},
+        state=_GateState(ci_vars or {}, {"build.changed": changed}),
+        workflow=preflight_ci.Workflow(file="pages.yml", data={}),
+        job_id="deploy",
+        job={"needs": "build"},
+    )
+
+
+def test_the_pause_only_gate_is_read_not_unevaluable() -> None:
+    """The lane evaluator reads ``(dispatch || (pauses)) && (inner)``: a ``||`` nested under ``&&``
+    recurses and ``github.ref`` is an atom. A pull request is never on ``refs/heads/main``, so the
+    deploy gate is false under the simulated event, paused or not."""
+    text = _pages_deploy_if()
+    assert "github.ref == 'refs/heads/main'" in text and text.startswith("(github.event_name == 'workflow_dispatch'")
+    assert _gate(text) is False
+    assert _gate(text, ci_vars={"PAUSE_PAGES": "true"}) is False
+
+
+@pytest.mark.parametrize(
+    ("text", "ci_vars", "expected"),
+    [
+        ("(github.event_name == 'pull_request' || (vars.P != 'true')) && (github.ref != 'refs/heads/main')", {}, True),
+        ("(github.event_name == 'push' || (vars.P != 'true')) && (needs.build.outputs.changed == 'true')", {}, True),
+        (
+            "(github.event_name == 'push' || (vars.P != 'true')) && (needs.build.outputs.changed == 'true')",
+            {"P": "true"},
+            False,
+        ),
+        (
+            "github.event_name == 'push' || (vars.P != 'true' && (github.ref == 'refs/heads/main' || vars.Q == 'x'))",
+            {"Q": "x"},
+            True,
+        ),
+        (
+            "github.event_name == 'push' || (vars.P != 'true' && (github.ref == 'refs/heads/main' || vars.Q == 'x'))",
+            {},
+            False,
+        ),
+    ],
+    ids=["ref-ne", "needs-under-or-group", "paused", "deeper-nesting-true", "deeper-nesting-false"],
+)
+def test_nested_groups_evaluate_as_github_does(text: str, ci_vars: dict, expected: bool) -> None:
+    assert _gate(text, ci_vars=ci_vars) is expected
+
+
+@pytest.mark.parametrize(
+    ("text", "event"),
+    [
+        ("github.ref == 'refs/pull/12/merge'", "pull_request"),  # a pull request's ref carries its number
+        ("vars.P != 'true' && github.ref == 'refs/heads/main'", "push"),  # only the simulated event is known
+        ("vars.P != 'true' && github.ref_name == 'main'", "pull_request"),  # outside the grammar still says so
+    ],
+    ids=["pr-ref-literal", "not-a-pull-request", "unknown-atom"],
+)
+def test_a_ref_the_simulation_cannot_know_stays_unevaluable(text: str, event: str) -> None:
+    with pytest.raises(preflight_ci._Unevaluable):
+        _gate(text, event=event)

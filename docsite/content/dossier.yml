@@ -1045,8 +1045,8 @@ sections:
       - false
     - cells:
       - Steward ← Marshal, Doctor
-      - Steward's own console refuses to publish rather than compute a status Marshal or Doctor haven't
-        already certified.
+      - Steward reads Marshal's tracked sprint ledgers as they stand and wraps Doctor's fleet-scan output;
+        it derives no story status of its own.
       mono:
       - true
       - false

@@ -131,7 +131,11 @@ tree is deleted); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absen
 **Never:**
 - Do not edit `kedro-viz-publish.yml` (atlas's), `assemble_pages.py` or `site.yml` (herald's).
 - Do not commit any file under `docs/dashboard/kedro-viz/`.
-- Do not add a token, a secret or a second artifact name.
+- Do not add a token, a secret or a second artifact name. *(Annotated 2026-10-15 with the review's ruling,
+  `review-102-4` should-fix 3 and atlas 30.2's review: `GH_ENTERPRISE_TOKEN` is the job's own `github.token` under
+  the name `gh` reads on a GitHub Enterprise Server, not a new token or secret, and the second artifact name
+  `vizro-static-export` is atlas 30.2's consumer step, which 30.2's review moved into this workflow. Both are
+  recorded in the Spec Change Log.)*
 - Do not fail the build on absence.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
 
@@ -218,7 +222,9 @@ with and one without the artifact are recorded
 ## Named, not fixed here
 
 - `gh run download` versus `actions/download-artifact@v8` with `run-id`: the implementer's; both need `actions: read`.
-- How many producer runs to scan for an unexpired artifact (10 is the default this spec names).
+- How many producer runs to scan for an unexpired artifact (10 is the default this spec names). *(Superseded
+  2026-10-15 by the re-review: no run window is scanned; the selection reads the artifact listing by name. See the
+  Spec Change Log.)*
 - The step's name and the env variable names beyond the three listed.
 
 ## Spec Change Log
@@ -304,3 +310,37 @@ with and one without the artifact are recorded
     (`test_pages_export.py::test_the_workflow_mounts_the_vizro_export_the_same_way`). Until atlas 30.2's producer job
     uploads the artifact it takes the absent path. The mount itself is herald's: `assemble_pages.py` copies
     `docs/dashboard/vizro/` under `/dashboard/vizro/` with no vendored-root exemption, as 30.2 asks.
+- 2026-10-15 (the re-review, `rereview-group1`: 102.4 NOT RESOLVED on two should-fix items, plus a nit; resolved
+  here; where this entry and an earlier one disagree, this one holds):
+  - **`gh` is told the host (should-fix).** A token alone does not tell `gh` which host to use: a GitHub Enterprise
+    Server runner has no `gh` configuration, so `gh` stopped asking for `GH_HOST`. Both download steps now run
+    `export GH_HOST="${GITHUB_SERVER_URL#*://}"` before the script, the form steward 102.5's release step uses, and
+    carry `GH_REPO: ${{ github.repository }}` beside `GH_TOKEN` and `GH_ENTERPRISE_TOKEN`, so the `{owner}/{repo}`
+    placeholders and `gh run download` resolve without reading git remotes. The GHE how-to's sentence that said the
+    token alone authenticates is corrected. Test: `test_pages_export.py::test_both_downloads_name_the_host_that_runs_the_workflow`
+    (and the env equality in `test_the_workflow_mounts_the_vizro_export_the_same_way`).
+  - **Selection by artifact, not by a run window (should-fix).** The step read only the ten newest successful producer
+    runs (`--limit 10`). Atlas 30.2's `changes` job makes one-sided runs (each export job runs only when its own paths
+    change), so after ten runs that rebuilt only one export the other live artifact fell out of the window, the step
+    read `absent` and the next changed-tree deploy dropped that mount from production with no error. The script now
+    lists every page of `gh api repos/{owner}/{repo}/actions/artifacts?name=<artifact>&per_page=100&page=<n>`
+    (`pages.export_artifacts_endpoint`; a short page ends the listing, and a listing longer than
+    `MAX_ARTIFACT_PAGES` full pages exits 1 rather than reading part of it), then reads the run behind each candidate
+    (`gh api repos/{owner}/{repo}/actions/runs/<id>`) newest-first and downloads with `gh run download <id> -n
+    <artifact>`. `pages.newest_export_run(artifacts_json, runs_json, *, artifact, workflow, branch)` stays the one
+    owner of the rule: an artifact counts when its name matches, `expired` is `false`, `workflow_run.head_branch` is
+    the branch and the run is not a fork's (`head_repository_id` equals `repository_id`); candidates are read by newest
+    `created_at`; the run must be `--workflow`'s (`path` is `.github/workflows/<workflow>`), concluded `success` and
+    on the branch, which keeps the old guarantees (only the producer's successful runs on `main`). `--limit` is gone.
+    `<PREFIX>_AT` is the chosen run's `created_at`, as before. Every `gh` error and every wrong-shape answer (a
+    listing that is not an object or has no `artifacts` list, a run payload that is not an object or has no `path`)
+    still exits 1 naming the argv, never `absent`. Tests (all in `test_pages_export.py`, rewritten on artifact-listing
+    JSON): `test_ac1_a_live_export_behind_one_sided_runs_is_still_selected`,
+    `test_ac2_the_live_export_behind_ten_one_sided_runs_is_downloaded` (the script never calls `gh run list`),
+    `test_ac2_every_page_of_the_listing_is_read`, `test_a_listing_longer_than_the_page_cap_fails_and_is_never_truncated`,
+    `test_ac1_an_artifact_another_workflow_uploaded_is_never_mounted`, `test_ac1_a_fork_s_run_is_never_mounted`, the
+    AC1–AC3 cases and the five wrong shapes; `test_pages_export_flag_states.py` reads the listing call first.
+  - **The Never bullet (nit)** is annotated with the review's ruling on `GH_ENTERPRISE_TOKEN` and
+    `vizro-static-export`, and "Named, not fixed here"'s run-window item is marked superseded.
+  - **Nit d** (`scribe capture --type project` for `DW-steward-102-4-1`) is the coordinating session's at session
+    close; no capture is run from a builder.

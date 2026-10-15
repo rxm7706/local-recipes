@@ -38,8 +38,10 @@ nav:
     flag: pyforge.herald.status_pages
 
 # Lane 1, the live operator console (Story 42.1): the status pages are build-time snapshots, and each
-# carries one plain navigation link here, labelled as the live view. Lane 1 is served by the platform,
-# not by Pages; an absolute URL here is a host's choice, a root-absolute path is the default.
+# carries one plain navigation link here, labelled as the live view, once href is an absolute
+# http(s):// URL. Lane 1 is served by the platform, not by Pages, so a root-absolute path (the default
+# below) would 404 on the Pages origin: the pages leave the link out until the operator sets Lane 1's
+# absolute URL here (herald DW-herald-42-1-1; docsite/tools/status_pages.py lane1_link).
 lane1:
   label: Live view on Lane 1
   href: /console/

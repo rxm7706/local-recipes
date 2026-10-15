@@ -8,8 +8,11 @@ Two build-time pages under herald's ``/status/`` prefix, mounted beside ``/heral
 * ``/status/ci/`` -- the guild status page, every row of CAP-59's committed snapshot
   ``docsite/content/ci-status.json``, validated and ordered by ``ci_surfaces_tile.py`` (one reading).
 
-Both are snapshots: each names its snapshot time and links the live view on Lane 1. Herald reads
-steward's output as data and re-derives nothing; nothing here imports a station or calls ``gh``.
+Both are snapshots: each names its snapshot time and, when ``site.yml``'s ``lane1.href`` is an absolute
+``http(s)://`` URL, links the live view on Lane 1 (:func:`lane1_link`). Lane 1 is served by the
+platform, never by Pages, so a root-absolute (``/console/``) or relative href would resolve on the
+Pages origin and 404 there: the link is then left out. Herald reads steward's output as data and
+re-derives nothing; nothing here imports a station or calls ``gh``.
 
 **The input** (``fleet-status.json``). Required: ``stations``, a list; per station ``done`` and
 ``total`` (non-negative integers, ``done`` no more than ``total``). Every other field is read under the name steward's JSON gives it
@@ -80,6 +83,21 @@ def export_env_for_ci() -> dict[str, str]:
 
 def input_path(content_dir: Path) -> Path:
     return content_dir / INPUT_NAME
+
+
+def lane1_link(lane1: Any) -> dict[str, str] | None:
+    """``site.yml``'s ``lane1`` entry when its ``href`` is an absolute ``http(s)://`` URL, else ``None``.
+
+    Lane 1 is the platform's host, not Pages: a root-absolute href (``/console/``, the default until
+    the operator names Lane 1's URL) or a relative one resolves on the Pages origin, where it 404s,
+    so the status pages carry no Lane 1 link until ``lane1.href`` names another host (herald 42.1's
+    re-review, orchestrator ruling 2026-10-15)."""
+    if not isinstance(lane1, dict):
+        return None
+    href = lane1.get("href")
+    if not isinstance(href, str) or not href.strip().lower().startswith(("http://", "https://")):
+        return None
+    return {"href": href.strip(), "label": str(lane1.get("label") or "")}
 
 
 def menu_entries(entries: Iterable[dict[str, Any]], *, enabled: bool) -> list[dict[str, Any]]:
@@ -215,27 +233,64 @@ def _counted(data: dict[str, Any], key: str) -> tuple[int, bool]:
     return sum(value for value in values if _is_count(value)), all(_is_count(value) for value in values)
 
 
+def _station_key(station: dict[str, Any]) -> str:
+    """The name a story row's ``station`` is matched against (``""`` for a station without one)."""
+    name = station.get("station")
+    return name if isinstance(name, str) else ""
+
+
+def _disagreements(data: dict[str, Any], items: list[dict[str, str]]) -> list[str]:
+    """Per station, each attention status whose listed rows differ from that station's own count.
+
+    Compared station by station, never as fleet-wide sums: one station's surplus must not hide
+    another's missing rows (herald 42.1 re-review). A count the input does not give is not compared;
+    a listed story whose station no ``stations`` row names is a disagreement of its own."""
+    counts: dict[str, dict[str, int | None]] = {}
+    for station in data["stations"]:
+        merged = counts.setdefault(_station_key(station), dict.fromkeys(ATTENTION_STATUSES, 0))
+        for status in ATTENTION_STATUSES:
+            value = station.get(status)
+            previous = merged[status]
+            merged[status] = previous + value if previous is not None and _is_count(value) else None
+    listed: dict[str, dict[str, int]] = {}
+    for item in items:
+        per = listed.setdefault(item["station"], dict.fromkeys(ATTENTION_STATUSES, 0))
+        per[item["status"]] += 1
+    lines: list[str] = []
+    for name, per_status in counts.items():
+        shown = listed.get(name, dict.fromkeys(ATTENTION_STATUSES, 0))
+        parts = [
+            f"{shown[status]} {status} listed, {count} counted"
+            for status, count in per_status.items()
+            if count is not None and shown[status] != count
+        ]
+        if parts:
+            lines.append(f"{name or 'a station without a name'}: {', '.join(parts)}")
+    for name, shown in listed.items():
+        if name not in counts:
+            parts = [f"{shown[status]} {status}" for status in ATTENTION_STATUSES if shown[status]]
+            lines.append(f"{name or 'no station'}: {', '.join(parts)} listed, no station row counts them")
+    return lines
+
+
 def attention_note(data: dict[str, Any], items: list[dict[str, str]]) -> str | None:
     """What the attention block says beside (or instead of) its list, from the station counts.
 
     The all-clear is said only when every station counts 0 blocked and 0 backlog: an input whose
     ``stories`` lists fewer rows than its counts show (omitted, or filtered) says so instead of
-    claiming nothing needs attention (herald 42.1 review)."""
+    claiming nothing needs attention (herald 42.1 review). A list that disagrees with the counts
+    names each station where it does, compared per station (herald 42.1 re-review)."""
     blocked, blocked_known = _counted(data, "blocked")
     backlog, backlog_known = _counted(data, "backlog")
-    listed_blocked = sum(1 for item in items if item["status"] == "blocked")
-    listed_backlog = sum(1 for item in items if item["status"] == "backlog")
     if not items:
         if blocked or backlog:
             return f"The input lists none of the {blocked} blocked / {backlog} backlog stories the station counts show."
         if blocked_known and backlog_known:
             return "Nothing needs attention: no story is blocked or in the backlog."
         return "The input lists no blocked or backlog story, and its station counts do not say whether any exist."
-    if listed_blocked < blocked or listed_backlog < backlog:
-        return (
-            f"The input lists {listed_blocked} of the {blocked} blocked and {listed_backlog} of the "
-            f"{backlog} backlog stories the station counts show."
-        )
+    lines = _disagreements(data, items)
+    if lines:
+        return "The input's story list and its station counts disagree. " + "; ".join(lines) + "."
     return None
 
 

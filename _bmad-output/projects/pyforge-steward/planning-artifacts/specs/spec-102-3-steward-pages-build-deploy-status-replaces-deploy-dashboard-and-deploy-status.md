@@ -348,3 +348,28 @@ atlas's producer calls the retired verbs
   - **N7, for herald 43.5.** The board's `generated_at` is the built commit's time, so `/status/` changes on every
     `main` commit even when the ledgers did not move; with the build-date footer it forces at most one re-hash a day.
     Herald 43.5 owns that interaction with the tree-hash deploy rule.
+- 2026-10-15 (the re-review, `rereview-group1`: 102.3 RESOLVED, with three new nits; done here):
+  - **`deploy --wait` reads the deploy job (nit a).** After `gh run watch <id> --exit-status` succeeds, the duty reads
+    `gh run view <id> --json jobs` and the `deploy` job's conclusion (`pages_duty.DEPLOY_JOB`): `success` says
+    "run N succeeded; deployed; page <url>"; `skipped` (a dispatch of an unchanged tree, the normal outcome since the
+    pause-only gate) says "run N succeeded; tree unchanged; deploy skipped" and names no page; an unreadable answer (a
+    failing call, invalid JSON, no concluded `deploy` job) or another conclusion is named on the line, and the result
+    stays ok because the run itself succeeded. `--dry-run --wait` prints the watch and the jobs read. Tests:
+    `test_pages_duty.py::test_ac2_deploy_wait_says_a_skipped_deploy_was_skipped`,
+    `::test_ac2_deploy_wait_names_an_unreadable_deploy_job` (four cases),
+    `::test_ac2_deploy_dry_run_with_wait_prints_the_watch_and_the_job_read`, and the deployed line in
+    `::test_ac2_deploy_wait_watches_the_run_and_reports_the_page`.
+  - **The lane evaluator reads the pause-only gate (nit b; chosen over restricting the schema option).**
+    `preflight_ci._eval_ci_if_expression` now recurses into a parenthesised `||` / `&&` group under `&&`
+    (`_eval_ci_term`), and `github.ref == | != '<literal>'` is an atom: under the simulated `pull_request` event the
+    ref is `refs/pull/<number>/merge`, never a branch or tag ref, so `== 'refs/heads/main'` is false and `!=` true; a
+    literal naming a pull request's own ref, or any other event, stays unevaluable (the lane runs and says why). A job
+    `if:` that mentions `github.ref` is routed to the evaluator too. So `dispatch: pause-only` stays open to every
+    registry row, a lane-bearing job included, and `docs/governance/ci-surfaces.schema.json` is unchanged. The live
+    `pages.deploy` gate now evaluates to false under the simulation instead of raising. Tests:
+    `test_preflight_selection.py::test_the_pause_only_gate_is_read_not_unevaluable` (reads the live `pages.yml`),
+    `::test_nested_groups_evaluate_as_github_does` (five shapes), `::test_a_ref_the_simulation_cannot_know_stays_unevaluable`.
+  - **The dossier's last ledger-guard line (nit c).** `docsite/content/dossier.yml`'s dependency-table cell for
+    "Steward ← Marshal, Doctor" said Steward's console "refuses to publish rather than compute a status Marshal or
+    Doctor haven't already certified", the deleted guard. It now reads as the Steward section's "A correction to the parent framing" finding does: Steward reads
+    Marshal's tracked sprint ledgers as they stand and wraps Doctor's fleet-scan output, deriving no story status.

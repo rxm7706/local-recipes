@@ -2,7 +2,8 @@
 {#- Story 42.1 (CAP-60): /status/ci/index.html, the guild status page. Every row of CAP-59's
     committed ci-status.json snapshot, live rows included, in the order ci_surfaces_tile.order_rows
     gives the tile (docsite/tools/ci_surfaces_tile.py). The verdicts are steward's data, so every
-    value is escaped. `rel` climbs from /status/ci/ back to the /herald/ mount. -#}
+    value is escaped. `rel` climbs from /status/ci/ back to the /herald/ mount. `lane1` is
+    status_pages.lane1_link's: None (no link) until site.yml names Lane 1 by an absolute URL. -#}
 {% block head_extra %}
 <style>
 .status-snapshot { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; color: var(--rail); margin-top: 14px; }
@@ -19,7 +20,7 @@
     <div class="kicker"><span class="dot"></span>Guild status</div>
     <h1>CI surfaces</h1>
     <p class="blurb">Every CI surface the registry declares, with the verdict steward's <code>ci status</code> gave it when the snapshot was captured. A snapshot: nothing on this page is live.</p>
-    <p class="status-snapshot">Snapshot captured <time datetime="{{ fetched_at | e }}">{{ fetched_at | e }}</time> &middot; <a href="{{ lane1.href | e }}">{{ lane1.label | e }}</a> &middot; <a href="../index.html">Fleet board</a></p>
+    <p class="status-snapshot">Snapshot captured <time datetime="{{ fetched_at | e }}">{{ fetched_at | e }}</time>{% if lane1 %} &middot; <a href="{{ lane1.href | e }}">{{ lane1.label | e }}</a>{% endif %} &middot; <a href="../index.html">Fleet board</a></p>
   </div>
 
   <div class="table-wrap">

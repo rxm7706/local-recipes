@@ -17,9 +17,11 @@ tree as the GitHub Actions workflow artifact **`kedro-viz-export`** (see
 `.github/workflows/kedro-viz-publish.yml`). When the
 `pyforge.atlas.viz_export_artifact` flag is on, the staged tree includes
 **`manifest.json`** beside `index.html` (`export_commit`, `export_date`,
-`kedro_viz_version`). Steward's Pages workflow downloads the newest successful,
-unexpired artifact from a run on `main` here before `pages-check` (steward Story
-102.4, `scripts/pages_artifact_download.py`, behind `pyforge.steward.pages_duty`)
+`kedro_viz_version`). Steward's Pages workflow downloads the newest unexpired
+artifact of that name from a successful `kedro-viz-publish.yml` run on `main` here
+before `pages-check`, chosen from the artifact listing itself rather than a window
+of recent runs, so a run that rebuilt only the other export never hides it (steward
+Story 102.4, `scripts/pages_artifact_download.py`, behind `pyforge.steward.pages_duty`)
 and exports `KEDRO_VIZ_EXPORT=present|absent` with the run id and date; with no
 artifact it takes the absent path below. Atlas's Vizro boards (atlas Story 30.2)
 arrive the same way, as the artifact `vizro-static-export` into `vizro/`. A

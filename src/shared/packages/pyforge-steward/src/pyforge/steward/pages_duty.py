@@ -10,10 +10,12 @@ branch. It replaces ``deploy dashboard`` and ``deploy status`` (retired by this 
   (:func:`pages.tree_hash`). ``--stamp`` then runs ``scripts/pages_build_stamp.py`` as the workflow
   does; ``--dry-run`` prints what would run and runs nothing.
 * ``deploy`` runs ``gh workflow run pages.yml --ref main``, then names the run it started through
-  ``gh run list``; ``--wait`` watches it to the end. ``--dry-run`` prints both argv lines and runs
-  nothing. The workflow's own hash compare is the no-diff gate (AD-4 as amended 2026-10-14): the
-  dispatch bypasses only the pause switches (the ``pages.deploy`` row renders ``dispatch: pause-only``),
-  so a dispatched run of an identical tree builds and skips its deploy.
+  ``gh run list``; ``--wait`` watches it to the end and reads the ``deploy`` job's conclusion
+  (``gh run view <id> --json jobs``). ``--dry-run`` prints the argv lines and runs nothing. The
+  workflow's own hash compare is the no-diff gate (AD-4 as amended 2026-10-14): the dispatch bypasses
+  only the pause switches (the ``pages.deploy`` row renders ``dispatch: pause-only``), so a dispatched
+  run of an identical tree builds and skips its deploy, and ``--wait`` then says "tree unchanged;
+  deploy skipped" rather than naming a deploy that did not happen.
 * ``status`` reads: the live root (``curl`` for ``last-modified`` and ``build.json``), the last run
   (``gh run list``) and the ``pages`` row's registry verdict (``ci.py``'s reader -- one status reader,
   AD-1). It never triggers a run or writes a variable.
@@ -72,6 +74,9 @@ STATUS_RUN_ARGV: tuple[str, ...] = (
 )
 SITE_URL_ARGV: tuple[str, ...] = ("gh", "api", "repos/{owner}/{repo}/pages", "--jq", ".html_url")
 STAMP_SCRIPT_REL = "scripts/pages_build_stamp.py"
+#: ``pages.yml``'s deploy job (no ``name:``, so the API names it by its id): ``deploy --wait`` reads its
+#: conclusion, ``skipped`` when the build found the tree unchanged.
+DEPLOY_JOB = "deploy"
 #: ``deploy`` looks for the run it started this many times, ``_LIST_INTERVAL_SECONDS`` apart: GitHub
 #: lists a dispatched run a few seconds after ``gh workflow run`` returns.
 _LIST_ATTEMPTS = 5
@@ -340,7 +345,8 @@ def run_deploy(deps: PagesDeps, *, dry_run: bool = False, wait: bool = False) ->
     dispatch = list(DISPATCH_ARGV)
     listing = list(DEPLOY_LIST_ARGV)
     if dry_run:
-        argvs = [dispatch, listing, *([["gh", "run", "watch", "<run id>", "--exit-status"]] if wait else [])]
+        waits = [["gh", "run", "watch", "<run id>", "--exit-status"], _jobs_argv("<run id>")] if wait else []
+        argvs = [dispatch, listing, *waits]
         summary = "\n".join(f"pages deploy (dry-run): {_argv_text(argv)}" for argv in argvs)
         return DutyResult(ok=True, summary=summary, details={"argv": argvs, "dry_run": True})
 
@@ -366,14 +372,46 @@ def run_deploy(deps: PagesDeps, *, dry_run: bool = False, wait: bool = False) ->
     if watched.returncode != 0:
         failure = _gh_failure("deploy --wait", watch, watched)
         return DutyResult(ok=False, summary="\n".join([*lines, failure.summary]), details=details)
+    conclusion, why_not = _deploy_job_conclusion(deps, run_id)
+    details["deploy_job"] = conclusion
+    if conclusion == "skipped":  # the build found the tree unchanged: nothing was deployed
+        lines.append(f"pages deploy: run {run_id} succeeded; tree unchanged; deploy skipped")
+        return DutyResult(ok=True, summary="\n".join(lines), details=details)
     url, why = _site_url(deps, None)
     details["page_url"] = url
-    lines.append(
-        f"pages deploy: run {run_id} succeeded; page {url}"
-        if url
-        else f"pages deploy: run {run_id} succeeded; page url unavailable ({why})"
-    )
+    page = f"page {url}" if url else f"page url unavailable ({why})"
+    if conclusion == "success":
+        lines.append(f"pages deploy: run {run_id} succeeded; deployed; {page}")
+    elif conclusion is None:
+        lines.append(f"pages deploy: run {run_id} succeeded; deploy job conclusion unavailable ({why_not}); {page}")
+    else:
+        lines.append(f"pages deploy: run {run_id} succeeded; deploy job concluded {conclusion!r}; {page}")
     return DutyResult(ok=True, summary="\n".join(lines), details=details)
+
+
+def _jobs_argv(run_id: object) -> list[str]:
+    return ["gh", "run", "view", str(run_id), "--json", "jobs"]
+
+
+def _deploy_job_conclusion(deps: PagesDeps, run_id: object) -> tuple[str | None, str]:
+    """The :data:`DEPLOY_JOB` job's conclusion in run ``run_id``, or ``None`` and why it is unreadable."""
+    argv = _jobs_argv(run_id)
+    proc = deps.runner(argv, deps.root)
+    if proc.returncode != 0:
+        return None, f"`{_argv_text(argv)}` exited {proc.returncode}: {_tail(proc)}"
+    try:
+        payload = json.loads(proc.stdout or "null")
+    except json.JSONDecodeError as exc:
+        return None, f"`{_argv_text(argv)}` gave invalid JSON: {exc}"
+    jobs = payload.get("jobs") if isinstance(payload, dict) else None
+    job = next(
+        (item for item in jobs or [] if isinstance(item, dict) and item.get("name") == DEPLOY_JOB),
+        None,
+    )
+    conclusion = job.get("conclusion") if job else None
+    if not isinstance(conclusion, str) or not conclusion:
+        return None, f"`{_argv_text(argv)}` names no concluded {DEPLOY_JOB!r} job"
+    return conclusion, ""
 
 
 # ── status ───────────────────────────────────────────────────────────────────────────────────────

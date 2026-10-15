@@ -9,7 +9,7 @@ name: Pages
 # (Starlight docs shelf at /, herald dossier at /herald/, Kedro-Viz at
 # /dashboard/kedro-viz/). Story 102.4: atlas's kedro-viz-publish.yml uploads the export as
 # the workflow artifact kedro-viz-export (atlas Story 30.1); the build job downloads the
-# newest unexpired one into docs/dashboard/kedro-viz/ (gitignored), which
+# newest live one into docs/dashboard/kedro-viz/ (gitignored), which
 # docsite/tools/assemble_pages.py mounts, and skips the mount when there is none (herald
 # Story 42.2). Lane 1 /console/ is the operator console.
 #
@@ -110,35 +110,38 @@ jobs:
         id: duty
         run: echo "pages_duty=${PYFORGE_PAGES_DUTY:-0}" >> "$GITHUB_OUTPUT"
 
-      # The Kedro-Viz mount's build input (Story 102.4): atlas's newest unexpired kedro-viz-export
-      # from a run on main, into docs/dashboard/kedro-viz/. Absent (no run, no artifact, expired) is
-      # a normal build: it exports KEDRO_VIZ_EXPORT=absent and herald's assembler skips the mount; a
-      # gh error fails the step. GH_ENTERPRISE_TOKEN authenticates gh on a GitHub Enterprise Server
-      # copy of this workflow. Another artifact mount is a copy of this step with its own --workflow,
-      # --artifact, --dest and --env-prefix.
+      # The Kedro-Viz mount's build input (Story 102.4): atlas's newest live kedro-viz-export from a
+      # successful kedro-viz-publish.yml run on main, into docs/dashboard/kedro-viz/, chosen from the
+      # artifact listing itself (no window of recent runs). Absent (no artifact, only expired ones)
+      # is a normal build: it exports KEDRO_VIZ_EXPORT=absent and herald's assembler skips the mount;
+      # a gh error fails the step. gh talks to the host that ran this workflow (GH_HOST from
+      # GITHUB_SERVER_URL, GH_REPO), github.com or a GitHub Enterprise Server, with the job's token
+      # as GH_TOKEN and GH_ENTERPRISE_TOKEN. Another artifact mount is a copy of this step with its
+      # own --workflow, --artifact, --dest and --env-prefix.
       - name: Download the Kedro-Viz export artifact
         if: ${{ env.PYFORGE_PAGES_DUTY == '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
           GH_ENTERPRISE_TOKEN: ${{ github.token }}
-        run: >-
-          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py
-          --workflow kedro-viz-publish.yml --artifact kedro-viz-export
-          --dest docs/dashboard/kedro-viz --env-prefix KEDRO_VIZ_EXPORT --branch main
+          GH_REPO: ${{ github.repository }}
+        run: |
+          export GH_HOST="${GITHUB_SERVER_URL#*://}"
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --workflow kedro-viz-publish.yml --artifact kedro-viz-export --dest docs/dashboard/kedro-viz --env-prefix KEDRO_VIZ_EXPORT --branch main
 
       # Atlas Story 30.2's consumer (its review moved it here): the Vizro boards' static export,
       # uploaded as vizro-static-export by a second job of kedro-viz-publish.yml, into
       # docs/dashboard/vizro/, which the assembler copies under /dashboard/vizro/. Same gate, same
-      # tokens, same absent path.
+      # host and tokens, same absent path; a run that rebuilt only the Kedro-Viz export never
+      # pushes this one out of reach, since the newest live artifact is chosen by name.
       - name: Download the Vizro static export artifact
         if: ${{ env.PYFORGE_PAGES_DUTY == '1' }}
         env:
           GH_TOKEN: ${{ github.token }}
           GH_ENTERPRISE_TOKEN: ${{ github.token }}
-        run: >-
-          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py
-          --workflow kedro-viz-publish.yml --artifact vizro-static-export
-          --dest docs/dashboard/vizro --env-prefix VIZRO_EXPORT --branch main
+          GH_REPO: ${{ github.repository }}
+        run: |
+          export GH_HOST="${GITHUB_SERVER_URL#*://}"
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --workflow kedro-viz-publish.yml --artifact vizro-static-export --dest docs/dashboard/vizro --env-prefix VIZRO_EXPORT --branch main
 
       # Herald's fleet board reads this input when pyforge.herald.status_pages is on (herald
       # Story 42.1); it is written on every build so the flag can flip without a workflow edit.

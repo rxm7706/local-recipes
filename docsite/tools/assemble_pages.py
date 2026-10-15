@@ -294,13 +294,17 @@ def _iter_herald_rendered_html(artifact_root: Path) -> list[Path]:
     return [*_iter_herald_html(artifact_root), *(page for page in others if page.is_file())]
 
 
-def _lane1_href() -> str:
-    """The Lane 1 live-view link the status pages carry (``site.yml`` ``lane1.href``). Lane 1 is
-    served by the platform, not by Pages, so the link is never resolved inside the artifact."""
+def _lane1_href() -> str | None:
+    """The Lane 1 live-view link the status pages carry, or ``None`` when they carry none: the
+    status pages link ``site.yml``'s ``lane1.href`` only when it is an absolute URL
+    (``status_pages.lane1_link``). Lane 1 is served by the platform, not by Pages, so that one link
+    is never resolved inside the artifact; a root-absolute ``/console/`` on a status page is not
+    exempt and fails as a broken link (herald 42.1 re-review)."""
     import yaml  # the ``site`` env carries PyYAML (docsite/build.py reads the same file)
 
     data = yaml.safe_load((_repo_root() / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
-    return str(data["lane1"]["href"])
+    link = sp.lane1_link(data.get("lane1"))
+    return link["href"] if link else None
 
 
 def _iter_checkable_files(artifact_root: Path) -> list[Path]:
@@ -609,7 +613,7 @@ def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
         text = page.read_text(encoding="utf-8", errors="replace")
         for match in _HREF_SRC.finditer(text):
             raw = match.group(1)
-            if raw == lane1:  # the live view on Lane 1 (Story 42.1): another host's path
+            if lane1 is not None and raw == lane1:  # the live view on Lane 1 (Story 42.1): another host
                 continue
             resolved = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
             if resolved is None:

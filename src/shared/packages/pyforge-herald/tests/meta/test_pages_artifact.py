@@ -494,8 +494,47 @@ def test_42_1_ac6_the_flag_on_artifact_passes_pages_check(tmp_path: Path, monkey
     ):
         assert _menu_labels(artifact / page) == _STATUS_LABELS, page
     board = (artifact / "status/index.html").read_text(encoding="utf-8")
-    assert board.count('href="/console/"') == 1  # the live view on Lane 1: another host, never resolved here
+    # site.yml's lane1.href is root-absolute (/console/) until the operator names Lane 1's URL; on the
+    # Pages origin it would 404, so neither status page links it (42.1's re-review).
+    assert "/console/" not in board
     assert not (artifact / "herald" / "status").exists()
+
+
+def test_42_1_a_root_absolute_lane1_link_on_a_status_page_fails_pages_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """The assembler exempts the Lane 1 href only when it is an absolute URL: a ``/console/`` link put
+    back on a status page resolves on the Pages origin and fails as a broken link."""
+    artifact = _assemble(tmp_path, monkeypatch, None, status=True, fleet_status=_FLEET_FIXTURE)
+    page = artifact / "status" / "index.html"
+    page.write_text(
+        page.read_text(encoding="utf-8").replace("</h1>", '</h1><a href="/console/">Live view on Lane 1</a>', 1),
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit) as exc:
+        _load_assemble_pages().check(artifact, site_url=_SITE_URL, fleet_status=_FLEET_FIXTURE)
+    assert exc.value.code == 1
+    assert "status/index.html -> '/console/'" in capsys.readouterr().err
+
+
+def test_42_1_an_absolute_lane1_url_on_the_status_pages_passes_pages_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The link the status pages carry once ``lane1.href`` names another host (rendered by
+    ``status_pages.lane1_link``; the unit test renders it) passes ``pages-check``: a navigation link to
+    another origin loads nothing (AD-21), and the href check never resolves it in the artifact."""
+    lane1 = "https://lane1.example.internal/console/"
+    artifact = _assemble(tmp_path, monkeypatch, None, status=True, fleet_status=_FLEET_FIXTURE)
+    for rel in ("status/index.html", "status/ci/index.html"):
+        page = artifact / rel
+        page.write_text(
+            page.read_text(encoding="utf-8").replace(
+                "</time>", f'</time> &middot; <a href="{lane1}">Live view on Lane 1</a>', 1
+            ),
+            encoding="utf-8",
+        )
+        assert page.read_text(encoding="utf-8").count(f'href="{lane1}"') == 1, rel
+    _load_assemble_pages().check(artifact, site_url=_SITE_URL, fleet_status=_FLEET_FIXTURE)
 
 
 def test_42_1_ac6_a_status_page_without_its_menu_fails_pages_check(

@@ -267,10 +267,16 @@ WARN and the degrade line when the probe raises, the sole-subprocess meta-test s
     "more than N hours", so a stale lag never prints as the 24-hour threshold itself (finding 4). `last-modified`
     prints as `YYYY-MM-DDTHH:MM:SSZ` in the message and the evidence.
   - An `HTTPError` (the response to a HEAD answered outside 2xx) is closed explicitly (finding 6).
-  - The deploy workflow is now `pages.yml` (steward 102.1 / 102.2), whose `paths:` filter is exactly
-    `PUBLISHED_INPUTS` plus the workflow file itself. The Intent, the Epic excerpt's Given and "Named, not fixed here"
-    item 2 above still describe `dashboard.yml` firing on every push with no filter; they are kept as minted. Spec
-    open question 2 (a doctor meta-test pinning `PUBLISHED_INPUTS` to that filter) is now cheap (finding 7).
+  - The deploy workflow is now `pages.yml` (steward 102.1 / 102.2), whose `paths:` filter is `PUBLISHED_INPUTS`
+    plus the workflow file itself and, since steward 102.4's review, the build's own tooling (`scripts/pages_*.py`
+    and steward's `src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py`). *(Corrected 2026-10-15 at the
+    lane merge; this line first said "exactly `PUBLISHED_INPUTS` plus the workflow file".)* `PUBLISHED_INPUTS` stays
+    as it is: build tooling, like the workflow file, is not a published input, so its commit date says nothing about
+    whether the published content is behind the live site; a tooling change that does change the built tree deploys
+    through the tree-hash compare and moves `last-modified` itself. The Intent, the Epic excerpt's Given and "Named,
+    not fixed here" item 2 above still describe `dashboard.yml` firing on every push with no filter; they are kept as
+    minted. Spec open question 2 (a doctor meta-test pinning `PUBLISHED_INPUTS` to that filter) is now cheap
+    (finding 7); that meta-test must exclude the workflow file and the build-tooling paths from the comparison.
   - The rule never consults the clock (finding 3): `DW-doctor-48-2-1` in the doctor deferred-work ledger, for a
     `bmad-spec` change to CAP-91. The identical-build case (the builder's open question) is a "Named, not fixed here"
     line above (finding 2).

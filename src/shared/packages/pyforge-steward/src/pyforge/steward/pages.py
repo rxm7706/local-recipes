@@ -15,6 +15,7 @@ from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 PAGES_DUTY_FLAG = "pyforge.steward.pages_duty"
 #: The unified Pages artifact ``pages-check`` builds, relative to the repository root.
@@ -31,6 +32,8 @@ KEDRO_VIZ_ENV_PREFIX = "KEDRO_VIZ_EXPORT"
 #: Only a run on this branch is mounted: a producer dispatched on an unmerged branch never reaches the
 #: production Pages origin (102.4's review).
 EXPORT_BRANCH = "main"
+#: The page size the export download asks the artifacts listing for (the REST API's maximum).
+ARTIFACTS_PER_PAGE = 100
 #: An identical tree still deploys once the live build is older than this and its commit moved
 #: (doctor 48.2's review): at most one extra deploy a day keeps the live ``last-modified`` honest.
 LIVENESS_MAX_AGE = timedelta(hours=24)
@@ -202,41 +205,67 @@ def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str |
     }
 
 
+def export_artifacts_endpoint(artifact: str, *, page: int) -> str:
+    """The Actions REST call that lists one page of the repository's artifacts named ``artifact``
+    (``gh api`` fills ``{owner}`` and ``{repo}``): the listing :func:`newest_export_run` reads."""
+    return (
+        f"repos/{{owner}}/{{repo}}/actions/artifacts?name={quote(artifact, safe='')}"
+        f"&per_page={ARTIFACTS_PER_PAGE}&page={page}"
+    )
+
+
 def newest_export_run(
-    runs_json: Iterable[Mapping[str, Any]],
-    artifacts_json: Mapping[Any, Mapping[str, Any]] | Callable[[int], Mapping[str, Any] | None],
+    artifacts_json: Iterable[Mapping[str, Any]],
+    runs_json: Mapping[Any, Mapping[str, Any]] | Callable[[int], Mapping[str, Any] | None],
     *,
     artifact: str = KEDRO_VIZ_ARTIFACT,
+    workflow: str = KEDRO_VIZ_WORKFLOW,
     branch: str | None = EXPORT_BRANCH,
 ) -> int | None:
-    """The newest successful producer run on ``branch`` whose ``artifact`` is listed and not expired
-    (Story 102.4).
+    """The producer run that holds the newest live ``artifact`` on ``branch`` (Story 102.4).
 
-    ``runs_json`` is ``gh run list --json databaseId,createdAt,conclusion,headBranch``. ``artifacts_json``
-    is either a mapping from a run id to that run's ``gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts``
-    payload (a run missing from it is passed over) or a ``fetch(run_id)`` callable this function calls
-    newest-first, stopping at the first match (the download script's lazy read). A run whose
-    ``conclusion`` is not ``success``, or whose ``headBranch`` is not ``branch`` (``None`` takes any), is
-    ignored. ``None``: no such run, no artifact of that name, or only expired ones."""
-    eligible = [
-        run
-        for run in runs_json
-        if isinstance(run, Mapping)
-        and run.get("conclusion") == "success"
-        and isinstance(run.get("databaseId"), int)
-        and (branch is None or run.get("headBranch") == branch)
-    ]
-    for run in sorted(eligible, key=lambda r: str(r.get("createdAt") or ""), reverse=True):
-        run_id = run["databaseId"]
-        if callable(artifacts_json):
-            payload = artifacts_json(run_id)
-        else:
-            payload = artifacts_json.get(run_id, artifacts_json.get(str(run_id)))
+    Selection is by artifact, never by a window of recent runs (102.4's re-review): atlas 30.2's
+    producer runs each export job only when that export's own paths change, so a run window of any
+    size can hold none of one export while a live one sits further back; it would then read
+    ``absent`` and the next deploy would drop that mount from production.
+
+    ``artifacts_json`` is every ``artifacts`` entry of every page of
+    :func:`export_artifacts_endpoint`. An entry counts when its ``name`` is ``artifact``, ``expired`` is
+    ``false``, its ``workflow_run.head_branch`` is ``branch`` (``None`` takes any) and its run is not a
+    fork's (``workflow_run.head_repository_id`` equals ``workflow_run.repository_id`` where both are
+    given). Counted entries are read newest ``created_at`` first. ``runs_json`` maps a run id to its
+    ``gh api repos/{owner}/{repo}/actions/runs/<id>`` payload (a run missing from it is passed over),
+    or is a ``fetch(run_id)`` callable read in that order, stopping at the first match. A run matches
+    when it is ``workflow``'s (``path`` is ``.github/workflows/<workflow>``), concluded ``success`` and
+    ran on ``branch``. ``None``: no live artifact of that name from such a run."""
+    candidates: list[tuple[str, int]] = []
+    for item in artifacts_json:
+        if not isinstance(item, Mapping) or item.get("name") != artifact or item.get("expired") is not False:
+            continue
+        run = item.get("workflow_run")
+        if not isinstance(run, Mapping) or not isinstance(run.get("id"), int):
+            continue
+        if branch is not None and run.get("head_branch") != branch:
+            continue
+        head_repo, repo = run.get("head_repository_id"), run.get("repository_id")
+        if head_repo is not None and repo is not None and head_repo != repo:
+            continue
+        candidates.append((str(item.get("created_at") or ""), run["id"]))
+    seen: set[int] = set()
+    for _created, run_id in sorted(candidates, reverse=True):
+        if run_id in seen:
+            continue
+        seen.add(run_id)
+        payload = runs_json(run_id) if callable(runs_json) else runs_json.get(run_id, runs_json.get(str(run_id)))
         if not isinstance(payload, Mapping):
             continue
-        for item in payload.get("artifacts") or []:
-            if isinstance(item, Mapping) and item.get("name") == artifact and item.get("expired") is False:
-                return run_id
+        path = str(payload.get("path") or "").split("@", 1)[0]
+        if (
+            path == f".github/workflows/{workflow}"
+            and payload.get("conclusion") == "success"
+            and (branch is None or payload.get("head_branch") == branch)
+        ):
+            return run_id
     return None
 
 

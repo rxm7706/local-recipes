@@ -853,6 +853,15 @@ def _eval_ci_atom(
         op, literal = event.groups()
         value = context.get("github.event_name", "")
         return (value == literal) if op == "==" else (value != literal)
+    ref = re.match(r"^github\.ref\s*(==|!=)\s*'([^']*)'$", text)
+    if ref:  # the pause-only gate's `github.ref == 'refs/heads/main'` (steward 102.3's re-review)
+        op, literal = ref.groups()
+        # The simulated event is a pull request, whose ref is refs/pull/<number>/merge: never a branch
+        # or tag ref. The number is unknown here, so only a literal naming a pull request's ref is
+        # unevaluable.
+        if context.get("github.event_name") != "pull_request" or literal.startswith("refs/pull/"):
+            raise _Unevaluable(f"job {job_id!r} if: atom {atom!r} needs the run's own ref")
+        return op == "!="
     var = re.match(r"^vars\.([A-Z0-9_]+)\s*(==|!=)\s*'([^']*)'$", text)
     if var:
         name, op, literal = var.groups()
@@ -896,7 +905,7 @@ def _eval_ci_if_expression(
     for part in _split_top_level(text, "||"):
         part = _unwrap_parens(part)
         if all(
-            _eval_ci_atom(
+            _eval_ci_term(
                 piece,
                 registry=registry,
                 context=context,
@@ -909,6 +918,28 @@ def _eval_ci_if_expression(
         ):
             return True
     return False
+
+
+def _eval_ci_term(
+    piece: str,
+    *,
+    registry: Mapping[str, Any],
+    context: Mapping[str, str],
+    state: Any,
+    workflow: Workflow,
+    job_id: str,
+    job: dict[str, Any],
+) -> bool:
+    """One ``&&`` operand: a parenthesised ``||`` / ``&&`` group recurses (the pause-only gate,
+    ``(dispatch || (pauses)) && (inner)``, steward 102.3's re-review), anything else is an atom."""
+    inner = _unwrap_parens(piece)
+    if len(_split_top_level(inner, "||")) > 1 or len(_split_top_level(inner, "&&")) > 1:
+        return _eval_ci_if_expression(
+            inner, registry=registry, context=context, state=state, workflow=workflow, job_id=job_id, job=job
+        )
+    return _eval_ci_atom(
+        inner, registry=registry, context=context, state=state, workflow=workflow, job_id=job_id, job=job
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1012,7 +1043,7 @@ class _State:
         if "if" not in job:
             return True, ""
         text = _normalize_condition(job["if"])
-        if "vars." in text or "github.event_name" in text:
+        if "vars." in text or "github.event_name" in text or "github.ref" in text:
             holds = _eval_ci_if_expression(
                 text,
                 registry=self.ci_registry,
