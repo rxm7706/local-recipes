@@ -6640,7 +6640,7 @@ So that two reconciles of one batch write the same recipe, and no floor rises pa
 **When** `estate reconcile` runs `generate-bmad-suite` for a batch
 **Then** it runs the generator in a new batch mode (`--journal <journal> --json`) that makes no upstream lookup: a member the batch moves gets the highest version the batch moved it to, any other member keeps the higher of its current floor and its member recipe's version, and no floor falls; reconcile writes the generator's per-member report (floor before and after, source, the move) to the journal and names each changed floor in its summary, and a generator failure or unreadable report fails reconcile with exit 1
 **And** the generator's hand path, without the new flags, is byte-for-byte unchanged, and its `--json` names each fallback there; the implementer invokes the `conda-forge-expert` skill first, and the story closes with the skill's retro (`SKILL.md`, `CHANGELOG.md`, a MINOR bump) in a `retro(cfe):` commit; four mutations fail named tests; `pyforge-steward-test` and the conda-forge-expert offline suite are green, no recipe under `recipes/` moves, and each governing Spec's memlog reconciles the changed paths before its scoped stamp
-**Status:** backlog
+**Status:** done
 
 ### Story 103.3: `pyforge-ci` is stdlib-only, as its tasks say
 
