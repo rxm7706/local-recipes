@@ -155,7 +155,6 @@ def test_a_stop_names_the_environment_of_the_lane_that_caused_it(
     assert dependent[f"{by_key}_environment"] == OTHER
 
 
-
 def test_a_stop_marks_only_the_twin_it_terminated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Review fix: ``fail`` goes red and its stop terminates ``a``@inv; ``a``@other, already exited on its
     own, keeps its own result. Modelled on test_lane_that_exits_on_its_own_during_a_stop_stays_red."""
@@ -199,6 +198,7 @@ def test_a_stop_marks_only_the_twin_it_terminated(tmp_path: Path, monkeypatch: p
 
     monkeypatch.setattr(preflight, "_run_pixi_argv", run_argv)
     inv_dir = preflight.lane_label("a", INV)
+    sleeper = "import os, time\nopen(os.path.join(os.environ['TMPDIR'], 'started'), 'w').close()\ntime.sleep(30)\n"
     scripts = {
         ("fail", INV): (
             "import os, sys, time\n"
@@ -209,11 +209,7 @@ def test_a_stop_marks_only_the_twin_it_terminated(tmp_path: Path, monkeypatch: p
             "time.sleep(0.3)\n"
             "sys.exit(1)\n"
         ),
-        ("a", INV): (
-            "import os, time\n"
-            "open(os.path.join(os.environ['TMPDIR'], 'started'), 'w').close()\n"
-            "time.sleep(30)\n"
-        ),
+        ("a", INV): sleeper,
         ("a", OTHER): "raise SystemExit(0)",
     }
     code = preflight.run_preflight(
@@ -318,6 +314,7 @@ def test_the_first_stop_cause_wins(tmp_path: Path) -> None:
     coord.set_stop_cause(("interrupt", None))
     assert coord.stop_cause == ("a", OTHER)
     assert coord.stop_trigger == "a"
+
 
 def test_the_journal_record_only_gains_optional_fields() -> None:
     """AC10: a plain lane result keeps its keys; an interrupt names no environment."""
