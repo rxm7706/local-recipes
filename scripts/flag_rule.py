@@ -1,8 +1,9 @@
 """The flag rule's machine form (doctor Story 34.1, spec-feature-flag-governance CAP-1).
 
 Every story spec of `type: feature` minted on or after the rule date (2026-09-28) carries
-either a `flag:` block (six fields: key, provider, default, scope, fallback, cleanup) or a
-`flag-exempt:` value from the closed list in docs/governance/guild-roster.json. This module
+either a `flag:` block (six fields: key, provider, default, scope, fallback, cleanup; the key
+is `pyforge.<station>.<capability>`, doctor Story 34.7) or a `flag-exempt:` value from the
+closed list in docs/governance/guild-roster.json. This module
 is the pure reader of that rule. It judges nothing: no finding, no exit code, no `sys.exit`.
 Story 34.2's gate turns a verdict into a finding, and the two named errors below into exit 2.
 
@@ -53,7 +54,9 @@ FLAG_FIELDS = ("key", "provider", "default", "scope", "fallback", "cleanup")
 
 # A story spec: spec-<epic>-<story>-<slug>.md directly under a project's specs/ folder. A
 # memlog matches the glob but is not a story spec; a folder-spec's own files never match.
-_STORY_SPEC_RE = re.compile(r"^_bmad-output/projects/[^/]+/planning-artifacts/specs/spec-\d+-\d+-[^/]*\.md$")
+_STORY_SPEC_RE = re.compile(
+    r"^_bmad-output/projects/[^/]+/planning-artifacts/specs/spec-\d+-\d+-[^/]*\.md$"
+)
 
 
 class FlagRuleError(Exception):
@@ -78,7 +81,9 @@ class OverlaysUnreadable(FlagRuleError):
 
 class Classification(NamedTuple):
     verdict: str  # FLAG | EXEMPT | NEITHER
-    reasons: tuple[str, ...]  # empty unless the verdict is NEITHER; one entry per defect
+    reasons: tuple[
+        str, ...
+    ]  # empty unless the verdict is NEITHER; one entry per defect
 
 
 def is_story_spec(rel: str) -> bool:
@@ -96,7 +101,10 @@ def repo_relative(path: str | os.PathLike[str], repo_root: Path | None = None) -
     p = Path(path)
     if not p.is_absolute():
         return Path(os.path.normpath(p)).as_posix()
-    for candidate, base in ((Path(os.path.normpath(p)), root), (p.resolve(), root.resolve())):
+    for candidate, base in (
+        (Path(os.path.normpath(p)), root),
+        (p.resolve(), root.resolve()),
+    ):
         try:
             return candidate.relative_to(base).as_posix()
         except ValueError:
@@ -108,7 +116,10 @@ def _read_json(rel: Path, repo_root: Path | None, error: type[FlagRuleError]) ->
     path = (Path(repo_root) if repo_root is not None else REPO_ROOT) / rel
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:  # ValueError covers JSON and UTF-8 decode errors
+    except (
+        OSError,
+        ValueError,
+    ) as exc:  # ValueError covers JSON and UTF-8 decode errors
         raise error(f"cannot read {rel.as_posix()}: {exc}") from exc
 
 
@@ -116,8 +127,14 @@ def load_exemptions(repo_root: Path | None = None) -> tuple[str, ...]:
     """The closed exemption list, read from the roster now (never cached, never copied)."""
     data = _read_json(ROSTER_REL, repo_root, RosterUnreadable)
     values = data.get("flag_exemptions") if isinstance(data, dict) else None
-    if not isinstance(values, list) or not values or not all(isinstance(v, str) for v in values):
-        raise RosterUnreadable(f"{ROSTER_REL.as_posix()} carries no `flag_exemptions` list of strings")
+    if (
+        not isinstance(values, list)
+        or not values
+        or not all(isinstance(v, str) for v in values)
+    ):
+        raise RosterUnreadable(
+            f"{ROSTER_REL.as_posix()} carries no `flag_exemptions` list of strings"
+        )
     return tuple(values)
 
 
@@ -126,7 +143,9 @@ def read_baseline(repo_root: Path | None = None) -> dict[str, Any]:
     data = _read_json(BASELINE_REL, repo_root, BaselineUnreadable)
     specs = data.get("specs") if isinstance(data, dict) else None
     if not isinstance(specs, list) or not all(isinstance(s, str) for s in specs):
-        raise BaselineUnreadable(f"{BASELINE_REL.as_posix()} carries no `specs` list of strings")
+        raise BaselineUnreadable(
+            f"{BASELINE_REL.as_posix()} carries no `specs` list of strings"
+        )
     return data
 
 
@@ -170,7 +189,10 @@ def _frontmatter(path: Path) -> tuple[dict[str, Any] | None, str]:
         data = yaml.safe_load("\n".join(lines[1:end]))
     except (yaml.YAMLError, ValueError, OverflowError) as exc:
         # ValueError/OverflowError: safe_load builds dates eagerly, so `created: 2026-02-30` raises.
-        return None, f"frontmatter is not valid YAML: {next(iter(str(exc).splitlines()), type(exc).__name__)}"
+        return (
+            None,
+            f"frontmatter is not valid YAML: {next(iter(str(exc).splitlines()), type(exc).__name__)}",
+        )
     if data is None:
         return None, "frontmatter is empty"
     if not isinstance(data, dict):
@@ -198,44 +220,80 @@ def _blank(value: Any) -> bool:
 
 def _classify_block(block: Any) -> Classification:
     if not isinstance(block, Mapping):
-        return Classification(NEITHER, (f"`flag:` is not a mapping of its six fields ({', '.join(FLAG_FIELDS)})",))
+        return Classification(
+            NEITHER,
+            (f"`flag:` is not a mapping of its six fields ({', '.join(FLAG_FIELDS)})",),
+        )
     reasons = []
     for field in FLAG_FIELDS:
         if field not in block:
             reasons.append(f"`flag:` block is missing `{field}`")
         elif _blank(block[field]):
             reasons.append(f"`flag:` block field `{field}` is empty")
+    key = block.get("key")
+    if isinstance(key, str) and key.strip() and not _has_station_prefix(key.strip()):
+        # doctor Story 34.7: the block's key is `pyforge.<station>.<capability>` (the block page's shape). A key
+        # with no station segment has no owner once it leaves the tree, so its `done` spec could never be retired.
+        reasons.append(
+            f"`flag:` block key `{key.strip()}` has no `pyforge.<station>.` prefix"
+        )
     return Classification(NEITHER if reasons else FLAG, tuple(reasons))
+
+
+def _has_station_prefix(key: str) -> bool:
+    parts = key.split(".")
+    return (
+        len(parts) >= 3 and parts[0] == "pyforge" and bool(parts[1]) and all(parts[2:])
+    )
 
 
 def _classify_exempt(value: Any, exemptions: Sequence[str]) -> Classification:
     if _blank(value):
-        return Classification(NEITHER, ("`flag-exempt:` is empty; it takes one value from the roster's closed list",))
+        return Classification(
+            NEITHER,
+            (
+                "`flag-exempt:` is empty; it takes one value from the roster's closed list",
+            ),
+        )
     if value not in exemptions:
         return Classification(
-            NEITHER, (f"`flag-exempt: {value}` is not on the roster's closed list ({', '.join(exemptions)})",)
+            NEITHER,
+            (
+                f"`flag-exempt: {value}` is not on the roster's closed list ({', '.join(exemptions)})",
+            ),
         )
     return Classification(EXEMPT, ())
 
 
-def classify_frontmatter(frontmatter: Mapping[str, Any], exemptions: Sequence[str]) -> Classification:
+def classify_frontmatter(
+    frontmatter: Mapping[str, Any], exemptions: Sequence[str]
+) -> Classification:
     """The verdict for an already-parsed frontmatter mapping and a given exemption list."""
     has_flag = "flag" in frontmatter
     has_exempt = "flag-exempt" in frontmatter
     if has_flag and has_exempt:
         return Classification(
-            NEITHER, ("carries both a `flag:` block and a `flag-exempt:` value; a spec declares exactly one",)
+            NEITHER,
+            (
+                "carries both a `flag:` block and a `flag-exempt:` value; a spec declares exactly one",
+            ),
         )
     if has_flag:
         return _classify_block(frontmatter["flag"])
     if has_exempt:
         return _classify_exempt(frontmatter["flag-exempt"], exemptions)
-    return Classification(NEITHER, ("carries neither a `flag:` block nor a `flag-exempt:` value",))
+    return Classification(
+        NEITHER, ("carries neither a `flag:` block nor a `flag-exempt:` value",)
+    )
 
 
 def _absolute(path: str | os.PathLike[str], repo_root: Path | None) -> Path:
     p = Path(path)
-    return p if p.is_absolute() else (Path(repo_root) if repo_root is not None else REPO_ROOT) / p
+    return (
+        p
+        if p.is_absolute()
+        else (Path(repo_root) if repo_root is not None else REPO_ROOT) / p
+    )
 
 
 def classify(
@@ -250,14 +308,18 @@ def classify(
     Raises RosterUnreadable when the exemption list cannot be read. Pass `exemptions` to
     classify many specs against one read of the roster.
     """
-    allowed = tuple(exemptions) if exemptions is not None else load_exemptions(repo_root)
+    allowed = (
+        tuple(exemptions) if exemptions is not None else load_exemptions(repo_root)
+    )
     frontmatter, why = _frontmatter(_absolute(path, repo_root))
     if frontmatter is None:
         return Classification(NEITHER, (why,))
     return classify_frontmatter(frontmatter, allowed)
 
 
-def in_scope(spec: Mapping[str, Any] | str | os.PathLike[str], *, repo_root: Path | None = None) -> bool:
+def in_scope(
+    spec: Mapping[str, Any] | str | os.PathLike[str], *, repo_root: Path | None = None
+) -> bool:
     """True when the spec is `type: feature` (Q1: `fix`, `chore` and `docs` need no flag).
 
     `spec` is a story spec's path, or its already-parsed frontmatter mapping.
@@ -266,7 +328,10 @@ def in_scope(spec: Mapping[str, Any] | str | os.PathLike[str], *, repo_root: Pat
         frontmatter: Mapping[str, Any] | None = spec
     else:
         frontmatter, _ = _frontmatter(_absolute(spec, repo_root))
-    return frontmatter is not None and str(frontmatter.get("type", "")).strip() == "feature"
+    return (
+        frontmatter is not None
+        and str(frontmatter.get("type", "")).strip() == "feature"
+    )
 
 
 # --- the one tree (Stories 76.1 / 76.2; Story 34.3 reads through here, never a second reader) ---
@@ -298,9 +363,13 @@ def load_overlays(repo_root: Path | None = None) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        raise OverlaysUnreadable(f"cannot read {OVERLAYS_REL.as_posix()}: {exc}") from exc
+        raise OverlaysUnreadable(
+            f"cannot read {OVERLAYS_REL.as_posix()}: {exc}"
+        ) from exc
     if not isinstance(payload, dict):
-        raise OverlaysUnreadable(f"{OVERLAYS_REL.as_posix()} is not an object keyed by environment")
+        raise OverlaysUnreadable(
+            f"{OVERLAYS_REL.as_posix()} is not an object keyed by environment"
+        )
     for name, entries in payload.items():
         if not isinstance(entries, dict):
             raise OverlaysUnreadable(
@@ -324,11 +393,17 @@ def rendered_variant(
     return entry.get("defaultVariant")
 
 
-def renders_on(key: str, entry: Mapping[str, Any], overlays: Mapping[str, Any], environment: str) -> bool:
+def renders_on(
+    key: str, entry: Mapping[str, Any], overlays: Mapping[str, Any], environment: str
+) -> bool:
     """True when ``environment`` renders ``key`` as a boolean-true variant."""
     variant = rendered_variant(key, entry, overlays, environment)
     variants = entry.get("variants")
-    return isinstance(variant, str) and isinstance(variants, dict) and variants.get(variant) is True
+    return (
+        isinstance(variant, str)
+        and isinstance(variants, dict)
+        and variants.get(variant) is True
+    )
 
 
 def parse_run_date(raw: str | None) -> date:
@@ -385,6 +460,10 @@ def tree_default_for_env(
     if not isinstance(variant, str):
         return str(variant)
     variants = entry.get("variants")
-    if isinstance(variants, dict) and variant in variants and isinstance(variants[variant], bool):
+    if (
+        isinstance(variants, dict)
+        and variant in variants
+        and isinstance(variants[variant], bool)
+    ):
         return "on" if variants[variant] else "off"
     return variant

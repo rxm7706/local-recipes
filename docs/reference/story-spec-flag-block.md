@@ -51,7 +51,7 @@ Six fields, all present and non-empty:
 
 | Field | Holds |
 |---|---|
-| `key` | The flag's key in the one OpenFeature tree, `pyforge.<station>.<capability>`. |
+| `key` | The flag's key in the one OpenFeature tree, `pyforge.<station>.<capability>`. A key with no station segment is a defect: once it left the tree, no story could retire it. |
 | `provider` | `openfeature-file`, the one provider (canopy:AD-11: one tree, no egress). |
 | `default` | The default per environment, as a mapping (`production`, `staging`, `dev`). A retrofit flag defaults ON, so it works as a kill switch. |
 | `scope` | `global`. Targeting rules (user, tenant) are a later CAP (Q5). |
@@ -140,20 +140,25 @@ retires-flag: pyforge.atlas.old_capability   # one key, or a list of keys
   or for its two-state test. The spec is never rewritten.
 - **No reader may stay.** Once a declared key leaves the tree, every tracked file that still names
   it is a defect that names the file, whoever declared the retirement. A read of a missing key
-  silently returns its default. The gate reads every file that can act on a flag: code,
-  configuration, workflows (`.github/`), task files (`pixi.toml`), site code and content
-  (`docsite/`, `docs-site/`) and BMAD config (`_bmad/`). It does not read prose (`*.md`), tests,
-  binary files, the planning and history record (`_bmad-output/`, `archive/`, `docs/dreams/`,
-  `presentations/`, `.claude/memory/`), `recipes/` or the spec-surface baseline. So the retiring
-  story's own absence test, which must name the key, never counts.
+  silently returns its default. Every mention counts, comments and docstrings included; only a
+  module path named like the key on an `import` line or in `import_module("...")` does not. The
+  gate reads every file that can act on a flag: code, configuration, workflows (`.github/`), task
+  files (`pixi.toml`), site code and content (`docsite/`, `docs-site/`), BMAD config (`_bmad/`),
+  and the values (not the comments) of each station's `planning-artifacts/marshal-policy.toml`.
+  It does not read prose (`*.md`), tests (`tests`/`test` folders, `test_*.py`, `*_test.py`,
+  `conftest.py`, and JS/TS test code `*.test.ts`, `*.spec.jsx` and the like), binary files, the
+  planning and history record (`_bmad-output/`, `archive/`, `docs/dreams/`, `presentations/`,
+  `.claude/memory/`), `recipes/` or the spec-surface baseline. So the retiring story's own absence
+  test, which must name the key, never counts.
 - **What the gate cannot see is the retiring story's own checklist.** Remove these by hand, with
   the flag's reader and its tests:
   - every environment stand-in for the flag, such as a `PYFORGE_*` variable a workflow reads, and
     the script that exports it from the flag;
   - every read that builds the key from parts (an f-string, `+`). **Spell a flag key literally at
     its read site**, so the gate can find it;
-  - every mention in code comments and docstrings. A module path named like the key is fine on an
-    `import` line or in `import_module("...")`, but nowhere else.
+  - every reader inside a class the gate never reads: build code under `presentations/`, config
+    held in `*.md` frontmatter, a runtime module inside a `tests` or `test` folder, a file the gate
+    takes for binary (UTF-16 text included), and any other planning-tree file a tool runs.
 - **A key still in the tree** is judged as any tree key is. Declaring its retirement early
   changes nothing.
 

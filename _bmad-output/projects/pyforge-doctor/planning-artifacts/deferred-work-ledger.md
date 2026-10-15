@@ -3040,9 +3040,9 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 
 - source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
   summary: A flag key that no story spec's `flag:` block names can leave the tree with no `retires-flag:` declaration, so neither `flag-key-not-in-tree` nor the retired-read walk ever judges its removal.
-  evidence: Seven live keys have no flag block in any story spec: the cutover string flag, steward's glass export and the five steward ledger-query keys (independent review of 34.7, should-fix 2; measured 2026-10-15 at the lane-C tree). The gate never reads git history, so `scripts/flag_gate_check.py` cannot tell that a key left the tree; it judges a removal only through a `done` spec's block or a declaration. Closing it needs each owner's CAP-7 retrofit to give these keys a block, or a base-ref comparison the gate does not make. The block page tells a removal story to declare `retires-flag:` anyway, so the reader check runs.
-  location: scripts/flag_gate_check.py:950
-  origin: spec-deferred 5290a8a19799 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  evidence: Seven live keys have no flag block in any story spec: the cutover string flag, steward's glass export and the five steward ledger-query keys (independent review of 34.7, should-fix 2; measured 2026-10-15 at the lane-C tree). The gate never reads git history, so `scripts/flag_gate_check.py` cannot tell that a key left the tree; it judges a removal only through a `done` spec's block or a declaration. A retrofit block does not close it: a story can edit a landed spec's block away (to a closed-list `flag-exempt:` value on a post-rule spec, or by deleting it on a pre-rule one, which only warns), then remove the key and leave a reader, and the gate exits 0 (the re-review's proofs B2 and B3). Only a base-ref comparison, which the gate does not make, closes every path. The block page tells a removal story to declare `retires-flag:` anyway, so the reader check runs.
+  location: scripts/flag_gate_check.py:judge_retired_reads
+  origin: spec-deferred 986e570c7af7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
@@ -3063,8 +3063,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 - source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
   summary: A reader that builds a flag key from parts (an f-string or `+`) is invisible to the retired-read walk and to the orphan check.
   evidence: `key_pattern` in `scripts/flag_gate_check.py` matches only a literally spelled key. No live reader builds one (independent review of 34.7, nit 3). The block page now says to spell a flag key literally at its read site; no check enforces it.
-  location: scripts/flag_gate_check.py:283
-  origin: spec-deferred c3aee08acbce — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  location: scripts/flag_gate_check.py:key_pattern
+  origin: spec-deferred 38a5552d474e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
@@ -3074,8 +3074,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 - source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
   summary: A `pyforge.core.*` or `pyforge.platform.*` flag key names an owning station with no project folder, so no story spec can ever retire it.
   evidence: `owning_station` in `scripts/flag_gate_check.py` takes the key's prefix, and only a story spec under `_bmad-output/projects/pyforge-<station>/` can match it; there is no `pyforge-core` or `pyforge-platform` project. No live key has such a prefix (independent review of 34.7, nit 1). A fix maps these prefixes to their owning project (core's Spec lives under pyforge-marshal) or refuses them in the tree.
-  location: scripts/flag_gate_check.py:429
-  origin: spec-deferred 81a4137d67ce — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  location: scripts/flag_gate_check.py:owning_station
+  origin: spec-deferred 567212ceca09 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
@@ -3087,6 +3087,17 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   evidence: Run to a scratch `--out-dir` on 2026-10-15 at the lane-C tree: every report but marshal's (14 changed lines) and steward's (30) matches apart from its SHA line. Marshal's "Runtime CAPs with no flag" drops from 26 to 24 and five CAP rows turn `unresolved`, because the CAP join reads prose in a Surface line changed outside this story (marshal Story 102.1, `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md:10010`) as code paths (the join's coverage gap is DW-doctor-34-4). This story regenerates nothing.
   location: docs/governance/flag-inventory/pyforge-marshal.md
   origin: spec-deferred 06670e938457 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-34-7-6: A runtime reader inside a class the retired-read walk never reads hides from `flag-retired-still-read`.
+
+- source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
+  summary: A runtime reader inside a class the retired-read walk never reads hides from `flag-retired-still-read`.
+  evidence: The re-review of 34.7 (finding 1, attacks A1 to A7, each exit 0) hid a reader in: build code under `presentations/` (`*.mjs`, `*.js`); config held in `*.md` frontmatter; a runtime module inside a `test`-named folder; a workflow running a script under `tests/`; UTF-16 text, which the NUL probe takes for binary; and runtime config elsewhere in the planning tree. None is live (its `probe_excluded.py`). Two classes are now read: the values of each station's `planning-artifacts/marshal-policy.toml`, and `*.spec.*`/`*.test.*` files that are not JS/TS code (`_is_retired_reader_candidate` in `scripts/flag_gate_check.py`). The block page lists the rest in the retiring story's own checklist.
+  location: scripts/flag_gate_check.py:_is_retired_reader_candidate
+  origin: spec-deferred 0b21e88f56a3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
