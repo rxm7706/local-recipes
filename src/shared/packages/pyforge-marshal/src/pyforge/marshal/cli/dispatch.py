@@ -105,11 +105,16 @@ from ..core.dispatch_retry import (
     verification_refusal_head_unchanged,
 )
 from ..core.dispatch_reverify import (
+    GATE_DIGEST_FIELD,
     MODE_FULL,
     MODE_REUSED,
+    REASON_GIT_READ_FAILED,
+    REASON_NO_STORY_SPEC,
     REUSE_EVIDENCE_FIELD,
     REUSED_HEAD_SHA_FIELD,
     REUSED_VERIFICATION_ID_FIELD,
+    declined,
+    gate_set_digest,
 )
 from ..core.dispatch_supervisor_finalize import (
     finalize_attempt_failed,
@@ -168,6 +173,7 @@ from ..dispatch_verify import (
     run_dispatch_ruff_format_before_verify,
     run_dispatch_spec_frontmatter_before_verify,
     verification_head_sha,
+    verify_gate_set,
 )
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
@@ -1317,7 +1323,11 @@ def _consider_verdict_reuse(
     latest_run_dir: Path | None,
 ) -> VerdictReuse | None:
     """Story 102.1 (CAP-161): the reuse attempt, or ``None`` when none is made -- the station's policy reads
-    ``"always"`` (no git read at all), or there is no run journal to reuse from."""
+    ``"always"`` (no git read at all), or there is no run journal to reuse from.
+
+    Review fixes (PR #2238): a story whose tracked spec cannot be resolved in the worktree declines (fail closed:
+    the story's own spec is never read as planning), and the gate set a fresh verification would run now -- this
+    policy, the worktree's diff against ``origin/main`` -- is digested for ``attempt_verdict_reuse`` to compare."""
     if policy.resolve_landing_reverify(effective_policy) != policy.LANDING_REVERIFY_ON_CODE_CHANGE:
         return None
     if fs is None or latest_run_dir is None:
@@ -1340,6 +1350,17 @@ def _consider_verdict_reuse(
             story_spec_rel = spec_path.relative_to(dispatch_core.canonical_repo_root(worktree)).as_posix()
         except ValueError:
             story_spec_rel = None
+    if story_spec_rel is None:
+        return VerdictReuse(
+            decision=declined(
+                REASON_NO_STORY_SPEC,
+                f"story {render_feed_key(story_key)!r} has no tracked spec in worktree {worktree}",
+            )
+        )
+    try:
+        diff = tuple(vcs.changed_files(repo_root, worktree, base=ORIGIN_MAIN))
+    except VcsCommandError as exc:
+        return VerdictReuse(decision=declined(REASON_GIT_READ_FAILED, f"cannot read the worktree's diff: {exc}"))
     return attempt_verdict_reuse(
         folded=fold(lines, sidecars=sidecars),
         run_id=run_dir.name,
@@ -1349,6 +1370,7 @@ def _consider_verdict_reuse(
         process=process,
         vcs=vcs,
         sidecars=sidecars,
+        current_gate_digest=gate_set_digest(verify_gate_set(effective_policy, changed_files=diff)),
     )
 
 
@@ -1376,6 +1398,7 @@ def _journal_cap4_verification(
                 REUSED_VERIFICATION_ID_FIELD: candidate.id_payload(),
                 REUSED_HEAD_SHA_FIELD: candidate.head_sha,
                 REUSE_EVIDENCE_FIELD: dict(cap4.reuse.decision.evidence),
+                **({GATE_DIGEST_FIELD: candidate.gate_digest} if candidate.gate_digest is not None else {}),
             }
             carried_advisories = candidate.scope_advisories
         else:

@@ -17,6 +17,7 @@ from .core import dispatch as dispatch_core
 from .core import gate as gate_core
 from .core import policy
 from .core.dispatch_reverify import (
+    GATE_DIGEST_FIELD,
     HEAD_SHA_FIELD,
     MODE_FIELD,
     MODE_FULL,
@@ -77,7 +78,8 @@ def build_dispatch_verification_journal_entries(
 ) -> DispatchVerificationJournalEntries:
     """Build the supervisor's ``dispatch-verification`` INTENT/OUTCOME pair.
 
-    Story 102.1: ``mode`` and ``head_sha`` (omitted when ``None``) ride every OUTCOME; ``reuse`` carries a reused
+    Story 102.1: ``mode`` and ``head_sha`` (omitted when ``None``) ride every OUTCOME, and so does the
+    ``gate_digest`` a full verification's ``verify_data`` carries (review fix 1); ``reuse`` carries a reused
     verdict's ``reused_verification_id``, ``reused_head_sha`` and ``reuse_evidence`` onto it, and
     ``carried_scope_advisories`` replaces the advisories the (narrow) findings would give with the reused verdict's
     own; ``reuse_declined`` names why a full verification ran when a reuse was considered."""
@@ -141,6 +143,11 @@ def build_dispatch_verification_journal_entries(
             **({VERIFY_FAILED_COMMANDS_FIELD: failed_commands_payload} if record_failed_commands else {}),
             MODE_FIELD: mode,
             **({HEAD_SHA_FIELD: head_sha} if head_sha is not None else {}),
+            **(
+                {GATE_DIGEST_FIELD: verify_data[GATE_DIGEST_FIELD]}
+                if isinstance(verify_data.get(GATE_DIGEST_FIELD), str)
+                else {}
+            ),
             **(dict(reuse) if reuse is not None else {}),
             **({REUSE_DECLINED_FIELD: dict(reuse_declined)} if reuse_declined is not None else {}),
         },

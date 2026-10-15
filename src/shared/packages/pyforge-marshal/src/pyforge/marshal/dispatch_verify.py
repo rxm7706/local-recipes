@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+from pyforge.core.errors import PyforgeError
 from pyforge.core.flags import FlagConfigError, read_boolean
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, ProcessResult
 
@@ -40,8 +41,10 @@ from .core.dispatch_environment_yaml import (
     apply_dispatch_environment_yaml_before_verify,
 )
 from .core.dispatch_reverify import (
+    GATE_DIGEST_FIELD,
     MAX_CHAIN_COMMITS,
     REASON_DIRTY_WORKTREE,
+    REASON_GATE_SET_CHANGED,
     REASON_GIT_READ_FAILED,
     REASON_NO_VERIFIED_VERDICT,
     REASON_RECHECK_FAILED,
@@ -50,6 +53,8 @@ from .core.dispatch_reverify import (
     ReuseDecision,
     ReuseFacts,
     declined,
+    gate_set_digest,
+    is_planning_path,
     judge_verdict_reuse,
     latest_reusable_verdict,
 )
@@ -660,6 +665,18 @@ def _verify_commands_with_surface_guard(
     return tuple(verify)
 
 
+def verify_gate_set(effective: EffectivePolicy, *, changed_files: tuple[str, ...]) -> tuple[str, ...]:
+    """Story 102.1 review fix 1: every gate command a full dispatch verification of ``changed_files`` runs, in order
+    -- the station's own and the derived ``_verify_commands_with_surface_guard`` set, then the cross-surface rules the
+    diff triggers -- so its digest (``core.dispatch_reverify.gate_set_digest``) moves whenever a policy edit or a
+    derivation change would make a fresh verification run different gates."""
+    commands = list(_verify_commands_with_surface_guard(effective, changed_files=changed_files))
+    for rule in gate.cross_surface_rules_for_changed_files(changed_files):
+        if rule.command not in commands:
+            commands.append(rule.command)
+    return tuple(commands)
+
+
 def run_verify_commands_only(
     effective: EffectivePolicy,
     *,
@@ -859,6 +876,9 @@ def evaluate_dispatch_verification(
         data["scope_check"] = {"checked": False, "reason": str(exc)}
 
     commands = _verify_commands_with_surface_guard(effective, changed_files=scope_changed_files)
+    # Story 102.1 review fix 1: the digest of the gate set this verdict ran, journaled on its OUTCOME, so a later
+    # re-landing can tell when the gates themselves moved (a policy edit, a derivation change) and re-verify.
+    data[GATE_DIGEST_FIELD] = gate_set_digest(verify_gate_set(effective, changed_files=scope_changed_files))
     command_reports: list[dict[str, object]] = []
     # Story 53.1 / 79.2: `commands` can no longer be empty -- the S-13.7 guard
     # and `lint-types` are unconditionally appended above, so a station with a
@@ -1501,7 +1521,7 @@ REUSE_RECHECK_COMMANDS: tuple[str, ...] = (
 _GIT_TIMEOUT_S = 120.0
 
 
-class _GitReadError(Exception):
+class _GitReadError(PyforgeError, Exception):
     """A git read this module needs did not answer; the reuse is declined (``git-read-failed``)."""
 
 
@@ -1529,6 +1549,19 @@ def _paths_between(process: ProcessPort, worktree: Path, old: str, new: str) -> 
 def _is_ancestor(process: ProcessPort, worktree: Path, ancestor: str, descendant: str) -> bool:
     result = _git(process, worktree, "merge-base", "--is-ancestor", ancestor, descendant, ok_codes=(0, 1))
     return result.returncode == 0
+
+
+def _on_first_parent_chain(process: ProcessPort, worktree: Path, commit: str, base: str) -> bool:
+    """Review fix 2 (PR #2238): ``commit`` is a state ``base`` was itself in -- on its first-parent chain, not merely
+    an ancestor (a commit inside a branch main merged, say). The walk is bounded by ``commit``'s own parents, so it
+    lists only main's first-parent commits since ``commit``."""
+    if not _is_ancestor(process, worktree, commit, base):
+        return False
+    parents = _git(process, worktree, "rev-list", "--parents", "-n", "1", commit).stdout.split()[1:]
+    args = ["rev-list", "--first-parent", base]
+    if parents:
+        args += ["--not", *parents]
+    return commit in _git(process, worktree, *args).stdout.split()
 
 
 def _replay_merge(process: ProcessPort, worktree: Path, first: str, second: str) -> tuple[str, tuple[str, ...]]:
@@ -1617,7 +1650,7 @@ def gather_reuse_facts(
         if len(parents) != 2:
             chain.append(ChainCommit(sha=sha, parents=parents, changed_paths=changed))
             continue
-        on_main = _is_ancestor(process, worktree, parents[1], base)
+        on_main = _on_first_parent_chain(process, worktree, parents[1], base)
         conflicts: tuple[str, ...] = ()
         resolution: tuple[str, ...] = ()
         if on_main:
@@ -1633,12 +1666,25 @@ def gather_reuse_facts(
                 resolution_paths=resolution,
             )
         )
+    # Review fix 2: every non-planning path a merge brought from main must still read current main's content -- a
+    # merge of a main commit later reverted, or a path main moved again since, is not the tree main would land.
+    brought = {
+        path
+        for commit in chain
+        if len(commit.parents) == 2
+        for path in commit.changed_paths
+        if not is_planning_path(path, story_spec_rel=story_spec_rel)
+    }
+    stale: tuple[str, ...] = ()
+    if brought:
+        stale = tuple(sorted(brought & set(_paths_between(process, worktree, current_head, base))))
     return ReuseFacts(
         verified_head=verified_head,
         current_head=current_head,
         story_paths=story_paths,
         chain=tuple(chain),
         story_spec_rel=story_spec_rel,
+        stale_main_paths=stale,
     )
 
 
@@ -1733,11 +1779,14 @@ def attempt_verdict_reuse(
     sidecars: Mapping[str, str | None] | None = None,
     base: str = ORIGIN_MAIN,
     recheck: Callable[..., tuple[tuple[Finding, ...], dict[str, object]]] | None = None,
+    current_gate_digest: str | None = None,
 ) -> VerdictReuse:
     """Story 102.1: whether this re-landing may reuse the run's verified verdict, and the narrow re-check if so.
 
-    Declines (the caller re-verifies in full) on no reusable verdict, a dirty worktree, an unreadable head or git
-    fact, any non-exempt move, or a red narrow re-check. Never raises for a git read; ``recheck`` defaults to
+    Declines (the caller re-verifies in full) on no reusable verdict, a gate set that moved since the verdict
+    (review fix 1: ``current_gate_digest`` is the digest of ``verify_gate_set`` for the policy and diff a fresh
+    verification would use now; a missing digest on either side declines), a dirty worktree, an unreadable head or
+    git fact, any non-exempt move, or a red narrow re-check. Never raises for a git read; ``recheck`` defaults to
     ``run_reuse_recheck``."""
     resolved_sidecars = sidecars or {}
 
@@ -1751,6 +1800,15 @@ def attempt_verdict_reuse(
                 REASON_NO_VERIFIED_VERDICT,
                 "the run's latest verification OUTCOME is not a verified verdict with a recorded head",
             )
+        )
+    if candidate.gate_digest is None or current_gate_digest is None or candidate.gate_digest != current_gate_digest:
+        return VerdictReuse(
+            decision=declined(
+                REASON_GATE_SET_CHANGED,
+                f"the verdict ran gate set {candidate.gate_digest or 'unrecorded'}; "
+                f"a fresh verification would run {current_gate_digest or 'an unknown set'}",
+            ),
+            candidate=candidate,
         )
     current_head = verification_head_sha(vcs, worktree)
     if current_head is None:

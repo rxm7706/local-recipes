@@ -20,6 +20,21 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py
 declared_low_risk: false
+deferred:
+  - summary: >-
+      A landing whose PR head reports no check runs proceeds after the 120 s grace, even when its verdict was reused, so a reused verdict can land with no CI having judged the combined tree.
+    evidence: |-
+      Pre-existing, found by the independent review of PR #2238 (2026-10-15). dispatch_land.py _wait_for_landing_checks (:1068) returns _CHECKS_NO_RUNS, with no finding, once a head that reports no check run has waited landing_check_grace_seconds (default 120). Story 102.1's safety argument for a reused verdict leans on GitHub CI judging the combined tree; on an empty check set that judge is absent. Fix: refuse an empty check set (a new MRS-DISP code) when the verdict handed to execute_dispatch_land was reused (verification_mode == reused). Kept out of Story 102.1 by its AC9 (dispatch_land.py is not edited).
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:1068
+    severity: medium
+  - summary: >-
+      The head a verdict judged is read once, after the verification, so a commit landing in the worktree while the verification ran would be recorded as the verified head.
+    evidence: |-
+      Found by the independent review of PR #2238 (2026-10-15). cli/dispatch.py _verification_verdict_for_cap4 (verification_head_sha after evaluate_dispatch_verification, :1308) and dispatch_supervisor/__main__.py _run_and_journal_verification (:2662) read HEAD and the dirty state once, after the gates ran. A commit made in the worktree during a long verification would be journaled as the head the verdict judged, and a later reuse would trust it. Fix: read the head before and after the verification and record head_sha only when both reads match and the tree is clean.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:1308
+    severity: low
 ---
 
 <intent-contract>
@@ -69,25 +84,35 @@ GitHub CI again, even when not one byte of the story's own code changed. Line nu
   the story's own diff (`git diff --name-only --no-renames origin/main...V`) and the first-parent chain from H down to
   V, the reuse is **exempt** when:
   - H equals V (`basis: head-unchanged`), or every commit on the chain is one of (`basis: merge-of-main`):
-    - **a merge of main:** exactly two parents, the second an ancestor of `refs/remotes/origin/main`; replaying it
-      (`git merge-tree --write-tree P1 P2`) reports no conflict in a non-planning path; its first-parent diff
-      (`P1..M`) touches no non-planning path of the story's own diff; and its tree differs from the replay only in
+    - **a merge of main:** exactly two parents, the second on `refs/remotes/origin/main`'s first-parent chain (a state
+      main was itself in, not merely an ancestor; review fix 2); replaying it (`git merge-tree --write-tree P1 P2`)
+      reports no conflict in a non-planning path; its first-parent diff (`P1..M`) touches no `marshal-policy.toml`
+      (review fix 1) and no non-planning path of the story's own diff; and its tree differs from the replay only in
       planning paths (no hand-made change outside them);
     - **a planning-only commit:** one parent, every changed path a planning path (marshal's own reconcile stamps and
       memlog unions land this way, as on steward 102.1's branch);
-  - and the story's own diff is not empty.
+  - every non-planning path a merge brought from main still reads current `origin/main`'s content (review fix 2: a
+    merge of a main commit main later reverted, or a path main moved again since, declines);
+  - the story's own diff is not empty;
+  - the gate set a fresh verification would run now (`verify_gate_set`: this policy's and the derived commands for
+    the worktree's diff, then the cross-surface rules) digests to the `gate_digest` the full verdict journaled (review
+    fix 1); and the story's tracked spec resolves in the worktree (review fix 6).
 
-  A **planning path** is under `_bmad-output/projects/*/planning-artifacts/`, `docs/dreams/` or `.claude/memory/`, any
-  `.memlog.md` or `deferred-work-ledger.md`, or `scripts/.spec-surface-baseline.json`, except every
+  A **planning path** is anywhere under exactly `_bmad-output/projects/<one segment>/planning-artifacts/`, under
+  `docs/dreams/` or `.claude/memory/`, a Spec memlog under `docs/governance/`, or `scripts/.spec-surface-baseline.json`
+  (review fix 4 anchors the match). Never planning: a path with an empty, `.` or `..` segment, a Python file, every
   `marshal-policy.toml` (it holds the verify commands) and the story's own tracked spec (its success signal and
   declared surface bind the verification). Anything else is **not exempt** and names one reason:
-  `no-verified-verdict`, `dirty-worktree`, `no-story-diff`, `not-on-first-parent-chain`, `story-commit`,
-  `octopus-merge`, `merge-not-of-main`, `merge-conflict-outside-planning`, `merge-touches-story-file`,
-  `merge-resolution-outside-planning`, `git-read-failed`.
+  `no-verified-verdict`, `gate-set-changed`, `no-story-spec`, `dirty-worktree`, `no-story-diff`,
+  `not-on-first-parent-chain`, `story-commit`, `octopus-merge`, `merge-not-of-main`,
+  `merge-conflict-outside-planning`, `merge-touches-policy`, `merge-touches-story-file`,
+  `merge-resolution-outside-planning`, `merge-stale-against-main`, `git-read-failed`.
 - **The git reads (`dispatch_verify.py`, beside the commit checks).** Read-only `git` through the `ProcessPort`
   seam, as `check_branch_commit_attribution` reads (`gather_reuse_facts`): one `rev-list --first-parent --parents V..H`, the story diff,
   and per chain commit its first-parent diff, plus, for a merge, `merge-base --is-ancestor`, `merge-tree` and a tree
-  diff. A walk longer than 64 commits, or one that does not end on V, is `not-on-first-parent-chain`.
+  diff. A walk longer than 64 commits, or one that does not end on V, is `not-on-first-parent-chain`. A merge's second
+  parent is checked against `rev-list --first-parent origin/main --not <its parents>`, and the paths the merges brought
+  against `git diff --name-only H origin/main`.
 - **The narrow re-check.** When exempt, the land-only path runs the full verification's own planning-surface commands
   and its two commit checks, never the station's suites: `python scripts/spec_surface_reconcile.py` (the S-13.7 guard,
   the same `gather_spec_surface` verdict as `spec-surface-check`), `pixi run --frozen -e pyforge-guild
@@ -239,7 +264,14 @@ Type / Effort / Deps: fix / M / —.
 
 **Residual risk:**
 - A reused verdict never ran the station's suites over main's new code beside the story's code. A semantic break
-  between them reaches only GitHub CI, which every landing awaits.
+  between them reaches only GitHub CI. Every landing waits for its PR head's check runs, but a head that reports none
+  proceeds after the 120 s grace (`dispatch_land.py:1068`, pre-existing), so on an empty check set nothing judges the
+  combined tree. `DW-marshal-102-1` records refusing an empty check set for a reused verdict.
+- A planning-only change is not judged by the suites a reuse skips, yet station tests read live planning paths: the
+  review counted 17 doctor, 9 steward and 4 herald test files that do (review finding 8). A planning-only commit or
+  a planning conflict resolution can therefore redden a suite the reuse never ran; the narrow re-check covers the
+  planning detectors, and CI is the backstop for the suites.
+- The verified head is read once, after the verification (`DW-marshal-102-1-2`).
 - A verdict journaled before this story lands carries no `head_sha`, so the three dispatches in flight today
   re-verify in full, as they do now.
 - `merge-tree` replays with today's git; a merge made by a git with different conflict rules could replay

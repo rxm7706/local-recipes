@@ -27,12 +27,16 @@ from pyforge.marshal.core.dispatch_reverify import (
     MODE_FULL,
     MODE_REUSED,
     REASON_DIRTY_WORKTREE,
+    REASON_GATE_SET_CHANGED,
     REASON_GIT_READ_FAILED,
     REASON_MERGE_CONFLICT_OUTSIDE_PLANNING,
     REASON_MERGE_NOT_OF_MAIN,
     REASON_MERGE_RESOLUTION_OUTSIDE_PLANNING,
+    REASON_MERGE_STALE_AGAINST_MAIN,
+    REASON_MERGE_TOUCHES_POLICY,
     REASON_MERGE_TOUCHES_STORY_FILE,
     REASON_NO_STORY_DIFF,
+    REASON_NO_STORY_SPEC,
     REASON_NO_VERIFIED_VERDICT,
     REASON_NOT_ON_FIRST_PARENT_CHAIN,
     REASON_OCTOPUS_MERGE,
@@ -40,6 +44,7 @@ from pyforge.marshal.core.dispatch_reverify import (
     REASON_STORY_COMMIT,
     ChainCommit,
     ReuseFacts,
+    gate_set_digest,
     is_planning_path,
     judge_verdict_reuse,
     latest_reusable_verdict,
@@ -57,6 +62,7 @@ from pyforge.marshal.dispatch_verify import (
     gather_reuse_facts,
     run_reuse_recheck,
     verification_head_sha,
+    verify_gate_set,
 )
 
 _SLUG = "pyforge-marshal"
@@ -65,6 +71,11 @@ _MEMLOG = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-p
 _BASELINE = "scripts/.spec-surface-baseline.json"
 _STORY_FILE = "src/app/core.py"
 _OTHER_FILE = "src/app/other.py"
+#: The story's own tracked spec, written by the story's change (``dispatch_core.resolve_story_spec_path`` finds it).
+_SPEC_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-102-1-the-story.md"
+_POLICY_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+#: A gate digest for the tests that drive ``attempt_verdict_reuse`` directly.
+_TEST_DIGEST = "sha256:" + "d" * 64
 
 
 # ---------------------------------------------------------------------------
@@ -91,7 +102,10 @@ class Scratch:
         self.write(_OTHER_FILE, "other\n")
         self.write(_MEMLOG, "---\ntopic: t\n---\n\n- (event) base\n")
         self.write(_BASELINE, '{"specs": {}}\n')
-        self.write("scripts/commit_msg_hook.py", "def offending_lines(message):\n    return []\n")
+        # The scratch repository's own attribution-hook stub, which the narrow re-check loads from the worktree. It is
+        # written into the scratch tree, never read from this repository's (the trigger map derives a read from a
+        # string literal naming a tracked path, so the path is built from its segments).
+        self.write(str(Path("scripts", "commit_msg_hook.py")), "def offending_lines(message):\n    return []\n")
         self.commit_all("base")
         self.sync_origin_main()
         self.git("checkout", "-q", "-b", "story")
@@ -126,10 +140,12 @@ class Scratch:
     def sync_origin_main(self) -> None:
         self.git("update-ref", ORIGIN_MAIN, "refs/heads/trunk")
 
-    def story_verified(self) -> str:
+    def story_verified(self, *, with_spec: bool = True) -> str:
         """The story's own change, committed: the head a full verification judged (V)."""
         self.replace_line(_STORY_FILE, "line 1\n", "line 1 (story)\n")
         self.append(_MEMLOG, "- (event) story\n")
+        if with_spec:
+            self.write(_SPEC_REL, "---\nstatus: in-review\n---\n")
         return self.commit_all("story change")
 
     def main_commit(self, edit, message: str = "main moves") -> str:
@@ -317,10 +333,9 @@ def test_a_verified_head_off_the_first_parent_chain_re_verifies(scratch: Scratch
 
 
 def test_a_policy_or_story_spec_change_is_never_a_planning_change(scratch: Scratch) -> None:
-    spec_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-102-1-x.md"
-    policy_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+    spec_rel = _SPEC_REL
     verified = scratch.story_verified()
-    scratch.write(policy_rel, 'verify_commands = ["true"]\n')
+    scratch.write(_POLICY_REL, 'verify_commands = ["true"]\n')
     scratch.commit_all("policy edit")
 
     assert _judge(scratch, verified).reason == REASON_STORY_COMMIT
@@ -439,7 +454,14 @@ def _outcome(counter: int, payload: dict, *, writer: str = "dispatch-supervisor-
 
 
 def _verified(head: str | None, **extra) -> dict:
-    payload: dict = {"verdict": "verified", "ok": True, "scope_violation_advisories": [], "mode": MODE_FULL, **extra}
+    payload: dict = {
+        "verdict": "verified",
+        "ok": True,
+        "scope_violation_advisories": [],
+        "mode": MODE_FULL,
+        "gate_digest": _TEST_DIGEST,
+        **extra,
+    }
     if head is not None:
         payload["head_sha"] = head
     return payload
@@ -504,6 +526,19 @@ class _GitVcs:
     def has_uncommitted_changes(self, worktree: Path) -> bool:
         out = subprocess.run(["git", "status", "--porcelain"], cwd=worktree, capture_output=True, text=True, check=True)
         return bool(out.stdout.strip())
+
+    def changed_files(self, _repo_root: Path, worktree: Path, *, base: str) -> tuple[str, ...]:
+        diff = subprocess.run(
+            ["git", "diff", "--name-only", f"{base}...HEAD"], cwd=worktree, capture_output=True, text=True, check=True
+        )
+        return tuple(sorted({line for line in diff.stdout.splitlines() if line}))
+
+
+def _digest_now(scratch: Scratch, project: dict) -> str:
+    """The gate digest a full verification at the scratch's current head records under ``project``'s policy."""
+    effective, _ = policy.compose(project_slug=_SLUG, project=project, flags={})
+    changed = _GitVcs().changed_files(scratch.repo, scratch.repo, base=ORIGIN_MAIN)
+    return gate_set_digest(verify_gate_set(effective, changed_files=changed))
 
 
 def test_the_recorded_head_is_the_clean_head_and_none_on_a_dirty_tree(scratch: Scratch) -> None:
@@ -646,7 +681,10 @@ def test_a_merge_only_move_reuses_the_verdict_and_lands_it_verified(
 ) -> None:
     verified = scratch.story_verified()
     advisory = {"code": "MRS-GATE-007", "path": "docs/x.md"}
-    run_dir = _seed_journal(scratch, _outcome(0, _verified(verified, scope_violation_advisories=[advisory])))
+    digest = _digest_now(scratch, _ON_CODE_CHANGE)
+    run_dir = _seed_journal(
+        scratch, _outcome(0, _verified(verified, scope_violation_advisories=[advisory], gate_digest=digest))
+    )
     scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "other, moved on main\n"))
     merge = scratch.merge_main()
 
@@ -666,6 +704,7 @@ def test_a_merge_only_move_reuses_the_verdict_and_lands_it_verified(
     assert reused["reused_head_sha"] == verified
     assert reused["reuse_evidence"]["basis"] == BASIS_MERGE_OF_MAIN
     assert reused["scope_violation_advisories"] == [advisory]
+    assert reused["gate_digest"] == digest
     for command in REUSE_RECHECK_COMMANDS[1:]:
         assert command in proc.commands
     assert any("spec_surface_reconcile.py" in command for command in proc.commands)
@@ -675,7 +714,9 @@ def test_a_red_narrow_re_check_declines_the_reuse_and_re_verifies_in_full(
     scratch: Scratch, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     verified = scratch.story_verified()
-    run_dir = _seed_journal(scratch, _outcome(0, _verified(verified)))
+    run_dir = _seed_journal(
+        scratch, _outcome(0, _verified(verified, gate_digest=_digest_now(scratch, _ON_CODE_CHANGE)))
+    )
     scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "other, moved on main\n"))
     scratch.merge_main()
 
@@ -695,7 +736,9 @@ def test_a_story_commit_declines_the_reuse_and_re_verifies_in_full(
     scratch: Scratch, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     verified = scratch.story_verified()
-    run_dir = _seed_journal(scratch, _outcome(0, _verified(verified)))
+    run_dir = _seed_journal(
+        scratch, _outcome(0, _verified(verified, gate_digest=_digest_now(scratch, _ON_CODE_CHANGE)))
+    )
     scratch.replace_line(_STORY_FILE, "line 5\n", "line 5 (fix)\n")
     head = scratch.commit_all("story fix")
 
@@ -757,6 +800,7 @@ def test_a_dirty_worktree_declines(scratch: Scratch) -> None:
         story_spec_rel=None,
         process=PosixProcess(),
         vcs=_GitVcs(),
+        current_gate_digest=_TEST_DIGEST,
     )
     assert not reuse.reused
     assert reuse.declined_payload()["reason"] == REASON_DIRTY_WORKTREE
@@ -772,6 +816,7 @@ def test_an_unknown_verified_head_is_a_git_read_failure(scratch: Scratch) -> Non
         story_spec_rel=None,
         process=PosixProcess(),
         vcs=_GitVcs(),
+        current_gate_digest=_TEST_DIGEST,
     )
     assert not reuse.reused
     assert reuse.declined_payload()["reason"] == REASON_GIT_READ_FAILED
@@ -794,6 +839,7 @@ def test_an_exempt_reuse_with_a_green_injected_re_check_is_reused(scratch: Scrat
         process=PosixProcess(),
         vcs=_GitVcs(),
         recheck=_green,
+        current_gate_digest=_TEST_DIGEST,
     )
     assert reuse.reused
     assert reuse.declined_payload() is None
@@ -860,3 +906,248 @@ def test_the_supervisor_journals_the_clean_head_its_verification_judged(
     assert payload["verdict"] == "verified"
     assert payload["mode"] == MODE_FULL
     assert payload.get("head_sha") == expected
+
+
+# ---------------------------------------------------------------------------
+# Review fixes (PR #2238, 2026-10-15)
+# ---------------------------------------------------------------------------
+
+
+def test_a_merge_of_main_that_changes_a_station_policy_re_verifies(scratch: Scratch) -> None:
+    """Review fix 1 (probe 5): a merge whose first-parent diff touches a ``marshal-policy.toml`` may move the very
+    verify commands the verdict ran, so it is never exempt."""
+    scratch.git("checkout", "-q", "trunk")
+    scratch.write(_POLICY_REL, 'verify_commands = ["pytest"]\n')
+    scratch.commit_all("policy on main")
+    scratch.sync_origin_main()
+    scratch.git("checkout", "-q", "story")
+    scratch.merge_main()
+    verified = scratch.story_verified()
+    scratch.main_commit(lambda: scratch.write(_POLICY_REL, 'verify_commands = ["pytest", "a-new-gate"]\n'))
+    scratch.merge_main()
+
+    decision = _judge(scratch, verified, story_spec_rel=_SPEC_REL)
+
+    assert not decision.exempt
+    assert decision.reason == REASON_MERGE_TOUCHES_POLICY
+    assert _POLICY_REL in decision.detail
+
+
+def test_a_changed_gate_set_declines_the_reuse_and_re_verifies_in_full(
+    scratch: Scratch, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review fix 1: the land-only policy is composed from the primary checkout, so a gate added between V and the
+    re-land changes the gate set a fresh verification would run. The digest moves, and the reuse declines."""
+    verified = scratch.story_verified()
+    run_dir = _seed_journal(
+        scratch, _outcome(0, _verified(verified, gate_digest=_digest_now(scratch, _ON_CODE_CHANGE)))
+    )
+    scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "other, moved on main\n"))
+    scratch.merge_main()
+    widened = {
+        **_ON_CODE_CHANGE,
+        "verify_commands": ["pixi run --frozen -e pyforge-marshal pyforge-marshal-test", "new-gate"],
+    }
+
+    _verdict, envelope, full_runs, _landed, outcomes, proc = _land_only(scratch, run_dir, monkeypatch, project=widened)
+
+    assert len(full_runs) == 1
+    assert envelope.data["verification_mode"] == MODE_FULL
+    assert outcomes[-1]["reuse_declined"]["reason"] == REASON_GATE_SET_CHANGED
+    assert proc.git_calls == [], "a changed gate set declines before any reuse git read"
+
+
+def test_a_verdict_without_a_gate_digest_is_never_reused(scratch: Scratch) -> None:
+    verified = scratch.story_verified()
+    payload = _verified(verified)
+    del payload["gate_digest"]
+    for lines, current in ((_outcome(0, payload), _TEST_DIGEST), (_outcome(0, _verified(verified)), None)):
+        reuse = attempt_verdict_reuse(
+            folded=fold(lines),
+            run_id=_RUN_ID,
+            worktree=scratch.repo,
+            repo_root=scratch.repo,
+            story_spec_rel=_SPEC_REL,
+            process=PosixProcess(),
+            vcs=_GitVcs(),
+            current_gate_digest=current,
+        )
+        assert reuse.declined_payload()["reason"] == REASON_GATE_SET_CHANGED
+
+
+def test_the_gate_digest_is_stable_and_moves_with_the_gate_set() -> None:
+    assert gate_set_digest(["a  b", "c"]) == gate_set_digest(["a b", "c"])
+    assert gate_set_digest(["a", "c"]) != gate_set_digest(["c", "a"])
+    assert gate_set_digest(["a"]) != gate_set_digest(["a", "b"])
+    effective, _ = policy.compose(project_slug=_SLUG, project={"verify_commands": ["x-gate"]}, flags={})
+    gates = verify_gate_set(effective, changed_files=("src/shared/packages/pyforge-marshal/src/pyforge/marshal/x.py",))
+    assert gates[0] == "x-gate"
+    assert any("pyforge-marshal-coverage-gate" in command for command in gates)
+    assert verify_gate_set(effective, changed_files=()) != gates
+
+
+def test_a_full_verification_journals_the_digest_of_the_gates_it_ran(scratch: Scratch) -> None:
+    """Review fix 1: ``evaluate_dispatch_verification`` records the digest of exactly the gate set it ran, and the
+    OUTCOME carries it."""
+    from pyforge.marshal.dispatch_verify import evaluate_dispatch_verification
+
+    scratch.story_verified()
+    effective, _ = policy.compose(project_slug=_SLUG, project={"verify_commands": ["x-gate"]}, flags={})
+    process = _Process()
+    envelope = evaluate_dispatch_verification(
+        project_slug=_SLUG,
+        story_key=normalize("102.1"),
+        worktree=scratch.repo,
+        repo_root=scratch.repo,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=_GitVcs(),
+    )
+    changed = _GitVcs().changed_files(scratch.repo, scratch.repo, base=ORIGIN_MAIN)
+    assert envelope.data["gate_digest"] == gate_set_digest(verify_gate_set(effective, changed_files=changed))
+    assert "x-gate" in process.commands
+    payload = dict(_built(verify_data=dict(envelope.data)).outcome_entry.payload)
+    assert payload["gate_digest"] == envelope.data["gate_digest"]
+
+
+def test_a_merge_of_a_main_commit_main_later_reverted_re_verifies(scratch: Scratch) -> None:
+    """Review fix 2 (probe 6): the merged commit is on main's first-parent line, but main reverted it, so the path it
+    brought no longer reads current main's content."""
+    verified = scratch.story_verified()
+    bad = scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "bad, later reverted\n"), "bad")
+    scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "other\n"), "Revert bad")
+    scratch.git("merge", "--no-ff", "--no-edit", "-m", "Merge an old main commit", bad)
+
+    decision = _judge(scratch, verified, story_spec_rel=_SPEC_REL)
+
+    assert not decision.exempt
+    assert decision.reason == REASON_MERGE_STALE_AGAINST_MAIN
+    assert _OTHER_FILE in decision.detail
+
+
+def test_a_path_main_moved_again_after_the_merge_re_verifies(scratch: Scratch) -> None:
+    """Review fix 2, the conservative side: main changed a path the merge brought once more after the merge, so the
+    branch no longer holds the tree main would land."""
+    verified = scratch.story_verified()
+    scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "other, moved on main\n"))
+    scratch.merge_main()
+    scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "other, moved again\n"))
+
+    decision = _judge(scratch, verified, story_spec_rel=_SPEC_REL)
+
+    assert decision.reason == REASON_MERGE_STALE_AGAINST_MAIN
+
+
+def test_a_merge_of_a_commit_off_main_s_first_parent_line_re_verifies(scratch: Scratch) -> None:
+    """Review fix 2 (nit 3): a commit inside a branch main merged is an ancestor of main, but main was never in that
+    state. Only a first-parent commit of main is a merge of main."""
+    verified = scratch.story_verified()
+    scratch.git("checkout", "-q", "-b", "feature", "trunk")
+    scratch.write(_OTHER_FILE, "half a feature\n")
+    half = scratch.commit_all("feature, part one")
+    scratch.write("src/app/feature.py", "part two\n")
+    scratch.commit_all("feature, part two")
+    scratch.git("checkout", "-q", "trunk")
+    scratch.git("merge", "--no-ff", "--no-edit", "-m", "Merge feature", "feature")
+    scratch.sync_origin_main()
+    scratch.git("checkout", "-q", "story")
+    scratch.git("merge", "--no-ff", "--no-edit", "-m", "Merge half a feature", half)
+
+    decision = _judge(scratch, verified, story_spec_rel=_SPEC_REL)
+
+    assert not decision.exempt
+    assert decision.reason == REASON_MERGE_NOT_OF_MAIN
+
+
+def test_a_conftest_under_a_nested_planning_artifacts_directory_re_verifies(scratch: Scratch) -> None:
+    """Review fix 4 (probe 7)."""
+    verified = scratch.story_verified()
+    scratch.write("_bmad-output/projects/x/tests/planning-artifacts/conftest.py", "raise SystemExit\n")
+    scratch.commit_all("planning?")
+
+    decision = _judge(scratch, verified, story_spec_rel=_SPEC_REL)
+
+    assert decision.reason == REASON_STORY_COMMIT
+
+
+@pytest.mark.parametrize(
+    ("path", "planning"),
+    [
+        ("_bmad-output/projects/x/tests/planning-artifacts/conftest.py", False),
+        ("_bmad-output/projects/x/tests/planning-artifacts/notes.md", False),
+        ("_bmad-output/projects/x/planning-artifacts/sub/conftest.py", False),
+        ("_bmad-output/projects/x/planning-artifacts/sub/notes.md", True),
+        ("_bmad-output/projects/planning-artifacts/notes.md", False),
+        ("src/shared/packages/pyforge-x/src/pyforge/x/.memlog.md", False),
+        ("src/shared/packages/pyforge-x/deferred-work-ledger.md", False),
+        ("docs/governance/spec-x/.memlog.md", True),
+        ("docs/governance/ci-surfaces.yaml", False),
+        ("docs/dreams/../../src/app/core.py", False),
+        ("docs/dreams//pyforge-marshal.md", False),
+        ("docs/dreams", False),
+        ("docs/dreams/helper.py", False),
+        (".claude/memory/feedback/x.md", True),
+    ],
+)
+def test_the_planning_rule_is_anchored(path: str, planning: bool) -> None:
+    assert is_planning_path(path) is planning
+
+
+def _reused_payload(*, counter: int = 1, head: str = "a" * 40) -> dict:
+    return {
+        "verdict": "verified",
+        "ok": True,
+        "mode": MODE_REUSED,
+        "head_sha": "b" * 40,
+        "reused_verification_id": {"writer_id": "dispatch-supervisor-1", "counter": counter},
+        "reused_head_sha": head,
+    }
+
+
+@pytest.mark.parametrize(
+    ("base_payload", "reused"),
+    [
+        (None, _reused_payload()),
+        ({"verdict": "refused", "ok": False, "mode": MODE_FULL, "head_sha": "a" * 40}, _reused_payload()),
+        ({**_reused_payload(), "head_sha": "a" * 40}, _reused_payload()),
+        (_verified("c" * 40), _reused_payload()),
+        (_verified("a" * 40), _reused_payload(counter=9)),
+    ],
+    ids=["base-missing", "base-refused", "base-is-a-reuse", "base-head-differs", "base-id-differs"],
+)
+def test_a_reuse_whose_base_does_not_hold_up_is_never_a_candidate(base_payload, reused) -> None:
+    """Review fix 5: the base a reused OUTCOME names must be present, verified, a full verification, and judge the
+    head the reuse names."""
+    lines = _outcome(0, base_payload) if base_payload is not None else []
+    lines += _outcome(5, reused, writer="dispatch-land-7")
+    assert latest_reusable_verdict(fold(lines), _RUN_ID) is None
+
+
+def test_a_reuse_with_a_sound_base_carries_the_base_s_gate_digest() -> None:
+    lines = _outcome(0, _verified("a" * 40, gate_digest="sha256:base")) + _outcome(
+        5, _reused_payload(), writer="dispatch-land-7"
+    )
+    candidate = latest_reusable_verdict(fold(lines), _RUN_ID)
+    assert candidate is not None
+    assert candidate.gate_digest == "sha256:base"
+
+
+def test_a_story_without_a_tracked_spec_declines_and_re_verifies_in_full(
+    scratch: Scratch, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review fix 6: with no tracked spec the story's own spec cannot be told from planning, so reuse fails closed."""
+    verified = scratch.story_verified(with_spec=False)
+    run_dir = _seed_journal(
+        scratch, _outcome(0, _verified(verified, gate_digest=_digest_now(scratch, _ON_CODE_CHANGE)))
+    )
+    scratch.main_commit(lambda: scratch.write(_OTHER_FILE, "other, moved on main\n"))
+    scratch.merge_main()
+
+    _verdict, _envelope, full_runs, _landed, outcomes, proc = _land_only(
+        scratch, run_dir, monkeypatch, project=_ON_CODE_CHANGE
+    )
+
+    assert len(full_runs) == 1
+    assert outcomes[-1]["reuse_declined"]["reason"] == REASON_NO_STORY_SPEC
+    assert proc.git_calls == []
