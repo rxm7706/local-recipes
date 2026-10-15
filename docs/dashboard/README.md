@@ -30,7 +30,16 @@ the overview tiles.
 
 Deploy is `.github/workflows/pages.yml`, which uploads `docs-site/build/site`.
 
-Vizro is a separate dashboard product from Kedro-Viz. If a Vizro board is
-ever published here too, it gets its own subfolder (e.g. `vizro/`) at that
-time — this directory does not mint an empty `vizro/` tree ahead of an
-actual publish.
+The Vizro boards (atlas Story 30.2) are staged locally under `vizro/`
+(gitignored) by `pixi run -e local-recipes vizro-static-export` when the
+`pyforge.atlas.vizro_static_boards` flag is on: one static page per board at
+`vizro/<page-id>/index.html`, the board index at `vizro/index.html`, one
+vendored `vizro/assets/plotly.min.js` (copied from the env's plotly, never a
+CDN) and `vizro/manifest.json` (`exported_at`, `export_commit`, and `boards[]`
+with each board's `id`, `title`, `path` and `data_build_timestamp`). CI's
+`vizro` job on `.github/workflows/kedro-viz-publish.yml` uploads that tree as
+the workflow artifact **`vizro-static-export`** (90 days). Pages mounts it at
+`/dashboard/vizro/` once the consumer lands (steward 102.4's download step and
+herald Story 43.3's mount; neither is on `main` as of 2026-10-15). The live
+Vizro server stays on Lane 1; the static boards carry no filters and no scan
+controls.

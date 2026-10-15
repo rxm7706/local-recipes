@@ -2,7 +2,7 @@
 title: '30.2: Vizro boards publish as static exports under /dashboard/vizro/'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: 'e134549afcbdcc5b55b35f291464ac60d6685243'
 flag:
   key: pyforge.atlas.vizro_static_boards          # new; minted by this story
@@ -281,3 +281,27 @@ states
   per-page stamp read-back, steward's `deploy.py` `_run_static` refusal and `docsite/tools/assemble_pages.py`'s
   `VENDORED_ROOTS`. Where the landed code differs from the shape quoted here, the landed code wins and the deviation is
   recorded in this log.
+- 2026-10-15 (atlas side built; the mount follows herald 43.3 / steward 102.4): `dashboard/static_export.py`,
+  `vizro_static_boards.py` (the flag, read without vizro), `PageDef.access_column`, `tools/vizro_static_export.py`
+  behind the `vizro-static-export` task, the `vizro` and `changes` jobs, the flag in the tree, overlays and inventory.
+  Where the landed code differs from the shape quoted above:
+  - **The bundle trips AC2's grep and AC7's check.** plotly 7.1.0's `package_data/plotly.min.js`, copied byte for
+    byte (AC1, an Always), carries `cdn.plot.ly/un/` (its default topojson URL, fetched only by geo traces) and a
+    maplibre ``.src = `https://cdn.jsdelivr.net/npm/@mapbox/maki@8.2.0/icons/${p}.svg` `` template that
+    `assemble_pages.cross_origin_findings` reports as a cross-origin dynamic src. The pages reference no origin at
+    all, so AC2 is tested on the pages; AC7 with `VENDORED_ROOTS` unchanged reds on `dashboard/vizro/assets/plotly.min.js`
+    alone. Open for the operator: a `VENDORED_ROOTS` entry for `dashboard/vizro/assets/` only (AD-21 rule 5, the
+    pages stay judged), a partial plotly.js bundle (a new dependency), or an amended AC.
+  - **Path filter.** GitHub filters paths per workflow, so `on.push.paths` gains `dashboard/**` and `semantic/**`
+    (30.1's AC4 pinned it unchanged; its test now pins the publish job to the 30.1 paths through the `changes` job,
+    which tells each producer whether the push touched its own paths).
+  - **Tables** render as plain HTML tables (every row, no script); only the declared chart goes through
+    `Figure.to_html`. Card text renders through a small Markdown subset (headings, paragraphs, `code`, **bold**,
+    pipe tables) rather than a new dependency. The data root's absolute path is shown as `<data-root>` on the
+    static pages. Flag off exits 2, atlas's usage code.
+  - **Fixed on the way (red on base):** `dashboard-dryrun` and `vizro-ai-dryrun` died loading `tests/conftest.py`
+    (`pyforge.testing_kit` is not in `-e local-recipes`; their `PYTHONPATH` now carries the kit's `src`), and five
+    `test_dashboard_e2e.py` tests then failed on `KeyError: 'nav-control-panel'` under vizro 0.1.62
+    (`LandmarkDashboard` now finds the nav container in 0.1.60 and 0.1.62). AC9's two-state test needs
+    `openfeature`, so it runs in `-e pyforge-atlas` and skips in `-e local-recipes`. The pixi-version registry counts
+    two `setup-pixi` pins in `kedro-viz-publish.yml`.

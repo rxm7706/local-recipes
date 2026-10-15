@@ -67,8 +67,8 @@ SITES: tuple[Site, ...] = (
           r"^- pixi >=" + _PIXI_VERSION + r"$", kind="floor", derived=True),
     _site("pages.yml setup-pixi", ".github/workflows/pages.yml",
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
-    _site("kedro-viz-publish.yml setup-pixi", ".github/workflows/kedro-viz-publish.yml",
-          r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
+    _site("kedro-viz-publish.yml setup-pixi (publish + vizro jobs)", ".github/workflows/kedro-viz-publish.yml",  # atlas 30.2 (2026-10-15): the vizro job, registered the day it was added
+          r"pixi-version: v" + _PIXI_VERSION, hits=2, kind="exact"),
     _site("detectors.yml setup-pixi", ".github/workflows/detectors.yml",  # PR #1043: pixi-first detectors env
           r"pixi-version: v" + _PIXI_VERSION, kind="exact"),
     _site("lint-types.yml setup-pixi", ".github/workflows/lint-types.yml",  # steward 66.1 (2026-09-20): registered on the day it was added, not found by a sweep later

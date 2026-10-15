@@ -116,6 +116,10 @@ class PageDef:
     # `vm.Graph`. A page DESIGN.md gives no Filter/Graph bullet declares neither.
     filters: tuple[str, ...] = ()
     chart: ChartDef | None = None
+    # Story 30.2 (CAP-63, sld:AD-10): the column a board would filter rows on per
+    # viewer. A static export has no viewer to filter for, so `static_export`
+    # refuses the whole export when any page declares one. No page sets it today.
+    access_column: str | None = None
 
 
 PAGE_INVENTORY: tuple[PageDef, ...] = (
@@ -736,16 +740,21 @@ def _factory_page(
     )
 
 
+#: The container holding Vizro's ``#nav-panel``, by Vizro release (newest last).
+NAV_CONTAINER_IDS = ("nav-control-panel", "left-side-inner")
+
+
 class LandmarkDashboard(vm.Dashboard):
     """``vm.Dashboard`` with the two ARIA landmarks its shipped layout lacks.
 
-    Vizro 0.1.60 builds the page select into a ``<div id="nav-control-panel">``
-    and the page content into a ``<div id="right-side">``: a browser agent (or a
-    screen reader) gets no ``navigation`` and no ``main`` landmark to jump to.
-    This subclass re-tags exactly those two containers after
-    ``_arrange_page`` has assembled them — nothing is reordered, no Vizro
-    component template is patched, and a Vizro release that adds its own
-    landmarks would simply make this a no-op rename.
+    Vizro builds the page select into a container beside the controls
+    (``<div id="nav-control-panel">`` in 0.1.60, ``<div id="left-side-inner">``
+    from 0.1.62, the version ``-e local-recipes`` resolves) and the page content
+    into a ``<div id="right-side">``: a browser agent (or a screen reader) gets
+    no ``navigation`` and no ``main`` landmark to jump to. This subclass re-tags
+    exactly those containers after ``_arrange_page`` has assembled them —
+    nothing is reordered, no Vizro component template is patched, and a Vizro
+    release that adds its own landmarks would simply make this a no-op rename.
 
     ``tests/integration/dashboard/test_dashboard_e2e.py`` asserts both landmarks
     against the rendered DOM (DW-FU-20-5-3).
@@ -756,13 +765,21 @@ class LandmarkDashboard(vm.Dashboard):
 
         layout = super()._arrange_page(outer_page=outer_page)
         layout["right-side"].role = "main"
-        nav_control_panel = layout["nav-control-panel"]
+        nav_container = None
+        for container_id in NAV_CONTAINER_IDS:
+            try:
+                nav_container = layout[container_id]
+            except KeyError:
+                continue
+            break
+        if nav_container is None:
+            raise KeyError(f"no navigation container ({', '.join(NAV_CONTAINER_IDS)}) in the Vizro page layout")
         aria_nav: dict[str, Any] = {"aria-label": "Dashboard pages"}
-        nav_control_panel.children = [
+        nav_container.children = [
             html.Nav(
                 id="pyforge-nav",
                 role="navigation",
-                children=nav_control_panel.children,
+                children=nav_container.children,
                 **aria_nav,
             )
         ]

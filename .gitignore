@@ -1033,8 +1033,10 @@ src/shared/packages/pyforge-steward/catalog/snapshot/
 # governed by a spec surface -- never git-tracked.
 forge-data/
 
-# docs/dashboard/ holds README (tracked); atlas stages Kedro-Viz under kedro-viz/ (gitignored).
+# docs/dashboard/ holds README (tracked); atlas stages Kedro-Viz under kedro-viz/ (gitignored)
+# and the static Vizro boards under vizro/ (Story 30.2; gitignored, shipped as a workflow artifact).
 docs/dashboard/kedro-viz/
+docs/dashboard/vizro/
 
 # Story 27.1: Starlight docs-site build outputs (local-only).
 docs-site/node_modules/
