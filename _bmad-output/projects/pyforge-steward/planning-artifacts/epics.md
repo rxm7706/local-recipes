@@ -6624,7 +6624,7 @@ So that none of the three readers says CI ran when it did not.
 **When** `pyforge steward ci status --json` runs with the master unset, `"false"` or `"true"`
 **Then** the payload has one `master:PAUSE_ALL_CI` row (declared `live`, the variable's live value, `live` while off, `drift` with a detail while on); every row whose jobs read the master, derived from the workflow files by `_ci_surface_gates_lib`'s parser, reads `paused` with a detail while it is on, below `drift`, `stuck` and `overdue`, and carries `paused_by_master`; drift is still judged on each row's own switch; the schema gains only the optional `paused_by_master` boolean and keeps its eight verdicts
 **And** with the master off every other row is unchanged; the master-on payload, kept as a steward fixture its test regenerates, read by doctor's, herald's and marshal's own code in their own environments gives one doctor WARN naming the master, a tile listing the master and every gated row, and a marshal list containing `master:PAUSE_ALL_CI`, with no consumer file changed; `docs/how-to/pause-ci.md` says what the report shows; four mutations fail named tests; `pyforge-steward-test`, `pyforge-doctor-test`, `pyforge-herald-test` and `lint-types` are green, and each governing Spec's memlog reconciles the changed paths before its scoped stamp
-**Status:** backlog
+**Status:** done
 
 ### Story 103.2: `estate reconcile` writes the bmad-suite floors from the batch, not the network
 
