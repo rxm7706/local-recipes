@@ -76,7 +76,10 @@ def test_fresh_clone_native_commands_are_cited_from_matrix():
     assert "npx skills add bmad-labs/skills" in section
     assert "corepack prepare pnpm@10.26.2" in section
     assert "steward provision --runner bmad-loop" in section
-    assert "steward deploy dashboard" in section
+    # Atlas Story 30.1: Kedro-Viz publishes as a workflow artifact, not through `steward deploy dashboard`.
+    assert "kedro-viz-export" in section
+    assert "viz-publish-stage" in section
+    assert "steward deploy dashboard" not in section
     assert "/console/" in section
     assert "Use this template" in section
 
@@ -122,6 +125,54 @@ def test_live_checkout_proves_six_class_outcomes():
     assert by_name["bmad-dashboard"].actual == "runnable"
     assert by_name["bmad-module-template"].actual == "n/a"
     assert by_name["bmad-module-template"].actual != "wired"
+
+
+def _dashboard_repo(tmp_path: Path, *, task: bool = True, upload: str | None = "kedro-viz-export") -> Path:
+    """A checkout with only what the bmad-dashboard class reads: playbook, pixi.toml, the producer."""
+    playbook = (
+        tmp_path
+        / "_bmad-output/projects/pyforge-steward/planning-artifacts/specs"
+        / "spec-bmad-suite-install-class-wiring/install-class-playbook.md"
+    )
+    playbook.parent.mkdir(parents=True)
+    playbook.write_text("Kedro-Viz: `viz-publish-stage`, `kedro-viz-export`; Lane 1 `/console/`.\n", encoding="utf-8")
+    pixi = "[workspace]\n" + ("[feature.pyforge-atlas.tasks.viz-publish-stage]\ncmd = 'true'\n" if task else "")
+    (tmp_path / "pixi.toml").write_text(pixi, encoding="utf-8")
+    workflow = tmp_path / ".github" / "workflows" / "kedro-viz-publish.yml"
+    workflow.parent.mkdir(parents=True)
+    steps = [{"run": "pixi run -e pyforge-atlas viz-publish-stage"}]
+    if upload is not None:
+        steps.append(
+            {"uses": "actions/upload-artifact@v4", "with": {"name": upload, "path": "docs/dashboard/kedro-viz/"}}
+        )
+    workflow.write_text(json.dumps({"jobs": {"publish": {"steps": steps}}}), encoding="utf-8")
+    return tmp_path
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "reason"),
+    [
+        ({}, None),
+        ({"task": False}, "viz-publish-stage] missing (the Kedro-Viz producer)"),
+        ({"upload": None}, "uploads no kedro-viz-export artifact"),
+        ({"upload": "something-else"}, "uploads no kedro-viz-export artifact"),
+    ],
+    ids=["wired", "no-stage-task", "no-upload", "wrong-artifact"],
+)
+def test_dashboard_runnable_reads_the_kedro_viz_producer_not_a_tracked_export(tmp_path: Path, kwargs, reason):
+    """Atlas Story 30.1: runnable means the producer is wired; no docs/dashboard/kedro-viz/ is ever asked for."""
+    from pyforge.steward.fresh_clone import _dashboard_runnable
+
+    repo = _dashboard_repo(tmp_path, **kwargs)
+    assert not (repo / "docs" / "dashboard" / "kedro-viz").exists()
+    playbook = next(repo.rglob("install-class-playbook.md")).read_text(encoding="utf-8")
+    outcome = _dashboard_runnable(repo, playbook, (repo / "pixi.toml").read_text(encoding="utf-8"))
+    if reason is None:
+        assert outcome.ok and outcome.actual == "runnable", outcome.detail
+        return
+    assert not outcome.ok
+    assert outcome.actual == "not-runnable"
+    assert reason in outcome.detail
 
 
 def test_template_into_repo_never_wired():

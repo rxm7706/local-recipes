@@ -49,7 +49,7 @@ on:
       - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/**'
       - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md'
       - 'pixi.toml'
-      - 'docs/dashboard/kedro-viz/**'
+      - '.github/workflows/kedro-viz-publish.yml'
       - '.github/workflows/pyforge-pip-install.yml'
   # Deliberately IDENTICAL to the pull_request list above. All three
   # predecessor workflows carried the same paths on both events, and a
@@ -71,7 +71,7 @@ on:
       - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-install-class-wiring/**'
       - '_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-channel-product/install-matrix.md'
       - 'pixi.toml'
-      - 'docs/dashboard/kedro-viz/**'
+      - '.github/workflows/kedro-viz-publish.yml'
       - '.github/workflows/pyforge-pip-install.yml'
   workflow_dispatch:
 

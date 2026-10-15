@@ -2,8 +2,9 @@
 title: '30.1: The DAG export reaches Pages as a workflow artifact'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: 'e134549afcbdcc5b55b35f291464ac60d6685243'
+status: 'in-review'
+followup_review_recommended: false
+baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag:
   key: pyforge.atlas.viz_export_artifact          # new; minted by this story
   provider: openfeature-file                      # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -12,7 +13,6 @@ flag:
   fallback: 'viz-publish-stage stages to docs/dashboard/kedro-viz/ exactly as today, writes no manifest.json, and the workflow upload step is skipped'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
@@ -160,6 +160,26 @@ Type / Effort / Deps: feature / M / — (cross-station, prose: steward 102.2 and
   in `tools/`, outside the package the no-inline-IO gate scans, or go through `pyforge.core.process`).
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
 
+**The consumers the removal breaks (landed with herald 42.2 in one PR, operator 2026-10-15):**
+AC1's removal of the tracked export breaks every reader that required `docs/dashboard/kedro-viz/` on a
+fresh clone. PR #2236 lands this story together with herald Story 42.2 and the fix for each, so `main`
+never holds the removal without its consumers (operator rulings 2026-10-15, recorded on
+`spec-pyforge-atlas` and `spec-pyforge-herald`):
+1. **The Pages build** (`docsite/tools/assemble_pages.py`, herald's): `missing required path
+   dashboard/kedro-viz/index.html`. Fixed by herald Story 42.2 — the mount reads this story's
+   `manifest.json` when the export is present and is skipped, with the tile hidden, when it is absent.
+2. **Steward's fresh-clone class-path proof** (`fresh_clone.py`, `test_fresh_clone_class_path.py`, the
+   `pip-install` lane) and **`deploy.py`'s repo-root marker**: both keyed on the export's `index.html`.
+   The `bmad-dashboard` class is now runnable when the producer is wired (`viz-publish-stage` plus this
+   workflow's `kedro-viz-export` upload); the marker is the tracked `docs/dashboard/README.md`.
+3. **Platform CI** (`src/platform/tests/test_console_parity_homes.py::test_generator_gone_kedro_viz_kept`)
+   and **steward's twin invariant** (`tests/meta/test_invariants.py::test_guildhall_generator_stays_deleted`):
+   "Kedro-Viz kept" now means kept as this workflow's artifact, not as a tracked directory.
+4. **`atlas-test`** (this story's own `test_viz_export_artifact.py`): AC4 read the baseline with
+   `git show <baseline_revision>`, which a `fetch-depth: 1` checkout cannot answer; the baseline's `on:`
+   block and the stub step's digest are pinned in the test instead, and the module fixture that ran
+   `git rm --cached` against the repository index is gone.
+
 ## I/O & Edge-Case Matrix
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
@@ -218,6 +238,8 @@ filter and the stub-credentials step unchanged, and a job `if:` carrying `PAUSE_
   import-direction and no-inline-IO meta-tests, which must stay green with the manifest tool in `tools/`).
 
 **Run before the push (not dispatch gates):**
+- `src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py` — expected: pass (AC1–AC7; runs
+  `pyforge.atlas.viz_export_artifact` in both states through `pyforge.testing_kit.flags.flag_states`).
 - `pixi run -e pyforge-atlas pyforge-atlas-test -k "viz_manifest or kedro_viz_publish or viz_export_artifact"` — expected:
   pass (AC1–AC7; the flag test through `pyforge.testing_kit.flags.flag_states`).
 - `pixi run -e pyforge-atlas viz-publish-stage` on a checkout with the flag on, then
@@ -259,3 +281,54 @@ filter and the stub-credentials step unchanged, and a job `if:` carrying `PAUSE_
   (`run_resume`, lines 1067–1090). The implementing session reads the CI-pause fragment steward Story 99.2 rendered on
   another workflow and copies its shape; where the landed code differs from the shape quoted here, the landed code wins
   and the deviation is recorded in this log.
+- 2026-10-15: landed Story 30.1 — `normalize_viz_build.py` repo-root marker is `docs/dashboard/README.md` (not
+  `kedro-viz/index.html`) so CI can normalize on a fresh clone after the export leaves git.
+- 2026-10-15 (amendment; landed with herald 42.2 in one PR, operator 2026-10-15): PR #2236 at `bc968a4c68` went red
+  on four lanes because AC1's removal had consumers this spec did not name — Pages `build` (`assemble_pages:
+  missing required path dashboard/kedro-viz/index.html`), `pip-install` and `steward-test` (the class-path proof and
+  `deploy.py`'s marker), Platform CI `test` (`test_generator_gone_kedro_viz_kept`), and `atlas-test` (AC4's `git show`
+  of the baseline on a shallow checkout). Marshal refused a separate 42.2 dispatch (`MRS-DISP-034`, surface overlap
+  with herald 43.1); the operator ruled "bring herald 42.2 forward" and then "combine 2236 - to include - Held: atlas
+  30.1 (rxm7706/local-recipes#2236). Its removal of the Kedro-Viz export breaks four consumers, so its spec needs
+  amending first, together with herald 42.2." Boundaries now name the four consumers and their fixes. Two `Never`
+  items stand for this story's own diff but not for the PR: the combined PR edits `docsite/` and `docs-site/` (herald
+  42.2's half) and steward's `deploy.py` marker (a consumer fix, not a change to any `deploy` duty's behaviour); this
+  story's files are unchanged in scope. The steward station-tests trigger map also gains this test's two root reads
+  (`docs/dashboard/README.md`, `docs/governance/ci-surfaces.yaml`) and its `git check-ignore` handoff. Status back to
+  `in-review` for the combined review; the ledger key stays `backlog` until the operator finalizes on merge
+  (`dispatch_land_finalize`).
+
+## Review Triage Log
+
+### 2026-10-15 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[reject]` `actions/upload-artifact@v4` while `pages.yml` uses `@v7` — versions differ by workflow age; upload shape matches AC4.
+  - `[false]` `[reject]` Stub-credentials heredoc drift claim — byte match to baseline workflow preserved.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Kedro-Viz publish now stages locally, optionally writes `manifest.json` when `pyforge.atlas.viz_export_artifact` is on, and uploads `kedro-viz-export` (90 days) instead of committing. The tracked export tree was removed from git and gitignored; CI pause switch `PAUSE_KEDRO_VIZ_PUBLISH` was wired on the registry row and job `if:`.
+
+Files changed (high level):
+- `.github/workflows/kedro-viz-publish.yml` — artifact upload, read-only permissions, pause fragment, flag-gated upload
+- `src/shared/packages/pyforge-atlas/tools/{viz_manifest,viz_publish_finish,print_viz_export_flag}.py` — manifest + flag wiring
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/viz_export_artifact.py` — `read_boolean` reader
+- `tests/unit/test_viz_export_artifact.py` — AC1–AC7 + matrix rows
+- `docs/dashboard/README.md`, `.gitignore`, `docs/governance/ci-surfaces.yaml`, flag tree + overlays, `pixi.toml` task chain
+- Removed tracked `docs/dashboard/kedro-viz/**`
+
+Review: 0 patches applied; 0 deferred.
+
+Verification:
+- `pytest …/test_viz_export_artifact.py` — 8 passed
+- `kedro-catalog-check` — 69 passed
+- `python scripts/spec_surface_reconcile.py` — OK (memlogs on spec-pyforge-atlas, spec-pyforge-steward, spec-pyforge-core, spec-pyforge-unifying-strategy, spec-pyforge-pages, spec-pyforge-marshal, spec-pixi-candidate-currency)
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0
+- `pixi run --frozen -e pyforge-guild flag-gate-check` — exit 0 (1 unrelated pre-existing steward spec fail outside this story)
+
+Residual risks: Operator must re-enable `kedro-viz-publish.yml` on GitHub and flip registry `paused-manually → live` (Named, not fixed here). Steward 102.4 consumes the artifact.
+
+followup_review_recommended: false

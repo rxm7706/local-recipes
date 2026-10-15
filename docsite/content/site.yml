@@ -35,13 +35,19 @@ nav:
 # The unified Pages artifact mounts this site under /herald/ and Kedro-Viz under
 # /dashboard/kedro-viz/. The href is rel-prefixed in templates so it resolves at
 # every depth under /herald/.
+#
+# `mount: kedro-viz` (Story 42.2, CAP-60): the entry shows only when atlas's export is
+# in the build input, docs/dashboard/kedro-viz/ (the kedro-viz-export workflow artifact,
+# or a local viz-publish-stage). With none, the tile and both shared menus drop it, and
+# the tile names the commit and date from the export's manifest.json when it is there.
 neighbours:
   - label: Kedro-Viz
     href: ../dashboard/kedro-viz/
+    mount: kedro-viz
     eyebrow: Atlas DAG
     blurb: >-
       The real pyforge-atlas Kedro pipeline graph, exported straight from the
-      DAG and republished on every push that touches its pipelines.
+      DAG as atlas's kedro-viz-export workflow artifact.
 
 infographics:
   # Globs, relative to the repo root, resolved in order. Every matching .html

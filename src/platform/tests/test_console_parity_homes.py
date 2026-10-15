@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 from django.apps import apps
 from django.conf import settings
 from django.http import Http404
@@ -312,10 +313,31 @@ def test_seed_hook_and_config_ready() -> None:
 
 
 def test_generator_gone_kedro_viz_kept() -> None:
+    """The Guildhall generator stays deleted; Kedro-Viz stays, as a workflow artifact.
+
+    Since atlas Story 30.1 the export is no tracked ``docs/dashboard/kedro-viz/``
+    tree: the producer workflow uploads it as ``kedro-viz-export`` and git ignores
+    the staging path, so a fresh clone holds only the publish root's README (the
+    Pages build mounts the artifact when present, herald Story 42.2).
+    """
     dashboard = REPO_ROOT / "docs" / "dashboard"
     assert not (dashboard / "generate.py").is_file()
     assert not (dashboard / "data.js").is_file()
-    assert (dashboard / "kedro-viz").is_dir()
+    assert (dashboard / "README.md").is_file()
+    ignored = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "docs/dashboard/kedro-viz/" in ignored
+    workflows = REPO_ROOT / ".github" / "workflows"
+    producer = yaml.safe_load(
+        (workflows / "kedro-viz-publish.yml").read_text(encoding="utf-8"),
+    )
+    uploads = [
+        step["with"]
+        for step in producer["jobs"]["publish"]["steps"]
+        if str(step.get("uses", "")).startswith("actions/upload-artifact")
+    ]
+    assert [(u["name"], u["path"]) for u in uploads] == [
+        ("kedro-viz-export", "docs/dashboard/kedro-viz/"),
+    ]
     pixi = (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8")
     for task in (
         "dashboard-gen",

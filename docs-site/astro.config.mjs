@@ -26,6 +26,11 @@ if (!fs.existsSync(topnavGenerated)) {
     `Missing ${topnavGenerated}. Run pixi run -e site docs-site-sidebar before building.`,
   );
 }
+// Story 42.2 (CAP-60): the /kedro-viz/ redirect exists only with the Kedro-Viz mount. The generator
+// decides that from the build input (docs/dashboard/kedro-viz/) and marks the menu entry it keeps.
+const kedroVizMounted = JSON.parse(fs.readFileSync(topnavGenerated, 'utf8')).some(
+  (item) => item.mount === 'kedro-viz',
+);
 
 const siteUrl = getSiteUrl();
 const urlParts = new URL(siteUrl);
@@ -53,9 +58,9 @@ export default defineConfig({
       ],
     }),
   },
-  redirects: {
-    '/kedro-viz/': '/dashboard/kedro-viz/',
-  },
+  // The destination carries the host's base path: Astro writes it into the stub verbatim, and a bare
+  // '/dashboard/kedro-viz/' sent the project site's /kedro-viz/ to the host's root (live until 2026-10-15).
+  redirects: kedroVizMounted ? { '/kedro-viz/': `${basePath}dashboard/kedro-viz/` } : {},
   integrations: [
     starlight({
       title: 'PyForge documentation',
