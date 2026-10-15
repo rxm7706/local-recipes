@@ -2,7 +2,7 @@
 title: "103.4: The `ci-surface-gates` tests write their fixtures under `tmp_path`"
 type: 'fix'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 baseline_revision: '6e1918fea260f9ebe879ae52d549eeba70029207'
 review_loop_iteration: 1
 followup_review_recommended: false

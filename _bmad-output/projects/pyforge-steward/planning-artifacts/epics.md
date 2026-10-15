@@ -6672,7 +6672,7 @@ So that a test run leaves the tracked tree as it found it, and no push needs `PY
 **When** the file runs in `pyforge-ci` or `pyforge-guild`, alone or inside `pyforge-doctor-scripts-test` under xdist
 **Then** every test builds what it generates under its own `tmp_path`, and none writes into the repository tree; the 18 generated files leave git, because no test reads one it did not write and so none is a checked-in input; an autouse guard fails any test after which `git status --porcelain --untracked-files=all -- tests/scripts/fixtures/ci_surface_gates` is not empty, and a named test proves that the guard is active and that its status read reports both an untracked and a modified file in a scratch repository
 **And** each test keeps its inputs, its detector arguments and every assertion; restoring one write into the repo tree fails the guard, and dropping untracked files from the status read fails the named test (mutations); `pyforge-doctor-scripts-test` (`pyforge-ci`), `pyforge-doctor-aggregate-scripts-test` and the file in `pyforge-guild` pass, `git status --porcelain` is empty after each and after `pr-preflight`, and the pre-push hook passes with no `PYFORGE_PREFLIGHT_SKIP`; `pixi.toml` and every import line stay as they are (Story 103.3's); the `spec-pyforge-steward` memlog reconciles the changed governed paths before one scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
