@@ -162,7 +162,18 @@ def _run_docs_site_build(repo_root: Path, site_url: str) -> None:
 
 
 def _astro_dossier_preexists(artifact_root: Path) -> bool:
-    return (artifact_root / DOSSIER_ARTIFACT_REL).is_file()
+    path = artifact_root / DOSSIER_ARTIFACT_REL
+    return path.is_file() and path.stat().st_size > 0
+
+
+def _remove_empty_astro_dossier(artifact_root: Path) -> None:
+    """Drop Astro's zero-byte dossier stub when the one-generator flag is off."""
+    dossier_dir = artifact_root / HERALD_PREFIX / "dossier"
+    if not dossier_dir.is_dir():
+        return
+    index = dossier_dir / "index.html"
+    if index.is_file() and index.stat().st_size == 0:
+        shutil.rmtree(dossier_dir)
 
 
 def _write_site_url_marker(artifact_root: Path, site_url: str) -> None:
@@ -784,6 +795,8 @@ def assemble(
 
     if not skip_docs_site_build:
         _run_docs_site_build(repo_root, site_url)
+        if not enabled_from_env():
+            _remove_empty_astro_dossier(artifact_root)
     _write_site_url_marker(artifact_root, site_url)
 
     one_generator = enabled_from_env()
