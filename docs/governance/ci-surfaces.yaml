@@ -469,6 +469,10 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
+  # Story 102.3 (AD-4 as amended 2026-10-14): a dispatch bypasses only the pause switches; the
+  # job's own condition (main, not a PR, the tree hash changed) still holds, so an identical tree
+  # never redeploys.
+  dispatch: pause-only
 - id: detectors.scripts-suite
   workflow: .github/workflows/detectors.yml
   job: scripts-suite

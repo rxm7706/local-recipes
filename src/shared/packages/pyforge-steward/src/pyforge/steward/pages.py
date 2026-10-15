@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -26,11 +26,19 @@ FLEET_STATUS_REL = "docsite/content/fleet-status.json"
 KEDRO_VIZ_WORKFLOW = "kedro-viz-publish.yml"
 KEDRO_VIZ_ARTIFACT = "kedro-viz-export"
 KEDRO_VIZ_DEST_REL = "docs/dashboard/kedro-viz"
+#: Names the three env lines the download writes (``<PREFIX>``, ``<PREFIX>_RUN``, ``<PREFIX>_AT``).
+KEDRO_VIZ_ENV_PREFIX = "KEDRO_VIZ_EXPORT"
+#: Only a run on this branch is mounted: a producer dispatched on an unmerged branch never reaches the
+#: production Pages origin (102.4's review).
+EXPORT_BRANCH = "main"
 #: An identical tree still deploys once the live build is older than this and its commit moved
 #: (doctor 48.2's review): at most one extra deploy a day keeps the live ``last-modified`` honest.
 LIVENESS_MAX_AGE = timedelta(hours=24)
 #: The story fields the board's attention block reads; the rest of steward's row stays out of the input.
 _FLEET_STORY_FIELDS = ("story_id", "station", "epic_id", "title", "status")
+#: The per-station counts herald's board reads (herald 42.1 ``COUNT_KEYS`` plus ``done``); nothing else of
+#: ``StationProgress`` reaches the input -- ``next_running`` carries the live ``marshal watch`` fact.
+_FLEET_STATION_COUNTS = ("done", "in_progress", "backlog", "blocked")
 
 # Relative paths excluded from tree_hash (never hashed silently — each entry documents why).
 # Herald M3 footer paths join this list when that footer ships (design-thinking P-A).
@@ -150,9 +158,11 @@ def decide_deploy(
 def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str | None = None) -> dict[str, Any]:
     """``sprint-ledger-query --format json`` reshaped as herald's fleet-status input.
 
-    ``stations`` is the payload's ``summary.stations`` as a list in station order, each
-    ``StationProgress`` row plus ``total`` (its ``total_stories``) and ``epics`` (how many of the
-    payload's ``epics`` rows name that station); ``stories`` keeps each story row's
+    ``stations`` is the payload's ``summary.stations`` as a list in station order, each row
+    ``station``, ``epics`` (how many of the payload's ``epics`` rows name that station), ``total`` (its
+    ``total_stories``) and the ``done`` / ``in_progress`` / ``backlog`` / ``blocked`` counts it gives --
+    nothing else of ``StationProgress``, so no live ``marshal watch`` fact reaches the input (the CI
+    run and a local ``steward pages build`` write the same file for one commit); ``stories`` keeps each story row's
     ``story_id``, ``station``, ``epic_id``, ``title`` and ``status``. ``generated_at`` is the snapshot
     time the board names: the payload's own unless the caller passes a steadier one (the workflow
     passes the built commit's time, so a scheduled build of an unmoved tree hashes the same and
@@ -172,14 +182,13 @@ def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str |
         if not isinstance(progress, dict):
             msg = f"sprint-ledger-query payload: summary.stations[{name!r}] is not an object"
             raise ValueError(msg)
-        rows.append(
-            {
-                **progress,
-                "station": progress.get("station", name),
-                "total": progress.get("total_stories", 0),
-                "epics": epics_per_station.get(name, 0),
-            }
-        )
+        row: dict[str, Any] = {
+            "station": progress.get("station", name),
+            "epics": epics_per_station.get(name, 0),
+            "total": progress.get("total_stories", 0),
+        }
+        row.update({key: progress[key] for key in _FLEET_STATION_COUNTS if key in progress})
+        rows.append(row)
     stories = [
         {field: story.get(field) for field in _FLEET_STORY_FIELDS}
         for story in ledger_payload.get("stories") or []
@@ -195,24 +204,34 @@ def fleet_status_document(ledger_payload: dict[str, Any], *, generated_at: str |
 
 def newest_export_run(
     runs_json: Iterable[Mapping[str, Any]],
-    artifacts_json: Mapping[Any, Mapping[str, Any]],
+    artifacts_json: Mapping[Any, Mapping[str, Any]] | Callable[[int], Mapping[str, Any] | None],
     *,
     artifact: str = KEDRO_VIZ_ARTIFACT,
+    branch: str | None = EXPORT_BRANCH,
 ) -> int | None:
-    """The newest successful producer run whose ``artifact`` is listed and not expired (Story 102.4).
+    """The newest successful producer run on ``branch`` whose ``artifact`` is listed and not expired
+    (Story 102.4).
 
-    ``runs_json`` is ``gh run list --json databaseId,createdAt,conclusion``; ``artifacts_json`` maps a
-    run id to that run's ``gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts`` payload (a run
-    missing from it has not been read and is passed over). A run whose ``conclusion`` is not
-    ``success`` is ignored. ``None``: no run, no artifact of that name, or only expired ones."""
-    successful = [
+    ``runs_json`` is ``gh run list --json databaseId,createdAt,conclusion,headBranch``. ``artifacts_json``
+    is either a mapping from a run id to that run's ``gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts``
+    payload (a run missing from it is passed over) or a ``fetch(run_id)`` callable this function calls
+    newest-first, stopping at the first match (the download script's lazy read). A run whose
+    ``conclusion`` is not ``success``, or whose ``headBranch`` is not ``branch`` (``None`` takes any), is
+    ignored. ``None``: no such run, no artifact of that name, or only expired ones."""
+    eligible = [
         run
         for run in runs_json
-        if isinstance(run, Mapping) and run.get("conclusion") == "success" and isinstance(run.get("databaseId"), int)
+        if isinstance(run, Mapping)
+        and run.get("conclusion") == "success"
+        and isinstance(run.get("databaseId"), int)
+        and (branch is None or run.get("headBranch") == branch)
     ]
-    for run in sorted(successful, key=lambda r: str(r.get("createdAt") or ""), reverse=True):
+    for run in sorted(eligible, key=lambda r: str(r.get("createdAt") or ""), reverse=True):
         run_id = run["databaseId"]
-        payload = artifacts_json.get(run_id, artifacts_json.get(str(run_id)))
+        if callable(artifacts_json):
+            payload = artifacts_json(run_id)
+        else:
+            payload = artifacts_json.get(run_id, artifacts_json.get(str(run_id)))
         if not isinstance(payload, Mapping):
             continue
         for item in payload.get("artifacts") or []:

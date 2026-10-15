@@ -668,3 +668,119 @@ def test_ci_canary_matrix_from_fixture_registry() -> None:
             }
         ]
     }
+
+
+# --- steward Story 102.3's review: a row may limit the dispatch bypass to the pause switches -------------
+
+RENDER_PATH = REPO_ROOT / "scripts" / "_ci_surface_gates_render.py"
+_INNER = "github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.build.outputs.changed == 'true'"
+
+
+def test_pause_only_fragment_keeps_the_job_condition_on_dispatch() -> None:
+    render = _load_module(RENDER_PATH, "ci_surface_gates_render_pause_only")
+    frag = render.build_fragment(
+        inner=_INNER,
+        workflow_switch="PAUSE_X",
+        job_switch=None,
+        dispatch_pause_only=True,
+    )
+    assert frag == (
+        "${{ (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_X != 'true')) "
+        f"&& ({_INNER}) }}}}"
+    )
+    assert render.parse_fragment_inner(frag) == _INNER
+    assert render.has_render_fragment(frag)
+    rebuilt = render.build_fragment(
+        inner=render.parse_fragment_inner(frag),
+        workflow_switch="PAUSE_X",
+        job_switch=None,
+        dispatch_pause_only=True,
+    )
+    assert rebuilt == frag  # idempotent
+    default = render.build_fragment(
+        inner=_INNER, workflow_switch="PAUSE_X", job_switch=None
+    )
+    assert default.startswith(
+        "${{ github.event_name == 'workflow_dispatch' || ("
+    )  # the default bypasses all
+    assert render.parse_fragment_inner(default) == _INNER
+
+
+@pytest.mark.parametrize("dispatch", ["pause-only", None])
+def test_the_registry_row_chooses_the_dispatch_shape_and_renders_once(
+    tmp_path: Path, dispatch: str | None
+) -> None:
+    render = _load_module(RENDER_PATH, f"ci_surface_gates_render_rows_{dispatch}")
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    path = workflows / "demo.yml"
+    path.write_text(
+        "name: Demo\n"
+        "on:\n"
+        "  push:\n"
+        "    branches: [main]\n"
+        "jobs:\n"
+        "  deploy:\n"
+        "    # ci-surfaces: demo.deploy\n"
+        "    # render: python scripts/ci_surface_gates.py --render\n"
+        f"    if: ${{{{ {_INNER} }}}}\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - run: echo hi\n",
+        encoding="utf-8",
+    )
+    row = {
+        "id": "demo.deploy",
+        "workflow": ".github/workflows/demo.yml",
+        "job": "deploy",
+        "kind": "ci-job",
+        "cost": "low",
+    }
+    if dispatch:
+        row["dispatch"] = dispatch
+    registry = {
+        "conventions": {"master": "PAUSE_ALL_CI"},
+        "surfaces": [
+            {
+                "id": "demo",
+                "workflow": ".github/workflows/demo.yml",
+                "kind": "workflow",
+                "switch": "PAUSE_DEMO",
+                "state": "live",
+            },
+            row,
+        ],
+    }
+    assert render.render_all(tmp_path, registry) == [".github/workflows/demo.yml"]
+    job_if = " ".join(
+        yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"]["deploy"]["if"].split()
+    )
+    if dispatch:
+        assert job_if.startswith(
+            "${{ (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI"
+        )
+        assert job_if.endswith(f"&& ({_INNER}) }}}}")
+    else:
+        assert job_if.startswith(
+            "${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI"
+        )
+    assert (
+        render.render_all(tmp_path, registry) == []
+    )  # a second render changes nothing
+
+
+def test_the_live_pages_deploy_row_renders_pause_only() -> None:
+    render = _load_module(RENDER_PATH, "ci_surface_gates_render_live")
+    lib = _load_module(LIB_PATH, "ci_surface_gates_lib_live_pause_only")
+    registry = lib.load_registry(REGISTRY_PATH)
+    plans = {
+        (p.workflow_rel, p.job_id): p for p in render.plan_renders(REPO_ROOT, registry)
+    }
+    deploy = plans[(".github/workflows/pages.yml", "deploy")]
+    assert deploy.dispatch_pause_only is True
+    assert "needs.build.outputs.changed == 'true'" in deploy.inner
+    assert not any(
+        p.dispatch_pause_only
+        for key, p in plans.items()
+        if key != (".github/workflows/pages.yml", "deploy")
+    )

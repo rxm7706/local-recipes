@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -117,9 +118,8 @@ def test_pages_fleet_status_reshapes_ledger_json(tmp_path: Path) -> None:
     )
     document = json.loads(out.read_text(encoding="utf-8"))
     assert document["generated_at"] == "2026-10-15T06:00:00+00:00"
-    assert document["stations"] == [
-        {"station": "pyforge-x", "total_stories": 2, "done": 1, "backlog": 1, "total": 2, "epics": 1}
-    ]
+    # Only the counts herald reads: no `total_stories`, no `next_running` (the live marshal fact).
+    assert document["stations"] == [{"station": "pyforge-x", "epics": 1, "total": 2, "done": 1, "backlog": 1}]
     assert document["stories"][0]["story_id"] == "1.2"
     assert "wrote" in proc.stdout
 
@@ -166,3 +166,70 @@ def test_decide_deploy_liveness_branch() -> None:
     # a changed tree still deploys, and flag off still always deploys
     assert decide_deploy("other", live_fresh, flag_on=True, built_from="a" * 40, now=now) is True
     assert decide_deploy("same", live_fresh, flag_on=False, built_from="a" * 40, now=now) is True
+
+
+def test_pages_fleet_status_refuses_an_empty_generated_at(tmp_path: Path) -> None:
+    """`--generated-at "$(git log …)"` with a failed git passes "": refuse it, never fall back silently."""
+    ledger = tmp_path / "sprint-ledger.json"
+    ledger.write_text(json.dumps({"summary": {"stations": {}}}), encoding="utf-8")
+    out = tmp_path / "fleet-status.json"
+    proc = subprocess.run(
+        [sys.executable, str(_FLEET), "--ledger", str(ledger), "--out", str(out), "--generated-at", " "],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 1
+    assert "--generated-at is empty" in proc.stderr
+    assert not out.exists()
+
+
+def _stamp_with_live(tmp_path: Path, *, live: dict, built_from: str) -> subprocess.CompletedProcess[str]:
+    """Run the stamp script against a `file://` live build.json, with the pages_duty flag on."""
+    from pyforge.testing_kit.flags import flagd_tree
+
+    tmp_path.mkdir(parents=True)
+    root = _fixture_tree(tmp_path)
+    live_path = tmp_path / "live" / "build.json"
+    live_path.parent.mkdir()
+    live_path.write_text(json.dumps(live), encoding="utf-8")
+    env = {
+        **os.environ,
+        "PYFORGE_FLAGS_PATH": str(flagd_tree(tmp_path, {"pyforge.steward.pages_duty": "on"})),
+    }
+    env.pop("PYFORGE_ENVIRONMENT", None)
+    return subprocess.run(
+        [
+            sys.executable,
+            str(_STAMP),
+            "--root",
+            str(root),
+            "--live-url",
+            live_path.as_uri(),
+            "--built-from",
+            built_from,
+            "--run-id",
+            "7",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+        env=env,
+    )
+
+
+def test_pages_build_stamp_wires_the_liveness_branch(tmp_path: Path) -> None:
+    """Story 102.3 (from the doctor 48.2 review): the script passes `built_from` and `now`, so an
+    identical tree whose live build is over a day old and whose commit moved deploys."""
+    from pyforge.steward.pages import tree_hash
+
+    (tmp_path / "probe").mkdir()
+    digest = tree_hash(_fixture_tree(tmp_path / "probe"))
+    old = {"tree_hash": digest, "built_from": "a" * 40, "run_id": "1", "built_at": "2026-01-01T00:00:00Z"}
+    moved = _stamp_with_live(tmp_path / "moved", live=old, built_from="b" * 40)
+    assert f"tree_hash={digest}" in moved.stdout
+    assert "changed=true" in moved.stdout
+    same = _stamp_with_live(tmp_path / "same", live=old, built_from="a" * 40)
+    assert "changed=false" in same.stdout

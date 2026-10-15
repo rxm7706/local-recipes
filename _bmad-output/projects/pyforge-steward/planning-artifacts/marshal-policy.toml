@@ -1177,7 +1177,11 @@ verify_commands = [
   # inventory (102.2), the repo-wide .gitignore (102.4), the docs that name the workflow or the retired verbs (102.1,
   # 102.3, 102.5: co-governor reconciles on doctor's and herald's Specs), herald's docsite tool, platform test, webhook
   # and artifact test only where they name the file (102.1), atlas's normalize tool and fleet_scan where their comments
-  # name the retired verb (102.3), the steward deferred-work ledger (102.3), and every Spec memlog.
+  # name the retired verb (102.3), the steward deferred-work ledger (102.3), and every Spec memlog. Widened at the
+  # 102.3 / 102.4 landing (2026-10-15): the fleet-board input writer (102.3) and the artifact download (102.4) beside
+  # the stamp script; the gate renderer and the registry schema (102.3's review: `pages.deploy` renders a pause-only
+  # dispatch bypass); herald's dossier and docsite README where they named the retired verbs or the old filter
+  # (102.3, 102.4); herald's deferred-work ledger (102.3's review: the steward deck refresh row).
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
@@ -1193,6 +1197,10 @@ verify_commands = [
   "scripts/_ci_surface_gates_lib.py",
   "scripts/pixi_version_registry.py",
   "scripts/pages_build_stamp.py",
+  "scripts/pages_fleet_status.py",
+  "scripts/pages_artifact_download.py",
+  "scripts/_ci_surface_gates_render.py",
+  "docs/governance/ci-surfaces.schema.json",
   "scripts/fleet_scan.py",
   "tests/scripts/**",
   "src/platform/config/flags.json",
@@ -1205,6 +1213,9 @@ verify_commands = [
   "docs/reference/github-workflows.md",
   "docs/explanation/enterprise-deployment.md",
   "docsite/tools/pages_second_host.py",
+  "docsite/content/dossier.yml",
+  "docsite/README.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
   "src/platform/tests/test_console_parity_homes.py",
   "src/shared/packages/pyforge-herald/src/pyforge/herald/webhook.py",
   "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py",

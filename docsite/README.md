@@ -77,7 +77,8 @@ PYFORGE_STATUS_PAGES=1 pixi run -e site pages-check
 ```
 
 A PR touching the four Diátaxis quadrants under `docs/`, `docs/index.md`, `docs/404.md`, `docs/map.yaml`,
-`docs-site/**`, `docsite/**` or `presentations/**` runs `pages-check` in CI (the `build` job of
+`docs/dashboard/**`, `docs-site/**`, `docsite/**`, `presentations/**` or the build's own `scripts/pages_*.py`
+runs `pages-check` in CI (the `build` job of
 `.github/workflows/pages.yml`, which folded `docsite-check.yml`; the Kedro-Viz export arrives there as atlas's
 workflow artifact, steward Story 102.4);
 `pixi run -e pyforge-guild pr-preflight` still runs the local `dist/` `site-check` leg unchanged.

@@ -11,7 +11,9 @@ branch. It replaces ``deploy dashboard`` and ``deploy status`` (retired by this 
   does; ``--dry-run`` prints what would run and runs nothing.
 * ``deploy`` runs ``gh workflow run pages.yml --ref main``, then names the run it started through
   ``gh run list``; ``--wait`` watches it to the end. ``--dry-run`` prints both argv lines and runs
-  nothing. The workflow's own hash compare is the no-diff gate (AD-4 as amended 2026-10-14).
+  nothing. The workflow's own hash compare is the no-diff gate (AD-4 as amended 2026-10-14): the
+  dispatch bypasses only the pause switches (the ``pages.deploy`` row renders ``dispatch: pause-only``),
+  so a dispatched run of an identical tree builds and skips its deploy.
 * ``status`` reads: the live root (``curl`` for ``last-modified`` and ``build.json``), the last run
   (``gh run list``) and the ``pages`` row's registry verdict (``ci.py``'s reader -- one status reader,
   AD-1). It never triggers a run or writes a variable.
@@ -116,16 +118,37 @@ class PagesDeps:
     sleep: Callable[[float], None] = field(default=time.sleep)
 
 
+def head_commit_time(root: Path) -> str | None:
+    """``git log -1 --format=%cI HEAD`` at ``root`` -- the snapshot time the workflow passes -- or
+    ``None`` when ``root`` is not a git checkout (``git`` by subprocess, AD-1)."""
+    import subprocess
+
+    try:
+        proc = subprocess.run(  # noqa: S603
+            ["git", "-C", str(root), "log", "-1", "--format=%cI", "HEAD"],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    stamp = proc.stdout.strip()
+    return stamp if proc.returncode == 0 and stamp else None
+
+
 def write_fleet_status(root: Path) -> Path:
     """The fleet board's input from the tracked ledgers: ``sprint-ledger-query --format json``
-    (the engine, in-process, without the live ``marshal watch`` call) reshaped for herald."""
+    (the engine, in-process, without the live ``marshal watch`` call) reshaped for herald, stamped
+    with HEAD's commit time as the workflow stamps it, so a local build writes the CI run's file
+    (the query time only where ``root`` is no git checkout)."""
     from .sprint_ledger_query import SprintLedgerQueryEngine
 
     engine = SprintLedgerQueryEngine(root_dir=root)
     payload = json.loads(engine.export(engine.query(), format_name="json"))
+    document = fleet_status_document(payload, generated_at=head_commit_time(root))
     out = root / FLEET_STATUS_REL
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(fleet_status_document(payload), indent=2) + "\n", encoding="utf-8")
+    out.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     return out
 
 

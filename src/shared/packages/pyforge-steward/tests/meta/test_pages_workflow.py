@@ -18,6 +18,9 @@ _EXPECTED_PATHS = {
     "docs/index.md",
     "docs/404.md",
     "docs/map.yaml",
+    "docs/dashboard/**",  # tracked `deploy static` boards publish from here (102.4's review kept it)
+    "scripts/pages_*.py",
+    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
     "docs-site/**",
     "docsite/**",
     "presentations/**",
@@ -76,6 +79,18 @@ def test_pages_yml_deploy_if_conjoins_skip_conditions() -> None:
     assert "PAUSE_PAGES" in deploy_if
     assert "pull_request" in deploy_if
     assert "needs.build.outputs.changed" in deploy_if
+
+
+def test_a_dispatch_bypasses_only_the_pause_switches_of_the_deploy() -> None:
+    """Story 102.3's review (AD-4 as amended 2026-10-14): an equal hash performs zero deploys, a
+    dispatch included. The dispatch term guards only the pause switches; the job's own condition
+    (not a PR, main, a changed tree) is conjoined outside it."""
+    deploy_if = " ".join(_load()["jobs"]["deploy"]["if"].split())
+    assert deploy_if == (
+        "${{ (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && "
+        "vars.PAUSE_PAGES != 'true')) && (github.event_name != 'pull_request' && "
+        "github.ref == 'refs/heads/main' && needs.build.outputs.changed == 'true') }}"
+    )
 
 
 def test_pages_yml_concurrency_and_timeouts() -> None:
