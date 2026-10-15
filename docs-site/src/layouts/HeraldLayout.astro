@@ -1,0 +1,71 @@
+---
+/**
+ * The herald overview, gallery and deck-family pages' shell (Story 43.2, CAP-61), in the shape of
+ * docsite/templates/shell_page.html.j2: the same head, stylesheets and header. The shared menu is
+ * herald's one navigation list (docsite/content/site.yml), read through the generated top-menu JSON
+ * exactly as SiteTitle.astro and HeraldDossierLayout.astro read it (Story 40.1, CAP-58).
+ */
+import topnav from '../topnav.generated.json';
+
+interface Props {
+  title: string;
+  description: string;
+  /** From this page to the /herald/ mount: '', '../' or '../../'. */
+  rel: string;
+  /** The menu entry this page sits under, as a site-root path ('herald/', 'herald/decks/'). */
+  current: string;
+  favicon?: string;
+  shortName: string;
+  builtAt: string;
+  commit: string;
+}
+
+const { title, description, rel, current, favicon, shortName, builtAt, commit } = Astro.props;
+/** Menu paths are relative to the site root, one level above the /herald/ mount. */
+const toRoot = `${rel}../`;
+const nav = topnav.map((item) => ({ label: item.label, href: `${toRoot}${item.path}`, path: item.path }));
+const icon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${favicon ?? ''}</text></svg>`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" href={icon} />
+    <link rel="stylesheet" href={`${rel}assets/fonts/fonts.css`} />
+    <link rel="stylesheet" href={`${rel}assets/site.css`} />
+  </head>
+  <body>
+    <header class="site-nav">
+      <div class="site-nav-inner">
+        <a class="site-brand" href={`${rel}index.html`}><span class="spark"></span>{shortName}</a>
+        <ul>
+          {
+            nav.map((item) => (
+              <li>
+                <a
+                  class="nav-link"
+                  data-pf-menu-link
+                  href={item.href}
+                  aria-current={item.path === current ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <span class="nav-spacer"></span>
+        <span class="stamp">Built {builtAt}{commit ? ` · ${commit}` : ''}</span>
+      </div>
+    </header>
+    <slot />
+  </body>
+</html>

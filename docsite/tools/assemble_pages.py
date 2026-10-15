@@ -13,7 +13,14 @@ same collision rule. With ``pyforge.herald.status_pages`` on (``PYFORGE_STATUS_P
 ``docsite/content/fleet-status.json`` is validated before anything is mounted (a missing or malformed
 input exits 1 naming the file), herald writes the fleet board and the guild status page under
 ``status/``, and the shared menu carries Status. Off, the input is never opened, no ``status/`` path
-may exist, and the menus are as before (``status_pages.py``)."""
+may exist, and the menus are as before (``status_pages.py``).
+
+Story 43.2 (CAP-61): with ``pyforge.herald.pages_one_generator`` on (``PYFORGE_PAGES_ONE_GENERATOR``)
+Astro writes the overview, the dossier, the gallery, the family pages and the reader's page around each
+infographic and family view; the herald build adds only the twins under ``/herald/twins/``, the
+downloads, the assets and the artifact build. ``check`` refuses a herald page from the other writer in
+either flag state, naming it; the twins are raw exports (no menu, no legacy redirect, no link walk)
+that the origin check still reads."""
 
 from __future__ import annotations
 
@@ -50,6 +57,13 @@ PIPELINES_PAGE = f"{DASHBOARD_PREFIX}/index.html"
 #: Herald's status pages (Story 42.1); written only with pyforge.herald.status_pages on.
 STATUS_PREFIX = sp.STATUS_PREFIX
 STATUS_PAGES = (sp.BOARD_PAGE, sp.GUILD_PAGE)
+#: Story 43.2: with pyforge.herald.pages_one_generator on, docsite/build.py copies each infographic and
+#: family view here, and Astro's reader page at the 2026-10-13 URL frames it under the back-bar.
+TWINS_PREFIX = f"{HERALD_PREFIX}/twins/"
+#: The herald build's single-file artifact dossier (CAP-47): Jinja's in both flag states until Story 43.7.
+ARTIFACT_DOSSIER = f"{HERALD_PREFIX}/artifact/dossier.html"
+#: The generator meta every Astro herald page carries (Stories 43.1, 43.2); no Jinja template writes one.
+_ASTRO_GENERATOR = re.compile(r"""<meta\s+name=["']generator["']\s+content=["']Astro\b""", re.IGNORECASE)
 
 # Vendored roots the cross-origin check does not judge (AD-21 rule 5, "re-vendor, never fork"):
 # a vendored upstream bundle stays byte-identical to its recorded build, so pages-check cannot
@@ -283,8 +297,15 @@ def _build_herald(
 
 
 def _iter_herald_html(artifact_root: Path) -> list[Path]:
+    """Herald's pages under ``/herald/``: not the twins under ``/herald/twins/`` (Story 43.2), which are
+    raw design exports framed by a reader's page -- no menu, no legacy redirect, no link walk, though
+    the origin check still reads them."""
     herald_root = artifact_root / HERALD_PREFIX
-    return sorted(p for p in herald_root.rglob("*.html") if p.is_file())
+    return sorted(
+        p
+        for p in herald_root.rglob("*.html")
+        if p.is_file() and not _artifact_path(p, artifact_root).startswith(TWINS_PREFIX)
+    )
 
 
 def _iter_herald_rendered_html(artifact_root: Path) -> list[Path]:
@@ -388,19 +409,24 @@ def _resolve_in_artifact(
     return candidate
 
 
-def _should_check_page_links(rel_posix: str) -> bool:
-    """Only Jinja-built navigation pages — not raw infographic or deck ``.dc.html`` exports."""
-    if rel_posix == f"{HERALD_PREFIX}/artifact/dossier.html":
-        return False
-    if rel_posix.startswith(f"{HERALD_PREFIX}/infographics/") and not rel_posix.endswith(
-        "/index.html"
-    ):
-        return False
-    if "/decks/" in rel_posix and rel_posix.rsplit("/", 1)[-1] in (
+def _is_reader_page(rel_posix: str) -> bool:
+    """An infographic's or a family view's page: the Jinja path's back-barred export, or (Story 43.2,
+    flag on) Astro's reader page framing the twin."""
+    if rel_posix.startswith(f"{HERALD_PREFIX}/infographics/") and not rel_posix.endswith("/index.html"):
+        return True
+    return "/decks/" in rel_posix and rel_posix.rsplit("/", 1)[-1] in (
         "infographic-deck.html",
         "executive-summary.html",
-    ):
+    )
+
+
+def _should_check_page_links(rel_posix: str, text: str = "") -> bool:
+    """Herald's navigation pages and Astro's reader pages -- not the artifact build, a twin, or the
+    Jinja path's back-barred export (raw infographic or deck ``.dc.html``)."""
+    if rel_posix == ARTIFACT_DOSSIER or rel_posix.startswith(TWINS_PREFIX):
         return False
+    if _is_reader_page(rel_posix):
+        return _ASTRO_GENERATOR.search(text) is not None
     return True
 
 
@@ -604,9 +630,9 @@ def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
     lane1 = _lane1_href()
     for page in _iter_herald_rendered_html(artifact_root):
         rel_page = _artifact_path(page, artifact_root)
-        if not _should_check_page_links(rel_page):
-            continue
         text = page.read_text(encoding="utf-8", errors="replace")
+        if not _should_check_page_links(rel_page, text):
+            continue
         for match in _HREF_SRC.finditer(text):
             raw = match.group(1)
             if raw == lane1:  # the live view on Lane 1 (Story 42.1): another host's path
@@ -794,14 +820,17 @@ def _menu_target(page: Path, raw: str, artifact_root: Path, base_path: str) -> P
 def _carries_the_menu(rel_page: str, text: str) -> bool:
     """Every navigable page carries the shared menu: all docs pages and herald's shell pages.
 
-    Not the Kedro-Viz export, not a redirect stub, and not a raw infographic or deck export
-    (the pages ``_should_check_page_links`` already leaves out). Herald's pipelines page under
-    ``/dashboard/`` is a shell page and carries it (Story 42.2)."""
+    Not the Kedro-Viz export, not a redirect stub, not the artifact build or a twin, and not an
+    infographic's or family view's reader page, which carries the back-bar instead (Story 43.2:
+    either path's). Herald's pipelines page under ``/dashboard/`` is a shell page and carries it
+    (Story 42.2)."""
     if rel_page.startswith(f"{DASHBOARD_PREFIX}/") and rel_page != PIPELINES_PAGE:
         return False
     if 'http-equiv="refresh"' in text:
         return False
-    return not (rel_page.startswith(f"{HERALD_PREFIX}/") and not _should_check_page_links(rel_page))
+    if not rel_page.startswith(f"{HERALD_PREFIX}/"):
+        return True
+    return not (rel_page == ARTIFACT_DOSSIER or rel_page.startswith(TWINS_PREFIX) or _is_reader_page(rel_page))
 
 
 def _menu_failure(message: str) -> None:
@@ -889,6 +918,25 @@ def _check_no_status_paths(artifact_root: Path) -> None:
         raise SystemExit(1)
 
 
+def _check_one_writer(artifact_root: Path, *, one_generator: bool) -> None:
+    """One generator per herald page (AD-21's collision rule, AD-23; Stories 43.1, 43.2). With
+    pyforge.herald.pages_one_generator on, Astro wrote every herald page but the artifact build (the
+    twins are copies, not pages); off, Astro wrote none. A page from the other writer exits 1 naming it."""
+    state = "on" if one_generator else "off"
+    for page in _iter_herald_html(artifact_root):
+        rel = _artifact_path(page, artifact_root)
+        if rel == ARTIFACT_DOSSIER:
+            continue
+        astro = _ASTRO_GENERATOR.search(page.read_text(encoding="utf-8", errors="replace")) is not None
+        if astro != one_generator:
+            writer = "Astro" if astro else "the Jinja build"
+            print(
+                f"assemble_pages: {rel} was written by {writer} but pyforge.herald.pages_one_generator is {state}",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+
+
 def _kedro_viz_path(rel: str) -> bool:
     return rel in (KEDRO_VIZ_MOUNT, "kedro-viz") or rel.startswith((f"{KEDRO_VIZ_MOUNT}/", "kedro-viz/"))
 
@@ -967,6 +1015,7 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
         if not (artifact_root / rel).is_file():
             print(f"assemble_pages: missing required path {rel}", file=sys.stderr)
             raise SystemExit(1)
+    _check_one_writer(artifact_root, one_generator=enabled_from_env())
     if mounted:
         try:
             kv.read_manifest(artifact_root / KEDRO_VIZ_MOUNT, label=KEDRO_VIZ_MOUNT)

@@ -20,6 +20,13 @@ the tile names the export's commit and date; with ``--dashboard-out DIR`` the pi
 written to ``DIR/index.html`` (the Pages build passes the artifact's ``dashboard/``). With no
 export, the tile, the menu entry and the pipelines page are left out.
 
+Story 43.2: with ``pyforge.herald.pages_one_generator`` on (``PYFORGE_PAGES_ONE_GENERATOR``, see
+``docsite/tools/pages_one_generator.py``) Astro renders the overview, the gallery, the deck family
+pages and the reader's page around each infographic and family view (``docs-site/src/pages/herald/``).
+This build then writes none of those pages: it copies each twin under ``dist/twins/`` -- the back-bar
+is the Astro page's, never the twin's; the one transformation left is Story 31.3's font-link
+vendoring (AD-21) -- and the downloads, and owns only what it writes, so it never deletes an Astro page.
+
 Story 42.1: with ``pyforge.herald.status_pages`` on (``PYFORGE_STATUS_PAGES``, see
 ``docsite/tools/status_pages.py``) the shared menu carries Status, the build refuses a
 ``fleet-status.json`` input that is missing or malformed (naming the file) before anything is written,
@@ -72,6 +79,10 @@ OWNED_OUTPUTS = (
     "decks",
     "artifact",
 )
+#: Story 43.2: with pyforge.herald.pages_one_generator on, where each twin is copied (under the
+#: /herald/ mount), and the only outputs this build owns -- Astro writes the pages around them.
+TWINS = "twins"
+ONE_GENERATOR_OWNED_OUTPUTS = (".nojekyll", "assets", "artifact", TWINS)
 CONTENT = SITE / "content"
 TEMPLATES = SITE / "templates"
 ASSETS = SITE / "assets"
@@ -550,6 +561,34 @@ def publish_family_downloads(fam: dict, deck_out: Path) -> None:
             shutil.copy2(d["path"], downloads / d["name"])
 
 
+def _copy_twin(item: dict, out_dir: Path, rel: str) -> None:
+    """Copy one twin to ``out_dir / rel`` for an Astro reader's page to wrap (Story 43.2, CAP-55): no
+    back-bar, and only Story 31.3's font-link vendoring (AD-21) -- the published file names no Google
+    Fonts origin. Records the copy's path and size on ``item``."""
+    dest = out_dir / rel
+    fonts_href = "../" * rel.count("/") + "assets/fonts/fonts.css"
+    raw = rewrite_google_font_links(item["path"].read_text(encoding="utf-8", errors="replace"), fonts_href)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(raw, encoding="utf-8")
+    item["twin"] = rel
+    item["published_bytes"] = len(raw.encode("utf-8"))
+
+
+def publish_twins(infographics: list[dict], families: list[dict], out_dir: Path) -> None:
+    """Story 43.2, with pyforge.herald.pages_one_generator on: every gallery infographic at
+    ``twins/infographics/<out_name>`` and every family view at ``twins/decks/<slug>/<out_name>``, where
+    Astro's reader pages (``herald/infographics/<out_name>``, ``herald/decks/<slug>/<out_name>``) frame
+    them under the back-bar."""
+    for item in infographics:
+        _copy_twin(item, out_dir, f"{TWINS}/infographics/{item['out_name']}")
+    for fam in families:
+        for key, out_name in _FAMILY_VIEW_OUT_NAMES.items():
+            view = fam.get(key)
+            if view is not None:
+                _copy_twin(view, out_dir, f"{TWINS}/decks/{fam['slug']}/{out_name}")
+                view["out_name"] = out_name
+
+
 # ------------------------------------------------------------------ build
 
 
@@ -697,6 +736,7 @@ def build(
     status_out: Path | None = None,
     fleet_status: Path | None = None,
     status_pages: bool | None = None,
+    one_generator: bool | None = None,
 ) -> dict:
     """Render the site into ``out_dir``. ``kedro_viz_export`` is the Kedro-Viz build input (default
     ``<repo_root>/docs/dashboard/kedro-viz``); a present export without a well-formed manifest raises
@@ -706,7 +746,12 @@ def build(
     On, ``fleet_status`` (default ``docsite/content/fleet-status.json``) and the ``ci-status.json``
     snapshot are validated before anything is written (``FleetStatusShapeError`` /
     ``CiStatusShapeError`` naming the file), the menus carry Status, and with ``status_out`` the two
-    status pages are rendered there (Story 42.1)."""
+    status pages are rendered there (Story 42.1).
+
+    ``one_generator`` is the ``pyforge.herald.pages_one_generator`` state (default:
+    ``PYFORGE_PAGES_ONE_GENERATOR``). On, Astro owns the overview, the dossier, the gallery and the
+    family pages, and this build writes the twins, the downloads, the assets and the artifact build
+    only (Story 43.2)."""
     kv = _kedro_viz_export()
     sp = _status_pages()
     export_dir = kedro_viz_export if kedro_viz_export is not None else kv.input_dir(repo_root)
@@ -780,11 +825,14 @@ def build(
 
     # Clean only what this build owns. The output directory may be a shared
     # publish root — docs/dashboard/ also holds the Kedro-Viz export, which a
-    # blanket rmtree would delete on every run.
-    skip_dossier = _pages_one_generator_from_env()
-    owned = list(OWNED_OUTPUTS)
-    if skip_dossier:
-        owned = [name for name in owned if name != "dossier"]
+    # blanket rmtree would delete on every run. With the one-generator flag on,
+    # Astro has already written its pages there (Story 43.2), so this build owns
+    # only its twins, the downloads, the assets and the artifact build.
+    one_gen = _pages_one_generator_from_env() if one_generator is None else one_generator
+    if one_gen:
+        owned = [*ONE_GENERATOR_OWNED_OUTPUTS, *(f"decks/{fam['slug']}/downloads" for fam in families)]
+    else:
+        owned = list(OWNED_OUTPUTS)
     for owned_name in owned:
         target = out_dir / owned_name
         if target.is_dir():
@@ -793,10 +841,10 @@ def build(
             target.unlink()
 
     (out_dir / "assets").mkdir(parents=True, exist_ok=True)
-    if not skip_dossier:
+    if not one_gen:
         (out_dir / "dossier").mkdir(parents=True, exist_ok=True)
-    (out_dir / "infographics").mkdir(parents=True, exist_ok=True)
-    (out_dir / "decks").mkdir(parents=True, exist_ok=True)
+        (out_dir / "infographics").mkdir(parents=True, exist_ok=True)
+        (out_dir / "decks").mkdir(parents=True, exist_ok=True)
     (out_dir / "artifact").mkdir(parents=True, exist_ok=True)
 
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")
@@ -806,18 +854,22 @@ def build(
 
     summary = strip_tags(md_inline(doc["summary"]))
 
-    (out_dir / "index.html").write_text(
-        env.get_template("page_index.html.j2").render(
-            page_title=f"{site_cfg['name']} — {site_cfg['eyebrow']}",
-            page_description=summary,
-            page_key="index",
-            rel="",
-            **shared,
-        ),
-        encoding="utf-8",
-    )
+    if one_gen:
+        publish_twins(infographics, families, out_dir)
+        for fam in families:
+            publish_family_downloads(fam, out_dir / "decks" / fam["slug"])
+    else:
+        (out_dir / "index.html").write_text(
+            env.get_template("page_index.html.j2").render(
+                page_title=f"{site_cfg['name']} — {site_cfg['eyebrow']}",
+                page_description=summary,
+                page_key="index",
+                rel="",
+                **shared,
+            ),
+            encoding="utf-8",
+        )
 
-    if not skip_dossier:
         (out_dir / "dossier" / "index.html").write_text(
             env.get_template("page_dossier.html.j2").render(
                 page_title=doc["title"],
@@ -829,51 +881,51 @@ def build(
             encoding="utf-8",
         )
 
-    (out_dir / "infographics" / "index.html").write_text(
-        env.get_template("page_gallery.html.j2").render(
-            page_title=f"Infographics — {site_cfg['name']}",
-            page_description=f"{len(infographics)} standalone infographics published from the repository.",
-            page_key="gallery",
-            rel="../",
-            **shared,
-        ),
-        encoding="utf-8",
-    )
-
-    inject = bool(site_cfg["infographics"].get("inject_backbar", True))
-    for item in infographics:
-        publish_infographic(item, out_dir / "infographics", inject)
-
-    for fam in families:
-        deck_out = out_dir / "decks" / fam["slug"]
-        deck_out.mkdir(parents=True, exist_ok=True)
-        publish_family_views(fam, deck_out, inject)
-        publish_family_downloads(fam, deck_out)
-        (deck_out / "index.html").write_text(
-            env.get_template("page_family.html.j2").render(
-                page_title=f"{fam['title']} — {site_cfg['name']}",
-                page_description=fam["description"]
-                or f"The {fam['title']} deck family: poster, Infographic Deck, Executive "
-                f"Summary, PowerPoint and Marp sources.",
-                page_key="decks",
-                rel="../../",
-                family=fam,
+        (out_dir / "infographics" / "index.html").write_text(
+            env.get_template("page_gallery.html.j2").render(
+                page_title=f"Infographics — {site_cfg['name']}",
+                page_description=f"{len(infographics)} standalone infographics published from the repository.",
+                page_key="gallery",
+                rel="../",
                 **shared,
             ),
             encoding="utf-8",
         )
 
-    (out_dir / "decks" / "index.html").write_text(
-        env.get_template("page_family_index.html.j2").render(
-            page_title=f"Decks — {site_cfg['name']}",
-            page_description=f"{len(families)} deck famil{'y' if len(families) == 1 else 'ies'} "
-            f"published from the repository.",
-            page_key="decks",
-            rel="../",
-            **shared,
-        ),
-        encoding="utf-8",
-    )
+        inject = bool(site_cfg["infographics"].get("inject_backbar", True))
+        for item in infographics:
+            publish_infographic(item, out_dir / "infographics", inject)
+
+        for fam in families:
+            deck_out = out_dir / "decks" / fam["slug"]
+            deck_out.mkdir(parents=True, exist_ok=True)
+            publish_family_views(fam, deck_out, inject)
+            publish_family_downloads(fam, deck_out)
+            (deck_out / "index.html").write_text(
+                env.get_template("page_family.html.j2").render(
+                    page_title=f"{fam['title']} — {site_cfg['name']}",
+                    page_description=fam["description"]
+                    or f"The {fam['title']} deck family: poster, Infographic Deck, Executive "
+                    f"Summary, PowerPoint and Marp sources.",
+                    page_key="decks",
+                    rel="../../",
+                    family=fam,
+                    **shared,
+                ),
+                encoding="utf-8",
+            )
+
+        (out_dir / "decks" / "index.html").write_text(
+            env.get_template("page_family_index.html.j2").render(
+                page_title=f"Decks — {site_cfg['name']}",
+                page_description=f"{len(families)} deck famil{'y' if len(families) == 1 else 'ies'} "
+                f"published from the repository.",
+                page_key="decks",
+                rel="../",
+                **shared,
+            ),
+            encoding="utf-8",
+        )
 
     artifact_fonts = inline_font_faces_for_artifact(FONTS_DIR / "fonts.css", FONTS_DIR)
     (out_dir / "artifact" / "dossier.html").write_text(
@@ -930,10 +982,58 @@ def build(
         "pipelines_page": pipelines_page,
         "status_pages_enabled": status_on,
         "status_pages": status_written,
+        "one_generator": one_gen,
     }
 
 
 # ------------------------------------------------------------------ checks
+
+
+def _twin_problems(out_dir: Path, result: dict) -> list[str]:
+    """Story 43.2, flag on: every twin is copied under ``twins/``, whole, and carries no back-bar (the
+    Astro reader's page around it does)."""
+    problems: list[str] = []
+    views = [fam[key] for fam in result["families"] for key in _FAMILY_VIEW_OUT_NAMES if fam.get(key)]
+    for item in [*result["infographics"], *views]:
+        rel = item.get("twin")
+        p = out_dir / rel if rel else None
+        if p is None or not p.exists():
+            problems.append(f"twin not published: {item.get('source') or item['path']}")
+        elif p.stat().st_size < item["published_bytes"]:
+            problems.append(f"twin shrank on publish: {rel}")
+        elif 'class="ig-backbar"' in p.read_text(encoding="utf-8", errors="replace"):
+            problems.append(f"twin carries the back-bar: {rel} (the reader's page wraps it; the twin is never edited)")
+    return problems
+
+
+def _family_page_problems(out_dir: Path, fam: dict) -> list[str]:
+    """The Jinja family page, its listing on the decks index and its two published views."""
+    problems: list[str] = []
+    slug = fam["slug"]
+    deck_out = out_dir / "decks" / slug
+    family_page = deck_out / "index.html"
+    if not family_page.exists():
+        problems.append(f"deck family page not published: {slug}")
+    else:
+        size = family_page.stat().st_size
+        if size < 500:
+            problems.append(f"suspiciously small: decks/{slug}/index.html ({size}B)")
+        text = family_page.read_text(encoding="utf-8")
+        if "{{" in text or "{%" in text:
+            problems.append(f"unrendered Jinja delimiters in decks/{slug}/index.html")
+    if slug not in (out_dir / "decks" / "index.html").read_text(encoding="utf-8"):
+        problems.append(f"deck missing from the decks index: {slug}")
+
+    for key, out_name in _FAMILY_VIEW_OUT_NAMES.items():
+        item = fam.get(key)
+        if item is None:
+            continue
+        vp = deck_out / out_name
+        if not vp.exists():
+            problems.append(f"{slug}: {key} not published")
+        elif vp.stat().st_size < item.get("published_bytes", item["bytes"]):
+            problems.append(f"{slug}: {key} shrank on publish")
+    return problems
 
 
 def check(out_dir: Path, result: dict) -> int:
@@ -945,17 +1045,19 @@ def check(out_dir: Path, result: dict) -> int:
 
     problems.extend(collect_shape_problems(CONTENT))
 
-    skip_dossier = _pages_one_generator_from_env()
-    required = [
-        "index.html",
-        ".nojekyll",
-        "assets/site.css",
-        "infographics/index.html",
-        "decks/index.html",
-        "artifact/dossier.html",
-    ]
-    if not skip_dossier:
-        required.insert(3, "dossier/index.html")
+    one_gen = result.get("one_generator", False)
+    if one_gen:  # Story 43.2: Astro's pages are checked by pages-check, not here
+        required = [".nojekyll", "assets/site.css", "artifact/dossier.html"]
+    else:
+        required = [
+            "index.html",
+            ".nojekyll",
+            "assets/site.css",
+            "dossier/index.html",
+            "infographics/index.html",
+            "decks/index.html",
+            "artifact/dossier.html",
+        ]
     for r in required:
         p = out_dir / r
         if not p.exists():
@@ -968,49 +1070,30 @@ def check(out_dir: Path, result: dict) -> int:
         if tag in artifact.lower():
             problems.append(f"artifact build must not contain {tag!r} — the Artifact host supplies it")
 
-    if not skip_dossier:
+    if one_gen:
+        problems.extend(_twin_problems(out_dir, result))
+    else:
         dossier = (out_dir / "dossier" / "index.html").read_text(encoding="utf-8")
         if "{{" in dossier or "{%" in dossier:
             problems.append("unrendered Jinja delimiters in dossier output")
 
-    for item in result["infographics"]:
-        p = out_dir / "infographics" / item["out_name"]
-        if not p.exists():
-            problems.append(f"infographic not published: {item['source']}")
-        elif p.stat().st_size < item.get("published_bytes", item["bytes"]):
-            problems.append(f"infographic shrank on publish: {item['out_name']}")
+        for item in result["infographics"]:
+            p = out_dir / "infographics" / item["out_name"]
+            if not p.exists():
+                problems.append(f"infographic not published: {item['source']}")
+            elif p.stat().st_size < item.get("published_bytes", item["bytes"]):
+                problems.append(f"infographic shrank on publish: {item['out_name']}")
 
-    gallery = (out_dir / "infographics" / "index.html").read_text(encoding="utf-8")
-    for item in result["infographics"]:
-        if item["out_name"] not in gallery:
-            problems.append(f"infographic missing from gallery: {item['out_name']}")
+        gallery = (out_dir / "infographics" / "index.html").read_text(encoding="utf-8")
+        for item in result["infographics"]:
+            if item["out_name"] not in gallery:
+                problems.append(f"infographic missing from gallery: {item['out_name']}")
 
-    decks_index = (out_dir / "decks" / "index.html").read_text(encoding="utf-8")
     for fam in result["families"]:
         slug = fam["slug"]
         deck_out = out_dir / "decks" / slug
-        family_page = deck_out / "index.html"
-        if not family_page.exists():
-            problems.append(f"deck family page not published: {slug}")
-        else:
-            size = family_page.stat().st_size
-            if size < 500:
-                problems.append(f"suspiciously small: decks/{slug}/index.html ({size}B)")
-            text = family_page.read_text(encoding="utf-8")
-            if "{{" in text or "{%" in text:
-                problems.append(f"unrendered Jinja delimiters in decks/{slug}/index.html")
-        if slug not in decks_index:
-            problems.append(f"deck missing from the decks index: {slug}")
-
-        for key, out_name in _FAMILY_VIEW_OUT_NAMES.items():
-            item = fam.get(key)
-            if item is None:
-                continue
-            vp = deck_out / out_name
-            if not vp.exists():
-                problems.append(f"{slug}: {key} not published")
-            elif vp.stat().st_size < item.get("published_bytes", item["bytes"]):
-                problems.append(f"{slug}: {key} shrank on publish")
+        if not one_gen:
+            problems.extend(_family_page_problems(out_dir, fam))
 
         for group in ("pptx", "marp"):
             for d in fam[group]:

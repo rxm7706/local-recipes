@@ -1,0 +1,135 @@
+---
+/**
+ * /herald/ -- the overview (Story 43.2, CAP-61): the dossier's headline stats, the doors to the
+ * dossier, the gallery and the deck families, site.yml's neighbours and the station tiles, from the
+ * same inputs page_index.html.j2 reads. A rest route so that with pyforge.herald.pages_one_generator
+ * off it emits no file at all, and the Jinja overview is the only one.
+ */
+import { getEntry } from 'astro:content';
+
+import HeraldLayout from '../../layouts/HeraldLayout.astro';
+import { cssVar, mdInline } from '../../lib/md-inline';
+import { loadHeraldPages, pagesOneGenerator } from '../../loaders/herald-pages-loader';
+
+export function getStaticPaths() {
+  return pagesOneGenerator() ? [{ params: { index: undefined } }] : [];
+}
+
+const pages = loadHeraldPages();
+const entry = await getEntry('dossier', 'dossier');
+if (!entry) {
+  throw new Error('dossier collection entry missing while PYFORGE_PAGES_ONE_GENERATOR=1');
+}
+const doc = entry.data as Record<string, unknown>;
+const site = pages.site;
+const stats = (doc.stats as Array<{ value: string; label: string }>) ?? [];
+const sections = (doc.sections as Array<Record<string, unknown>>) ?? [];
+const stations = sections.filter((s) => s.kind === 'station');
+const footer = doc.footer as { note?: string } | undefined;
+const igCount = pages.infographics.length;
+const famCount = pages.families.length;
+const description = mdInline(doc.summary as string).replace(/<[^>]+>/g, '');
+---
+
+<HeraldLayout
+  title={`${site.name} — ${site.eyebrow}`}
+  description={description}
+  rel=""
+  current="herald/"
+  favicon={site.favicon}
+  shortName={site.short_name ?? site.name}
+  builtAt={pages.builtAt}
+  commit={pages.commit}
+>
+  <div class="page">
+    <div class="lander">
+      <div class="kicker"><span class="dot"></span>{site.eyebrow}</div>
+      <h1>{site.name}</h1>
+      <p class="blurb">{site.blurb}</p>
+
+      <div class="hero-stats">
+        {
+          stats.map((s) => (
+            <div class="hero-stat">
+              <span class="n" set:html={mdInline(s.value)} />
+              <span class="l" set:html={mdInline(s.label)} />
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <a class="card" href="dossier/index.html">
+        <span class="card-eyebrow">Full fleet</span>
+        <h3>The Dossier</h3>
+        <p set:html={mdInline(doc.summary as string)} />
+        <span class="card-go">Read all {sections.length} sections &rarr;</span>
+      </a>
+      <a class="card" href="infographics/index.html">
+        <span class="card-eyebrow">Standalone</span>
+        <h3>Infographics</h3>
+        <p>
+          {
+            igCount
+              ? `${igCount} standalone visual${igCount === 1 ? '' : 's'}, each published as its own page and kept in step with the code they describe.`
+              : 'Standalone visuals, published as their own pages alongside the dossier.'
+          }
+        </p>
+        <span class="card-go">{igCount ? 'Open the gallery' : 'Nothing published yet'} &rarr;</span>
+      </a>
+      <a class="card" href="decks/index.html">
+        <span class="card-eyebrow">Family</span>
+        <h3>Decks</h3>
+        <p>
+          {
+            famCount
+              ? `${famCount} deck famil${famCount === 1 ? 'y' : 'ies'}, each with its poster, Infographic Deck and Executive Summary in view, plus PowerPoint and Marp downloads.`
+              : 'Deck families, published as their own pages alongside the dossier.'
+          }
+        </p>
+        <span class="card-go">{famCount ? 'Open the decks' : 'Nothing published yet'} &rarr;</span>
+      </a>
+      {
+        pages.neighbours.map((n) => {
+          const exp = n.export as { commit: string; date: string; version: string } | undefined;
+          return (
+            <a class="card" href={String(n.href)}>
+              <span class="card-eyebrow">{String(n.eyebrow ?? '')}</span>
+              <h3>{String(n.label)}</h3>
+              <p>{String(n.blurb ?? '')}</p>
+              {exp ? (
+                <p class="kv-provenance" data-export-commit={exp.commit} data-export-date={exp.date}>
+                  Exported from commit <code title={exp.commit}>{exp.commit.slice(0, 12)}</code> on{' '}
+                  <time datetime={exp.date}>{exp.date.slice(0, 10)}</time>
+                  {exp.version ? ` · kedro-viz ${exp.version}` : ''}
+                </p>
+              ) : null}
+              <span class="card-go">Open {String(n.label)} &rarr;</span>
+            </a>
+          );
+        })
+      }
+    </div>
+
+    <div class="station-rail">
+      {
+        stations.map((s) => (
+          <a
+            class="station-pill"
+            href={`dossier/index.html#${s.id as string}`}
+            style={`color:${cssVar(s.accent as string)}`}
+          >
+            <span class="dot" style={`background:${cssVar(s.accent as string)}`} />
+            <span set:html={mdInline(s.title as string)} />
+          </a>
+        ))
+      }
+    </div>
+
+    <footer>
+      <span set:html={mdInline(footer?.note ?? '')} />
+      <span>Site rebuilt {pages.builtAt}</span>
+    </footer>
+  </div>
+</HeraldLayout>

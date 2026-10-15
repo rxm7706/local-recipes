@@ -1242,6 +1242,11 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py": _H["DOCS_SITE"],
         "src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py": _H["DOCS_SITE"],
+        "src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_parity.py": (
+            ("docs-site/**", "docsite/**", "presentations/**"),
+            "Story 43.2: the parity test builds the herald pages on both paths (docsite/build.py and docs-site's "
+            "Astro) over the tracked tree",
+        ),
         "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": (
             ("docsite/**", "presentations/**"),
             "Story 42.2: pages-build runs the real herald build from the root around a fixture Kedro-Viz export",
