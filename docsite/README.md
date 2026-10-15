@@ -64,10 +64,14 @@ They render only with `pyforge.herald.status_pages` on, which reaches the `site`
 `PYFORGE_STATUS_PAGES` (`tools/export_status_pages_env.py`, run in the Guild env); on, the menus
 gain Status and the build input `content/fleet-status.json` (gitignored, written by a Guild step of
 steward's workflow from `sprint-ledger-query --format json`; its shape is in `tools/status_pages.py`)
-must carry `stations`, a list, each with `done` and `total`, or `pages-check` exits 1 naming the
-file. Off, the input is never opened and no other page changes. A local run with the flag on:
+must carry `stations`, a list, each with `done` and `total` (`done` no more than `total`), or
+`pages-check` exits 1 naming the file. The attention block says "nothing needs attention" only when
+every station counts 0 blocked and 0 backlog. Off, the input is never opened and no other page
+changes. A local run with the flag on, from the live ledgers (steward Story 102.3 writes the input,
+then runs `pages-check`) or from the fixture:
 
 ```bash
+PYFORGE_STATUS_PAGES=1 pixi run -e pyforge-guild pyforge steward pages build
 cp src/shared/packages/pyforge-herald/tests/fixtures/fleet-status-2026-10-14.json docsite/content/fleet-status.json
 PYFORGE_STATUS_PAGES=1 pixi run -e site pages-check
 ```

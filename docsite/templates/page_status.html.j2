@@ -56,8 +56,9 @@
       <li data-key="{{ a.station | e }} {{ a.story_id | e }}"><span class="status-tag {{ a.status }}">{{ a.status }}</span><b>{{ a.station | e }}</b> <code>{{ a.story_id | e }}</code>{% if a.title %} {{ a.title | e }}{% endif %}</li>
       {%- endfor %}
     </ul>
-    {%- else %}
-    <p class="soft-note">Nothing needs attention: no story is blocked or in the backlog.</p>
+    {%- endif %}
+    {%- if board.attention_note %}
+    <p class="soft-note status-attention-note">{{ board.attention_note | e }}</p>
     {%- endif %}
   </section>
 

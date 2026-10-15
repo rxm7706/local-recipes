@@ -316,3 +316,38 @@ with the flag test running both states
     run on this tree and on `d7e52c11f3` diffs to nothing.
   - **CAP-59's order** gained one tie-break: within an unknown verdict, rows sort by id (they kept input order);
     `ci_surfaces_tile.order_rows` serves both the tile (non-live) and the guild page (all rows, `live` last).
+- 2026-10-15 (the independent review, `review-42-1`, verdict FAIL on two should-fix findings; resolved here):
+  - **No false all-clear (should-fix 1).** The attention block says "Nothing needs attention" only when every
+    station counts 0 blocked and 0 backlog. An input whose `stories` lists none of what the counts show (omitted or
+    filtered) says "The input lists none of the N blocked / M backlog stories the station counts show"; one that
+    lists some of them says how many of each; counts the input does not give say so
+    (`status_pages.attention_note`). `test_ac2_no_listed_story_under_nonzero_counts_is_not_an_all_clear` is the
+    regression for the contradiction the first test codified.
+  - **`done` above `total` is refused (nit 4)**, naming the file and the station index, before any bar is drawn.
+  - **The flip preconditions (should-fix 2, nit 3).** Two of the three the review named are closed by steward Story
+    102.3 (commit `a35fea43ab`): `pages.yml` now writes `docsite/content/fleet-status.json` from
+    `sprint-ledger-query --format json` before `pages-check`, and exports `PYFORGE_STATUS_PAGES` through
+    `export_status_pages_env.py`; the input shape it writes is `steward pages.fleet_status_document`'s, the one this
+    reader documents. The one left before `pyforge.herald.status_pages` turns on in staging or production: **an
+    absolute Lane 1 URL in `site.yml`'s `lane1.href`**. `/console/` resolves on the Pages origin, where Lane 1 is
+    not served, and `pages-check` skips that one href by design; the operator has not yet ruled on the URL, so
+    `site.yml` keeps `/console/`. The field names and the gap belong on spec-pyforge-herald's memlog too (the
+    coordinating session's surface-reconcile append carries them).
+  - **Files outside Epic 42's surface (nit 5)**, each forced by the story: `.gitignore` (the input is gitignored),
+    `docs-site/scripts/sidebar_from_map.py` (the docs menus gate the Status entry; Epic 43's surface),
+    `src/shared/packages/pyforge-core/tests/unit/test_flags.py` and `src/platform/tests/test_openfeature_file_flags.py`
+    (the shipped-flag pins list the new key). Their co-governors (spec-pyforge-pages, spec-pyforge-core,
+    spec-pyforge-unifying-strategy) get the memlog reconcile and a scoped stamp in the coordinating session's pass.
+    One more file outside it, changed in steward 102.3: `pyforge-steward/tests/meta/test_station_tests_trigger_map.py`
+    now declares this story's `test_status_pages_flag_states.py` in `ROOT_HANDOFF_INPUTS` (`docsite/**`,
+    `presentations/**`), since the flag-off test hands the repo root to the herald build.
+  - **The two-state test (nit 6)** names the key literally: `@flag_states("pyforge.herald.status_pages")`.
+  - **Nit 7 (the AC7 oracle)** is accepted as the review rules; the base-commit `git archive` diff stays the check
+    for flag-off changes the shell, `site.yml` or the tile's tie-break could carry.
+  - **Healed tissue from steward 102.3.** `docsite/content/dossier.yml`'s steward paragraph names `deploy`
+    (perimeter/static) and the `pages` duty. The steward deck family still says `steward deploy dashboard` in its
+    Design handoffs (`project/*.dc.html`), the poster standalone, `src/slides/manifest.json` and two current Marp
+    sources: those are not hand-edited here. `docs/how-to/presentation-deck.md` puts deck content in the Design
+    prototype (edit in Design, `herald deck pull`, `npm run extract`) and derives every export from its Marp source
+    with `deck-export`, which re-dates and re-renders the whole export set; a hand edit would diverge from Design and
+    be reverted by the next pull. A steward deck refresh carries it.

@@ -12,7 +12,7 @@ Both are snapshots: each names its snapshot time and links the live view on Lane
 steward's output as data and re-derives nothing; nothing here imports a station or calls ``gh``.
 
 **The input** (``fleet-status.json``). Required: ``stations``, a list; per station ``done`` and
-``total`` (non-negative integers). Every other field is read under the name steward's JSON gives it
+``total`` (non-negative integers, ``done`` no more than ``total``). Every other field is read under the name steward's JSON gives it
 (``sprint-ledger-query --format json``: ``StationProgress`` and ``WorkPassportItem``) and is optional;
 extra keys are ignored::
 
@@ -126,6 +126,8 @@ def validate_fleet_status(data: Any, *, path: str) -> None:
                 raise FleetStatusShapeError(f"{path}: {label} missing {key}")
             if not _is_count(station[key]):
                 raise FleetStatusShapeError(f"{path}: {label} {key} is not a non-negative integer")
+        if station["done"] > station["total"]:
+            raise FleetStatusShapeError(f"{path}: {label} done {station['done']} is more than total {station['total']}")
     stories = data.get("stories")
     if stories is None:
         return
@@ -154,7 +156,8 @@ def load_fleet_status(path: Path) -> dict[str, Any]:
 
 
 def bar_width(done: int, total: int) -> int:
-    """The integer percentage of ``done`` over ``total`` (floored); 0 when ``total`` is 0."""
+    """The integer percentage of ``done`` over ``total`` (floored); 0 when ``total`` is 0. The shape
+    check refuses ``done`` above ``total``; the clamp only keeps a direct caller's bar inside 100."""
     if total <= 0:
         return 0
     return min(100, done * 100 // total)
@@ -206,13 +209,45 @@ def attention_items(data: dict[str, Any]) -> list[dict[str, str]]:
     return items
 
 
+def _counted(data: dict[str, Any], key: str) -> tuple[int, bool]:
+    """The stations' summed ``key`` count, and whether every station gave one."""
+    values = [station.get(key) for station in data["stations"]]
+    return sum(value for value in values if _is_count(value)), all(_is_count(value) for value in values)
+
+
+def attention_note(data: dict[str, Any], items: list[dict[str, str]]) -> str | None:
+    """What the attention block says beside (or instead of) its list, from the station counts.
+
+    The all-clear is said only when every station counts 0 blocked and 0 backlog: an input whose
+    ``stories`` lists fewer rows than its counts show (omitted, or filtered) says so instead of
+    claiming nothing needs attention (herald 42.1 review)."""
+    blocked, blocked_known = _counted(data, "blocked")
+    backlog, backlog_known = _counted(data, "backlog")
+    listed_blocked = sum(1 for item in items if item["status"] == "blocked")
+    listed_backlog = sum(1 for item in items if item["status"] == "backlog")
+    if not items:
+        if blocked or backlog:
+            return f"The input lists none of the {blocked} blocked / {backlog} backlog stories the station counts show."
+        if blocked_known and backlog_known:
+            return "Nothing needs attention: no story is blocked or in the backlog."
+        return "The input lists no blocked or backlog story, and its station counts do not say whether any exist."
+    if listed_blocked < blocked or listed_backlog < backlog:
+        return (
+            f"The input lists {listed_blocked} of the {blocked} blocked and {listed_backlog} of the "
+            f"{backlog} backlog stories the station counts show."
+        )
+    return None
+
+
 def board(data: dict[str, Any]) -> dict[str, Any]:
     """The fleet board's view of a validated input."""
     generated_at = data.get("generated_at")
+    items = attention_items(data)
     return {
         "generated_at": generated_at if isinstance(generated_at, str) and generated_at.strip() else None,
         "stations": station_rows(data),
-        "attention": attention_items(data),
+        "attention": items,
+        "attention_note": attention_note(data, items),
     }
 
 

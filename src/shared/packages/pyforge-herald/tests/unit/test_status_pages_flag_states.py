@@ -149,7 +149,7 @@ def test_the_site_build_reads_the_exported_variable(monkeypatch: pytest.MonkeyPa
 # --- AC9: two states ------------------------------------------------------------------------------
 
 
-@flag_states(_FLAG)
+@flag_states("pyforge.herald.status_pages")
 def test_ac9_render_follows_flag_state(
     flag_provider: dict[str, bool], build_mod, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -231,16 +231,50 @@ def test_ac2_a_repeated_key_is_listed_once(build_mod, tmp_path: Path) -> None:
     assert len(keys) == len(set(keys)) == 22
 
 
-def test_ac2_nothing_needs_attention(build_mod, tmp_path: Path) -> None:
-    payload = {
-        "generated_at": "t",
-        "stations": _fleet()["stations"],
-        "stories": [{"story_id": "1.1", "status": "done"}],
-    }
+def _attention_block(build_mod, tmp_path: Path, payload: dict) -> str:
     status_out, _ = _render(build_mod, tmp_path, flag_enabled=True, fleet=_write(tmp_path, payload))
-    block = _section((status_out / "index.html").read_text(encoding="utf-8"), "status-attention")
-    assert "Nothing needs attention" in block
+    return _section((status_out / "index.html").read_text(encoding="utf-8"), "status-attention")
+
+
+def test_ac2_no_listed_story_under_nonzero_counts_is_not_an_all_clear(build_mod, tmp_path: Path) -> None:
+    """The review's regression: the stations count 13 blocked and 9 backlog, the input lists only a
+    done story (or no stories at all), so the block says it lists none of them, never the all-clear."""
+    for stories in ([{"story_id": "1.1", "status": "done"}], None):
+        payload = {"generated_at": "t", "stations": _fleet()["stations"]}
+        if stories is not None:
+            payload["stories"] = stories
+        block = _attention_block(build_mod, tmp_path, payload)
+        assert "Nothing needs attention" not in block
+        assert "The input lists none of the 13 blocked / 9 backlog stories the station counts show." in block
+        assert "<li" not in block
+
+
+def test_ac2_nothing_needs_attention_when_every_count_is_zero(build_mod, tmp_path: Path) -> None:
+    stations = [{**s, "blocked": 0, "backlog": 0} for s in _fleet()["stations"]]
+    payload = {"generated_at": "t", "stations": stations, "stories": [{"story_id": "1.1", "status": "done"}]}
+    block = _attention_block(build_mod, tmp_path, payload)
+    assert "Nothing needs attention: no story is blocked or in the backlog." in block
     assert "<li" not in block
+
+
+def test_ac2_counts_the_input_does_not_give_are_not_an_all_clear(build_mod, tmp_path: Path) -> None:
+    payload = {"generated_at": "t", "stations": [{"station": "pyforge-x", "done": 1, "total": 2}]}
+    block = _attention_block(build_mod, tmp_path, payload)
+    assert "Nothing needs attention" not in block
+    assert "station counts do not say whether any exist" in block
+
+
+def test_ac2_a_partial_list_says_how_much_it_lists(build_mod, tmp_path: Path) -> None:
+    payload = _fleet()
+    payload["stories"] = [s for s in payload["stories"] if s["status"] != "backlog"]
+    block = _attention_block(build_mod, tmp_path, payload)
+    assert len(re.findall(r'<li data-key="', block)) == 13  # noqa: PLR2004
+    assert "The input lists 13 of the 13 blocked and 0 of the 9 backlog stories the station counts show." in block
+
+
+def test_ac2_a_complete_list_carries_no_note(build_mod, tmp_path: Path) -> None:
+    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
+    assert "status-attention-note" not in (status_out / "index.html").read_text(encoding="utf-8")
 
 
 def test_ac3_snapshot_time_and_one_lane1_link(build_mod, tmp_path: Path) -> None:
@@ -343,6 +377,10 @@ def test_ac5_no_input_names_the_path(tmp_path: Path) -> None:
         (lambda p: p["stations"].__setitem__(0, "pyforge-atlas"), "station 0 is not an object"),
         (lambda p: p["stations"][2].__setitem__("done", "132"), "station 2 (pyforge-herald) done is not"),
         (lambda p: p["stations"][2].__setitem__("total", -1), "station 2 (pyforge-herald) total is not"),
+        (
+            lambda p: p["stations"][3].__setitem__("done", 454),
+            "station 3 (pyforge-marshal) done 454 is more than total 453",
+        ),
         (lambda p: p.__setitem__("stories", {"x": 1}), "stories is not a list"),
         (lambda p: p["stories"][0].pop("status"), "story 0 missing status"),
     ],

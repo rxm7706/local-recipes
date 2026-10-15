@@ -872,7 +872,8 @@ sections:
     body:
     - 'Fifteen "duties," each a structural (Protocol-conforming, not inherited) unit of platform work
       — two more than the last pass found, with `restore` and `revoke` added: `keys` (credential lifecycle),
-      `deploy` (dashboard/perimeter/static), `provision` (a flag-driven, class-keyed install playbook
+      `deploy` (perimeter/static; the Pages build, deploy and status moved to a `pages` duty in Story
+      102.3), `provision` (a flag-driven, class-keyed install playbook
       — deliberately no nested verbs, routed to a documented playbook spec rather than inline logic),
       `budget`, `sync` (bidirectional GitHub Projects ↔ Jira reconciliation), `workspace`, `upgrade` (a
       five-stage BMAD-core upgrade pipeline — pre-flight, deliberate apply, clobber detection, pin-fan-out,
