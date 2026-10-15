@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 3618c040daf3616f
-story_count: 378
+source_fingerprint: 824f12b30595307b
+story_count: 379
 test_file_count: 126
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 378
+- **Stories parsed:** 379
 - **Epics parsed:** 103
 - **Test files inventoried:** 126 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3618c040daf3616f`
+- **Source fingerprint:** `824f12b30595307b`
 
 ## Risk Assessment
 
@@ -653,6 +653,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.1 | `steward ci status` reports the master switch, and every surface it pauses | none observed |
 | 103.2 | `estate reconcile` writes the bmad-suite floors from the batch, not the network | none observed |
 | 103.3 | `pyforge-ci` is stdlib-only, as its tasks say | none observed |
+| 103.4 | The `ci-surface-gates` tests write their fixtures under `tmp_path` | none observed |
 
 ## Quality Gates
 
