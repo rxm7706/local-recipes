@@ -12,7 +12,7 @@ entries: 60
 real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
 Follow-up intake and verification campaigns added more `## DW-` headings without retiring
 that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
-the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**185** `### DW-` headings
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**193** `### DW-` headings
 today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
@@ -4899,3 +4899,92 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   story: promoted to Story 31.1 (spec-pyforge-atlas CAP-20, Epic 31, minted 2026-10-14 on the operator's approval "chain the three DWs"); close when 31.1 lands, citing its merge.
   verified: 2026-10-14 dispatch/pyforge-atlas/31.1 — `pixi run --frozen -e pyforge-foundry-full mypy` exit 0; pyforge-atlas line ok after Success in 130 source files.
   status: closed
+
+### DW-atlas-retro-2026-10-15-1: The dashboard e2e grid assertion uses Playwright's 5 s default where its neighbours allow 15 s, so it flakes under load.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`
+  summary: `test_declared_controls_render_against_real_rows` waits 15 s for the facet filter, its dropdown and the chart, then asserts the grid's text with Playwright's 5 s default. Under host load the grid can take longer than that, and the test fails while the waits above it pass.
+  evidence: `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:238`-`:240` pass `timeout=15_000`; `:242` (`expect(grid).to_contain_text("linux-64")`) passes none. The comment at `:233`-`:235` records why the others were raised (a loaded CI runner took longer than 5 s twice on 2026-10-04, #1836 and #1838). This one failed under host load during atlas Story 31.1's local pr-preflight (2026-10-15).
+  location: src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:242
+  fix: pass `timeout=15_000` to the grid assertion, the budget its neighbours use. Test-only; no retry, skip or `xfail` (AD-11).
+  origin: retrospective 2026-10-15 (Epics 25-31)
+  severity: medium
+  promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
+  status: open
+
+### DW-atlas-retro-2026-10-15-2: The two `mypy` lanes share each package's `.mypy_cache` when pr-preflight runs them at once.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`
+  summary: Since atlas Story 31.1, `pr-preflight-lanes` runs `mypy` twice: in `pyforge-guild` (through `lint-types`) and in `pyforge-foundry-full`. Both run `mypy -p pyforge.<station>` from the package directory with no `--cache-dir`, so both write `<package>/.mypy_cache`. The two environments resolve third-party imports differently (Guild reads Vizro, Dagster, Kedro and OpenLineage as `Any`), so each lane can overwrite the other's cache entries mid-run. Not yet seen to change a verdict.
+  evidence: `scripts/lint_types.py:181` (`_run(["mypy", "-p", ...], cwd=pkg)`); `pixi.toml:1639` (both lanes in `pr-preflight-lanes`); `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py:843` (pool size = logical cores) and `:954` (`ThreadPoolExecutor`). Raised as nit 5 in steward Story 103.5's review ("not changed here; the orchestrating session tracks it separately"); no ledger row carried it before this one.
+  location: scripts/lint_types.py; src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py
+  fix: give each environment its own cache (for example `--cache-dir .mypy_cache/<environment>`), or serialize the two `mypy` lanes with a preflight mutex key.
+  owner: steward (spec-pyforge-steward:CAP-153 owns `lint_types.py`; spec-pyforge-steward:CAP-159 owns the preflight)
+  origin: retrospective 2026-10-15 (Epic 31; steward Story 103.5 review, nit 5)
+  severity: low
+  promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
+  status: open
+
+### DW-atlas-retro-2026-10-15-3: A local pr-preflight on a loaded host fails lanes on timeouts, and its journal cannot tell that from a real red.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`
+  summary: The preflight sizes its lane pool to the logical core count whatever else the host is running, and journals no load figure. Under heavy load, test-level timeouts red lanes the diff cannot reach, and the run record reads the same as a real failure.
+  evidence: During atlas Story 31.1's landing (2026-10-15), a local `pr-preflight` on a heavily loaded host timed out in several lanes. `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py:843` sets `worker_count` to the logical core count when `--jobs` is not given; `.steward/preflight-runs.jsonl` records `jobs` and `logical_cores` but no load. Example: on the steward-only 103.5 branch, run `0dfe01dc` (2026-10-15T00:42Z, 16 jobs on 16 cores) went red on `pyforge-atlas-test` after 380 s, a lane that diff cannot change; the journal does not say why.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py
+  fix: record the host load average with each run (and each red lane), and size `--jobs` from the cores not already busy, so a load timeout shows as one.
+  owner: steward (spec-pyforge-steward:CAP-159)
+  origin: retrospective 2026-10-15 (Epic 31's landing)
+  severity: low
+  promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
+  status: open
+
+### DW-atlas-retro-2026-10-15-4: `pyforge-deps-test` runs for no atlas change, so an undeclared import reaches main.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`
+  summary: `pyforge-deps-test` (`tests/packaging/test_dependency_completeness.py`, AUD-ATLAS-010: every hard import is a declared dependency) runs in no GitHub workflow, no pr-preflight lane and not in atlas's `verify_commands`. Twice on 2026-10-04 an atlas landing added an undeclared import, and main went red. The break showed up only when marshal's merge-tree preview refused another station's landing.
+  evidence: Story 27.1's `numpy` import (fixed by #1809) and Story 27.3's module-level `from dash import html, no_update` (fixed by #1851; it refused every marshal landing at the merge-tree preview, MRS-DISP-044 on #1848). At `17ca13adaa`, no `.github/workflows/*.yml` step names `pyforge-deps-test` or `tests/packaging/test_dependency_completeness.py`; `pr-preflight-lanes` (`pixi.toml:1639`) does not list it; atlas's `verify_commands` (`_bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml:51`-`:54`) are `kedro-test` and `kedro-catalog-check`; marshal's policy is the one that runs it (`_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml:96`). It passes on main today: `pixi run --frozen -e pyforge-ci pyforge-deps-test` exit 0 (130 passed, 3 skipped).
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml (verify_commands); pixi.toml (pr-preflight-lanes)
+  fix: add `pixi run --frozen -e pyforge-ci pyforge-deps-test` to atlas's `verify_commands` (atlas's call). A CI step or pr-preflight lane for every station is steward's (spec-pyforge-steward:CAP-159).
+  owner: atlas (its verify_commands); steward for a fleet-wide lane
+  origin: retrospective 2026-10-15 (Epic 27's 2026-10-04 hotfixes)
+  severity: medium
+  promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
+  status: open
+
+### DW-atlas-retro-2026-10-15-5: `steward-test` still does not run when only a station's `src/` changes, though steward's guild-env test reads every station's `src/`.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`
+  summary: `test_no_station_assumes_local_recipes.py` scans every `pyforge-*/src` tree, but the `steward` trigger in `pyforge-station-tests.yml` names no other station's `src/`. An atlas-only PR that shells out to `-e local-recipes` still runs no `steward-test` and reds main, as Story 27.3 did on 2026-10-04, after steward Story 98.1 derived the triggers from what each suite reads.
+  evidence: Story 27.3's `dashboard/scan_submit.py` ran `env-inspect` through `-e local-recipes`; its PR (#1836) ran no `steward-test`, and main went red (hotfix #1840; spec-27-3 § Review Triage Log). At `17ca13adaa`, `steward_paths` (`.github/workflows/pyforge-station-tests.yml:367`-`:406`) lists steward's package, `src/shared/packages/pyforge-*/tests/*` and shared files, while the test reads `PACKAGES.glob("pyforge-*")` / `src` (`src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py:90`-`:91`). `git ls-files` over the steward pathspecs lists no file under `src/shared/packages/pyforge-atlas/src/`. Read and pathspec-matched, not run through the `changes` step.
+  location: .github/workflows/pyforge-station-tests.yml (steward_paths); src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py (the derivation that missed the glob read)
+  fix: add `src/shared/packages/pyforge-*/src` to `steward_paths`, and teach the trigger-map derivation the `PACKAGES.glob(...)` read so its meta-test reds this gap.
+  owner: steward (spec-pyforge-steward:CAP-159, Story 98.1)
+  origin: retrospective 2026-10-15 (Epic 27's 2026-10-04 hotfixes)
+  severity: medium
+  promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
+  status: open
+
+### DW-atlas-retro-2026-10-15-6: Stories 25.2, 27.3, 29.1 and 31.1 landed with no independent review in their specs.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`
+  summary: Four atlas stories landed between 2026-10-05 and 2026-10-15 with only a self-review, or none, in their specs. Implementation and review stay separate (AGENTS.md § Behavioural guidelines, item 8).
+  evidence: spec-25-2 § Review Triage Log ("self-review against acceptance criteria … no subagent findings"); spec-27-3 ("No review has run yet"; the landing then needed hotfix #1840); spec-29-1 has no `## Review Triage Log`; spec-31-1 ("implementer verification"). Story 25.1 shows what this misses: its in-session review recorded one maybe-false finding, while a separate reviewer sent it back five times, with 2 high and 7 medium findings in iteration 1 alone (spec-25-1 § Review Triage Log).
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-2-a-poll-cursor-sensor-refreshes-the-history-over-warden-s-fleet-inventory.md; spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data.md; spec-29-1-the-range-test-server-records-each-response-before-the-client-can-read-it.md; spec-31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so.md
+  fix: run one independent review per story against its spec, in the per-station review batch the operator's 2026-10-03 ruling set up for Story 27.4's eight owed reviews, and record each verdict in the story spec.
+  origin: retrospective 2026-10-15 (Epics 25, 27, 29, 31)
+  severity: low
+  promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
+  status: open
+
+### DW-atlas-retro-2026-10-15-7: A single-story dispatch does not hold a story whose declared Deps are not `done`; Story 25.2 landed before 25.1.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-atlas-2026-10-15.md`
+  summary: Story 25.2 declares `**Deps:** S-25.1`. It landed on 2026-10-05 against a placeholder node while 25.1 was `blocked`. 25.1 landed on 2026-10-11 and changed the job 25.2 triggers, which left the sensor's link to Warden's inventory nominal (`DW-atlas-25-1-1`). A single-story dispatch checks Deps only against stories in flight; the not-`done` check is read only by the drain.
+  evidence: `epics.md` Story 25.2 (`**Deps:** S-25.1`); spec-25-2 § Auto Run Result ("placeholder op"; "Residual risk: Story 25.1 still replaces the placeholder"); merges `3f2744da9e` (25.2) and `96dbe8a03a` (25.1). In `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`, the dispatch preflight uses the Deps graph only at `:2374` (`story_transitively_depends_on(feed_story, in_flight, graph)`, for a LIVE story); `dispatch_prelaunch.unmet_deps` is read by the drain (`cli/drain_plan.py:657`) and its held rows (`cli/dispatch.py:5737`). How 25.2's launch was chosen is not recorded in its spec.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py (the dispatch preflight)
+  fix: decide between refusing a single-story dispatch whose declared Deps are not `done` and warning with an explicit override, then build that.
+  owner: marshal
+  origin: retrospective 2026-10-15 (Epic 25)
+  severity: low
+  promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
+  status: open
