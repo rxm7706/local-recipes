@@ -47,11 +47,23 @@ def snapshot_path(content_dir: Path) -> Path:
     return content_dir / SNAPSHOT_NAME
 
 
-def _verdict_sort_key(row: dict[str, Any]) -> tuple[int, int, str]:
+def _verdict_sort_key(row: dict[str, Any]) -> tuple[int, int, str, str]:
+    """The tile's order: ``VERDICT_ORDER``, then any unknown verdict (by name), then ``live``;
+    by id within a verdict."""
     verdict = row["verdict"]
+    row_id = str(row["id"])
     if verdict in VERDICT_ORDER:
-        return (0, VERDICT_ORDER.index(verdict), row["id"])
-    return (1, 0, verdict)
+        return (0, VERDICT_ORDER.index(verdict), "", row_id)
+    if verdict == "live":
+        return (2, 0, "", row_id)
+    return (1, 0, str(verdict), row_id)
+
+
+def order_rows(rows: list[dict[str, Any]], *, include_live: bool = True) -> list[dict[str, Any]]:
+    """The snapshot's rows in the tile's order; the guild status page (Story 42.1) shows them all,
+    ``live`` last, and the tile shows the rest."""
+    chosen = rows if include_live else [row for row in rows if row.get("verdict") != "live"]
+    return sorted(chosen, key=_verdict_sort_key)
 
 
 def format_days_left(review_days_left: int | None) -> str:
@@ -104,8 +116,7 @@ def load_ci_status_snapshot(path: Path) -> dict[str, Any]:
 
 
 def select_non_live_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    non_live = [row for row in rows if row.get("verdict") != "live"]
-    return sorted(non_live, key=_verdict_sort_key)
+    return order_rows(rows, include_live=False)
 
 
 def format_row_line(row: dict[str, Any]) -> str:

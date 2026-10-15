@@ -7,13 +7,18 @@ name: Pages
 #
 # Publishes one GitHub Pages artifact assembled at docs-site/build/site/
 # (Starlight docs shelf at /, herald dossier at /herald/, Kedro-Viz at
-# /dashboard/kedro-viz/). Atlas Kedro-Viz is staged under docs/dashboard/kedro-viz/
-# by kedro-viz-publish.yml and copied into the artifact by docsite/tools/assemble_pages.py.
-# Lane 1 /console/ is the operator console.
+# /dashboard/kedro-viz/). Story 102.4: atlas's kedro-viz-publish.yml uploads the export as
+# the workflow artifact kedro-viz-export (atlas Story 30.1); the build job downloads the
+# newest unexpired one into docs/dashboard/kedro-viz/ (gitignored), which
+# docsite/tools/assemble_pages.py mounts, and skips the mount when there is none (herald
+# Story 42.2). Lane 1 /console/ is the operator console.
 #
-# kedro-viz-publish.yml stages the export, then this workflow republishes when the
-# built tree changes. Story 102.2: build on pull_request and push (one filter),
+# Story 102.2: build on pull_request and push (one filter),
 # deploy on main only when the tree hash differs from live build.json.
+# Story 102.3: a Guild step writes herald's fleet board input
+# (docsite/content/fleet-status.json, from sprint-ledger-query --format json) before
+# every build, and the build env carries PYFORGE_STATUS_PAGES (herald Story 42.1's
+# flag); `steward pages build|deploy|status` is the duty that speaks to this workflow.
 
 on:
   pull_request:
@@ -25,7 +30,6 @@ on:
       - 'docs/index.md'
       - 'docs/404.md'
       - 'docs/map.yaml'
-      - 'docs/dashboard/**'
       - 'docs-site/**'
       - 'docsite/**'
       - 'presentations/**'
@@ -48,6 +52,12 @@ jobs:
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true') }}
     runs-on: ubuntu-latest
+    # actions: read (Story 102.4) lets the job list another workflow's runs and download its artifact.
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: read
     timeout-minutes: 20
     concurrency:
       group: pages-build-${{ github.ref }}
@@ -79,9 +89,37 @@ jobs:
           pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python docsite/tools/export_ci_surfaces_tile_env.py >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_one_generator_env.py >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python docsite/tools/export_status_pages_env.py >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --flag-env >> "$GITHUB_ENV"
         env:
           PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
           PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      # The Kedro-Viz mount's build input (Story 102.4): atlas's newest unexpired kedro-viz-export,
+      # into docs/dashboard/kedro-viz/. Absent (no run, no artifact, expired) is a normal build: it
+      # exports KEDRO_VIZ_EXPORT=absent and herald's assembler skips the mount; a gh error fails the
+      # step. Another artifact mount is a copy of this step with its own --workflow, --artifact,
+      # --dest and --env-prefix.
+      - name: Download the Kedro-Viz export artifact
+        if: ${{ env.PYFORGE_PAGES_DUTY == '1' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py
+          --workflow kedro-viz-publish.yml --artifact kedro-viz-export
+          --dest docs/dashboard/kedro-viz --env-prefix KEDRO_VIZ_EXPORT
+
+      # Herald's fleet board reads this input when pyforge.herald.status_pages is on (herald
+      # Story 42.1); it is written on every build so the flag can flip without a workflow edit.
+      # The snapshot time is the built commit's, so a scheduled build of an unmoved tree hashes the
+      # same and skips its deploy.
+      - name: Write the fleet board's build input
+        run: |
+          pixi run --frozen -e pyforge-guild sprint-ledger-query -- --format json --output "$RUNNER_TEMP/sprint-ledger.json"
+          pixi run --frozen -e pyforge-guild python scripts/pages_fleet_status.py \
+            --ledger "$RUNNER_TEMP/sprint-ledger.json" \
+            --generated-at "$(git log -1 --format=%cI HEAD)" \
+            --out docsite/content/fleet-status.json
 
       - name: Build and verify the unified Pages artifact
         run: pixi run --frozen -e site pages-check

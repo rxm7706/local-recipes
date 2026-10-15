@@ -2,7 +2,7 @@
 title: "102.4: The Pages build mounts atlas's Kedro-Viz export from a workflow artifact and tolerates its absence"
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
 flag:
   key: pyforge.steward.pages_duty                 # Story 102.2's; the download step reads its exported state
@@ -197,6 +197,24 @@ with and one without the artifact are recorded
 - `gh workflow run pages.yml --ref main` once atlas 30.1 and herald's half are on `main`; read the run's download
   step and `pages-check` exit; record both run ids (present and absent) here.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py src/shared/packages/pyforge-steward/tests/unit/test_pages_export_flag_states.py -q`
+  — exit 0 (AC1–AC5; with `test_pages_workflow.py` and `test_pages.py`, 35 passed).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 2742 passed, 2 skipped.
+- `python scripts/ci_surface_gates.py --check` — exit 0. `pixi run --frozen -e pyforge-guild flag-gate-check` — exit 0.
+  `pixi run --frozen -e pyforge-guild lint-types` — exit 0. `pixi run --frozen -e site docs-site-validate` — exit 0.
+- `git ls-files docs/dashboard/kedro-viz | wc -l` — 0 (atlas 30.1 landed): the AC6 branch that drops the filter entry.
+- Group 1's end gate (102.3 + 102.4): `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0, 1984 passed,
+  5 skipped; `pixi run --frozen -e site pages-check` — exit 0 with no export (`kedro-viz absent: no tile, no menu
+  entry, no pipelines page`).
+- A live, read-only rehearsal of the step's selection (`scripts/pages_artifact_download.py --github-env <scratch>`):
+  exit 0, `kedro-viz-export: none found; mount skipped`, `KEDRO_VIZ_EXPORT=absent`. The producer's newest successful
+  run is `31905522038` (2026-08-15), from before it uploaded an artifact; it has been `paused-manually` since
+  2026-08-24 (registry `review_by` 2026-11-01), so no artifact exists yet. `--flag-env` printed `PYFORGE_PAGES_DUTY=1`.
+- Not run here: the memlog reconciles, the scoped stamps, `detectors-ci` and `pr-preflight` (the coordinating
+  session runs them for the branch); AC7's two dispatched runs (operator, below).
+
 ## Named, not fixed here
 
 - `gh run download` versus `actions/download-artifact@v8` with `run-id`: the implementer's; both need `actions: read`.
@@ -209,3 +227,40 @@ with and one without the artifact are recorded
   `assemble_pages.py` (which exits 1 on a missing mount) and `site.yml` (the Kedro-Viz neighbour tile). The split —
   steward downloads and exports, herald tolerates and hides — is the 2026-10-14 design decision on the Spec's memlog.
   The implementing session reads the landed atlas 30.1 producer and herald half first.
+- 2026-10-15 (implemented, in review; one branch with the rest of the Pages redesign chain). Read first, as the
+  mint asked: atlas 30.1 landed (the producer uploads `kedro-viz-export`, 90-day retention, behind
+  `pyforge.atlas.viz_export_artifact`; the committed tree is gone and `.gitignore` already names
+  `docs/dashboard/kedro-viz/`), and herald 42.2 landed (`assemble_pages.py` decides presence from the directory
+  itself, skipping the mount, the redirect, the tile and the menu entry when it is empty or absent). Where the landed
+  code differs from the text above, the code is the contract:
+  - **The script is `scripts/pages_artifact_download.py`** (beside `pages_build_stamp.py`), on
+    `pages.newest_export_run(runs_json, artifacts_json, *, artifact=…) -> int | None`. It lists runs with
+    `--json databaseId,createdAt,conclusion` (the conclusion is how AC1 ignores a failed run) and reads each run's
+    full `gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts` payload newest-first, stopping at the first live
+    `kedro-viz-export` (so the selection runs on recorded JSON, not a `--jq` string). An artifact counts only when
+    the API says `expired: false`. It refuses (exit 1) a `--dest` that already holds files rather than clearing it:
+    in CI the directory never exists; on a laptop it may hold a local `viz-publish-stage`.
+  - **A second artifact mount is a copy of the step.** `--workflow`, `--artifact`, `--dest` and `--env-prefix`
+    default to atlas's producer, `kedro-viz-export`, `docs/dashboard/kedro-viz` and `KEDRO_VIZ_EXPORT`; a later
+    mount (atlas 30.2's Vizro export into `docs/dashboard/vizro/`) passes its own four. No second artifact name is
+    added here.
+  - **The flag's exported state.** No Guild step exported `pyforge.steward.pages_duty` before this story (102.2's stamp
+    script reads it directly), so the script's `--flag-env` prints `PYFORGE_PAGES_DUTY=1|0` from the env-resolve
+    step, and the download step's `if:` reads it. With the flag off the step is skipped; called anyway, the script
+    returns before any `gh` call.
+  - **Permission and token.** The `build` job gains a job-level `permissions:` block (`contents: read`,
+    `pages: write`, `id-token: write`, `actions: read`); the workflow-level block and the `deploy` job are unchanged.
+    The step hands `gh` the job's own `${{ github.token }}` as `GH_TOKEN`: no secret is added.
+  - **What herald reads.** Herald 42.2 decides presence by the directory and dates the export from its
+    `manifest.json`, so `KEDRO_VIZ_EXPORT`, `KEDRO_VIZ_EXPORT_RUN` and `KEDRO_VIZ_EXPORT_AT` are written for the run's
+    log and any later reader; no herald file reads them today.
+  - **The filter (AC6).** `docs/dashboard/**` left both `paths:` lists (one YAML anchor). One consequence recorded:
+    a `steward deploy static` board under `docs/dashboard/<board>/` still lands through a pull request and is still
+    copied into the artifact, but its merge no longer triggers a Pages run on its own; the six-hourly schedule or
+    `steward pages deploy` publishes it. Stale lines naming the old filter or the folded `docsite-check.yml` lane are
+    corrected in `docs/dashboard/README.md`, `docsite/README.md` and `docs/how-to/presentation-deck.md`;
+    `pyforge-station-tests.yml`'s steward list gains the script.
+  - **AC7 waits on the producer.** No `kedro-viz-export` exists until `kedro-viz-publish.yml` runs once with atlas's
+    flag on, and that workflow is `paused-manually` (registry row `kedro-viz-publish`, `review_by` 2026-11-01). The
+    `absent` record above stands for the second AC7 run; the `present` run is the operator's after resuming the
+    producer.

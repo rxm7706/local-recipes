@@ -2,7 +2,7 @@
 title: '42.1: The fleet board and guild status pages render at build'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 flag:
   key: pyforge.herald.status_pages               # new; minted by this story
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -238,6 +238,30 @@ with the flag test running both states
 - Once steward Story 102.2 writes `fleet-status.json` in the deploy workflow, turn `pyforge.herald.status_pages` on and
   see `/status/` show the eight stations and `/status/ci/` the guild's surfaces, each naming its snapshot time.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/unit/test_status_pages_flag_states.py -q`
+  — exit 0, 51 passed (AC1–AC9; the two-state test runs `flag_states("pyforge.herald.status_pages")`).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0, 1979 passed, 5 skipped (the `test_42_1_*`
+  artifact tests in `tests/meta/test_pages_artifact.py` build the real herald site with the flag on and off).
+- `pixi run --frozen -e site pages-check` — exit 0 with the flag off (no input); exit 0 with
+  `PYFORGE_STATUS_PAGES=1` and the fixture copied to `docsite/content/fleet-status.json` (the docs root, every herald
+  page and both status pages carry the seven-link menu with Status).
+- Mutations, each restored: `total` dropped from station 3 → `pages-check` exit 1
+  `docsite/content/fleet-status.json: station 3 (pyforge-marshal) missing total`; no input with the flag on → exit 1
+  `...fleet-status.json: fleet-status input missing`; the Status entry removed from `site.yml` with the flag on →
+  five story tests fail and `pages-check` exit 1 `...the shared menu has no entry linking status/index.html`;
+  the board rendered with the flag off → the AC9 off case and the three AC7 cases fail.
+- A flag-off `docsite/build.py` run on this tree and on `d7e52c11f3` (`git archive`) — `diff -r` exit 0.
+- `pixi run --frozen -e site docs-site-validate` — exit 0. `pixi run --frozen -e pyforge-guild flag-gate-check` — exit 0.
+  `pixi run --frozen -e pyforge-guild flag-inventory` — exit 0 (`pyforge-herald.md` regenerated; CAP-58, CAP-59 and
+  CAP-60 now name the key). `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- The flag tree's readers: `src/shared/packages/pyforge-core/tests/unit/test_flags.py` (162 passed) and
+  `src/platform/tests/test_openfeature_file_flags.py` with the policy and chart suites (186 passed);
+  `pixi run --frozen -e pyforge-guild platform-ci-local -- --test` — exit 0.
+- Not run here: the memlog reconcile, the scoped stamps, `detectors-ci` and `pr-preflight` (the coordinating session
+  runs them once for the branch).
+
 ## Named, not fixed here
 
 - **The Guild step and the workflow** that write `fleet-status.json` (and the schedule that refreshes it every six
@@ -257,3 +281,73 @@ with the flag test running both states
   2026-10-13 entry and the design preview the operator approved on 2026-10-14. The input's required keys (`stations`,
   `done`, `total`) are the ones the acceptance names; every other field is read as steward's JSON names it, and the
   implementing session reads Story 102.2's landed output first and records the field names on the Spec memlog.
+- 2026-10-15 (implemented, in review; one branch with the rest of the Pages redesign chain, operator 2026-10-15).
+  Where the landed code differs from the text above, the code is the contract and each difference is recorded here:
+  - **No step writes `fleet-status.json` yet.** Steward 102.2 landed (`done`) without a Guild step that writes the
+    input: its `pages.yml` exports the host, CI-tile and one-generator env and runs `pages-check`, nothing more, and
+    no steward spec (102.2–102.5) names the step. The board is therefore built and tested on a fixture, and the
+    production flag stays off until a steward story adds the step and the `export_status_pages_env.py` line to
+    `pages.yml` (this story names both and edits neither). The field names below are read from
+    `sprint-ledger-query --format json` as landed (`StationProgress`, `WorkPassportItem`), not from a 102.2 output.
+  - **The input's shape** (documented in `docsite/tools/status_pages.py`): `generated_at` (the snapshot time,
+    steward's envelope key), `stations` (a list; steward's `summary.stations` values) with `station`, `done`,
+    `total` (steward's `total_stories`), `epics` (the count of steward's `epics` rows for the station),
+    `in_progress`, `backlog`, `blocked`; and `stories` (steward's `stories` rows: `story_id`, `station`, `status`,
+    `title`), whose `blocked` then `backlog` rows are the attention block, each `(station, story_id)` once.
+    Required: `stations`, `done`, `total`. Optional and absent: a count reads `—`, the snapshot line says the time
+    is not recorded, no `stories` means nothing needs attention. Present but unreadable (a non-integer `done` or
+    `total`, a `stories` that is not a list of objects carrying `story_id` and `status`) is refused too, naming the
+    file and the index: a loose read would draw a wrong bar or a false all-clear. Station indexes are 0-based, as
+    CAP-59's row refusals are.
+  - **The bar width** is the floored integer percentage (`done * 100 // total`, 0 when `total` is 0): rounding gives
+    marshal 100, not AC1's 99. The fixture (`tests/fixtures/fleet-status-2026-10-14.json`) is the eight ledgers at
+    `0627eb9077` (2026-10-14T01:56:19Z): 1,433 stories, 1,411 done by steward's counting (every non-`epic-` key);
+    no 2026-10-14 tree gives both 1,410 done and steward's 95, so the fixture keeps AC1's widths.
+  - **The Lane 1 link** is `site.yml` `lane1` (`href: /console/`, `label: Live view on Lane 1`), one plain link on
+    each page. Lane 1 is the platform's host, not Pages, so `pages-check` never resolves that one href inside the
+    artifact; a host that serves Lane 1 elsewhere sets an absolute URL there.
+  - **The flag gate in the one nav list** is a `flag: pyforge.herald.status_pages` key on the Status entry, read by
+    `status_pages.menu_entries` in `docsite/build.py`, `assemble_pages.py` and `sidebar_from_map.py` (an entry gated
+    on any other flag is refused). Status sits after Decks, before the Kedro-Viz neighbour. With the flag on,
+    `pages-check` also refuses a menu that has no entry linking `status/index.html`, so removing the entry from
+    `site.yml` fails the gate rather than building consistently Status-less menus.
+  - **The two pages' styles** live in each template (a `head_extra` block the shell gained, empty for every other
+    page), so `site.css` and every other file are byte-identical with the flag off: a flag-off `docsite/build.py`
+    run on this tree and on `d7e52c11f3` diffs to nothing.
+  - **CAP-59's order** gained one tie-break: within an unknown verdict, rows sort by id (they kept input order);
+    `ci_surfaces_tile.order_rows` serves both the tile (non-live) and the guild page (all rows, `live` last).
+- 2026-10-15 (the independent review, `review-42-1`, verdict FAIL on two should-fix findings; resolved here):
+  - **No false all-clear (should-fix 1).** The attention block says "Nothing needs attention" only when every
+    station counts 0 blocked and 0 backlog. An input whose `stories` lists none of what the counts show (omitted or
+    filtered) says "The input lists none of the N blocked / M backlog stories the station counts show"; one that
+    lists some of them says how many of each; counts the input does not give say so
+    (`status_pages.attention_note`). `test_ac2_no_listed_story_under_nonzero_counts_is_not_an_all_clear` is the
+    regression for the contradiction the first test codified.
+  - **`done` above `total` is refused (nit 4)**, naming the file and the station index, before any bar is drawn.
+  - **The flip preconditions (should-fix 2, nit 3).** Two of the three the review named are closed by steward Story
+    102.3 (commit `a35fea43ab`): `pages.yml` now writes `docsite/content/fleet-status.json` from
+    `sprint-ledger-query --format json` before `pages-check`, and exports `PYFORGE_STATUS_PAGES` through
+    `export_status_pages_env.py`; the input shape it writes is `steward pages.fleet_status_document`'s, the one this
+    reader documents. The one left before `pyforge.herald.status_pages` turns on in staging or production: **an
+    absolute Lane 1 URL in `site.yml`'s `lane1.href`**. `/console/` resolves on the Pages origin, where Lane 1 is
+    not served, and `pages-check` skips that one href by design; the operator has not yet ruled on the URL, so
+    `site.yml` keeps `/console/`. The field names and the gap belong on spec-pyforge-herald's memlog too (the
+    coordinating session's surface-reconcile append carries them).
+  - **Files outside Epic 42's surface (nit 5)**, each forced by the story: `.gitignore` (the input is gitignored),
+    `docs-site/scripts/sidebar_from_map.py` (the docs menus gate the Status entry; Epic 43's surface),
+    `src/shared/packages/pyforge-core/tests/unit/test_flags.py` and `src/platform/tests/test_openfeature_file_flags.py`
+    (the shipped-flag pins list the new key). Their co-governors (spec-pyforge-pages, spec-pyforge-core,
+    spec-pyforge-unifying-strategy) get the memlog reconcile and a scoped stamp in the coordinating session's pass.
+    One more file outside it, changed in steward 102.3: `pyforge-steward/tests/meta/test_station_tests_trigger_map.py`
+    now declares this story's `test_status_pages_flag_states.py` in `ROOT_HANDOFF_INPUTS` (`docsite/**`,
+    `presentations/**`), since the flag-off test hands the repo root to the herald build.
+  - **The two-state test (nit 6)** names the key literally: `@flag_states("pyforge.herald.status_pages")`.
+  - **Nit 7 (the AC7 oracle)** is accepted as the review rules; the base-commit `git archive` diff stays the check
+    for flag-off changes the shell, `site.yml` or the tile's tie-break could carry.
+  - **Healed tissue from steward 102.3.** `docsite/content/dossier.yml`'s steward paragraph names `deploy`
+    (perimeter/static) and the `pages` duty. The steward deck family still says `steward deploy dashboard` in its
+    Design handoffs (`project/*.dc.html`), the poster standalone, `src/slides/manifest.json` and two current Marp
+    sources: those are not hand-edited here. `docs/how-to/presentation-deck.md` puts deck content in the Design
+    prototype (edit in Design, `herald deck pull`, `npm run extract`) and derives every export from its Marp source
+    with `deck-export`, which re-dates and re-renders the whole export set; a hand edit would diverge from Design and
+    be reverted by the next pull. A steward deck refresh carries it.

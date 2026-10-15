@@ -11,7 +11,11 @@ Starlight build can prefix whichever base path the host gives it.
 Story 42.2 (CAP-60): an entry carrying ``mount: kedro-viz`` is kept only when atlas's Kedro-Viz export
 is in the build input (``docs/dashboard/kedro-viz/``, decided by ``docsite/tools/kedro_viz_export.py``
 as the herald build decides it); the top-menu JSON marks the kept entry with its ``mount`` so the Astro
-config writes the ``/kedro-viz/`` redirect only when the mount exists."""
+config writes the ``/kedro-viz/`` redirect only when the mount exists.
+
+Story 42.1 (CAP-60): an entry carrying ``flag: pyforge.herald.status_pages`` (the Status link to
+herald's ``/status/`` board) is kept only with that flag on, read as the herald build reads it
+(``PYFORGE_STATUS_PAGES``, ``docsite/tools/status_pages.py``); off, both menus are as before."""
 
 from __future__ import annotations
 
@@ -27,6 +31,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "docsite" / "tools"))
 import kedro_viz_export as kv  # noqa: E402
+import status_pages as sp  # noqa: E402
 
 _QUADRANTS = ("tutorials", "how-to", "reference", "explanation")
 _QUADRANT_LABELS = {
@@ -82,15 +87,21 @@ def _site_root_path(herald_href: str) -> str:
     return f"{joined}/" if is_dir else joined
 
 
-def load_site_menu(site_yml: Path, *, kedro_viz: bool = True) -> list[dict[str, str]]:
+def load_site_menu(
+    site_yml: Path, *, kedro_viz: bool = True, status_pages: bool | None = None
+) -> list[dict[str, str]]:
     """The shared menu, in order: site.yml ``nav`` then ``neighbours``, as ``{label, path}``.
 
-    ``kedro_viz=False`` (no export in the build input) drops the entries that need the mount."""
+    ``kedro_viz=False`` (no export in the build input) drops the entries that need the mount;
+    ``status_pages`` (default: ``PYFORGE_STATUS_PAGES``) keeps or drops the flag-gated Status entry."""
     data = yaml.safe_load(site_yml.read_text(encoding="utf-8"))
     if not isinstance(data, dict) or not isinstance(data.get("nav"), list):
         raise ValueError(f"{site_yml}: expected a nav list")
+    if status_pages is None:
+        status_pages = sp.enabled_from_env()
+    entries = sp.menu_entries([*data["nav"], *(data.get("neighbours") or [])], enabled=status_pages)
     menu: list[dict[str, str]] = []
-    for item in kv.menu_entries([*data["nav"], *(data.get("neighbours") or [])], present=kedro_viz):
+    for item in kv.menu_entries(entries, present=kedro_viz):
         label, href = item.get("label"), item.get("href")
         if not isinstance(label, str) or not isinstance(href, str):
             raise ValueError(f"{site_yml}: menu entry needs a label and an href: {item!r}")
@@ -234,7 +245,12 @@ def _validate_and_build(
 
 
 def build_sidebar(
-    map_path: Path, docs_dir: Path, site_yml: Path | None = None, *, kedro_viz: bool = True
+    map_path: Path,
+    docs_dir: Path,
+    site_yml: Path | None = None,
+    *,
+    kedro_viz: bool = True,
+    status_pages: bool | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """The quadrant groups in map.yaml order, then the Herald group when ``site_yml`` is given."""
     pages = _load_map(map_path)
@@ -242,7 +258,7 @@ def build_sidebar(
     if errors or site_yml is None:
         return sidebar, errors
     try:
-        menu = load_site_menu(site_yml, kedro_viz=kedro_viz)
+        menu = load_site_menu(site_yml, kedro_viz=kedro_viz, status_pages=status_pages)
     except ValueError as exc:
         return [], [str(exc)]
     return [*sidebar, herald_sidebar_group(menu)], []

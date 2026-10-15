@@ -1,0 +1,71 @@
+{% extends "shell_page.html.j2" %}
+{#- Story 42.1 (CAP-60): /status/index.html, the fleet board. A build-time snapshot of the
+    fleet-status.json build input (docsite/tools/status_pages.py); the counts are steward's data, so
+    every value is escaped. `rel` climbs from /status/ back to the /herald/ mount. -#}
+{% block head_extra %}
+<style>
+.status-snapshot { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; color: var(--rail); margin-top: 14px; }
+.status-table td.num, .status-table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.status-bar { display: inline-block; vertical-align: middle; width: 120px; height: 8px; background: var(--paper-sunken); border-radius: 2px; overflow: hidden; }
+.status-bar-fill { display: block; height: 100%; background: var(--green); }
+.status-pct { font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; color: var(--rail); margin-left: 6px; }
+.status-attention ul { list-style: none; margin: 12px 0 0; padding: 0; max-width: 90ch; }
+.status-attention li { padding: 6px 0; border-bottom: 1px solid var(--rail-faint); }
+.status-tag { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px; margin-right: 8px; }
+.status-tag.blocked { background: var(--red-soft); color: var(--red); }
+.status-tag.backlog { background: var(--amber-soft); color: var(--amber); }
+</style>
+{%- endblock %}
+{% block body %}
+<div class="page">
+
+  <div class="lander">
+    <div class="kicker"><span class="dot"></span>Fleet board</div>
+    <h1>Status</h1>
+    <p class="blurb">One row per station, counted from the tracked sprint ledgers when this site was built. A snapshot: nothing on this page is live.</p>
+    <p class="status-snapshot">Snapshot {% if board.generated_at %}taken <time datetime="{{ board.generated_at | e }}">{{ board.generated_at | e }}</time>{% else %}time not recorded in the input{% endif %} &middot; <a href="{{ lane1.href | e }}">{{ lane1.label | e }}</a> &middot; <a href="ci/index.html">Guild CI status</a></p>
+  </div>
+
+  <section class="status-board">
+    <h3>Stations</h3>
+    <div class="table-wrap">
+      <table class="status-table">
+        <thead><tr><th>Station</th><th class="num">Epics</th><th class="num">Done / total</th><th class="num">In progress</th><th class="num">Backlog</th><th class="num">Blocked</th><th>Done</th></tr></thead>
+        <tbody>
+          {%- for s in board.stations %}
+          <tr data-station="{{ s.name | e }}">
+            <td>{{ s.name | e }}</td>
+            <td class="num">{{ s.epics | e }}</td>
+            <td class="num">{{ s.done }} / {{ s.total }}</td>
+            <td class="num">{{ s.in_progress | e }}</td>
+            <td class="num">{{ s.backlog | e }}</td>
+            <td class="num">{{ s.blocked | e }}</td>
+            <td><span class="status-bar" role="img" aria-label="{{ s.width }}% done"><span class="status-bar-fill" data-width="{{ s.width }}" style="width:{{ s.width }}%"></span></span><span class="status-pct">{{ s.width }}%</span></td>
+          </tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="status-attention">
+    <h3>Attention</h3>
+    {%- if board.attention %}
+    <ul>
+      {%- for a in board.attention %}
+      <li data-key="{{ a.station | e }} {{ a.story_id | e }}"><span class="status-tag {{ a.status }}">{{ a.status }}</span><b>{{ a.station | e }}</b> <code>{{ a.story_id | e }}</code>{% if a.title %} {{ a.title | e }}{% endif %}</li>
+      {%- endfor %}
+    </ul>
+    {%- endif %}
+    {%- if board.attention_note %}
+    <p class="soft-note status-attention-note">{{ board.attention_note | e }}</p>
+    {%- endif %}
+  </section>
+
+  <footer>
+    <span>Rendered from <code>fleet-status.json</code>, which a Guild step of steward's Pages workflow writes from <code>sprint-ledger-query --format json</code>; the counts are steward's.</span>
+    <span>Site rebuilt {{ built_at }}</span>
+  </footer>
+
+</div>
+{% endblock %}

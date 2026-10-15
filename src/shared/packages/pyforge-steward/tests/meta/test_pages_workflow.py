@@ -1,4 +1,4 @@
-"""Story 102.1–102.2 (CAP-168): pages.yml trigger, build, and deploy shape."""
+"""Story 102.1–102.3 (CAP-168): pages.yml trigger, build, and deploy shape."""
 
 from __future__ import annotations
 
@@ -18,7 +18,6 @@ _EXPECTED_PATHS = {
     "docs/index.md",
     "docs/404.md",
     "docs/map.yaml",
-    "docs/dashboard/**",
     "docs-site/**",
     "docsite/**",
     "presentations/**",
@@ -107,3 +106,18 @@ def test_pages_yml_runs_docs_site_validate_in_build() -> None:
     text = PAGES_WORKFLOW.read_text(encoding="utf-8")
     assert "docs-site-validate" in text
     assert re.search(r"jobs:\s*\n\s*build:", text)
+
+
+def test_pages_yml_writes_the_fleet_board_input_before_the_build() -> None:
+    """Story 102.3 (closes the 102.2 gap herald 42.1's spec assigns to this workflow): a Guild step
+    writes docsite/content/fleet-status.json from sprint-ledger-query --format json before
+    pages-check, and the build env carries herald's status-pages flag."""
+    steps = [s for s in _load()["jobs"]["build"]["steps"] if isinstance(s, dict)]
+    runs = [str(s.get("run", "")) for s in steps]
+    writer = next(i for i, run in enumerate(runs) if "scripts/pages_fleet_status.py" in run)
+    build = next(i for i, run in enumerate(runs) if "pages-check" in run)
+    env = next(i for i, run in enumerate(runs) if "export_status_pages_env.py" in run)
+    assert env < writer < build
+    assert "sprint-ledger-query -- --format json --output" in runs[writer]
+    assert "--out docsite/content/fleet-status.json" in runs[writer]
+    assert 'export_status_pages_env.py >> "$GITHUB_ENV"' in runs[env]

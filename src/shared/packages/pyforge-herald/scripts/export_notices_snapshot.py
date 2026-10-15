@@ -36,7 +36,7 @@ _SRC = _PACKAGE_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from pyforge.herald import notices
+from pyforge.herald import notices  # noqa: E402 - after the sys.path bootstrap above
 
 
 def export_snapshot(repo_root: Path, out_path: Path) -> int:
@@ -61,9 +61,7 @@ def export_snapshot(repo_root: Path, out_path: Path) -> int:
         if n.status != "draft"  # drafts never ship to the public web snapshot
     ]
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return len(payload)
 
 

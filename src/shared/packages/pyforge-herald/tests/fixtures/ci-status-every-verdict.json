@@ -1,0 +1,132 @@
+{
+  "fetched_at": "2026-10-14T12:00:00+00:00",
+  "repo": "rxm7706/local-recipes",
+  "rate_limit": {
+    "core_limit": 5000,
+    "core_remaining": 5000
+  },
+  "rows": [
+    {
+      "id": "surface.live",
+      "switch": "SW_LIVE",
+      "declared_state": "live",
+      "live_switch_value": null,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": "pyforge-steward",
+      "last_green_run": "2026-10-14T00:00:00Z",
+      "verdict": "live"
+    },
+    {
+      "id": "surface.quarantined",
+      "switch": null,
+      "declared_state": "unknown",
+      "live_switch_value": null,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": null,
+      "last_green_run": null,
+      "verdict": "quarantined",
+      "detail": "synthetic unknown verdict"
+    },
+    {
+      "id": "surface.retired",
+      "switch": "SW_RETIRED",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-10-15",
+      "review_days_left": 1,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "retired"
+    },
+    {
+      "id": "surface.opt-in-off",
+      "switch": "SW_OPT_IN_OFF",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-10-15",
+      "review_days_left": 1,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "opt-in-off"
+    },
+    {
+      "id": "surface.paused-manually",
+      "switch": "SW_PAUSED_MANUALLY",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-10-15",
+      "review_days_left": 1,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "paused-manually"
+    },
+    {
+      "id": "surface.paused",
+      "switch": "SW_PAUSED",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-10-15",
+      "review_days_left": 1,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "paused"
+    },
+    {
+      "id": "surface.overdue",
+      "switch": "SW_OVERDUE",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-10-15",
+      "review_days_left": 1,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "overdue"
+    },
+    {
+      "id": "surface.stuck",
+      "switch": "SW_STUCK",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-10-15",
+      "review_days_left": 1,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "stuck"
+    },
+    {
+      "id": "surface.drift",
+      "switch": "SW_DRIFT",
+      "declared_state": "paused",
+      "live_switch_value": "true",
+      "paused_since": "2026-10-01",
+      "review_by": "2026-10-15",
+      "review_days_left": 1,
+      "owner": "pyforge-steward",
+      "last_green_run": null,
+      "verdict": "drift"
+    },
+    {
+      "id": "surface.a-live",
+      "switch": null,
+      "declared_state": "live",
+      "live_switch_value": null,
+      "paused_since": null,
+      "review_by": null,
+      "review_days_left": null,
+      "owner": "pyforge-herald",
+      "last_green_run": "2026-10-14T00:00:00Z",
+      "verdict": "live",
+      "detail": "<b>escaped</b> & kept"
+    }
+  ]
+}

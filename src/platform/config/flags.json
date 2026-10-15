@@ -315,6 +315,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.herald.status_pages": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "herald",
+        "story": "42-1-the-fleet-board-and-guild-status-pages-render-at-build",
+        "created": "2026-10-15",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.herald.deck_export_native": {
       "state": "ENABLED",
       "variants": {

@@ -1250,6 +1250,10 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],
         "src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py": _H["PRESENTATIONS"],
+        "src/shared/packages/pyforge-herald/tests/unit/test_status_pages_flag_states.py": (
+            ("docsite/**", "presentations/**"),
+            "Story 42.1: the flag-off test runs the real herald build from the root, with and without the status templates",
+        ),
     },
     "marshal": {
         "src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py": _H[

@@ -2,9 +2,8 @@
 `render_edge_config` + `steward deploy perimeter` — Story 9.5 (CAP-6, AD-5).
 
 Covers every row of the story spec's I/O & Edge-Case Matrix, plus CLI verb
-dispatch through `DeployDuty.run` -- mirrors `test_deploy_status.py`'s
-conformance-tier shape (direct `DeployDuty().run(...)` / `main([...])`
-invocation, no subprocess).
+dispatch through `DeployDuty.run` -- the conformance-tier shape (direct
+`DeployDuty().run(...)` / `main([...])` invocation, no subprocess).
 """
 
 from __future__ import annotations

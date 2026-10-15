@@ -621,10 +621,11 @@ superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
 - [ ] The React app, static bundle, and exports are the same deck (content lives
       only in the prototype → fragments; no divergent hand edits).
 - [ ] For a deck published to the family pages under `docsite/`: a PR touching
-      `docsite/**` or `docs/dashboard/**` runs the `Docsite check` `pull_request`
-      lane (`.github/workflows/docsite-check.yml`) — `docsite/build.py --check`
-      + `site-check` — before merge, not just `pages.yml`'s push-to-main
-      build; `pixi run -e pyforge-guild pr-preflight` predicts it locally.
+      `docsite/**` or `presentations/**` runs `pages-check` (which includes
+      `docsite/build.py --check`) in the `build` job of `.github/workflows/pages.yml`
+      on the pull request, before merge (steward Story 102.2 folded the old
+      `docsite-check.yml` lane into it); `pixi run -e pyforge-guild pr-preflight`
+      predicts it locally.
 
 ---
 
