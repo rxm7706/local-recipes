@@ -253,8 +253,21 @@ def _ensure_kedro_viz_redirect(artifact_root: Path) -> None:
     path.write_text(redirect_html(target), encoding="utf-8")
 
 
-def _resolve_in_artifact(base: Path, raw: str, artifact_root: Path) -> Path | None:
+def _normalize_internal_absolute(raw: str, base_path: str) -> str:
+    """Strip the publish base path from root-absolute hrefs (Astro Starlight assets)."""
+    if not raw.startswith("/"):
+        return raw
+    prefix = (base_path or "/").rstrip("/")
+    if prefix and prefix != "" and raw.startswith(f"{prefix}/"):
+        return raw[len(prefix) :]
+    return raw
+
+
+def _resolve_in_artifact(
+    base: Path, raw: str, artifact_root: Path, *, base_path: str = "/"
+) -> Path | None:
     raw = raw.strip().split("#", 1)[0]
+    raw = _normalize_internal_absolute(raw, base_path)
     if not raw:
         return None
     if raw in ("./support.js", "support.js"):
@@ -490,7 +503,8 @@ def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
         raise SystemExit(1)
 
 
-def _check_href_resolution(artifact_root: Path) -> None:
+def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
+    base_path = _base_path(site_url)
     for page in _iter_herald_html(artifact_root):
         rel_page = _artifact_path(page, artifact_root)
         if not _should_check_page_links(rel_page):
@@ -498,7 +512,7 @@ def _check_href_resolution(artifact_root: Path) -> None:
         text = page.read_text(encoding="utf-8", errors="replace")
         for match in _HREF_SRC.finditer(text):
             raw = match.group(1)
-            resolved = _resolve_in_artifact(page, raw, artifact_root)
+            resolved = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
             if resolved is None:
                 continue
             if resolved == Path("/"):
@@ -747,7 +761,7 @@ def check(artifact_root: Path, *, site_url: str | None = None) -> None:
             )
             raise SystemExit(1)
 
-    _check_href_resolution(artifact_root)
+    _check_href_resolution(artifact_root, site_url=site_url)
     _check_shelf_pages(artifact_root, site_url)
     _check_cross_origin_and_hosts(artifact_root, site_url)
     _check_menu_links(artifact_root, site_url)

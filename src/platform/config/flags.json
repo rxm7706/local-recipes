@@ -282,7 +282,7 @@
         "story": "43-1-astro-renders-the-dossier-from-dossier-yml",
         "created": "2026-10-14",
         "on_everywhere": "",
-        "cleanup_by": "43-7-docsite-retires-and-one-generator-remains"
+        "cleanup_by": ""
       }
     },
     "pyforge.herald.deck_export_native": {

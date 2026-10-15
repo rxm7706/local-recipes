@@ -958,7 +958,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
     "pyforge.herald.pages_second_host": ("herald", "31-1-", "2026-09-28", "", ""),
     "pyforge.herald.ci_surfaces_tile": ("herald", "39-1-", "2026-10-14", "", ""),
-    "pyforge.herald.pages_one_generator": ("herald", "43-1-", "2026-10-14", "", "43-7-"),
+    "pyforge.herald.pages_one_generator": ("herald", "43-1-", "2026-10-14", "", ""),
     "pyforge.herald.deck_export_native": ("herald", "32-1-", "2026-09-28", "", ""),
     "pyforge.steward.ledger_query_postgres_sync": (
         "steward",
