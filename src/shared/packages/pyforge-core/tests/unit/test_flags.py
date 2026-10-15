@@ -998,6 +998,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.estate_refresh": ("steward", "100-2-", "2026-10-13", "", ""),
     # Story 99.3 minted; 99.4 / 99.5 reuse (CAP-166).
     "pyforge.steward.ci_pause_control": ("steward", "99-3-", "2026-10-13", "", ""),
+    "pyforge.steward.pages_duty": ("steward", "102-2-", "2026-10-14", "", ""),
 }
 
 
@@ -1062,6 +1063,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.stations_index": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.estate_refresh": {"dev": True, "staging": False, "production": False},
         "pyforge.steward.ci_pause_control": {"dev": True, "staging": False, "production": False},
+        "pyforge.steward.pages_duty": {"dev": True, "staging": False, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.landing_ci_pauses": {"dev": True, "staging": False, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},

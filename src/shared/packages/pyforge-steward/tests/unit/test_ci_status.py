@@ -123,10 +123,10 @@ def _fixture_registry() -> dict:
                 "owner": "pyforge-steward",
             },
             {
-                "id": "dashboard",
+                "id": "pages",
                 "workflow": ".github/workflows/pages.yml",
                 "kind": "workflow",
-                "switch": "PAUSE_DASHBOARD",
+                "switch": "PAUSE_PAGES",
                 "switch_class": "pause",
                 "state": "live",
                 "owner": "pyforge-steward",
@@ -328,7 +328,7 @@ def test_fixture_verdicts_ac1(tmp_path: Path) -> None:
     assert by_id["pause.platform-container"]["verdict"] == "paused"
     for oid in ("optin.air-gap", "optin.gke", "optin.ocp", "optin.registry"):
         assert by_id[oid]["verdict"] == "opt-in-off"
-    assert by_id["dashboard"]["verdict"] == "stuck"
+    assert by_id["pages"]["verdict"] == "stuck"
     assert by_id["cancel-streak"]["verdict"] == "stuck"
     assert by_id["drift-live"]["verdict"] == "drift"
     assert by_id["overdue.pause"]["verdict"] == "overdue"

@@ -10,7 +10,7 @@ on:
 
 jobs:
   plan:
-    # ci-surfaces: ci-canary
+    # ci-surfaces: ci-canary.plan
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_CI_CANARY != 'true') }}
     runs-on: ubuntu-latest

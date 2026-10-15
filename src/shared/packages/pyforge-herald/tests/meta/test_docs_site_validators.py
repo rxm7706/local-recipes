@@ -46,9 +46,9 @@ def test_docs_site_validate_pixi_tasks_registered() -> None:
     assert bundle["depends-on"] == ["docs-site-validate-links", "docs-site-validate-sidebar"]
 
 
-def test_docsite_check_runs_docs_site_validate() -> None:
+def test_pages_build_runs_docs_site_validate() -> None:
     root = _repo_root()
-    text = (root / ".github/workflows/docsite-check.yml").read_text(encoding="utf-8")
+    text = (root / ".github/workflows/pages.yml").read_text(encoding="utf-8")
     assert "docs-site-validate" in text
     assert "pages-check" in text
 

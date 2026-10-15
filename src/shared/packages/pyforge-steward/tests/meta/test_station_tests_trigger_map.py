@@ -1315,6 +1315,10 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
         ),
         "src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py": _H["PLANNING"],
         "src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py": _H["CLASS_PATH"],
+        "src/shared/packages/pyforge-steward/tests/unit/test_pages.py": (
+            ("scripts/pages_build_stamp.py",),
+            "Story 102.2: pages_build_stamp.py is invoked as a subprocess from repo root",
+        ),
     },
     "warden": {
         "src/shared/packages/pyforge-warden/tests/meta/test_portal_audit_start_get.py": _H["GIT_PLATFORM_DIFF"],

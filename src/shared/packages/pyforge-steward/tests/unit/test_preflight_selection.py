@@ -13,10 +13,10 @@ says they do:
 * ``pyforge-doctor-aggregate-scripts-test`` -- ``detectors.yml``'s ``scripts-suite`` job runs it
   on every pull request, so it belongs with the always-on lanes;
 * ``pages-check`` -- herald Story 27.5 replaced ``pr-preflight``'s always-on ``site-check`` leg with
-  ``pages-check``, selected when ``docsite-check.yml``'s ``paths`` fire (steward Story 71.2).
+  ``pages-check``, selected when ``pages.yml``'s ``pull_request`` ``paths`` fire (Story 102.2).
   ``site-check`` stays a pixi task only; no pull_request workflow runs it.
 
-Likewise ``docs/**`` is one of ``docsite-check.yml``'s trigger paths, so a ``docs/dreams/``
+Likewise ``docs/how-to/**`` is one of ``pages.yml``'s trigger paths, so a ``docs/how-to/``
 diff also fires the three ``docs-site-validate-*`` lanes. The tests assert the spec's lanes
 exactly and these additions explicitly.
 """
@@ -297,13 +297,15 @@ def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane
     assert "no CI counterpart" in next(e for e in journal["selected"] if e["lane"] == "docs-gen-test")["reason"]
 
 
-def test_pixi_toml_selects_every_lane_but_the_eight_coverage_gates(tmp_path: Path, all_tasks: set[str]) -> None:
+def test_pixi_toml_triggers_lint_and_station_lanes_not_pages(tmp_path: Path) -> None:
+    """``pixi.toml`` is not a ``pages.yml`` path (Story 102.2); it no longer selects pages-check."""
     repo = make_repo(tmp_path, {"pixi.toml": (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8") + "\n# touched\n"})
-    selection = select(repo)
-    assert selected_tasks(selection) == all_tasks - GATES
-    assert {v.task for v in selection.verdicts if not v.selected} == GATES
-    assert all(verdict(selection, g).workflow == "coverage-gates.yml" for g in GATES)
-    assert all("on.pull_request.paths" in verdict(selection, g).rule for g in GATES)
+    chosen = selected_tasks(select(repo))
+    assert ALWAYS_ON <= chosen
+    assert LINT <= chosen
+    assert not (chosen & PAGES_CHECK_LEAVES)
+    assert not (chosen & DOCS_SITE_VALIDATE)
+    assert not (chosen & GATES)
 
 
 def test_cfe_only_branch_selects_the_lanes_station_tests_reads(tmp_path: Path) -> None:
@@ -326,11 +328,9 @@ def test_dream_only_branch_selects_the_always_on_lanes(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, {"docs/dreams/a-dream.md": "# dream\n"})
     chosen = selected_tasks(select(repo))
     assert SPEC_ALWAYS_ON <= chosen
-    # `docs/**` is a docsite-check.yml trigger path, so its three validators run too.
+    # ``docs/dreams/**`` is outside ``pages.yml``'s twelve published-input paths (Story 102.2).
     assert chosen == (
         ALWAYS_ON
-        | DOCS_SITE_VALIDATE
-        | PAGES_CHECK_LEAVES
         | {suite("doctor"), suite("herald"), suite("marshal"), suite("steward")}
         | _spurious_lint_tasks_from_station_tests_changes(repo)
     )
@@ -482,10 +482,8 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
     }  # no paths filter
     if _oracle_fires(repo, "cfe-regression-net.yml", changed):
         chosen.add("test-ci")
-    if _oracle_fires(repo, "docsite-check.yml", changed):
+    if _oracle_fires(repo, "pages.yml", changed):
         chosen |= DOCS_SITE_VALIDATE | PAGES_CHECK_LEAVES
-    if _oracle_push_fires(repo, "pages.yml", changed):
-        chosen |= PAGES_CHECK_LEAVES
     if _oracle_fires(repo, "pyforge-station-tests.yml", changed):
         out = _oracle_outputs(repo, "pyforge-station-tests.yml", tmp_path)
         for key, lane in [("core", "pyforge-core-test"), ("testing_kit", "pyforge-testing-kit-test")] + [

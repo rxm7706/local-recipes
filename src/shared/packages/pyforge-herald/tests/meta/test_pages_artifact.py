@@ -84,12 +84,13 @@ def test_dashboard_yml_uploads_unified_artifact() -> None:
     assert "workflow_dispatch" in text
 
 
-def test_docsite_check_runs_pages_check_with_path_filters() -> None:
+def test_pages_yml_runs_pages_check_with_path_filters() -> None:
     root = _repo_root()
-    text = (root / ".github/workflows/docsite-check.yml").read_text(encoding="utf-8")
+    text = (root / ".github/workflows/pages.yml").read_text(encoding="utf-8")
     assert "pages-check" in text
-    assert "docs/**" in text
+    assert "docs/how-to/**" in text
     assert "docs-site/**" in text
+    assert "pull_request:" in text
 
 
 def test_assemble_writes_redirect_per_herald_html(tmp_path: Path) -> None:

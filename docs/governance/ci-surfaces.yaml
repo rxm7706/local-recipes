@@ -48,12 +48,12 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
-- id: dashboard
+- id: pages
   workflow: .github/workflows/pages.yml
   kind: workflow
   cost: low
   gate: false
-  switch: PAUSE_DASHBOARD
+  switch: PAUSE_PAGES
   switch_class: pause
   state: live
   owner: pyforge-steward
@@ -76,7 +76,9 @@ surfaces:
   gate: false
   switch: PAUSE_DOCSITE_CHECK
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-14'
+  reason: folded into pages.yml build job (Story 102.2)
   owner: pyforge-steward
 - id: kedro-viz-publish
   workflow: .github/workflows/kedro-viz-publish.yml
@@ -433,7 +435,7 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
-- id: dashboard.build
+- id: pages.build
   workflow: .github/workflows/pages.yml
   job: build
   kind: ci-job
@@ -443,7 +445,7 @@ surfaces:
   switch_class: pause
   state: live
   owner: pyforge-steward
-- id: dashboard.deploy
+- id: pages.deploy
   workflow: .github/workflows/pages.yml
   job: deploy
   kind: ci-job
@@ -481,7 +483,9 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: live
+  state: retired
+  retired_on: '2026-10-14'
+  reason: folded into pages.yml build job (Story 102.2)
   owner: pyforge-steward
 - id: lint-types.lint-types
   workflow: .github/workflows/lint-types.yml

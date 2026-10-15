@@ -2,8 +2,8 @@
 title: '102.2: One Pages workflow in upstream shape builds on every change and deploys only what changed'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
+status: 'in-review'
+baseline_revision: '22e5c19c285e722bcf7d58203689d57e9cc4dd55'
 flag:
   key: pyforge.steward.pages_duty                 # new; minted by this story (102.3, 102.4 and 102.5 reuse it)
   provider: openfeature-file                      # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -244,6 +244,13 @@ and `flag-gate-check` exit 0
   this spec names).
 - The exclusion list's first entries (herald's M3 footer does not exist yet; the list may start empty).
 - `retired_on` is the landing date.
+
+## Auto Run Result
+
+Status: in-review  
+Verification: `python scripts/spec_surface_reconcile.py` OK; `python scripts/ci_surface_gates.py --check` OK; `pixi-version-check` OK; `flag-gate-check` OK; steward pages/preflight/ci_status meta tests green; full `pyforge-steward-test` green after trigger-map and invariants fixes (2026-10-14 run).  
+AC8 (live double `workflow_dispatch` with flag on in production): deferred — `pyforge.steward.pages_duty` remains off in production at landing; skip behaviour proven on fixtures (AC3/AC7). Operator records both run ids when production overlay flips.  
+Governance: memlog reconciles on `spec-pyforge-steward`, `docs/governance/spec-feature-flag-governance`, `spec-pyforge-herald` (co-governor tests); scoped stamp on `pyforge-steward/spec-pyforge-steward`. Herald scoped stamp blocked by pre-existing presentation drift vs baseline (warn-only in `spec-surface-check`, not introduced by this story).
 
 ## Spec Change Log
 

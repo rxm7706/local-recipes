@@ -1,6 +1,6 @@
 name: Pages
 
-# Steward owns this duct (spec-pyforge-steward CAP-168 / Story 102.1). Herald owns
+# Steward owns this duct (spec-pyforge-steward CAP-168 / Story 102.1–102.2). Herald owns
 # the artifact content (pages-build, pages-check, docsite/, docs-site/, /herald/).
 # This workflow is the sole actions/deploy-pages caller (herald herald:AD-21). No
 # bot commit on main.
@@ -11,14 +11,13 @@ name: Pages
 # by kedro-viz-publish.yml and copied into the artifact by docsite/tools/assemble_pages.py.
 # Lane 1 /console/ is the operator console.
 #
-# kedro-viz-publish.yml stages the export, then this workflow republishes on push
-# to main when published inputs change. Story 102.2 adds pull_request and the no-op
-# deploy skip.
+# kedro-viz-publish.yml stages the export, then this workflow republishes when the
+# built tree changes. Story 102.2: build on pull_request and push (one filter),
+# deploy on main only when the tree hash differs from live build.json.
 
 on:
-  push:
-    branches: [main]
-    paths:
+  pull_request:
+    paths: &pages_paths
       - 'docs/tutorials/**'
       - 'docs/how-to/**'
       - 'docs/reference/**'
@@ -31,25 +30,31 @@ on:
       - 'docsite/**'
       - 'presentations/**'
       - '.github/workflows/pages.yml'
+  push:
+    branches: [main]
+    paths: *pages_paths
   workflow_dispatch:
   schedule:
-    - cron: '17 6 * * 1'
+    - cron: '23 */6 * * *'
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   build:
-    # ci-surfaces: dashboard.build
+    # ci-surfaces: pages.build
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DASHBOARD != 'true') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: pages-build-${{ github.ref }}
+      cancel-in-progress: true
+    outputs:
+      changed: ${{ steps.stamp.outputs.changed }}
+      tree_hash: ${{ steps.stamp.outputs.tree_hash }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -80,20 +85,45 @@ jobs:
       - name: Build and verify the unified Pages artifact
         run: pixi run --frozen -e site pages-check
 
+      - name: Validate docs-site (PR gate folded from docsite-check.yml)
+        run: pixi run --frozen -e site docs-site-validate
+
       - name: Verify the dossier's numbers against the source tree
         continue-on-error: true
         run: pixi run --frozen -e site site-verify
 
-      - uses: actions/upload-pages-artifact@v5
+      - name: Stamp build.json and decide deploy
+        id: stamp
+        run: |
+          pixi run --frozen -e pyforge-guild python scripts/pages_build_stamp.py \
+            --root docs-site/build/site \
+            --live-url "${{ steps.pages.outputs.base_url }}/build.json" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Upload Pages artifact (non-PR)
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs-site/build/site
 
+      - name: Upload PR review artifact
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pages-site
+          path: docs-site/build/site
+          retention-days: 14
+
   deploy:
-    # ci-surfaces: dashboard.deploy
+    # ci-surfaces: pages.deploy
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_DASHBOARD != 'true') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true' && ((github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true')) && github.event_name != 'pull_request' && needs.build.outputs.changed == 'true')) }}
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 15
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
