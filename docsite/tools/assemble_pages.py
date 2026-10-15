@@ -16,6 +16,7 @@ from urllib.parse import unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from pages_one_generator import DOSSIER_ARTIFACT_REL, enabled_from_env  # noqa: E402
 from pages_second_host import (  # noqa: E402
     SITE_URL_MARKER,
     resolve_from_process_environment,
@@ -148,12 +149,20 @@ def _refuses_collision(artifact_root: Path, rel_path: str) -> None:
 def _run_docs_site_build(repo_root: Path, site_url: str) -> None:
     env = os.environ.copy()
     env["SITE_URL"] = site_url
+    if enabled_from_env():
+        env.setdefault("PYFORGE_PAGES_ONE_GENERATOR", "1")
+    else:
+        env["PYFORGE_PAGES_ONE_GENERATOR"] = "0"
     subprocess.run(
         ["npm", "run", "build"],
         cwd=repo_root / "docs-site",
         env=env,
         check=True,
     )
+
+
+def _astro_dossier_preexists(artifact_root: Path) -> bool:
+    return (artifact_root / DOSSIER_ARTIFACT_REL).is_file()
 
 
 def _write_site_url_marker(artifact_root: Path, site_url: str) -> None:
@@ -763,9 +772,16 @@ def assemble(
         _run_docs_site_build(repo_root, site_url)
     _write_site_url_marker(artifact_root, site_url)
 
+    one_generator = enabled_from_env()
     for mount in (f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/"):
         existing = artifact_root / mount.rstrip("/")
         if existing.exists():
+            if (
+                mount.startswith(f"{HERALD_PREFIX}/")
+                and one_generator
+                and _astro_dossier_preexists(artifact_root)
+            ):
+                continue
             print(f"assemble_pages: collision at {mount}", file=sys.stderr)
             raise SystemExit(1)
 

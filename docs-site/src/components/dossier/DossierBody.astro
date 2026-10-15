@@ -1,0 +1,87 @@
+---
+import { cssVar, mdInline } from '../../lib/md-inline';
+import DossierBlock from './DossierBlock.astro';
+
+interface Props {
+  doc: Record<string, unknown>;
+}
+
+const { doc } = Astro.props;
+const stats = (doc.stats as Array<{ value: string; label: string }>) ?? [];
+const toc = (doc.toc as Array<{ id: string; label: string; accent: string; group_start?: boolean }>) ?? [];
+const sections = (doc.sections as Array<Record<string, unknown>>) ?? [];
+const footer = doc.footer as { note: string; date: string } | undefined;
+---
+
+<div class="page">
+  <div class="hero">
+    <div class="hero-eyebrow"><span class="dot"></span><span set:html={mdInline(doc.eyebrow as string)} /></div>
+    <h1 set:html={mdInline(doc.heading as string)} />
+    <p class="hero-sub" set:html={mdInline(doc.summary as string)} />
+    <div class="hero-stats">
+      {
+        stats.map((s) => (
+          <div class="hero-stat">
+            <span class="n" set:html={mdInline(s.value)} />
+            <span class="l" set:html={mdInline(s.label)} />
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Table of contents">
+      <span class="toc-label">Contents</span>
+      <ol>
+        {
+          toc.map((t) => (
+            <li class={t.group_start ? 'toc-group' : undefined}>
+              <a href={`#${t.id}`}>
+                <span class="stdot" style={`background:${cssVar(t.accent)}`} />
+                <span set:html={mdInline(t.label)} />
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+
+    <main class="content" data-pagefind-body>
+      {
+        sections.map((s) => (
+          <section id={s.id as string}>
+            {s.kind === 'station' ? (
+              <div class="station-head">
+                <div class="station-mark" style={`background:${cssVar(s.accent as string)}`}>
+                  <span set:html={mdInline(s.mark as string)} />
+                </div>
+                <div class="station-title">
+                  <h2 set:html={mdInline(s.title as string)} />
+                  <span class="role" set:html={mdInline(s.role as string)} />
+                </div>
+              </div>
+            ) : (
+              <div class="section-head">
+                <span class="section-num" set:html={mdInline(String(s.num ?? ''))} />
+                <h2 set:html={mdInline(s.title as string)} />
+              </div>
+            )}
+            {((s.blocks as Array<Record<string, unknown>>) ?? []).map((b) => (
+              <DossierBlock block={b} />
+            ))}
+          </section>
+        ))
+      }
+    </main>
+  </div>
+
+  {
+    footer ? (
+      <footer>
+        <span set:html={mdInline(footer.note)} />
+        <span set:html={mdInline(footer.date)} />
+      </footer>
+    ) : null
+  }
+</div>
