@@ -6753,7 +6753,7 @@ So that every landing records which CI surfaces were paused, instead of `unknown
 **When** `ci status` runs against a registry whose retired rows name deleted workflow files, and against one whose live row's run list cannot be read
 **Then** no run list is read for a retired row, which reads `last_green_run` null and can be neither partial nor `stuck`, so the first read exits 0 with the envelope on stdout; the second still exits 1, and with `--json` prints its envelope on stdout carrying `partial: true` and `run_list_errors`, the failed row's `last_green_run` `unknown`, while the table form keeps stderr; the schema gains only the two optional top-level properties, and a complete envelope, the master-on fixture included, is unchanged
 **And** marshal's adapter records a read on exit 0 and on exit 1 with a valid envelope on stdout (adding `partial: true` to the record), and `unknown` on exit 1 without one; doctor reads a partial envelope from stdout and falls back to stderr, keeping its `ci-pause-partial` WARN; herald's tile validates a partial envelope unchanged; re-fetching retired rows and dropping the stdout request each fail a named test (mutations); the live command exits 0 with JSON on stdout after the fix; `pyforge-steward-test`, the steward coverage gate, `pyforge-marshal-test`, `pyforge-doctor-test`, `lint-types` and `flag-gate-check` are green, and each governing Spec's memlog reconciles the changed paths before its scoped stamp
-**Status:** backlog
+**Status:** done
 
 ## Epic 104: The CFE regression lane runs when what its tests load changes (fix under spec-pyforge-steward CAP-159; no CAP)
 
