@@ -45,7 +45,7 @@ development_status:
   103-4-the-ci-surface-gates-tests-write-their-fixtures-under-tmp-path: done
   103-5-the-preflight-keys-each-lane-by-its-task-and-its-environment: done
   103-6-a-touched-scope-preflight-leaves-the-other-lanes-to-ci-and-verify-deferred-catches-up: done
-  103-7-steward-ci-status-reads-no-runs-for-a-retired-row-so-a-landing-records-the-ci-pauses: backlog
+  103-7-steward-ci-status-reads-no-runs-for-a-retired-row-so-a-landing-records-the-ci-pauses: done
   104-1-cfe-regression-net-runs-when-a-script-its-tests-load-changes: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
