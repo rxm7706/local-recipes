@@ -14,11 +14,9 @@ carried by a plain :class:`contextvars.ContextVar` that always works.
 from __future__ import annotations
 
 import re
-from contextlib import ExitStack
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

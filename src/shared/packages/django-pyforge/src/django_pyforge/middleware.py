@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from django.http import HttpRequest
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 
-from django_pyforge.roles import claims_from_request
-from django_pyforge.roles import roles_from_claims
+from django_pyforge.roles import claims_from_request, roles_from_claims
 
 
 class TokenRolesMiddleware:

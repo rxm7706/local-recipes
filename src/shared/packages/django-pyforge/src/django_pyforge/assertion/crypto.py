@@ -2,23 +2,24 @@
 
 from __future__ import annotations
 
-from datetime import UTC
-from datetime import datetime
+from datetime import UTC, datetime
 
 import jwt
 from django.conf import settings
 
 from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.schema import ALG
-from django_pyforge.assertion.schema import CLAIM_AUD
-from django_pyforge.assertion.schema import CLAIM_DELEGATED_BY
-from django_pyforge.assertion.schema import CLAIM_EXP
-from django_pyforge.assertion.schema import CLAIM_IAT
-from django_pyforge.assertion.schema import CLAIM_ROLES
-from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.assertion.schema import DELEGATED_BY
-from django_pyforge.assertion.schema import MAX_TTL_SECONDS
-from django_pyforge.assertion.schema import audience_for
+from django_pyforge.assertion.schema import (
+    ALG,
+    CLAIM_AUD,
+    CLAIM_DELEGATED_BY,
+    CLAIM_EXP,
+    CLAIM_IAT,
+    CLAIM_ROLES,
+    CLAIM_SUB,
+    DELEGATED_BY,
+    MAX_TTL_SECONDS,
+    audience_for,
+)
 from django_pyforge.assertion.verify import verify_assertion_claims
 
 

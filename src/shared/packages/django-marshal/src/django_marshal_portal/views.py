@@ -1,11 +1,10 @@
-from django.http import HttpRequest
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
-
-from django_marshal_portal.mcp_asgi import WATCH_TOOL
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
+
+from django_marshal_portal.mcp_asgi import WATCH_TOOL
 
 
 @require_GET

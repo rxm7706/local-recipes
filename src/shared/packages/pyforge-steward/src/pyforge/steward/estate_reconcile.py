@@ -439,7 +439,7 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
         )
 
     today = deps.now().date()
-    reconcile_block: dict[str, Any] = {
+    reconcile_block = {
         "generators": gen_steps,
         "checks": checks,
         "moved_paths": sorted(moved),

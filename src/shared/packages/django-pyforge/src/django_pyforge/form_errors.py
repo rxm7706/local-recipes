@@ -11,8 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from django.forms import BaseForm
-from django.forms import ValidationError
+from django.forms import BaseForm, ValidationError
 from django.forms.forms import NON_FIELD_ERRORS
 
 _SKIP_LOC = frozenset({"body", "query", "path"})
