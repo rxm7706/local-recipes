@@ -15,8 +15,10 @@ Two halves, both over the same tree on each side:
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path, PurePosixPath
 
 import pytest
@@ -47,7 +49,20 @@ def build_mod(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("PYFORGE_CI_SURFACES_TILE", "0")
     monkeypatch.setenv("PYFORGE_STATUS_PAGES", "0")
     monkeypatch.delenv("PYFORGE_PAGES_ONE_GENERATOR", raising=False)
+    # Both paths stamp an unsidecarred export with GITHUB_SHA's first seven before git; Actions sets it.
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
     return load_build("docsite_build_parity")
+
+
+def _load_assemble_pages():
+    spec = importlib.util.spec_from_file_location(
+        "assemble_pages_parity", REPO_ROOT / "docsite" / "tools" / "assemble_pages.py"
+    )
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 
 _MODEL_SCRIPT = """
@@ -177,7 +192,10 @@ def test_ac3_the_model_matches_the_jinja_path_on_afixture_tree(build_mod, tmp_pa
 
 
 @needs_node
-def test_ac5_two_dated_files_of_one_kind_are_refused_naming_both(tmp_path: Path) -> None:
+def test_ac5_two_dated_files_of_one_kind_are_refused_naming_both(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
     root = fixture_tree(tmp_path, second_pptx=True)
     ts = _ts_model(site_yml(root), root)
     assert ts.get("files") == [
@@ -251,6 +269,8 @@ def _assert_twins_wrapped_never_edited(build_mod, astro: Path, root: Path, infog
         assert hashlib.sha256(got).hexdigest() == hashlib.sha256(want.encode("utf-8")).hexdigest(), (
             f"{rel} is not its tracked file {source.relative_to(root).as_posix()} (font-link vendoring aside)"
         )
+        changes = _load_assemble_pages()._font_vendoring_only(got, source.read_bytes())  # an independent line diff
+        assert changes == [], f"{rel}: {changes}"
         assert _BACKBAR.encode() not in got, f"{rel} carries the back-bar"
         assert b"fonts.googleapis.com" not in got, f"{rel} names fonts.googleapis.com"
         text = reader.read_text(encoding="utf-8")
@@ -329,3 +349,40 @@ def test_ac6_the_flag_selects_what_the_jinja_build_writes(
         return
     assert astro_page.read_text(encoding="utf-8") == "<html>Astro's overview</html>"  # never deleted
     assert sorted(p.name for p in out.iterdir()) == [".nojekyll", "artifact", "assets", "index.html"]
+
+
+_VENDOR_SCRIPT = """
+import fs from 'node:fs';
+import { vendorFontLinks } from %(lib)s;
+const jobs = %(jobs)s;
+process.stdout.write(JSON.stringify(jobs.map(([file, href]) => vendorFontLinks(fs.readFileSync(file, 'utf8'), href))));
+"""
+
+
+@needs_node
+def test_ac4_the_vendoring_changes_only_font_links_on_every_tracked_twin(build_mod) -> None:
+    """AC4 as amended (Story 43.2's ruling), in the always-run half: the Astro side's ``vendorFontLinks`` -- what
+    ``populate-public.ts`` writes each twin with -- over every tracked twin, read against the tracked bytes by
+    ``assemble_pages._font_vendoring_only``, a line diff that knows nothing of either implementation: the only lines
+    lost name a Google Fonts origin, the only lines gained are one vendored font link and blank lines."""
+    igs = build_mod.collect_infographics(site_yml(REPO_ROOT), REPO_ROOT)
+    jobs = [(str(ig["path"]), "../../assets/fonts/fonts.css") for ig in igs]
+    for fam in build_mod.collect_families(igs, REPO_ROOT, ""):
+        for key in ("infographic_deck", "executive_summary"):
+            if fam[key] is not None:
+                jobs.append((str(fam[key]["path"]), "../../../assets/fonts/fonts.css"))
+    assert len(jobs) > len(igs), "no family view to read"
+    script = _VENDOR_SCRIPT % {"lib": json.dumps(HERALD_PAGES_TS.as_uri()), "jobs": json.dumps(jobs)}
+    done = subprocess.run(
+        [NODE or "node", "--experimental-strip-types", "--input-type=module", "-e", script],
+        cwd=DOCS_SITE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    assemble_pages = _load_assemble_pages()
+    for (file, _), published in zip(jobs, json.loads(done.stdout), strict=True):
+        raw = published.encode("utf-8")
+        assert assemble_pages._font_vendoring_only(raw, Path(file).read_bytes()) == [], file
+        assert b"fonts.googleapis.com" not in raw and b"fonts.gstatic.com" not in raw, file

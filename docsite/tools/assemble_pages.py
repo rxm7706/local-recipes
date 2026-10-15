@@ -32,7 +32,9 @@ below. Off, it does all of that as before."""
 from __future__ import annotations
 
 import argparse
+import difflib
 import html
+import importlib.util
 import json
 import os
 import posixpath
@@ -40,6 +42,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -715,6 +718,144 @@ def _check_vizro_mount(artifact_root: Path) -> None:
         raise SystemExit(1)
 
 
+#: Story 43.2 (review): the one line a twin gains -- a link to the site's own fonts (Story 31.3's vendoring).
+_VENDORED_FONT_LINK = re.compile(rb'<link rel="stylesheet" href="(?:\.\./)+assets/fonts/fonts\.css">')
+_GOOGLE_FONT_ORIGINS = (b"fonts.googleapis.com", b"fonts.gstatic.com")
+
+
+class _HeraldPage(HTMLParser):
+    """What a herald gallery, decks index or family page links and offers: its body's anchors (not the shared
+    menu or the brand), each card's ``(href, title)``, each download's name and its size-and-stamp line."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.hrefs: list[str] = []
+        self.shots: list[tuple[str, str]] = []
+        self.downloads: list[str] = []
+        self.meta: list[str] = []
+        self._shot: str | None = None
+        self._capture: str | None = None
+        self._text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        a = {k: v or "" for k, v in attrs}
+        if tag == "a" and "href" in a and "data-pf-menu-link" not in a and "site-brand" not in a.get("class", ""):
+            self.hrefs.append(a["href"])
+            if "shot" in a.get("class", "").split():
+                self._shot = a["href"]
+            if "download" in a:
+                self._capture, self._text = "download", []
+        elif tag == "h3" and self._shot is not None:
+            self._capture, self._text = "shot", []
+        elif tag == "span" and "dl-meta" in a.get("class", ""):
+            self._capture, self._text = "meta", []
+
+    def handle_endtag(self, tag: str) -> None:
+        text = " ".join("".join(self._text).split())
+        if tag == "a" and self._capture == "download":
+            self.downloads.append(text)
+            self._capture = None
+        elif tag == "h3" and self._capture == "shot":
+            self.shots.append((self._shot or "", text))
+            self._capture = None
+        elif tag == "span" and self._capture == "meta":
+            self.meta.append(text)
+            self._capture = None
+        if tag == "a":
+            self._shot = None
+
+    def handle_data(self, data: str) -> None:
+        if self._capture:
+            self._text.append(data)
+
+
+def _herald_page(path: Path) -> _HeraldPage:
+    page = _HeraldPage()
+    page.feed(path.read_text(encoding="utf-8", errors="replace"))
+    page.close()
+    return page
+
+
+def _font_vendoring_only(published: bytes, tracked: bytes) -> list[str]:
+    """What a twin changed beyond Story 31.3's font-link vendoring, read on raw bytes line by line and
+    independently of the code that wrote it: a lost line that names no Google Fonts origin, a gained line other
+    than the one vendored link or a blank line, or more than one vendored link."""
+    lost_gained: list[str] = []
+    links = 0
+    a, b = tracked.splitlines(keepends=True), published.splitlines(keepends=True)
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+        if tag == "equal":
+            continue
+        lost_gained += [f"lost {line!r}" for line in a[i1:i2] if not any(o in line for o in _GOOGLE_FONT_ORIGINS)]
+        for line in b[j1:j2]:
+            if _VENDORED_FONT_LINK.fullmatch(line.strip()):
+                links += 1
+            elif line.strip():
+                lost_gained.append(f"gained {line!r}")
+    if links > 1:
+        lost_gained.append(f"gained {links} vendored font links, not one")
+    return lost_gained
+
+
+def _check_herald_parity(artifact_root: Path) -> None:
+    """Story 43.2 (AC3, AC4; the independent review): while both generators exist, ``pages-check`` with the flag on
+    renders the Jinja path over the same tree into a scratch directory and compares it with the Astro pages in the
+    artifact -- the gallery's ordered cards, the decks index's links, and per family its links, downloads and their
+    size-and-stamp lines -- and reads every twin against its tracked file (font-link vendoring only). The Astro side
+    parsed ``site.yml`` and ``facts.yaml`` with its own YAML reader; the Jinja side with PyYAML."""
+    repo_root = _repo_root()
+    spec = importlib.util.spec_from_file_location("assemble_pages_jinja_build", repo_root / "docsite" / "build.py")
+    assert spec and spec.loader
+    build = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build)
+    herald = artifact_root / HERALD_PREFIX
+    problems: list[str] = []
+
+    def differ(rel: str, what: str, astro: object, jinja: object) -> None:
+        if astro != jinja:
+            problems.append(f"herald/{rel}: {what} differ -- Astro {astro!r}, Jinja {jinja!r}")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        jinja = Path(tmp)
+        result = build.build(jinja, repo_root, one_generator=False, status_pages=False)
+        for rel in ("infographics/index.html", "decks/index.html"):
+            if not (herald / rel).is_file():
+                problems.append(f"herald/{rel}: no Astro page")
+        if not problems:
+            gallery_a, gallery_j = (_herald_page(root / "infographics/index.html") for root in (herald, jinja))
+            differ("infographics/index.html", "the ordered (href, title) cards", gallery_a.shots, gallery_j.shots)
+            index_a, index_j = (_herald_page(root / "decks/index.html") for root in (herald, jinja))
+            differ("decks/index.html", "the links", sorted(set(index_a.hrefs)), sorted(set(index_j.hrefs)))
+        slugs = sorted(fam["slug"] for fam in result["families"])
+        differ("decks/", "the family pages", sorted(p.parent.name for p in herald.glob("decks/*/index.html")), slugs)
+        for slug in slugs:
+            rel = f"decks/{slug}/index.html"
+            if not (herald / rel).is_file():
+                continue
+            page_a, page_j = _herald_page(herald / rel), _herald_page(jinja / rel)
+            differ(rel, "the links", sorted(set(page_a.hrefs)), sorted(set(page_j.hrefs)))
+            differ(rel, "the downloads", sorted(page_a.downloads), sorted(page_j.downloads))
+            differ(rel, "the download sizes and stamps", sorted(page_a.meta), sorted(page_j.meta))
+    twins = [(f"twins/infographics/{ig['out_name']}", ig["path"]) for ig in result["infographics"]]
+    for fam in result["families"]:
+        for key, name in build._FAMILY_VIEW_OUT_NAMES.items():
+            if fam.get(key):
+                twins.append((f"twins/decks/{fam['slug']}/{name}", fam[key]["path"]))
+    for rel, source in twins:
+        twin = herald / rel
+        if not twin.is_file():
+            problems.append(f"herald/{rel}: no twin of {source.relative_to(repo_root).as_posix()}")
+            continue
+        changes = _font_vendoring_only(twin.read_bytes(), source.read_bytes())
+        problems += [f"herald/{rel}: {change}" for change in changes]
+    for line in problems:
+        print(f"assemble_pages: {line}", file=sys.stderr)
+    if problems:
+        print(f"assemble_pages: the Astro and Jinja herald pages differ ({len(problems)})", file=sys.stderr)
+        raise SystemExit(1)
+    print(f"assemble_pages: the Astro herald pages match the Jinja path ({len(slugs)} families, {len(twins)} twins)")
+
+
 def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
     base_path = _base_path(site_url)
     lane1 = _lane1_href()
@@ -1121,6 +1262,7 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
     if one_generator:  # Story 43.3: the frozen set, written by the Astro build
         _check_legacy_redirects(artifact_root)
         _check_csp(artifact_root)
+        _check_herald_parity(artifact_root)  # Story 43.2's review: while both generators exist
     herald_htmls = [] if one_generator else _iter_herald_html(artifact_root)
     for herald_html in herald_htmls:
         old_rel = _old_path_for_herald_page(artifact_root, herald_html)

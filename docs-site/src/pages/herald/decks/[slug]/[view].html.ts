@@ -25,6 +25,6 @@ export const getStaticPaths: GetStaticPaths = () => {
 export const GET: APIRoute = ({ props }) => {
   const { family, view } = props as { family: Family; view: FamilyView };
   const title = `${family.title} — ${view.label}`;
-  const html = twinWrapperHtml({ title, backbar: familyViewBackbar(family.title, title), rel: '../../', twin: view.twin });
+  const html = twinWrapperHtml({ title, backbar: familyViewBackbar(family.title, title, `../../${view.twin}`), rel: '../../', twin: view.twin });
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 };

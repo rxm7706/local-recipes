@@ -26,9 +26,13 @@ NODE = shutil.which("node")
 _GENERATED = ("src/sidebar.generated.json", "src/topnav.generated.json")
 RENDER_READY = NODE is not None and ASTRO_BIN.is_file() and all((DOCS_SITE / g).is_file() for g in _GENERATED)
 needs_node = pytest.mark.skipif(NODE is None, reason="node is not on PATH")
+#: No CI lane that runs the herald suite installs docs-site (the suite is offline by construction), so these
+#: skip there; CI enforces the same comparisons on the real artifact through ``pages-check`` with the flag on
+#: (``assemble_pages._check_herald_parity``, Story 43.2's review), in the Pages lane and ``pr-preflight``.
 needs_astro = pytest.mark.skipif(
     not RENDER_READY,
-    reason="docs-site is not installed: pixi run -e site docs-site-install docs-site-sidebar",
+    reason="docs-site is not installed (pixi run -e site docs-site-install docs-site-sidebar); "
+    "pages-check runs the same parity on the built artifact",
 )
 
 
@@ -55,7 +59,11 @@ def site_yml(root: Path) -> dict:
     return yaml.safe_load((root / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
 
 
-POSTER = """<!DOCTYPE html><html><head><meta charset="utf-8"><title>{title}</title>
+#: Shaped as the tracked Design exports are: ``<head>`` on its own line, the Google Fonts links one per line.
+POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"><title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400&amp;display=swap" rel="stylesheet">
 </head><body><main><h1>{title}</h1><p>{body}</p></main></body></html>

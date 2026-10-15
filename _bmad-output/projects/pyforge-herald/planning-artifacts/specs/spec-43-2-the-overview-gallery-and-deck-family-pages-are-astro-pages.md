@@ -243,6 +243,43 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 
 ## Spec Change Log
 
+- 2026-10-15 (independent review, iteration 1: FAIL; resolved on the tree as Story 43.3 left it, which moved the
+  twin and download copy from `build.py` to `docs-site/scripts/populate-public.ts`):
+  - **Blocker -- `GITHUB_SHA`.** Both paths stamp an unsidecarred export with `GITHUB_SHA`'s first seven before
+    git, and Actions sets it, so the fixture model test's `tree == "unknown"` was red in CI. The `build_mod` fixture
+    and the AC5 model test now drop the variable.
+  - **The rendered parity, CI-enforced through `pages-check`.** The herald suite is offline by construction and no
+    lane that runs it installs docs-site, so its rendered half skips there (its skip reason now says so); installing
+    from a test or editing a workflow (steward's) was not needed. Instead `pages-check` with the flag on -- the Pages
+    lane, which the dev overlay turns on, and `pr-preflight` -- now renders the Jinja path over the same tree into a
+    scratch directory and compares it with the artifact's Astro pages: the gallery's ordered (href, title) cards,
+    the decks index's links, and per family its links, downloads and size-and-stamp lines
+    (`assemble_pages._check_herald_parity`). The Astro side read `site.yml` and `facts.yaml` with its own YAML
+    reader, the Jinja side with PyYAML, so a YAML 1.1/1.2 divergence now shows there.
+  - **AC4's oracle, independent and in CI twice.** `assemble_pages._font_vendoring_only` reads a twin against its
+    tracked file on raw bytes, line by line, knowing neither implementation: lost lines must name a Google Fonts
+    origin, gained lines must be the one vendored link or blank (a CRLF change, an edited line, a back-bar or a
+    second link each fail). `pages-check` runs it on every twin in the artifact; the always-run model half runs the
+    Astro side's `vendorFontLinks` over all 30 tracked twins through it (`test_ac4_the_vendoring_changes_only_font_links_on_every_tracked_twin`,
+    in the herald lane, which has node). It holds a twin whose `<head>` shares a line with other markup to a stricter
+    rule than the vendoring needs (none does today; the fixture poster now matches the tracked shape).
+  - **The one-writer gate and the exemptions** have tests in `test_pages_artifact.py`: a Jinja page with the flag on
+    and an Astro page with it off each exit 1 naming the page; a twin gets no redirect, no menu and no link walk but
+    the origin checks read it; a reader page carries no menu and is link-walked only when Astro's.
+  - **Nits.** A `<title>` with a named entity the Astro path does not decode is refused, naming the file (give it an
+    override title; every include has one today); an out-of-range numeric reference reads U+FFFD, as in Python. The
+    export kind is `deck_versions._kind_key`'s: only a valid `-YYYY-MM-DD` stem groups, so an undated file is listed
+    on its own (the Jinja path's newest-name rule groups it with a dated sibling; no tracked deck has one, and the
+    parity check would name the difference). The reader page sets `body{box-sizing:border-box}` (no outer
+    scrollbar) and its back-bar links the framed file ("Full page", to read or print it whole). The gallery blurb no
+    longer says "unmodified".
+  - **Recorded scope:** the edit to steward's `tests/meta/test_station_tests_trigger_map.py` declares this story's
+    parity test in `ROOT_HANDOFF_INPUTS` (`docs-site/**`, `docsite/**`, `presentations/**`), which steward's
+    meta-test requires of a new test that hands the repo root to a build; it is outside Epic 43's surface.
+  - **For the operator (the review's observation, not changed here):** `pages.yml` sets no `PYFORGE_ENVIRONMENT`, so
+    the Guild step reads the dev overlay and `pyforge.herald.pages_one_generator` is on for every build, the deploy
+    from `main` included; the flag's `production: off` does not gate the public site, and CI never runs `pages-check`
+    with the flag off.
 - 2026-10-15 (orchestrator rulings after the commit, operator may override): the font-rewritten twin copy is accepted
   (Story 31.3's mechanism; AD-21 forbids the third-party origin) -- no Design re-export, no DW row. The rendered half
   of `test_herald_pages_parity.py` skips where `docs-site/node_modules` or the generated menu is absent, which is

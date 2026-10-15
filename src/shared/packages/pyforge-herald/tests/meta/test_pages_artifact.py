@@ -891,3 +891,130 @@ def test_43_3_the_assembler_hands_mounts_and_redirects_to_astro(
     assert served == "<html>Astro served the export</html>"
     assert sorted(p.name for p in (artifact / "herald").iterdir()) == [".nojekyll", "artifact", "assets"]
     assert (artifact / "dashboard" / "index.html").is_file()  # herald's pipelines page, still Jinja's
+
+
+# --- Story 43.2 (independent review): the one-writer gate, the twin and reader-page exemptions, the parity check --
+
+_ASTRO_META = '<meta name="generator" content="Astro v7.3.2">'
+
+
+def test_43_2_one_writer_with_the_flag_on_refuses_a_jinja_page(tmp_path: Path, capsys) -> None:
+    write(tmp_path / "herald/index.html", f"<html><head>{_ASTRO_META}</head></html>")
+    write(tmp_path / "herald/artifact/dossier.html", "<div>the artifact build: Jinja's in both states</div>")
+    write(tmp_path / "herald/twins/infographics/x.html", "<html>a copy, not a page</html>")
+    assemble_pages = _load_assemble_pages()
+    assemble_pages._check_one_writer(tmp_path, one_generator=True)
+    write(tmp_path / "herald/decks/index.html", "<html><head></head></html>")
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages._check_one_writer(tmp_path, one_generator=True)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "herald/decks/index.html was written by the Jinja build but pyforge.herald.pages_one_generator is on" in err
+
+
+def test_43_2_one_writer_with_the_flag_off_refuses_an_astro_page(tmp_path: Path, capsys) -> None:
+    write(tmp_path / "herald/index.html", "<html><head></head></html>")
+    assemble_pages = _load_assemble_pages()
+    assemble_pages._check_one_writer(tmp_path, one_generator=False)
+    write(tmp_path / "herald/infographics/index.html", f"<html><head>{_ASTRO_META}</head></html>")
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages._check_one_writer(tmp_path, one_generator=False)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "herald/infographics/index.html was written by Astro but pyforge.herald.pages_one_generator is off" in err
+
+
+def test_43_2_a_twin_is_no_page_but_its_loads_are_judged(tmp_path: Path, capsys) -> None:
+    """A twin under /herald/twins/ gets no legacy redirect, carries no menu and is not link-walked, but the origin
+    checks read it."""
+    assemble_pages = _load_assemble_pages()
+    twin = "herald/twins/infographics/x.html"
+    write(tmp_path / twin, '<html><head><script src="./support.js"></script></head><a href="nowhere.html">x</a></html>')
+    write(tmp_path / "herald/index.html", "<html></html>")
+    assert [p.name for p in assemble_pages._iter_herald_html(tmp_path)] == ["index.html"]
+    assemble_pages._write_dossier_redirects(tmp_path)
+    assert not (tmp_path / "twins").exists()
+    assert not assemble_pages._carries_the_menu(twin, "")
+    assert not assemble_pages._should_check_page_links(twin, "")
+    assemble_pages._check_href_resolution(tmp_path, site_url=_SITE_URL)  # the broken link in the twin is not walked
+    write(tmp_path / twin, '<html><head><link rel="stylesheet" href="https://fonts.googleapis.com/css2"></head></html>')
+    findings, _ = assemble_pages.cross_origin_findings(tmp_path, _SITE_URL)
+    assert any(twin in line and "fonts.googleapis.com" in line for line in findings)
+    with pytest.raises(SystemExit):
+        assemble_pages._check_origins(tmp_path, _SITE_URL)
+    assert twin in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("rel", ["herald/infographics/atlas.html", "herald/decks/pyforge-atlas/infographic-deck.html"])
+def test_43_2_a_reader_page_carries_no_menu_and_only_astros_is_link_walked(rel: str) -> None:
+    assemble_pages = _load_assemble_pages()
+    assert not assemble_pages._carries_the_menu(rel, "<html></html>")
+    assert not assemble_pages._should_check_page_links(rel, "<html><body>a Jinja back-barred export</body></html>")
+    assert assemble_pages._should_check_page_links(rel, f"<html><head>{_ASTRO_META}</head></html>")
+
+
+_TRACKED_TWIN = (
+    b'<!DOCTYPE html>\n<html>\n<head>\n<meta charset="utf-8">\n'
+    b'<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+    b'<link href="https://fonts.googleapis.com/css2?family=Archivo" rel="stylesheet">\n'
+    b"<title>T</title>\n</head>\n<body><p>body</p></body>\n</html>\n"
+)
+_VENDORED_TWIN = (
+    _TRACKED_TWIN.replace(b"<head>\n", b'<head>\n<link rel="stylesheet" href="../../assets/fonts/fonts.css">\n\n', 1)
+    .replace(b'<link rel="preconnect" href="https://fonts.googleapis.com">\n', b"")
+    .replace(b'<link href="https://fonts.googleapis.com/css2?family=Archivo" rel="stylesheet">\n', b"")
+)
+
+
+@pytest.mark.parametrize(
+    ("published", "needle"),
+    [
+        (_VENDORED_TWIN, None),
+        (_VENDORED_TWIN.replace(b"<p>body</p>", b"<p>edited</p>"), "gained"),
+        (_VENDORED_TWIN.replace(b"<title>T</title>\n", b""), "lost"),
+        (_VENDORED_TWIN.replace(b"\n", b"\r\n"), "lost"),
+        (_VENDORED_TWIN.replace(b"<head>\n", b'<head>\n<div class="ig-backbar"></div>\n', 1), "gained"),
+        (
+            _VENDORED_TWIN.replace(
+                b"<head>\n", b'<head>\n<link rel="stylesheet" href="../../assets/fonts/fonts.css">\n', 1
+            ),
+            "vendored font links, not one",
+        ),
+    ],
+    ids=["vendoring-only", "edited-body", "dropped-title", "crlf", "back-bar", "two-links"],
+)
+def test_43_2_the_twin_diff_allows_only_the_font_vendoring(published: bytes, needle: str | None) -> None:
+    changes = _load_assemble_pages()._font_vendoring_only(published, _TRACKED_TWIN)
+    if needle is None:
+        assert changes == []
+    else:
+        assert changes and any(needle in change for change in changes), changes
+
+
+@needs_astro
+def test_43_2_pages_check_compares_the_astro_pages_with_the_jinja_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """The parity ``pages-check`` runs with the flag on: green on the tracked tree; a dropped download, a
+    reordered gallery and an edited twin each exit 1 naming the page or file."""
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+    artifact = _astro_artifact(tmp_path, monkeypatch)
+    assemble_pages = _load_assemble_pages()
+    assemble_pages._check_herald_parity(artifact)
+    assert "the Astro herald pages match the Jinja path (10 families, 30 twins)" in capsys.readouterr().out
+
+    family = artifact / "herald/decks/pyforge-herald/index.html"
+    text = family.read_text(encoding="utf-8")
+    family.write_text(text.replace('href="downloads/pyforge-herald-deck-2026-09-15.md"', 'href="x.md"'), "utf-8")
+    gallery = artifact / "herald/infographics/index.html"
+    cards = gallery.read_text(encoding="utf-8")
+    gallery.write_text(cards.replace("<h3>Atlas</h3>", "<h3>Atlas!</h3>"), encoding="utf-8")
+    twin = artifact / "herald/twins/infographics/herald.html"
+    twin.write_bytes(twin.read_bytes().replace(b"</body>", b"<p>edited</p></body>", 1))
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages._check_herald_parity(artifact)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "herald/decks/pyforge-herald/index.html: the links differ" in err
+    assert "herald/infographics/index.html: the ordered (href, title) cards differ" in err
+    assert "herald/twins/infographics/herald.html: gained" in err

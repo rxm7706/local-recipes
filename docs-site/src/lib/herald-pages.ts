@@ -183,21 +183,38 @@ const NAMED_ENTITIES: Record<string, string> = {
   hellip: '…',
 };
 
+/**
+ * Character references in a `<title>`, as Python's `html.unescape` reads them for the names in `NAMED_ENTITIES`
+ * (an out-of-range number reads U+FFFD, as there). Any other name is left in place for `readTitle` to refuse.
+ */
 function unescapeHtml(text: string): string {
-  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, ref: string) => {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z][a-z0-9]*);/gi, (whole, ref: string) => {
     if (ref[0] === '#') {
       const code = ref[1].toLowerCase() === 'x' ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
-      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
+      const valid = code > 0 && code <= 0x10ffff && (code < 0xd800 || code > 0xdfff);
+      return valid ? String.fromCodePoint(code) : '\ufffd';
     }
-    return NAMED_ENTITIES[ref.toLowerCase()] ?? whole;
+    return NAMED_ENTITIES[ref] ?? whole;
   });
 }
 
-/** `build.py`'s `read_title`: the file's own `<title>`, else its stem. */
+/**
+ * `build.py`'s `read_title`: the file's own `<title>`, else its stem. A title holding a named character reference
+ * this module does not decode is refused, naming the file: Python's table is all of HTML5, so the two paths could
+ * title (and name) the infographic differently -- give it an override `title` in `site.yml` instead.
+ */
 export function readTitle(file: string): string {
   const head = fs.readFileSync(file, 'utf8').slice(0, 100_000);
   const match = TITLE_RE.exec(head);
-  return match ? unescapeHtml(match[1]).trim() : path.basename(file, path.extname(file));
+  if (!match) {
+    return path.basename(file, path.extname(file));
+  }
+  const title = unescapeHtml(match[1]).trim();
+  const unknown = /&[a-z][a-z0-9]*;/i.exec(title);
+  if (unknown) {
+    throw new Error(`${file}: its <title> holds ${unknown[0]}, which the Astro path does not decode; give it an override title in site.yml`);
+  }
+  return title;
 }
 
 function comparePaths(a: string, b: string): number {
@@ -364,12 +381,21 @@ function singleFile(dir: string, suffix: string): string | null {
   return matches.length ? path.join(dir, matches[0]) : null;
 }
 
-const DATE_SUFFIX = /-\d{4}-\d{2}-\d{2}$/;
+/** The ISO date a dated export's stem ends with, when it is a real calendar date (`deck_versions._kind_key`). */
+function exportDate(stem: string): string | null {
+  const match = /-(\d{4}-\d{2}-\d{2})$/.exec(stem);
+  if (!match) {
+    return null;
+  }
+  const parsed = new Date(`${match[1]}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === match[1] ? match[1] : null;
+}
 
 /**
  * The exports of one kind directory (`src/pptx/*.pptx`, `src/marp/*.md`), newest name first as the
- * Jinja page lists them. A kind -- the stem before `-YYYY-MM-DD` -- holding more than one file is
- * recorded in `problems`, never resolved by picking a date.
+ * Jinja page lists them. A kind is `pyforge.herald.deck_versions`' (`_kind_key`): the stem before a valid
+ * `-YYYY-MM-DD`; a kind holding more than one file is recorded in `problems`, never resolved by picking a date.
+ * An undated (or invalidly dated) file is no kind there and is listed on its own here.
  */
 function currentExports(dir: string, suffix: string, repoRoot: string, problems: string[][]): string[] {
   if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
@@ -381,7 +407,8 @@ function currentExports(dir: string, suffix: string, repoRoot: string, problems:
       continue;
     }
     const stem = name.slice(0, name.length - path.extname(name).length);
-    const kind = stem.replace(DATE_SUFFIX, '');
+    const date = exportDate(stem);
+    const kind = date ? stem.slice(0, -(date.length + 1)) : `\u0000${name}`;
     byKind.set(kind, [...(byKind.get(kind) ?? []), name]);
   }
   const listed: string[] = [];
@@ -548,23 +575,31 @@ body{padding-top:32px!important}
 </style>
 `;
 
-/** The infographic page's back-bar, as `build.py`'s `BACKBAR` (links relative to `/herald/infographics/`). */
-export function infographicBackbar(title: string): string {
+/**
+ * The infographic page's back-bar, as `build.py`'s `BACKBAR` (links relative to `/herald/infographics/`), plus a
+ * link to the framed file itself (`twinHref`), to read or print it whole.
+ */
+export function infographicBackbar(title: string, twinHref: string): string {
   return `<div class="ig-backbar">
   <a href="index.html">&larr; All infographics</a>
   <a href="../index.html">Overview</a>
   <a href="../dossier/index.html">Dossier</a>
+  <a href="${escapeAttr(twinHref)}">Full page</a>
   <span class="ig-title">${escapeText(title)}</span>
 </div>
 ${BACKBAR_STYLE}`;
 }
 
-/** A family view's back-bar, as `build.py`'s `FAMILY_VIEW_BACKBAR` (links relative to `/herald/decks/<slug>/`). */
-export function familyViewBackbar(deckTitle: string, title: string): string {
+/**
+ * A family view's back-bar, as `build.py`'s `FAMILY_VIEW_BACKBAR` (links relative to `/herald/decks/<slug>/`), plus a
+ * link to the framed file itself (`twinHref`).
+ */
+export function familyViewBackbar(deckTitle: string, title: string, twinHref: string): string {
   return `<div class="ig-backbar">
   <a href="index.html">&larr; ${escapeText(deckTitle)} family</a>
   <a href="../../index.html">Overview</a>
   <a href="../../dossier/index.html">Dossier</a>
+  <a href="${escapeAttr(twinHref)}">Full page</a>
   <span class="ig-title">${escapeText(title)}</span>
 </div>
 ${BACKBAR_STYLE}`;
@@ -592,6 +627,7 @@ export function twinWrapperHtml(options: { title: string; backbar: string; rel: 
 <link rel="stylesheet" href="${escapeAttr(`${rel}assets/fonts/fonts.css`)}">
 <style>
 html,body{margin:0;height:100%;background:#12161a}
+body{box-sizing:border-box}
 .ig-twin{display:block;width:100%;height:calc(100vh - 32px);border:0;background:#fff}
 </style>
 </head>

@@ -21,6 +21,6 @@ export const getStaticPaths: GetStaticPaths = () => {
 
 export const GET: APIRoute = ({ props }) => {
   const { ig } = props as { ig: Infographic };
-  const html = twinWrapperHtml({ title: ig.title, backbar: infographicBackbar(ig.title), rel: '../', twin: ig.twin });
+  const html = twinWrapperHtml({ title: ig.title, backbar: infographicBackbar(ig.title, `../${ig.twin}`), rel: '../', twin: ig.twin });
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 };
