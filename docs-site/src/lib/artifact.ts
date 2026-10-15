@@ -6,7 +6,7 @@
  *   build rendered carries one `Content-Security-Policy` meta. The herald layouts and reader pages write
  *   `HERALD_CSP` themselves; every Starlight page -- the shelf, `/changes/`, `/status/**`, the 404 -- gets the same
  *   policy here, its own inline scripts (Starlight's theme, sidebar and search glue) allowed by hash and
- *   `'wasm-unsafe-eval'` for the Pagefind search, as the first element of its head. Redirect stubs, the twins, the
+ *   `'wasm-unsafe-eval'` for the Pagefind search, right after its `<meta charset>`. Redirect stubs, the twins, the
  *   artifact build and the mounted `dashboard/` tree are no pages of the build's and are left as they are.
  * - **The artifact build** `herald/artifact/dossier.html` (CAP-47): the built dossier page, single file, for the
  *   Claude Artifact tool -- its title, the stylesheets it links with the faces it names inlined as data URIs (the three
@@ -46,7 +46,12 @@ function htmlFiles(dir: string): string[] {
 
 const sha256 = (text: string): string => `'sha256-${createHash('sha256').update(text, 'utf8').digest('base64')}'`;
 
-/** `html` with one CSP meta first in its head, allowing exactly its own inline scripts; `null` when it needs none. */
+/**
+ * `html` with one CSP meta in its head, allowing exactly its own inline scripts; `null` when it needs none. The meta
+ * goes right after `<meta charset>` (else first in the head), ahead of every script: the charset declaration stays
+ * where a browser's 1024-byte encoding prescan finds it, however many script hashes the policy lists (Story 43.7's
+ * review).
+ */
 export function withCsp(html: string): string | null {
   if (CSP_META.test(html) || REFRESH.test(html)) {
     return null;
@@ -57,7 +62,12 @@ export function withCsp(html: string): string | null {
   }
   const hashes = [...new Set([...html.matchAll(INLINE_SCRIPT)].map((m) => sha256(m[1])))];
   const meta = `<meta http-equiv="Content-Security-Policy" content="${cspWith(["'wasm-unsafe-eval'", ...hashes])}">`;
-  const end = head.index + head[0].length;
+  const headEnd = head.index + head[0].length;
+  const rest = html.slice(headEnd);
+  const charset = /<meta\s+charset\s*=[^>]*>/i.exec(rest);
+  // only a charset meta inside the head and ahead of its first script
+  const bound = Math.min(...[rest.search(/<script\b/i), rest.search(/<\/head>/i)].filter((i) => i >= 0), rest.length);
+  const end = charset && charset.index < bound ? headEnd + charset.index + charset[0].length : headEnd;
   return `${html.slice(0, end)}${meta}${html.slice(end)}`;
 }
 

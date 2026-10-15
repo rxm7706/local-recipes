@@ -40,10 +40,12 @@ on:
       - 'docs/404.md'
       - 'docs/map.yaml'
       # Tracked `steward deploy static` boards publish from docs/dashboard/<board>/ (the downloaded
-      # exports under it are gitignored); the build's own scripts and steward's pages module too.
+      # exports under it are gitignored); the build's own scripts, steward's pages module and herald's
+      # flag export (the build's PYFORGE_* lines, herald Story 43.7) too.
       - 'docs/dashboard/**'
       - 'scripts/pages_*.py'
       - 'src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py'
+      - 'src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py'
       - 'docs-site/**'
       - 'presentations/**'
       - '.github/workflows/pages.yml'
@@ -85,7 +87,7 @@ jobs:
           # Shallow, not sparse: the deck family pages publish each deck's PPTX (src/pptx/) and Marp
           # (src/marp/) files and its stamp sidecars (project/*.stamp.json), which is 77.6 MB of the
           # 84.9 MB tracked under presentations/ (2026-10-14). A sparse set that drops them still
-          # passes site-check, because an absent download directory lists nothing.
+          # passes pages-check, because an absent download directory lists nothing.
           fetch-depth: 1
 
       - uses: prefix-dev/setup-pixi@v0.10.2
@@ -164,8 +166,13 @@ jobs:
           PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: pixi run --frozen -e site pages-check
 
+      # The legs of docs-site-validate, each alone: pages-check above already ran docs-site-install
+      # (npm ci), which docs-site-validate-sidebar depends on, so --skip-deps keeps a second install out.
       - name: Validate docs-site (PR gate folded from docsite-check.yml)
-        run: pixi run --frozen -e site docs-site-validate
+        run: |
+          pixi run --frozen --skip-deps -e site docs-site-validate-links
+          pixi run --frozen --skip-deps -e site docs-site-validate-sidebar-order
+          pixi run --frozen --skip-deps -e site docs-site-validate-sidebar
 
       - name: Stamp build.json and decide deploy
         id: stamp

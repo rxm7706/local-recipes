@@ -14,7 +14,6 @@ Story 43.5's measured-dossier tests moved here from the retired parity test.
 from __future__ import annotations
 
 import base64
-import difflib
 import gzip
 import hashlib
 import html
@@ -34,6 +33,7 @@ from pages_astro import (
     REPO_ROOT,
     astro_build,
     fixture_tree,
+    font_vendoring_only,
     needs_astro,
     needs_node,
     pages_check,
@@ -63,9 +63,16 @@ def _tracked(*paths: str) -> list[str]:
 
 
 def test_ac1_docsite_is_gone() -> None:
-    assert not (REPO_ROOT / "docsite").exists()
-    tracked = subprocess.run(["git", "ls-files", "docsite"], cwd=REPO_ROOT, capture_output=True, text=True, check=True)
-    assert tracked.stdout == ""
+    """AC1 on what git sees (the 43.7 review): ``docsite/`` holds no tracked file and no untracked file git would show.
+    A checkout that merged the deletion keeps its ignored leftovers (``__pycache__``, the old build inputs), which
+    ``/docsite/`` in ``.gitignore`` keeps out of sight; an ``exists()`` test went red on them."""
+    for args in (["ls-files"], ["ls-files", "--others", "--exclude-standard"]):
+        listed = subprocess.run(
+            ["git", *args, "--", "docsite"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+        )
+        assert listed.stdout == "", args
+    ignore = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "/docsite/" in ignore
 
 
 def test_ac2_the_content_lives_beside_the_generator_and_nothing_names_docsite() -> None:
@@ -188,14 +195,24 @@ def test_ac7_the_artifact_holds_every_url_and_passes_pages_check(built: Path) ->
     assert pages_check(built, env=STATUS_ENV, repo_root=REPO_ROOT) == []
 
 
+def _cdn_names(site: Path) -> list[str]:
+    """AC8's grep (``fonts.googleapis|cdn\\.``) over the artifact, the vendored upstream files pages-check exempts by
+    name (``pages.mts``'s ``VENDORED``: the Kedro-Viz build, Vizro's plotly bundle) excepted -- AC8's recorded
+    exception (the 43.7 review, nit 1): with the exports mounted, plotly.js names cdn.plot.ly for traces no page draws."""
+    vendored = ts(DOCS_SITE / "scripts" / "pages.mts", "return Object.keys(m.VENDORED);")
+    assert vendored == ["dashboard/kedro-viz/", "dashboard/vizro/assets/plotly.min.js"]
+    named = []
+    for path in sorted(p for p in site.rglob("*") if p.is_file()):
+        rel = path.relative_to(site).as_posix()
+        exempt = any(rel == v or (v.endswith("/") and rel.startswith(v)) for v in vendored)
+        if not exempt and re.search(rb"fonts\.googleapis|cdn\.", path.read_bytes()):
+            named.append(rel)
+    return named
+
+
 @needs_astro
 def test_ac8_nothing_loads_a_font_or_a_script_from_a_cdn(built: Path) -> None:
-    offenders = [
-        p.relative_to(built).as_posix()
-        for p in built.rglob("*")
-        if p.is_file() and re.search(rb"fonts\.googleapis|cdn\.", p.read_bytes())
-    ]
-    assert offenders == []
+    assert _cdn_names(built) == []
 
 
 @needs_astro
@@ -318,6 +335,9 @@ def test_42_2_with_the_exports_present_the_mounts_their_redirect_and_their_secti
     assert findings and all(line.startswith("legacy redirect ") for line in findings), (
         findings
     )  # the fixture's 2 families
+    # AC8 with the exports mounted: only the vendored files name a CDN (the fixture's plotly bundle does)
+    assert b"cdn.plot.ly" in (out / "dashboard/vizro/assets/plotly.min.js").read_bytes()
+    assert _cdn_names(out) == []
 
 
 # --- Story 43.5: every number is measured (moved from the retired parity test) ------------------------------------
@@ -460,6 +480,60 @@ def test_43_3_ac2_a_page_at_a_legacy_path_fails_the_build(tmp_path: Path) -> Non
     assert not (tmp_path / "out" / "decks").exists()  # nothing written when one path is taken
 
 
+_COLLISIONS = """
+const { pathToFileURL } = await import('node:url');
+const at = (rel) => pathToFileURL(`${inp.out}/${rel}`);
+const assets = new Map(Object.entries(inp.routes).map(([route, rels]) => [route, rels.map(at)]));
+m.refusePublicCollisions(inp.out, inp.written, assets);
+return 'passed';
+"""
+
+
+@needs_node
+@pytest.mark.parametrize(
+    ("written", "named"),
+    [
+        (["favicon.svg", "herald/twins/infographics/atlas.html"], None),
+        (["favicon.svg", "status/index.html", "herald/decks/fx/downloads/a.md"], "status/index.html"),
+        (["herald/index.html", "status/index.html"], "herald/index.html, status/index.html"),
+    ],
+    ids=["no-collision", "one-route-is-served", "two-named-sorted"],
+)
+def test_43_7_a_route_whose_output_public_serves_fails_the_build(
+    tmp_path: Path, written: list[str], named: str | None
+) -> None:
+    """AD-21 rule 1 for ``docs-site/public/`` (the 43.7 review, F4): ``refusePublicCollisions`` -- the build-time guard
+    that replaced the retired one-writer check -- throws naming every route output ``populatePublic`` also wrote."""
+    routes = {"/herald/": ["herald/index.html"], "/status/": ["status/index.html"], "/": ["index.html"]}
+    result = ts(
+        DOCS_SITE / "src" / "lib" / "redirects.ts",
+        _COLLISIONS,
+        out=str(tmp_path / "out"),
+        written=written,
+        routes=routes,
+    )
+    if named is None:
+        assert result == "passed"
+    else:
+        assert result["error"] == "Error" and result["message"].endswith(f"(AD-21 rule 1, one owner): {named}")
+
+
+def test_43_7_the_build_hook_refuses_collisions_before_it_writes_the_stubs() -> None:
+    """The wiring of the guard above (the 43.7 review, F4): ``populatePublic``'s list is taken at
+    ``astro:build:start`` and judged against the routes' ``assets`` first thing at ``astro:build:done``."""
+    config = (DOCS_SITE / "astro.config.mjs").read_text(encoding="utf-8")
+    start = re.search(
+        r"'astro:build:start': \(\) => \{\s*served = populatePublic\(path\.join\(__dirname, 'public'\)\);", config
+    )
+    done = re.search(
+        r"'astro:build:done': \(\{ dir, assets \}\) => \{\s*const outDir = fileURLToPath\(dir\);\s*"
+        r"refusePublicCollisions\(outDir, served, assets\);\s*writeLegacyRedirects\(",
+        config,
+    )
+    assert start and done and start.start() < done.start()
+    assert "integrations: [" in config and "heraldArtifact()," in config
+
+
 @needs_astro
 def test_43_3_ac4_search_holds_a_dossier_page_and_a_family_page(built: Path) -> None:
     fragments = []
@@ -470,27 +544,6 @@ def test_43_3_ac4_search_holds_a_dossier_page_and_a_family_page(built: Path) -> 
     assert len(dossier) == 1 and dossier[0].endswith("/herald/dossier/"), dossier
     family = [f["url"] for f in fragments if "/herald/decks/" in f["url"] and "pyforge-herald" in f["content"]]
     assert len(family) == 1 and family[0].endswith("/herald/decks/pyforge-herald/"), family
-
-
-def _font_vendoring_only(published: bytes, tracked: bytes) -> list[str]:
-    """What a twin changed beyond Story 31.3's font-link vendoring, read on raw bytes line by line and independently
-    of the code that wrote it: a lost line naming no Google Fonts origin, a gained line other than the one vendored
-    link, or more than one vendored link (the retired assembler's check, kept as this test's oracle)."""
-    vendored = re.compile(rb'<link rel="stylesheet" href="(?:\.\./)+fonts\.css">')
-    google = (b"fonts.googleapis.com", b"fonts.gstatic.com")
-    changes: list[str] = []
-    links = 0
-    a, b = tracked.splitlines(keepends=True), published.splitlines(keepends=True)
-    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
-        if tag == "equal":
-            continue
-        changes += [f"lost {line!r}" for line in a[i1:i2] if not any(o in line for o in google)]
-        for line in b[j1:j2]:
-            if vendored.fullmatch(line.strip()):
-                links += 1
-            elif line.strip():
-                changes.append(f"gained {line!r}")
-    return [*changes, *([f"gained {links} vendored font links, not one"] if links > 1 else [])]
 
 
 @needs_astro
@@ -548,7 +601,7 @@ def test_43_3_ac3_public_serves_the_twins_downloads_exports_and_licences(tmp_pat
     for rel, source in copies.items():
         assert (public / rel).read_bytes() == (root / source).read_bytes(), f"{rel} is not {source}"
     for rel, source in twins.items():
-        assert _font_vendoring_only((public / rel).read_bytes(), (root / source).read_bytes()) == [], rel
+        assert font_vendoring_only((public / rel).read_bytes(), (root / source).read_bytes()) == [], rel
     assert not (out / "dashboard" / "README.md").exists()
 
 

@@ -103,6 +103,16 @@ export function vendorFontLinks(html: string, stylesheetHref: string): string {
   return `${out.slice(0, end)}\n${link}${out.slice(end)}`;
 }
 
+/**
+ * A twin as `scripts/populate-public.mts` writes it at `/herald/<twin>`: the tracked `source` (relative to `repoRoot`)
+ * with its font links vendored to `HERALD_FONTS` at the mount's root, climbing from the twin's own directory. Node
+ * builtins only, so the herald tests judge every tracked twin without docs-site's `node_modules`.
+ */
+export function publishedTwin(repoRoot: string, source: string, twin: string): string {
+  const fonts = `${'../'.repeat(twin.split('/').length - 1)}${HERALD_FONTS}`;
+  return vendorFontLinks(fs.readFileSync(path.join(repoRoot, source), 'utf8'), fonts);
+}
+
 /** The family views' published names, as the retired Jinja build's `_FAMILY_VIEW_OUT_NAMES`. */
 export const FAMILY_VIEWS = [
   { key: 'infographic_deck', suffix: ' - Infographic Deck.dc.html', label: 'Infographic Deck', outName: 'infographic-deck.html' },

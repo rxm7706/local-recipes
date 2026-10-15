@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { HERALD_FONTS, vendorFontLinks } from '../src/lib/herald-pages.ts';
+import { publishedTwin } from '../src/lib/herald-pages.ts';
 import { DASHBOARD_EXPORTS, holdsAFile } from '../src/lib/nav.ts';
 import { heraldPagesRoot, loadHeraldPages } from '../src/loaders/herald-pages-loader.ts';
 
@@ -54,10 +54,7 @@ export function populatePublic(publicDir: string, repoRoot: string = heraldPages
     fs.writeFileSync(dest, data);
     written.push(rel);
   };
-  const twin = (source: string, rel: string): void => {
-    const fonts = `${'../'.repeat(rel.split('/').length - 1)}${HERALD_FONTS}`;
-    put(`herald/${rel}`, vendorFontLinks(fs.readFileSync(path.join(repoRoot, source), 'utf8'), fonts));
-  };
+  const twin = (source: string, rel: string): void => put(`herald/${rel}`, publishedTwin(repoRoot, source, rel));
 
   const pages = loadHeraldPages();
   for (const ig of pages.infographics) {

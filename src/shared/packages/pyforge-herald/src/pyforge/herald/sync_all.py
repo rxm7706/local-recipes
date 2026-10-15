@@ -402,8 +402,11 @@ class PixiSitePublisher:
     """The real ``SitePublisher``: ``pixi run -e site pages-build``, one bounded
     subprocess call -- rebuilds every deck's family page in one pass (the
     Pages build has no per-slug scope; ``site``, the Jinja path's task, retired
-    with ``docsite/`` in Story 43.7). Never invoked by this package's own tests
-    (every ``sync_all`` test injects a fake)."""
+    with ``docsite/`` in Story 43.7). ``pages-build`` is ``npm ci`` plus the Astro
+    build and its search index: measured 2026-10-15 at 8 s with a warm npm cache
+    (``npm ci`` 3 s, 85 pages in 4 s), well inside the 300 s bound, which stays
+    (Story 43.7's review). Never invoked by this package's own tests (every
+    ``sync_all`` test injects a fake)."""
 
     def __init__(self, *, timeout: float = _SUBPROCESS_TIMEOUT) -> None:
         self._timeout = timeout

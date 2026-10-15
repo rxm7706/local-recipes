@@ -5,7 +5,7 @@
  * reads -- and bundled by Astro under the artifact's own _astro/, so no font loads from another origin and none is
  * vendored by hand. The latin subset and the weights are the ones Story 31.3 vendored by hand, until Story 43.7 retired
  * that copy. The fonts are under the SIL Open Font License 1.1: each package's own LICENSE ships in the artifact at
- * /fonts/<package>.LICENSE.txt (scripts/populate-public.ts; docs-site/README.md).
+ * /fonts/<package>.LICENSE.txt (scripts/populate-public.mts; docs-site/README.md).
  */
 
 @font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 600; font-display: swap;

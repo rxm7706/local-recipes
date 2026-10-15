@@ -13,6 +13,9 @@ that still describe the artifact, and the site URL rules of Stories 27.2, 31.1 a
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import html
 import json
 import re
 from pathlib import Path
@@ -41,6 +44,9 @@ RSS = (
 )
 LEGACY = json.loads((DOCS_SITE / "redirects.json").read_text(encoding="utf-8"))["legacy"]
 READER_VIEWS = ("infographic-deck.html", "executive-summary.html")
+DECKS = "herald/decks/index.html"
+#: The decks index links its families (``herald/decks/<slug>/``); the plant's one is a legacy redirect's target.
+FAMILY_LINK = '<a href="pyforge-atlas/index.html">Atlas</a>'
 
 pytestmark = needs_node
 
@@ -75,13 +81,9 @@ def plant(root: Path, *, status: bool = False, menu: list[tuple[str, str]] | Non
     write(root / ".pages-build-site-url", f"{SITE_URL}\n")
     for rel in ("index.html", "404.html", "changes/index.html"):
         write(root / rel, _page(rel, menu=menu, shelf=True))
-    for rel in (
-        "herald/index.html",
-        "herald/dossier/index.html",
-        "herald/infographics/index.html",
-        "herald/decks/index.html",
-    ):
+    for rel in ("herald/index.html", "herald/dossier/index.html", "herald/infographics/index.html"):
         write(root / rel, _page(rel, menu=menu))
+    write(root / DECKS, _page(DECKS, menu=menu, body=FAMILY_LINK))  # its family page is a legacy target below
     write(root / "herald/artifact/dossier.html", "<title>The PyForge Dossier</title>\n<p>body</p>\n")
     for rel, text in (("llms.txt", "# PyForge\n"), ("llms-full.txt", "# PyForge\n"), ("facts.json", "{}\n")):
         write(root / rel, text)
@@ -263,18 +265,37 @@ def test_43_3_every_legacy_redirect_lands_on_its_target(site: Path) -> None:
     ("feed", "facts", "finding"),
     [
         ('<rss version="2.0"><channel><title>a & b</title></channel></rss>', "{}", "changes/rss.xml is not"),
+        ('<rss version="2.0"><channel><title>a&nbsp;b</title></channel></rss>', "{}", "changes/rss.xml is not"),
+        ('<rss version="2.0"><channel><link href="a<b"/></channel></rss>', "{}", "changes/rss.xml is not"),
+        ('<rss version="2.0"><channel><link href="a&b"/></channel></rss>', "{}", "changes/rss.xml is not"),
         ('<rss version="2.0"><channel></channel><channel></channel></rss>', "{}", "changes/rss.xml is not"),
         ("<feed><entry/></feed>", "{}", "changes/rss.xml is not"),
         ('<rss version="2.0"><channel><item></channel></rss>', "{}", "changes/rss.xml is not"),
         (RSS, "[]", "facts.json is not a JSON object"),
         (RSS, "{", "facts.json is not a JSON object"),
     ],
-    ids=["bare-ampersand", "two-channels", "atom", "unclosed", "array-facts", "broken-facts"],
+    ids=[
+        "bare-ampersand",
+        "html-entity",
+        "lt-in-attribute",
+        "ampersand-in-attribute",
+        "two-channels",
+        "atom",
+        "unclosed",
+        "array-facts",
+        "broken-facts",
+    ],
 )
 def test_43_6_the_machine_read_documents_parse(site: Path, feed: str, facts: str, finding: str) -> None:
     write(site / "changes/rss.xml", feed)
     write(site / "facts.json", facts)
     _one(pages_check(site, origins=False), finding)
+
+
+def test_43_6_xml_s_five_entities_and_character_references_pass(site: Path) -> None:
+    title = "a &amp; b &lt;c&gt; &quot;d&quot; &apos;e&apos; &#233; &#xE9;"
+    write(site / "changes/rss.xml", RSS.replace("PyForge changes", title))
+    assert pages_check(site, origins=False) == []
 
 
 # --- every page: one CSP, one built-from line, one build ---------------------------------------------------------
@@ -286,6 +307,78 @@ def test_43_7_every_page_carries_one_csp(site: Path, csp: str) -> None:
     write(site / "changes/index.html", text)
     count = text.count("Content-Security-Policy")
     _one(pages_check(site, origins=False), f"changes/index.html carries {count} Content-Security-Policy metas, not one")
+
+
+def _sha(text: str) -> str:
+    return "'sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode("ascii") + "'"
+
+
+_SCRIPT = "document.documentElement.dataset.theme='dark'"
+_HANDLER = "this.parentElement.classList.add('is-loaded')"
+
+
+@pytest.mark.parametrize(
+    ("rel", "policy", "body", "finding"),
+    [
+        ("herald/index.html", "default-src 'self'", f"<script>{_SCRIPT}</script>", "an inline <script> its CSP blocks"),
+        (
+            "changes/index.html",
+            "default-src 'self'",
+            f'<img onload="{_HANDLER}" src="x.png">',
+            "an inline onload= handler",
+        ),
+        (
+            "herald/decks/index.html",
+            f"default-src 'self'; script-src 'self' {_sha(_HANDLER)}",
+            f'<img onload="{_HANDLER}">',
+            "an inline onload= handler its CSP blocks",
+        ),  # a handler's hash needs 'unsafe-hashes'
+        (
+            "index.html",
+            f"default-src 'self'; script-src 'self' 'unsafe-inline' {_sha('other()')}",
+            f"<script>{_SCRIPT}</script>",
+            "an inline <script> its CSP blocks",
+        ),  # a hash in the list makes the browser ignore 'unsafe-inline'
+        (
+            "herald/dossier/index.html",
+            f"default-src 'self'; script-src 'self' {_sha(_SCRIPT)}",
+            "<script>other()</script>",
+            f"({_sha('other()')} is not in its script-src)",
+        ),
+    ],
+    ids=["herald-inline-script", "shelf-handler", "hash-without-unsafe-hashes", "unsafe-inline-ignored", "other-hash"],
+)
+def test_43_7_every_inline_script_and_handler_is_allowed_by_the_pages_own_csp(
+    site: Path, rel: str, policy: str, body: str, finding: str
+) -> None:
+    """The CSP decision, enforced (the 43.7 review, F1): a page's inline scripts and ``on*=`` handlers each run under
+    its own policy -- by hash, a handler's with ``'unsafe-hashes'`` -- or ``pages-check`` names the page."""
+    meta = f'<meta http-equiv="Content-Security-Policy" content="{html.escape(policy)}">'
+    page = _page(rel, body=body, shelf=not rel.startswith("herald/")).replace(CSP, meta)
+    write(site / rel, page)
+    findings = pages_check(site, origins=False)
+    assert any(line.startswith(f"{rel} carries ") and finding in line for line in findings), findings
+
+
+@pytest.mark.parametrize(
+    ("policy", "body"),
+    [
+        (f"default-src 'self'; script-src 'self' {_sha(_SCRIPT)}", f"<script>{_SCRIPT}</script>"),
+        (
+            f"default-src 'self'; script-src 'self' 'unsafe-hashes' {_sha(_HANDLER)}",
+            f'<img onload="{html.escape(_HANDLER)}" src="x.png">',
+        ),
+        ("default-src 'self'; script-src 'self' 'unsafe-inline'", f'<script>{_SCRIPT}</script><b onclick="go()">x</b>'),
+        ("default-src 'self'", '<script type="application/ld+json">{"a": 1}</script><script src="x.js"></script>'),
+    ],
+    ids=["hashed-script", "hashed-handler", "unsafe-inline", "data-block-and-external"],
+)
+def test_43_7_allowed_scripts_and_data_blocks_pass(site: Path, policy: str, body: str) -> None:
+    write(site / "changes/x.png", b"\x89PNG")
+    write(site / "changes/x.js", "/* self */")
+    meta = f'<meta http-equiv="Content-Security-Policy" content="{html.escape(policy)}">'
+    write(site / "changes/index.html", _page("changes/index.html", body=body, shelf=True).replace(CSP, meta))
+    assert pages_check(site, origins=False) == []
 
 
 def test_43_7_stubs_twins_the_artifact_build_and_mounts_carry_no_csp_or_line(site: Path, tmp_path: Path) -> None:
@@ -327,6 +420,17 @@ def test_43_7_the_line_is_matched_as_built_from_ts_writes_it() -> None:
         encoding="utf-8"
     )
     assert f"rb'({open_tag})[^<]*(</p>)'" in steward
+
+
+def test_steward_writes_the_fleet_board_input_where_the_build_reads_it() -> None:
+    """Steward's ``pages.FLEET_STATUS_REL`` (``steward pages build``'s output) is the file the generator reads: Story
+    43.6's inputs directory (``agent-surface.ts``'s ``INPUTS_DIR_REL``) and the board's input name (``status.ts``'s
+    ``FLEET_STATUS_INPUT``); the 43.7 review found only the workflow's ``--out`` pinned from both sides."""
+    inputs = ts(DOCS_SITE / "src" / "lib" / "agent-surface.ts", "return m.INPUTS_DIR_REL;")
+    name = ts(DOCS_SITE / "src" / "lib" / "status.ts", "return m.FLEET_STATUS_INPUT;")
+    steward = (REPO_ROOT / "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py").read_text("utf-8")
+    assert f'FLEET_STATUS_REL = "{inputs}/{name}"' in steward
+    assert f"--out {inputs}/{name}" in (REPO_ROOT / ".github/workflows/pages.yml").read_text(encoding="utf-8")
 
 
 # --- every link, every shelf body, one menu -----------------------------------------------------------------------
@@ -371,6 +475,42 @@ def test_44_1_a_percent_encoded_link_and_a_srcset_resolve(site: Path) -> None:
     findings = pages_check(site, origins=False)
     assert [f for f in findings if "A%20Deck" in f] == []
     _one(findings, 'broken link: herald/decks/index.html -> "missing.png"')
+
+
+def test_a_malformed_percent_encoding_is_named_not_a_crash(site: Path) -> None:
+    write(site / "changes/index.html", _page("changes/index.html", body='<a href="a%zz.html">x</a>', shelf=True))
+    _one(
+        pages_check(site, origins=False), 'broken link: changes/index.html -> "a%zz.html" (malformed percent-encoding)'
+    )
+
+
+def test_an_artifact_with_no_shelf_page_fails(site: Path) -> None:
+    """The retired ``_check_shelf_pages``' first refusal, restored (the 43.7 review, nit 5)."""
+    for rel in ("index.html", "404.html", "changes/index.html"):
+        write(site / rel, _page(rel))
+    _one(pages_check(site, origins=False), "no shelf page found")
+
+
+@pytest.mark.parametrize("href", ["#", "#top", "", "https://example.com/elsewhere/"])
+def test_a_menu_link_must_land_on_a_file_of_the_artifact(site: Path, href: str) -> None:
+    """The retired ``_menu_target`` refusal, restored (the 43.7 review, nit 5): an empty, fragment-only or off-site
+    menu link points at no page of the site, though the labels match the docs root's."""
+    text = _page("changes/index.html", shelf=True).replace(f'href="{BASE}changes/"', f'href="{href}"', 1)
+    write(site / "changes/index.html", text)
+    _one(
+        pages_check(site, origins=False),
+        f"menu link lands on no file of the artifact: changes/index.html -> {json.dumps(href)}",
+    )
+
+
+def test_the_family_pages_the_decks_index_links_are_required(site: Path) -> None:
+    """AC7 in CI (the 43.7 review, nit 6): ``pages-check`` requires every family page the decks index links, and a
+    decks index that links none."""
+    body = FAMILY_LINK + f'<a href="{BASE}herald/decks/pyforge-zz/">Z</a><a href="pyforge-atlas/downloads/a.md">dl</a>'
+    write(site / DECKS, _page(DECKS, body=body))
+    _one(pages_check(site, origins=False), "missing required path herald/decks/pyforge-zz/index.html")
+    write(site / DECKS, _page(DECKS))
+    _one(pages_check(site, origins=False), "herald/decks/index.html links no family page")
 
 
 @pytest.mark.parametrize(

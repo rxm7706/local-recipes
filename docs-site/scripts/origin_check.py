@@ -64,7 +64,7 @@ def findings(root: Path, origin: str, other: str = "", exempt: tuple[str, ...] =
     return out
 
 
-if __name__ == "__main__":  # pages-check (scripts/pages.ts): ROOT ORIGIN OTHER [EXEMPT ...]; exit 1 naming each finding
+if __name__ == "__main__":  # pages-check (scripts/pages.mts): ROOT ORIGIN OTHER [EXEMPT ...]; exit 1 naming each finding
     import sys
 
     found = findings(Path(sys.argv[1]), sys.argv[2], sys.argv[3], tuple(sys.argv[4:]))

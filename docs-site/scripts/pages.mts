@@ -12,15 +12,18 @@
  * every page's built-from line names one build time) in the build's own environment, never this process's, runs
  * `npm run build` in `docs-site/`, and records the site URL in the artifact for the check.
  *
- * **check** reads `docs-site/build/site/` (`--root` names another): every path the site must hold (AC7), the
- * dashboard mount exactly the build input's, the Kedro-Viz and Vizro mounts when present, the frozen legacy
- * redirects, one CSP and one built-from line per page (all naming one build), the machine-read documents, every
- * local link of every page, a non-empty body on every shelf page, one menu on every navigable page, faces from the
- * bundle only, and -- through `scripts/origin_check.py` -- nothing loading from another origin. Node builtins only
- * (the origin check is Python, run with `$HERALD_PYTHON` or `python`): the herald tests run it over fixture trees.
+ * **check** reads `docs-site/build/site/` (`--root` names another): every path the site must hold (AC7) and every
+ * family page the decks index links, the dashboard mount exactly the build input's, the Kedro-Viz and Vizro mounts
+ * when present, the frozen legacy redirects, one CSP per page that allows every inline script and `on*=` handler the
+ * page carries, one built-from line per page (all naming one build), the machine-read documents, every local link of
+ * every page, a non-empty body on every shelf page (and at least one shelf page), one menu on every navigable page,
+ * each menu link landing on a file of the artifact, faces from the bundle only, and -- through
+ * `scripts/origin_check.py` -- nothing loading from another origin. Node builtins only (the origin check is Python,
+ * run with `$HERALD_PYTHON` or `python`): the herald tests run it over fixture trees.
  */
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -139,20 +142,94 @@ export interface Tag {
   attrs: Record<string, string>;
 }
 
+/** The attributes of a tag's attribute text, names lower-cased, values unescaped. */
+function attributes(text: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  for (const a of text.matchAll(/([^\s=/>"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g)) {
+    attrs[a[1].toLowerCase()] = unescapeAttr(a[2] ?? a[3] ?? a[4] ?? '');
+  }
+  return attrs;
+}
+
 /** Every tag of `html` with its attributes; script and style bodies and comments are not markup and are skipped. */
 export function tags(html: string): Tag[] {
   const markup = html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/(<(script|style)\b[^>]*>)[\s\S]*?<\/\2>/gi, '$1');
-  const out: Tag[] = [];
-  for (const m of markup.matchAll(/<([a-zA-Z][\w:-]*)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/g)) {
-    const attrs: Record<string, string> = {};
-    for (const a of m[2].matchAll(/([^\s=/>"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g)) {
-      attrs[a[1].toLowerCase()] = unescapeAttr(a[2] ?? a[3] ?? a[4] ?? '');
+  return [...markup.matchAll(/<([a-zA-Z][\w:-]*)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/g)].map((m) => ({
+    name: m[1].toLowerCase(),
+    attrs: attributes(m[2]),
+  }));
+}
+
+// ------------------------------------------------------------------------------------- the page's own CSP
+
+const SCRIPT_ELEMENT = /<script\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/script\s*>/gi;
+/** A data block (`application/json`, `application/ld+json` ...) runs nothing, so no CSP judges it. */
+const DATA_BLOCK = /(?:^|\/|\+)json$/i;
+
+const sha256Source = (text: string): string => `'sha256-${createHash('sha256').update(text, 'utf8').digest('base64')}'`;
+
+/** The sources of the first of `directives` that `policy` states (CSP's fallback order); `null` when none is stated. */
+function sourcesOf(policy: string, directives: string[]): string[] | null {
+  const stated = new Map<string, string[]>();
+  for (const part of policy.split(';')) {
+    const [name, ...sources] = part.trim().split(/\s+/);
+    if (name && !stated.has(name.toLowerCase())) {
+      stated.set(name.toLowerCase(), sources);
     }
-    out.push({ name: m[1].toLowerCase(), attrs });
   }
-  return out;
+  const first = directives.find((d) => stated.has(d));
+  return first === undefined ? null : (stated.get(first) ?? null);
+}
+
+/** `sources` run an inline script (`handler`: an `on*=` value) whose digest is `hash`, as a browser decides it. */
+function runs(sources: string[] | null, hash: string, handler: boolean): boolean {
+  if (sources === null) {
+    return true;
+  }
+  const words = sources.map((s) => s.toLowerCase());
+  // a hash or nonce in the list makes the browser ignore 'unsafe-inline' (CSP Level 2)
+  if (words.includes("'unsafe-inline'") && !words.some((s) => /^'(?:sha(?:256|384|512)-|nonce-)/.test(s))) {
+    return true;
+  }
+  return sources.includes(hash) && (!handler || words.includes("'unsafe-hashes'"));
+}
+
+/**
+ * Each inline script and `on*=` handler of `html` that its own CSP meta would block, one line each (AD-21; Story
+ * 43.7's review: `HERALD_CSP` is a fixed list and a Starlight upgrade can add a handler, either of which the browser
+ * blocks silently): an inline `<script>`'s sha256 in `script-src-elem` / `script-src` / `default-src`, a handler's
+ * with `'unsafe-hashes'` in `script-src-attr` / `script-src` / `default-src`, unless `'unsafe-inline'` holds.
+ */
+export function blockedScripts(html: string): string[] {
+  const meta = tags(html).find((t) => t.name === 'meta' && (t.attrs['http-equiv'] ?? '').toLowerCase() === 'content-security-policy');
+  if (!meta) {
+    return [];
+  }
+  const policy = meta.attrs.content ?? '';
+  const elements = sourcesOf(policy, ['script-src-elem', 'script-src', 'default-src']);
+  const handlers = sourcesOf(policy, ['script-src-attr', 'script-src', 'default-src']);
+  const out = new Set<string>();
+  for (const [, attrText, body] of html.matchAll(SCRIPT_ELEMENT)) {
+    const attrs = attributes(attrText);
+    if ('src' in attrs || DATA_BLOCK.test((attrs.type ?? '').trim())) {
+      continue;
+    }
+    const hash = sha256Source(body);
+    if (!runs(elements, hash, false)) {
+      out.add(`an inline <script> its CSP blocks (${hash} is not in its script-src)`);
+    }
+  }
+  for (const tag of tags(html)) {
+    for (const [name, value] of Object.entries(tag.attrs)) {
+      const hash = sha256Source(value);
+      if (/^on[a-z]+$/.test(name) && !runs(handlers, hash, true)) {
+        out.add(`an inline ${name}= handler its CSP blocks (${hash} with 'unsafe-hashes' is not in its script-src)`);
+      }
+    }
+  }
+  return [...out];
 }
 
 /** Every URL a page names in an `href`, `src`, `srcset`, `poster` or `data` attribute. */
@@ -183,17 +260,19 @@ export function resolveLink(root: string, rel: string, raw: string, base: string
   if (!url || /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(url)) {
     return null;
   }
-  let target: string;
-  if (url.startsWith('/')) {
-    if (!url.startsWith(base)) {
-      return { problem: `outside the base path ${base}` };
-    }
-    target = path.join(root, decodeURIComponent(url.slice(base.length)));
-  } else if (rel === '404.html') {
-    return { problem: 'relative on the 404 page, which is served at any path' };
-  } else {
-    target = path.join(root, path.dirname(rel), decodeURIComponent(url));
+  if (url.startsWith('/') && !url.startsWith(base)) {
+    return { problem: `outside the base path ${base}` };
   }
+  if (!url.startsWith('/') && rel === '404.html') {
+    return { problem: 'relative on the 404 page, which is served at any path' };
+  }
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(url.startsWith('/') ? url.slice(base.length) : url);
+  } catch {
+    return { problem: 'malformed percent-encoding' };
+  }
+  const target = url.startsWith('/') ? path.join(root, decoded) : path.join(root, path.dirname(rel), decoded);
   const inside = path.relative(root, target);
   if (inside.startsWith('..') || path.isAbsolute(inside)) {
     return { problem: 'escapes the artifact' };
@@ -224,6 +303,24 @@ export const REQUIRED = [
   'changes/rss.xml',
 ];
 export const STATUS_PAGES = ['status/index.html', 'status/ci/index.html', 'status/runs/index.html'];
+const DECKS_INDEX = 'herald/decks/index.html';
+
+/** The family pages the decks index links (`<slug>/index.html`, relative or under the base), as artifact paths. */
+export function familyPages(html: string, base: string): string[] {
+  const out = new Set<string>();
+  for (const tag of tags(html)) {
+    const href = (tag.attrs.href ?? '').split(/[?#]/)[0];
+    if (tag.name !== 'a' || !href || /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(href) || (href.startsWith('/') && !href.startsWith(base))) {
+      continue;
+    }
+    const rel = href.startsWith('/') ? href.slice(base.length) : path.posix.join(path.posix.dirname(DECKS_INDEX), href);
+    const slug = /^herald\/decks\/([^/]+)\/(?:index\.html)?$/.exec(path.posix.normalize(rel))?.[1];
+    if (slug) {
+      out.add(`herald/decks/${slug}/index.html`);
+    }
+  }
+  return [...out].sort();
+}
 
 /** What the build input mounts at `/dashboard/`: every entry of `docs/dashboard/` but its README and dot-entries, an
  * export only when it holds a file (`scripts/populate-public.mts`'s rule). */
@@ -240,13 +337,24 @@ export function dashboardInput(repoRoot: string): string[] {
     .sort();
 }
 
-/** An XML document's elements nest and close (no parser in node builtins; the feed is ours and escaped). */
+/** A `&` that starts none of XML's five named entities or a character reference (`&nbsp;` is HTML, not XML). */
+const BARE_AMPERSAND = /&(?!(?:amp|lt|gt|quot|apos);|#\d+;|#x[0-9a-fA-F]+;)/; // XML names are case-sensitive
+
+/**
+ * An XML document's elements nest and close, its text and attribute values hold no bare `<` or `&` and no entity but
+ * XML's five (no parser in node builtins; the feed is ours and escaped, and carries no comment or CDATA section,
+ * which this refuses).
+ */
 function wellFormed(xml: string): boolean {
   const body = xml.replace(/^<\?xml[^?]*\?>\s*/, '');
   const stack: string[] = [];
-  for (const m of body.matchAll(/<(\/?)([A-Za-z][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>|<|&(?![a-z]+;|#\d+;|#x[0-9a-f]+;)/gi)) {
-    if (!m[2]) {
-      return false; // a bare < or & in text
+  const pattern = new RegExp(
+    `<(\\/?)([A-Za-z][\\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\\/?)>|<|${BARE_AMPERSAND.source}`,
+    'g',
+  );
+  for (const m of body.matchAll(pattern)) {
+    if (!m[2] || /</.test(m[3]) || BARE_AMPERSAND.test(m[3])) {
+      return false; // a bare < or & in text, or in an attribute value
     }
     if (m[1]) {
       if (stack.pop() !== m[2]) {
@@ -279,9 +387,14 @@ export function check(root: string, options: CheckOptions = {}): string[] {
   const has = (rel: string) => all.includes(rel);
   const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8');
 
-  // AC7: the paths every build holds, and the status pages exactly with their flag.
+  // AC7: the paths every build holds, every family page the decks index links (there is at least one), and the
+  // status pages exactly with their flag.
   const statusOn = envFlagOn('PYFORGE_STATUS_PAGES', env);
-  for (const rel of [...REQUIRED, ...(statusOn ? STATUS_PAGES : [])]) {
+  const families = has(DECKS_INDEX) ? familyPages(read(DECKS_INDEX), base) : [];
+  if (has(DECKS_INDEX) && !families.length) {
+    out.push(`${DECKS_INDEX} links no family page (herald/decks/<slug>/)`);
+  }
+  for (const rel of [...REQUIRED, ...families, ...(statusOn ? STATUS_PAGES : [])]) {
     if (!has(rel)) {
       out.push(`missing required path ${rel}`);
     }
@@ -362,10 +475,12 @@ export function check(root: string, options: CheckOptions = {}): string[] {
     }
   }
 
-  // Every page of the build: one CSP, one built-from line naming one build, every local link resolving.
+  // Every page of the build: one CSP allowing the page's own scripts, one built-from line naming one build, every
+  // local link resolving.
   const pages = all.filter((rel) => rel.endsWith('.html') && !NOT_PAGES.some((prefix) => rel.startsWith(prefix)));
   const builds = new Set<string>();
   const menus = new Map<string, string[]>();
+  let shelfPages = 0;
   for (const rel of pages) {
     const html = read(rel);
     if (isStub(html)) {
@@ -374,6 +489,8 @@ export function check(root: string, options: CheckOptions = {}): string[] {
     const csp = (html.match(CSP_META) ?? []).length;
     if (csp !== 1) {
       out.push(`${rel} carries ${csp} Content-Security-Policy metas, not one`);
+    } else {
+      out.push(...blockedScripts(html).map((line) => `${rel} carries ${line}`));
     }
     const lines = [...html.matchAll(BUILT_FROM)].map((m) => m[1]);
     if (lines.length !== 1) {
@@ -386,11 +503,21 @@ export function check(root: string, options: CheckOptions = {}): string[] {
         out.push(`broken link: ${rel} -> ${JSON.stringify(raw)} (${landed.problem})`);
       }
     }
-    if (html.includes('sl-markdown-content') && !shelfBodyHasWords(html)) {
-      out.push(`empty shelf page body: ${rel}`);
+    if (html.includes('sl-markdown-content')) {
+      shelfPages += 1;
+      if (!shelfBodyHasWords(html)) {
+        out.push(`empty shelf page body: ${rel}`);
+      }
     }
     if (!readerPage(rel)) {
-      menus.set(rel, menuLabels(html));
+      const links = menuLinks(html);
+      menus.set(rel, links.map(([label]) => label));
+      for (const [, href] of links) {
+        const landed = resolveLink(root, rel, href, base);
+        if (!landed || !('file' in landed) || !href.split('#')[0].trim()) {
+          out.push(`menu link lands on no file of the artifact: ${rel} -> ${JSON.stringify(href)}`);
+        }
+      }
     }
     if (rel.startsWith('herald/') && /<style\b[^>]*>[^<]*(?<![\w-])--[\w-]+\s*:/i.test(html)) {
       out.push(`${rel} carries an inline theme (a custom property in a <style> of its own)`);
@@ -398,6 +525,9 @@ export function check(root: string, options: CheckOptions = {}): string[] {
   }
   if (builds.size > 1) {
     out.push(`the pages name ${builds.size} builds: ${[...builds].sort().join(' | ')}`);
+  }
+  if (!shelfPages) {
+    out.push('no shelf page found (no page carries the docs shelf body, sl-markdown-content)');
   }
 
   // One menu (the registry's, CAP-58) on every navigable page, as the docs root shows it.
@@ -439,10 +569,15 @@ export function check(root: string, options: CheckOptions = {}): string[] {
   return out;
 }
 
-/** The labels of a page's top menu (`data-pf-menu-link` anchors), in order. */
+/** `[label, href]` of each link of a page's top menu (`data-pf-menu-link` anchors), in order. */
+export function menuLinks(html: string): Array<[string, string]> {
+  const menu = /<a\b((?=[^>]*\bdata-pf-menu-link\b)[^>]*)>\s*([^<]*?)\s*<\/a>/gi;
+  return [...html.matchAll(menu)].map((m) => [unescapeAttr(m[2]), attributes(m[1]).href ?? '']);
+}
+
+/** The labels of a page's top menu, in order. */
 export function menuLabels(html: string): string[] {
-  const menu = /<a\b(?=[^>]*\bdata-pf-menu-link\b)[^>]*>\s*([^<]*?)\s*<\/a>/gi;
-  return [...html.matchAll(menu)].map((m) => unescapeAttr(m[1]));
+  return menuLinks(html).map(([label]) => label);
 }
 
 /** The words of a shelf page's markdown container (Story 44.1: its body must not render empty). */

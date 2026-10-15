@@ -8,8 +8,10 @@ skips, naming that command. Each build rewrites ``docs-site/public/`` from scrat
 
 from __future__ import annotations
 
+import difflib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -99,6 +101,27 @@ def pages_check(
     result = ts(PAGES_MTS, f"return m.check({json.dumps(str(root))}, inp.options);", options=options)
     assert isinstance(result, list), result
     return result
+
+
+def font_vendoring_only(published: bytes, tracked: bytes) -> list[str]:
+    """What a twin changed beyond Story 31.3's font-link vendoring, read on raw bytes line by line and independently
+    of the code that wrote it: a lost line naming no Google Fonts origin, a gained line other than the one vendored
+    link, or more than one vendored link (the retired assembler's check, kept as the herald tests' oracle)."""
+    vendored = re.compile(rb'<link rel="stylesheet" href="(?:\.\./)+fonts\.css">')
+    google = (b"fonts.googleapis.com", b"fonts.gstatic.com")
+    changes: list[str] = []
+    links = 0
+    a, b = tracked.splitlines(keepends=True), published.splitlines(keepends=True)
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+        if tag == "equal":
+            continue
+        changes += [f"lost {line!r}" for line in a[i1:i2] if not any(o in line for o in google)]
+        for line in b[j1:j2]:
+            if vendored.fullmatch(line.strip()):
+                links += 1
+            elif line.strip():
+                changes.append(f"gained {line!r}")
+    return [*changes, *([f"gained {links} vendored font links, not one"] if links > 1 else [])]
 
 
 #: Shaped as the tracked Design exports are: ``<head>`` on its own line, the Google Fonts links one per line.

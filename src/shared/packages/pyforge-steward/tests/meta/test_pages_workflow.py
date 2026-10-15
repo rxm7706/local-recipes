@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
 import yaml
@@ -21,6 +22,8 @@ _EXPECTED_PATHS = {
     "docs/dashboard/**",  # tracked `deploy static` boards publish from here (102.4's review kept it)
     "scripts/pages_*.py",
     "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
+    # herald Story 43.7's review: the build's flag export, `python -m pyforge.herald.pages_env`
+    "src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py",
     "docs-site/**",
     "presentations/**",
     ".github/workflows/pages.yml",
@@ -119,10 +122,27 @@ def test_pages_yml_pr_artifact_upload_shape() -> None:
     assert upload_site["with"]["name"] == "pages-site"
 
 
+def _leaves(tasks: dict, name: str) -> list[str]:
+    """The tasks ``pixi run <name>`` runs that carry a command, in dependency order."""
+    task = tasks[name]
+    deps = [d if isinstance(d, str) else d["task"] for d in task.get("depends-on", [])]
+    return [*(leaf for dep in deps for leaf in _leaves(tasks, dep)), *([name] if "cmd" in task else [])]
+
+
 def test_pages_yml_runs_docs_site_validate_in_build() -> None:
+    """After ``pages-check`` (which ran ``docs-site-install``), the build job runs every leg of ``docs-site-validate``
+    with ``--skip-deps``, so CI installs docs-site's npm dependencies once (herald Story 43.7's review); a leg added to
+    ``docs-site-validate`` in ``pixi.toml`` and not here fails this test."""
     text = PAGES_WORKFLOW.read_text(encoding="utf-8")
-    assert "docs-site-validate" in text
     assert re.search(r"jobs:\s*\n\s*build:", text)
+    tasks = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))["feature"]["site"]["tasks"]
+    legs = [leg for leg in _leaves(tasks, "docs-site-validate") if leg != "docs-site-install"]
+    assert legs == ["docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"]
+    runs = [str(s.get("run", "")) for s in _load()["jobs"]["build"]["steps"] if isinstance(s, dict)]
+    check = next(i for i, run in enumerate(runs) if "pixi run --frozen -e site pages-check" in run)
+    validate = next(i for i, run in enumerate(runs) if "docs-site-validate" in run)
+    assert check < validate
+    assert runs[validate].split("\n")[:3] == [f"pixi run --frozen --skip-deps -e site {leg}" for leg in legs]
 
 
 def test_pages_yml_writes_the_fleet_board_input_before_the_build() -> None:

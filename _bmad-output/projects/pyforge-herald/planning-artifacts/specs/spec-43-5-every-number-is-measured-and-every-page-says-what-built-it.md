@@ -164,7 +164,7 @@ page; `pages-check` and `pyforge-herald-test` are green
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/unit/test_verify_claims_emit.py src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_parity.py src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py src/shared/packages/pyforge-herald/tests/unit/test_status_pages_flag_states.py -q -k 43_5` — expected: pass (AC1–AC6: the emit and compare on a fixture tree, the built dossier and footer over a fixture tree, `pages-check`'s built-from check, the status pages' line and its TypeScript twin; corrected at the review -- `test_dossier_golden.py` is Story 43.1's block parity and checks none of them).
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/unit/test_verify_claims_emit.py src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py src/shared/packages/pyforge-herald/tests/unit/test_status_pages_flag_states.py -q -k 43_5` — expected: pass (AC1–AC6: the emit and compare on a fixture tree, the built dossier and footer over a fixture tree, `pages-check`'s built-from check, the status pages' line and its TypeScript twin; corrected at the review -- `src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py` is Story 43.1's block parity and checks none of them; Story 43.7 moved the built-dossier tests from the deleted parity test to the one-generator test named above).
 - `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_dossier_golden.py -q` — expected: pass (the dossier's blocks unchanged).
 - `pixi run --frozen -e site pages-check` with the flag on and off — expected: exit 0 both times (AC7, AC8).
 - `pixi run --frozen -e site site-verify` after a flag-on build — expected: 0 drifted claims, exit 0 (AC5).
@@ -236,6 +236,9 @@ On `f8d99e0c84` plus this change (lane A of the one-PR Pages redesign); every ve
 
 ## Spec Change Log
 
+- 2026-10-15 (Story 43.7's review): the Verification named the parity test Story 43.7 deleted; it names
+  `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py`, where this story's built-dossier tests moved,
+  and gives `test_dossier_golden.py` its repo path.
 - 2026-10-15 (independent review, iteration 1: FAIL, 4 should-fix and 7 nits; resolved, with the coordinating
   session's rule that a finding in a file Story 43.7 deletes or ports -- the Jinja templates, `build.py`, the
   assembler -- is fixed where 43.7 leaves the behaviour, carried into its spec, not fixed twice):

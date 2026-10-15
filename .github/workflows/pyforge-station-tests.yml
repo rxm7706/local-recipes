@@ -407,6 +407,7 @@ jobs:
             src/platform
             'src/shared/packages/django-*/*'
             'src/shared/packages/pyforge-*/tests/*'
+            src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py
             src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
             src/shared/packages/pyforge-mason
             tests/packaging/test_openteams_handoffs.py

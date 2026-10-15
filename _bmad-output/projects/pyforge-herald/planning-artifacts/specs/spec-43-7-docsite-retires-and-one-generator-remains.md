@@ -213,7 +213,7 @@ the five vendored files keep their hashes
 - `pixi run --frozen -e pyforge-guild flag-gate-check` and `pixi run --frozen -e pyforge-guild flag-inventory` — expected: exit 0 (AC5).
 - `pixi project export conda-environment -e build > environment.yaml` then `git diff --stat -- environment.yaml` — expected: empty (byte-identical) or committed.
 - `pixi run --frozen -e pyforge-guild pyforge-station-tests` — expected: exit 0 (`pixi.toml` changed; the shared-surface rule).
-- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` (or its meta subset) — expected: `test_instruction_surface_parity.py` passes (AC9).
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` (or its meta subset) — expected: `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` passes (AC9).
 - `pixi run --frozen -e pyforge-guild governance-currency` — expected: exit 0 (AC9).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: exit 0, read from the exit code.
@@ -223,7 +223,8 @@ the five vendored files keep their hashes
 **Mutations (each restored afterwards):**
 - Re-add a `tasks.site-check` entry to `pixi.toml` — expected: AC4 fails.
 - Remove the Changes entry from a fixture registry — expected: AC3's three-menu test fails naming the entry.
-- Restore one `.woff2` under `docsite/assets/fonts/` — expected: AC1 fails.
+- Restore one `.woff2` under `docsite/assets/fonts/` and `git add -f` it — expected: AC1 fails (an ignored leftover
+  alone does not, by design: `/docsite/` is ignored; the review's AC1 oracle, see the change log).
 
 ### Verification run (2026-10-15)
 
@@ -231,16 +232,20 @@ On the Pages branch at `ffb2fb8801` plus this change, from the worktree root, ea
 from its exit code:
 
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- exit 0: 2001 passed, 5 skipped (the live claude-design
-  and daphne opt-ins). The story's own files: `test_one_generator.py` 25 passed (the built tests ran: docs-site was
-  installed), `test_pages_artifact.py`, `test_docs_site_nav.py`, `test_status_pages_flag_states.py`,
-  `test_ci_surfaces_tile_flag_states.py`.
+  and daphne opt-ins). The story's own files:
+  `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py` 25 passed (the built tests ran: docs-site was
+  installed), `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py`,
+  `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_nav.py`,
+  `src/shared/packages/pyforge-herald/tests/unit/test_status_pages_flag_states.py`,
+  `src/shared/packages/pyforge-herald/tests/unit/test_ci_surfaces_tile_flag_states.py`.
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- exit 0: 2813 passed, 2 skipped (the trigger map
   included).
 - `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests -n auto` -- exit 0: 3789 passed,
   1 skipped.
 - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` -- exit 0: 1618 passed, 28 skipped.
-- `pixi run --frozen -e pyforge-core pytest .../pyforge-core/tests/unit/test_flags.py` -- exit 0: 161 passed;
-  `pixi run --frozen -e pyforge-scribe pytest .../test_instruction_surface_parity.py` -- exit 0: 32 passed (AC9).
+- `pixi run --frozen -e pyforge-core pytest src/shared/packages/pyforge-core/tests/unit/test_flags.py` -- exit 0: 161
+  passed; `pixi run --frozen -e pyforge-scribe pytest
+  src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` -- exit 0: 32 passed (AC9).
 - `pixi run --frozen -e site pages-check` -- exit 0 three times: the flags off and no build input; the status pages and
   the tile on with the fixture inputs (`fleet-status.json` and Story 43.6's three) and CI's variables; and for a second
   host (`PAGES_HOST_BASE_URL=https://pages.ghe.example`, `PAGES_HOST_BASE_PATH=/org/local-recipes`: every link under
@@ -273,6 +278,42 @@ from its exit code:
 - Not run here: `pyforge-station-tests` (all eight suites; herald, steward, doctor, core's flag tests and the platform
   ran above) and `pr-preflight` -- the orchestrator's push gates, after the surface reconcile.
 
+### Verification run (2026-10-15, the independent reviews resolved)
+
+On the Pages branch at `fa6e11d4e4` plus the review fixes, from the worktree root, each command alone, each verdict read
+from its exit code:
+
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` -- exit 0: 2030 passed, 5 skipped. New or widened:
+  `src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py` (4, node only),
+  `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` (93),
+  `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py` (29, the built tests ran).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` -- exit 0: 2813 passed, 2 skipped; the trigger map alone
+  (`src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py`) -- exit 0, 45 passed.
+- `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests -n auto` -- exit 0: 3789 passed,
+  1 skipped. `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` -- exit 0: 1618 passed, 28 skipped.
+- `pixi run --frozen -e site pages-check` -- exit 0 three times: the flags off and no build input; the status pages and
+  the tile on with the fixture inputs and CI's variables (the inputs removed afterwards); the second host
+  (`PAGES_HOST_BASE_URL=https://pages.ghe.example`, `PAGES_HOST_BASE_PATH=/org/local-recipes`). Every page now passes
+  the per-page script check; the docs root's CSP meta follows `<meta charset>`.
+- `pixi run --frozen -e site docs-site-validate` -- exit 0; its three legs with `--skip-deps`, as `pages.yml` now runs
+  them -- exit 0, no second `npm ci`.
+- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0. `pixi run --frozen -e pyforge-guild flag-gate-check` --
+  exit 0 (0 fail, 840 warn).
+- **The flag gate at `done`** (review B's landing blocker): a copy of the tree (tracked plus new files) with all
+  fourteen of the PR's in-review specs set to `done` -- herald 42.1, 42.3, 43.2-43.7, steward 102.3-102.5, doctor 48.2
+  and 34.7, atlas 30.2 -- and steward 102.3's two Verification paths given their package prefix there (that fix lands
+  from the other lane): `python scripts/flag_gate_check.py` -- exit 0 (0 fail, 840 warn); before the fix, exit 1 on
+  102.3's `flag-test-file-missing` alone.
+- `pixi run -e site pages-build`, as `sync_all`'s publisher runs it -- exit 0 in 8.2 s (npm ci 3 s, 85 pages in 4 s).
+- **Mutations, each restored:** a herald page given an inline `<script>` and an `onclick=`, and a shelf page an
+  `onclick=` -- `pages-check` exits 1 naming each; the CAP-53 refusal disabled, the gallery's `order` sort reversed, and
+  `GOOGLE_FONT_LINK` widened to eat the next tag -- each fails the model test above (the last on the Genesis poster's
+  real twin); an ignored `docsite/` leftover (a `.pyc`, a `.woff2`) -- AC1 passes; the `.woff2` added with
+  `git add -f` -- AC1 fails.
+- **In the browser** (the second-host artifact served under `/org/local-recipes/`): the docs root's CSP meta follows its
+  `<meta charset>`; the search dialog finds the dossier (Pagefind's WASM under `'wasm-unsafe-eval'`); the gallery's ten
+  preview `onload` handlers all run under `HERALD_CSP`; no CSP violation and no failed request on either page.
+
 ## Named, not fixed here
 
 - **`docs/map.yaml` `sections:`** and the `docs/MAP.md` rows that name `docsite/` (the "outside this map" table, line
@@ -303,6 +344,73 @@ from its exit code:
 
 ## Spec Change Log
 
+- 2026-10-15 (independent reviews A and B: FAIL, 8 should-fix and their nits; resolved, builder A6; status stays
+  `in-review`). Review B's second and third should-fix (the open deferred-work rows and the active Specs' CAP text that
+  name moved paths) are the other lane's (the `SPEC.md` re-derives and the ledgers), not changed here.
+  - **F1 -- the CSP decision is enforced.** `pages-check` reads each page's own CSP meta and requires the sha256 of
+    every inline `<script>` in its `script-src-elem` / `script-src` / `default-src`, and of every `on*=` handler with
+    `'unsafe-hashes'` in its `script-src-attr` / `script-src` / `default-src`, unless `'unsafe-inline'` holds (and no
+    hash or nonce makes the browser ignore it); a data block (`*json`) and a `src` script are not judged
+    (`pages.mts`'s `blockedScripts`). So a herald layout gaining a script `HERALD_CSP` does not list, or a Starlight
+    upgrade adding a handler, fails the check naming the page. Tests: `test_43_7_every_inline_script_and_handler_...`
+    (five planted failures) and `test_43_7_allowed_scripts_and_data_blocks_pass`; the review's mutation now fails.
+  - **The meta's place (nit 2).** `addCsp` writes it right after `<meta charset>` (else first in the head), ahead of
+    every script, so the charset stays inside the 1024-byte prescan however many hashes the policy lists.
+  - **Astro's `security.csp` (nit 3) is not adopted here.** Astro 7.3.2 ships it stable: it hashes inline scripts and
+    styles itself and would replace `addCsp` and the herald layouts' own meta (with a `'wasm-unsafe-eval'` script
+    resource for Pagefind). Named as the future option; this story keeps the post-build pass, now checked per page.
+  - **F2 -- the model's oracles, back as literals.** `test_herald_pages_model.py` (node only, so it runs in CI where
+    the built tests skip): the tracked gallery's ten titles and names in order and its ten families; the fixture
+    tree's override and `order` sort (Beta 10 by file name, Alpha 20 by path), `beta-co.html`, `fx-gamma` with no
+    family, `fx-beta` with `infographic_deck` only, the sidecar stamp cut to twelve, `{tree: 'unstamped', etag:
+    sha256[:12]}` for every file without one; `MoreThanOneCurrentExport` naming both pptx files
+    (`fixture_tree(second_pptx=True)` is used again).
+  - **F3 -- the twin oracle over every real twin.** `populate-public`'s twin writer moved into `herald-pages.ts`
+    (`publishedTwin`, node builtins only), and the same test file runs the vendoring-only line diff
+    (`pages_astro.font_vendoring_only`, moved from `test_one_generator.py`) over all thirty tracked twins against their
+    sources, in CI. The previous entry's "the rest are kept" holds again with this.
+  - **F4 -- `refusePublicCollisions` is tested.** A node unit test (no collision; one route output `public/` serves,
+    named; two, named sorted) and a static assertion that `astro.config.mjs` takes `populatePublic`'s list at
+    `astro:build:start` and runs the guard first at `astro:build:done`, before the stubs.
+  - **F5.** `docs/dashboard/README.md` no longer promises the pipelines page: `/dashboard/` holds exactly what
+    `docs/dashboard/` mounts, and the Kedro-Viz export's commit and date are on the overview's tile (`neighbours`).
+  - **AC1's oracle (review B, should-fix 1)** reads `git ls-files docsite` and `git ls-files --others
+    --exclude-standard docsite`, both printing nothing, in place of `test -e docsite`: a checkout that merged the
+    deletion keeps its ignored leftovers (`docsite/tools/__pycache__/`, the old build inputs), which reded the herald
+    suite there. `/docsite/` is ignored in `.gitignore`, so the leftovers stay out of `git status` and of a `git add
+    -A`; the test asserts the line. The Verification's `.woff2` mutation now needs `git add -f` to fail AC1.
+  - **AC8's recorded exception (nit 1).** With the exports mounted, AC8's literal grep names
+    `dashboard/vizro/assets/plotly.min.js` (`cdn.plot.ly`, for map traces no exported page draws) and can name the
+    Kedro-Viz build: exactly `pages.mts`'s `VENDORED` paths, which the origin check exempts by name (AD-21 rule 5). The
+    AC8 test exempts those two and nothing else, and also runs over the fixture build with the exports mounted.
+  - **The checks the retired assembler had (nit 5)**: "no shelf page found" is restored; `_menu_target`'s refusal is
+    restored and widened -- every menu link must land on a file of the artifact (an empty, fragment-only or off-site
+    href fails); the docs root's Herald sidebar-link check stays retired, the registry's sidebar being pinned by
+    `test_docs_site_nav.py`.
+  - **More of AC7 in CI (nit 6).** `pages-check` requires every family page the decks index links, and fails a decks
+    index that links none.
+  - **Smaller (nits 4, 7, 9, 10).** The RSS check accepts only XML's five named entities and refuses a `<` or a bare
+    `&` in an attribute value; a malformed percent-encoding is a named broken link, not a crash; the status board's bar
+    carries no fallback text, so the percentage reads once ("99% 99%" was the bar's text and its label); the stale
+    names `scripts/pages.ts`, `populate-public.ts` and `site-check` are corrected.
+  - **`/llms-full.txt`'s infographic text (nit 8), the reading taken:** each infographic's text is the build's own
+    sentences -- its `site.yml` description and where it is published from -- not the poster's text: a poster is a
+    Design export (markup and scripts, CAP-55: never edited), and the page itself is linked. The family entries list
+    their views, downloads and facts.
+  - **A correction (nit 11).** This story's commit message says an unmoved tree from a later commit no longer
+    redeploys. That holds for the family pages (their stamps no longer carry the commit) and for a build with the
+    status pages off; the public deploy builds them on, and the board's `generated_at` is HEAD's commit time (Story
+    43.5 recorded it as measured data), so a new HEAD still moves `/status/` and redeploys. The PR body says so.
+  - **Review B's nits.** `pages.yml`'s path filter, steward's `_EXPECTED_PATHS` and steward's job in
+    `pyforge-station-tests.yml` name `pyforge/herald/pages_env.py` (the build's flag export); `pages.yml` runs the
+    three legs of `docs-site-validate` with `--skip-deps` after `pages-check`, so CI installs docs-site once (steward's
+    test pins the legs to the task's closure); `sync_all`'s `pages-build` measured at 8 s against its 300 s bound,
+    kept and recorded on the publisher; a herald test pins steward's `FLEET_STATUS_REL` to `INPUTS_DIR_REL` +
+    `FLEET_STATUS_INPUT`.
+  - **The landing blocker (review B).** The flag gate over a copy with the PR's fourteen specs at `done` failed only on
+    steward 102.3's two relative test paths (fixed in the other lane); 43.2's and 43.5's Verification named the parity
+    test this story deleted and now name its replacements, and this spec's Verification names every test by its repo
+    path. See *Verification run (2026-10-15, the independent reviews resolved)*.
 - 2026-10-15 (built, builder A5; status `in-review`). **What changed, by AC:**
   - **AC1.** `docsite/` is deleted with `git rm` (55 tracked files: `build.py`, the assembler, the templates, the
     vendored fonts, their sha256 table and OFL copies, `_dossier.css`, `_site-chrome.css`, the export scripts, the tools,

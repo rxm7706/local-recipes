@@ -179,7 +179,7 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_parity.py -q` — expected: pass (AC1–AC5).
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py -q` — expected: pass (AC1–AC5; Story 43.7 deleted the Jinja path and the parity test that held both paths equal: the model's literal oracles and every tracked twin's font-only change run node-only in the first, the built pages in the second).
 - `pixi run --frozen -e site pages-check` with the flag on and with it off — expected: exit 0 both times (AC6, AC7).
 - `pixi run --frozen -e site docs-site-validate` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
@@ -188,8 +188,8 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
 
 **Mutations (each restored afterwards):**
-- Reorder two entries in a fixture `site.yml` include list on one path only — expected: the gallery parity test fails.
-- Drop one download from a fixture family on the Astro path — expected: the parity test names the family and the download.
+- Reorder two entries in a fixture `site.yml` include list on one path only — expected: the gallery parity test fails (since Story 43.7: reverse the model's `order` sort -- the gallery's literal-order tests fail).
+- Drop one download from a fixture family on the Astro path — expected: the parity test names the family and the download (since Story 43.7: the fixture family's literal downloads and stamps fail).
 - Write the back-bar into a copied twin — expected: AC4's hash test fails naming the file.
 
 ## Verification run (2026-10-15)
@@ -243,6 +243,11 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 
 ## Spec Change Log
 
+- 2026-10-15 (Story 43.7's review, F2): Story 43.7 deleted the parity test this Verification named, and with it the
+  model's oracles; `src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py` (node-only, so it runs in
+  CI) restores them as literals -- the tracked gallery's ten titles in order, the fixture's order, names, families,
+  views, sidecar and `unstamped` stamps, CAP-53's refusal naming both files -- and runs the vendoring-only oracle over
+  all thirty tracked twins. The Verification names it.
 - 2026-10-15 (independent review, iteration 1: FAIL; resolved on the tree as Story 43.3 left it, which moved the
   twin and download copy from `build.py` to `docs-site/scripts/populate-public.ts`):
   - **Blocker -- `GITHUB_SHA`.** Both paths stamp an unsidecarred export with `GITHUB_SHA`'s first seven before

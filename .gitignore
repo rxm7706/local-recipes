@@ -1042,6 +1042,10 @@ docs/dashboard/.vizro-*/
 
 # Story 42.1: the fleet board's build input, written by a Guild step of steward's Pages workflow
 # (docs-site/src/lib/status.ts reads it); a fixture lives under pyforge-herald's tests/fixtures/.
+# Story 43.7 retired docsite/: a checkout that merged the deletion keeps its ignored leftovers (__pycache__/, the
+# old build inputs under docsite/content/), which stay out of sight here instead of showing as untracked files.
+/docsite/
+
 # Story 43.6 (CAP-61): the changes page's and the runs page's build inputs, written by Guild steps
 # of steward's Pages workflow (absent is a normal build; docs-site/src/lib/agent-surface.ts).
 # Story 43.7 moved all four beside the generator's committed content (docs-site/src/content/).
@@ -1054,7 +1058,7 @@ docs-site/src/content/herald-progress.json
 docs-site/node_modules/
 docs-site/build/
 docs-site/.astro/
-# Story 43.3: written from scratch on every Astro build by docs-site/scripts/populate-public.ts (the twins, the
+# Story 43.3: written from scratch on every Astro build by docs-site/scripts/populate-public.mts (the twins, the
 # family downloads, the dashboard exports and the font licences); never tracked.
 docs-site/public/
 # Override repo-root `lib/` (Python packaging) so vendored upstream helper is tracked.

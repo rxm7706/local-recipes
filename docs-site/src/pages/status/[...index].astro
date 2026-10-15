@@ -62,7 +62,8 @@ const n = view.stations.length;
             <td>{s.backlog}</td>
             <td>{s.blocked}</td>
             <td>
-              <progress max="100" value={s.width} data-width={s.width} aria-label={`${s.width}% done`}>{s.width}%</progress>{' '}
+              {/* the label beside the bar is its text; the bar carries none, so the percentage reads once (43.7 review) */}
+              <progress max="100" value={s.width} data-width={s.width} aria-label={`${s.width}% done`} />{' '}
               {s.width}%
             </td>
           </tr>

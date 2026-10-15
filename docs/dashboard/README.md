@@ -28,13 +28,15 @@ artifact it takes the absent path below. Atlas's Vizro boards (atlas Story 30.2)
 arrive the same way, as the artifact `vizro-static-export` into `vizro/`. A
 `steward deploy static` board is tracked here (`<board>/index.html`), so this
 directory stays in `pages.yml`'s path filter. The Pages
-build mounts whatever is here at
-`/dashboard/kedro-viz/` (herald Story 42.2): with an export present it also
-writes the `/kedro-viz/` redirect and herald's pipelines page at `/dashboard/`,
-whose commit and date come from `manifest.json` — so a present export without a
-well-formed `manifest.json` fails `pages-check`, naming the file. With none, the
-build carries on: no mount, no redirect, and no Kedro-Viz entry in the menus or
-the overview tiles.
+build mounts whatever is here under `/dashboard/` and nothing else: `/dashboard/`
+holds exactly what `docs/dashboard/` mounts (herald Story 43.7 retired the pipelines
+page that stood at `/dashboard/`). The Kedro-Viz export lands at
+`/dashboard/kedro-viz/` (herald Story 42.2): with it present the build also writes
+the `/kedro-viz/` redirect, and the overview's Kedro-Viz tile (`site.yml`'s
+`neighbours`) shows the export's commit and date from `manifest.json` — so a present
+export without a well-formed `manifest.json` fails the build and `pages-check`,
+naming the file. With none, the build carries on: no mount, no redirect, and no
+Kedro-Viz entry in the menus or the overview tiles.
 
 Deploy is `.github/workflows/pages.yml`, which uploads `docs-site/build/site`.
 `pixi run -e pyforge-guild pyforge steward pages deploy` triggers one run of it on `main` (which
