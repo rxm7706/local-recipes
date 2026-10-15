@@ -673,6 +673,25 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"102" = [  # a re-landing does not re-verify from scratch when only main moved (a fix under spec-pyforge-marshal
+  # CAP-161, no CAP; Story 102.1), added 2026-10-15. The default surface, restated because a declared entry replaces
+  # it outright; its package glob covers core/policy.py, core/dispatch_reverify.py, dispatch_reverify.py, the journal
+  # builder, the land-only path, the supervisor and their tests. Plus every Spec memlog (marshal's src/ is co-governed
+  # by spec-pyforge-core) and the four Pages stations' marshal-policy.toml, which opt in to the setting.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/marshal-policy.toml",
+]
 "87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
   # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
   # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts

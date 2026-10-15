@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 505a446b718fe8a4
-story_count: 455
+source_fingerprint: d41fb40c836a9e15
+story_count: 456
 test_file_count: 268
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 455
-- **Epics parsed:** 99
+- **Stories parsed:** 456
+- **Epics parsed:** 100
 - **Test files inventoried:** 268 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `505a446b718fe8a4`
+- **Source fingerprint:** `d41fb40c836a9e15`
 
 ## Risk Assessment
 
@@ -121,6 +121,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 99: Seed check stops waiting on its probes one at a time
 - Epic 100: A landing says which CI gates were paused when it merged (spec-pyforge-marshal CAP-292)
 - Epic 101: A landing under the CI master switch names every gate it stopped
+- Epic 102: A re-landing does not re-verify from scratch when only main moved
 
 ### Low-risk epics
 
@@ -868,6 +869,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 99.1 | Seed check probes its tools at once and says when a probe timed out | none observed |
 | 100.1 | A landing records which CI surfaces were paused when it merged | none observed |
 | 101.1 | The landing line lists every surface the CI master switch pauses | none observed |
+| 102.1 | A landing reuses its verified verdict when only a merge of main moved the branch | none observed |
 
 ## Quality Gates
 
