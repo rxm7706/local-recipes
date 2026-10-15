@@ -299,7 +299,59 @@ Type / Effort / Deps: fix / M / —.
 - 2026-10-15: minted from the Dream entry of 2026-10-15 (a landing re-verifies when only main moved) at the operator's
   rulings "chain it now and I'll mint the story chain and implement it" and "make sure we include this - Optional,
   marshal: a landing re-verification setting". `type: fix`, no flag, no CAP.
+- 2026-10-15: implemented and moved to `in-review`. The git reads and the narrow re-check sit in `dispatch_verify.py`,
+  not a new top-level module (see Adjustments), so no import contract or package `pyproject.toml` moves.
 
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: in-review (hand-implemented on `chain-marshal-102-1-landing-reverify-on-conflict-2026-10-15`; an independent
+reviewer follows).
+
+Summary: `dispatch.landing_reverify` (`"always"` by default, or `"on-code-change"`) is validated in the closed
+`dispatch` block. Every `dispatch-verification` OUTCOME records `mode` and, on a clean tree, `head_sha`. Under
+`"on-code-change"` the land-only path reuses the run's latest full verified verdict when only merges of main and
+planning-only commits moved the branch, after a narrow re-check; anything else re-verifies in full, with
+`reuse_declined` naming the reason. `dispatch_land.py` is untouched. Herald, steward, atlas and doctor opt in.
+
+Files: `core/policy.py`, `schemas/policy.json`, `core/dispatch_reverify.py` (new), `dispatch_verify.py`,
+`dispatch_verification_journal.py`, `cli/dispatch.py`, `dispatch_supervisor/__main__.py`, `cli/config.py` (stale
+dispatch-block comments: the block has eight keys, not five); tests `tests/unit/test_dispatch_reverify.py` (new),
+`tests/unit/test_policy.py`, `tests/unit/test_dispatch_supervisor_verify_fix.py` (its pinned "main's OUTCOME keys"
+gain `mode`); the four stations' `marshal-policy.toml`.
+
+Verification (solo lanes, each exit code read from `$?`):
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — exit 0 (13139 passed, 20 skipped).
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — exit 0 (130 passed, 3 skipped).
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` — exit 0 (6 touched modules ≥ 80%:
+  `core/dispatch_reverify.py` 97%, `dispatch_verify.py` 93%, `dispatch_verification_journal.py` 98%,
+  `core/policy.py` 92%, `dispatch_supervisor/__main__.py` 93%, `cli/dispatch.py` 85%).
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- `chain_currency_sweep_check.py --project pyforge-marshal` — exit 0, after the move (with a `pyproject.toml` change
+  it read `behind-code` for the PRD and spine).
+- `spec-surface-check` — exit 0 after the memlog entries and the scoped stamps of `pyforge-marshal/spec-pyforge-marshal`
+  and `pyforge-marshal/spec-pyforge-core`.
+- `git diff origin/main...HEAD --stat -- .../marshal/dispatch_land.py` — empty (AC9).
+
+Mutations (AC8), each restored after its run:
+- Dropping the replayed conflict check (`code_conflicts = []`): exit 1.
+  `test_a_modify_delete_conflict_kept_as_the_story_s_file_re_verifies` fails because the decision is now exempt.
+  `test_a_content_conflict_in_code_re_verifies` fails because the reason becomes `merge-touches-story-file`.
+- Treating a single-parent commit that changes a story file as exempt (`outside = []`): exit 1. These fail:
+  `test_a_story_file_change_after_the_verified_head_re_verifies`,
+  `test_a_policy_or_story_spec_change_is_never_a_planning_change` and
+  `test_a_story_commit_declines_the_reuse_and_re_verifies_in_full`.
+- Ignoring the policy mode (no `"always"` early return): exit 1. Both cases of
+  `test_always_re_verifies_in_full_and_reads_no_reuse_fact` fail.
+
+Real history: replayed with `gather_reuse_facts` and `judge_verdict_reuse` against `7555e62f3e` as `origin/main`,
+steward 102.1's branch `fbb3ee095b → b937a1371e` reads exempt (`merge-of-main`). Its three commits are the two
+planning-only reconcile stamps and the merge, whose one planning conflict is `spec-pyforge-herald/.memlog.md`. The
+story's own fix, `→ 0fea7f20e0`, reads `story-commit` (`.github/workflows/pages.yml` and its meta test).
+
+Residual risk: as in Boundaries. A supervisor still running the old code composes a `[dispatch]` block that holds
+`landing_reverify` as `MRS-POLICY-002` and falls back to the default block until it restarts. For herald, atlas and
+doctor that default is what they had. For steward it is the 15-minute fix turn; no steward dispatch is live.
