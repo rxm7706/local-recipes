@@ -1,0 +1,6 @@
+{
+  "case": "The 2026-10-06 replay: the deploy sat in waiting from 2026-10-06; herald Story 27.2 moved the dossier under /herald/ on 2026-10-08, a published-input change the stuck deploy never published. Timestamps are the fixture's, chosen inside the incident window, not recovered from GitHub.",
+  "head": {"status": 200, "headers": {"last-modified": "Tue, 06 Oct 2026 03:12:00 GMT"}},
+  "git_log": "d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708 2026-10-08T15:30:00-05:00",
+  "expect": {"check": "pages-liveness-stale", "status": "warn", "requests": ["HEAD"], "lag_hours": 65}
+}

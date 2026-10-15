@@ -1,0 +1,6 @@
+{
+  "case": "The git read fails (no refs/remotes/origin/main here); the site is never asked.",
+  "head": {"status": 200, "headers": {"last-modified": "Wed, 14 Oct 2026 15:46:03 GMT"}},
+  "git_error": "git log -1 exited 128: fatal: bad revision 'refs/remotes/origin/main'\nhint: run git fetch",
+  "expect": {"check": "pages-liveness-unavailable", "status": "warn", "requests": [], "cause": "git log on refs/remotes/origin/main failed: git log -1 exited 128: fatal: bad revision 'refs/remotes/origin/main'"}
+}

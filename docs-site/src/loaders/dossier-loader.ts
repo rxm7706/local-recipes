@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import type { Loader } from 'astro/loaders';
 import { parse as parseYaml } from 'yaml';
 
+import { pagesOneGenerator } from '../lib/flags.ts';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 const DOSSIER_YML = path.join(REPO_ROOT, 'docsite/content/dossier.yml');
@@ -58,7 +60,7 @@ export function dossierLoader(): Loader {
   return {
     name: 'dossier-yml-loader',
     load: async ({ store, logger }) => {
-      if (process.env.PYFORGE_PAGES_ONE_GENERATOR !== '1') {
+      if (!pagesOneGenerator()) {
         logger.info('dossier collection skipped (PYFORGE_PAGES_ONE_GENERATOR off)');
         return;
       }

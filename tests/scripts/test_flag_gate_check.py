@@ -76,17 +76,18 @@ def _boolean_flag_entry(
     key: str,
     *,
     default_variant: str = "on",
-    owner: str = "doctor",
+    owner: str | None = None,
     story: str = "fixture-story",
     on_everywhere: str = "",
 ) -> dict:
-    """One boolean flag with the Story 76.2 metadata shape the gate reads (Story 34.3)."""
+    """One boolean flag with the Story 76.2 metadata shape the gate reads (Story 34.3). ``owner`` defaults to the
+    key's ``pyforge.<station>.`` prefix, so a fixture never disagrees with it by accident (Story 34.7)."""
     return {
         "state": "ENABLED",
         "variants": {"on": True, "off": False},
         "defaultVariant": default_variant,
         "metadata": {
-            "owner": owner,
+            "owner": owner if owner is not None else (flag_gate_check.prefix_station(key) or "doctor"),
             "story": story,
             "created": "2026-09-01",
             "on_everywhere": on_everywhere,
@@ -432,6 +433,308 @@ def test_a_done_flagged_spec_whose_key_the_tree_lacks_is_one_fail_naming_the_key
     assert finding["path"] == rel
     assert finding["key"] == "pyforge.test.landed"
     assert "`pyforge.test.landed`" in finding["message"]
+
+
+# --- a retired key (doctor Story 34.7, CAP-2's retirement path; herald Story 42.3 was the first) -------------
+
+RETIRED = "pyforge.test.retired"  # owned by the `test` station: its `pyforge.<station>.` prefix
+OWNER_PROJECT = "pyforge-test"
+RETIRE_BLOCK = f"flag-exempt: alpha\nretires-flag: {RETIRED}\n"
+
+
+def _retired_root(tmp_path: Path) -> tuple[Path, str]:
+    """The tree no longer holds ``RETIRED``; the `done` spec that introduced it still names it."""
+    root = _fixture(tmp_path, tree_keys=["pyforge.test.other"])
+    _write(root, "src/pkg/reader.py", 'flag("pyforge.test.other")\n')
+    landed = _spec(
+        root,
+        FLAG_BLOCK.format(key=RETIRED),
+        name="spec-1-1-landed.md",
+        project=OWNER_PROJECT,
+        status="done",
+        body=_verification("tests/test_gone_with_the_flag.py"),
+    )
+    return root, landed
+
+
+def test_the_owners_retirement_of_a_key_no_reader_names_leaves_its_done_spec_unjudged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """A story spec of the key's owning station declares `retires-flag: <key>`; with the key out of the tree and
+    no reader left, the `done` spec that introduced it is history -- no not-in-tree finding and no missing-test
+    finding (its tests left with the flag)."""
+    root, landed = _retired_root(tmp_path)
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == ["flag-key-not-in-tree", "flag-test-file-missing"]
+    assert {f["path"] for f in payload["findings"]} == {landed}
+
+    retire = _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT, status="backlog")
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 0
+    assert payload["findings"] == []
+    for rel in (landed, retire):
+        rc, out, _ = _run(root, "--spec", rel, capsys=capsys)
+        assert (rc, json.loads(out)["verdict"]) == (0, "pass")
+
+
+def test_a_reader_left_on_a_retired_key_is_one_fail_per_reader_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    """The leak the review proved: the key leaves the tree, a reader still calls `read_boolean` on it and silently
+    gets the default. Every reader file that names the key is a FAIL; tests, `*.md`, and a longer or dotted name
+    that merely starts with the key (`_two`, `.head`) are not reads of it."""
+    root, _landed = _retired_root(tmp_path)
+    retire = _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT, status="done")
+    host = _write(root, "src/pkg/host.py", f'enabled = read_boolean("{RETIRED}", default=False)\n')
+    script = _write(root, "scripts/export_host.py", f"KEY = '{RETIRED}'\n")
+    _write(root, "src/pkg/tests/test_host.py", f'read_boolean("{RETIRED}")\n')
+    _write(root, "src/pkg/README.md", f"`{RETIRED}` was retired\n")
+    _write(root, "src/pkg/longer.py", f'read_boolean("{RETIRED}_two")\n')
+    _write(root, "src/pkg/partition.py", f'_PARTITION_HEAD_KEY = b"{RETIRED}.head"\n')
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-retired-still-read", "flag-retired-still-read"]
+    assert [f["path"] for f in payload["findings"]] == [
+        script.relative_to(root).as_posix(),
+        host.relative_to(root).as_posix(),
+    ]
+    finding = payload["findings"][0]
+    assert finding["key"] == RETIRED
+    assert finding["station"] == OWNER_PROJECT
+    assert retire in finding["message"]
+    assert "silently returns its default" in finding["message"]
+
+    rc_retire, out_retire, _ = _run(root, "--spec", retire, capsys=capsys)
+    assert rc_retire == 1
+    spec_payload = json.loads(out_retire)
+    assert spec_payload["verdict"] == "red"
+    assert [f["kind"] for f in spec_payload["findings"]] == ["flag-retired-still-read"] * 2
+
+    host.unlink()
+    script.unlink()
+    rc, payload = _tree_json(root, capsys)
+    assert (rc, payload["findings"]) == (0, [])
+
+
+@pytest.mark.parametrize(
+    ("rel", "text"),
+    [
+        ("docsite/tools/k.py", 'FLAG_KEY = "{key}"\nenabled = read_boolean(FLAG_KEY)\n'),
+        ("docsite/content/site.yml", "nav:\n  - title: Status\n    flag: {key}\n"),
+        (".github/workflows/pages.yml", "    run: python -c \"read_boolean('{key}')\"\n"),
+        ("pixi.toml", '[tasks.export]\ncmd = "python -m reader --flag {key}"\n'),
+        ("docs-site/src/lib/flags.ts", 'export const FLAG = "{key}";\n'),
+        ("_bmad/custom/bmad-build.toml", 'persistent_facts = ["read {key} first"]\n'),
+        ("src/pkg/docs/k.py", 'read_boolean("{key}")\n'),
+        ("src/pkg/fixtures/k.py", 'read_boolean("{key}")\n'),
+    ],
+)
+def test_a_reader_anywhere_that_can_act_on_a_flag_is_found(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], rel: str, text: str
+):
+    """The walk reads every tracked file that can act on a flag, not only `src/` and `scripts/`: site code and
+    content, workflows, task files and BMAD config (the review's proof cases). A root the orphan check skips
+    is a false red there and would be a silent green here."""
+    root, _landed = _retired_root(tmp_path)
+    _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT)
+    _write(root, rel, text.format(key=RETIRED))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [("flag-retired-still-read", rel)]
+
+
+@pytest.mark.parametrize(
+    ("rel", "text"),
+    [
+        ("_bmad-output/brainstorming/notes.yaml", "flag: {key}\n"),
+        ("archive/docsite/tools/k.py", 'read_boolean("{key}")\n'),
+        ("docs/dreams/a-dream.md", "`{key}` retired\n"),
+        ("presentations/deck/facts.yaml", "flag: {key}\n"),
+        (".claude/memory/project/a.md", "{key}\n"),
+        ("recipes/pkg/recipe.yaml", "about: {key}\n"),
+        ("scripts/.spec-surface-baseline.json", '{{"x": "{key}"}}\n'),
+        ("docs/how-to/a.md", "set `{key}`\n"),
+        ("src/pkg/tests/test_absence.py", 'RETIRED_FLAG = "{key}"\n'),
+        ("src/pkg/test/helper.py", 'read_boolean("{key}")\n'),
+        ("docs-site/src/lib/flags.test.ts", 'expect("{key}")\n'),
+        ("docs-site/src/lib/flags.spec.ts", 'expect("{key}")\n'),
+        ("src/pkg/k_test.py", 'read_boolean("{key}")\n'),
+        ("src/pkg/conftest.py", 'read_boolean("{key}")\n'),
+        ("src/pkg/module_user.py", "from {key} import enabled\nimport {key} as k\nm = import_module('{key}')\n"),
+    ],
+)
+def test_the_record_prose_tests_and_import_lines_are_not_readers(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], rel: str, text: str
+):
+    """Not readers: the planning and history record, the recipe factory, the spec-surface baseline, prose, tests
+    (so a retiring story's own absence test never reds), and a module path named like the key on an import line
+    or in `import_module(...)`."""
+    root, _landed = _retired_root(tmp_path)
+    _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT)
+    _write(root, rel, text.format(key=RETIRED))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert (rc, payload["findings"]) == (0, [])
+
+
+def test_a_binary_file_is_never_read_for_a_key(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    root, _landed = _retired_root(tmp_path)
+    _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT)
+    path = root / "docsite" / "assets" / "logo.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"\x89PNG\0\0" + RETIRED.encode("utf-8"))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert (rc, payload["findings"]) == (0, [])
+
+
+def test_the_reader_boundary_is_the_two_state_readers_boundary() -> None:
+    """One definition of "names the key" in the gate (`key_pattern`, shared with `_names_key`)."""
+    key = "pyforge.atlas.dependency_history"
+    for text in (f'"{key}"', f"`{key}`", f"{key}.", f"read_boolean('{key}')"):
+        assert flag_gate_check._names_key(text, key), text
+    for text in (f"{key}.head", f"{key}_two", f"{key}-two", f"x.{key}", f"x{key}"):
+        assert not flag_gate_check._names_key(text, key), text
+        assert not flag_gate_check.key_pattern(key).search(text), text
+
+
+def test_a_retirement_declared_by_another_station_fails_naming_the_spec_and_retires_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Any status, any other station: the declaration is a FAIL naming its spec, and the key is judged as if no
+    retirement existed -- the `done` spec that introduced it is red again."""
+    root, landed = _retired_root(tmp_path)
+    for status in ("backlog", "done"):
+        foreign = _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project="pyforge-doctor", status=status)
+
+        rc, payload = _tree_json(root, capsys)
+
+        assert rc == 1
+        by_kind = {f["kind"]: f for f in payload["findings"]}
+        assert sorted(by_kind) == ["flag-key-not-in-tree", "flag-retirement-not-owner", "flag-test-file-missing"]
+        refused = by_kind["flag-retirement-not-owner"]
+        assert (refused["path"], refused["key"], refused["station"]) == (foreign, RETIRED, "pyforge-doctor")
+        assert "`pyforge-test`" in refused["message"]
+        assert by_kind["flag-key-not-in-tree"]["path"] == landed
+
+        rc, out, _ = _run(root, "--spec", foreign, capsys=capsys)
+        assert rc == 1
+        assert [f["kind"] for f in json.loads(out)["findings"]] == ["flag-retirement-not-owner"]
+
+
+def test_a_foreign_declaration_retires_nothing_but_its_key_is_still_read_for(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The reader check only ever adds a FAIL, so it runs for every declared key gone from the tree, whoever
+    declared it. The foreign declaration still lifts nothing: the `done` spec is red not-in-tree. With the owner's
+    declaration added, the key is retired and the reader is what reds."""
+    root, landed = _retired_root(tmp_path)
+    host = _write(root, "src/pkg/host.py", f'read_boolean("{RETIRED}")\n')
+    foreign = _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project="pyforge-doctor", status="done")
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == [
+        "flag-key-not-in-tree",
+        "flag-retired-still-read",
+        "flag-retirement-not-owner",
+        "flag-test-file-missing",
+    ]
+    read = next(f for f in payload["findings"] if f["kind"] == "flag-retired-still-read")
+    assert (read["path"], read["station"]) == (host.relative_to(root).as_posix(), "pyforge-doctor")
+    assert foreign in read["message"]
+
+    owner = _spec(root, RETIRE_BLOCK, name="spec-1-3-retire.md", project=OWNER_PROJECT, status="backlog")
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == ["flag-retired-still-read", "flag-retirement-not-owner"]
+    assert owner in next(f for f in payload["findings"] if f["kind"] == "flag-retired-still-read")["message"]
+    assert landed not in {f.get("path") for f in payload["findings"]}
+
+
+def test_a_retirement_declared_while_the_key_is_still_in_the_tree_changes_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The owner's declaration on a key the tree still holds: the key, its reader and its `done` spec are judged
+    as before. Another station's declaration on the same key still reds as not the owner's."""
+    root = _landed_root(tmp_path)
+    rel = _landed_spec(root, _verification("tests/test_absent.py"))
+    _spec(root, f"flag-exempt: alpha\nretires-flag: [{KEY}]\n", name="spec-1-2-retire.md", project=OWNER_PROJECT)
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-test-file-missing"]
+    assert payload["findings"][0]["path"] == rel
+
+    foreign = _spec(root, f"flag-exempt: alpha\nretires-flag: [{KEY}]\n", name="spec-1-3-retire.md")
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == ["flag-retirement-not-owner", "flag-test-file-missing"]
+    assert next(f for f in payload["findings"] if f["kind"] == "flag-retirement-not-owner")["path"] == foreign
+
+
+def test_a_key_with_no_station_segment_is_still_read_for_once_it_leaves_the_tree(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The live cutover string flag's shape: no `pyforge.<station>.` prefix, so the tree's (normalised)
+    `metadata.owner` names the owner while the tree holds the key. Once the key leaves the tree no owner is known:
+    the owner's own declaration is not red, it lifts nothing (no flag block names such a key), and the reader
+    check still runs, so a reader left behind reds."""
+    solo = "pyforge.solo"
+    root = _fixture(tmp_path)
+    _patch_tree_flag(root, solo, _boolean_flag_entry(solo, owner=" Pyforge-Test "))
+    _write(root, "src/pkg/reader.py", f'flag("{solo}")\n')
+    tree = flag_rule.load_flags(root)
+    assert flag_gate_check.owning_station(solo, tree) == "test"
+    assert flag_gate_check.owning_station("pyforge.herald.pages_one_generator", tree) == "herald"
+    assert flag_gate_check.owning_station("pyforge.gone", tree) == ""
+    retire = _spec(
+        root, f"flag-exempt: alpha\nretires-flag: {solo}\n", name="spec-1-1-retire.md", project=OWNER_PROJECT
+    )
+    foreign = _spec(root, f"flag-exempt: alpha\nretires-flag: {solo}\n", name="spec-1-2-retire.md")
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [("flag-retirement-not-owner", foreign)]
+
+    _patch_tree_flag(root, "pyforge.test.other", _boolean_flag_entry("pyforge.test.other"))
+    tree_path = root / "src" / "platform" / "config" / "flags.json"
+    document = json.loads(tree_path.read_text(encoding="utf-8"))
+    del document["flags"][solo]
+    tree_path.write_text(json.dumps(document), encoding="utf-8")
+    _write(root, "src/pkg/other.py", 'flag("pyforge.test.other")\n')
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1  # no owner is known now, so the foreign declaration is no longer judged; the reader is
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [("flag-retired-still-read", "src/pkg/reader.py")]
+
+    (root / foreign).unlink()
+    rc, payload = _tree_json(root, capsys)
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [("flag-retired-still-read", "src/pkg/reader.py")]
+    assert retire in payload["findings"][0]["message"]
+
+    (root / "src" / "pkg" / "reader.py").unlink()
+    rc, payload = _tree_json(root, capsys)
+    assert (rc, payload["findings"]) == (0, [])
+    rc, out, _ = _run(root, "--spec", retire, capsys=capsys)
+    assert (rc, json.loads(out)["verdict"]) == (0, "pass")
+
+
+def test_retired_by_reads_a_string_or_a_list() -> None:
+    assert flag_gate_check.retired_by({"retires-flag": " pyforge.a.b "}) == ["pyforge.a.b"]
+    assert flag_gate_check.retired_by({"retires-flag": ["pyforge.a.b", "", 3, "pyforge.c.d"]}) == [
+        "pyforge.a.b",
+        "pyforge.c.d",
+    ]
+    assert flag_gate_check.retired_by({}) == []
+    assert flag_gate_check.retired_by(None) == []
 
 
 def test_the_same_spec_at_backlog_has_no_finding_and_a_done_spec_with_its_key_in_the_tree_passes(
@@ -1291,16 +1594,17 @@ def test_a_flag_on_everywhere_91_days_before_the_run_date_is_one_clock_fail_nami
     _patch_tree_flag(
         root,
         KEY,
-        _boolean_flag_entry(KEY, owner="steward", story="76-1-overlays", on_everywhere="2026-01-01"),
+        _boolean_flag_entry(KEY, owner="test", story="76-1-overlays", on_everywhere="2026-01-01"),
     )
 
     rc, payload = _tree_json(root, capsys, "--run-date", "2026-04-02")
 
     assert rc == 1
+    assert _kinds(payload) == ["flag-clock-overdue"]
     clock = [f for f in payload["findings"] if f["kind"] == "flag-clock-overdue"]
     assert len(clock) == 1
     assert clock[0]["key"] == KEY
-    assert "steward" in clock[0]["message"]
+    assert "owner 'test'" in clock[0]["message"]
     assert "76-1-overlays" in clock[0]["message"]
 
 
@@ -1361,6 +1665,40 @@ def test_a_tree_flag_with_no_owner_metadata_is_one_fail_naming_the_flag_and_the_
     assert len(missing) == 1
     assert missing[0]["key"] == KEY
     assert "metadata.owner" in missing[0]["message"]
+
+
+def test_a_metadata_owner_that_disagrees_with_the_key_prefix_is_one_fail_naming_both(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Story 34.7: the 90-day clock asks `metadata.owner` to remove the flag, and only the prefix station's story
+    can retire it, so the two must agree. The owner is normalised first (`pyforge-test`, ` Test ` read `test`)."""
+    root = _fixture(tmp_path, tree_keys=[KEY])
+    _write(root, "src/pkg/reader.py", f'flag("{KEY}")\n')
+    for agreeing in ("test", "pyforge-test", " Test "):
+        _patch_tree_flag(root, KEY, _boolean_flag_entry(KEY, owner=agreeing))
+        rc, payload = _tree_json(root, capsys)
+        assert (rc, payload["findings"]) == (0, []), agreeing
+
+    _patch_tree_flag(root, KEY, _boolean_flag_entry(KEY, owner="steward"))
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-owner-mismatch"]
+    finding = payload["findings"][0]
+    assert (finding["key"], finding["station"]) == (KEY, "test")
+    assert "'steward'" in finding["message"] and "`test`" in finding["message"]
+
+
+def test_a_key_with_no_station_segment_has_no_owner_to_disagree_with(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _patch_tree_flag(root, "pyforge.solo", _boolean_flag_entry("pyforge.solo", owner="steward"))
+    _write(root, "src/pkg/reader.py", 'flag("pyforge.solo")\n')
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert (rc, payload["findings"]) == (0, [])
 
 
 def test_a_done_flagged_spec_whose_production_default_disagrees_with_the_overlay_is_one_fail(

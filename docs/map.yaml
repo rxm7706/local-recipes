@@ -92,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-14T18:57:42-05:00'
-      tree: 184195d9949d8d928f3cbc8333bcb92ed81b3266-dirty
+      derived_at: '2026-10-15T09:19:53-05:00'
+      tree: 7de68be07a909b3a3176e67789d0fc6fbbaf0cc7-dirty
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward

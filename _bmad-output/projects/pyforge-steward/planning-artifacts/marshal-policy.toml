@@ -1212,7 +1212,7 @@ verify_commands = [
   "docs/how-to/**",
   "docs/reference/github-workflows.md",
   "docs/explanation/enterprise-deployment.md",
-  "docsite/tools/pages_second_host.py",
+  "docsite/tools/pages_site_url.py",  # was pages_second_host.py (herald 42.3 renamed it; 42.3 + 102.5 review)
   "docsite/content/dossier.yml",
   "docsite/README.md",
   "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",

@@ -255,19 +255,103 @@ def test_ac2_deploy_gh_failure_names_argv_and_stderr(tmp_path: Path) -> None:
     assert runner.calls == [list(DISPATCH_ARGV)]
 
 
+def _jobs(deploy: str | None) -> _Proc:
+    jobs = [{"name": "build", "conclusion": "success"}]
+    if deploy is not None:
+        jobs.append({"name": "deploy", "conclusion": deploy})
+    return _Proc(0, json.dumps({"jobs": jobs}))
+
+
 def test_ac2_deploy_wait_watches_the_run_and_reports_the_page(tmp_path: Path) -> None:
     runner = FakeRunner(
         {
             DISPATCH_ARGV: _Proc(0),
             DEPLOY_LIST_ARGV: _Proc(0, json.dumps([_RUN])),
             ("gh", "run", "watch"): _Proc(0),
+            ("gh", "run", "view"): _jobs("success"),
             SITE_URL_ARGV: _Proc(0, _SITE + "\n"),
         }
     )
     result = run_deploy(_deps(tmp_path, runner), wait=True)
     assert result.ok is True
     assert runner.calls[2] == ["gh", "run", "watch", "4242", "--exit-status"]
-    assert f"page {_SITE}" in result.summary
+    assert runner.calls[3] == ["gh", "run", "view", "4242", "--json", "jobs"]
+    assert result.summary.splitlines()[-1] == f"pages deploy: run 4242 succeeded; deployed; page {_SITE}"
+    assert result.details["deploy_job"] == "success"
+
+
+def test_the_deploy_job_the_duty_reads_is_pages_yml_s_deploy_job() -> None:
+    """102.3's lane-B re-review: ``gh run view --json jobs`` names a job by its ``name:``, else by its id, so
+    ``DEPLOY_JOB`` holds only while ``pages.yml``'s deploy job has no ``name:`` (or one equal to it)."""
+    import yaml
+
+    workflow = yaml.safe_load(
+        (Path(__file__).resolve().parents[6] / ".github/workflows/pages.yml").read_text(encoding="utf-8")
+    )
+    deploy = workflow["jobs"][pages_duty.DEPLOY_JOB]
+    assert deploy.get("name", pages_duty.DEPLOY_JOB) == pages_duty.DEPLOY_JOB
+    assert any(str(step.get("uses", "")).startswith("actions/deploy-pages@") for step in deploy["steps"])
+
+
+def test_ac2_deploy_wait_says_a_skipped_deploy_was_skipped(tmp_path: Path) -> None:
+    """102.3's re-review: a dispatch of an unchanged tree succeeds with its deploy job skipped; the
+    duty says so instead of naming a deploy that did not happen."""
+    runner = FakeRunner(
+        {
+            DISPATCH_ARGV: _Proc(0),
+            DEPLOY_LIST_ARGV: _Proc(0, json.dumps([_RUN])),
+            ("gh", "run", "watch"): _Proc(0),
+            ("gh", "run", "view"): _jobs("skipped"),
+            SITE_URL_ARGV: _Proc(0, _SITE + "\n"),
+        }
+    )
+    result = run_deploy(_deps(tmp_path, runner), wait=True)
+    assert result.ok is True
+    assert result.summary.splitlines()[-1] == "pages deploy: run 4242 succeeded; tree unchanged; deploy skipped"
+    assert "deployed" not in result.summary and "page " not in result.summary
+    assert list(SITE_URL_ARGV) not in runner.calls  # no page is named for a deploy that did not run
+
+
+@pytest.mark.parametrize(
+    ("view", "expected"),
+    [
+        (
+            _Proc(1, stderr="HTTP 502"),
+            "deploy job conclusion unavailable (`gh run view 4242 --json jobs` exited 1: HTTP 502)",
+        ),
+        (_Proc(0, "not json"), "deploy job conclusion unavailable (`gh run view 4242 --json jobs` gave invalid JSON"),
+        (
+            _jobs(None),
+            "deploy job conclusion unavailable (`gh run view 4242 --json jobs` names no concluded 'deploy' job)",
+        ),
+        (_jobs("neutral"), "deploy job concluded 'neutral'"),
+    ],
+    ids=["view-fails", "not-json", "no-deploy-job", "other-conclusion"],
+)
+def test_ac2_deploy_wait_names_an_unreadable_deploy_job(tmp_path: Path, view: _Proc, expected: str) -> None:
+    runner = FakeRunner(
+        {
+            DISPATCH_ARGV: _Proc(0),
+            DEPLOY_LIST_ARGV: _Proc(0, json.dumps([_RUN])),
+            ("gh", "run", "watch"): _Proc(0),
+            ("gh", "run", "view"): view,
+            SITE_URL_ARGV: _Proc(0, _SITE + "\n"),
+        }
+    )
+    result = run_deploy(_deps(tmp_path, runner), wait=True)
+    assert result.ok is True  # the run itself succeeded; only the job's conclusion is unread
+    assert expected in result.summary
+    assert "tree unchanged" not in result.summary
+
+
+def test_ac2_deploy_dry_run_with_wait_prints_the_watch_and_the_job_read(tmp_path: Path) -> None:
+    runner = FakeRunner()
+    result = run_deploy(_deps(tmp_path, runner), dry_run=True, wait=True)
+    assert runner.calls == []
+    assert result.summary.splitlines()[2:] == [
+        "pages deploy (dry-run): gh run watch <run id> --exit-status",
+        "pages deploy (dry-run): gh run view <run id> --json jobs",
+    ]
 
 
 def test_ac2_deploy_wait_propagates_a_failed_run(tmp_path: Path) -> None:

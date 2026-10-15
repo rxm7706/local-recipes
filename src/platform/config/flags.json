@@ -195,6 +195,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.atlas.vizro_static_boards": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "atlas",
+        "story": "30-2-vizro-boards-publish-as-static-exports-under-dashboard-vizro",
+        "created": "2026-10-15",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.fix_target_resolution": {
       "state": "ENABLED",
       "variants": {
@@ -250,21 +265,6 @@
       "metadata": {
         "owner": "herald",
         "story": "30-1-a-deck-s-html-twins-are-self-contained-and-published",
-        "created": "2026-09-28",
-        "on_everywhere": "",
-        "cleanup_by": ""
-      }
-    },
-    "pyforge.herald.pages_second_host": {
-      "state": "ENABLED",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "defaultVariant": "off",
-      "metadata": {
-        "owner": "herald",
-        "story": "31-1-the-pages-artifact-builds-for-the-host-that-deploys-it",
         "created": "2026-09-28",
         "on_everywhere": "",
         "cleanup_by": ""

@@ -2,7 +2,7 @@
 title: '30.2: Vizro boards publish as static exports under /dashboard/vizro/'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: 'e134549afcbdcc5b55b35f291464ac60d6685243'
 flag:
   key: pyforge.atlas.vizro_static_boards          # new; minted by this story
@@ -85,11 +85,18 @@ handoff this export rides.
   `actions/upload-artifact` step `name: vizro-static-export`, `retention-days: 90`, `path: docs/dashboard/vizro` — gated
   on the same `PAUSE_KEDRO_VIZ_PUBLISH` fragment and the flag's resolved value, with no commit or push step. If the
   operator rules for its own workflow instead (the Spec's open question), the job moves file with its own registry row
-  (steward's), and the shape above holds unchanged.
+  (steward's), and the shape above holds unchanged. *(Amended 2026-10-15, orchestrator ruling; operator may override:
+  the task lands under `[feature.pyforge-atlas.tasks]` and runs in `-e pyforge-atlas`, which carries vizro and
+  plotly 7.1.0, with no `PYTHONPATH`, as its sibling atlas tasks; the job's `setup-pixi` names `pyforge-atlas`. AC1,
+  AC8 and Always say the same.)*
 - **The consumer is not this story.** The Pages build consumes `vizro-static-export` the way steward 102.4 consumes
   `kedro-viz-export`, and herald Story 43.3 (CAP-61, M3) mounts it through `publicDir`. `pages-check` judges the mount as a
   first-party tree: no `VENDORED_ROOTS` entry is added for `dashboard/vizro/`, so a `cdn.plot.ly` reference would red
-  it — the structural proof the Dream asks for.
+  it — the structural proof the Dream asks for. *(Amended 2026-10-15, orchestrator ruling; operator may override: the
+  pages stay judged, but the vendored bundle `dashboard/vizro/assets/plotly.min.js` is byte-identical upstream code
+  that names third-party origins, so herald Story 43.3 adds that one exact file, never the tree, to `VENDORED_ROOTS`
+  (herald:AD-21 rule 5), and the export refuses any chart drawing a third-party trace; the Pages download step is
+  steward 102.4's. AC2 and AC7 say the same.)*
 - **The flag.** `pyforge.atlas.vizro_static_boards` in `flags.json` (`defaultVariant` off, owner `atlas`, story this
   key), `flag-overlays.json` (dev on, staging and production off) and `docs/governance/flag-inventory/pyforge-atlas.md`;
   read through `pyforge.core.flags.read_boolean` at the top of the exporter. Off: the task prints the flag-off message,
@@ -121,13 +128,17 @@ consumer step generalized; no blocked row).
 ## Acceptance Criteria
 
 - **AC1 — The export.** With the flag on and the fixture data root the dryrun gate uses,
-  `pixi run -e local-recipes vizro-static-export` exits 0 and `docs/dashboard/vizro/` holds `index.html`, exactly one
+  `pixi run -e pyforge-atlas vizro-static-export` (amended 2026-10-15, orchestrator ruling; operator may override) exits 0 and `docs/dashboard/vizro/` holds `index.html`, exactly one
   `assets/plotly.min.js` (byte-identical to the env's `plotly/package_data/plotly.min.js`), `manifest.json`, and one
   `<page-id>/index.html` for every page `build_dashboard` returns (34 today; the test reads the count from the object,
   never a literal).
-- **AC2 — No third-party origin.** `grep -rl "cdn.plot.ly" docs/dashboard/vizro` prints nothing; every `<script src=`
-  and `<link href=` in the export resolves to a file inside `docs/dashboard/vizro/`; no `https://` resource reference
-  appears in any page (navigation `<a href>` to `/dashboard/kedro-viz/` and `/` is allowed, as herald's check allows).
+- **AC2 — No third-party origin.** (amended 2026-10-15, orchestrator ruling; operator may override) The pages: `grep -rl --include='*.html' "cdn.plot.ly" docs/dashboard/vizro`
+  prints nothing; every `<script src=` and `<link href=` in the export resolves to a file inside
+  `docs/dashboard/vizro/`; no `https://` resource reference appears in any page (navigation `<a href>` to
+  `/dashboard/kedro-viz/` and `/` is allowed, as herald's check allows). The vendored `assets/plotly.min.js` is
+  plotly's own bytes (AC1) and carries map and geo provider URLs; it is reachable at runtime only through geo or map
+  traces or Chart Studio links, so the export refuses a chart that draws one of those traces, writes
+  `showLink` / `showEditInChartStudio` off, and `assets/` holds that one file only.
 - **AC3 — The manifest.** `manifest.json` parses with the keys `exported_at` (ISO 8601 UTC), `export_commit`
   (`^[0-9a-f]{40}$`, equal to `git rev-parse HEAD` or `GITHUB_SHA`) and `boards[]`; `boards` has one entry per exported
   page, each with exactly `id`, `title`, `path`, `data_build_timestamp`; every `path` exists; every
@@ -141,11 +152,14 @@ consumer step generalized; no blocked row).
   written, not a partial tree). The exporter's module imports no `pyforge.steward`.
 - **AC6 — Flag off.** With the flag off the task prints the flag-off message, exits with the station's usage code, and
   writes nothing.
-- **AC7 — The mount holds the Pages gate.** With the export present under `docs/dashboard/vizro/` and
-  `docsite/tools/assemble_pages.py`'s `VENDORED_ROOTS` unchanged, `pixi run --frozen -e site pages-check` exits 0 and
-  reports no cross-origin finding under `dashboard/vizro/`.
+- **AC7 — The mount holds the Pages gate.** (amended 2026-10-15, orchestrator ruling; operator may override) Verified when herald Story 43.3 runs
+  `pixi run --frozen -e site pages-check` with an export present: 43.3 lands the `/dashboard/vizro/` mount and adds to
+  `docsite/tools/assemble_pages.py`'s `VENDORED_ROOTS` the exact file `dashboard/vizro/assets/plotly.min.js`
+  (herald:AD-21 rule 5, a vendored upstream bundle), never the `dashboard/vizro/` tree, so every page stays judged and
+  `pages-check` reports no cross-origin finding under `dashboard/vizro/`. The `pages.yml` download of the
+  `vizro-static-export` artifact is steward 102.4's (its review fix, `5993910a33`).
 - **AC8 — The producer job.** A test reads `.github/workflows/kedro-viz-publish.yml` as YAML and asserts the Vizro job:
-  `setup-pixi` `environments` naming `local-recipes`; one `actions/upload-artifact` step with `name:
+  `setup-pixi` `environments` naming `pyforge-atlas` (amended 2026-10-15, orchestrator ruling; operator may override); one `actions/upload-artifact` step with `name:
   vizro-static-export`, `retention-days: 90`, `path: docs/dashboard/vizro`; no `run` containing `git push`,
   `git commit` or `steward deploy`; `permissions.contents` still `read`; the job `if:` carrying
   `PAUSE_KEDRO_VIZ_PUBLISH`; the upload step gated on the flag's resolved value. (If the operator rules for a separate
@@ -154,7 +168,7 @@ consumer step generalized; no blocked row).
   `pyforge.testing_kit.flags.flag_states("pyforge.atlas.vizro_static_boards")`: on, AC1–AC4 on the fixture root; off,
   AC6.
 - **AC10 — The gates.** `pixi run -e pyforge-atlas kedro-test`, `pixi run -e pyforge-atlas kedro-catalog-check` and
-  `pixi run --frozen -e local-recipes dashboard-dryrun` exit 0; `flag-gate-check` exits 0; `spec-surface-check` exits 0
+  `pixi run --frozen -e local-recipes dashboard-dryrun` exit 0 (the live dashboard's own gate, unchanged); `flag-gate-check` exits 0; `spec-surface-check` exits 0
   after the memlog reconciles and scoped stamps of every Spec it names.
 
 ## Boundaries & Constraints
@@ -166,8 +180,9 @@ consumer step generalized; no blocked row).
   URL and never from a checked-in copy.
 - The refusal runs first and writes nothing; `sld:AD-10` is applied as a rule, not by importing steward.
 - Every page prints its AD-17 stamp; the manifest repeats it as `data_build_timestamp`.
-- Runs in `-e local-recipes` (the vizro closure, about 257 packages, is not in `pyforge-guild`); the task uses the
-  `PYTHONPATH` shape `dashboard-serve` already uses.
+- Runs in `-e pyforge-atlas` (amended 2026-10-15, orchestrator ruling; operator may override): that env carries vizro and plotly 7.1.0, and `-e local-recipes` (over 10 GB) is the
+  recipe factory's env, which no station job assumes (AGENTS.md). The task is
+  `[feature.pyforge-atlas.tasks.vizro-static-export]`.
 - Every Spec `spec-surface-check` names is reconciled through its memlog and stamped scoped; the PR carries the
   `maintenance` label.
 
@@ -176,8 +191,10 @@ consumer step generalized; no blocked row).
 - Do not embed data for filter states, emulate filters in JavaScript, or export a Run control — no server means no
   submission and no per-user view.
 - Do not export a board that declares an access column, and do not downgrade the refusal to a warning or a skip.
-- Do not commit the export, call `deploy-pages`, edit `pages.yml` / `dashboard.yml` / `docsite/` / `docs-site/`, or add a
-  `VENDORED_ROOTS` entry for `dashboard/vizro/` (the mount must pass the cross-origin check on its own).
+- Do not commit the export, call `deploy-pages`, or edit `pages.yml` / `docsite/` / `docs-site/` in this story (amended 2026-10-15, orchestrator ruling; operator may override): the
+  `pages.yml` consumer step is steward 102.4's, and the `/dashboard/vizro/` mount and the `VENDORED_ROOTS` entry for
+  the exact file `dashboard/vizro/assets/plotly.min.js` are herald 43.3's. No `VENDORED_ROOTS` entry ever covers the
+  `dashboard/vizro/` tree or its pages.
 - Do not import Dagster, `kedro-mcp`, `pyforge.steward` or `subprocess` under `src/pyforge/atlas`; do not import vizro or
   plotly outside `dashboard/`.
 - Do not change the 34-page inventory, DESIGN.md's controls, or `dashboard-dryrun`'s assertions; do not hand-edit
@@ -243,18 +260,30 @@ states
   import-direction and no-inline-IO meta-tests, which must stay green with the exporter under `dashboard/`).
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e local-recipes dashboard-dryrun` — expected: pass (the object still builds; the exporter's tests
-  live beside it under `tests/integration/dashboard/` and run in this env: AC1–AC6, AC9).
-- `pixi run --frozen -e local-recipes vizro-static-export` on a checkout with the flag on, then
-  `grep -rl "cdn.plot.ly" docs/dashboard/vizro; echo $?` — expected: no output, then `1` (AC2); `find docs/dashboard/vizro
-  -name plotly.min.js | wc -l` — expected: `1`.
-- `pixi run --frozen -e site pages-check` with the export present — expected: exit 0 (AC7).
+- `pixi run --frozen -e local-recipes dashboard-dryrun` — expected: pass (the object still builds;
+  `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py` and the exporter's tests run
+  there: AC1–AC6; the two-state test skips, `-e local-recipes` carries no openfeature).
+- `pixi run --frozen -e pyforge-atlas python -m pytest src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_vizro_static_export.py src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_vizro_static_export_flag.py -q`
+  — expected: pass (AC1–AC6 and AC9: the second file runs `pyforge.atlas.vizro_static_boards` in both states with
+  `flag_states`).
+- `pixi run --frozen -e pyforge-atlas vizro-static-export` on a checkout with the flag on, then
+  `grep -rl --include='*.html' "cdn.plot.ly" docs/dashboard/vizro; echo $?` — expected: no output, then `1` (AC2);
+  `find docs/dashboard/vizro -name plotly.min.js | wc -l` — expected: `1`.
+- `pixi run --frozen -e site pages-check` with the export present — expected: exit 0 (AC7; run by herald Story 43.3).
+  *Verified 2026-10-15 by herald 43.3 (its Verification run; copied here at the lane-B → lane-A merge):* a real export
+  from this story's `vizro_static_export.py` (34 boards, 37 files, `export_commit` `cbc34a5800`) copied to
+  `docs/dashboard/vizro/` — `pixi run --frozen -e site pages-check` exit 0 with `pyforge.herald.pages_one_generator`
+  on (mounted from `docs-site/public/`, judged by 43.3's origin check) and off (mounted by `_copy_dashboard`, judged by
+  the old scanner); no cross-origin finding under `dashboard/vizro/`; the one exempt file,
+  `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5), holds one reference, `https://cdn.jsdelivr.net`
+  (maplibre's icon template), and all 34 pages pass judged. The export was removed afterwards. AC7 is met; this
+  story's status stays `in-review` until the chain's endgame flips it.
 - `pixi run -e pyforge-atlas pyforge-atlas-test -k "kedro_viz_publish or vizro_static"` — expected: pass (AC8 and the
   unit-level tests).
 - `pixi run --frozen -e pyforge-guild flag-gate-check` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild detectors-ci` — expected: exit 0, read from the exit code.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog reconciles and the scoped
-  stamps (`spec-pyforge-atlas`; `spec-pyforge-unifying-strategy` co-governs `test_dashboard_dryrun.py` and
+  stamps (`spec-pyforge-atlas`; `spec-pyforge-unifying-strategy` co-governs the dryrun test and
   `dashboard/__init__.py` if either moves; `spec-pyforge-steward` if the workflow's registry row changes).
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
 
@@ -264,6 +293,9 @@ states
   listed on the run.
 - Turn `pyforge.atlas.vizro_static_boards` on where the boards should publish; the consumer (steward 102.4, herald
   CAP-61) mounts them at `/dashboard/vizro/`.
+- Know what CI exports: the workflow sets no `PYFORGE_ENVIRONMENT`, so the flag resolves as `dev` (on) in CI, and the
+  runner materializes no data (`data/` is gitignored), so the uploaded boards are honest-empty until a producer step
+  materializes their datasets.
 
 ## Named, not fixed here
 
@@ -281,3 +313,88 @@ states
   per-page stamp read-back, steward's `deploy.py` `_run_static` refusal and `docsite/tools/assemble_pages.py`'s
   `VENDORED_ROOTS`. Where the landed code differs from the shape quoted here, the landed code wins and the deviation is
   recorded in this log.
+- 2026-10-15 (atlas side built; the mount follows herald 43.3 / steward 102.4): `dashboard/static_export.py`,
+  `vizro_static_boards.py` (the flag, read without vizro), `PageDef.access_column`, `tools/vizro_static_export.py`
+  behind the `vizro-static-export` task, the `vizro` and `changes` jobs, the flag in the tree, overlays and inventory.
+  Where the landed code differs from the shape quoted above:
+  - **The bundle trips AC2's grep and AC7's check.** plotly 7.1.0's `package_data/plotly.min.js`, copied byte for
+    byte (AC1, an Always), carries `cdn.plot.ly/un/` (its default topojson URL, fetched only by geo traces) and a
+    maplibre ``.src = `https://cdn.jsdelivr.net/npm/@mapbox/maki@8.2.0/icons/${p}.svg` `` template that
+    `assemble_pages.cross_origin_findings` reports as a cross-origin dynamic src. The pages reference no origin at
+    all, so AC2 is tested on the pages; AC7 with `VENDORED_ROOTS` unchanged reds on `dashboard/vizro/assets/plotly.min.js`
+    alone. Open for the operator: a `VENDORED_ROOTS` entry for `dashboard/vizro/assets/` only (AD-21 rule 5, the
+    pages stay judged), a partial plotly.js bundle (a new dependency), or an amended AC.
+  - **Path filter.** GitHub filters paths per workflow, so `on.push.paths` gains `dashboard/**` and `semantic/**`
+    (30.1's AC4 pinned it unchanged; its test now pins the publish job to the 30.1 paths through the `changes` job,
+    which tells each producer whether the push touched its own paths).
+  - **Tables** render as plain HTML tables (every row, no script); only the declared chart goes through
+    `Figure.to_html`. Card text renders through a small Markdown subset (headings, paragraphs, `code`, **bold**,
+    pipe tables) rather than a new dependency. The data root's absolute path is shown as `<data-root>` on the
+    static pages. Flag off exits 2, atlas's usage code.
+  - **Fixed on the way (red on base):** `dashboard-dryrun` and `vizro-ai-dryrun` died loading `tests/conftest.py`
+    (`pyforge.testing_kit` is not in `-e local-recipes`; their `PYTHONPATH` now carries the kit's `src`), and five
+    `test_dashboard_e2e.py` tests then failed on `KeyError: 'nav-control-panel'` under vizro 0.1.62
+    (`LandmarkDashboard` now finds the nav container in 0.1.60 and 0.1.62). AC9's two-state test needs
+    `openfeature`, so it runs in `-e pyforge-atlas` and skips in `-e local-recipes`. The pixi-version registry counts
+    two `setup-pixi` pins in `kedro-viz-publish.yml`.
+- 2026-10-15 (fixed while building herald 42.3 + steward 102.5; this story's spec status unchanged):
+  - `StaticExportError` gains `PyforgeError` as a base, as `pyforge-core`'s exception-root meta-test requires.
+    *(42.3 + 102.5's review, 2026-10-15: the second base `Exception` was redundant, since `PyforgeError` subclasses
+    it; the class is now `StaticExportError(PyforgeError)`, as `pyforge-core`'s own errors are.)*
+  - The flag key is registered in the core and platform tree-wide flag tests, which list every key the tree holds;
+    both were red at `73ae4f1180`.
+  - `test_vizro_static_export.py` no longer computes a repository root. `MEMBER_DIR.parents[2]` was `src/`, and steward's
+    station-tests trigger map read that as a read of all of `src/`. The HEAD check runs from the member directory.
+- 2026-10-15 (independent review, iteration 1; orchestrator rulings 2026-10-15, operator may override):
+  - **Rulings.** The Vizro export runs in `-e pyforge-atlas`, not `-e local-recipes`. That env carries vizro and
+    plotly 7.1.0; `-e local-recipes` is over 10 GB, has no disk-free step on a stock runner, and is not a station job's
+    env (AGENTS.md). The task moves to `[feature.pyforge-atlas.tasks]`, and the job's `setup-pixi` names `pyforge-atlas`.
+    The Pages-side items leave this story, per its own cross-station prose:
+    - the `pages.yml` consumer step landed in steward 102.4's review fix (`5993910a33`);
+    - the `/dashboard/vizro/` mount, and the herald exemption of the exact file `dashboard/vizro/assets/plotly.min.js`
+      (herald:AD-21 rule 5), land in herald 43.3.
+
+    AC1, AC2, AC7, AC8, Always and Never are amended in place to say so.
+  - **Should-fix.**
+    - The data-root scrub replaces only the absolute root as a whole path: a relative `--data-root data` no longer
+      rewrites `"data"` in a figure's JSON, and `/data` no longer rewrites `/database`. Tests cover the relative root
+      and the path boundary.
+    - Verification names `test_vizro_static_export_flag.py` and the dryrun test by repo path.
+    - Guards: a chart drawing a geo or map trace (`THIRD_PARTY_TRACE_TYPES`) refuses the export.
+      `PLOTLY_CONFIG` writes `showLink` and `showEditInChartStudio` off. A test asserts every exported chart's trace
+      types avoid that set. `assets/` holds `plotly.min.js` alone.
+  - **Nits.**
+    - `exported_at` is the export commit's committer time, so one commit's export is byte-identical on every run (a
+      test proves it) and the Pages tree hash does not move on a producer run with unchanged data. An unreadable
+      committer time refuses (exit 1).
+    - The `changes` job reads `git diff --quiet`'s exit code, so a diff error runs the producer instead of skipping it.
+    - The `publish` job's marker is `kedro-viz-publish.publish`: rendered as if its row were live, the workflow does
+      not change. Its three jobs still need `ci-job` rows when that row leaves `paused-manually` (steward's follow-up).
+    - A fresh-interpreter test shows a flag-off run imports neither `pyforge.atlas.dashboard` nor vizro.
+    - A hostile-input escaping test covers cells, columns, ids and Card text.
+    - `docs/dashboard/.vizro-*/` is gitignored.
+    - The swap renames the old tree aside and puts it back if the new tree's rename fails.
+    - 30.1's spec points here for its AC4 widening.
+  - **Not done here.** The `pyforge-atlas/tools/vizro_static_export.py` and `pixi.lock` paths are not in the job's
+    filter, so a plotly bump does not re-export (review N3); that belongs to the schedule/consumer story.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`: 30.2 RESOLVED with four nits; done here):
+  - **The Approach is annotated in place (nit a)** with the 2026-10-15 rulings the ACs already carry: the task and
+    the job run in `-e pyforge-atlas`, and the pages stay judged while herald 43.3 exempts the one vendored bundle
+    file.
+  - **The staleness clock is the export's moment (nit b).** `export_boards` passed no `now`, so the BSL staleness
+    models read `time.time()`, and "one commit's export is byte-identical on every run" held only for honest-empty
+    data. `now` now defaults to the export moment (`exported_at`, the export commit's committer time when the task
+    runs), so the claim holds with materialized data too. Test:
+    `test_the_staleness_clock_is_the_export_moment_not_the_wall_clock`.
+  - **A failed aside-rename no longer leaks the staging directory (nit c).** Both renames sit inside the cleanup
+    `try`: either failure puts the previous tree back if it was moved and removes the staging directory. Test:
+    `test_a_failed_swap_keeps_the_previous_export_and_leaks_no_staging` (the aside rename and the swap-in rename).
+  - **The scrub boundary is any non-path character (nit d).** The lookahead is `(?![\w-]|\.[\w-])`: a root followed
+    by `)`, `,`, `:` or a sentence's `.` is replaced, and `/data.bak`, `/data-old`, `/data_2` are not. Test:
+    `test_the_scrub_boundary_is_any_non_path_character`.
+  - **The surface.** Atlas's Epic 30 surface (`marshal-policy.toml`) lists the two tree-wide flag pins that carry
+    `pyforge.atlas.vizro_static_boards` (`src/platform/tests/test_openfeature_file_flags.py`,
+    `src/shared/packages/pyforge-core/tests/unit/test_flags.py`).
+- 2026-10-15 (the lane-B → lane-A merge): AC7's evidence, recorded by herald 43.3 with a real 34-board export, is copied
+  into the Verification section beside AC7's command. Status stays `in-review`.
+

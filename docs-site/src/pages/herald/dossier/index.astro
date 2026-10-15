@@ -4,7 +4,9 @@ import { getEntry } from 'astro:content';
 import DossierBody from '../../../components/dossier/DossierBody.astro';
 import HeraldDossierLayout from '../../../layouts/HeraldDossierLayout.astro';
 
-export const prerender = process.env.PYFORGE_PAGES_ONE_GENERATOR === '1';
+import { pagesOneGenerator } from '../../../lib/flags.ts';
+
+export const prerender = pagesOneGenerator();
 
 const entry = prerender ? await getEntry('dossier', 'dossier') : null;
 if (prerender && !entry) {

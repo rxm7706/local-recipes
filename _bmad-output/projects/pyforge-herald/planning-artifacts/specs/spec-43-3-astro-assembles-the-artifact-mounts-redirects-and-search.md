@@ -297,3 +297,7 @@ lines) finds no absolute URL off the configured origin, the vendored Kedro-Viz b
 - 2026-10-14: specced at mint from Epic 43's Story 43.3 text, `spec-pyforge-herald` CAP-61, FR-12.4 and the Dream's
   2026-10-13 entry (M3), against `assemble_pages.py` and `astro.config.mjs` as they stand on 2026-10-14 (the config
   already carries the `/kedro-viz/` redirect; the 44 legacy paths are written by the assembler).
+- 2026-10-15 (the lane-B → lane-A merge, a semantic clash fixed in the merge): `_check_origins` imported
+  `public_site_url` from `pages_second_host`, which herald 42.3 (lane B) renamed to `docsite/tools/pages_site_url.py`;
+  the merged tree's flag-on `pages-check` would have died on the import. It now imports from `pages_site_url`, as the
+  rest of the assembler does.

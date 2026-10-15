@@ -31,7 +31,7 @@ def test_the_download_follows_the_flag(flag_provider: dict[str, bool], tmp_path:
 
     def gh(argv: list[str]) -> subprocess.CompletedProcess[str]:
         calls.append(list(argv))
-        return subprocess.CompletedProcess(argv, 0, json.dumps([]), "")
+        return subprocess.CompletedProcess(argv, 0, json.dumps({"total_count": 0, "artifacts": []}), "")
 
     enabled = flag_provider["pyforge.steward.pages_duty"]
     script = _load_script()
@@ -40,7 +40,9 @@ def test_the_download_follows_the_flag(flag_provider: dict[str, bool], tmp_path:
     assert script.main(["--flag-env"], runner=gh, flag_on=enabled, root=tmp_path) == 0
     out = capsys.readouterr().out
     if enabled:
-        assert calls and calls[0][:3] == ["gh", "run", "list"]  # the selection runs
+        assert (
+            calls and calls[0][:2] == ["gh", "api"] and "/actions/artifacts?name=" in calls[0][2]
+        )  # the selection runs
         assert env_file.read_text(encoding="utf-8") == "KEDRO_VIZ_EXPORT=absent\n"
         assert "PYFORGE_PAGES_DUTY=1" in out
     else:

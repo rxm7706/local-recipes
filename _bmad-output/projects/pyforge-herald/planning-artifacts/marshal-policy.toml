@@ -546,7 +546,7 @@ verify_commands = [
 "42" = [  # the Pages site shows the fleet and the guild, and builds for any host without a flag (feature under CAP-60,
   # FR-12.1..FR-12.3; flags pyforge.herald.status_pages new and pyforge.herald.pages_second_host retired; Stories
   # 42.1-42.3), added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus
-  # docsite/ (build.py, the status templates, the build inputs, site.yml, assemble_pages.py, pages_second_host.py), the
+  # docsite/ (build.py, the status templates, the build inputs, site.yml, assemble_pages.py, pages_site_url.py), the
   # flag tree, its overlay and herald's flag inventory, the GHE how-to, and every Spec memlog a reconcile names
   # (spec-pyforge-steward co-governs the workflow that writes the inputs; herald never edits pages.yml).
   "src/shared/packages/pyforge-herald/**",
@@ -558,6 +558,10 @@ verify_commands = [
   "src/platform/config/flag-overlays.json",
   "docs/governance/flag-inventory/pyforge-herald.md",
   "docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md",
+  # The tree-wide flag pins list every key the tree holds: 42.1 added pyforge.herald.status_pages and 42.3 removed
+  # pyforge.herald.pages_second_host (lane-B re-review).
+  "src/platform/tests/test_openfeature_file_flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "43" = [  # one generator renders the whole Pages site (feature under CAP-61, FR-12.4..FR-12.5, AD-23; flag
@@ -577,6 +581,10 @@ verify_commands = [
   "src/platform/config/flag-overlays.json",
   "docs/governance/flag-inventory/pyforge-herald.md",
   "AGENTS.md",
+  # Story 43.6: the three build inputs it reads are gitignored beside 42.1's, and the Guild steps that would
+  # write them are a steward deferred-work row.
+  ".gitignore",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 

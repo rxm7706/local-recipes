@@ -59,14 +59,18 @@ The status pages (Story 42.1) are herald's second prefix, `/status/`, mounted be
 the fleet board at `/status/` (one row per station with a done bar, and an attention block of every
 blocked and backlog story) and the guild status page at `/status/ci/` (every row of
 `content/ci-status.json`, in the dossier tile's order with `live` last). Both are build-time
-snapshots: each names its snapshot time and links the live view on Lane 1 (`site.yml` `lane1`).
+snapshots: each names its snapshot time and, once `site.yml`'s `lane1.href` is an absolute
+`http(s)://` URL, links the live view on Lane 1; a root-absolute href (`/console/`, the default) would
+404 on the Pages origin, so the pages carry no Lane 1 link until the operator names it (herald
+deferred-work row `DW-herald-42-1-1`).
 They render only with `pyforge.herald.status_pages` on, which reaches the `site` build as
 `PYFORGE_STATUS_PAGES` (`tools/export_status_pages_env.py`, run in the Guild env); on, the menus
 gain Status and the build input `content/fleet-status.json` (gitignored, written by a Guild step of
 steward's workflow from `sprint-ledger-query --format json`; its shape is in `tools/status_pages.py`)
 must carry `stations`, a list, each with `done` and `total` (`done` no more than `total`), or
 `pages-check` exits 1 naming the file. The attention block says "nothing needs attention" only when
-every station counts 0 blocked and 0 backlog. Off, the input is never opened and no other page
+every station counts 0 blocked and 0 backlog, and names each station whose listed blocked or backlog
+rows differ from its own count. Off, the input is never opened and no other page
 changes. A local run with the flag on, from the live ledgers (steward Story 102.3 writes the input,
 then runs `pages-check`) or from the fixture:
 

@@ -46,6 +46,14 @@ These files are maintained in this repository and are **not** byte-identical to 
 - `scripts/populate-public.ts` — the only writer of `public/` (gitignored), run at every build's start: with the flag
   on, the twins, the family downloads and the dashboard exports in `docs/dashboard/`; off, empty
 - `scripts/origin_check.py` — `pages-check`'s origin rule with the flag on (under 40 lines; AD-21)
+- `src/lib/agent-surface.ts`, `src/lib/agent-data.ts` and the pages `src/pages/[llms].txt.ts`, `src/pages/[facts].json.ts`,
+  `src/pages/changes/` and `src/pages/status/runs/` — herald Story 43.6's machine surfaces: `/llms.txt` and
+  `/llms-full.txt` (`docs/map.yaml`'s pages and its `herald` section), `/facts.json` (every
+  `presentations/<slug>/facts.yaml`), `/changes/` with `/changes/rss.xml`, and `/status/runs/`. Emitted only with
+  `PYFORGE_PAGES_ONE_GENERATOR=1` (the runs page also needs `PYFORGE_STATUS_PAGES=1`). The changes and runs pages
+  read three gitignored build inputs under `docsite/content/` (`changes.json`, `marshal-status.json`,
+  `herald-progress.json`; `PAGES_BUILD_INPUTS_DIR` points elsewhere); an absent input is one line on the page,
+  a malformed one fails the build naming the file
 
 ## Layout
 

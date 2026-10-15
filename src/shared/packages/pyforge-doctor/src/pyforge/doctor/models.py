@@ -219,6 +219,13 @@ class Source(StrEnum):
     # fleet-picture ATTENTION probes this DISPATCH name. Never imports
     # ``pyforge.steward``; subprocess lives in ``cli_bridge`` only.
     CI_PAUSE_DRIFT = "ci-pause-drift"
+    # Story 48.2 (Epic 48 / CAP-91 FR-24): warn-only live read of the Pages
+    # root's ``last-modified`` against the latest published-input commit on
+    # ``refs/remotes/origin/main``; a deploy more than 24 hours behind its
+    # inputs is one WARN, an unreadable side is one WARN and never an OK.
+    # fleet-picture ATTENTION probes this DISPATCH name. Subject steward (the
+    # deploy duct, pages.yml); see sources/pages_liveness.py.
+    PAGES_LIVENESS = "pages-liveness"
     # Story 17.2 (Epic 17 / FR-147): Dream-tier hygiene mode on the
     # dream-chain surface — frontmatter validity (status vocab, owner in
     # station/`guild`, title present), README table sync, realization-log

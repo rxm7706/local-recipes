@@ -2,8 +2,9 @@
 title: '42.3: The second host needs no flag'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 flag-exempt: flag-infrastructure   # the story retires a flag, pyforge.herald.pages_second_host (spec-feature-flag-governance Q2)
+retires-flag: pyforge.herald.pages_second_host   # read by the flag gate and the flag inventory (scripts/flag_gate_check.py RETIRES_FIELD)
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -220,3 +221,66 @@ files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
   2026-10-13 entry, against `pages_second_host.py`, `pages_host.py` and `export_pages_host_env.py` as they stand on
   2026-10-14. AC5's grep is scoped to code, tests, configuration, workflows and docs because the planning record and the
   Dream keep the flag's history by design.
+- 2026-10-15 (built with steward 102.5 in one commit, lane B; status `in-review`). Where the landed code differs:
+  - **The module is renamed.** AC3's `grep -rn "pages_second_host" docsite/` cannot pass while `assemble_pages.py`
+    imports a module of that name, so `docsite/tools/pages_second_host.py` is now `docsite/tools/pages_site_url.py`
+    (same functions: `combine_pages_host`, `public_site_url`, `site_origin`, `resolve_build_site_url` without
+    `apply_second_host`, `resolve_from_process_environment` reading the two variables only). The test file keeps its
+    name and spells the retired key in pieces. The Surface line in `epics.md` names the new path.
+  - **The first flag retirement needed the gate to know about retirements.** With the key gone, `flag-gate-check`
+    redded the `done` 31.1 spec (key not in the tree, its deleted test missing), and the regenerated inventory kept
+    printing the key from 31.1's flag block (AC4, AC5). This spec now carries `retires-flag:
+    pyforge.herald.pages_second_host`. `scripts/flag_gate_check.py` (`RETIRES_FIELD`) leaves a `done` spec whose key
+    is declared retired *and* gone from the tree unjudged, and `scripts/flag_inventory.py` prints "none (retired by
+    <story>)" instead of the key. A key still in the tree is judged as before. Tests are in
+    `tests/scripts/test_flag_gate_check.py` and `test_flag_inventory.py`. This changes the flag governance mechanism
+    (spec-feature-flag-governance Q4), so it needs that Spec's review.
+  - **The example key.** `test_flags.py` (core) and `test_openfeature_file_flags.py` (platform) list every key the tree
+    holds rather than using one as an example, so the key's rows are removed, not moved. The same lists lacked atlas
+    30.2's `pyforge.atlas.vizro_static_boards` (red at `73ae4f1180`), which is now added.
+  - **AC5 is checked by the spec's command, not by a test.** A herald test that ran `git grep` over the repo root
+    would hand the root to code, and steward's station-tests trigger map would then have to fire herald's job on every
+    path. AC3 and AC4 are tests.
+  - **AC1's enterprise `pages-check` was red on base** on one absolute link to the public host in
+    `docs/reference/github-workflows.md` (`<https://rxm7706.github.io/local-recipes/>`, the `pages.yml` row). The row
+    now names the host in code and describes 102.5's behaviour.
+- 2026-10-15 (the independent review, `review-42-3-102-5`; the 42.3 items are resolved here, where this entry and an
+  earlier one disagree, this one holds):
+  - **The blocker is not this story's any more.** The flag gate's and the flag inventory's retirement rule
+    (`scripts/flag_gate_check.py`, `scripts/flag_inventory.py`, their tests, the `retires-flag:` field and
+    `docs/reference/story-spec-flag-block.md`) moved to a new doctor story, built in its own worktree, by operator
+    ruling 2026-10-15; the review's should-fix on that rule (a retired key whose reader lives) goes with it. This
+    story's `retires-flag:` frontmatter stays as built until that story lands.
+  - **A root-hosted site builds for its own origin (should-fix; AC2 and the matrix amended).** `configure-pages` gives
+    `base_path: ""` for a site served at its host's root (a custom domain, a root-hosted Pages host), and the old
+    "both values, else public" rule built such a host for the public github.io URL; `assemble_pages` then overwrote
+    the workflow's correct `SITE_URL` with that. `pages_site_url.resolve_build_site_url` now decides on the base URL
+    alone: with one, `combine_pages_host(base_url, base_path)`, which already maps an empty or `/` path to the origin;
+    with none, `public_site_url()`. AC2 now reads: given no `PAGES_HOST_BASE_URL` (whatever the base path), the
+    build's `SITE_URL` is the public github.io URL; given a base URL with an empty base path, it is that origin. The
+    matrix rows "root base path" (`PAGES_HOST_BASE_PATH=""` or `/` → the origin alone) and "only one variable"
+    (base URL alone → its origin; base path alone → the public URL) read the same. The `empty-path` case now expects
+    `https://pages.ghe.example`, and `custom-domain-root`, `empty-url` and `url-only` cases join it
+    (`test_the_base_url_alone_decides_and_an_empty_path_is_the_origin`). The how-to's § 5 sentence says the same.
+  - **The test file is renamed and spells the key outright (nit; AC5 amended).** `tests/meta/test_pages_second_host.py`
+    is now `tests/meta/test_pages_site_url.py`, after the module it tests; it is AC3's and AC4's absence test, so it
+    names `pyforge.herald.pages_second_host` plainly instead of in pieces. AC5's command now excludes it by path, and
+    uses git's long pathspec form, because the short form as written fails before searching (`git grep ...
+    ':!_bmad-output'` exits 128, "Unimplemented pathspec magic '_'"): `git grep -l pages_second_host -- .
+    ':(exclude)_bmad-output' ':(exclude)docs/dreams' ':(exclude)archive' ':(exclude)scripts/.spec-surface-baseline.json'
+    ':(exclude)src/shared/packages/pyforge-herald/tests/meta/test_pages_site_url.py'` prints nothing (run 2026-10-15,
+    exit 1, no output). The gate script's `*_second_host` comment is the doctor story's file.
+  - **The how-to index (should-fix).** `docs/how-to/README.md` describes the page as "`configure-pages` host values +
+    the `pages-site` release zip", not "Story 31.1 flag + `pages.yml`".
+  - **The surfaces (nit).** `marshal-policy.toml`'s steward "102" surface names `docsite/tools/pages_site_url.py`, and
+    herald's "42" comment names it too.
+- 2026-10-15 (independent review, lane C): the gate and inventory change this story carried (`RETIRES_FIELD` in
+  `scripts/flag_gate_check.py`, the retired cell in `scripts/flag_inventory.py` and their tests) is now owned by doctor
+  Story 34.7, under `spec-feature-flag-governance` CAP-2's retirement path (operator ruling 2026-10-15). 34.7 adds the
+  owner rule (only a story of the key's owning station retires it) and `flag-retired-still-read` (a reader left on a
+  retired key reds). This spec's `retires-flag: pyforge.herald.pages_second_host` line stands: herald owns
+  `pyforge.herald.*`, and no reader names the key.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`, surface nit): herald's Epic 42 surface (`marshal-policy.toml`)
+  now lists `src/platform/tests/test_openfeature_file_flags.py` and
+  `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, the tree-wide flag pins 42.1 and this story edited;
+  atlas's Epic 30 surface lists them too (30.2's key).

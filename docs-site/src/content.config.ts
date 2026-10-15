@@ -2,6 +2,7 @@ import { defineCollection, z } from 'astro:content';
 import { i18nLoader } from '@astrojs/starlight/loaders';
 import { docsSchema, i18nSchema } from '@astrojs/starlight/schema';
 
+import { pagesOneGenerator } from './lib/flags.ts';
 import { dossierLoader } from './loaders/dossier-loader';
 import { shelfDocsLoader } from './loaders/shelf-docs-loader';
 
@@ -47,7 +48,6 @@ const sectionSchema = z
 /** Loader validates block types; keep the collection schema loose for YAML shape drift. */
 const dossierSchema = z.object({ title: z.string() }).passthrough();
 
-const pagesOneGenerator = process.env.PYFORGE_PAGES_ONE_GENERATOR === '1';
 
 export const collections = {
   docs: defineCollection({
@@ -55,7 +55,7 @@ export const collections = {
     schema: docsSchema(),
   }),
   i18n: defineCollection({ loader: i18nLoader(), schema: i18nSchema() }),
-  ...(pagesOneGenerator
+  ...(pagesOneGenerator()
     ? {
         dossier: defineCollection({
           loader: dossierLoader(),

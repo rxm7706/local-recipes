@@ -33,10 +33,8 @@ export interface HeraldPages {
   builtAt: string;
 }
 
-/** `pyforge.herald.pages_one_generator`, as the Guild step exports it (Story 43.1). */
-export function pagesOneGenerator(): boolean {
-  return ['1', 'true', 'yes'].includes((process.env.PYFORGE_PAGES_ONE_GENERATOR ?? '').trim().toLowerCase());
-}
+/** `pyforge.herald.pages_one_generator` (Story 43.1), read by the docs-site's one flag reader (`src/lib/flags.ts`). */
+export { pagesOneGenerator } from '../lib/flags.ts';
 
 /**
  * The tree the pages read: `HERALD_PAGES_REPO_ROOT`, else the repository holding the build's working

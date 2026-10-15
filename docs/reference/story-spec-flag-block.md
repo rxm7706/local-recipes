@@ -113,6 +113,58 @@ code: every station's frozen exit-code domain holds in both flag states. The sto
 `## Verification` names a test that runs both states and, for such a verb, asserts the listing
 and the refusal.
 
+## Retiring a flag: `retires-flag:`
+
+A flag leaves the tree 90 days after it is ON in every environment, and its owning station files
+the removal story (Q4). That story names the key it removes in its frontmatter, beside its own
+`flag-exempt:` value:
+
+```yaml
+---
+title: 'A story that removes a flag'
+type: 'feature'
+flag-exempt: flag-infrastructure
+retires-flag: pyforge.atlas.old_capability   # one key, or a list of keys
+---
+```
+
+- **Only the owner retires a key.** The key's owning station is its `pyforge.<station>.` prefix,
+  or, for a key with no station segment, the tree's `metadata.owner` while the tree holds the
+  key. The tree's `metadata.owner` must name the prefix's station (a mismatch is a defect). A story
+  spec's station is its project folder. A `retires-flag:` in a story spec of another station, at
+  any status, is a defect that names the spec, and it retires nothing. A key with no station
+  segment has no known owner once it leaves the tree: its declaration then retires nothing and is
+  not judged.
+- **The key's history stays.** Once the owner retires the key and it leaves the tree, a `done`
+  spec whose `flag:` block names it is history: the gate no longer asks for the key in the tree
+  or for its two-state test. The spec is never rewritten.
+- **No reader may stay.** Once a declared key leaves the tree, every tracked file that still names
+  it is a defect that names the file, whoever declared the retirement. A read of a missing key
+  silently returns its default. The gate reads every file that can act on a flag: code,
+  configuration, workflows (`.github/`), task files (`pixi.toml`), site code and content
+  (`docsite/`, `docs-site/`) and BMAD config (`_bmad/`). It does not read prose (`*.md`), tests,
+  binary files, the planning and history record (`_bmad-output/`, `archive/`, `docs/dreams/`,
+  `presentations/`, `.claude/memory/`), `recipes/` or the spec-surface baseline. So the retiring
+  story's own absence test, which must name the key, never counts.
+- **What the gate cannot see is the retiring story's own checklist.** Remove these by hand, with
+  the flag's reader and its tests:
+  - every environment stand-in for the flag, such as a `PYFORGE_*` variable a workflow reads, and
+    the script that exports it from the flag;
+  - every read that builds the key from parts (an f-string, `+`). **Spell a flag key literally at
+    its read site**, so the gate can find it;
+  - every mention in code comments and docstrings. A module path named like the key is fine on an
+    `import` line or in `import_module("...")`, but nowhere else.
+- **A key still in the tree** is judged as any tree key is. Declaring its retirement early
+  changes nothing.
+
+The gate guards keys that a `done` spec's `flag:` block names. A key no block names can leave the
+tree with no declaration; its removal story still declares `retires-flag:`, so the reader check
+runs.
+
+The flag inventory names a retired key by its retiring story, never by the key. The rule is
+`docs/governance/spec-feature-flag-governance/SPEC.md` CAP-2's retirement path (doctor Story
+34.7).
+
 ## How a machine reads it
 
 `scripts/flag_rule.py` is the pure reader: `classify(path)` returns `flag`, `exempt` or

@@ -1,7 +1,8 @@
 {% extends "shell_page.html.j2" %}
 {#- Story 42.1 (CAP-60): /status/index.html, the fleet board. A build-time snapshot of the
     fleet-status.json build input (docsite/tools/status_pages.py); the counts are steward's data, so
-    every value is escaped. `rel` climbs from /status/ back to the /herald/ mount. -#}
+    every value is escaped. `rel` climbs from /status/ back to the /herald/ mount. `lane1` is
+    status_pages.lane1_link's: None (no link) until site.yml names Lane 1 by an absolute URL. -#}
 {% block head_extra %}
 <style>
 .status-snapshot { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; color: var(--rail); margin-top: 14px; }
@@ -23,7 +24,7 @@
     <div class="kicker"><span class="dot"></span>Fleet board</div>
     <h1>Status</h1>
     <p class="blurb">One row per station, counted from the tracked sprint ledgers when this site was built. A snapshot: nothing on this page is live.</p>
-    <p class="status-snapshot">Snapshot {% if board.generated_at %}taken <time datetime="{{ board.generated_at | e }}">{{ board.generated_at | e }}</time>{% else %}time not recorded in the input{% endif %} &middot; <a href="{{ lane1.href | e }}">{{ lane1.label | e }}</a> &middot; <a href="ci/index.html">Guild CI status</a></p>
+    <p class="status-snapshot">Snapshot {% if board.generated_at %}taken <time datetime="{{ board.generated_at | e }}">{{ board.generated_at | e }}</time>{% else %}time not recorded in the input{% endif %}{% if lane1 %} &middot; <a href="{{ lane1.href | e }}">{{ lane1.label | e }}</a>{% endif %} &middot; <a href="ci/index.html">Guild CI status</a></p>
   </div>
 
   <section class="status-board">

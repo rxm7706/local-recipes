@@ -241,6 +241,7 @@ jobs:
             '_bmad-output/projects/*/planning-artifacts/*'
             _bmad-output/projects/pyforge-doctor/README.md
             archive
+            docs/404.md
             docs/MAP.md
             docs/dashboard
             docs/dreams
@@ -248,6 +249,8 @@ jobs:
             docs/foundry/frames/pyforge.frame.md
             docs/governance
             docs/how-to
+            docs/index.md
+            docs/map.yaml
             docs/reference
             docsite/build.py
             'recipes/*/recipe.yaml'

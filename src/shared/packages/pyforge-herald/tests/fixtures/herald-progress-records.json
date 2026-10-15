@@ -1,0 +1,8 @@
+{
+  "generated_at": "2026-10-15T09:06:00+00:00",
+  "records": [
+    {"id": "p1", "station": "pyforge-steward", "date": "2026-10-13", "shipped_capabilities": ["CAP-166"], "compute_hours": 1.5, "token_spend": 120000, "wall_clock_hours": 3.0, "unblock_narrative": "ci pause registry", "created_at": "2026-10-13T10:00:00Z", "updated_at": "2026-10-13T10:00:00Z"},
+    {"id": "p2", "station": "pyforge-steward", "date": "2026-10-15", "shipped_capabilities": ["CAP-168", "CAP-169"], "compute_hours": 2.25, "token_spend": 340000, "wall_clock_hours": 5.5, "unblock_narrative": "pages duct", "created_at": "2026-10-15T08:00:00Z", "updated_at": "2026-10-15T08:00:00Z"},
+    {"id": "p3", "station": "pyforge-herald", "date": "2026-10-14", "shipped_capabilities": ["CAP-60"], "compute_hours": 0.75, "token_spend": 90000, "wall_clock_hours": 2.0, "unblock_narrative": "", "created_at": "2026-10-14T09:00:00Z", "updated_at": "2026-10-14T09:00:00Z"}
+  ]
+}

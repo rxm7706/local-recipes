@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 0dbabec02416ef7a
-story_count: 156
-test_file_count: 97
+source_fingerprint: c4bfef4d508b4682
+story_count: 157
+test_file_count: 98
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 156
+- **Stories parsed:** 157
 - **Epics parsed:** 48
-- **Test files inventoried:** 97 under `src/shared/packages/pyforge-doctor/tests/`
+- **Test files inventoried:** 98 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `0dbabec02416ef7a`
+- **Source fingerprint:** `c4bfef4d508b4682`
 
 ## Risk Assessment
 
@@ -175,6 +175,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_marshal_story_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_one_chain_fold_complete.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_pixi_currency.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_platform_policy.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_registry.py` | unit | none observed |
@@ -321,6 +322,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.4 | Each station has a checked-in flag inventory of its runtime capabilities | none observed |
 | 34.5 | The flag gate reds a landed flagged story whose test does not run both states | none observed |
 | 34.6 | A flag key shared by several done stories is judged against the latest one | none observed |
+| 34.7 | A retired flag leaves the tree only by its owner, and never while read | none observed |
 | 35.1 | capability-ledger's post-PIN check reads only live Specs | none observed |
 | 36.1 | A fold-complete check proves each archived Dream's body is in its station Dream | none observed |
 | 36.2 | The sibling-drift check reads acknowledged Dreams under the archive | none observed |

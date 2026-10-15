@@ -82,7 +82,15 @@ def _site_cfg() -> dict:
     return yaml.safe_load(_SITE_YML.read_text(encoding="utf-8"))
 
 
-def _render(build_mod, tmp_path: Path, *, flag_enabled: bool, fleet: Path = _FLEET, ci: Path = _CI):
+def _render(
+    build_mod,
+    tmp_path: Path,
+    *,
+    flag_enabled: bool,
+    fleet: Path = _FLEET,
+    ci: Path = _CI,
+    site_cfg: dict | None = None,
+):
     status_out = tmp_path / "site" / "status"
     written = build_mod.render_status_pages(
         flag_enabled=flag_enabled,
@@ -90,7 +98,7 @@ def _render(build_mod, tmp_path: Path, *, flag_enabled: bool, fleet: Path = _FLE
         herald_out=tmp_path / "site" / "herald",
         fleet_status=fleet,
         ci_status=ci,
-        site_cfg=_site_cfg(),
+        site_cfg=site_cfg if site_cfg is not None else _site_cfg(),
         built_at="2026-10-15",
         commit="abc1234",
     )
@@ -264,12 +272,73 @@ def test_ac2_counts_the_input_does_not_give_are_not_an_all_clear(build_mod, tmp_
     assert "station counts do not say whether any exist" in block
 
 
-def test_ac2_a_partial_list_says_how_much_it_lists(build_mod, tmp_path: Path) -> None:
+def test_ac2_a_partial_list_names_each_station_it_is_short_for(build_mod, tmp_path: Path) -> None:
     payload = _fleet()
     payload["stories"] = [s for s in payload["stories"] if s["status"] != "backlog"]
     block = _attention_block(build_mod, tmp_path, payload)
     assert len(re.findall(r'<li data-key="', block)) == 13  # noqa: PLR2004
-    assert "The input lists 13 of the 13 blocked and 0 of the 9 backlog stories the station counts show." in block
+    assert "The input&#39;s story list and its station counts disagree." in block
+    short = [s for s in payload["stations"] if s.get("backlog")]
+    assert short  # the fixture's backlog sits on some stations, not all
+    for station in short:
+        assert f"{station['station']}: 0 backlog listed, {station['backlog']} counted" in block
+    for station in payload["stations"]:
+        if not station.get("backlog"):
+            assert f"{station['station']}:" not in block  # a station whose list matches is not named
+    assert "blocked listed" not in block  # every blocked row is listed
+
+
+def _two_stations(listed: dict[str, int]) -> dict:
+    """Station a counts 1 blocked, station b counts 1 blocked; ``listed`` blocked rows per station."""
+    stations = [
+        {"station": "pyforge-a", "done": 1, "total": 2, "blocked": 1, "backlog": 0},
+        {"station": "pyforge-b", "done": 1, "total": 2, "blocked": 1, "backlog": 0},
+    ]
+    stories = [
+        {"story_id": f"{name[-1]}.{i}", "station": name, "status": "blocked"}
+        for name, count in listed.items()
+        for i in range(count)
+    ]
+    return {"generated_at": "t", "stations": stations, "stories": stories}
+
+
+def test_ac2_one_station_s_surplus_never_hides_another_s_missing_rows() -> None:
+    """The re-review's probe: station a lists 2 of 1, station b lists 0 of 1. The fleet-wide sums agree
+    (2 listed, 2 counted) and the old note said nothing; compared per station, both are named."""
+    sp, _ = _tools()
+    data = _two_stations({"pyforge-a": 2})
+    note = sp.attention_note(data, sp.attention_items(data))
+    assert note == (
+        "The input's story list and its station counts disagree. "
+        "pyforge-a: 2 blocked listed, 1 counted; pyforge-b: 0 blocked listed, 1 counted."
+    )
+
+
+def test_ac2_a_surplus_reads_as_listed_and_counted_never_as_x_of_fewer() -> None:
+    """The re-review's other probe: a list longer than the counts read "lists 3 of the 1 blocked"."""
+    sp, _ = _tools()
+    data = _two_stations({"pyforge-a": 3, "pyforge-b": 1})
+    note = sp.attention_note(data, sp.attention_items(data))
+    assert note == "The input's story list and its station counts disagree. pyforge-a: 3 blocked listed, 1 counted."
+    assert "of the" not in note
+
+
+def test_ac2_a_listed_story_no_station_row_counts_is_named() -> None:
+    sp, _ = _tools()
+    data = _two_stations({"pyforge-a": 1, "pyforge-b": 1})
+    data["stories"].append({"story_id": "9.1", "station": "pyforge-zz", "status": "backlog"})
+    note = sp.attention_note(data, sp.attention_items(data))
+    assert note == (
+        "The input's story list and its station counts disagree. "
+        "pyforge-zz: 1 backlog listed, no station row counts them."
+    )
+
+
+def test_ac2_a_station_whose_counts_are_unknown_is_not_compared() -> None:
+    sp, _ = _tools()
+    data = _two_stations({"pyforge-a": 1, "pyforge-b": 2})
+    del data["stations"][1]["blocked"]
+    assert sp.attention_note(data, sp.attention_items(data)) is None
 
 
 def test_ac2_a_complete_list_carries_no_note(build_mod, tmp_path: Path) -> None:
@@ -277,16 +346,57 @@ def test_ac2_a_complete_list_carries_no_note(build_mod, tmp_path: Path) -> None:
     assert "status-attention-note" not in (status_out / "index.html").read_text(encoding="utf-8")
 
 
-def test_ac3_snapshot_time_and_one_lane1_link(build_mod, tmp_path: Path) -> None:
+_LANE1_URL = "https://lane1.example.internal/console/"
+
+
+def test_ac3_a_root_absolute_lane1_href_carries_no_link(build_mod, tmp_path: Path) -> None:
+    """42.1's re-review: the Pages build resolves flags as ``dev``, so the status pages ship the day
+    this lands. ``site.yml``'s ``lane1.href`` is ``/console/`` until the operator names Lane 1's URL,
+    and on the Pages origin that path 404s: both pages leave the link out (orchestrator ruling
+    2026-10-15) and still name their snapshot time."""
+    assert _site_cfg()["lane1"]["href"].startswith("/")  # the live default this test pins
     status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
     for page in (status_out / "index.html", status_out / "ci" / "index.html"):
         text = page.read_text(encoding="utf-8")
-        links = re.findall(r'<a href="/console/">([^<]*)</a>', text)
-        assert links == ["Live view on Lane 1"], page
-        assert text.count("/console/") == 1, page
+        assert "/console/" not in text and "Lane 1" not in text, page
         assert "<script src" not in text and "<iframe" not in text and "fetch(" not in text
     board = (status_out / "index.html").read_text(encoding="utf-8")
     assert '<time datetime="2026-10-14T01:56:19+00:00">' in board
+    assert '</time> &middot; <a href="ci/index.html">Guild CI status</a></p>' in board
+    guild = (status_out / "ci" / "index.html").read_text(encoding="utf-8")
+    assert '</time> &middot; <a href="../index.html">Fleet board</a></p>' in guild
+
+
+def test_ac3_an_absolute_lane1_url_is_one_link_on_each_page(build_mod, tmp_path: Path) -> None:
+    site_cfg = {**_site_cfg(), "lane1": {"label": "Live view on Lane 1", "href": _LANE1_URL}}
+    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True, site_cfg=site_cfg)
+    for page in (status_out / "index.html", status_out / "ci" / "index.html"):
+        text = page.read_text(encoding="utf-8")
+        assert re.findall(r'<a href="([^"]+)">Live view on Lane 1</a>', text) == [_LANE1_URL], page
+        assert text.count(_LANE1_URL) == 1, page
+        assert "<script src" not in text and "<iframe" not in text and "fetch(" not in text
+
+
+@pytest.mark.parametrize(
+    ("href", "linked"),
+    [
+        ("/console/", False),
+        ("//lane1.example.internal/console/", False),
+        ("console/", False),
+        ("", False),
+        (None, False),
+        (_LANE1_URL, True),
+        ("http://lane1.example.internal/console/", True),
+        ("HTTPS://LANE1.EXAMPLE/console/", True),
+    ],
+)
+def test_lane1_link_renders_only_an_absolute_url(href: str | None, linked: bool) -> None:
+    sp, _ = _tools()
+    link = sp.lane1_link({"label": "Live view on Lane 1", "href": href})
+    assert (link is not None) is linked
+    if linked:
+        assert link == {"href": href, "label": "Live view on Lane 1"}
+    assert sp.lane1_link(None) is None and sp.lane1_link("https://x/") is None
 
 
 def test_ac3_an_input_without_a_snapshot_time_says_so(build_mod, tmp_path: Path) -> None:

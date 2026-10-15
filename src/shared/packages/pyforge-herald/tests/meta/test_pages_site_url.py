@@ -1,16 +1,25 @@
-"""Story 31.1: Pages artifact builds for the deploying host (CAP-56)."""
+"""Story 31.1: Pages artifact builds for the deploying host (CAP-56).
+
+Story 42.3 (CAP-60): ``actions/configure-pages`` is authoritative on every host, so the build takes
+``PAGES_HOST_BASE_URL`` (joined with ``PAGES_HOST_BASE_PATH``; an empty base path is a root-hosted site)
+whenever a base URL is set and the public github.io URL otherwise, with no flag. The resolver is
+``docsite/tools/pages_site_url.py``; the flag, its reader (``pyforge/herald/pages_host.py``) and the
+workflow exporter (``docsite/tools/export_pages_host_env.py``) are gone. This file is the absence test, so
+it names the retired key outright; 42.3's AC5 grep excludes it by path (42.3's review).
+"""
 
 from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
 import pytest
-from pyforge.testing_kit.flags import flagd_tree
 
-PAGES_SECOND_HOST_FLAG = "pyforge.herald.pages_second_host"
+#: The retired key (AC4). AC5's tracked-file grep excludes this file by path.
+RETIRED_FLAG = "pyforge.herald.pages_second_host"
 ENTERPRISE_SITE = "https://pages.ghe.example/org/local-recipes"
 ENTERPRISE_BASE_PATH = "/org/local-recipes/"
 
@@ -34,12 +43,12 @@ def _load_module(name: str, path: Path):
     return mod
 
 
-def _pages_second_host():
+def _site_url():
     root = _repo_root()
     tools = root / "docsite" / "tools"
     if str(tools) not in sys.path:
         sys.path.insert(0, str(tools))
-    return _load_module("pages_second_host_under_test", tools / "pages_second_host.py")
+    return _load_module("pages_site_url_under_test", tools / "pages_site_url.py")
 
 
 def _assemble_pages():
@@ -51,50 +60,96 @@ def _assemble_pages():
 
 
 def test_public_site_url_default() -> None:
-    psh = _pages_second_host()
+    psh = _site_url()
     assert psh.public_site_url(github_repository="rxm7706/local-recipes") == ("https://rxm7706.github.io/local-recipes")
 
 
 def test_combine_pages_host() -> None:
-    psh = _pages_second_host()
+    psh = _site_url()
     url = psh.combine_pages_host(ENTERPRISE_SITE, ENTERPRISE_BASE_PATH)
     assert url == "https://pages.ghe.example/org/local-recipes"
 
 
-def test_resolve_build_site_url_flag_on() -> None:
-    psh = _pages_second_host()
-    url = psh.resolve_build_site_url(
-        configured_base_url=ENTERPRISE_SITE,
-        configured_base_path=ENTERPRISE_BASE_PATH,
-        apply_second_host=True,
-    )
-    assert url == "https://pages.ghe.example/org/local-recipes"
+def test_both_host_values_set_are_the_site_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """AC1: both configure-pages values, no flag anywhere."""
+    psh = _site_url()
+    monkeypatch.setenv("PAGES_HOST_BASE_URL", "https://pages.ghe.example")
+    monkeypatch.setenv("PAGES_HOST_BASE_PATH", "/org/local-recipes")
+    assert psh.resolve_from_process_environment() == "https://pages.ghe.example/org/local-recipes"
 
 
-def test_resolve_build_site_url_flag_off_ignores_enterprise() -> None:
-    psh = _pages_second_host()
-    url = psh.resolve_build_site_url(
-        configured_base_url=ENTERPRISE_SITE,
-        configured_base_path=ENTERPRISE_BASE_PATH,
-        apply_second_host=False,
-    )
-    assert url == "https://rxm7706.github.io/local-recipes"
+_PUBLIC = "https://rxm7706.github.io/local-recipes"
 
 
-def test_export_host_env_flag_on_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    psh = _pages_second_host()
-    monkeypatch.setenv("PAGES_HOST_BASE_URL", ENTERPRISE_SITE)
-    monkeypatch.setenv("PAGES_HOST_BASE_PATH", ENTERPRISE_BASE_PATH)
+@pytest.mark.parametrize(
+    ("base_url", "base_path", "expected"),
+    [
+        (None, None, _PUBLIC),
+        (None, "/org/local-recipes", _PUBLIC),
+        ("", "/org/local-recipes", _PUBLIC),
+        ("https://pages.ghe.example", "", "https://pages.ghe.example"),
+        ("https://docs.example.com", "", "https://docs.example.com"),
+        ("https://pages.ghe.example", None, "https://pages.ghe.example"),
+    ],
+    ids=["neither", "path-only", "empty-url", "empty-path", "custom-domain-root", "url-only"],
+)
+def test_the_base_url_alone_decides_and_an_empty_path_is_the_origin(
+    monkeypatch: pytest.MonkeyPatch, base_url: str | None, base_path: str | None, expected: str
+) -> None:
+    """AC2 as amended by 42.3's review: no base URL builds for the public github.io URL, whatever the
+    base path; a base URL with an empty base path is a host served at its root, so the site URL is that
+    origin. ``configure-pages`` emits ``base_path: ""`` for a custom domain or a root-hosted Pages site,
+    and the old "both values or public" rule built such a host for the public URL."""
+    psh = _site_url()
+    monkeypatch.setenv("GITHUB_REPOSITORY", "rxm7706/local-recipes")
+    for name, value in (("PAGES_HOST_BASE_URL", base_url), ("PAGES_HOST_BASE_PATH", base_path)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+    assert psh.resolve_from_process_environment() == expected
 
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {PAGES_SECOND_HOST_FLAG: "on"})))
-    on_env = psh.export_host_env_for_ci()
-    assert on_env[psh.ENV_APPLY_HOST] == "1"
-    assert on_env[psh.ENV_SITE_URL] == "https://pages.ghe.example/org/local-recipes"
 
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {PAGES_SECOND_HOST_FLAG: "off"})))
-    off_env = psh.export_host_env_for_ci()
-    assert off_env[psh.ENV_APPLY_HOST] == "0"
-    assert off_env[psh.ENV_SITE_URL] == "https://rxm7706.github.io/local-recipes"
+@pytest.mark.parametrize(
+    ("base_url", "base_path", "expected"),
+    [
+        ("https://pages.ghe.example", "/", "https://pages.ghe.example"),
+        (ENTERPRISE_SITE, "/org/local-recipes", ENTERPRISE_SITE),
+        ("https://rxm7706.github.io/local-recipes", "/local-recipes", "https://rxm7706.github.io/local-recipes"),
+    ],
+    ids=["root-base-path", "url-already-carries-path", "github-io"],
+)
+def test_resolve_build_site_url_combines_without_a_flag(base_url: str, base_path: str, expected: str) -> None:
+    psh = _site_url()
+    assert psh.resolve_build_site_url(configured_base_url=base_url, configured_base_path=base_path) == expected
+
+
+def test_no_flag_read_in_docsite_and_the_reader_is_gone() -> None:
+    """AC3."""
+    root = _repo_root()
+    pattern = re.compile("pages_second_host|PYFORGE_PAGES_APPLY_HOST|read_boolean")
+    hits = [
+        f"{path.relative_to(root)}:{number}"
+        for path in sorted((root / "docsite").rglob("*"))
+        if path.is_file() and path.suffix in {".py", ".md", ".yml", ".yaml", ".j2", ".html", ".toml", ".json"}
+        for number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1)
+        if pattern.search(line)
+    ]
+    assert hits == []
+    assert not (root / "src/shared/packages/pyforge-herald/src/pyforge/herald/pages_host.py").exists()
+    assert not (root / "docsite/tools/export_pages_host_env.py").exists()
+
+
+def test_the_retired_key_is_gone_from_the_tree_and_every_overlay() -> None:
+    """AC4."""
+    root = _repo_root()
+    tree = json.loads((root / "src/platform/config/flags.json").read_text(encoding="utf-8"))
+    assert RETIRED_FLAG not in tree["flags"]
+    overlays = json.loads((root / "src/platform/config/flag-overlays.json").read_text(encoding="utf-8"))
+    for environment, values in overlays.items():
+        assert RETIRED_FLAG not in values, environment
+    inventory = (root / "docs/governance/flag-inventory/pyforge-herald.md").read_text(encoding="utf-8")
+    assert "pages_second_host" not in inventory
 
 
 # Story 40.1 (FR-8.6): pages-check requires herald's shared menu, exactly as docsite/content/site.yml
@@ -188,7 +243,7 @@ def test_pages_check_cross_origin_kinds(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], snippet: str, kind: str, origin: str
 ) -> None:
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     artifact = tmp_path / "site"
     artifact.mkdir()
     site_url = psh.public_site_url()
@@ -217,7 +272,7 @@ def test_pages_check_cross_origin_kinds(
 )
 def test_pages_check_passes_navigation_and_non_loading_links(tmp_path: Path, snippet: str) -> None:
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     artifact = tmp_path / "site"
     artifact.mkdir()
     site_url = psh.public_site_url()
@@ -230,7 +285,7 @@ def test_pages_check_judges_the_element_not_the_outside_host(
 ) -> None:
     """One outside origin: the <a href> passes; the stylesheet, script and image it loads fail."""
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     site_url = psh.public_site_url()
     link = '<a href="https://docs.python.org/3/">Python docs</a>'
 
@@ -271,7 +326,7 @@ def test_pages_check_reads_css_and_js_files(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], rel_path: str, content: str, kind: str
 ) -> None:
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     artifact = tmp_path / "site"
     artifact.mkdir()
     site_url = psh.public_site_url()
@@ -286,7 +341,7 @@ def test_pages_check_reads_css_and_js_files(
 def test_pages_check_js_navigation_link_passes(tmp_path: Path) -> None:
     """A map-attribution style <a href> built in a JS string is navigation, not a load."""
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     artifact = tmp_path / "site"
     artifact.mkdir()
     site_url = psh.public_site_url()
@@ -322,7 +377,7 @@ def test_pages_check_exempts_vendored_kedro_viz_and_reports_it(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     artifact = tmp_path / "site"
     artifact.mkdir()
     site_url = psh.public_site_url()
@@ -346,7 +401,7 @@ def test_pages_check_exemption_is_not_a_blanket_skip(
 ) -> None:
     """The same vendored bytes outside the named root fail, even beside it under dashboard/."""
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     artifact = tmp_path / "site"
     artifact.mkdir()
     site_url = psh.public_site_url()
@@ -364,7 +419,7 @@ def test_pages_check_exemption_is_not_a_blanket_skip(
 
 def test_pages_check_absolute_internal_other_host(tmp_path: Path) -> None:
     assemble_pages = _assemble_pages()
-    psh = _pages_second_host()
+    psh = _site_url()
     artifact = tmp_path / "site"
     artifact.mkdir()
     enterprise = psh.combine_pages_host(ENTERPRISE_SITE, ENTERPRISE_BASE_PATH)
@@ -373,13 +428,6 @@ def test_pages_check_absolute_internal_other_host(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         assemble_pages.check(artifact, site_url=enterprise)
     assert exc.value.code == 1
-
-
-def test_flags_json_carries_pages_second_host() -> None:
-    root = _repo_root()
-    tree = json.loads((root / "src/platform/config/flags.json").read_text(encoding="utf-8"))
-    flag = tree["flags"][PAGES_SECOND_HOST_FLAG]
-    assert flag["defaultVariant"] == "off"
 
 
 def test_flags_json_carries_ci_surfaces_tile() -> None:

@@ -625,7 +625,8 @@ def test_the_committed_baseline_matches_the_ruling_commits_tree():
 def test_the_reference_pages_yaml_examples_classify_as_written(tmp_path: Path):
     page = (REPO_ROOT / "docs/reference/story-spec-flag-block.md").read_text(encoding="utf-8")
     blocks = re.findall(r"```yaml\n(.*?)```", page, flags=re.DOTALL)
-    assert len(blocks) == 2, "the page carries one flagged and one exempt example"
+    # doctor Story 34.7 added the third: a removal story, itself exempt, that names the key it retires
+    assert len(blocks) == 3, "the page carries one flagged, one exempt and one retiring example"
 
     verdicts = []
     for i, block in enumerate(blocks):
@@ -634,4 +635,7 @@ def test_the_reference_pages_yaml_examples_classify_as_written(tmp_path: Path):
         assert flag_rule.in_scope(path) is True
         verdicts.append(flag_rule.classify(path))
 
-    assert verdicts == [(flag_rule.FLAG, ()), (flag_rule.EXEMPT, ())]
+    assert verdicts == [(flag_rule.FLAG, ()), (flag_rule.EXEMPT, ()), (flag_rule.EXEMPT, ())]
+    retiring, _why = flag_rule.read_frontmatter(tmp_path / "spec-1-2-example.md", repo_root=tmp_path)
+    assert retiring is not None
+    assert str(retiring.get("retires-flag", "")).startswith("pyforge.")

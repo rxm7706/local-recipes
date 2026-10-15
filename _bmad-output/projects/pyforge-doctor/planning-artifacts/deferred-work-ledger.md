@@ -3024,3 +3024,69 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   status: open
   story: promoted to steward Story 103.3 (spec-pyforge-steward CAP-5, steward Epic 103, minted 2026-10-14 on the operator's ruling "yes stdlib only"; spec `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say.md`); close when 103.3 lands, citing its merge.
   reason: Not fixed in Story 47.1. A `pixi.toml` change fires every station suite and the `environment.yaml` rule, which is out of scale for a description fix, and the env's composition is steward's ruling. Story 47.1 corrected the same claim in `.github/workflows/detectors.yml` and in `tests/scripts/test_detectors_doctor_sources.py`, which it touches.
+
+### DW-doctor-48-2-1: `pages-liveness` judges the commit against the header and never the clock, so a deploy that stalls within a day of its last good one is not named
+
+- source_spec: `planning-artifacts/specs/spec-48-2-a-pages-deploy-more-than-a-day-behind-its-inputs-is-named-in-fleet-picture.md`
+  summary: CAP-91 (Story 48.2's AC1/AC2) calls the site stale when the latest published-input commit on `refs/remotes/origin/main` is more than 24 hours newer than the root's `last-modified`; the wall clock never enters the rule. (i) A deploy that stalls within 24 hours of the last good deploy, the usual shape since every input push deploys and herald's build stamp forces a daily deploy, reads clean until some later input commit is dated more than 24 hours after that deploy; in a quiet period it never fires, against CAP-91's own title ("a stalled Pages deploy is named within a day"). (ii) When the last deploy is more than 24 hours old, every new input landing reads `pages-liveness-stale` for its normal build-and-deploy window (about 15-20 minutes). Proposed rule: stale when `last-modified` is before the landing of the latest input commit C and `now` minus that landing is more than `STALE_AFTER`, with `now` injectable for the fixtures; or, reading the live `build.json` too, C is not an ancestor of `built_from` and the oldest undeployed first-parent input landing is more than 24 hours old. Either needs a `bmad-spec` change to CAP-91 (its AC1/AC2 are written in commit-against-header terms) before a story.
+  evidence: Story 48.2 independent review, iteration 1 (finding 3, 2026-10-15), classified accept-with-DW: the story implements its Spec faithfully, so this is a Spec change, not a story defect. The rule is `if lag > STALE_AFTER:` at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py:109`, with `lag = commit_date - last_modified` at `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py:95`.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py:109
+  origin: story-48-2 independent review, iteration 1 (finding 3)
+  severity: medium
+  status: open
+  reason: Needs a `bmad-spec` change to CAP-91 first; Story 48.2's AC1/AC2 define the rule it ships. The identical-build false positive the review also ruled is not this row: it is a "Named, not fixed here" line on the story spec, closed in the duct by steward 102.3's daily refresh.
+
+### DW-doctor-34-7: A flag key that no story spec's `flag:` block names can leave the tree with no `retires-flag:` declaration, so neither `flag-key-not-in-tree` nor the retired-read walk ever judges its removal.
+
+- source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
+  summary: A flag key that no story spec's `flag:` block names can leave the tree with no `retires-flag:` declaration, so neither `flag-key-not-in-tree` nor the retired-read walk ever judges its removal.
+  evidence: Seven live keys have no flag block in any story spec: the cutover string flag, steward's glass export and the five steward ledger-query keys (independent review of 34.7, should-fix 2; measured 2026-10-15 at the lane-C tree). The gate never reads git history, so `scripts/flag_gate_check.py` cannot tell that a key left the tree; it judges a removal only through a `done` spec's block or a declaration. Closing it needs each owner's CAP-7 retrofit to give these keys a block, or a base-ref comparison the gate does not make. The block page tells a removal story to declare `retires-flag:` anyway, so the reader check runs.
+  location: scripts/flag_gate_check.py:950
+  origin: spec-deferred 5290a8a19799 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-34-7-2: The retired-read walk cannot see an environment stand-in for a flag, such as the `PYFORGE_PAGES_DUTY` variable a workflow reads in place of steward's pages-duty flag.
+
+- source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
+  summary: The retired-read walk cannot see an environment stand-in for a flag, such as the `PYFORGE_PAGES_DUTY` variable a workflow reads in place of steward's pages-duty flag.
+  evidence: `.github/workflows/pages.yml:122` gates two steps on `env.PYFORGE_PAGES_DUTY`, which `scripts/pages_artifact_download.py` (`FLAG_ENV`) exports from the flag. The variable's name does not contain the key, so with the key retired and the exporter removed, the workflow would keep reading the stand-in's default (`0`) with no finding. The walk does red the exporter while it still names the key. The block page now makes removing every stand-in and its exporter the retiring story's own duty; nothing enforces it. A fix would register each stand-in beside its key in the tree's metadata, or derive it by a naming rule the gate can check.
+  location: .github/workflows/pages.yml:122
+  origin: spec-deferred df1f65abceff — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-34-7-3: A reader that builds a flag key from parts (an f-string or `+`) is invisible to the retired-read walk and to the orphan check.
+
+- source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
+  summary: A reader that builds a flag key from parts (an f-string or `+`) is invisible to the retired-read walk and to the orphan check.
+  evidence: `key_pattern` in `scripts/flag_gate_check.py` matches only a literally spelled key. No live reader builds one (independent review of 34.7, nit 3). The block page now says to spell a flag key literally at its read site; no check enforces it.
+  location: scripts/flag_gate_check.py:283
+  origin: spec-deferred c3aee08acbce — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-34-7-4: A `pyforge.core.*` or `pyforge.platform.*` flag key names an owning station with no project folder, so no story spec can ever retire it.
+
+- source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
+  summary: A `pyforge.core.*` or `pyforge.platform.*` flag key names an owning station with no project folder, so no story spec can ever retire it.
+  evidence: `owning_station` in `scripts/flag_gate_check.py` takes the key's prefix, and only a story spec under `_bmad-output/projects/pyforge-<station>/` can match it; there is no `pyforge-core` or `pyforge-platform` project. No live key has such a prefix (independent review of 34.7, nit 1). A fix maps these prefixes to their owning project (core's Spec lives under pyforge-marshal) or refuses them in the tree.
+  location: scripts/flag_gate_check.py:429
+  origin: spec-deferred 81a4137d67ce — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-34-7-5: The checked-in flag inventory reports are stale: a fresh `flag-inventory` run rewrites the marshal and steward reports.
+
+- source_spec: `planning-artifacts/specs/spec-34-7-a-retired-flag-leaves-the-tree-only-by-its-owner-and-never-while-read.md`
+  summary: The checked-in flag inventory reports are stale: a fresh `flag-inventory` run rewrites the marshal and steward reports.
+  evidence: Run to a scratch `--out-dir` on 2026-10-15 at the lane-C tree: every report but marshal's (14 changed lines) and steward's (30) matches apart from its SHA line. Marshal's "Runtime CAPs with no flag" drops from 26 to 24 and five CAP rows turn `unresolved`, because the CAP join reads prose in a Surface line changed outside this story (marshal Story 102.1, `_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md:10010`) as code paths (the join's coverage gap is DW-doctor-34-4). This story regenerates nothing.
+  location: docs/governance/flag-inventory/pyforge-marshal.md
+  origin: spec-deferred 06670e938457 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

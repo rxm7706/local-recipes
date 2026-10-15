@@ -663,7 +663,8 @@ def render_status_pages(
     snapshot = cst.load_ci_status_snapshot(ci_status)
     env = env or _jinja_env()
     site = {**site_cfg, "nav": sp.menu_entries(site_cfg["nav"], enabled=True)}
-    shared = {"site": site, "built_at": built_at, "commit": commit, "lane1": site_cfg["lane1"]}
+    # Lane 1's live view is linked only when site.yml names it by an absolute URL (status_pages.lane1_link).
+    shared = {"site": site, "built_at": built_at, "commit": commit, "lane1": sp.lane1_link(site_cfg.get("lane1"))}
 
     _clean_status_out(status_out)
     ci_out = status_out / "ci"

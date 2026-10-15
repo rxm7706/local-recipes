@@ -382,6 +382,9 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         subject_station="fleet",
         owning_station="doctor",
     ),  # Story 16.1 (Epic 16 / CAP-1) -- sources/sibling_dreams.py. Diffs
+    # shared Dream status/owner/content-hash/title vs the named sibling tree; warn-only; fleet
+    # subject (local docs/dreams + archive/docs/dreams, and the sibling). Opt-in via
+    # `doctor check --sibling-dreams` + fleet-picture ATTENTION probe.
     SourceRegistration(
         source=Source.CI_PAUSE_DRIFT,
         scope="runtime",
@@ -390,9 +393,18 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 45.1 (Epic 45 / CAP-89) -- sources/ci_pause_drift.py. Reads
     # steward ``ci status --json`` via dispatch; warn-only; fleet-picture
     # ATTENTION probe; not in ``doctor check`` default set (NFR-4).
-    # shared Dream status/owner/content-hash/title vs the named sibling tree; warn-only; fleet
-    # subject (local docs/dreams + archive/docs/dreams, and the sibling). Opt-in via
-    # `doctor check --sibling-dreams` + fleet-picture ATTENTION probe.
+    SourceRegistration(
+        source=Source.PAGES_LIVENESS,
+        scope="runtime",
+        subject_station="steward",
+        owning_station="doctor",
+    ),  # Story 48.2 (Epic 48 / CAP-91) -- sources/pages_liveness.py. One live
+    # HTTP read of the Pages root's last-modified against the latest
+    # published-input commit on refs/remotes/origin/main; warn-only;
+    # fleet-picture ATTENTION probe; not in ``doctor check``'s default set
+    # (NFR-4) or detectors-ci. Subject steward: it judges whether the deploy
+    # duct (pages.yml, steward's since M2) kept the site current; the label
+    # moved from herald with M2's closing pair (herald 42.3 + steward 102.5).
     SourceRegistration(
         source=Source.DREAMS_HYGIENE,
         scope="repo",
@@ -624,7 +636,7 @@ def degrade_on_exception(
     ``docs_map_hygiene``, ``docs_shelf``, ``factory``, ``frozen_path``,
     ``frontmatter_duplicate_keys``, ``general_docs_consistency``,
     ``live_proof_surfaces``, ``one_chain``, ``pixi_currency``, ``sibling_dreams``,
-    ``ci_pause_drift``
+    ``ci_pause_drift``, ``pages_liveness``
     and ``status_body_consistency`` (all in ``sources/``). Any other source module
     does not call it; an exception
     escaping such a ``gather()`` is a real bug in a module that promises never

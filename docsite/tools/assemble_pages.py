@@ -56,7 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kedro_viz_export as kv  # noqa: E402
 import status_pages as sp  # noqa: E402
 from pages_one_generator import DOSSIER_ARTIFACT_REL, enabled_from_env  # noqa: E402
-from pages_second_host import (  # noqa: E402
+from pages_site_url import (  # noqa: E402
     SITE_URL_MARKER,
     resolve_from_process_environment,
     site_origin,
@@ -79,6 +79,11 @@ TWINS_PREFIX = f"{HERALD_PREFIX}/twins/"
 ARTIFACT_DOSSIER = f"{HERALD_PREFIX}/artifact/dossier.html"
 #: The generator meta every Astro herald page carries (Stories 43.1, 43.2); no Jinja template writes one.
 _ASTRO_GENERATOR = re.compile(r"""<meta\s+name=["']generator["']\s+content=["']Astro\b""", re.IGNORECASE)
+#: The agent surface and the changes feed (Story 43.6, CAP-61): Astro emits these only with
+#: pyforge.herald.pages_one_generator on, and the runs page only with pyforge.herald.status_pages on too.
+AGENT_SURFACE_FILES = ("llms.txt", "llms-full.txt", "facts.json", "changes/index.html", "changes/rss.xml")
+RUNS_DIR = "runs"
+RUNS_PAGE = f"{STATUS_PREFIX}/{RUNS_DIR}/index.html"
 
 # Vendored roots the cross-origin check does not judge (AD-21 rule 5, "re-vendor, never fork"):
 # a vendored upstream bundle stays byte-identical to its recorded build, so pages-check cannot
@@ -351,13 +356,17 @@ def _iter_herald_rendered_html(artifact_root: Path) -> list[Path]:
     return [*_iter_herald_html(artifact_root), *(page for page in others if page.is_file())]
 
 
-def _lane1_href() -> str:
-    """The Lane 1 live-view link the status pages carry (``site.yml`` ``lane1.href``). Lane 1 is
-    served by the platform, not by Pages, so the link is never resolved inside the artifact."""
+def _lane1_href() -> str | None:
+    """The Lane 1 live-view link the status pages carry, or ``None`` when they carry none: the
+    status pages link ``site.yml``'s ``lane1.href`` only when it is an absolute URL
+    (``status_pages.lane1_link``). Lane 1 is served by the platform, not by Pages, so that one link
+    is never resolved inside the artifact; a root-absolute ``/console/`` on a status page is not
+    exempt and fails as a broken link (herald 42.1 re-review)."""
     import yaml  # the ``site`` env carries PyYAML (docsite/build.py reads the same file)
 
     data = yaml.safe_load((_repo_root() / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
-    return str(data["lane1"]["href"])
+    link = sp.lane1_link(data.get("lane1"))
+    return link["href"] if link else None
 
 
 def _iter_checkable_files(artifact_root: Path) -> list[Path]:
@@ -614,7 +623,7 @@ def cross_origin_findings(
     Returns ``(findings, exempt)``: ``findings`` are report lines; ``exempt`` maps each
     :data:`VENDORED_ROOTS` entry to ``(files seen, cross-origin URLs found there)``.
     """
-    from pages_second_host import public_site_url
+    from pages_site_url import public_site_url
 
     configured_origin = site_origin(site_url)
     public_origin = site_origin(public_site_url())
@@ -672,7 +681,7 @@ def _check_origins(artifact_root: Path, site_url: str) -> None:
     if scripts not in sys.path:
         sys.path.insert(0, scripts)
     import origin_check  # noqa: E402 -- docs-site's own check, beside the vendored validators
-    from pages_second_host import public_site_url
+    from pages_site_url import public_site_url
 
     for path, reason in VENDORED_ROOTS.items():
         kind = "root" if path.endswith("/") else "file"
@@ -916,7 +925,7 @@ def _check_href_resolution(artifact_root: Path, *, site_url: str) -> None:
             continue
         for match in _HREF_SRC.finditer(text):
             raw = match.group(1)
-            if raw == lane1:  # the live view on Lane 1 (Story 42.1): another host's path
+            if lane1 is not None and raw == lane1:  # the live view on Lane 1 (Story 42.1): another host
                 continue
             resolved = _resolve_in_artifact(page, raw, artifact_root, base_path=base_path)
             if resolved is None:
@@ -993,11 +1002,12 @@ class _ShelfBody(HTMLParser):
 
 def _iter_shelf_pages(artifact_root: Path) -> list[Path]:
     """Every Starlight shelf page: the HTML outside the herald and dashboard mounts that carries
-    a markdown body container (legacy redirect stubs have none)."""
+    a markdown body container (legacy redirect stubs have none). Astro's runs page under ``status/``
+    is one too (Story 43.6's review): its links are judged like every other Starlight page's."""
     pages = []
     for page in sorted(artifact_root.rglob("*.html")):
         rel = _artifact_path(page, artifact_root)
-        if rel.startswith((f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", f"{STATUS_PREFIX}/")):
+        if rel != RUNS_PAGE and rel.startswith((f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", f"{STATUS_PREFIX}/")):
             continue
         if _SHELF_CONTAINER in page.read_text(encoding="utf-8", errors="replace"):
             pages.append(page)
@@ -1189,6 +1199,60 @@ def _check_status_menu_entry(expected: list[tuple[str, str]]) -> None:
     _menu_failure(f"pyforge.herald.status_pages is on but the shared menu has no entry linking {board} (site.yml nav)")
 
 
+def _astro_runs_only(artifact_root: Path) -> bool:
+    """``status/`` holds only Astro's runs page (Story 43.6): the herald build then adds the board and
+    the guild page beside it, as ``herald/`` takes the Astro dossier."""
+    status = artifact_root / STATUS_PREFIX
+    return status.is_dir() and [child.name for child in status.iterdir()] == [RUNS_DIR]
+
+
+def _check_agent_surface(artifact_root: Path, *, one_generator: bool, status_on: bool) -> None:
+    """Story 43.6 AC7: with pyforge.herald.pages_one_generator on, the agent files, the changes page and its
+    feed exist (and the runs page with pyforge.herald.status_pages on too); off, none of them and no
+    ``changes/`` path exists."""
+    paths = [*AGENT_SURFACE_FILES, RUNS_PAGE]
+    if one_generator:
+        for rel in AGENT_SURFACE_FILES + ((RUNS_PAGE,) if status_on else ()):
+            if not (artifact_root / rel).is_file():
+                print(f"assemble_pages: missing required path {rel}", file=sys.stderr)
+                raise SystemExit(1)
+        _check_agent_documents(artifact_root)
+        return
+    present = [rel for rel in [*paths, "changes"] if (artifact_root / rel).exists()]
+    if present:
+        print(
+            f"assemble_pages: {', '.join(present)} exist in the artifact but pyforge.herald.pages_one_generator is off",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+
+def _check_agent_documents(artifact_root: Path) -> None:
+    """The machine-read surfaces parse (Story 43.6's review): ``changes/rss.xml`` as XML, an RSS 2.0
+    document with one channel, and ``facts.json`` as one JSON object. A feed nothing parsed could
+    publish malformed and green."""
+    import json
+    import xml.etree.ElementTree as ET
+
+    feed = artifact_root / "changes" / "rss.xml"
+    try:
+        root = ET.fromstring(feed.read_bytes())
+    except ET.ParseError as exc:
+        print(f"assemble_pages: changes/rss.xml is not well-formed XML: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    if root.tag != "rss" or root.get("version") != "2.0" or len(root.findall("channel")) != 1:
+        print("assemble_pages: changes/rss.xml is not an RSS 2.0 document with one channel", file=sys.stderr)
+        raise SystemExit(1)
+    try:
+        facts = json.loads((artifact_root / "facts.json").read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        print(f"assemble_pages: facts.json is not valid JSON: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    if not isinstance(facts, dict):
+        print("assemble_pages: facts.json is not a JSON object keyed by deck", file=sys.stderr)
+        raise SystemExit(1)
+
+
 def _check_no_status_paths(artifact_root: Path) -> None:
     """With pyforge.herald.status_pages off no ``status/`` path exists in the artifact (Story 42.1 AC7)."""
     if (artifact_root / STATUS_PREFIX).exists():
@@ -1328,6 +1392,7 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
             )
             raise SystemExit(1)
 
+    _check_agent_surface(artifact_root, one_generator=enabled_from_env(), status_on=status_on)
     _check_href_resolution(artifact_root, site_url=site_url)
     _check_shelf_pages(artifact_root, site_url)
     if one_generator:
@@ -1372,6 +1437,8 @@ def assemble(
     for mount in mounts:
         existing = artifact_root / mount.rstrip("/")
         if existing.exists() and mount not in astro_owned:
+            if mount == f"{STATUS_PREFIX}/" and one_generator and _astro_runs_only(artifact_root):
+                continue  # Story 43.6: Astro's /status/runs/; the herald build adds the board beside it
             print(f"assemble_pages: collision at {mount}", file=sys.stderr)
             raise SystemExit(1)
 

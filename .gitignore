@@ -1033,12 +1033,21 @@ src/shared/packages/pyforge-steward/catalog/snapshot/
 # governed by a spec surface -- never git-tracked.
 forge-data/
 
-# docs/dashboard/ holds README (tracked); atlas stages Kedro-Viz under kedro-viz/ (gitignored).
+# docs/dashboard/ holds README (tracked); atlas stages Kedro-Viz under kedro-viz/ (gitignored)
+# and the static Vizro boards under vizro/ (Story 30.2; gitignored, shipped as a workflow artifact).
 docs/dashboard/kedro-viz/
+docs/dashboard/vizro/
+# the Vizro export's staging and swap-aside siblings (.vizro-*, .vizro-old-*), left only by a killed run
+docs/dashboard/.vizro-*/
 
 # Story 42.1: the fleet board's build input, written by a Guild step of steward's Pages workflow
 # (docsite/tools/status_pages.py); a fixture lives under pyforge-herald's tests/fixtures/.
 docsite/content/fleet-status.json
+# Story 43.6 (CAP-61): the changes page's and the runs page's build inputs, written by Guild steps
+# of steward's Pages workflow (absent is a normal build; docs-site/src/lib/agent-surface.ts).
+docsite/content/changes.json
+docsite/content/marshal-status.json
+docsite/content/herald-progress.json
 
 # Story 27.1: Starlight docs-site build outputs (local-only).
 docs-site/node_modules/

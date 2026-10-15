@@ -47,6 +47,7 @@ from pyforge.doctor.sources import (
     live_proof_surfaces,
     marshal,
     one_chain,
+    pages_liveness,
     pixi_currency,
     platform_policy,
     sibling_dreams,
@@ -71,6 +72,8 @@ _EXPECTED_DISPATCH = {
     "bmad-method-version-drift": bmad_method.gather,
     "sibling-dreams-drift": sibling_dreams.gather,
     "ci-pause-drift": ci_pause_drift.gather,
+    # Story 48.2 (CAP-91) -- the Pages root against its published inputs.
+    "pages-liveness": pages_liveness.gather,
     "platform-policy-suite": platform_policy.gather,
     "bmad-render-config-ambiguity": bmad_config.gather,
     "frozen-path-changed": frozen_path.gather,

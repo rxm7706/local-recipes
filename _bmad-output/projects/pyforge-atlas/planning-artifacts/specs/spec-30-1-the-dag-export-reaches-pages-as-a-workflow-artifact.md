@@ -298,6 +298,12 @@ filter and the stub-credentials step unchanged, and a job `if:` carrying `PAUSE_
   `in-review` for the combined review; the ledger key stays `backlog` until the operator finalizes on merge
   (`dispatch_land_finalize`).
 
+- 2026-10-15: atlas Story 30.2 adds the Vizro producer to `kedro-viz-publish.yml`. GitHub filters paths per workflow,
+  so `on.push.paths` now also carries `dashboard/**` and `semantic/**`, which AC4's "unchanged from
+  `baseline_revision`" no longer literally holds. A `changes` job keeps the `publish` job on exactly this story's
+  paths, and `test_viz_export_artifact.py` pins both the widened trigger and the `publish` job's pathspecs. Record:
+  30.2's Spec Change Log, 2026-10-15.
+
 ## Review Triage Log
 
 ### 2026-10-15 — Review pass

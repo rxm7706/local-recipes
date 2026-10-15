@@ -328,10 +328,11 @@ with the flag test running both states
     102.3 (commit `a35fea43ab`): `pages.yml` now writes `docsite/content/fleet-status.json` from
     `sprint-ledger-query --format json` before `pages-check`, and exports `PYFORGE_STATUS_PAGES` through
     `export_status_pages_env.py`; the input shape it writes is `steward pages.fleet_status_document`'s, the one this
-    reader documents. The one left before `pyforge.herald.status_pages` turns on in staging or production: **an
-    absolute Lane 1 URL in `site.yml`'s `lane1.href`**. `/console/` resolves on the Pages origin, where Lane 1 is
-    not served, and `pages-check` skips that one href by design; the operator has not yet ruled on the URL, so
-    `site.yml` keeps `/console/`. The field names and the gap belong on spec-pyforge-herald's memlog too (the
+    reader documents. *(Corrected by the re-review, 2026-10-15: the Lane 1 URL is not a precondition of the flip.
+    `pages.yml` sets no `PYFORGE_ENVIRONMENT`, so the Pages build resolves flags as `dev`, where
+    `pyforge.herald.status_pages` is on, and both status pages publish when this chain lands. The open item is the
+    operator's absolute Lane 1 URL for `site.yml`'s `lane1.href`; until it is set the pages carry no Lane 1 link —
+    the re-review entry below.)* The field names and the gap belong on spec-pyforge-herald's memlog too (the
     coordinating session's surface-reconcile append carries them).
   - **Files outside Epic 42's surface (nit 5)**, each forced by the story: `.gitignore` (the input is gitignored),
     `docs-site/scripts/sidebar_from_map.py` (the docs menus gate the Status entry; Epic 43's surface),
@@ -351,3 +352,32 @@ with the flag test running both states
     prototype (edit in Design, `herald deck pull`, `npm run extract`) and derives every export from its Marp source
     with `deck-export`, which re-dates and re-renders the whole export set; a hand edit would diverge from Design and
     be reverted by the next pull. A steward deck refresh carries it.
+- 2026-10-15 (the re-review, `rereview-group1`: 42.1 NOT RESOLVED on should-fix 2, plus one nit; resolved here; where
+  this entry and an earlier one disagree, this one holds):
+  - **No dead Lane 1 link ships (AC3 amended; orchestrator ruling 2026-10-15).** The Pages build reads the flag as
+    `dev`, so `/status/` and `/status/ci/` publish at landing, and `lane1.href` is still `/console/`, which 404s on the
+    Pages origin. `status_pages.lane1_link` now hands the templates the `lane1` entry only when its href is an absolute
+    `http://` or `https://` URL; a root-absolute href (`/console/`, and a protocol-relative `//host/…`, which also
+    starts with `/`), a relative one or an empty one gives no link, and both pages then leave it out (the snapshot
+    line keeps its time and its link to the sibling page). With an absolute URL the one link renders on each page with
+    no other edit. The assembler exempts the Lane 1 href from its in-artifact link check only when it is absolute, so
+    a `/console/` link put back on a status page fails `pages-check` as a broken link. AC3 now reads: given any valid
+    input, `status/index.html` names the snapshot time and carries exactly one link labelled as the live view to
+    `lane1.href` when that is an absolute URL, and none otherwise. Tests: `test_status_pages_flag_states.py`
+    (`test_ac3_a_root_absolute_lane1_href_carries_no_link`, `test_ac3_an_absolute_lane1_url_is_one_link_on_each_page`,
+    `test_lane1_link_renders_only_an_absolute_url`) and `tests/meta/test_pages_artifact.py`
+    (`test_42_1_a_root_absolute_lane1_link_on_a_status_page_fails_pages_check`,
+    `test_42_1_an_absolute_lane1_url_on_the_status_pages_passes_pages_check`; the flag-on artifact test now asserts
+    no `/console/`).
+  - **The open ruling is tracked**: herald deferred-work row `DW-herald-42-1-1` (operator: set an absolute Lane 1 URL
+    in `docsite/content/site.yml` `lane1.href`). The re-review also asked for `scribe capture --type project`; that is
+    the coordinating session's at session close.
+  - **The attention note compares per station (nit).** Fleet-wide sums let one station's surplus hide another
+    station's missing rows, and a surplus read as "lists 3 of the 1 blocked". The note now names each station whose
+    listed `blocked` or `backlog` rows differ from its own count ("pyforge-a: 2 blocked listed, 1 counted"), names a
+    listed story whose station no `stations` row counts, and does not compare a count the input does not give. The
+    empty-list messages (the all-clear only when every count is 0, "lists none of …", "do not say whether any exist")
+    are unchanged. Tests: `test_ac2_a_partial_list_names_each_station_it_is_short_for`,
+    `test_ac2_one_station_s_surplus_never_hides_another_s_missing_rows`,
+    `test_ac2_a_surplus_reads_as_listed_and_counted_never_as_x_of_fewer`,
+    `test_ac2_a_listed_story_no_station_row_counts_is_named`, `test_ac2_a_station_whose_counts_are_unknown_is_not_compared`.

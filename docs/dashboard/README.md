@@ -17,9 +17,11 @@ tree as the GitHub Actions workflow artifact **`kedro-viz-export`** (see
 `.github/workflows/kedro-viz-publish.yml`). When the
 `pyforge.atlas.viz_export_artifact` flag is on, the staged tree includes
 **`manifest.json`** beside `index.html` (`export_commit`, `export_date`,
-`kedro_viz_version`). Steward's Pages workflow downloads the newest successful,
-unexpired artifact from a run on `main` here before `pages-check` (steward Story
-102.4, `scripts/pages_artifact_download.py`, behind `pyforge.steward.pages_duty`)
+`kedro_viz_version`). Steward's Pages workflow downloads the newest unexpired
+artifact of that name from a successful `kedro-viz-publish.yml` run on `main` here
+before `pages-check`, chosen from the artifact listing itself rather than a window
+of recent runs, so a run that rebuilt only the other export never hides it (steward
+Story 102.4, `scripts/pages_artifact_download.py`, behind `pyforge.steward.pages_duty`)
 and exports `KEDRO_VIZ_EXPORT=present|absent` with the run id and date; with no
 artifact it takes the absent path below. Atlas's Vizro boards (atlas Story 30.2)
 arrive the same way, as the artifact `vizro-static-export` into `vizro/`. A
@@ -40,7 +42,16 @@ deploys only when the built tree changed, a dispatch included),
 `steward pages build` rehearses the build locally (steward Story 102.3). No verb commits to
 `main`.
 
-Vizro is a separate dashboard product from Kedro-Viz. If a Vizro board is
-ever published here too, it gets its own subfolder (e.g. `vizro/`) at that
-time — this directory does not mint an empty `vizro/` tree ahead of an
-actual publish.
+The Vizro boards (atlas Story 30.2) are staged locally under `vizro/`
+(gitignored) by `pixi run -e local-recipes vizro-static-export` when the
+`pyforge.atlas.vizro_static_boards` flag is on: one static page per board at
+`vizro/<page-id>/index.html`, the board index at `vizro/index.html`, one
+vendored `vizro/assets/plotly.min.js` (copied from the env's plotly, never a
+CDN) and `vizro/manifest.json` (`exported_at`, `export_commit`, and `boards[]`
+with each board's `id`, `title`, `path` and `data_build_timestamp`). CI's
+`vizro` job on `.github/workflows/kedro-viz-publish.yml` uploads that tree as
+the workflow artifact **`vizro-static-export`** (90 days). Pages mounts it at
+`/dashboard/vizro/` once the consumer lands (steward 102.4's download step and
+herald Story 43.3's mount; neither is on `main` as of 2026-10-15). The live
+Vizro server stays on Lane 1; the static boards carry no filters and no scan
+controls.
