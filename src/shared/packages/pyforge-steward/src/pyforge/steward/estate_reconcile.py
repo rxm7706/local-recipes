@@ -65,7 +65,37 @@ def _journal_moves_include(journal: dict[str, Any], predicate: Callable[[str], b
     return False
 
 
-def _build_generators(journal: dict[str, Any], root: Path) -> list[tuple[str, list[str], str | None]]:
+def _parse_bmad_suite_report(stdout: str | None) -> dict[str, Any] | None:
+    if not stdout or not stdout.strip():
+        return None
+    try:
+        data = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict) or not isinstance(data.get("members"), list):
+        return None
+    return data
+
+
+def _bmad_suite_floor_summary(report: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    for row in report.get("members") or []:
+        if not isinstance(row, dict):
+            continue
+        name = row.get("name")
+        floor_before = row.get("floor_before")
+        floor = row.get("floor")
+        source = row.get("source")
+        if name is None or floor is None:
+            continue
+        if floor_before != floor:
+            lines.append(f"{name} {floor_before} -> {floor} [{source}]")
+    return lines
+
+
+def _build_generators(
+    journal: dict[str, Any], root: Path, *, journal_path: Path | None = None
+) -> list[tuple[str, list[str], str | None]]:
     """Return ordered (label, argv, output_rel) rows; output_rel when stdout must be captured."""
     py = sys.executable
     gens: list[tuple[str, list[str], str | None]] = [
@@ -96,13 +126,11 @@ def _build_generators(journal: dict[str, Any], root: Path) -> list[tuple[str, li
     if _journal_moves_include(journal, lambda pkg: pkg == "pixi"):
         gens.append(("bump-pixi-version", [py, "scripts/bump_pixi_version.py"], None))
     if _journal_moves_include(journal, lambda pkg: pkg == "bmad-method" or pkg.startswith("bmad-")):
-        gens.append(
-            (
-                "generate-bmad-suite",
-                [py, ".claude/scripts/conda-forge-expert/bmad_suite_metapackage.py"],
-                None,
-            )
-        )
+        argv = [py, ".claude/scripts/conda-forge-expert/bmad_suite_metapackage.py"]
+        if journal_path is not None:
+            argv.extend(["--journal", str(journal_path)])
+        argv.append("--json")
+        gens.append(("generate-bmad-suite", argv, None))
     return gens
 
 
@@ -337,11 +365,53 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
 
     before = _fingerprints(deps.root, WATCH_PATHS)
     gen_steps: list[dict] = []
-    for _label, argv, output_rel in _build_generators(journal_doc, deps.root):
-        code = _run_generator(deps, argv, output_rel, gen_steps)
-        if code != 0 and "bmad-estate" in " ".join(argv):
-            # scribe non-zero: continue remaining checks per spec I/O matrix
-            pass
+    bmad_floor_lines: list[str] = []
+    generator_failed = False
+    for label, argv, output_rel in _build_generators(journal_doc, deps.root, journal_path=journal_path):
+        if label == "generate-bmad-suite":
+            started = time.monotonic()
+            proc = deps.runner(argv, deps.root)
+            step: dict[str, Any] = {
+                "label": label,
+                "argv": list(argv),
+                "exit": int(proc.returncode),
+                "seconds": round(time.monotonic() - started, 3),
+            }
+            if proc.returncode != 0:
+                step["error"] = "non-zero exit"
+                generator_failed = True
+            else:
+                parsed = _parse_bmad_suite_report(proc.stdout)
+                if parsed is None:
+                    step["error"] = "stdout is not a JSON report with members"
+                    generator_failed = True
+                else:
+                    bmad_floor_lines = _bmad_suite_floor_summary(parsed)
+                    step["bmad_suite"] = parsed
+            gen_steps.append(step)
+        else:
+            code = _run_generator(deps, argv, output_rel, gen_steps)
+            if code != 0 and "bmad-estate" in " ".join(argv):
+                # scribe non-zero: continue remaining checks per spec I/O matrix
+                pass
+
+    if generator_failed:
+        reconcile_block: dict[str, Any] = {
+            "generators": gen_steps,
+            "checks": [],
+            "moved_paths": sorted(_moved_paths(before, _fingerprints(deps.root, WATCH_PATHS))),
+        }
+        journal_doc["reconcile"] = reconcile_block
+        if journal_path.is_file() or journal_path.parent.exists():
+            journal_path.parent.mkdir(parents=True, exist_ok=True)
+            journal_path.write_text(json.dumps(journal_doc, indent=2) + "\n", encoding="utf-8")
+        fail_step = next((s for s in gen_steps if s.get("label") == "generate-bmad-suite"), {})
+        reason = fail_step.get("error") or "unknown"
+        return DutyResult(
+            ok=False,
+            summary=f"estate reconcile: generate-bmad-suite failed ({reason})",
+            details={"exit_code": EXIT_RECONCILE_CHECKS, "reconcile": reconcile_block},
+        )
 
     after = _fingerprints(deps.root, WATCH_PATHS)
     moved = _moved_paths(before, after)
@@ -374,6 +444,9 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
         "checks": checks,
         "moved_paths": sorted(moved),
     }
+    bmad_step = next((s for s in gen_steps if s.get("label") == "generate-bmad-suite"), None)
+    if bmad_step and isinstance(bmad_step.get("bmad_suite"), dict):
+        reconcile_block["bmad_suite"] = bmad_step["bmad_suite"]
     surface_err = _reconcile_spec_surface(
         deps,
         moved=moved,
@@ -396,8 +469,9 @@ def run_reconcile(deps: ReconcileDeps, *, journal_path: Path | None = None) -> D
     summary_lines = [
         "estate reconcile: generators and checks journaled",
         f"moved paths: {len(moved)}",
-        f"recommended commit:\n{recommended}",
     ]
+    summary_lines.extend(bmad_floor_lines)
+    summary_lines.append(f"recommended commit:\n{recommended}")
     if gating_failed:
         return DutyResult(
             ok=False,

@@ -131,8 +131,16 @@ def test_ac1_generators_order_and_conditional(tmp_path: Path) -> None:
     joined2 = [" ".join(step["argv"]) for step in result2.details["reconcile"]["generators"]]
     assert any("bump_pixi_version.py" in line for line in joined2)
 
-    gens_bmad = _build_generators({"moves": [{"package": "bmad-method", "feature": "*", "from": "1", "to": "2"}]}, root)
-    assert any("bmad_suite_metapackage.py" in " ".join(g[1]) for g in gens_bmad)
+    jpath = root / ".steward/estate-refresh/2026-10-13.json"
+    gens_bmad = _build_generators(
+        {"moves": [{"package": "bmad-method", "feature": "*", "from": "1", "to": "2"}]},
+        root,
+        journal_path=jpath,
+    )
+    joined_bmad = " ".join(gens_bmad[0][1])
+    assert "bmad_suite_metapackage.py" in joined_bmad
+    assert "--journal" in joined_bmad
+    assert "--json" in joined_bmad
 
 
 def test_ac3_checks_journaled_and_gating_red(tmp_path: Path) -> None:
@@ -311,6 +319,70 @@ def test_docs_map_is_a_watched_path() -> None:
     # The docs generators restamp the map page; joined here so the trigger-map meta-test
     # does not read a literal path as a file this suite opens.
     assert "/".join(("docs", "map.yaml")) in WATCH_PATHS
+
+
+def test_ac6_reconcile_journals_bmad_suite_report(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    journal = json.loads((root / ".steward/estate-refresh/2026-10-13.json").read_text())
+    journal["moves"] = [{"package": "bmad-method", "feature": "*", "from": "6.12.0", "to": "6.12.2"}]
+    jpath = root / ".steward/estate-refresh/2026-10-13.json"
+    jpath.write_text(json.dumps(journal), encoding="utf-8")
+    report = {
+        "version_before": "2026.10.1",
+        "version": "2026.10.14",
+        "written": True,
+        "members": [
+            {
+                "name": "bmad-method",
+                "floor_before": "6.12.0",
+                "floor": "6.12.2",
+                "source": "batch-move",
+            }
+        ],
+    }
+
+    @dataclass
+    class BmadRunner(RecordingRunner):
+        def __call__(self, argv: list[str], cwd: Path) -> FakeProc:
+            if "bmad_suite_metapackage.py" in " ".join(argv):
+                assert "--journal" in argv
+                assert "--json" in argv
+                return FakeProc(argv, 0, json.dumps(report), "")
+            return super().__call__(argv, cwd)
+
+    result = run_reconcile(_deps(root, BmadRunner()))
+    assert result.ok
+    saved = json.loads(jpath.read_text())
+    assert saved["reconcile"]["bmad_suite"]["version"] == "2026.10.14"
+    assert "bmad-method 6.12.0 -> 6.12.2 [batch-move]" in result.summary
+
+
+def test_ac7_broken_generator_fails_reconcile(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    journal = json.loads((root / ".steward/estate-refresh/2026-10-13.json").read_text())
+    journal["moves"] = [{"package": "bmad-loop", "feature": "*", "from": "0.12.0", "to": "0.13.0"}]
+    jpath = root / ".steward/estate-refresh/2026-10-13.json"
+    jpath.write_text(json.dumps(journal), encoding="utf-8")
+
+    @dataclass
+    class FailBmadRunner(RecordingRunner):
+        mode: str = "exit1"
+
+        def __call__(self, argv: list[str], cwd: Path) -> FakeProc:
+            if "bmad_suite_metapackage.py" in " ".join(argv):
+                if self.mode == "exit1":
+                    return FakeProc(argv, 1, "", "fail")
+                return FakeProc(argv, 0, "not json", "")
+            return super().__call__(argv, cwd)
+
+    r1 = run_reconcile(_deps(root, FailBmadRunner(mode="exit1")))
+    assert not r1.ok
+    assert r1.details["exit_code"] == EXIT_RECONCILE_CHECKS
+    assert "generate-bmad-suite" in r1.summary
+
+    r2 = run_reconcile(_deps(root, FailBmadRunner(mode="badjson")))
+    assert not r2.ok
+    assert "generate-bmad-suite" in r2.summary
 
 
 def test_checks_run_in_the_guild_env() -> None:
