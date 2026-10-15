@@ -31,6 +31,10 @@ _LEAKY_GIT_VARS = (
     "GIT_COMMON_DIR",
     "GIT_CEILING_DIRECTORIES",
     "GIT_PREFIX",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_NAMESPACE",
+    "GIT_CONFIG_PARAMETERS",  # what `git -c k=v push` exports to its hooks
+    "GIT_CONFIG_COUNT",  # turns off the GIT_CONFIG_KEY_<n> / GIT_CONFIG_VALUE_<n> pairs
 )
 
 

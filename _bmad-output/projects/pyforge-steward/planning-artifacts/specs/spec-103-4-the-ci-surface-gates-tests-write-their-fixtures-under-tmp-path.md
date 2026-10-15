@@ -290,7 +290,7 @@ the first pass under its old name.
 | 3 | NIT | A stray file failed the teardown of every later test (15 errors in mutation 1), and the read could take `index.lock`. | The guard snapshots the status before each test and fails only on new lines, so only the writer fails. The named test also asserts the repo's fixture tree is clean, so a leftover from an earlier run fails it once. The read runs `git --no-optional-locks status`. |
 | 4 | NIT | Seven older `subprocess.run` calls lacked `check=` (ruff `PLW1510` under the root config; `ruff check` on the file exited 1). | `check=False` on each; behaviour unchanged. `ruff check tests/scripts/test_ci_surface_gates.py` exits 0. |
 | 5 | NIT | `context:` still listed the removed `tests/scripts/fixtures/ci_surface_gates/`; the memlog read "Story 103.3s". | The path left `context:`; a one-line correction is appended to the `spec-pyforge-steward` memlog, which is append-only. |
-| 6 | OUT OF SCOPE | `test_six_fixture_rules_together_six_findings` is vacuous: it takes the `len()` of a six-item literal set, so Story 99.1's AC2 has no test. AC5 freezes the existing assertions. | Deferred to a follow-up story, which the coordinator is chaining. |
+| 6 | SHOULD-FIX (deferred: AC5 freezes the assertion) | `test_six_fixture_rules_together_six_findings` is vacuous: it takes the `len()` of a six-item literal set, so Story 99.1's AC2 has no test. AC5 freezes the existing assertions. | Deferred to a follow-up story, which the coordinator is chaining. |
 
 Verification after review 1 (2026-10-14):
 - The file: 21 passed in `pyforge-ci`, in `pyforge-guild` and in `pyforge-ci` under `-n auto --dist loadgroup`, each
@@ -319,3 +319,22 @@ Verification after review 1 (2026-10-14):
   `UNKNOWN: exceeded 300s` at 300.1 s, with every other detector passing, and the runner then cancelled
   `pyforge-doctor-test` and `pyforge-steward-test`. Run alone straight after, `pixi run -e pyforge-guild
   chain-currency-sweep-check` exited 0 in 87 s. The push's pre-push hook re-runs the whole preflight.
+
+### Review iteration 2 (2026-10-15, independent)
+
+Verdict: passed for the code at `66996b87bb`. All six review-1 findings were re-checked against the diff and closed;
+no assertion weakened. The reviewer re-ran the file in `pyforge-ci`, under `-n auto` and in `pyforge-guild` (exit 0
+each, tree clean), `ruff check` on the file (exit 0), `spec-surface-check`, `story-status-check`,
+`chain-completeness-check`, `deferred-work-check` and `chain-currency-sweep-check` (exit 0 each), and a scratch
+linked-worktree run under an exported `GIT_DIR` (21 passed, `core.bare` unchanged).
+
+- Finding 6 is tracked as `DW-steward-103-4-1` in steward's deferred-work ledger (severity medium).
+- Nit taken: `_LEAKY_GIT_VARS` also clears `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_NAMESPACE`,
+  `GIT_CONFIG_PARAMETERS` and `GIT_CONFIG_COUNT`, which a hook can inherit from `git -c k=v push`.
+- Nit noted: under xdist, a test on another worker can fail when a writer runs at the same moment, so "the first
+  failing test is the writer" holds strictly for a serial run.
+- AC7 evidence: the local pre-push preflights at `e7ace47f09` and `66996b87bb` were red only on host-load timeouts
+  (`chain_currency_sweep_check` past its 300 s cap at load 30 to 114, exit 0 in 87 s alone; atlas's dashboard e2e port
+  bind past 60 s), in lanes this test-file change does not reach. The push of `66996b87bb` went out with a journaled
+  `PYFORGE_PREFLIGHT_SKIP` (2026-10-15T00:53:50Z); GitHub CI on the merged head is the gate for landing.
+
