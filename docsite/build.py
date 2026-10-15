@@ -554,6 +554,14 @@ def git_commit(repo_root: Path) -> str:
         return ""
 
 
+def _pages_one_generator_from_env() -> bool:
+    if str(_TOOLS) not in sys.path:
+        sys.path.insert(0, str(_TOOLS))
+    from pages_one_generator import enabled_from_env  # noqa: E402
+
+    return enabled_from_env()
+
+
 def _apply_ci_surfaces(doc: dict) -> None:
     if str(_TOOLS) not in sys.path:
         sys.path.insert(0, str(_TOOLS))
@@ -632,15 +640,20 @@ def build(out_dir: Path, repo_root: Path) -> dict:
     # Clean only what this build owns. The output directory may be a shared
     # publish root — docs/dashboard/ also holds the Kedro-Viz export, which a
     # blanket rmtree would delete on every run.
-    for owned in OWNED_OUTPUTS:
-        target = out_dir / owned
+    skip_dossier = _pages_one_generator_from_env()
+    owned = list(OWNED_OUTPUTS)
+    if skip_dossier:
+        owned = [name for name in owned if name != "dossier"]
+    for owned_name in owned:
+        target = out_dir / owned_name
         if target.is_dir():
             shutil.rmtree(target)
         elif target.exists():
             target.unlink()
 
     (out_dir / "assets").mkdir(parents=True, exist_ok=True)
-    (out_dir / "dossier").mkdir(parents=True, exist_ok=True)
+    if not skip_dossier:
+        (out_dir / "dossier").mkdir(parents=True, exist_ok=True)
     (out_dir / "infographics").mkdir(parents=True, exist_ok=True)
     (out_dir / "decks").mkdir(parents=True, exist_ok=True)
     (out_dir / "artifact").mkdir(parents=True, exist_ok=True)
@@ -663,16 +676,17 @@ def build(out_dir: Path, repo_root: Path) -> dict:
         encoding="utf-8",
     )
 
-    (out_dir / "dossier" / "index.html").write_text(
-        env.get_template("page_dossier.html.j2").render(
-            page_title=doc["title"],
-            page_description=summary,
-            page_key="dossier",
-            rel="../",
-            **shared,
-        ),
-        encoding="utf-8",
-    )
+    if not skip_dossier:
+        (out_dir / "dossier" / "index.html").write_text(
+            env.get_template("page_dossier.html.j2").render(
+                page_title=doc["title"],
+                page_description=summary,
+                page_key="dossier",
+                rel="../",
+                **shared,
+            ),
+            encoding="utf-8",
+        )
 
     (out_dir / "infographics" / "index.html").write_text(
         env.get_template("page_gallery.html.j2").render(
@@ -753,10 +767,17 @@ def check(out_dir: Path, result: dict) -> int:
 
     problems.extend(collect_shape_problems(CONTENT))
 
+    skip_dossier = _pages_one_generator_from_env()
     required = [
-        "index.html", ".nojekyll", "assets/site.css",
-        "dossier/index.html", "infographics/index.html", "decks/index.html", "artifact/dossier.html",
+        "index.html",
+        ".nojekyll",
+        "assets/site.css",
+        "infographics/index.html",
+        "decks/index.html",
+        "artifact/dossier.html",
     ]
+    if not skip_dossier:
+        required.insert(3, "dossier/index.html")
     for r in required:
         p = out_dir / r
         if not p.exists():
@@ -769,9 +790,10 @@ def check(out_dir: Path, result: dict) -> int:
         if tag in artifact.lower():
             problems.append(f"artifact build must not contain {tag!r} — the Artifact host supplies it")
 
-    dossier = (out_dir / "dossier" / "index.html").read_text(encoding="utf-8")
-    if "{{" in dossier or "{%" in dossier:
-        problems.append("unrendered Jinja delimiters in dossier output")
+    if not skip_dossier:
+        dossier = (out_dir / "dossier" / "index.html").read_text(encoding="utf-8")
+        if "{{" in dossier or "{%" in dossier:
+            problems.append("unrendered Jinja delimiters in dossier output")
 
     for item in result["infographics"]:
         p = out_dir / "infographics" / item["out_name"]

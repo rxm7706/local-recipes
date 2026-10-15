@@ -138,7 +138,7 @@ development_status:
   45-1-doctor-names-every-ci-surface-that-drifted-stuck-or-outlived-its-review-date: done
   46-1-the-env-hygiene-scan-walks-each-tree-once-and-skips-test-code: done
   47-1-the-aggregate-scripts-test-checks-scope-filtering-without-gathering: done
-  48-1-one-registry-orders-every-section-of-the-pages-site: backlog
+  48-1-one-registry-orders-every-section-of-the-pages-site: done
   48-2-a-pages-deploy-more-than-a-day-behind-its-inputs-is-named-in-fleet-picture: backlog
   5-1-marshal-durability-source-independent-by-construction: done
   5-2-render-the-verdict-through-a-doctor-verb: done
@@ -254,7 +254,7 @@ development_status:
   epic-46-retrospective: optional
   epic-47: done
   epic-47-retrospective: optional
-  epic-48: backlog
+  epic-48: in-progress
   epic-48-retrospective: optional
   epic-5: done
   epic-5-retrospective: optional
