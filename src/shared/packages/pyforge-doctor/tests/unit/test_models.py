@@ -199,6 +199,8 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "backlog-intake",
         "sibling-dreams-drift",
         "ci-pause-drift",
+        # Story 48.2 (CAP-91): the Pages root against its published inputs.
+        "pages-liveness",
         "dreams-hygiene",
         "chain-layers-audit",
         "platform-policy-suite",

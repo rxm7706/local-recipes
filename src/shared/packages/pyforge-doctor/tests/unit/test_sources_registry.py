@@ -323,6 +323,7 @@ _DEGRADE_CALL_SITES = {
     "pixi_currency": 1,
     "sibling_dreams": 1,
     "ci_pause_drift": 1,
+    "pages_liveness": 1,
     "status_body_consistency": 1,
 }
 

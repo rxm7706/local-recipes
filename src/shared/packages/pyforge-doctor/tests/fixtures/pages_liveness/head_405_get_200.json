@@ -1,0 +1,7 @@
+{
+  "case": "HEAD is refused (405); one GET follows and answers 200 with the header: the normal verdict, two requests.",
+  "head": {"status": 405, "headers": {"allow": "GET"}},
+  "get": {"status": 200, "headers": {"last-modified": "Wed, 14 Oct 2026 15:46:03 GMT"}},
+  "git_log": "e6f708192a3b4c5d6e7f8091a2b3c4d5e6f70819 2026-10-14T14:00:00+00:00",
+  "expect": {"check": "pages-liveness", "status": "ok", "requests": ["HEAD", "GET"], "lag_hours": -2}
+}

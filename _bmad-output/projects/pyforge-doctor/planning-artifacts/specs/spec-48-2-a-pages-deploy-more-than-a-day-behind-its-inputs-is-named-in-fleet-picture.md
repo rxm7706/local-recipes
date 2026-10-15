@@ -2,7 +2,7 @@
 title: '48.2: A Pages deploy more than a day behind its inputs is named in fleet-picture'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: 'e134549afcbdcc5b55b35f291464ac60d6685243'
 flag-exempt: detector-or-gate   # a check that judges; gating it off would bring back the silent-off surface it names, the 2026-10-06 deploy (spec-feature-flag-governance Q2; bmad-spec ruling 2026-10-14, memlog)
 review_loop_iteration: 0
@@ -249,3 +249,48 @@ WARN and the degrade line when the probe raises, the sole-subprocess meta-test s
   `flag-exempt: detector-or-gate` by `bmad-spec` ruling (memlog 2026-10-14). The live `last-modified` header was
   measured on 2026-10-14 before the mint; the 2026-10-06 replay's timestamps are the fixture's, chosen inside the
   incident window, not recovered from GitHub.
+
+## Auto Run Result
+
+Status: in-review
+
+Summary: New Doctor source `pages-liveness` (`sources/pages_liveness.py`): `Source.PAGES_LIVENESS`, a `REGISTRY` row
+(`runtime`, subject `herald`, owner `doctor`), a `DISPATCH` row and the report schema's `source` enum (additive). One
+`git log -1 --format=%H %cI refs/remotes/origin/main -- <the eleven published inputs>` through `cli_bridge.run_git`,
+then one HEAD to the Pages root (one GET when HEAD is not 2xx, body unread, 10 s timeout, `User-Agent:
+pyforge-doctor-pages-liveness`); a commit more than 24 hours newer than `last-modified` is one `pages-liveness-stale`
+WARN, otherwise one `pages-liveness` OK row; every unreadable side is one `pages-liveness-unavailable` WARN carrying
+`evidence.unevaluable: true`, and `degrade_on_exception` reports any unforeseen raise under that same check.
+`scripts/fleet_picture.py` gains `pages_liveness_findings()` (60 s, `check=True`, WARN rows only) and one ATTENTION
+watch line per WARN beside the CI-pauses probe, `could not check Pages liveness` when the probe raises.
+
+Files changed:
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py` (new), `models.py`,
+  `sources/__init__.py` (registry row; the sibling-dreams comment split by the 45.1 row moved back onto its row),
+  `sources/__main__.py`, `data/report-schema.json`
+- `tests/unit/test_sources_pages_liveness.py` (new), `tests/fixtures/pages_liveness/*.json` (14 new), and the
+  wiring tables in `test_sources_dispatch.py`, `test_sources_registry.py`, `test_models.py`,
+  `tests/meta/test_source_independence.py`
+- `scripts/fleet_picture.py`, `tests/scripts/test_fleet_picture_pages_liveness.py` (new)
+
+Verification: `pyforge-doctor-test` exit 0 (3776 passed, 1 skipped; speed budget 4 passed);
+`test_sources_pages_liveness.py` 75 passed; dispatch + sole-subprocess + registry + models + source-independence +
+full-refname meta 288 passed; `test_fleet_picture_pages_liveness.py` (guild) passed; `pyforge-doctor-scripts-test`
+(pyforge-ci) exit 0; `pyforge-doctor-aggregate-scripts-test` exit 0; `lint-types` exit 0; `flag-gate-check` exit 0;
+`doctor check --list` lists no new row. The five AC9 mutations each fail their named test (the bare-`main` one also
+fails `tests/meta/test_refs_are_full_refnames.py`). Unit coverage: `pages_liveness.py` 100%. `detectors-ci` reds only
+on `spec-surface` drift under `spec-pyforge-doctor`, the surface reconcile and scoped stamp still to run.
+
+Decisions inside the contract: the git read runs first, so a git failure or an empty log is one unavailable WARN with
+no HTTP request; a transport failure (URLError, timeout, dropped connection) on HEAD is unavailable without a GET
+(only an HTTP status outside 2xx earns the GET); a `last-modified` without a zone reads as UTC; a git line whose date
+does not parse or carries no zone is unavailable.
+
+Open question for review (not changed here): the Intent assumed `dashboard.yml` deploys on every push to `main`.
+Steward Story 102.2, already on this branch, has `pages.yml` deploy only when the built tree's hash differs from the
+live `build.json`. A published-input commit whose build is byte-identical to the live tree (for example a
+comment-only edit to `docs/map.yaml`) is never deployed, so `last-modified` stays at the earlier deploy and this
+source reads `pages-liveness-stale` once that commit is a day old, though nothing is stuck.
+`PUBLISHED_INPUTS` also now equals `pages.yml`'s `paths` filter minus the workflow itself (Spec open question 2).
+
+followup_review_recommended: false

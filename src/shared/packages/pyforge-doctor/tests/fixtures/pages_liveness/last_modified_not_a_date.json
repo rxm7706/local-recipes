@@ -1,0 +1,6 @@
+{
+  "case": "HEAD answers 200 with a last-modified header that is not an HTTP date.",
+  "head": {"status": 200, "headers": {"last-modified": "not a date"}},
+  "git_log": "4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f 2026-10-14T14:00:00+00:00",
+  "expect": {"check": "pages-liveness-unavailable", "status": "warn", "requests": ["HEAD"], "cause": "last-modified 'not a date'"}
+}

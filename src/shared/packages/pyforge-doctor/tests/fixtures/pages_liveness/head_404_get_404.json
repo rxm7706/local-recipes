@@ -1,0 +1,7 @@
+{
+  "case": "The site is gone: HEAD 404, then GET 404.",
+  "head": {"status": 404, "headers": {}},
+  "get": {"status": 404, "headers": {}},
+  "git_log": "f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a 2026-10-14T14:00:00+00:00",
+  "expect": {"check": "pages-liveness-unavailable", "status": "warn", "requests": ["HEAD", "GET"], "cause": "HEAD 404, GET 404"}
+}

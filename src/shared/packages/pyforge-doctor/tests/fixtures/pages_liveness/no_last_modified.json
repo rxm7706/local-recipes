@@ -1,0 +1,6 @@
+{
+  "case": "HEAD answers 200 without a last-modified header.",
+  "head": {"status": 200, "headers": {"content-type": "text/html; charset=utf-8"}},
+  "git_log": "3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e 2026-10-14T14:00:00+00:00",
+  "expect": {"check": "pages-liveness-unavailable", "status": "warn", "requests": ["HEAD"], "cause": "HEAD 200 from https://rxm7706.github.io/local-recipes/ carries no last-modified header"}
+}
