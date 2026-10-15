@@ -716,6 +716,12 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    # Story 103.6 (CAP-159); default off, dev on (spec flag.default).
+    "pyforge.steward.preflight_ci_arbitrates": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.marshal.verify_fix_loop": {
         "dev": True,
         "staging": True,

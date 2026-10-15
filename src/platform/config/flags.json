@@ -554,6 +554,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.steward.preflight_ci_arbitrates": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "103-6-a-touched-scope-preflight-leaves-the-other-lanes-to-ci-and-verify-deferred-catches-up",
+        "created": "2026-10-15",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }
