@@ -2,7 +2,7 @@
 title: '43.7: docsite/ retires and one generator remains'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-review'
+status: 'done'
 flag-exempt: flag-infrastructure   # the story retires the flag that gated Epic 43, pyforge.herald.pages_one_generator (spec-feature-flag-governance Q2)
 retires-flag: pyforge.herald.pages_one_generator   # doctor Story 34.7's retirement path: the owner's story declares it
 review_loop_iteration: 0

@@ -2290,7 +2290,7 @@ stays on Lane 1.
 **When** `pixi run -e pyforge-atlas vizro-static-export` runs with the flag on against the fixture data root *(amended 2026-10-15, orchestrator ruling; operator may override)*
 **Then** it exits 0 and writes `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, exactly one `assets/plotly.min.js` (plotly's own `package_data` copy), and `manifest.json` with `exported_at`, `export_commit` and one `boards[]` entry per page (`id`, `title`, `path`, `data_build_timestamp`); `grep -rl cdn.plot.ly docs/dashboard/vizro` prints nothing and every `<script src=` resolves to the vendored file; the Run controls of `scan-project` and `env-inspect` are absent and those pages say they show the latest cached result
 **And** a fixture board with a declared access column makes the task exit 1 naming the board and write nothing (`sld:AD-10`); with the flag off it refuses and writes nothing; with the export under `docs/dashboard/vizro/`, `pixi run -e site pages-check` exits 0 with no cross-origin finding under `dashboard/vizro/`, the one `VENDORED_ROOTS` entry under the mount being the exact file `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5; amended 2026-10-15, was "`VENDORED_ROOTS` unchanged"); the producer job uploads `docs/dashboard/vizro/` as `vizro-static-export` (`retention-days: 90`) and has no commit or push step; `dashboard-dryrun`, `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in both states with `flag_states`
-**Status:** backlog
+**Status:** done
 
 ## Epic 31: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so (fix under spec-pyforge-atlas CAP-20)
 

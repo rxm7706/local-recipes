@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 26, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
+updated: "2026-10-15"   # RE-STAMPED 2026-10-15: chain-currency (spec -> PRD) for the spec memlog's 2026-10-15 surface decision (a stale surface glob re-pointed; no CAP, FR or AD moved). See § Currency reconciliation — 2026-10-15. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 26, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
 status: final
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
@@ -449,5 +449,20 @@ one story per station) and the event that minted Epic 26 / Story 26.1.*
 capabilities that already carry it and closes the station's open medium and low deferred-work rows, each with a
 `resolution:` and a cited `verified:` line. No CAP is minted, no FR is added, renumbered or removed, and no success
 metric changes.
+
+**Content changed:** this section only. `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-10-15
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-scribe`'s `.memlog.md` gained a 2026-10-15 decision in the
+Pages one-PR's healed-tissue pass: the surface entry `src/platform/tests/test_scribe_recall_argv.py`, which never existed
+in git (it arrived with the 2026-09-17 fold from `spec-scribe-recall-mode-wiring`), is re-pointed to
+`src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py`, the test that pins the portal recall argv
+(mode optional, never defaulting to planning or code). The same memlog records the surface reconcile for herald Story
+43.7's `AGENTS.md` edit (the dossier citation moved to `docs-site/src/content/dossier/dossier.yml`).*
+
+**What moved, and why the FR delta is none.** The surface now names the file that already tests the portal's recall
+argv (the portal path of FR-13, recall queryable by any session; the mode rules are the Spec's, folded in from
+`spec-scribe-recall-mode-wiring`). No requirement moves, and `AGENTS.md`'s citation is a path, not a contract change. No CAP is minted, no FR is added, renumbered or removed, and no success metric changes.
 
 **Content changed:** this section only. `updated:` bumped to record that the check ran.
