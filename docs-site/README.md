@@ -33,6 +33,15 @@ These files are maintained in this repository and are **not** byte-identical to 
 - `src/loaders/shelf-docs-loader.ts` — titles from frontmatter or first `#` heading; `README.md` → quadrant index; heading deduplication; renders each page's markdown with the project's rehype plugins (Story 44.1: before it, every page body rendered empty)
 - `src/lib/shelf.mjs` — the one rule for which `docs/` files are pages, read by the loader and the link plugin
 - `src/rehype-shelf-links.js` — runs before the two vendored link plugins: points `README.md` links at the directory index and sends links to repo files the shelf does not publish (`docs/MAP.md`, `docs/governance/**`, anything outside `docs/`) to their repository page
+- `src/pages/herald/`, `src/layouts/Herald*.astro`, `src/components/{dossier,herald}/`, `src/lib/herald-pages.ts`,
+  `src/loaders/{dossier,herald-pages}-loader.ts` — the herald pages (Epic 43), emitted only with
+  `pyforge.herald.pages_one_generator` on (`PYFORGE_PAGES_ONE_GENERATOR=1`); off, `docsite/` renders them
+- `redirects.json` — the frozen root redirects: the 44 legacy paths and `/kedro-viz/` (Story 43.3; never hand-grown)
+- `src/lib/redirects.ts` — writes the legacy redirects into the build with the flag on, refusing a path the build
+  already holds
+- `scripts/populate-public.ts` — the only writer of `public/` (gitignored), run at every build's start: with the flag
+  on, the twins, the family downloads and the dashboard exports in `docs/dashboard/`; off, empty
+- `scripts/origin_check.py` — `pages-check`'s origin rule with the flag on (under 40 lines; AD-21)
 
 ## Layout
 
@@ -40,6 +49,7 @@ These files are maintained in this repository and are **not** byte-identical to 
 docs/                          # shelf content (repo root)
 docs-site/
   src/content/docs -> ../../../docs
+  public/                      # gitignored; written by scripts/populate-public.ts
   build/site/                  # gitignored build output
 ```
 

@@ -21,8 +21,48 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** Where `docsite/build.py` copies each twin under the `/herald/` mount when the flag is on. */
+/** Where each twin is served under the `/herald/` mount with the flag on (`scripts/populate-public.ts`, Story 43.3). */
 export const TWINS_DIR = 'twins';
+
+/** The preview frame's load handler (`components/herald/Shot.astro`), allowed by hash in the CSP below. */
+export const PREVIEW_ONLOAD = "this.parentElement.classList.add('is-loaded')";
+
+/**
+ * The `Content-Security-Policy` every Astro herald page carries (Story 43.3, AD-21): nothing loads from another
+ * origin. Inline styles are the dossier's accents and the back-bar's; the one inline script is the preview handler.
+ */
+export const HERALD_CSP = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-hashes' 'sha256-${createHash('sha256').update(PREVIEW_ONLOAD).digest('base64')}'`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self' data:",
+  "frame-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ');
+
+const GOOGLE_FONT_LINK = /<link\b[^>]*\b(?:href|rel)=['"][^'"]*fonts\.(?:googleapis|gstatic)\.com[^'"]*['"][^>]*>\s*/gi;
+const GOOGLE_FONT_IMPORT = /@import\s+url\(['"]?https:\/\/fonts\.googleapis\.com[^)]+\)\s*;?\s*/gi;
+
+/**
+ * A twin as the site serves it: Google Fonts links and imports dropped and one link to the site's own fonts added,
+ * as `docsite/build.py`'s `rewrite_google_font_links` (Story 31.3) -- the one transformation a twin gets (AD-21).
+ */
+export function vendorFontLinks(html: string, stylesheetHref: string): string {
+  const out = html.replace(GOOGLE_FONT_LINK, '').replace(GOOGLE_FONT_IMPORT, '');
+  if (out.includes(stylesheetHref)) {
+    return out;
+  }
+  const link = `<link rel="stylesheet" href="${stylesheetHref}">\n`;
+  const head = /<head[^>]*>/i.exec(out);
+  if (!head) {
+    return link + out;
+  }
+  const end = head.index + head[0].length;
+  return `${out.slice(0, end)}\n${link}${out.slice(end)}`;
+}
 
 /** The family views' published names, as `build.py`'s `_FAMILY_VIEW_OUT_NAMES`. */
 export const FAMILY_VIEWS = [
@@ -548,6 +588,7 @@ export function twinWrapperHtml(options: { title: string; backbar: string; rel: 
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeText(title)}</title>
 <meta name="generator" content="Astro">
+<meta http-equiv="Content-Security-Policy" content="${HERALD_CSP}">
 <link rel="stylesheet" href="${escapeAttr(`${rel}assets/fonts/fonts.css`)}">
 <style>
 html,body{margin:0;height:100%;background:#12161a}

@@ -243,6 +243,11 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 
 ## Spec Change Log
 
+- 2026-10-15 (orchestrator rulings after the commit, operator may override): the font-rewritten twin copy is accepted
+  (Story 31.3's mechanism; AD-21 forbids the third-party origin) -- no Design re-export, no DW row. The rendered half
+  of `test_herald_pages_parity.py` skips where `docs-site/node_modules` or the generated menu is absent, which is
+  every CI lane today (the herald lane installs neither); the model half runs everywhere. Story 43.3 moves the twins
+  and downloads to `docs-site/public/` (its change log).
 - 2026-10-15: implemented (lane A of the one-PR Pages redesign); status `in-review`. Deviations, each for the
   reviewer and the operator to keep or overturn:
   - **The twin is the tracked file plus Story 31.3's font-link vendoring, not byte-identical (AC1, AC4).** Every

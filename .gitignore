@@ -1045,5 +1045,8 @@ docs-site/node_modules/
 docs-site/build/
 docs-site/.astro/
 docs-site/src/sidebar.generated.json
+# Story 43.3: written from scratch on every Astro build by docs-site/scripts/populate-public.ts (the twins, the
+# family downloads and the dashboard exports); never tracked.
+docs-site/public/
 # Override repo-root `lib/` (Python packaging) so vendored upstream helper is tracked.
 !docs-site/src/lib/

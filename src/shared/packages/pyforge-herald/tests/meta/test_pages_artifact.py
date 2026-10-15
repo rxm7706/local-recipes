@@ -4,18 +4,37 @@ Story 42.2 (CAP-60): the Kedro-Viz mount is an artifact handoff that tolerates a
 ``test_42_2_*`` tests below build the real herald site around a fixture export, and around none.
 
 Story 42.1 (CAP-60): the fleet board and guild status pages under ``/status/`` -- the ``test_42_1_*``
-tests build the real herald site with ``pyforge.herald.status_pages`` on (a fixture input) and off."""
+tests build the real herald site with ``pyforge.herald.status_pages`` on (a fixture input) and off.
+
+Story 43.3 (CAP-61): with ``pyforge.herald.pages_one_generator`` on, the Astro build assembles the herald side
+itself -- the ``test_43_3_*`` tests build it (where docs-site is installed, ``pages_astro``) and check the
+frozen redirects, ``publicDir``, the search index, the small origin check and the CSP meta."""
 
 from __future__ import annotations
 
+import gzip
 import importlib.util
 import json
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from pages_astro import (
+    DOCS_SITE,
+    NODE,
+    REPO_ROOT,
+    astro_build,
+    fixture_tree,
+    load_build,
+    needs_astro,
+    needs_node,
+    write,
+)
+from pyforge.testing_kit import make_flag_provider_fixture
+from pyforge.testing_kit.flags import flag_states
 
 
 def _load_assemble_pages():
@@ -603,3 +622,272 @@ def test_42_1_the_status_mount_refuses_a_collision(tmp_path: Path, monkeypatch: 
             fleet_status=_FLEET_FIXTURE,
         )
     assert exc.value.code == 1
+
+
+# --- Story 43.3: Astro assembles the artifact -------------------------------------------------------------
+
+_FLAG = "pyforge.herald.pages_one_generator"
+flag_provider = make_flag_provider_fixture()
+_REDIRECTS = json.loads((DOCS_SITE / "redirects.json").read_text(encoding="utf-8"))
+
+
+def _astro_artifact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, root: Path | None = None) -> Path:
+    """The flag-on artifact as the assembler leaves it: Astro's build, then the herald build's assets."""
+    monkeypatch.setenv("PYFORGE_CI_SURFACES_TILE", "0")
+    out = tmp_path / "site"
+    done = astro_build(out, flag=True, root=root)
+    assert done.returncode == 0, done.stdout[-3000:] + done.stderr[-3000:]
+    build = load_build("docsite_build_43_3")
+    build.CONTENT = (root or REPO_ROOT) / "docsite" / "content"
+    build.build(out / "herald", root or REPO_ROOT, one_generator=True, status_pages=False)
+    return out
+
+
+def _origin_check():
+    scripts = str(DOCS_SITE / "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    import origin_check
+
+    return origin_check
+
+
+@needs_astro
+def test_43_3_ac1_ac5_the_built_artifact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    """AC1: every legacy path of redirects.json is a redirect landing on its target. AC5: every herald page
+    carries one CSP meta, and the small origin check finds nothing off the configured origin."""
+    artifact = _astro_artifact(tmp_path, monkeypatch)
+    legacy = _REDIRECTS["legacy"]
+    assert len(legacy) == 44
+    refresh = re.compile(r"""http-equiv=["']refresh["'][^>]*url=([^"']+)["']""")
+    for source, target in legacy.items():
+        stub = artifact / source.lstrip("/")
+        assert stub.is_file(), f"{source}: no redirect page"
+        match = refresh.search(stub.read_text(encoding="utf-8"))
+        assert match, f"{source}: not a redirect page"
+        landed = (stub.parent / match.group(1)).resolve()
+        assert landed == (artifact / target.lstrip("/")).resolve() and landed.is_file(), f"{source}: lands nowhere"
+    assemble_pages = _load_assemble_pages()
+    assemble_pages._check_legacy_redirects(artifact)
+    assemble_pages._check_csp(artifact)
+    pages = [p for p in (artifact / "herald").rglob("*.html") if "twins" not in p.parts and "artifact" not in p.parts]
+    assert len(pages) > 40
+    for built in pages:
+        assert built.read_text(encoding="utf-8").count('http-equiv="Content-Security-Policy"') == 1, built
+    origin_check = _origin_check()
+    assert origin_check.findings(artifact, origin_check.site_origin("http://localhost:3000")) == []
+    (artifact / "herald" / "artifact" / "dossier.html").unlink()
+    with pytest.raises(SystemExit):
+        assemble_pages._check_legacy_redirects(artifact)
+    assert "legacy redirect /artifact/dossier.html does not land on" in capsys.readouterr().err
+
+
+@needs_node
+def test_43_3_ac2_a_page_at_a_legacy_path_fails_the_build(tmp_path: Path) -> None:
+    """AC2: the redirect writer refuses a path the build already holds, naming it (AD-21 rule 1)."""
+    write(tmp_path / "out" / "dossier" / "index.html", "<html>a page</html>")
+    lib = json.dumps((DOCS_SITE / "src" / "lib" / "redirects.ts").as_uri())
+    out, legacy = json.dumps(str(tmp_path / "out")), json.dumps(_REDIRECTS["legacy"])
+    script = (
+        f"import {{ writeLegacyRedirects }} from {lib};"
+        f"try {{ writeLegacyRedirects({out}, {legacy}); }}"
+        "catch (exc) { process.stdout.write(String(exc.message)); process.exit(3); }"
+    )
+    done = subprocess.run(
+        [NODE or "node", "--experimental-strip-types", "--input-type=module", "-e", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 3, done.stderr
+    assert "dossier/index.html" in done.stdout and "one owner" in done.stdout
+    assert not (tmp_path / "out" / "decks").exists()  # nothing written when one path is taken
+
+
+@needs_astro
+def test_43_3_ac3_public_dir_serves_the_twins_downloads_and_exports(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC3: docs-site/public/ holds exactly the twins, the downloads and the exports, each the artifact's copy
+    byte for byte; a download or an export is its source byte for byte, a twin its source with only the
+    font-link vendoring (Story 43.2's ruling)."""
+    root = fixture_tree(tmp_path / "tree", exports=True)
+    artifact = _astro_artifact(tmp_path, monkeypatch, root)
+    public = DOCS_SITE / "public"
+    files = sorted(p.relative_to(public).as_posix() for p in public.rglob("*") if p.is_file())
+    project, src = "presentations/{}/project/{}", "presentations/{}/src/{}"
+    twins = {
+        "herald/twins/infographics/beta-co.html": project.format("fx-beta", "Beta Infographic standalone.html"),
+        "herald/twins/infographics/alpha.html": project.format("fx-alpha", "Alpha Infographic standalone.html"),
+        "herald/twins/decks/fx-alpha/infographic-deck.html": project.format(
+            "fx-alpha", "Alpha - Infographic Deck.dc.html"
+        ),
+        "herald/twins/decks/fx-alpha/executive-summary.html": project.format(
+            "fx-alpha", "Alpha - Executive Summary.dc.html"
+        ),
+        "herald/twins/decks/fx-beta/infographic-deck.html": project.format(
+            "fx-beta", "Beta - Infographic Deck.dc.html"
+        ),
+    }
+    copies = {
+        "herald/decks/fx-alpha/downloads/fx-alpha-deck-2026-01-01.pptx": src.format(
+            "fx-alpha", "pptx/fx-alpha-deck-2026-01-01.pptx"
+        ),
+        "herald/decks/fx-alpha/downloads/fx-alpha-deck-2026-01-01.md": src.format(
+            "fx-alpha", "marp/fx-alpha-deck-2026-01-01.md"
+        ),
+        "herald/decks/fx-alpha/downloads/fx-alpha-narration-2026-01-02.md": src.format(
+            "fx-alpha", "marp/fx-alpha-narration-2026-01-02.md"
+        ),
+        "herald/decks/fx-beta/downloads/fx-beta-2026-02-02.md": src.format("fx-beta", "marp/fx-beta-2026-02-02.md"),
+    }
+    for name in ("kedro-viz", "vizro"):
+        source = root / "docs" / "dashboard" / name
+        for path in source.rglob("*"):
+            if path.is_file():
+                rel = path.relative_to(source).as_posix()
+                copies[f"dashboard/{name}/{rel}"] = f"docs/dashboard/{name}/{rel}"
+    assert files == sorted([*twins, *copies]), "docs-site/public/ holds a file the population script did not write"
+    for rel in files:
+        assert (artifact / rel).read_bytes() == (public / rel).read_bytes(), f"{rel}: the artifact's copy differs"
+    for rel, source in copies.items():
+        assert (public / rel).read_bytes() == (root / source).read_bytes(), f"{rel} is not {source}"
+    build = load_build("docsite_build_43_3_ac3")
+    for rel, source in twins.items():
+        fonts = "../" * (rel.count("/") - 1) + "assets/fonts/fonts.css"
+        want = build.rewrite_google_font_links((root / source).read_text(encoding="utf-8"), fonts).encode("utf-8")
+        assert (public / rel).read_bytes() == want, f"{rel} is not {source} with its font links vendored"
+    assert not (artifact / "dashboard" / "README.md").exists()
+
+
+@needs_astro
+def test_43_3_ac4_search_holds_a_dossier_page_and_a_family_page(tmp_path: Path) -> None:
+    """AC4: the one Pagefind index holds the dossier (a section title: one herald hit) and each family page
+    (its slug: one family-page hit)."""
+    out = tmp_path / "site"
+    done = astro_build(out, flag=True)
+    assert done.returncode == 0, done.stderr[-3000:]
+    fragments = []
+    for path in (out / "pagefind" / "fragment").glob("*.pf_fragment"):
+        raw = gzip.decompress(path.read_bytes())
+        fragments.append(json.loads(raw[len(b"pagefind_dcd") :]))
+    dossier = [f["url"] for f in fragments if "/herald/" in f["url"] and "Cross-fleet synthesis" in f["content"]]
+    assert len(dossier) == 1 and dossier[0].endswith("/herald/dossier/"), dossier
+    family = [f["url"] for f in fragments if "/herald/decks/" in f["url"] and "pyforge-herald" in f["content"]]
+    assert len(family) == 1 and family[0].endswith("/herald/decks/pyforge-herald/"), family
+
+
+def test_43_3_ac5_the_origin_check_is_small() -> None:
+    assert len((DOCS_SITE / "scripts" / "origin_check.py").read_text(encoding="utf-8").splitlines()) < 40
+
+
+@pytest.mark.parametrize(
+    ("rel", "body", "finding"),
+    [
+        (
+            "herald/twins/infographics/x.html",
+            '<link href="https://fonts.googleapis.com/css2?family=Archivo" rel="stylesheet">',
+            "fonts.googleapis.com",
+        ),
+        ("herald/dossier/index.html", '<script src="https://cdn.example.com/a.js"></script>', "cdn.example.com"),
+        ("dashboard/vizro/estate/index.html", '<img src="//cdn.plot.ly/x.png">', "cdn.plot.ly"),
+        ("herald/assets/site.css", "@import url('https://fonts.googleapis.com/css2');", "fonts.googleapis.com"),
+        ("_astro/app.js", 'fetch("https://api.example.com/x")', "api.example.com"),
+        ("_astro/map.js", "icon.src = `https://cdn.jsdelivr.net/npm/maki/${p}.svg`", "cdn.jsdelivr.net"),
+    ],
+)
+def test_43_3_ac5_pages_check_names_a_planted_load(tmp_path: Path, capsys, rel: str, body: str, finding: str) -> None:
+    """A load from another origin anywhere outside the vendored paths exits 1 naming the file and the URL."""
+    write(tmp_path / rel, f"<html><head>{body}</head></html>" if rel.endswith(".html") else body)
+    write(tmp_path / "about" / "index.html", '<a href="https://github.com/rxm7706/local-recipes">a link</a>')
+    with pytest.raises(SystemExit) as exc:
+        _load_assemble_pages()._check_origins(tmp_path, _SITE_URL)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert rel in err and finding in err
+    assert "about/index.html" not in err  # a link is navigation, not a load
+
+
+def test_43_3_ac5_the_vendored_bundles_are_exempt_by_name(tmp_path: Path, capsys) -> None:
+    """The Kedro-Viz root and plotly.js -- the file, never the Vizro tree -- keep their own references."""
+    write(tmp_path / "dashboard/kedro-viz/index.html", '<script src="https://cdn.example.com/kv.js"></script>')
+    write(tmp_path / "dashboard/vizro/assets/plotly.min.js", 'fetch("https://cdn.plot.ly/un/world_110m.json")')
+    assemble_pages = _load_assemble_pages()
+    assemble_pages._check_origins(tmp_path, _SITE_URL)
+    out = capsys.readouterr().out
+    assert "exempt vendored root dashboard/kedro-viz/" in out
+    assert "exempt vendored file dashboard/vizro/assets/plotly.min.js" in out
+    write(tmp_path / "dashboard/vizro/assets/other.js", 'fetch("https://cdn.plot.ly/un/world_110m.json")')
+    with pytest.raises(SystemExit):
+        assemble_pages._check_origins(tmp_path, _SITE_URL)
+    assert "dashboard/vizro/assets/other.js" in capsys.readouterr().err
+
+
+def test_43_3_ac5_the_second_host_refuses_a_link_to_the_public_host(tmp_path: Path, capsys) -> None:
+    write(tmp_path / "index.html", f'<a href="{_SITE_URL}/how-to/">how-to</a>')
+    with pytest.raises(SystemExit):
+        _load_assemble_pages()._check_origins(tmp_path, "https://pages.example.test/local-recipes")
+    assert "on the other host https://rxm7706.github.io" in capsys.readouterr().err
+
+
+def test_43_3_ac5_every_herald_page_carries_one_csp(tmp_path: Path, capsys) -> None:
+    csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'">'
+    write(tmp_path / "herald/index.html", f"<html><head>{csp}</head></html>")
+    write(tmp_path / "herald/artifact/dossier.html", "<div>the artifact build, no head</div>")
+    write(tmp_path / "herald/twins/infographics/x.html", "<html>a twin</html>")
+    assemble_pages = _load_assemble_pages()
+    assemble_pages._check_csp(tmp_path)
+    write(tmp_path / "herald/decks/index.html", "<html><head></head></html>")
+    with pytest.raises(SystemExit):
+        assemble_pages._check_csp(tmp_path)
+    assert "herald/decks/index.html carries 0 Content-Security-Policy meta(s)" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("case", ["no-index", "no-manifest", "bad-manifest", "absent", "empty", "good"])
+def test_43_3_the_vizro_mount_is_judged_when_present(tmp_path: Path, capsys, case: str) -> None:
+    mount = tmp_path / "dashboard" / "vizro"
+    if case != "absent":
+        mount.mkdir(parents=True)
+    if case in ("no-manifest", "bad-manifest", "good"):
+        write(mount / "index.html", "<html>boards</html>")
+    if case in ("no-index", "good"):
+        write(mount / "manifest.json", "{}")
+    if case == "bad-manifest":
+        write(mount / "manifest.json", "[]")
+    if case in ("absent", "empty", "good"):
+        _load_assemble_pages()._check_vizro_mount(tmp_path)
+        return
+    with pytest.raises(SystemExit):
+        _load_assemble_pages()._check_vizro_mount(tmp_path)
+    assert "dashboard/vizro/ lacks index.html or a manifest.json object" in capsys.readouterr().err
+
+
+@flag_states(_FLAG)
+def test_43_3_the_assembler_hands_mounts_and_redirects_to_astro(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flag_provider: dict[str, bool]
+) -> None:
+    """Off, the assembler writes the 44 legacy stubs and copies the dashboard input, as before; on, it writes
+    neither -- the Astro build does, from docs-site/redirects.json and docs-site/public/ -- and refuses no
+    mount Astro already holds."""
+    on = flag_provider[_FLAG]
+    monkeypatch.setenv("PYFORGE_PAGES_ONE_GENERATOR", "1" if on else "0")
+    monkeypatch.setenv("PYFORGE_STATUS_PAGES", "0")
+    monkeypatch.setenv("PYFORGE_CI_SURFACES_TILE", "0")
+    artifact = tmp_path / "site"
+    artifact.mkdir()
+    if on:
+        write(artifact / "dashboard" / "kedro-viz" / "index.html", "<html>Astro served the export</html>")
+    src = _dashboard_src(tmp_path, _fixture_export(tmp_path / "export"))
+    _load_assemble_pages().assemble(
+        artifact, repo_root=_repo_root(), dashboard_src=src, skip_docs_site_build=True, site_url=_SITE_URL
+    )
+    stubs = [source for source in _REDIRECTS["legacy"] if (artifact / source.lstrip("/")).is_file()]
+    if not on:
+        assert sorted(stubs) == sorted(_REDIRECTS["legacy"])
+        assert (artifact / "dashboard" / "kedro-viz" / "manifest.json").is_file()
+        return
+    assert stubs == []
+    served = (artifact / "dashboard" / "kedro-viz" / "index.html").read_text(encoding="utf-8")
+    assert served == "<html>Astro served the export</html>"
+    assert sorted(p.name for p in (artifact / "herald").iterdir()) == [".nojekyll", "artifact", "assets"]
+    assert (artifact / "dashboard" / "index.html").is_file()  # herald's pipelines page, still Jinja's

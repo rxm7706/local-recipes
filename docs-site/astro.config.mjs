@@ -10,6 +10,9 @@ import rehypeShelfLinks from './src/rehype-shelf-links.js';
 import rehypeMarkdownLinks from './src/rehype-markdown-links.js';
 import rehypeBasePaths from './src/rehype-base-paths.js';
 import { getSiteUrl } from './src/lib/site-url.mjs';
+import { readRedirects, writeLegacyRedirects } from './src/lib/redirects.ts';
+import { pagesOneGenerator } from './src/loaders/herald-pages-loader.ts';
+import { populatePublic } from './scripts/populate-public.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sidebarGenerated = path.join(__dirname, 'src', 'sidebar.generated.json');
@@ -31,6 +34,9 @@ if (!fs.existsSync(topnavGenerated)) {
 const kedroVizMounted = JSON.parse(fs.readFileSync(topnavGenerated, 'utf8')).some(
   (item) => item.mount === 'kedro-viz',
 );
+
+// Story 43.3 (CAP-61): the root redirects -- the frozen legacy set and /kedro-viz/ -- read from one file.
+const siteRedirects = readRedirects(path.join(__dirname, 'redirects.json'));
 
 const siteUrl = getSiteUrl();
 const urlParts = new URL(siteUrl);
@@ -60,7 +66,11 @@ export default defineConfig({
   },
   // The destination carries the host's base path: Astro writes it into the stub verbatim, and a bare
   // '/dashboard/kedro-viz/' sent the project site's /kedro-viz/ to the host's root (live until 2026-10-15).
-  redirects: kedroVizMounted ? { '/kedro-viz/': `${basePath}dashboard/kedro-viz/` } : {},
+  redirects: kedroVizMounted
+    ? Object.fromEntries(
+        Object.entries(siteRedirects['kedro-viz']).map(([from, to]) => [from, `${basePath}${to.replace(/^\//, '')}`]),
+      )
+    : {},
   integrations: [
     starlight({
       title: 'PyForge documentation',
@@ -76,5 +86,29 @@ export default defineConfig({
         SiteTitle: './src/components/SiteTitle.astro',
       },
     }),
+    heraldArtifact(),
   ],
 });
+
+/**
+ * Story 43.3 (CAP-61): with pyforge.herald.pages_one_generator on, the build assembles the herald side of the
+ * artifact itself -- public/ written from scratch before the build (twins, downloads, dashboard exports), and the
+ * legacy root redirects written into it after, refusing any path the build already holds (AD-21 rule 1). Off,
+ * public/ is emptied and the Jinja path's assembler does both, as before.
+ */
+function heraldArtifact() {
+  const oneGenerator = pagesOneGenerator();
+  return {
+    name: 'herald-artifact',
+    hooks: {
+      'astro:build:start': () => {
+        populatePublic(path.join(__dirname, 'public'), oneGenerator);
+      },
+      'astro:build:done': ({ dir }) => {
+        if (oneGenerator) {
+          writeLegacyRedirects(fileURLToPath(dir), siteRedirects.legacy);
+        }
+      },
+    },
+  };
+}

@@ -5,7 +5,7 @@
  * poster, the Infographic Deck and the Executive Summary in view and offering the current PPTX and
  * Marp sources as downloads, each stamped with its sidecar's tree and etag (or the commit and a
  * content hash). A rest route so that with pyforge.herald.pages_one_generator off it emits no file
- * and the Jinja family pages are the only ones.
+ * and the Jinja family pages are the only ones. A family page is indexed for search (Story 43.3).
  */
 import Shot from '../../../components/herald/Shot.astro';
 import HeraldLayout from '../../../layouts/HeraldLayout.astro';
@@ -57,7 +57,7 @@ const shell = {
       }
       rel="../../"
     >
-      <div class="page">
+      <div class="page" data-pagefind-body>
         <div class="lander">
           <div class="kicker">
             <span class="dot" />

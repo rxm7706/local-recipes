@@ -20,12 +20,20 @@ Astro writes the overview, the dossier, the gallery, the family pages and the re
 infographic and family view; the herald build adds only the twins under ``/herald/twins/``, the
 downloads, the assets and the artifact build. ``check`` refuses a herald page from the other writer in
 either flag state, naming it; the twins are raw exports (no menu, no legacy redirect, no link walk)
-that the origin check still reads."""
+that the origin check still reads.
+
+Story 43.3 (CAP-61): with the flag on, the Astro build also serves the twins, the downloads and the
+dashboard exports (``docs/dashboard/kedro-viz/`` and ``docs/dashboard/vizro/``, each when present) from
+``docs-site/public/`` and writes the root redirects from ``docs-site/redirects.json``; this assembler
+then mounts, copies and redirects nothing, and ``check`` judges the frozen redirects, one CSP meta per
+herald page and the small origin check (``docs-site/scripts/origin_check.py``) in place of the scanner
+below. Off, it does all of that as before."""
 
 from __future__ import annotations
 
 import argparse
 import html
+import json
 import os
 import posixpath
 import re
@@ -57,8 +65,8 @@ PIPELINES_PAGE = f"{DASHBOARD_PREFIX}/index.html"
 #: Herald's status pages (Story 42.1); written only with pyforge.herald.status_pages on.
 STATUS_PREFIX = sp.STATUS_PREFIX
 STATUS_PAGES = (sp.BOARD_PAGE, sp.GUILD_PAGE)
-#: Story 43.2: with pyforge.herald.pages_one_generator on, docsite/build.py copies each infographic and
-#: family view here, and Astro's reader page at the 2026-10-13 URL frames it under the back-bar.
+#: Story 43.2: with pyforge.herald.pages_one_generator on, each infographic and family view is served here
+#: (Story 43.3: from docs-site/public/), and Astro's reader page at the 2026-10-13 URL frames it under the back-bar.
 TWINS_PREFIX = f"{HERALD_PREFIX}/twins/"
 #: The herald build's single-file artifact dossier (CAP-47): Jinja's in both flag states until Story 43.7.
 ARTIFACT_DOSSIER = f"{HERALD_PREFIX}/artifact/dossier.html"
@@ -69,12 +77,23 @@ _ASTRO_GENERATOR = re.compile(r"""<meta\s+name=["']generator["']\s+content=["']A
 # a vendored upstream bundle stays byte-identical to its recorded build, so pages-check cannot
 # ask it to drop its own third-party references. Each root is named here with its reason --
 # never a blanket skip -- and `check` reports every root it exempted and what it found there.
+# A key ending in "/" is a root; any other key is that one file (Story 43.3).
 VENDORED_ROOTS: dict[str, str] = {
     f"{KEDRO_VIZ_MOUNT}/": (
         "Kedro-Viz static build: atlas's kedro-viz-export artifact (viz-publish-stage), "
         "mounted verbatim from docs/dashboard/kedro-viz/"
     ),
+    f"{DASHBOARD_PREFIX}/vizro/assets/plotly.min.js": (
+        "plotly.js, the env's plotly package_data bundle the Vizro export copies byte for byte "
+        "(atlas Story 30.2); its geo and map traces name a CDN no exported page draws -- the file "
+        "only, every Vizro page stays judged (orchestrator ruling 2026-10-15, operator may override)"
+    ),
 }
+#: Story 43.3: atlas's Vizro export (Story 30.2), mounted from docs/dashboard/vizro/ when present.
+VIZRO_MOUNT = f"{DASHBOARD_PREFIX}/vizro"
+#: Story 43.3: the frozen root redirects; with pyforge.herald.pages_one_generator on the Astro build writes them.
+REDIRECTS_JSON = "docs-site/redirects.json"
+_CSP_META = re.compile(r"""<meta\s+http-equiv=["']Content-Security-Policy["']""", re.IGNORECASE)
 
 _HREF_SRC = re.compile(
     r"""(?:href|src)\s*=\s*["']([^"']+)["']""",
@@ -234,25 +253,35 @@ def _input_label(path: Path, repo_root: Path) -> str:
         return str(path)
 
 
+def _load_kedro_viz(export_dir: Path, repo_root: Path | None) -> dict[str, str] | None:
+    """The Kedro-Viz export's manifest, ``None`` when absent; a malformed one exits 1 naming the input path."""
+    label = _input_label(export_dir, repo_root) if repo_root is not None else str(export_dir)
+    try:
+        return kv.load(export_dir, label=label)
+    except kv.ExportShapeError as exc:
+        print(f"assemble_pages: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+
+
 def _copy_dashboard(dashboard_src: Path, artifact_root: Path, *, repo_root: Path | None = None) -> bool:
     """Copy ``dashboard_src`` (minus its README) under ``dashboard/``; True when Kedro-Viz was mounted.
 
     The Kedro-Viz input is validated first: a present export whose ``index.html`` or
     ``manifest.json`` is missing or malformed exits 1 naming the input path; an absent (missing or
-    empty) one is skipped, and nothing is written for it (Story 42.2)."""
+    empty) one is skipped, and nothing is written for it (Story 42.2), as is an absent Vizro export
+    (``vizro/``, atlas Story 30.2; Story 43.3)."""
     dest = artifact_root / DASHBOARD_PREFIX
     _refuses_collision(artifact_root, f"{DASHBOARD_PREFIX}/")
     export_dir = dashboard_src / "kedro-viz"
     label = _input_label(export_dir, repo_root) if repo_root is not None else str(export_dir)
-    try:
-        export = kv.load(export_dir, label=label)
-    except kv.ExportShapeError as exc:
-        print(f"assemble_pages: {exc}", file=sys.stderr)
-        raise SystemExit(1) from exc
+    export = _load_kedro_viz(export_dir, repo_root)
+    vizro_dir = dashboard_src / "vizro"
     items = [
         item
         for item in (sorted(dashboard_src.iterdir()) if dashboard_src.is_dir() else [])
-        if item.name != "README.md" and not (item == export_dir and export is None)
+        if item.name != "README.md"
+        and not (item == export_dir and export is None)
+        and not (item == vizro_dir and not kv.is_present(vizro_dir))
     ]
     for item in items:
         target = dest / item.name
@@ -564,7 +593,10 @@ def _scan_file(path: Path) -> tuple[list[tuple[str, str]], list[str]]:
 
 
 def _vendored_root(rel_file: str) -> str | None:
-    return next((root for root in VENDORED_ROOTS if rel_file.startswith(root)), None)
+    return next(
+        (root for root in VENDORED_ROOTS if rel_file == root or (root.endswith("/") and rel_file.startswith(root))),
+        None,
+    )
 
 
 def cross_origin_findings(
@@ -612,8 +644,9 @@ def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
     findings, exempt = cross_origin_findings(artifact_root, site_url)
     for root, (files, urls) in exempt.items():
         origins = sorted({_origin_of(url) for url in urls})
+        kind = "root" if root.endswith("/") else "file"
         print(
-            f"assemble_pages: exempt vendored root {root} (AD-21 rule 5: {VENDORED_ROOTS[root]}): "
+            f"assemble_pages: exempt vendored {kind} {root} (AD-21 rule 5: {VENDORED_ROOTS[root]}): "
             f"{files} file(s) not judged, {len(urls)} cross-origin reference(s)"
             + (f" to {', '.join(origins)}" if origins else ""),
             flush=True,  # ahead of the stderr findings in a combined log
@@ -622,6 +655,63 @@ def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
         print(line, file=sys.stderr)
     if findings:
         print(f"assemble_pages: {len(findings)} cross-origin finding(s)", file=sys.stderr)
+        raise SystemExit(1)
+
+
+def _check_origins(artifact_root: Path, site_url: str) -> None:
+    """Story 43.3 (flag on): the small origin check, ``docs-site/scripts/origin_check.py``, in place of the
+    scanner above -- every URL the artifact loads is on the configured origin, the vendored paths exempt by name."""
+    scripts = str(_repo_root() / "docs-site" / "scripts")
+    if scripts not in sys.path:
+        sys.path.insert(0, scripts)
+    import origin_check  # noqa: E402 -- docs-site's own check, beside the vendored validators
+    from pages_second_host import public_site_url
+
+    for path, reason in VENDORED_ROOTS.items():
+        kind = "root" if path.endswith("/") else "file"
+        print(f"assemble_pages: exempt vendored {kind} {path} (AD-21 rule 5: {reason})", flush=True)
+    origin, other = origin_check.site_origin(site_url), origin_check.site_origin(public_site_url())
+    findings = origin_check.findings(artifact_root, origin, other, tuple(VENDORED_ROOTS))
+    for line in findings:
+        print(f"assemble_pages: {line}", file=sys.stderr)
+    if findings:
+        print(f"assemble_pages: {len(findings)} cross-origin finding(s)", file=sys.stderr)
+        raise SystemExit(1)
+
+
+def _check_csp(artifact_root: Path) -> None:
+    """Story 43.3 (flag on): every herald page carries one Content-Security-Policy meta (AD-21)."""
+    for page in _iter_herald_html(artifact_root):
+        rel = _artifact_path(page, artifact_root)
+        count = len(_CSP_META.findall(page.read_text(encoding="utf-8", errors="replace")))
+        if rel != ARTIFACT_DOSSIER and count != 1:
+            print(f"assemble_pages: {rel} carries {count} Content-Security-Policy meta(s), not one", file=sys.stderr)
+            raise SystemExit(1)
+
+
+def _check_legacy_redirects(artifact_root: Path) -> None:
+    """Story 43.3 (flag on): every legacy path of ``docs-site/redirects.json`` is a redirect landing on its target."""
+    data = json.loads((_repo_root() / REDIRECTS_JSON).read_text(encoding="utf-8"))
+    for source, target in data["legacy"].items():
+        stub = artifact_root / source.lstrip("/")
+        match = _REFRESH_URL.search(stub.read_text(encoding="utf-8", errors="replace")) if stub.is_file() else None
+        landed = (stub.parent / match.group(1).strip()).resolve() if match else None
+        if landed is None or landed != (artifact_root / target.lstrip("/")).resolve() or not landed.is_file():
+            print(f"assemble_pages: legacy redirect {source} does not land on {target}", file=sys.stderr)
+            raise SystemExit(1)
+
+
+def _check_vizro_mount(artifact_root: Path) -> None:
+    """Story 43.3: a mounted Vizro export (atlas Story 30.2) carries its index and its manifest; none is fine."""
+    mount = artifact_root / VIZRO_MOUNT
+    if not kv.is_present(mount):
+        return
+    try:
+        manifest = json.loads((mount / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        manifest = None
+    if not (mount / "index.html").is_file() or not isinstance(manifest, dict):
+        print(f"assemble_pages: {VIZRO_MOUNT}/ lacks index.html or a manifest.json object", file=sys.stderr)
         raise SystemExit(1)
 
 
@@ -1026,7 +1116,12 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
     else:
         _check_no_kedro_viz_paths(artifact_root, site_url)
 
-    herald_htmls = _iter_herald_html(artifact_root)
+    _check_vizro_mount(artifact_root)
+    one_generator = enabled_from_env()
+    if one_generator:  # Story 43.3: the frozen set, written by the Astro build
+        _check_legacy_redirects(artifact_root)
+        _check_csp(artifact_root)
+    herald_htmls = [] if one_generator else _iter_herald_html(artifact_root)
     for herald_html in herald_htmls:
         old_rel = _old_path_for_herald_page(artifact_root, herald_html)
         if old_rel is None:
@@ -1042,7 +1137,10 @@ def check(artifact_root: Path, *, site_url: str | None = None, fleet_status: Pat
 
     _check_href_resolution(artifact_root, site_url=site_url)
     _check_shelf_pages(artifact_root, site_url)
-    _check_cross_origin_and_hosts(artifact_root, site_url)
+    if one_generator:
+        _check_origins(artifact_root, site_url)
+    else:
+        _check_cross_origin_and_hosts(artifact_root, site_url)
     expected = _expected_menu(kedro_viz=mounted, status_pages=status_on)
     if status_on:
         _check_status_menu_entry(expected)
@@ -1074,22 +1172,23 @@ def assemble(
     _write_site_url_marker(artifact_root, site_url)
 
     one_generator = enabled_from_env()
+    # With the flag on, Astro has already written /herald/ and served /dashboard/'s exports from
+    # docs-site/public/ (Story 43.3); the one-writer check judges every herald page afterwards.
+    astro_owned = (f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/") if one_generator else ()
     mounts = [f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", *([f"{STATUS_PREFIX}/"] if status_on else [])]
     for mount in mounts:
         existing = artifact_root / mount.rstrip("/")
-        if existing.exists():
-            if (
-                mount.startswith(f"{HERALD_PREFIX}/")
-                and one_generator
-                and _astro_dossier_preexists(artifact_root)
-            ):
-                continue
+        if existing.exists() and mount not in astro_owned:
             print(f"assemble_pages: collision at {mount}", file=sys.stderr)
             raise SystemExit(1)
 
     if status_on:  # before anything is mounted; off, the input is never opened
         _check_fleet_status_input(fleet_status, repo_root)
-    mounted = _copy_dashboard(dashboard_src, artifact_root, repo_root=repo_root)
+    if one_generator:  # the export is Astro's static files; it is only validated here (Story 42.2)
+        mounted = _load_kedro_viz(dashboard_src / "kedro-viz", repo_root) is not None
+        print(f"assemble_pages: Kedro-Viz export {'mounted' if mounted else 'absent'} (docs-site/public/)", flush=True)
+    else:
+        mounted = _copy_dashboard(dashboard_src, artifact_root, repo_root=repo_root)
     if not skip_herald_build:
         _build_herald(
             herald_out,
@@ -1099,8 +1198,9 @@ def assemble(
             status_out=(artifact_root / STATUS_PREFIX) if status_on else None,
             fleet_status=fleet_status if status_on else None,
         )
-    _write_dossier_redirects(artifact_root)
-    _ensure_kedro_viz_redirect(artifact_root)
+    if not one_generator:  # Story 43.3: on, the Astro build writes both from docs-site/redirects.json
+        _write_dossier_redirects(artifact_root)
+        _ensure_kedro_viz_redirect(artifact_root)
     return site_url
 
 

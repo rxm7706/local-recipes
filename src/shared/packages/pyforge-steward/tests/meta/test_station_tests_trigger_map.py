@@ -1248,8 +1248,9 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
             "Astro) over the tracked tree",
         ),
         "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": (
-            ("docsite/**", "presentations/**"),
-            "Story 42.2: pages-build runs the real herald build from the root around a fixture Kedro-Viz export",
+            ("docs-site/**", "docsite/**", "presentations/**"),
+            "Story 42.2: pages-build runs the real herald build from the root around a fixture Kedro-Viz export; "
+            "Story 43.3: the Astro build assembles the flag-on artifact from the root",
         ),
         "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],

@@ -313,7 +313,8 @@ _VENDORED_KEDRO_VIZ = {
 
 def test_vendored_roots_are_a_named_allowlist() -> None:
     assemble_pages = _assemble_pages()
-    assert list(assemble_pages.VENDORED_ROOTS) == ["dashboard/kedro-viz/"]
+    # Story 43.3: the Vizro export's plotly.js is exempt as one file, never the dashboard/vizro/ tree.
+    assert list(assemble_pages.VENDORED_ROOTS) == ["dashboard/kedro-viz/", "dashboard/vizro/assets/plotly.min.js"]
     assert all(reason.strip() for reason in assemble_pages.VENDORED_ROOTS.values())
 
 

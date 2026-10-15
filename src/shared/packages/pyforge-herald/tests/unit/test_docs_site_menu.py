@@ -160,7 +160,11 @@ def test_without_the_export_neither_docs_menu_names_kedro_viz(gen):
 def test_the_astro_redirect_follows_the_mount_and_keeps_the_base_path():
     config = _ASTRO_CONFIG.read_text(encoding="utf-8")
     assert "item.mount === 'kedro-viz'" in config
-    assert "redirects: kedroVizMounted ? { '/kedro-viz/': `${basePath}dashboard/kedro-viz/` } : {}" in config
+    # Story 43.3: the entry comes from docs-site/redirects.json, its target prefixed with the host's base path.
+    assert "redirects: kedroVizMounted" in config
+    assert "[from, `${basePath}${to.replace(/^\\//, '')}`]" in config
+    redirects = json.loads((_ASTRO_CONFIG.parent / "redirects.json").read_text(encoding="utf-8"))
+    assert redirects["kedro-viz"] == {"/kedro-viz/": "/dashboard/kedro-viz/"}
 
 
 def test_the_docs_site_hardcodes_no_menu_label_or_target():

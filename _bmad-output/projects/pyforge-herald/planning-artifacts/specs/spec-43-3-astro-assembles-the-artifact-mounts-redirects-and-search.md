@@ -2,7 +2,7 @@
 title: '43.3: Astro assembles the artifact: mounts, redirects and search'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 flag:
   key: pyforge.herald.pages_one_generator        # Story 43.1's; shared across Epic 43 (one flag per CAP, Q6), not minted here
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -187,6 +187,46 @@ lines) finds no absolute URL off the configured origin, the vendored Kedro-Viz b
 - Add a page at `dossier/index.html` beside the redirect — expected: the build fails naming the path.
 - Remove `data-pagefind-body` from the dossier page — expected: AC4's search test finds no dossier hit.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py -q`
+  — exit 0 (the `test_43_3_*` tests: AC1 on a flag-on build of the tracked tree, 44 legacy stubs each landing on its
+  target; AC2 through the redirect writer; AC3 on a fixture tree with a Kedro-Viz and a Vizro export; AC4 on the
+  built Pagefind fragments; AC5's size, planted-load, exemption, second-host and CSP cases; the two-state test
+  `flag_states("pyforge.herald.pages_one_generator")` over what the assembler writes). None skipped here.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0, 2015 passed, 5 skipped (the live Design and
+  webhook smokes).
+- `pages-check`: flag on, public host — exit 0 (`docs-site/public/` holds the 30 twins and 69 downloads; the 44
+  legacy stubs come from the Astro build); flag off, public host — exit 0. CAP-56 fixture host
+  (`PYFORGE_PAGES_APPLY_HOST=1 PAGES_HOST_BASE_URL=https://pages.example.test PAGES_HOST_BASE_PATH=/local-recipes`) —
+  exit 1 in both flag states, and exit 1 on `cbc34a5800` (flag off, `git archive`) with the same finding:
+  `reference/github-workflows/index.html` autolinks `https://rxm7706.github.io/local-recipes/` (the `pages.yml` row
+  steward 102.3 wrote; lane B's herald 42.3 / steward 102.5 rewrote it as plain text). With lane B's row applied
+  locally, the fixture host exits 0 in both flag states; the row was restored and is not edited here (the lanes
+  merge before 43.7).
+- With a real Vizro export (`vizro_static_export.py` from lane B's atlas 30.2, run with lane B's `pyforge-atlas` env
+  into a scratch dir: 34 boards, 37 files; neither worktree changed), copied to `docs/dashboard/vizro/`: `pages-check`
+  exit 0 with the flag on (mounted from `docs-site/public/`, judged by the new origin check) and with it off
+  (mounted by `_copy_dashboard`, judged by the old scanner: `exempt vendored file dashboard/vizro/assets/plotly.min.js
+  ... 1 file(s) not judged, 1 cross-origin reference(s) to https://cdn.jsdelivr.net`); the export was removed
+  afterwards. Without the exemption the new check names only `dashboard/vizro/assets/plotly.min.js` (the maplibre
+  `.src = \`https://cdn.jsdelivr.net/...\`` template); all 34 pages pass judged.
+- AC6: a flag-off `assemble_pages.py` on this tree and on `cbc34a5800` (both `git archive`/copied to scratch with the
+  same `node_modules` and `GITHUB_SHA`) — `diff -r` exit 0 over the 361-file artifact.
+- The flag-on artifact served under its base path in a browser: no CSP violation on a family page, the dossier or a
+  reader page; the preview handler runs (`is-loaded` on every frame); every request is same-origin (the two 404s are
+  the `.dc.html` twins' own `./support.js`, as `build.py` documents); a legacy URL redirects to the reader page.
+- Mutations, each restored: a Google Fonts link planted in `herald/twins/infographics/atlas.html` — `pages-check`
+  (flag on) exit 1 `herald/twins/infographics/atlas.html: loads 'https://fonts.googleapis.com/css2?family=Planted'`;
+  a page planted at `src/pages/dossier/index.astro` — the build exits 1 `legacy redirect path(s) already hold a page
+  or file (AD-21 rule 1, one owner): dossier/index.html`; `data-pagefind-body` removed from the dossier — AC4's test
+  fails with no dossier hit.
+- `wc -l docs-site/scripts/origin_check.py` — 39. `pixi run --frozen -e site docs-site-validate` — exit 0.
+  `pixi run --frozen -e pyforge-guild lint-types` — exit 0. `pixi run --frozen -e pyforge-guild flag-gate-check` —
+  exit 0. Steward's `tests/meta/test_station_tests_trigger_map.py` — exit 0, 45 passed.
+- Not run here: the memlog reconcile, the scoped stamps, `detectors-ci` and `pr-preflight` (the coordinating session
+  runs them once for the branch).
+
 ## Named, not fixed here
 
 - **The assembler's deletion**, the 300-line scanner's removal and the `site-check` task's retirement: Story 43.7.
@@ -201,6 +241,59 @@ lines) finds no absolute URL off the configured origin, the vendored Kedro-Viz b
 
 ## Spec Change Log
 
+- 2026-10-15: implemented (lane A of the one-PR Pages redesign); status `in-review`. Deviations and rulings, each for
+  the reviewer and the operator to keep or overturn:
+  - **The legacy redirects are written by the build, not Astro's `redirects`.** Astro writes every `redirects` key as
+    `<path>/index.html`, and all 44 legacy paths are file names (`infographics/atlas.html`, `decks/<slug>/index.html`,
+    `artifact/dossier.html`), so a `redirects` entry would serve `infographics/atlas.html/index.html`. `astro.config.mjs`
+    reads `docs-site/redirects.json` into Astro's `redirects` for `/kedro-viz/` (the same value as before, so the
+    flag-off stub is unchanged) and, with the flag on, into an integration hook that writes the 44 stubs into the build
+    after it (`src/lib/redirects.ts`), in the Jinja assembler's shape with relative targets.
+  - **The collision rule is the hook's.** Astro only warns when two routes emit one path (setting
+    `prerenderConflictBehavior: 'error'` would also fail the build on the pre-existing Starlight `/404` conflict), and
+    a `public/` file silently wins over a route; the hook refuses any legacy path the build already holds, naming it
+    (AC2), and writes nothing then.
+  - **`redirects.json`** has two keys: `legacy` (the 44, derived once from `_write_dossier_redirects` on the flag-off
+    artifact of 2026-10-15; the derivation and the 2026-10-05 set agree at 44) and `kedro-viz`. For the Spec memlog
+    (the coordinating session writes it): the JSON is the frozen legacy set, AD-21 rule 1's "derived, never hand-kept"
+    sentence wants the next spine re-stamp, and `_check_legacy_redirects` in `pages-check` lands every entry on its
+    target with the flag on.
+  - **The population script is TypeScript** (`scripts/populate-public.ts`, the only writer of the gitignored
+    `docs-site/public/`), run by the same integration at `astro:build:start` and runnable alone; it reuses Story 43.2's
+    model (`src/lib/herald-pages.ts`), so no third copy of the gallery and family rules exists. It counts toward no
+    Python budget. Twins get the font-link vendoring (Story 43.2's ruling); downloads and exports are byte for byte
+    (AC3). `docsite/build.py` with the flag on now writes only the assets and the artifact build (43.2's twin and
+    download copy is removed). Each test Astro build rewrites `docs-site/public/` too, as every build does.
+  - **The origin check judges loads, not navigation**: every URL an HTML, CSS or JS file loads (src, srcset, poster,
+    data, a loading `<link>`, `url()`, `@import`, `fetch`, `import()`, a `.src =` assignment) must be on the configured
+    origin, and no `href` may name the public host when building for another (CAP-56). AD-21 allows a plain link
+    off-site, and the docs shelf has many; "every absolute URL" read literally would red them. 39 lines.
+  - **The CSP meta** is `default-src 'self'` plus `style-src 'unsafe-inline'` (the dossier's accents, the back-bar),
+    `img-src`/`font-src` `data:` (the favicon), `frame-src 'self'` and `script-src 'self' 'unsafe-hashes'` with the
+    hash of the one inline handler (the preview frame's `onload`, now a constant in `herald-pages.ts`); no origin is
+    admitted. It is on every Astro herald page, including the reader pages and 43.1's dossier, and `pages-check`
+    checks one per page with the flag on.
+  - **Search**: the family pages carry `data-pagefind-body` beside 43.1's dossier; the overview, gallery and decks
+    index do not (navigation pages), so a family slug hits one page. AC4's test reads the built Pagefind fragments
+    (gzip, `pagefind_dcd` JSON) rather than running the browser client.
+  - **Carry-ins from atlas 30.2 (orchestrator ruling 2026-10-15, operator may override):** `/dashboard/vizro/` mounts
+    from `docs/dashboard/vizro/` when present (non-empty) -- through `public/` with the flag on, through
+    `_copy_dashboard` off (an empty `vizro/` is now skipped there, as an empty `kedro-viz/` was) -- and `pages-check`
+    refuses a mounted export without `index.html` or a `manifest.json` object. `VENDORED_ROOTS` gains the exact file
+    `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5, a vendored upstream bundle; a key without a trailing
+    `/` is one file), never the tree.
+  - **Atlas 30.2 AC7 evidence** (for the coordinator to copy into that spec at the lane merge): a real export from
+    30.2's `vizro_static_export.py` (34 boards, 37 files, export_commit `cbc34a5800`) under `docs/dashboard/vizro/`
+    -- `pixi run --frozen -e site pages-check` exit 0 with the flag on and with it off; no cross-origin finding under
+    `dashboard/vizro/`; the exempt file's one reference is `https://cdn.jsdelivr.net` (maplibre's icon template).
+  - **The CAP-56 fixture host** is red on the base for a docs row lane B already rewrote (Verification run); the
+    gate holds once the lanes merge.
+  - Tests share `tests/meta/pages_astro.py` (the Astro build, the fixture tree with optional exports, the page
+    reader); steward's trigger map declares `docs-site/**` for `test_pages_artifact.py`, which now builds Astro. Two
+    pinned tests move with the code: `test_pages_second_host.py`'s `VENDORED_ROOTS` list and
+    `test_docs_site_menu.py`'s `/kedro-viz/` redirect (now read from `redirects.json`).
+  - The bespoke Python under `docs-site/` is 381 lines (`scripts/sidebar_from_map.py` was 342 before this story; the
+    origin check adds 39): AD-23's under-300 target is Story 43.7's measure.
 - 2026-10-14: specced at mint from Epic 43's Story 43.3 text, `spec-pyforge-herald` CAP-61, FR-12.4 and the Dream's
   2026-10-13 entry (M3), against `assemble_pages.py` and `astro.config.mjs` as they stand on 2026-10-14 (the config
   already carries the `/kedro-viz/` redirect; the 44 legacy paths are written by the assembler).

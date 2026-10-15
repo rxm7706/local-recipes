@@ -3,8 +3,10 @@
  * The herald overview, gallery and deck-family pages' shell (Story 43.2, CAP-61), in the shape of
  * docsite/templates/shell_page.html.j2: the same head, stylesheets and header. The shared menu is
  * herald's one navigation list (docsite/content/site.yml), read through the generated top-menu JSON
- * exactly as SiteTitle.astro and HeraldDossierLayout.astro read it (Story 40.1, CAP-58).
+ * exactly as SiteTitle.astro and HeraldDossierLayout.astro read it (Story 40.1, CAP-58). Every page carries the
+ * herald Content-Security-Policy (Story 43.3, AD-21).
  */
+import { HERALD_CSP } from '../lib/herald-pages';
 import topnav from '../topnav.generated.json';
 
 interface Props {
@@ -38,6 +40,7 @@ const icon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta name="generator" content={Astro.generator} />
+    <meta http-equiv="Content-Security-Policy" content={HERALD_CSP} />
     <link rel="icon" href={icon} />
     <link rel="stylesheet" href={`${rel}assets/fonts/fonts.css`} />
     <link rel="stylesheet" href={`${rel}assets/site.css`} />

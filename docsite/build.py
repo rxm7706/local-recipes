@@ -22,10 +22,10 @@ export, the tile, the menu entry and the pipelines page are left out.
 
 Story 43.2: with ``pyforge.herald.pages_one_generator`` on (``PYFORGE_PAGES_ONE_GENERATOR``, see
 ``docsite/tools/pages_one_generator.py``) Astro renders the overview, the gallery, the deck family
-pages and the reader's page around each infographic and family view (``docs-site/src/pages/herald/``).
-This build then writes none of those pages: it copies each twin under ``dist/twins/`` -- the back-bar
-is the Astro page's, never the twin's; the one transformation left is Story 31.3's font-link
-vendoring (AD-21) -- and the downloads, and owns only what it writes, so it never deletes an Astro page.
+pages and the reader's page around each infographic and family view (``docs-site/src/pages/herald/``),
+and since Story 43.3 serves the twins and the downloads from ``docs-site/public/``. This build then
+writes the assets and the artifact build only, and owns only what it writes, so it never deletes an
+Astro page.
 
 Story 42.1: with ``pyforge.herald.status_pages`` on (``PYFORGE_STATUS_PAGES``, see
 ``docsite/tools/status_pages.py``) the shared menu carries Status, the build refuses a
@@ -79,10 +79,9 @@ OWNED_OUTPUTS = (
     "decks",
     "artifact",
 )
-#: Story 43.2: with pyforge.herald.pages_one_generator on, where each twin is copied (under the
-#: /herald/ mount), and the only outputs this build owns -- Astro writes the pages around them.
-TWINS = "twins"
-ONE_GENERATOR_OWNED_OUTPUTS = (".nojekyll", "assets", "artifact", TWINS)
+#: Stories 43.2, 43.3: with pyforge.herald.pages_one_generator on, the only outputs this build owns --
+#: Astro writes every page and serves the twins and downloads from docs-site/public/.
+ONE_GENERATOR_OWNED_OUTPUTS = (".nojekyll", "assets", "artifact")
 CONTENT = SITE / "content"
 TEMPLATES = SITE / "templates"
 ASSETS = SITE / "assets"
@@ -561,34 +560,6 @@ def publish_family_downloads(fam: dict, deck_out: Path) -> None:
             shutil.copy2(d["path"], downloads / d["name"])
 
 
-def _copy_twin(item: dict, out_dir: Path, rel: str) -> None:
-    """Copy one twin to ``out_dir / rel`` for an Astro reader's page to wrap (Story 43.2, CAP-55): no
-    back-bar, and only Story 31.3's font-link vendoring (AD-21) -- the published file names no Google
-    Fonts origin. Records the copy's path and size on ``item``."""
-    dest = out_dir / rel
-    fonts_href = "../" * rel.count("/") + "assets/fonts/fonts.css"
-    raw = rewrite_google_font_links(item["path"].read_text(encoding="utf-8", errors="replace"), fonts_href)
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(raw, encoding="utf-8")
-    item["twin"] = rel
-    item["published_bytes"] = len(raw.encode("utf-8"))
-
-
-def publish_twins(infographics: list[dict], families: list[dict], out_dir: Path) -> None:
-    """Story 43.2, with pyforge.herald.pages_one_generator on: every gallery infographic at
-    ``twins/infographics/<out_name>`` and every family view at ``twins/decks/<slug>/<out_name>``, where
-    Astro's reader pages (``herald/infographics/<out_name>``, ``herald/decks/<slug>/<out_name>``) frame
-    them under the back-bar."""
-    for item in infographics:
-        _copy_twin(item, out_dir, f"{TWINS}/infographics/{item['out_name']}")
-    for fam in families:
-        for key, out_name in _FAMILY_VIEW_OUT_NAMES.items():
-            view = fam.get(key)
-            if view is not None:
-                _copy_twin(view, out_dir, f"{TWINS}/decks/{fam['slug']}/{out_name}")
-                view["out_name"] = out_name
-
-
 # ------------------------------------------------------------------ build
 
 
@@ -749,9 +720,9 @@ def build(
     status pages are rendered there (Story 42.1).
 
     ``one_generator`` is the ``pyforge.herald.pages_one_generator`` state (default:
-    ``PYFORGE_PAGES_ONE_GENERATOR``). On, Astro owns the overview, the dossier, the gallery and the
-    family pages, and this build writes the twins, the downloads, the assets and the artifact build
-    only (Story 43.2)."""
+    ``PYFORGE_PAGES_ONE_GENERATOR``). On, Astro owns the overview, the dossier, the gallery, the
+    family pages, the twins and the downloads, and this build writes the assets and the artifact build
+    only (Stories 43.2, 43.3)."""
     kv = _kedro_viz_export()
     sp = _status_pages()
     export_dir = kedro_viz_export if kedro_viz_export is not None else kv.input_dir(repo_root)
@@ -826,13 +797,10 @@ def build(
     # Clean only what this build owns. The output directory may be a shared
     # publish root — docs/dashboard/ also holds the Kedro-Viz export, which a
     # blanket rmtree would delete on every run. With the one-generator flag on,
-    # Astro has already written its pages there (Story 43.2), so this build owns
-    # only its twins, the downloads, the assets and the artifact build.
+    # Astro has already written its pages, twins and downloads there (Stories
+    # 43.2, 43.3), so this build owns only the assets and the artifact build.
     one_gen = _pages_one_generator_from_env() if one_generator is None else one_generator
-    if one_gen:
-        owned = [*ONE_GENERATOR_OWNED_OUTPUTS, *(f"decks/{fam['slug']}/downloads" for fam in families)]
-    else:
-        owned = list(OWNED_OUTPUTS)
+    owned = list(ONE_GENERATOR_OWNED_OUTPUTS if one_gen else OWNED_OUTPUTS)
     for owned_name in owned:
         target = out_dir / owned_name
         if target.is_dir():
@@ -854,11 +822,7 @@ def build(
 
     summary = strip_tags(md_inline(doc["summary"]))
 
-    if one_gen:
-        publish_twins(infographics, families, out_dir)
-        for fam in families:
-            publish_family_downloads(fam, out_dir / "decks" / fam["slug"])
-    else:
+    if not one_gen:
         (out_dir / "index.html").write_text(
             env.get_template("page_index.html.j2").render(
                 page_title=f"{site_cfg['name']} — {site_cfg['eyebrow']}",
@@ -989,23 +953,6 @@ def build(
 # ------------------------------------------------------------------ checks
 
 
-def _twin_problems(out_dir: Path, result: dict) -> list[str]:
-    """Story 43.2, flag on: every twin is copied under ``twins/``, whole, and carries no back-bar (the
-    Astro reader's page around it does)."""
-    problems: list[str] = []
-    views = [fam[key] for fam in result["families"] for key in _FAMILY_VIEW_OUT_NAMES if fam.get(key)]
-    for item in [*result["infographics"], *views]:
-        rel = item.get("twin")
-        p = out_dir / rel if rel else None
-        if p is None or not p.exists():
-            problems.append(f"twin not published: {item.get('source') or item['path']}")
-        elif p.stat().st_size < item["published_bytes"]:
-            problems.append(f"twin shrank on publish: {rel}")
-        elif 'class="ig-backbar"' in p.read_text(encoding="utf-8", errors="replace"):
-            problems.append(f"twin carries the back-bar: {rel} (the reader's page wraps it; the twin is never edited)")
-    return problems
-
-
 def _family_page_problems(out_dir: Path, fam: dict) -> list[str]:
     """The Jinja family page, its listing on the decks index and its two published views."""
     problems: list[str] = []
@@ -1046,7 +993,7 @@ def check(out_dir: Path, result: dict) -> int:
     problems.extend(collect_shape_problems(CONTENT))
 
     one_gen = result.get("one_generator", False)
-    if one_gen:  # Story 43.2: Astro's pages are checked by pages-check, not here
+    if one_gen:  # Stories 43.2, 43.3: Astro's pages, twins and downloads are checked by pages-check
         required = [".nojekyll", "assets/site.css", "artifact/dossier.html"]
     else:
         required = [
@@ -1070,9 +1017,7 @@ def check(out_dir: Path, result: dict) -> int:
         if tag in artifact.lower():
             problems.append(f"artifact build must not contain {tag!r} — the Artifact host supplies it")
 
-    if one_gen:
-        problems.extend(_twin_problems(out_dir, result))
-    else:
+    if not one_gen:
         dossier = (out_dir / "dossier" / "index.html").read_text(encoding="utf-8")
         if "{{" in dossier or "{%" in dossier:
             problems.append("unrendered Jinja delimiters in dossier output")
@@ -1089,11 +1034,10 @@ def check(out_dir: Path, result: dict) -> int:
             if item["out_name"] not in gallery:
                 problems.append(f"infographic missing from gallery: {item['out_name']}")
 
-    for fam in result["families"]:
+    for fam in [] if one_gen else result["families"]:
         slug = fam["slug"]
         deck_out = out_dir / "decks" / slug
-        if not one_gen:
-            problems.extend(_family_page_problems(out_dir, fam))
+        problems.extend(_family_page_problems(out_dir, fam))
 
         for group in ("pptx", "marp"):
             for d in fam[group]:
