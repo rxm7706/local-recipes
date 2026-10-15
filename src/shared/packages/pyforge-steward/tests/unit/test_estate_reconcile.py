@@ -137,7 +137,8 @@ def test_ac1_generators_order_and_conditional(tmp_path: Path) -> None:
         root,
         journal_path=jpath,
     )
-    joined_bmad = " ".join(gens_bmad[0][1])
+    bmad_gen = next(g for g in gens_bmad if g[0] == "generate-bmad-suite")
+    joined_bmad = " ".join(bmad_gen[1])
     assert "bmad_suite_metapackage.py" in joined_bmad
     assert "--journal" in joined_bmad
     assert "--json" in joined_bmad
