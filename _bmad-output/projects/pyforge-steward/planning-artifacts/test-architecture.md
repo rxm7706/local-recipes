@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: e71350c7e669e6a4
-story_count: 380
-test_file_count: 127
+source_fingerprint: 9a1a9aee5ee0a524
+story_count: 381
+test_file_count: 128
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 380
+- **Stories parsed:** 381
 - **Epics parsed:** 104
-- **Test files inventoried:** 127 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 128 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e71350c7e669e6a4`
+- **Source fingerprint:** `9a1a9aee5ee0a524`
 
 ## Risk Assessment
 
@@ -129,7 +129,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 98: Station tests run when what they read changes (fix under CAP-159)
 - Epic 100: The estate's library and BMAD pins move on one policy-driven, measured, repeatable path (spec-pyforge-steward CAP-167)
 - Epic 101: The `platform-ci-local` stubs leak no process, and the holder scan takes seconds (fix under CAP-152)
-- Epic 103: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167 and CAP-5)
+- Epic 103: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167, CAP-5 and CAP-159)
 - Epic 104: The CFE regression lane runs when what its tests load changes (fix under spec-pyforge-steward CAP-159; no CAP)
 
 ### Low-risk epics
@@ -228,6 +228,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` | unit | none observed |
@@ -656,6 +657,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.2 | `estate reconcile` writes the bmad-suite floors from the batch, not the network | none observed |
 | 103.3 | `pyforge-ci` is stdlib-only, as its tasks say | none observed |
 | 103.4 | The `ci-surface-gates` tests write their fixtures under `tmp_path` | none observed |
+| 103.5 | The preflight keys each lane by its task and its environment | none observed |
 | 104.1 | cfe-regression-net runs when a script its tests load changes | none observed |
 
 ## Quality Gates

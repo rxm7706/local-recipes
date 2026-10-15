@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from pyforge.steward.preflight import JOURNAL_RELATIVE
+from pyforge.steward.preflight import JOURNAL_RELATIVE, lane_label
 
 DEFAULT_BUDGET_SECONDS = 60
 CAP_CITATION = "CAP-159 (FR-32)"
@@ -98,24 +98,32 @@ def _run_by_id(runs: Sequence[dict[str, Any]], run_id: str) -> dict[str, Any] | 
     return None
 
 
-def _selection_selected_lanes(selection: dict[str, Any]) -> set[str]:
+def _selection_selected_lanes(selection: dict[str, Any]) -> set[tuple[str, str]]:
+    """The selected lanes as ``(task, environment)`` pairs: one task may run in two environments."""
     selected = selection.get("selected")
     if not isinstance(selected, list):
         return set()
-    lanes: set[str] = set()
+    lanes: set[tuple[str, str]] = set()
     for entry in selected:
         if isinstance(entry, dict) and "lane" in entry:
-            lanes.add(str(entry["lane"]))
+            lanes.add((str(entry["lane"]), str(entry.get("environment", ""))))
     return lanes
 
 
 def is_single_station_budget(selection: dict[str, Any]) -> bool:
     """True when selection has at most one station test lane and no ``test-ci``."""
     selected = _selection_selected_lanes(selection)
-    if "test-ci" in selected:
+    if any(task == "test-ci" for task, _environment in selected):
         return False
-    station_tests = [lane for lane in selected if lane in STATION_TEST_TASKS]
+    station_tests = [(task, env) for task, env in selected if task in STATION_TEST_TASKS]
     return len(station_tests) <= 1
+
+
+def _timing_label(entry: dict[str, Any]) -> str:
+    """``<task>@<environment>``, the lane's scratch name; the task alone for an entry with no environment."""
+    task = str(entry.get("task", "unknown"))
+    environment = entry.get("environment")
+    return lane_label(task, str(environment)) if environment else task
 
 
 def _lane_timings(run: dict[str, Any], install_seconds: Sequence[float]) -> list[tuple[str, float]]:
@@ -130,8 +138,7 @@ def _lane_timings(run: dict[str, Any], install_seconds: Sequence[float]) -> list
             status = entry.get("status", "")
             if status in ("cancelled", "not-run"):
                 continue
-            task = str(entry.get("task", "unknown"))
-            timings.append((task, float(entry.get("seconds", 0.0))))
+            timings.append((_timing_label(entry), float(entry.get("seconds", 0.0))))
     return timings
 
 

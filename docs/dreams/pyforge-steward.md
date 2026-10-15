@@ -1796,6 +1796,19 @@ Drift — orphaned between stations.
     run leaves the fixture tree clean. **Constraints:** a fix under CAP-166, with no CAP and no flag; no assertion
     weakens; no environment and no `pixi.toml` change (Story 103.3 owns the env split). Owner `spec-pyforge-steward`.
     → Story 103.4, specced 2026-10-14.
+  - **Added the same day (preflight lane identity) — Found: two preflight lanes of one task overwrite each other.**
+    `pr-preflight-lanes` may name one task in two environments; atlas Story 31.1 (PR #2221) adds `{ task = "mypy",
+    environment = "pyforge-foundry-full" }` beside the Guild's `mypy`, and `steward-test` goes red on it. The runner
+    (Story 71.1, CAP-159) already lists a lane per `(task, environment)`, but it keeps each lane's result, scratch
+    directory, log, terminated mark and journal extras by the task name alone. So one lane's result replaces the
+    other's, the journal lists the survivor twice, and both lanes write one `<task>.log`. Reproduced at `22e5c19c28`:
+    a green lane and a red lane of one task were journaled as the red lane twice. The budget check counts station
+    lanes by name.
+    **What it looks like when fixed:** a lane is its task and its environment wherever the preflight selects, runs,
+    orders, journals, logs and budgets lanes; both lanes run, each is journaled with its own environment and result,
+    and each writes its own log. **Constraints:** a fix under CAP-159, with no CAP and no flag; the journal changes
+    only additively; no assertion weakens; no `pixi.toml` or workflow change (atlas 31.1 owns its lane). Owner
+    `spec-pyforge-steward`. → Story 103.5, specced 2026-10-14.
 
 - **2026-10-14 (the CFE regression lane runs when what its tests load changes)** — **Found: `cfe-regression-net` never
   ran when doctor Story 45.1 changed `scripts/fleet_picture.py`, and three conda-forge-expert meta tests went red unseen.**

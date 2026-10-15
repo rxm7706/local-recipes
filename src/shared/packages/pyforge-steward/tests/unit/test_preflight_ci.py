@@ -140,7 +140,7 @@ def test_run_preflight_journals_paused_skip(
     tmp_path: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     flag_provider["pyforge.steward.ci_pause_control"] = True
-    from test_preflight_selection import STEWARD_PLACEHOLDER, lanes_and_pixi, make_repo
+    from test_preflight_selection import INVOKING_ENV, STEWARD_PLACEHOLDER, lanes_and_pixi, make_repo
 
     repo = make_repo(tmp_path, {STEWARD_PLACEHOLDER: "touch\n"})
     _mini_registry(repo)
@@ -167,13 +167,16 @@ def test_run_preflight_journals_paused_skip(
         preflight_ci, "resolve_ci_vars", lambda *a, **k: preflight_ci.CiVarResolution("snapshot 1h", lambda n: "true")
     )
     monkeypatch.setattr(preflight_ci, "_flag_on", lambda _r: True)
+    ran: list[tuple[str, str]] = []
     code = preflight.run_preflight(
         repo,
+        invoking_env=INVOKING_ENV,  # the lanes' own environment, as the paused lane names it
         jobs=1,
         install_environment=lambda _e: 0,
-        run_lane=lambda _lane: 0,
+        run_lane=lambda lane: ran.append((lane.task, lane.environment)) or 0,
     )
     assert code == 0
+    assert (target.task, target.environment) not in ran
     journal = repo / preflight.JOURNAL_RELATIVE
     text = journal.read_text(encoding="utf-8")
     assert "skipped: paused in CI (PAUSE_CONTAINER_BUILDS since 2026-10-04, review_by 2026-11-01)" in text
@@ -184,7 +187,7 @@ def test_ignore_ci_pauses_journals_override(
     tmp_path: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     flag_provider["pyforge.steward.ci_pause_control"] = True
-    from test_preflight_selection import STEWARD_PLACEHOLDER, lanes_and_pixi, make_repo
+    from test_preflight_selection import INVOKING_ENV, STEWARD_PLACEHOLDER, lanes_and_pixi, make_repo
 
     repo = make_repo(tmp_path, {STEWARD_PLACEHOLDER: "touch\n"})
     lanes, _pixi = lanes_and_pixi(repo)
@@ -203,21 +206,22 @@ def test_ignore_ci_pauses_journals_override(
         lambda *a, **k: preflight_ci.CiVarResolution("snapshot 1h", lambda n: "true"),
     )
     monkeypatch.setattr(preflight_ci, "_flag_on", lambda _r: True)
-    ran: list[str] = []
+    ran: list[tuple[str, str]] = []
 
     def _run(lane: preflight.Lane) -> int:
-        ran.append(lane.task)
+        ran.append((lane.task, lane.environment))
         return 0
 
     code = preflight.run_preflight(
         repo,
+        invoking_env=INVOKING_ENV,  # the lanes' own environment, as the paused lane names it
         jobs=1,
         ignore_ci_pauses=True,
         install_environment=lambda _e: 0,
         run_lane=_run,
     )
     assert code == 0
-    assert target.task in ran
+    assert (target.task, target.environment) in ran
     journal = (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8")
     assert "ci_pause_override" in journal
     assert "--ignore-ci-pauses" in journal
