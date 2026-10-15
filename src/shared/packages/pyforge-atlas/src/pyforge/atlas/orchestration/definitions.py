@@ -58,8 +58,12 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import dagster as dg
+
+if TYPE_CHECKING:
+    from dagster._core.definitions.unresolved_asset_job_definition import UnresolvedAssetJobDefinition
 from kedro_dagster import KedroProjectTranslator
 from pyforge.core.flags import read_boolean
 
@@ -512,17 +516,16 @@ def _with_per_op_budgets(graph: dg.GraphDefinition) -> dg.GraphDefinition:
     """Rebuild ``graph`` attaching each op its OWN ``dagster/max_runtime`` tag
     and the default retry policy — per NodeInvocation, so no single monolithic
     timeout wraps the DAG (AC-4). Dependency structure is preserved verbatim."""
-    rekeyed: dict[dg.NodeInvocation, object] = {}
-    for inv, dep in graph.dependencies.items():
-        budget = _timeout_for(inv.name)
-        new_inv = dg.NodeInvocation(
+    rekeyed = {
+        dg.NodeInvocation(
             name=inv.name,
             alias=inv.alias,
-            tags={**(inv.tags or {}), "dagster/max_runtime": str(budget)},
+            tags={**(inv.tags or {}), "dagster/max_runtime": str(_timeout_for(inv.name))},
             hook_defs=inv.hook_defs,
             retry_policy=DEFAULT_RETRY,
-        )
-        rekeyed[new_inv] = dep
+        ): dep
+        for inv, dep in graph.dependencies.items()
+    }
     return dg.GraphDefinition(
         name=graph.name,
         node_defs=graph.node_defs,
@@ -686,7 +689,7 @@ def _default_raw_lister() -> tuple[str, ...]:
 
 def build_wiki_compile_sensor(
     *,
-    job: dg.JobDefinition,
+    job: dg.JobDefinition | UnresolvedAssetJobDefinition,
     raw_lister=_default_raw_lister,
 ) -> dg.SensorDefinition:
     """Build the new-raw-file sensor that fires the compile crew (Story H4, § 7.2, FR-6).

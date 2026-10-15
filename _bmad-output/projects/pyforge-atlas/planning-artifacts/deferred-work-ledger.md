@@ -4897,4 +4897,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-14 — recorded with the Story 100.7 landing
   note: 2026-10-14 re-measure at `846d8383f5` for Story 31.1 (fresh worktree, `pixi run --frozen -e pyforge-foundry-full lint-types`, exit 1; mypy 2.4.0, the lock's): still 72 errors in 8 files, but `dashboard/app.py` 59 (54 `call-arg`, 4 `arg-type`, 1 `operator`), `views/widgets.py` 4, `datasets/upstream_discovery.py` 2, `orchestration/definitions.py` 2, `query_plane_vectors.py` 2, and one each in `mcp/session.py`, `observability.py` and `rag/store.py`. The per-file counts above sum to 79, and the `Nav` is Dash's `html.Nav`, not FastHTML. The pydantic mypy plugin clears 10 of the 54 `call-arg`. The primary checkout's env is behind the lock on mypy alone (2.3.1) and reports the same 72.
   story: promoted to Story 31.1 (spec-pyforge-atlas CAP-20, Epic 31, minted 2026-10-14 on the operator's approval "chain the three DWs"); close when 31.1 lands, citing its merge.
-  status: open
+  verified: 2026-10-14 dispatch/pyforge-atlas/31.1 — `pixi run --frozen -e pyforge-foundry-full mypy` exit 0; pyforge-atlas line ok after Success in 130 source files.
+  status: closed

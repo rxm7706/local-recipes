@@ -49,11 +49,12 @@ def bootstrapped_session(
     """
     root = Path(project_path) if project_path is not None else PROJECT_ROOT
     bootstrap_project(root)
-    with KedroSession.create(
+    session = KedroSession.create(
         project_path=root,
         runtime_params=extra_params or {},
         env=env,
-    ) as session:
+    )
+    with session:
         yield session
 
 
