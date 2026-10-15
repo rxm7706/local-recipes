@@ -220,8 +220,8 @@ sidebar and retires `docsite/content/site.yml`'s nav.
 | [`how-to/monitor-the-fleet.md`](how-to/monitor-the-fleet.md) | fleet | authored |
 | [`how-to/ocp-cluster-bringup.md`](how-to/ocp-cluster-bringup.md) | fleet | authored |
 | [`how-to/one-chain-station-ops.md`](how-to/one-chain-station-ops.md) | doctor | authored |
+| [`how-to/pause-ci.md`](how-to/pause-ci.md) | pyforge-steward | authored |
 | [`how-to/pixi-tasks.md`](how-to/pixi-tasks.md) | steward | generated |
-| [`how-to/pause-ci.md`](how-to/pause-ci.md) | steward | authored |
 | [`how-to/presentation-deck.md`](how-to/presentation-deck.md) | fleet | authored |
 | [`how-to/purge-preserved-refs.md`](how-to/purge-preserved-refs.md) | marshal | authored |
 | [`how-to/recipe-testing-and-builds.md`](how-to/recipe-testing-and-builds.md) | fleet | authored |

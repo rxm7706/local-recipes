@@ -2,7 +2,7 @@
 title: '48.1: One registry orders every section of the Pages site'
 type: 'feature'
 created: '2026-10-14'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'f7be77efadb4c111c7913f0853ad1cb3a1058f05'
 flag-exempt: docs-only   # a documentation registry and its hygiene check: registry rows, schema fields and MAP rows are documentation data, and the two hygiene classes are checks that judge; neither half is a runtime capability a flag could gate without recreating a silent-off surface (spec-feature-flag-governance Q2; coordinator assignment, memlog 2026-10-14)
 review_loop_iteration: 0
