@@ -17,7 +17,25 @@ DETECTOR_PATH = REPO_ROOT / "scripts" / "ci_surface_gates.py"
 LIB_PATH = REPO_ROOT / "scripts" / "_ci_surface_gates_lib.py"
 REGISTRY_PATH = REPO_ROOT / "docs/governance/ci-surfaces.yaml"
 SCHEMA_PATH = REPO_ROOT / "docs/governance/ci-surfaces.schema.json"
-FIXTURES = Path(__file__).resolve().parent / "fixtures" / "ci_surface_gates"
+# Story 103.4: every case below is built under its test's own tmp_path. They used to be written
+# into this tracked directory, so each run, and so each pr-preflight, edited tracked files and the
+# pre-push hook refused the push. The autouse guard fails the test that adds an entry there.
+FIXTURE_TREE = "tests/scripts/fixtures/ci_surface_gates"
+# A git hook exports locators to its children (in a linked worktree GIT_DIR names that worktree's
+# gitdir), and a git command that inherits them acts on that repository, not on its cwd.
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_COMMON_DIR",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_PREFIX",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_NAMESPACE",
+    "GIT_CONFIG_PARAMETERS",  # what `git -c k=v push` exports to its hooks
+    "GIT_CONFIG_COUNT",  # turns off the GIT_CONFIG_KEY_<n> / GIT_CONFIG_VALUE_<n> pairs
+)
 
 
 def _load_module(path: Path, name: str):
@@ -35,7 +53,124 @@ def _run_detector(*extra: str) -> subprocess.CompletedProcess[str]:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
+
+
+def _tree_status(root: Path, pathspec: str) -> list[str]:
+    """``git status --porcelain`` lines for one pathspec: changed, untracked and ignored files.
+
+    Each untracked (``??``) and ignored (``!!``) file is its own line. The read takes no optional
+    lock, so it never holds ``index.lock``, and a read that fails is a failure, never a clean answer.
+    """
+    proc = subprocess.run(
+        [
+            "git",
+            "--no-optional-locks",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--ignored=matching",
+            "--",
+            pathspec,
+        ],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, f"git status failed in {root}: {proc.stderr.strip()}"
+    return proc.stdout.splitlines()
+
+
+def _isolate_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make git act on its cwd alone, with no global or system config, whatever its parent exported."""
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+
+
+@pytest.fixture(autouse=True)
+def _fixture_tree_stays_clean():
+    """Fail the test that leaves a new change, untracked file or ignored file in the fixture tree."""
+    before = set(_tree_status(REPO_ROOT, FIXTURE_TREE))
+    yield
+    added = [
+        line for line in _tree_status(REPO_ROOT, FIXTURE_TREE) if line not in before
+    ]
+    assert added == [], (
+        f"this test left new entries in {FIXTURE_TREE}; build generated cases under tmp_path "
+        "(Story 103.4):\n" + "\n".join(added)
+    )
+
+
+def test_fixture_tree_guard_is_active_and_sees_modified_untracked_and_ignored_files(
+    tmp_path: Path, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 103.4 AC4: the guard is on, the tree is clean, and its status read is not blind.
+
+    The per-test guard fails only the test that adds an entry, so a leftover from an earlier run
+    is caught here, once.
+    """
+    assert "_fixture_tree_stays_clean" in request.fixturenames
+    leftover = _tree_status(REPO_ROOT, FIXTURE_TREE)
+    assert leftover == [], (
+        f"{FIXTURE_TREE} is not clean; remove what an earlier run left:\n"
+        + "\n".join(leftover)
+    )
+
+    # Run the scratch repository as a linked worktree's git hook would run this test: with a
+    # GIT_DIR exported. Isolated, git must create its own .git and leave the decoy alone.
+    decoy = tmp_path / "decoy.git"
+    monkeypatch.setenv("GIT_DIR", str(decoy))
+    monkeypatch.setenv("GIT_WORK_TREE", str(tmp_path))
+    _isolate_git(monkeypatch)
+    repo = tmp_path / "scratch"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            [
+                "git",
+                "-c",
+                "core.hooksPath=/dev/null",
+                "-c",
+                "commit.gpgsign=false",
+                "-c",
+                "user.name=fixture-guard",
+                "-c",
+                "user.email=fixture-guard@example.invalid",
+                *args,
+            ],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+
+    git("init", "-q", "--template=")
+    assert not decoy.exists(), (
+        "git followed the exported GIT_DIR instead of its own cwd"
+    )
+    assert (
+        Path(git("rev-parse", "--absolute-git-dir").strip()).resolve()
+        == (repo / ".git").resolve()
+    )
+    case = repo / FIXTURE_TREE / "case"
+    case.mkdir(parents=True)
+    (case / "registry.yaml").write_text("version: 1\n", encoding="utf-8")
+    (repo / ".gitignore").write_text("*.log\n", encoding="utf-8")
+    git("add", "--", FIXTURE_TREE)
+    git("commit", "-q", "--no-verify", "-m", "seed")
+    assert _tree_status(repo, FIXTURE_TREE) == []
+    (case / "registry.yaml").write_text("version: 2\n", encoding="utf-8")
+    (case / "workflows_match.json").write_text("{}", encoding="utf-8")
+    (case / "run.log").write_text("x\n", encoding="utf-8")
+    lines = _tree_status(repo, FIXTURE_TREE)
+    assert f" M {FIXTURE_TREE}/case/registry.yaml" in lines
+    assert f"?? {FIXTURE_TREE}/case/workflows_match.json" in lines
+    assert f"!! {FIXTURE_TREE}/case/run.log" in lines
 
 
 def test_live_tree_offline_check_exits_zero() -> None:
@@ -58,16 +193,15 @@ def test_no_hardcoded_grandfather_or_prefix_lists_in_checker() -> None:
         assert "PLATFORM_CI_AIR_GAP_PARITY" not in text
 
 
-def test_fixture_unregistered_pause_var() -> None:
-    FIXTURES.mkdir(parents=True, exist_ok=True)
-    wf_dir = FIXTURES / "unregistered" / ".github" / "workflows"
+def test_fixture_unregistered_pause_var(tmp_path: Path) -> None:
+    wf_dir = tmp_path / "unregistered" / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
         "jobs:\n  job1:\n    if: vars.PAUSE_FOO != 'true'\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo ok\n",
         encoding="utf-8",
     )
     reg = yaml.safe_load(REGISTRY_PATH.read_text(encoding="utf-8"))
-    (FIXTURES / "unregistered" / "registry.yaml").write_text(
+    (tmp_path / "unregistered" / "registry.yaml").write_text(
         yaml.safe_dump(reg), encoding="utf-8"
     )
     proc = subprocess.run(
@@ -76,21 +210,21 @@ def test_fixture_unregistered_pause_var() -> None:
             str(DETECTOR_PATH),
             "--check",
             "--root",
-            str(FIXTURES / "unregistered"),
+            str(tmp_path / "unregistered"),
             "--registry",
-            str(FIXTURES / "unregistered" / "registry.yaml"),
+            str(tmp_path / "unregistered" / "registry.yaml"),
         ],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "PAUSE_FOO" in proc.stdout + proc.stderr
 
 
-def test_fixture_row_switch_not_in_if() -> None:
-    FIXTURES.mkdir(parents=True, exist_ok=True)
-    root = FIXTURES / "row_drift"
+def test_fixture_row_switch_not_in_if(tmp_path: Path) -> None:
+    root = tmp_path / "row_drift"
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
@@ -136,13 +270,14 @@ def test_fixture_row_switch_not_in_if() -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "PAUSE_OTHER" in proc.stdout + proc.stderr
 
 
-def test_fixture_bad_switch_name() -> None:
-    root = FIXTURES / "bad_name"
+def test_fixture_bad_switch_name(tmp_path: Path) -> None:
+    root = tmp_path / "bad_name"
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
@@ -188,13 +323,14 @@ def test_fixture_bad_switch_name() -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "SKIP_FOO" in proc.stdout + proc.stderr
 
 
-def test_fixture_wrong_pause_comparison() -> None:
-    root = FIXTURES / "wrong_cmp"
+def test_fixture_wrong_pause_comparison(tmp_path: Path) -> None:
+    root = tmp_path / "wrong_cmp"
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
@@ -240,13 +376,14 @@ def test_fixture_wrong_pause_comparison() -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "PAUSE_FOO" in proc.stdout + proc.stderr
 
 
-def test_fixture_missing_job() -> None:
-    root = FIXTURES / "missing_job"
+def test_fixture_missing_job(tmp_path: Path) -> None:
+    root = tmp_path / "missing_job"
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
@@ -292,13 +429,14 @@ def test_fixture_missing_job() -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "ghost" in proc.stdout + proc.stderr
 
 
-def test_fixture_paused_missing_review_by() -> None:
-    root = FIXTURES / "paused_no_review"
+def test_fixture_paused_missing_review_by(tmp_path: Path) -> None:
+    root = tmp_path / "paused_no_review"
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
@@ -347,6 +485,7 @@ def test_fixture_paused_missing_review_by() -> None:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert proc.returncode == 1
     assert "review_by" in proc.stdout + proc.stderr
@@ -378,8 +517,7 @@ def test_push_registry_judged_at_step() -> None:
     assert row.get("step")
 
 
-def test_live_fixture_match_exits_zero() -> None:
-    FIXTURES.mkdir(parents=True, exist_ok=True)
+def test_live_fixture_match_exits_zero(tmp_path: Path) -> None:
     workflows = []
     for row in yaml.safe_load(REGISTRY_PATH.read_text())["surfaces"]:
         if row.get("state") == "paused-manually":
@@ -390,26 +528,24 @@ def test_live_fixture_match_exits_zero() -> None:
             workflows.append(
                 {"path": Path(str(row["workflow"])).name, "state": "active"}
             )
-    fixture_path = FIXTURES / "workflows_match.json"
+    fixture_path = tmp_path / "workflows_match.json"
     fixture_path.write_text(json.dumps({"workflows": workflows}), encoding="utf-8")
     proc = _run_detector("--check", "--live", "--fixture-workflows", str(fixture_path))
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
-def test_live_extra_disabled_workflow_exits_one() -> None:
-    FIXTURES.mkdir(parents=True, exist_ok=True)
+def test_live_extra_disabled_workflow_exits_one(tmp_path: Path) -> None:
     workflows = [{"path": "mystery.yml", "state": "disabled_manually"}]
-    fixture_path = FIXTURES / "workflows_extra_disabled.json"
+    fixture_path = tmp_path / "workflows_extra_disabled.json"
     fixture_path.write_text(json.dumps({"workflows": workflows}), encoding="utf-8")
     proc = _run_detector("--check", "--live", "--fixture-workflows", str(fixture_path))
     assert proc.returncode == 1
     assert "mystery.yml" in proc.stdout + proc.stderr
 
 
-def test_live_paused_manually_row_but_active_exits_one() -> None:
-    FIXTURES.mkdir(parents=True, exist_ok=True)
+def test_live_paused_manually_row_but_active_exits_one(tmp_path: Path) -> None:
     workflows = [{"path": "test-all.yml", "state": "active"}]
-    fixture_path = FIXTURES / "workflows_active_mismatch.json"
+    fixture_path = tmp_path / "workflows_active_mismatch.json"
     fixture_path.write_text(json.dumps({"workflows": workflows}), encoding="utf-8")
     proc = _run_detector("--check", "--live", "--fixture-workflows", str(fixture_path))
     assert proc.returncode == 1
@@ -432,9 +568,9 @@ def test_live_gh_failure_exits_two(monkeypatch) -> None:
     assert any("no auth" in f for f in findings)
 
 
-def test_matrix_wrapped_if_parsed_like_bare() -> None:
+def test_matrix_wrapped_if_parsed_like_bare(tmp_path: Path) -> None:
     lib = _load_module(LIB_PATH, "ci_surface_lib_matrix")
-    root = FIXTURES / "wrapped_if"
+    root = tmp_path / "wrapped_if"
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
@@ -445,9 +581,9 @@ def test_matrix_wrapped_if_parsed_like_bare() -> None:
     assert any(u.name == "PAUSE_X" and u.comparison == "!= 'true'" for u in uses)
 
 
-def test_matrix_multiline_if_collects_both_vars() -> None:
+def test_matrix_multiline_if_collects_both_vars(tmp_path: Path) -> None:
     lib = _load_module(LIB_PATH, "ci_surface_lib_multiline")
-    root = FIXTURES / "multiline_if"
+    root = tmp_path / "multiline_if"
     wf_dir = root / ".github" / "workflows"
     wf_dir.mkdir(parents=True, exist_ok=True)
     (wf_dir / "sample.yml").write_text(
@@ -472,9 +608,9 @@ def test_six_fixture_rules_together_six_findings() -> None:
     assert len(classes) == 6
 
 
-def test_high_cost_row_without_canary_fails_check() -> None:
+def test_high_cost_row_without_canary_fails_check(tmp_path: Path) -> None:
     lib = _load_module(LIB_PATH, "ci_surface_lib_canary")
-    root = FIXTURES / "missing_canary"
+    root = tmp_path / "missing_canary"
     root.mkdir(parents=True, exist_ok=True)
     reg = {
         "version": 1,

@@ -1784,6 +1784,18 @@ Drift — orphaned between stations.
   and CAP-5, with no CAP and no flag; no consumer station changes; the bmad-suite generator is conda-forge-expert's,
   so its story invokes the skill and closes with its retro; `pixi lock` only, and no other environment's packages
   move; nothing outward. Owner `spec-pyforge-steward`. → Epic 103 / Stories 103.1-103.3, specced 2026-10-14.
+  - **Added the same day (ci-surface-gates fixture writes) — Found: a test run edits tracked files, so every push is
+    refused.** `tests/scripts/test_ci_surface_gates.py` (Story 99.1, CAP-166) builds each case it checks under
+    `tests/scripts/fixtures/ci_surface_gates/` in the tracked tree, and builds two of them from the live registry. The
+    18 files there entered git only through the 99.1 and 99.6 dispatch auto-checkpoints. When Story 102.1 renamed
+    `dashboard.yml` to `pages.yml` and updated the registry, those two tracked copies went stale. Since then every run of
+    the scripts suite, and so every `pr-preflight`, leaves `unregistered/registry.yaml` and `workflows_match.json`
+    modified, and the pre-push hook fails with "files were modified by this hook" even when the verdict is ok. Two
+    pushes on 2026-10-14 went out only with `PYFORGE_PREFLIGHT_SKIP=1`. **What it looks like when fixed:** each test
+    builds its cases under its own temporary directory, nothing it only generates stays in git, and a guard shows that a
+    run leaves the fixture tree clean. **Constraints:** a fix under CAP-166, with no CAP and no flag; no assertion
+    weakens; no environment and no `pixi.toml` change (Story 103.3 owns the env split). Owner `spec-pyforge-steward`.
+    → Story 103.4, specced 2026-10-14.
   - **Added the same day (preflight lane identity) — Found: two preflight lanes of one task overwrite each other.**
     `pr-preflight-lanes` may name one task in two environments; atlas Story 31.1 (PR #2221) adds `{ task = "mypy",
     environment = "pyforge-foundry-full" }` beside the Guild's `mypy`, and `steward-test` goes red on it. The runner

@@ -3584,7 +3584,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "55c74e6a35205b13ed861dd4e16c0ac3dfb248ee",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "36eff3e94bef60c27d3f8f856c0108aef55fcb83",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/passport.py": "2278ef2d166f09db42fa761a0f48428a4462b774",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "556ce8332208c9ddf4f9c3c0ad4cb4038ce8f1c6",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "0b77f8cd1caabb007f7e378ead33b56fe968294d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py": "8389d30828edc20cc61b726521e0fe60568b6678",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py": "f65849c6a8b75b9fa5f60b27b24fa5e962a3caa8",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py": "5a7db75ff877822830c1f0182be606800d5afb94",
@@ -3648,7 +3648,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "25fcb99d08b9ee48cdd479e10764df859596cfe7"
+  "memlog": "5e1d1e16d23e510fa50b94733296d91d89d59326"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3704,7 +3704,7 @@
    ".cursor/rules/bmad-build.mdc": "6425c633bd14353c56d0d6565b9edf5825ecbf8f",
    ".marshal/seed-state.yml": "1bd1609630b7e345769eb5cf2a0ffc3f95e670e4",
    "_bmad-output/projects/pyforge-marshal/planning-artifacts/upstream-register.json": "145f927a95dae989ece5f1b06dda05c9bacacc39",
-   "docs/dashboard/README.md": "2ff9be9bf01546fd40b5ef62452a5832efb07049",
+   "docs/dashboard/README.md": "29844496bfe76cf7d0ee26f22a9c264665465f46",
    "docs/dashboard/kedro-viz/.vite/manifest.json": "a792c3db598433602b258c3a62adb718e0999a38",
    "docs/dashboard/kedro-viz/404.html": "5b438519097d0782c87cbfabbe3129d4654e4672",
    "docs/dashboard/kedro-viz/api/deploy-viz-metadata": "d1d2447dda80afe6b86726adcff01310786474d2",
@@ -3923,7 +3923,7 @@
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "36c7872706225d8d1e2af89ced2c0b3c4cdd667f",
    "environment.yaml": "34f7aaaa937c5504f212bf2487b614a365a1d1eb",
-   "pixi.toml": "67b5b5ecd5a04e12e08c66d304cf86a0a303c340",
+   "pixi.toml": "6e6e8f0556f7b75669f7092ce94d332aa3e453e2",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -4475,7 +4475,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "735f6260467ef5678dcdd63c5d75906e362f1774"
+  "memlog": "3a9b911887159148488efd42f671d2ecff2be7c8"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -6050,7 +6050,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "55c74e6a35205b13ed861dd4e16c0ac3dfb248ee",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/measures.py": "36eff3e94bef60c27d3f8f856c0108aef55fcb83",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/passport.py": "2278ef2d166f09db42fa761a0f48428a4462b774",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "556ce8332208c9ddf4f9c3c0ad4cb4038ce8f1c6",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py": "0b77f8cd1caabb007f7e378ead33b56fe968294d",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py": "8389d30828edc20cc61b726521e0fe60568b6678",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py": "f65849c6a8b75b9fa5f60b27b24fa5e962a3caa8",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py": "5a7db75ff877822830c1f0182be606800d5afb94",
@@ -6154,9 +6154,9 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight.py": "a89f04a95bc2a390aaca19804ad412561ca5e7ed",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py": "77054e38e3a62882953bc550ea260ab7d54cc019",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py": "ad5f65184350445b836ae86e0e624a023fa05d9d",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py": "c98051ea2456839af6e2d592ed538fc17d0e6d27",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py": "dfa303606fad0bbb9b0a660de612a1902fc38bf4",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py": "c08ecc5a871c1ffdd122a2b76125ab9c625663bc",
-   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py": "8d74c83d977b2ad84463676fd610b1cf5dcdd56c",
+   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py": "c13ffaf3738afef9c9b3c49d8a7e48f1a2b2d76e",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py": "a95ab6413b677f629a5319574e4dafb78a6aa58d",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py": "88111a3c98a7ed9f938cebc7173caf473ad108f3",
    "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py": "92a59965e82a6f9fcb2978f794c692c03fd8bd19",
@@ -6204,7 +6204,7 @@
    "tests/scripts/fixtures/pin_policy/pin-policy.yaml": "0a1e842e817fb4c853531b0b3932f77bed9d14c8",
    "tests/scripts/fixtures/pin_policy/pixi.toml.after": "de2f979701008c09e465977e94faab891b85398c",
    "tests/scripts/fixtures/pin_policy/pixi.toml.base": "95d98b47795403125f52f41ab46fd46853c471c1",
-   "tests/scripts/test_ci_surface_gates.py": "2e4e94706b07faaa1df1bf5c248ed65995dd2dd4",
+   "tests/scripts/test_ci_surface_gates.py": "d2b70d0bea1404a1f621a1ad3a7bb7df54dfa6f1",
    "tests/scripts/test_pin_policy_check.py": "a8d05fc2cd52310e342375e78d08ef70145db208",
    "tests/scripts/test_pin_policy_restore.py": "9c6699a6e335a085ce626734574a438c185d7ae1",
    "tests/scripts/test_realization_register_check.py": "2aaae3034a8aefabd475af58420a3c90d39ee768",
@@ -6212,7 +6212,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "140071d93a0158c0d827429c8db3449c21269ab6"
+  "memlog": "60ad467451899f8c02497426fecd0fed16469617"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
