@@ -118,9 +118,17 @@ export interface Changes {
   merges: Merge[];
 }
 
+/** `YYYY-MM-DD`, or an ISO date-time with an explicit offset: never read in the build host's time zone. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2}))?$/;
+/** A commit id as `git log` prints it, abbreviated or full. */
+const SHA = /^[0-9a-f]{7,40}$/;
+/** Characters XML 1.0 forbids (C0 controls but tab, newline and carriage return; U+FFFE, U+FFFF). */
+const XML_ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/;
+
 /**
  * `changes.json`: an object `{ generated_at, window_days, merges: [...] }`, or the bare `merges` list. Each
- * merge carries `date` (an ISO date or date-time), `station` and `subject` (strings); `sha` is optional.
+ * merge carries `date` (`YYYY-MM-DD`, or an ISO date-time with an offset), `station` and `subject` (strings with no
+ * character XML forbids, so the feed stays well-formed); `sha` is optional, a 7-40 hex commit id, and unique.
  * Listed newest first by `date` (ties keep the input's order).
  */
 export function parseChanges(text: string, file: string): Changes {
@@ -138,12 +146,22 @@ export function parseChanges(text: string, file: string): Changes {
         throw new BuildInputShapeError(`${file}: merge ${index} has no string ${key}`);
       }
     }
-    const at = Date.parse(item.date as string);
+    const at = ISO_DATE.test(item.date as string) ? Date.parse(item.date as string) : Number.NaN;
     if (Number.isNaN(at)) {
-      throw new BuildInputShapeError(`${file}: merge ${index} date ${JSON.stringify(item.date)} is not a date`);
+      throw new BuildInputShapeError(
+        `${file}: merge ${index} date ${JSON.stringify(item.date)} is not YYYY-MM-DD or an ISO date-time with an offset`,
+      );
     }
     if (!(item.subject as string).trim()) {
       throw new BuildInputShapeError(`${file}: merge ${index} has an empty subject`);
+    }
+    for (const key of ['station', 'subject']) {
+      if (XML_ILLEGAL.test(item[key] as string)) {
+        throw new BuildInputShapeError(`${file}: merge ${index} ${key} holds a control character XML forbids`);
+      }
+    }
+    if (item.sha !== undefined && item.sha !== null && !(typeof item.sha === 'string' && SHA.test(item.sha))) {
+      throw new BuildInputShapeError(`${file}: merge ${index} sha ${JSON.stringify(item.sha)} is not a hex commit id`);
     }
     return {
       date: item.date as string,
@@ -154,6 +172,17 @@ export function parseChanges(text: string, file: string): Changes {
       index,
     };
   });
+  const shas = new Map<string, number>();
+  for (const merge of merges) {
+    if (merge.sha === null) {
+      continue;
+    }
+    const first = shas.get(merge.sha);
+    if (first !== undefined) {
+      throw new BuildInputShapeError(`${file}: merge ${merge.index} repeats merge ${first}'s sha ${merge.sha}`);
+    }
+    shas.set(merge.sha, merge.index);
+  }
   merges.sort((a, b) => b.at - a.at || a.index - b.index);
   return {
     generatedAt: isObject(data) ? optionalString(data.generated_at) : null,
@@ -335,12 +364,12 @@ export function latestPerStation(records: ProgressRecord[]): ProgressRecord[] {
       latest.set(record.station, record);
     }
   }
-  return [...latest.values()].sort((a, b) => a.station.localeCompare(b.station));
+  return [...latest.values()].sort((a, b) => (a.station < b.station ? -1 : a.station > b.station ? 1 : 0));
 }
 
 /**
  * `herald-progress.json`: `{ generated_at, records: [...] }`, a JSON list of records, or the newline-delimited
- * JSON `herald progress --json` prints (one record per line).
+ * JSON `herald progress --json` prints (one record per line; one line is one record).
  */
 export function parseHeraldProgress(text: string, file: string): HeraldProgress {
   let data: unknown;
@@ -356,12 +385,14 @@ export function parseHeraldProgress(text: string, file: string): HeraldProgress 
       }
     });
   }
-  const list = Array.isArray(data) ? data : isObject(data) ? data.records : undefined;
+  // One `herald progress --json` line is itself one JSON object: a record, not an envelope (43.6's review).
+  const single = isObject(data) && !('records' in data) && 'station' in data;
+  const list = Array.isArray(data) ? data : single ? [data] : isObject(data) ? data.records : undefined;
   if (!Array.isArray(list)) {
     throw new BuildInputShapeError(`${file}: neither a list of progress records nor an object with a records list`);
   }
   return {
-    generatedAt: isObject(data) ? optionalString(data.generated_at) : null,
+    generatedAt: isObject(data) && !single ? optionalString(data.generated_at) : null,
     latest: latestPerStation(list.map((record, index) => progressRecord(record, `${file}: record ${index}`))),
   };
 }
@@ -484,20 +515,6 @@ export function llmsFullTxt(site: { title: string; summary: string; sections: Ll
     }
   }
   return `${parts.join('\n---\n\n').trimEnd()}\n`;
-}
-
-/** The entries of `/llms.txt`'s page sections (Docs, Herald): the count AC1 compares with `docs/map.yaml`. */
-export function countPageEntries(llms: string, sections: string[] = ['Docs', 'Herald']): number {
-  let current = '';
-  let count = 0;
-  for (const line of llms.split('\n')) {
-    if (line.startsWith('## ')) {
-      current = line.slice(3).trim();
-    } else if (sections.includes(current) && line.startsWith('- [')) {
-      count += 1;
-    }
-  }
-  return count;
 }
 
 // ------------------------------------------------------------------------------------------- Lane 1

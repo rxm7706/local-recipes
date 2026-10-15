@@ -18,6 +18,7 @@ import { parse as parseYaml } from 'yaml';
 import {
   BuildInputShapeError,
   CHANGES_INPUT,
+  CHANGES_WINDOW_DAYS,
   type Changes,
   factsDocument,
   flattenText,
@@ -143,6 +144,8 @@ export async function llmsSections(site: URL): Promise<{ title: string; summary:
     return { title: entry.label, url: new URL(entry.href, site).href, text };
   });
 
+  const changes = changesInput();
+  const windowDays = (changes.present ? changes.value.windowDays : null) ?? CHANGES_WINDOW_DAYS;
   const data = [
     {
       title: 'Deck facts',
@@ -152,7 +155,7 @@ export async function llmsSections(site: URL): Promise<{ title: string; summary:
     {
       title: 'Changes',
       url: new URL('changes/', site).href,
-      description: 'merges to main in the last 30 days, newest first; RSS at changes/rss.xml',
+      description: `merges to main in the last ${windowDays} days, newest first; RSS at changes/rss.xml`,
     },
     ...(statusPages()
       ? [

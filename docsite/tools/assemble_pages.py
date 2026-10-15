@@ -695,11 +695,12 @@ class _ShelfBody(HTMLParser):
 
 def _iter_shelf_pages(artifact_root: Path) -> list[Path]:
     """Every Starlight shelf page: the HTML outside the herald and dashboard mounts that carries
-    a markdown body container (legacy redirect stubs have none)."""
+    a markdown body container (legacy redirect stubs have none). Astro's runs page under ``status/``
+    is one too (Story 43.6's review): its links are judged like every other Starlight page's."""
     pages = []
     for page in sorted(artifact_root.rglob("*.html")):
         rel = _artifact_path(page, artifact_root)
-        if rel.startswith((f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", f"{STATUS_PREFIX}/")):
+        if rel != RUNS_PAGE and rel.startswith((f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/", f"{STATUS_PREFIX}/")):
             continue
         if _SHELF_CONTAINER in page.read_text(encoding="utf-8", errors="replace"):
             pages.append(page)
@@ -905,6 +906,7 @@ def _check_agent_surface(artifact_root: Path, *, one_generator: bool, status_on:
             if not (artifact_root / rel).is_file():
                 print(f"assemble_pages: missing required path {rel}", file=sys.stderr)
                 raise SystemExit(1)
+        _check_agent_documents(artifact_root)
         return
     present = [rel for rel in [*paths, "changes"] if (artifact_root / rel).exists()]
     if present:
@@ -912,6 +914,32 @@ def _check_agent_surface(artifact_root: Path, *, one_generator: bool, status_on:
             f"assemble_pages: {', '.join(present)} exist in the artifact but pyforge.herald.pages_one_generator is off",
             file=sys.stderr,
         )
+        raise SystemExit(1)
+
+
+def _check_agent_documents(artifact_root: Path) -> None:
+    """The machine-read surfaces parse (Story 43.6's review): ``changes/rss.xml`` as XML, an RSS 2.0
+    document with one channel, and ``facts.json`` as one JSON object. A feed nothing parsed could
+    publish malformed and green."""
+    import json
+    import xml.etree.ElementTree as ET
+
+    feed = artifact_root / "changes" / "rss.xml"
+    try:
+        root = ET.fromstring(feed.read_bytes())
+    except ET.ParseError as exc:
+        print(f"assemble_pages: changes/rss.xml is not well-formed XML: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    if root.tag != "rss" or root.get("version") != "2.0" or len(root.findall("channel")) != 1:
+        print("assemble_pages: changes/rss.xml is not an RSS 2.0 document with one channel", file=sys.stderr)
+        raise SystemExit(1)
+    try:
+        facts = json.loads((artifact_root / "facts.json").read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        print(f"assemble_pages: facts.json is not valid JSON: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    if not isinstance(facts, dict):
+        print("assemble_pages: facts.json is not a JSON object keyed by deck", file=sys.stderr)
         raise SystemExit(1)
 
 

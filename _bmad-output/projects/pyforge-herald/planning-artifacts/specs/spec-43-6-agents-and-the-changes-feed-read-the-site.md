@@ -197,7 +197,7 @@ five items; `pages-check` and `pyforge-herald-test` are green
 
 - `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py -q`
   — exit 0, 22 passed (AC1–AC7: the model through node, four Astro builds into scratch directories, and the
-  assembler's checks).
+  assembler's checks); 36 passed after the independent review (five Astro builds; see the Spec Change Log).
 - `pixi run --frozen -e site pages-check` — exit 0 in four states: both flags off; `PYFORGE_PAGES_ONE_GENERATOR=1
   PYFORGE_STATUS_PAGES=1` with the 42.1 fleet fixture and the three 43.6 fixtures in `docsite/content/` (all removed
   afterwards); both on with the three inputs absent (each page carries its one-line absence, the feed an empty
@@ -210,6 +210,7 @@ five items; `pages-check` and `pyforge-herald-test` are green
   `one-missing` and `none` builds of AC6.
 - Gates as briefed (lighter gates, operator ruling 2026-10-15): the herald suite, `lint-types` and `pages-check`;
   the memlog reconcile, the scoped stamps, `detectors-ci` and `pr-preflight` are the coordinating session's.
+- `pixi run --frozen -e site docs-site-validate` — exit 0 (run with the first build and again after the review).
 
 ## Named, not fixed here
 
@@ -283,3 +284,40 @@ five items; `pages-check` and `pyforge-herald-test` are green
     AC7 check), `.gitignore` (the three inputs), `docs-site/README.md`, the steward deferred-work ledger, and herald's
     `marshal-policy.toml` (`.gitignore` and the steward ledger join Epic 43's surface). The tests are
     `tests/meta/test_agent_surface_and_changes.py` and three fixtures under `tests/fixtures/`.
+- 2026-10-15 (the independent review, `review-43-6`, verdict FAIL on six should-fix findings; resolved here; where
+  this entry and an earlier one disagree, this one holds):
+  - **One progress record is one record (F1).** `herald progress --json` prints one JSON object per line, so a store
+    holding one record prints one valid JSON object. `parseHeraldProgress` reads an object with a `station` and no
+    `records` as `[value]`. Test: the one-line case in
+    `test_progress_keeps_the_latest_record_per_station_in_every_input_shape`.
+  - **The feed cannot publish malformed (F2).** `parseChanges` refuses a `station` or `subject` holding a character
+    XML 1.0 forbids (C0 controls but tab, newline and carriage return; U+FFFE, U+FFFF), naming the file and the merge.
+    `pages-check` (`_check_agent_documents`) now parses `changes/rss.xml` as XML (an RSS 2.0 document with one
+    channel) and `facts.json` as a JSON object with the flag on, so a broken surface reds instead of publishing
+    green. Tests: three control-character cases in `test_a_malformed_changes_input_names_the_file`,
+    `test_a_date_only_merge_and_whitespace_controls_still_make_a_well_formed_feed`,
+    `test_pages_check_parses_the_feed_and_facts_json` (four cases).
+  - **"No input is opened" is tested (AC7, F3).** The flag-off build reads malformed copies of all three inputs, so a
+    module-scope read would fail it; proven by a mutation (a module-scope `changesInput()` in the feed route reds
+    `test_ac7_the_surfaces_follow_the_flag`'s off case).
+  - **The runs page joins the shelf link walk (F4).** `_iter_shelf_pages` takes `status/runs/index.html` (a Starlight
+    page with a markdown body), so its `../` and `../ci/` links, and the Lane 1 link once it is absolute, are judged.
+    Test: `test_the_runs_page_joins_the_shelf_link_walk`.
+  - **The Guild-step contract keeps the deploy skip (F5).** `DW-steward-43-6-1` now says `changes.json`'s
+    `generated_at` is HEAD's committer time (`%cI`) and its 30-day window is anchored on that commit date, as the fleet
+    input's is; that the two runs-page inputs are live snapshots, so the runs page defeats the scheduled build's
+    deploy skip by design (the steward story decides); and that a single NDJSON line is one record.
+  - **The AC1 enrichment's owner is herald Story 43.7 (F6; coordinator ruling 2026-10-15).** After the lane merge,
+    listing each infographic and deck-family page, with its text, in `/llms.txt` and `/llms-full.txt` through Story
+    43.2's `loadHeraldPages()` (`docs-site/src/loaders/herald-pages-loader.ts`) is 43.7's: the coordinator carries it
+    into 43.7's brief.
+  - **Nits.** A merge `date` is `YYYY-MM-DD` or an ISO date-time with an offset (an offset-less one would be read in
+    the build host's zone), `sha` a 7-40 hex id and unique (duplicates gave duplicate anchors and guids); stations sort
+    in code-unit order, not by locale; the unused `countPageEntries` is gone; AC1's test asserts each Docs URL is a
+    page the build wrote (no longer recomputing the route); a present `[]` merge list has its own build
+    (`test_an_empty_merge_list_says_so_and_the_feed_is_an_empty_channel`); `/llms.txt`'s Changes entry reads the
+    input's `window_days`; `docs-site-validate` is recorded in the Verification run. Not done here, for the lane merge:
+    one `PYFORGE_PAGES_ONE_GENERATOR` reader (`=== '1'` in 43.1's files, `1|true|yes` here and in lane A's loader),
+    the review's N8 and M5. Not done: an `<atom:link rel="self">` in the channel (optional, N3) and rewriting
+    `llms-full.txt`'s raw relative markdown links (cosmetic, N9).
+
