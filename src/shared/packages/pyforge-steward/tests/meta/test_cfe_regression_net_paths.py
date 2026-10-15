@@ -100,14 +100,17 @@ def _covered(path: str, globs: list[str]) -> bool:
 
 def test_the_derivation_finds_the_scripts_the_tests_load() -> None:
     scripts = loaded_root_scripts()
-    # Blindness guard: on 2026-10-14 the CFE tests loaded these five by path.
+    # Blindness guard: on 2026-10-14 the CFE tests loaded these five by path. They are compared by
+    # stem, not spelled as paths: this test reads the CFE tests and the workflow, never the scripts,
+    # and the station-tests trigger map counts a path literal in a steward test as a read.
+    assert all(PurePosixPath(path).parent == PurePosixPath("scripts") for path in scripts), sorted(scripts)
     assert {
-        "scripts/fleet_picture.py",
-        "scripts/fleet_scan.py",
-        "scripts/loop_stall_check.py",
-        "scripts/spec_surface_check.py",
-        "scripts/unpushed_work_check.py",
-    } <= scripts, sorted(scripts)
+        "fleet_picture",
+        "fleet_scan",
+        "loop_stall_check",
+        "spec_surface_check",
+        "unpushed_work_check",
+    } <= {PurePosixPath(path).stem for path in scripts}, sorted(scripts)
 
 
 def test_both_filters_cover_every_loaded_script() -> None:
@@ -119,5 +122,6 @@ def test_both_filters_cover_every_loaded_script() -> None:
 
 
 def test_a_filter_missing_a_script_is_reported() -> None:
-    globs = [glob for glob in _filter_paths("push") if glob != "scripts/fleet_picture.py"]
-    assert not _covered("scripts/fleet_picture.py", globs)
+    target = sorted(loaded_root_scripts())[0]
+    globs = [glob for glob in _filter_paths("push") if glob != target]
+    assert not _covered(target, globs)
