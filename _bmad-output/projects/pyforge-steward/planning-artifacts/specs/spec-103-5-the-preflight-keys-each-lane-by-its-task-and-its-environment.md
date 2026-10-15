@@ -270,9 +270,49 @@ The diff is for an independent review against this spec, not against this summar
   - `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
   - The coverage gate and `pr-preflight` are recorded on the PR.
 
+## Review
+
+The independent review (2026-10-14) of PR #2225 at `8dd1fd00ad` returned **PASS**, with one should-fix and five
+nits. The reviewer's mutants and logs are in the orchestrating session's scratch (`r103-5/`). Each finding below has
+its resolution; the fixes land on the same branch.
+
+- **1 (should-fix) — Two re-keyed coordinator paths were untested.**
+  - **Finding:** two mutants passed all 270 preflight tests: comparing terminated marks by task again at both
+    `key in coord.terminated_lanes` sites (m5), and dropping `cancelled_by_environment=trigger_env` from the
+    terminated-lane result (m6). Neither `_skip_lane_on_red_stop` path in `_run_lane_in_pool` had an assertion; only
+    the dependency-blocked path was covered.
+  - **Resolution:** three tests in `test_preflight_lane_identity.py`:
+    - `test_a_stop_marks_only_the_twin_it_terminated`: `fail` goes red, its stop terminates `a`@inv, and `a`@other,
+      which already exited on its own, stays `ok`; `coord.terminated_lanes == {("a", "inv")}`.
+    - `test_a_lane_the_stop_keeps_from_starting_names_its_twin`: the first stop check.
+    - `test_a_lane_stopped_while_it_waits_for_its_service_names_its_twin`: the second stop check, after the service
+      lock; deterministic through a lock that signals its waiter.
+    - `test_real_subprocess_red_lane_cancels_running_peer` also asserts `cancelled_by_environment`.
+  - **Mutants, re-run against `test_preflight_lane_identity.py` and `test_preflight_concurrency.py`; each now fails:**
+    - m5 fails `test_a_stop_marks_only_the_twin_it_terminated`;
+    - m6 fails it and `test_real_subprocess_red_lane_cancels_running_peer`;
+    - m7 (no environment on the first stop check) fails `test_a_lane_the_stop_keeps_from_starting_names_its_twin`;
+    - m8 (no environment on the second stop check) fails
+      `test_a_lane_stopped_while_it_waits_for_its_service_names_its_twin`.
+- **2 (nit) — The interrupt clause of AC4 was checked only on a hand-built `LaneResult`.**
+  **Resolution:** `test_sigint_cancels_real_subprocess_lanes` asserts that no cancelled journal entry carries
+  `cancelled_by_environment`.
+- **3 (nit) — The comment said the stop cause is "assigned once", but the code checked and set it without a lock.**
+  - **Resolution:** a new `_RunCoordinator.set_stop_cause` checks and sets under a dedicated reentrant `stop_lock`,
+    and both callers (the red lane and the SIGINT handler) use it. `test_the_first_stop_cause_wins` covers it.
+  - **Why not `proc_lock`:** the handler runs on the main thread and may re-enter, and `proc_lock` is a plain lock
+    the handler already takes through `terminate_children`.
+- **4 (nit) — The suite reduction is applied by task across environments.**
+  **Resolution:** the `suite_lane_plan` comment says so and names the case where it would matter: a station test in
+  two environments while its coverage gate runs in one.
+- **5 (nit) — Atlas 31.1's two `mypy` lanes share `.mypy_cache` when they run concurrently.**
+  **Resolution:** not changed here; the orchestrating session tracks it separately.
+
 ## Spec Change Log
 
 - 2026-10-14: minted from the Dream's preflight lane identity addition, under the operator's standing direction of
   2026-10-14. `type: fix`, no flag, no CAP. Bound to `spec-pyforge-steward` CAP-159.
 - 2026-10-14 (implementation): the environment-aware CI-counterpart match was dropped (Approach, amended; AC6
   restated; AC11's closure mutation replaced). It moved no verdict and failed `test_service_lanes_never_overlap`.
+- 2026-10-14 (review): PASS with one should-fix and five nits; four resolved on the branch, nit 5 tracked separately
+  (§ Review). No AC changed.

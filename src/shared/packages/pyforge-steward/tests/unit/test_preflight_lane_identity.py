@@ -8,8 +8,12 @@ runner keeps the two lanes apart wherever it selects, runs, orders, journals, lo
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -150,6 +154,170 @@ def test_a_stop_names_the_environment_of_the_lane_that_caused_it(
     assert dependent[by_key] == "a"
     assert dependent[f"{by_key}_environment"] == OTHER
 
+
+
+def test_a_stop_marks_only_the_twin_it_terminated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review fix: ``fail`` goes red and its stop terminates ``a``@inv; ``a``@other, already exited on its
+    own, keeps its own result. Modelled on test_lane_that_exits_on_its_own_during_a_stop_stays_red."""
+    repo = _repo(
+        tmp_path,
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
+        'depends-on = ["fail", "a", { task = "a", environment = "other" }]\n'
+        '[feature.guild-tasks.tasks.fail]\ncmd = "true"\n'
+        '[feature.guild-tasks.tasks.a]\ncmd = "true"\n',
+    )
+    coords: list[preflight._RunCoordinator] = []  # noqa: SLF001
+    real_coordinator = preflight._RunCoordinator  # noqa: SLF001
+
+    def make_coordinator(*args: Any, **kwargs: Any) -> preflight._RunCoordinator:  # noqa: SLF001
+        coords.append(real_coordinator(*args, **kwargs))
+        return coords[-1]
+
+    monkeypatch.setattr(preflight, "_RunCoordinator", make_coordinator)
+    real_run = preflight._run_pixi_argv  # noqa: SLF001
+    other_exited = threading.Event()
+    inv_key = ("a", INV)
+
+    def run_argv(coord: Any, ctx: preflight.LaneRunContext, argv: list[str], log_handle: Any) -> int:
+        if (ctx.lane.task, ctx.lane.environment) != ("a", OTHER):
+            if ctx.lane.task == "fail":
+                assert other_exited.wait(timeout=10)
+            return real_run(coord, ctx, argv, log_handle)
+        proc = subprocess.Popen(argv, cwd=coord.repo_root, env=ctx.env, stdout=log_handle, start_new_session=True)
+        coord.register_proc(proc, preflight._lane_key(ctx.lane))  # noqa: SLF001
+        try:
+            code = proc.wait()
+            other_exited.set()
+            # Hand the exit back only once the stop has marked the twin it terminated.
+            deadline = time.monotonic() + 10
+            while inv_key not in coord.terminated_lanes and time.monotonic() < deadline:
+                time.sleep(0.02)
+            assert inv_key in coord.terminated_lanes
+            return int(code)
+        finally:
+            coord.unregister_proc(proc)
+
+    monkeypatch.setattr(preflight, "_run_pixi_argv", run_argv)
+    inv_dir = preflight.lane_label("a", INV)
+    scripts = {
+        ("fail", INV): (
+            "import os, sys, time\n"
+            f"marker = os.path.join(os.path.dirname(os.environ['TMPDIR']), {inv_dir!r}, 'started')\n"
+            "deadline = time.monotonic() + 10\n"
+            "while not os.path.exists(marker) and time.monotonic() < deadline:\n"
+            "    time.sleep(0.02)\n"
+            "time.sleep(0.3)\n"
+            "sys.exit(1)\n"
+        ),
+        ("a", INV): (
+            "import os, time\n"
+            "open(os.path.join(os.environ['TMPDIR'], 'started'), 'w').close()\n"
+            "time.sleep(30)\n"
+        ),
+        ("a", OTHER): "raise SystemExit(0)",
+    }
+    code = preflight.run_preflight(
+        repo,
+        invoking_env=INV,
+        jobs=3,
+        install_environment=_NOOP_INSTALL,
+        scratch_parent=tmp_path / "scratch",
+        subprocess_argv_for_lane=lambda lane: [sys.executable, "-c", scripts[(lane.task, lane.environment)]],
+    )
+    assert code == preflight.EXIT_LANE_RED
+    by_lane = {(e["task"], e["environment"]): e for e in _run_record(repo)["lanes"]}
+    assert (by_lane[("fail", INV)]["status"], by_lane[("fail", INV)]["exit_code"]) == ("red", 1)
+    terminated = by_lane[("a", INV)]
+    assert terminated["status"] == "cancelled"
+    assert terminated["exit_code"] < 0
+    assert (terminated["cancelled_by"], terminated["cancelled_by_environment"]) == ("fail", INV)
+    own = by_lane[("a", OTHER)]
+    assert (own["status"], own["exit_code"]) == ("ok", 0)
+    assert "cancelled_by" not in own
+    (coord,) = coords
+    assert coord.terminated_lanes == {inv_key}
+    assert coord.red_lanes == [("fail", INV)]
+
+
+def _coordinator(tmp_path: Path) -> preflight._RunCoordinator:  # noqa: SLF001
+    coordinator = preflight._RunCoordinator  # noqa: SLF001
+    return coordinator(repo_root=tmp_path, run_id="t", run_start=0.0, jobs=1, keep_going=False)
+
+
+def test_a_lane_the_stop_keeps_from_starting_names_its_twin(tmp_path: Path) -> None:
+    """Review fix: the pool's first stop check (before any service lock) journals the twin that stopped the run."""
+    coord = _coordinator(tmp_path)
+    coord.set_stop_cause(("a", INV))
+    coord.stop_on_red.set()
+    ran: list[preflight.LaneRunContext] = []
+    result = preflight._run_lane_in_pool(  # noqa: SLF001
+        coord, preflight.Lane("a", OTHER), tmp_path / "scratch", None, lambda ctx: ran.append(ctx) or 0, False, {}
+    )
+    assert ran == []
+    assert (result.task, result.environment, result.status) == ("a", OTHER, "cancelled")
+    assert (result.cancelled_by, result.cancelled_by_environment) == ("a", INV)
+
+
+class _SignallingLock:
+    """A service lock that says when a lane starts waiting for it."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.waiting = threading.Event()
+
+    def acquire(self) -> bool:
+        self.waiting.set()
+        return self.lock.acquire()
+
+    def release(self) -> None:
+        self.lock.release()
+
+
+def test_a_lane_stopped_while_it_waits_for_its_service_names_its_twin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review fix: the pool's second stop check (after the service lock) journals the twin that stopped the run."""
+    coord = _coordinator(tmp_path)
+    service = _SignallingLock()
+    monkeypatch.setattr(coord, "service_lock", lambda _key: service)
+    service.lock.acquire()  # the twin holds the shared service container
+    ran: list[preflight.LaneRunContext] = []
+    results: list[preflight.LaneResult] = []
+
+    def run_waiting_lane() -> None:
+        results.append(
+            preflight._run_lane_in_pool(  # noqa: SLF001
+                coord,
+                preflight.Lane("a", OTHER),
+                tmp_path / "scratch",
+                "services:postgres",
+                lambda ctx: ran.append(ctx) or 0,
+                False,
+                {},
+            )
+        )
+
+    worker = threading.Thread(target=run_waiting_lane)
+    worker.start()
+    assert service.waiting.wait(timeout=5)  # past the first stop check, blocked on the service
+    coord.set_stop_cause(("a", INV))
+    coord.stop_on_red.set()
+    service.release()
+    worker.join(timeout=5)
+    assert not worker.is_alive()
+    assert ran == []
+    (result,) = results
+    assert (result.task, result.environment, result.status) == ("a", OTHER, "cancelled")
+    assert (result.cancelled_by, result.cancelled_by_environment) == ("a", INV)
+
+
+def test_the_first_stop_cause_wins(tmp_path: Path) -> None:
+    """Review nit: the cause is checked and set under one lock; a later cause never replaces it."""
+    coord = _coordinator(tmp_path)
+    coord.set_stop_cause(("a", OTHER))
+    coord.set_stop_cause(("interrupt", None))
+    assert coord.stop_cause == ("a", OTHER)
+    assert coord.stop_trigger == "a"
 
 def test_the_journal_record_only_gains_optional_fields() -> None:
     """AC10: a plain lane result keeps its keys; an interrupt names no environment."""

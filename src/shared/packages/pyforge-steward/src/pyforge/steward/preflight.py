@@ -299,12 +299,19 @@ class _RunCoordinator:
     proc_lock: threading.Lock = field(default_factory=threading.Lock)
     red_lanes: list[LaneKey] = field(default_factory=list)
     # What stopped the run: the red lane's (task, environment), or ("interrupt", None). One
-    # tuple, assigned once, so a reader never sees a trigger without its environment.
+    # tuple, so a reader never sees a trigger without its environment; set only through
+    # set_stop_cause, which checks and sets under stop_lock, so the first cause wins.
     stop_cause: tuple[str, str | None] | None = None
+    # Reentrant: the SIGINT handler sets the cause on the main thread and may re-enter itself.
+    stop_lock: threading.RLock = field(default_factory=threading.RLock)
     terminated_lanes: set[LaneKey] = field(default_factory=set)
     proc_lane: dict[int, LaneKey] = field(default_factory=dict)
     # Keyed by task, not lane: the plan is derived from the pixi task definition, which has no
-    # environment, so every lane of a task reads its task's plan.
+    # environment, so every lane of a task reads its task's plan. The reduction is therefore
+    # applied by task across environments (build_suite_lane_overrides pairs pyforge-<s>-test
+    # with pyforge-<s>-coverage-gate by name). It would matter if one station test ran in two
+    # environments while its gate ran in one: the other environment's lane would skip tests
+    # the gate never ran there. No lane list does that today; the plan would then need a lane key.
     suite_lane_plan: dict[str, preflight_suite_reduction.SuiteLaneOverride | dict[str, Any]] = field(
         default_factory=dict
     )
@@ -319,6 +326,12 @@ class _RunCoordinator:
         """The journaled ``cancelled_by`` of a stop: the red lane's task, or ``interrupt``."""
         cause = self.stop_cause
         return cause[0] if cause is not None else None
+
+    def set_stop_cause(self, cause: tuple[str, str | None]) -> None:
+        """Record what stopped the run; the first cause wins (checked and set under ``stop_lock``)."""
+        with self.stop_lock:
+            if self.stop_cause is None:
+                self.stop_cause = cause
 
     def service_lock(self, key: str | None) -> threading.Lock | None:
         if key is None:
@@ -739,8 +752,7 @@ def _run_lane_in_pool(
             return LaneResult(lane.task, lane.environment, elapsed, 0, "ok", start_offset, journal_extra)
         coord.red_lanes.append(key)
         if not coord.keep_going:
-            if coord.stop_cause is None:
-                coord.stop_cause = key
+            coord.set_stop_cause(key)
             coord.stop_on_red.set()
             coord.terminate_children()
         return LaneResult(lane.task, lane.environment, elapsed, code, "red", start_offset, journal_extra)
@@ -930,8 +942,7 @@ def run_preflight(
 
     def _on_sigint(_signum: int, _frame: object | None) -> None:
         coord.cancel.set()
-        if coord.stop_cause is None:
-            coord.stop_cause = ("interrupt", None)
+        coord.set_stop_cause(("interrupt", None))
         coord.terminate_children()
 
     signal.signal(signal.SIGINT, _on_sigint)

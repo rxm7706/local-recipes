@@ -435,6 +435,7 @@ def test_real_subprocess_red_lane_cancels_running_peer(
     assert by_task["sleep"]["exit_code"] < 0
     assert by_task["sleep"]["seconds"] > 0
     assert by_task["sleep"]["cancelled_by"] == "fail"
+    assert by_task["sleep"]["cancelled_by_environment"] == _key("fail")[1]  # the red lane's environment (Story 103.5)
     (coord,) = coords
     assert coord.red_lanes == [_key("fail")]
     assert coord.terminated_lanes == {_key("sleep")}
@@ -596,6 +597,7 @@ def test_sigint_cancels_real_subprocess_lanes(tmp_path: Path, monkeypatch: pytes
         assert entry["exit_code"] < 0
         assert entry["seconds"] > 0
         assert entry["cancelled_by"] == "interrupt"
+        assert "cancelled_by_environment" not in entry  # an interrupt is no lane (Story 103.5 AC4)
     (coord,) = coords
     assert coord.red_lanes == []
     assert coord.stop_trigger == "interrupt"
