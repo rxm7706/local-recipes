@@ -663,7 +663,7 @@ export function twinWrapperHtml(options: { title: string; backbar: string; rel: 
 html,body{margin:0;height:100%;background:var(--sl-color-black)}
 body{box-sizing:border-box}
 .ig-twin{display:block;width:100%;height:calc(100vh - 32px - 1.5rem);border:0;background:var(--sl-color-black)}
-.built-from{box-sizing:border-box;height:1.5rem;margin:0;padding:0 16px;line-height:1.5rem;overflow:hidden;white-space:nowrap}
+.built-from{box-sizing:border-box;height:1.5rem;margin:0;padding:0 16px;line-height:1.5rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 </style>
 </head>
 <body>

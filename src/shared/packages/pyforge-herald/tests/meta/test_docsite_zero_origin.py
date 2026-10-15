@@ -222,16 +222,17 @@ _STYLE_ATTRIBUTE = re.compile(
 )
 _TRUSTED_INTERPOLATION = re.compile(r"\$\{\s*(?:cssVar|cssTextTone)\([^()`{}]*\)\s*\}")
 #: Story 43.4's second re-review: the presentation attributes that take a colour (SVG and legacy HTML), the legacy
-#: ``<font face>`` and the ``theme-color`` meta, read inside each tag of a non-CSS source.
+#: ``<font face>``, SVG's ``font-family`` and the ``theme-color`` meta, read inside each tag of a non-CSS source, the
+#: value double- or single-quoted, an Astro expression or unquoted (the third re-review).
 _TAG = re.compile(r"<[a-zA-Z][\w:.-]*\b[^<>]*>")
 _COLOUR_ATTRIBUTE = re.compile(
-    r"""\s(fill|stroke|stop-color|flood-color|lighting-color|color|bgcolor|face|content)\s*=\s*"""
-    r"""(?:"([^"]*)"|'([^']*)'|\{([^{}]*)\})""",
+    r"""\s(fill|stroke|stop-color|flood-color|lighting-color|color|bgcolor|face|font-family|content)\s*=\s*"""
+    r"""(?:"([^"]*)"|'([^']*)'|\{([^{}]*)\}|([^\s"'=<>`{}]+))""",
     re.IGNORECASE,
 )
 _TRUSTED_ATTRIBUTE = re.compile(r"\s*(?:cssVar|cssTextTone)\([^()`{}]*\)\s*")
-#: at-rules whose block holds declarations; every other one (``@media``, ``@supports``, ``@layer`` ...) holds rules
-_DECLARATION_AT_RULES = ("@font-face", "@property", "@page", "@counter-style", "@font-palette-values")
+#: ``@property --sl-*`` registers a theme variable (its ``initial-value`` sets it): theme.css's alone
+_REGISTERED_THEME_VARIABLE = re.compile(r"@property\s+(--sl-[\w-]+)", re.IGNORECASE)
 _FONT_KEYWORDS = frozenset(
     "normal italic oblique bold bolder lighter small-caps ultra-condensed extra-condensed condensed semi-condensed "
     "semi-expanded expanded extra-expanded ultra-expanded xx-small x-small small medium large x-large xx-large "
@@ -282,9 +283,11 @@ def _font_findings(prop: str, value: str) -> list[str]:
 
 
 def _css_bodies(css: str) -> list[str]:
-    """Each rule's own declarations with its nested rules cut out (CSS nesting: ``.a { color: red; .b { ... } }`` reads
-    ``color: red``); a grouping at-rule's block (``@media``, ``@supports``, ``@layer`` ...) holds rules, not
-    declarations, and only its rules are read."""
+    """Each block's own text with its nested blocks cut out (CSS nesting: ``.a { color: red; .b { ... } }`` reads
+    ``color: red``). Every block counts, an at-rule's too: a grouping rule nested in a style rule holds declarations
+    (``.a { @media screen { color: red } }``, ``@supports``, ``@container``, ``@layer``, ``@starting-style``, and a
+    top-level ``@scope``), while one that holds only rules (a top-level ``@media``) has no text of its own once they
+    are cut out (the third re-review: a filter on the prelude dropped the nested case)."""
     frames: list[tuple[str, list[str]]] = [("", [])]
     out, buf = [], ""
     for char in _COMMENT.sub("", css):
@@ -294,10 +297,9 @@ def _css_bodies(css: str) -> list[str]:
             frames.append((prelude.strip(), []))
             buf = ""
         elif char == "}" and len(frames) > 1:
-            prelude, own = frames.pop()
+            _prelude, own = frames.pop()
             own.append(buf)
-            if not prelude.startswith("@") or prelude.lower().startswith(_DECLARATION_AT_RULES):
-                out.append("".join(own))
+            out.append("".join(own))
             buf = ""
         else:
             buf += char
@@ -311,17 +313,19 @@ def _attribute_findings(text: str) -> list[str]:
     findings = []
     for tag in _TAG.findall(text):
         theme_meta = re.match(r"<meta\b", tag, re.IGNORECASE) and re.search(
-            r"""\bname\s*=\s*["']theme-color""", tag, re.I
+            r"""\bname\s*=\s*["']?theme-color""", tag, re.I
         )
-        for name, double, single, expression in _COLOUR_ATTRIBUTE.findall(f" {tag[1:]}"):
+        for name, double, single, expression, bare in _COLOUR_ATTRIBUTE.findall(f" {tag[1:]}"):
             name = name.lower()
             if name == "content" and not theme_meta:
                 continue
-            value = double or single
+            value = double or single or bare
             if expression and not _TRUSTED_ATTRIBUTE.fullmatch(expression):
                 findings.append(f"an attribute the guard cannot read, {name}={{{expression}}}")
             elif name == "face" and value.strip():
                 findings.append(f"font face {value!r}")
+            elif name == "font-family":
+                findings += _font_findings("font-family", value)
             else:
                 findings += [f"colour {c!r} in the {name} attribute" for c in _colour_literals(value)]
     return findings
@@ -335,13 +339,23 @@ def _declaration_lists(path: Path) -> tuple[list[str], list[str]]:
     ``style={expression}``, is a finding of its own: the guard cannot read it. Out of its reach, named so nobody
     reads more into it: a style string built by concatenation or held in a variable, ``el.style`` /
     ``setAttribute('style', ...)`` in a script, ``<style set:html>``, an escaped quote (``style=\\"...\\"`` inside
-    a TS string), CSS escapes (``\\72 ed``) and an SVG data URI inside ``url()``."""
+    a TS string), CSS escapes (``\\72 ed``), an SVG data URI inside ``url()``, a ``{`` or ``}`` inside a CSS string
+    ahead of a declaration, and a computed key in an Astro style object (``{{ ['color']: ... }}``). In a tag's
+    attributes (``_attribute_findings``): a ``>`` or ``<`` inside an earlier attribute's expression (it ends the tag
+    early), a spread (``{...{ fill: ... }}``), attributes with no space between them, SVG animation values
+    (``<animate to>``, ``<set to>``, ``from``, ``values``) and legacy ``<body text link vlink alink>``."""
     text = path.read_text(encoding="utf-8", errors="replace")
     sheets = [text] if path.suffix == ".css" else re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL | re.I)
     unreadable: list[str] = [
         f"a <style> body with an interpolation, {sheet[:60]!r}" for sheet in sheets if "${" in sheet
     ]
     lists = [body for sheet in sheets if "${" not in sheet for body in _css_bodies(sheet)]
+    # an @property registration of a theme variable is a write of it (its initial-value), read as one
+    lists += [
+        f"{name}: registered"
+        for sheet in sheets
+        for name in _REGISTERED_THEME_VARIABLE.findall(_COMMENT.sub("", sheet))
+    ]
     for match in _STYLE_ATTRIBUTE.finditer(text):
         *strings, astro_object, expression = match.groups()
         if expression is not None:
@@ -496,6 +510,55 @@ _GUARD_MUTATIONS = [  # (file under docs-site/src, the text to find, its replace
     ),
     ("pages/herald/[...index].astro", '<div class="station-rail">', '<div class="station-rail" STYLE="color:red">'),
     ("pages/herald/[...index].astro", '<div class="station-rail">', '<div class="station-rail" style = "color: red">'),
+    # the third re-review's probes: a group rule nested in a style rule (CSS nesting gives its block declarations), a
+    # top-level @scope, unquoted attribute values, SVG's font-family attribute and an @property theme variable
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        "* { box-sizing: border-box; }\n.a { @media screen { color: red; } }",
+    ),
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        "* { box-sizing: border-box; }\n.a { @layer x { font-family: Georgia; } }",
+    ),
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        "* { box-sizing: border-box; }\n.a { @starting-style { background: red; } }",
+    ),
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        "* { box-sizing: border-box; }\n@scope (.a) { color: red; }",
+    ),
+    (
+        "components/SiteTitle.astro",
+        "  .pf-top-menu {\n",
+        "  .pf-x { @supports (display: grid) { color: #c00; } }\n  .pf-top-menu {\n",
+    ),
+    (
+        "pages/herald/[...index].astro",
+        '<div class="station-rail">',
+        '<div class="station-rail"><svg><rect fill=#c00 /></svg>',
+    ),
+    ("lib/dossier-blocks.ts", '`<div class="chips">', '`<div class="chips"><svg><path stroke=red></path></svg>'),
+    (
+        "layouts/HeraldLayout.astro",
+        '<meta charset="utf-8" />',
+        '<meta charset="utf-8" /><meta name=theme-color content=#c00 />',
+    ),
+    (
+        "pages/herald/[...index].astro",
+        '<div class="station-rail">',
+        '<div class="station-rail"><svg><text font-family="Comic Sans MS">x</text></svg>',
+    ),
+    (
+        "styles/herald.css",
+        "* { box-sizing: border-box; }",
+        "* { box-sizing: border-box; }\n@property --sl-font-x { syntax: '*'; inherits: true; initial-value: Georgia; }"
+        "\n.x { font-family: var(--sl-font-x); }",
+    ),
 ]
 
 

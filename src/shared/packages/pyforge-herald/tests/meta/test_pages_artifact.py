@@ -609,6 +609,57 @@ def test_43_3_on_a_second_host_a_link_to_the_public_host_fails(site: Path) -> No
 
 # --- pages-build: the site URL and the one build time --------------------------------------------------------------
 
+_BUILT_AT = """
+return inp.times.map((t) => {
+  try {
+    return m.builtFromText({ GITHUB_SHA: '0123456789abcdef', GITHUB_RUN_ID: '7', PAGES_BUILT_AT: t });
+  } catch (exc) {
+    return `refused: ${exc.message}`;
+  }
+});
+"""
+
+
+@pytest.mark.parametrize(
+    ("built_at", "line"),
+    [
+        ("2026-10-15T09:00:00Z", "Built from 0123456 · 2026-10-15 09:00 UTC · run 7"),
+        ("2026-10-15T14:30:59.123+05:30", "Built from 0123456 · 2026-10-15 09:00 UTC · run 7"),
+        ("2024-02-29T00:00:00Z", "Built from 0123456 · 2024-02-29 00:00 UTC · run 7"),
+        (" 2026-10-15T09:00:00Z\n", "Built from 0123456 · 2026-10-15 09:00 UTC · run 7"),
+        ("2026-02-30T00:00:00Z", None),
+        ("2026-02-29T00:00:00Z", None),
+        ("2026-13-01T00:00:00Z", None),
+        ("0000-01-01T00:00:00Z", None),
+        ("﻿2026-10-15T09:00:00Z", None),
+        ("2026-10-15T09:00:00", None),
+        ("2026-10-15t09:00:00z", None),
+        ("2026-10-15", None),
+    ],
+    ids=[
+        "utc",
+        "offset",
+        "leap-day",
+        "whitespace",
+        "feb-30",
+        "feb-29-common-year",
+        "month-13",
+        "year-0000",
+        "bom",
+        "naive",
+        "lower-case",
+        "date-only",
+    ],
+)
+def test_43_5_the_build_time_is_a_real_iso_instant_with_an_offset(built_at: str, line: str | None) -> None:
+    """``PAGES_BUILT_AT`` as the retired Python twin read it (``datetime.fromisoformat``, Story 43.5; the re-review's
+    nit 3): ``Date`` alone rolls February 30 into March, reads year 0000 and trims a byte-order mark away."""
+    [said] = ts(DOCS_SITE / "src" / "lib" / "built-from.ts", _BUILT_AT, times=[built_at])
+    if line is None:
+        assert said.startswith("refused: PAGES_BUILT_AT is not an ISO 8601 time with an offset"), said
+    else:
+        assert said == line
+
 
 def test_43_5_the_build_time_is_set_once_in_the_builds_own_environment() -> None:
     """Story 43.5's carry-in: ``PAGES_BUILT_AT`` is made once and handed to the build's environment, never written into

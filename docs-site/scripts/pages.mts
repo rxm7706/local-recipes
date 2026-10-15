@@ -87,7 +87,9 @@ function basePathOf(siteUrl: string): string {
 /** Build the artifact; returns the site URL it was built for. */
 export function build(env: Env = process.env): string {
   const siteUrl = resolveSiteUrl(env);
-  const builtAt = (env.PAGES_BUILT_AT ?? '').trim() || new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+  // a given time reaches the build as given: `built-from.ts` judges it (a byte-order mark, which trim() drops, included)
+  const given = env.PAGES_BUILT_AT ?? '';
+  const builtAt = given.trim() ? given : new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const done = spawnSync('npm', ['run', 'build'], {
     cwd: DOCS_SITE,
     env: { ...env, SITE_URL: siteUrl, PAGES_BUILT_AT: builtAt },

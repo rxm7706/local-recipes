@@ -236,6 +236,18 @@ On `f8d99e0c84` plus this change (lane A of the one-PR Pages redesign); every ve
 
 ## Spec Change Log
 
+- 2026-10-15 (re-review of the review resolution: RESOLVED, 5 nits; swept after Story 43.7):
+  - **Nit 3, the build time.** `built-from.ts` refuses what the retired Python twin (`datetime.fromisoformat`)
+    refused and `Date` accepts: an impossible calendar date (`2026-02-30`, a common year's `02-29`), year `0000` and a
+    byte-order mark, which `trim()` would drop (`pages.mts build` now hands a given `PAGES_BUILT_AT` to the build
+    untrimmed, so the line's reader judges it). Twelve literal cases in `test_pages_artifact.py`
+    (`test_43_5_the_build_time_is_a_real_iso_instant_with_an_offset`); without the new checks four of them pass.
+  - **Nit 4.** The reader page's built-from line ends in an ellipsis where it is cut (`text-overflow: ellipsis`; at
+    390 px and narrower the run id no longer vanishes unmarked).
+  - **Nit 5.** `herald.css`'s dead `.stamp` rule is gone (Story 43.7 removed it); `.stamp-line` is the family page's
+    live provenance line. Nits 1 and 2 (the Jinja nav stamp and the exact-literal coupling with steward) are in Story
+    43.7's change log and in `built-from.ts`'s header; the "Measured on" wording stays the operator's question, named
+    in Story 43.7's *Named, not fixed here*.
 - 2026-10-15 (Story 43.7's review): the Verification named the parity test Story 43.7 deleted; it names
   `src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py`, where this story's built-dossier tests moved,
   and gives `test_dossier_golden.py` its repo path.

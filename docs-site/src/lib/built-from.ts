@@ -16,8 +16,20 @@
  */
 
 const LOADED_AT = new Date();
-/** The one `PAGES_BUILT_AT` form both twins accept: an ISO 8601 date-time with seconds and an explicit offset. */
-const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+/**
+ * The one `PAGES_BUILT_AT` form: an ISO 8601 date-time with seconds and an explicit offset, on a real calendar date
+ * from year 0001 -- what the retired Python twin (`datetime.fromisoformat`, Story 43.5) accepted. `Date` alone would
+ * roll `2026-02-30` to March, read year `0000` and drop a leading byte-order mark with the whitespace.
+ */
+const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+/** `raw` names a day the calendar has: year 1 to 9999, month 1 to 12, a day the month holds. */
+function realDate(raw: string): boolean {
+  const [, y, m, d] = (ISO_INSTANT.exec(raw) ?? []).map(Number);
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
+  return y >= 1 && days !== undefined && d >= 1 && d <= days;
+}
 
 /** `YYYY-MM-DD HH:MM UTC`. */
 function utcMinute(value: Date): string {
@@ -30,10 +42,11 @@ export function builtFromText(env: Record<string, string | undefined> = process.
   if (!sha) {
     return 'local build';
   }
-  const raw = (env.PAGES_BUILT_AT ?? '').trim();
+  const given = env.PAGES_BUILT_AT ?? '';
+  const raw = given.trim();
   const at = raw ? new Date(raw) : LOADED_AT;
-  if (raw && (!ISO_INSTANT.test(raw) || Number.isNaN(at.getTime()))) {
-    throw new Error(`PAGES_BUILT_AT is not an ISO 8601 time with an offset: ${JSON.stringify(raw)}`);
+  if (raw && (given.includes('\ufeff') || !ISO_INSTANT.test(raw) || !realDate(raw) || Number.isNaN(at.getTime()))) {
+    throw new Error(`PAGES_BUILT_AT is not an ISO 8601 time with an offset: ${JSON.stringify(given)}`);
   }
   const run = (env.GITHUB_RUN_ID ?? '').trim();
   return [`Built from ${sha.slice(0, 7)}`, utcMinute(at), ...(run ? [`run ${run}`] : [])].join(' · ');

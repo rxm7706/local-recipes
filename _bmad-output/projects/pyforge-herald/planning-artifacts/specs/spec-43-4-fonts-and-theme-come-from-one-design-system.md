@@ -10,7 +10,7 @@ flag:
   scope: global                                  # v1 is global only
   fallback: 'the Jinja path serves its own stylesheet and the vendored woff2 files exactly as it does today'
   cleanup: retired by Story 43.7 with the Jinja path (spec-feature-flag-governance Q4)
-review_loop_iteration: 3
+review_loop_iteration: 4
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -239,6 +239,22 @@ follow here are the first implementation's run, kept as its record.
 
 ## Spec Change Log
 
+- 2026-10-15 (third re-review of the guard, iteration 4: NOT RESOLVED, 1 should-fix and 3 nits; resolved here, in the
+  sweep after Story 43.7):
+  - **Should-fix, the nesting regression.** `_css_bodies` read a block's own text only when its prelude was not an
+    at-rule (or a declaration at-rule), so a group rule nested in a style rule -- `.a { @media screen { color: red } }`,
+    `@supports`, `@container`, `@layer`, `@starting-style`, and a top-level `@scope` -- lost its declarations, which
+    CSS nesting gives it directly; the guard of the second re-review had caught them. The filter is gone: every block's
+    own text is read, and a grouping rule that holds only rules has none once they are cut out (the baseline stays
+    clean). Five planted cases in `_GUARD_MUTATIONS`; with the old filter back, exactly those five pass the guard.
+  - **Nit 1, the reach.** Read now: an unquoted colour attribute (`fill=#c00`, `stroke=red`, `<meta name=theme-color
+    content=#c00>`), SVG's `font-family` attribute (a family, as `font-family` is in CSS) and an `@property --sl-*`
+    registration (a write of the theme variable). Five planted cases, each missed by the reader before it. The
+    remaining unreachable forms are named in `_declaration_lists` and `docs-site/README.md`: a `{` or `}` inside a CSS
+    string, a computed key in an Astro style object, a `>` or `<` inside an earlier attribute's expression, a spread,
+    attributes with no space between them, SVG animation values and legacy `<body text link>`.
+  - **Nit 2** (`theme.css`'s claim) holds within the test's reach, which the README now states in full; **nit 3** (the
+    built test's `names` addition) ran green in the Story 43.7 suite.
 - 2026-10-15 (second re-review, iteration 3: NOT RESOLVED, 1 should-fix and 5 nits -- every earlier finding resolved;
   resolved here, `review_loop_iteration` 3):
   - **Should-fix, the guard's reach.** `test_43_4_no_source_names_a_font_or_colour_outside_the_theme` now also refuses
