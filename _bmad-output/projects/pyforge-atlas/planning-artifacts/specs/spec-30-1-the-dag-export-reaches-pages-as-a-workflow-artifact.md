@@ -13,7 +13,6 @@ flag:
   fallback: 'viz-publish-stage stages to docs/dashboard/kedro-viz/ exactly as today, writes no manifest.json, and the workflow upload step is skipped'
   cleanup: 90 days after ON in every environment (spec-feature-flag-governance Q4)
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
