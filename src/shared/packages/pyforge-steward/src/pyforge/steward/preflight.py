@@ -9,6 +9,11 @@ each needed environment serially, runs selected lanes in a pool bounded by
 A lane is its task and its environment wherever the runner keeps per-lane state —
 results, scratch, logs, stop marks, journal extras, worker shares (Story 103.5):
 one task may run in two environments.
+A run has a scope (Story 103.6): ``full`` runs every selected lane; ``touched`` runs only the lanes the diff
+changes, the five fast-core detectors in place of ``detectors-ci`` and lint and types when Python under ``src/``
+changed, and journals every other lane as deferred: CI arbitrates it. ``PYFORGE_PREFLIGHT_SCOPE`` chooses the
+scope, or, unset, the flag ``pyforge.steward.preflight_ci_arbitrates``; ``main`` resolves it, so
+``run_preflight`` defaults to ``full``. ``steward preflight verify-deferred`` is the catch-up.
 Not a steward CLI duty — ``main()`` owns the exit code (AD-8).
 """
 
@@ -27,12 +32,14 @@ import threading
 import time
 import tomllib
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from pyforge.core.flags import FlagConfigError, read_boolean
 
 from pyforge.steward import preflight_ci, preflight_suite_reduction, preflight_xdist
 
@@ -45,6 +52,24 @@ EXIT_OK = 0
 EXIT_LANE_RED = 1
 EXIT_CONFIG = 2
 EXIT_INTERRUPT = 130
+
+# Story 103.6: the scope of one run. The variable wins; unset, the flag decides (on = touched).
+SCOPE_ENV = "PYFORGE_PREFLIGHT_SCOPE"
+SCOPE_FULL = "full"
+SCOPE_TOUCHED = "touched"
+SCOPES = (SCOPE_FULL, SCOPE_TOUCHED)
+SCOPE_FLAG_KEY = "pyforge.steward.preflight_ci_arbitrates"
+DEFERRED_REASON = "CI arbitrates"
+# The cheap planning detectors a touched run keeps, each a guild task of its own, in place of the
+# detectors-ci lane that runs them among the rest.
+FAST_CORE_TASKS = (
+    "spec-surface-check",
+    "flag-gate-check",
+    "story-status-check",
+    "ledger-regression-check",
+    "chain-completeness-check",
+)
+FAST_CORE_REPLACES = "detectors-ci"
 
 
 LaneKey = tuple[str, str]
@@ -93,6 +118,46 @@ class LaneResult:
 
 class PreflightConfigError(Exception):
     """Lane list could not be derived from pixi.toml."""
+
+
+class PreflightScopeError(Exception):
+    """``PYFORGE_PREFLIGHT_SCOPE`` holds a value that is not a scope; the run refuses, it never falls back."""
+
+
+@dataclass(frozen=True)
+class ScopeChoice:
+    """The scope of one run and what chose it: the variable, or the flag's value."""
+
+    scope: str
+    source: str
+
+
+def _scope_flag_on() -> bool:
+    return read_boolean(SCOPE_FLAG_KEY, default=False)
+
+
+def resolve_scope(
+    environ: Mapping[str, str] | None = None,
+    *,
+    flag_on: Callable[[], bool] | None = None,
+) -> ScopeChoice:
+    """``PYFORGE_PREFLIGHT_SCOPE`` when it is set, else the flag (Story 103.6).
+
+    ``full`` and ``touched`` are the scopes. Any other value of the variable, the empty string included, raises
+    :class:`PreflightScopeError`. The flag is read only when the variable is unset. ``PYFORGE_PREFLIGHT_SKIP`` is
+    the pre-push hook's, and it is read before this ever runs.
+    """
+    env = os.environ if environ is None else environ
+    if SCOPE_ENV in env:
+        value = env[SCOPE_ENV]
+        if value not in SCOPES:
+            raise PreflightScopeError(
+                f"{SCOPE_ENV}={value!r} is not a scope: set {SCOPE_FULL} or {SCOPE_TOUCHED}, "
+                f"or unset it to follow the flag {SCOPE_FLAG_KEY}"
+            )
+        return ScopeChoice(value, f"{SCOPE_ENV}={value}")
+    on = (flag_on or _scope_flag_on)()
+    return ScopeChoice(SCOPE_TOUCHED if on else SCOPE_FULL, f"flag {SCOPE_FLAG_KEY} {'on' if on else 'off'}")
 
 
 def _invoking_environment() -> str:
@@ -205,6 +270,108 @@ def list_preflight_lanes(
         task_name, lane_env = _resolve_dep(dep, env)
         _visit_preflight_root(pixi_data, task_name, lane_env, lanes_by_key, order)
     return [lanes_by_key[key] for key in order]
+
+
+@dataclass(frozen=True)
+class TouchedCut:
+    """What a touched run runs and what it leaves to CI (Story 103.6)."""
+
+    lanes: tuple[Lane, ...]  # what runs, in run order
+    deferred: tuple[Lane, ...]  # what CI arbitrates
+    reasons: tuple[tuple[LaneKey, str], ...] = ()  # why each lane of ``lanes`` runs
+    fast_core: tuple[Lane, ...] = ()  # the detectors that run in place of detectors-ci
+    note: str | None = None  # why nothing was cut
+
+
+def _fast_core_lanes(pixi_data: dict[str, Any], environment: str) -> list[Lane]:
+    lanes_by_key: dict[LaneKey, Lane] = {}
+    order: list[LaneKey] = []
+    for task_name in FAST_CORE_TASKS:
+        task = _find_task(pixi_data, task_name)
+        if task is None or "cmd" not in task:
+            raise PreflightConfigError(f"fast-core task {task_name!r} is not a pixi task with a cmd")
+        _ensure_lane(pixi_data, task_name, environment, [], lanes_by_key, order)
+    return [lanes_by_key[key] for key in order]
+
+
+def touched_cut(
+    repo_root: Path,
+    lanes: Sequence[Lane],
+    pixi_data: dict[str, Any],
+    selection: preflight_ci.Selection,
+) -> TouchedCut:
+    """Keep the lanes the diff touches and defer the rest: CI arbitrates them (Story 103.6).
+
+    ``lanes`` are what a full run would run (the selection, after the CI pause filter), in run order. A lane is
+    kept when ``preflight_ci.touch_verdict`` says the diff changes its station package, a path its command
+    names, or Python under ``src/`` for a lint-and-types lane; a kept lane brings the lanes it depends on.
+    ``detectors-ci``, unless kept itself, gives its place and its environment to the fast core. Nothing is cut
+    when the selection could not read the diff. Raises :class:`PreflightConfigError` for a missing fast-core task.
+    """
+    if selection.all_reason:
+        return TouchedCut(
+            lanes=tuple(lanes),
+            deferred=(),
+            note=f"the diff cannot be read ({selection.all_reason}), so every selected lane runs",
+        )
+    changed = preflight_ci.touched_paths(selection)
+    lint_tasks = preflight_ci.lint_types_tasks(pixi_data)
+    by_key = {_lane_key(lane): lane for lane in lanes}
+    reasons: dict[LaneKey, str] = {}
+    for lane in lanes:
+        verdict = preflight_ci.touch_verdict(repo_root, lane, pixi_data, changed, lint_tasks=lint_tasks)
+        if verdict.touched:
+            reasons[_lane_key(lane)] = verdict.reason
+    pending = list(reasons)
+    while pending:
+        key = pending.pop()
+        for dep_key in by_key[key].depends_on:
+            if dep_key in by_key and dep_key not in reasons:
+                reasons[dep_key] = f"{lane_label(*key)} depends on it"
+                pending.append(dep_key)
+    run: list[Lane] = []
+    fast_core: list[Lane] = []
+    for lane in lanes:
+        if _lane_key(lane) in reasons:
+            run.append(lane)
+        elif lane.task == FAST_CORE_REPLACES and not fast_core:
+            fast_core = [
+                extra for extra in _fast_core_lanes(pixi_data, lane.environment) if _lane_key(extra) not in by_key
+            ]
+            for extra in fast_core:
+                reasons[_lane_key(extra)] = f"fast core, in place of {lane_label(lane.task, lane.environment)}"
+            run.extend(fast_core)
+    return TouchedCut(
+        lanes=tuple(run),
+        deferred=tuple(lane for lane in lanes if _lane_key(lane) not in reasons),
+        reasons=tuple((_lane_key(lane), reasons[_lane_key(lane)]) for lane in run),
+        fast_core=tuple(fast_core),
+    )
+
+
+def _deferred_journal(deferred: Sequence[Lane]) -> list[dict[str, str]]:
+    return [{"lane": lane.task, "environment": lane.environment, "reason": DEFERRED_REASON} for lane in deferred]
+
+
+def _print_scope(scope: str, source: str, cut: TouchedCut | None) -> None:
+    """Name the run's scope, what chose it and every deferred lane on stdout (Story 103.6)."""
+    origin = f" ({source})" if source else ""
+    if cut is None:
+        print(f"preflight: scope {scope}{origin}", flush=True)
+        return
+    print(
+        f"preflight: scope {scope}{origin}: {len(cut.lanes)} lanes run, "
+        f"{len(cut.deferred)} deferred -- {DEFERRED_REASON}",
+        flush=True,
+    )
+    if cut.note:
+        print(f"preflight: scope {scope}: {cut.note}", flush=True)
+    if cut.fast_core:
+        replaced = next((reason for key, reason in cut.reasons if key == _lane_key(cut.fast_core[0])), "")
+        names = ", ".join(lane.task for lane in cut.fast_core)
+        print(f"preflight: {replaced}: {names}", flush=True)
+    for lane in cut.deferred:
+        print(f"preflight: deferred ({DEFERRED_REASON}): {lane_label(lane.task, lane.environment)}", flush=True)
 
 
 def _logical_core_count() -> int:
@@ -776,8 +943,17 @@ def run_preflight(
     subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None,
     before_popen: Callable[[LaneRunContext], None] | None = None,
     between_segments: Callable[[LaneRunContext, int], None] | None = None,
+    scope: str = SCOPE_FULL,
+    scope_source: str = "",
 ) -> int:
-    """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130."""
+    """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130.
+
+    ``scope`` is ``full`` (every selected lane) or ``touched`` (Story 103.6: see :func:`touched_cut`);
+    ``scope_source`` says what chose it, for the run's stdout.
+    """
+    if scope not in SCOPES:
+        print(f"preflight: scope {scope!r} is not one of {', '.join(SCOPES)}", file=sys.stderr)
+        return EXIT_CONFIG
     repo_root = repo_root.resolve()
     pixi_file = pixi_path or (repo_root / "pixi.toml")
     if not pixi_file.is_file():
@@ -833,12 +1009,29 @@ def run_preflight(
     else:
         lanes = [lane for lane in lanes if selection.is_selected(lane)]
     skipped_count = len(selection.verdicts) - len(lanes)
+    cut: TouchedCut | None = None
+    if scope == SCOPE_TOUCHED:
+        try:
+            cut = touched_cut(repo_root, lanes, pixi_data, selection)
+        except PreflightConfigError as exc:
+            print(f"preflight: {exc}", file=sys.stderr)
+            return EXIT_CONFIG
+        lanes = list(cut.lanes)
+    deferred: tuple[Lane, ...] = cut.deferred if cut is not None else ()
     note = f" ({selection.all_reason})" if selection.all_reason else ""
+    if cut is None:
+        counted = f"running {len(lanes)} of {len(selection.verdicts)} lanes"
+    else:
+        counted = (
+            f"running {len(lanes)} lanes ({len(lanes) - len(cut.fast_core)} of {len(selection.verdicts)} "
+            f"and {len(cut.fast_core)} fast-core detectors)"
+        )
+    deferred_note = f", {len(deferred)} deferred to CI" if cut is not None else ""
     print(
-        f"preflight: running {len(lanes)} of {len(selection.verdicts)} lanes, "
-        f"{skipped_count} skipped by their workflow's own rules{note}",
+        f"preflight: {counted}, {skipped_count} skipped by their workflow's own rules{deferred_note}{note}",
         file=sys.stderr,
     )
+    _print_scope(scope, scope_source, cut)
 
     worker_count = jobs if jobs is not None else _logical_core_count()
     if worker_count < 1:
@@ -1063,6 +1256,8 @@ def run_preflight(
                 "total_seconds": total_seconds,
                 "verdict": "interrupted",
                 "invoking_environment": env,
+                "mode": scope,
+                "deferred": _deferred_journal(deferred),
                 "selection": selection.to_journal(),
                 "lanes": [_lane_result_dict(r) for r in ordered],
             },
@@ -1113,6 +1308,8 @@ def run_preflight(
             "total_seconds": total_seconds,
             "verdict": verdict,
             "invoking_environment": env,
+            "mode": scope,
+            "deferred": _deferred_journal(deferred),
             "selection": {
                 **selection.to_journal(),
                 **({"ci_var_source": resolution.source} if flag_on else {}),
@@ -1170,12 +1367,22 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         return preflight_budget.main(argv_list)
     args = _parse_args(argv_list)
+    try:
+        choice = resolve_scope()
+    except PreflightScopeError as exc:
+        print(f"preflight: {exc}", file=sys.stderr)
+        return EXIT_CONFIG
+    except FlagConfigError as exc:
+        print(f"preflight: cannot read the flag {SCOPE_FLAG_KEY}: {exc}", file=sys.stderr)
+        return EXIT_CONFIG
     repo_root = Path(os.environ.get("PIXI_PROJECT_ROOT", ".")).resolve()
     return run_preflight(
         repo_root,
         jobs=args.jobs,
         keep_going=args.keep_going,
         ignore_ci_pauses=args.ignore_ci_pauses,
+        scope=choice.scope,
+        scope_source=choice.source,
     )
 
 

@@ -37,7 +37,7 @@ def test_help_lists_all_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_twenty_eight_duties():
+def test_there_are_exactly_thirty_duties():
     assert DUTIES == (
         "keys",
         "deploy",
@@ -68,6 +68,7 @@ def test_there_are_exactly_twenty_eight_duties():
         "deck-drift",
         "estate",
         "ci",
+        "preflight",
     )
 
 
@@ -136,6 +137,7 @@ def test_setup_initrepo_validate_fast_are_wired_into_help():
             "deck-drift",
             "estate",
             "ci",
+            "preflight",
         )
     ],
 )
@@ -238,8 +240,8 @@ def test_a_bad_flag_overlay_projects_to_the_usage_code(monkeypatch, tmp_path, ca
 
 
 def test_keys_exec_is_a_verb_of_keys_not_a_new_duty(capsys):
-    """`exec` joins `keys` (Story 75.1): the duty count stays 28, the verb list grows to seven."""
-    assert len(DUTIES) == 29  # noqa: PLR2004
+    """`exec` joins `keys` (Story 75.1): it is a verb, not a duty (30 with Story 103.6's `preflight`); the verb list grows to seven."""
+    assert len(DUTIES) == 30  # noqa: PLR2004
     assert "exec" not in DUTIES
     with pytest.raises(SystemExit):
         build_parser().parse_args(["keys", "--help"])
