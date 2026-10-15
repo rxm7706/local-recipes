@@ -1,8 +1,7 @@
 ---
 /**
  * Story 43.5 (CAP-61): Starlight's footer, then the line saying what built the page (`src/lib/built-from.ts`), the
- * same element every herald page carries. Registered in astro.config.mjs only with pyforge.herald.pages_one_generator
- * on, so with the flag off the docs keep Starlight's own footer.
+ * same element every herald page carries. Registered in astro.config.mjs for every Starlight page (Story 43.7).
  */
 import Default from '@astrojs/starlight/components/Footer.astro';
 import { builtFromHtml } from '../lib/built-from';

@@ -2,13 +2,11 @@
  * The herald overview, gallery and deck-family pages, read as data (Story 43.2, spec-pyforge-herald
  * CAP-61 on CAP-35, CAP-53 and CAP-55).
  *
- * The inputs are the ones `docsite/build.py` reads -- `site.yml`'s `infographics` include, exclude and
- * override lists, each `presentations/<slug>/` export set and each export's `<file>.stamp.json`
- * sidecar -- and the rules mirror its `collect_infographics`, `collect_families` and `_artifact_stamp`,
- * so both paths list the same infographics and families while both exist (the parity test,
- * `tests/meta/test_herald_pages_parity.py`, compares them). Node builtins only, and YAML is parsed by
- * the caller (`src/loaders/herald-pages-loader.ts`): the parity test imports this module with node's
- * type stripping and no `node_modules`.
+ * The inputs are `site.yml`'s `infographics` include, exclude and override lists, each `presentations/<slug>/` export
+ * set and each export's `<file>.stamp.json` sidecar; the rules are the ones the retired Jinja build applied
+ * (`collect_infographics`, `collect_families`, `_artifact_stamp`; Story 43.2 held the two paths equal until Story 43.7
+ * deleted the Jinja one). Node builtins only, and YAML is parsed by the caller (`src/loaders/herald-pages-loader.ts`):
+ * the herald tests import this module with node's type stripping and no `node_modules`.
  *
  * One current version per export (CAP-53; AD-4 as amended 2026-09-28): `pyforge.herald.deck_versions`
  * is the writers' one definition of current. This module lists the one dated file per kind the tree
@@ -16,14 +14,14 @@
  * every file.
  */
 
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { builtFromHtml } from './built-from.ts';
+import { holdsAFile } from './nav.ts';
 
-/** Where each twin is served under the `/herald/` mount with the flag on (`scripts/populate-public.ts`, Story 43.3). */
+/** Where each twin is served under the `/herald/` mount (`scripts/populate-public.mts`, Story 43.3). */
 export const TWINS_DIR = 'twins';
 
 /**
@@ -59,29 +57,37 @@ export const THEME_SCRIPT =
 const sha256 = (text: string): string => `'sha256-${createHash('sha256').update(text).digest('base64')}'`;
 
 /**
- * The `Content-Security-Policy` every Astro herald page carries (Story 43.3, AD-21): nothing loads from another
- * origin. Inline styles are the dossier's accents and the back-bar's; the inline scripts are the preview handler
- * and the theme script.
+ * The site's one `Content-Security-Policy` (Story 43.3, AD-21; every page since Story 43.7): nothing loads from another
+ * origin; `script-src` is `'self'` plus `scripts`, the inline scripts a page runs (by hash) and what else it needs.
  */
-export const HERALD_CSP = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-hashes' ${sha256(PREVIEW_ONLOAD)} ${sha256(THEME_SCRIPT)}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "font-src 'self' data:",
-  "frame-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join('; ');
+export function cspWith(scripts: string[]): string {
+  return [
+    "default-src 'self'",
+    ['script-src', "'self'", ...scripts].join(' '),
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self' data:",
+    "frame-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+}
+
+/**
+ * The CSP every herald layout and reader page writes itself: inline styles are the dossier's accents and the
+ * back-bar's; the inline scripts are the preview handler and the theme script. Every Starlight page gets the same
+ * policy with its own scripts at build end (`src/lib/artifact.ts`).
+ */
+export const HERALD_CSP = cspWith(["'unsafe-hashes'", sha256(PREVIEW_ONLOAD), sha256(THEME_SCRIPT)]);
 
 const GOOGLE_FONT_LINK = /<link\b[^>]*\b(?:href|rel)=['"][^'"]*fonts\.(?:googleapis|gstatic)\.com[^'"]*['"][^>]*>\s*/gi;
 const GOOGLE_FONT_IMPORT = /@import\s+url\(['"]?https:\/\/fonts\.googleapis\.com[^)]+\)\s*;?\s*/gi;
 
 /**
  * A twin as the site serves it: Google Fonts links and imports dropped and one link to the site's own fonts added,
- * as `docsite/build.py`'s `rewrite_google_font_links` (Story 31.3) -- the one transformation a twin gets (AD-21).
- * Since Story 43.4 the link names the @fontsource faces at `HERALD_FONTS`, not the Jinja path's vendored files.
+ * Story 31.3's `rewrite_google_font_links` -- the one transformation a twin gets (AD-21). Since Story 43.4 the link
+ * names the @fontsource faces at `HERALD_FONTS`.
  */
 export function vendorFontLinks(html: string, stylesheetHref: string): string {
   const out = html.replace(GOOGLE_FONT_LINK, '').replace(GOOGLE_FONT_IMPORT, '');
@@ -97,7 +103,7 @@ export function vendorFontLinks(html: string, stylesheetHref: string): string {
   return `${out.slice(0, end)}\n${link}${out.slice(end)}`;
 }
 
-/** The family views' published names, as `build.py`'s `_FAMILY_VIEW_OUT_NAMES`. */
+/** The family views' published names, as the retired Jinja build's `_FAMILY_VIEW_OUT_NAMES`. */
 export const FAMILY_VIEWS = [
   { key: 'infographic_deck', suffix: ' - Infographic Deck.dc.html', label: 'Infographic Deck', outName: 'infographic-deck.html' },
   { key: 'executive_summary', suffix: ' - Executive Summary.dc.html', label: 'Executive Summary', outName: 'executive-summary.html' },
@@ -191,9 +197,9 @@ export class MoreThanOneCurrentExport extends Error {
   }
 }
 
-// ------------------------------------------------------------------ helpers mirroring build.py
+// ------------------------------------------------------------------ helpers mirroring the retired Jinja build
 
-/** `build.py`'s `slugify`: NFKD, ASCII only, word characters, spaces and dashes to one dash. */
+/** the retired Jinja build's `slugify`: NFKD, ASCII only, word characters, spaces and dashes to one dash. */
 export function slugify(name: string): string {
   const ascii = name.normalize('NFKD').replace(/[^\x00-\x7f]/g, '');
   const s = ascii.replace(/[^\w\s-]/g, '').trim().toLowerCase();
@@ -232,7 +238,7 @@ function unescapeHtml(text: string): string {
 }
 
 /**
- * `build.py`'s `read_title`: the file's own `<title>`, else its stem. A title holding a named character reference
+ * the retired Jinja build's `read_title`: the file's own `<title>`, else its stem. A title holding a named character reference
  * this module does not decode is refused, naming the file: Python's table is all of HTML5, so the two paths could
  * title (and name) the infographic differently -- give it an override `title` in `site.yml` instead.
  */
@@ -276,29 +282,13 @@ function isFile(file: string): boolean {
   }
 }
 
-/** The build's commit, as `build.py`'s `git_commit`: `GITHUB_SHA`'s first seven, else `git rev-parse --short HEAD`. */
-export function gitCommit(repoRoot: string): string {
-  const sha = process.env.GITHUB_SHA;
-  if (sha) {
-    return sha.slice(0, 7);
-  }
-  try {
-    return execFileSync('git', ['-C', repoRoot, 'rev-parse', '--short', 'HEAD'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 10_000,
-    }).trim();
-  } catch {
-    return '';
-  }
-}
-
-
 /**
- * An artifact's provenance stamp, as `build.py`'s `_artifact_stamp`: the `<file>.stamp.json` sidecar's
- * `tree` and `etag` when the derive pipeline wrote one, else the build's commit and a short content hash.
+ * An artifact's provenance stamp: the `<file>.stamp.json` sidecar's `tree` and `etag` when the derive pipeline wrote
+ * one, else `unstamped` and a short content hash. Never the build's commit (Story 43.7): that stamped every family page
+ * with every commit, so a rebuild of an unmoved tree from a later commit changed the Pages tree and redeployed; what
+ * built the page is its built-from line.
  */
-export function artifactStamp(file: string, commit: string): Stamp {
+export function artifactStamp(file: string): Stamp {
   const sidecar = `${file}.stamp.json`;
   if (isFile(sidecar)) {
     let data: unknown = null;
@@ -318,7 +308,7 @@ export function artifactStamp(file: string, commit: string): Stamp {
     }
   }
   const digest = createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 12);
-  return { tree: (commit || 'unknown').slice(0, 12), etag: digest };
+  return { tree: 'unstamped', etag: digest };
 }
 
 // ------------------------------------------------------------------ the gallery
@@ -338,7 +328,7 @@ function overrideFor(
 }
 
 /**
- * The gallery, as `build.py`'s `collect_infographics`: the `include` globs resolved in order, the
+ * The gallery, as the retired Jinja build's `collect_infographics`: the `include` globs resolved in order, the
  * `exclude` globs removed, each item titled and placed by its override (or its own `<title>`), sorted
  * by `order` then title, and each published name made unique.
  */
@@ -450,24 +440,23 @@ function currentExports(dir: string, suffix: string, repoRoot: string, problems:
   return listed.sort().reverse().map((name) => path.join(dir, name));
 }
 
-function download(file: string, repoRoot: string, commit: string): Download {
+function download(file: string, repoRoot: string): Download {
   return {
     name: path.basename(file),
     source: path.relative(repoRoot, file).split(path.sep).join('/'),
     bytes: fs.statSync(file).size,
-    stamp: artifactStamp(file, commit),
+    stamp: artifactStamp(file),
   };
 }
 
 /**
- * One family per gallery infographic under `presentations/<slug>/`, as `build.py`'s
+ * One family per gallery infographic under `presentations/<slug>/`, as the retired Jinja build's
  * `collect_families` -- never a second hand-maintained list. `facts` reads the deck's `facts.yaml`
  * (parsed by the caller), or `null` where it has none.
  */
 export function collectFamilies(
   infographics: Infographic[],
   repoRoot: string,
-  commit: string,
   facts: (slug: string) => FamilyFacts | null = () => null,
 ): Family[] {
   const families: Family[] = [];
@@ -498,7 +487,7 @@ export function collectFamilies(
         outName: view.outName,
         twin: `${TWINS_DIR}/decks/${slug}/${view.outName}`,
         bytes: fs.statSync(file).size,
-        stamp: artifactStamp(file, commit),
+        stamp: artifactStamp(file),
       });
     }
     const pptx = currentExports(path.join(deckDir, 'src', 'pptx'), '.pptx', repoRoot, problems);
@@ -508,10 +497,10 @@ export function collectFamilies(
       slug,
       title: ig.title,
       description: ig.description,
-      poster: { ...ig, stamp: artifactStamp(path.join(repoRoot, ig.source), commit) },
+      poster: { ...ig, stamp: artifactStamp(path.join(repoRoot, ig.source)) },
       views,
-      pptx: pptx.map((file) => download(file, repoRoot, commit)),
-      marp: marp.map((file) => download(file, repoRoot, commit)),
+      pptx: pptx.map((file) => download(file, repoRoot)),
+      marp: marp.map((file) => download(file, repoRoot)),
       facts: facts(slug),
     });
   }
@@ -530,14 +519,14 @@ export interface KedroVizExport {
 }
 
 /**
- * `site.yml`'s neighbours for the overview, as `kedro_viz_export.neighbours`: an entry carrying
- * `mount: kedro-viz` shows only when the export is in the build input (`docs/dashboard/kedro-viz/`
- * holding anything) and then names its manifest's commit and date. A present export without a
+ * `site.yml`'s neighbours, the overview's tiles: an entry carrying `mount: kedro-viz` shows only when the export is in
+ * the build input (`docs/dashboard/kedro-viz/` holding a file, the one presence rule, `nav.ts`'s `holdsAFile`) and
+ * then names its manifest's commit and date. A present export without a
  * well-formed manifest is refused, naming the file (Story 42.2).
  */
 export function neighbours(site: SiteConfig, repoRoot: string): Array<Record<string, unknown>> {
   const exportDir = path.join(repoRoot, 'docs', 'dashboard', 'kedro-viz');
-  const present = fs.existsSync(exportDir) && fs.statSync(exportDir).isDirectory() && fs.readdirSync(exportDir).length > 0;
+  const present = holdsAFile(exportDir);
   const shown: Array<Record<string, unknown>> = [];
   for (const entry of site.neighbours ?? []) {
     if (entry.mount !== 'kedro-viz') {
@@ -608,7 +597,7 @@ body{padding-top:32px!important}
 `;
 
 /**
- * The infographic page's back-bar, as `build.py`'s `BACKBAR` (links relative to `/herald/infographics/`), plus a
+ * The infographic page's back-bar, as the retired Jinja build's `BACKBAR` (links relative to `/herald/infographics/`), plus a
  * link to the framed file itself (`twinHref`), to read or print it whole.
  */
 export function infographicBackbar(title: string, twinHref: string): string {
@@ -623,7 +612,7 @@ ${BACKBAR_STYLE}`;
 }
 
 /**
- * A family view's back-bar, as `build.py`'s `FAMILY_VIEW_BACKBAR` (links relative to `/herald/decks/<slug>/`), plus a
+ * A family view's back-bar, as the retired Jinja build's `FAMILY_VIEW_BACKBAR` (links relative to `/herald/decks/<slug>/`), plus a
  * link to the framed file itself (`twinHref`).
  */
 export function familyViewBackbar(deckTitle: string, title: string, twinHref: string): string {

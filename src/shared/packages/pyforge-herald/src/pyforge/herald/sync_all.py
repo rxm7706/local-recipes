@@ -10,7 +10,7 @@ pull, ``push_exports(..., prove=True)`` for push+prove,
 ``select_exporter(...).export(...)`` for the export half of derive) or
 shells the same pixi task an operator would run by hand for a step that
 has no in-package function yet (``deck-facts --refresh`` for refresh,
-``deck-trio`` for the trio half of derive, ``pixi run -e site site`` for
+``deck-trio`` for the trio half of derive, ``pixi run -e site pages-build`` for
 publish) -- mirroring ``deck_pipeline.PixiDeckExporter``'s own bounded-
 subprocess pattern exactly. Every one of those shelled steps is an
 injectable seam (``FactsRefresher``/``DeckDeriver``/``SitePublisher``,
@@ -399,17 +399,18 @@ class PixiDeckDeriver:
 
 
 class PixiSitePublisher:
-    """The real ``SitePublisher``: ``pixi run -e site site``, one bounded
-    subprocess call -- rebuilds every deck's family page in one pass
-    (``docsite/build.py`` has no per-slug scope). Never invoked by this
-    package's own tests (every ``sync_all`` test injects a fake)."""
+    """The real ``SitePublisher``: ``pixi run -e site pages-build``, one bounded
+    subprocess call -- rebuilds every deck's family page in one pass (the
+    Pages build has no per-slug scope; ``site``, the Jinja path's task, retired
+    with ``docsite/`` in Story 43.7). Never invoked by this package's own tests
+    (every ``sync_all`` test injects a fake)."""
 
     def __init__(self, *, timeout: float = _SUBPROCESS_TIMEOUT) -> None:
         self._timeout = timeout
 
     def publish(self, *, repo_root: Path) -> None:
         _run_bounded(
-            ["pixi", "run", "-e", "site", "site"],
+            ["pixi", "run", "-e", "site", "pages-build"],
             cwd=repo_root,
             timeout=self._timeout,
             what="site publish",

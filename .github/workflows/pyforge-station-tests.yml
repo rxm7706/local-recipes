@@ -71,7 +71,6 @@ on:
       - 'archive/**'
       - 'docs-site/**'
       - 'docs/**'
-      - 'docsite/**'
       - 'presentations/**'
       - 'recipes/**'
       - 'scripts/**'
@@ -124,7 +123,6 @@ on:
       - 'archive/**'
       - 'docs-site/**'
       - 'docs/**'
-      - 'docsite/**'
       - 'presentations/**'
       - 'recipes/**'
       - 'scripts/**'
@@ -252,7 +250,6 @@ jobs:
             docs/index.md
             docs/map.yaml
             docs/reference
-            docsite/build.py
             'recipes/*/recipe.yaml'
             recipes/bmad-suite/suite-members.yaml
             recipes/docker/recipe.yaml
@@ -272,7 +269,6 @@ jobs:
             _bmad/skf
             docs
             docs-site
-            docsite
             presentations
             src/platform
             src/shared/packages/django-herald
@@ -384,6 +380,7 @@ jobs:
             _bmad
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
+            docs-site/src/lib/status.ts
             docs/404.md
             docs/dreams
             docs/foundry

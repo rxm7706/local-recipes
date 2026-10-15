@@ -62,3 +62,12 @@ def findings(root: Path, origin: str, other: str = "", exempt: tuple[str, ...] =
         hosts = [u for u in page.hrefs if u and other != origin and site_origin(u) == other]
         out += [f"{rel}: links {u!r} on the other host {other}" for u in hosts]
     return out
+
+
+if __name__ == "__main__":  # pages-check (scripts/pages.ts): ROOT ORIGIN OTHER [EXEMPT ...]; exit 1 naming each finding
+    import sys
+
+    found = findings(Path(sys.argv[1]), sys.argv[2], sys.argv[3], tuple(sys.argv[4:]))
+    for line in found:
+        print(line, file=sys.stderr)
+    sys.exit(1 if found else 0)

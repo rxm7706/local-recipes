@@ -37,8 +37,8 @@ export function directoryRoute(relativeDir, exists) {
 }
 
 /**
- * The site path of a file under docs/ that the Pages assembler copies into the artifact as-is, or
- * null. docsite/tools/assemble_pages.py copies docs/dashboard/ (all but its README.md) to /dashboard/.
+ * The site path of a file under docs/ that the Pages build serves in the artifact as-is, or null:
+ * scripts/populate-public.mts copies docs/dashboard/ (all but its README.md) to /dashboard/.
  */
 export function servedStaticPath(relativePath, isDirectory = false) {
   const norm = relativePath.replace(/\\/g, '/').replace(/\/$/, '');

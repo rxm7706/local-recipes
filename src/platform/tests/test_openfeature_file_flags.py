@@ -756,11 +756,6 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
-    "pyforge.herald.pages_one_generator": {
-        "dev": True,
-        "staging": False,
-        "production": False,
-    },
     "pyforge.herald.status_pages": {
         "dev": True,
         "staging": False,

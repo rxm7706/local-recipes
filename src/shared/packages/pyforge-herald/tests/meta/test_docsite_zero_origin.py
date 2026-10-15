@@ -1,13 +1,15 @@
-"""Story 31.3: the public docsite build loads no third-party font resources.
+"""Story 31.3: the public site loads no third-party font resources.
 
-Story 43.4 (CAP-61): on the Astro path the faces come from @fontsource, the dossier's families and tokens match the
-Jinja path's, and the theme follows the docs header's toggle -- the ``test_43_4_*`` tests."""
+Story 43.4 (CAP-61): the faces come from @fontsource, the dossier's families and tokens match the retired Jinja
+path's (frozen in ``tests/fixtures/jinja-theme-2026-10-15.json`` when Story 43.7 deleted ``docsite/``), and the theme
+follows the docs header's toggle -- the ``test_43_4_*`` tests. Story 43.7: the faces' OFL-1.1 licence text ships in
+the artifact from each @fontsource package's own ``LICENSE`` (``scripts/populate-public.mts``).
+"""
 
 from __future__ import annotations
 
 import base64
 import hashlib
-import importlib.util
 import json
 import re
 import shutil
@@ -17,75 +19,28 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.herald import twins
-
 REPO_ROOT = Path(__file__).resolve().parents[6]
-BUILD = REPO_ROOT / "docsite" / "build.py"
-README = REPO_ROOT / "docsite" / "README.md"
-FONTS_DIR = REPO_ROOT / "docsite" / "assets" / "fonts"
+#: The retired Jinja path's families and tokens, frozen when Story 43.7 deleted it.
+JINJA = json.loads(
+    (Path(__file__).resolve().parents[1] / "fixtures" / "jinja-theme-2026-10-15.json").read_text("utf-8")
+)
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    digest.update(path.read_bytes())
-    return digest.hexdigest()
-
-
-def _parse_readme_checksums(readme: str) -> dict[str, str]:
-    table: dict[str, str] = {}
-    for line in readme.splitlines():
-        match = re.match(r"^\| `assets/fonts/([^`]+)` \| .+ \| .+ \| `([a-f0-9]{64})` \|", line)
-        if match:
-            table[match.group(1)] = match.group(2)
-    return table
-
-
-def test_docsite_build_has_zero_external_origins(tmp_path: Path) -> None:
-    out = tmp_path / "site"
-    proc = subprocess.run(
-        [sys.executable, str(BUILD), "--out", str(out)],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
+def test_ofl_licences_ship_from_each_fontsource_package() -> None:
+    """Story 43.4's re-review (nit 6), carried by 43.7: the licence text comes from each package's own ``LICENSE``,
+    never a hand-vendored copy, and the build serves it beside the faces."""
+    script = (REPO_ROOT / "docs-site" / "scripts" / "populate-public.mts").read_text(encoding="utf-8")
+    assert "fs.readFileSync(path.join(modules, pkg, 'LICENSE'))" in script
+    packages = re.findall(
+        r"'(@fontsource(?:-variable)?/[\w-]+)'", script.split("FONT_PACKAGES = [", 1)[1].split("]", 1)[0]
     )
-    assert proc.returncode == 0, proc.stderr or proc.stdout
-
-    html_pages = list(out.rglob("*.html"))
-    assert len(html_pages) >= 45, f"expected at least 45 HTML pages, got {len(html_pages)}"
-
-    findings = twins.scan_tree(out)
-    assert not findings, "\n".join(f"{f.path.relative_to(out)}: {f.origin}" for f in findings[:20])
-
-
-def test_vendored_font_files_match_readme_sha256() -> None:
-    readme = README.read_text(encoding="utf-8")
-    expected = _parse_readme_checksums(readme)
-    assert expected, "docsite/README.md must list vendored font sha256 rows"
-    for name, want in expected.items():
-        path = FONTS_DIR / name
-        assert path.is_file(), name
-        assert _sha256(path) == want, name
-
-
-def test_every_font_file_in_readme_table() -> None:
-    readme = README.read_text(encoding="utf-8")
-    expected = _parse_readme_checksums(readme)
-    on_disk = {p.name for p in FONTS_DIR.iterdir() if p.is_file()}
-    missing = on_disk - set(expected)
-    assert not missing, f"README missing rows for: {sorted(missing)}"
-
-
-def test_ofl_sidecars_present() -> None:
-    for name in (
-        "OFL-big-shoulders-display.txt",
-        "OFL-ibm-plex-sans.txt",
-        "OFL-ibm-plex-mono.txt",
-        "OFL-archivo.txt",
-        "OFL-archivo-expanded.txt",
-    ):
-        path = FONTS_DIR / name
-        assert path.is_file() and path.stat().st_size > 100, name
-        assert "SIL OPEN FONT LICENSE" in path.read_text(encoding="utf-8").upper()
+    fonts = (REPO_ROOT / "docs-site" / "src" / "styles" / "herald-fonts.css").read_text(encoding="utf-8")
+    assert sorted(packages) == sorted({"/".join(url.split("/")[:2]) for url in re.findall(r"url\('([^']+)'\)", fonts)})
+    modules = REPO_ROOT / "docs-site" / "node_modules"
+    for package in packages:
+        licence = modules / package / "LICENSE"
+        if licence.is_file():  # installed: the text is the OFL
+            assert "SIL OPEN FONT LICENSE" in licence.read_text(encoding="utf-8").upper(), package
 
 
 # --- Story 43.4: fonts and theme come from one design system; its review: one theme contract across Pages -------
@@ -95,8 +50,6 @@ STYLES = DOCS_SITE / "src" / "styles"
 HERALD_CSS = STYLES / "herald.css"
 HERALD_FONTS_CSS = STYLES / "herald-fonts.css"
 THEME_CSS = STYLES / "theme.css"
-JINJA_CSS = REPO_ROOT / "docsite" / "assets" / "_dossier.css"
-JINJA_CHROME_CSS = REPO_ROOT / "docsite" / "assets" / "_site-chrome.css"
 HERALD_PAGES_TS = DOCS_SITE / "src" / "lib" / "herald-pages.ts"
 NODE = shutil.which("node")
 
@@ -207,19 +160,16 @@ def _families(css: str, scope: dict[str, str]) -> dict[str, tuple[str, ...]]:
 
 def test_43_4_ac2_the_herald_pages_resolve_the_jinja_families() -> None:
     """AC2, under the theme contract (operator ruling 2026-10-15): the dossier's body and headings resolve, through the
-    site theme's variables, to exactly the Jinja path's font-family; every other rule of the Jinja stylesheets that
-    names a family resolves to the same face first (the theme carries one mono fallback list). The back-bar's rules are
-    the reader pages' own."""
-    jinja = _families(JINJA_CSS.read_text(encoding="utf-8"), {})
+    site theme's variables, to exactly the retired Jinja path's font-family; every other rule of its stylesheets that
+    named a family resolves to the same face first (the theme carries one mono fallback list)."""
+    expected = JINJA["first_family"]
     for dark in (False, True):
         astro = _families(HERALD_CSS.read_text(encoding="utf-8"), _theme(dark))
-        assert astro["body"] == jinja["body"] == ("IBM Plex Sans", "system-ui", "-apple-system", "sans-serif")
+        assert astro["body"] == tuple(JINJA["body"]) == ("IBM Plex Sans", "system-ui", "-apple-system", "sans-serif")
         heading = ("Big Shoulders Display", "IBM Plex Sans", "sans-serif")
-        assert astro["h1, h2, h3, h4"] == jinja["h1, h2, h3, h4"] == heading
-        chrome = _families(JINJA_CHROME_CSS.read_text(encoding="utf-8"), {})
-        expected = {**jinja, **{sel: fam for sel, fam in chrome.items() if not sel.startswith(".ig-backbar")}}
+        assert astro["h1, h2, h3, h4"] == tuple(JINJA["headings"]) == heading
         assert len(expected) > 20
-        assert {sel: astro.get(sel, ("?",))[0] for sel in expected} == {sel: fam[0] for sel, fam in expected.items()}
+        assert {sel: astro.get(sel, ("?",))[0] for sel in expected} == expected
 
 
 def test_43_4_ac3_the_theme_is_light_and_under_starlights_dark_selector() -> None:
@@ -252,8 +202,7 @@ def test_43_4_ac3_the_theme_is_light_and_under_starlights_dark_selector() -> Non
     tokens = _tokens(herald, _LIGHT)
     assert [sel for sel, _ in _rules(herald) if "data-theme" in sel] == []
     assert "prefers-color-scheme" not in _COMMENT.sub("", herald)
-    jinja = JINJA_CSS.read_text(encoding="utf-8")
-    jinja_light, jinja_dark = _tokens(jinja, _LIGHT), _tokens(jinja, _DARK)
+    jinja_light, jinja_dark = JINJA["tokens_light"], JINJA["tokens_dark"]
     assert set(tokens) == set(jinja_light) and len(tokens) > 30
     for name, value in tokens.items():
         assert "var(--sl-" in value and not _colour_literals(value), f"{name}: {value}"
@@ -681,21 +630,11 @@ def test_43_4_ac4_the_astro_path_names_no_vendored_font() -> None:
     assert "@import './theme.css';" in HERALD_CSS.read_text(encoding="utf-8")
 
 
-def _load_assemble_pages():
-    spec = importlib.util.spec_from_file_location(
-        "assemble_pages_43_4", REPO_ROOT / "docsite" / "tools" / "assemble_pages.py"
-    )
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def test_43_4_ac5_a_google_fonts_link_on_a_herald_page_fails_pages_check(tmp_path: Path, capsys) -> None:
-    """AC5: ``pages-check``'s origin check finds no font from another origin on the built faces, and a planted
-    ``fonts.googleapis.com`` stylesheet link on a herald page exits 1 naming the page and the URL."""
-    site_url = "https://rxm7706.github.io/local-recipes"
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH")
+def test_43_4_ac5_a_google_fonts_link_on_a_herald_page_fails_pages_check(tmp_path: Path) -> None:
+    """AC5: ``pages-check``'s origin check (``scripts/origin_check.py``, run by ``scripts/pages.mts``) passes the built
+    faces, and a planted ``fonts.googleapis.com`` stylesheet link on a herald page is named with the page and the
+    URL."""
     page = tmp_path / "herald" / "dossier" / "index.html"
     page.parent.mkdir(parents=True)
     (tmp_path / "_astro").mkdir()
@@ -705,12 +644,11 @@ def test_43_4_ac5_a_google_fonts_link_on_a_herald_page_fails_pages_check(tmp_pat
     )
     head = '<link rel="stylesheet" href="/local-recipes/_astro/herald.css">'
     page.write_text(f"<html><head>{head}</head><body><h1>Dossier</h1></body></html>", encoding="utf-8")
-    assemble_pages = _load_assemble_pages()
-    assemble_pages._check_origins(tmp_path, site_url)
+    origin = [sys.executable, str(DOCS_SITE / "scripts" / "origin_check.py"), str(tmp_path)]
+    hosts = ["https://rxm7706.github.io", "https://rxm7706.github.io"]
+    assert subprocess.run([*origin, *hosts], capture_output=True, text=True, check=False).returncode == 0
     planted = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans">'
     page.write_text(f"<html><head>{head}{planted}</head><body></body></html>", encoding="utf-8")
-    with pytest.raises(SystemExit) as exc:
-        assemble_pages._check_origins(tmp_path, site_url)
-    assert exc.value.code == 1
-    err = capsys.readouterr().err
-    assert "herald/dossier/index.html" in err and "fonts.googleapis.com" in err
+    done = subprocess.run([*origin, *hosts], capture_output=True, text=True, check=False)
+    assert done.returncode == 1
+    assert "herald/dossier/index.html" in done.stderr and "fonts.googleapis.com" in done.stderr

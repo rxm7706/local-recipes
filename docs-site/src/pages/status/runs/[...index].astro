@@ -5,16 +5,16 @@
  * (`marshal status --format json`, one row per loop home) and `herald-progress.json` (`herald progress --json`,
  * the latest record per station). Each block names its snapshot time; the live view is Lane 1's, linked only once
  * `site.yml`'s `lane1.href` is an absolute URL (Story 42.1's rule). An absent input is one line. Only the fields
- * shown here are read: no Tier-3 path reaches Pages. Emitted only with `pyforge.herald.pages_one_generator` and
- * `pyforge.herald.status_pages` both on (the second owns the `/status/` prefix).
+ * shown here are read: no Tier-3 path reaches Pages. Emitted only with `pyforge.herald.status_pages` on (the flag
+ * that owns the `/status/` prefix), beside the fleet board and the guild status page.
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 
 import { heraldProgressInput, lane1, marshalStatusInput } from '../../../lib/agent-data.ts';
-import { HERALD_PROGRESS_INPUT, MARSHAL_STATUS_INPUT, pagesOneGenerator, statusPages } from '../../../lib/agent-surface.ts';
+import { HERALD_PROGRESS_INPUT, MARSHAL_STATUS_INPUT, statusPages } from '../../../lib/agent-surface.ts';
 
 export function getStaticPaths() {
-  return pagesOneGenerator() && statusPages() ? [{ params: { index: undefined } }] : [];
+  return statusPages() ? [{ params: { index: undefined } }] : [];
 }
 
 const marshal = marshalStatusInput();

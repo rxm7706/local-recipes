@@ -1247,7 +1247,7 @@ def _add_pages_subparsers(pages_parser: argparse.ArgumentParser) -> None:
     build = pages_subs.add_parser(
         "build",
         help=(
-            "write docsite/content/fleet-status.json from the ledgers, run pages-check, report the tree hash "
+            "write docs-site/src/content/fleet-status.json from the ledgers, run pages-check, report the tree hash "
             "(never writes build.json unless --stamp)"
         ),
     )

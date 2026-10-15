@@ -1,7 +1,7 @@
 /*
  * The one theme of the Pages site (Story 43.4's review; operator ruling 2026-10-15; spec-pyforge-herald CAP-61, AD-23):
  * Starlight's theme variables are the single contract, filled here with the herald look, and every page reads them --
- * the docs through Starlight's `customCss` (astro.config.mjs, with pyforge.herald.pages_one_generator on), the herald
+ * the docs through Starlight's `customCss` (astro.config.mjs), the herald
  * pages through styles/herald.css, which declares no font or colour of its own and derives its tokens from these.
  *
  * Light under :root and dark under Starlight's [data-theme='dark'], the attribute the docs header's toggle sets (the

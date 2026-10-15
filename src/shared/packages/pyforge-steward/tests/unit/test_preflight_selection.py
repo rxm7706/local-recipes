@@ -14,7 +14,7 @@ says they do:
   on every pull request, so it belongs with the always-on lanes;
 * ``pages-check`` -- herald Story 27.5 replaced ``pr-preflight``'s always-on ``site-check`` leg with
   ``pages-check``, selected when ``pages.yml``'s ``pull_request`` ``paths`` fire (Story 102.2).
-  ``site-check`` stays a pixi task only; no pull_request workflow runs it.
+  ``site-check`` retired with ``docsite/`` (herald Story 43.7); ``pages-check`` is the one build check.
 
 Likewise ``docs/how-to/**`` is one of ``pages.yml``'s trigger paths, so a ``docs/how-to/``
 diff also fires the three ``docs-site-validate-*`` lanes. The tests assert the spec's lanes
@@ -55,7 +55,7 @@ LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}
 ALWAYS_ON_SINCE_SPEC = {"pyforge-doctor-aggregate-scripts-test"}
 DOCS_SITE_VALIDATE = {"docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"}
-PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install", "docs-site-sidebar"}
+PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install"}
 GATES = {f"pyforge-{s}-coverage-gate" for s in STATIONS}
 NO_CI_COUNTERPART = {"docs-map-render-test", "docs-gen-test"}
 ALWAYS_ON = SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC
@@ -260,7 +260,7 @@ def test_step_matches_task_closure_or_own_command_line(task: str, lane_env: str,
 
 
 # ---------------------------------------------------------------------------
-# I/O matrix: one station, shared surface, CFE only, Dream only, docsite
+# I/O matrix: one station, shared surface, CFE only, Dream only, docs-site
 # ---------------------------------------------------------------------------
 
 
@@ -344,14 +344,13 @@ def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
     for name in PAGES_CHECK_LEAVES:
         assert name in by_task
     assert by_task["pages-check"].depends_on == (("pages-build", "site"),)
-    assert set(by_task["pages-build"].depends_on) == {
-        ("docs-site-install", "site"),
-        ("docs-site-sidebar", "site"),
-    }
+    assert set(by_task["pages-build"].depends_on) == {("docs-site-install", "site")}
 
 
-def test_docsite_branch_selects_the_docsite_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"docsite/page.html": "<p>x</p>\n"})
+def test_docs_site_branch_selects_the_docs_site_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
+    """herald Story 43.7: ``docs-site/`` is the one generator (``docsite/`` retired), so a change there is the one that
+    fires the Pages lanes and the herald suite."""
+    repo = make_repo(tmp_path, {"docs-site/page.html": "<p>x</p>\n"})
     assert selected_tasks(select(repo)) == (
         ALWAYS_ON
         | DOCS_SITE_VALIDATE
@@ -506,7 +505,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         {"pixi.toml": (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8") + "\n# touched\n"},
         {".claude/skills/conda-forge-expert/scripts/x.py": "x\n"},
         {"docs/dreams/a-dream.md": "# dream\n"},
-        {"docsite/page.html": "<p>x</p>\n"},
+        {"docs-site/page.html": "<p>x</p>\n"},
         {"src/shared/packages/pyforge-core/src/x.py": "x\n", "src/shared/packages/pyforge-herald/src/y.py": "y\n"},
         {"presentations/deck/a.md": "x\n"},
         {"scripts/tests/test_x.py": "x\n"},
@@ -520,7 +519,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         "pixi",
         "cfe",
         "dream",
-        "docsite",
+        "docs-site",
         "core+herald",
         "presentations",
         "atlas-extra",

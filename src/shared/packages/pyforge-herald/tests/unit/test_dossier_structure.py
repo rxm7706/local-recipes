@@ -1,6 +1,6 @@
 """The dossier's A→B control plane is checkable (herald Story 26.1, fnd:CAP-14).
 
-`docsite/content/dossier.yml` states where the cutover stands. Its Verified
+`docs-site/src/content/dossier/dossier.yml` states where the cutover stands. Its Verified
 section (§ 10) lists only what the case list, the capability ledger and CI
 prove, so every claim row carries a `source` that resolves to one of them:
 a `docs/foundry/capability-ledger.yaml` id, a case-list id, or a GitHub
@@ -18,7 +18,7 @@ from typing import Any
 import yaml
 
 REPO = Path(__file__).resolve().parents[6]
-DOSSIER = REPO / "docsite" / "content" / "dossier.yml"
+DOSSIER = REPO / "docs-site" / "src" / "content" / "dossier" / "dossier.yml"
 LEDGER = REPO / "docs" / "foundry" / "capability-ledger.yaml"
 CASE_LIST = (
     REPO

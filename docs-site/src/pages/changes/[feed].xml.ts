@@ -1,15 +1,15 @@
 /**
  * `/changes/rss.xml` (Story 43.6, spec-pyforge-herald CAP-61): RSS 2.0 over the `changes.json` build input, the
  * same merges as `/changes/` in the same order, each item linking its entry on that page. With the input absent
- * the channel is empty. Emitted only with `pyforge.herald.pages_one_generator` on.
+ * the channel is empty.
  */
 import type { APIRoute } from 'astro';
 
 import { changesInput } from '../../lib/agent-data.ts';
-import { changesFeed, pagesOneGenerator } from '../../lib/agent-surface.ts';
+import { changesFeed } from '../../lib/agent-surface.ts';
 
 export function getStaticPaths() {
-  return pagesOneGenerator() ? [{ params: { feed: 'rss' } }] : [];
+  return [{ params: { feed: 'rss' } }];
 }
 
 export const GET: APIRoute = ({ site }) => {

@@ -1,13 +1,13 @@
-"""Shared by the Epic 43 page tests (Stories 43.2, 43.3): build docs-site's Astro over a tree, write a fixture
-tree, and read what a herald page links and offers. Not a test module; the meta tests import it by name.
+"""Shared by the Pages tests (Epic 43; Story 43.7 made ``docs-site/`` the one generator): build docs-site's Astro over
+a tree, write a fixture tree, run ``pages-check`` over an artifact, and read what a herald page links and offers. Not a
+test module; the meta tests import it by name.
 
-Building Astro needs docs-site's ``node_modules`` and generated menu (``pixi run -e site docs-site-install
-docs-site-sidebar``); without them ``needs_astro`` skips, naming that command. Each build rewrites
-``docs-site/public/`` from scratch, as every build does (Story 43.3)."""
+Building Astro needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``); without them ``needs_astro``
+skips, naming that command. Each build rewrites ``docs-site/public/`` from scratch, as every build does (Story 43.3).
+``pages-check`` (``docs-site/scripts/pages.mts``) needs only node: its herald tests run wherever node does."""
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
 import shutil
@@ -22,28 +22,19 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[6]
 DOCS_SITE = REPO_ROOT / "docs-site"
 ASTRO_BIN = DOCS_SITE / "node_modules" / "astro" / "bin" / "astro.mjs"
+PAGES_MTS = DOCS_SITE / "scripts" / "pages.mts"
+SITE_YML_REL = "docs-site/src/content/site.yml"
+DOSSIER_REL = "docs-site/src/content/dossier/dossier.yml"
+SITE_URL = "https://rxm7706.github.io/local-recipes"
 NODE = shutil.which("node")
-_GENERATED = ("src/sidebar.generated.json", "src/topnav.generated.json")
-RENDER_READY = NODE is not None and ASTRO_BIN.is_file() and all((DOCS_SITE / g).is_file() for g in _GENERATED)
+RENDER_READY = NODE is not None and ASTRO_BIN.is_file()
 needs_node = pytest.mark.skipif(NODE is None, reason="node is not on PATH")
-#: No CI lane that runs the herald suite installs docs-site (the suite is offline by construction), so these
-#: skip there; CI enforces the same comparisons on the real artifact through ``pages-check`` with the flag on
-#: (``assemble_pages._check_herald_parity``, Story 43.2's review), in the Pages lane and ``pr-preflight``.
+#: No CI lane that runs the herald suite installs docs-site (the suite is offline by construction), so these skip
+#: there; CI judges the real artifact through ``pages-check`` in the Pages lane and ``pr-preflight``.
 needs_astro = pytest.mark.skipif(
     not RENDER_READY,
-    reason="docs-site is not installed (pixi run -e site docs-site-install docs-site-sidebar); "
-    "pages-check runs the same parity on the built artifact",
+    reason="docs-site is not installed (pixi run -e site docs-site-install); pages-check judges the built artifact",
 )
-
-
-def load_build(name: str = "docsite_build_pages") -> object:
-    """``docsite/build.py``, the Jinja path, as a fresh module."""
-    spec = importlib.util.spec_from_file_location(name, REPO_ROOT / "docsite" / "build.py")
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def write(path: Path, text: str | bytes) -> Path:
@@ -56,7 +47,58 @@ def write(path: Path, text: str | bytes) -> Path:
 
 
 def site_yml(root: Path) -> dict:
-    return yaml.safe_load((root / "docsite" / "content" / "site.yml").read_text(encoding="utf-8"))
+    return yaml.safe_load((root / SITE_YML_REL).read_text(encoding="utf-8"))
+
+
+def node_env() -> dict[str, str]:
+    """This process's environment for a node child: no pytest options, no fixture-root or input overrides."""
+    drop = ("PYTEST_ADDOPTS", "HERALD_PAGES_REPO_ROOT", "PAGES_BUILD_INPUTS_DIR")
+    return {k: v for k, v in os.environ.items() if k not in drop}
+
+
+def ts(module: Path, expression: str, **inputs: object) -> object:
+    """Evaluate ``expression`` with ``module`` imported as ``m`` and ``inputs`` bound as ``inp``, through node's type
+    stripping; a thrown error comes back as ``{"error": name, "message": ...}``."""
+    script = (
+        f"import * as m from {json.dumps(module.as_uri())};\n"
+        f"const inp = {json.dumps(inputs)};\n"
+        "try {\n"
+        f"  const value = await (async () => {{ {expression} }})();\n"
+        "  process.stdout.write(JSON.stringify({ value }));\n"
+        "} catch (exc) {\n"
+        "  process.stdout.write(JSON.stringify({ error: exc.name, message: exc.message }));\n"
+        "}\n"
+    )
+    done = subprocess.run(
+        [NODE or "node", "--experimental-strip-types", "--no-warnings", "--input-type=module", "-e", script],
+        cwd=DOCS_SITE,
+        env=node_env(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    result = json.loads(done.stdout)
+    return result if "error" in result else result["value"]
+
+
+def pages_check(
+    root: Path,
+    *,
+    env: dict[str, str] | None = None,
+    repo_root: Path | None = None,
+    origins: bool = True,
+) -> list[str]:
+    """``pages-check``'s findings over the artifact at ``root`` (``docs-site/scripts/pages.mts``'s ``check``), with
+    ``env`` as the build environment (the flags, the host) and ``repo_root`` the tree whose ``docs/dashboard/`` the
+    build mounted (default: an empty one beside ``root``)."""
+    base_env = {"HERALD_PYTHON": sys.executable, **(env or {})}
+    repo = repo_root if repo_root is not None else root.parent / f"{root.name}-repo"
+    repo.mkdir(parents=True, exist_ok=True)
+    options = {"env": base_env, "repoRoot": str(repo), "origins": origins}
+    result = ts(PAGES_MTS, f"return m.check({json.dumps(str(root))}, inp.options);", options=options)
+    assert isinstance(result, list), result
+    return result
 
 
 #: Shaped as the tracked Design exports are: ``<head>`` on its own line, the Google Fonts links one per line.
@@ -114,9 +156,8 @@ def fixture_tree(root: Path, *, second_pptx: bool = False, exports: bool = False
             "Beta Infographic standalone.html": {"order": 10},
         },
     }
-    content = root / "docsite" / "content"
-    write(content / "site.yml", yaml.safe_dump(site, sort_keys=False, allow_unicode=True))
-    shutil.copy2(REPO_ROOT / "docsite" / "content" / "dossier.yml", content / "dossier.yml")
+    write(root / SITE_YML_REL, yaml.safe_dump(site, sort_keys=False, allow_unicode=True))
+    write(root / DOSSIER_REL, (REPO_ROOT / DOSSIER_REL).read_text(encoding="utf-8"))
     station_packages(root)  # Story 43.5: the dossier's measured stats count these
 
     alpha = root / "presentations" / "fx-alpha"
@@ -170,17 +211,27 @@ BUILT_FROM_ENV = ("GITHUB_SHA", "GITHUB_RUN_ID", "PAGES_BUILT_AT")
 
 
 def astro_build(
-    out: Path, *, flag: bool, root: Path | None = None, extra_env: dict[str, str] | None = None
+    out: Path,
+    *,
+    root: Path | None = None,
+    status: bool = False,
+    tile: bool = False,
+    inputs: Path | None = None,
+    extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """``astro build`` into ``out`` with pyforge.herald.pages_one_generator ``flag``, over ``root`` when given."""
-    drop = ("HERALD_PAGES_REPO_ROOT", "PYTEST_ADDOPTS", *BUILT_FROM_ENV)
-    env = {k: v for k, v in os.environ.items() if k not in drop}
-    env.update({"PYFORGE_PAGES_ONE_GENERATOR": "1" if flag else "0", "PYFORGE_CI_SURFACES_TILE": "0"})
+    """``astro build`` into ``out`` for the public site URL (``SITE_URL``, recorded in ``out`` as ``pages-build``
+    records it, so ``pages_check`` reads the same base path), over ``root`` when given, with
+    ``pyforge.herald.status_pages`` (``status``) and ``pyforge.herald.ci_surfaces_tile`` (``tile``) as the Guild step
+    would export them, and the build inputs from ``inputs`` when given."""
+    env = {k: v for k, v in node_env().items() if k not in BUILT_FROM_ENV}
+    env.update({"PYFORGE_STATUS_PAGES": "1" if status else "0", "PYFORGE_CI_SURFACES_TILE": "1" if tile else "0"})
+    env["SITE_URL"] = SITE_URL
     env.update(extra_env or {})
-    env["PYFORGE_STATUS_PAGES"] = "0"
     if root is not None:
         env["HERALD_PAGES_REPO_ROOT"] = str(root)
-    return subprocess.run(
+    if inputs is not None:
+        env["PAGES_BUILD_INPUTS_DIR"] = str(inputs)
+    done = subprocess.run(
         [NODE or "node", str(ASTRO_BIN), "build", "--outDir", str(out)],
         cwd=DOCS_SITE,
         env=env,
@@ -188,6 +239,9 @@ def astro_build(
         text=True,
         check=False,
     )
+    if done.returncode == 0:
+        write(out / ".pages-build-site-url", f"{env['SITE_URL']}\n")
+    return done
 
 
 class Page(HTMLParser):

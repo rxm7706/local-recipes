@@ -2,7 +2,6 @@ import { defineCollection, z } from 'astro:content';
 import { i18nLoader } from '@astrojs/starlight/loaders';
 import { docsSchema, i18nSchema } from '@astrojs/starlight/schema';
 
-import { pagesOneGenerator } from './lib/flags.ts';
 import { dossierLoader } from './loaders/dossier-loader';
 import { shelfDocsLoader } from './loaders/shelf-docs-loader';
 
@@ -64,19 +63,14 @@ const dossierSchema = z
     });
   });
 
-
 export const collections = {
   docs: defineCollection({
     loader: shelfDocsLoader(),
     schema: docsSchema(),
   }),
   i18n: defineCollection({ loader: i18nLoader(), schema: i18nSchema() }),
-  ...(pagesOneGenerator()
-    ? {
-        dossier: defineCollection({
-          loader: dossierLoader(),
-          schema: dossierSchema,
-        }),
-      }
-    : {}),
+  dossier: defineCollection({
+    loader: dossierLoader(),
+    schema: dossierSchema,
+  }),
 };

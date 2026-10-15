@@ -41,8 +41,8 @@ def test_docs_site_validate_pixi_tasks_registered() -> None:
     sidebar = tasks["docs-site-validate-sidebar"]
     bundle = tasks["docs-site-validate"]
     assert links["cmd"] == "node docs-site/scripts/validate-doc-links.js"
-    assert sidebar["cmd"] == "python docs-site/scripts/sidebar_from_map.py --check"
-    assert sidebar["depends-on"] == ["docs-site-validate-sidebar-order"]
+    assert sidebar["cmd"] == "node docs-site/scripts/nav-check.mts"  # Story 43.7: the map check, in the generator's TS
+    assert sidebar["depends-on"] == ["docs-site-install", "docs-site-validate-sidebar-order"]
     assert bundle["depends-on"] == ["docs-site-validate-links", "docs-site-validate-sidebar"]
 
 

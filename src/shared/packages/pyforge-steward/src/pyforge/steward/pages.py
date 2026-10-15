@@ -2,9 +2,9 @@
 
 Story 102.4 adds :func:`newest_export_run`, the selection behind the Pages build's artifact download
 (``scripts/pages_artifact_download.py``). Story 102.3 adds the fleet board's build input: :func:`fleet_status_document` reshapes
-``sprint-ledger-query --format json`` into the ``docsite/content/fleet-status.json`` herald's board
-reads (herald Story 42.1, ``docsite/tools/status_pages.py``). Pure functions only: the workflow runs
-them through ``scripts/pages_fleet_status.py``, ``steward pages build`` in-process.
+``sprint-ledger-query --format json`` into the ``docs-site/src/content/fleet-status.json`` herald's board
+reads (herald Story 42.1, ``docs-site/src/lib/status.ts``; herald Story 43.7 moved it). Pure functions only:
+the workflow runs them through ``scripts/pages_fleet_status.py``, ``steward pages build`` in-process.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ PAGES_DUTY_FLAG = "pyforge.steward.pages_duty"
 #: The unified Pages artifact ``pages-check`` builds, relative to the repository root.
 SITE_ROOT_REL = "docs-site/build/site"
 #: The fleet board's build input herald reads (gitignored), relative to the repository root.
-FLEET_STATUS_REL = "docsite/content/fleet-status.json"
+FLEET_STATUS_REL = "docs-site/src/content/fleet-status.json"
 #: Atlas's Kedro-Viz producer and the artifact it uploads (atlas Story 30.1); the mount source the
 #: Pages build reads (herald Story 42.2). Story 102.4 downloads one into the other.
 KEDRO_VIZ_WORKFLOW = "kedro-viz-publish.yml"

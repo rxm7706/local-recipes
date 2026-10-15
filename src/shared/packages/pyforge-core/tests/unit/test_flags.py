@@ -959,7 +959,6 @@ _SHIPPED_CLOCKS = {
     # CAP-55 deck_viewer: Story 30.1 publish/twins; Story 30.2 portal + deck-twins API routes.
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
     "pyforge.herald.ci_surfaces_tile": ("herald", "39-1-", "2026-10-14", "", ""),
-    "pyforge.herald.pages_one_generator": ("herald", "43-1-", "2026-10-14", "", ""),
     "pyforge.herald.status_pages": ("herald", "42-1-", "2026-10-15", "", ""),
     "pyforge.herald.deck_export_native": ("herald", "32-1-", "2026-09-28", "", ""),
     "pyforge.steward.ledger_query_postgres_sync": (
@@ -1081,7 +1080,6 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.herald.deck_publish": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.deck_viewer": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.ci_surfaces_tile": {"dev": True, "staging": False, "production": False},
-        "pyforge.herald.pages_one_generator": {"dev": True, "staging": False, "production": False},
         "pyforge.herald.status_pages": {"dev": True, "staging": False, "production": False},
         "pyforge.herald.deck_export_native": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_draft_pr_estate": {"dev": True, "staging": True, "production": False},

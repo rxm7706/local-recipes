@@ -1,4 +1,4 @@
-/** Inline markdown subset — mirrors docsite/build.py ``md_inline`` (Story 41.1 / 43.1). */
+/** Inline markdown subset — the retired Jinja build's ``md_inline`` (Stories 41.1, 43.1; the only one since 43.7). */
 
 const ESCAPED = /\\(.)/gs;
 const ARROW = /<<(.+?)>>/gs;

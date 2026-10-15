@@ -279,8 +279,8 @@ On `f8d99e0c84` plus this change (lane A of the one-PR Pages redesign); every ve
     the wording to the operator). 10: § Verification now credits the AC tests, not the golden; 43.7's spec carries
     `verify_claims.py`'s 338 lines into its budget. 11: `pages.yml`'s push filter (steward's) does not list
     `src/shared/packages/**`, which the measured stats now read, so a commit touching only station code refreshes the
-    dossier's numbers at the next six-hourly scheduled build, not on push; named here for steward (`pyforge-steward:
-    CAP-168`), no edit made.
+    dossier's numbers at the next six-hourly scheduled build, not on push; named here for steward
+    (`pyforge-steward:CAP-168`), no edit made.
   - **Gates (2026-10-15, on `a680b61d54` plus this change).** The Pages, parity, 43.6, zero-origin, validator, imports,
     site-URL, build, flag-state, golden and emit test files -- exit 0, 403 passed, none skipped; the herald suite --
     exit 0, 2193 passed, 5 skipped; the steward suite -- exit 0, 2813 passed, 2 skipped; `lint-types` -- exit 0;

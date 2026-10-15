@@ -1,6 +1,6 @@
 /**
  * Dossier block HTML — one implementation shared by Astro components and the golden-test renderer.
- * Shapes mirror docsite/templates/blocks.html.j2 (Epic 43 fourteen types + ci_surfaces).
+ * The fifteen block types (Epic 43's fourteen + ci_surfaces), the shapes the retired Jinja macros had (Story 43.7).
  */
 
 import { cssTextTone, cssVar, mdInline } from './md-inline.ts';

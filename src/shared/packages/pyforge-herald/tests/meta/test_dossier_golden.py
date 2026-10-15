@@ -1,19 +1,28 @@
-"""Story 43.1: golden parity between Jinja macros and Astro block renderers (AC2, AC3)."""
+"""Story 43.1: golden parity of the dossier block renderers (AC2, AC3).
+
+Until Story 43.7 this test rendered every block type through both generators, the Jinja macros and the Astro
+renderer, and compared them. With the Jinja path deleted, the streams it rendered are frozen in
+``tests/fixtures/dossier-block-goldens-2026-10-15.json`` (the Astro renderer gave the same that day), and the one
+renderer, ``docs-site/src/lib/dossier-blocks.ts``, is held to them: a block that renders differently is a change to
+review, never a silent drift.
+"""
 
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
-import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
-TEMPLATES = REPO_ROOT / "docsite" / "templates"
 DOCS_SITE = REPO_ROOT / "docs-site"
+GOLDENS = json.loads(
+    (Path(__file__).resolve().parents[1] / "fixtures" / "dossier-block-goldens-2026-10-15.json").read_text("utf-8")
+)
+pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH")
 
 
 class _TokenParser(HTMLParser):
@@ -36,106 +45,31 @@ def _tokens(html: str) -> list[str]:
     return parser.tokens
 
 
-def _jinja_env() -> Environment:
-    sys.path.insert(0, str(REPO_ROOT / "docsite"))
-    from build import md_inline  # noqa: E402
-
-    env = Environment(
-        loader=FileSystemLoader(str(TEMPLATES)),
-        undefined=StrictUndefined,
-        autoescape=False,
-    )
-    env.filters["md"] = md_inline
-    return env
-
-
-def _render_jinja(block: dict) -> str:
-    env = _jinja_env()
-    module = env.get_template("blocks.html.j2").module
-    return module.render(block).strip()
-
-
 def _render_ts(block: dict) -> str:
     payload = json.dumps(block)
-    cmd = [
-        "node",
-        "--experimental-strip-types",
-        "-e",
-        (f"import {{ renderBlock }} from './src/lib/dossier-blocks.ts';process.stdout.write(renderBlock({payload}));"),
-    ]
+    script = (
+        f"import {{ renderBlock }} from './src/lib/dossier-blocks.ts';process.stdout.write(renderBlock({payload}));"
+    )
     proc = subprocess.run(
-        cmd,
-        cwd=DOCS_SITE,
-        capture_output=True,
-        text=True,
-        check=False,
+        ["node", "--experimental-strip-types", "-e", script], cwd=DOCS_SITE, capture_output=True, text=True, check=False
     )
     assert proc.returncode == 0, proc.stderr
     return proc.stdout.strip()
 
 
-def _assert_same(html_a: str, html_b: str) -> None:
-    assert _tokens(html_a) == _tokens(html_b)
-
-
-BLOCK_FIXTURES: dict[str, dict] = {
-    "lede": {"type": "lede", "md": "Lead **bold** line."},
-    "prose": {"type": "prose", "body": ["One paragraph.", "Second *em* line."]},
-    "h3": {"type": "h3", "num": "1", "text": "Heading text"},
-    "table": {
-        "type": "table",
-        "headers": ["Col"],
-        "rows": [{"cells": ["cell"], "mono": [True]}],
-    },
-    "callout": {"type": "callout", "label": "Note", "body": ["Body line."], "tone": ""},
-    "finding": {
-        "type": "finding",
-        "label": "Find",
-        "body": ["Detail."],
-        "alarm": False,
-        "accent": "",
-    },
-    "stats": {"type": "stats", "stats": [{"value": "1", "label": "One"}]},
-    "quote": {"type": "quote", "md": "Quoted line."},
-    "relations": {"type": "relations", "items": [{"glyph": "→", "md": "rel"}]},
-    "lattice": {
-        "type": "lattice",
-        "rungs": [{"exit": "0", "name": "n", "desc": "d", "tone": "", "exit_tone": ""}],
-        "note": "note",
-    },
-    "engines": {
-        "type": "engines",
-        "engines": [{"name": "E", "verb": "run", "body": ["p"]}],
-    },
-    "chips": {"type": "chips", "chips": ["alpha", "beta"]},
-    "note": {"type": "note", "md": "Soft note."},
-    "verify": {"type": "verify", "md": "Verify note."},
-}
-
-
-@pytest.mark.parametrize("block_type", list(BLOCK_FIXTURES.keys()))
+@pytest.mark.parametrize("block_type", list(GOLDENS["fixtures"]))
 def test_ac2_golden_per_block_type(block_type: str) -> None:
-    block = BLOCK_FIXTURES[block_type]
-    _assert_same(_render_jinja(block), _render_ts(block))
+    assert _tokens(_render_ts(GOLDENS["fixtures"][block_type])) == GOLDENS["tokens"][block_type]
 
 
 def test_ac2_fourteen_block_sequence() -> None:
-    blocks = [BLOCK_FIXTURES[name] for name in BLOCK_FIXTURES]
-    jinja_html = "".join(_render_jinja(b) for b in blocks)
-    ts_html = "".join(_render_ts(b) for b in blocks)
-    _assert_same(jinja_html, ts_html)
+    names = list(GOLDENS["fixtures"])
+    assert len(names) == 14
+    html = "".join(_render_ts(GOLDENS["fixtures"][name]) for name in names)
+    assert _tokens(html) == [token for name in names for token in GOLDENS["tokens"][name]]
 
 
 def test_ac3_inline_vocabulary() -> None:
-    block = {
-        "type": "prose",
-        "body": [
-            "Code `x`, **bold**, *em*, [link](https://example.com), arrow <<→>>, escape \\*",
-            "`/stations/\\*/mcp`",
-        ],
-    }
-    jinja_html = _render_jinja(block)
-    ts_html = _render_ts(block)
-    assert "\x00" not in jinja_html
-    assert "\x00" not in ts_html
-    _assert_same(jinja_html, ts_html)
+    html = _render_ts(GOLDENS["inline"])
+    assert "\x00" not in html
+    assert _tokens(html) == GOLDENS["tokens"]["prose-inline-vocabulary"]

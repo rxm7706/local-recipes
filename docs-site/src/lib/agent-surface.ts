@@ -12,9 +12,9 @@
  * it says so in one line -- and a malformed one fails the build naming the file. Nothing here calls `gh`,
  * `git`, `marshal` or `herald`: a Guild step runs them and hands the build their JSON.
  *
- * Every surface is emitted only with `pyforge.herald.pages_one_generator` on (Story 43.1's flag, exported to
- * the build as `PYFORGE_PAGES_ONE_GENERATOR`); `/status/runs/` also needs `pyforge.herald.status_pages`
- * (`PYFORGE_STATUS_PAGES`), the flag that owns the `/status/` prefix (Story 42.1).
+ * Every surface is emitted on every build (Story 43.7 retired the one-generator flag that gated them);
+ * `/status/runs/` needs `pyforge.herald.status_pages` (`PYFORGE_STATUS_PAGES`), the flag that owns the
+ * `/status/` prefix (Story 42.1).
  */
 
 import fs from 'node:fs';
@@ -24,8 +24,11 @@ import path from 'node:path';
 export const CHANGES_INPUT = 'changes.json';
 export const MARSHAL_STATUS_INPUT = 'marshal-status.json';
 export const HERALD_PROGRESS_INPUT = 'herald-progress.json';
-/** Where the inputs live, relative to the repository root (gitignored, beside Story 42.1's `fleet-status.json`). */
-export const INPUTS_DIR_REL = 'docsite/content';
+/**
+ * Where the inputs live, relative to the repository root: beside the generator's committed content (Story 43.7), each
+ * gitignored, with Story 42.1's `fleet-status.json`.
+ */
+export const INPUTS_DIR_REL = 'docs-site/src/content';
 /** Points the build at another input directory (the herald tests' fixtures). */
 export const INPUTS_DIR_ENV = 'PAGES_BUILD_INPUTS_DIR';
 /** The changes window, in days, until a CalVer tag anchors "since the last release". */
@@ -39,8 +42,8 @@ export class BuildInputShapeError extends Error {
   }
 }
 
-/** The two flags, through the docs-site's one flag reader (`src/lib/flags.ts`). */
-export { pagesOneGenerator, statusPages } from './flags.ts';
+/** The status pages' flag, through the docs-site's one flag reader (`src/lib/flags.ts`). */
+export { statusPages } from './flags.ts';
 
 /** The repository holding `start` (the build runs in `docs-site/`). */
 export function repoRoot(start: string = process.cwd()): string {
@@ -54,7 +57,7 @@ export function repoRoot(start: string = process.cwd()): string {
   }
 }
 
-/** The input directory: `PAGES_BUILD_INPUTS_DIR`, else `<repo>/docsite/content`. */
+/** The input directory: `PAGES_BUILD_INPUTS_DIR`, else `<repo>/docs-site/src/content`. */
 export function inputsDir(root: string): string {
   const override = process.env[INPUTS_DIR_ENV];
   return override ? path.resolve(override) : path.join(root, INPUTS_DIR_REL);
@@ -510,8 +513,8 @@ export function llmsFullTxt(site: { title: string; summary: string; sections: Ll
 
 /**
  * `site.yml`'s `lane1` entry when its `href` is an absolute `http(s)://` URL, else `null`: Lane 1 is the
- * platform's host, not Pages, so a root-absolute href would 404 on the Pages origin (the rule
- * `docsite/tools/status_pages.lane1_link` applies to Story 42.1's board).
+ * platform's host, not Pages, so a root-absolute href would 404 on the Pages origin (Story 42.1's rule, which every
+ * status page follows).
  */
 export function lane1Link(lane1: unknown): { href: string; label: string } | null {
   if (!isObject(lane1) || typeof lane1.href !== 'string') {

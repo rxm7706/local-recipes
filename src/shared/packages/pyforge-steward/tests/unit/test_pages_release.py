@@ -52,7 +52,7 @@ def test_ac1_pages_check_reads_the_deploying_hosts_values() -> None:
 def test_ac1_the_flag_exports_stay_in_the_renamed_step() -> None:
     step = next(step for step in _steps("build") if step.get("name") == "Resolve build env (flags)")
     run = step["run"]
-    assert 'docsite/tools/export_ci_surfaces_tile_env.py >> "$GITHUB_ENV"' in run
+    assert 'python -m pyforge.herald.pages_env >> "$GITHUB_ENV"' in run  # herald Story 43.7: one export for its flags
     assert 'scripts/pages_artifact_download.py --flag-env >> "$GITHUB_ENV"' in run
     assert "env" not in step  # no host value reaches a flag export
     names = [s.get("name") for s in _steps("build")]

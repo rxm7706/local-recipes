@@ -649,7 +649,7 @@ def test_write_fleet_status_stamps_head_commit_time(tmp_path: Path) -> None:
 
 
 def test_the_fleet_status_document_is_the_shape_herald_reads() -> None:
-    """herald 42.1's contract (docsite/tools/status_pages.py): ``stations`` a list, each with
+    """herald 42.1's contract (docs-site/src/lib/status.ts since herald 43.7): ``stations`` a list, each with
     non-negative integer ``done`` and ``total``; ``stories`` rows with ``story_id`` and ``status``."""
     payload = {
         "generated_at": "2026-10-15T00:00:00+00:00",

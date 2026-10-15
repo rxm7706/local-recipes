@@ -6,16 +6,20 @@ import { fileURLToPath } from 'node:url';
 import type { Loader } from 'astro/loaders';
 import { parse as parseYaml } from 'yaml';
 
-import { pagesOneGenerator } from '../lib/flags.ts';
+import { ciSurfacesTile } from '../lib/flags.ts';
+import { CI_STATUS_SNAPSHOT, loadCiStatus, tileBlock } from '../lib/status.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 /** The tree the dossier reads and the measurer counts: `HERALD_PAGES_REPO_ROOT` (a test's fixture), else this one. */
 const DATA_ROOT = process.env.HERALD_PAGES_REPO_ROOT ? path.resolve(process.env.HERALD_PAGES_REPO_ROOT) : REPO_ROOT;
-const DOSSIER_YML = path.join(DATA_ROOT, 'docsite/content/dossier.yml');
-const CONTENT_DIR = path.join(REPO_ROOT, 'docsite/content');
+/** The dossier's content, beside the generator (Story 43.7). */
+export const DOSSIER_REL = 'docs-site/src/content/dossier/dossier.yml';
+const DOSSIER_YML = path.join(DATA_ROOT, DOSSIER_REL);
+/** The committed CAP-59 snapshot the CI surfaces tile reads. */
+const CI_STATUS = path.join(REPO_ROOT, 'docs-site/src/content', CI_STATUS_SNAPSHOT);
 /** The one measurer (CAP-46), never a second measurement: Story 43.5 reads what it emits. */
-const MEASURER = path.join(REPO_ROOT, 'docsite/tools/verify_claims.py');
+const MEASURER = path.join(REPO_ROOT, 'docs-site/scripts/verify_claims.py');
 
 type Stat = { value: string; label: string; check?: string };
 type Measured = Record<string, Record<string, { value: string; files?: number }>>;
@@ -68,62 +72,32 @@ function applyMeasured(doc: Record<string, unknown>, measured: Measured): void {
   }
 }
 
-function tileEnabledFromEnv(): boolean {
-  const raw = process.env.PYFORGE_CI_SURFACES_TILE ?? '';
-  return ['1', 'true', 'yes'].includes(raw.trim().toLowerCase());
-}
-
-async function loadCiSnapshot(): Promise<Record<string, unknown>> {
-  const snapPath = path.join(CONTENT_DIR, 'ci-status.json');
-  const text = await fs.readFile(snapPath, 'utf8');
-  return JSON.parse(text) as Record<string, unknown>;
-}
-
-function buildCiSurfacesBlock(data: Record<string, unknown>): Record<string, unknown> {
-  const rows = (data.rows as Array<Record<string, unknown>>) ?? [];
-  const lines = rows.map((row) => `${row.id}: ${row.verdict}`);
-  return {
-    type: 'ci_surfaces',
-    fetched_at: data.fetched_at,
-    lines,
-    all_live: lines.length === 1 && String(lines[0]).toLowerCase().includes('live'),
-  };
-}
-
-async function applyCiSurfacesAsync(doc: Record<string, unknown>): Promise<void> {
+/**
+ * The CI surfaces tile (Story 39.1, CAP-59): with `pyforge.herald.ci_surfaces_tile` on, each `ci_surfaces` block is
+ * the snapshot's tile -- one line per surface that is not live, or the one all-live line (`src/lib/status.ts`); a
+ * missing or malformed snapshot fails the build naming the file. Off, the block is dropped.
+ */
+function applyCiSurfaces(doc: Record<string, unknown>): void {
   const sections = (doc.sections as Array<Record<string, unknown>>) ?? [];
-  if (!tileEnabledFromEnv()) {
-    for (const section of sections) {
-      const blocks = section.blocks as Array<Record<string, unknown>> | undefined;
-      if (blocks) {
-        section.blocks = blocks.filter((b) => b.type !== 'ci_surfaces');
-      }
-    }
-    return;
-  }
-  const data = await loadCiSnapshot();
-  const payload = buildCiSurfacesBlock(data);
+  const payload = ciSurfacesTile() ? tileBlock(loadCiStatus(CI_STATUS)) : null;
   for (const section of sections) {
     const blocks = section.blocks as Array<Record<string, unknown>> | undefined;
-    if (!blocks) {
-      continue;
+    if (blocks) {
+      section.blocks = payload
+        ? blocks.map((b) => (b.type === 'ci_surfaces' ? payload : b))
+        : blocks.filter((b) => b.type !== 'ci_surfaces');
     }
-    section.blocks = blocks.map((b) => (b.type === 'ci_surfaces' ? payload : b));
   }
 }
 
 export function dossierLoader(): Loader {
   return {
     name: 'dossier-yml-loader',
-    load: async ({ store, logger, parseData }) => {
-      if (!pagesOneGenerator()) {
-        logger.info('dossier collection skipped (PYFORGE_PAGES_ONE_GENERATOR off)');
-        return;
-      }
+    load: async ({ store, parseData }) => {
       const raw = await fs.readFile(DOSSIER_YML, 'utf8');
       const doc = parseYaml(raw) as Record<string, unknown>;
       applyMeasured(doc, measure());
-      await applyCiSurfacesAsync(doc);
+      applyCiSurfaces(doc);
       // An object loader validates through parseData (Story 43.5): the schema's refusals reach the build.
       const data = await parseData({ id: 'dossier', data: doc });
       store.set({

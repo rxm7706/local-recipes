@@ -2,7 +2,8 @@
 """Write the fleet board's build input for the Pages workflow (steward Story 102.3, CAP-168).
 
 Reads the JSON ``sprint-ledger-query --format json --output PATH`` wrote and writes
-``docsite/content/fleet-status.json`` in the shape herald's board reads (herald Story 42.1), through
+``docs-site/src/content/fleet-status.json`` in the shape herald's board reads (herald Story 42.1; Story 43.7 moved
+it beside the generator), through
 ``pyforge.steward.pages.fleet_status_document``. Exit 0 wrote the file, 1 the ledger JSON was missing
 or unusable (named on stderr); nothing else is written.
 """

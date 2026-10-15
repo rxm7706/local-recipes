@@ -7,9 +7,10 @@ steward Story 30.2 (PRD FR-7). Operator surfaces live on Lane 1 at
 This directory is **not** the GitHub Pages upload root anymore (Story 27.2).
 The Pages build copies what it holds, minus this README, into
 `docs-site/build/site/dashboard/` beside the Starlight shelf (`/`) and the
-herald dossier mount (`/herald/`). The PyForge site is built by
-`docsite/build.py` into that `herald/` prefix; legacy HTML URLs at the old root
-paths are redirect stubs in the unified artifact.
+herald dossier mount (`/herald/`). The whole site is built by one generator,
+`docs-site/` (herald Story 43.7 retired `docsite/`), which mounts this directory
+from `docs-site/public/`; legacy HTML URLs at the old root paths are redirect
+stubs in the unified artifact.
 
 The Kedro-Viz board is staged locally under `kedro-viz/` (gitignored). CI
 builds it with `pixi run -e pyforge-atlas viz-publish-stage`, then uploads the

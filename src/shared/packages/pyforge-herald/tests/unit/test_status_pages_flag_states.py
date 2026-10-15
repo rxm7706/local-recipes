@@ -1,40 +1,38 @@
 """Story 42.1 (spec-pyforge-herald CAP-60): the fleet board and guild status pages render at build.
 
-The render (``docsite/build.py``'s ``render_status_pages``) takes the flag state as an argument, so
-the two-state test drives both values; the reading of the inputs is ``docsite/tools/status_pages.py``
-(the fleet board) and ``docsite/tools/ci_surfaces_tile.py`` (the guild status page, CAP-59's one
-reading of ``ci-status.json``). Fixtures: the 2026-10-14 ledgers reshaped as steward's
-``sprint-ledger-query --format json`` names them, and a snapshot with one row per verdict.
+Since Story 43.7 they are Astro pages (``docs-site/src/pages/status/``) over ``docs-site/src/lib/status.ts``, which
+reads and shapes both inputs: ``fleet-status.json`` (steward's ``sprint-ledger-query --format json``, reshaped) and the
+committed ``ci-status.json`` (CAP-59's one reading). The flag reaches the build as ``PYFORGE_STATUS_PAGES``, exported by
+``python -m pyforge.herald.pages_env`` from the flag tree. The model runs through node with type stripping (no
+``node_modules``); the built pages are ``test_one_generator.py``'s and ``test_pages_artifact.py``'s. Fixtures: the
+2026-10-14 ledgers reshaped as steward names them, and a snapshot with one row per verdict.
 """
 
 from __future__ import annotations
 
-import ast
-import filecmp
-import importlib.util
 import json
 import re
-import shutil
 import sys
 from pathlib import Path
 
 import pytest
-import yaml
 from pyforge.testing_kit import make_flag_provider_fixture
 from pyforge.testing_kit.flags import flag_states, flagd_tree
 
+from pyforge.herald import pages_env
 from pyforge.herald.status_pages import STATUS_PAGES_FLAG, status_pages_enabled
 
-_FLAG = "pyforge.herald.status_pages"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "meta"))
+from pages_astro import DOCS_SITE, REPO_ROOT, needs_node, ts  # noqa: E402 -- the shared Pages helpers
 
+_FLAG = "pyforge.herald.status_pages"
 flag_provider = make_flag_provider_fixture()
 
-REPO_ROOT = Path(__file__).resolve().parents[6]
-_TOOLS = REPO_ROOT / "docsite" / "tools"
+STATUS_TS = DOCS_SITE / "src" / "lib" / "status.ts"
+FLAGS_TS = DOCS_SITE / "src" / "lib" / "flags.ts"
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 _FLEET = _FIXTURES / "fleet-status-2026-10-14.json"
 _CI = _FIXTURES / "ci-status-every-verdict.json"
-_SITE_YML = REPO_ROOT / "docsite" / "content" / "site.yml"
 
 #: AC1: the 2026-10-14 counts, station by station, and the bar widths they give.
 _STATIONS = ["atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden"]
@@ -54,74 +52,15 @@ _GUILD_ORDER = [
 ]
 
 
-def _tools():
-    if str(_TOOLS) not in sys.path:
-        sys.path.insert(0, str(_TOOLS))
-    import ci_surfaces_tile
-    import status_pages
-
-    return status_pages, ci_surfaces_tile
-
-
-def _load(path: Path, name: str):
-    spec = importlib.util.spec_from_file_location(name, path)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-@pytest.fixture
-def build_mod():
-    _tools()
-    return _load(REPO_ROOT / "docsite" / "build.py", "docsite_build_status_under_test")
-
-
-def _site_cfg() -> dict:
-    return yaml.safe_load(_SITE_YML.read_text(encoding="utf-8"))
-
-
-def _render(
-    build_mod,
-    tmp_path: Path,
-    *,
-    flag_enabled: bool,
-    fleet: Path = _FLEET,
-    ci: Path = _CI,
-    site_cfg: dict | None = None,
-):
-    status_out = tmp_path / "site" / "status"
-    written = build_mod.render_status_pages(
-        flag_enabled=flag_enabled,
-        status_out=status_out,
-        herald_out=tmp_path / "site" / "herald",
-        fleet_status=fleet,
-        ci_status=ci,
-        site_cfg=site_cfg if site_cfg is not None else _site_cfg(),
-        built_at="2026-10-15",
-        commit="abc1234",
-    )
-    return status_out, written
-
-
-def _write(tmp_path: Path, payload: object, name: str = "fleet-status.json") -> Path:
-    path = tmp_path / name
-    path.write_text(payload if isinstance(payload, str) else json.dumps(payload), encoding="utf-8")
-    return path
+def _board(data: object) -> object:
+    return ts(STATUS_TS, "m.validateFleetStatus(inp.data, 'fleet-status.json'); return m.board(inp.data);", data=data)
 
 
 def _fleet() -> dict:
     return json.loads(_FLEET.read_text(encoding="utf-8"))
 
 
-def _section(html: str, cls: str) -> str:
-    match = re.search(rf'<section class="{cls}">(.*?)</section>', html, re.S)
-    assert match, cls
-    return match.group(1)
-
-
-# --- the flag -------------------------------------------------------------------------------------
+# --- the flag -------------------------------------------------------------------------------------------------------
 
 
 def test_the_key_is_the_one_the_tree_declares() -> None:
@@ -145,586 +84,163 @@ def test_on_and_off_trees_read_through_flags_path(tmp_path: Path) -> None:
     assert status_pages_enabled(flags_path=off) is False
 
 
-def test_the_site_build_reads_the_exported_variable(monkeypatch: pytest.MonkeyPatch) -> None:
-    sp, _ = _tools()
-    for value, expected in (("1", True), ("true", True), ("0", False), ("", False)):
-        monkeypatch.setenv(sp.ENV_STATUS_PAGES, value)
-        assert sp.enabled_from_env() is expected
-    monkeypatch.delenv(sp.ENV_STATUS_PAGES)
-    assert sp.enabled_from_env() is False
-
-
-# --- AC9: two states ------------------------------------------------------------------------------
-
-
 @flag_states("pyforge.herald.status_pages")
-def test_ac9_render_follows_flag_state(
-    flag_provider: dict[str, bool], build_mod, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_ac9_the_build_env_and_the_pages_follow_the_flag_state(flag_provider: dict[str, bool], tmp_path: Path) -> None:
+    """Two states: the Guild step's export says the flag's state (``pages_env``), and the docs-site reads that
+    variable as the flag -- on, the three ``/status/`` pages are routes and the menu's Status section shows; off,
+    neither."""
     enabled = flag_provider[_FLAG]
-    sp, _ = _tools()
-    if not enabled:  # AC7: off, the input is never opened
-        monkeypatch.setattr(sp, "load_fleet_status", lambda path: pytest.fail(f"opened {path} with the flag off"))
-    status_out, written = _render(build_mod, tmp_path, flag_enabled=enabled)
-    if enabled:
-        assert written == [status_out / "index.html", status_out / "ci" / "index.html"]
-        board = (status_out / "index.html").read_text(encoding="utf-8")
-        assert re.findall(r'data-width="(\d+)"', board) == [str(w) for w in _WIDTHS]
-        guild = (status_out / "ci" / "index.html").read_text(encoding="utf-8")
-        assert re.findall(r'data-surface="([^"]+)"', guild) == _GUILD_ORDER
-    else:
-        assert written is None
-        assert not status_out.exists()
+    tree = flagd_tree(tmp_path, {_FLAG: "on" if enabled else "off"})
+    env = pages_env.build_env(flags_path=tree)
+    assert env["PYFORGE_STATUS_PAGES"] == ("1" if enabled else "0")
+    assert ts(FLAGS_TS, "return m.envFlagOn('PYFORGE_STATUS_PAGES', inp.env);", env=env) is enabled
+    sections = ts(
+        DOCS_SITE / "src" / "lib" / "nav.ts",
+        "const sections = [{key: 'status', label: 'Status', href: 'status/', owner: 'herald', order: 20}];"
+        "return m.siteSections(sections, {mounted: () => false, flag: (key) => inp.on && key === inp.key});",
+        on=enabled,
+        key=_FLAG,
+    )
+    assert [s["key"] for s in sections] == (["status"] if enabled else [])
+    for page in ("status/[...index].astro", "status/ci/[...index].astro", "status/runs/[...index].astro"):
+        source = (DOCS_SITE / "src" / "pages" / page).read_text(encoding="utf-8")
+        assert "return statusPages() ? [{ params: { index: undefined } }] : [];" in source, page
 
 
-# --- AC1-AC3: the fleet board ---------------------------------------------------------------------
+def test_the_export_prints_one_line_per_build_flag(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    tree = flagd_tree(tmp_path, {_FLAG: "on", "pyforge.herald.ci_surfaces_tile": "off"})
+    assert pages_env.build_env(flags_path=tree) == {"PYFORGE_STATUS_PAGES": "1", "PYFORGE_CI_SURFACES_TILE": "0"}
+    assert pages_env.main([]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert [line.split("=")[0] for line in lines] == ["PYFORGE_STATUS_PAGES", "PYFORGE_CI_SURFACES_TILE"]
+    assert all(re.fullmatch(r"PYFORGE_\w+=[01]", line) for line in lines)
 
 
-def test_ac1_one_row_per_station(build_mod, tmp_path: Path) -> None:
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
-    board = (status_out / "index.html").read_text(encoding="utf-8")
-    rows = re.findall(r'<tr data-station="([^"]+)">(.*?)</tr>', board, re.S)
-    assert [name for name, _ in rows] == [f"pyforge-{s}" for s in _STATIONS]
-    for (name, body), station, width in zip(rows, _fleet()["stations"], _WIDTHS, strict=True):
-        cells = re.findall(r'<td class="num">([^<]*)</td>', body)
-        assert cells == [
-            str(station["epics"]),
-            f"{station['done']} / {station['total']}",
-            str(station["in_progress"]),
-            str(station["backlog"]),
-            str(station["blocked"]),
-        ], name
-        assert f'data-width="{width}" style="width:{width}%"' in body, name
+# --- AC1-AC3: the fleet board ---------------------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    ("done", "total", "width"),
-    [(104, 105, 99), (152, 152, 100), (351, 369, 95), (0, 0, 0), (5, 0, 0), (0, 7, 0), (9, 8, 100)],
-)
+@needs_node
+def test_ac1_one_row_per_station_with_its_bar() -> None:
+    board = _board(_fleet())
+    assert [row["name"] for row in board["stations"]] == [f"pyforge-{s}" for s in _STATIONS]
+    assert [row["width"] for row in board["stations"]] == _WIDTHS
+    assert board["generatedAt"] == _fleet()["generated_at"]
+
+
+@needs_node
+@pytest.mark.parametrize(("done", "total", "width"), [(0, 0, 0), (1, 3, 33), (2, 3, 66), (3, 3, 100), (5, 4, 100)])
 def test_bar_width_is_the_floored_integer_percentage(done: int, total: int, width: int) -> None:
-    sp, _ = _tools()
-    assert sp.bar_width(done, total) == width
+    assert ts(STATUS_TS, "return m.barWidth(inp.done, inp.total);", done=done, total=total) == width
 
 
-def test_a_station_with_total_zero_shows_its_counts_and_an_empty_bar(build_mod, tmp_path: Path) -> None:
-    payload = {"generated_at": "t", "stations": [{"station": "pyforge-new", "done": 0, "total": 0, "epics": 1}]}
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True, fleet=_write(tmp_path, payload))
-    board = (status_out / "index.html").read_text(encoding="utf-8")
-    assert 'data-width="0" style="width:0%"' in board
-    assert '<td class="num">0 / 0</td>' in board
-    # Counts steward's JSON did not give read as a dash, never as a guess.
-    assert board.count('<td class="num">—</td>') == 3
+def _station(name: str, **counts: int) -> dict:
+    return {"station": name, "done": 1, "total": 2, **counts}
 
 
-def test_ac2_the_attention_block_lists_each_blocked_and_backlog_key_once(build_mod, tmp_path: Path) -> None:
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
-    block = _section((status_out / "index.html").read_text(encoding="utf-8"), "status-attention")
-    keys = re.findall(r'<li data-key="([^"]+)">', block)
-    stories = _fleet()["stories"]
-    wanted = [f"{s['station']} {s['story_id']}" for s in stories if s["status"] in ("blocked", "backlog")]
-    done = {f"{s['station']} {s['story_id']}" for s in stories if s["status"] == "done"}
-    assert wanted and done
-    assert sorted(keys) == sorted(set(wanted))
-    assert len(keys) == len(set(keys))
-    assert not done & set(keys)
-    blocked = [k for k in keys if k in {f"{s['station']} {s['story_id']}" for s in stories if s["status"] == "blocked"}]
-    assert keys[: len(blocked)] == blocked  # blocked first, then backlog
-
-
-def test_ac2_a_repeated_key_is_listed_once(build_mod, tmp_path: Path) -> None:
-    payload = _fleet()
-    payload["stories"] = [*payload["stories"], *payload["stories"]]
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True, fleet=_write(tmp_path, payload))
-    keys = re.findall(r'<li data-key="([^"]+)">', (status_out / "index.html").read_text(encoding="utf-8"))
-    assert len(keys) == len(set(keys)) == 22
-
-
-def _attention_block(build_mod, tmp_path: Path, payload: dict) -> str:
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True, fleet=_write(tmp_path, payload))
-    return _section((status_out / "index.html").read_text(encoding="utf-8"), "status-attention")
-
-
-def test_ac2_no_listed_story_under_nonzero_counts_is_not_an_all_clear(build_mod, tmp_path: Path) -> None:
-    """The review's regression: the stations count 13 blocked and 9 backlog, the input lists only a
-    done story (or no stories at all), so the block says it lists none of them, never the all-clear."""
-    for stories in ([{"story_id": "1.1", "status": "done"}], None):
-        payload = {"generated_at": "t", "stations": _fleet()["stations"]}
-        if stories is not None:
-            payload["stories"] = stories
-        block = _attention_block(build_mod, tmp_path, payload)
-        assert "Nothing needs attention" not in block
-        assert "The input lists none of the 13 blocked / 9 backlog stories the station counts show." in block
-        assert "<li" not in block
-
-
-def test_ac2_nothing_needs_attention_when_every_count_is_zero(build_mod, tmp_path: Path) -> None:
-    stations = [{**s, "blocked": 0, "backlog": 0} for s in _fleet()["stations"]]
-    payload = {"generated_at": "t", "stations": stations, "stories": [{"story_id": "1.1", "status": "done"}]}
-    block = _attention_block(build_mod, tmp_path, payload)
-    assert "Nothing needs attention: no story is blocked or in the backlog." in block
-    assert "<li" not in block
-
-
-def test_ac2_counts_the_input_does_not_give_are_not_an_all_clear(build_mod, tmp_path: Path) -> None:
-    payload = {"generated_at": "t", "stations": [{"station": "pyforge-x", "done": 1, "total": 2}]}
-    block = _attention_block(build_mod, tmp_path, payload)
-    assert "Nothing needs attention" not in block
-    assert "station counts do not say whether any exist" in block
-
-
-def test_ac2_a_partial_list_names_each_station_it_is_short_for(build_mod, tmp_path: Path) -> None:
-    payload = _fleet()
-    payload["stories"] = [s for s in payload["stories"] if s["status"] != "backlog"]
-    block = _attention_block(build_mod, tmp_path, payload)
-    assert len(re.findall(r'<li data-key="', block)) == 13  # noqa: PLR2004
-    assert "The input&#39;s story list and its station counts disagree." in block
-    short = [s for s in payload["stations"] if s.get("backlog")]
-    assert short  # the fixture's backlog sits on some stations, not all
-    for station in short:
-        assert f"{station['station']}: 0 backlog listed, {station['backlog']} counted" in block
-    for station in payload["stations"]:
-        if not station.get("backlog"):
-            assert f"{station['station']}:" not in block  # a station whose list matches is not named
-    assert "blocked listed" not in block  # every blocked row is listed
-
-
-def _two_stations(listed: dict[str, int]) -> dict:
-    """Station a counts 1 blocked, station b counts 1 blocked; ``listed`` blocked rows per station."""
-    stations = [
-        {"station": "pyforge-a", "done": 1, "total": 2, "blocked": 1, "backlog": 0},
-        {"station": "pyforge-b", "done": 1, "total": 2, "blocked": 1, "backlog": 0},
-    ]
-    stories = [
-        {"story_id": f"{name[-1]}.{i}", "station": name, "status": "blocked"}
-        for name, count in listed.items()
-        for i in range(count)
-    ]
-    return {"generated_at": "t", "stations": stations, "stories": stories}
-
-
-def test_ac2_one_station_s_surplus_never_hides_another_s_missing_rows() -> None:
-    """The re-review's probe: station a lists 2 of 1, station b lists 0 of 1. The fleet-wide sums agree
-    (2 listed, 2 counted) and the old note said nothing; compared per station, both are named."""
-    sp, _ = _tools()
-    data = _two_stations({"pyforge-a": 2})
-    note = sp.attention_note(data, sp.attention_items(data))
-    assert note == (
-        "The input's story list and its station counts disagree. "
-        "pyforge-a: 2 blocked listed, 1 counted; pyforge-b: 0 blocked listed, 1 counted."
-    )
-
-
-def test_ac2_a_surplus_reads_as_listed_and_counted_never_as_x_of_fewer() -> None:
-    """The re-review's other probe: a list longer than the counts read "lists 3 of the 1 blocked"."""
-    sp, _ = _tools()
-    data = _two_stations({"pyforge-a": 3, "pyforge-b": 1})
-    note = sp.attention_note(data, sp.attention_items(data))
-    assert note == "The input's story list and its station counts disagree. pyforge-a: 3 blocked listed, 1 counted."
-    assert "of the" not in note
-
-
-def test_ac2_a_listed_story_no_station_row_counts_is_named() -> None:
-    sp, _ = _tools()
-    data = _two_stations({"pyforge-a": 1, "pyforge-b": 1})
-    data["stories"].append({"story_id": "9.1", "station": "pyforge-zz", "status": "backlog"})
-    note = sp.attention_note(data, sp.attention_items(data))
-    assert note == (
-        "The input's story list and its station counts disagree. "
-        "pyforge-zz: 1 backlog listed, no station row counts them."
-    )
-
-
-def test_ac2_a_station_whose_counts_are_unknown_is_not_compared() -> None:
-    sp, _ = _tools()
-    data = _two_stations({"pyforge-a": 1, "pyforge-b": 2})
-    del data["stations"][1]["blocked"]
-    assert sp.attention_note(data, sp.attention_items(data)) is None
-
-
-def test_ac2_a_complete_list_carries_no_note(build_mod, tmp_path: Path) -> None:
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
-    assert "status-attention-note" not in (status_out / "index.html").read_text(encoding="utf-8")
-
-
-_LANE1_URL = "https://lane1.example.internal/console/"
-
-
-def test_ac3_a_root_absolute_lane1_href_carries_no_link(build_mod, tmp_path: Path) -> None:
-    """42.1's re-review: the Pages build resolves flags as ``dev``, so the status pages ship the day
-    this lands. ``site.yml``'s ``lane1.href`` is ``/console/`` until the operator names Lane 1's URL,
-    and on the Pages origin that path 404s: both pages leave the link out (orchestrator ruling
-    2026-10-15) and still name their snapshot time."""
-    assert _site_cfg()["lane1"]["href"].startswith("/")  # the live default this test pins
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
-    for page in (status_out / "index.html", status_out / "ci" / "index.html"):
-        text = page.read_text(encoding="utf-8")
-        assert "/console/" not in text and "Lane 1" not in text, page
-        assert "<script src" not in text and "<iframe" not in text and "fetch(" not in text
-    board = (status_out / "index.html").read_text(encoding="utf-8")
-    assert '<time datetime="2026-10-14T01:56:19+00:00">' in board
-    assert '</time> &middot; <a href="ci/index.html">Guild CI status</a></p>' in board
-    guild = (status_out / "ci" / "index.html").read_text(encoding="utf-8")
-    assert '</time> &middot; <a href="../index.html">Fleet board</a></p>' in guild
-
-
-def test_ac3_an_absolute_lane1_url_is_one_link_on_each_page(build_mod, tmp_path: Path) -> None:
-    site_cfg = {**_site_cfg(), "lane1": {"label": "Live view on Lane 1", "href": _LANE1_URL}}
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True, site_cfg=site_cfg)
-    for page in (status_out / "index.html", status_out / "ci" / "index.html"):
-        text = page.read_text(encoding="utf-8")
-        assert re.findall(r'<a href="([^"]+)">Live view on Lane 1</a>', text) == [_LANE1_URL], page
-        assert text.count(_LANE1_URL) == 1, page
-        assert "<script src" not in text and "<iframe" not in text and "fetch(" not in text
-
-
-@pytest.mark.parametrize(
-    ("href", "linked"),
-    [
-        ("/console/", False),
-        ("//lane1.example.internal/console/", False),
-        ("console/", False),
-        ("", False),
-        (None, False),
-        (_LANE1_URL, True),
-        ("http://lane1.example.internal/console/", True),
-        ("HTTPS://LANE1.EXAMPLE/console/", True),
-    ],
-)
-def test_lane1_link_renders_only_an_absolute_url(href: str | None, linked: bool) -> None:
-    sp, _ = _tools()
-    link = sp.lane1_link({"label": "Live view on Lane 1", "href": href})
-    assert (link is not None) is linked
-    if linked:
-        assert link == {"href": href, "label": "Live view on Lane 1"}
-    assert sp.lane1_link(None) is None and sp.lane1_link("https://x/") is None
-
-
-def test_ac3_an_input_without_a_snapshot_time_says_so(build_mod, tmp_path: Path) -> None:
-    payload = {key: value for key, value in _fleet().items() if key != "generated_at"}
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True, fleet=_write(tmp_path, payload))
-    assert "Snapshot time not recorded in the input" in (status_out / "index.html").read_text(encoding="utf-8")
-
-
-def test_the_pages_carry_the_shared_menu_with_status(build_mod, tmp_path: Path) -> None:
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
-    board = (status_out / "index.html").read_text(encoding="utf-8")
-    guild = (status_out / "ci" / "index.html").read_text(encoding="utf-8")
-    assert 'data-pf-menu-link href="../herald/../status/index.html" aria-current="page">Status</a>' in board
-    assert 'data-pf-menu-link href="../../herald/../status/index.html">Status</a>' in guild
-    assert 'href="../herald/assets/site.css"' in board and 'href="../../herald/assets/site.css"' in guild
-
-
-# --- AC4: the guild status page -------------------------------------------------------------------
-
-
-def test_ac4_every_row_in_the_tiles_order_with_live_last(build_mod, tmp_path: Path) -> None:
-    status_out, _ = _render(build_mod, tmp_path, flag_enabled=True)
-    guild = (status_out / "ci" / "index.html").read_text(encoding="utf-8")
-    rows = re.findall(r'<tr data-surface="([^"]+)" data-verdict="([^"]+)">(.*?)</tr>', guild, re.S)
-    assert [row_id for row_id, _, _ in rows] == _GUILD_ORDER
-    snapshot = {row["id"]: row for row in json.loads(_CI.read_text(encoding="utf-8"))["rows"]}
-    for row_id, verdict, body in rows:
-        cells = [re.sub(r"<[^>]+>", "", cell) for cell in re.findall(r"<td[^>]*>(.*?)</td>", body, re.S)]
-        assert len(cells) == 7, row_id
-        source = snapshot[row_id]
-        expected = [source.get(f) for f in ("id", "verdict", "switch", "paused_since", "review_by", "owner")]
-        assert cells[:6] == ["—" if v is None else str(v) for v in expected], row_id
-        assert verdict == source["verdict"]
-    assert '<time datetime="2026-10-14T12:00:00+00:00">' in guild
-    # Steward's text is data: escaped, never markup.
-    assert "&lt;b&gt;escaped&lt;/b&gt; &amp; kept" in guild
-
-
-def test_ac4_the_tile_keeps_its_order_and_its_non_live_rows() -> None:
-    _, cst = _tools()
-    rows = json.loads(_CI.read_text(encoding="utf-8"))["rows"]
-    assert [r["id"] for r in cst.select_non_live_rows(rows)] == _GUILD_ORDER[:-2]
-    assert [r["id"] for r in cst.order_rows(rows)] == _GUILD_ORDER
-
-
-# --- AC5: the shape check -------------------------------------------------------------------------
-
-
-def _station_case(drop: str) -> dict:
-    payload = _fleet()
-    del payload["stations"][3][drop]
-    return payload
-
-
-_BAD_INPUTS = {
-    "no-stations": ({"generated_at": "t"}, "missing stations"),
-    "stations-not-a-list": ({"stations": {"pyforge-atlas": {"done": 1, "total": 1}}}, "stations is not a list"),
-    "station-without-done": (_station_case("done"), "station 3 (pyforge-marshal) missing done"),
-    "station-without-total": (_station_case("total"), "station 3 (pyforge-marshal) missing total"),
-    "not-json": ("{stations: [", "not valid JSON"),
-}
-
-
-@pytest.mark.parametrize("case", sorted(_BAD_INPUTS))
-def test_ac5_shape_refusals_name_the_file(tmp_path: Path, case: str) -> None:
-    sp, _ = _tools()
-    payload, message = _BAD_INPUTS[case]
-    path = _write(tmp_path, payload)
-    with pytest.raises(sp.FleetStatusShapeError) as exc:
-        sp.load_fleet_status(path)
-    assert str(exc.value).startswith(f"{path}: ")
-    assert message in str(exc.value)
-    assert sp.collect_shape_problems(path, enabled=True) == [str(exc.value)]
-    assert sp.collect_shape_problems(path, enabled=False) == []
-
-
-def test_ac5_no_input_names_the_path(tmp_path: Path) -> None:
-    sp, _ = _tools()
-    missing = tmp_path / "fleet-status.json"
-    with pytest.raises(sp.FleetStatusShapeError, match="fleet-status input missing"):
-        sp.load_fleet_status(missing)
-    assert sp.collect_shape_problems(missing, enabled=True) == [f"{missing}: fleet-status input missing"]
-
-
-@pytest.mark.parametrize(
-    ("mutate", "message"),
-    [
-        (lambda p: p["stations"].__setitem__(0, "pyforge-atlas"), "station 0 is not an object"),
-        (lambda p: p["stations"][2].__setitem__("done", "132"), "station 2 (pyforge-herald) done is not"),
-        (lambda p: p["stations"][2].__setitem__("total", -1), "station 2 (pyforge-herald) total is not"),
-        (
-            lambda p: p["stations"][3].__setitem__("done", 454),
-            "station 3 (pyforge-marshal) done 454 is more than total 453",
-        ),
-        (lambda p: p.__setitem__("stories", {"x": 1}), "stories is not a list"),
-        (lambda p: p["stories"][0].pop("status"), "story 0 missing status"),
-    ],
-)
-def test_ac5_a_value_the_board_cannot_draw_is_refused(tmp_path: Path, mutate, message: str) -> None:
-    sp, _ = _tools()
-    payload = _fleet()
-    mutate(payload)
-    with pytest.raises(sp.FleetStatusShapeError, match=re.escape(message)):
-        sp.load_fleet_status(_write(tmp_path, payload))
-
-
-def test_ac5_extra_keys_change_nothing(build_mod, tmp_path: Path) -> None:
-    payload = _fleet()
-    payload["a_new_envelope_key"] = {"nested": [1, 2]}
-    for station in payload["stations"]:
-        station["a_new_station_key"] = "ignored"
-    plain, _ = _render(build_mod, tmp_path / "plain", flag_enabled=True)
-    extra, _ = _render(build_mod, tmp_path / "extra", flag_enabled=True, fleet=_write(tmp_path, payload))
-    assert (plain / "index.html").read_text(encoding="utf-8") == (extra / "index.html").read_text(encoding="utf-8")
-
-
-def test_ac5_the_build_refuses_before_writing(build_mod, tmp_path: Path) -> None:
-    sp, _ = _tools()
-    out = tmp_path / "herald"
-    bad = _write(tmp_path, _station_case("total"))
-    with pytest.raises(sp.FleetStatusShapeError, match="station 3"):
-        build_mod.build(
-            out,
-            REPO_ROOT,
-            kedro_viz_export=tmp_path / "no-export",
-            status_out=tmp_path / "status",
-            fleet_status=bad,
-            status_pages=True,
-        )
-    assert not out.exists() and not (tmp_path / "status").exists()
-
-
-# --- AC6: the menu --------------------------------------------------------------------------------
-
-_SIX = ["Docs", "Overview", "Dossier", "Infographics", "Decks", "Kedro-Viz"]
-_SEVEN = ["Docs", "Overview", "Dossier", "Infographics", "Decks", "Status", "Kedro-Viz"]
-
-
-def test_ac6_one_nav_list_gains_status_only_with_the_flag() -> None:
-    sp, _ = _tools()
-    data = _site_cfg()
-    entries = [*data["nav"], *data["neighbours"]]
-    assert [e["label"] for e in sp.menu_entries(entries, enabled=True)] == _SEVEN
-    assert [e["label"] for e in sp.menu_entries(entries, enabled=False)] == _SIX
-    status = next(e for e in data["nav"] if e["key"] == "status")
-    assert status["href"] == "../status/index.html" and status["flag"] == _FLAG
-
-
-def test_ac6_an_entry_gated_on_an_unknown_flag_is_refused() -> None:
-    sp, _ = _tools()
-    with pytest.raises(ValueError, match="unknown flag"):
-        sp.menu_entries([{"key": "x", "label": "X", "href": "x/", "flag": "pyforge.herald.other"}], enabled=True)
-
-
-@pytest.mark.parametrize("enabled", [True, False], ids=["on", "off"])
-def test_ac6_the_docs_menus_follow_the_flag(enabled: bool) -> None:
-    gen = _load(REPO_ROOT / "docs-site" / "scripts" / "sidebar_from_map.py", "sidebar_from_map_status_under_test")
-    menu = gen.load_site_menu(_SITE_YML, status_pages=enabled)
-    labels = _SEVEN if enabled else _SIX
-    assert [item["label"] for item in gen.top_menu(menu)] == labels
-    herald = gen.herald_sidebar_group(menu)
-    assert [item["label"] for item in herald["items"]] == labels[1:]
-    assert ({"link": "/status/", "label": "Status"} in herald["items"]) is enabled
-
-
-@pytest.mark.parametrize("enabled", [True, False], ids=["on", "off"])
-def test_ac6_pages_check_expects_the_seven_or_six_link_menu(enabled: bool) -> None:
-    assemble = _load(_TOOLS / "assemble_pages.py", "assemble_pages_status_under_test")
-    labels = [label for label, _ in assemble._expected_menu(status_pages=enabled)]
-    assert labels == (_SEVEN if enabled else _SIX)
-
-
-def test_ac6_pages_check_refuses_a_flag_on_menu_without_status(capsys) -> None:
-    assemble = _load(_TOOLS / "assemble_pages.py", "assemble_pages_status_menu_under_test")
-    expected = assemble._expected_menu(status_pages=False)
-    with pytest.raises(SystemExit) as exc:
-        assemble._check_status_menu_entry(expected)
-    assert exc.value.code == 1
-    assert "no entry linking status/index.html" in capsys.readouterr().err
-    assemble._check_status_menu_entry(assemble._expected_menu(status_pages=True))
-
-
-# --- AC7: flag off --------------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize("fleet_input", ["valid", "malformed", "absent"])
-def test_ac7_flag_off_changes_no_file_and_opens_no_input(
-    build_mod, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fleet_input: str
-) -> None:
-    """Off, every herald file is byte-identical to a build without this story's two templates, no
-    status page is written, and the input is never opened (valid, malformed or absent)."""
-    sp, cst = _tools()
-    fleet = {"valid": _FLEET, "malformed": _write(tmp_path, "{not json"), "absent": tmp_path / "none.json"}[fleet_input]
-    monkeypatch.setattr(sp, "load_fleet_status", lambda path: pytest.fail(f"opened {path} with the flag off"))
-    kw = {"kedro_viz_export": tmp_path / "no-export", "fleet_status": fleet, "status_pages": False}
-
-    with_story = tmp_path / "with" / "herald"
-    build_mod.build(with_story, REPO_ROOT, status_out=tmp_path / "with" / "status", **kw)
-
-    templates = tmp_path / "templates-without-42-1"
-    shutil.copytree(build_mod.TEMPLATES, templates)
-    for name in ("page_status.html.j2", "page_status_ci.html.j2"):
-        (templates / name).unlink()
-    monkeypatch.setattr(build_mod, "TEMPLATES", templates)
-    without = tmp_path / "without" / "herald"
-    build_mod.build(without, REPO_ROOT, **kw)
-
-    assert not (tmp_path / "with" / "status").exists()
-    compared = filecmp.dircmp(with_story, without)
-    _assert_same_tree(compared)
-    for page in with_story.rglob("*.html"):
-        assert ">Status</a>" not in page.read_text(encoding="utf-8", errors="replace"), page
-
-
-def _assert_same_tree(cmp: filecmp.dircmp) -> None:
-    assert not cmp.left_only and not cmp.right_only, (cmp.left, cmp.left_only, cmp.right_only)
-    _, mismatch, errors = filecmp.cmpfiles(cmp.left, cmp.right, cmp.common_files, shallow=False)
-    assert not mismatch and not errors, (cmp.left, mismatch, errors)
-    for sub in cmp.subdirs.values():
-        _assert_same_tree(sub)
-
-
-# --- AC8: the boundary ----------------------------------------------------------------------------
-
-_STATUS_MODULES = [
-    REPO_ROOT / "src/shared/packages/pyforge-herald/src/pyforge/herald/status_pages.py",
-    _TOOLS / "status_pages.py",
-    _TOOLS / "export_status_pages_env.py",
-    _TOOLS / "ci_surfaces_tile.py",
-    _TOOLS / "assemble_pages.py",
-    REPO_ROOT / "docsite" / "build.py",
-]
-
-
-@pytest.mark.parametrize("path", _STATUS_MODULES, ids=lambda p: p.name)
-def test_ac8_no_steward_import_and_no_gh_call(path: Path) -> None:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            assert not any(a.name.startswith("pyforge.steward") for a in node.names), path
-        elif isinstance(node, ast.ImportFrom):
-            assert not (node.module or "").startswith("pyforge.steward"), path
-        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            assert node.value != "gh", f"{path}: a literal 'gh' argument"
-
-
-# --- Story 43.5: the built-from line on the Jinja status pages ----------------------------------------------------
-
-_BUILT_FROM_ENVS = [
-    {},
-    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "2026-10-15T14:03:09Z"},
-    {"GITHUB_SHA": "fedcba9876543210", "GITHUB_RUN_ID": "4242", "PAGES_BUILT_AT": "2026-10-15T23:59:59+00:00"},
-    {"GITHUB_SHA": "fedcba9876543210", "PAGES_BUILT_AT": "2026-10-15T23:59:59.5-05:00"},  # crosses the UTC date
-    # the review's divergences, now refused by both: a date alone, a naive time, not a time at all
-    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "2026-10-15"},
-    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "2026-10-15T14:03:09"},
-    {"GITHUB_SHA": "0123456789abcdef", "PAGES_BUILT_AT": "Thu, 15 Oct 2026 14:03:09 GMT"},
-]
-_BUILT_FROM_PROBE = """
-import { builtFromHtml } from %s;
-const lines = %s.map((env) => { try { return builtFromHtml(env); } catch { return 'refused'; } });
-process.stdout.write(JSON.stringify(lines));
-"""
-
-
-def _python_line(status_pages, env: dict[str, str]) -> str:
-    try:
-        return status_pages.built_from_html(env)
-    except ValueError:
-        return "refused"
-
-
-def test_43_5_the_status_pages_carry_the_line_only_when_given(build_mod, tmp_path: Path) -> None:
-    """Story 43.5: with pyforge.herald.pages_one_generator on, ``build.py`` hands each status page the built-from
-    line; off (``None``), nothing is added and the pages are as before."""
-    status_pages, _ = _tools()
-    line = status_pages.built_from_html(
-        {"GITHUB_SHA": "0123456789abcdef", "GITHUB_RUN_ID": "7", "PAGES_BUILT_AT": "2026-10-15T09:00:00Z"}
-    )
-    assert (
-        line
-        == '<p class="built-from" data-pages-built-from data-pagefind-ignore>Built from 0123456 · 2026-10-15 09:00 UTC · run 7</p>'
-    )
-    status_out, _ = _render(build_mod, tmp_path / "off", flag_enabled=True)
-    for page in (status_out / "index.html", status_out / "ci" / "index.html"):
-        assert "data-pages-built-from" not in page.read_text(encoding="utf-8")
-    on = tmp_path / "on" / "site" / "status"
-    build_mod.render_status_pages(
-        flag_enabled=True,
-        status_out=on,
-        herald_out=tmp_path / "on" / "site" / "herald",
-        fleet_status=_FLEET,
-        ci_status=_CI,
-        site_cfg=_site_cfg(),
-        built_at="2026-10-15",
-        commit="abc1234",
-        built_from=line,
-    )
-    for page, before in (
-        (on / "index.html", status_out / "index.html"),
-        (on / "ci" / "index.html", status_out / "ci" / "index.html"),
-    ):
-        text = page.read_text(encoding="utf-8")
-        assert text.count(line) == 1 and text.replace(f"\n    {line}", "") == before.read_text(encoding="utf-8")
-
-
-@pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH")
-def test_43_5_the_python_line_is_the_typescript_one(tmp_path: Path) -> None:
-    """``status_pages.built_from_html`` renders ``docs-site/src/lib/built-from.ts``'s ``builtFromHtml`` byte for byte,
-    so the Jinja status pages and the Astro pages name one build alike (``pages-check`` refuses two)."""
-    import subprocess
-
-    status_pages, _ = _tools()
-    module = (REPO_ROOT / "docs-site" / "src" / "lib" / "built-from.ts").as_uri()
-    done = subprocess.run(
-        [
-            "node",
-            "--experimental-strip-types",
-            "--input-type=module",
-            "-e",
-            _BUILT_FROM_PROBE % (json.dumps(module), json.dumps(_BUILT_FROM_ENVS)),
+@needs_node
+def test_ac2_the_attention_block_lists_each_blocked_then_backlog_key_once() -> None:
+    data = {
+        "stations": [_station("pyforge-a", blocked=1, backlog=1)],
+        "stories": [
+            {"story_id": "1.2", "station": "pyforge-a", "status": "backlog", "title": "later"},
+            {"story_id": "1.1", "station": "pyforge-a", "status": "blocked", "title": "stuck"},
+            {"story_id": "1.1", "station": "pyforge-a", "status": "blocked", "title": "stuck again"},
+            {"story_id": "1.3", "station": "pyforge-a", "status": "done"},
         ],
-        capture_output=True,
-        text=True,
-        check=False,
+    }
+    board = _board(data)
+    assert [(a["story_id"], a["status"]) for a in board["attention"]] == [("1.1", "blocked"), ("1.2", "backlog")]
+    assert board["attentionNote"] is None
+
+
+@needs_node
+@pytest.mark.parametrize(
+    ("stations", "stories", "note"),
+    [
+        ([_station("a", blocked=0, backlog=0)], [], "Nothing needs attention: no story is blocked or in the backlog."),
+        ([_station("a", blocked=2, backlog=1)], [], "The input lists none of the 2 blocked / 1 backlog stories"),
+        ([_station("a")], [], "its station counts do not say whether any exist"),
+        (
+            [_station("a", blocked=1, backlog=0), _station("b", blocked=0, backlog=1)],
+            [
+                {"story_id": "1", "station": "a", "status": "blocked"},
+                {"story_id": "2", "station": "a", "status": "blocked"},
+            ],
+            "a: 2 blocked listed, 1 counted; b: 0 backlog listed, 1 counted",
+        ),
+        (
+            [_station("a", blocked=0, backlog=0)],
+            [{"story_id": "9", "station": "ghost", "status": "blocked"}],
+            "ghost: 1 blocked listed, no station row counts them",
+        ),
+    ],
+    ids=["all-clear", "none-listed", "counts-unknown", "per-station", "unknown-station"],
+)
+def test_ac2_the_note_never_claims_an_all_clear_the_counts_contradict(stations: list, stories: list, note: str) -> None:
+    board = _board({"stations": stations, "stories": stories})
+    assert note in (board["attentionNote"] or ""), board
+
+
+@needs_node
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        ([], "fleet-status.json: envelope is not a JSON object"),
+        ({}, "fleet-status.json: missing stations"),
+        ({"stations": {}}, "stations is not a list"),
+        ({"stations": [{"station": "a", "total": 1}]}, "station 0 (a) missing done"),
+        ({"stations": [{"done": -1, "total": 1}]}, "station 0 done is not a non-negative integer"),
+        ({"stations": [{"done": 1.5, "total": 2}]}, "station 0 done is not a non-negative integer"),
+        ({"stations": [{"done": 3, "total": 2}]}, "station 0 done 3 is more than total 2"),
+        ({"stations": [], "stories": {}}, "stories is not a list"),
+        ({"stations": [], "stories": [{"status": "blocked"}]}, "story 0 missing story_id"),
+    ],
+)
+def test_ac5_a_malformed_input_is_refused_naming_the_file(data: object, message: str) -> None:
+    result = _board(data)
+    assert result == {"error": "StatusInputShapeError", "message": result["message"]}
+    assert message in result["message"]
+
+
+@needs_node
+def test_ac5_a_missing_or_unreadable_input_names_the_path(tmp_path: Path) -> None:
+    absent = ts(STATUS_TS, "return m.loadFleetStatus(inp.file);", file=str(tmp_path / "fleet-status.json"))
+    assert (
+        absent["error"] == "StatusInputShapeError"
+        and "fleet-status.json: fleet-status input missing" in absent["message"]
     )
-    assert done.returncode == 0, done.stderr
-    lines = json.loads(done.stdout)
-    assert lines == [_python_line(status_pages, env) for env in _BUILT_FROM_ENVS]
-    assert lines[0].endswith(">local build</p>") and "2026-10-16 04:59 UTC" in lines[3]
-    assert lines[4:] == ["refused"] * 3
+    broken = tmp_path / "broken.json"
+    broken.write_text("{not json", encoding="utf-8")
+    result = ts(STATUS_TS, "return m.loadFleetStatus(inp.file);", file=str(broken))
+    assert "broken.json: not valid JSON" in result["message"]
+
+
+@needs_node
+def test_ac3_lane1_is_linked_only_by_an_absolute_url() -> None:
+    hrefs = ["/console/", "console/", "//lane1.example/", "https://lane1.example/console/", None]
+    links = ts(
+        DOCS_SITE / "src" / "lib" / "agent-surface.ts",
+        "return inp.hrefs.map((href) => m.lane1Link(href === null ? null : { label: 'Live', href }));",
+        hrefs=hrefs,
+    )
+    assert links == [None, None, None, {"href": "https://lane1.example/console/", "label": "Live"}, None]
+
+
+# --- AC4: the guild status page ---------------------------------------------------------------------------------------
+
+
+@needs_node
+def test_ac4_every_row_in_the_tiles_order_with_live_last() -> None:
+    rows = ts(STATUS_TS, "return m.guildRows(m.loadCiStatus(inp.file));", file=str(_CI))
+    assert [row["id"] for row in rows] == _GUILD_ORDER
+    assert set(rows[0]) == {"id", "verdict", "switch", "paused_since", "review_by", "owner", "detail"}
+    assert all(isinstance(v, str) for row in rows for v in row.values())
+
+
+def test_ac8_no_steward_import_and_no_gh_call_in_the_status_code() -> None:
+    """Herald reads steward's output as data: the status code imports no station and runs no process."""
+    for rel in ("src/lib/status.ts", "src/pages/status/[...index].astro", "src/pages/status/ci/[...index].astro"):
+        text = (DOCS_SITE / rel).read_text(encoding="utf-8")
+        imports = re.findall(r"^import .* from '([^']+)';", text, re.M)
+        assert all(source.startswith(("node:", "../", "./", "@astrojs/")) for source in imports), (rel, imports)
+        assert "child_process" not in text and "spawn" not in text and "execFile" not in text, rel

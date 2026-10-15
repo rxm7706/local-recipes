@@ -1,14 +1,18 @@
 /**
  * Story 43.5 (CAP-61): every page says what built it -- the first seven characters of `GITHUB_SHA`, the build time
  * and `GITHUB_RUN_ID`, read from the environment the workflow already provides (no `gh` call, no token); with no
- * `GITHUB_SHA` it says `local build`. The time is `PAGES_BUILT_AT` (ISO 8601, which the Pages assembler sets once per
- * build so every page and generator agrees), else this module's load time.
+ * `GITHUB_SHA` it says `local build`. The time is `PAGES_BUILT_AT` (ISO 8601, which `pages-build` --
+ * `scripts/pages.mts build` -- sets once per build in the build's environment, so every page agrees), else this
+ * module's load time.
  *
- * The line is build provenance, not content: it is one `data-pages-built-from` element of plain text, which steward's
- * `tree_hash` (`pyforge.steward.pages`) reads without its text, so a rebuild of an unmoved tree hashes the same and
- * deploys nothing (the 24-hour liveness rule keeps the live build honest), and `data-pagefind-ignore` keeps it out of
- * the search index. `docsite/tools/status_pages.py` renders the same element for the Jinja status pages until Story
- * 43.7; a test holds the two equal. Node builtins only: the reader pages and the tests import it with type stripping.
+ * The line is build provenance, not content: it is one element of plain text, exactly `BUILT_FROM_OPEN` + text +
+ * `</p>`, which steward's `tree_hash` (`pyforge.steward.pages.BUILT_FROM_TEXT`) reads without its text, so a rebuild
+ * of an unmoved tree hashes the same and deploys nothing (the 24-hour liveness rule keeps the live build honest), and
+ * `data-pagefind-ignore` keeps it out of the search index. **Three things change together** (Story 43.7): this markup,
+ * steward's `BUILT_FROM_TEXT` regex, which matches it byte for byte, and `pages-check`'s built-from check
+ * (`scripts/pages.mts`, which reads `BUILT_FROM_OPEN` from here). A markup change without steward's regex keeps the
+ * text in the hash and redeploys every build, silently; a herald test pins the two equal. Node builtins only: the
+ * reader pages and the tests import it with type stripping.
  */
 
 const LOADED_AT = new Date();
@@ -35,8 +39,11 @@ export function builtFromText(env: Record<string, string | undefined> = process.
   return [`Built from ${sha.slice(0, 7)}`, utcMinute(at), ...(run ? [`run ${run}`] : [])].join(' · ');
 }
 
+/** The element's opening tag, byte for byte: steward's `BUILT_FROM_TEXT` and `pages-check` match exactly this. */
+export const BUILT_FROM_OPEN = '<p class="built-from" data-pages-built-from data-pagefind-ignore>';
+
 /** The footer element every page carries (text only: the text holds no markup to escape). */
 export function builtFromHtml(env: Record<string, string | undefined> = process.env): string {
   const text = builtFromText(env).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return `<p class="built-from" data-pages-built-from data-pagefind-ignore>${text}</p>`;
+  return `${BUILT_FROM_OPEN}${text}</p>`;
 }

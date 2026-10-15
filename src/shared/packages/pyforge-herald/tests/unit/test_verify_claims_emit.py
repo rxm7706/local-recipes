@@ -1,31 +1,24 @@
 """Story 43.5 (spec-pyforge-herald CAP-61): the measurer becomes a producer.
 
-``docsite/tools/verify_claims.py --emit`` writes what ``measure()`` counts for every ``check:`` key the dossier
-uses (AC6), refusing an unknown key or a missing package by name; with ``--page`` the compare judges the stats a
-built dossier shows rather than the YAML's typed values (AC5), keeping its exit 1 on drift. Every case measures a
-fixture tree with known line counts, never this repository."""
+``docs-site/scripts/verify_claims.py --emit`` (Story 43.7 moved it beside the generator and retired its typed-value
+compare with the ``site-verify`` advisory) writes what ``measure()`` counts for every ``check:`` key the dossier uses
+(AC6), refusing an unknown key or a missing package by name. Every case measures a fixture tree with known line
+counts, never this repository."""
 
 from __future__ import annotations
 
-import importlib.util
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 import yaml
-from pyforge.testing_kit import make_flag_provider_fixture
-from pyforge.testing_kit.flags import flag_states
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
-VERIFY = REPO_ROOT / "docsite" / "tools" / "verify_claims.py"
-_FLAG = "pyforge.herald.pages_one_generator"
-flag_provider = make_flag_provider_fixture()
+VERIFY = REPO_ROOT / "docs-site" / "scripts" / "verify_claims.py"
 
-#: station -> (source lines, source files, test lines, Python floor) of its fixture package; the floors differ, so
-#: the compare's fleet-wide floor-gap check has nothing to report
+#: station -> (source lines, source files, test lines, Python floor) of its fixture package
 COUNTS = {"atlas": (41234, 3, 400, "3.13"), "mason": (52345, 2, 7000, "3.14")}
 
 
@@ -77,9 +70,7 @@ def _tree(tmp_path: Path, *, atlas_check: str = "src_lines", measured: bool = Tr
 
 
 def _run(*args: str) -> subprocess.CompletedProcess[str]:
-    """The script on the fixture only: with the flag unset, a bare compare reads ``--content``, never a built page."""
-    env = {k: v for k, v in os.environ.items() if k != "PYFORGE_PAGES_ONE_GENERATOR"}
-    return subprocess.run([sys.executable, str(VERIFY), *args], capture_output=True, text=True, check=False, env=env)
+    return subprocess.run([sys.executable, str(VERIFY), *args], capture_output=True, text=True, check=False)
 
 
 def test_43_5_ac6_emit_writes_one_key_per_check_key_with_the_measured_values(tmp_path: Path) -> None:
@@ -117,83 +108,7 @@ def test_43_5_ac6_an_unknown_key_or_a_missing_package_fails_naming_it(
     assert named in done.stderr
 
 
-def _page(values: dict[str, list[tuple[str, str]]]) -> str:
-    """A built dossier as DossierBody.astro renders it: the hero, then one section per id."""
-    hero = "".join(
-        f'<div class="hero-stat"> <span class="n">{v}</span> <span class="l">{lab}</span> </div>'
-        for v, lab in values[""]
-    )
-    sections = "".join(
-        f'<section id="{sid}"><div class="stat-row">'
-        + "".join(f'<div class="s"><b>{v}</b><span>{lab}</span></div>' for v, lab in stats)
-        + "</div></section>"
-        for sid, stats in values.items()
-        if sid
-    )
-    return f'<html><body><div class="hero-stats">{hero}</div><main>{sections}</main></body></html>'
-
-
-def test_43_5_ac5_the_compare_judges_the_built_page_and_keeps_exit_1_on_drift(tmp_path: Path) -> None:
-    root, content = _tree(tmp_path)
-    measured = {
-        "": [("~94K", "Lines of source"), ("8", "Stations")],
-        "atlas": [("41,234", "Lines · 3 files"), ("8 / 11", "Pipelines")],
-        "mason": [("52,345", "Source lines · 2 files"), ("7,000", "Test lines"), ("py3.14", "Floor")],
-        "synthesis": [("17", "Claims")],
-    }
-    page = tmp_path / "index.html"
-    page.write_text(_page(measured), encoding="utf-8")
-    assert _run("--root", str(root), "--content", str(content)).returncode == 1  # the YAML's typed values drift
-    clean = _run("--page", str(page), "--root", str(root), "--content", str(content))
-    assert clean.returncode == 0 and "All checked claims match" in clean.stdout, clean.stdout + clean.stderr
-
-    stale = {**measured, "atlas": [("999", "Lines · 3 files"), ("8 / 11", "Pipelines")]}  # a page showing a typed value
-    page.write_text(_page(stale), encoding="utf-8")
-    drift = _run("--page", str(page), "--root", str(root), "--content", str(content), "--format", "github")
-    assert drift.returncode == 1
-    assert "::warning file=docsite/content/dossier.yml::atlas: Lines · 3 files — dossier says 999" in drift.stdout
-
-    short = {**measured, "mason": measured["mason"][:2]}
-    page.write_text(_page(short), encoding="utf-8")
-    refused = _run("--page", str(page), "--root", str(root), "--content", str(content))
-    assert refused.returncode == 2 and "section 'mason': the page shows 2 stats, dossier.yml has 3" in refused.stderr
-    missing = _run("--page", str(tmp_path / "absent.html"), "--root", str(root), "--content", str(content))
-    assert missing.returncode == 2 and "pages-build writes it" in missing.stderr
-
-
-@flag_states(_FLAG)
-def test_43_5_ac5_with_the_flag_on_site_verify_reads_the_built_page_by_default(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys, flag_provider: dict[str, bool]
-) -> None:
-    """``site-verify`` passes no ``--page``: with pyforge.herald.pages_one_generator on, the compare reads the Pages
-    build's dossier (``BUILT_DOSSIER``) -- exit 2 naming it when no build is there, 0 over a page showing the measured
-    values; off, it compares the YAML's typed values as before (exit 1 on the fixture's stale ones)."""
-    on = flag_provider[_FLAG]
-    monkeypatch.setenv("PYFORGE_PAGES_ONE_GENERATOR", "1" if on else "0")  # as the Guild step exports it
-    spec = importlib.util.spec_from_file_location("verify_claims_flag_states", VERIFY)
-    assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    built = tmp_path / "site" / "herald" / "dossier" / "index.html"
-    monkeypatch.setattr(mod, "BUILT_DOSSIER", built)
-    root, content = _tree(tmp_path)
-    argv = ["--root", str(root), "--content", str(content)]
-    if not on:
-        assert mod.main(argv) == 1
-        assert "drifted" in capsys.readouterr().out
-        return
-    assert mod.main(argv) == 2
-    assert str(built) in capsys.readouterr().err
-    built.parent.mkdir(parents=True)
-    built.write_text(
-        _page(
-            {
-                "": [("~94K", "Lines of source"), ("8", "Stations")],
-                "atlas": [("41,234", "Lines · 3 files"), ("8 / 11", "Pipelines")],
-                "mason": [("52,345", "Source lines · 2 files"), ("7,000", "Test lines"), ("py3.14", "Floor")],
-                "synthesis": [("17", "Claims")],
-            }
-        ),
-        encoding="utf-8",
-    )
-    assert mod.main(argv) == 0
+def test_43_7_emit_is_the_one_mode_and_a_bare_run_says_so() -> None:
+    done = _run()
+    assert done.returncode == 2 and "--emit" in done.stderr
+    assert "def check(" not in VERIFY.read_text(encoding="utf-8")  # the typed-value compare retired with site-verify

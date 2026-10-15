@@ -81,11 +81,13 @@ def test_real_pixi_lists_every_leaf_once() -> None:
     assert ("ruff", "pyforge-guild") in keys
     by_task = _lane_map(pixi)
     assert by_task["pages-check"].depends_on == (("pages-build", "site"),)
-    assert set(by_task["pages-build"].depends_on) == {
+    # herald Story 43.7: the sidebar is computed at build from docs/map.yaml (no docs-site-sidebar task), and the map
+    # check reads YAML with docs-site's npm packages.
+    assert set(by_task["pages-build"].depends_on) == {("docs-site-install", "site")}
+    assert set(by_task["docs-site-validate-sidebar"].depends_on) == {
         ("docs-site-install", "site"),
-        ("docs-site-sidebar", "site"),
+        ("docs-site-validate-sidebar-order", "site"),
     }
-    assert by_task["docs-site-validate-sidebar"].depends_on == (("docs-site-validate-sidebar-order", "site"),)
 
 
 def test_missing_aggregate_exits_2(tmp_path: Path) -> None:

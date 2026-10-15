@@ -1,10 +1,11 @@
 /**
  * Loads the herald overview, gallery and deck-family pages' data at build time (Story 43.2, CAP-61):
- * `docsite/content/site.yml` and each `presentations/<slug>/facts.yaml` parsed here, the rest read by
- * `src/lib/herald-pages.ts` -- all in place, nothing copied or edited.
+ * `docs-site/src/content/site.yml` (Story 43.7 moved it beside the generator) and each
+ * `presentations/<slug>/facts.yaml` parsed here, the rest read by `src/lib/herald-pages.ts` -- all in place, nothing
+ * copied or edited.
  *
- * `HERALD_PAGES_REPO_ROOT` points the loader at another tree (the parity test's fixtures), as
- * `docsite/build.py --repo-root` does for the Jinja path; unset, it is this repository.
+ * `HERALD_PAGES_REPO_ROOT` points the loader at another tree (the herald tests' fixtures, laid out as this
+ * repository is); unset, it is this repository.
  */
 
 import fs from 'node:fs';
@@ -15,7 +16,6 @@ import { parse as parseYaml } from 'yaml';
 import {
   collectFamilies,
   collectInfographics,
-  gitCommit,
   neighbours,
   type Family,
   type FamilyFacts,
@@ -23,16 +23,15 @@ import {
   type SiteConfig,
 } from '../lib/herald-pages.ts';
 
+/** The site's configuration (the infographics to publish, the overview's tiles, the artifact URL), from the root. */
+export const SITE_YML = 'docs-site/src/content/site.yml';
+
 export interface HeraldPages {
   site: SiteConfig;
   neighbours: Array<Record<string, unknown>>;
   infographics: Infographic[];
   families: Family[];
-  commit: string;
 }
-
-/** `pyforge.herald.pages_one_generator` (Story 43.1), read by the docs-site's one flag reader (`src/lib/flags.ts`). */
-export { pagesOneGenerator } from '../lib/flags.ts';
 
 /**
  * The tree the pages read: `HERALD_PAGES_REPO_ROOT`, else the repository holding the build's working
@@ -44,11 +43,11 @@ export function heraldPagesRoot(): string {
     return path.resolve(override);
   }
   for (let dir = process.cwd(); ; dir = path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, 'pixi.toml')) && fs.existsSync(path.join(dir, 'docsite', 'content', 'site.yml'))) {
+    if (fs.existsSync(path.join(dir, 'pixi.toml')) && fs.existsSync(path.join(dir, SITE_YML))) {
       return dir;
     }
     if (path.dirname(dir) === dir) {
-      throw new Error(`no repository with docsite/content/site.yml above ${process.cwd()}`);
+      throw new Error(`no repository with ${SITE_YML} above ${process.cwd()}`);
     }
   }
 }
@@ -71,15 +70,13 @@ export function loadHeraldPages(): HeraldPages {
     return loaded;
   }
   const repoRoot = heraldPagesRoot();
-  const site = parseYaml(fs.readFileSync(path.join(repoRoot, 'docsite/content/site.yml'), 'utf8')) as SiteConfig;
-  const commit = gitCommit(repoRoot);
+  const site = parseYaml(fs.readFileSync(path.join(repoRoot, SITE_YML), 'utf8')) as SiteConfig;
   const infographics = collectInfographics(site, repoRoot);
   loaded = {
     site,
     neighbours: neighbours(site, repoRoot),
     infographics,
-    families: collectFamilies(infographics, repoRoot, commit, (slug) => readFacts(repoRoot, slug)),
-    commit,
+    families: collectFamilies(infographics, repoRoot, (slug) => readFacts(repoRoot, slug)),
   };
   return loaded;
 }

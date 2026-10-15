@@ -1,7 +1,7 @@
 name: Pages
 
 # Steward owns this duct (spec-pyforge-steward CAP-168 / Stories 102.1–102.4). Herald owns
-# the artifact content (pages-build, pages-check, docsite/, docs-site/, /herald/).
+# the artifact content (pages-build, pages-check, docs-site/, /herald/, /status/).
 # This workflow is the sole actions/deploy-pages caller (herald herald:AD-21). No
 # bot commit on main.
 #
@@ -10,8 +10,8 @@ name: Pages
 # /dashboard/kedro-viz/). Story 102.4: atlas's kedro-viz-publish.yml uploads the export as
 # the workflow artifact kedro-viz-export (atlas Story 30.1); the build job downloads the
 # newest live one into docs/dashboard/kedro-viz/ (gitignored), which
-# docsite/tools/assemble_pages.py mounts, and skips the mount when there is none (herald
-# Story 42.2). Lane 1 /console/ is the operator console.
+# the Astro build mounts (docs-site/scripts/populate-public.mts), and skips the mount when there
+# is none (herald Story 42.2). Lane 1 /console/ is the operator console.
 #
 # Story 102.2: build on pull_request and push (one filter),
 # deploy on main only when the tree hash differs from live build.json (or, once a day, when
@@ -19,9 +19,10 @@ name: Pages
 # pause switches: its deploy still needs main and a changed tree (AD-4 as amended 2026-10-14;
 # the pages.deploy registry row renders `dispatch: pause-only`).
 # Story 102.3: a Guild step writes herald's fleet board input
-# (docsite/content/fleet-status.json, from sprint-ledger-query --format json) before
-# every build, and the build env carries PYFORGE_STATUS_PAGES (herald Story 42.1's
-# flag); `steward pages build|deploy|status` is the duty that speaks to this workflow.
+# (docs-site/src/content/fleet-status.json, from sprint-ledger-query --format json; herald
+# Story 43.7 moved it beside the generator) before every build, and the build env carries
+# PYFORGE_STATUS_PAGES (herald Story 42.1's flag); `steward pages build|deploy|status` is the
+# duty that speaks to this workflow.
 # Story 102.5: actions/configure-pages is authoritative on every host -- its base_url and
 # base_path reach the build (SITE_URL, PAGES_HOST_BASE_URL, PAGES_HOST_BASE_PATH) with no flag
 # (herald Story 42.3 retires the second-host flag) -- and after each deploy the
@@ -44,7 +45,6 @@ on:
       - 'scripts/pages_*.py'
       - 'src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py'
       - 'docs-site/**'
-      - 'docsite/**'
       - 'presentations/**'
       - '.github/workflows/pages.yml'
   push:
@@ -98,11 +98,11 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v6
 
+      # Herald's build flags (pyforge.herald.status_pages, pyforge.herald.ci_surfaces_tile) as
+      # PYFORGE_* lines, resolved in the Guild env (herald Story 43.7: python -m pyforge.herald.pages_env).
       - name: Resolve build env (flags)
         run: |
-          pixi run --frozen -e pyforge-guild python docsite/tools/export_ci_surfaces_tile_env.py >> "$GITHUB_ENV"
-          pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_one_generator_env.py >> "$GITHUB_ENV"
-          pixi run --frozen -e pyforge-guild python docsite/tools/export_status_pages_env.py >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python -m pyforge.herald.pages_env >> "$GITHUB_ENV"
           pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --flag-env >> "$GITHUB_ENV"
 
       # Story 102.5: the deploy job's release-asset step reads steward's duty flag from here.
@@ -113,7 +113,7 @@ jobs:
       # The Kedro-Viz mount's build input (Story 102.4): atlas's newest live kedro-viz-export from a
       # successful kedro-viz-publish.yml run on main, into docs/dashboard/kedro-viz/, chosen from the
       # artifact listing itself (no window of recent runs). Absent (no artifact, only expired ones)
-      # is a normal build: it exports KEDRO_VIZ_EXPORT=absent and herald's assembler skips the mount;
+      # is a normal build: it exports KEDRO_VIZ_EXPORT=absent and the herald build skips the mount;
       # a gh error fails the step. gh talks to the host that ran this workflow (GH_HOST from
       # GITHUB_SERVER_URL, GH_REPO), github.com or a GitHub Enterprise Server, with the job's token
       # as GH_TOKEN and GH_ENTERPRISE_TOKEN. Another artifact mount is a copy of this step with its
@@ -130,7 +130,7 @@ jobs:
 
       # Atlas Story 30.2's consumer (its review moved it here): the Vizro boards' static export,
       # uploaded as vizro-static-export by a second job of kedro-viz-publish.yml, into
-      # docs/dashboard/vizro/, which the assembler copies under /dashboard/vizro/. Same gate, same
+      # docs/dashboard/vizro/, which the Astro build mounts at /dashboard/vizro/. Same gate, same
       # host and tokens, same absent path; a run that rebuilt only the Kedro-Viz export never
       # pushes this one out of reach, since the newest live artifact is chosen by name.
       - name: Download the Vizro static export artifact
@@ -153,7 +153,7 @@ jobs:
           pixi run --frozen -e pyforge-guild python scripts/pages_fleet_status.py \
             --ledger "$RUNNER_TEMP/sprint-ledger.json" \
             --generated-at "$(git log -1 --format=%cI HEAD)" \
-            --out docsite/content/fleet-status.json
+            --out docs-site/src/content/fleet-status.json
 
       # configure-pages is authoritative on every host (Story 102.5, herald Story 42.3): the
       # deploying host's base URL and path reach pages-check and the Astro build, no flag.
@@ -166,10 +166,6 @@ jobs:
 
       - name: Validate docs-site (PR gate folded from docsite-check.yml)
         run: pixi run --frozen -e site docs-site-validate
-
-      - name: Verify the dossier's numbers against the source tree
-        continue-on-error: true
-        run: pixi run --frozen -e site site-verify
 
       - name: Stamp build.json and decide deploy
         id: stamp

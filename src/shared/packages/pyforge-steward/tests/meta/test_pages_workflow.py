@@ -22,7 +22,6 @@ _EXPECTED_PATHS = {
     "scripts/pages_*.py",
     "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
     "docs-site/**",
-    "docsite/**",
     "presentations/**",
     ".github/workflows/pages.yml",
 }
@@ -128,14 +127,15 @@ def test_pages_yml_runs_docs_site_validate_in_build() -> None:
 
 def test_pages_yml_writes_the_fleet_board_input_before_the_build() -> None:
     """Story 102.3 (closes the 102.2 gap herald 42.1's spec assigns to this workflow): a Guild step
-    writes docsite/content/fleet-status.json from sprint-ledger-query --format json before
-    pages-check, and the build env carries herald's status-pages flag."""
+    writes the fleet board's input (docs-site/src/content/fleet-status.json since herald Story 43.7) from
+    sprint-ledger-query --format json before pages-check, and the build env carries herald's status-pages flag
+    (``python -m pyforge.herald.pages_env``, herald Story 43.7)."""
     steps = [s for s in _load()["jobs"]["build"]["steps"] if isinstance(s, dict)]
     runs = [str(s.get("run", "")) for s in steps]
     writer = next(i for i, run in enumerate(runs) if "scripts/pages_fleet_status.py" in run)
     build = next(i for i, run in enumerate(runs) if "pages-check" in run)
-    env = next(i for i, run in enumerate(runs) if "export_status_pages_env.py" in run)
+    env = next(i for i, run in enumerate(runs) if "pyforge.herald.pages_env" in run)
     assert env < writer < build
     assert "sprint-ledger-query -- --format json --output" in runs[writer]
-    assert "--out docsite/content/fleet-status.json" in runs[writer]
-    assert 'export_status_pages_env.py >> "$GITHUB_ENV"' in runs[env]
+    assert "--out docs-site/src/content/fleet-status.json" in runs[writer]
+    assert 'python -m pyforge.herald.pages_env >> "$GITHUB_ENV"' in runs[env]

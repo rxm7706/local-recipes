@@ -53,16 +53,16 @@ def test_nodejs_pin_matches_feature_python() -> None:
 def test_docs_site_pixi_tasks() -> None:
     root = _repo_root()
     pixi = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
-    install = pixi["feature"]["site"]["tasks"]["docs-site-install"]
-    sidebar = pixi["feature"]["site"]["tasks"]["docs-site-sidebar"]
-    build = pixi["feature"]["site"]["tasks"]["docs-site-build"]
+    tasks = pixi["feature"]["site"]["tasks"]
+    install = tasks["docs-site-install"]
+    build = tasks["docs-site-build"]
     assert install["cmd"] == "npm ci"
     assert install["cwd"] == "docs-site"
-    assert sidebar["cmd"] == "python scripts/sidebar_from_map.py"
-    assert sidebar["cwd"] == "docs-site"
     assert build["cmd"] == "npm run build"
     assert build["cwd"] == "docs-site"
-    assert build["depends-on"] == ["docs-site-install", "docs-site-sidebar"]
+    # Story 43.7: the sidebar is computed at build from docs/map.yaml (src/lib/site-nav.ts); no generator task.
+    assert build["depends-on"] == ["docs-site-install"]
+    assert "docs-site-sidebar" not in tasks
 
 
 def test_nvmrc_major_within_nodejs_pin() -> None:
@@ -99,6 +99,7 @@ def test_gitignore_excludes_docs_site_artifacts() -> None:
         "docs-site/node_modules/",
         "docs-site/build/",
         "docs-site/.astro/",
-        "docs-site/src/sidebar.generated.json",
+        "docs-site/public/",
+        "docs-site/src/content/fleet-status.json",
     ):
         assert line in ignore

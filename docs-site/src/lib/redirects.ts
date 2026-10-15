@@ -3,7 +3,7 @@
  *
  * `legacy` is the frozen set of root paths the herald pages were served at before the `/herald/` mount, each a
  * file name (`dossier/index.html`, `infographics/atlas.html`): Astro's `redirects` writes `<path>/index.html` for
- * every key, so these stubs are written into the build after it, in the Jinja assembler's shape, each pointing at
+ * every key, so these stubs are written into the build after it, in the retired assembler's shape, each pointing at
  * its target by a relative URL (any host, any base path). `kedro-viz` stays an Astro redirect (Story 42.2).
  *
  * One owner per path: a stub whose path the build already holds -- a page, or a file from `public/` -- fails the
@@ -73,7 +73,7 @@ export function writeLegacyRedirects(outDir: string, legacy: Record<string, stri
 /**
  * AD-21 rule 1, one owner per path: throw, naming each, when a route's output (`astro:build:done`'s `assets`, recorded
  * before Astro skips a page for a `public/` file of the same name) is a file `populatePublic` wrote (`written`,
- * relative to the public directory and so to the build's `outDir`; `scripts/populate-public.ts`).
+ * relative to the public directory and so to the build's `outDir`; `scripts/populate-public.mts`).
  */
 export function refusePublicCollisions(outDir: string, written: string[], assets: Map<string, URL[]>): void {
   const served = new Set(written);

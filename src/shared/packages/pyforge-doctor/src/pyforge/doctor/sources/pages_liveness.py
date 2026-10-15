@@ -43,8 +43,8 @@ __all__ = ("PAGES_ROOT_URL", "PUBLISHED_INPUTS", "STALE_AFTER", "gather")
 #: The live Pages root (the second host is Spec open question 1; a constant until then).
 PAGES_ROOT_URL = "https://rxm7706.github.io/local-recipes/"
 
-#: The herald Dream's M1 published-inputs list. The workflow itself is excluded:
-#: a workflow edit deploys nothing new.
+#: The herald Dream's M1 published-inputs list, less ``docsite`` (herald Story 43.7 retired it: ``docs-site``
+#: is the one generator). The workflow itself is excluded: a workflow edit deploys nothing new.
 PUBLISHED_INPUTS: tuple[str, ...] = (
     "docs/tutorials",
     "docs/how-to",
@@ -55,7 +55,6 @@ PUBLISHED_INPUTS: tuple[str, ...] = (
     "docs/map.yaml",
     "docs/dashboard",
     "docs-site",
-    "docsite",
     "presentations",
 )
 

@@ -2,15 +2,14 @@
 /**
  * /herald/infographics/ -- the gallery (Story 43.2, CAP-61): site.yml's include list resolved in its
  * order, each infographic with its title and a lazy preview of its twin, linking the reader's page
- * (the wrapper that carries the back-bar, ./[page].html.ts). A rest route so that with
- * pyforge.herald.pages_one_generator off it emits no file and the Jinja gallery is the only one.
+ * (the wrapper that carries the back-bar, ./[page].html.ts).
  */
 import Shot from '../../../components/herald/Shot.astro';
 import HeraldLayout from '../../../layouts/HeraldLayout.astro';
-import { loadHeraldPages, pagesOneGenerator } from '../../../loaders/herald-pages-loader';
+import { loadHeraldPages } from '../../../loaders/herald-pages-loader';
 
 export function getStaticPaths() {
-  return pagesOneGenerator() ? [{ params: { index: undefined } }] : [];
+  return [{ params: { index: undefined } }];
 }
 
 const pages = loadHeraldPages();

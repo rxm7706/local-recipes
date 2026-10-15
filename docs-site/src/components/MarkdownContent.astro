@@ -1,0 +1,71 @@
+---
+/**
+ * Story 43.7 (spec-pyforge-herald CAP-61): the home's doors. On the docs root only, ahead of its markdown, one door per
+ * part of the site -- the docs shelf, then each registry section (`docs/map.yaml` `sections`, src/lib/site-nav.ts) in
+ * its order, each listing its entries -- so the doors, the sidebar and the top menu always list the same sections.
+ * Every other page is Starlight's own MarkdownContent. Every href carries the host's base path (CAP-56).
+ */
+import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+import { siteNav } from '../lib/site-nav';
+
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const home = Astro.locals.starlightRoute.id === '';
+const doors = home ? siteNav().doors : [];
+---
+
+{
+  home && (
+    <nav class="pf-doors" aria-label="The site's parts" data-pf-doors>
+      {doors.map((door) => (
+        <div class="pf-door" data-pf-door={door.path}>
+          <a class="pf-door-link" href={`${base}${door.path}`}>{door.label}</a>
+          {door.entries.length > 0 && (
+            <ul>
+              {door.entries.map((entry) => (
+                <li>
+                  <a href={`${base}${entry.path}`}>{entry.label}</a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </nav>
+  )
+}
+<Default><slot /></Default>
+
+<style>
+  .pf-doors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .pf-door {
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: var(--sl-color-gray-6);
+  }
+  .pf-door-link {
+    display: block;
+    font-family: var(--sl-font-heading);
+    font-size: var(--sl-text-2xl);
+    font-weight: 700;
+    color: var(--sl-color-white);
+    text-decoration: none;
+  }
+  .pf-door-link:hover {
+    color: var(--sl-color-text-accent);
+  }
+  .pf-door ul {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    font-size: var(--sl-text-sm);
+  }
+  .pf-door a:not(.pf-door-link) {
+    color: var(--sl-color-text-accent);
+  }
+</style>

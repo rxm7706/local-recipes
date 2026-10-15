@@ -1,7 +1,7 @@
 /*
- * The herald pages' one stylesheet (Story 43.4 and its review; spec-pyforge-herald CAP-61; AD-23): the rules
- * docsite/assets/_dossier.css, docsite/build.py's content-model additions and docsite/assets/_site-chrome.css give the
- * Jinja path, imported by the herald layouts and bundled by Astro.
+ * The herald pages' one stylesheet (Story 43.4 and its review; spec-pyforge-herald CAP-61; AD-23): the dossier's rules,
+ * its content-model additions and the site chrome the retired Jinja path carried (Story 43.7 deleted it), imported by
+ * the herald layouts and bundled by Astro.
  *
  * It declares no font and no colour of its own (operator ruling 2026-10-15): every face and colour is one of
  * Starlight's theme variables, which theme.css fills with the herald look and the docs read too, and the dossier's
@@ -168,7 +168,7 @@ th { font-family: var(--sl-font-mono); font-size: 0.68rem; letter-spacing: 0.07e
 
 footer { margin-top: 96px; padding-top: 24px; border-top: 1px solid var(--border); font-family: var(--sl-font-mono); font-size: 0.78rem; color: var(--rail); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 
-/* --- content-model additions (docsite/build.py) --- */
+/* --- content-model additions (the retired Jinja build's, Story 43.7) --- */
 .soft-note{font-size:0.85rem;color:var(--rail);max-width:70ch;}
 .lattice-note{flex:1 1 260px;font-size:0.9rem;color:var(--ink-soft);max-width:40ch;}
 /* Long inline paths (src/shared/packages/pyforge-*) are wider than a
@@ -226,10 +226,6 @@ code,.mono{overflow-wrap:anywhere;}
 .site-nav a.nav-link:hover { color: var(--sl-color-text-accent); }
 .site-nav a.nav-link[aria-current="page"] { color: var(--ink); border-bottom-color: var(--amber); }
 .site-nav .nav-spacer { margin-left: auto; }
-.stamp {
-  font-family: var(--sl-font-mono); font-size: 0.68rem;
-  color: var(--rail); letter-spacing: 0.04em; white-space: nowrap;
-}
 
 /* ---- landing ---- */
 .lander { padding: clamp(48px, 9vw, 104px) 0 24px; border-bottom: 3px solid var(--ink); }

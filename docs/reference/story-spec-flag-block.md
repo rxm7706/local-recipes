@@ -143,7 +143,7 @@ retires-flag: pyforge.atlas.old_capability   # one key, or a list of keys
   silently returns its default. Every mention counts, comments and docstrings included; only a
   module path named like the key on an `import` line or in `import_module("...")` does not. The
   gate reads every file that can act on a flag: code, configuration, workflows (`.github/`), task
-  files (`pixi.toml`), site code and content (`docsite/`, `docs-site/`), BMAD config (`_bmad/`),
+  files (`pixi.toml`), site code and content (`docs-site/`), BMAD config (`_bmad/`),
   and the values (not the comments) of each station's `planning-artifacts/marshal-policy.toml`.
   It does not read prose (`*.md`), tests (`tests`/`test` folders, `test_*.py`, `*_test.py`,
   `conftest.py`, and JS/TS test code `*.test.ts`, `*.spec.jsx` and the like), binary files, the

@@ -3,16 +3,15 @@
  * `/changes/` (Story 43.6, spec-pyforge-herald CAP-61, on CAP-13): what landed on `main`, from the `changes.json`
  * build input a Guild step writes (the merge subjects of the last 30 days, until a CalVer tag anchors "since the
  * last release"). Newest first, each with its date, station and subject; the RSS feed carries the same items.
- * A build-time snapshot: absent input is one line, never a failed build. Emitted only with
- * `pyforge.herald.pages_one_generator` on.
+ * A build-time snapshot: absent input is one line, never a failed build.
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 
 import { changesInput } from '../../lib/agent-data.ts';
-import { CHANGES_INPUT, CHANGES_WINDOW_DAYS, mergeAnchor, pagesOneGenerator } from '../../lib/agent-surface.ts';
+import { CHANGES_INPUT, CHANGES_WINDOW_DAYS, mergeAnchor } from '../../lib/agent-surface.ts';
 
 export function getStaticPaths() {
-  return pagesOneGenerator() ? [{ params: { index: undefined } }] : [];
+  return [{ params: { index: undefined } }];
 }
 
 const input = changesInput();

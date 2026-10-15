@@ -1,9 +1,9 @@
 """Status pages flag read (Story 42.1, CAP-60).
 
-The fleet board (``/status/``) and the guild status page (``/status/ci/``) render at build in
-``docsite/build.py``; their stdlib reading lives in ``docsite/tools/status_pages.py`` so the ``site``
-env gains no pyforge dependency. The Guild env hands the build this flag's resolved value through
-``docsite/tools/export_status_pages_env.py`` (``PYFORGE_STATUS_PAGES``).
+The fleet board (``/status/``), the guild status page (``/status/ci/``) and the runs page (``/status/runs/``) render
+at build in ``docs-site/`` (Story 43.7 ported the first two from the retired Jinja path), which reads this flag's
+resolved value from ``PYFORGE_STATUS_PAGES``; the Guild env hands it over through ``python -m
+pyforge.herald.pages_env``, so the ``site`` env gains no pyforge dependency.
 """
 
 from __future__ import annotations

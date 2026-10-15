@@ -501,7 +501,6 @@ def test_the_published_inputs_are_the_herald_dreams_m1_list() -> None:
         "docs/map.yaml",
         "docs/dashboard",
         "docs-site",
-        "docsite",
         "presentations",
     )
     assert pages_liveness.PAGES_ROOT_URL == _URL

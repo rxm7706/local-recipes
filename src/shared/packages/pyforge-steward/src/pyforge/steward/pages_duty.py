@@ -4,7 +4,7 @@ The duct's duty: it speaks to the one Pages workflow (``.github/workflows/pages.
 branch. It replaces ``deploy dashboard`` and ``deploy status`` (retired by this story; AD-5's
 2026-08-09 rule, deleted rather than deprecated).
 
-* ``build`` writes the fleet board's build input (``docsite/content/fleet-status.json``, from
+* ``build`` writes the fleet board's build input (``docs-site/src/content/fleet-status.json``, from
   ``sprint-ledger-query --format json`` reshaped by :func:`pages.fleet_status_document`, in-process),
   runs ``pixi run --frozen -e site pages-check`` by subprocess and reports the built tree's hash
   (:func:`pages.tree_hash`). ``--stamp`` then runs ``scripts/pages_build_stamp.py`` as the workflow
@@ -117,7 +117,7 @@ class PagesDeps:
     flag_on: Callable[[], bool]
     #: ``(verdict, reason)``: the ``pages`` row's verdict, or ``None`` and why it is unavailable.
     registry_verdict: Callable[[], tuple[str | None, str]]
-    #: Writes ``docsite/content/fleet-status.json`` under the given root; returns the path written.
+    #: Writes ``docs-site/src/content/fleet-status.json`` under the given root; returns the path written.
     write_fleet_status: Callable[[Path], Path]
     now: Callable[[], datetime] = field(default=lambda: datetime.now(timezone.utc))
     sleep: Callable[[float], None] = field(default=time.sleep)

@@ -3,8 +3,9 @@
  * dossier, its shell, the docs (through theme.css) and the Design twins name, each a woff2 file of an @fontsource
  * package in docs-site/package.json, declared here once -- woff2 only, the format every browser the site supports
  * reads -- and bundled by Astro under the artifact's own _astro/, so no font loads from another origin and none is
- * vendored by hand. The latin subset and the weights are the ones the Jinja path vendors by hand (Story 31.3) until
- * Story 43.7. The fonts are under the SIL Open Font License 1.1 (docs-site/README.md).
+ * vendored by hand. The latin subset and the weights are the ones Story 31.3 vendored by hand, until Story 43.7 retired
+ * that copy. The fonts are under the SIL Open Font License 1.1: each package's own LICENSE ships in the artifact at
+ * /fonts/<package>.LICENSE.txt (scripts/populate-public.ts; docs-site/README.md).
  */
 
 @font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 600; font-display: swap;

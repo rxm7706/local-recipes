@@ -92,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-15T09:19:53-05:00'
-      tree: 7de68be07a909b3a3176e67789d0fc6fbbaf0cc7-dirty
+      derived_at: '2026-10-15T14:46:45-05:00'
+      tree: ffb2fb8801ec2ed057a6b9a5e6ac58cb0d602d10-dirty
   - path: how-to/pause-ci.md
     quadrant: how-to
     owner: pyforge-steward
@@ -323,8 +323,23 @@ sections:
       - key: decks
         label: Decks
         href: herald/decks/
+  - key: status
+    label: Status
+    href: status/
+    owner: herald
+    order: 20
   - key: pipelines
     label: Kedro-Viz
     href: dashboard/kedro-viz/
     owner: atlas
     order: 30
+  - key: dashboards
+    label: Dashboards
+    href: dashboard/vizro/
+    owner: atlas
+    order: 40
+  - key: changes
+    label: Changes
+    href: changes/
+    owner: herald
+    order: 50

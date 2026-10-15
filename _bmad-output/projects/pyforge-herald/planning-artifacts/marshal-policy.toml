@@ -585,6 +585,27 @@ verify_commands = [
   # write them are a steward deferred-work row.
   ".gitignore",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  # Story 43.7 (the go-live): every consumer of the retired docsite/ and site* tasks -- the registry rows and the
+  # docs map (doctor's, cross-station), the Pages and station-tests workflows and the fleet-board input writer
+  # (steward's, cross-station), steward's and doctor's tests and modules that named the old paths, the flag pins in
+  # pyforge-core's and the platform's tests, the regenerated pixi-tasks page, and the docs that named the old paths.
+  "docs/map.yaml",
+  "docs/MAP.md",
+  "docs/dashboard/README.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/how-to/presentation-deck.md",
+  "docs/reference/github-workflows.md",
+  "docs/reference/story-spec-flag-block.md",
+  ".github/workflows/pages.yml",
+  ".github/workflows/pyforge-station-tests.yml",
+  "scripts/pages_fleet_status.py",
+  "src/shared/packages/pyforge-steward/**",
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py",
+  "src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  "environment.yaml",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 

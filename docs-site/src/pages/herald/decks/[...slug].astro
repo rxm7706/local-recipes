@@ -3,19 +3,16 @@
  * /herald/decks/ and /herald/decks/<slug>/ -- the deck families (Story 43.2, CAP-61 on CAP-35 and
  * CAP-53): the index, and one page per gallery infographic under presentations/<slug>/ showing the
  * poster, the Infographic Deck and the Executive Summary in view and offering the current PPTX and
- * Marp sources as downloads, each stamped with its sidecar's tree and etag (or the commit and a
- * content hash). A rest route so that with pyforge.herald.pages_one_generator off it emits no file
- * and the Jinja family pages are the only ones. A family page is indexed for search (Story 43.3).
+ * Marp sources as downloads, each stamped with its sidecar's tree and etag (or `unstamped` and a content hash; never
+ * the build's commit, Story 43.7). A rest route: the index and every family from one page. A family page is indexed
+ * for search (Story 43.3).
  */
 import Shot from '../../../components/herald/Shot.astro';
 import HeraldLayout from '../../../layouts/HeraldLayout.astro';
 import type { Download, Family } from '../../../lib/herald-pages';
-import { loadHeraldPages, pagesOneGenerator } from '../../../loaders/herald-pages-loader';
+import { loadHeraldPages } from '../../../loaders/herald-pages-loader';
 
 export function getStaticPaths() {
-  if (!pagesOneGenerator()) {
-    return [];
-  }
   const { families } = loadHeraldPages();
   return [
     { params: { slug: undefined }, props: { family: null } },
@@ -161,7 +158,7 @@ const shell = {
             <h3>No decks registered yet</h3>
             <p>
               A deck family page is derived from each published infographic in <code>infographics.include</code> (
-              <code>docsite/content/site.yml</code>); none matched.
+              <code>docs-site/src/content/site.yml</code>); none matched.
             </p>
           </div>
         )}

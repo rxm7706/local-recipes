@@ -1,24 +1,23 @@
 ---
 /**
  * /herald/ -- the overview (Story 43.2, CAP-61): the dossier's headline stats, the doors to the
- * dossier, the gallery and the deck families, site.yml's neighbours and the station tiles, from the
- * same inputs page_index.html.j2 reads. A rest route so that with pyforge.herald.pages_one_generator
- * off it emits no file at all, and the Jinja overview is the only one.
+ * dossier, the gallery and the deck families, site.yml's neighbours and the station tiles (the Jinja
+ * overview's inputs, which Story 43.7 retired).
  */
 import { getEntry } from 'astro:content';
 
 import HeraldLayout from '../../layouts/HeraldLayout.astro';
 import { cssTextTone, cssVar, mdInline } from '../../lib/md-inline';
-import { loadHeraldPages, pagesOneGenerator } from '../../loaders/herald-pages-loader';
+import { loadHeraldPages } from '../../loaders/herald-pages-loader';
 
 export function getStaticPaths() {
-  return pagesOneGenerator() ? [{ params: { index: undefined } }] : [];
+  return [{ params: { index: undefined } }];
 }
 
 const pages = loadHeraldPages();
 const entry = await getEntry('dossier', 'dossier');
 if (!entry) {
-  throw new Error('dossier collection entry missing while PYFORGE_PAGES_ONE_GENERATOR=1');
+  throw new Error('the dossier collection entry is missing (docs-site/src/content/dossier/dossier.yml)');
 }
 const doc = entry.data as Record<string, unknown>;
 const site = pages.site;
