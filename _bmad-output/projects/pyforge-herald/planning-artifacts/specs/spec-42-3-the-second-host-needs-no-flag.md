@@ -244,3 +244,9 @@ files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
   - **AC1's enterprise `pages-check` was red on base** on one absolute link to the public host in
     `docs/reference/github-workflows.md` (`<https://rxm7706.github.io/local-recipes/>`, the `pages.yml` row). The row
     now names the host in code and describes 102.5's behaviour.
+- 2026-10-15 (independent review, lane C): the gate and inventory change this story carried (`RETIRES_FIELD` in
+  `scripts/flag_gate_check.py`, the retired cell in `scripts/flag_inventory.py` and their tests) is now owned by doctor
+  Story 34.7, under `spec-feature-flag-governance` CAP-2's retirement path (operator ruling 2026-10-15). 34.7 adds the
+  owner rule (only a story of the key's owning station retires it) and `flag-retired-still-read` (a reader left on a
+  retired key reds). This spec's `retires-flag: pyforge.herald.pages_second_host` line stands: herald owns
+  `pyforge.herald.*`, and no reader names the key.

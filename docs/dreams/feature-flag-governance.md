@@ -195,3 +195,19 @@ These parts do not transfer to this estate:
 
   Every mechanism story is itself `flag-exempt`. CAP-7's retrofit stories are each Smith's, minted
   after 34.4's inventory lands. Next: dispatch 34.1 and 74.1.
+- **2026-10-15** — The flag lifecycle's retirement leg. Q4 removes a flag 90 days after it is ON
+  everywhere, and the owning station files the removal story. The gate had no path for a removed
+  flag: its "key not in the tree" check reds every `done` spec that introduced the key.
+  - **The first retirement.** Herald Story 42.3 removed `pyforge.herald.pages_second_host` in the
+    one-PR Pages redesign. To pass the gate, it taught the gate and the inventory a `retires-flag:`
+    declaration itself: the judged party changed the gate (Charter §6), with no entry on the Spec.
+  - **The leak.** Any spec of any station, at any status, could declare `retires-flag:`, delete the
+    key and silence the check. Code still calling `read_boolean` on the key then silently reads the
+    default. An independent review proved it.
+  - **Operator ruling (2026-10-15):** a doctor story in the same PR carries the gate change. CAP-2
+    gains the retirement path (Spec memlog). A `done` spec's key may leave the tree only when a
+    story of the key's owning station declares `retires-flag: <key>`. The gate reds a retirement
+    declared by another station, and `flag-retired-still-read` while any reader still names a
+    retired key. The inventory names the retiring story.
+  - **The mechanism** is doctor Story 34.7, added to Epic 34, which reopens under Story 41.5's rule.
+    The Dream stays `specified`.

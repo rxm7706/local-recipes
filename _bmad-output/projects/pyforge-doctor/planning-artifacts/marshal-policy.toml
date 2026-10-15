@@ -275,7 +275,10 @@ verify_commands = [
   "environment.yaml",
   "scripts/.spec-surface-baseline.json",
   "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-  # 34.1-34.5: the rule, the baseline, the gate and the inventory (scripts/), their tests, their allowlist lines
+  # 34.1-34.5: the rule, the baseline, the gate and the inventory (scripts/), their tests, their allowlist lines;
+  # 34.6 (the shared-key fix) and 34.7 (the retirement path: the owner rule, flag-retired-still-read, the retired
+  # inventory cell, added 2026-10-15) change the same gate, inventory and tests, and the block page below
+
   "scripts/flag_rule.py",
   "scripts/flag_rule_baseline.py",
   "scripts/flag_gate_check.py",
