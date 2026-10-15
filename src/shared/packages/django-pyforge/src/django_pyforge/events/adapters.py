@@ -5,11 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from django_pyforge.events.constants import EVENT_TYPES
-from django_pyforge.events.constants import STATION_TOKENS
-from django_pyforge.events.constants import SUBSCRIPTIONS
-from django_pyforge.events.fabric import Handler
-from django_pyforge.events.fabric import UnregisteredEventTypeError
+from django_pyforge.events.constants import EVENT_TYPES, STATION_TOKENS, SUBSCRIPTIONS
+from django_pyforge.events.fabric import Handler, UnregisteredEventTypeError
 
 logger = logging.getLogger(__name__)
 

@@ -237,8 +237,7 @@ class PortalClient:
         cwd: str | Path | None = None,
     ) -> dict[str, tuple[str, ...]]:
         """Named pixi environments as ``steward provision --list`` (in-process)."""
-        from pyforge.steward.provision import load_pixi_environments
-        from pyforge.steward.provision import repo_root
+        from pyforge.steward.provision import load_pixi_environments, repo_root
 
         return load_pixi_environments(cwd=cwd if cwd is not None else repo_root())
 

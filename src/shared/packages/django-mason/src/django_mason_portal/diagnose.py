@@ -5,8 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from django_pyforge.assertion.crypto import verify_assertion
-from django_pyforge.assertion.schema import CLAIM_SUB
-from django_pyforge.assertion.schema import audience_for
+from django_pyforge.assertion.schema import CLAIM_SUB, audience_for
 
 STATION = "mason"
 LAST_DIAGNOSE_SUMMARY = "mason diagnose equivalent: last station diagnosis"

@@ -29,12 +29,19 @@ on that file.
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Sequence
 
 import duckdb
 from pyforge.core.errors import PyforgeError
 
 from .embedding import Embedder, HashingEmbedder
+
+if TYPE_CHECKING:
+    from pyforge.atlas.duckdb_writer import LockedDuckDB
+
+    type DuckdbConnectionLike = duckdb.DuckDBPyConnection | LockedDuckDB
+else:
+    DuckdbConnectionLike = duckdb.DuckDBPyConnection
 
 # array_distance (L2) ↔ HNSW metric 'l2sq' — the matching pair the vss optimizer needs to use
 # the index for a k-NN ``ORDER BY … LIMIT`` scan. L2 (not cosine) so a zero embedding vector
@@ -42,7 +49,7 @@ from .embedding import Embedder, HashingEmbedder
 _HNSW_METRIC = "l2sq"
 
 # The offline LOAD step. The connection type used to gate the vss loader.
-VssLoader = Callable[["duckdb.DuckDBPyConnection"], None]
+VssLoader = Callable[[DuckdbConnectionLike], None]
 
 # \Z (not $) so a trailing newline can't slip through — $ also matches before a final \n.
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
@@ -68,7 +75,7 @@ class VssNotProvisionedError(PyforgeError, RuntimeError):
     additional base -- ``RuntimeError`` stays in the MRO."""
 
 
-def load_vss_offline(con: "duckdb.DuckDBPyConnection") -> None:
+def load_vss_offline(con: DuckdbConnectionLike) -> None:
     """LOAD ``vss`` from the pre-provisioned local extension cache — OFFLINE (the consumer path).
 
     No ``INSTALL`` (that is the network step). If the extension is not present in the cache,
@@ -135,7 +142,7 @@ class DuckdbVssRagStore:
         self,
         *,
         embedder: Embedder | None = None,
-        connection: "duckdb.DuckDBPyConnection | None" = None,
+        connection: DuckdbConnectionLike | None = None,
         vss_loader: VssLoader = load_vss_offline,
         table: str = "rag_artifacts",
         metric: str = _HNSW_METRIC,
@@ -238,7 +245,10 @@ class DuckdbVssRagStore:
             )
 
     def count(self) -> int:
-        return int(self.con.execute(f"SELECT count(*) FROM {self._table}").fetchone()[0])
+        row = self.con.execute(f"SELECT count(*) FROM {self._table}").fetchone()
+        if row is None:
+            raise RuntimeError(f"count query returned no row for table {self._table!r}")
+        return int(row[0])
 
     def close(self) -> None:
         """Close the connection ONLY if this store created it. An injected connection (the F1

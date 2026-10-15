@@ -23,8 +23,7 @@ from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any
 
-from django_pyforge.assertion.exceptions import AssertionRefusedError
-from django_pyforge.assertion.exceptions import WrongAudienceError
+from django_pyforge.assertion.exceptions import AssertionRefusedError, WrongAudienceError
 from django_pyforge.assertion.schema import audience_for
 from django_pyforge.assertion.verify import verify_assertion_claims
 

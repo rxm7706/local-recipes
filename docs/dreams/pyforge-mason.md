@@ -713,6 +713,23 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   **Constraints:** local only, through `conda-forge-expert`, with a `retro(cfe):` commit. It is a fix: no flag and no
   new CAP. It binds CAP-18 and CAP-23, as Story 29.1 does. Owner: mason. → Epic 30 / Story 30.1, specced 2026-10-12.
 
+- **2026-10-14 — Fixed: CFE's fleet-picture ATTENTION test stubs the CI-pause probe.** Measured on clean `main`
+  on 2026-10-14: `tests/meta/test_fleet_picture_main_attention.py` fails all three of its tests, and so does the
+  `cfe-regression-net` lane (`test-ci`) on any PR that touches its paths. Doctor Story 45.1
+  (`pyforge-doctor:CAP-89`, merge `7c6dac8c07`) added `ci_pause_drift_findings()` to `scripts/fleet_picture.py`'s
+  `main()`. The test stubs every probe it lists in `_PROBES`, and that list did not name the new one, so the probe read
+  the test's fake `subprocess.run`, could not parse it, and added `could not check CI pauses` to every `watch` list.
+  The lane never ran on Story 45.1's PR, because its path filter covers the CFE tree and the pixi files, not
+  `scripts/fleet_picture.py`.
+
+  **What it looks like when real:** the test lists `ci_pause_drift_findings` with the other probes, stubs it with one
+  `ci-pause-drift` finding, and expects its `watch` line and its `could not check CI pauses` line in `main()`'s order.
+  All three tests pass, and the CFE meta suite is green.
+  **Constraints:** tests only: `scripts/fleet_picture.py` and every CFE script stay unchanged. No assertion is skipped
+  or weakened. The change lands in one `retro(cfe):` commit with a CHANGELOG PATCH bump (AD-15). It is a fix: no flag
+  and no new CAP. It binds CAP-23 (the skill's own meta-test suite is green), as Stories 29.1 and 30.1 do. Owner:
+  mason. → Epic 31 / Story 31.1, specced 2026-10-14.
+
 ## One-chain fold — 2026-09-17
 
 Station Dream status is `specified` (Spec `spec-pyforge-mason` is `ready`). Mason-owned satellite Dreams archive in place with Consolidated-into banners. Practice Dream `packaging-factory` is archived into this station Dream (CHAIN-STANDARD precedence; no new station Dream minted). Recipe work stays `conda-forge-expert`; this fold is planning-chain only.

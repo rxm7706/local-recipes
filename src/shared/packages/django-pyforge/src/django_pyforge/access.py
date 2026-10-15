@@ -5,9 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from functools import wraps
 
-from django.http import HttpRequest
-from django.http import HttpResponse
-from django.http import HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 
 from django_pyforge.roles import roles_from_request
 

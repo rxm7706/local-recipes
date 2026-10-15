@@ -103,7 +103,7 @@ development_status:
   3-9-release-to-availability-velocity-columns: done
   30-1-the-dag-export-reaches-pages-as-a-workflow-artifact: backlog
   30-2-vizro-boards-publish-as-static-exports-under-dashboard-vizro: backlog
-  31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so: backlog
+  31-1-atlas-passes-mypy-in-pyforge-foundry-full-and-a-lane-keeps-it-so: done
   4-1-integrate-kedro-dagster-for-scheduling-execution: done
   4-2-integrate-kedro-viz-expose-a-pixi-task: done
   5-1-define-the-boring-semantic-layer-bsl-models: done
@@ -170,7 +170,7 @@ development_status:
   epic-3-retrospective: done
   epic-30: backlog
   epic-30-retrospective: optional
-  epic-31: backlog
+  epic-31: done
   epic-31-retrospective: optional
   epic-4: done
   epic-4-retrospective: done

@@ -2,8 +2,8 @@
 title: "31.1: Atlas passes mypy in `pyforge-foundry-full`, and a lane keeps it so"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
-baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
+status: 'done'
+baseline_revision: '22e5c19c285e722bcf7d58203689d57e9cc4dd55'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -349,4 +349,12 @@ Re-stamp them with a dated Currency reconciliation note, as
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-14 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (implementer verification) All AC verification commands run green locally: foundry-full and guild mypy/lint-types, observability unit tests, new meta/unit tests, pyforge-atlas-coverage-gate, `python scripts/spec_surface_reconcile.py`.
+
+## Auto Run Result
+
+Status: done
+Verification: `pixi run --frozen -e pyforge-foundry-full mypy` exit 0; `pixi run --frozen -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0; `pixi run --frozen -e pyforge-atlas pyforge-atlas-coverage-gate` exit 0.

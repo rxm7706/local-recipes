@@ -2324,7 +2324,7 @@ So that a type error only real library types reveal reds the PR that adds it, no
 **When** `pixi run --frozen -e pyforge-foundry-full mypy` runs, on a branch, in CI or in `pr-preflight`
 **Then** it exits 0. The 17 errors that are neither Vizro's `call-arg` nor the OpenLineage defect, and the one the Bokeh import fix exposes, are fixed by typed call sites, annotations or narrowing, with no `# type: ignore`, `cast` or `ignore_errors`. The only new override is `call-arg` on `pyforge.atlas.dashboard.app`, and with it removed only Vizro's "Missing named argument" errors return. `observability.py` emits `outputStatistics` under `outputFacets`, and the four assertions read it there. `pixi run --frozen -e pyforge-guild lint-types` still exits 0
 **And** the `lint-types` CI job installs `pyforge-guild pyforge-foundry-full` and runs `pixi run --frozen -e pyforge-foundry-full mypy`. `pr-preflight-lanes` gains `{ task = "mypy", environment = "pyforge-foundry-full" }`, and an atlas meta test pins both. Reverting one typed fix reds the foundry-full leg while the guild leg stays green (mutation). `pyforge-atlas-coverage-gate`, `kedro-test`, `kedro-catalog-check`, `pyforge-atlas-test` and `pyforge-station-tests` exit 0. Every governing Spec is reconciled and stamped scoped, and the DW row closes citing the merge
-**Status:** backlog
+**Status:** done
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 

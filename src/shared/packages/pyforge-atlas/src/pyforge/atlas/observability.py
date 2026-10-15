@@ -69,6 +69,7 @@ from openlineage.client.event_v2 import (
     RunState,
 )
 from openlineage.client.facet_v2 import (
+    OutputDatasetFacet,
     error_message_run,
     output_statistics_output_dataset,
 )
@@ -262,14 +263,16 @@ class AtlasObservabilityHooks:
     def _output_datasets(self, node: Any, outputs: dict[str, Any] | None = None) -> list[OutputDataset]:
         datasets: list[OutputDataset] = []
         for name in node.outputs:
-            facets = {}
+            output_facets: dict[str, OutputDatasetFacet] = {}
             if outputs is not None and name in outputs:
                 rows = _rowcount(outputs[name])
                 if rows is not None:
-                    facets["outputStatistics"] = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
-                        rowCount=rows, producer=PRODUCER
+                    output_facets["outputStatistics"] = (
+                        output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
+                            rowCount=rows, producer=PRODUCER
+                        )
                     )
-            datasets.append(OutputDataset(namespace=self._namespace, name=name, facets=facets))
+            datasets.append(OutputDataset(namespace=self._namespace, name=name, outputFacets=output_facets))
         return datasets
 
     # -- OTel helpers ------------------------------------------------------- #

@@ -454,7 +454,12 @@ def _env_before(tokens: Sequence[str], runs: Sequence[_PixiRun], index: int) -> 
 
 def _step_matches(lane: LaneLike, text: str, pixi_data: Mapping[str, Any]) -> bool:
     """Does this ``run:`` text run the lane: its task, a task holding it in ``depends-on``,
-    or its own command line?"""
+    or its own command line?
+
+    A ``pixi run <task>`` step matches by task whatever its ``-e``: a bare ``depends-on`` lane runs in
+    the environment ``pr-preflight`` was invoked from (the Guild or ``local-recipes``), which need not be
+    the one CI names. Its verdict is still the lane's own, keyed by ``(task, environment)``; only the
+    command-line match compares environments (Story 103.5 kept this rule)."""
     tokens = _tokens(text)
     for run in _pixi_runs(tokens):
         if run.task and lane.task in _closure(pixi_data, run.task):

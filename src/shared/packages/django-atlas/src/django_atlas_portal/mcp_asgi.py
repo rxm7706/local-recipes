@@ -19,9 +19,11 @@ def build_atlas_mcp_asgi() -> Any:
     if _APP is None:
         from django_pyforge.mcp_http import asgi_for_server  # noqa: PLC0415
         from django_pyforge.mcp_start_get import attach_start_get  # noqa: PLC0415
-        from django_pyforge.supervisor import ATLAS_STATION  # noqa: PLC0415
-        from django_pyforge.supervisor import RUN_PIPELINE_TOOL  # noqa: PLC0415
-        from django_pyforge.supervisor import register_runner  # noqa: PLC0415
+        from django_pyforge.supervisor import (
+            ATLAS_STATION,  # noqa: PLC0415
+            RUN_PIPELINE_TOOL,  # noqa: PLC0415
+            register_runner,  # noqa: PLC0415
+        )
         from pyforge.atlas.mcp.server import build_server  # noqa: PLC0415
 
         register_runner(ATLAS_STATION, RUN_PIPELINE_TOOL, _atlas_run_pipeline)

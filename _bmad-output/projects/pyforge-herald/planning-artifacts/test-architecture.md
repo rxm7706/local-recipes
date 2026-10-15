@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 3f52dca93f4849f8
-story_count: 145
-test_file_count: 93
+source_fingerprint: 53fbfd31bd9bcbe6
+story_count: 146
+test_file_count: 94
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 145
-- **Epics parsed:** 43
-- **Test files inventoried:** 93 under `src/shared/packages/pyforge-herald/tests/`
+- **Stories parsed:** 146
+- **Epics parsed:** 44
+- **Test files inventoried:** 94 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3f52dca93f4849f8`
+- **Source fingerprint:** `53fbfd31bd9bcbe6`
 
 ## Risk Assessment
 
@@ -79,6 +79,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 31: The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56)
 - Epic 40: The docs site and the herald pages share one menu (spec-pyforge-herald CAP-58)
 - Epic 43: One generator renders the whole Pages site (spec-pyforge-herald CAP-61)
+- Epic 44: Every docs page renders its body and its links resolve (fix under spec-pyforge-herald CAP-52; no CAP)
 
 ## Test Inventory
 
@@ -97,6 +98,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_pages_second_host.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_pages_shelf_check.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_herald_guard.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_import_boundary.py` | meta | none observed |
@@ -327,6 +329,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 43.5 | Every number is measured, and every page says what built it | none observed |
 | 43.6 | Agents and the changes feed read the site | none observed |
 | 43.7 | docsite/ retires and one generator remains | none observed |
+| 44.1 | Every docs page renders its body and its links resolve | none observed |
 
 ## Quality Gates
 

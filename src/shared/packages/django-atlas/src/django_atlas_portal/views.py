@@ -3,16 +3,14 @@ from __future__ import annotations
 from typing import Any
 
 from django.db.models import F
-from django.http import HttpRequest
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 from django_pyforge.access import require_station_role
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.models import RunState
 from django_pyforge.non_atomic import non_atomic_view
-from django_pyforge.roles import claims_from_request
-from django_pyforge.roles import roles_from_request
+from django_pyforge.roles import claims_from_request, roles_from_request
 from django_pyforge.supervisor import ATLAS_STATION
 
 _DEFAULT_SUB = "atlas-portal"
@@ -52,11 +50,7 @@ def _public_row(row: RunState) -> dict[str, Any]:
 
 
 def load_atlas_inventory_row() -> dict[str, Any]:
-    row = (
-        RunState.objects.filter(station=ATLAS_STATION)
-        .order_by(F("started_at").desc(nulls_last=True), "-id")
-        .first()
-    )
+    row = RunState.objects.filter(station=ATLAS_STATION).order_by(F("started_at").desc(nulls_last=True), "-id").first()
     if row is None:
         return _idle_inventory_row()
     return _public_row(row)
