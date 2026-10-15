@@ -2207,6 +2207,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/lxml-6.1.3-py314h52646a4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py314h67df5f8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/marp-cli-4.2.3-h5ac6406_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/msgpack-python-1.2.3-py314h5383ef5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mypy-2.4.0-py314hfe1a184_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_1.conda
@@ -2656,11 +2657,12 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-23.1.2-hdb3d66b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/lxml-6.1.3-py314hc2fa20a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/markupsafe-3.0.3-py314h6e9b3f0_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/marp-cli-4.2.3-h7d04ff1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/msgpack-python-1.2.3-py314hb1acb19_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/mypy-2.4.0-py314hd98292b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nh3-0.3.7-py310h3639a8a_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nodejs-26.10.0-h8d74fab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nodejs-24.21.0-hb275ff0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numpy-2.5.3-py314he06036b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/onnxruntime-1.31.0-py314h43a1c39_0_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openjpeg-2.5.4-h4d1e80c_2.conda
@@ -2668,8 +2670,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/orjson-3.12.0-py314h0d31c30_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pillow-12.3.0-py314h709c99d_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pixi-0.81.0-h9d417a0_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.63.0-hd1b9f45_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pnpm-12.4.1-h465deab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.64.0-h63323fe_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pnpm-12.4.1-h8893684_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/protobuf-7.35.1-py314hd8852ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/psutil-7.2.2-py314hd98292b_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pthread-stubs-0.4-hb001647_1004.conda
@@ -2928,11 +2930,12 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-23.1.2-h49e36cd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/lxml-6.1.3-py314h3fc22ad_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/markupsafe-3.0.3-py314h2359020_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/marp-cli-4.2.3-he474a74_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mkl-2026.1.0-hac47afa_235.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/msgpack-python-1.2.3-py314hf309875_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mypy-2.4.0-py314hc5dbbe4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/nh3-0.3.7-py310ha413424_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/nodejs-26.10.0-h80d1838_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/nodejs-24.21.0-h80d1838_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/numpy-2.5.3-py314h02f10f6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/onnxruntime-1.31.0-py314h8bd40d1_0_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/openjpeg-2.5.4-h90fa87c_2.conda
@@ -2940,8 +2943,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/orjson-3.12.0-py314h64f83cb_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pillow-12.3.0-py314h6acc0e1_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pixi-0.81.0-he94b42d_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.63.0-h8fff0a6_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/pnpm-12.4.1-hfe981f5_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.64.0-hff8d339_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/pnpm-12.4.1-h785286a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/protobuf-7.35.1-py314h88ed4fb_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/psutil-7.2.2-py314hc5dbbe4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.46.5-py314h9f07db2_2.conda
@@ -14566,6 +14569,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/lzo-2.10-hebe6cf0_1003.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mamba-2.9.0-h33f7037_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py314h67df5f8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/marp-cli-4.2.3-h5ac6406_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.11.2-py314h9124352_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mbedtls-4.0.0-hecca717_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/menuinst-2.5.2-py314h9e666f3_2.conda
@@ -15681,6 +15685,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/lzo-2.10-h74c22ad_1003.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/mamba-2.9.0-hcd24bd8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/markupsafe-3.0.3-py314h6e9b3f0_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/marp-cli-4.2.3-h7d04ff1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/matplotlib-base-3.11.2-py314heb334b3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/mbedtls-4.0.0-haf25636_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/menuinst-2.5.2-py314h6ffbfce_2.conda
@@ -16437,6 +16442,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/m2-conda-epoch-20250515-0_x86_64.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mamba-2.9.0-hedcd9f2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/markupsafe-3.0.3-py314h2359020_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/marp-cli-4.2.3-he474a74_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/matplotlib-base-3.11.2-py314h2061cd4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mbedtls-4.0.0-hac47afa_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/menuinst-2.5.2-py314hb98de8c_2.conda
@@ -16446,7 +16452,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/mypy-2.4.0-py314hc5dbbe4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/nh3-0.3.7-py310ha413424_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/nlohmann_json-3.12.0-h5112557_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/nodejs-26.10.0-h80d1838_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/nodejs-24.21.0-h80d1838_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/numpy-2.5.3-py314h02f10f6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/onnxruntime-1.31.0-py314h8bd40d1_0_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/openjpeg-2.5.4-h90fa87c_2.conda
@@ -16460,8 +16466,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/pillow-12.3.0-py314h6acc0e1_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pixi-0.81.0-he94b42d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pixman-0.46.4-h5112557_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.64.0-h8fff0a6_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/pnpm-12.4.1-hfe981f5_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.64.0-hff8d339_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/pnpm-12.4.1-h785286a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/prometheus-cpp-1.3.0-hd44ad28_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/protobuf-6.33.5-py314h6a447be_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/psutil-7.2.2-py314hc5dbbe4_3.conda
@@ -16775,6 +16781,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/lzo-2.10-hebe6cf0_1003.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mamba-2.9.0-h33f7037_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py314h67df5f8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/marp-cli-4.2.3-h5ac6406_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.11.2-py314h9124352_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mbedtls-4.0.0-hecca717_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/menuinst-2.5.2-py314h9e666f3_2.conda
@@ -17419,6 +17426,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/lxml-6.1.3-py314h52646a4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py314h67df5f8_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/marp-cli-4.2.3-h5ac6406_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mmh3-5.3.1-py314hc75f4c6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/msgpack-python-1.2.3-py314h5383ef5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/mypy-2.4.0-py314hfe1a184_0.conda
@@ -17883,12 +17891,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-23.1.2-hdb3d66b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/lxml-6.1.3-py314hc2fa20a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/markupsafe-3.0.3-py314h6e9b3f0_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/marp-cli-4.2.3-h7d04ff1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/mmh3-5.3.1-py314ha630e2e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/msgpack-python-1.2.3-py314hb1acb19_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/mypy-2.4.0-py314hd98292b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nh3-0.3.7-py310h3639a8a_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nodejs-26.10.0-h8d74fab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nodejs-24.21.0-hb275ff0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numpy-2.5.3-py314he06036b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/onnxruntime-1.31.0-py314h43a1c39_0_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/openjpeg-2.5.4-h4d1e80c_2.conda
@@ -17896,8 +17905,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/orjson-3.12.0-py314h0d31c30_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pillow-12.3.0-py314h709c99d_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pixi-0.81.0-h9d417a0_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.63.0-hd1b9f45_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pnpm-12.4.1-h465deab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/playwright-1.64.0-h63323fe_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pnpm-12.4.1-h8893684_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/protobuf-7.35.1-py314hd8852ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/psutil-7.2.2-py314hd98292b_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/pthread-stubs-0.4-hb001647_1004.conda
@@ -18168,12 +18177,13 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-23.1.2-h49e36cd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/lxml-6.1.3-py314h3fc22ad_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/markupsafe-3.0.3-py314h2359020_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/marp-cli-4.2.3-he474a74_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mkl-2026.1.0-hac47afa_235.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mmh3-5.3.1-py314h13fbf68_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/msgpack-python-1.2.3-py314hf309875_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mypy-2.4.0-py314hc5dbbe4_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/nh3-0.3.7-py310ha413424_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/nodejs-26.10.0-h80d1838_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/nodejs-24.21.0-h80d1838_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/numpy-2.5.3-py314h02f10f6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/onnxruntime-1.31.0-py314h8bd40d1_0_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/openjpeg-2.5.4-h90fa87c_2.conda
@@ -18181,8 +18191,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/orjson-3.12.0-py314h64f83cb_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pillow-12.3.0-py314h6acc0e1_4.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pixi-0.81.0-he94b42d_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.63.0-h8fff0a6_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/pnpm-12.4.1-hfe981f5_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/playwright-1.64.0-hff8d339_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/pnpm-12.4.1-h785286a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/protobuf-7.35.1-py314h88ed4fb_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/psutil-7.2.2-py314hc5dbbe4_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.46.5-py314h9f07db2_2.conda
@@ -29474,6 +29484,7 @@ packages:
   - nodejs >=24.4.1,<25.0a0
   license: MIT
   license_family: MIT
+  purls: []
   run_exports: {}
   size: 15301780
   timestamp: 1754805615388
@@ -56439,6 +56450,7 @@ packages:
   - nodejs >=24.4.1,<25.0a0
   license: MIT
   license_family: MIT
+  purls: []
   run_exports: {}
   size: 15620558
   timestamp: 1754805821835
@@ -64347,6 +64359,7 @@ packages:
   - nodejs >=24.4.1,<25.0a0
   license: MIT
   license_family: MIT
+  purls: []
   run_exports: {}
   size: 15682192
   timestamp: 1754805814083
@@ -64640,6 +64653,7 @@ packages:
   md5: bbd1757b2abb3fdf7a3f24311549cc6b
   license: MIT
   license_family: MIT
+  purls: []
   run_exports:
     weak:
     - nodejs >=24.21.0,<25.0a0
@@ -65272,6 +65286,7 @@ packages:
   - nodejs >=24.21.0,<25.0a0
   license: Apache-2.0
   license_family: APACHE
+  purls: []
   run_exports: {}
   size: 2912561
   timestamp: 1791430603982
@@ -65286,6 +65301,7 @@ packages:
   - nodejs >=24.19.0,<25.0a0
   license: MIT
   license_family: MIT
+  purls: []
   run_exports: {}
   size: 136601171
   timestamp: 1789131059755

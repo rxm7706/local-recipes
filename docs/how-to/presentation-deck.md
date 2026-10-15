@@ -28,9 +28,10 @@ spec_updated: 2026-07-24
 > surface, so CLAUDE.md Rules 1 & 2 (invoke `conda-forge-expert`, run a CFE
 > retro) do **not** apply.
 >
-> **Pixi:** install `pixi install -e pyforge-foundry-full` for everyday work; deck export
-> tasks (`deck-export`, `marp`, …) live in `local-recipes` — add `pixi install -e local-recipes`
-> when you run them.
+> **Pixi:** the deck export tasks (`deck-export`, `deck-trio`, `deck-facts`) and the `marp`
+> binary `deck-export` runs live in `pyforge-guild`, the session default (steward Stories 63.6
+> and 63.8) — `pixi install -e pyforge-guild` is all they need. `local-recipes` still carries
+> them for back-compat, but a Guild task run as `-e local-recipes` is refused by the session hook.
 
 ---
 
@@ -563,20 +564,20 @@ in `src/marp/`:
    CLI pushes the regenerated set back into the deck's Design project
    (`SPEC-design-code-bridge` CAP-5), so Design holds the complete set too.
 
-**Generation** — from repo root; the `local-recipes` pixi env carries `marp` 4.2.3
-and Chrome at `/usr/bin/google-chrome` (Chrome is required for `--pptx`/`--pdf`;
-`--html` is pure Node):
+**Generation** — from repo root; the `pyforge-guild` pixi env carries `marp` 4.2.3
+(steward Story 63.8; `local-recipes` has it too), and Chrome is read from the host at
+`/usr/bin/google-chrome` (Chrome is required for `--pptx`/`--pdf`; `--html` is pure Node):
 
 ```bash
 S=presentations/<slug>/src
 # 4. standalone infographic HTML (offline, self-contained)
-pixi run -e local-recipes marp --allow-local-files \
+pixi run -e pyforge-guild marp --allow-local-files \
   "$S/marp/<slug>-infographic-<date>.md" \
   -o "$S/marp/<slug>-infographic-standalone-<date>.html"
 # 5 + 6. PPTX (Chrome-backed)
-CHROME_PATH=/usr/bin/google-chrome pixi run -e local-recipes marp --allow-local-files --pptx \
+CHROME_PATH=/usr/bin/google-chrome pixi run -e pyforge-guild marp --allow-local-files --pptx \
   "$S/marp/<slug>-deck-<date>.md" -o "$S/pptx/<slug>-deck-<date>.pptx"
-CHROME_PATH=/usr/bin/google-chrome pixi run -e local-recipes marp --allow-local-files --pptx \
+CHROME_PATH=/usr/bin/google-chrome pixi run -e pyforge-guild marp --allow-local-files --pptx \
   "$S/marp/<slug>-infographic-<date>.md" -o "$S/pptx/<slug>_infographic_deck-<date>.pptx"
 ```
 

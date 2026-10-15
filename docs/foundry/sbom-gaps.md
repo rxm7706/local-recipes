@@ -95,7 +95,6 @@ derivation and this file diverge.
 | `pin:markdown` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:markdownify` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:markitdown` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
-| `pin:marp-cli` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:matplotlib-base` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:mermaid-py` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:minio` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |

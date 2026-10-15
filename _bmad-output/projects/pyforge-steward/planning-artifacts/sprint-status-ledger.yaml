@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 589
+# stories: 590
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -289,6 +289,7 @@ development_status:
   63-5-pyforge-foundry-full-the-fleet-s-whole-dependency-closure-is-one-locked-artifact: done
   63-6-no-station-code-assumes-the-local-recipes-environment-at-runtime: done
   63-7-two-platform-ci-local-runs-at-once-never-share-services-or-a-work-dir: done
+  63-8-marp-resolves-in-the-guild-env-so-deck-export-runs-where-every-agent-runs: done
   64-1-the-nine-frames-go-bare-type-frame-and-the-readme-pins-the-upstream-heads: done
   64-2-pyforge-publishes-its-frame-conformance-profile: done
   65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill: done
