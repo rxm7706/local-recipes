@@ -162,6 +162,17 @@ def test_ac1_a_fetch_callable_is_read_newest_first_and_stops_at_the_first_match(
     assert read == [303, 302]
 
 
+@pytest.mark.parametrize("run", [None, {}, {"id": "303"}], ids=["no-run", "no-id", "id-not-int"])
+def test_ac1_a_live_artifact_without_a_readable_run_is_a_wrong_shape_never_a_skip(run: object) -> None:
+    """102.4's lane-B re-review: skipping it would read as absence and drop the mount."""
+    broken = {**_ARTS[0], "workflow_run": run}
+    with pytest.raises(ValueError, match="has no readable workflow_run.id"):
+        newest_export_run([broken, *_ARTS[1:]], _RUNS)
+    # An expired one, or one of another name, is not read at all.
+    assert newest_export_run([{**broken, "expired": True}, *_ARTS[1:]], _RUNS) == 302  # noqa: PLR2004
+    assert newest_export_run([{**broken, "name": "other"}, *_ARTS[1:]], _RUNS) == 302  # noqa: PLR2004
+
+
 def test_ac1_order_is_by_created_at_not_listing_order() -> None:
     assert newest_export_run(list(reversed(_ARTS)), _RUNS) == 303  # noqa: PLR2004
 
@@ -429,6 +440,15 @@ def test_a_wrong_shape_answer_fails_naming_the_argv(tmp_path: Path, capsys, answ
     assert code == 1
     assert f"`{named}" in capsys.readouterr().err
     assert not env_file.exists()
+
+
+def test_a_live_artifact_without_a_readable_run_fails_naming_the_listing(tmp_path: Path, capsys) -> None:
+    broken = {**_art(303, "2026-10-15T09:05:00Z"), "workflow_run": {"head_branch": "main"}}
+    code, env_file = _run_script(tmp_path, FakeGh({_listing(): _page([broken, *_ARTS[1:]])}))
+    assert code == 1
+    err = capsys.readouterr().err
+    assert f"`{_listing()}` gave live artifact kedro-viz-export (id 3030) with no readable workflow_run.id" in err
+    assert not env_file.exists()  # never `absent`
 
 
 def test_no_gh_on_the_runner_fails_naming_the_argv(tmp_path: Path, capsys) -> None:

@@ -115,6 +115,20 @@ def _list_artifacts(runner: Runner, artifact: str) -> list[Any]:
         items = payload.get("artifacts")
         if not isinstance(items, list):
             raise GhError(f"`{' '.join(argv)}` gave no artifacts list")
+        for item in (
+            items
+        ):  # a live artifact of this name must name its run (102.4's lane-B re-review)
+            if (
+                isinstance(item, dict)
+                and item.get("name") == artifact
+                and item.get("expired") is False
+            ):
+                run = item.get("workflow_run")
+                if not isinstance(run, dict) or not isinstance(run.get("id"), int):
+                    raise GhError(
+                        f"`{' '.join(argv)}` gave live artifact {artifact} (id {item.get('id')!r}) "
+                        "with no readable workflow_run.id"
+                    )
         listed.extend(items)
         if len(items) < ARTIFACTS_PER_PAGE:
             return listed

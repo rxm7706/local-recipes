@@ -280,6 +280,19 @@ def test_ac2_deploy_wait_watches_the_run_and_reports_the_page(tmp_path: Path) ->
     assert result.details["deploy_job"] == "success"
 
 
+def test_the_deploy_job_the_duty_reads_is_pages_yml_s_deploy_job() -> None:
+    """102.3's lane-B re-review: ``gh run view --json jobs`` names a job by its ``name:``, else by its id, so
+    ``DEPLOY_JOB`` holds only while ``pages.yml``'s deploy job has no ``name:`` (or one equal to it)."""
+    import yaml
+
+    workflow = yaml.safe_load(
+        (Path(__file__).resolve().parents[6] / ".github/workflows/pages.yml").read_text(encoding="utf-8")
+    )
+    deploy = workflow["jobs"][pages_duty.DEPLOY_JOB]
+    assert deploy.get("name", pages_duty.DEPLOY_JOB) == pages_duty.DEPLOY_JOB
+    assert any(str(step.get("uses", "")).startswith("actions/deploy-pages@") for step in deploy["steps"])
+
+
 def test_ac2_deploy_wait_says_a_skipped_deploy_was_skipped(tmp_path: Path) -> None:
     """102.3's re-review: a dispatch of an unchanged tree succeeds with its deploy job skipped; the
     duty says so instead of naming a deploy that did not happen."""

@@ -280,3 +280,7 @@ files finds nothing; `pyforge-herald-test` and `flag-gate-check` are green
   owner rule (only a story of the key's owning station retires it) and `flag-retired-still-read` (a reader left on a
   retired key reds). This spec's `retires-flag: pyforge.herald.pages_second_host` line stands: herald owns
   `pyforge.herald.*`, and no reader names the key.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`, surface nit): herald's Epic 42 surface (`marshal-policy.toml`)
+  now lists `src/platform/tests/test_openfeature_file_flags.py` and
+  `src/shared/packages/pyforge-core/tests/unit/test_flags.py`, the tree-wide flag pins 42.1 and this story edited;
+  atlas's Epic 30 surface lists them too (30.2's key).

@@ -90,19 +90,23 @@ def test_ac2_the_asset_steps_follow_the_deploy_and_carry_the_gate() -> None:
 
 def test_ac2_the_rolling_release_is_kept_and_its_tag_moved() -> None:
     """102.5's review: delete-then-create left no release (and no asset) whenever create failed. An
-    existing release is kept: its tag moves to the deploying commit, its target follows, and the asset
-    is replaced with ``--clobber``; only a first deploy creates the release."""
+    existing release is kept: the tag moves to the deploying commit first (also a tag left without its
+    release, which ``gh release create --target`` would adopt where it stands; lane-B re-review), the
+    release's target follows, and the asset is replaced with ``--clobber``; only a first deploy creates
+    the release."""
     run = next(step["run"] for step in _steps("deploy") if pages.RELEASE_ASSET in str(step.get("run", "")))
     assert "gh release delete" not in run and "--cleanup-tag" not in run
     lines = [line.strip() for line in run.splitlines()]
-    view = lines.index("if gh release view pages-site >/dev/null 2>&1; then")
+    probe = lines.index('if gh api "repos/$GH_REPO/git/ref/tags/pages-site" >/dev/null 2>&1; then')
     move = lines.index(
         'gh api -X PATCH "repos/$GH_REPO/git/refs/tags/pages-site" -f sha="$GITHUB_SHA" -F force=true >/dev/null'
     )
+    view = lines.index("if gh release view pages-site >/dev/null 2>&1; then")
     edit = lines.index('gh release edit pages-site --target "$GITHUB_SHA" --notes "$notes"')
     create = next(i for i, line in enumerate(lines) if line.startswith("gh release create pages-site --prerelease"))
     upload = lines.index('gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber')
-    assert view < move < edit < lines.index("else") < create < lines.index("fi") < upload
+    fis = [i for i, line in enumerate(lines) if line == "fi"]
+    assert probe < move < fis[0] < view < edit < lines.index("else") < create < fis[1] < upload
 
 
 def test_ac2_the_gate_reads_the_build_jobs_exported_duty_flag() -> None:

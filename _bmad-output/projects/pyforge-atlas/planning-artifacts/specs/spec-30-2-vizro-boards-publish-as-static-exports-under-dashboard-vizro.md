@@ -85,11 +85,18 @@ handoff this export rides.
   `actions/upload-artifact` step `name: vizro-static-export`, `retention-days: 90`, `path: docs/dashboard/vizro` — gated
   on the same `PAUSE_KEDRO_VIZ_PUBLISH` fragment and the flag's resolved value, with no commit or push step. If the
   operator rules for its own workflow instead (the Spec's open question), the job moves file with its own registry row
-  (steward's), and the shape above holds unchanged.
+  (steward's), and the shape above holds unchanged. *(Amended 2026-10-15, orchestrator ruling; operator may override:
+  the task lands under `[feature.pyforge-atlas.tasks]` and runs in `-e pyforge-atlas`, which carries vizro and
+  plotly 7.1.0, with no `PYTHONPATH`, as its sibling atlas tasks; the job's `setup-pixi` names `pyforge-atlas`. AC1,
+  AC8 and Always say the same.)*
 - **The consumer is not this story.** The Pages build consumes `vizro-static-export` the way steward 102.4 consumes
   `kedro-viz-export`, and herald Story 43.3 (CAP-61, M3) mounts it through `publicDir`. `pages-check` judges the mount as a
   first-party tree: no `VENDORED_ROOTS` entry is added for `dashboard/vizro/`, so a `cdn.plot.ly` reference would red
-  it — the structural proof the Dream asks for.
+  it — the structural proof the Dream asks for. *(Amended 2026-10-15, orchestrator ruling; operator may override: the
+  pages stay judged, but the vendored bundle `dashboard/vizro/assets/plotly.min.js` is byte-identical upstream code
+  that names third-party origins, so herald Story 43.3 adds that one exact file, never the tree, to `VENDORED_ROOTS`
+  (herald:AD-21 rule 5), and the export refuses any chart drawing a third-party trace; the Pages download step is
+  steward 102.4's. AC2 and AC7 say the same.)*
 - **The flag.** `pyforge.atlas.vizro_static_boards` in `flags.json` (`defaultVariant` off, owner `atlas`, story this
   key), `flag-overlays.json` (dev on, staging and production off) and `docs/governance/flag-inventory/pyforge-atlas.md`;
   read through `pyforge.core.flags.read_boolean` at the top of the exporter. Off: the task prints the flag-off message,
@@ -362,4 +369,21 @@ states
     - 30.1's spec points here for its AC4 widening.
   - **Not done here.** The `pyforge-atlas/tools/vizro_static_export.py` and `pixi.lock` paths are not in the job's
     filter, so a plotly bump does not re-export (review N3); that belongs to the schedule/consumer story.
-
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`: 30.2 RESOLVED with four nits; done here):
+  - **The Approach is annotated in place (nit a)** with the 2026-10-15 rulings the ACs already carry: the task and
+    the job run in `-e pyforge-atlas`, and the pages stay judged while herald 43.3 exempts the one vendored bundle
+    file.
+  - **The staleness clock is the export's moment (nit b).** `export_boards` passed no `now`, so the BSL staleness
+    models read `time.time()`, and "one commit's export is byte-identical on every run" held only for honest-empty
+    data. `now` now defaults to the export moment (`exported_at`, the export commit's committer time when the task
+    runs), so the claim holds with materialized data too. Test:
+    `test_the_staleness_clock_is_the_export_moment_not_the_wall_clock`.
+  - **A failed aside-rename no longer leaks the staging directory (nit c).** Both renames sit inside the cleanup
+    `try`: either failure puts the previous tree back if it was moved and removes the staging directory. Test:
+    `test_a_failed_swap_keeps_the_previous_export_and_leaks_no_staging` (the aside rename and the swap-in rename).
+  - **The scrub boundary is any non-path character (nit d).** The lookahead is `(?![\w-]|\.[\w-])`: a root followed
+    by `)`, `,`, `:` or a sentence's `.` is replaced, and `/data.bak`, `/data-old`, `/data_2` are not. Test:
+    `test_the_scrub_boundary_is_any_non_path_character`.
+  - **The surface.** Atlas's Epic 30 surface (`marshal-policy.toml`) lists the two tree-wide flag pins that carry
+    `pyforge.atlas.vizro_static_boards` (`src/platform/tests/test_openfeature_file_flags.py`,
+    `src/shared/packages/pyforge-core/tests/unit/test_flags.py`).

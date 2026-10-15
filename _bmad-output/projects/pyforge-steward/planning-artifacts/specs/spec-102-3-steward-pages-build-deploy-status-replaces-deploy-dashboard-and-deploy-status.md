@@ -373,3 +373,13 @@ atlas's producer calls the retired verbs
     "Steward ← Marshal, Doctor" said Steward's console "refuses to publish rather than compute a status Marshal or
     Doctor haven't already certified", the deleted guard. It now reads as the Steward section's "A correction to the parent framing" finding does: Steward reads
     Marshal's tracked sprint ledgers as they stand and wraps Doctor's fleet-scan output, deriving no story status.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`: 102.3 RESOLVED; two nits done here):
+  - **`github.ref` on a push-only site is unevaluable.** The evaluator's context carries the trigger a site is judged
+    through (`preflight_ci._TRIGGER_KEY`: `pull_request`, or `push` for a push-only workflow such as
+    `kedro-viz-publish.yml`); a `github.ref` atom answers only on a pull request site, so a push-only job gated on
+    `github.ref == 'refs/heads/main'` reads `unknown` and its lane runs, as before this story's evaluator change.
+    Test: `test_preflight_selection.py::test_a_ref_atom_on_a_push_only_site_is_unevaluable` (the atom alone and
+    through `_job_holds` on a push-only and a pull-request workflow).
+  - **`DEPLOY_JOB` is pinned to `pages.yml`.** `gh run view --json jobs` names a job by its `name:`, else its id, so
+    `test_pages_duty.py::test_the_deploy_job_the_duty_reads_is_pages_yml_s_deploy_job` asserts the deploy job carries
+    no other `name:` and is the one that runs `actions/deploy-pages`.

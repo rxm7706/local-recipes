@@ -244,8 +244,12 @@ jobs:
           test -f pages-site/build.json
           (cd pages-site && zip -qr "$RUNNER_TEMP/pages-site.zip" .)
           notes="built_from $GITHUB_SHA, run $GITHUB_RUN_ID"
-          if gh release view pages-site >/dev/null 2>&1; then
+          # Move the tag first, release or not: `gh release create --target` adopts an existing tag where it
+          # stands, so a tag left without its release would otherwise keep a stale commit.
+          if gh api "repos/$GH_REPO/git/ref/tags/pages-site" >/dev/null 2>&1; then
             gh api -X PATCH "repos/$GH_REPO/git/refs/tags/pages-site" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+          fi
+          if gh release view pages-site >/dev/null 2>&1; then
             gh release edit pages-site --target "$GITHUB_SHA" --notes "$notes"
           else
             gh release create pages-site --prerelease --target "$GITHUB_SHA" \

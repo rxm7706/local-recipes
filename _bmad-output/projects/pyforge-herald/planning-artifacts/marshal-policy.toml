@@ -558,6 +558,10 @@ verify_commands = [
   "src/platform/config/flag-overlays.json",
   "docs/governance/flag-inventory/pyforge-herald.md",
   "docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md",
+  # The tree-wide flag pins list every key the tree holds: 42.1 added pyforge.herald.status_pages and 42.3 removed
+  # pyforge.herald.pages_second_host (lane-B re-review).
+  "src/platform/tests/test_openfeature_file_flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "43" = [  # one generator renders the whole Pages site (feature under CAP-61, FR-12.4..FR-12.5, AD-23; flag

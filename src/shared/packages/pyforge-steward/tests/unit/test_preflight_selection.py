@@ -936,3 +936,39 @@ def test_nested_groups_evaluate_as_github_does(text: str, ci_vars: dict, expecte
 def test_a_ref_the_simulation_cannot_know_stays_unevaluable(text: str, event: str) -> None:
     with pytest.raises(preflight_ci._Unevaluable):
         _gate(text, event=event)
+
+
+def test_a_ref_atom_on_a_push_only_site_is_unevaluable() -> None:
+    """102.3's lane-B re-review: a push-only workflow is judged through ``on.push``, where the ref after the
+    merge is the branch's own, so ``github.ref == 'refs/heads/main'`` must not read False there (its lane
+    would never be selected): it is unevaluable, and the lane runs and says why."""
+    text = "vars.P != 'true' && github.ref == 'refs/heads/main'"
+    with pytest.raises(preflight_ci._Unevaluable, match="needs the run's own ref"):
+        preflight_ci._eval_ci_if_expression(
+            text,
+            registry={},
+            context={"github.event_name": "pull_request", preflight_ci._TRIGGER_KEY: "push"},
+            state=_GateState({}, {}),
+            workflow=preflight_ci.Workflow(file="push-only.yml", data={}),
+            job_id="publish",
+            job={},
+        )
+
+    class _Holder:
+        ci_registry: dict = {}
+
+        def _context(self) -> dict[str, str]:
+            return {"github.event_name": "pull_request"}
+
+        def ci_var_lookup(self, name: str) -> str:
+            return ""
+
+    job = {"if": "${{ " + text + " }}", "steps": [{"run": "true"}]}
+    push_only = preflight_ci.Workflow(
+        file="push-only.yml", data={"on": {"push": {"branches": ["main"]}}, "jobs": {"publish": job}}
+    )
+    with pytest.raises(preflight_ci._Unevaluable):
+        preflight_ci._State._job_holds(_Holder(), push_only, "publish", job)  # type: ignore[arg-type]
+    pull_request = preflight_ci.Workflow(file="pr.yml", data={"on": {"pull_request": {}}, "jobs": {"publish": job}})
+    holds, _ = preflight_ci._State._job_holds(_Holder(), pull_request, "publish", job)  # type: ignore[arg-type]
+    assert holds is False  # a pull request's ref is never refs/heads/main

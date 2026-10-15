@@ -520,6 +520,73 @@ def test_the_scrub_replaces_only_the_absolute_root_as_a_whole_path() -> None:
     assert scrub(text) == '/database and &lt;data-root&gt;/x and "&lt;data-root&gt;" and &lt;data-root&gt;'
 
 
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("(/data)", "(&lt;data-root&gt;)"),
+        ("/data, then", "&lt;data-root&gt;, then"),
+        ("root /data: missing", "root &lt;data-root&gt;: missing"),
+        ("under /data.", "under &lt;data-root&gt;."),
+        ("/data.bak and /data-old and /data_2", "/data.bak and /data-old and /data_2"),
+    ],
+)
+def test_the_scrub_boundary_is_any_non_path_character(text: str, expected: str) -> None:
+    """30.2's re-review: the lookahead allowlist missed a root followed by ``)``, ``,`` or ``:``."""
+    assert static_export._data_root_scrubber(Path("/data"))(text) == expected
+
+
+def test_the_staleness_clock_is_the_export_moment_not_the_wall_clock(
+    tmp_path: Path, bmad_fixture: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """30.2's re-review: without ``now`` the BSL staleness models read ``time.time()``, so one commit's
+    export changed day to day once data was materialized. The clock is the export's own moment."""
+    seen: list[int | None] = []
+    real = static_export._app.build_dashboard
+
+    def build_dashboard(**kwargs):
+        seen.append(kwargs.get("now"))
+        return real(**kwargs)
+
+    monkeypatch.setattr(static_export._app, "build_dashboard", build_dashboard)
+    static_export.export_boards(
+        tmp_path / "vizro",
+        export_commit=SHA,
+        exported_at=EXPORTED_AT,
+        data_root=FIXTURE_ROOT,
+        sprint_status_path=bmad_fixture["sprint"],
+        epics_path=bmad_fixture["epics"],
+    )
+    assert seen == [int(EXPORTED_AT.timestamp())]
+
+
+@pytest.mark.parametrize("failing", ["aside", "swap-in"])
+def test_a_failed_swap_keeps_the_previous_export_and_leaks_no_staging(
+    tmp_path: Path, bmad_fixture: dict, monkeypatch: pytest.MonkeyPatch, failing: str
+) -> None:
+    """30.2's re-review: a failure renaming the previous tree aside (or the new one in) leaves the previous
+    export byte-for-byte where it was and no ``.vizro-*`` directory beside it."""
+    out = tmp_path / "vizro"
+    _export(out, bmad_fixture)
+    before = {p.relative_to(out): p.read_bytes() for p in out.rglob("*") if p.is_file()}
+    real_rename = Path.rename
+
+    def rename(self: Path, target):
+        moving_aside = self == out and Path(target).name.startswith(".vizro-old-")
+        swapping_in = (
+            Path(target) == out and self.name.startswith(".vizro-") and not self.name.startswith(".vizro-old-")
+        )
+        if (failing == "aside" and moving_aside) or (failing == "swap-in" and swapping_in):
+            raise OSError(f"rename refused ({failing})")
+        return real_rename(self, target)
+
+    monkeypatch.setattr(Path, "rename", rename)
+    with pytest.raises(OSError, match=f"rename refused \\({failing}\\)"):
+        _export(out, bmad_fixture)
+    monkeypatch.undo()
+    assert {p.relative_to(out): p.read_bytes() for p in out.rglob("*") if p.is_file()} == before
+    assert [p.name for p in tmp_path.iterdir() if p.name.startswith(".vizro-")] == []
+
+
 def test_a_relative_data_root_leaves_the_figures_json_intact(
     tmp_path: Path, bmad_fixture: dict, monkeypatch: pytest.MonkeyPatch
 ) -> None:

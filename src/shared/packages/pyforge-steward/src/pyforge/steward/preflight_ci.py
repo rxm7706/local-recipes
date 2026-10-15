@@ -816,6 +816,11 @@ def emit_twin_banner(repo_root: Path, twin_key: str) -> None:
         print_ci_pause_banner(repo_root, paused, resolution=resolution)
 
 
+#: The evaluator's context key naming the trigger a site is judged through (``pull_request``, or
+#: ``push`` for a push-only workflow); ``github.ref`` is evaluable only on a pull request site.
+_TRIGGER_KEY = "preflight.trigger"
+
+
 def _split_top_level(text: str, op: str) -> list[str]:
     parts: list[str] = []
     depth = 0
@@ -856,10 +861,16 @@ def _eval_ci_atom(
     ref = re.match(r"^github\.ref\s*(==|!=)\s*'([^']*)'$", text)
     if ref:  # the pause-only gate's `github.ref == 'refs/heads/main'` (steward 102.3's re-review)
         op, literal = ref.groups()
-        # The simulated event is a pull request, whose ref is refs/pull/<number>/merge: never a branch
-        # or tag ref. The number is unknown here, so only a literal naming a pull request's ref is
-        # unevaluable.
-        if context.get("github.event_name") != "pull_request" or literal.startswith("refs/pull/"):
+        # A pull request site's ref is refs/pull/<number>/merge: never a branch or tag ref. The number is
+        # unknown here, so a literal naming a pull request's ref is unevaluable, and so is any ref on a
+        # site judged through `on.push` (a push-only workflow), whose ref after the merge is the branch's
+        # own (`_TRIGGER_KEY`; 102.3's lane-B re-review).
+        pull_request_site = context.get(_TRIGGER_KEY, "pull_request") == "pull_request"
+        if (
+            context.get("github.event_name") != "pull_request"
+            or not pull_request_site
+            or literal.startswith("refs/pull/")
+        ):
             raise _Unevaluable(f"job {job_id!r} if: atom {atom!r} needs the run's own ref")
         return op == "!="
     var = re.match(r"^vars\.([A-Z0-9_]+)\s*(==|!=)\s*'([^']*)'$", text)
@@ -1044,10 +1055,11 @@ class _State:
             return True, ""
         text = _normalize_condition(job["if"])
         if "vars." in text or "github.event_name" in text or "github.ref" in text:
+            trigger = "pull_request" if workflow.pull_request is not None else "push"  # as `sites_for` picks it
             holds = _eval_ci_if_expression(
                 text,
                 registry=self.ci_registry,
-                context=self._context(),
+                context={**self._context(), _TRIGGER_KEY: trigger},
                 state=self,
                 workflow=workflow,
                 job_id=job_id,

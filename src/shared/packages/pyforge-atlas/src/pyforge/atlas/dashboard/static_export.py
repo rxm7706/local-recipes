@@ -209,6 +209,10 @@ def export_boards(
         raise StaticExportError(f"export_commit {export_commit!r} is not a 40-hex commit; nothing written")
     moment = (exported_at or datetime.now(UTC)).astimezone(UTC).replace(microsecond=0)
     exported_text = moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # The staleness models' clock is the export's own moment (the export commit's committer time when
+    # the task runs), never the wall clock: one commit's export is byte-identical on every run, with
+    # materialized data as with honest-empty data (30.2's re-review).
+    now = int(moment.timestamp()) if now is None else now
 
     root = Path(data_root) if data_root is not None else _data.default_data_root()
     dashboard = _app.build_dashboard(
@@ -256,17 +260,17 @@ def _data_root_scrubber(root: Path) -> Callable[[str], str]:
 
     An honest-empty page names the file it did not find (``provenance.resolve_for_file``); on a
     static page an absolute root would publish the exporting host's checkout path. Only an absolute
-    spelling is replaced, and only as a whole path -- followed by ``/``, a quote, ``<``, whitespace
-    or the end -- so a relative root (``data``) never rewrites the word ``data`` in a figure's JSON,
-    and ``/data`` never rewrites ``/database``. A relative root prints relative, leaking nothing."""
+    spelling is replaced, and only as a whole path -- not followed by a path character (a word
+    character or ``-``, or a ``.`` that continues the name) -- so a relative root (``data``) never
+    rewrites the word ``data`` in a figure's JSON, ``/data`` never rewrites ``/database`` or
+    ``/data.bak``, and a root followed by ``)``, ``,``, ``:`` or a sentence's ``.`` is still replaced.
+    A relative root prints relative, leaking nothing."""
     resolved = str(root.resolve())
     raw = {resolved, *([str(root)] if root.is_absolute() else [])} - {"", "/"}
     if not raw:
         return lambda text: text
     spellings = sorted(raw | {_esc(spelling) for spelling in raw}, key=len, reverse=True)
-    pattern = re.compile(
-        "(?:" + "|".join(re.escape(spelling) for spelling in spellings) + r")(?=/|&quot;|&#x27;|\"|'|<|\s|$)"
-    )
+    pattern = re.compile("(?:" + "|".join(re.escape(spelling) for spelling in spellings) + r")(?![\w-]|\.[\w-])")
     token = _esc(DATA_ROOT_TOKEN)
 
     def scrub(text: str) -> str:
@@ -473,14 +477,16 @@ def _write_tree(
         shutil.rmtree(staging, ignore_errors=True)
         raise
     previous: Path | None = None
-    if out_dir.exists():
-        previous = Path(tempfile.mkdtemp(prefix=f".{out_dir.name}-old-", dir=out_dir.parent))
-        previous.rmdir()
-        out_dir.rename(previous)
     try:
+        if out_dir.exists():
+            previous = Path(tempfile.mkdtemp(prefix=f".{out_dir.name}-old-", dir=out_dir.parent))
+            previous.rmdir()
+            out_dir.rename(previous)
         staging.rename(out_dir)
     except BaseException:
-        if previous is not None:
+        # Either rename failed: the previous tree goes back where it was (if it was moved aside), and
+        # the finished staging directory never outlives the call (30.2's re-review).
+        if previous is not None and previous.exists() and not out_dir.exists():
             previous.rename(out_dir)
         shutil.rmtree(staging, ignore_errors=True)
         raise

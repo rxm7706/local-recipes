@@ -237,14 +237,17 @@ def newest_export_run(
     ``gh api repos/{owner}/{repo}/actions/runs/<id>`` payload (a run missing from it is passed over),
     or is a ``fetch(run_id)`` callable read in that order, stopping at the first match. A run matches
     when it is ``workflow``'s (``path`` is ``.github/workflows/<workflow>``), concluded ``success`` and
-    ran on ``branch``. ``None``: no live artifact of that name from such a run."""
+    ran on ``branch``. ``None``: no live artifact of that name from such a run. A live artifact of that name
+    with no readable ``workflow_run.id`` raises ``ValueError``: a wrong-shape answer is never absence."""
     candidates: list[tuple[str, int]] = []
     for item in artifacts_json:
         if not isinstance(item, Mapping) or item.get("name") != artifact or item.get("expired") is not False:
             continue
         run = item.get("workflow_run")
         if not isinstance(run, Mapping) or not isinstance(run.get("id"), int):
-            continue
+            # A live artifact of this name whose run cannot be read is a wrong-shape answer, never a skip:
+            # skipping every one would read as absence and drop the mount (102.4's lane-B re-review).
+            raise ValueError(f"live artifact {artifact!r} (id {item.get('id')!r}) has no readable workflow_run.id")
         if branch is not None and run.get("head_branch") != branch:
             continue
         head_repo, repo = run.get("head_repository_id"), run.get("repository_id")

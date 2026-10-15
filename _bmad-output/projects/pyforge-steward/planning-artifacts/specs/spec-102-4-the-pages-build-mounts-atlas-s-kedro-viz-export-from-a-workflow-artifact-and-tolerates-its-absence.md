@@ -95,7 +95,13 @@ tree is deleted); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absen
 
 - **AC1 — Selection.** `newest_export_run` over recorded `gh run list` and artifacts JSON returns the newest
   successful run whose `kedro-viz-export` is not expired; returns `None` for no runs, for runs without the artifact,
-  and for an expired artifact; ignores runs whose `conclusion` is not `success`.
+  and for an expired artifact; ignores runs whose `conclusion` is not `success`. *(Amended 2026-10-15 by 102.4's
+  re-review, orchestrator ruling: the selection reads the artifact listing, not a run window. Over recorded
+  `gh api repos/{owner}/{repo}/actions/artifacts?name=<artifact>` pages and each candidate's run payload,
+  `newest_export_run(artifacts_json, runs_json, *, artifact, workflow, branch)` returns the run holding the newest
+  live artifact of that name from a successful `--workflow` run on `--branch` (not a fork's); `None` for no such
+  artifact or only expired ones; a live artifact whose run cannot be read is a wrong-shape error, never a skip. See
+  the Spec Change Log.)*
 - **AC2 — Present.** With a fake `gh` returning a run and an artifact, the step's script downloads into
   `docs/dashboard/kedro-viz/` (the fake records `gh run download <id> -n kedro-viz-export -D docs/dashboard/kedro-viz`),
   writes `KEDRO_VIZ_EXPORT=present`, `KEDRO_VIZ_EXPORT_RUN=<id>`, `KEDRO_VIZ_EXPORT_AT=<createdAt>`, exit 0.
@@ -344,3 +350,11 @@ with and one without the artifact are recorded
     `vizro-static-export`, and "Named, not fixed here"'s run-window item is marked superseded.
   - **Nit d** (`scribe capture --type project` for `DW-steward-102-4-1`) is the coordinating session's at session
     close; no capture is run from a builder.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`: 102.4 RESOLVED; two nits done here):
+  - **A live artifact whose run cannot be read is a wrong shape, never a skip.** `newest_export_run` raises
+    `ValueError` for a name-matched, unexpired artifact with no readable `workflow_run.id`, and the script's listing
+    reader exits 1 naming the listing argv before selection; skipping every such artifact would have read as `absent`
+    and dropped the mount. Tests: `test_ac1_a_live_artifact_without_a_readable_run_is_a_wrong_shape_never_a_skip`,
+    `test_a_live_artifact_without_a_readable_run_fails_naming_the_listing`.
+  - **AC1 is annotated in place** with the selection-by-artifact rule (the AC is the oracle), and so is steward
+    `epics.md`'s Story 102.4 When line.

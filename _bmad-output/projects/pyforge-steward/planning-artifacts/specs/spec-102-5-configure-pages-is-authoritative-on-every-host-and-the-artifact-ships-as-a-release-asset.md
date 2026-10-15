@@ -297,3 +297,9 @@ deploy's release is recorded with its asset
     promotes it.
   - **`marshal-policy.toml`'s Epic 102 surface** names `docsite/tools/pages_site_url.py`, not the retired
     `pages_second_host.py`.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`: 102.5 RESOLVED; one nit done here): **the tag moves first,
+  release or not.** A `pages-site` tag left without its release (a release deleted by hand) sent the step down the
+  create path, where `gh release create --target` adopts the existing tag at its old commit. The step now reads
+  `repos/$GH_REPO/git/ref/tags/pages-site` and, when the tag exists, moves it to the deploying commit before `gh
+  release view`; then it edits the kept release or creates the first one, and uploads with `--clobber`.
+  `test_ac2_the_rolling_release_is_kept_and_its_tag_moved` pins the order.
