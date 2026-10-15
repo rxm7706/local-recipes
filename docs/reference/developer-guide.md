@@ -1,9 +1,6 @@
 # Local-Recipes Developer Guide
 
-[![Test All Platforms](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml)
-[![Test Linux](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml)
-[![Test Windows](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml)
-[![Test macOS](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml)
+CI workflows: [Test All Platforms](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml) · [Test Linux](https://github.com/rxm7706/local-recipes/actions/workflows/test-linux.yml) · [Test Windows](https://github.com/rxm7706/local-recipes/actions/workflows/test-windows.yml) · [Test macOS](https://github.com/rxm7706/local-recipes/actions/workflows/test-macos.yml)
 
 > Configuration reference for conda-forge recipe development in this repo. For onboarding,
 > operational how-tos, and CI dispatch, see the Diátaxis map at [`docs/MAP.md`](../MAP.md):

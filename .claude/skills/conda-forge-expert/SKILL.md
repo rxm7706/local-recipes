@@ -4555,6 +4555,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.101.0** (Oct 14, 2026) — **steward Story 103.2 Rule-2 retro: batch mode for estate reconcile; `bmad_suite_metapackage.py --journal` writes floors from the batch, not the network (MINOR).** See `CHANGELOG.md`.
+- **v8.100.4** (Oct 14, 2026) — **mason Story 31.1 Rule-2 retro: the fleet-picture ATTENTION test stubs the CI-pause probe doctor Story 45.1 added (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.100.3** (Oct 14, 2026) — **steward Story 100.7 Rule-2 retro: the bmad-suite generator's floors depend on the network (PATCH).** See `CHANGELOG.md`.
 - **v8.100.2** (Oct 13, 2026) — **steward Story 100.6 Rule-2 retro: G117 names the estate refresh path, not a hand exclude list (PATCH).** See `CHANGELOG.md`.
 - **v8.100.1** (Oct 13, 2026) — **mason Story 30.1 Rule-2 retro: the playwright pair is linted, and the generator path that spread it is named (PATCH).** See `CHANGELOG.md`.

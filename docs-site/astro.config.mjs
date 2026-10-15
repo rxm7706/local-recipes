@@ -5,6 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { unified } from '@astrojs/markdown-remark';
+import rehypeShelfLinks from './src/rehype-shelf-links.js';
+import rehypeMarkdownLinks from './src/rehype-markdown-links.js';
+import rehypeBasePaths from './src/rehype-base-paths.js';
 import { getSiteUrl } from './src/lib/site-url.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -37,6 +41,18 @@ export default defineConfig({
   site: `${urlParts.origin}${basePath}`,
   base: basePath,
   outDir: './build/site',
+  // The shelf's links: the local plugin points README.md at the directory index and sends links to
+  // repo files the shelf does not publish to their repository page; then upstream's .md -> route and
+  // base-path plugins (vendored byte-identical, docs-site/README.md).
+  markdown: {
+    processor: unified({
+      rehypePlugins: [
+        [rehypeShelfLinks],
+        [rehypeMarkdownLinks, { base: basePath }],
+        [rehypeBasePaths, { base: basePath }],
+      ],
+    }),
+  },
   redirects: {
     '/kedro-viz/': '/dashboard/kedro-viz/',
   },
