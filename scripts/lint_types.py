@@ -26,7 +26,9 @@ verb passes ``--cache-dir <package>/.mypy_cache/<environment>``: the environment
 ``PIXI_ENVIRONMENT_NAME``, else the basename of ``CONDA_PREFIX``, else of ``sys.prefix``.
 The path stays under ``.mypy_cache/``, which ``.gitignore`` and the tree walkers already
 skip. A command-line ``--cache-dir`` outranks ``MYPY_CACHE_DIR`` and the config file, so
-neither can put two environments back on one cache.
+neither can put two environments back on one cache. Every line printed while the tools run
+is flushed first, so in a piped log (CI, the preflight) it sits beside the tool output it
+describes rather than after all of it.
 
 Django packages not yet clean for a verb are listed in ``NOT_YET_CLEAN``; that
 map only shrinks as each station's fix story lands (Story 93.1).
@@ -188,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         pkgs = pyforge
 
     if args.verb == "mypy":
-        print(f"[lint-types] mypy cache  <package>/.mypy_cache/{mypy_cache_env()}/")
+        print(f"[lint-types] mypy cache  <package>/.mypy_cache/{mypy_cache_env()}/", flush=True)
 
     worst = 0
     for pkg in pkgs:
@@ -197,12 +199,12 @@ def main(argv: list[str] | None = None) -> int:
         is_django = pkg_name.startswith("django-")
 
         if args.verb in RUFF_VERBS and is_django and not has_ruff_table(pkg):
-            print(_status_line(args.verb, pkg_name, 1, missing_table=True))
+            print(_status_line(args.verb, pkg_name, 1, missing_table=True), flush=True)
             worst = _record_worst(worst, pkg_name, args.verb, 1, missing_table=True)
             continue
 
         if args.verb == "ruff-format" and args.fix and _listed_for(pkg_name, "ruff-format"):
-            print(f"[lint-types] ruff-format {pkg_name:<20} skipped (listed for ruff-format)")
+            print(f"[lint-types] ruff-format {pkg_name:<20} skipped (listed for ruff-format)", flush=True)
             continue
 
         if args.verb == "ruff":
@@ -218,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
                 cwd=pkg,
             )
 
-        print(_status_line(args.verb, pkg_name, rc))
+        print(_status_line(args.verb, pkg_name, rc), flush=True)
         worst = _record_worst(worst, pkg_name, args.verb, rc)
     return worst
 

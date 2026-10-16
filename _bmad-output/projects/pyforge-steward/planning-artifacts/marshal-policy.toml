@@ -1282,15 +1282,32 @@ verify_commands = [
   ".github/workflows/cfe-regression-net.yml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
-"106" = [  # the two mypy lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP, no flag; Story
-  # 106.1), added 2026-10-16. The default surface, restated because a declared entry replaces it outright, plus the
-  # task script both mypy lanes run, the atlas deferred-work row the story closes, and every Spec memlog a reconcile
-  # names. pixi.toml, pixi.lock and environment.yaml are left off on purpose: the story changes none of them.
+"105" = [  # the preflight never runs two docs-site lanes at once (fix under spec-pyforge-steward CAP-159; no CAP, no
+  # flag; Story 105.1), added 2026-10-15. The default surface, restated because a declared entry replaces it outright,
+  # plus the station-tests workflow (steward's job runs when the docs-site/ files the new meta test reads change,
+  # Story 98.1's rule), the regenerated TEA matrix, and every Spec memlog (spec-pyforge-core co-governs the preflight
+  # module). The meta test reads pixi.toml, docs-site/ and herald's tests as data; none of them changes.
   "src/shared/packages/pyforge-steward/**",
   "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/test-architecture.md",
+  "scripts/.spec-surface-baseline.json",
+  ".github/workflows/pyforge-station-tests.yml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"106" = [  # the two mypy lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP, no flag; Story
+  # 106.1), added 2026-10-16. The default surface, restated because a declared entry replaces it outright, plus the
+  # task script both mypy lanes run, the regenerated TEA matrix, the station-tests workflow (steward's job fires on
+  # .gitignore, which the new meta test reads; Story 98.1's rule), the atlas deferred-work row the story closes, and
+  # every Spec memlog a reconcile names. pixi.toml, pixi.lock and environment.yaml are left off on purpose: the story
+  # changes none of them.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/test-architecture.md",
   "scripts/.spec-surface-baseline.json",
   "scripts/lint_types.py",
+  ".github/workflows/pyforge-station-tests.yml",
   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]

@@ -18,6 +18,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[6]
 SCRIPTS = ROOT / "scripts"
+# Set beside PIXI_ENVIRONMENT_NAME wherever a test reads the process environment, so a key that
+# read CONDA_PREFIX first fails under `pixi run` and in a bare shell alike (106.1 review nit).
+OTHER_CONDA_PREFIX = "/w/.pixi/envs/some-other-env"
 
 _PYFORGE_TEN = (
     "pyforge-atlas",
@@ -121,6 +124,7 @@ def test_the_cache_dir_is_the_environment_under_the_package_mypy_cache(tmp_path:
 def test_the_cache_key_reads_the_process_environment_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     mod = _load_lint_types()
     monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "pyforge-foundry-full")
+    monkeypatch.setenv("CONDA_PREFIX", OTHER_CONDA_PREFIX)
     assert mod.mypy_cache_env() == "pyforge-foundry-full"
 
 
@@ -132,6 +136,7 @@ def test_mypy_passes_each_package_its_environment_cache_dir(
 ) -> None:
     """Mutation: drop ``--cache-dir`` from the mypy argv — this test fails."""
     monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "pyforge-foundry-full")
+    monkeypatch.setenv("CONDA_PREFIX", OTHER_CONDA_PREFIX)
     calls = _record_runs(monkeypatch, lt)
     assert lt.main(["mypy"]) == 0
     assert [cwd.name for _argv, cwd in calls] == list(_PYFORGE_TEN)
@@ -147,12 +152,33 @@ def test_mypy_passes_each_package_its_environment_cache_dir(
     assert "[lint-types] mypy cache  <package>/.mypy_cache/pyforge-foundry-full/" in capsys.readouterr().out
 
 
+def test_every_line_the_mypy_run_prints_is_flushed_before_the_tool_runs(lt, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mutation: drop ``flush=True`` from the cache line or a status line — this test fails.
+
+    Unflushed, a piped log (CI, the preflight) shows every ``[lint-types]`` line after all ten
+    packages' mypy output (106.1 review nit).
+    """
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "pyforge-guild")
+    _record_runs(monkeypatch, lt)
+    printed: list[tuple[str, bool]] = []
+
+    def fake_print(*args: object, flush: bool = False, **_kw: object) -> None:
+        printed.append((" ".join(str(a) for a in args), flush))
+
+    monkeypatch.setattr(lt, "print", fake_print, raising=False)
+    assert lt.main(["mypy"]) == 0
+    assert len(printed) == 1 + len(_PYFORGE_TEN)
+    assert printed[0][0].startswith("[lint-types] mypy cache")
+    assert all(flushed for _line, flushed in printed), printed
+
+
 # ---- AC3: two environments, two caches --------------------------------------------
 
 
 def test_two_environments_never_share_a_cache_dir(lt, monkeypatch: pytest.MonkeyPatch) -> None:
     """Mutation: key the cache on anything but the environment — this test fails."""
     dirs: dict[str, dict[str, Path]] = {}
+    monkeypatch.setenv("CONDA_PREFIX", OTHER_CONDA_PREFIX)
     for environment in ("pyforge-guild", "pyforge-foundry-full"):
         monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", environment)
         calls = _record_runs(monkeypatch, lt)

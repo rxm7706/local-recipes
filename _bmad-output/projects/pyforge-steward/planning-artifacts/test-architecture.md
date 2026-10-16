@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b76c969f3856c5d3
-story_count: 385
-test_file_count: 136
+source_fingerprint: 08e2a0a24a57a842
+story_count: 386
+test_file_count: 138
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 385
-- **Epics parsed:** 105
-- **Test files inventoried:** 136 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 386
+- **Epics parsed:** 106
+- **Test files inventoried:** 138 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b76c969f3856c5d3`
+- **Source fingerprint:** `08e2a0a24a57a842`
 
 ## Risk Assessment
 
@@ -141,6 +141,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 57: One pixi env for the platform image (spec-platform-image-one-pixi-env)
 - Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 - Epic 99: Every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged (spec-pyforge-steward CAP-166)
+- Epic 105: The preflight never runs two docs-site lanes at once (fix under spec-pyforge-steward CAP-159; no CAP)
 
 ## Test Inventory
 
@@ -158,6 +159,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_preflight_docs_site_lanes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
@@ -234,6 +236,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_docs_site_mutex.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py` | unit | none observed |
@@ -671,6 +674,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.6 | A touched-scope preflight leaves the other lanes to CI, and `verify-deferred`... | none observed |
 | 103.7 | `steward ci status` reads no runs for a retired row, so a landing records the... | none observed |
 | 104.1 | cfe-regression-net runs when a script its tests load changes | none observed |
+| 105.1 | The preflight never runs two docs-site lanes at once | none observed |
 | 106.1 | The two `mypy` lanes keep separate caches | none observed |
 
 ## Quality Gates

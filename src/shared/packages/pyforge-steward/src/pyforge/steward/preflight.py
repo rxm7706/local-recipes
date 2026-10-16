@@ -6,6 +6,8 @@ selects the lanes CI would run for the diff (Story 71.2,
 ``preflight_ci``: read from ``.github/workflows/*.yml`` at run time), installs
 each needed environment serially, runs selected lanes in a pool bounded by
 ``--jobs``, and appends JSON lines to ``.steward/preflight-runs.jsonl``.
+Lanes that share a CI service container, or the ``docs-site/`` tree, share a mutex and never run at once
+(Stories 71.3, 105.1; :func:`lane_mutex_keys`).
 A lane is its task and its environment wherever the runner keeps per-lane state —
 results, scratch, logs, stop marks, journal extras, worker shares (Story 103.5):
 one task may run in two environments.
@@ -71,6 +73,24 @@ FAST_CORE_TASKS = (
 )
 FAST_CORE_REPLACES = "detectors-ci"
 
+# Story 105.1 (a fix under CAP-159: concurrent lanes share no mutable state): the tasks that install into, read from
+# or build in the one ``docs-site/`` tree. Each lane of one holds DOCS_SITE_MUTEX_KEY while it runs, so no two of them
+# overlap; every other lane keeps its concurrency. Declared once, here: tests/meta/test_preflight_docs_site_lanes.py
+# derives the same set from pixi.toml, the docs-site scripts' imports and herald's tests, and fails when they differ.
+DOCS_SITE_MUTEX_KEY = "tree:docs-site"
+DOCS_SITE_TASKS = frozenset(
+    {
+        "docs-site-install",  # npm ci: deletes docs-site/node_modules and installs it again
+        "docs-site-build",  # astro build: rewrites docs-site/public/ and writes docs-site/build/site/
+        "pages-build",  # the same build, through docs-site/scripts/pages.mts
+        "pages-check",  # pages.mts check: reads docs-site/build/site/, which the builds write
+        "docs-site-validate-sidebar",  # nav-check.mts imports the yaml package from docs-site/node_modules
+        "pyforge-herald-test",  # herald's built-site tests run astro build in docs-site/ (pages_astro.astro_build)
+        "pyforge-herald-coverage-gate",  # herald's unit suite under coverage, its built-site test included
+        "pyforge-herald-test-coverage",  # herald's whole suite under coverage
+    }
+)
+
 
 LaneKey = tuple[str, str]
 
@@ -89,6 +109,26 @@ def lane_label(task: str, environment: str) -> str:
     lane even when ``pr-preflight-lanes`` names one task in two environments (Story 103.5).
     """
     return f"{task}@{environment}"
+
+
+def lane_mutex_keys(
+    lanes: Sequence[Lane],
+    service_keys: Mapping[LaneKey, str | None],
+) -> dict[LaneKey, tuple[str, ...]]:
+    """Every mutex each lane holds while it runs, sorted: the one order every lane takes them in (Story 105.1).
+
+    A lane holds its CI job's service key when it has one (Story 71.3; ``preflight_ci.static_service_mutex_keys``)
+    and, when its task is in :data:`DOCS_SITE_TASKS`, :data:`DOCS_SITE_MUTEX_KEY`. Two lanes that share a key never
+    run at once; a lane with no key holds nothing.
+    """
+    keys: dict[LaneKey, tuple[str, ...]] = {}
+    for lane in lanes:
+        held = {DOCS_SITE_MUTEX_KEY} if lane.task in DOCS_SITE_TASKS else set()
+        service = service_keys.get(_lane_key(lane))
+        if service is not None:
+            held.add(service)
+        keys[_lane_key(lane)] = tuple(sorted(held))
+    return keys
 
 
 @dataclass(frozen=True)
@@ -461,7 +501,10 @@ class _RunCoordinator:
     keep_going: bool
     cancel: threading.Event = field(default_factory=threading.Event)
     stop_on_red: threading.Event = field(default_factory=threading.Event)
-    service_locks: dict[str, threading.Lock] = field(default_factory=dict)
+    # One lock per mutex key (a CI service, or the docs-site tree; Story 105.1), created under mutex_guard so two
+    # pool threads never make two locks for one key.
+    mutex_locks: dict[str, threading.Lock] = field(default_factory=dict)
+    mutex_guard: threading.Lock = field(default_factory=threading.Lock)
     active_procs: list[tuple[subprocess.Popen[Any], int]] = field(default_factory=list)
     proc_lock: threading.Lock = field(default_factory=threading.Lock)
     red_lanes: list[LaneKey] = field(default_factory=list)
@@ -500,12 +543,10 @@ class _RunCoordinator:
             if self.stop_cause is None:
                 self.stop_cause = cause
 
-    def service_lock(self, key: str | None) -> threading.Lock | None:
-        if key is None:
-            return None
-        if key not in self.service_locks:
-            self.service_locks[key] = threading.Lock()
-        return self.service_locks[key]
+    def mutex_lock(self, key: str) -> threading.Lock:
+        """The one lock for ``key``, made under ``mutex_guard``: two pool threads never get two locks for one key."""
+        with self.mutex_guard:
+            return self.mutex_locks.setdefault(key, threading.Lock())
 
     def register_proc(self, proc: subprocess.Popen[Any], lane: LaneKey) -> None:
         with self.proc_lock:
@@ -807,11 +848,38 @@ def _needed_by_pending_dependent(lane: Lane, pending: dict[LaneKey, Lane]) -> bo
     return any(key in other.depends_on for other in pending.values())
 
 
-def _skip_lane_on_red_stop(coord: _RunCoordinator, lane: Lane, pending: dict[LaneKey, Lane]) -> bool:
-    """Whether a red stop should prevent ``lane`` from running (Story 88.1 AC4)."""
-    if not coord.stop_on_red.is_set() or coord.keep_going:
-        return False
-    return not _needed_by_pending_dependent(lane, pending)
+def _skip_lane_on_red_stop(coord: _RunCoordinator) -> bool:
+    """Whether a red stop keeps a lane from starting (Story 88.1 AC4): every lane, once a red lane stopped a run
+    without ``--keep-going``.
+
+    After the stop the pool drains what is running and the run ends, so no lane still pending ever starts. A lane
+    that pending lanes depend on would only feed dependents that never run (Story 105.1's review: the docs-site
+    deferral made this reachable for ``docs-site-install``, which an earlier rule started and then killed at once).
+    """
+    return coord.stop_on_red.is_set() and not coord.keep_going
+
+
+def _next_lane(
+    ready: Sequence[Lane],
+    lanes: Sequence[Lane],
+    pending: dict[LaneKey, Lane],
+    docs_turn: int | None,
+) -> Lane:
+    """The ready lane that starts next (Story 105.1's review and re-review).
+
+    Every lane outside :data:`DOCS_SITE_TASKS` keeps its declared turn, its index in ``lanes``. The docs-site lanes,
+    which run one at a time, trade turns among themselves only: the next docs-site turn (``docs_turn``, the declared
+    index of the next docs-site lane in declaration order) goes to the ready docs-site lane that pending lanes depend
+    on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
+    lanes declared before them, and herald's built-site tests read this run's install, never a stale one or none at
+    all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position.
+    """
+    turns = [(lanes.index(lane), lane) for lane in ready if lane.task not in DOCS_SITE_TASKS]
+    docs = [lane for lane in ready if lane.task in DOCS_SITE_TASKS]
+    if docs:
+        first = min(docs, key=lambda lane: (not _needed_by_pending_dependent(lane, pending), lanes.index(lane)))
+        turns.append((lanes.index(first) if docs_turn is None else docs_turn, first))
+    return min(turns, key=lambda turn: turn[0])[1]
 
 
 def _blocked_lane_result(lane: Lane, blocker: tuple[str, str | None], *, keep_going: bool) -> LaneResult:
@@ -843,15 +911,14 @@ def _run_lane_in_pool(
     coord: _RunCoordinator,
     lane: Lane,
     scratch_root: Path,
-    service_key: str | None,
+    mutex_keys: tuple[str, ...],
     runner: Callable[[LaneRunContext], int],
     use_subprocess: bool,
-    pending: dict[LaneKey, Lane],
 ) -> LaneResult:
     key = _lane_key(lane)
     if coord.cancel.is_set():
         return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
-    if _skip_lane_on_red_stop(coord, lane, pending):
+    if _skip_lane_on_red_stop(coord):
         trigger, trigger_env = _stop_cause(coord, "red")
         return LaneResult(
             lane.task,
@@ -864,13 +931,17 @@ def _run_lane_in_pool(
             cancelled_by_environment=trigger_env,
         )
 
-    service_lock = coord.service_lock(service_key)
-    if service_lock is not None:
-        service_lock.acquire()
+    # Story 105.1: every mutex the lane holds (its CI service, the docs-site tree), taken in one sorted order, so two
+    # lanes that each wait for the other's key cannot exist; released in reverse, whatever the lane did.
+    held: list[threading.Lock] = []
     try:
+        for name in sorted(set(mutex_keys)):
+            lock = coord.mutex_lock(name)
+            lock.acquire()
+            held.append(lock)
         if coord.cancel.is_set():
             return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
-        if _skip_lane_on_red_stop(coord, lane, pending):
+        if _skip_lane_on_red_stop(coord):
             trigger, trigger_env = _stop_cause(coord, "red")
             return LaneResult(
                 lane.task,
@@ -924,8 +995,8 @@ def _run_lane_in_pool(
             coord.terminate_children()
         return LaneResult(lane.task, lane.environment, elapsed, code, "red", start_offset, journal_extra)
     finally:
-        if service_lock is not None:
-            service_lock.release()
+        for lock in reversed(held):
+            lock.release()
 
 
 def run_preflight(
@@ -1037,7 +1108,7 @@ def run_preflight(
     if worker_count < 1:
         worker_count = 1
 
-    mutex_keys = preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data)
+    mutex_keys = lane_mutex_keys(lanes, preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data))
     suite_lane_plan = preflight_suite_reduction.build_suite_lane_overrides(
         repo_root,
         selected_task_names={lane.task for lane in lanes},
@@ -1143,6 +1214,9 @@ def run_preflight(
     results_by_key: dict[LaneKey, LaneResult] = {}
     pending: dict[LaneKey, Lane] = {_lane_key(lane): lane for lane in lanes}
     completed: dict[LaneKey, LaneResult] = {}
+    # Story 105.1: the declared turns of the docs-site lanes, which they trade among themselves (_next_lane).
+    docs_turns = [index for index, lane in enumerate(lanes) if lane.task in DOCS_SITE_TASKS]
+    docs_started = 0
     try:
         with ThreadPoolExecutor(max_workers=worker_count) as pool:
             futures: dict[Future[LaneResult], Lane] = {}
@@ -1169,37 +1243,35 @@ def run_preflight(
                 _mark_dependency_blocked()
 
                 while len(futures) < worker_count:
+                    # Story 105.1: a lane whose mutex an in-flight lane holds would only wait in its slot; it stays
+                    # pending and is offered again when that lane finishes, so the slot goes to a lane that can run.
+                    busy = {name for running in futures.values() for name in mutex_keys[_lane_key(running)]}
                     ready_candidates: list[Lane] = []
                     for candidate in lanes:
                         key = _lane_key(candidate)
                         if key not in pending or not _deps_all_ok(candidate, completed):
                             continue
-                        if _skip_lane_on_red_stop(coord, candidate, pending):
+                        if _skip_lane_on_red_stop(coord):
+                            continue
+                        if busy.intersection(mutex_keys[key]):
                             continue
                         ready_candidates.append(candidate)
                     if not ready_candidates:
                         break
-                    if coord.stop_on_red.is_set() and not coord.keep_going:
-                        ready_candidates.sort(
-                            key=lambda lane: (
-                                not _needed_by_pending_dependent(lane, pending),
-                                lanes.index(lane),
-                            )
-                        )
-                    else:
-                        ready_candidates.sort(key=lambda lane: lanes.index(lane))
-                    ready = ready_candidates[0]
+                    docs_turn = docs_turns[docs_started] if docs_started < len(docs_turns) else None
+                    ready = _next_lane(ready_candidates, lanes, pending, docs_turn)
                     key = _lane_key(ready)
                     del pending[key]
+                    if ready.task in DOCS_SITE_TASKS:
+                        docs_started += 1
                     fut = pool.submit(
                         _run_lane_in_pool,
                         coord,
                         ready,
                         scratch_root,
-                        mutex_keys.get((ready.task, ready.environment)),
+                        mutex_keys[key],
                         runner,
                         use_subprocess,
-                        pending,
                     )
                     futures[fut] = ready
 

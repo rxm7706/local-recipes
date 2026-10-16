@@ -2,10 +2,10 @@
 title: '106.1: The two mypy lanes keep separate caches'
 type: 'fix'
 created: '2026-10-16'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'f44a99ba0c04b48b2d406c603181f80c61ba50d2'
 flag-exempt: detector-or-gate   # a fix to the lint gate's own task; a gated gate reports a silent green
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -86,7 +86,8 @@ environments; every exit code read directly):
 
 **Rejected:**
 - **A preflight mutex for the two `mypy` lanes.** It would serialize them, which costs the warm-cache time back, and
-  would leave CI's two steps on one cache. It would also extend Story 105.1's mutex in `preflight.py`, not yet merged.
+  would leave CI's two steps on one cache. It would also extend Story 105.1's `tree:docs-site` mutex in `preflight.py`
+  (#2242, merged `94a77d724d` while this story was in review).
 - **`MYPY_CACHE_DIR` set by the preflight per lane.** It fixes the preflight and leaves CI and a hand run sharing; the
   cache path belongs to the task, which every runner calls.
 - **`.mypy_cache-<environment>` beside `.mypy_cache`.** Unique too, but no ignore rule or tree walker knows that name.
@@ -121,7 +122,8 @@ live `pixi.toml`, workflow and `.gitignore`. None runs pixi or mypy.
   argument it reads the process environment. `mypy_cache_dir(pkg)` is `pkg / ".mypy_cache" / <key>`.
 - **AC2 — Every package's run names its cache.** `main(["mypy"])` runs mypy once per `pyforge-*` package, in package
   order, each with argv `["mypy", "--cache-dir", "<package>/.mypy_cache/<key>", "-p", "pyforge.<station>"]`, and
-  prints `[lint-types] mypy cache  <package>/.mypy_cache/<key>/`.
+  prints `[lint-types] mypy cache  <package>/.mypy_cache/<key>/`. *(Added at review, 2026-10-16:)* that line and every
+  status line are printed with `flush=True`, so a piped log shows each beside the tool output it describes.
 - **AC3 — Two environments, two caches.** Run under `pyforge-guild` and then `pyforge-foundry-full`, the two runs'
   cache directories are disjoint for all ten packages, and each package's two share the parent
   `<package>/.mypy_cache`.
@@ -135,7 +137,8 @@ live `pixi.toml`, workflow and `.gitignore`. None runs pixi or mypy.
   - keying the cache on a constant (AC1, AC3, AC5);
   - dropping the `CONDA_PREFIX` fallback (AC1);
   - returning an empty name with neither variable set (AC1);
-  - reading `CONDA_PREFIX` before `PIXI_ENVIRONMENT_NAME` (AC1, AC2).
+  - reading `CONDA_PREFIX` before `PIXI_ENVIRONMENT_NAME` (AC1, AC2), under `pixi run` and in a bare shell alike;
+  - *(added at review)* dropping `flush=True` from the cache line, or from the per-package status line (AC2).
 - **AC7 — The real lanes.** `pixi run --frozen -e pyforge-guild lint-types` exits 0 twice, the second run warm;
   `pixi run --frozen -e pyforge-foundry-full mypy` exits 0 twice; the two run at once three times, both exit 0 each
   time, and every package then holds `.mypy_cache/pyforge-guild/` and `.mypy_cache/pyforge-foundry-full/`.
@@ -151,7 +154,9 @@ live `pixi.toml`, workflow and `.gitignore`. None runs pixi or mypy.
   what is checked.
 
 **Never:**
-- Never touch `preflight.py` (Story 105.1 is open on it), `pixi.toml`, `pixi.lock` or a workflow.
+- Never touch `preflight.py` (Story 105.1's, #2242, merged `94a77d724d`), `pixi.toml`, `pixi.lock` or a workflow,
+  with one exception, Story 98.1's rule *(amended at landing, 2026-10-16)*: `pyforge-station-tests.yml`'s steward
+  job lists `.gitignore`, because AC5's meta test reads it.
 - Never weaken or delete an existing assertion.
 
 **Residual risk:**
@@ -159,7 +164,13 @@ live `pixi.toml`, workflow and `.gitignore`. None runs pixi or mypy.
   foundry-full run after a cold Guild run took 41-42 s on the shared cache and takes 53-54 s on its own, so the job
   may take about 12 s longer. Both preflight lanes run cold the same way the first time (36 s together before, 58 s
   after), and warm after that (8-11 s before, 3-4 s after).
-- An existing checkout keeps its old `<package>/.mypy_cache/3.14/` as dead data (ignored by git); deleting it is safe.
+- **Disk** *(added at review, 2026-10-16)*. One shared cache was about 259 MB per checkout; split, it is about 124 MB
+  for `pyforge-guild` plus 252-258 MB for `pyforge-foundry-full`, about 376-382 MB (+~123 MB, +48%) in every checkout
+  or worktree that runs both lanes (the review measured 382 MB on archive copies; 376 MiB here). `steward workspace
+  clean`'s tarballs include `.mypy_cache`, because `_archive_worktree` drops only `REINSTALLABLE_ENV_DIRS`
+  (`.pixi/{envs,solve-group-envs,bld}`, `workspace.py:748`), so the archives grow by the same amount. An existing
+  checkout also keeps its old `<package>/.mypy_cache/3.14/` as dead data, up to about 259 MB (ignored by git);
+  deleting it is safe. Dropping tool caches from the archive filter is out of scope here.
 - A run with neither `PIXI_ENVIRONMENT_NAME` nor `CONDA_PREFIX` set keys on `sys.prefix`'s basename, so two such runs
   from interpreters whose prefixes share a basename would share a cache. Every lane and CI step runs through pixi.
 
@@ -185,12 +196,13 @@ live `pixi.toml`, workflow and `.gitignore`. None runs pixi or mypy.
 - Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-16 (the two mypy lanes share one cache)
   entry.
 - Epic: Epic 106 (new), Story 106.1; `epic-106` and `epic-106-retrospective` are minted with it. Epic 106, not 105:
-  Story 105.1 (PR #2242) holds Epic 105 on its own branch.
+  Epic 105 is Story 105.1's (#2242, merged `94a77d724d`).
 - Ledger key: `106-1-the-two-mypy-lanes-keep-separate-caches`.
-- Ledger status at mint: `backlog` (as 103.5's was while it was in review); promote it to `done` when the story lands.
+- Ledger status at mint: `backlog` (as 103.5's was while it was in review); `done` in the landing merge, with
+  `epic-106` rolled up to `done`.
 - Deps: none.
-- Closes: `DW-atlas-retro-2026-10-15-2` (its `story:` line names this story; close the row when 106.1 lands, citing the
-  merge).
+- Closes: `DW-atlas-retro-2026-10-15-2` (`status: closed` in the landing merge, with a `verified:` line citing
+  steward 106.1).
 - Surface: `marshal-policy.toml` `[epic_surfaces]."106"`.
 - Flag: none — a fix (`spec-feature-flag-governance` Q1); `flag-exempt: detector-or-gate` recorded above.
 
@@ -205,7 +217,7 @@ Story 106.1 in `epics.md` § Epic 106: the two `mypy` lanes keep separate caches
   MRS-GATE-010 binding).
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e pyforge-steward python -m pytest -q src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py src/shared/packages/pyforge-steward/tests/meta/test_lint_types_mypy_cache_per_environment.py` — expected: 14 passed (AC1-AC5).
+- `pixi run --frozen -e pyforge-steward python -m pytest -q src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py src/shared/packages/pyforge-steward/tests/meta/test_lint_types_mypy_cache_per_environment.py` — expected: 15 passed (AC1-AC5).
 - The AC6 mutations, one at a time against `scripts/lint_types.py`, re-running the two files — expected: each fails
   its named tests; restore the file after each.
 - `pixi run --frozen -e pyforge-ci python -m pytest -q tests/scripts/test_lint_types_gate.py` — expected: exit 0.
@@ -223,7 +235,10 @@ Story 106.1 in `epics.md` § Epic 106: the two `mypy` lanes keep separate caches
   CAP; bound to `spec-pyforge-steward` CAP-159. Measured first: no verdict change, corruption or crash reproduced;
   the shared cache and its churn are the defect.
 - 2026-10-16 (implementation): hand-implemented on branch `chain-preflight-mypy-cache-2026-10-16` from `f44a99ba0c`;
-  status `in-review` for an independent review against this spec.
+  status `in-review` for an independent review against this spec (commit `3df4461dbd`).
+- 2026-10-16 (review): PASS with two should-fix findings and four nits (§ Review), all resolved on the branch in the
+  merge of `origin/main` (steward 105.1, `94a77d724d`). AC2 and AC6 gained the flush clause; no other AC changed.
+- 2026-10-16 (landing): status `done`; the ledger key and `epic-106` `done`; `DW-atlas-retro-2026-10-15-2` closed.
 
 ## Implementation Result
 
@@ -234,7 +249,7 @@ independent review against this spec, not against this summary.
   verb runs `mypy --cache-dir <package>/.mypy_cache/<environment> -p pyforge.<station>` and prints
   `[lint-types] mypy cache  <package>/.mypy_cache/<environment>/` once; the module docstring says why. `_run` passes
   `check=False` explicitly: ruff's PLW1510 on the touched file, fixed in passing; behaviour is unchanged.
-- **Tests (new):** `tests/unit/test_lint_types_mypy_cache.py` (AC1-AC4, 11 cases) and
+- **Tests (new):** `tests/unit/test_lint_types_mypy_cache.py` (AC1-AC4, 12 cases after the review) and
   `tests/meta/test_lint_types_mypy_cache_per_environment.py` (AC5, 3 cases), both in `pyforge-steward`, the home of
   the existing `lint_types` tests.
 - **AC6, each mutation against `scripts/lint_types.py`, the file restored after each (`cmp` clean):**
@@ -247,7 +262,46 @@ independent review against this spec, not against this summary.
   - an empty name with neither variable set failed `test_without_either_variable_the_interpreter_prefix_names_the_cache`;
   - `CONDA_PREFIX` read first failed `test_the_cache_is_keyed_on_the_pixi_environment_first`,
     `test_the_cache_key_reads_the_process_environment_by_default`, the argv test and the disjointness test.
-- **Not changed:** `preflight.py`, `pixi.toml`, `pixi.lock`, `environment.yaml`, every workflow, `.gitignore`.
+  - *Re-run after the review, under `pixi run` and in a bare shell (`env -u CONDA_PREFIX -u PIXI_ENVIRONMENT_NAME`),
+    seven mutations:* the five above failed 2, 10, 3, 1 and 4 tests in both runners (the fifth had failed only 1 in a
+    bare shell before the three tests pinned `CONDA_PREFIX`); no `flush=True` on the cache line, and none on the
+    status line, each failed `test_every_line_the_mypy_run_prints_is_flushed_before_the_tool_runs` in both.
+- **Not changed:** `preflight.py`, `pixi.toml`, `pixi.lock`, `environment.yaml`, `lint-types.yml`, `.gitignore`. The one
+  workflow edit, found at landing: `.github/workflows/pyforge-station-tests.yml`'s `steward_paths` gains `.gitignore`
+  (Story 98.1's rule; atlas, herald and marshal already list it), so the job that runs AC5's meta test fires when
+  the file it reads changes.
+
+## Review
+
+The independent review (2026-10-16) of commit `3df4461dbd`, read against this spec, returned **PASS** with two
+should-fix findings and four nits (scratchpad `review-106-1.md`). Each resolution lands on the same branch, in the
+merge of `origin/main` at `94a77d724d` (steward 105.1).
+
+- **1 (should-fix) — Residual risk left out the disk cost.** **Resolution:** the Disk bullet under Residual risk
+  (about 259 MB to 376-382 MB per checkout that runs both lanes, the `workspace clean` tarballs, the dead `3.14/`).
+- **2 (should-fix) — Five merge conflicts with `origin/main`, three of them traps.** **Resolution:** as the review
+  set out. `epics.md` keeps one `updated:` key (106.1's amendment, then ` Prior: ` and 105.1's) and orders Epic 105
+  before Epic 106; `marshal-policy.toml` closes the `"105"` array before `"106"` (checked with `tomllib`); the
+  memlog keeps one `updated:` key, 105.1's entries first; the ledger is main's, re-synced from a worktree-local feed
+  (`# stories: 598`); `test-architecture.md` is regenerated (386 stories, 138 test files, 106 epics).
+- **3 (nit) — Three tests inherited `CONDA_PREFIX`,** so a key reading it first was killed by one test in a bare
+  shell. **Resolution:** they set `CONDA_PREFIX` to another environment; the mutation now fails four tests in both
+  runners.
+- **4 (nit) — The `"106"` surface left out `test-architecture.md`.** **Resolution:** added.
+- **5 (nit) — The new cache line, like the status lines, was not flushed,** so a piped log printed it after all ten
+  packages' mypy output. **Resolution:** `flush=True` on the cache line and the three in-loop status prints, a
+  docstring sentence, and `test_every_line_the_mypy_run_prints_is_flushed_before_the_tool_runs`; a piped real run
+  now prints the cache line first and each status line after its package's `Success:` line.
+- **Found at landing, not by the review — AC5's meta test reads `.gitignore`, and steward's CI job did not fire on
+  it.** On the merged tree, `test_station_tests_trigger_map.py::test_every_read_and_declared_glob_fires_its_job`
+  failed: "steward: read `.gitignore` (from …/test_lint_types_mypy_cache_per_environment.py) … the `changes` step left
+  output `steward` false". It passed in the pre-review suite run only because that run started before the new test
+  file was staged, and the derivation reads tracked files. **Resolution:** `.gitignore` joins `steward_paths` in
+  `pyforge-station-tests.yml` (Story 98.1's rule, as atlas, herald and marshal already have it); the trigger-map and
+  path-filter tests then passed (46). The alternative, dropping the `.gitignore` assertion, would leave AC5 short.
+- **6 (nit) — Wording that goes stale once 105.1 merges.** **Resolution:** this spec, the Epic 106 intro, the
+  `epics.md` amendment and the two 106.1 memlog entries now say Epic 105 is Story 105.1's (#2242, merged
+  `94a77d724d`).
 
 ## Verification run (2026-10-16)
 
@@ -276,3 +330,30 @@ directly, never through a pipe.
   the two tests, the story spec; `spec-pyforge-atlas`: its deferred-work ledger). No baseline is stamped on this
   branch; the landing stamps each Spec scoped.
 - Not run here: the full `pr-preflight`, `detectors-ci` and the steward coverage gate (left to the landing).
+
+## Verification run (2026-10-16, after the review and the merge of `origin/main`)
+
+On the merged tree (`3df4461dbd` + `origin/main` at `94a77d724d` + the review fixes), staged; every exit code read
+directly.
+
+- New tests, under `pixi run --frozen -e pyforge-steward` and in a bare shell (`env -u CONDA_PREFIX -u
+  PIXI_ENVIRONMENT_NAME`): exit 0, 15 passed in each. The seven mutations (Implementation Result) each failed their
+  named tests in both.
+- `pixi run --frozen -e pyforge-ci python -m pytest -q tests/scripts/test_lint_types_gate.py`: exit 0, 30 passed.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0 (4 s, warm). `pixi run --frozen -e pyforge-foundry-full mypy`:
+  exit 0 (4 s, warm). A piped `pixi run --frozen -e pyforge-guild mypy` printed the cache line first and each status
+  line after its package's `Success:` line.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: first exit 1, 1 failed and 2855 passed
+  (`test_every_read_and_declared_glob_fires_its_job`, § Review, found at landing); after `.gitignore` joined
+  `steward_paths`, exit 0, 2856 passed, 2 skipped, 1 warning, in 535 s.
+- `pixi run --frozen -e pyforge-guild python scripts/ci_surface_gates.py --check`: exit 0.
+- `marshal-policy.toml` read with `tomllib`: `"105"` and `"106"` both whole.
+- `sprint-ledger-sync -- --project steward` from a worktree-local feed (deleted after): exit 0, `# stories: 598`,
+  `106-1-…: done`, `epic-106: done`; `story-status-check` exit 0 (373 audited) before and after the feed was removed.
+- `bmad_tea_playwright.py --project pyforge-steward`: exit 0, 386 stories, 138 test files, 106 epics.
+- Planning detectors, each `pixi run --frozen -e pyforge-guild <task>`: chain-completeness, dream-chain,
+  dreams-hygiene, deferred-work, ledger-regression, story-status, chain-currency-sweep, ad-citation, flag-gate,
+  tea-playwright and spec-surface, each exit 0. `deferred-work-check` first exited 2 on the closing `verified:` line
+  (`verified-line-uncited`); it now cites `scripts/lint_types.py:219` and two commands with their exit codes.
+- No baseline stamped: `spec-pyforge-steward` and `spec-pyforge-atlas` are left for the scoped stamps after the merge
+  commit.
