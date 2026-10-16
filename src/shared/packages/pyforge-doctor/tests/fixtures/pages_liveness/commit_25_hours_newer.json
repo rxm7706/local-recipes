@@ -1,0 +1,6 @@
+{
+  "case": "The latest published-input commit is 25 hours newer than the deploy: stale.",
+  "head": {"status": 200, "headers": {"last-modified": "Tue, 13 Oct 2026 12:00:00 GMT"}},
+  "git_log": "c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7 2026-10-14T13:00:00+00:00",
+  "expect": {"check": "pages-liveness-stale", "status": "warn", "requests": ["HEAD"], "lag_hours": 25}
+}

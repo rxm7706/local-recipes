@@ -31,6 +31,13 @@ BASELINE_ON_BLOCK = {
     },
     "workflow_dispatch": None,
 }
+# Story 30.2 (CAP-63) adds the Vizro producer to this workflow. GitHub filters paths per
+# workflow, not per job, so `on.push.paths` grows by the Vizro paths, and the `changes` job
+# keeps the publish job on exactly the baseline paths above (asserted below).
+VIZRO_TRIGGER_PATHS = [
+    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/**",
+    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/**",
+]
 # sha256 of the baseline's "Materialize stub credentials" step `run:` text (byte-for-byte, AC4).
 BASELINE_STUB_RUN_SHA256 = "cf84a9860fb3cb7910940fe596c968a96f444e78d342754d500a7fd6b2e6d505"
 CI_SURFACES = REPO_ROOT / "docs/governance/ci-surfaces.yaml"
@@ -76,11 +83,24 @@ def test_ac4_kedro_viz_publish_workflow_shape() -> None:
     assert document["permissions"]["contents"] == "read"
     assert "write" not in document.get("permissions", {})
     on_block = _workflow_on(document)
-    assert on_block == BASELINE_ON_BLOCK
+    widened = {
+        "push": {
+            "branches": BASELINE_ON_BLOCK["push"]["branches"],
+            "paths": [*BASELINE_ON_BLOCK["push"]["paths"], *VIZRO_TRIGGER_PATHS],
+        },
+        "workflow_dispatch": None,
+    }
+    assert on_block == widened
     assert "workflow_dispatch" in on_block
 
     job = document["jobs"]["publish"]
     assert "PAUSE_KEDRO_VIZ_PUBLISH" in job["if"]
+    # The publish job still runs on the baseline paths alone (Story 30.2's `changes` job).
+    assert job["needs"] == "changes"
+    assert "needs.changes.outputs.kedro_viz == 'true'" in job["if"]
+    paths_step = next(s for s in document["jobs"]["changes"]["steps"] if s.get("id") == "paths")
+    kedro_viz_pathspecs = paths_step["env"]["KEDRO_VIZ_PATHS"].split()
+    assert kedro_viz_pathspecs == [path.removesuffix("/**") for path in BASELINE_ON_BLOCK["push"]["paths"]]
 
     steps = job["steps"]
     run_text = "\n".join(step.get("run", "") for step in steps if isinstance(step, dict))

@@ -1,0 +1,95 @@
+---
+/**
+ * `/status/` -- the fleet board (Story 42.1, spec-pyforge-herald CAP-60; ported from the retired Jinja path by Story
+ * 43.7, CAP-61): one row per station, counted from the tracked sprint ledgers when the site was built, and an
+ * attention block of every blocked and backlog story. The input is `fleet-status.json`, which a Guild step of steward's
+ * Pages workflow writes from `sprint-ledger-query --format json` (`src/lib/status.ts` reads and shapes it; a missing or
+ * malformed input fails the build naming the file). A snapshot: it names its snapshot time, links the live view on
+ * Lane 1 only once `site.yml`'s `lane1.href` is an absolute URL, and carries no date of its own -- what built it is the
+ * footer's built-from line, like every page. Emitted only with `pyforge.herald.status_pages` on.
+ */
+import { Badge } from '@astrojs/starlight/components';
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+import { fleetStatus, lane1 } from '../../lib/agent-data.ts';
+import { statusPages } from '../../lib/flags.ts';
+import { board } from '../../lib/status.ts';
+
+export function getStaticPaths() {
+  return statusPages() ? [{ params: { index: undefined } }] : [];
+}
+
+const view = board(fleetStatus());
+const live = lane1();
+const n = view.stations.length;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Status',
+    description: `The fleet board: ${n} station${n === 1 ? '' : 's'} from the sprint ledgers, a build-time snapshot.`,
+  }}
+>
+  <p class="status-intro">
+    One row per station, counted from the tracked sprint ledgers when this site was built. A snapshot: nothing on
+    this page is live.
+  </p>
+  <p class="status-snapshot">
+    {
+      view.generatedAt ? (
+        <>Snapshot taken <time datetime={view.generatedAt}>{view.generatedAt}</time>.</>
+      ) : (
+        <>Snapshot time not recorded in the input.</>
+      )
+    }{' '}
+    <a href="ci/">Guild CI status</a> &middot; <a href="runs/">Runs and progress</a>
+    {live && (<> &middot; <a href={live.href}>{live.label}</a></>)}
+  </p>
+
+  <h2 id="stations">Stations</h2>
+  <table class="status-table">
+    <thead>
+      <tr><th>Station</th><th>Epics</th><th>Done / total</th><th>In progress</th><th>Backlog</th><th>Blocked</th><th>Done</th></tr>
+    </thead>
+    <tbody>
+      {
+        view.stations.map((s) => (
+          <tr data-station={s.name}>
+            <td>{s.name}</td>
+            <td>{s.epics}</td>
+            <td>{s.done} / {s.total}</td>
+            <td>{s.in_progress}</td>
+            <td>{s.backlog}</td>
+            <td>{s.blocked}</td>
+            <td>
+              {/* the label beside the bar is its text; the bar carries none, so the percentage reads once (43.7 review) */}
+              <progress max="100" value={s.width} data-width={s.width} aria-label={`${s.width}% done`} />{' '}
+              {s.width}%
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <h2 id="attention">Attention</h2>
+  {
+    view.attention.length > 0 && (
+      <ul class="status-attention">
+        {view.attention.map((a) => (
+          <li data-key={`${a.station} ${a.story_id}`}>
+            <Badge text={a.status} variant={a.status === 'blocked' ? 'danger' : 'caution'} /> <b>{a.station}</b>{' '}
+            <code>{a.story_id}</code>
+            {a.title && ` ${a.title}`}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {view.attentionNote && <p class="status-attention-note">{view.attentionNote}</p>}
+
+  <p class="status-source">
+    Rendered from <code>fleet-status.json</code>, which a Guild step of steward's Pages workflow writes from
+    <code>sprint-ledger-query --format json</code>; the counts are steward's.
+  </p>
+</StarlightPage>

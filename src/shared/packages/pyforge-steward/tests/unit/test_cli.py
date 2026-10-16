@@ -37,7 +37,7 @@ def test_help_lists_all_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_thirty_duties():
+def test_there_are_exactly_thirty_one_duties():
     assert DUTIES == (
         "keys",
         "deploy",
@@ -68,6 +68,7 @@ def test_there_are_exactly_thirty_duties():
         "deck-drift",
         "estate",
         "ci",
+        "pages",
         "preflight",
     )
 
@@ -240,8 +241,8 @@ def test_a_bad_flag_overlay_projects_to_the_usage_code(monkeypatch, tmp_path, ca
 
 
 def test_keys_exec_is_a_verb_of_keys_not_a_new_duty(capsys):
-    """`exec` joins `keys` (Story 75.1): it is a verb, not a duty (30 with Story 103.6's `preflight`); the verb list grows to seven."""
-    assert len(DUTIES) == 30  # noqa: PLR2004
+    """`exec` joins `keys` (Story 75.1): it is a verb, not a duty (31 with Story 102.3's `pages`); the verb list grows to seven."""
+    assert len(DUTIES) == 31  # noqa: PLR2004
     assert "exec" not in DUTIES
     with pytest.raises(SystemExit):
         build_parser().parse_args(["keys", "--help"])

@@ -49,7 +49,7 @@ surface:
   - src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/planning_graph.py
   - src/shared/packages/pyforge-marshal/tests/unit/test_planning_graph.py
-  - src/platform/tests/test_scribe_recall_argv.py
+  - src/shared/packages/pyforge-scribe/tests/meta/test_first_portal_slice.py    # the portal recall argv (re-pointed 2026-10-15 from src/platform/tests/test_scribe_recall_argv.py, never created)
   - src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py
 companions:
   - ../../architecture/architecture-pyforge-scribe-2026-07-25/ARCHITECTURE-SPINE.md

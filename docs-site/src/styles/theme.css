@@ -1,0 +1,148 @@
+/*
+ * The one theme of the Pages site (Story 43.4's review; operator ruling 2026-10-15; spec-pyforge-herald CAP-61, AD-23):
+ * Starlight's theme variables are the single contract, filled here with the herald look, and every page reads them --
+ * the docs through Starlight's `customCss` (astro.config.mjs), the herald
+ * pages through styles/herald.css, which declares no font or colour of its own and derives its tokens from these.
+ *
+ * Light under :root and dark under Starlight's [data-theme='dark'], the attribute the docs header's toggle sets (the
+ * herald pages read the same store, THEME_SCRIPT in src/lib/herald-pages.ts), on screen only, so print reads light;
+ * with scripts off, the system scheme picks the block. `--sl-color-text-accent` is the one accent text colour (every
+ * link, the herald's small amber labels). `--sl-font-heading` is this site's one addition to the contract (Starlight has no headings face):
+ * the herald display face, which the docs' headings take below and the herald pages read with `--sl-font` as fallback.
+ *
+ * To re-theme the whole site, replace this file or add a Starlight theme plugin; nothing else names a font or colour
+ * or sets a --sl-* variable (test_docsite_zero_origin.py; docs-site/README.md names what that test cannot read).
+ */
+
+@import './herald-fonts.css';
+
+:root {
+  color-scheme: light;
+  --sl-font: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --sl-font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  --sl-font-heading: "Big Shoulders Display", "IBM Plex Sans", sans-serif;
+
+  --sl-color-white: #1a2024;
+  --sl-color-gray-1: #2a3237;
+  --sl-color-gray-2: #3a444a;
+  --sl-color-gray-3: #58676f;
+  --sl-color-gray-4: #95a19c;
+  --sl-color-gray-5: #d3d8cf;
+  --sl-color-gray-6: #e7eae4;
+  --sl-color-gray-7: #e2e5df;
+  --sl-color-black: #f1f3ef;
+
+  --sl-color-accent-low: #f0dfbe;
+  --sl-color-accent: #b06a13;
+  --sl-color-accent-high: #7d4b0d;
+  --sl-color-orange-low: #ece2c8;
+  --sl-color-orange: #8a6a2e;
+  --sl-color-orange-high: #5f4920;
+  --sl-color-green-low: #d9e9de;
+  --sl-color-green: #3f7a5c;
+  --sl-color-green-high: #2b5640;
+  --sl-color-blue-low: #d9e5ea;
+  --sl-color-blue: #3a5f73;
+  --sl-color-blue-high: #284350;
+  --sl-color-purple-low: #e2ddee;
+  --sl-color-purple: #5f5286;
+  --sl-color-purple-high: #43395f;
+  --sl-color-red-low: #f0d9d3;
+  --sl-color-red: #a3392f;
+  --sl-color-red-high: #742820;
+  /* The site's one accent text -- every link, docs and herald alike, and the herald's small amber labels: the herald
+     amber reads 3.8:1 on the light paper, so light text takes the darker accent (6.5:1); dark text takes the amber
+     itself (7.6:1), set in the dark blocks below. */
+  --sl-color-text-accent: var(--sl-color-accent-high);
+}
+
+/* Dark is a screen theme (Story 43.4's re-review): in print only the light block above applies (on the docs as well
+   as Starlight's print stylesheet, which forces light too), so a page printed in dark mode reads light on paper. */
+@media screen {
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --sl-color-white: #e7ebe6;
+    --sl-color-gray-1: #cfd6d0;
+    --sl-color-gray-2: #b7c0ba;
+    --sl-color-gray-3: #8ea0a8;
+    --sl-color-gray-4: #5d6b71;
+    --sl-color-gray-5: #2b3238;
+    --sl-color-gray-6: #191e22;
+    --sl-color-gray-7: #0e1114;
+    --sl-color-black: #12161a;
+
+    --sl-color-accent-low: #3a2c14;
+    --sl-color-accent: #dd9a3f;
+    --sl-color-accent-high: #f2cf98;
+    --sl-color-orange-low: #332a16;
+    --sl-color-orange: #c9a95e;
+    --sl-color-orange-high: #e8d3a0;
+    --sl-color-green-low: #16261e;
+    --sl-color-green: #6fb992;
+    --sl-color-green-high: #b0dcc3;
+    --sl-color-blue-low: #1c262b;
+    --sl-color-blue: #7fa8bd;
+    --sl-color-blue-high: #c0d6e1;
+    --sl-color-purple-low: #241f36;
+    --sl-color-purple: #a495cf;
+    --sl-color-purple-high: #d4cbee;
+    --sl-color-red-low: #2e1714;
+    --sl-color-red: #d6766a;
+    --sl-color-red-high: #f0bab3;
+
+    --sl-color-text-accent: var(--sl-color-accent);
+  }
+}
+
+/* Scripts off: no data-theme is set, so the system scheme chooses on screen; the same dark values as the block above. */
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --sl-color-white: #e7ebe6;
+    --sl-color-gray-1: #cfd6d0;
+    --sl-color-gray-2: #b7c0ba;
+    --sl-color-gray-3: #8ea0a8;
+    --sl-color-gray-4: #5d6b71;
+    --sl-color-gray-5: #2b3238;
+    --sl-color-gray-6: #191e22;
+    --sl-color-gray-7: #0e1114;
+    --sl-color-black: #12161a;
+
+    --sl-color-accent-low: #3a2c14;
+    --sl-color-accent: #dd9a3f;
+    --sl-color-accent-high: #f2cf98;
+    --sl-color-orange-low: #332a16;
+    --sl-color-orange: #c9a95e;
+    --sl-color-orange-high: #e8d3a0;
+    --sl-color-green-low: #16261e;
+    --sl-color-green: #6fb992;
+    --sl-color-green-high: #b0dcc3;
+    --sl-color-blue-low: #1c262b;
+    --sl-color-blue: #7fa8bd;
+    --sl-color-blue-high: #c0d6e1;
+    --sl-color-purple-low: #241f36;
+    --sl-color-purple: #a495cf;
+    --sl-color-purple-high: #d4cbee;
+    --sl-color-red-low: #2e1714;
+    --sl-color-red: #d6766a;
+    --sl-color-red-high: #f0bab3;
+
+    --sl-color-text-accent: var(--sl-color-accent);
+  }
+}
+
+/* The docs' page title and content headings take the display face, as the herald pages' headings do -- at no more
+   specificity than a class (each branch in :where()), and not a heading an author marks .not-content, as Starlight's
+   own heading rules exclude it. */
+:where(h1#_top),
+.sl-markdown-content :where(h1, h2, h3, h4):not(:where(.not-content *)) {
+  font-family: var(--sl-font-heading);
+}
+
+/* Story 43.5: the line every page carries saying what built it (src/lib/built-from.ts). */
+.built-from {
+  margin: 1.5rem 0 0;
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  color: var(--sl-color-gray-3);
+}

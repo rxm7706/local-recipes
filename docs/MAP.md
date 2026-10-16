@@ -31,9 +31,8 @@ general documentation:
 | Governance | `docs/governance/` | Policy corpus; cross-cutting, not Diátaxis-quadrant material |
 | Foundry | `docs/foundry/` | Foundry registry, frames and guards — machine-read by detectors, not authored documentation |
 | Station/package docs | `src/shared/packages/pyforge-*/README.md`, skill dirs | Station-scoped; link *into* this map where general |
-| Publish roots (generated) | `docs/dashboard/` | One Pages artifact assembled at `docs-site/build/site/` — the Starlight shelf at `/`, herald's dossier site under `/herald/`, Kedro-Viz under `/dashboard/kedro-viz/` mounted from `docs/dashboard/kedro-viz/` (gitignored: atlas's `kedro-viz-export` workflow artifact, skipped and hidden when absent) — deployed by `pages.yml`, the sole `deploy-pages` caller (see [`docs/dashboard/README.md`](dashboard/README.md)) |
-| Herald site sources | `docsite/` | Herald's Jinja dossier and infographic site, built by `docsite/build.py`; dissolves into `docs-site/` under pyforge-herald CAP-61 Story 43.7 |
-| Pages shelf + assembler | `docs-site/` | The Starlight shelf and the Pages assembler output root (`docsite/tools/assemble_pages.py`); never renamed |
+| Publish roots (generated) | `docs/dashboard/` | One Pages artifact built at `docs-site/build/site/` — the Starlight shelf at `/`, herald's dossier site under `/herald/`, the status pages under `/status/`, Kedro-Viz under `/dashboard/kedro-viz/` and the Vizro boards under `/dashboard/vizro/`, mounted from `docs/dashboard/` (the exports gitignored: atlas's workflow artifacts, skipped and hidden when absent) — deployed by `pages.yml`, the sole `deploy-pages` caller (see [`docs/dashboard/README.md`](dashboard/README.md)) |
+| Pages site | `docs-site/` | The one generator of the Pages artifact (Astro + Starlight): the shelf, herald's pages and content (`docs-site/src/content/`), the status pages and the machine surfaces; `pages-build` / `pages-check` (pyforge-herald CAP-61 Story 43.7 retired `docsite/`); never renamed |
 | Deck sources | `presentations/` | Herald's deck sources and `facts.yaml`, published under `/herald/`; not documentation |
 
 ## One-chain operator layer (2026-09-17)
@@ -184,8 +183,10 @@ GitHub Pages site. Each section requires five fields: `key` (slug), `label`, `hr
 (site-root-relative directory with trailing slash), `owner` (station slug), and `order`
 (integer). Optional `entries` carry `{key, label, href}` sub-items. A row is added when its
 section publishes, by the station that publishes it, through the same surface reconcile that
-adds a `pages:` row (the Publish roots rule). Herald Story 43.7 reads this list into the
-sidebar and retires `docsite/content/site.yml`'s nav.
+adds a `pages:` row (the Publish roots rule). Herald Story 43.7 reads this list into the docs
+sidebar, the top menu every page carries and the home's doors, in `order`, and retired `site.yml`'s
+nav; a section whose `href` is a mounted export shows only when the export is present, and `status`
+only with `pyforge.herald.status_pages` on.
 
 ## Page registry (generated)
 

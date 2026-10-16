@@ -541,6 +541,27 @@ def ci_pause_drift_findings(
     return [f for f in findings if f.get("status") == "warn"]
 
 
+def pages_liveness_findings(
+    repo: pathlib.Path = REPO, timeout: int = 60
+) -> list[dict]:
+    """WARN Findings from ``pyforge.doctor``'s pages-liveness source (Story
+    48.2, spec-pyforge-doctor CAP-91): the live Pages root's ``last-modified``
+    against the latest published-input commit on ``refs/remotes/origin/main``.
+    Same subprocess discipline as ``ci_pause_drift_findings``; raises on
+    failure so ATTENTION can degrade.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.doctor.sources", "pages-liveness", "--json"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=True,
+    )
+    findings = json.loads(result.stdout)
+    return [f for f in findings if f.get("status") == "warn"]
+
+
 def sibling_dreams_drift_findings(
     repo: pathlib.Path = REPO, timeout: int = 20
 ) -> list[dict]:
@@ -1290,6 +1311,14 @@ def main() -> int:
             watch.append(f"{check}: {message}")
     except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
         watch.append("could not check CI pauses")
+
+    try:
+        for finding in pages_liveness_findings():
+            check = finding.get("check", "pages-liveness")
+            message = finding.get("message", "Pages liveness").split(chr(10))[0][:110]
+            watch.append(f"{check}: {message}")
+    except Exception:  # noqa: BLE001 -- same ATTENTION degrade idiom
+        watch.append("could not check Pages liveness")
 
     try:
         for finding in sibling_dreams_drift_findings():

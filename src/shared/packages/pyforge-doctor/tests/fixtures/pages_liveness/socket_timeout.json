@@ -1,0 +1,6 @@
+{
+  "case": "The request times out (socket.timeout, an alias of TimeoutError).",
+  "head": {"error": "timeout"},
+  "git_log": "2a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d 2026-10-14T14:00:00+00:00",
+  "expect": {"check": "pages-liveness-unavailable", "status": "warn", "requests": ["HEAD"], "cause": "TimeoutError: timed out"}
+}

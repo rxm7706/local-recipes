@@ -1,8 +1,9 @@
-"""Story 102.1–102.2 (CAP-168): pages.yml trigger, build, and deploy shape."""
+"""Story 102.1–102.3 and 102.5 (CAP-168): pages.yml trigger, build, and deploy shape."""
 
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
 
 import yaml
@@ -18,9 +19,12 @@ _EXPECTED_PATHS = {
     "docs/index.md",
     "docs/404.md",
     "docs/map.yaml",
-    "docs/dashboard/**",
+    "docs/dashboard/**",  # tracked `deploy static` boards publish from here (102.4's review kept it)
+    "scripts/pages_*.py",
+    "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
+    # herald Story 43.7's review: the build's flag export, `python -m pyforge.herald.pages_env`
+    "src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py",
     "docs-site/**",
-    "docsite/**",
     "presentations/**",
     ".github/workflows/pages.yml",
 }
@@ -79,6 +83,18 @@ def test_pages_yml_deploy_if_conjoins_skip_conditions() -> None:
     assert "needs.build.outputs.changed" in deploy_if
 
 
+def test_a_dispatch_bypasses_only_the_pause_switches_of_the_deploy() -> None:
+    """Story 102.3's review (AD-4 as amended 2026-10-14): an equal hash performs zero deploys, a
+    dispatch included. The dispatch term guards only the pause switches; the job's own condition
+    (not a PR, main, a changed tree) is conjoined outside it."""
+    deploy_if = " ".join(_load()["jobs"]["deploy"]["if"].split())
+    assert deploy_if == (
+        "${{ (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && "
+        "vars.PAUSE_PAGES != 'true')) && (github.event_name != 'pull_request' && "
+        "github.ref == 'refs/heads/main' && needs.build.outputs.changed == 'true') }}"
+    )
+
+
 def test_pages_yml_concurrency_and_timeouts() -> None:
     document = _load()
     build = document["jobs"]["build"]
@@ -91,19 +107,55 @@ def test_pages_yml_concurrency_and_timeouts() -> None:
 
 
 def test_pages_yml_pr_artifact_upload_shape() -> None:
+    """The Pages artifact uploads off pull requests; the ``pages-site`` copy uploads for a pull request
+    or a changed tree (Story 102.5 and its review: a PR's review copy, and the deploy job's release
+    asset; an unchanged tree deploys nothing)."""
     document = _load()
     steps = document["jobs"]["build"]["steps"]
     upload_pages = next(s for s in steps if isinstance(s, dict) and "upload-pages-artifact" in str(s.get("uses", "")))
-    upload_pr = next(
+    upload_site = next(
         s for s in steps if isinstance(s, dict) and s.get("uses", "").startswith("actions/upload-artifact@")
     )
     assert "pull_request" in upload_pages["if"]
     assert upload_pages["if"].strip() == "${{ github.event_name != 'pull_request' }}"
-    assert upload_pr["if"].strip() == "${{ github.event_name == 'pull_request' }}"
-    assert upload_pr["with"]["name"] == "pages-site"
+    assert upload_site["if"] == "${{ github.event_name == 'pull_request' || steps.stamp.outputs.changed == 'true' }}"
+    assert upload_site["with"]["name"] == "pages-site"
+
+
+def _leaves(tasks: dict, name: str) -> list[str]:
+    """The tasks ``pixi run <name>`` runs that carry a command, in dependency order."""
+    task = tasks[name]
+    deps = [d if isinstance(d, str) else d["task"] for d in task.get("depends-on", [])]
+    return [*(leaf for dep in deps for leaf in _leaves(tasks, dep)), *([name] if "cmd" in task else [])]
 
 
 def test_pages_yml_runs_docs_site_validate_in_build() -> None:
+    """After ``pages-check`` (which ran ``docs-site-install``), the build job runs every leg of ``docs-site-validate``
+    with ``--skip-deps``, so CI installs docs-site's npm dependencies once (herald Story 43.7's review); a leg added to
+    ``docs-site-validate`` in ``pixi.toml`` and not here fails this test."""
     text = PAGES_WORKFLOW.read_text(encoding="utf-8")
-    assert "docs-site-validate" in text
     assert re.search(r"jobs:\s*\n\s*build:", text)
+    tasks = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))["feature"]["site"]["tasks"]
+    legs = [leg for leg in _leaves(tasks, "docs-site-validate") if leg != "docs-site-install"]
+    assert legs == ["docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"]
+    runs = [str(s.get("run", "")) for s in _load()["jobs"]["build"]["steps"] if isinstance(s, dict)]
+    check = next(i for i, run in enumerate(runs) if "pixi run --frozen -e site pages-check" in run)
+    validate = next(i for i, run in enumerate(runs) if "docs-site-validate" in run)
+    assert check < validate
+    assert runs[validate].split("\n")[:3] == [f"pixi run --frozen --skip-deps -e site {leg}" for leg in legs]
+
+
+def test_pages_yml_writes_the_fleet_board_input_before_the_build() -> None:
+    """Story 102.3 (closes the 102.2 gap herald 42.1's spec assigns to this workflow): a Guild step
+    writes the fleet board's input (docs-site/src/content/fleet-status.json since herald Story 43.7) from
+    sprint-ledger-query --format json before pages-check, and the build env carries herald's status-pages flag
+    (``python -m pyforge.herald.pages_env``, herald Story 43.7)."""
+    steps = [s for s in _load()["jobs"]["build"]["steps"] if isinstance(s, dict)]
+    runs = [str(s.get("run", "")) for s in steps]
+    writer = next(i for i, run in enumerate(runs) if "scripts/pages_fleet_status.py" in run)
+    build = next(i for i, run in enumerate(runs) if "pages-check" in run)
+    env = next(i for i, run in enumerate(runs) if "pyforge.herald.pages_env" in run)
+    assert env < writer < build
+    assert "sprint-ledger-query -- --format json --output" in runs[writer]
+    assert "--out docs-site/src/content/fleet-status.json" in runs[writer]
+    assert 'python -m pyforge.herald.pages_env >> "$GITHUB_ENV"' in runs[env]

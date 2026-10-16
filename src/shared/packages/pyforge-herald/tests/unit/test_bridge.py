@@ -220,7 +220,7 @@ provenance -- no transport call, no inference SDK, no argv parsing.
 ``sync_all.py`` (Story 23.6) joins for the same reason once more: it
 composes ``deck_pipeline``'s own CAP functions (``pull_*``, ``push_exports``)
 plus bounded subprocess calls to existing pixi tasks (``deck-facts``,
-``deck-trio``, ``pixi run -e site site``, ``git status``) into one ordered
+``deck-trio``, ``pixi run -e site pages-build``, ``git status``) into one ordered
 per-deck loop -- no transport call of its own outside what it passes
 straight through to ``deck_pipeline``, no inference SDK, no argv parsing
 (that stays ``cli.py``'s own ``_run_deck_sync_all``).
@@ -382,9 +382,9 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
             "deck_twins",  # Story 30.2 (CAP-55): twin stream handlers, not bridge-core
             "twins",  # Story 30.1 (CAP-55): twin scan/build/publish, not bridge-core
             "pptx_native",  # Story 32.1 (CAP-57): native pptx export, not bridge-core
-            "pages_host",  # Story 31.1 (CAP-56): Pages second-host flag read, not bridge-core
-            "pages_one_generator",  # Story 43.1 (CAP-61): Pages one-generator flag read, not bridge-core
+            "pages_env",  # Story 43.7 (CAP-61): the Pages build's flag environment, not bridge-core
             "ci_surfaces_tile",  # Story 39.1 (CAP-59): CI surfaces tile flag read, not bridge-core
+            "status_pages",  # Story 42.1 (CAP-60): status pages flag read, not bridge-core
             "local_ship",  # Story 19.2 (no CAP; CAP-38/CAP-39 effect): operator loopback ship, not bridge-core
         }
         == swept

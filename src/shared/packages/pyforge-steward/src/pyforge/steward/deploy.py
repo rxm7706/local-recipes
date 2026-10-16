@@ -1,35 +1,12 @@
 """Steward's `deploy` duty-adapter module (AD-1/AD-4) — Epic 2's single file,
 mirrors `keys.py`'s "one module per duty" precedent.
 
-Story 2.1 slice: `build_dashboard` — a thin `subprocess` wrap of the existing
-`dashboard-gen` pixi task (`retired-console-check`), never a
-reimplementation of `pyforge.doctor.sources.fleet_scan`'s own logic (AD-1). `DeployDuty`
-is the `Duty`-conforming adapter `cli.py`'s `resolve_duty("deploy")` now
-returns, wiring `steward deploy dashboard --build`.
-
-Story 2.2 slice: `dashboard_diff` (git-diff the freshly built `docs/dashboard/`
-tree against the committed one) and `commit_and_push_dashboard` (git add +
-commit + push to the currently checked-out branch) — together the FR-9
-reconciled-push behavior: bare `steward deploy dashboard` builds, diffs, and
-only commits+pushes on a real difference (AD-4 — no daemon, no new workflow;
-the operator or an existing workflow invokes the CLI).
-
-Story 2.3 slice: `--dry-run` on the same `dashboard` verb — build+diff,
-print, never commit/push. No new primitive; `_run_dashboard` just gains a
-third branch alongside `--build`/bare-reconcile.
-
-Story 2.4 slice: `last_deploy_commit` — reads the last commit that touched
-`docs/dashboard/` straight from `git log` (no separate state file, per
-FR-11). Wired as `steward deploy status`.
-
-Story 5.2 slice: `_tracked_ledger_refusal` — a precondition guard on the
-`dashboard` verb only (AD-71: Marshal produces and owns the sprint ledger's
-currency; Steward must refuse rather than silently publish when its own
-tracked ledger is missing or unreadable). The guard checks only the file's
-presence and shape (a `development_status:` block exists) — never an
-individual story-status value — so this module still performs zero status
-derivation of its own (AD-1: that computation stays inside the wrapped
-`dashboard-gen` subprocess / `pyforge.doctor.sources.fleet_scan`).
+Story 102.3 (CAP-168) retired the `dashboard` and `status` verbs and their git plumbing (the
+no-op build, the diff, the commit-and-push, the last-deploy-commit reader and the tracked-ledger
+refusal that guarded the committing verb): the generator they wrapped retired on
+2026-08-25, the Pages artifact is built and deployed by `.github/workflows/pages.yml`, and
+`steward pages build|deploy|status` (`pages_duty.py`) is the duty that speaks to it. They were
+deleted, not deprecated (AD-5's 2026-08-09 rule); no verb here commits or pushes.
 
 Story 9.5 slice (CAP-6, AD-5, AD-8): `DeploymentTopology` + `check_shareable_
 state` implement AD-5's refusal — "any cross-worker shared state that cannot
@@ -46,10 +23,7 @@ invariant (`test_no_module_outside_dashboard_imports_dashboard_django_or_
 channels`) already forbids this file from importing anything under
 `dashboard/`, `django`, or `channels` — so this code deals only in plain
 strings (dotted backend class paths, peer addresses, file paths), never a
-real Django/Channels object. Wired as `steward deploy perimeter`, a THIRD,
-unrelated verb alongside the pre-existing `dashboard` (docs/dashboard-gen)
-and `status` — reusing the `dashboard` name for this surface was flagged as
-a live naming collision on Story 9.1's own deferred-work ledger.
+real Django/Channels object. Wired as `steward deploy perimeter`.
 
 Story 9.7 slice (CAP-8, AD-10): `StaticPanel` + `render_static_index` +
 `_run_static` implement AD-10's refusal — "a board that has declared an
@@ -57,12 +31,8 @@ access column may not be delivered by static export... refuses rather than
 warns" — wired as a FOURTH verb, `steward deploy static`. Panels arrive as
 caller-supplied, already-rendered HTML fragments (e.g. an adopter's own
 `plotly.graph_objects.Figure.to_html(full_html=False)` output) and are assembled verbatim
-into one self-contained `docs/dashboard/<board>/index.html`; the
-pre-existing `dashboard` verb's reconciled-push mechanism then commits and
-pushes that file unchanged — no new git plumbing. `dashboard_diff` (Story
-2.2, above) is extended here to also see genuinely new, untracked files
-under `docs/dashboard/`, since a board's first-ever static publish is
-exactly that shape and was previously invisible to it.
+into one self-contained `docs/dashboard/<board>/index.html`, which lands
+through a pull request like any tracked file (no verb pushes; Story 102.3).
 """
 
 from __future__ import annotations
@@ -105,283 +75,6 @@ def repo_root() -> Path:
         f"deploy.py: could not locate {_DASHBOARD_GENERATE_MARKER} by walking "
         f"up from {here} — this module must live inside a local-recipes checkout."
     )
-
-
-# ── Build primitive (FR-8, Story 2.1) ───────────────────────────────────────
-
-_DEFAULT_BUILD_CMD: tuple[str, ...] = ("true",)
-
-
-def build_dashboard(*, cwd: str | Path, cmd: Sequence[str] | None = None) -> subprocess.CompletedProcess[str]:
-    """Run a no-op build (Kedro-Viz is staged by atlas `viz-publish-stage`).
-
-    Story 30.2 retired `dashboard-gen`. `steward deploy dashboard` still
-    diffs and commits `docs/dashboard/` (Kedro-Viz + stub). `cmd` remains
-    injectable for tests.
-    """
-    return subprocess.run(
-        list(cmd) if cmd is not None else list(_DEFAULT_BUILD_CMD),
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-
-# ── Diff + reconciled push (FR-9, Story 2.2) ────────────────────────────────
-
-
-def dashboard_diff(*, cwd: str | Path) -> str:
-    """Return non-empty text if `docs/dashboard/` differs from the committed
-    tree — either unstaged changes to already-tracked files (`git diff`) or
-    genuinely NEW, untracked files under that path (`git ls-files --others
-    --exclude-standard`, Story 9.7).
-
-    The original design assumed `dashboard-gen` only ever rewrites the
-    existing tracked `data.js` in place, never adds a new file — true for
-    every caller until `steward deploy static` (Story 9.7), whose entire
-    job is to create a NEW, previously-untracked board directory on first
-    publish. Without the untracked-file check, that first publish was
-    invisible here, so `steward deploy dashboard` reported "nothing to
-    deploy" and never committed/pushed it (review pass 2 finding).
-
-    Empty string means no diff — the only thing either caller keys off:
-    `_run_dashboard`'s "nothing to deploy" gate and its `--dry-run`
-    printout both compare `.strip()` truthy/falsy only, never this text's
-    exact shape, so combining the two subprocess outputs is a
-    backward-compatible extension. Raises `subprocess.CalledProcessError`
-    if either underlying git call fails (e.g. `cwd` is not a git worktree)
-    — propagated, not swallowed.
-    """
-    diff_result = subprocess.run(
-        ["git", "diff", "--", str(_DASHBOARD_RELATIVE_PATH)],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    untracked_result = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard", "--", str(_DASHBOARD_RELATIVE_PATH)],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return diff_result.stdout + untracked_result.stdout
-
-
-def commit_and_push_dashboard(*, cwd: str | Path) -> str:
-    """`git add` the `docs/dashboard/` diff, commit it (scoped to that same
-    pathspec), and push to the currently checked-out branch on `origin` —
-    direct push, no new Actions workflow (AD-4). Returns the new commit's
-    full SHA.
-
-    Review finding: the branch is now resolved (`git symbolic-ref --short
-    HEAD`) FIRST, before any write -- a detached-HEAD checkout used to
-    commit successfully and only fail resolving the push branch AFTER an
-    orphan commit already existed, silently, with no record it was ever
-    made once garbage-collected. Refusing before the commit means a
-    detached-HEAD failure leaves the working tree exactly as it was.
-
-    Review finding: `git commit` is now scoped to `-- docs/dashboard`
-    (mirrors the preceding `git add`'s own pathspec) rather than a bare
-    `git commit`, which commits the ENTIRE index regardless of what `git
-    add` staged -- any unrelated file staged by the operator or another
-    process sharing this working tree at call time would otherwise ride
-    along into this commit and get pushed under a misleading message.
-
-    Raises `subprocess.CalledProcessError` on any failing step (a detached
-    HEAD with no branch, nothing to commit, a rejected push) — propagated,
-    not swallowed, caught only at `DeployDuty`'s boundary, which now names
-    the exact failing command (see `DeployDuty.run`) rather than a bare
-    `"git"`. A push failure after a successful local commit is a known,
-    accepted partial-completion state -- not rolled back here, but the next
-    `deploy dashboard` invocation now detects and retries it (see
-    `_push_pending_commit_if_ahead`) rather than silently reporting "nothing
-    to deploy".
-    """
-    branch = subprocess.run(
-        ["git", "symbolic-ref", "--short", "HEAD"],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    subprocess.run(
-        ["git", "add", "--", str(_DASHBOARD_RELATIVE_PATH)],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    subprocess.run(
-        [
-            "git",
-            "commit",
-            "-m",
-            "dashboard: refresh status (steward deploy dashboard)",
-            "--",
-            str(_DASHBOARD_RELATIVE_PATH),
-        ],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    sha = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    subprocess.run(
-        ["git", "push", "origin", branch],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return sha
-
-
-def _push_pending_commit_if_ahead(*, cwd: str | Path) -> str | None:
-    """Review finding: if an earlier `commit_and_push_dashboard` call
-    committed successfully but its push failed, the local branch is left
-    AHEAD of `origin` with a real, already-committed change. The next
-    `steward deploy dashboard` run would previously build fresh content
-    identical to what's already committed, see an EMPTY `dashboard_diff`
-    (the working tree already matches the ahead-of-origin HEAD), and report
-    "nothing to deploy" -- permanently hiding the earlier push failure;
-    `deploy status` would also report the unpushed commit as if it were a
-    completed deploy.
-
-    Called before the diff check (never during `--dry-run`, which must
-    never push): if HEAD is ahead of its upstream, push it now and return
-    the pushed SHA. Returns `None` if not ahead (the ordinary case,
-    including "no upstream configured" or a detached HEAD -- `@{u}`
-    resolution failing here is treated as "cannot tell", not an error; the
-    normal build/diff/commit flow's own git calls surface a clearer error
-    if something about the checkout is genuinely broken).
-    """
-    ahead = subprocess.run(
-        ["git", "rev-list", "--count", "@{u}..HEAD"],
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-    )
-    if ahead.returncode != 0:
-        return None
-    count = ahead.stdout.strip()
-    if not count.isdigit() or int(count) == 0:
-        return None
-    branch = subprocess.run(
-        ["git", "symbolic-ref", "--short", "HEAD"],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    subprocess.run(
-        ["git", "push", "origin", branch],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-
-
-# ── Deploy status (FR-11, Story 2.4) ────────────────────────────────────────
-
-
-@dataclass(frozen=True)
-class DeployRecord:
-    """The last commit that touched `docs/dashboard/` — SHA + committer
-    timestamp, read straight from `git log`. No separate state file exists
-    anywhere (FR-11's explicit constraint); this IS the record."""
-
-    sha: str
-    timestamp: str
-
-
-_LOG_FORMAT = "%H\x1f%cI"  # full SHA + strict-ISO committer date, unit-separated
-
-
-def last_deploy_commit(*, cwd: str | Path) -> DeployRecord | None:
-    """Return the last commit touching `docs/dashboard/`, or `None` if none
-    exists.
-
-    Reads git history directly (`git log -1`) — never a separate state file
-    (per FR-11's "no separate state store" constraint; see this story's
-    spec, "Design Notes" for why no Steward-provenance filter is applied).
-
-    Raises `subprocess.CalledProcessError` if `git log` itself fails (e.g.
-    `cwd` is not a git worktree) — propagated, not swallowed.
-    """
-    result = subprocess.run(
-        ["git", "log", "-1", f"--format={_LOG_FORMAT}", "--", str(_DASHBOARD_RELATIVE_PATH)],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    output = result.stdout.strip()
-    if not output:
-        return None
-    sha, timestamp = output.split("\x1f")
-    return DeployRecord(sha=sha, timestamp=timestamp)
-
-
-# ── Tracked-ledger precondition (AD-71, Story 5.2) ──────────────────────────
-
-_STEWARD_LEDGER_RELATIVE_PATH = Path(
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml"
-)
-
-
-def _tracked_ledger_refusal(*, cwd: str | Path) -> str | None:
-    """Return a refusal message if Steward's own tracked sprint ledger is
-    missing, unreadable, or not shaped like a ledger — or `None` if it's fine
-    to proceed.
-
-    Physical path, never the `_bmad-output/planning-artifacts` symlink (that
-    symlink is per-worktree global state and may point at a different
-    project — see this repo's CLAUDE.md "PARALLEL AGENTS" section). Checks
-    only presence and shape (a top-level `development_status:` line exists)
-    — never an individual story key or status value, so this stays a
-    precondition check, not the story-status derivation AD-1 forbids
-    `deploy.py` from doing (that computation stays inside the wrapped
-    `dashboard-gen` subprocess / `pyforge.doctor.sources.fleet_scan`).
-
-    Review finding: the shape check used to be a bare substring test
-    (`"development_status:" in text`), which a comment merely MENTIONING the
-    key (or any longer identifier ending in it) would satisfy — the real
-    consumer, `generate.py::parse_sprint_status`, only recognizes a line
-    whose STRIPPED text equals `"development_status:"` exactly. A ledger
-    that passed the old check could still parse to zero statuses downstream,
-    exactly the silent-invisibility this guard exists to prevent. Now
-    matches that same line-exact rule.
-    """
-    ledger = Path(cwd) / _STEWARD_LEDGER_RELATIVE_PATH
-    if not ledger.is_file():
-        return f"tracked ledger not found at {ledger}"
-    try:
-        text = ledger.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        # Review finding: `UnicodeDecodeError` (invalid-encoding ledger
-        # content) is a `ValueError`, not an `OSError` -- excluding it left
-        # a corrupt-encoding ledger crashing uncaught instead of refusing.
-        return f"tracked ledger unreadable at {ledger}: {exc}"
-    if not any(line.strip() == "development_status:" for line in text.splitlines()):
-        return f"tracked ledger at {ledger} has no development_status: block"
-    return None
 
 
 # ── Deployment topology + AD-5 shareability refusal (CAP-6, Story 9.5) ─────
@@ -1178,16 +871,14 @@ def _is_path_gitignored(path: Path, *, cwd: Path) -> bool:
     """True when `git` would refuse to add `path` because a `.gitignore`
     rule excludes it (review follow-up pass finding).
 
-    `commit_and_push_dashboard` publishes via `git add`, and `dashboard_diff`
-    detects new boards via `git ls-files --others --exclude-standard` — both
-    honour `.gitignore`. A board slug is only constrained to
+    A board lands through a pull request, and `git add` honours
+    `.gitignore`. A board slug is only constrained to
     `^[A-Za-z0-9_-]+$`, which happily admits `build`, `dist`, `out`, `lib`,
     `env`, `venv`, `logs`, `target` and `node_modules`; every one of those is
     matched by a bare-directory rule in this repo's own `.gitignore`, which
     applies at ANY depth — so `docs/dashboard/build/index.html` is ignored
     today. Writing there reported success while the board could never be
-    committed, pushed, or even seen as a diff: silent non-publication, the
-    same failure mode review pass 2 closed for untracked files.
+    committed or even seen as a diff: silent non-publication.
 
     A non-zero exit means "not ignored" (1), or that this question cannot be
     answered here at all (128 — `cwd` is not a git worktree, as in this
@@ -1299,8 +990,8 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
     presence, then each `--panel LABEL=PATH` entry's shape (a `=`
     separator, a non-empty label) and file content (`OSError` and
     `UnicodeDecodeError` — not an `OSError` subclass — both caught as a
-    named refusal, mirroring `_tracked_ledger_refusal`'s own established
-    precedent for this exact bug class). Every string-typed operation on
+    named refusal: `UnicodeDecodeError` is a `ValueError`, so catching only
+    `OSError` would let a corrupt-encoding panel crash instead of refusing). Every string-typed operation on
     `ns.access_column`/`ns.board`/each parsed panel label additionally
     catches `(TypeError, AttributeError)`, mirroring `_run_perimeter`'s own
     documented precedent in this file for a malformed `Namespace`.
@@ -1412,7 +1103,7 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
             ok=False,
             summary=(
                 f"deploy static: refused — {final_path} is excluded by a .gitignore rule, "
-                f"so `steward deploy dashboard` could never commit or push it; "
+                f"so it could never be committed; "
                 f"choose a --board slug that is not gitignored (got {board!r})"
             ),
         )
@@ -1460,111 +1151,18 @@ def _run_static(ns: argparse.Namespace) -> DutyResult:
 
 # ── DeployDuty (Duty-protocol adapter) ──────────────────────────────────────
 
-_DEPLOY_VERBS: tuple[str, ...] = ("dashboard", "status", "perimeter", "static")
-
-
-def _run_dashboard(ns: argparse.Namespace) -> DutyResult:
-    """`deploy dashboard [--build] [--dry-run]`.
-
-    `--build` always wins over `--dry-run` if both are passed (build-only is
-    the narrower operation; ACs don't define combining them, so this is a
-    documented judgment call, not a silent one — see this story's spec,
-    "Design Notes") — builds and returns without ever computing a diff.
-
-    Otherwise: build, then diff `docs/dashboard/` against the committed
-    tree. No diff → `ok=True`, "nothing to deploy", regardless of
-    `--dry-run` (FR-9's zero-commit-on-no-diff property). A real diff with
-    `--dry-run` → the diff is printed; `commit_and_push_dashboard` is never
-    called, so `git log`/`git status` are left unchanged. A real diff with
-    neither flag → commit + push (Story 2.2's FR-9 reconciled-push
-    behavior).
-
-    Story 5.2: refuses before any of the above if Steward's own tracked
-    sprint ledger is missing, unreadable, or unshaped (AD-71) — named,
-    not a silent fallback; `build_dashboard()` is never reached.
-    """
-    root = repo_root()
-    refusal = _tracked_ledger_refusal(cwd=root)
-    if refusal is not None:
-        return DutyResult(ok=False, summary=f"deploy dashboard: refused — {refusal}")
-
-    build_dashboard(cwd=root)
-
-    if getattr(ns, "build", False):
-        return DutyResult(ok=True, summary="deploy dashboard: build complete (docs/dashboard/ refreshed)")
-
-    if not getattr(ns, "dry_run", False):
-        # Review finding: check for (and retry) an earlier run's unpushed
-        # commit BEFORE the diff-based no-op check below -- otherwise a
-        # stuck unpushed commit permanently masquerades as "nothing to
-        # deploy" forever (see `_push_pending_commit_if_ahead`'s own
-        # docstring). Never runs during `--dry-run`, which must never push.
-        pending_sha = _push_pending_commit_if_ahead(cwd=root)
-        if pending_sha is not None:
-            return DutyResult(
-                ok=True,
-                summary=(
-                    f"deploy dashboard: pushed previously-committed {pending_sha} "
-                    "(an earlier run's push had failed and was retried)"
-                ),
-            )
-
-    diff_text = dashboard_diff(cwd=root)
-    if not diff_text.strip():
-        return DutyResult(ok=True, summary="deploy dashboard: no diff — nothing to deploy")
-
-    if getattr(ns, "dry_run", False):
-        return DutyResult(
-            ok=True,
-            summary=f"deploy dashboard: pending diff (dry-run, not committed):\n{diff_text}",
-        )
-
-    sha = commit_and_push_dashboard(cwd=root)
-    return DutyResult(ok=True, summary=f"deploy dashboard: committed and pushed {sha}")
-
-
-def _run_status(ns: argparse.Namespace) -> DutyResult:  # noqa: ARG001 -- no flags yet
-    """`deploy status` — reports the last commit touching `docs/dashboard/`.
-
-    Review finding: previously reported the last commit's SHA/timestamp
-    unconditionally, even if that commit was never actually pushed (a prior
-    `deploy dashboard` committed but its push failed) -- misreporting a
-    local-only commit as a completed deploy. Now appends an explicit note
-    when HEAD is ahead of its upstream, using the SAME `@{u}`-based check
-    `_push_pending_commit_if_ahead` uses (read-only here -- `status` never
-    pushes) -- still no separate state file (FR-11)."""
-    root = repo_root()
-    record = last_deploy_commit(cwd=root)
-    if record is None:
-        return DutyResult(ok=True, summary="deploy status: no dashboard deploy commit found in git history")
-    ahead = subprocess.run(
-        ["git", "rev-list", "--count", "@{u}..HEAD"],
-        cwd=str(root),
-        capture_output=True,
-        text=True,
-    )
-    unpushed_note = ""
-    if ahead.returncode == 0:
-        count = ahead.stdout.strip()
-        if count.isdigit() and int(count) > 0:
-            unpushed_note = " -- HEAD is ahead of origin; the most recent commit(s) may not be pushed yet"
-    return DutyResult(
-        ok=True,
-        summary=f"deploy status: last deploy {record.sha} at {record.timestamp}{unpushed_note}",
-    )
+_DEPLOY_VERBS: tuple[str, ...] = ("perimeter", "static")
 
 
 class DeployDuty:
-    """The real `deploy` duty — dispatches the `dashboard`/`status`/
-    `perimeter`/`static` verbs.
+    """The real `deploy` duty — dispatches the `perimeter`/`static` verbs.
 
     Bare `steward deploy` (no verb) degrades to `DutyResult(ok=True, ...)`
     naming the available verbs (AD-7), matching `KeysDuty`'s identical
-    precedent. A subprocess failure (pixi, git) is caught here as
+    precedent. A subprocess failure is caught here as
     `subprocess.CalledProcessError` and reported as a duty-level failure,
     never conflated with an internal crash (AD-8 — that boundary is
-    `cli.main()`'s alone). `static` never shells out, but is dispatched
-    through the same guarded `try` for a uniform shape.
+    `cli.main()`'s alone).
     """
 
     name = "deploy"
@@ -1577,20 +1175,12 @@ class DeployDuty:
                 summary=f"deploy: available verbs are {', '.join(_DEPLOY_VERBS)}",
             )
         try:
-            if verb == "dashboard":
-                return _run_dashboard(ns)
             if verb == "perimeter":
                 return _run_perimeter(ns)
-            if verb == "static":
-                return _run_static(ns)
-            return _run_status(ns)
+            return _run_static(ns)
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
-            # Review finding: `exc.cmd[0]` was always the literal string
-            # "git" (every subprocess call in this module starts with it),
-            # so the summary never actually named which step failed despite
-            # this module's own docstrings claiming per-step attribution.
-            # The full command line does.
+            # The full command line names the step that failed, not just its program.
             cmd_name = " ".join(str(part) for part in exc.cmd) if exc.cmd else "subprocess"
             return DutyResult(
                 ok=False,

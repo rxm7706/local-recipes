@@ -1,0 +1,6 @@
+{
+  "case": "Offline: name resolution fails before any response.",
+  "head": {"error": "URLError", "reason": "[Errno -3] Temporary failure in name resolution"},
+  "git_log": "192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c 2026-10-14T14:00:00+00:00",
+  "expect": {"check": "pages-liveness-unavailable", "status": "warn", "requests": ["HEAD"], "cause": "URLError: [Errno -3] Temporary failure in name resolution"}
+}

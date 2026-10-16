@@ -1,0 +1,54 @@
+/*
+ * The herald faces (Story 43.4 and its review; spec-pyforge-herald CAP-61; AD-21, AD-23): the five families the
+ * dossier, its shell, the docs (through theme.css) and the Design twins name, each a woff2 file of an @fontsource
+ * package in docs-site/package.json, declared here once -- woff2 only, the format every browser the site supports
+ * reads -- and bundled by Astro under the artifact's own _astro/, so no font loads from another origin and none is
+ * vendored by hand. The latin subset and the weights are the ones Story 31.3 vendored by hand, until Story 43.7 retired
+ * that copy. The fonts are under the SIL Open Font License 1.1: each package's own LICENSE ships in the artifact at
+ * /fonts/<package>.LICENSE.txt (scripts/populate-public.mts; docs-site/README.md).
+ */
+
+@font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('@fontsource/big-shoulders-display/files/big-shoulders-display-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('@fontsource/big-shoulders-display/files/big-shoulders-display-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 800; font-display: swap;
+  src: url('@fontsource/big-shoulders-display/files/big-shoulders-display-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Big Shoulders Display'; font-style: normal; font-weight: 900; font-display: swap;
+  src: url('@fontsource/big-shoulders-display/files/big-shoulders-display-latin-900-normal.woff2') format('woff2'); }
+
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-style: italic; font-weight: 400; font-display: swap;
+  src: url('@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-italic.woff2') format('woff2'); }
+
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2') format('woff2'); }
+
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('@fontsource/archivo/files/archivo-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('@fontsource/archivo/files/archivo-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('@fontsource/archivo/files/archivo-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('@fontsource/archivo/files/archivo-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 800; font-display: swap;
+  src: url('@fontsource/archivo/files/archivo-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 900; font-display: swap;
+  src: url('@fontsource/archivo/files/archivo-latin-900-normal.woff2') format('woff2'); }
+
+/* Archivo Expanded is the 125% width of the variable Archivo; npm publishes no package of that name. */
+@font-face { font-family: 'Archivo Expanded'; font-style: normal; font-weight: 700 900; font-stretch: 125%;
+  font-display: swap;
+  src: url('@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2') format('woff2-variations'); }

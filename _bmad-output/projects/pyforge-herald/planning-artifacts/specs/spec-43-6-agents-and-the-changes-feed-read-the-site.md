@@ -2,7 +2,7 @@
 title: '43.6: Agents and the changes feed read the site'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
 flag:
   key: pyforge.herald.pages_one_generator        # Story 43.1's; shared across Epic 43 (one flag per CAP, Q6), not minted here
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -193,6 +193,25 @@ five items; `pages-check` and `pyforge-herald-test` are green
 - Delete `marshal-status.json` from the build input — expected: the runs page carries the one-line absence and the build exits 0 (AC6).
 - Drop `deck` from a fixture `facts.yaml` — expected: the build exits 1 naming the file.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_agent_surface_and_changes.py -q`
+  — exit 0, 22 passed (AC1–AC7: the model through node, four Astro builds into scratch directories, and the
+  assembler's checks); 36 passed after the independent review (five Astro builds; see the Spec Change Log).
+- `pixi run --frozen -e site pages-check` — exit 0 in four states: both flags off; `PYFORGE_PAGES_ONE_GENERATOR=1
+  PYFORGE_STATUS_PAGES=1` with the 42.1 fleet fixture and the three 43.6 fixtures in `docsite/content/` (all removed
+  afterwards); both on with the three inputs absent (each page carries its one-line absence, the feed an empty
+  channel); the one-generator flag on with the status flag off (no `status/` path).
+- The `facts.json` / `rss.xml` checks of the Commands list are the built-site tests (AC2, AC4): `facts.json` parses
+  with 14 decks, `rss.xml` is `<rss version="2.0">` with one channel and five items.
+- Mutations, each restored: one merge removed from the fixture — the AC3, AC4 and feed tests fail (3 failed);
+  `deck` removed from `presentations/deckcraft/facts.yaml` — the flag-on Astro build exits 1 with
+  `BuildInputShapeError: presentations/deckcraft/facts.yaml: no deck slug`; a missing `marshal-status.json` is the
+  `one-missing` and `none` builds of AC6.
+- Gates as briefed (lighter gates, operator ruling 2026-10-15): the herald suite, `lint-types` and `pages-check`;
+  the memlog reconcile, the scoped stamps, `detectors-ci` and `pr-preflight` are the coordinating session's.
+- `pixi run --frozen -e site docs-site-validate` — exit 0 (run with the first build and again after the review).
+
 ## Named, not fixed here
 
 - **The Guild steps** that write `changes.json` (the 30-day `git log --first-parent` window on `main`),
@@ -209,3 +228,113 @@ five items; `pages-check` and `pyforge-herald-test` are green
 - 2026-10-14: specced at mint from Epic 43's Story 43.6 text, `spec-pyforge-herald` CAP-61, FR-12.5 and the Dream's
   2026-10-13 entry (M3). The three inputs' field names are read as steward's Guild steps write them (Story 102.2); the
   implementing session reads the landed output first and records the names on the Spec memlog.
+- 2026-10-15 (implemented, in review; lane B of the one-PR Pages redesign chain). Where the landed code differs from
+  the text above, the code is the contract and each difference is recorded here:
+  - **No new npm dependency (orchestrator ruling 2026-10-15).** `/llms.txt`, `/llms-full.txt` and `/changes/rss.xml`
+    are hand-written Astro endpoints over `docs-site/src/lib/agent-surface.ts`, the "equivalent" the Approach allows,
+    not `starlight-llms-txt` and `@astrojs/rss`; `package.json` and the lockfile are unchanged. The feed is RSS 2.0
+    built and escaped there (`rssXml`, `changesFeed`).
+  - **The routes are dynamic so the flag can emit nothing.** A static route always writes its file, so the pages are
+    `src/pages/[llms].txt.ts` (`llms`, `llms-full`), `src/pages/[facts].json.ts`, `src/pages/changes/[...index].astro`,
+    `src/pages/changes/[feed].xml.ts` (`rss`) and `src/pages/status/runs/[...index].astro`, each with a
+    `getStaticPaths` that lists nothing with `pyforge.herald.pages_one_generator` off (Story 43.2's pattern). The
+    URLs are the spec's.
+  - **The two modules.** `agent-surface.ts` is node builtins only (the tests import it with node's type stripping):
+    the input shapes and their refusals, the feed, the facts union, the latest progress per station, the llms text,
+    the Lane 1 rule. `agent-data.ts` reads the tracked files and the inputs inside the build (`yaml`,
+    `astro:content`).
+  - **AC1's herald pages are `docs/map.yaml`'s `herald` section** (Overview, Dossier, Infographics, Decks), the nav
+    registry (`pyforge-doctor:CAP-90`); the shelf pages are the map's `pages`. `/llms.txt` lists 68 + 4 page entries on
+    2026-10-15 under `## Docs` and `## Herald`, then a `## Data` section (`facts.json`, `/changes/`, the fleet board
+    and `/status/runs/` with the status flag on, `llms-full.txt`). `/llms-full.txt` carries each page's text: a shelf
+    page's markdown body, the site blurb for the overview, the dossier's prose (Story 43.1's collection, flattened),
+    and a pointer line for the gallery and the decks, whose own pages are Jinja-rendered on this lane after the Astro
+    build. At the lane merge, Story 43.2's `loadHeraldPages()` (`docs-site/src/loaders/herald-pages-loader.ts`)
+    can list the infographic and family pages and their text the same way; that is a merge task, not this story's.
+    The hand-maintained `docs/reference/*-llms-full.md` catalogues are untouched (they publish as two shelf pages).
+  - **`/facts.json`** is an object keyed by deck slug (14 on 2026-10-15), each value the file's `deck`, `persona`,
+    `derived_at`, `tree`, `facts` and its `source` path. A file with no `deck`, a `facts` that is not a list, or a
+    second file for one deck fails the build naming the files.
+  - **The inputs.** No Guild step writes them yet: steward 102.2 landed without them and no steward story names them,
+    so they are steward deferred-work row `DW-steward-43-6-1` (orchestrator ruling), with the shapes below. They are
+    read from `docsite/content/` (gitignored beside Story 42.1's `fleet-status.json`; `PAGES_BUILD_INPUTS_DIR`
+    overrides it for the tests). `changes.json` is `{generated_at, window_days, merges: [{date, station, subject,
+    sha}]}` or the bare merges list (the matrix's `[]`), listed newest first by `date`. `marshal-status.json` is
+    marshal's `--format json` envelope (`data.homes`) with a top-level `generated_at` the step adds (the envelope
+    carries no time); only `slug`, `branch`, `state`, `current_story`, `elapsed_seconds`, `budget_consumed` and
+    `budget_consumed_usd` are read, so the escalation artifact, failed-patch and unpushed-work fields (Tier-3 paths)
+    never reach Pages. `herald-progress.json` is `{generated_at, records}`, a JSON list, or the NDJSON `herald progress
+    --json` prints; the page shows the latest record per station by `date` then `updated_at`. A snapshot time the
+    input does not give reads "not recorded". 43.7, which retires `docsite/`, must move `INPUTS_DIR_REL`.
+  - **`/status/runs/` needs both flags.** `/status/` is `pyforge.herald.status_pages`'s prefix, and `pages-check`
+    refuses any `status/` path with that flag off, so the runs page is emitted only with both flags on; AC7 holds for
+    the one-generator flag (off, no 43.6 file or page). With both on, Astro writes `status/runs/` first and the
+    assembler lets the herald build add the board and the guild page beside it (`_astro_runs_only`, as `herald/`
+    takes the Astro dossier).
+  - **AC5's Lane 1 link** follows Story 42.1's re-review rule: linked only once `site.yml`'s `lane1.href` is an
+    absolute URL (`lane1Link`, the TypeScript twin of `status_pages.lane1_link`); with `/console/` today the page
+    carries no Lane 1 link. The page links the fleet board and the guild status page instead.
+  - **`pages-check`** (`docsite/tools/assemble_pages.py`, `_check_agent_surface`) requires the five files with the
+    one-generator flag on (and `status/runs/index.html` with the status flag on too) and refuses any of them, or a
+    `changes/` path, with it off. `/changes/` is a Starlight page, so it carries the shared menu and passes the shelf
+    body check (its one link, `rss.xml`, resolves).
+  - **No nav entry** for `/changes/` or `/status/runs/` (Named, not fixed here: 43.7's `docs/map.yaml` sections).
+    `/llms.txt` links both.
+  - **Files outside the spec's list**, each forced by the story: `docsite/tools/assemble_pages.py` (the mount and the
+    AC7 check), `.gitignore` (the three inputs), `docs-site/README.md`, the steward deferred-work ledger, and herald's
+    `marshal-policy.toml` (`.gitignore` and the steward ledger join Epic 43's surface). The tests are
+    `tests/meta/test_agent_surface_and_changes.py` and three fixtures under `tests/fixtures/`.
+- 2026-10-15 (the independent review, `review-43-6`, verdict FAIL on six should-fix findings; resolved here; where
+  this entry and an earlier one disagree, this one holds):
+  - **One progress record is one record (F1).** `herald progress --json` prints one JSON object per line, so a store
+    holding one record prints one valid JSON object. `parseHeraldProgress` reads an object with a `station` and no
+    `records` as `[value]`. Test: the one-line case in
+    `test_progress_keeps_the_latest_record_per_station_in_every_input_shape`.
+  - **The feed cannot publish malformed (F2).** `parseChanges` refuses a `station` or `subject` holding a character
+    XML 1.0 forbids (C0 controls but tab, newline and carriage return; U+FFFE, U+FFFF), naming the file and the merge.
+    `pages-check` (`_check_agent_documents`) now parses `changes/rss.xml` as XML (an RSS 2.0 document with one
+    channel) and `facts.json` as a JSON object with the flag on, so a broken surface reds instead of publishing
+    green. Tests: three control-character cases in `test_a_malformed_changes_input_names_the_file`,
+    `test_a_date_only_merge_and_whitespace_controls_still_make_a_well_formed_feed`,
+    `test_pages_check_parses_the_feed_and_facts_json` (four cases).
+  - **"No input is opened" is tested (AC7, F3).** The flag-off build reads malformed copies of all three inputs, so a
+    module-scope read would fail it; proven by a mutation (a module-scope `changesInput()` in the feed route reds
+    `test_ac7_the_surfaces_follow_the_flag`'s off case).
+  - **The runs page joins the shelf link walk (F4).** `_iter_shelf_pages` takes `status/runs/index.html` (a Starlight
+    page with a markdown body), so its `../` and `../ci/` links, and the Lane 1 link once it is absolute, are judged.
+    Test: `test_the_runs_page_joins_the_shelf_link_walk`.
+  - **The Guild-step contract keeps the deploy skip (F5).** `DW-steward-43-6-1` now says `changes.json`'s
+    `generated_at` is HEAD's committer time (`%cI`) and its 30-day window is anchored on that commit date, as the fleet
+    input's is; that the two runs-page inputs are live snapshots, so the runs page defeats the scheduled build's
+    deploy skip by design (the steward story decides); and that a single NDJSON line is one record.
+  - **The AC1 enrichment's owner is herald Story 43.7 (F6; coordinator ruling 2026-10-15).** After the lane merge,
+    listing each infographic and deck-family page, with its text, in `/llms.txt` and `/llms-full.txt` through Story
+    43.2's `loadHeraldPages()` (`docs-site/src/loaders/herald-pages-loader.ts`) is 43.7's: the coordinator carries it
+    into 43.7's brief.
+  - **Nits.** A merge `date` is `YYYY-MM-DD` or an ISO date-time with an offset (an offset-less one would be read in
+    the build host's zone), `sha` a 7-40 hex id and unique (duplicates gave duplicate anchors and guids); stations sort
+    in code-unit order, not by locale; the unused `countPageEntries` is gone; AC1's test asserts each Docs URL is a
+    page the build wrote (no longer recomputing the route); a present `[]` merge list has its own build
+    (`test_an_empty_merge_list_says_so_and_the_feed_is_an_empty_channel`); `/llms.txt`'s Changes entry reads the
+    input's `window_days`; `docs-site-validate` is recorded in the Verification run. Not done here, for the lane merge:
+    one `PYFORGE_PAGES_ONE_GENERATOR` reader (`=== '1'` in 43.1's files, `1|true|yes` here and in lane A's loader),
+    the review's N8 and M5. Not done: an `<atom:link rel="self">` in the channel (optional, N3) and rewriting
+    `llms-full.txt`'s raw relative markdown links (cosmetic, N9).
+- 2026-10-15 (the lane-B → lane-A merge, onto herald 43.2-43.4):
+  - **The `status/` mount (review M1).** 43.3 rewrote `assemble()`'s collision loop to `existing.exists() and mount not
+    in astro_owned` (`herald/` and `dashboard/` with the flag on). 43.6's exemption sits inside it: `status/` may
+    pre-exist only when `one_generator and _astro_runs_only(...)`, so a build with both flags on does not exit
+    "collision at status/". `check()` keeps `_check_agent_surface` (and its `_check_agent_documents`) beside 43.3's
+    and 43.4's checks (review M2).
+  - **One flag reader (review M5 and N8).** `docs-site/src/lib/flags.ts` is the docs-site's one reader of
+    `PYFORGE_PAGES_ONE_GENERATOR` and `PYFORGE_STATUS_PAGES`: `1`, `true` or `yes` (trimmed, any case) read on, the
+    rule `docsite/tools/pages_one_generator.py` and `status_pages.py` apply. 43.2's loader and 43.6's
+    `agent-surface.ts` re-export it, and 43.1's `content.config.ts`, `dossier-loader.ts` and
+    `pages/herald/dossier/index.astro` (which tested `=== '1'`) call it, so a `true` the assembler passes through no
+    longer leaves the dossier collection undefined while `/llms.txt` reads it. Tests:
+    `test_one_flag_reader_accepts_the_python_sides_values`, `test_only_the_flag_reader_reads_the_flag_environment`
+    (no other docs-site file reads either variable), `test_a_true_spelled_flag_builds_every_surface` (an Astro build
+    with `PYFORGE_PAGES_ONE_GENERATOR=true`).
+  - **Coexistence.** 43.6's routes (`[llms].txt.ts`, `[facts].json.ts`, `changes/`, `status/runs/`) build beside
+    43.2-43.4's `herald/` routes, `populate-public.ts` and the herald font/theme layout; `/changes/` and
+    `/status/runs/` carry no CSP meta (43.3's `_check_csp` judges `herald/` only), which herald 43.7 owns.

@@ -2,7 +2,7 @@
 title: '43.2: The overview, gallery and deck family pages are Astro pages'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
 flag:
   key: pyforge.herald.pages_one_generator        # Story 43.1's; shared across Epic 43 (one flag per CAP, Q6), not minted here
   provider: openfeature-file                     # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -179,7 +179,7 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_parity.py -q` — expected: pass (AC1–AC5).
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py -q` — expected: pass (AC1–AC5; Story 43.7 deleted the Jinja path and the parity test that held both paths equal: the model's literal oracles and every tracked twin's font-only change run node-only in the first, the built pages in the second).
 - `pixi run --frozen -e site pages-check` with the flag on and with it off — expected: exit 0 both times (AC6, AC7).
 - `pixi run --frozen -e site docs-site-validate` — expected: exit 0.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
@@ -188,9 +188,46 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 - `pixi run --frozen -e pyforge-guild pr-preflight` — expected: exit 0.
 
 **Mutations (each restored afterwards):**
-- Reorder two entries in a fixture `site.yml` include list on one path only — expected: the gallery parity test fails.
-- Drop one download from a fixture family on the Astro path — expected: the parity test names the family and the download.
+- Reorder two entries in a fixture `site.yml` include list on one path only — expected: the gallery parity test fails (since Story 43.7: reverse the model's `order` sort -- the gallery's literal-order tests fail).
+- Drop one download from a fixture family on the Astro path — expected: the parity test names the family and the download (since Story 43.7: the fixture family's literal downloads and stamps fail).
 - Write the back-bar into a copied twin — expected: AC4's hash test fails naming the file.
+
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-herald python -m pytest src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_parity.py -q`
+  — exit 0, 9 passed, none skipped. The model half (node's type stripping over `docs-site/src/lib/herald-pages.ts`,
+  no `node_modules`) matches `build.py`'s `collect_infographics` / `collect_families` on the tracked tree and on a
+  fixture tree (AC3), and refuses two dated PPTX of one kind naming both (AC5). The rendered half builds Astro with
+  the flag on over both trees and the Jinja path over the same trees: ten gallery cards in the same order with lazy
+  previews (AC1), ten family pages with the same hrefs, download names, sizes and stamps (AC2, AC3), every twin
+  equal to its tracked file after the font-link vendoring, with no back-bar, and every reader page carrying the
+  back-bar and framing its twin (AC4), the fixture's two-PPTX build exiting non-zero naming both files (AC5), and a
+  flag-off Astro build emitting no `herald/index.html`, `herald/infographics/` or `herald/decks/` file (AC6). The
+  two-state test runs `flag_states("pyforge.herald.pages_one_generator")` over what the herald build writes.
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0, 1993 passed, 5 skipped (the live Design and
+  webhook smokes, skipped before this story too).
+- `PYFORGE_PAGES_ONE_GENERATOR=1 pixi run --frozen -e site pages-check` — exit 0 (Astro writes the overview, the
+  gallery, the ten family pages and the 30 reader pages; the herald build adds 30 twins under `/herald/twins/`; 44
+  legacy redirects, as before); `PYFORGE_PAGES_ONE_GENERATOR=0 pixi run --frozen -e site pages-check` — exit 0.
+  The new one-writer check, run by hand: the flag-off artifact checked with the flag on exits 1 naming
+  `herald/decks/index.html ... written by the Jinja build`; the flag-on artifact checked with the flag off exits 1
+  naming it `... written by Astro`.
+- A flag-off `docsite/build.py` run on this tree and on `5993910a33` (`git archive`) — `diff -r` exit 0 over 141
+  files (AC6: the Jinja outputs are byte-identical).
+- The flag-on artifact served locally and read in a browser: the overview, the gallery (previews load), a family page
+  (all three previews load) and a reader page (back-bar over the framed twin); no request to `fonts.googleapis.com`.
+- Mutations, each restored: the gallery's order reversed on the Astro path only — the model and rendered gallery
+  tests fail (`the gallery differs between the paths`); the first download of each group dropped on the Astro path —
+  `fx-alpha: hrefs only on the Jinja path {'downloads/fx-alpha-narration-2026-01-02.md',
+  'downloads/fx-alpha-deck-2026-01-01.pptx'}`; the back-bar written into each copied twin —
+  `twins/infographics/beta-co.html is not its tracked file ...`.
+- `pixi run --frozen -e site docs-site-validate` — exit 0. `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+  `pixi run --frozen -e pyforge-guild flag-gate-check` — exit 0. Steward's
+  `tests/meta/test_station_tests_trigger_map.py` (`pyforge-steward` env) — exit 0, 45 passed, with the parity test
+  declared in `ROOT_HANDOFF_INPUTS`.
+- Not run here: the memlog reconcile, the scoped stamps, `detectors-ci` and `pr-preflight` (the coordinating session
+  runs them once for the branch); `spec-surface-check` exits 2 until then (this story's drift is on
+  `spec-pyforge-herald` and, for the trigger map, `spec-pyforge-steward`).
 
 ## Named, not fixed here
 
@@ -206,6 +243,96 @@ with the flag off nothing changes; `pages-check` and `pyforge-herald-test` are g
 
 ## Spec Change Log
 
+- 2026-10-15 (Story 43.7's review, F2): Story 43.7 deleted the parity test this Verification named, and with it the
+  model's oracles; `src/shared/packages/pyforge-herald/tests/meta/test_herald_pages_model.py` (node-only, so it runs in
+  CI) restores them as literals -- the tracked gallery's ten titles in order, the fixture's order, names, families,
+  views, sidecar and `unstamped` stamps, CAP-53's refusal naming both files -- and runs the vendoring-only oracle over
+  all thirty tracked twins. The Verification names it.
+- 2026-10-15 (independent review, iteration 1: FAIL; resolved on the tree as Story 43.3 left it, which moved the
+  twin and download copy from `build.py` to `docs-site/scripts/populate-public.ts`):
+  - **Blocker -- `GITHUB_SHA`.** Both paths stamp an unsidecarred export with `GITHUB_SHA`'s first seven before
+    git, and Actions sets it, so the fixture model test's `tree == "unknown"` was red in CI. The `build_mod` fixture
+    and the AC5 model test now drop the variable.
+  - **The rendered parity, CI-enforced through `pages-check`.** The herald suite is offline by construction and no
+    lane that runs it installs docs-site, so its rendered half skips there (its skip reason now says so); installing
+    from a test or editing a workflow (steward's) was not needed. Instead `pages-check` with the flag on -- the Pages
+    lane, which the dev overlay turns on, and `pr-preflight` -- now renders the Jinja path over the same tree into a
+    scratch directory and compares it with the artifact's Astro pages: the gallery's ordered (href, title) cards,
+    the decks index's links, and per family its links, downloads and size-and-stamp lines
+    (`assemble_pages._check_herald_parity`). The Astro side read `site.yml` and `facts.yaml` with its own YAML
+    reader, the Jinja side with PyYAML, so a YAML 1.1/1.2 divergence now shows there.
+  - **AC4's oracle, independent and in CI twice.** `assemble_pages._font_vendoring_only` reads a twin against its
+    tracked file on raw bytes, line by line, knowing neither implementation: lost lines must name a Google Fonts
+    origin, gained lines must be the one vendored link or blank (a CRLF change, an edited line, a back-bar or a
+    second link each fail). `pages-check` runs it on every twin in the artifact; the always-run model half runs the
+    Astro side's `vendorFontLinks` over all 30 tracked twins through it (`test_ac4_the_vendoring_changes_only_font_links_on_every_tracked_twin`,
+    in the herald lane, which has node). It holds a twin whose `<head>` shares a line with other markup to a stricter
+    rule than the vendoring needs (none does today; the fixture poster now matches the tracked shape).
+  - **The one-writer gate and the exemptions** have tests in `test_pages_artifact.py`: a Jinja page with the flag on
+    and an Astro page with it off each exit 1 naming the page; a twin gets no redirect, no menu and no link walk but
+    the origin checks read it; a reader page carries no menu and is link-walked only when Astro's.
+  - **Nits.** A `<title>` with a named entity the Astro path does not decode is refused, naming the file (give it an
+    override title; every include has one today); an out-of-range numeric reference reads U+FFFD, as in Python. The
+    export kind is `deck_versions._kind_key`'s: only a valid `-YYYY-MM-DD` stem groups, so an undated file is listed
+    on its own (the Jinja path's newest-name rule groups it with a dated sibling; no tracked deck has one, and the
+    parity check would name the difference). The reader page sets `body{box-sizing:border-box}` (no outer
+    scrollbar) and its back-bar links the framed file ("Full page", to read or print it whole). The gallery blurb no
+    longer says "unmodified".
+  - **Recorded scope:** the edit to steward's `tests/meta/test_station_tests_trigger_map.py` declares this story's
+    parity test in `ROOT_HANDOFF_INPUTS` (`docs-site/**`, `docsite/**`, `presentations/**`), which steward's
+    meta-test requires of a new test that hands the repo root to a build; it is outside Epic 43's surface.
+  - **For the operator (the review's observation, not changed here):** `pages.yml` sets no `PYFORGE_ENVIRONMENT`, so
+    the Guild step reads the dev overlay and `pyforge.herald.pages_one_generator` is on for every build, the deploy
+    from `main` included; the flag's `production: off` does not gate the public site, and CI never runs `pages-check`
+    with the flag off.
+- 2026-10-15 (orchestrator rulings after the commit, operator may override): the font-rewritten twin copy is accepted
+  (Story 31.3's mechanism; AD-21 forbids the third-party origin) -- no Design re-export, no DW row. The rendered half
+  of `test_herald_pages_parity.py` skips where `docs-site/node_modules` or the generated menu is absent, which is
+  every CI lane today (the herald lane installs neither); the model half runs everywhere. Story 43.3 moves the twins
+  and downloads to `docs-site/public/` (its change log).
+- 2026-10-15: implemented (lane A of the one-PR Pages redesign); status `in-review`. Deviations, each for the
+  reviewer and the operator to keep or overturn:
+  - **The twin is the tracked file plus Story 31.3's font-link vendoring, not byte-identical (AC1, AC4).** Every
+    tracked Design export the pages publish (the ten posters and the twenty Infographic Deck / Executive Summary
+    files) links `fonts.googleapis.com`; a verbatim copy loads a third-party origin (AD-21) and fails AC7's origin
+    check. The herald build copies each twin with `rewrite_google_font_links` as its one transformation (the vendored
+    fonts instead of Google's) and nothing else; the back-bar is no longer written into it. The AC4 test pins
+    `sha256(published) == sha256(rewrite_google_font_links(tracked))`, no back-bar and no Google Fonts origin. A truly
+    verbatim copy needs the Design exports re-exported with their fonts vendored (CAP-55's self-contained twin), a
+    `presentations/` change outside this story; Story 43.3 (`publicDir`) and 43.4 (fonts) inherit the question.
+  - **Where the twins live.** `docsite/build.py` (flag on) copies them to `/herald/twins/infographics/<name>.html` and
+    `/herald/twins/decks/<slug>/<view>.html`; the reader's page keeps the 2026-10-13 URL
+    (`/herald/infographics/<name>.html`, `/herald/decks/<slug>/<view>.html`) and frames the twin under the back-bar.
+    `publicDir` population stays Story 43.3's. The twins are not legacy pages: no redirect stub, no shared menu, no
+    link walk; the origin check reads them. The reader's pages carry the back-bar, not the shared menu, as the Jinja
+    reader pages do (CAP-58's menu check exempted them before and still does); their links are now walked.
+  - **Route files.** `src/pages/herald/[...index].astro`, `infographics/[...index].astro` and `decks/[...slug].astro`
+    (the index and every family) replace the spec's `index.astro`, `decks/index.astro` and `decks/[slug].astro`: a
+    rest route returns no path with the flag off, so Astro emits no file at all rather than a zero-byte stub the
+    assembler deletes (43.1's dossier pattern, left as it is). The reader's pages are endpoints
+    (`infographics/[page].html.ts`, `decks/[slug]/[view].html.ts`) because Astro writes a page only as
+    `<name>/index.html` and the URLs are file names; their HTML comes from `twinWrapperHtml` in
+    `src/lib/herald-pages.ts`, as 43.1's block renderers do.
+  - **Data, not a content collection.** `src/lib/herald-pages.ts` mirrors `collect_infographics`,
+    `collect_families` and `_artifact_stamp` with node builtins only (so the parity test runs without
+    `node_modules`); `src/loaders/herald-pages-loader.ts` parses `site.yml` and each `facts.yaml` once per build.
+    `HERALD_PAGES_REPO_ROOT` points it at another tree (the parity test's fixtures), as `build.py --repo-root` does.
+  - **One current export.** A kind (the stem before `-YYYY-MM-DD`) holding more than one file fails the build naming
+    every file (`MoreThanOneCurrentExport`); the loader never picks a date. Recorded on the Spec memlog by the
+    coordinating session with the surface reconcile.
+  - **Families** are the gallery's decks, as `build.py` derives them (never a second list); `facts.yaml` adds a
+    line ("N facts in facts.yaml, derived <date>") where it exists and is not a condition, so a gallery deck without
+    one still gets a page on both paths (all ten have one).
+  - **Gallery order.** `build.py` orders the gallery by each override's `order`, then title; the `include` list's
+    order sets neither path's gallery. The spec's "reorder two include entries" mutation was run as the order
+    comparison reversed on the Astro path only.
+  - **The overview** keeps today's content (the dossier's stats, the doors to the dossier, gallery and decks,
+    `site.yml`'s neighbours with the Kedro-Viz export's provenance, the station tiles) in the shared shell; the
+    four-door home is Story 43.7's (§ *Named, not fixed here*).
+  - **One writer, checked.** `pages-check` now refuses a herald page from the other generator in either flag state,
+    naming it (Astro's generator meta present or absent), the collision rule this story and 43.1 state; the artifact
+    build `herald/artifact/dossier.html` stays Jinja's in both states until 43.7.
+  - `build.py`'s `check` reads the flag state from the build's result, not the environment.
 - 2026-10-14: specced at mint from Epic 43's Story 43.2 text, `spec-pyforge-herald` CAP-61, FR-12.4 and the Dream's
   2026-10-13 entry (M3), against `build.py`, `site.yml` and the templates as they stand on 2026-10-14. The
   one-current-version rule (fail on two dated files of a kind, never choose) is the reading of AD-4's 2026-09-28

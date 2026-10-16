@@ -2,7 +2,7 @@
 title: '102.5: `configure-pages` is authoritative on every host and the artifact ships as a release asset'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
 flag:
   key: pyforge.steward.pages_duty                 # Story 102.2's; the release-asset step reads its exported state
@@ -28,6 +28,21 @@ context:
   - docs/how-to/air-gapped-mirror-setup.md
   - docs/governance/rulesets/protected-refs.json
   - docs/governance/guild-roster.json
+deferred:
+  - summary: >-
+      The how-to's second air-gapped option is not available: an enterprise host cannot publish the pulled
+      pages-site.zip through its own GitHub Pages, because pages.yml has no input that takes a prebuilt tree in
+      place of a build.
+    evidence: |-
+      Story 102.5's Approach names two air-gapped paths (serve the unzipped tree, or upload it as the enterprise
+      Pages artifact through the mirror's pages.yml). Only the first exists: the build job always runs pages-check
+      and uploads what it built. The how-to's Pull the zip section says so and recommends serving the tree as
+      static files; sections 1-4 (rebuild on the mirror) remain the GitHub Actions path. Recorded as frontmatter
+      by the 42.3 + 102.5 review (2026-10-15) so deferred_work_intake promotes it.
+    location: >-
+      .github/workflows/pages.yml (a workflow_dispatch input such as a release tag or artifact to deploy instead
+      of building) and docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md section 6
+    severity: low
 declared_low_risk: false
 ---
 
@@ -220,3 +235,71 @@ deploy's release is recorded with its asset
   not a CalVer tag) is the 2026-10-14 design decision on the Spec's memlog; whether the asset also attaches to a CalVer
   release once one exists is the Spec's open question for the operator. The implementing session reads herald CAP-60's
   landed story first.
+- 2026-10-15 (built with herald 42.3 in one commit, lane B; status `in-review`). Where the landed code differs:
+  - **Where `SITE_URL` is set.** A job-level `env:` cannot read `steps.*`, so `SITE_URL` (from `base_url`) and herald's
+    reader inputs `PAGES_HOST_BASE_URL` / `PAGES_HOST_BASE_PATH` (from `base_url` / `base_path`) sit on the
+    `pages-check` step, as AC1 allows. The flag step is `Resolve build env (flags)` and no longer carries host env.
+  - **The flag reaches the deploy job** through a new build-job output `pages_duty`, written by a `Carry the duty
+    flag to the deploy job` step from `PYFORGE_PAGES_DUTY`. The two asset steps are gated on
+    `pages.RELEASE_ASSET_IF`, which `pages.release_asset_runs` evaluates for AC4's two-state test.
+  - **Rolling release.** If the release exists it is deleted (`--cleanup-tag`), then `gh release create pages-site
+    --prerelease --target $GITHUB_SHA`, then `gh release upload … --clobber`. `gh` targets the running host:
+    `GH_HOST` comes from `GITHUB_SERVER_URL`, and `GH_ENTERPRISE_TOKEN` is set beside `GH_TOKEN`.
+  - **The how-to's second air-gapped option is not available yet.** `pages.yml` has no input that takes a prebuilt
+    tree in place of a build. *Pull the zip* recommends serving the unzipped tree as static files, says the zip is
+    built for the public base path, and names sections 1–4 (rebuild on the mirror) as the GitHub Actions path. Feeding
+    the zip to the enterprise `pages.yml` is named, not fixed.
+  - **102.2's test.** `tests/meta/test_pages_workflow.py`'s PR-upload test now expects `pages-site` on every event.
+  - **AC6.** `scripts/protected_refs_ruleset_check.py` exits 1 today on live-ruleset drift that this diff does not
+    touch ("missing live ruleset named 'protected-refs-tags'" and three more, plus one extra). The test over
+    `protected-refs.json` shows `refs/tags/pages-site` matches no protected pattern.
+  - **AC3** (the recorded upload) is the operator's, after landing.
+- 2026-10-15 (the independent review, `review-42-3-102-5`: one blocker, six should-fix items and nits across 42.3 and
+  102.5; the 102.5 items are resolved here, where this entry and an earlier one disagree, this one holds; the
+  blocker, the flag gate's retirement rule, moved to a new doctor story by operator ruling and is not this story's):
+  - **Every `gh` step names its host (should-fix).** The how-to says the enterprise copy runs `pages.yml` unchanged.
+    That is now true: the two artifact downloads (steward 102.4's re-review) and the release step each export
+    `GH_HOST` from `GITHUB_SERVER_URL` before `gh` runs and carry `GH_TOKEN`, `GH_ENTERPRISE_TOKEN` and `GH_REPO`;
+    `configure-pages` reads the host itself, and no other step calls `gh`.
+    `test_pages_release.py::test_every_gh_step_names_the_host_and_carries_the_token` pins the three steps.
+  - **The live protected-refs rulesets (should-fix).** AC6's red is real and outward: live GitHub has none of the four
+    declared rulesets (and one undeclared, `protected-refs-no-deletion`), so archive/preserve/rescue tags are
+    unprotected. Recorded as steward row `DW-steward-102-5-1` (operator); the coordinating session runs `scribe
+    capture --type project` at close. The rolling tag still matches no protected pattern (AC6's test).
+  - **The rolling release is kept (nit; "Named, not fixed here" settled).** Delete-then-create left no release, and
+    no asset, whenever `create` failed. An existing release is now kept: `gh api -X PATCH
+    repos/$GH_REPO/git/refs/tags/pages-site -f sha=$GITHUB_SHA -F force=true` moves the tag, `gh release edit
+    pages-site --target $GITHUB_SHA --notes …` moves the release's `targetCommitish` with it (GitHub does not move
+    an existing tag from `target_commitish`, so the ref PATCH is what moves it), and `gh release upload … --clobber`
+    replaces the asset; only a first deploy runs `gh release create`. AC2 still holds as written (the step names
+    `pages-site.zip`, the `pages-site` release and `--clobber`). AC3 now also reads the tag's commit (`gh api
+    repos/rxm7706/local-recipes/git/ref/tags/pages-site --jq .object.sha`) beside `targetCommitish`. A moved tag is
+    rejected by `git fetch --tags` in a clone that fetched it earlier; nothing reads the tag. Test:
+    `test_ac2_the_rolling_release_is_kept_and_its_tag_moved`.
+  - **The `pages-site` artifact uploads for a pull request or a changed tree (nit; amends "every event").** A build
+    whose tree did not change deploys nothing, so the six-hourly schedule of an unmoved tree no longer stores a
+    14-day copy of the whole site: the step's `if:` is `github.event_name == 'pull_request' ||
+    steps.stamp.outputs.changed == 'true'`, and the deploy job (its one reader) still runs only on a changed tree.
+    Tests: `test_ac2_the_site_artifact_uploads_for_a_pr_or_a_changed_tree` and 102.2's
+    `test_pages_yml_pr_artifact_upload_shape`.
+  - **`RELEASE_ASSET_IF` is pinned (nit)** as an exact string in `test_ac2_the_gate_reads_the_build_jobs_exported_duty_flag`,
+    so the constant and the YAML cannot drift together unnoticed.
+  - **AC3's record (nit).** No workflow sets `PYFORGE_ENVIRONMENT`, so CI resolves the `dev` overlay, where
+    `pyforge.steward.pages_duty` is on: the asset publishes from the first changed deploy after landing, and AC3's
+    "flag off at landing" branch will not apply.
+  - **The how-to (nit).** *Pull the zip* says the asset depends on `pyforge.steward.pages_duty`, and that `tree_hash`
+    cannot be recomputed from the zip (it covers the build tree's hidden `.pages-build-site-url` and
+    `herald/.nojekyll`, which the artifact uploads leave out), so `built_from` is the integrity check.
+    `tree_hash` itself is unchanged: changing what it covers would change every deploy decision.
+  - **`contents: write` stays job-wide on `deploy`**, as AC2 requires; a separate release job (so `deploy-pages` and
+    `download-artifact` would not run with it) needs an AC2 amendment and is not taken here.
+  - **The unavailable second air-gapped option** is a `deferred:` frontmatter entry, so `deferred_work_intake`
+    promotes it.
+  - **`marshal-policy.toml`'s Epic 102 surface** names `docsite/tools/pages_site_url.py`, not the retired
+    `pages_second_host.py`.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`: 102.5 RESOLVED; one nit done here): **the tag moves first,
+  release or not.** A `pages-site` tag left without its release (a release deleted by hand) sent the step down the
+  create path, where `gh release create --target` adopts the existing tag at its old commit. The step now reads
+  `repos/$GH_REPO/git/ref/tags/pages-site` and, when the tag exists, moves it to the deploying commit before `gh
+  release view`; then it edits the kept release or creates the first one, and uploads with `--clobber`.
+  `test_ac2_the_rolling_release_is_kept_and_its_tag_moved` pins the order.

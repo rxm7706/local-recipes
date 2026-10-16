@@ -2,7 +2,7 @@
 title: '48.2: A Pages deploy more than a day behind its inputs is named in fleet-picture'
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: 'e134549afcbdcc5b55b35f291464ac60d6685243'
 flag-exempt: detector-or-gate   # a check that judges; gating it off would bring back the silent-off surface it names, the 2026-10-06 deploy (spec-feature-flag-governance Q2; bmad-spec ruling 2026-10-14, memlog)
 review_loop_iteration: 0
@@ -241,6 +241,14 @@ WARN and the degrade line when the probe raises, the sole-subprocess meta-test s
 - **A schedule.** `fleet-picture`'s cadence is the operator's; a scheduled probe is outward work.
 - **The lag's cause.** This source says the site is behind; CAP-89's `ci-pause-stuck` and steward's `ci status` say
   why from GitHub's side. The two are read together in `fleet-picture`'s ATTENTION block.
+- **The identical-build case** (added 2026-10-15 by the independent review). `pages.yml` deploys only when the built
+  tree's hash differs from the live `build.json` (steward 102.2), so a published-input commit whose build is
+  byte-identical to the live tree (a comment-only edit to `docs/map.yaml`) is not deployed, `last-modified` stays at
+  the earlier deploy, and this rule would read `pages-liveness-stale` a day later with nothing stuck. Today herald's
+  build stamp (`Built <date> · <sha7>`) makes every new commit's tree hash differently, so it does not occur. Steward
+  102.3's `decide_deploy` daily refresh keeps it from occurring once the hash stops seeing the stamp: it deploys an
+  identical tree when the live `built_at` is more than 24 hours old and the commit differs from the live
+  `built_from`, so the lag this rule reads cannot pass 24 hours on a healthy duct. Not this source's to fix.
 
 ## Spec Change Log
 
@@ -249,3 +257,75 @@ WARN and the degrade line when the probe raises, the sole-subprocess meta-test s
   `flag-exempt: detector-or-gate` by `bmad-spec` ruling (memlog 2026-10-14). The live `last-modified` header was
   measured on 2026-10-14 before the mint; the 2026-10-06 replay's timestamps are the fixture's, chosen inside the
   incident window, not recovered from GitHub.
+- 2026-10-15 (independent review, iteration 1 fixes):
+  - argv adds `--first-parent`: the landing commit's date is when main's inputs changed. Without it, history
+    simplification answered with a commit from the merged branch, dated up to 7 hours (and, for a long branch, days)
+    before its landing, which reads the site fresher than it is (finding 1). The argv still names
+    `refs/remotes/origin/main` and fetches nothing (AC8).
+  - The stale message leads with the lag and both dates and names the commit and the URL last, so `fleet-picture`'s
+    110-character ATTENTION line keeps the evidence (finding 5). A lag that is not a whole number of hours reads
+    "more than N hours", so a stale lag never prints as the 24-hour threshold itself (finding 4). `last-modified`
+    prints as `YYYY-MM-DDTHH:MM:SSZ` in the message and the evidence.
+  - An `HTTPError` (the response to a HEAD answered outside 2xx) is closed explicitly (finding 6).
+  - The deploy workflow is now `pages.yml` (steward 102.1 / 102.2), whose `paths:` filter is `PUBLISHED_INPUTS`
+    plus the workflow file itself and, since steward 102.4's review, the build's own tooling (`scripts/pages_*.py`
+    and steward's `src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py`). *(Corrected 2026-10-15 at the
+    lane merge; this line first said "exactly `PUBLISHED_INPUTS` plus the workflow file".)* `PUBLISHED_INPUTS` stays
+    as it is: build tooling, like the workflow file, is not a published input, so its commit date says nothing about
+    whether the published content is behind the live site; a tooling change that does change the built tree deploys
+    through the tree-hash compare and moves `last-modified` itself. The Intent, the Epic excerpt's Given and "Named,
+    not fixed here" item 2 above still describe `dashboard.yml` firing on every push with no filter; they are kept as
+    minted. Spec open question 2 (a doctor meta-test pinning `PUBLISHED_INPUTS` to that filter) is now cheap
+    (finding 7); that meta-test must exclude the workflow file and the build-tooling paths from the comparison.
+  - The rule never consults the clock (finding 3): `DW-doctor-48-2-1` in the doctor deferred-work ledger, for a
+    `bmad-spec` change to CAP-91. The identical-build case (the builder's open question) is a "Named, not fixed here"
+    line above (finding 2).
+- 2026-10-15 (M2's reconcile, with herald 42.3 + steward 102.5): the `REGISTRY` row's `subject_station` moves from
+  `herald` to `steward`, as the Intent's Model bullet foresaw ("the label follows the duct to steward on M2's
+  reconcile"): steward owns the deploy duct (`pages.yml`) since M2, and that pair closes M2. AC7's "subject `herald`" and
+  the Auto Run Result's wording record the row as first landed.
+- 2026-10-15 (same pass): steward's station-tests trigger map reads this story's pinned `PUBLISHED_INPUTS` strings as
+  reads, so `.github/workflows/pyforge-station-tests.yml`'s doctor job now also fires on `docs/index.md`,
+  `docs/404.md` and `docs/map.yaml`. It was red at `73ae4f1180`.
+
+## Auto Run Result
+
+Status: in-review
+
+Summary: New Doctor source `pages-liveness` (`sources/pages_liveness.py`): `Source.PAGES_LIVENESS`, a `REGISTRY` row
+(`runtime`, subject `herald`, owner `doctor`), a `DISPATCH` row and the report schema's `source` enum (additive). One
+`git log -1 --format=%H %cI refs/remotes/origin/main -- <the eleven published inputs>` through `cli_bridge.run_git`,
+then one HEAD to the Pages root (one GET when HEAD is not 2xx, body unread, 10 s timeout, `User-Agent:
+pyforge-doctor-pages-liveness`); a commit more than 24 hours newer than `last-modified` is one `pages-liveness-stale`
+WARN, otherwise one `pages-liveness` OK row; every unreadable side is one `pages-liveness-unavailable` WARN carrying
+`evidence.unevaluable: true`, and `degrade_on_exception` reports any unforeseen raise under that same check.
+`scripts/fleet_picture.py` gains `pages_liveness_findings()` (60 s, `check=True`, WARN rows only) and one ATTENTION
+watch line per WARN beside the CI-pauses probe, `could not check Pages liveness` when the probe raises.
+
+Files changed:
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py` (new), `models.py`,
+  `sources/__init__.py` (registry row; the sibling-dreams comment split by the 45.1 row moved back onto its row),
+  `sources/__main__.py`, `data/report-schema.json`
+- `tests/unit/test_sources_pages_liveness.py` (new), `tests/fixtures/pages_liveness/*.json` (14 new), and the
+  wiring tables in `test_sources_dispatch.py`, `test_sources_registry.py`, `test_models.py`,
+  `tests/meta/test_source_independence.py`
+- `scripts/fleet_picture.py`, `tests/scripts/test_fleet_picture_pages_liveness.py` (new)
+
+Verification: `pyforge-doctor-test` exit 0 (3776 passed, 1 skipped; speed budget 4 passed);
+`test_sources_pages_liveness.py` 75 passed; dispatch + sole-subprocess + registry + models + source-independence +
+full-refname meta 288 passed; `test_fleet_picture_pages_liveness.py` (guild) passed; `pyforge-doctor-scripts-test`
+(pyforge-ci) exit 0; `pyforge-doctor-aggregate-scripts-test` exit 0; `lint-types` exit 0; `flag-gate-check` exit 0;
+`doctor check --list` lists no new row. The five AC9 mutations each fail their named test (the bare-`main` one also
+fails `tests/meta/test_refs_are_full_refnames.py`). Unit coverage: `pages_liveness.py` 100%. `detectors-ci` reds only
+on `spec-surface` drift under `spec-pyforge-doctor`, the surface reconcile and scoped stamp still to run.
+
+Decisions inside the contract: the git read runs first, so a git failure or an empty log is one unavailable WARN with
+no HTTP request; a transport failure (URLError, timeout, dropped connection) on HEAD is unavailable without a GET
+(only an HTTP status outside 2xx earns the GET); a `last-modified` without a zone reads as UTC; a git line whose date
+does not parse or carries no zone is unavailable.
+
+The builder's open question (a byte-identical build is never deployed under steward 102.2) was ruled by the
+independent review, 2026-10-15: accept, recorded as "Named, not fixed here" (the identical-build case); its fixes are
+in the Spec Change Log.
+
+followup_review_recommended: false

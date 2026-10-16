@@ -1136,8 +1136,8 @@ _H: dict[str, tuple[tuple[str, ...], str]] = {
         "the deck helpers read presentations/ (exports, Marp sources, the Modernist design system)",
     ),
     "DOCS_SITE": (
-        ("docs-site/**", "docsite/**"),
-        "the docs-site and docsite checks list and read their trees from the root",
+        ("docs-site/**",),
+        "the docs-site checks list and read its tree from the root (herald Story 43.7 retired docsite/)",
     ),
     "MARSHAL_CODE_LINKAGE": (
         (*_PLAN, "docs/dreams/**", "src/shared/packages/pyforge-marshal/**"),
@@ -1241,10 +1241,10 @@ ROOT_HANDOFF_INPUTS: dict[str, dict[str, tuple[tuple[str, ...], str]]] = {
     "herald": {
         "src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py": _H["DOCS_SITE"],
-        "src/shared/packages/pyforge-herald/tests/meta/test_docsite_zero_origin.py": _H["DOCS_SITE"],
-        "src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py": (
-            ("docsite/**", "presentations/**"),
-            "Story 42.2: pages-build runs the real herald build from the root around a fixture Kedro-Viz export",
+        "src/shared/packages/pyforge-herald/tests/meta/test_one_generator.py": (
+            ("docs-site/**", "docs/**", "presentations/**", ".github/workflows/**"),
+            "Story 43.7: the one generator builds the tracked tree (the shelf, the herald pages over presentations/) "
+            "and pages-check judges it, the tracked files listed from the root",
         ),
         "src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py": _H["PRESENTATIONS"],
         "src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py": _H["SKF_SKILL_TREE"],

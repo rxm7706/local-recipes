@@ -2,7 +2,7 @@
 title: "102.4: The Pages build mounts atlas's Kedro-Viz export from a workflow artifact and tolerates its absence"
 type: 'feature'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '8ef404d388d1bdafac6aa0d96a8f626f97cad47a'
 flag:
   key: pyforge.steward.pages_duty                 # Story 102.2's; the download step reads its exported state
@@ -95,7 +95,13 @@ tree is deleted); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absen
 
 - **AC1 — Selection.** `newest_export_run` over recorded `gh run list` and artifacts JSON returns the newest
   successful run whose `kedro-viz-export` is not expired; returns `None` for no runs, for runs without the artifact,
-  and for an expired artifact; ignores runs whose `conclusion` is not `success`.
+  and for an expired artifact; ignores runs whose `conclusion` is not `success`. *(Amended 2026-10-15 by 102.4's
+  re-review, orchestrator ruling: the selection reads the artifact listing, not a run window. Over recorded
+  `gh api repos/{owner}/{repo}/actions/artifacts?name=<artifact>` pages and each candidate's run payload,
+  `newest_export_run(artifacts_json, runs_json, *, artifact, workflow, branch)` returns the run holding the newest
+  live artifact of that name from a successful `--workflow` run on `--branch` (not a fork's); `None` for no such
+  artifact or only expired ones; a live artifact whose run cannot be read is a wrong-shape error, never a skip. See
+  the Spec Change Log.)*
 - **AC2 — Present.** With a fake `gh` returning a run and an artifact, the step's script downloads into
   `docs/dashboard/kedro-viz/` (the fake records `gh run download <id> -n kedro-viz-export -D docs/dashboard/kedro-viz`),
   writes `KEDRO_VIZ_EXPORT=present`, `KEDRO_VIZ_EXPORT_RUN=<id>`, `KEDRO_VIZ_EXPORT_AT=<createdAt>`, exit 0.
@@ -131,7 +137,11 @@ tree is deleted); herald Story 42.2 (CAP-60, the Kedro-Viz mount tolerates absen
 **Never:**
 - Do not edit `kedro-viz-publish.yml` (atlas's), `assemble_pages.py` or `site.yml` (herald's).
 - Do not commit any file under `docs/dashboard/kedro-viz/`.
-- Do not add a token, a secret or a second artifact name.
+- Do not add a token, a secret or a second artifact name. *(Annotated 2026-10-15 with the review's ruling,
+  `review-102-4` should-fix 3 and atlas 30.2's review: `GH_ENTERPRISE_TOKEN` is the job's own `github.token` under
+  the name `gh` reads on a GitHub Enterprise Server, not a new token or secret, and the second artifact name
+  `vizro-static-export` is atlas 30.2's consumer step, which 30.2's review moved into this workflow. Both are
+  recorded in the Spec Change Log.)*
 - Do not fail the build on absence.
 - Do not hand-edit `sprint-status-ledger.yaml` or any `SPEC.md`.
 
@@ -197,10 +207,30 @@ with and one without the artifact are recorded
 - `gh workflow run pages.yml --ref main` once atlas 30.1 and herald's half are on `main`; read the run's download
   step and `pages-check` exit; record both run ids (present and absent) here.
 
+## Verification run (2026-10-15)
+
+- `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py src/shared/packages/pyforge-steward/tests/unit/test_pages_export_flag_states.py -q`
+  — exit 0 (AC1–AC5; with `test_pages_workflow.py` and `test_pages.py`, 35 passed).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 2742 passed, 2 skipped.
+- `python scripts/ci_surface_gates.py --check` — exit 0. `pixi run --frozen -e pyforge-guild flag-gate-check` — exit 0.
+  `pixi run --frozen -e pyforge-guild lint-types` — exit 0. `pixi run --frozen -e site docs-site-validate` — exit 0.
+- `git ls-files docs/dashboard/kedro-viz | wc -l` — 0 (atlas 30.1 landed): the AC6 branch that drops the filter entry.
+- Group 1's end gate (102.3 + 102.4): `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0, 1984 passed,
+  5 skipped; `pixi run --frozen -e site pages-check` — exit 0 with no export (`kedro-viz absent: no tile, no menu
+  entry, no pipelines page`).
+- A live, read-only rehearsal of the step's selection (`scripts/pages_artifact_download.py --github-env <scratch>`):
+  exit 0, `kedro-viz-export: none found; mount skipped`, `KEDRO_VIZ_EXPORT=absent`. The producer's newest successful
+  run is `31905522038` (2026-08-15), from before it uploaded an artifact; it has been `paused-manually` since
+  2026-08-24 (registry `review_by` 2026-11-01), so no artifact exists yet. `--flag-env` printed `PYFORGE_PAGES_DUTY=1`.
+- Not run here: the memlog reconciles, the scoped stamps, `detectors-ci` and `pr-preflight` (the coordinating
+  session runs them for the branch); AC7's two dispatched runs (operator, below).
+
 ## Named, not fixed here
 
 - `gh run download` versus `actions/download-artifact@v8` with `run-id`: the implementer's; both need `actions: read`.
-- How many producer runs to scan for an unexpired artifact (10 is the default this spec names).
+- How many producer runs to scan for an unexpired artifact (10 is the default this spec names). *(Superseded
+  2026-10-15 by the re-review: no run window is scanned; the selection reads the artifact listing by name. See the
+  Spec Change Log.)*
 - The step's name and the env variable names beyond the three listed.
 
 ## Spec Change Log
@@ -209,3 +239,122 @@ with and one without the artifact are recorded
   `assemble_pages.py` (which exits 1 on a missing mount) and `site.yml` (the Kedro-Viz neighbour tile). The split —
   steward downloads and exports, herald tolerates and hides — is the 2026-10-14 design decision on the Spec's memlog.
   The implementing session reads the landed atlas 30.1 producer and herald half first.
+- 2026-10-15 (implemented, in review; one branch with the rest of the Pages redesign chain). Read first, as the
+  mint asked: atlas 30.1 landed (the producer uploads `kedro-viz-export`, 90-day retention, behind
+  `pyforge.atlas.viz_export_artifact`; the committed tree is gone and `.gitignore` already names
+  `docs/dashboard/kedro-viz/`), and herald 42.2 landed (`assemble_pages.py` decides presence from the directory
+  itself, skipping the mount, the redirect, the tile and the menu entry when it is empty or absent). Where the landed
+  code differs from the text above, the code is the contract:
+  - **The script is `scripts/pages_artifact_download.py`** (beside `pages_build_stamp.py`), on
+    `pages.newest_export_run(runs_json, artifacts_json, *, artifact=…) -> int | None`. It lists runs with
+    `--json databaseId,createdAt,conclusion` (the conclusion is how AC1 ignores a failed run) and reads each run's
+    full `gh api repos/{owner}/{repo}/actions/runs/<id>/artifacts` payload newest-first, stopping at the first live
+    `kedro-viz-export` (so the selection runs on recorded JSON, not a `--jq` string). An artifact counts only when
+    the API says `expired: false`. It refuses (exit 1) a `--dest` that already holds files rather than clearing it:
+    in CI the directory never exists; on a laptop it may hold a local `viz-publish-stage`.
+  - **A second artifact mount is a copy of the step.** `--workflow`, `--artifact`, `--dest` and `--env-prefix`
+    default to atlas's producer, `kedro-viz-export`, `docs/dashboard/kedro-viz` and `KEDRO_VIZ_EXPORT`; a later
+    mount (atlas 30.2's Vizro export into `docs/dashboard/vizro/`) passes its own four. No second artifact name is
+    added here.
+  - **The flag's exported state.** No Guild step exported `pyforge.steward.pages_duty` before this story (102.2's stamp
+    script reads it directly), so the script's `--flag-env` prints `PYFORGE_PAGES_DUTY=1|0` from the env-resolve
+    step, and the download step's `if:` reads it. With the flag off the step is skipped; called anyway, the script
+    returns before any `gh` call.
+  - **Permission and token.** The `build` job gains a job-level `permissions:` block (`contents: read`,
+    `pages: write`, `id-token: write`, `actions: read`); the workflow-level block and the `deploy` job are unchanged.
+    The step hands `gh` the job's own `${{ github.token }}` as `GH_TOKEN`: no secret is added.
+  - **What herald reads.** Herald 42.2 decides presence by the directory and dates the export from its
+    `manifest.json`, so `KEDRO_VIZ_EXPORT`, `KEDRO_VIZ_EXPORT_RUN` and `KEDRO_VIZ_EXPORT_AT` are written for the run's
+    log and any later reader; no herald file reads them today.
+  - **The filter (AC6).** `docs/dashboard/**` left both `paths:` lists (one YAML anchor). One consequence recorded:
+    a `steward deploy static` board under `docs/dashboard/<board>/` still lands through a pull request and is still
+    copied into the artifact, but its merge no longer triggers a Pages run on its own; the six-hourly schedule or
+    `steward pages deploy` publishes it. Stale lines naming the old filter or the folded `docsite-check.yml` lane are
+    corrected in `docs/dashboard/README.md`, `docsite/README.md` and `docs/how-to/presentation-deck.md`;
+    `pyforge-station-tests.yml`'s steward list gains the script.
+  - **AC7 waits on the producer.** No `kedro-viz-export` exists until `kedro-viz-publish.yml` runs once with atlas's
+    flag on, and that workflow is `paused-manually` (registry row `kedro-viz-publish`, `review_by` 2026-11-01). The
+    `absent` record above stands for the second AC7 run; the `present` run is the operator's after resuming the
+    producer.
+- 2026-10-15 (the independent review, `review-102-4`, verdict FAIL on five should-fix items; resolved here; where this
+  entry and the one above disagree, this one holds):
+  - **The filter keeps `docs/dashboard/**` (AC6 reversed).** The mint's premise, "nothing published lives there any
+    more", is false against the landed code: `steward deploy static` writes tracked `docs/dashboard/<board>/index.html`,
+    the assembler copies it into the artifact, and without the entry a board PR ran no `pages-check` in CI or in
+    `pr-preflight` (CAP-159 selects lanes from these paths). The Boundaries' rule that landed facts win applies, so the
+    entry stays in both lists and in `test_pages_workflow.py`'s `_EXPECTED_PATHS`; the downloaded exports under it are
+    gitignored, so no diff ever touches them. The filter also gains `scripts/pages_*.py` and steward's
+    `pyforge/steward/pages.py` (the build runs them; a PR touching only them ran no Pages build). `docs/dashboard/README.md`
+    no longer says the directory left the filter.
+  - **Only a run on `main` is mounted.** `gh run list` gains `--branch main` and `headBranch`, the script `--branch`
+    (default `main`, the `pages.EXPORT_BRANCH` constant), and `newest_export_run` passes over a run on any other branch:
+    the producer accepts a dispatch on any ref, and its HTML/JS is published verbatim on the production origin. AC1
+    gains the case. `newest_export_run` now also takes a `fetch(run_id)` callable and owns the success filter, the
+    branch filter and the newest-first order, so the script no longer repeats them.
+  - **GitHub Enterprise.** The download steps hand `gh` the job token as `GH_ENTERPRISE_TOKEN` beside `GH_TOKEN`; a
+    runner without `gh` fails the step naming the command (a `FileNotFoundError` is mapped, never a traceback); the GHE
+    how-to lists `gh` as a runner prerequisite. Steward 102.5 (the other lane) leaves this step and the script alone.
+  - **AC7.** The local rehearsal recorded above is not the dispatched `absent` record: it never exercised the job's
+    `actions: read`, the token wiring, `gh`'s repository resolution on a runner or the step's `if:`. The `absent`
+    record is the chain PR's own `pages.yml` pull_request run (the PR changes `pages.yml`, so the build runs both
+    download steps); the coordinating session fills its id at PR time. The `present` run is steward deferred-work row
+    `DW-steward-102-4-1`, keyed to resuming atlas's producer (`kedro-viz-publish`, `paused-manually`, `review_by`
+    2026-11-01).
+  - **Surface.** `scripts/pages_artifact_download.py` and `docsite/README.md` are on Epic 102's surface
+    (`marshal-policy.toml`, widened in 102.3's review). The script's place on spec-pyforge-steward's own surface comes
+    with the chain's `bmad-spec` re-derive, beside `scripts/pages_fleet_status.py`.
+  - **Nits.** The `build` job's permissions are `contents: read`, `pages: read`, `actions: read` (`configure-pages`
+    reads the site; `pages: write` and `id-token: write` belong to `deploy`); the chain PR's run confirms
+    `configure-pages` under it. An exit-0 `gh` answer of the wrong shape (a run list that is not a list, an artifacts
+    payload that is not an object or has no `artifacts` list) fails naming the argv instead of reading as `absent`. New
+    tests: the script's own `read_boolean` (no injected state), the second artifact's present path (`-n`, `-D`,
+    `_RUN`), a missing `gh`, the four wrong shapes. `--env-prefix` defaults to `pages.KEDRO_VIZ_ENV_PREFIX`.
+    `docs/reference/github-workflows.md`'s `pages.yml` row names 102.4, the downloads and the permissions.
+  - **Atlas 30.2's consumer step, per 30.2's review.** A second download step, the same script with
+    `--workflow kedro-viz-publish.yml --artifact vizro-static-export --dest docs/dashboard/vizro --env-prefix VIZRO_EXPORT
+    --branch main`, the same `if:` and both tokens, runs after the Kedro-Viz step and before `pages-check`
+    (`test_pages_export.py::test_the_workflow_mounts_the_vizro_export_the_same_way`). Until atlas 30.2's producer job
+    uploads the artifact it takes the absent path. The mount itself is herald's: `assemble_pages.py` copies
+    `docs/dashboard/vizro/` under `/dashboard/vizro/` with no vendored-root exemption, as 30.2 asks.
+- 2026-10-15 (the re-review, `rereview-group1`: 102.4 NOT RESOLVED on two should-fix items, plus a nit; resolved
+  here; where this entry and an earlier one disagree, this one holds):
+  - **`gh` is told the host (should-fix).** A token alone does not tell `gh` which host to use: a GitHub Enterprise
+    Server runner has no `gh` configuration, so `gh` stopped asking for `GH_HOST`. Both download steps now run
+    `export GH_HOST="${GITHUB_SERVER_URL#*://}"` before the script, the form steward 102.5's release step uses, and
+    carry `GH_REPO: ${{ github.repository }}` beside `GH_TOKEN` and `GH_ENTERPRISE_TOKEN`, so the `{owner}/{repo}`
+    placeholders and `gh run download` resolve without reading git remotes. The GHE how-to's sentence that said the
+    token alone authenticates is corrected. Test: `test_pages_export.py::test_both_downloads_name_the_host_that_runs_the_workflow`
+    (and the env equality in `test_the_workflow_mounts_the_vizro_export_the_same_way`).
+  - **Selection by artifact, not by a run window (should-fix).** The step read only the ten newest successful producer
+    runs (`--limit 10`). Atlas 30.2's `changes` job makes one-sided runs (each export job runs only when its own paths
+    change), so after ten runs that rebuilt only one export the other live artifact fell out of the window, the step
+    read `absent` and the next changed-tree deploy dropped that mount from production with no error. The script now
+    lists every page of `gh api repos/{owner}/{repo}/actions/artifacts?name=<artifact>&per_page=100&page=<n>`
+    (`pages.export_artifacts_endpoint`; a short page ends the listing, and a listing longer than
+    `MAX_ARTIFACT_PAGES` full pages exits 1 rather than reading part of it), then reads the run behind each candidate
+    (`gh api repos/{owner}/{repo}/actions/runs/<id>`) newest-first and downloads with `gh run download <id> -n
+    <artifact>`. `pages.newest_export_run(artifacts_json, runs_json, *, artifact, workflow, branch)` stays the one
+    owner of the rule: an artifact counts when its name matches, `expired` is `false`, `workflow_run.head_branch` is
+    the branch and the run is not a fork's (`head_repository_id` equals `repository_id`); candidates are read by newest
+    `created_at`; the run must be `--workflow`'s (`path` is `.github/workflows/<workflow>`), concluded `success` and
+    on the branch, which keeps the old guarantees (only the producer's successful runs on `main`). `--limit` is gone.
+    `<PREFIX>_AT` is the chosen run's `created_at`, as before. Every `gh` error and every wrong-shape answer (a
+    listing that is not an object or has no `artifacts` list, a run payload that is not an object or has no `path`)
+    still exits 1 naming the argv, never `absent`. Tests (all in `test_pages_export.py`, rewritten on artifact-listing
+    JSON): `test_ac1_a_live_export_behind_one_sided_runs_is_still_selected`,
+    `test_ac2_the_live_export_behind_ten_one_sided_runs_is_downloaded` (the script never calls `gh run list`),
+    `test_ac2_every_page_of_the_listing_is_read`, `test_a_listing_longer_than_the_page_cap_fails_and_is_never_truncated`,
+    `test_ac1_an_artifact_another_workflow_uploaded_is_never_mounted`, `test_ac1_a_fork_s_run_is_never_mounted`, the
+    AC1–AC3 cases and the five wrong shapes; `test_pages_export_flag_states.py` reads the listing call first.
+  - **The Never bullet (nit)** is annotated with the review's ruling on `GH_ENTERPRISE_TOKEN` and
+    `vizro-static-export`, and "Named, not fixed here"'s run-window item is marked superseded.
+  - **Nit d** (`scribe capture --type project` for `DW-steward-102-4-1`) is the coordinating session's at session
+    close; no capture is run from a builder.
+- 2026-10-15 (the lane-B re-review, `rereview-laneb`: 102.4 RESOLVED; two nits done here):
+  - **A live artifact whose run cannot be read is a wrong shape, never a skip.** `newest_export_run` raises
+    `ValueError` for a name-matched, unexpired artifact with no readable `workflow_run.id`, and the script's listing
+    reader exits 1 naming the listing argv before selection; skipping every such artifact would have read as `absent`
+    and dropped the mount. Tests: `test_ac1_a_live_artifact_without_a_readable_run_is_a_wrong_shape_never_a_skip`,
+    `test_a_live_artifact_without_a_readable_run_fails_naming_the_listing`.
+  - **AC1 is annotated in place** with the selection-by-artifact rule (the AC is the oracle), and so is steward
+    `epics.md`'s Story 102.4 When line.

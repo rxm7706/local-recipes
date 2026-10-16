@@ -1,9 +1,9 @@
 /**
  * Dossier block HTML — one implementation shared by Astro components and the golden-test renderer.
- * Shapes mirror docsite/templates/blocks.html.j2 (Epic 43 fourteen types + ci_surfaces).
+ * The fifteen block types (Epic 43's fourteen + ci_surfaces), the shapes the retired Jinja macros had (Story 43.7).
  */
 
-import { cssVar, mdInline } from './md-inline.ts';
+import { cssTextTone, cssVar, mdInline } from './md-inline.ts';
 
 export type DossierBlock = Record<string, unknown> & { type: string };
 
@@ -64,7 +64,7 @@ export function renderBlock(block: DossierBlock): string {
       const accent = block.accent ? String(block.accent) : '';
       const border = accent ? ` style="border-left-color:${cssVar(accent)}"` : '';
       const flabel = block.label
-        ? `<span class="flabel"${accent ? ` style="color:${cssVar(accent)}"` : ''}>${mdInline(block.label as string)}</span>`
+        ? `<span class="flabel"${accent ? ` style="color:${cssTextTone(accent)}"` : ''}>${mdInline(block.label as string)}</span>`
         : '';
       const body = ((block.body as string[]) ?? []).map((p) => `<p>${mdInline(p)}</p>`).join('');
       return `<div class="find-box${alarm}"${border}>${flabel}${body}</div>`;

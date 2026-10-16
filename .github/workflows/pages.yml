@@ -1,19 +1,33 @@
 name: Pages
 
-# Steward owns this duct (spec-pyforge-steward CAP-168 / Story 102.1–102.2). Herald owns
-# the artifact content (pages-build, pages-check, docsite/, docs-site/, /herald/).
+# Steward owns this duct (spec-pyforge-steward CAP-168 / Stories 102.1–102.4). Herald owns
+# the artifact content (pages-build, pages-check, docs-site/, /herald/, /status/).
 # This workflow is the sole actions/deploy-pages caller (herald herald:AD-21). No
 # bot commit on main.
 #
 # Publishes one GitHub Pages artifact assembled at docs-site/build/site/
 # (Starlight docs shelf at /, herald dossier at /herald/, Kedro-Viz at
-# /dashboard/kedro-viz/). Atlas Kedro-Viz is staged under docs/dashboard/kedro-viz/
-# by kedro-viz-publish.yml and copied into the artifact by docsite/tools/assemble_pages.py.
-# Lane 1 /console/ is the operator console.
+# /dashboard/kedro-viz/). Story 102.4: atlas's kedro-viz-publish.yml uploads the export as
+# the workflow artifact kedro-viz-export (atlas Story 30.1); the build job downloads the
+# newest live one into docs/dashboard/kedro-viz/ (gitignored), which
+# the Astro build mounts (docs-site/scripts/populate-public.mts), and skips the mount when there
+# is none (herald Story 42.2). Lane 1 /console/ is the operator console.
 #
-# kedro-viz-publish.yml stages the export, then this workflow republishes when the
-# built tree changes. Story 102.2: build on pull_request and push (one filter),
-# deploy on main only when the tree hash differs from live build.json.
+# Story 102.2: build on pull_request and push (one filter),
+# deploy on main only when the tree hash differs from live build.json (or, once a day, when
+# the live build is over 24 h old and its commit moved). A workflow_dispatch bypasses only the
+# pause switches: its deploy still needs main and a changed tree (AD-4 as amended 2026-10-14;
+# the pages.deploy registry row renders `dispatch: pause-only`).
+# Story 102.3: a Guild step writes herald's fleet board input
+# (docs-site/src/content/fleet-status.json, from sprint-ledger-query --format json; herald
+# Story 43.7 moved it beside the generator) before every build, and the build env carries
+# PYFORGE_STATUS_PAGES (herald Story 42.1's flag); `steward pages build|deploy|status` is the
+# duty that speaks to this workflow.
+# Story 102.5: actions/configure-pages is authoritative on every host -- its base_url and
+# base_path reach the build (SITE_URL, PAGES_HOST_BASE_URL, PAGES_HOST_BASE_PATH) with no flag
+# (herald Story 42.3 retires the second-host flag) -- and after each deploy the
+# deployed site ships as pages-site.zip on the rolling `pages-site` pre-release, for a host that
+# cannot reach github.io and pulls reviewed bytes instead of rebuilding behind a mirror.
 
 on:
   pull_request:
@@ -25,9 +39,14 @@ on:
       - 'docs/index.md'
       - 'docs/404.md'
       - 'docs/map.yaml'
+      # Tracked `steward deploy static` boards publish from docs/dashboard/<board>/ (the downloaded
+      # exports under it are gitignored); the build's own scripts, steward's pages module and herald's
+      # flag export (the build's PYFORGE_* lines, herald Story 43.7) too.
       - 'docs/dashboard/**'
+      - 'scripts/pages_*.py'
+      - 'src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py'
+      - 'src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py'
       - 'docs-site/**'
-      - 'docsite/**'
       - 'presentations/**'
       - '.github/workflows/pages.yml'
   push:
@@ -48,6 +67,12 @@ jobs:
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true') }}
     runs-on: ubuntu-latest
+    # actions: read (Story 102.4) lets the job list another workflow's runs and download its artifact;
+    # pages: read is all configure-pages needs. pages: write and id-token: write stay with deploy.
+    permissions:
+      contents: read
+      pages: read
+      actions: read
     timeout-minutes: 20
     concurrency:
       group: pages-build-${{ github.ref }}
@@ -55,13 +80,14 @@ jobs:
     outputs:
       changed: ${{ steps.stamp.outputs.changed }}
       tree_hash: ${{ steps.stamp.outputs.tree_hash }}
+      pages_duty: ${{ steps.duty.outputs.pages_duty }}
     steps:
       - uses: actions/checkout@v7
         with:
           # Shallow, not sparse: the deck family pages publish each deck's PPTX (src/pptx/) and Marp
           # (src/marp/) files and its stamp sidecars (project/*.stamp.json), which is 77.6 MB of the
           # 84.9 MB tracked under presentations/ (2026-10-14). A sparse set that drops them still
-          # passes site-check, because an absent download directory lists nothing.
+          # passes pages-check, because an absent download directory lists nothing.
           fetch-depth: 1
 
       - uses: prefix-dev/setup-pixi@v0.10.2
@@ -74,24 +100,79 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v6
 
-      - name: Resolve Pages host env (flag + configure-pages)
+      # Herald's build flags (pyforge.herald.status_pages, pyforge.herald.ci_surfaces_tile) as
+      # PYFORGE_* lines, resolved in the Guild env (herald Story 43.7: python -m pyforge.herald.pages_env).
+      - name: Resolve build env (flags)
         run: |
-          pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"
-          pixi run --frozen -e pyforge-guild python docsite/tools/export_ci_surfaces_tile_env.py >> "$GITHUB_ENV"
-          pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_one_generator_env.py >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python -m pyforge.herald.pages_env >> "$GITHUB_ENV"
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --flag-env >> "$GITHUB_ENV"
+
+      # Story 102.5: the deploy job's release-asset step reads steward's duty flag from here.
+      - name: Carry the duty flag to the deploy job
+        id: duty
+        run: echo "pages_duty=${PYFORGE_PAGES_DUTY:-0}" >> "$GITHUB_OUTPUT"
+
+      # The Kedro-Viz mount's build input (Story 102.4): atlas's newest live kedro-viz-export from a
+      # successful kedro-viz-publish.yml run on main, into docs/dashboard/kedro-viz/, chosen from the
+      # artifact listing itself (no window of recent runs). Absent (no artifact, only expired ones)
+      # is a normal build: it exports KEDRO_VIZ_EXPORT=absent and the herald build skips the mount;
+      # a gh error fails the step. gh talks to the host that ran this workflow (GH_HOST from
+      # GITHUB_SERVER_URL, GH_REPO), github.com or a GitHub Enterprise Server, with the job's token
+      # as GH_TOKEN and GH_ENTERPRISE_TOKEN. Another artifact mount is a copy of this step with its
+      # own --workflow, --artifact, --dest and --env-prefix.
+      - name: Download the Kedro-Viz export artifact
+        if: ${{ env.PYFORGE_PAGES_DUTY == '1' }}
         env:
+          GH_TOKEN: ${{ github.token }}
+          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          export GH_HOST="${GITHUB_SERVER_URL#*://}"
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --workflow kedro-viz-publish.yml --artifact kedro-viz-export --dest docs/dashboard/kedro-viz --env-prefix KEDRO_VIZ_EXPORT --branch main
+
+      # Atlas Story 30.2's consumer (its review moved it here): the Vizro boards' static export,
+      # uploaded as vizro-static-export by a second job of kedro-viz-publish.yml, into
+      # docs/dashboard/vizro/, which the Astro build mounts at /dashboard/vizro/. Same gate, same
+      # host and tokens, same absent path; a run that rebuilt only the Kedro-Viz export never
+      # pushes this one out of reach, since the newest live artifact is chosen by name.
+      - name: Download the Vizro static export artifact
+        if: ${{ env.PYFORGE_PAGES_DUTY == '1' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          export GH_HOST="${GITHUB_SERVER_URL#*://}"
+          pixi run --frozen -e pyforge-guild python scripts/pages_artifact_download.py --workflow kedro-viz-publish.yml --artifact vizro-static-export --dest docs/dashboard/vizro --env-prefix VIZRO_EXPORT --branch main
+
+      # Herald's fleet board reads this input when pyforge.herald.status_pages is on (herald
+      # Story 42.1); it is written on every build so the flag can flip without a workflow edit.
+      # The snapshot time is the built commit's, so a scheduled build of an unmoved tree hashes the
+      # same and skips its deploy.
+      - name: Write the fleet board's build input
+        run: |
+          pixi run --frozen -e pyforge-guild sprint-ledger-query -- --format json --output "$RUNNER_TEMP/sprint-ledger.json"
+          pixi run --frozen -e pyforge-guild python scripts/pages_fleet_status.py \
+            --ledger "$RUNNER_TEMP/sprint-ledger.json" \
+            --generated-at "$(git log -1 --format=%cI HEAD)" \
+            --out docs-site/src/content/fleet-status.json
+
+      # configure-pages is authoritative on every host (Story 102.5, herald Story 42.3): the
+      # deploying host's base URL and path reach pages-check and the Astro build, no flag.
+      - name: Build and verify the unified Pages artifact
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
           PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
           PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-
-      - name: Build and verify the unified Pages artifact
         run: pixi run --frozen -e site pages-check
 
+      # The legs of docs-site-validate, each alone: pages-check above already ran docs-site-install
+      # (npm ci), which docs-site-validate-sidebar depends on, so --skip-deps keeps a second install out.
       - name: Validate docs-site (PR gate folded from docsite-check.yml)
-        run: pixi run --frozen -e site docs-site-validate
-
-      - name: Verify the dossier's numbers against the source tree
-        continue-on-error: true
-        run: pixi run --frozen -e site site-verify
+        run: |
+          pixi run --frozen --skip-deps -e site docs-site-validate-links
+          pixi run --frozen --skip-deps -e site docs-site-validate-sidebar-order
+          pixi run --frozen --skip-deps -e site docs-site-validate-sidebar
 
       - name: Stamp build.json and decide deploy
         id: stamp
@@ -107,8 +188,10 @@ jobs:
         with:
           path: docs-site/build/site
 
-      - name: Upload PR review artifact
-        if: ${{ github.event_name == 'pull_request' }}
+      # Story 102.5: a PR's review copy, and on a changed tree the deploy job's release asset. A build
+      # whose tree did not change deploys nothing, so it uploads no copy either (102.5's review).
+      - name: Upload the site artifact (pages-site)
+        if: ${{ github.event_name == 'pull_request' || steps.stamp.outputs.changed == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: pages-site
@@ -118,16 +201,61 @@ jobs:
   deploy:
     # ci-surfaces: pages.deploy
     # render: python scripts/ci_surface_gates.py --render
-    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true' && ((github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true')) && github.event_name != 'pull_request' && needs.build.outputs.changed == 'true')) }}
+    if: ${{ (github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_PAGES != 'true')) && (github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.build.outputs.changed == 'true') }}
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 15
     concurrency:
       group: pages
       cancel-in-progress: false
+    # contents: write is this job's alone (Story 102.5): the release asset. The build job keeps read.
+    permissions:
+      pages: write
+      id-token: write
+      contents: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+      # Story 102.5: the deployed bytes as pages-site.zip (build.json inside) on the rolling
+      # `pages-site` pre-release, moved to the deploying commit. Not a version and outside every
+      # protected tag pattern. Skipped with steward's duty flag off; a pull_request never deploys.
+      # The release is kept across deploys (102.5's review): its tag moves to the deploying commit
+      # (and the release's target with it) and `--clobber` replaces the asset, so no deploy leaves the
+      # repository without the release, as delete-then-create did when create failed. A clone that
+      # fetched the tag earlier sees it rejected as moved on `git fetch --tags`; nothing reads it.
+      - name: Download the deployed site
+        if: ${{ needs.build.outputs.pages_duty == '1' && github.event_name != 'pull_request' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: pages-site
+          path: pages-site
+
+      - name: Publish the site as the pages-site release asset
+        if: ${{ needs.build.outputs.pages_duty == '1' && github.event_name != 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # gh talks to the host that ran this workflow (github.com or a GitHub Enterprise host).
+          export GH_HOST="${GITHUB_SERVER_URL#*://}"
+          test -f pages-site/build.json
+          (cd pages-site && zip -qr "$RUNNER_TEMP/pages-site.zip" .)
+          notes="built_from $GITHUB_SHA, run $GITHUB_RUN_ID"
+          # Move the tag first, release or not: `gh release create --target` adopts an existing tag where it
+          # stands, so a tag left without its release would otherwise keep a stale commit.
+          if gh api "repos/$GH_REPO/git/ref/tags/pages-site" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/pages-site" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+          fi
+          if gh release view pages-site >/dev/null 2>&1; then
+            gh release edit pages-site --target "$GITHUB_SHA" --notes "$notes"
+          else
+            gh release create pages-site --prerelease --target "$GITHUB_SHA" \
+              --title "Pages site (rolling)" --notes "$notes"
+          fi
+          gh release upload pages-site "$RUNNER_TEMP/pages-site.zip" --clobber

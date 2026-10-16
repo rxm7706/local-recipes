@@ -546,18 +546,23 @@ verify_commands = [
 "42" = [  # the Pages site shows the fleet and the guild, and builds for any host without a flag (feature under CAP-60,
   # FR-12.1..FR-12.3; flags pyforge.herald.status_pages new and pyforge.herald.pages_second_host retired; Stories
   # 42.1-42.3), added 2026-10-14. The default surface, restated because a declared entry replaces it outright, plus
-  # docsite/ (build.py, the status templates, the build inputs, site.yml, assemble_pages.py, pages_second_host.py), the
+  # docsite/ (build.py, the status templates, the build inputs, site.yml, assemble_pages.py, pages_site_url.py), the
   # flag tree, its overlay and herald's flag inventory, the GHE how-to, and every Spec memlog a reconcile names
   # (spec-pyforge-steward co-governs the workflow that writes the inputs; herald never edits pages.yml).
+  # 2026-10-15: "docsite/**" left this list when Story 43.7 deleted docsite/ (its independent review, part B);
+  # Epic 42's stories edited it in the same PR, and Epic 43's list keeps the glob for the deletion itself.
   "src/shared/packages/pyforge-herald/**",
   "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
   "scripts/.spec-surface-baseline.json",
-  "docsite/**",
   "src/platform/config/flags.json",
   "src/platform/config/flag-overlays.json",
   "docs/governance/flag-inventory/pyforge-herald.md",
   "docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md",
+  # The tree-wide flag pins list every key the tree holds: 42.1 added pyforge.herald.status_pages and 42.3 removed
+  # pyforge.herald.pages_second_host (lane-B re-review).
+  "src/platform/tests/test_openfeature_file_flags.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 "43" = [  # one generator renders the whole Pages site (feature under CAP-61, FR-12.4..FR-12.5, AD-23; flag
@@ -577,6 +582,43 @@ verify_commands = [
   "src/platform/config/flag-overlays.json",
   "docs/governance/flag-inventory/pyforge-herald.md",
   "AGENTS.md",
+  # Story 43.6: the three build inputs it reads are gitignored beside 42.1's, and the Guild steps that would
+  # write them are a steward deferred-work row.
+  ".gitignore",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  # Story 43.7 (the go-live): every consumer of the retired docsite/ and site* tasks -- the registry rows and the
+  # docs map (doctor's, cross-station), the Pages and station-tests workflows and the fleet-board input writer
+  # (steward's, cross-station), steward's and doctor's tests and modules that named the old paths, the flag pins in
+  # pyforge-core's and the platform's tests, the regenerated pixi-tasks page, and the docs that named the old paths.
+  "docs/map.yaml",
+  "docs/MAP.md",
+  "docs/dashboard/README.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/how-to/presentation-deck.md",
+  "docs/reference/github-workflows.md",
+  "docs/reference/story-spec-flag-block.md",
+  ".github/workflows/pages.yml",
+  ".github/workflows/pyforge-station-tests.yml",
+  "scripts/pages_fleet_status.py",
+  # Narrowed 2026-10-15 (43.7 independent review, part B) from all of src/shared/packages/pyforge-steward/** to the
+  # steward modules and tests Epic 43's stories touched (43.2, 43.3, 43.5, 43.7):
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/pages.py",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/pages_duty.py",
+  "src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py",
+  "src/shared/packages/pyforge-steward/tests/meta/test_station_tests_trigger_map.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_ci_status.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_pages.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_pages_release.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_preflight.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py",
+  "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/pages_liveness.py",
+  "src/shared/packages/pyforge-doctor/tests/unit/test_sources_pages_liveness.py",
+  "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+  "src/platform/tests/test_openfeature_file_flags.py",
+  "environment.yaml",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 

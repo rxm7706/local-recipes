@@ -250,6 +250,51 @@ def test_a_key_the_tree_lacks_reads_none_naming_the_key_and_still_counts_as_unfl
     assert _header(report, "Runtime CAPs with no flag") == 1
 
 
+def test_a_retired_key_reads_none_naming_the_retiring_story_never_the_key(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """herald Story 42.3: a story spec that retires a key (`retires-flag:`) names the retirement; the
+    historical flag block stays, and the report never prints the key once it has left the tree."""
+    root = _fixture(tmp_path, tree_keys=[])
+    _spec(root)
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _story_spec(root, "spec-1-1-alpha.md", FLAG_BLOCK.format(key=KEY), body=f"Living CAP: `{SLUG}` CAP-1.")
+    _story_spec(root, "spec-1-2-retire-it.md", f"flag-exempt: flag-infrastructure\nretires-flag: {KEY}\n")
+
+    report = _report(root, tmp_path, capsys)
+
+    assert "| none (retired by 1-2-retire-it) |" in _row(report, 1)
+    assert KEY not in report
+
+
+def test_another_stations_retirement_leaves_the_key_reading_not_in_tree(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """doctor Story 34.7: only the key's owning station retires it (atlas, by `pyforge.atlas.`); a herald story's
+    `retires-flag:` is not a retirement, so the report keeps naming the missing key."""
+    root = _fixture(tmp_path, tree_keys=[])
+    _spec(root)
+    _epics(root, ("CAP-1", "`cli.py`"))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _story_spec(root, "spec-1-1-alpha.md", FLAG_BLOCK.format(key=KEY), body=f"Living CAP: `{SLUG}` CAP-1.")
+    _story_spec(
+        root, "spec-1-2-retire-it.md", f"flag-exempt: flag-infrastructure\nretires-flag: {KEY}\n", station="herald"
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    assert f"| none (key {KEY} not in tree) |" in _row(report, 1)
+    assert "retired by" not in report
+
+
+def test_flag_cell_keeps_naming_an_unretired_missing_key_beside_a_retired_one() -> None:
+    retired = {"pyforge.test.gone": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-9-9-retire.md"}
+    cell = flag_inventory.flag_cell(["pyforge.test.gone", "pyforge.test.typo"], {}, retired)
+    assert cell == "none (key pyforge.test.typo not in tree; retired by 9-9-retire)"
+    assert flag_inventory.flag_cell(["pyforge.test.gone"], {"pyforge.test.gone": {}}, retired) == "`pyforge.test.gone`"
+
+
 def test_a_flag_block_that_cites_another_cap_or_another_station_gates_nothing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):

@@ -4,6 +4,13 @@ name: Kedro-Viz publish (real atlas DAG)
 # static kedro-viz export on every push touching its pipelines, stage it locally,
 # and upload it as the workflow artifact ``kedro-viz-export`` (90-day retention).
 # Pages consumes that artifact (steward 102.4); this job never commits to git.
+#
+# Story 30.2 (CAP-63): a second producer, the `vizro` job, exports the Vizro boards as
+# static pages (`vizro-static-export`, in `-e pyforge-atlas`) and uploads them as the
+# artifact ``vizro-static-export`` (90 days); Pages mounts it at /dashboard/vizro/ (steward
+# 102.4's consumer step, herald CAP-61). GitHub filters paths per workflow, not per job, so
+# `on.push.paths` is the union of both producers' paths and the `changes` job tells each
+# producer whether the push touched its own (workflow_dispatch runs both).
 
 on:
   push:
@@ -13,6 +20,8 @@ on:
       - 'src/shared/packages/pyforge-atlas/conf/base/catalog.yml'
       - 'src/shared/packages/pyforge-atlas/conf/base/globals.yml'
       - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/**'
+      - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/**'
+      - 'src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/**'
   workflow_dispatch:
 
 permissions:
@@ -23,10 +32,61 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    # ci-surfaces: kedro-viz-publish
+  changes:
+    # ci-surfaces: kedro-viz-publish.changes
     # render: python scripts/ci_surface_gates.py --render
     if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_KEDRO_VIZ_PUBLISH != 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      kedro_viz: ${{ steps.paths.outputs.kedro_viz }}
+      vizro: ${{ steps.paths.outputs.vizro }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Each list is one producer's own paths (the `on.push.paths` entries, as git pathspecs).
+      # Anything other than a push with a readable `before` commit runs both producers.
+      - name: Which producer's paths did this push touch
+        id: paths
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          KEDRO_VIZ_PATHS: >-
+            src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines
+            src/shared/packages/pyforge-atlas/conf/base/catalog.yml
+            src/shared/packages/pyforge-atlas/conf/base/globals.yml
+            src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets
+          VIZRO_PATHS: >-
+            src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard
+            src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic
+            src/shared/packages/pyforge-atlas/conf/base/catalog.yml
+        run: |
+          set -euo pipefail
+          kedro_viz=true
+          vizro=true
+          # `git diff --quiet` exits 0 when the paths did not change and 1 when they did; any other
+          # code is an error, and an error runs the producer rather than skipping it silently.
+          touched() {
+            local rc=0
+            # shellcheck disable=SC2086  # the list is deliberately split into pathspecs
+            git diff --quiet "$BEFORE" "$GITHUB_SHA" -- $1 || rc=$?
+            if [ "$rc" -eq 0 ]; then echo false; else echo true; fi
+          }
+          if [ "$EVENT_NAME" = "push" ] && [ -n "$BEFORE" ] \
+             && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+             && git fetch --no-tags --depth=1 origin "$BEFORE"; then
+            kedro_viz=$(touched "$KEDRO_VIZ_PATHS")
+            vizro=$(touched "$VIZRO_PATHS")
+          fi
+          echo "kedro_viz=$kedro_viz" >> "$GITHUB_OUTPUT"
+          echo "vizro=$vizro" >> "$GITHUB_OUTPUT"
+          echo "kedro_viz=$kedro_viz vizro=$vizro"
+
+  publish:
+    # ci-surfaces: kedro-viz-publish.publish
+    # render: python scripts/ci_surface_gates.py --render
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_KEDRO_VIZ_PUBLISH != 'true' && (needs.changes.outputs.kedro_viz == 'true')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -95,4 +155,44 @@ jobs:
         with:
           name: kedro-viz-export
           path: docs/dashboard/kedro-viz/
+          retention-days: 90
+
+  vizro:
+    # ci-surfaces: kedro-viz-publish.vizro
+    # render: python scripts/ci_surface_gates.py --render
+    needs: changes
+    if: ${{ github.event_name == 'workflow_dispatch' || (vars.PAUSE_ALL_CI != 'true' && vars.PAUSE_KEDRO_VIZ_PUBLISH != 'true' && (needs.changes.outputs.vizro == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # pyforge-atlas carries vizro and plotly (the same env as the publish job); local-recipes
+      # (over 10 GB) is the recipe factory's env, never a station job's (orchestrator ruling 2026-10-15).
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.80.0
+          environments: >-
+            pyforge-atlas
+          locked: true
+          cache: true
+
+      - name: Resolve Vizro static boards flag
+        id: vizro_flag
+        run: |
+          pixi run --frozen -e pyforge-atlas python \
+            src/shared/packages/pyforge-atlas/tools/vizro_static_export.py --print-flag >> "$GITHUB_OUTPUT"
+
+      # The same Dashboard object dashboard-dryrun builds, one static page per board, ONE
+      # vendored assets/plotly.min.js; never a commit (the export is gitignored).
+      - name: Export the Vizro boards as static pages
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        run: pixi run --frozen -e pyforge-atlas vizro-static-export
+
+      - name: Upload Vizro static export artifact
+        if: ${{ steps.vizro_flag.outputs.enabled == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vizro-static-export
+          path: docs/dashboard/vizro
           retention-days: 90

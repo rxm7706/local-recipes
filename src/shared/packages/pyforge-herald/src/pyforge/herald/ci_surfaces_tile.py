@@ -1,6 +1,8 @@
 """CI surfaces tile flag read (Story 39.1, CAP-59).
 
-Row logic lives in ``docsite/tools/ci_surfaces_tile.py`` (stdlib-only for the ``site`` build).
+The tile's rows are shaped at build in ``docs-site/src/lib/status.ts`` (Story 43.7 ported them from the retired Jinja
+path), which reads this flag's resolved value from ``PYFORGE_CI_SURFACES_TILE``; the Guild env hands it over through
+``python -m pyforge.herald.pages_env``.
 """
 
 from __future__ import annotations

@@ -53,9 +53,7 @@ surface:
   - .github/workflows/lint-types.yml
   - scripts/llms_full_check.py
   - docs/reference/library-llms-full.md
-  - .steward/budget.yaml
   - .steward/keys-inventory.yaml
-  - .steward/*.age
   - .steward/sync-config.example.yaml
   - .steward/repo-sets.example.yaml
   - recipes/bmad-eval-quality/**
@@ -76,7 +74,7 @@ surface:
   - src/shared/packages/django-pyforge/src/django_pyforge/mcp_http.py
   - src/platform/config/asgi.py
   - src/platform/deploy/charts/platform/
-  - "[feature.mcp-host]"
+  - pixi.toml    # its [feature.mcp-host] and [feature.python-agent-platform] tables (re-pointed 2026-10-15: a surface glob names files, not TOML tables)
   - scripts/mcp_factory_stdio_translator.py
   - docs/dreams/mcp-host-real-station-tools.md
   - src/platform/mcp_host/app.py
@@ -93,7 +91,6 @@ surface:
   - scripts/platform_ci_test_requirements_check.py
   - src/platform/Containerfile
   - scripts/platform_image_pip_layer.py
-  - "[feature.python-agent-platform]"
   - scripts/platform_object_storage.py
   - scripts/build-pixi-mirror.py
   - scripts/platform-golden-path-promotion.sh
@@ -124,6 +121,8 @@ surface:
   - scripts/pin_policy_check.py
   - scripts/ci_surface_gates.py
   - scripts/pages_build_stamp.py
+  - scripts/pages_fleet_status.py
+  - scripts/pages_artifact_download.py
   - scripts/_ci_surface_gates_lib.py
   - tests/scripts/test_ci_surface_gates.py
   - scripts/pin_policy_lib.py

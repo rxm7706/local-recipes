@@ -36,6 +36,12 @@ EXIT_INTERNAL = 70  # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
 # meaningful, just distinct and documented.
 EXIT_BUDGET_NOT_CONFIGURED = 3
 
+# The refusal code two flag-gated duties share, defined beside each duty and only requested through
+# `DutyResult.details["exit_code"]` (main() acts on it): `ci.EXIT_CI_REFUSAL` (3, Story 99.3: the
+# `ci` flag is off, or gh cannot read) and `pages_duty.EXIT_PAGES_REFUSAL` (3, Story 102.3:
+# `pyforge.steward.pages_duty` is off; refused before any subprocess). Not imported here, so
+# `steward --help` loads neither module.
+
 _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 # The eight duties — all real as of this story. `keys` (Epic 1), `deploy`
@@ -56,6 +62,8 @@ _ISO_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 # `deck-drift` (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5 — flags silent
 #   size/etag drift on a pulled Design deck artifact; Herald owns the pull itself).
 # `preflight` (Epic 103, Story 103.6 / CAP-159 — verify-deferred, the catch-up for a touched-scope preflight).
+# `pages` (Epic 102, Story 102.3 / CAP-168 — build/deploy/status of the one Pages workflow; replaced
+#   `deploy dashboard` and `deploy status`).
 DUTIES: tuple[str, ...] = (
     "keys",
     "deploy",
@@ -86,6 +94,7 @@ DUTIES: tuple[str, ...] = (
     "deck-drift",
     "estate",
     "ci",
+    "pages",
     "preflight",
 )
 
@@ -136,8 +145,8 @@ _HELP = {
     ),
     "keys": "credential lifecycle — encrypt/decrypt/rotate/list/audit/revoke/exec",
     "deploy": (
-        "dashboard build/reconcile/status; perimeter: AD-5 shareability + daphne/nginx "
-        "manifests; static: CAP-8/AD-10 static-export publish"
+        "perimeter: AD-5 shareability + daphne/nginx manifests; static: CAP-8/AD-10 "
+        "static-export publish (the Pages artifact itself is `steward pages`)"
     ),
     "provision": (
         "environment and substrate provisioning; non-module suite pieces "
@@ -201,6 +210,11 @@ _HELP = {
     "ci": (
         "CI pause visibility — status (one table/json of every surface) and vars (gitignored snapshot) "
         "behind pyforge.steward.ci_pause_control (Story 99.3 / CAP-166 FR-39)"
+    ),
+    "pages": (
+        "the one Pages workflow -- build (fleet-status input + pages-check + tree hash), deploy "
+        "(gh workflow run pages.yml, names the run), status (live root, last run, registry verdict) "
+        "behind pyforge.steward.pages_duty (Story 102.3 / CAP-168 FR-41)"
     ),
     "preflight": (
         "the pre-push preflight's catch-up — verify-deferred lists every run that left lanes to CI "
@@ -284,6 +298,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_estate_subparsers(duty_parser)
         elif name == "ci":
             _add_ci_subparsers(duty_parser)
+        elif name == "pages":
+            _add_pages_subparsers(duty_parser)
         elif name == "preflight":
             _add_preflight_subparsers(duty_parser)
         elif name in ("init", "shell-init", "setup", "initrepo", "validate-fast"):
@@ -875,25 +891,16 @@ def _add_guards_subparsers(guards_parser: argparse.ArgumentParser) -> None:
 
 
 def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
-    """Add the `dashboard` (`--build`/`--dry-run`), `status`, `perimeter`,
-    and `static` verbs. `perimeter` is a distinct, unrelated surface from
-    `dashboard` (Story 9.5, CAP-6) — it validates and renders the
-    `pyforge.steward.dashboard` Django app's deployment perimeter (AD-5
-    shareability + daphne/nginx manifests), never the GitHub-Pages program
-    console `dashboard` builds/reconciles. `static` (Story 9.7, CAP-8/
-    AD-10) publishes a board as a self-contained static export to
-    `docs/dashboard/<board>/index.html`, which the pre-existing `dashboard`
-    verb then commits/pushes unchanged — a fourth, also-unrelated surface.
+    """Add the `perimeter` and `static` verbs. `perimeter` (Story 9.5, CAP-6)
+    validates and renders the `pyforge.steward.dashboard` Django app's
+    deployment perimeter (AD-5 shareability + daphne/nginx manifests).
+    `static` (Story 9.7, CAP-8/AD-10) writes a board as a self-contained
+    static export to `docs/dashboard/<board>/index.html`, which lands
+    through a pull request like any tracked file. Story 102.3 retired
+    `dashboard` and `status` (the Pages artifact is `steward pages`); a call
+    to either is a usage error.
     """
-    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{dashboard,status,perimeter,static}")
-
-    dashboard = deploy_subs.add_parser("dashboard", help="build/reconcile the GitHub Pages program-console dashboard")
-    dashboard.add_argument(
-        "--build", action="store_true", help="build only — refresh docs/dashboard/, no diff/commit/push"
-    )
-    dashboard.add_argument("--dry-run", action="store_true", help="build + diff and print — no commit/push")
-
-    deploy_subs.add_parser("status", help="report the last commit that touched docs/dashboard/ (SHA, timestamp)")
+    deploy_subs = deploy_parser.add_subparsers(dest="deploy_verb", metavar="{perimeter,static}")
 
     perimeter = deploy_subs.add_parser(
         "perimeter",
@@ -970,10 +977,11 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         ),
     )
 
-    static = deploy_subs.add_parser(
-        "static",
-        help=("publish a board as a self-contained static export (docs/dashboard/<board>/index.html) — CAP-8/AD-10"),
+    static_help = (
+        "write a board as a self-contained static export (docs/dashboard/<board>/index.html) — "
+        "CAP-8/AD-10; the file lands through a pull request like any tracked file (no verb pushes)"
     )
+    static = deploy_subs.add_parser("static", help=static_help, description=static_help)
     static.add_argument(
         "--board",
         required=True,
@@ -981,7 +989,7 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         help=(
             "the board slug (filesystem-safe: ^[A-Za-z0-9_-]+$; also refused when "
             "docs/dashboard/<slug>/ is excluded by a .gitignore rule, since such a "
-            "board could never be committed or pushed)"
+            "board could never be committed)"
         ),
     )
     static.add_argument(
@@ -1229,6 +1237,42 @@ def _add_ci_subparsers(ci_parser: argparse.ArgumentParser) -> None:
         "--yes",
         action="store_true",
         help="perform gh variable delete and update the registry (operator only)",
+    )
+
+
+def _add_pages_subparsers(pages_parser: argparse.ArgumentParser) -> None:
+    """Story 102.3 (CAP-168): the three verbs of the Pages duty. No `required=True`: a bare
+    `steward pages` names the verbs (AD-7's degrade)."""
+    pages_subs = pages_parser.add_subparsers(dest="pages_verb", metavar="{build,deploy,status}")
+    build = pages_subs.add_parser(
+        "build",
+        help=(
+            "write docs-site/src/content/fleet-status.json from the ledgers, run pages-check, report the tree hash "
+            "(never writes build.json unless --stamp)"
+        ),
+    )
+    build.add_argument("--json", action="store_true", help="emit {exit, tree_hash, root, fleet_status}")
+    build.add_argument("--dry-run", action="store_true", help="print what would run and run nothing")
+    build.add_argument(
+        "--stamp",
+        action="store_true",
+        help="after a green build, run scripts/pages_build_stamp.py as the workflow does (a local rehearsal)",
+    )
+    build.add_argument("--site-url", default=None, metavar="URL", help="the live site for --stamp (default: gh api)")
+    deploy = pages_subs.add_parser(
+        "deploy", help="trigger one run of .github/workflows/pages.yml on main and name it (gh workflow run)"
+    )
+    deploy.add_argument("--dry-run", action="store_true", help="print the gh argv lines and run nothing")
+    deploy.add_argument("--wait", action="store_true", help="watch the run to the end and report the page url")
+    status = pages_subs.add_parser(
+        "status", help="read the live root, the last pages.yml run and the pages registry verdict"
+    )
+    status.add_argument("--json", action="store_true", help="emit the three blocks as JSON")
+    status.add_argument(
+        "--site-url",
+        default=None,
+        metavar="URL",
+        help="the live site (default: gh api repos/{owner}/{repo}/pages --jq .html_url)",
     )
 
 
@@ -1780,6 +1824,10 @@ def resolve_duty(name: str) -> Duty:
         from .ci import CiDuty
 
         return CiDuty()
+    if name == "pages":
+        from .pages_duty import PagesDuty
+
+        return PagesDuty()
     if name == "preflight":
         from .preflight_verify import PreflightDuty
 

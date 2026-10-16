@@ -695,8 +695,9 @@ def _registry_row_for_lane(registry: Mapping[str, Any], lane_task: str) -> dict[
     for row in registry.get("surfaces") or []:
         if not isinstance(row, dict):
             continue
-        twin = str(row.get("local_twin") or "").split()[0]
-        if twin == lane_task:
+        # Most rows declare no local twin; an absent or blank one matches no lane.
+        twin_words = str(row.get("local_twin") or "").split()
+        if twin_words and twin_words[0] == lane_task:
             return row
     return None
 
@@ -816,6 +817,11 @@ def emit_twin_banner(repo_root: Path, twin_key: str) -> None:
         print_ci_pause_banner(repo_root, paused, resolution=resolution)
 
 
+#: The evaluator's context key naming the trigger a site is judged through (``pull_request``, or
+#: ``push`` for a push-only workflow); ``github.ref`` is evaluable only on a pull request site.
+_TRIGGER_KEY = "preflight.trigger"
+
+
 def _split_top_level(text: str, op: str) -> list[str]:
     parts: list[str] = []
     depth = 0
@@ -853,6 +859,21 @@ def _eval_ci_atom(
         op, literal = event.groups()
         value = context.get("github.event_name", "")
         return (value == literal) if op == "==" else (value != literal)
+    ref = re.match(r"^github\.ref\s*(==|!=)\s*'([^']*)'$", text)
+    if ref:  # the pause-only gate's `github.ref == 'refs/heads/main'` (steward 102.3's re-review)
+        op, literal = ref.groups()
+        # A pull request site's ref is refs/pull/<number>/merge: never a branch or tag ref. The number is
+        # unknown here, so a literal naming a pull request's ref is unevaluable, and so is any ref on a
+        # site judged through `on.push` (a push-only workflow), whose ref after the merge is the branch's
+        # own (`_TRIGGER_KEY`; 102.3's lane-B re-review).
+        pull_request_site = context.get(_TRIGGER_KEY, "pull_request") == "pull_request"
+        if (
+            context.get("github.event_name") != "pull_request"
+            or not pull_request_site
+            or literal.startswith("refs/pull/")
+        ):
+            raise _Unevaluable(f"job {job_id!r} if: atom {atom!r} needs the run's own ref")
+        return op == "!="
     var = re.match(r"^vars\.([A-Z0-9_]+)\s*(==|!=)\s*'([^']*)'$", text)
     if var:
         name, op, literal = var.groups()
@@ -896,7 +917,7 @@ def _eval_ci_if_expression(
     for part in _split_top_level(text, "||"):
         part = _unwrap_parens(part)
         if all(
-            _eval_ci_atom(
+            _eval_ci_term(
                 piece,
                 registry=registry,
                 context=context,
@@ -909,6 +930,28 @@ def _eval_ci_if_expression(
         ):
             return True
     return False
+
+
+def _eval_ci_term(
+    piece: str,
+    *,
+    registry: Mapping[str, Any],
+    context: Mapping[str, str],
+    state: Any,
+    workflow: Workflow,
+    job_id: str,
+    job: dict[str, Any],
+) -> bool:
+    """One ``&&`` operand: a parenthesised ``||`` / ``&&`` group recurses (the pause-only gate,
+    ``(dispatch || (pauses)) && (inner)``, steward 102.3's re-review), anything else is an atom."""
+    inner = _unwrap_parens(piece)
+    if len(_split_top_level(inner, "||")) > 1 or len(_split_top_level(inner, "&&")) > 1:
+        return _eval_ci_if_expression(
+            inner, registry=registry, context=context, state=state, workflow=workflow, job_id=job_id, job=job
+        )
+    return _eval_ci_atom(
+        inner, registry=registry, context=context, state=state, workflow=workflow, job_id=job_id, job=job
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1012,11 +1055,12 @@ class _State:
         if "if" not in job:
             return True, ""
         text = _normalize_condition(job["if"])
-        if "vars." in text or "github.event_name" in text:
+        if "vars." in text or "github.event_name" in text or "github.ref" in text:
+            trigger = "pull_request" if workflow.pull_request is not None else "push"  # as `sites_for` picks it
             holds = _eval_ci_if_expression(
                 text,
                 registry=self.ci_registry,
-                context=self._context(),
+                context={**self._context(), _TRIGGER_KEY: trigger},
                 state=self,
                 workflow=workflow,
                 job_id=job_id,

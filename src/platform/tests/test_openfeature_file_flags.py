@@ -644,6 +644,11 @@ _SHIPPED_BOOLEANS = {
         "staging": False,
         "production": False,
     },
+    "pyforge.atlas.vizro_static_boards": {
+        "dev": True,
+        "staging": False,
+        "production": False,
+    },
     "pyforge.warden.fix_target_resolution": {
         "dev": True,
         "staging": True,
@@ -746,17 +751,12 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
-    "pyforge.herald.pages_second_host": {
-        "dev": True,
-        "staging": True,
-        "production": False,
-    },
     "pyforge.herald.ci_surfaces_tile": {
         "dev": True,
         "staging": False,
         "production": False,
     },
-    "pyforge.herald.pages_one_generator": {
+    "pyforge.herald.status_pages": {
         "dev": True,
         "staging": False,
         "production": False,

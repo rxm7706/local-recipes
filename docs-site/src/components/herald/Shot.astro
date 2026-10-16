@@ -1,0 +1,35 @@
+---
+/**
+ * One card of the gallery, the decks index or a family page (Story 43.2): a link to the reader's
+ * page and a preview of the twin the build copied, the iframe marked lazy so a 100 KB - 6 MB page
+ * loads only near the viewport. The load handler is the
+ * one inline script the herald CSP allows, by hash (Story 43.3).
+ */
+import { PREVIEW_ONLOAD } from '../../lib/herald-pages';
+
+interface Props {
+  href: string;
+  /** The twin to preview, relative to this page. */
+  preview: string;
+  placeholder: string;
+}
+
+const { href, preview, placeholder } = Astro.props;
+---
+
+<a class="shot" href={href}>
+  <div class="shot-frame">
+    <span class="shot-placeholder" aria-hidden="true">{placeholder}</span>
+    <iframe
+      src={preview}
+      loading="lazy"
+      title=""
+      aria-hidden="true"
+      tabindex="-1"
+      scrolling="no"
+      onload={PREVIEW_ONLOAD}></iframe>
+  </div>
+  <div class="shot-meta">
+    <slot />
+  </div>
+</a>

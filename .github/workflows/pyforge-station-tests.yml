@@ -71,7 +71,6 @@ on:
       - 'archive/**'
       - 'docs-site/**'
       - 'docs/**'
-      - 'docsite/**'
       - 'presentations/**'
       - 'recipes/**'
       - 'scripts/**'
@@ -124,7 +123,6 @@ on:
       - 'archive/**'
       - 'docs-site/**'
       - 'docs/**'
-      - 'docsite/**'
       - 'presentations/**'
       - 'recipes/**'
       - 'scripts/**'
@@ -241,6 +239,7 @@ jobs:
             '_bmad-output/projects/*/planning-artifacts/*'
             _bmad-output/projects/pyforge-doctor/README.md
             archive
+            docs/404.md
             docs/MAP.md
             docs/dashboard
             docs/dreams
@@ -248,8 +247,9 @@ jobs:
             docs/foundry/frames/pyforge.frame.md
             docs/governance
             docs/how-to
+            docs/index.md
+            docs/map.yaml
             docs/reference
-            docsite/build.py
             'recipes/*/recipe.yaml'
             recipes/bmad-suite/suite-members.yaml
             recipes/docker/recipe.yaml
@@ -269,7 +269,6 @@ jobs:
             _bmad/skf
             docs
             docs-site
-            docsite
             presentations
             src/platform
             src/shared/packages/django-herald
@@ -381,6 +380,7 @@ jobs:
             _bmad
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
+            docs-site/src/lib/status.ts
             docs/404.md
             docs/dreams
             docs/foundry
@@ -397,7 +397,9 @@ jobs:
             scripts/coverage_gates_ci.py
             scripts/detectors.py
             scripts/lint_types.py
+            scripts/pages_artifact_download.py
             scripts/pages_build_stamp.py
+            scripts/pages_fleet_status.py
             scripts/platform-ci-local.sh
             scripts/precommit_config_check.py
             scripts/target_version_check.py
@@ -405,6 +407,7 @@ jobs:
             src/platform
             'src/shared/packages/django-*/*'
             'src/shared/packages/pyforge-*/tests/*'
+            src/shared/packages/pyforge-herald/src/pyforge/herald/pages_env.py
             src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
             src/shared/packages/pyforge-mason
             tests/packaging/test_openteams_handoffs.py

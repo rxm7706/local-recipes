@@ -60,7 +60,9 @@ def _fixture(
     """A repo root with its own roster, baseline and tree; no story specs, no `src/`, no `scripts/`."""
     gov = tmp_path / "docs" / "governance"
     gov.mkdir(parents=True, exist_ok=True)
-    (gov / "guild-roster.json").write_text(json.dumps({"flag_exemptions": list(exemptions)}), encoding="utf-8")
+    (gov / "guild-roster.json").write_text(
+        json.dumps({"flag_exemptions": list(exemptions)}), encoding="utf-8"
+    )
     document: dict = {"specs": sorted(baseline)}
     if rule_date is not None:
         document["rule_date"] = rule_date
@@ -76,17 +78,20 @@ def _boolean_flag_entry(
     key: str,
     *,
     default_variant: str = "on",
-    owner: str = "doctor",
+    owner: str | None = None,
     story: str = "fixture-story",
     on_everywhere: str = "",
 ) -> dict:
-    """One boolean flag with the Story 76.2 metadata shape the gate reads (Story 34.3)."""
+    """One boolean flag with the Story 76.2 metadata shape the gate reads (Story 34.3). ``owner`` defaults to the
+    key's ``pyforge.<station>.`` prefix, so a fixture never disagrees with it by accident (Story 34.7)."""
     return {
         "state": "ENABLED",
         "variants": {"on": True, "off": False},
         "defaultVariant": default_variant,
         "metadata": {
-            "owner": owner,
+            "owner": owner
+            if owner is not None
+            else (flag_gate_check.prefix_station(key) or "doctor"),
             "story": story,
             "created": "2026-09-01",
             "on_everywhere": on_everywhere,
@@ -123,7 +128,8 @@ def _spec(
     path = root / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        f"---\ntitle: a story\ntype: {type_}\nstatus: {status}\n{frontmatter}---\n\n{body}", encoding="utf-8"
+        f"---\ntitle: a story\ntype: {type_}\nstatus: {status}\n{frontmatter}---\n\n{body}",
+        encoding="utf-8",
     )
     return rel
 
@@ -135,13 +141,17 @@ def _write(root: Path, rel: str, text: str = "") -> Path:
     return path
 
 
-def _run(root: Path, *args: str, capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:
+def _run(
+    root: Path, *args: str, capsys: pytest.CaptureFixture[str]
+) -> tuple[int, str, str]:
     rc = flag_gate_check.main(["--root", str(root), *args])
     captured = capsys.readouterr()
     return rc, captured.out, captured.err
 
 
-def _tree_json(root: Path, capsys: pytest.CaptureFixture[str], *args: str) -> tuple[int, dict]:
+def _tree_json(
+    root: Path, capsys: pytest.CaptureFixture[str], *args: str
+) -> tuple[int, dict]:
     rc, out, _ = _run(root, "--json", *args, capsys=capsys)
     return rc, json.loads(out)
 
@@ -175,7 +185,9 @@ def test_off(tmp_path):
 """
 
 
-def _write_test(root: Path, key: str, template: str, *, rel: str = "tests/test_flagged.py") -> str:
+def _write_test(
+    root: Path, key: str, template: str, *, rel: str = "tests/test_flagged.py"
+) -> str:
     """Write a test file holding ``template`` for ``key``; return its repo-relative path."""
     _write(root, rel, template.format(key=key))
     return rel
@@ -183,7 +195,9 @@ def _write_test(root: Path, key: str, template: str, *, rel: str = "tests/test_f
 
 def _verification(*names: str) -> str:
     """A story-spec body whose `## Verification` runs each named test file."""
-    commands = "".join(f"- `python -m pytest {name} -q` -- expected: pass\n" for name in names)
+    commands = "".join(
+        f"- `python -m pytest {name} -q` -- expected: pass\n" for name in names
+    )
     return f"## Verification\n\n**Commands:**\n{commands}\n## Review Triage Log\n"
 
 
@@ -202,7 +216,9 @@ def _landed_root(tmp_path: Path) -> Path:
     return root
 
 
-def _landed_spec(root: Path, body: str, *, name: str = "spec-1-1-landed.md", status: str = "done") -> str:
+def _landed_spec(
+    root: Path, body: str, *, name: str = "spec-1-1-landed.md", status: str = "done"
+) -> str:
     return _spec(root, FLAG_BLOCK.format(key=KEY), name=name, status=status, body=body)
 
 
@@ -217,7 +233,11 @@ def test_a_post_rule_feature_with_neither_exits_1_with_one_fail_naming_the_spec_
 
     rc, out, _ = _run(root, capsys=capsys)
 
-    fails = [ln for ln in out.splitlines() if ln.startswith("[flag-gate] fail -- flag-missing")]
+    fails = [
+        ln
+        for ln in out.splitlines()
+        if ln.startswith("[flag-gate] fail -- flag-missing")
+    ]
     assert rc == 1
     assert len(fails) == 1
     assert rel in fails[0]
@@ -237,7 +257,9 @@ def test_a_post_rule_feature_with_a_partial_block_is_flag_missing_and_names_each
     assert rc == 1
     assert _kinds(payload) == ["flag-missing"]
     message = payload["findings"][0]["message"]
-    assert all(f"`{field}`" in message for field in ("default", "scope", "fallback", "cleanup"))
+    assert all(
+        f"`{field}`" in message for field in ("default", "scope", "fallback", "cleanup")
+    )
 
 
 # --- backlog feature, no block: a warning under its station ----------------------------------
@@ -266,7 +288,10 @@ def test_warnings_group_by_station_and_a_default_run_lists_a_few_while_verbose_l
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _fixture(tmp_path)
-    rels = [_spec(root, name=f"spec-1-{n}-story.md", project="pyforge-atlas") for n in range(1, 6)]
+    rels = [
+        _spec(root, name=f"spec-1-{n}-story.md", project="pyforge-atlas")
+        for n in range(1, 6)
+    ]
     rels.append(_spec(root, name="spec-2-1-other.md", project="pyforge-herald"))
     _fixture(tmp_path, baseline=rels)
 
@@ -285,7 +310,10 @@ def test_the_json_report_lists_every_pre_rule_warning_with_its_station(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _fixture(tmp_path)
-    rels = [_spec(root, name=f"spec-1-{n}-story.md", project="pyforge-mason") for n in range(1, 6)]
+    rels = [
+        _spec(root, name=f"spec-1-{n}-story.md", project="pyforge-mason")
+        for n in range(1, 6)
+    ]
     _fixture(tmp_path, baseline=rels)
 
     rc, payload = _tree_json(root, capsys)
@@ -315,7 +343,9 @@ def test_a_fix_chore_or_docs_spec_needs_no_flag_even_after_the_rule_date(
     assert payload["verdict"] == "pass"
 
 
-def test_a_pre_rule_fix_spec_is_not_warned_about(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_pre_rule_fix_spec_is_not_warned_about(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     rel = _spec(root, type_="fix")
     _fixture(tmp_path, baseline=[rel])
@@ -326,7 +356,9 @@ def test_a_pre_rule_fix_spec_is_not_warned_about(tmp_path: Path, capsys: pytest.
     assert payload["findings"] == []
 
 
-def test_a_memlog_and_a_folder_spec_file_are_not_story_specs(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_memlog_and_a_folder_spec_file_are_not_story_specs(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     base = "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs"
     _write(root, f"{base}/spec-1-1-a-story.memlog.md", "---\ntype: feature\n---\n")
@@ -342,9 +374,13 @@ def test_a_memlog_and_a_folder_spec_file_are_not_story_specs(tmp_path: Path, cap
 # --- flagged and exempt specs pass ------------------------------------------------------------
 
 
-def test_a_full_flag_block_and_a_listed_exemption_both_pass(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_full_flag_block_and_a_listed_exemption_both_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path, tree_keys=["pyforge.test.flagged"])
-    _spec(root, FLAG_BLOCK.format(key="pyforge.test.flagged"), name="spec-1-1-flagged.md")
+    _spec(
+        root, FLAG_BLOCK.format(key="pyforge.test.flagged"), name="spec-1-1-flagged.md"
+    )
     _spec(root, "flag-exempt: alpha\n", name="spec-1-2-exempt.md")
     _write(root, "src/pkg/reader.py", 'flag("pyforge.test.flagged")\n')
 
@@ -368,7 +404,11 @@ def test_a_full_flag_block_and_a_listed_exemption_both_pass(tmp_path: Path, caps
     ],
 )
 def test_an_unknown_exemption_on_any_spec_is_one_fail_naming_the_value(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], name: str, kwargs: dict, baselined: bool
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    name: str,
+    kwargs: dict,
+    baselined: bool,
 ):
     root = _fixture(tmp_path)
     rel = _spec(root, "flag-exempt: someday\n", **kwargs)
@@ -385,7 +425,9 @@ def test_an_unknown_exemption_on_any_spec_is_one_fail_naming_the_value(
     assert "alpha, beta" in finding["message"]
 
 
-def test_an_unknown_exemption_is_named_in_the_text_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_an_unknown_exemption_is_named_in_the_text_report(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     _spec(root, "flag-exempt: someday\n")
 
@@ -393,7 +435,8 @@ def test_an_unknown_exemption_is_named_in_the_text_report(tmp_path: Path, capsys
 
     assert rc == 1
     assert (
-        len([ln for ln in out.splitlines() if ln.startswith("[flag-gate] fail --")]) == 2
+        len([ln for ln in out.splitlines() if ln.startswith("[flag-gate] fail --")])
+        == 2
     )  # the finding, then the summary
     assert "someday" in out
 
@@ -403,7 +446,11 @@ def test_a_blank_exemption_stays_neither_and_a_doubled_declaration_is_never_an_u
 ):
     root = _fixture(tmp_path)
     _spec(root, "flag-exempt:\n", name="spec-1-1-blank.md")
-    _spec(root, FLAG_BLOCK.format(key="pyforge.test.both") + "flag-exempt: someday\n", name="spec-1-2-both.md")
+    _spec(
+        root,
+        FLAG_BLOCK.format(key="pyforge.test.both") + "flag-exempt: someday\n",
+        name="spec-1-2-both.md",
+    )
 
     rc, payload = _tree_json(root, capsys)
 
@@ -421,7 +468,9 @@ def test_a_done_flagged_spec_whose_key_the_tree_lacks_is_one_fail_naming_the_key
 ):
     root = _fixture(tmp_path, tree_keys=["pyforge.test.other"])
     body = _verification(_write_test(root, "pyforge.test.landed", KIT_TEST))
-    rel = _spec(root, FLAG_BLOCK.format(key="pyforge.test.landed"), status="done", body=body)
+    rel = _spec(
+        root, FLAG_BLOCK.format(key="pyforge.test.landed"), status="done", body=body
+    )
     _write(root, "src/pkg/reader.py", 'flag("pyforge.test.other")\n')
 
     rc, payload = _tree_json(root, capsys)
@@ -432,6 +481,458 @@ def test_a_done_flagged_spec_whose_key_the_tree_lacks_is_one_fail_naming_the_key
     assert finding["path"] == rel
     assert finding["key"] == "pyforge.test.landed"
     assert "`pyforge.test.landed`" in finding["message"]
+
+
+# --- a retired key (doctor Story 34.7, CAP-2's retirement path; herald Story 42.3 was the first) -------------
+
+RETIRED = "pyforge.test.retired"  # owned by the `test` station: its `pyforge.<station>.` prefix
+OWNER_PROJECT = "pyforge-test"
+RETIRE_BLOCK = f"flag-exempt: alpha\nretires-flag: {RETIRED}\n"
+
+
+def _retired_root(tmp_path: Path) -> tuple[Path, str]:
+    """The tree no longer holds ``RETIRED``; the `done` spec that introduced it still names it."""
+    root = _fixture(tmp_path, tree_keys=["pyforge.test.other"])
+    _write(root, "src/pkg/reader.py", 'flag("pyforge.test.other")\n')
+    landed = _spec(
+        root,
+        FLAG_BLOCK.format(key=RETIRED),
+        name="spec-1-1-landed.md",
+        project=OWNER_PROJECT,
+        status="done",
+        body=_verification("tests/test_gone_with_the_flag.py"),
+    )
+    return root, landed
+
+
+def test_the_owners_retirement_of_a_key_no_reader_names_leaves_its_done_spec_unjudged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """A story spec of the key's owning station declares `retires-flag: <key>`; with the key out of the tree and
+    no reader left, the `done` spec that introduced it is history -- no not-in-tree finding and no missing-test
+    finding (its tests left with the flag)."""
+    root, landed = _retired_root(tmp_path)
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == ["flag-key-not-in-tree", "flag-test-file-missing"]
+    assert {f["path"] for f in payload["findings"]} == {landed}
+
+    retire = _spec(
+        root,
+        RETIRE_BLOCK,
+        name="spec-1-2-retire.md",
+        project=OWNER_PROJECT,
+        status="backlog",
+    )
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 0
+    assert payload["findings"] == []
+    for rel in (landed, retire):
+        rc, out, _ = _run(root, "--spec", rel, capsys=capsys)
+        assert (rc, json.loads(out)["verdict"]) == (0, "pass")
+
+
+def test_a_reader_left_on_a_retired_key_is_one_fail_per_reader_file(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The leak the review proved: the key leaves the tree, a reader still calls `read_boolean` on it and silently
+    gets the default. Every reader file that names the key is a FAIL; tests, `*.md`, and a longer or dotted name
+    that merely starts with the key (`_two`, `.head`) are not reads of it."""
+    root, _landed = _retired_root(tmp_path)
+    retire = _spec(
+        root,
+        RETIRE_BLOCK,
+        name="spec-1-2-retire.md",
+        project=OWNER_PROJECT,
+        status="done",
+    )
+    host = _write(
+        root, "src/pkg/host.py", f'enabled = read_boolean("{RETIRED}", default=False)\n'
+    )
+    script = _write(root, "scripts/export_host.py", f"KEY = '{RETIRED}'\n")
+    _write(root, "src/pkg/tests/test_host.py", f'read_boolean("{RETIRED}")\n')
+    _write(root, "src/pkg/README.md", f"`{RETIRED}` was retired\n")
+    _write(root, "src/pkg/longer.py", f'read_boolean("{RETIRED}_two")\n')
+    _write(root, "src/pkg/partition.py", f'_PARTITION_HEAD_KEY = b"{RETIRED}.head"\n')
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-retired-still-read", "flag-retired-still-read"]
+    assert [f["path"] for f in payload["findings"]] == [
+        script.relative_to(root).as_posix(),
+        host.relative_to(root).as_posix(),
+    ]
+    finding = payload["findings"][0]
+    assert finding["key"] == RETIRED
+    assert finding["station"] == OWNER_PROJECT
+    assert retire in finding["message"]
+    assert "silently returns its default" in finding["message"]
+
+    rc_retire, out_retire, _ = _run(root, "--spec", retire, capsys=capsys)
+    assert rc_retire == 1
+    spec_payload = json.loads(out_retire)
+    assert spec_payload["verdict"] == "red"
+    assert [f["kind"] for f in spec_payload["findings"]] == [
+        "flag-retired-still-read"
+    ] * 2
+
+    host.unlink()
+    script.unlink()
+    rc, payload = _tree_json(root, capsys)
+    assert (rc, payload["findings"]) == (0, [])
+
+
+@pytest.mark.parametrize(
+    ("rel", "text"),
+    [
+        (
+            "docsite/tools/k.py",
+            'FLAG_KEY = "{key}"\nenabled = read_boolean(FLAG_KEY)\n',
+        ),
+        ("docsite/content/site.yml", "nav:\n  - title: Status\n    flag: {key}\n"),
+        (
+            ".github/workflows/pages.yml",
+            "    run: python -c \"read_boolean('{key}')\"\n",
+        ),
+        ("pixi.toml", '[tasks.export]\ncmd = "python -m reader --flag {key}"\n'),
+        ("docs-site/src/lib/flags.ts", 'export const FLAG = "{key}";\n'),
+        ("_bmad/custom/bmad-build.toml", 'persistent_facts = ["read {key} first"]\n'),
+        ("src/pkg/docs/k.py", 'read_boolean("{key}")\n'),
+        ("src/pkg/fixtures/k.py", 'read_boolean("{key}")\n'),
+        ("src/pkg/host.py", "# {key} was retired here\n"),
+        ("docs-site/src/data/board.spec.json", '{{"flag": "{key}"}}\n'),
+        (
+            "_bmad-output/projects/pyforge-test/planning-artifacts/marshal-policy.toml",
+            'verify_commands = ["python -m reader --flag {key}"]\n',
+        ),
+        (
+            "_bmad-output/projects/pyforge-test/planning-artifacts/marshal-policy.toml",
+            "broken = [\n# {key}\n",
+        ),
+    ],
+)
+def test_a_reader_anywhere_that_can_act_on_a_flag_is_found(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], rel: str, text: str
+):
+    """The walk reads every tracked file that can act on a flag, not only `src/` and `scripts/`: site code and
+    content, workflows, task files and BMAD config (the review's proof cases). A root the orphan check skips
+    is a false red there and would be a silent green here. A comment counts; a `*.spec.json` is data, not a test;
+    a marshal policy's values are read (dispatch runs them), and one that does not parse is read whole."""
+    root, _landed = _retired_root(tmp_path)
+    _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT)
+    _write(root, rel, text.format(key=RETIRED))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [
+        ("flag-retired-still-read", rel)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("rel", "text"),
+    [
+        ("_bmad-output/brainstorming/notes.yaml", "flag: {key}\n"),
+        ("archive/docsite/tools/k.py", 'read_boolean("{key}")\n'),
+        ("docs/dreams/a-dream.md", "`{key}` retired\n"),
+        ("presentations/deck/facts.yaml", "flag: {key}\n"),
+        (".claude/memory/project/a.md", "{key}\n"),
+        ("recipes/pkg/recipe.yaml", "about: {key}\n"),
+        ("scripts/.spec-surface-baseline.json", '{{"x": "{key}"}}\n'),
+        ("docs/how-to/a.md", "set `{key}`\n"),
+        ("src/pkg/tests/test_absence.py", 'RETIRED_FLAG = "{key}"\n'),
+        ("src/pkg/test/helper.py", 'read_boolean("{key}")\n'),
+        ("docs-site/src/lib/flags.test.ts", 'expect("{key}")\n'),
+        ("docs-site/src/lib/flags.spec.ts", 'expect("{key}")\n'),
+        ("src/pkg/k_test.py", 'read_boolean("{key}")\n'),
+        ("src/pkg/conftest.py", 'read_boolean("{key}")\n'),
+        (
+            "src/pkg/module_user.py",
+            "from {key} import enabled\nimport {key} as k\nm = import_module('{key}')\n",
+        ),
+        ("docs-site/src/components/board.test.jsx", 'expect("{key}")\n'),
+        (
+            "_bmad-output/projects/pyforge-test/planning-artifacts/marshal-policy.toml",
+            '# {key} was retired by Story 9.9\nverify_commands = ["pytest -q"]\n',
+        ),
+    ],
+)
+def test_the_record_prose_tests_and_import_lines_are_not_readers(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], rel: str, text: str
+):
+    """Not readers: the planning and history record, the recipe factory, the spec-surface baseline, prose, tests
+    (so a retiring story's own absence test never reds), and a module path named like the key on an import line
+    or in `import_module(...)`."""
+    root, _landed = _retired_root(tmp_path)
+    _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT)
+    _write(root, rel, text.format(key=RETIRED))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert (rc, payload["findings"]) == (0, [])
+
+
+def test_a_binary_file_is_never_read_for_a_key(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root, _landed = _retired_root(tmp_path)
+    _spec(root, RETIRE_BLOCK, name="spec-1-2-retire.md", project=OWNER_PROJECT)
+    path = root / "docsite" / "assets" / "logo.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"\x89PNG\0\0" + RETIRED.encode("utf-8"))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert (rc, payload["findings"]) == (0, [])
+
+
+def test_the_reader_boundary_is_the_two_state_readers_boundary() -> None:
+    """One definition of "names the key" in the gate (`key_pattern`, shared with `_names_key`)."""
+    key = "pyforge.atlas.dependency_history"
+    for text in (f'"{key}"', f"`{key}`", f"{key}.", f"read_boolean('{key}')"):
+        assert flag_gate_check._names_key(text, key), text
+    for text in (f"{key}.head", f"{key}_two", f"{key}-two", f"x.{key}", f"x{key}"):
+        assert not flag_gate_check._names_key(text, key), text
+        assert not flag_gate_check.key_pattern(key).search(text), text
+
+
+def test_a_retirement_declared_by_another_station_fails_naming_the_spec_and_retires_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Any status, any other station: the declaration is a FAIL naming its spec, and the key is judged as if no
+    retirement existed -- the `done` spec that introduced it is red again."""
+    root, landed = _retired_root(tmp_path)
+    for status in ("backlog", "done"):
+        foreign = _spec(
+            root,
+            RETIRE_BLOCK,
+            name="spec-1-2-retire.md",
+            project="pyforge-doctor",
+            status=status,
+        )
+
+        rc, payload = _tree_json(root, capsys)
+
+        assert rc == 1
+        by_kind = {f["kind"]: f for f in payload["findings"]}
+        assert sorted(by_kind) == [
+            "flag-key-not-in-tree",
+            "flag-retirement-not-owner",
+            "flag-test-file-missing",
+        ]
+        refused = by_kind["flag-retirement-not-owner"]
+        assert (refused["path"], refused["key"], refused["station"]) == (
+            foreign,
+            RETIRED,
+            "pyforge-doctor",
+        )
+        assert "`pyforge-test`" in refused["message"]
+        assert by_kind["flag-key-not-in-tree"]["path"] == landed
+
+        rc, out, _ = _run(root, "--spec", foreign, capsys=capsys)
+        assert rc == 1
+        assert [f["kind"] for f in json.loads(out)["findings"]] == [
+            "flag-retirement-not-owner"
+        ]
+
+
+def test_a_foreign_declaration_retires_nothing_but_its_key_is_still_read_for(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The reader check only ever adds a FAIL, so it runs for every declared key gone from the tree, whoever
+    declared it. The foreign declaration still lifts nothing: the `done` spec is red not-in-tree. With the owner's
+    declaration added, the key is retired and the reader is what reds."""
+    root, landed = _retired_root(tmp_path)
+    host = _write(root, "src/pkg/host.py", f'read_boolean("{RETIRED}")\n')
+    foreign = _spec(
+        root,
+        RETIRE_BLOCK,
+        name="spec-1-2-retire.md",
+        project="pyforge-doctor",
+        status="done",
+    )
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == [
+        "flag-key-not-in-tree",
+        "flag-retired-still-read",
+        "flag-retirement-not-owner",
+        "flag-test-file-missing",
+    ]
+    read = next(
+        f for f in payload["findings"] if f["kind"] == "flag-retired-still-read"
+    )
+    assert (read["path"], read["station"]) == (
+        host.relative_to(root).as_posix(),
+        "pyforge-doctor",
+    )
+    assert foreign in read["message"]
+
+    owner = _spec(
+        root,
+        RETIRE_BLOCK,
+        name="spec-1-3-retire.md",
+        project=OWNER_PROJECT,
+        status="backlog",
+    )
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == [
+        "flag-retired-still-read",
+        "flag-retirement-not-owner",
+    ]
+    assert (
+        owner
+        in next(
+            f for f in payload["findings"] if f["kind"] == "flag-retired-still-read"
+        )["message"]
+    )
+    assert landed not in {f.get("path") for f in payload["findings"]}
+
+
+def test_a_retirement_declared_while_the_key_is_still_in_the_tree_changes_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The owner's declaration on a key the tree still holds: the key, its reader and its `done` spec are judged
+    as before. Another station's declaration on the same key still reds as not the owner's."""
+    root = _landed_root(tmp_path)
+    rel = _landed_spec(root, _verification("tests/test_absent.py"))
+    _spec(
+        root,
+        f"flag-exempt: alpha\nretires-flag: [{KEY}]\n",
+        name="spec-1-2-retire.md",
+        project=OWNER_PROJECT,
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-test-file-missing"]
+    assert payload["findings"][0]["path"] == rel
+
+    foreign = _spec(
+        root, f"flag-exempt: alpha\nretires-flag: [{KEY}]\n", name="spec-1-3-retire.md"
+    )
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert sorted(_kinds(payload)) == [
+        "flag-retirement-not-owner",
+        "flag-test-file-missing",
+    ]
+    assert (
+        next(
+            f for f in payload["findings"] if f["kind"] == "flag-retirement-not-owner"
+        )["path"]
+        == foreign
+    )
+
+
+def test_a_key_with_no_station_segment_is_still_read_for_once_it_leaves_the_tree(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The live cutover string flag's shape: no `pyforge.<station>.` prefix, so the tree's (normalised)
+    `metadata.owner` names the owner while the tree holds the key. Once the key leaves the tree no owner is known:
+    the owner's own declaration is not red, it lifts nothing (no flag block names such a key), and the reader
+    check still runs, so a reader left behind reds."""
+    solo = "pyforge.solo"
+    root = _fixture(tmp_path)
+    _patch_tree_flag(root, solo, _boolean_flag_entry(solo, owner=" Pyforge-Test "))
+    _write(root, "src/pkg/reader.py", f'flag("{solo}")\n')
+    tree = flag_rule.load_flags(root)
+    assert flag_gate_check.owning_station(solo, tree) == "test"
+    assert (
+        flag_gate_check.owning_station("pyforge.herald.pages_one_generator", tree)
+        == "herald"
+    )
+    assert flag_gate_check.owning_station("pyforge.gone", tree) == ""
+    retire = _spec(
+        root,
+        f"flag-exempt: alpha\nretires-flag: {solo}\n",
+        name="spec-1-1-retire.md",
+        project=OWNER_PROJECT,
+    )
+    foreign = _spec(
+        root, f"flag-exempt: alpha\nretires-flag: {solo}\n", name="spec-1-2-retire.md"
+    )
+
+    rc, payload = _tree_json(root, capsys)
+    assert rc == 1
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [
+        ("flag-retirement-not-owner", foreign)
+    ]
+
+    _patch_tree_flag(
+        root, "pyforge.test.other", _boolean_flag_entry("pyforge.test.other")
+    )
+    tree_path = root / "src" / "platform" / "config" / "flags.json"
+    document = json.loads(tree_path.read_text(encoding="utf-8"))
+    del document["flags"][solo]
+    tree_path.write_text(json.dumps(document), encoding="utf-8")
+    _write(root, "src/pkg/other.py", 'flag("pyforge.test.other")\n')
+
+    rc, payload = _tree_json(root, capsys)
+    assert (
+        rc == 1
+    )  # no owner is known now, so the foreign declaration is no longer judged; the reader is
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [
+        ("flag-retired-still-read", "src/pkg/reader.py")
+    ]
+
+    (root / foreign).unlink()
+    rc, payload = _tree_json(root, capsys)
+    assert [(f["kind"], f["path"]) for f in payload["findings"]] == [
+        ("flag-retired-still-read", "src/pkg/reader.py")
+    ]
+    assert retire in payload["findings"][0]["message"]
+
+    (root / "src" / "pkg" / "reader.py").unlink()
+    rc, payload = _tree_json(root, capsys)
+    assert (rc, payload["findings"]) == (0, [])
+    rc, out, _ = _run(root, "--spec", retire, capsys=capsys)
+    assert (rc, json.loads(out)["verdict"]) == (0, "pass")
+
+
+def test_a_done_block_naming_a_key_with_no_station_segment_is_refused_at_the_rule(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """The re-review's B1: a `done` block naming `pyforge.solo` could never be retired green (once the key left the
+    tree no owner is known, so nothing lifts `flag-key-not-in-tree`). The rule refuses the block instead."""
+    root = _fixture(tmp_path)
+    rel = _spec(
+        root,
+        FLAG_BLOCK.format(key="pyforge.solo"),
+        name="spec-1-1-solo.md",
+        status="done",
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    by_kind = {f["kind"]: f for f in payload["findings"]}
+    assert sorted(by_kind) == [
+        "flag-key-not-in-tree",
+        "flag-missing",
+    ]  # the key check reads any block, as before
+    assert {f["path"] for f in payload["findings"]} == {rel}
+    assert "has no `pyforge.<station>.` prefix" in by_kind["flag-missing"]["message"]
+
+
+def test_retired_by_reads_a_string_or_a_list() -> None:
+    assert flag_gate_check.retired_by({"retires-flag": " pyforge.a.b "}) == [
+        "pyforge.a.b"
+    ]
+    assert flag_gate_check.retired_by(
+        {"retires-flag": ["pyforge.a.b", "", 3, "pyforge.c.d"]}
+    ) == [
+        "pyforge.a.b",
+        "pyforge.c.d",
+    ]
+    assert flag_gate_check.retired_by({}) == []
+    assert flag_gate_check.retired_by(None) == []
 
 
 def test_the_same_spec_at_backlog_has_no_finding_and_a_done_spec_with_its_key_in_the_tree_passes(
@@ -446,9 +947,20 @@ def test_the_same_spec_at_backlog_has_no_finding_and_a_done_spec_with_its_key_in
             "production": {"pyforge.test.landed": "off"},
         },
     )
-    _spec(root, FLAG_BLOCK.format(key="pyforge.test.absent"), name="spec-1-1-backlog.md", status="backlog")
+    _spec(
+        root,
+        FLAG_BLOCK.format(key="pyforge.test.absent"),
+        name="spec-1-1-backlog.md",
+        status="backlog",
+    )
     body = _verification(_write_test(root, "pyforge.test.landed", KIT_TEST))
-    _spec(root, FLAG_BLOCK.format(key="pyforge.test.landed"), name="spec-1-2-done.md", status="done", body=body)
+    _spec(
+        root,
+        FLAG_BLOCK.format(key="pyforge.test.landed"),
+        name="spec-1-2-done.md",
+        status="done",
+        body=body,
+    )
     _write(root, "src/pkg/reader.py", 'flag("pyforge.test.landed")\n')
 
     rc, payload = _tree_json(root, capsys)
@@ -457,7 +969,9 @@ def test_the_same_spec_at_backlog_has_no_finding_and_a_done_spec_with_its_key_in
     assert payload["findings"] == []
 
 
-def test_a_done_spec_with_no_usable_key_is_not_a_key_finding(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_done_spec_with_no_usable_key_is_not_a_key_finding(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     _spec(root, "flag-exempt: alpha\n", status="done")
 
@@ -487,7 +1001,9 @@ def test_a_tree_key_that_no_file_under_src_or_scripts_mentions_is_one_fail_namin
     assert finding["path"] == "src/platform/config/flags.json"
 
 
-@pytest.mark.parametrize("reader", ["src/pkg/reader.py", "scripts/reader.py", "src/pkg/reader.toml"])
+@pytest.mark.parametrize(
+    "reader", ["src/pkg/reader.py", "scripts/reader.py", "src/pkg/reader.toml"]
+)
 def test_the_same_fixture_with_a_src_or_scripts_file_that_reads_the_key_has_no_finding(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], reader: str
 ):
@@ -527,7 +1043,9 @@ def test_a_mention_in_a_test_doc_fixture_or_markdown_file_is_not_a_reader(
     assert _kinds(payload) == ["flag-key-orphan"]
 
 
-def test_the_tree_itself_and_story_specs_never_read_a_key(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_tree_itself_and_story_specs_never_read_a_key(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path, tree_keys=[ORPHAN_KEY])
     _spec(root, FLAG_BLOCK.format(key=ORPHAN_KEY))
 
@@ -537,20 +1055,31 @@ def test_the_tree_itself_and_story_specs_never_read_a_key(tmp_path: Path, capsys
     assert "flag-key-orphan" in _kinds(payload)
 
 
-def test_the_overlay_document_names_every_key_and_reads_none(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_overlay_document_names_every_key_and_reads_none(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     """Story 76.1: `flag-overlays.json` lists a key per environment; it is no more a reader than the tree."""
     root = _fixture(tmp_path, tree_keys=[ORPHAN_KEY])
-    _write(root, "src/platform/config/flag-overlays.json", '{"production": {"%s": "off"}}\n' % ORPHAN_KEY)
+    _write(
+        root,
+        "src/platform/config/flag-overlays.json",
+        '{"production": {"%s": "off"}}\n' % ORPHAN_KEY,
+    )
 
     rc, payload = _tree_json(root, capsys)
 
     assert rc == 1
     assert _kinds(payload) == ["flag-key-orphan"]
     assert payload["findings"][0]["key"] == ORPHAN_KEY
-    assert flag_gate_check.OVERLAYS_REL.as_posix() == "src/platform/config/flag-overlays.json"
+    assert (
+        flag_gate_check.OVERLAYS_REL.as_posix()
+        == "src/platform/config/flag-overlays.json"
+    )
 
 
-def test_only_the_unread_key_is_orphaned(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_only_the_unread_key_is_orphaned(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path, tree_keys=[ORPHAN_KEY, "pyforge.test.read"])
     _write(root, "src/pkg/reader.py", 'flag("pyforge.test.read")\n')
 
@@ -576,7 +1105,11 @@ def test_a_test_that_uses_the_kits_helper_with_the_specs_key_has_no_finding(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], import_line: str
 ):
     root = _landed_root(tmp_path)
-    _write(root, "tests/test_flagged.py", f'{import_line}\n\n@flag_states("{KEY}")\ndef test_it(): ...\n')
+    _write(
+        root,
+        "tests/test_flagged.py",
+        f'{import_line}\n\n@flag_states("{KEY}")\ndef test_it(): ...\n',
+    )
     _landed_spec(root, _verification("tests/test_flagged.py"))
 
     rc, payload = _tree_json(root, capsys)
@@ -597,7 +1130,11 @@ def test_a_test_that_writes_two_flagd_trees_for_the_key_has_no_finding(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], writer: str
 ):
     root = _landed_root(tmp_path)
-    _write(root, "tests/test_flagged.py", f'KEY = "{KEY}"\n\ndef test_it(tmp_path):\n    {writer}')
+    _write(
+        root,
+        "tests/test_flagged.py",
+        f'KEY = "{KEY}"\n\ndef test_it(tmp_path):\n    {writer}',
+    )
     _landed_spec(root, _verification("tests/test_flagged.py"))
 
     rc, payload = _tree_json(root, capsys)
@@ -613,16 +1150,37 @@ def test_a_test_that_writes_two_flagd_trees_for_the_key_has_no_finding(
             "kit helper, another key",
             'from pyforge.testing_kit.flags import flag_states\n@flag_states("pyforge.other.key")\n',
         ),
-        ("kit helper, no key at all", "from pyforge.testing_kit.flags import flag_states\n@flag_states(KEY)\n"),
-        ("kit helper, a longer key", f'from pyforge.testing_kit.flags import flag_states\n@flag_states("{KEY}_v2")\n'),
-        ("kit helper, a sub-key", f'from pyforge.testing_kit.flags import flag_states\n@flag_states("{KEY}.sub")\n'),
-        ("key, no helper and no tree", f'KEY = "{KEY}"\ndef test_it():\n    assert True\n'),
-        ("key, helper named but never imported", f'KEY = "{KEY}"\n@flag_states(KEY)\ndef test_it(): ...\n'),
+        (
+            "kit helper, no key at all",
+            "from pyforge.testing_kit.flags import flag_states\n@flag_states(KEY)\n",
+        ),
+        (
+            "kit helper, a longer key",
+            f'from pyforge.testing_kit.flags import flag_states\n@flag_states("{KEY}_v2")\n',
+        ),
+        (
+            "kit helper, a sub-key",
+            f'from pyforge.testing_kit.flags import flag_states\n@flag_states("{KEY}.sub")\n',
+        ),
+        (
+            "key, no helper and no tree",
+            f'KEY = "{KEY}"\ndef test_it():\n    assert True\n',
+        ),
+        (
+            "key, helper named but never imported",
+            f'KEY = "{KEY}"\n@flag_states(KEY)\ndef test_it(): ...\n',
+        ),
         ("two trees, no key", '_flagd_tree("on")\n_flagd_tree("off")\n'),
         ("one tree only", f'KEY = "{KEY}"\n_flagd_tree("on")\n'),
-        ("two trees, both on", f'KEY = "{KEY}"\n_flagd_tree("on")\n_flagd_tree("on")\n'),
+        (
+            "two trees, both on",
+            f'KEY = "{KEY}"\n_flagd_tree("on")\n_flagd_tree("on")\n',
+        ),
         ("one call naming both", f'KEY = "{KEY}"\n_flagd_tree("on", "off")\n'),
-        ("a definition is not a call", f'KEY = "{KEY}"\ndef _flagd_tree(v="on"): ...\ndef _flagd_tree(v="off"): ...\n'),
+        (
+            "a definition is not a call",
+            f'KEY = "{KEY}"\ndef _flagd_tree(v="on"): ...\ndef _flagd_tree(v="off"): ...\n',
+        ),
         (
             "kit helper imported and key named, never called",
             f'from pyforge.testing_kit.flags import flag_states\nKEY = "{KEY}"\n',
@@ -679,11 +1237,15 @@ def test_a_flagd_tree_call_after_an_identifier_that_ends_in_def_is_still_a_call(
     assert payload["findings"] == []
 
 
-def test_the_not_two_state_finding_names_every_named_test_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_not_two_state_finding_names_every_named_test_file(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _landed_root(tmp_path)
     _write(root, "tests/test_weak_one.py", "def test_x(): ...\n")
     _write(root, "tests/test_weak_two.py", f'KEY = "{KEY}"\n')
-    _landed_spec(root, _verification("tests/test_weak_one.py", "tests/test_weak_two.py"))
+    _landed_spec(
+        root, _verification("tests/test_weak_one.py", "tests/test_weak_two.py")
+    )
 
     rc, payload = _tree_json(root, capsys)
 
@@ -727,7 +1289,9 @@ def test_only_a_test_file_named_in_the_verification_section_counts(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], body: str
 ):
     root = _landed_root(tmp_path)
-    _write_test(root, KEY, KIT_TEST)  # a good test exists; the Verification just does not name it
+    _write_test(
+        root, KEY, KIT_TEST
+    )  # a good test exists; the Verification just does not name it
     _landed_spec(root, body)
 
     rc, payload = _tree_json(root, capsys)
@@ -778,9 +1342,16 @@ def test_a_second_verification_section_after_another_section_is_read_too(
 
 @pytest.mark.parametrize(
     "name",
-    ["tests/test_flagged.py", "tests/flagged_test.py", "web/flagged.test.ts", "e2e/flagged.spec.ts"],
+    [
+        "tests/test_flagged.py",
+        "tests/flagged_test.py",
+        "web/flagged.test.ts",
+        "e2e/flagged.spec.ts",
+    ],
 )
-def test_a_named_path_counts_as_a_test_file_by_its_name(tmp_path: Path, capsys: pytest.CaptureFixture[str], name: str):
+def test_a_named_path_counts_as_a_test_file_by_its_name(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], name: str
+):
     root = _landed_root(tmp_path)
     _write(root, name, f'@flag_states("{KEY}")\n')
     rel = _landed_spec(root, _verification(name))
@@ -788,12 +1359,16 @@ def test_a_named_path_counts_as_a_test_file_by_its_name(tmp_path: Path, capsys: 
     rc, payload = _tree_json(root, capsys)
 
     assert rc == 1
-    assert _kinds(payload) == ["flag-test-not-two-state"]  # named and found: only its content is short
+    assert _kinds(payload) == [
+        "flag-test-not-two-state"
+    ]  # named and found: only its content is short
     assert name in payload["findings"][0]["message"]
     assert payload["findings"][0]["path"] == rel
 
 
-def test_one_two_state_test_among_several_named_files_is_enough(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_one_two_state_test_among_several_named_files_is_enough(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _landed_root(tmp_path)
     _write(root, "tests/test_unrelated.py", "def test_x(): ...\n")
     good = _write_test(root, KEY, KIT_TEST, rel="tests/test_two_state.py")
@@ -824,7 +1399,12 @@ def test_a_missing_path_is_one_fail_never_two_even_beside_a_present_test_that_is
 ):
     root = _landed_root(tmp_path)
     _write(root, "tests/test_weak.py", "def test_x(): ...\n")
-    _landed_spec(root, _verification("tests/test_weak.py", "tests/test_absent.py", "tests/test_gone.py"))
+    _landed_spec(
+        root,
+        _verification(
+            "tests/test_weak.py", "tests/test_absent.py", "tests/test_gone.py"
+        ),
+    )
 
     rc, payload = _tree_json(root, capsys)
 
@@ -841,7 +1421,9 @@ def test_a_named_path_outside_the_repo_is_missing_never_read(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], how: str
 ):
     root = _landed_root(tmp_path / "repo")
-    outside = _write(tmp_path, "outside/test_flagged.py", KIT_TEST.format(key=KEY))  # a real two-state test
+    outside = _write(
+        tmp_path, "outside/test_flagged.py", KIT_TEST.format(key=KEY)
+    )  # a real two-state test
     named = str(outside) if how == "absolute" else "../outside/test_flagged.py"
     _landed_spec(root, f"## Verification\n\n- `pytest {named}`\n")
 
@@ -865,7 +1447,9 @@ def test_a_named_directory_is_not_a_test_file_even_when_it_is_named_like_one(
     assert _kinds(payload) == ["flag-test-file-missing"]
 
 
-def test_a_test_file_is_read_as_text_never_imported_or_run(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_test_file_is_read_as_text_never_imported_or_run(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _landed_root(tmp_path)
     _write(
         root,
@@ -882,10 +1466,14 @@ def test_a_test_file_is_read_as_text_never_imported_or_run(tmp_path: Path, capsy
     assert payload["findings"] == []
 
 
-def test_a_test_file_that_is_not_utf8_is_read_not_crashed_on(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_test_file_that_is_not_utf8_is_read_not_crashed_on(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _landed_root(tmp_path)
     (root / "tests").mkdir()
-    (root / "tests" / "test_flagged.py").write_bytes(b'\xff\xfe# not utf-8\nKEY = "' + KEY.encode() + b'"\n')
+    (root / "tests" / "test_flagged.py").write_bytes(
+        b'\xff\xfe# not utf-8\nKEY = "' + KEY.encode() + b'"\n'
+    )
     _landed_spec(root, _verification("tests/test_flagged.py"))
 
     rc, payload = _tree_json(root, capsys)
@@ -899,13 +1487,28 @@ def test_a_test_file_that_is_not_utf8_is_read_not_crashed_on(tmp_path: Path, cap
     [
         ("backlog", FLAG_BLOCK.format(key=KEY), "backlog", "body\n"),
         ("in-progress", FLAG_BLOCK.format(key=KEY), "in-progress", "body\n"),
-        ("in-review", FLAG_BLOCK.format(key=KEY), "in-review", "## Verification\n\n- `pytest -q`\n"),
+        (
+            "in-review",
+            FLAG_BLOCK.format(key=KEY),
+            "in-review",
+            "## Verification\n\n- `pytest -q`\n",
+        ),
         ("exempt and done", "flag-exempt: alpha\n", "done", "body\n"),
-        ("exempt and backlog", "flag-exempt: alpha\n", "backlog", "## Verification\n\n- `pytest -q`\n"),
+        (
+            "exempt and backlog",
+            "flag-exempt: alpha\n",
+            "backlog",
+            "## Verification\n\n- `pytest -q`\n",
+        ),
     ],
 )
 def test_a_spec_not_landed_or_exempt_is_never_judged_on_the_two_state_test(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], label: str, frontmatter: str, status: str, body: str
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    label: str,
+    frontmatter: str,
+    status: str,
+    body: str,
 ):
     root = _landed_root(tmp_path)
     _spec(root, frontmatter, status=status, body=body)
@@ -933,7 +1536,12 @@ def test_a_done_spec_with_an_incomplete_flag_block_reports_only_the_missing_bloc
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _landed_root(tmp_path)
-    _spec(root, f"flag:\n  key: {KEY}\n  provider: openfeature-file\n", status="done", body="body\n")
+    _spec(
+        root,
+        f"flag:\n  key: {KEY}\n  provider: openfeature-file\n",
+        status="done",
+        body="body\n",
+    )
 
     rc, payload = _tree_json(root, capsys)
 
@@ -946,9 +1554,13 @@ def test_spec_mode_on_the_failing_fixture_carries_the_finding_and_verdict_red(
 ):
     root = _landed_root(tmp_path)
     _write(root, "tests/test_flagged.py", "def test_x(): ...\n")
-    bad = _landed_spec(root, _verification("tests/test_flagged.py"), name="spec-1-1-bad.md")
+    bad = _landed_spec(
+        root, _verification("tests/test_flagged.py"), name="spec-1-1-bad.md"
+    )
     good = _landed_spec(
-        root, _verification(_write_test(root, KEY, KIT_TEST, rel="tests/test_good.py")), name="spec-1-2-good.md"
+        root,
+        _verification(_write_test(root, KEY, KIT_TEST, rel="tests/test_good.py")),
+        name="spec-1-2-good.md",
     )
     none = _landed_spec(root, "body\n", name="spec-1-3-none.md")
 
@@ -963,16 +1575,24 @@ def test_spec_mode_on_the_failing_fixture_carries_the_finding_and_verdict_red(
     assert payload["findings"][0]["path"] == bad
     assert "tests/test_flagged.py" in payload["findings"][0]["message"]
     assert json.loads(out_good)["verdict"] == "pass"
-    assert [f["kind"] for f in json.loads(out_none)["findings"]] == ["flag-verification-names-no-test"]
+    assert [f["kind"] for f in json.loads(out_none)["findings"]] == [
+        "flag-verification-names-no-test"
+    ]
 
 
-def test_the_text_report_names_the_spec_and_the_kind(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_text_report_names_the_spec_and_the_kind(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _landed_root(tmp_path)
     rel = _landed_spec(root, "body\n")
 
     rc, out, _ = _run(root, capsys=capsys)
 
-    fails = [ln for ln in out.splitlines() if ln.startswith("[flag-gate] fail -- flag-verification-names-no-test")]
+    fails = [
+        ln
+        for ln in out.splitlines()
+        if ln.startswith("[flag-gate] fail -- flag-verification-names-no-test")
+    ]
     assert rc == 1
     assert len(fails) == 1
     assert rel in fails[0]
@@ -982,7 +1602,9 @@ def test_the_text_report_names_the_spec_and_the_kind(tmp_path: Path, capsys: pyt
 
 
 @pytest.mark.skipif(git is None, reason="git is not installed")
-def test_in_a_git_checkout_only_tracked_files_are_judged_and_read(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_in_a_git_checkout_only_tracked_files_are_judged_and_read(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path, tree_keys=[ORPHAN_KEY])
     tracked = _spec(root, "flag-exempt: alpha\n", name="spec-1-1-tracked.md")
     _write(root, "src/pkg/tracked.py", "x = 1\n")
@@ -1001,7 +1623,9 @@ def test_in_a_git_checkout_only_tracked_files_are_judged_and_read(tmp_path: Path
 
 
 @pytest.mark.skipif(git is None, reason="git is not installed")
-def test_a_tracked_spec_deleted_from_the_working_tree_is_not_judged(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_tracked_spec_deleted_from_the_working_tree_is_not_judged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
     rel = _spec(root)
     subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -1018,14 +1642,23 @@ def test_a_tracked_spec_deleted_from_the_working_tree_is_not_judged(tmp_path: Pa
 
 
 @pytest.mark.parametrize(
-    "text", ["# no fence at all\n", "---\ntype: feature\nnever closed\n", "---\nkey: [unclosed\n---\n"]
+    "text",
+    [
+        "# no fence at all\n",
+        "---\ntype: feature\nnever closed\n",
+        "---\nkey: [unclosed\n---\n",
+    ],
 )
 def test_a_spec_with_unreadable_frontmatter_is_neither_a_post_rule_fail_and_a_pre_rule_warn(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], text: str
 ):
     root = _fixture(tmp_path)
-    post = "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-1-1-post.md"
-    pre = "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-1-2-pre.md"
+    post = (
+        "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-1-1-post.md"
+    )
+    pre = (
+        "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-1-2-pre.md"
+    )
     _write(root, post, text)
     _write(root, pre, text)
     _fixture(tmp_path, baseline=[pre])
@@ -1033,7 +1666,10 @@ def test_a_spec_with_unreadable_frontmatter_is_neither_a_post_rule_fail_and_a_pr
     rc, payload = _tree_json(root, capsys)
 
     assert rc == 1
-    assert {(f["kind"], f["path"]) for f in payload["findings"]} == {("flag-missing", post), ("flag-pre-rule", pre)}
+    assert {(f["kind"], f["path"]) for f in payload["findings"]} == {
+        ("flag-missing", post),
+        ("flag-pre-rule", pre),
+    }
 
 
 # --- --spec: one JSON object -------------------------------------------------------------------
@@ -1051,7 +1687,10 @@ def test_spec_mode_prints_one_json_object_per_verdict_and_exits_1_0_0(
     results = {}
     for label, rel in (("red", red), ("warn", warn), ("pass", ok)):
         rc, out, _ = _run(root, "--spec", rel, capsys=capsys)
-        results[label] = (rc, json.loads(out))  # one object: the whole stdout parses as JSON
+        results[label] = (
+            rc,
+            json.loads(out),
+        )  # one object: the whole stdout parses as JSON
 
     assert results["red"][0] == 1
     assert results["warn"][0] == 0
@@ -1074,9 +1713,15 @@ def test_spec_mode_reds_an_unknown_exemption_and_a_done_key_absent_from_the_tree
     unknown = _spec(root, "flag-exempt: someday\n", name="spec-1-1-unknown.md")
     body = _verification(_write_test(root, "pyforge.test.landed", KIT_TEST))
     landed = _spec(
-        root, FLAG_BLOCK.format(key="pyforge.test.landed"), name="spec-1-2-landed.md", status="done", body=body
+        root,
+        FLAG_BLOCK.format(key="pyforge.test.landed"),
+        name="spec-1-2-landed.md",
+        status="done",
+        body=body,
     )
-    backlog = _spec(root, FLAG_BLOCK.format(key="pyforge.test.landed"), name="spec-1-3-backlog.md")
+    backlog = _spec(
+        root, FLAG_BLOCK.format(key="pyforge.test.landed"), name="spec-1-3-backlog.md"
+    )
 
     rc_unknown, out_unknown, _ = _run(root, "--spec", unknown, capsys=capsys)
     rc_landed, out_landed, _ = _run(root, "--spec", landed, capsys=capsys)
@@ -1088,9 +1733,15 @@ def test_spec_mode_reds_an_unknown_exemption_and_a_done_key_absent_from_the_tree
     assert json.loads(out_backlog)["verdict"] == "pass"
 
 
-def test_spec_mode_judges_only_its_spec_never_the_tree(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
-    root = _fixture(tmp_path, tree_keys=[ORPHAN_KEY])  # an orphan key the tree-mode run would red
-    _spec(root, name="spec-1-1-red.md")  # and a red spec, which --spec on the passing one must not report
+def test_spec_mode_judges_only_its_spec_never_the_tree(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(
+        tmp_path, tree_keys=[ORPHAN_KEY]
+    )  # an orphan key the tree-mode run would red
+    _spec(
+        root, name="spec-1-1-red.md"
+    )  # and a red spec, which --spec on the passing one must not report
     ok = _spec(root, "flag-exempt: alpha\n", name="spec-1-2-pass.md")
 
     rc, out, _ = _run(root, "--spec", ok, capsys=capsys)
@@ -1111,10 +1762,17 @@ def test_spec_mode_takes_a_cwd_relative_or_an_absolute_path(
     rc_rel, out_rel, _ = _run(root, "--spec", rel, capsys=capsys)
 
     assert rc_cwd == rc_abs == rc_rel == 1
-    assert json.loads(out_cwd)["spec"] == json.loads(out_abs)["spec"] == json.loads(out_rel)["spec"] == rel
+    assert (
+        json.loads(out_cwd)["spec"]
+        == json.loads(out_abs)["spec"]
+        == json.loads(out_rel)["spec"]
+        == rel
+    )
 
 
-@pytest.mark.parametrize("target", ["not-a-spec.md", "docs/governance/guild-roster.json"])
+@pytest.mark.parametrize(
+    "target", ["not-a-spec.md", "docs/governance/guild-roster.json"]
+)
 def test_spec_mode_on_a_path_that_is_not_a_story_spec_is_unknown_exit_2(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], target: str
 ):
@@ -1130,7 +1788,9 @@ def test_spec_mode_on_a_path_that_is_not_a_story_spec_is_unknown_exit_2(
     assert "unknown" in err
 
 
-def test_spec_mode_on_a_missing_spec_is_unknown_exit_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_spec_mode_on_a_missing_spec_is_unknown_exit_2(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _fixture(tmp_path)
 
     rc, out, _ = _run(
@@ -1171,9 +1831,15 @@ def test_an_unreadable_roster_baseline_or_tree_exits_2_and_names_what_it_could_n
     tmp_path: Path, capsys: pytest.CaptureFixture[str], which: str, how: str
 ):
     root = _fixture(tmp_path)
-    _spec(root)  # a red spec is present: an unreadable input must not be reported as exit 1
+    _spec(
+        root
+    )  # a red spec is present: an unreadable input must not be reported as exit 1
     _break(root, which, how)
-    name = {"roster": "guild-roster.json", "baseline": "flag-rule-baseline.json", "tree": "flags.json"}[which]
+    name = {
+        "roster": "guild-roster.json",
+        "baseline": "flag-rule-baseline.json",
+        "tree": "flags.json",
+    }[which]
 
     rc, out, err = _run(root, capsys=capsys)
 
@@ -1212,7 +1878,9 @@ def test_the_json_report_of_an_unreadable_input_is_unknown_never_pass(
     assert "flags.json" in payload["error"]
 
 
-def test_a_root_that_does_not_exist_is_exit_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_a_root_that_does_not_exist_is_exit_2(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     rc, out, err = _run(tmp_path / "absent", capsys=capsys)
 
     assert rc == 2
@@ -1225,7 +1893,9 @@ def test_a_git_checkout_whose_tracked_files_cannot_be_listed_is_exit_2(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _fixture(tmp_path)
-    (root / ".git").write_text("not a git dir\n", encoding="utf-8")  # `.git` exists but is not a repository
+    (root / ".git").write_text(
+        "not a git dir\n", encoding="utf-8"
+    )  # `.git` exists but is not a repository
 
     rc, _out, err = _run(root, capsys=capsys)
 
@@ -1257,12 +1927,30 @@ def test_the_script_runs_as_a_program_and_exits_with_the_verdict(tmp_path: Path)
     root = _fixture(tmp_path)
     _spec(root)
 
-    red = subprocess.run([sys.executable, str(GATE), "--root", str(root)], capture_output=True, text=True, check=False)
-    _fixture(tmp_path, baseline=["_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-1-1-a-story.md"])
-    warn = subprocess.run([sys.executable, str(GATE), "--root", str(root)], capture_output=True, text=True, check=False)
+    red = subprocess.run(
+        [sys.executable, str(GATE), "--root", str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    _fixture(
+        tmp_path,
+        baseline=[
+            "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-1-1-a-story.md"
+        ],
+    )
+    warn = subprocess.run(
+        [sys.executable, str(GATE), "--root", str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     (root / "docs/governance/guild-roster.json").unlink()
     unknown = subprocess.run(
-        [sys.executable, str(GATE), "--root", str(root)], capture_output=True, text=True, check=False
+        [sys.executable, str(GATE), "--root", str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
     )
 
     assert (red.returncode, warn.returncode, unknown.returncode) == (1, 0, 2)
@@ -1274,7 +1962,9 @@ def test_the_registry_discovers_the_gate_as_a_repo_detector_with_its_pixi_task()
     found, gaps = detectors.discover()
 
     row = next((d for d in found if d["name"] == "flag_gate_check"), None)
-    assert row is not None, "scripts/flag_gate_check.py is invisible to scripts/detectors.py"
+    assert row is not None, (
+        "scripts/flag_gate_check.py is invisible to scripts/detectors.py"
+    )
     assert row["scope"] == "repo"
     assert row["task"] == "flag-gate-check"
     assert not [g for g in gaps if "flag_gate_check" in g]
@@ -1291,16 +1981,19 @@ def test_a_flag_on_everywhere_91_days_before_the_run_date_is_one_clock_fail_nami
     _patch_tree_flag(
         root,
         KEY,
-        _boolean_flag_entry(KEY, owner="steward", story="76-1-overlays", on_everywhere="2026-01-01"),
+        _boolean_flag_entry(
+            KEY, owner="test", story="76-1-overlays", on_everywhere="2026-01-01"
+        ),
     )
 
     rc, payload = _tree_json(root, capsys, "--run-date", "2026-04-02")
 
     assert rc == 1
+    assert _kinds(payload) == ["flag-clock-overdue"]
     clock = [f for f in payload["findings"] if f["kind"] == "flag-clock-overdue"]
     assert len(clock) == 1
     assert clock[0]["key"] == KEY
-    assert "steward" in clock[0]["message"]
+    assert "owner 'test'" in clock[0]["message"]
     assert "76-1-overlays" in clock[0]["message"]
 
 
@@ -1363,11 +2056,52 @@ def test_a_tree_flag_with_no_owner_metadata_is_one_fail_naming_the_flag_and_the_
     assert "metadata.owner" in missing[0]["message"]
 
 
+def test_a_metadata_owner_that_disagrees_with_the_key_prefix_is_one_fail_naming_both(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Story 34.7: the 90-day clock asks `metadata.owner` to remove the flag, and only the prefix station's story
+    can retire it, so the two must agree. The owner is normalised first (`pyforge-test`, ` Test ` read `test`)."""
+    root = _fixture(tmp_path, tree_keys=[KEY])
+    _write(root, "src/pkg/reader.py", f'flag("{KEY}")\n')
+    for agreeing in ("test", "pyforge-test", " Test "):
+        _patch_tree_flag(root, KEY, _boolean_flag_entry(KEY, owner=agreeing))
+        rc, payload = _tree_json(root, capsys)
+        assert (rc, payload["findings"]) == (0, []), agreeing
+
+    _patch_tree_flag(root, KEY, _boolean_flag_entry(KEY, owner="steward"))
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    assert _kinds(payload) == ["flag-owner-mismatch"]
+    finding = payload["findings"][0]
+    assert (finding["key"], finding["station"]) == (
+        KEY,
+        "pyforge-test",
+    )  # the project form every spec finding uses
+    assert "'steward'" in finding["message"] and "`test`" in finding["message"]
+
+
+def test_a_key_with_no_station_segment_has_no_owner_to_disagree_with(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _patch_tree_flag(
+        root, "pyforge.solo", _boolean_flag_entry("pyforge.solo", owner="steward")
+    )
+    _write(root, "src/pkg/reader.py", 'flag("pyforge.solo")\n')
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert (rc, payload["findings"]) == (0, [])
+
+
 def test_a_done_flagged_spec_whose_production_default_disagrees_with_the_overlay_is_one_fail(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _landed_root(tmp_path)
-    _write_overlays(root, {"dev": {KEY: "on"}, "staging": {KEY: "on"}, "production": {KEY: "on"}})
+    _write_overlays(
+        root, {"dev": {KEY: "on"}, "staging": {KEY: "on"}, "production": {KEY: "on"}}
+    )
     rel = _landed_spec(root, _verification("tests/test_flagged.py"))
 
     rc, payload = _tree_json(root, capsys)
@@ -1380,9 +2114,13 @@ def test_a_done_flagged_spec_whose_production_default_disagrees_with_the_overlay
     assert "production" in env[0]["message"]
 
 
-def test_the_same_spec_at_backlog_has_no_per_environment_finding(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_the_same_spec_at_backlog_has_no_per_environment_finding(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _landed_root(tmp_path)
-    _write_overlays(root, {"dev": {KEY: "on"}, "staging": {KEY: "on"}, "production": {KEY: "on"}})
+    _write_overlays(
+        root, {"dev": {KEY: "on"}, "staging": {KEY: "on"}, "production": {KEY: "on"}}
+    )
     _landed_spec(root, _verification("tests/test_flagged.py"), status="backlog")
 
     rc, payload = _tree_json(root, capsys)
@@ -1412,7 +2150,9 @@ def test_spec_mode_json_carries_the_per_environment_finding_and_verdict_red(
 SHARED_KEY = "pyforge.test.shared_cap"
 
 
-def _env_flag_block(*, production: str = "off", staging: str = "on", dev: str = "on") -> str:
+def _env_flag_block(
+    *, production: str = "off", staging: str = "on", dev: str = "on"
+) -> str:
     return f"""flag:
   key: {SHARED_KEY}
   provider: openfeature-file
@@ -1439,7 +2179,11 @@ def test_two_done_specs_sharing_a_key_judge_only_the_latest_when_the_tree_matche
     root = _shared_key_fixture(tmp_path)
     _write_overlays(
         root,
-        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+        {
+            "dev": {SHARED_KEY: "on"},
+            "staging": {SHARED_KEY: "on"},
+            "production": {SHARED_KEY: "off"},
+        },
     )
     _spec(
         root,
@@ -1470,7 +2214,11 @@ def test_mismatch_findings_name_the_latest_declaration_not_an_earlier_one(
     root = _shared_key_fixture(tmp_path)
     _write_overlays(
         root,
-        {"dev": {SHARED_KEY: "off"}, "staging": {SHARED_KEY: "off"}, "production": {SHARED_KEY: "off"}},
+        {
+            "dev": {SHARED_KEY: "off"},
+            "staging": {SHARED_KEY: "off"},
+            "production": {SHARED_KEY: "off"},
+        },
     )
     rel_1 = _spec(
         root,
@@ -1506,7 +2254,11 @@ def test_spec_mode_skips_env_mismatch_on_the_earlier_declaration_and_matches_tre
     root = _shared_key_fixture(tmp_path)
     _write_overlays(
         root,
-        {"dev": {SHARED_KEY: "off"}, "staging": {SHARED_KEY: "off"}, "production": {SHARED_KEY: "off"}},
+        {
+            "dev": {SHARED_KEY: "off"},
+            "staging": {SHARED_KEY: "off"},
+            "production": {SHARED_KEY: "off"},
+        },
     )
     rel_1 = _spec(
         root,
@@ -1534,16 +2286,28 @@ def test_spec_mode_skips_env_mismatch_on_the_earlier_declaration_and_matches_tre
     assert rc_1 == 0
     assert "flag-default-env-mismatch" not in _kinds(payload_1)
     assert rc_2 == 1
-    tree_env = [f for f in payload_tree["findings"] if f["path"] == rel_2 and f["kind"] == "flag-default-env-mismatch"]
-    spec_env = [f for f in payload_2["findings"] if f["kind"] == "flag-default-env-mismatch"]
+    tree_env = [
+        f
+        for f in payload_tree["findings"]
+        if f["path"] == rel_2 and f["kind"] == "flag-default-env-mismatch"
+    ]
+    spec_env = [
+        f for f in payload_2["findings"] if f["kind"] == "flag-default-env-mismatch"
+    ]
     assert spec_env == tree_env
 
 
-def test_story_key_order_is_numeric_so_87_11_beats_87_3(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+def test_story_key_order_is_numeric_so_87_11_beats_87_3(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
     root = _shared_key_fixture(tmp_path)
     _write_overlays(
         root,
-        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+        {
+            "dev": {SHARED_KEY: "on"},
+            "staging": {SHARED_KEY: "on"},
+            "production": {SHARED_KEY: "off"},
+        },
     )
     _spec(
         root,
@@ -1572,7 +2336,14 @@ def test_a_single_done_declaration_keeps_todays_mismatch_message(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _shared_key_fixture(tmp_path)
-    _write_overlays(root, {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "on"}})
+    _write_overlays(
+        root,
+        {
+            "dev": {SHARED_KEY: "on"},
+            "staging": {SHARED_KEY: "on"},
+            "production": {SHARED_KEY: "on"},
+        },
+    )
     rel = _spec(
         root,
         _env_flag_block(production="off", staging="on", dev="on"),
@@ -1597,7 +2368,14 @@ def test_cross_station_same_key_still_reports_each_station_that_disagrees(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _shared_key_fixture(tmp_path)
-    _write_overlays(root, {"dev": {SHARED_KEY: "off"}, "staging": {SHARED_KEY: "off"}, "production": {SHARED_KEY: "off"}})
+    _write_overlays(
+        root,
+        {
+            "dev": {SHARED_KEY: "off"},
+            "staging": {SHARED_KEY: "off"},
+            "production": {SHARED_KEY: "off"},
+        },
+    )
     rel_steward = _spec(
         root,
         _env_flag_block(production="off", staging="on", dev="on"),
@@ -1644,7 +2422,11 @@ def test_a_not_done_later_spec_does_not_supersede_the_done_declaration(
     )
     _write_overlays(
         root,
-        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+        {
+            "dev": {SHARED_KEY: "on"},
+            "staging": {SHARED_KEY: "on"},
+            "production": {SHARED_KEY: "off"},
+        },
     )
 
     rc, payload = _tree_json(root, capsys)
@@ -1662,7 +2444,11 @@ def test_judging_every_done_spec_for_env_defaults_would_red_the_shared_key_fixtu
     root = _shared_key_fixture(tmp_path)
     _write_overlays(
         root,
-        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+        {
+            "dev": {SHARED_KEY: "on"},
+            "staging": {SHARED_KEY: "on"},
+            "production": {SHARED_KEY: "off"},
+        },
     )
     rel_1 = _spec(
         root,
@@ -1734,7 +2520,11 @@ def test_the_live_tree_has_no_unknown_exemption_no_landed_key_missing_and_no_orp
     _judged, findings = flag_gate_check.judge_tree(REPO_ROOT, inputs)
 
     assert {f.kind for f in findings} <= {*owned, flag_gate_check.K_PRE_RULE}
-    assert [f for f in findings if f.severity == flag_gate_check.FAIL and f.kind not in owned] == []
+    assert [
+        f
+        for f in findings
+        if f.severity == flag_gate_check.FAIL and f.kind not in owned
+    ] == []
 
 
 # --- one declared source, outside every station --------------------------------------------------
@@ -1758,10 +2548,21 @@ def test_the_gate_imports_no_station_module_and_never_reads_the_second_tree():
     ]
 
     assert not [m for m in imported if m == "pyforge" or m.startswith("pyforge.")]
-    assert ".steward/flags.json" not in source  # steward Story 76.3 folds that second tree into the one tree
+    assert (
+        ".steward/flags.json" not in source
+    )  # steward Story 76.3 folds that second tree into the one tree
 
 
-KIT_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-testing-kit" / "src" / "pyforge" / "testing_kit"
+KIT_SRC = (
+    REPO_ROOT
+    / "src"
+    / "shared"
+    / "packages"
+    / "pyforge-testing-kit"
+    / "src"
+    / "pyforge"
+    / "testing_kit"
+)
 
 
 def test_the_gates_kit_helper_is_what_marshal_74_1_landed():
@@ -1774,13 +2575,16 @@ def test_the_gates_kit_helper_is_what_marshal_74_1_landed():
     reexported = {
         alias.name
         for node in package.body
-        if isinstance(node, ast.ImportFrom) and node.module == "pyforge.testing_kit.flags"
+        if isinstance(node, ast.ImportFrom)
+        and node.module == "pyforge.testing_kit.flags"
         for alias in node.names
     }
     assert helper in defined
     assert helper in reexported
     # and the gate's own import pattern accepts the module the kit defines it in
-    assert flag_gate_check._KIT_IMPORT.search(f"from pyforge.testing_kit.flags import {helper}\n")
+    assert flag_gate_check._KIT_IMPORT.search(
+        f"from pyforge.testing_kit.flags import {helper}\n"
+    )
     assert flag_gate_check._KIT_CALL.search(f'@{helper}("{KEY}")')
 
 
@@ -1789,7 +2593,8 @@ def test_the_gate_declares_itself_a_repo_scope_detector():
     declared = [
         ast.literal_eval(node.value)
         for node in tree.body
-        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "DETECTOR" for t in node.targets)
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "DETECTOR" for t in node.targets)
     ]
 
     assert declared == [{"scope": "repo"}]

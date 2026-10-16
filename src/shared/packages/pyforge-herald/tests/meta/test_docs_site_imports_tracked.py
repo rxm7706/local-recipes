@@ -144,6 +144,7 @@ def _relative_specifiers(source: str) -> list[str]:
 
 
 def _resolve_relative(importer: Path, specifier: str) -> Path | None:
+    specifier = specifier.split("?", 1)[0]  # a Vite query (``?inline``, ``?url``) names the same file
     base = (importer.parent / specifier).resolve()
     if base.is_file():
         return base

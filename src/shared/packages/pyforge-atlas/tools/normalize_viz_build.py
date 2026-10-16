@@ -3,8 +3,9 @@
 checkouts, not just across repeated runs in the same one.
 
 Epic 12/FR-62's publish pipeline (`viz-publish-stage`) only works if two
-builds of an unchanged DAG produce byte-identical output -- Steward's
-`deploy dashboard` treats any diff as a real change to commit+push. Two
+builds of an unchanged DAG produce byte-identical output -- the Pages
+workflow hashes the built tree and deploys on any difference (steward
+Stories 102.2-102.3; the export used to be committed by a retired verb). Two
 independent root causes defeat that, on top of (not instead of) pinning
 `PYTHONHASHSEED=0` on the `viz-build` task (which alone fixes the *ordering*
 of kedro-viz's internal `set`-based node/pipeline/edge enumeration, but

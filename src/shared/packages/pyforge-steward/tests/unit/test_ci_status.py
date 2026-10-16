@@ -1162,24 +1162,34 @@ assert not any("wf.all-gated" in f.message for f in warns)
         check=True,
     )
 
+    # Herald's tile and guild status page read the snapshot through docs-site/src/lib/status.ts since herald Story 43.7
+    # (node builtins only, run with node's type stripping in herald's env).
+    status_ts = (repo_root / "docs-site" / "src" / "lib" / "status.ts").as_uri()
     herald_snippet = f"""
-import json
-import sys
-from pathlib import Path
-repo = Path({str(repo_root)!r})
-sys.path.insert(0, str(repo))
-from docsite.tools.ci_surfaces_tile import format_row_line, select_non_live_rows, validate_ci_status_envelope
-fixture = Path({fixture_s!r})
-payload = json.loads(fixture.read_text(encoding="utf-8"))
-validate_ci_status_envelope(payload, path=str(fixture))
-non_live = select_non_live_rows(payload["rows"])
-assert non_live[0]["id"] == "master:PAUSE_ALL_CI"
-for row in non_live:
-    if row.get("detail"):
-        assert str(row["detail"]) in format_row_line(row)
+import fs from 'node:fs';
+import {{ orderRows, tileLine, validateCiStatus }} from {json.dumps(status_ts)};
+const payload = JSON.parse(fs.readFileSync({json.dumps(fixture_s)}, 'utf8'));
+validateCiStatus(payload, {json.dumps(fixture_s)});
+const notLive = orderRows(payload.rows, false);
+if (notLive[0].id !== 'master:PAUSE_ALL_CI') throw new Error(`first non-live row is ${{notLive[0].id}}`);
+for (const row of notLive) {{
+  if (row.detail && !tileLine(row).includes(String(row.detail))) throw new Error(`detail missing for ${{row.id}}`);
+}}
 """
     subprocess.run(
-        ["pixi", "run", "--frozen", "-e", "pyforge-herald", "python", "-c", herald_snippet],
+        [
+            "pixi",
+            "run",
+            "--frozen",
+            "-e",
+            "pyforge-herald",
+            "node",
+            "--experimental-strip-types",
+            "--no-warnings",
+            "--input-type=module",
+            "-e",
+            herald_snippet,
+        ],
         cwd=repo_root,
         check=True,
     )

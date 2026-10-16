@@ -44,10 +44,24 @@ const sectionSchema = z
   })
   .passthrough();
 
-/** Loader validates block types; keep the collection schema loose for YAML shape drift. */
-const dossierSchema = z.object({ title: z.string() }).passthrough();
-
-const pagesOneGenerator = process.env.PYFORGE_PAGES_ONE_GENERATOR === '1';
+/**
+ * Loader validates block types; keep the collection schema loose for YAML shape drift -- but every section carries
+ * `measured:`, the day its prose was last checked against the tree (Story 43.5), refused naming the section.
+ */
+const dossierSchema = z
+  .object({ title: z.string(), sections: z.array(sectionSchema) })
+  .passthrough()
+  .superRefine((doc, ctx) => {
+    doc.sections.forEach((section, index) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(section.measured ?? ''))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['sections', index, 'measured'],
+          message: `dossier section ${JSON.stringify(section.id)} has no measured: date (YYYY-MM-DD)`,
+        });
+      }
+    });
+  });
 
 export const collections = {
   docs: defineCollection({
@@ -55,12 +69,8 @@ export const collections = {
     schema: docsSchema(),
   }),
   i18n: defineCollection({ loader: i18nLoader(), schema: i18nSchema() }),
-  ...(pagesOneGenerator
-    ? {
-        dossier: defineCollection({
-          loader: dossierLoader(),
-          schema: dossierSchema,
-        }),
-      }
-    : {}),
+  dossier: defineCollection({
+    loader: dossierLoader(),
+    schema: dossierSchema,
+  }),
 };

@@ -1,0 +1,74 @@
+---
+/**
+ * The herald overview, gallery and deck-family pages' shell (Story 43.2, CAP-61): the head and the header. The shared
+ * menu is the registry's (`docs/map.yaml` `sections`, src/lib/site-nav.ts; Story 43.7), exactly as SiteTitle.astro
+ * and HeraldDossierLayout.astro read it (Story 40.1, CAP-58). Every page carries the
+ * herald Content-Security-Policy (Story 43.3, AD-21); its faces, tokens and rules come from the one herald
+ * stylesheet, bundled by Astro, with the theme the docs header's toggle chose (Story 43.4). What built the page is the
+ * one built-from line below it (Story 43.5), so no wall-clock date or commit stamp of its own moves the Pages tree hash.
+ */
+import { builtFromHtml } from '../lib/built-from';
+import { HERALD_CSP, THEME_SCRIPT } from '../lib/herald-pages';
+import '../styles/herald.css';
+import { siteNav } from '../lib/site-nav';
+
+interface Props {
+  title: string;
+  description: string;
+  /** From this page to the /herald/ mount: '', '../' or '../../'. */
+  rel: string;
+  /** The menu entry this page sits under, as a site-root path ('herald/', 'herald/decks/'). */
+  current: string;
+  favicon?: string;
+  shortName: string;
+}
+
+const { title, description, rel, current, favicon, shortName } = Astro.props;
+/** Menu paths are relative to the site root, one level above the /herald/ mount. */
+const toRoot = `${rel}../`;
+const nav = siteNav().menu.map((item) => ({ label: item.label, href: `${toRoot}${item.path}`, path: item.path }));
+const icon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${favicon ?? ''}</text></svg>`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="generator" content={Astro.generator} />
+    <meta http-equiv="Content-Security-Policy" content={HERALD_CSP} />
+    <link rel="icon" href={icon} />
+    <script is:inline set:html={THEME_SCRIPT} />
+  </head>
+  <body>
+    <header class="site-nav">
+      <div class="site-nav-inner">
+        <a class="site-brand" href={`${rel}index.html`}><span class="spark"></span>{shortName}</a>
+        <ul>
+          {
+            nav.map((item) => (
+              <li>
+                <a
+                  class="nav-link"
+                  data-pf-menu-link
+                  href={item.href}
+                  aria-current={item.path === current ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <span class="nav-spacer"></span>
+      </div>
+    </header>
+    <slot />
+    <Fragment set:html={builtFromHtml()} />
+  </body>
+</html>

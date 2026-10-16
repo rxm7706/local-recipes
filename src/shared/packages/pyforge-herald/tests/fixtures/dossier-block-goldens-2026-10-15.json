@@ -1,0 +1,254 @@
+{
+ "$comment": "Each dossier block fixture and the tag/text token stream the retired Jinja macros (docsite/templates/blocks.html.j2) rendered for it, frozen when herald Story 43.7 deleted them; the Astro renderer (docs-site/src/lib/dossier-blocks.ts) gave the same streams that day.",
+ "fixtures": {
+  "lede": {
+   "type": "lede",
+   "md": "Lead **bold** line."
+  },
+  "prose": {
+   "type": "prose",
+   "body": [
+    "One paragraph.",
+    "Second *em* line."
+   ]
+  },
+  "h3": {
+   "type": "h3",
+   "num": "1",
+   "text": "Heading text"
+  },
+  "table": {
+   "type": "table",
+   "headers": [
+    "Col"
+   ],
+   "rows": [
+    {
+     "cells": [
+      "cell"
+     ],
+     "mono": [
+      true
+     ]
+    }
+   ]
+  },
+  "callout": {
+   "type": "callout",
+   "label": "Note",
+   "body": [
+    "Body line."
+   ],
+   "tone": ""
+  },
+  "finding": {
+   "type": "finding",
+   "label": "Find",
+   "body": [
+    "Detail."
+   ],
+   "alarm": false,
+   "accent": ""
+  },
+  "stats": {
+   "type": "stats",
+   "stats": [
+    {
+     "value": "1",
+     "label": "One"
+    }
+   ]
+  },
+  "quote": {
+   "type": "quote",
+   "md": "Quoted line."
+  },
+  "relations": {
+   "type": "relations",
+   "items": [
+    {
+     "glyph": "→",
+     "md": "rel"
+    }
+   ]
+  },
+  "lattice": {
+   "type": "lattice",
+   "rungs": [
+    {
+     "exit": "0",
+     "name": "n",
+     "desc": "d",
+     "tone": "",
+     "exit_tone": ""
+    }
+   ],
+   "note": "note"
+  },
+  "engines": {
+   "type": "engines",
+   "engines": [
+    {
+     "name": "E",
+     "verb": "run",
+     "body": [
+      "p"
+     ]
+    }
+   ]
+  },
+  "chips": {
+   "type": "chips",
+   "chips": [
+    "alpha",
+    "beta"
+   ]
+  },
+  "note": {
+   "type": "note",
+   "md": "Soft note."
+  },
+  "verify": {
+   "type": "verify",
+   "md": "Verify note."
+  }
+ },
+ "inline": {
+  "type": "prose",
+  "body": [
+   "Code `x`, **bold**, *em*, [link](https://example.com), arrow <<→>>, escape \\*",
+   "`/stations/\\*/mcp`"
+  ]
+ },
+ "tokens": {
+  "lede": [
+   "p",
+   "Lead",
+   "b",
+   "bold",
+   "line."
+  ],
+  "prose": [
+   "div",
+   "p",
+   "One paragraph.",
+   "p",
+   "Second",
+   "em",
+   "em",
+   "line."
+  ],
+  "h3": [
+   "h3",
+   "span",
+   "1",
+   "Heading text"
+  ],
+  "table": [
+   "div",
+   "table",
+   "thead",
+   "tr",
+   "th",
+   "Col",
+   "tbody",
+   "tr",
+   "td",
+   "cell"
+  ],
+  "callout": [
+   "div",
+   "span",
+   "Note",
+   "p",
+   "Body line."
+  ],
+  "finding": [
+   "div",
+   "span",
+   "Find",
+   "p",
+   "Detail."
+  ],
+  "stats": [
+   "div",
+   "div",
+   "b",
+   "1",
+   "span",
+   "One"
+  ],
+  "quote": [
+   "blockquote",
+   "Quoted line."
+  ],
+  "relations": [
+   "ul",
+   "li",
+   "span",
+   "→",
+   "rel"
+  ],
+  "lattice": [
+   "div",
+   "div",
+   "div",
+   "span",
+   "0",
+   "span",
+   "n",
+   "span",
+   "d",
+   "p",
+   "note"
+  ],
+  "engines": [
+   "div",
+   "div",
+   "h4",
+   "E",
+   "span",
+   "run",
+   "p",
+   "p"
+  ],
+  "chips": [
+   "div",
+   "span",
+   "alpha",
+   "span",
+   "beta"
+  ],
+  "note": [
+   "p",
+   "Soft note."
+  ],
+  "verify": [
+   "p",
+   "Verify note."
+  ],
+  "prose-inline-vocabulary": [
+   "div",
+   "p",
+   "Code",
+   "code",
+   "x",
+   ",",
+   "b",
+   "bold",
+   ",",
+   "em",
+   "em",
+   ",",
+   "a",
+   "link",
+   ", arrow",
+   "span",
+   "→",
+   ", escape *",
+   "p",
+   "code",
+   "/stations/*/mcp"
+  ]
+ }
+}

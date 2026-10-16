@@ -1,0 +1,67 @@
+---
+/**
+ * `/status/ci/` -- the guild status page (Story 42.1, spec-pyforge-herald CAP-60; ported from the retired Jinja path
+ * by Story 43.7, CAP-61): every row of CAP-59's committed `ci-status.json` snapshot (`pyforge steward ci status
+ * --json`), live rows included, in the dossier tile's order with `live` last (`src/lib/status.ts`). A snapshot: it
+ * names its capture time and carries no date of its own. Emitted only with `pyforge.herald.status_pages` on.
+ */
+import { Badge } from '@astrojs/starlight/components';
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+import { ciStatus, lane1 } from '../../../lib/agent-data.ts';
+import { statusPages } from '../../../lib/flags.ts';
+import { guildRows } from '../../../lib/status.ts';
+
+export function getStaticPaths() {
+  return statusPages() ? [{ params: { index: undefined } }] : [];
+}
+
+const snapshot = ciStatus();
+const rows = guildRows(snapshot);
+const live = lane1();
+const variant = (verdict: string) =>
+  verdict === 'live' ? 'success' : ['drift', 'stuck', 'overdue'].includes(verdict) ? 'danger' : 'caution';
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Guild CI status',
+    description: 'Every CI surface and the verdict steward gave it, a build-time snapshot.',
+  }}
+>
+  <p class="status-intro">
+    Every CI surface the registry declares, with the verdict steward's <code>ci status</code> gave it when the snapshot
+    was captured. A snapshot: nothing on this page is live.
+  </p>
+  <p class="status-snapshot">
+    Snapshot captured <time datetime={String(snapshot.fetched_at)}>{String(snapshot.fetched_at)}</time>.{' '}
+    <a href="../">Fleet board</a> &middot; <a href="../runs/">Runs and progress</a>
+    {live && (<> &middot; <a href={live.href}>{live.label}</a></>)}
+  </p>
+
+  <table class="status-table">
+    <thead>
+      <tr><th>Surface</th><th>Verdict</th><th>Switch</th><th>Paused since</th><th>Review by</th><th>Owner</th><th>Detail</th></tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((r) => (
+          <tr data-surface={r.id} data-verdict={r.verdict}>
+            <td><code>{r.id}</code></td>
+            <td><Badge text={r.verdict} variant={variant(r.verdict)} /></td>
+            <td><code>{r.switch}</code></td>
+            <td>{r.paused_since}</td>
+            <td>{r.review_by}</td>
+            <td>{r.owner}</td>
+            <td>{r.detail}</td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  <p class="status-source">
+    Rendered from the committed <code>ci-status.json</code> snapshot (<code>pyforge steward ci status --json</code>);
+    the verdicts are steward's.
+  </p>
+</StarlightPage>

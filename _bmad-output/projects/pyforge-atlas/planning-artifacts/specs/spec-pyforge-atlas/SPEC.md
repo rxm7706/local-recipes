@@ -2,7 +2,7 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: ready
-updated: "2026-10-14"
+updated: "2026-10-15"
 owner-dream: docs/dreams/pyforge-atlas.md
 covers-dreams:
   - docs/dreams/pyforge-atlas.md
@@ -54,10 +54,10 @@ surface:
   - conf/conda-forge-packaging-inventory-operations.local.env.example
   - conf/conda-forge-packaging-inventory-operations_curated_groups.json
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py
-  - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py
+  - src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite.py
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
   - src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py
-  - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py
+  - src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite_live_rehearsal.py
 surface-drift-exclude:
   # 2026-09-12: also governed by the spec(s) named below, which already
   # reconciles each of these files cleanly -- this kernel spec's own
@@ -385,9 +385,9 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     `kedro-viz-publish` names `switch: PAUSE_KEDRO_VIZ_PUBLISH`. `docs/dashboard/README.md` names the artifact and no
     longer names `steward deploy dashboard`. `kedro-test` and `kedro-catalog-check` green; the flag test runs the key in
     both states with `pyforge.testing_kit.flags.flag_states`.
-- **CAP-63 — Vizro boards publish as static exports under `/dashboard/vizro/`** ← spec-pyforge-atlas CAP-63 (ready 2026-10-14; extends CAP-8, CAP-40, CAP-42, CAP-50 and CAP-62; binds `sld:AD-10` of the steward spine)
-  - **intent:** a `vizro-static-export` task in `-e local-recipes` (the env that carries the vizro closure; `pyforge-guild`
-    has none) builds the same BSL-driven `Dashboard` object `dashboard-dryrun` builds
+- **CAP-63 — Vizro boards publish as static exports under `/dashboard/vizro/`** ← spec-pyforge-atlas CAP-63 (ready 2026-10-14; amended 2026-10-15: runs in `-e pyforge-atlas`, and the vendored `plotly.min.js` is the one exact-file vendored entry, in `docs-site/scripts/pages.mts` since herald Story 43.7; extends CAP-8, CAP-40, CAP-42, CAP-50 and CAP-62; binds `sld:AD-10` of the steward spine)
+  - **intent:** a `vizro-static-export` task in `-e pyforge-atlas` (the env that carries vizro and plotly 7.1.0; `pyforge-guild`
+    has none; `-e local-recipes` until the 2026-10-15 ruling) builds the same BSL-driven `Dashboard` object `dashboard-dryrun` builds
     (`pyforge.atlas.dashboard.app.build_dashboard`, 34 pages, no server, no `.run()`) and writes one static page per
     board under `docs/dashboard/vizro/<page-id>/index.html` and a board index at `docs/dashboard/vizro/index.html`. Each
     page's declared chart and table are rendered through plotly's `to_html(full_html=False, include_plotlyjs=<relative
@@ -401,19 +401,21 @@ One-chain rebase 2026-09-17. Each reminted CAP keeps provenance `← spec-<old> 
     `export_commit`. A board that declares an access column is refused before any file is written (`sld:AD-10`, the rule
     `steward deploy static` already applies); no page declares one today, so the refusal is proven on a fixture. The
     producer job (a second job on `kedro-viz-publish.yml`, or its own workflow with its own registry row — the operator's
-    call) runs in `-e local-recipes`, is path-filtered on `dashboard/**`, `semantic/**` and `conf/base/catalog.yml`, and
+    call) runs in `-e pyforge-atlas`, is path-filtered on `dashboard/**`, `semantic/**` and `conf/base/catalog.yml`, and
     uploads `docs/dashboard/vizro/` as the workflow artifact `vizro-static-export` (90-day retention); the Pages build
     consumes it as it consumes `kedro-viz-export` (steward 102.4's step; herald CAP-61 (M3) mounts it through
-    `publicDir`), and `pages-check` judges the mount with no `VENDORED_ROOTS` exemption in
-    `docsite/tools/assemble_pages.py`. The live Vizro server and the console stay Lane 1. Flag
+    `publicDir`), and `pages-check` judges every exported page: the one vendored entry under the mount in
+    `docs-site/scripts/pages.mts`'s `VENDORED` map (handed to `docs-site/scripts/origin_check.py`; `VENDORED_ROOTS` in
+    `docsite/tools/assemble_pages.py` until herald Story 43.7, 2026-10-15) is the exact file
+    `dashboard/vizro/assets/plotly.min.js` (herald:AD-21 rule 5, a vendored upstream bundle), never the tree. The live Vizro server and the console stay Lane 1. Flag
     `pyforge.atlas.vizro_static_boards`; off, the task refuses with the flag-off message and writes nothing.
-  - **success:** `pixi run -e local-recipes vizro-static-export` with the flag on and the fixture data root exits 0 and
+  - **success:** `pixi run -e pyforge-atlas vizro-static-export` with the flag on and the fixture data root exits 0 and
     writes `docs/dashboard/vizro/index.html`, one `<page-id>/index.html` per exported page, exactly one
     `assets/plotly.min.js`, and `manifest.json` whose `boards[]` holds one entry per exported page with the four keys and
     whose `exported_at` and `export_commit` parse. `grep -rl cdn.plot.ly docs/dashboard/vizro` prints nothing and every
     `<script src=` in the export resolves to the vendored file. With the export under `docs/dashboard/vizro/`, `pixi run
-    -e site pages-check` exits 0 and reports no cross-origin finding under `dashboard/vizro/`, `VENDORED_ROOTS`
-    unchanged. A fixture board with an access column makes the task exit 1 naming the board and write nothing; with the
+    -e site pages-check` exits 0 and reports no cross-origin finding under `dashboard/vizro/`, with
+    `dashboard/vizro/assets/plotly.min.js` the one vendored entry under the mount. A fixture board with an access column makes the task exit 1 naming the board and write nothing; with the
     flag off the task refuses and writes nothing. A workflow test asserts one `actions/upload-artifact` step with `name:
     vizro-static-export` and `retention-days: 90` and no commit or push step. `dashboard-dryrun`, `kedro-test` and
     `kedro-catalog-check` green; the flag test runs the key in both states with `flag_states`.

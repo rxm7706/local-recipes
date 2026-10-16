@@ -1538,3 +1538,28 @@ deployment.
   severity: low
   promoted: 2026-10-11 — herald Story 19.2 landing review
   status: open
+
+### DW-herald-102-3-1: The steward deck family still presents `steward deploy dashboard`, `deploy status` and the deleted tracked-ledger refusal as current
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-102-3-steward-pages-build-deploy-status-replaces-deploy-dashboard-and-deploy-status.md`
+  summary: steward Story 102.3 retired `steward deploy dashboard` / `deploy status` and deleted the tracked-ledger refusal; the steward deck family's current surfaces still name them as live. `presentations/pyforge-steward/project/PyForge Steward - Infographic Deck.dc.html:206,688,734,737,780,877,1018`, `…/PyForge Steward - Infographic.dc.html:193,631,671,674,716,812,942`, `…/PyForge Steward Infographic standalone.html:190,628,668,671,713,809,939`, `…/PyForge Steward.dc.html:140` and `presentations/pyforge-steward/src/slides/manifest.json:47` ("Publish the dashboard · `pyforge steward deploy dashboard`", "Kedro-Viz via steward deploy dashboard", the deleted dry-run / status / ledger-refusal tests). The dated Marp sources (`src/marp/pyforge-steward-deck-2026-09-15.md:104`, `…-narration-2026-07-31.md:35`) carry the same line.
+  evidence: steward Story 102.3 independent review (2026-10-15, AC7 / S3); `git grep -n "deploy dashboard\|deploy status\|ledger refusal" -- presentations/pyforge-steward` lists the lines above. Not hand-edited: `docs/how-to/presentation-deck.md` puts deck content in the Design prototype and derives every export from it (edit in Design, `herald deck pull`, `npm run extract`, then `pixi run -e pyforge-guild deck-export pyforge-steward`); a hand edit would diverge from Design and be reverted by the next pull.
+  location: presentations/pyforge-steward/
+  origin: steward Story 102.3 review, 2026-10-15 (prose outside steward's surface; the dossier half, `docsite/content/dossier.yml`, was fixed in the same chain)
+  fix: a steward deck refresh through the claude-design bridge: replace the retired verb with `steward pages build|deploy|status` (the Pages workflow builds and deploys; no verb commits to `main`) in the three Design files, pull, re-extract, and re-run `deck-export pyforge-steward` so the Marp sources, the poster and both PPTX follow. Operator-owned: it writes to the operator's Design project.
+  severity: low
+  promoted: 2026-10-15 — steward Story 102.3 review (Pages redesign chain)
+  status: open
+
+### DW-herald-42-1-1: operator: set an absolute Lane 1 URL in `docs-site/src/content/site.yml` `lane1.href`
+
+- source_spec: `planning-artifacts/specs/spec-42-1-the-fleet-board-and-guild-status-pages-render-at-build.md`
+  summary: The fleet board (`/status/`) and the guild status page (`/status/ci/`) are build-time snapshots that link the live view on Lane 1 from `site.yml`'s `lane1.href`. That href is `/console/`, a root-absolute path: Lane 1 is served by the platform, not by Pages, so on the Pages origin it 404s. The Pages build resolves flags as `dev` (`pages.yml` sets no `PYFORGE_ENVIRONMENT`), where `pyforge.herald.status_pages` is on, so the pages publish when this chain lands. Until the operator names Lane 1's absolute URL, both pages leave the Lane 1 link out (`lane1Link` in `docs-site/src/lib/agent-surface.ts` since herald Story 43.7 ported `status_pages.lane1_link`; orchestrator ruling 2026-10-15); with an absolute `http(s)://` URL in `lane1.href` they render it with no other edit.
+  evidence: herald 42.1 re-review (2026-10-15, `rereview-group1`, should-fix 2); `git grep -n PYFORGE_ENVIRONMENT -- .github/workflows` finds nothing; `src/platform/config/flag-overlays.json` dev `pyforge.herald.status_pages: on`; `test_status_pages_flag_states.py::test_ac3_lane1_is_linked_only_by_an_absolute_url` (Story 43.7 folded the two earlier tests, `test_ac3_a_root_absolute_lane1_href_carries_no_link` and `test_ac3_an_absolute_lane1_url_is_one_link_on_each_page`, into it); `docs-site/src/content/site.yml:20` cites this row.
+  location: docs-site/src/content/site.yml (moved from `docsite/content/site.yml` by herald Story 43.7, 2026-10-15)
+  origin: herald Story 42.1 re-review, 2026-10-15 (an operator decision: which host serves Lane 1 to Pages readers)
+  fix: set `lane1.href` to Lane 1's absolute URL (for example `https://<platform host>/console/`) in `docs-site/src/content/site.yml`; the next Pages build links it on both status pages, and `pages-check` passes (a navigation link to another origin loads nothing). No code change.
+  severity: low
+  promoted: 2026-10-15 — herald Story 42.1 re-review (Pages redesign chain)
+  note: re-pointed 2026-10-15 — herald Story 43.7 retired `docsite/` (its independent review, part B, should-fix 2): the location, the fix, the reader and the test ids follow; the decision itself is unchanged
+  status: open

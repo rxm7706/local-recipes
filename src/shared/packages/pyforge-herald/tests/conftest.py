@@ -122,6 +122,13 @@ def deny_network(
     monkeypatch.setattr(auth, "DEFAULT_CONFIG_PATH", tmp_path / "no-herald-config")
 
 
+@pytest.fixture(autouse=True)
+def status_pages_off_unless_asked(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 42.1: the Pages build reads ``PYFORGE_STATUS_PAGES`` from the environment, so a shell
+    that exported it on would change every menu and artifact test; a test that wants it sets it."""
+    monkeypatch.delenv("PYFORGE_STATUS_PAGES", raising=False)
+
+
 @pytest.fixture
 def network_denied_error() -> type[NetworkDeniedError]:
     """The harness's denial class as a fixture -- test modules take the

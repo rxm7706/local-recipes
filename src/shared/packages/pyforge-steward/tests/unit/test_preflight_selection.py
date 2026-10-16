@@ -14,7 +14,7 @@ says they do:
   on every pull request, so it belongs with the always-on lanes;
 * ``pages-check`` -- herald Story 27.5 replaced ``pr-preflight``'s always-on ``site-check`` leg with
   ``pages-check``, selected when ``pages.yml``'s ``pull_request`` ``paths`` fire (Story 102.2).
-  ``site-check`` stays a pixi task only; no pull_request workflow runs it.
+  ``site-check`` retired with ``docsite/`` (herald Story 43.7); ``pages-check`` is the one build check.
 
 Likewise ``docs/how-to/**`` is one of ``pages.yml``'s trigger paths, so a ``docs/how-to/``
 diff also fires the three ``docs-site-validate-*`` lanes. The tests assert the spec's lanes
@@ -55,7 +55,7 @@ LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}
 ALWAYS_ON_SINCE_SPEC = {"pyforge-doctor-aggregate-scripts-test"}
 DOCS_SITE_VALIDATE = {"docs-site-validate-links", "docs-site-validate-sidebar-order", "docs-site-validate-sidebar"}
-PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install", "docs-site-sidebar"}
+PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install"}
 GATES = {f"pyforge-{s}-coverage-gate" for s in STATIONS}
 NO_CI_COUNTERPART = {"docs-map-render-test", "docs-gen-test"}
 ALWAYS_ON = SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC
@@ -260,7 +260,7 @@ def test_step_matches_task_closure_or_own_command_line(task: str, lane_env: str,
 
 
 # ---------------------------------------------------------------------------
-# I/O matrix: one station, shared surface, CFE only, Dream only, docsite
+# I/O matrix: one station, shared surface, CFE only, Dream only, docs-site
 # ---------------------------------------------------------------------------
 
 
@@ -344,14 +344,13 @@ def test_pages_check_leaves_carry_dependency_edges_from_pixi() -> None:
     for name in PAGES_CHECK_LEAVES:
         assert name in by_task
     assert by_task["pages-check"].depends_on == (("pages-build", "site"),)
-    assert set(by_task["pages-build"].depends_on) == {
-        ("docs-site-install", "site"),
-        ("docs-site-sidebar", "site"),
-    }
+    assert set(by_task["pages-build"].depends_on) == {("docs-site-install", "site")}
 
 
-def test_docsite_branch_selects_the_docsite_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"docsite/page.html": "<p>x</p>\n"})
+def test_docs_site_branch_selects_the_docs_site_validators_and_the_always_on_lanes(tmp_path: Path) -> None:
+    """herald Story 43.7: ``docs-site/`` is the one generator (``docsite/`` retired), so a change there is the one that
+    fires the Pages lanes and the herald suite."""
+    repo = make_repo(tmp_path, {"docs-site/page.html": "<p>x</p>\n"})
     assert selected_tasks(select(repo)) == (
         ALWAYS_ON
         | DOCS_SITE_VALIDATE
@@ -506,7 +505,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         {"pixi.toml": (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8") + "\n# touched\n"},
         {".claude/skills/conda-forge-expert/scripts/x.py": "x\n"},
         {"docs/dreams/a-dream.md": "# dream\n"},
-        {"docsite/page.html": "<p>x</p>\n"},
+        {"docs-site/page.html": "<p>x</p>\n"},
         {"src/shared/packages/pyforge-core/src/x.py": "x\n", "src/shared/packages/pyforge-herald/src/y.py": "y\n"},
         {"presentations/deck/a.md": "x\n"},
         {"scripts/tests/test_x.py": "x\n"},
@@ -520,7 +519,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
         "pixi",
         "cfe",
         "dream",
-        "docsite",
+        "docs-site",
         "core+herald",
         "presentations",
         "atlas-extra",
@@ -850,3 +849,125 @@ def test_a_repository_without_workflows_still_selects_every_lane(tmp_path: Path)
         == 0
     )
     assert ran == ["a", "b"]
+
+
+# --- the pause-only gate shape (steward 102.3's re-review) ----------------------------------------
+
+
+class _GateState:
+    """The two readers ``_eval_ci_if_expression`` reaches: the CI variables and a ``needs`` output."""
+
+    def __init__(self, ci_vars: Mapping[str, str], outputs: Mapping[str, str]) -> None:
+        self._vars = ci_vars
+        self._outputs = outputs
+
+    def ci_var_lookup(self, name: str) -> str:
+        return self._vars.get(name, "")
+
+    def _needs_output(self, workflow, job, dep: str, name: str) -> str:
+        return self._outputs[f"{dep}.{name}"]
+
+
+def _pages_deploy_if() -> str:
+    """The live ``pages.deploy`` gate, as the renderer writes it (``dispatch: pause-only``)."""
+    workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "pages.yml").read_text(encoding="utf-8"))
+    return preflight_ci._normalize_condition(workflow["jobs"]["deploy"]["if"])
+
+
+def _gate(text: str, *, event: str = "pull_request", ci_vars: Mapping[str, str] | None = None, changed: str = "true"):
+    return preflight_ci._eval_ci_if_expression(
+        text,
+        registry={},
+        context={"github.event_name": event},
+        state=_GateState(ci_vars or {}, {"build.changed": changed}),
+        workflow=preflight_ci.Workflow(file="pages.yml", data={}),
+        job_id="deploy",
+        job={"needs": "build"},
+    )
+
+
+def test_the_pause_only_gate_is_read_not_unevaluable() -> None:
+    """The lane evaluator reads ``(dispatch || (pauses)) && (inner)``: a ``||`` nested under ``&&``
+    recurses and ``github.ref`` is an atom. A pull request is never on ``refs/heads/main``, so the
+    deploy gate is false under the simulated event, paused or not."""
+    text = _pages_deploy_if()
+    assert "github.ref == 'refs/heads/main'" in text and text.startswith("(github.event_name == 'workflow_dispatch'")
+    assert _gate(text) is False
+    assert _gate(text, ci_vars={"PAUSE_PAGES": "true"}) is False
+
+
+@pytest.mark.parametrize(
+    ("text", "ci_vars", "expected"),
+    [
+        ("(github.event_name == 'pull_request' || (vars.P != 'true')) && (github.ref != 'refs/heads/main')", {}, True),
+        ("(github.event_name == 'push' || (vars.P != 'true')) && (needs.build.outputs.changed == 'true')", {}, True),
+        (
+            "(github.event_name == 'push' || (vars.P != 'true')) && (needs.build.outputs.changed == 'true')",
+            {"P": "true"},
+            False,
+        ),
+        (
+            "github.event_name == 'push' || (vars.P != 'true' && (github.ref == 'refs/heads/main' || vars.Q == 'x'))",
+            {"Q": "x"},
+            True,
+        ),
+        (
+            "github.event_name == 'push' || (vars.P != 'true' && (github.ref == 'refs/heads/main' || vars.Q == 'x'))",
+            {},
+            False,
+        ),
+    ],
+    ids=["ref-ne", "needs-under-or-group", "paused", "deeper-nesting-true", "deeper-nesting-false"],
+)
+def test_nested_groups_evaluate_as_github_does(text: str, ci_vars: dict, expected: bool) -> None:
+    assert _gate(text, ci_vars=ci_vars) is expected
+
+
+@pytest.mark.parametrize(
+    ("text", "event"),
+    [
+        ("github.ref == 'refs/pull/12/merge'", "pull_request"),  # a pull request's ref carries its number
+        ("vars.P != 'true' && github.ref == 'refs/heads/main'", "push"),  # only the simulated event is known
+        ("vars.P != 'true' && github.ref_name == 'main'", "pull_request"),  # outside the grammar still says so
+    ],
+    ids=["pr-ref-literal", "not-a-pull-request", "unknown-atom"],
+)
+def test_a_ref_the_simulation_cannot_know_stays_unevaluable(text: str, event: str) -> None:
+    with pytest.raises(preflight_ci._Unevaluable):
+        _gate(text, event=event)
+
+
+def test_a_ref_atom_on_a_push_only_site_is_unevaluable() -> None:
+    """102.3's lane-B re-review: a push-only workflow is judged through ``on.push``, where the ref after the
+    merge is the branch's own, so ``github.ref == 'refs/heads/main'`` must not read False there (its lane
+    would never be selected): it is unevaluable, and the lane runs and says why."""
+    text = "vars.P != 'true' && github.ref == 'refs/heads/main'"
+    with pytest.raises(preflight_ci._Unevaluable, match="needs the run's own ref"):
+        preflight_ci._eval_ci_if_expression(
+            text,
+            registry={},
+            context={"github.event_name": "pull_request", preflight_ci._TRIGGER_KEY: "push"},
+            state=_GateState({}, {}),
+            workflow=preflight_ci.Workflow(file="push-only.yml", data={}),
+            job_id="publish",
+            job={},
+        )
+
+    class _Holder:
+        ci_registry: dict = {}
+
+        def _context(self) -> dict[str, str]:
+            return {"github.event_name": "pull_request"}
+
+        def ci_var_lookup(self, name: str) -> str:
+            return ""
+
+    job = {"if": "${{ " + text + " }}", "steps": [{"run": "true"}]}
+    push_only = preflight_ci.Workflow(
+        file="push-only.yml", data={"on": {"push": {"branches": ["main"]}}, "jobs": {"publish": job}}
+    )
+    with pytest.raises(preflight_ci._Unevaluable):
+        preflight_ci._State._job_holds(_Holder(), push_only, "publish", job)  # type: ignore[arg-type]
+    pull_request = preflight_ci.Workflow(file="pr.yml", data={"on": {"pull_request": {}}, "jobs": {"publish": job}})
+    holds, _ = preflight_ci._State._job_holds(_Holder(), pull_request, "publish", job)  # type: ignore[arg-type]
+    assert holds is False  # a pull request's ref is never refs/heads/main

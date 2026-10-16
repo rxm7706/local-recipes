@@ -1,0 +1,175 @@
+---
+/**
+ * /herald/decks/ and /herald/decks/<slug>/ -- the deck families (Story 43.2, CAP-61 on CAP-35 and
+ * CAP-53): the index, and one page per gallery infographic under presentations/<slug>/ showing the
+ * poster, the Infographic Deck and the Executive Summary in view and offering the current PPTX and
+ * Marp sources as downloads, each stamped with its sidecar's tree and etag (or `unstamped` and a content hash; never
+ * the build's commit, Story 43.7). A rest route: the index and every family from one page. A family page is indexed
+ * for search (Story 43.3).
+ */
+import Shot from '../../../components/herald/Shot.astro';
+import HeraldLayout from '../../../layouts/HeraldLayout.astro';
+import type { Download, Family } from '../../../lib/herald-pages';
+import { loadHeraldPages } from '../../../loaders/herald-pages-loader';
+
+export function getStaticPaths() {
+  const { families } = loadHeraldPages();
+  return [
+    { params: { slug: undefined }, props: { family: null } },
+    ...families.map((family) => ({ params: { slug: family.slug }, props: { family } })),
+  ];
+}
+
+interface Props {
+  family: Family | null;
+}
+
+const { family } = Astro.props;
+const pages = loadHeraldPages();
+const site = pages.site;
+const families = pages.families;
+const groups: Array<{ heading: string; none: string; items: Download[] }> = family
+  ? [
+      { heading: 'PowerPoint', none: 'No PowerPoint exported yet.', items: family.pptx },
+      { heading: 'Marp sources', none: 'No Marp sources exported yet.', items: family.marp },
+    ]
+  : [];
+const shell = {
+  favicon: site.favicon,
+  shortName: site.short_name ?? site.name,
+  current: 'herald/decks/',
+};
+---
+
+{
+  family ? (
+    <HeraldLayout
+      {...shell}
+      title={`${family.title} — ${site.name}`}
+      description={
+        family.description ||
+        `The ${family.title} deck family: poster, Infographic Deck, Executive Summary, PowerPoint and Marp sources.`
+      }
+      rel="../../"
+    >
+      <div class="page" data-pagefind-body>
+        <div class="lander">
+          <div class="kicker">
+            <span class="dot" />
+            Deck family
+          </div>
+          <h1>{family.title}</h1>
+          {family.description ? <p class="blurb">{family.description}</p> : null}
+        </div>
+
+        <div class="gallery">
+          <Shot
+            href={`../../infographics/${family.poster.outName}`}
+            preview={`../../${family.poster.twin}`}
+            placeholder="Poster"
+          >
+            <h3>Poster</h3>
+            <span class="shot-file">{family.poster.source}</span>
+            <span class="stamp-line">
+              tree {family.poster.stamp.tree} &middot; etag {family.poster.stamp.etag}
+            </span>
+          </Shot>
+          {family.views.map((view) => (
+            <Shot href={view.outName} preview={`../../${view.twin}`} placeholder={view.label}>
+              <h3>{view.label}</h3>
+              <span class="stamp-line">
+                tree {view.stamp.tree} &middot; etag {view.stamp.etag}
+              </span>
+            </Shot>
+          ))}
+        </div>
+
+        <div class="downloads">
+          {groups.map((group) => (
+            <Fragment>
+              <h2>{group.heading}</h2>
+              {group.items.length ? (
+                <ul class="download-list">
+                  {group.items.map((d) => (
+                    <li>
+                      <a href={`downloads/${d.name}`} download>
+                        {d.name}
+                      </a>
+                      <span class="dl-meta">
+                        {Math.floor(d.bytes / 1024)} KB &middot; tree {d.stamp.tree} &middot; etag {d.stamp.etag}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="soft-note">{group.none}</p>
+              )}
+            </Fragment>
+          ))}
+        </div>
+
+        {family.facts ? (
+          <p class="soft-note facts-line">
+            {`${family.facts.count} fact${family.facts.count === 1 ? '' : 's'} in `}<code>facts.yaml</code>{`, derived ${family.facts.derivedAt}`}
+          </p>
+        ) : null}
+
+        <footer>
+          <span>
+            <a href="../../decks/index.html">&larr; All decks</a>
+          </span>
+        </footer>
+      </div>
+    </HeraldLayout>
+  ) : (
+    <HeraldLayout
+      {...shell}
+      title={`Decks — ${site.name}`}
+      description={`${families.length} deck famil${families.length === 1 ? 'y' : 'ies'} published from the repository.`}
+      rel="../"
+    >
+      <div class="page">
+        <div class="lander">
+          <div class="kicker">
+            <span class="dot" />
+            Deck family
+          </div>
+          <h1>Decks</h1>
+          <p class="blurb">
+            One page per registered deck &mdash; the poster, the Infographic Deck and the Executive Summary in view, its
+            PowerPoint and Marp sources as downloads.
+          </p>
+        </div>
+
+        {families.length ? (
+          <div class="gallery">
+            {families.map((fam) => (
+              <Shot href={`${fam.slug}/index.html`} preview={`../${fam.poster.twin}`} placeholder={fam.title}>
+                <h3>{fam.title}</h3>
+                {fam.description ? <p>{fam.description}</p> : null}
+                <span class="shot-file">
+                  {fam.pptx.length} PPTX &middot; {fam.marp.length} Marp source{fam.marp.length === 1 ? '' : 's'}
+                </span>
+              </Shot>
+            ))}
+          </div>
+        ) : (
+          <div class="empty-state">
+            <h3>No decks registered yet</h3>
+            <p>
+              A deck family page is derived from each published infographic in <code>infographics.include</code> (
+              <code>docs-site/src/content/site.yml</code>); none matched.
+            </p>
+          </div>
+        )}
+
+        <footer>
+          <span>
+            Built from each deck's own standard export set (<code>presentations/&lt;slug&gt;/</code>) &mdash; nothing
+            here is hand-maintained.
+          </span>
+        </footer>
+      </div>
+    </HeraldLayout>
+  )
+}

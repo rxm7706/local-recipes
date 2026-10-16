@@ -69,6 +69,7 @@ from . import (
     live_proof_surfaces,
     marshal,
     one_chain,
+    pages_liveness,
     pixi_currency,
     platform_policy,
     sibling_dreams,
@@ -111,6 +112,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # Story 45.1 (Epic 45 / CAP-89) -- CI pause drift/stuck/overdue from
     # steward ``ci status --json``; fleet-picture ATTENTION probes this name.
     Source.CI_PAUSE_DRIFT.value: ci_pause_drift.gather,
+    # Story 48.2 (Epic 48 / CAP-91) -- the Pages root's last-modified against
+    # the latest published-input commit; fleet-picture ATTENTION probes this name.
+    Source.PAGES_LIVENESS.value: pages_liveness.gather,
     # Retro action item 3 (retro-pyforge-steward-2026-09-04.md, 2026-09-05)
     # -- another genuinely NEW (non-ported) DISPATCH member, same shape as
     # DUE_FOR_VERIFICATION/SIBLING_DREAMS_DRIFT above.

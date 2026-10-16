@@ -69,6 +69,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "stuck_rules": { "type": "object" },
+        "dispatch": { "type": "string", "enum": ["bypass", "pause-only"] },
         "retired_on": { "type": "string" },
         "owner": { "type": "string", "minLength": 1 }
       },

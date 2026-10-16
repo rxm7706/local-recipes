@@ -5,8 +5,8 @@ Covers the I/O matrix's happy-path materialization, unknown-name, and
 dogfooding-target rows, both at the primitive level and through the CLI
 (`main(["provision", "--env", ...])`). The real `pixi install -e <name>`
 invocation is never exercised here — `subprocess.run` is monkeypatched to a
-fast fixture (mirrors `test_deploy_build.py`'s own rationale: the real
-`pyforge-steward` env resolve is slow/network-dependent in a unit test).
+fast fixture: the real `pyforge-steward` env resolve is slow and
+network-dependent in a unit test.
 """
 
 from __future__ import annotations

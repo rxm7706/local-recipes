@@ -1,0 +1,64 @@
+---
+/**
+ * `/changes/` (Story 43.6, spec-pyforge-herald CAP-61, on CAP-13): what landed on `main`, from the `changes.json`
+ * build input a Guild step writes (the merge subjects of the last 30 days, until a CalVer tag anchors "since the
+ * last release"). Newest first, each with its date, station and subject; the RSS feed carries the same items.
+ * A build-time snapshot: absent input is one line, never a failed build.
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+import { changesInput } from '../../lib/agent-data.ts';
+import { CHANGES_INPUT, CHANGES_WINDOW_DAYS, mergeAnchor } from '../../lib/agent-surface.ts';
+
+export function getStaticPaths() {
+  return [{ params: { index: undefined } }];
+}
+
+const input = changesInput();
+const changes = input.present ? input.value : null;
+const days = changes?.windowDays ?? CHANGES_WINDOW_DAYS;
+const feedHead = [
+  { tag: 'link' as const, attrs: { rel: 'alternate', type: 'application/rss+xml', title: 'PyForge changes', href: 'rss.xml' } },
+];
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Changes',
+    description: `Merges to main in the last ${days} days, newest first; a build-time snapshot.`,
+    head: feedHead,
+  }}
+>
+  {
+    changes === null ? (
+      <p class="changes-absent" data-input-absent={CHANGES_INPUT}>
+        No change list in this build: the <code>{CHANGES_INPUT}</code> build input is absent.
+      </p>
+    ) : (
+      <>
+        <p class="changes-snapshot">
+          Merges to <code>main</code> in the last {days} days, newest first.{' '}
+          {changes.generatedAt ? (
+            <>
+              Snapshot taken <time datetime={changes.generatedAt}>{changes.generatedAt}</time>.
+            </>
+          ) : (
+            <>Snapshot time not recorded in the input.</>
+          )}
+        </p>
+        {changes.merges.length === 0 ? (
+          <p class="changes-empty">No merges to main in the last {days} days.</p>
+        ) : (
+          <ol class="changes-list">
+            {changes.merges.map((merge, index) => (
+              <li id={mergeAnchor(merge, index)} data-merge={merge.sha ?? ''}>
+                <time datetime={merge.date}>{merge.date}</time> <b>{merge.station}</b> {merge.subject}
+              </li>
+            ))}
+          </ol>
+        )}
+      </>
+    )
+  }
+  <p class="changes-feed"><a href="rss.xml">RSS feed</a> of the same list.</p>
+</StarlightPage>

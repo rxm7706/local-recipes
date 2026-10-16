@@ -1,10 +1,15 @@
 ---
 /**
- * The shared menu is herald's one navigation list (docsite/content/site.yml), read through the
- * generated top-menu JSON exactly as SiteTitle.astro reads it (Story 40.1, CAP-58) -- so an entry
- * that needs the Kedro-Viz mount drops out here too when no export is mounted (Story 42.2, CAP-60).
+ * The shared menu is the registry's (`docs/map.yaml` `sections`, src/lib/site-nav.ts; Story 43.7), exactly as
+ * SiteTitle.astro reads it (Story 40.1, CAP-58) -- so a section that needs a mounted export drops out here too when
+ * the export is absent (Story 42.2, CAP-60). The page
+ * carries the herald Content-Security-Policy (Story 43.3, AD-21), and its faces, tokens and rules come from the one
+ * herald stylesheet, bundled by Astro, with the theme the docs header's toggle chose (Story 43.4).
  */
-import topnav from '../topnav.generated.json';
+import { builtFromHtml } from '../lib/built-from';
+import { HERALD_CSP, THEME_SCRIPT } from '../lib/herald-pages';
+import '../styles/herald.css';
+import { siteNav } from '../lib/site-nav';
 
 interface Props {
   title: string;
@@ -12,12 +17,12 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
-/** Same rel prefix as docsite/templates/shell_page.html.j2 for the dossier page. */
+/** From /herald/dossier/ to the /herald/ mount. */
 const rel = '../';
 /** This page is /herald/dossier/; menu paths are relative to the site root. */
 const toRoot = `${rel}../`;
 const current = 'herald/dossier/';
-const nav = topnav.map((item) => ({ label: item.label, href: `${toRoot}${item.path}`, path: item.path }));
+const nav = siteNav().menu.map((item) => ({ label: item.label, href: `${toRoot}${item.path}`, path: item.path }));
 ---
 
 <!doctype html>
@@ -28,8 +33,8 @@ const nav = topnav.map((item) => ({ label: item.label, href: `${toRoot}${item.pa
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="generator" content="Astro" />
-    <link rel="stylesheet" href={`${rel}assets/fonts/fonts.css`} />
-    <link rel="stylesheet" href={`${rel}assets/site.css`} />
+    <meta http-equiv="Content-Security-Policy" content={HERALD_CSP} />
+    <script is:inline set:html={THEME_SCRIPT} />
   </head>
   <body>
     <header class="site-nav">
@@ -55,5 +60,6 @@ const nav = topnav.map((item) => ({ label: item.label, href: `${toRoot}${item.pa
       </div>
     </header>
     <slot />
+    <Fragment set:html={builtFromHtml()} />
   </body>
 </html>
