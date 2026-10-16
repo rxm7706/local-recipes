@@ -6,6 +6,8 @@ import os
 import shutil
 import subprocess
 import sys
+import threading
+import time
 import tomllib
 from pathlib import Path
 
@@ -135,3 +137,56 @@ def test_docs_how_to_diff_selects_pages_check(tmp_path: Path) -> None:
     selection = _select(repo)
     assert "pages-check" in _selected_tasks(selection)
     assert "site-check" not in _selected_tasks(selection)
+
+
+def test_a_herald_only_diff_runs_the_install_before_herald_s_suite(tmp_path: Path) -> None:
+    """Story 45.1: a diff touching only herald's tests fires herald's job and not pages.yml, and the preflight still
+    runs docs-site-install before herald's suite. The job's step runs pyforge-herald-test-built (the install, then the
+    suite), so the reader selects both lanes; pyforge-herald-test itself has no edge to the install (it stays npm-free
+    for the SBOM laptop gate), so pr-preflight-lanes declares the install before the station suites, where it takes the
+    docs-site lanes' first turn, and a touched run keeps it beside herald's lane."""
+    repo = _make_repo(tmp_path, {"src/shared/packages/pyforge-herald/tests/unit/probe.py": "# probe\n"})
+    pixi = tomllib.loads((repo / "pixi.toml").read_text(encoding="utf-8"))
+    lanes = preflight.list_preflight_lanes(pixi, invoking_env=INVOKING_ENV)
+    selection = preflight_ci.select_lanes(repo, lanes, pixi)
+    chosen = [lane for lane in lanes if selection.is_selected(lane)]
+    keys = [(lane.task, lane.environment) for lane in chosen]
+    assert {("pyforge-herald-test", "pyforge-herald"), ("docs-site-install", "site")} <= set(keys)
+    assert ("pages-check", "site") not in keys  # the Pages workflow did not fire: the install comes from herald's job
+    herald = next(lane for lane in lanes if lane.task == "pyforge-herald-test")
+    assert herald.depends_on == ()
+    assert keys.index(("docs-site-install", "site")) < keys.index(("pyforge-herald-test", "pyforge-herald"))
+    docs_lanes = [lane.task for lane in lanes if lane.task in preflight.DOCS_SITE_TASKS]
+    assert docs_lanes[0] == "docs-site-install"  # the first docs-site turn (steward Story 105.1's _next_lane)
+    cut = preflight.touched_cut(repo, chosen, pixi, selection)
+    assert dict(cut.reasons)[("docs-site-install", "site")] == "pyforge-herald-test@pyforge-herald reads its install"
+
+
+def test_the_install_runs_before_herald_s_suite_in_one_slot_and_many(tmp_path: Path) -> None:
+    """Story 45.1, end to end through ``run_preflight`` with an injected runner: on the shipped lane list, a herald-only
+    selection runs docs-site-install to its end before herald's suite starts, at ``--jobs 1`` and ``--jobs 8``, in the
+    full and the touched scope."""
+    repo = _make_repo(tmp_path, {"src/shared/packages/pyforge-herald/tests/unit/probe.py": "# probe\n"})
+    for scope in (preflight.SCOPE_FULL, preflight.SCOPE_TOUCHED):
+        for jobs in (1, 8):
+            rows: dict[str, tuple[float, float]] = {}
+            lock = threading.Lock()
+
+            def run_ctx(ctx: preflight.LaneRunContext, rows=rows, lock=lock) -> int:
+                start = time.monotonic()
+                time.sleep(0.05 if ctx.lane.task in preflight.DOCS_SITE_TASKS else 0.0)
+                with lock:
+                    rows[ctx.lane.task] = (start, time.monotonic())
+                return 0
+
+            code = preflight.run_preflight(
+                repo,
+                invoking_env=INVOKING_ENV,
+                jobs=jobs,
+                install_environment=lambda _env: 0,
+                run_lane_ctx=run_ctx,
+                scope=scope,
+                scratch_parent=tmp_path,
+            )
+            assert code == preflight.EXIT_OK, (scope, jobs)
+            assert rows["docs-site-install"][1] <= rows["pyforge-herald-test"][0], (scope, jobs, rows)

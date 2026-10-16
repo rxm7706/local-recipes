@@ -658,3 +658,40 @@ def test_kit_register_test_runs_in_the_real_checkout(tmp_path: Path, monkeypatch
     _verify(root, runner)
     seed = [cwd for argv, cwd in runner.calls if argv[-3:] == ["marshal", "seed", "check"]]
     assert seed == [root]
+
+
+def test_a_filtered_lane_runs_the_lanes_it_depends_on_first(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Herald Story 45.1's review: `--lane X` ran X alone with `--skip-deps`, so a lane whose dependency prepares the
+    tree (`pages-build` on `docs-site-install`) ran without it. The lane's dependencies run first, as rows of their own,
+    even when the selection did not select them."""
+    root = _fixture_root(tmp_path)
+    pixi = (root / "pixi.toml").read_text(encoding="utf-8")
+    pixi = pixi.replace(
+        '[feature.guild-tasks.tasks.guild-container]\ncmd = "echo guild-container"\n',
+        '[feature.guild-tasks.tasks.guild-container]\ncmd = "echo guild-container"\ndepends-on = ["prep"]\n'
+        '[feature.guild-tasks.tasks.prep]\ncmd = "echo prep"\n',
+    )
+    (root / "pixi.toml").write_text(pixi, encoding="utf-8")
+
+    def _selection(*_a, **_k):
+        return Selection(
+            base_ref="refs/remotes/origin/main",
+            all_reason=None,
+            changed_paths=("pixi.toml",),
+            dirty_paths=(),
+            verdicts=(
+                LaneVerdict("lint-types", "pyforge-guild", True, "fixture"),
+                LaneVerdict("prep", "pyforge-guild", False),
+                LaneVerdict("guild-container", "pyforge-guild", True, "fixture"),
+            ),
+        )
+
+    import pyforge.steward.estate_verify as ev
+
+    monkeypatch.setattr(ev, "select_lanes_for_paths", _selection)
+    runner = RecordingRunner(root=root)
+    result = _verify(root, runner, lane_filter="guild-container")
+    ran = [argv[-1] for argv, _ in runner.calls if argv[:4] == ["pixi", "run", "--frozen", "--skip-deps"]]
+    assert ran == ["prep", "guild-container"]
+    lane_rows = [row["name"] for row in result.details["verify"]["rows"] if row.get("kind") == "lane"]
+    assert lane_rows[:2] == ["prep", "guild-container"]

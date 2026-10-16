@@ -249,6 +249,67 @@ def test_a_station_package_change_keeps_that_stations_lanes(tmp_path: Path) -> N
     assert reasons[("ruff", INV)].startswith("lint and types: Python under src/ changed")
 
 
+DOCS_PIXI = """
+[feature.guild-tasks.tasks.pr-preflight-lanes]
+depends-on = [
+  "detectors-ci",
+  { task = "docs-site-install", environment = "site" },
+  { task = "pyforge-herald-test", environment = "pyforge-herald" },
+  { task = "pyforge-b-test", environment = "pyforge-b" },
+]
+[feature.guild-tasks.tasks.detectors-ci]
+cmd = "python tools/detectors.py --scope repo"
+[feature.site.tasks.docs-site-install]
+cmd = "npm ci"
+cwd = "docs-site"
+[feature.herald.tasks.pyforge-herald-test]
+cmd = "pytest src/shared/packages/pyforge-herald/tests -q"
+[feature.b.tasks.pyforge-b-test]
+cmd = "pytest src/shared/packages/pyforge-b/tests -q"
+""" + "".join(f'[feature.guild-tasks.tasks.{task}]\ncmd = "true"\n' for task in preflight.FAST_CORE_TASKS)
+
+
+def _docs_cut(tmp_path: Path, *changed: str, install_selected: bool = True) -> preflight.TouchedCut:
+    repo = _repo(tmp_path, DOCS_PIXI)
+    herald_test = repo / "src/shared/packages/pyforge-herald/tests/test_h.py"
+    herald_test.parent.mkdir(parents=True, exist_ok=True)
+    herald_test.write_text("", encoding="utf-8")
+    pixi = tomllib.loads(DOCS_PIXI)
+    lanes = [
+        lane
+        for lane in preflight.list_preflight_lanes(pixi, invoking_env=INV)
+        if install_selected or lane.task != preflight.DOCS_SITE_INSTALL_TASK
+    ]
+    verdicts = tuple(preflight_ci.LaneVerdict(lane.task, lane.environment, True, reason="fires") for lane in lanes)
+    selection = preflight_ci.Selection(preflight_ci.BASE_REF, None, tuple(changed), (), verdicts)
+    return preflight.touched_cut(repo, lanes, pixi, selection)
+
+
+def test_a_kept_docs_site_lane_brings_the_selected_install(tmp_path: Path) -> None:
+    """Herald Story 45.1: pyforge-herald-test declares no dependency on docs-site-install (the SBOM laptop gate runs it
+    and stays npm-free), so the cut keeps a selected install beside a kept docs-site lane, which reads it; the install
+    is declared first, so it takes the docs-site lanes' first turn."""
+    cut = _docs_cut(tmp_path, "src/shared/packages/pyforge-herald/tests/test_h.py")
+    assert _keys(cut.lanes) == [
+        *FAST_CORE,
+        ("docs-site-install", "site"),
+        ("pyforge-herald-test", "pyforge-herald"),
+    ]
+    assert dict(cut.reasons)[("docs-site-install", "site")] == "pyforge-herald-test@pyforge-herald reads its install"
+    assert ("pyforge-b-test", "pyforge-b") in _keys(cut.deferred)
+
+
+def test_the_install_stays_deferred_when_no_docs_site_lane_is_kept(tmp_path: Path) -> None:
+    cut = _docs_cut(tmp_path, "src/shared/packages/pyforge-b/tests/test_b.py")
+    assert _keys(cut.lanes) == [*FAST_CORE, ("pyforge-b-test", "pyforge-b")]
+    assert ("docs-site-install", "site") in _keys(cut.deferred)
+
+
+def test_an_install_the_selection_did_not_select_is_never_added(tmp_path: Path) -> None:
+    cut = _docs_cut(tmp_path, "src/shared/packages/pyforge-herald/tests/test_h.py", install_selected=False)
+    assert _keys(cut.lanes) == [*FAST_CORE, ("pyforge-herald-test", "pyforge-herald")]
+
+
 def test_the_portal_package_is_the_stations_too(tmp_path: Path) -> None:
     cut = _cut(_repo(tmp_path), "src/shared/packages/django-a/templates/a.html")
     assert _keys(cut.lanes) == [*FAST_CORE, ("pyforge-a-test", "pyforge-a"), ("pyforge-a-gate", "pyforge-a")]

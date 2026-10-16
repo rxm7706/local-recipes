@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.101.0
+version: 8.101.1
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4555,6 +4555,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.101.1** (Oct 16, 2026) — **herald Story 45.1 Rule-2 retro: the fleet-picture ATTENTION test stubs the Pages-liveness probe doctor Story 48.2 added (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.101.0** (Oct 14, 2026) — **steward Story 103.2 Rule-2 retro: batch mode for estate reconcile; `bmad_suite_metapackage.py --journal` writes floors from the batch, not the network (MINOR).** See `CHANGELOG.md`.
 - **v8.100.4** (Oct 14, 2026) — **mason Story 31.1 Rule-2 retro: the fleet-picture ATTENTION test stubs the CI-pause probe doctor Story 45.1 added (PATCH; tests only).** See `CHANGELOG.md`.
 - **v8.100.3** (Oct 14, 2026) — **steward Story 100.7 Rule-2 retro: the bmad-suite generator's floors depend on the network (PATCH).** See `CHANGELOG.md`.

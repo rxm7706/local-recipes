@@ -78,6 +78,11 @@ FAST_CORE_REPLACES = "detectors-ci"
 # overlap; every other lane keeps its concurrency. Declared once, here: tests/meta/test_preflight_docs_site_lanes.py
 # derives the same set from pixi.toml, the docs-site scripts' imports and herald's tests, and fails when they differ.
 DOCS_SITE_MUTEX_KEY = "tree:docs-site"
+# Herald Story 45.1: the install every other docs-site lane reads. A touched run keeps it beside any kept docs-site lane
+# (touched_cut), because pyforge-herald-test declares no dependency on it: pyforge-station-tests and the SBOM laptop
+# gate run that task and stay npm-free (fnd:CAP-13). pr-preflight-lanes declares it before the station suites, so it
+# takes the docs-site lanes' first turn (_next_lane).
+DOCS_SITE_INSTALL_TASK = "docs-site-install"
 DOCS_SITE_TASKS = frozenset(
     {
         "docs-site-install",  # npm ci: deletes docs-site/node_modules and installs it again
@@ -344,7 +349,8 @@ def touched_cut(
 
     ``lanes`` are what a full run would run (the selection, after the CI pause filter), in run order. A lane is
     kept when ``preflight_ci.touch_verdict`` says the diff changes its station package, a path its command
-    names, or Python under ``src/`` for a lint-and-types lane; a kept lane brings the lanes it depends on.
+    names, or Python under ``src/`` for a lint-and-types lane; a kept lane brings the lanes it depends on, and a kept
+    docs-site lane brings a selected ``docs-site-install``, which it reads (herald Story 45.1).
     ``detectors-ci``, unless kept itself, gives its place and its environment to the fast core. Nothing is cut
     when the selection could not read the diff. Raises :class:`PreflightConfigError` for a missing fast-core task.
     """
@@ -362,6 +368,11 @@ def touched_cut(
         verdict = preflight_ci.touch_verdict(repo_root, lane, pixi_data, changed, lint_tasks=lint_tasks)
         if verdict.touched:
             reasons[_lane_key(lane)] = verdict.reason
+    install = next((key for key in by_key if key[0] == DOCS_SITE_INSTALL_TASK), None)
+    if install is not None and install not in reasons:
+        reader = next((key for key in reasons if key[0] in DOCS_SITE_TASKS), None)
+        if reader is not None:
+            reasons[install] = f"{lane_label(*reader)} reads its install"
     pending = list(reasons)
     while pending:
         key = pending.pop()
@@ -714,10 +725,13 @@ def _subprocess_reduced_suite_lane(
             if _run_stopped_before_segment(len(override.segments)):
                 pass
             elif segment_rows and all(row["outcome"] == "no-tests-selected" for row in segment_rows):
+                # --skip-deps, as every lane runs: the lanes it depends on ran as lanes of their own (herald Story 45.1's
+                # review: without it the fallback re-ran a task's dependencies, npm ci among them, inside the lane).
                 collect_argv = [
                     "pixi",
                     "run",
                     "--frozen",
+                    "--skip-deps",
                     "-e",
                     ctx.lane.environment,
                     ctx.lane.task,

@@ -4,7 +4,7 @@ review, F2 and F3).
 ``docs-site/src/lib/herald-pages.ts`` reads the gallery, the deck families, their downloads and their stamps, and
 refuses a second current export of a kind. Until Story 43.7 the parity test held it equal to the Jinja path; with that
 path gone, these tests hold it to what the tree says, literally. They need only node (the module imports node builtins
-and no ``node_modules``), so they run in CI, where the built Astro tests skip:
+and no ``node_modules``), so they run in every CI lane, the coverage leg too, which installs no docs-site:
 
 * the tracked gallery's ten titles in their order, and its ten families;
 * the fixture tree's override and ``order`` sort, its published names, a deck with no poster (no family), a family

@@ -637,6 +637,35 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"45" = [  # herald's built-site tests install docs-site first, in preflight and CI (fix under CAP-61; no CAP, no flag;
+  # Story 45.1), added 2026-10-16 and widened by its review fixes the same day. The default surface, restated because a
+  # declared entry replaces it outright, plus pixi.toml (the cmd-less pyforge-herald-test-built, the coverage report's
+  # install, pr-preflight-lanes' install leg), steward's station-tests workflow (the herald job's site environment and
+  # strict step), steward's preflight (the touched cut keeps a selected install beside a kept docs-site lane; the
+  # collect-only fallback skips dependencies) and estate verify (a lane's dependencies first) with their tests,
+  # steward's selection oracle, the steward deferred-work rows the review asked for, the regenerated pixi-tasks page
+  # (with its docs/map.yaml stamp) and TEA matrix, and every Spec memlog a reconcile names (spec-python-foundry-cutover:
+  # the laptop gate stays npm-free). pixi.lock and environment.yaml stay unchanged.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/test-architecture.md",
+  "scripts/.spec-surface-baseline.json",
+  "pixi.toml",
+  ".github/workflows/pyforge-station-tests.yml",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_estate_verify.py",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  "docs/how-to/pixi-tasks.md",
+  "docs/map.yaml",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # dispatch (Story 102.1 / spec-pyforge-marshal CAP-161), added 2026-10-15: a re-landing reuses this station's own
 # verified verdict when only merges of main and planning-only commits moved the branch since the head it judged,
 # after a narrow re-check, and still waits for CI (operator rulings 2026-10-15; the Pages stations' speed ask). The

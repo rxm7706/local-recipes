@@ -4,7 +4,8 @@
 the top menu every page carries and the home's doors their entries, in ``order`` (``docs-site/src/lib/nav.ts``,
 read once per build by ``src/lib/site-nav.ts``). Replaces Stories 27.3 and 40.1's ``sidebar_from_map.py`` tests and
 ``site.yml``'s nav list. The model runs through node (no ``node_modules``); the built-site test needs docs-site
-installed and skips naming the command otherwise.
+installed, which ``pyforge-herald-test-built`` does first, and otherwise skips naming the command, or fails under
+``HERALD_DOCS_SITE_REQUIRED`` (Story 45.1).
 """
 
 from __future__ import annotations

@@ -6446,9 +6446,11 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   location: src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py (`run_preflight`, `_mark_dependency_blocked`)
   origin: Story 103.6 independent review, 2026-10-15 (no implementation)
   owner: steward
+  fix: either (a) close a full-scope selection over `depends_on` before the pool (`run_preflight`, after the selection filter at `preflight.py:1074`/`:1095`), as `touched_cut` already does for a kept lane, so a selected lane brings the lanes it depends on; or (b) refuse the run with `EXIT_CONFIG` (2), naming each selected lane whose dependency lane is not in the run, before any lane starts. (a) matches what `pixi run` itself does (it runs a task's dependencies); (b) keeps the selection exactly CI's. Either needs a `run_preflight` test with a lane whose dependency the selection leaves out, under the 105.1 hang guard.
   severity: medium
   promoted: 2026-10-15 — recorded with Story 103.6's review
   status: open
+  verified: 2026-10-16 — STANDS, reproduced — a probe during herald Story 45.1 (a scratch copy of the repo; steps inline here) gave `pyforge-herald-coverage-gate` a `depends-on` on `docs-site-install@site` in a scratch repo holding the real workflows, committed a `scripts/coverage_gate.py`-only diff (coverage-gates.yml's shared surface: every station's gate fires, herald's suite job does not), and ran `run_preflight` with an injected runner: the reader selected the gate's lane without the install, and the run was still going after 30 s; 45.1's independent review reproduced it at 25 s with the gate lane never started. Cause at `7c44d291e7` (line numbers there; symbols are stable): `_deps_all_ok` (`preflight.py:849`) stays false; `_mark_dependency_blocked` (`:1242`-`:1251`) skips a lane while any dependency has no result (`:1245`); with no future in flight, `if not futures:` (`:1294`-`:1297`) `continue`s with no sleep, at 100% CPU. Still latent on the shipped graph: 45.1's review swept 1100 one-path diffs and every pause combination and found no selection that strands a dependency. 45.1 keeps it latent on purpose: the coverage gate takes no install dependency (a pixi.toml comment and `test_the_coverage_gate_takes_no_install_dependency` say why). The next `depends-on` on a lane the reader matches by its command line, rather than by a task's closure, reaches it.
 
 ### DW-steward-103-6-2: The touched cut's fast-core filter would drop a fast-core task's own dependencies
 
@@ -6534,4 +6536,16 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   fix: at the next estate refresh (`pixi run -e pyforge-steward pyforge steward estate plan --due`, then `refresh`), remove `jinja2` from `[feature.site.dependencies]` and re-solve `pixi.lock`; reword the `site` environment comment to the loop it is (python, pyyaml for `docs-site/scripts/verify_claims.py`, nodejs for Astro); regenerate `environment.yaml` only if the `build` export changes (it should not) and run `pixi run --frozen -e site pages-check` and `llms-full-check` (`jinja2` stays catalogued: another feature declares it).
   severity: low
   promoted: 2026-10-15 — herald Story 43.7 independent review (Pages redesign chain)
+  status: open
+
+### DW-steward-45-1-1: `pixi run -e pyforge-guild pr-preflight-lanes` stops at "could not find the task 'pages-build'"
+
+- source_spec: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-45-1-the-built-site-tests-install-docs-site-first.md`
+  summary: `pr-preflight-lanes` is the serial reference for every lane a PR gates on (Story 71.1). Run as a pixi task it fails before any lane starts: its `{ task = "pages-check", environment = "site" }` leg depends on the bare `pages-build`, which pixi resolves in the invoking environment (`pyforge-guild`), where the `site` feature's tasks do not exist. `docs-site-validate`'s bare legs would fail the same way. `pr-preflight` (the runner, `python -m pyforge.steward.preflight`) is unaffected: it reads the graph itself and gives a bare dependency its dependent's environment. Follow-up: name the environment on the `site` tasks' own dependencies (`depends-on = [{ task = "pages-build", environment = "site" }]` and the like, as `pyforge-herald-test-built` does), or say in `pr-preflight-lanes`' description that it is a graph for the runner only, not a task to run, and pin whichever with a test that dry-runs it. Recorded only; herald Story 45.1 does not change it.
+  evidence: `pixi run --as-is --dry-run -e pyforge-guild pr-preflight-lanes` exits 1 with "× could not find the task 'pages-build'" at `d21af06fbc`, at `57af743b4f` (45.1's independent review, observation) and at 45.1's review-fix tree `7c44d291e7` (same command, same error); `pixi.toml` `[feature.site.tasks.pages-check]` `depends-on = ["pages-build"]`.
+  location: pixi.toml (`[feature.site.tasks.pages-check]`, `[feature.site.tasks.docs-site-validate]`, `[feature.site.tasks.docs-site-validate-sidebar]`, `[feature.guild-tasks.tasks.pr-preflight-lanes]`)
+  origin: herald Story 45.1 independent review, 2026-10-16 (pre-existing, outside its diff; the coordinating session's ruling: steward owns it)
+  owner: steward
+  severity: low
+  promoted: 2026-10-16 — recorded with herald Story 45.1's review fixes
   status: open

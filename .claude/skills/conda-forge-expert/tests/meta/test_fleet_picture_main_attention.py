@@ -17,7 +17,8 @@ fleet-picture layer naming them, not only the generic warn filter
 to `main()` and left out here is not stubbed, so it reads the faked
 `subprocess.run` and degrades to its own "could not check" line in every test:
 doctor Story 45.1 added `ci_pause_drift_findings` that way, and the three
-tests went red until mason Story 31.1 listed it.
+tests went red until mason Story 31.1 listed it; doctor Story 48.2 did the same
+with `pages_liveness_findings`, listed by herald Story 45.1.
 """
 import importlib.util
 import sys
@@ -57,6 +58,7 @@ _PROBES = (
     "verification_staleness_findings",
     "dream_chain_gap_findings",
     "ci_pause_drift_findings",
+    "pages_liveness_findings",
     "sibling_dreams_drift_findings",
     "capability_effect_findings",
     "status_body_consistency_findings",
@@ -112,6 +114,10 @@ def test_every_probe_result_reaches_needs_or_watch(mod, monkeypatch, capsys):
         lambda: [_finding("ci-pause-drift", "dashboard.deploy switch drifted")],
     )
     monkeypatch.setattr(
+        mod, "pages_liveness_findings",
+        lambda: [_finding("pages-liveness", "live root is 26h behind its inputs")],
+    )
+    monkeypatch.setattr(
         mod, "sibling_dreams_drift_findings",
         lambda: [_finding("sibling-dreams-drift", "title X differs")],
     )
@@ -137,6 +143,7 @@ def test_every_probe_result_reaches_needs_or_watch(mod, monkeypatch, capsys):
         "3 rows due",
         "dream chain: gap",
         "ci-pause-drift: dashboard.deploy switch drifted",
+        "pages-liveness: live root is 26h behind its inputs",
         "sibling-dreams-drift: title X differs",
         "capability-effect: CAP-9 has no effect",
         "status-body-consistency: body says done (precision=0.500)",
@@ -187,6 +194,7 @@ def test_every_failing_probe_degrades_to_its_own_watch_line(mod, monkeypatch, ca
         "could not check verification staleness",
         "could not check dream-chain gaps",
         "could not check CI pauses",
+        "could not check Pages liveness",
         "could not check sibling-dreams drift",
         "could not check capability-effect",
         "could not check status-body-consistency",
