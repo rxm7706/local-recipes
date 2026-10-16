@@ -205,16 +205,54 @@ def test_a_dependency_paused_in_ci_strands_its_dependent_and_the_run_refuses(
 def test_a_lane_no_ci_step_runs_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A lane with no CI counterpart always runs here; CI runs it neither with its dependency nor without."""
+    """A lane with no CI counterpart always runs here; CI runs it neither with its dependency nor without, and there
+    is no step to change, so the fix is to add one."""
     _write(tmp_path / "pixi.toml", CHAIN)
     reason = "no CI counterpart in .github/workflows (always runs)"
     _quiet_ci(monkeypatch, _selection({"lint", "app"}, CHAIN_LANES, reason=reason))
     assert _refused_run(tmp_path) == preflight.EXIT_CONFIG
     assert _refusal(capsys.readouterr().err)[1:] == [
         "preflight:   no CI step runs app, so CI never runs it, with build@pyforge-guild or without",
-        "preflight:   fix: make the CI step run `pixi run app`, or drop app's depends-on",
+        "preflight:   fix: add a CI step that runs `pixi run app`, or drop app's depends-on",
         REFUSED,
     ]
+
+
+def test_a_paused_lane_ignore_ci_pauses_re_adds_without_its_dependency_says_why(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The fourth way in (the re-review's should-fix): ``app``'s CI step is ``pixi run app``, and its job is paused, so
+    CI's selection, with the pause applied, leaves out ``app`` and its dependency ``install``. ``--ignore-ci-pauses``
+    re-adds only the paused lanes a ci-surfaces.yaml row names as a local twin (``discover_paused_lanes``): ``app``,
+    not ``install``. Refused, saying the same pause holds ``install`` back and how to fix it; ``app``'s CI step needs
+    no change."""
+    _write(tmp_path / "pixi.toml", _pixi(["lint", "app"], {"app": ["install"]}))
+    paused = preflight_ci.PausedLane("app", INV, "PAUSE_X", "2026-10-04", "2026-11-01")
+    monkeypatch.setattr(preflight_ci, "_flag_on", lambda _root: True)
+    monkeypatch.setattr(
+        preflight_ci, "resolve_ci_vars", lambda *a, **k: preflight_ci.CiVarResolution("snapshot 1h", lambda _n: "true")
+    )
+    monkeypatch.setattr(preflight_ci, "list_paused_ci_surfaces", lambda *a, **k: [])
+    monkeypatch.setattr(preflight_ci, "discover_paused_lanes", lambda *a, **k: [paused])
+    monkeypatch.setattr(preflight_ci, "select_lanes", lambda *a, **k: _selection({"lint"}, ["lint", "install", "app"]))
+    assert _refused_run(tmp_path, ignore_ci_pauses=True) == preflight.EXIT_CONFIG
+    assert _refusal(capsys.readouterr().err) == [
+        "preflight: app@pyforge-guild runs (paused in CI (PAUSE_X since 2026-10-04, review_by 2026-11-01), re-added "
+        "by --ignore-ci-pauses) but depends on install@pyforge-guild, which this run does not run",
+        "preflight:   install@pyforge-guild is held back by the same pause, and --ignore-ci-pauses re-adds only the "
+        "lanes docs/governance/ci-surfaces.yaml names as a local twin",
+        "preflight:   fix: name install@pyforge-guild as the local twin of its surface's "
+        "docs/governance/ci-surfaces.yaml row, or run without --ignore-ci-pauses",
+        REFUSED,
+    ]
+    assert not (tmp_path / preflight.JOURNAL_RELATIVE).exists()
+
+
+def test_two_missing_dependencies_are_named_together() -> None:
+    """The pause line agrees in number with the dependencies it names."""
+    lane = preflight.Lane("app", INV, (("a", INV), ("b", INV)))
+    lines = preflight.stranded_lane_message(lane, lane.depends_on, "paused", kind=preflight.STRANDED_PAUSE_IGNORED)
+    assert lines[1].startswith("  a@pyforge-guild, b@pyforge-guild are held back by the same pause")
 
 
 def _touched_repo(tmp_path: Path, *, fast_core_dep: str | None = None) -> Path:

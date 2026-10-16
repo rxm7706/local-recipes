@@ -335,9 +335,13 @@ def stranded_dependencies(lanes: Sequence[Lane]) -> tuple[tuple[Lane, tuple[Lane
 
 
 NO_CI_COUNTERPART = "no CI counterpart"  # how preflight_ci's verdict reason opens for a lane no CI step runs
+# Story 107.1: why a stranded lane is in the run, which decides what its refusal says.
+STRANDED_SELECTED = "selected"  # CI's selection chose it (by its command line, or as a lane no CI step runs)
+STRANDED_FAST_CORE = "fast-core"  # a touched run's fast core, in place of detectors-ci
+STRANDED_PAUSE_IGNORED = "pause-ignored"  # paused in CI and re-added by --ignore-ci-pauses
 
 
-def stranded_lane_message(lane: Lane, missing: Sequence[LaneKey], why: str, *, fast_core: bool) -> list[str]:
+def stranded_lane_message(lane: Lane, missing: Sequence[LaneKey], why: str, *, kind: str) -> list[str]:
     """The refusal's lines for one stranded lane (Story 107.1): the lane, why it runs, each missing dependency, what
     CI does with it, and the fixes.
 
@@ -345,26 +349,37 @@ def stranded_lane_message(lane: Lane, missing: Sequence[LaneKey], why: str, *, f
     dependency is a lane of the run. It never pulls a missing one in: a CI step that runs ``pixi run <task>`` selects
     every lane of the task's ``depends-on`` closure with it (``preflight_ci._step_matches``), so CI's selection leaves
     a dependency out only when nothing in CI runs it with the lane -- a lane the reader matched by its command line,
-    a fast-core detector, a lane no CI step runs -- and running it here could turn CI's red into a local green.
+    a fast-core detector, a lane no CI step runs -- and running it here could turn CI's red into a local green. The
+    fourth way in is ``--ignore-ci-pauses``, which re-adds only the paused lanes ``docs/governance/ci-surfaces.yaml``
+    names as a local twin, so a dependency the same pause holds back can stay out.
     """
     name = lane_label(lane.task, lane.environment)
     deps = ", ".join(lane_label(*key) for key in missing)
     lines = [f"{name} runs ({why}) but depends on {deps}, which this run does not run"]
-    if fast_core:
+    if kind == STRANDED_FAST_CORE:
         lines.append(
             f"  CI runs {lane.task} inside detectors-ci (scripts/detectors.py), never as `pixi run {lane.task}`, "
             f"so never with {deps}"
         )
         lines.append(f"  fix: drop {lane.task}'s depends-on, or take {lane.task} out of FAST_CORE_TASKS")
-        return lines
-    if why.startswith(NO_CI_COUNTERPART):
+    elif kind == STRANDED_PAUSE_IGNORED:
+        lines.append(
+            f"  {deps} {'is' if len(missing) == 1 else 'are'} held back by the same pause, and --ignore-ci-pauses "
+            "re-adds only the lanes docs/governance/ci-surfaces.yaml names as a local twin"
+        )
+        lines.append(
+            f"  fix: name {deps} as the local twin of its surface's docs/governance/ci-surfaces.yaml row, "
+            "or run without --ignore-ci-pauses"
+        )
+    elif why.startswith(NO_CI_COUNTERPART):
         lines.append(f"  no CI step runs {lane.task}, so CI never runs it, with {deps} or without")
+        lines.append(f"  fix: add a CI step that runs `pixi run {lane.task}`, or drop {lane.task}'s depends-on")
     else:
         lines.append(
             f"  CI runs {lane.task}'s command without {deps}: the step that selects it runs the command, "
             f"not `pixi run {lane.task}`, which is what runs a task's dependencies"
         )
-    lines.append(f"  fix: make the CI step run `pixi run {lane.task}`, or drop {lane.task}'s depends-on")
+        lines.append(f"  fix: make the CI step run `pixi run {lane.task}`, or drop {lane.task}'s depends-on")
     return lines
 
 
@@ -1179,13 +1194,22 @@ def run_preflight(
         }
         cut_reasons = dict(cut.reasons) if cut is not None else {}
         fast_core_keys = {_lane_key(lane) for lane in cut.fast_core} if cut is not None else set()
+        # The paused lanes --ignore-ci-pauses re-added: unselected with the pause applied, so they have no reason above.
+        re_added = {(entry.task, entry.environment): entry for entry in paused_lanes} if ignore_ci_pauses else {}
         for lane, missing in stranded:
             key = _lane_key(lane)
             if key in fast_core_keys:
-                why = cut_reasons[key]
+                kind, why = STRANDED_FAST_CORE, cut_reasons[key]
+            elif key in selected:
+                kind, why = STRANDED_SELECTED, selected[key]
             else:
-                why = selected.get(key, "paused in CI, run by --ignore-ci-pauses")
-            for line in stranded_lane_message(lane, missing, why, fast_core=key in fast_core_keys):
+                entry = re_added[key]
+                kind = STRANDED_PAUSE_IGNORED
+                why = (
+                    f"paused in CI ({entry.switch} since {entry.since}, review_by {entry.review_by}), "
+                    "re-added by --ignore-ci-pauses"
+                )
+            for line in stranded_lane_message(lane, missing, why, kind=kind):
                 print(f"preflight: {line}", file=sys.stderr)
         print("preflight: refusing the run before any install or lane starts", file=sys.stderr)
         return EXIT_CONFIG

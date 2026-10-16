@@ -5,7 +5,7 @@ created: '2026-10-16'
 status: 'in-review'
 baseline_revision: '2ca62dbca09624fa3a8231123101acaf7c95f1d1'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate: a flag-OFF run would keep the spin reachable (Q2's gate exemption), as 105.1 and 106.1 recorded
-review_loop_iteration: 1
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -55,15 +55,20 @@ ruling, checked against the code):
 - `discover_paused_lanes` (`:754`) marks a lane paused only when it is unselected with the pause and selected without
   it. A dependency the dependent's unpaused step matches is selected with the pause on, so it is never paused while
   its dependent runs.
-- That leaves three ways in: a dependent CI's reader matches by its own command line (`_step_matches`' second branch;
+- That leaves four ways in: a dependent CI's reader matches by its own command line (`_step_matches`' second branch;
   `coverage-gates.yml:202` runs `python scripts/coverage_gates_ci.py`, not the gate task); a lane no CI step runs at
-  all, which `_outcome` (`:1234`) selects as "no CI counterpart … (always runs)"; and, after the touched cut, which
-  already keeps a kept lane's dependencies from the selected lanes, a dependency of a fast-core detector. In each,
-  nothing in CI runs the lane with the dependency.
+  all, which `_outcome` (`:1234`) selects as "no CI counterpart … (always runs)"; after the touched cut, which already
+  keeps a kept lane's dependencies from the selected lanes, a dependency of a fast-core detector; and
+  `--ignore-ci-pauses` *(added at re-review, 2026-10-16)*. The selection is read with the pause applied, so a paused
+  lane and the dependency its `pixi run` step runs with it are both left out, and the flag re-adds only the lanes
+  `discover_paused_lanes` returns, which are only lanes a `docs/governance/ci-surfaces.yaml` row names as a local twin
+  (`_registry_row_for_lane`, `:694`); a dependency with no such row stays out. In each, nothing in CI runs the lane
+  with the dependency: CI runs the first three without it, and runs neither the paused lane nor its dependency.
 - On the shipped graph none is reached: the three lanes with a dependency (`pages-build`, `pages-check`,
-  `docs-site-validate-sidebar`) are each matched by a `pixi run` step, and the lanes matched only by their command
-  line (the eight coverage gates) or by nothing (`detectors-ci`, `docs-map-render-test`, `docs-gen-test`) have no
-  `depends-on` (scratchpad `sites_probe.py` over the live workflows).
+  `docs-site-validate-sidebar`) are each matched by a `pixi run` step, the lanes matched only by their command line
+  (the eight coverage gates) or by nothing (`detectors-ci`, `docs-map-render-test`, `docs-gen-test`) have no
+  `depends-on` (scratchpad `sites_probe.py` over the live workflows), and no `local_twin` row names a preflight lane,
+  so `--ignore-ci-pauses` re-adds nothing (the re-review).
 
 **Measured at `2ca62dbca0`** (16 logical cores; pixi 0.81.0; every exit code read directly):
 
@@ -105,14 +110,21 @@ ruling, checked against the code):
   does not run`, a line on what CI does with the lane, and a `fix:` line, then `preflight: refusing the run before any
   install or lane starts`, and returns `EXIT_CONFIG` (2), journaling nothing, as every config refusal does.
   `stranded_lane_message` builds the lines:
-  - `<why>` is the lane's selection verdict reason (for a touched run's kept lane too), or, for a fast-core detector,
-    the cut's reason (`fast core, in place of detectors-ci@<env>`); a lane `--ignore-ci-pauses` added has no selected
-    verdict and reads `paused in CI, run by --ignore-ci-pauses`.
+  - `<why>` is the lane's selection verdict reason (for a touched run's kept lane too); for a fast-core detector, the
+    cut's reason (`fast core, in place of detectors-ci@<env>`); for a lane `--ignore-ci-pauses` re-added, which has no
+    selected verdict, its pause (`paused in CI (<switch> since <date>, review_by <date>), re-added by
+    --ignore-ci-pauses`). `run_preflight` picks one of three kinds (`STRANDED_SELECTED`, `STRANDED_FAST_CORE`,
+    `STRANDED_PAUSE_IGNORED`) from the cut, the verdicts and the paused lanes the flag re-added.
   - A lane CI's reader matched by its command line: `CI runs <task>'s command without <deps>: the step that selects it
     runs the command, not \`pixi run <task>\`, which is what runs a task's dependencies`, and `fix: make the CI step
     run \`pixi run <task>\`, or drop <task>'s depends-on`.
   - A lane no CI step runs (its reason opens with `NO_CI_COUNTERPART`, pinned against `preflight_ci._outcome`):
-    `no CI step runs <task>, so CI never runs it, with <deps> or without`, and the same `fix:` line.
+    `no CI step runs <task>, so CI never runs it, with <deps> or without`, and, since there is no step to change,
+    `fix: add a CI step that runs \`pixi run <task>\`, or drop <task>'s depends-on` *(the re-review's nit)*.
+  - A lane `--ignore-ci-pauses` re-added: `<deps> is held back by the same pause, and --ignore-ci-pauses re-adds only
+    the lanes docs/governance/ci-surfaces.yaml names as a local twin`, and `fix: name <deps> as the local twin of its
+    surface's docs/governance/ci-surfaces.yaml row, or run without --ignore-ci-pauses`. Which lanes the flag re-adds
+    does not change *(added at re-review)*.
   - A fast-core detector: `CI runs <task> inside detectors-ci (scripts/detectors.py), never as \`pixi run <task>\`, so
     never with <deps>`, and `fix: drop <task>'s depends-on, or take <task> out of FAST_CORE_TASKS`.
   The scheduler loop is not restructured: the refusal makes the spin unreachable. With nothing stranded the run set,
@@ -180,7 +192,10 @@ install and lane runner raise if reached. AC7 reads the live `pixi.toml`. No tes
   2, no install, no lane, no journal; stderr ends with exactly the three lines for `app` (why, the command-line case,
   the fix) and the refusal line.
 - **AC3 — A paused dependency.** With the CI pause flag on and `install` paused alone, `app` (selected, depends on
-  `install`): refused after the pause banner, before any install, naming `install`.
+  `install`): refused after the pause banner, before any install, naming `install`. *(Added at re-review:)* with
+  `--ignore-ci-pauses`, a paused `app` the flag re-adds while its paused dependency `install` stays out (no local-twin
+  row): refused with exactly the pause-ignored lines (the pause in the why, the same pause holding `install` back, the
+  local-twin fix); and the line agrees in number with two missing dependencies.
 - **AC4 — Touched scope.** The diff touches `app`, which the cut keeps; the selection dropped `build`: refused with the
   same lines as AC2.
 - **AC5 — The fast core.** A touched run whose fast-core `flag-gate-check` depends on `build`, which the cut deferred:
@@ -188,7 +203,7 @@ install and lane runner raise if reached. AC7 reads the live `pixi.toml`. No tes
 - **AC6 — Nothing stranded.** A run whose dependencies are all selected (`lint`, skipped, has no dependent): the run
   set and order, the whole stderr, and both journal records (the install record and the run record, with only the run's
   identity, the checkout's head, the clocks and the host left out) equal a pinned copy, which passes against the base
-  revision's `preflight.py` too. A lane no CI step runs gets its own explanation line.
+  revision's `preflight.py` too. A lane no CI step runs gets its own explanation line and an "add a CI step" fix.
 - **AC7 — The pixi graph.** The meta test's walk of `pr-preflight-lanes` from `pyforge-guild` finds every pair; finds
   the same pairs `list_preflight_lanes` builds; on the old `site` shape, rebuilt from the live tree, names
   `pages-build@pyforge-guild` (named by `pages-check@site`) first, then the two `docs-site-validate` legs, and resolves
@@ -199,7 +214,9 @@ install and lane runner raise if reached. AC7 reads the live `pixi.toml`. No tes
 - **AC8 — Mutation.** Each change below fails a named test, and the Implementation Result records which: no refusal;
   the refusal after the install; the check before the touched cut; the environment ignored in the check; the why left
   out; the fast-core lines for every lane; the command-line lines for a fast-core lane; the no-counterpart branch
-  dropped; no `fix:` line; and in the walk: a bare entry in its dependent's environment, depth-first, the default
+  dropped; no `fix:` line; the fast-core why read from the selection; *(added at re-review)* the pause-ignored branch
+  dropped, its why replaced by the old fallback string, and the no-counterpart fix line back to "make the CI step
+  run"; and in the walk: a bare entry in its dependent's environment, depth-first, the default
   feature always, an explicit environment ignored; and `pixi.toml`'s `site` entries back to bare names.
 - **AC9 — The real tree.** `pixi run --as-is --dry-run -e pyforge-guild pr-preflight-lanes` exits 0 with 36 tasks;
   `-e site pages-check` and `-e site docs-site-validate` exit 0 and list the same tasks, in the same order, as before;
@@ -228,6 +245,11 @@ install and lane runner raise if reached. AC7 reads the live `pixi.toml`. No tes
 - **A `depends-on` on a lane no CI step runs is refused too.** CI never runs that lane, so pulling its dependency in
   could not mask a CI red; refusing it costs only the run, and the message says no CI step runs the lane.
   `detectors-ci`, `docs-map-render-test` and `docs-gen-test` are such lanes today, and none has a `depends-on`.
+- **`--ignore-ci-pauses` refuses a paused lane whose paused dependency has no local-twin row** *(added at re-review)*.
+  The flag's purpose, running what CI pauses, then stops at the refusal until the dependency is named as a local twin
+  in its surface's `docs/governance/ci-surfaces.yaml` row, or the run drops the flag. Widening what the flag re-adds
+  is out of scope (the ruling: which lanes it re-adds does not change). Today no `local_twin` row names a preflight
+  lane, so the flag re-adds nothing.
 - **A fast-core task with a dependency refuses touched runs.** `_fast_core_lanes` brings a fast-core task's dependency
   when it is not among the run's lanes, so the refusal fires only when it is and the cut deferred it. Then every such
   touched run exits 2 until the fast-core task drops its dependency or leaves the fast core. None of the five has a
@@ -246,6 +268,7 @@ install and lane runner raise if reached. AC7 reads the live `pixi.toml`. No tes
 | a lane no CI step runs depends on a lane the selection dropped | spins | exit 2; "no CI step runs" it |
 | touched run, a kept lane's dependency dropped by the selection | spins | exit 2, as the full run |
 | touched run, a fast-core task depends on a lane the cut deferred | spins (the fast core's other four run) | exit 2, the fast-core reason and fixes |
+| `--ignore-ci-pauses` re-adds a paused lane; its paused dependency has no local-twin row | spins | exit 2: the pause, the same pause holds the dependency back, the local-twin fix or drop the flag |
 | nothing stranded | the run as it was | unchanged (pinned) |
 | `pixi run --as-is --dry-run -e pyforge-guild pr-preflight-lanes` | exit 1, `could not find the task 'pages-build'` | exit 0, 36 tasks, the runner's 36 lanes in the runner's order |
 | `pixi run --as-is --dry-run -e site pages-check` / `docs-site-validate` | exit 0: 3 / 4 tasks | exit 0: the same tasks in the same order |
@@ -283,7 +306,7 @@ Story 107.1 in `epics.md` § Epic 107: a stranded preflight lane is refused, and
   MRS-GATE-010 binding).
 
 **Run before the push (not dispatch gates):**
-- `pixi run --frozen -e pyforge-steward python -m pytest -q src/shared/packages/pyforge-steward/tests/unit/test_preflight_stranded_lane.py src/shared/packages/pyforge-steward/tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py` — expected: 20 passed (AC1-AC7).
+- `pixi run --frozen -e pyforge-steward python -m pytest -q src/shared/packages/pyforge-steward/tests/unit/test_preflight_stranded_lane.py src/shared/packages/pyforge-steward/tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py` — expected: 22 passed (AC1-AC7).
 - The AC8 mutations, one at a time on a scratch copy (never the worktree), re-running the two files — expected: each
   fails its named tests; the copy restored after each.
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: exit 0.
@@ -324,23 +347,35 @@ Story 107.1 in `epics.md` § Epic 107: a stranded preflight lane is refused, and
   missing dependency, what CI does and the fixes; the unit tests become `test_preflight_stranded_lane.py`; the story is
   retitled and its ledger key, spec file and `marshal-policy.toml` comment follow. Should-fix (1): both rationales now
   say CI's matrix step runs the script, not the task, so CI never runs the install with the gate, and a `depends-on`
-  there would be refused (exit 2). Should-fix (2) and all four nits go with the closure. The `pixi.toml` `site` fix
-  and its meta test are unchanged, as the review found them sound.
+  there would be refused (exit 2). Should-fix (2) and the first three nits went with the closure. The fourth nit (no
+  run-level `--ignore-ci-pauses` case) was recorded here as gone too; it was not (next entry). The `pixi.toml` `site`
+  fix and its meta test are unchanged, as the review found them sound.
+- 2026-10-16 (re-review of `42c3ffff5d`): FAIL, one should-fix and one nit (scratchpad `r107/review.md`, "Re-review";
+  probe `r107/tools/probe_ignore.py`). (should-fix) `--ignore-ci-pauses` is a fourth way to strand a lane: it re-adds
+  only the paused lanes a ci-surfaces.yaml row names as a local twin, so a paused lane's dependency from the same
+  paused `pixi run` step stays out when it has no row, and the refusal said "CI runs L's command without P … make the
+  CI step run `pixi run L`", false for that step. That is the fourth nit above, which outlived the closure. Fixed: a
+  lane the flag re-added gets its own lines (its pause as the why, the same pause holding the dependency back, the
+  flag re-adding only local-twin lanes; fix: name the dependency as its surface's local twin, or run without the
+  flag), a run-level test pins them, and the four-case list replaces the three-case one here, in the Dream entry,
+  Epic 107 and the DW-steward-103-6-1 `closed:` line. Which lanes the flag re-adds does not change. (nit) A lane no CI
+  step runs has no step to change: its fix line now reads "add a CI step that runs `pixi run <task>`, or drop <task>'s
+  depends-on".
 
 ## Implementation Result
 
 Hand-implemented on branch `chain-preflight-stranded-deps-2026-10-16`, from baseline `2ca62dbca0`, revised after the
 review. The diff is for an independent review against this spec, not against this summary.
 
-- **`preflight.py`:** `stranded_dependencies`, `NO_CI_COUNTERPART` and `stranded_lane_message` beside
-  `list_preflight_lanes`; `run_preflight` refuses a stranded lane after `_print_scope` and before the install, with
-  each lane's why taken from its selection verdict or, for a fast-core detector, from the cut; the module and
-  `run_preflight` docstrings say so. Against `2ca62dbca0` the file gains only these (no closure, no journal key; the
+- **`preflight.py`:** `stranded_dependencies`, `NO_CI_COUNTERPART`, the three `STRANDED_*` kinds and
+  `stranded_lane_message` beside `list_preflight_lanes`; `run_preflight` refuses a stranded lane after `_print_scope`
+  and before the install, with each lane's kind and why taken from the cut (a fast-core detector), its selection
+  verdict, or the pause of a lane `--ignore-ci-pauses` re-added; the module and `run_preflight` docstrings say so. Against `2ca62dbca0` the file gains only these (no closure, no journal key; the
   scheduler, the selection and the journal code are byte-identical).
 - **`pixi.toml`:** the five `site` tasks with a `depends-on` (`docs-site-build`, `pages-build`, `pages-check`,
   `docs-site-validate-sidebar`, `docs-site-validate`) name `environment = "site"` on every entry, under a comment that
   says why; the comment above `pyforge-herald-coverage-gate` restates its reason. No other line changes.
-- **Tests (new):** `tests/unit/test_preflight_stranded_lane.py` (AC1-AC6, 10 cases) and
+- **Tests (new):** `tests/unit/test_preflight_stranded_lane.py` (AC1-AC6, 12 cases after the re-review) and
   `tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py` (AC7, 10 cases).
 - **Herald (cross-station):** `tests/meta/test_docs_site.py` (`docs-site-build`),
   `tests/meta/test_docs_site_validators.py` (`docs-site-validate-sidebar`, `docs-site-validate`) and
@@ -348,33 +383,60 @@ review. The diff is for an independent review against this spec, not against thi
   `tests/meta/test_built_site_tests_install_first.py`'s `test_the_coverage_gate_takes_no_install_dependency` docstring
   restates its reason (no assertion changes).
 - **AC2-AC6 against the base.** The unit file run against `2ca62dbca0`'s `preflight.py` (a `git archive` copy with only
-  the new test file added, `PYTHONPATH` on the copy): 9 failed, 1 passed. The pinned record test passed; the five run
-  tests each failed on `pixi install was reached` (the run went on to its pool, where the probe above spun); the four
-  check tests failed on the missing names.
+  the new test file added, `PYTHONPATH` on the copy), re-run after the re-review: 11 failed, 1 passed. The pinned
+  record test passed; the six run tests each failed on `pixi install was reached` (the run went on to its pool, where
+  the probe above spun); the five check and message tests failed on the missing names.
 - **AC7 against the base.** The meta test run on `2ca62dbca0`'s tree: 3 failed, 7 passed. The graph test named
   `pages-build@pyforge-guild (named by pages-check@site); docs-site-validate-links@pyforge-guild (named by
   docs-site-validate@site); docs-site-validate-sidebar@pyforge-guild (named by docs-site-validate@site)`; the
   cross-check and the shape test failed with it.
 - **AC8, each mutation on a scratch copy of the staged tree, the copy restored after each** (scratchpad
-  `mutate2.py`): 20 passed before and after.
+  `mutate3.py`, after the re-review): 22 passed before and after.
 
   | Mutation | Failed |
   |---|---|
-  | R1 no refusal | 5: every run test (full, paused, no-counterpart, touched, fast core), each on `pixi install was reached` |
-  | R2 the refusal after the install | 5: the same tests |
+  | R1 no refusal | 6: every run test (full, paused, no-counterpart, `--ignore-ci-pauses`, touched, fast core), each on `pixi install was reached` |
+  | R2 the refusal after the install | 6: the same tests |
   | R3 the check on the lanes before the touched cut | 1: `test_a_fast_core_task_whose_dependency_the_cut_deferred_refuses` |
   | R4 the environment ignored in the check | 1: `test_a_dependency_is_a_task_in_its_own_environment` |
-  | R5 the why left out | 4: the full, paused, touched and fast-core tests |
-  | R6 the fast-core lines for every lane | 3: the full, no-counterpart and touched tests |
+  | R5 the why left out | 5: the full, paused, `--ignore-ci-pauses`, touched and fast-core tests |
+  | R6 the fast-core lines for every lane | 5: the full, no-counterpart, `--ignore-ci-pauses`, touched and two-dependencies tests |
   | R7 the command-line lines for a fast-core lane | 1: the fast-core test |
   | R8 the no-counterpart branch dropped | 1: `test_a_lane_no_ci_step_runs_says_so` |
-  | R9 no `fix:` line | 3: the full, no-counterpart and touched tests |
+  | R9 no `fix:` line in the command-line case | 2: the full and touched tests |
   | R10 the fast-core why read from the selection | 1: the fast-core test |
+  | R11 the pause-ignored branch dropped | 2: `test_a_paused_lane_ignore_ci_pauses_re_adds_without_its_dependency_says_why`, `test_two_missing_dependencies_are_named_together` |
+  | R12 a re-added lane's why back to the old fallback string | 1: the `--ignore-ci-pauses` test (it survived all 10 tests before the re-review) |
+  | R13 the old fallback whole (the command-line kind and the old string) | 1: the `--ignore-ci-pauses` test |
+  | R14 the no-counterpart fix line back to "make the CI step run" | 1: the no-counterpart test |
+  | R15 the pause line's verb fixed to "is" | 1: `test_two_missing_dependencies_are_named_together` |
   | W1 walk: a bare entry in its dependent's environment | 2: the old-shape test and the bare-entry fixture test |
   | W2 walk: depth-first | 1: `test_on_the_old_site_shape_the_walk_stops_where_pixi_did` |
   | W3 walk: the default feature always | 2: the bare-entry and default-feature fixture tests |
   | W4 walk: an explicit environment ignored | 5: the graph, cross-check, old-shape, bare-entry and entry-form tests |
   | P1 `pixi.toml`'s `site` entries bare again (`2ca62dbca0`'s file) | 3: the graph, cross-check and shape tests |
+
+## Verification run (2026-10-16, after the re-review)
+
+On the 16-core host, at the branch's staged tree (`42c3ffff5d` plus the re-review fixes); every exit code read
+directly, never through a pipe.
+
+- The two new files, `pixi run --frozen -e pyforge-steward python -m pytest -q` on them: exit 0, 22 passed.
+- The AC8 mutations (`mutate3.py`, Implementation Result): each of the 20 failed its named tests; the scratch copy
+  passed 22 before and after.
+- The re-review's probe, `r107/tools/probe_ignore.py`, against the staged `preflight.py`: exit 2 with the
+  pause-ignored lines (the old command-line lines are gone).
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0, 2882 passed, 2 skipped, 1 warning, in 399 s.
+- The steward coverage gate (`--paths-file`, as below): exit 0; `preflight.py` 95%.
+- `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+- Planning detectors, each `pixi run --frozen -e pyforge-guild <task>` on the staged tree: chain-completeness,
+  dream-chain, dreams-hygiene, deferred-work, ledger-regression, story-status, flag-gate, chain-currency-sweep,
+  ad-citation, tea-playwright-check and frontmatter-duplicate-keys, each exit 0;
+  `python scripts/ci_surface_gates.py --check` exit 0. `bmad_tea_playwright.py --project pyforge-steward` exit 0.
+- `spec-surface-check`: exit 0, last, after the memlog entries (`spec-pyforge-steward`, `spec-pyforge-core`, the two
+  Specs the detector named) and their scoped stamps.
+- `pixi.toml` and herald's files do not change in this unit, so the dry-runs, the lane dump, the export and herald's
+  suite stand as recorded below.
 
 ## Verification run (2026-10-16, after the review)
 
