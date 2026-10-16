@@ -6013,7 +6013,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py": "0f88bcbc1f599f9c176cb414e6a6c3b43f8c2084",
    "src/shared/packages/pyforge-steward/tests/unit/test_measures.py": "ad38b82e87911c044f3b0eee3e5f4ed02e07b463",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages.py": "126f24462ebc9e87b068f824f80879c8425519d8",
-   "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py": "1349e7f618cd9816e07cb3e03685122902acfdf7",
+   "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py": "d26e3b9ac1f3cfb84a65e0bdb619ec12046e478d",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py": "77a5092cd067328445da31bce7f616b566043adf",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py": "17461377f5fd6e7b03ed7bbaa71606fbc00194ac",
    "src/shared/packages/pyforge-steward/tests/unit/test_pages_export_flag_states.py": "7424abfe180d9a10936930ec0df1c7fb95d51233",
@@ -6087,7 +6087,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "3845a2a9f1966a817755c52cf374ddf23c279778"
+  "memlog": "77c8a7e5f13672bb012313d9acbb42d59caac34d"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
