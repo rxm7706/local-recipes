@@ -6890,7 +6890,7 @@ So that the preflight never spins on a dependency nobody runs, never runs locall
 **When** the selection or a CI pause leaves out a dependency of a lane the run keeps, or a touched run's fast core depends on a deferred lane, or `--ignore-ci-pauses` re-adds a paused lane but not the dependency the same pause holds back, or pixi resolves `pr-preflight-lanes` from `pyforge-guild`
 **Then** the run exits 2 before any install or lane, journaling nothing, and names on stderr each stranded lane, why it runs (its selection verdict's reason, the fast-core reason, or the pause of a lane `--ignore-ci-pauses` re-added), each missing dependency, that nothing in CI runs the lane with it, and the fixes (make the CI step run `pixi run <task>`, or add one where no step runs the lane, or drop the `depends-on`; for a fast-core detector, drop the `depends-on` or take the task out of the fast core; under `--ignore-ci-pauses`, name the dependency as its surface's local twin in `docs/governance/ci-surfaces.yaml`, or run without the flag, whose re-adds do not change); and pixi resolves all 36 tasks, because every `site` task's `depends-on` entry names `environment = "site"`
 **And** when nothing is stranded, the run set, its order and the journal are what they were at `2ca62dbca0`; a steward meta test walks `pr-preflight-lanes` from `pyforge-guild` by pixi's lookup rule and fails naming every task it cannot find, and on the old `site` shape it fails first at `pages-build`, where pixi's dry-run stopped; `list_preflight_lanes` is unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` and `pixi run --frozen -e pyforge-guild lint-types` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

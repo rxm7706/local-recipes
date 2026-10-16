@@ -2,7 +2,7 @@
 title: '107.1: A stranded preflight lane is refused, and pr-preflight-lanes resolves under pixi'
 type: 'fix'
 created: '2026-10-16'
-status: 'in-review'
+status: 'done'
 baseline_revision: '2ca62dbca09624fa3a8231123101acaf7c95f1d1'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1), and pr-preflight is a gate: a flag-OFF run would keep the spin reachable (Q2's gate exemption), as 105.1 and 106.1 recorded
 review_loop_iteration: 2
@@ -254,6 +254,12 @@ install and lane runner raise if reached. AC7 reads the live `pixi.toml`. No tes
   when it is not among the run's lanes, so the refusal fires only when it is and the cut deferred it. Then every such
   touched run exits 2 until the fast-core task drops its dependency or leaves the fast core. None of the five has a
   `depends-on` today.
+- **The `--ignore-ci-pauses` lines fit the usual case only** (re-review 2's two optional nits, accepted as latent):
+  "held back by the same pause" is false when the re-added lane is matched by its command line in its paused job,
+  where its dependency is never selected, paused or not; and "name it as the local twin of its surface's row" would
+  displace the lane when that row is the lane's own (the workable form is a second row on the same switch, as
+  `PAUSE_PLATFORM_CONTAINER_BUILDS` has). Both need a `local_twin` row naming a preflight lane, and none does today.
+  The refusal still fires; only its advice is off.
 - **The walk models pixi 0.81.0.** A pixi release that resolves a bare entry in its dependent's environment would make
   the test stricter than pixi, never looser. Platform tasks (`target.<platform>.tasks`) and the `depends_on` key are
   outside the walk; a guard test fails when `pixi.toml` starts to use either. Feature `platforms` restrictions are
@@ -361,6 +367,12 @@ Story 107.1 in `epics.md` § Epic 107: a stranded preflight lane is refused, and
   Epic 107 and the DW-steward-103-6-1 `closed:` line. Which lanes the flag re-adds does not change. (nit) A lane no CI
   step runs has no step to change: its fix line now reads "add a CI step that runs `pixi run <task>`, or drop <task>'s
   depends-on".
+
+- 2026-10-16 (re-review 2 of `e3c9a61a75`): RESOLVED; both findings fixed. Two optional nits on the
+  `--ignore-ci-pauses` lines are accepted as latent and recorded under Residual risk; the reviewer confirmed the
+  `KeyError` branch in the refusal's kind lookup is unreachable by construction (every lane in the run is selected, a
+  paused lane the flag re-added, or a fast-core extra).
+- 2026-10-16 (landing): status `done`; the ledger key and `epic-107` `done`; the three DW rows closed.
 
 ## Implementation Result
 
