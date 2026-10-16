@@ -247,7 +247,7 @@ def test_a_lane_the_stop_keeps_from_starting_names_its_twin(tmp_path: Path) -> N
     coord.stop_on_red.set()
     ran: list[preflight.LaneRunContext] = []
     result = preflight._run_lane_in_pool(  # noqa: SLF001
-        coord, preflight.Lane("a", OTHER), tmp_path / "scratch", (), lambda ctx: ran.append(ctx) or 0, False, {}
+        coord, preflight.Lane("a", OTHER), tmp_path / "scratch", (), lambda ctx: ran.append(ctx) or 0, False
     )
     assert ran == []
     assert (result.task, result.environment, result.status) == ("a", OTHER, "cancelled")
@@ -289,7 +289,6 @@ def test_a_lane_stopped_while_it_waits_for_its_service_names_its_twin(
                 ("services:postgres",),
                 lambda ctx: ran.append(ctx) or 0,
                 False,
-                {},
             )
         )
 

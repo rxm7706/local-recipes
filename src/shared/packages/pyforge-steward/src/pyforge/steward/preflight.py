@@ -848,11 +848,32 @@ def _needed_by_pending_dependent(lane: Lane, pending: dict[LaneKey, Lane]) -> bo
     return any(key in other.depends_on for other in pending.values())
 
 
-def _skip_lane_on_red_stop(coord: _RunCoordinator, lane: Lane, pending: dict[LaneKey, Lane]) -> bool:
-    """Whether a red stop should prevent ``lane`` from running (Story 88.1 AC4)."""
-    if not coord.stop_on_red.is_set() or coord.keep_going:
-        return False
-    return not _needed_by_pending_dependent(lane, pending)
+def _skip_lane_on_red_stop(coord: _RunCoordinator) -> bool:
+    """Whether a red stop keeps a lane from starting (Story 88.1 AC4): every lane, once a red lane stopped a run
+    without ``--keep-going``.
+
+    After the stop the pool drains what is running and the run ends, so no lane still pending ever starts. A lane
+    that pending lanes depend on would only feed dependents that never run (Story 105.1's review: the docs-site
+    deferral made this reachable for ``docs-site-install``, which an earlier rule started and then killed at once).
+    """
+    return coord.stop_on_red.is_set() and not coord.keep_going
+
+
+def _run_order(
+    lane: Lane,
+    lanes: Sequence[Lane],
+    pending: dict[LaneKey, Lane],
+    keys: tuple[str, ...],
+) -> tuple[bool, int]:
+    """The order ready lanes start in: first a lane that holds a mutex and that pending lanes depend on, then
+    declaration order (Story 105.1's review).
+
+    Lanes that share a mutex run one at a time, so which one starts first decides what the others see:
+    ``docs-site-install`` then runs before ``pyforge-herald-test``, and herald's built-site tests read this run's
+    install, never a stale one or none at all (a fresh worktree). A lane that holds no mutex keeps its declared
+    place, as before.
+    """
+    return (not (bool(keys) and _needed_by_pending_dependent(lane, pending)), lanes.index(lane))
 
 
 def _blocked_lane_result(lane: Lane, blocker: tuple[str, str | None], *, keep_going: bool) -> LaneResult:
@@ -887,12 +908,11 @@ def _run_lane_in_pool(
     mutex_keys: tuple[str, ...],
     runner: Callable[[LaneRunContext], int],
     use_subprocess: bool,
-    pending: dict[LaneKey, Lane],
 ) -> LaneResult:
     key = _lane_key(lane)
     if coord.cancel.is_set():
         return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
-    if _skip_lane_on_red_stop(coord, lane, pending):
+    if _skip_lane_on_red_stop(coord):
         trigger, trigger_env = _stop_cause(coord, "red")
         return LaneResult(
             lane.task,
@@ -915,7 +935,7 @@ def _run_lane_in_pool(
             held.append(lock)
         if coord.cancel.is_set():
             return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
-        if _skip_lane_on_red_stop(coord, lane, pending):
+        if _skip_lane_on_red_stop(coord):
             trigger, trigger_env = _stop_cause(coord, "red")
             return LaneResult(
                 lane.task,
@@ -1222,22 +1242,16 @@ def run_preflight(
                         key = _lane_key(candidate)
                         if key not in pending or not _deps_all_ok(candidate, completed):
                             continue
-                        if _skip_lane_on_red_stop(coord, candidate, pending):
+                        if _skip_lane_on_red_stop(coord):
                             continue
                         if busy.intersection(mutex_keys[key]):
                             continue
                         ready_candidates.append(candidate)
                     if not ready_candidates:
                         break
-                    if coord.stop_on_red.is_set() and not coord.keep_going:
-                        ready_candidates.sort(
-                            key=lambda lane: (
-                                not _needed_by_pending_dependent(lane, pending),
-                                lanes.index(lane),
-                            )
-                        )
-                    else:
-                        ready_candidates.sort(key=lambda lane: lanes.index(lane))
+                    ready_candidates.sort(
+                        key=lambda lane: _run_order(lane, lanes, pending, mutex_keys[_lane_key(lane)])
+                    )
                     ready = ready_candidates[0]
                     key = _lane_key(ready)
                     del pending[key]
@@ -1249,7 +1263,6 @@ def run_preflight(
                         mutex_keys[key],
                         runner,
                         use_subprocess,
-                        pending,
                     )
                     futures[fut] = ready
 

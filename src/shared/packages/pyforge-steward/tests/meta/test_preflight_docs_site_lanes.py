@@ -9,16 +9,24 @@ each task does, and fails when the declared set misses a task or names one more:
 * **it needs the tree's install:** its ``depends-on`` closure reaches a task of the first kind;
 * **it imports an npm package:** it runs a ``docs-site/`` script whose import closure (relative imports followed)
   names a package, which node reads from ``docs-site/node_modules``;
+* **it spawns npm or astro:** it runs a ``docs-site/`` script whose import closure takes ``node:child_process`` and
+  names npm, npx, pnpm or astro as a command (``pages.mts`` runs ``spawnSync('npm', ['run', 'build'])``), so the
+  task builds in the tree whether or not it depends on the install (Story 105.1's review);
 * **it runs herald's suite,** whose built-site tests call ``astro_build`` (``tests/meta/pages_astro.py``) and so run
   ``astro build`` in ``docs-site/``, which rewrites ``docs-site/public/``.
 
-A script that imports only node builtins and reads only ``docs/`` (the link and sidebar-order validators) is in none
-of these, so its lane keeps its concurrency; the test pins that too, from the scripts' own source.
+A script that imports only node builtins, spawns nothing and reads only ``docs/`` (the link and sidebar-order
+validators) is in none of these, so its lane keeps its concurrency; the test pins that too, from the scripts' own
+source. Steward's station-tests job must fire on every file this test reads (Story 98.1's rule): the last test checks
+that ``steward_paths`` in ``.github/workflows/pyforge-station-tests.yml`` covers each docs-site file an import closure
+visits, which the AST-derived trigger map cannot see.
 """
 
 from __future__ import annotations
 
 import ast
+import copy
+import fnmatch
 import re
 import shlex
 import tomllib
@@ -32,6 +40,7 @@ PIXI = REPO_ROOT / "pixi.toml"
 DOCS_SITE = "docs-site"
 HERALD_TESTS = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-herald" / "tests"
 NPM_TOOLS = frozenset({"npm", "npx", "pnpm", "astro"})
+STATION_TESTS_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "pyforge-station-tests.yml"
 SCRIPT_SUFFIXES = (".ts", ".mts", ".js", ".mjs", ".cjs")
 
 _BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
@@ -42,6 +51,8 @@ _SPECIFIERS = (
     re.compile(r"""\bimport\(\s*['"]([^'"]+)['"]\s*\)"""),
     re.compile(r"""\brequire\(\s*['"]([^'"]+)['"]\s*\)"""),
 )
+# A quoted npm, npx, pnpm or astro command name (``spawnSync('npm', ...)``), or astro's own bin path.
+_SPAWNED_TOOL = re.compile(r"""['"](?:npm|npx|pnpm|astro)['"]|astro/bin/astro\.mjs""")
 
 
 def _pixi() -> dict[str, Any]:
@@ -110,8 +121,9 @@ def _specifiers(path: Path) -> list[str]:
     return [match for pattern in _SPECIFIERS for match in pattern.findall(source)]
 
 
-def import_closure(script: Path) -> set[str]:
-    """Every non-relative specifier the script and the files it imports relatively name (``node:fs``, ``yaml``)."""
+def _script_closure(script: Path) -> tuple[set[Path], set[str]]:
+    """The files the script reaches through relative imports (itself included), and every non-relative specifier they
+    name (``node:fs``, ``yaml``)."""
     named: set[str] = set()
     seen: set[Path] = set()
     stack = [script.resolve()]
@@ -127,7 +139,26 @@ def import_closure(script: Path) -> set[str]:
                 stack.append(_resolve(path, specifier))
             else:
                 named.add(specifier)
-    return named
+    return seen, named
+
+
+def import_closure(script: Path) -> set[str]:
+    """Every non-relative specifier the script and the files it imports relatively name (``node:fs``, ``yaml``)."""
+    return _script_closure(script)[1]
+
+
+def closure_files(script: Path) -> set[Path]:
+    """The script and every file it reaches through relative imports."""
+    return _script_closure(script)[0]
+
+
+def spawns_tool(script: Path) -> bool:
+    """True when the script's import closure takes ``node:child_process`` and names npm, npx, pnpm or astro as a
+    command: it builds or installs in the tree from inside node."""
+    files, named = _script_closure(script)
+    if "node:child_process" not in named:
+        return False
+    return any(_SPAWNED_TOOL.search(_BLOCK_COMMENT.sub("", f.read_text(encoding="utf-8"))) for f in files)
 
 
 def _packages(specifiers: set[str]) -> set[str]:
@@ -163,9 +194,9 @@ def _herald_tests_build_astro() -> list[str]:
     return callers
 
 
-def derive() -> dict[str, set[str]]:
-    """The docs-site tasks of ``pixi.toml``, by the rule that puts each in the set."""
-    every = _tasks(_pixi())
+def derive(pixi: dict[str, Any] | None = None) -> dict[str, set[str]]:
+    """The docs-site tasks of ``pixi.toml`` (or of ``pixi``), by the rule that puts each in the set."""
+    every = _tasks(_pixi() if pixi is None else pixi)
     tasks = {name: task for name, task in every.items() if "cmd" in task}
     in_tree = {name for name, task in tasks.items() if _runs_in_the_tree(task)}
     needs_install = {name for name in tasks if _closure(name, every) & in_tree}
@@ -174,10 +205,17 @@ def derive() -> dict[str, set[str]]:
         for name, task in tasks.items()
         if any(_packages(import_closure(script)) for script in _docs_site_scripts(task))
     }
+    spawns = {name for name, task in tasks.items() if any(spawns_tool(s) for s in _docs_site_scripts(task))}
     herald = (
         {name for name, task in tasks.items() if _runs_herald_suite(task)} if _herald_tests_build_astro() else set()
     )
-    return {"in_tree": in_tree, "needs_install": needs_install, "imports_package": imports_package, "herald": herald}
+    return {
+        "in_tree": in_tree,
+        "needs_install": needs_install,
+        "imports_package": imports_package,
+        "spawns_tool": spawns,
+        "herald": herald,
+    }
 
 
 def test_the_declared_set_is_exactly_the_derived_set() -> None:
@@ -195,7 +233,23 @@ def test_each_rule_sees_the_tasks_it_exists_for() -> None:
     assert {"docs-site-install", "docs-site-build"} <= rules["in_tree"]
     assert {"pages-build", "pages-check", "docs-site-validate-sidebar"} <= rules["needs_install"]
     assert "docs-site-validate-sidebar" in rules["imports_package"]
+    assert {"pages-build", "pages-check"} <= rules["spawns_tool"]
     assert {"pyforge-herald-test", "pyforge-herald-coverage-gate"} <= rules["herald"]
+
+
+def test_a_build_through_a_docs_site_script_is_seen_without_its_install_dependency() -> None:
+    """Story 105.1's review: pages-build matches the spawn rule on its own, so dropping its install dependency keeps it
+    (and pages-check) in the derived set, and a new task that runs pages.mts with no depends-on is caught."""
+    planted = copy.deepcopy(_pixi())
+    site = planted["feature"]["site"]["tasks"]
+    del site["pages-build"]["depends-on"]
+    site["pages-preview"] = "node docs-site/scripts/pages.mts build"
+    rules = derive(planted)
+    derived = set().union(*rules.values())
+    assert "pages-build" in rules["spawns_tool"]
+    assert "pages-build" not in rules["needs_install"]
+    assert {"pages-build", "pages-check", "pages-preview"} <= derived
+    assert derived - preflight.DOCS_SITE_TASKS == {"pages-preview"}  # the equality test above would fail on it
 
 
 def test_the_import_scan_reads_nav_checks_yaml_import() -> None:
@@ -223,6 +277,7 @@ def test_the_two_validators_import_only_node_builtins_and_stay_concurrent() -> N
             specifiers = import_closure(script)
             assert specifiers, (name, script)
             assert all(s.startswith("node:") for s in specifiers), (name, sorted(specifiers))
+            assert not spawns_tool(script), (name, script)
         assert not _closure(name, tasks), name
         assert name not in preflight.DOCS_SITE_TASKS
 
@@ -243,3 +298,36 @@ def test_the_real_lane_list_holds_more_than_one_docs_site_lane() -> None:
     assert {lane.task for lane in lanes if preflight.DOCS_SITE_MUTEX_KEY in keys[(lane.task, lane.environment)]} == (
         in_set
     )
+
+
+def _steward_paths() -> list[str]:
+    """``steward_paths`` from the station-tests workflow's ``changes`` step: git pathspecs, quotes stripped."""
+    lines = STATION_TESTS_WORKFLOW.read_text(encoding="utf-8").splitlines()
+    start = next(i for i, line in enumerate(lines) if line.strip() == "steward_paths=(")
+    end = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == ")")
+    return [line.strip().strip("'\"") for line in lines[start + 1 : end] if line.strip()]
+
+
+def _covered(path: str, pathspecs: list[str]) -> bool:
+    """git's default pathspec match: a leading-directory or exact path, or a glob whose ``*`` crosses ``/``."""
+    for spec in pathspecs:
+        if any(ch in spec for ch in "*?["):
+            if fnmatch.fnmatchcase(path, spec):
+                return True
+        elif path == spec or path.startswith(f"{spec.rstrip('/')}/"):
+            return True
+    return False
+
+
+def test_steward_s_job_fires_on_every_docs_site_file_this_test_reads() -> None:
+    """Story 98.1's rule for what this test reads through import resolution: every file an import closure of a
+    docs-site task's script visits, and herald's Astro helper, is on steward_paths."""
+    pathspecs = _steward_paths()
+    assert "src/shared/packages/pyforge-steward" in pathspecs  # the parser read the right array
+    read: set[str] = {(HERALD_TESTS / "meta" / "pages_astro.py").relative_to(REPO_ROOT).as_posix()}
+    for task in _tasks(_pixi()).values():
+        for script in _docs_site_scripts(task):
+            read |= {f.relative_to(REPO_ROOT).as_posix() for f in closure_files(script)}
+    assert any(path.startswith("docs-site/src/lib/") for path in read)  # a blindness guard: imports were followed
+    missing = sorted(path for path in read if not _covered(path, pathspecs))
+    assert not missing, f"steward's station-tests job does not fire on files this test reads: {missing}"

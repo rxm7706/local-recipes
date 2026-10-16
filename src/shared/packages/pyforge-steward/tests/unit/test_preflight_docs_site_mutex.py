@@ -4,14 +4,22 @@ Every test runs the real ``run_preflight`` (or the real pool function) over a fi
 lane runner; none runs pixi. The fixtures are not git repositories, so selection runs every lane (no
 ``refs/remotes/origin/main``), and the service keys come from the fixture workflows alone
 (``preflight_ci.static_service_mutex_keys``).
+
+Every test runs under a hang guard: a scheduler or lock regression into a spin or a deadlock dumps every thread's
+stack to ``<pytest basetemp>/hang-guard-<test>.txt`` and ends the process with exit 1
+(``faulthandler.dump_traceback_later(..., exit=True)``) instead of hanging the steward lane. pytest captures stderr,
+so the stacks go to that file, which a red preflight lane keeps in its scratch. ``run_preflight`` installs a SIGINT
+handler, so it has to stay on the main thread; faulthandler's watchdog is a thread of its own and needs no signal.
 """
 
 from __future__ import annotations
 
+import faulthandler
 import json
 import threading
 import time
 import tomllib
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -24,6 +32,19 @@ POSTGRES = "services:postgres"
 DOCS = preflight.DOCS_SITE_MUTEX_KEY
 # A test that asserts two lanes DO overlap gives each this long, so a loaded host's thread start-up cannot hide it.
 OVERLAP_SECONDS = 0.6
+# The longest any test here may take before the hang guard ends the process. The slowest takes about 2 s.
+HANG_SECONDS = 120
+
+
+@pytest.fixture(autouse=True)
+def _hang_guard(request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    dump = tmp_path_factory.getbasetemp() / f"hang-guard-{request.node.name}.txt"
+    with dump.open("w", encoding="utf-8") as handle:
+        faulthandler.dump_traceback_later(HANG_SECONDS, exit=True, file=handle)
+        try:
+            yield
+        finally:
+            faulthandler.cancel_dump_traceback_later()
 
 
 def _write(path: Path, text: str) -> None:
@@ -214,7 +235,7 @@ def test_two_lanes_given_their_keys_in_opposite_orders_take_them_in_one_order(
         def run() -> None:
             results.append(
                 preflight._run_lane_in_pool(  # noqa: SLF001
-                    coord, preflight.Lane(task, INV), tmp_path / "scratch", keys, runs, False, {}
+                    coord, preflight.Lane(task, INV), tmp_path / "scratch", keys, runs, False
                 )
             )
 
@@ -241,7 +262,7 @@ def test_a_lane_releases_every_mutex_it_took_when_it_fails(tmp_path: Path) -> No
 
     with pytest.raises(RuntimeError, match="lane crashed"):
         preflight._run_lane_in_pool(  # noqa: SLF001
-            coord, preflight.Lane("pyforge-herald-test", INV), tmp_path / "scratch", (POSTGRES, DOCS), boom, False, {}
+            coord, preflight.Lane("pyforge-herald-test", INV), tmp_path / "scratch", (POSTGRES, DOCS), boom, False
         )
     for key in (POSTGRES, DOCS):
         lock = coord.mutex_lock(key)
@@ -249,11 +270,42 @@ def test_a_lane_releases_every_mutex_it_took_when_it_fails(tmp_path: Path) -> No
         lock.release()
 
 
+class _RacyLocks(dict[str, threading.Lock]):
+    """A lock map that holds the race window open: a membership check waits until both threads have checked, and a
+    ``setdefault`` pauses between its check and its store. An unguarded check-then-set, or an unguarded
+    ``setdefault``, then stores two locks for one key; ``mutex_lock``'s guard stores one."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.stored: list[threading.Lock] = []
+        self._both_checked = threading.Barrier(2, timeout=5)
+
+    def __contains__(self, key: object) -> bool:
+        found = super().__contains__(key)
+        self._both_checked.wait()
+        return found
+
+    def __setitem__(self, key: str, value: threading.Lock) -> None:
+        self.stored.append(value)
+        super().__setitem__(key, value)
+
+    def setdefault(self, key: str, default: threading.Lock) -> threading.Lock:  # type: ignore[override]
+        if not super().__contains__(key):
+            time.sleep(0.1)
+            self.stored.append(default)
+            super().__setitem__(key, default)
+        return super().__getitem__(key)
+
+
 def test_every_thread_gets_the_one_lock_of_a_key() -> None:
+    """Review nit: the map holds the check-to-store window open, so the test fails against the old unguarded
+    check-then-set (and against a ``setdefault`` without the guard), which hand two threads two locks."""
     coord = preflight._RunCoordinator(  # noqa: SLF001
-        repo_root=Path("."), run_id="t", run_start=0.0, jobs=16, keep_going=False
+        repo_root=Path("."), run_id="t", run_start=0.0, jobs=2, keep_going=False
     )
-    start = threading.Barrier(16)
+    racy = _RacyLocks()
+    coord.mutex_locks = racy
+    start = threading.Barrier(2)
     got: list[threading.Lock] = []
     guard = threading.Lock()
 
@@ -263,10 +315,98 @@ def test_every_thread_gets_the_one_lock_of_a_key() -> None:
         with guard:
             got.append(lock)
 
-    threads = [threading.Thread(target=take) for _ in range(16)]
+    threads = [threading.Thread(target=take, daemon=True) for _ in range(2)]
     for thread in threads:
         thread.start()
     for thread in threads:
         thread.join(timeout=10)
-    assert len(got) == 16
-    assert len({id(lock) for lock in got}) == 1
+    assert len(got) == 2
+    assert len(racy.stored) == 1, f"{len(racy.stored)} locks stored for one key"
+    assert got[0] is got[1] is racy.stored[0]
+
+
+def test_the_install_starts_before_herald_s_suite(tmp_path: Path) -> None:
+    """Review should-fix 2: a lane that pending lanes depend on starts first, so docs-site-install runs before
+    pyforge-herald-test even though herald is declared first, and herald's built-site tests read this run's install
+    (on a fresh worktree, an install at all)."""
+    _write(
+        tmp_path / "pixi.toml",
+        _pixi(
+            ["pyforge-herald-test", "pages-check"],
+            {"pages-check": ["pages-build"], "pages-build": ["docs-site-install"]},
+        ),
+    )
+    for jobs in (1, 8):
+        runs = _Intervals(seconds=0.1)
+        assert (
+            preflight.run_preflight(
+                tmp_path, invoking_env=INV, jobs=jobs, install_environment=_NOOP_INSTALL, run_lane_ctx=runs
+            )
+            == preflight.EXIT_OK
+        ), jobs
+        assert runs.rows["docs-site-install"][1] <= runs.rows["pyforge-herald-test"][0], (jobs, runs.rows)
+        assert runs.rows["pages-build"][1] <= runs.rows["pyforge-herald-test"][0], (jobs, runs.rows)
+
+
+def test_only_a_lane_holding_a_mutex_jumps_the_declared_order(tmp_path: Path) -> None:
+    """With one slot, a keyless lane that a pending lane waits on keeps its declared place (``a``, then ``b``, then
+    ``c``), as before; a docs-site lane that a pending lane waits on (``docs-site-install``) starts first."""
+    started: list[str] = []
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        started.append(ctx.lane.task)
+        return 0
+
+    _write(tmp_path / "pixi.toml", _pixi(["a", "c"], {"c": ["b"]}))
+    assert (
+        preflight.run_preflight(
+            tmp_path, invoking_env=INV, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
+        )
+        == preflight.EXIT_OK
+    )
+    assert started == ["a", "b", "c"]
+    started.clear()
+    _write(tmp_path / "pixi.toml", _pixi(["a", "pages-build"], {"pages-build": ["docs-site-install"]}))
+    assert (
+        preflight.run_preflight(
+            tmp_path, invoking_env=INV, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
+        )
+        == preflight.EXIT_OK
+    )
+    assert started == ["docs-site-install", "a", "pages-build"]
+
+
+def test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on(tmp_path: Path) -> None:
+    """Review nit: herald (holding the docs-site key) goes red while docs-site-install, which pages-build waits on,
+    is deferred. The stop ends the run, so nothing that would only feed cancelled dependents starts: the install
+    never runs and is journaled as a lane that never started (Story 71.10)."""
+    _write(
+        tmp_path / "pixi.toml",
+        _pixi(
+            ["pyforge-herald-test", "after-herald", "pages-build"],
+            {"after-herald": ["pyforge-herald-test"], "pages-build": ["docs-site-install"]},
+        ),
+    )
+    started: list[str] = []
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        started.append(ctx.lane.task)
+        return 1 if ctx.lane.task == "pyforge-herald-test" else 0
+
+    assert (
+        preflight.run_preflight(
+            tmp_path, invoking_env=INV, jobs=4, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
+        )
+        == preflight.EXIT_LANE_RED
+    )
+    assert started == ["pyforge-herald-test"]
+    by_task = {entry["task"]: entry for entry in _journal(tmp_path)["lanes"]}
+    assert by_task["pyforge-herald-test"]["status"] == "red"
+    assert (by_task["after-herald"]["status"], by_task["after-herald"]["cancelled_by"]) == (
+        "cancelled",
+        "pyforge-herald-test",
+    )
+    install = by_task["docs-site-install"]
+    assert (install["status"], install["exit_code"], install["seconds"]) == ("cancelled", 0, 0.0)
+    assert "cancelled_by" not in install
+    assert by_task["pages-build"]["status"] == "cancelled"
