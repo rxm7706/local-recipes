@@ -135,3 +135,21 @@ def test_docs_how_to_diff_selects_pages_check(tmp_path: Path) -> None:
     selection = _select(repo)
     assert "pages-check" in _selected_tasks(selection)
     assert "site-check" not in _selected_tasks(selection)
+
+
+def test_a_herald_only_diff_runs_the_install_before_herald_s_suite(tmp_path: Path) -> None:
+    """Story 45.1: a diff touching only herald's tests fires herald's job and not pages.yml, and the preflight still runs
+    docs-site-install, because herald's suite task depends on it and the job's step runs that task. Herald's lane waits
+    on the install (the lane edge), and a touched-scope run keeps the install beside herald's lane."""
+    repo = _make_repo(tmp_path, {"src/shared/packages/pyforge-herald/tests/unit/probe.py": "# probe\n"})
+    pixi = tomllib.loads((repo / "pixi.toml").read_text(encoding="utf-8"))
+    lanes = preflight.list_preflight_lanes(pixi, invoking_env=INVOKING_ENV)
+    selection = preflight_ci.select_lanes(repo, lanes, pixi)
+    chosen = {(lane.task, lane.environment) for lane in lanes if selection.is_selected(lane)}
+    assert {("pyforge-herald-test", "pyforge-herald"), ("docs-site-install", "site")} <= chosen
+    assert ("pages-check", "site") not in chosen  # the Pages workflow did not fire: the install comes from herald's
+    herald = next(lane for lane in lanes if lane.task == "pyforge-herald-test")
+    assert ("docs-site-install", "site") in herald.depends_on
+    cut = preflight.touched_cut(repo, [lane for lane in lanes if selection.is_selected(lane)], pixi, selection)
+    reasons = dict(cut.reasons)
+    assert reasons[("docs-site-install", "site")] == "pyforge-herald-test@pyforge-herald depends on it"

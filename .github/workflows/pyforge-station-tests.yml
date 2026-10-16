@@ -585,9 +585,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+      # Herald Story 45.1: pyforge-herald-test depends on docs-site-install (npm ci in the site env), so its
+      # built-site tests build Astro here instead of skipping; setting up `site` beside herald caches that env.
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          environments: pyforge-herald
+          environments: pyforge-herald site
           cache: true
       # DW-14-2-1: the render gate's real-browser tests need Chromium.
       # ubuntu-latest ships google-chrome; fall back to a playwright-managed

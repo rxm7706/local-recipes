@@ -5,8 +5,9 @@ Two halves, as Story 43.2's parity test splits them:
 * **The model** runs wherever ``node`` does: ``docs-site/src/lib/agent-surface.ts`` (node builtins only, imported
   with node's type stripping, no ``node_modules``) over the fixtures -- the input shapes and their refusals, the
   feed, the facts union, the latest progress record per station, the Lane 1 rule.
-* **The built site** needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``) and skips naming
-  them otherwise. It builds Astro into a scratch directory with the inputs present, partly present and absent, and
+* **The built site** needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``), which herald's suite
+  task installs first; without them ``pages_astro.needs_astro`` skips naming the install, or fails under the task
+  (Story 45.1). It builds Astro into a scratch directory with the inputs present, partly present and absent, and
   with ``pyforge.herald.status_pages`` on and off (AC1-AC7). Since Story 43.7 every surface is emitted on every build;
   ``pages-check``'s judging of them is ``test_pages_artifact.py``'s.
 """
@@ -24,22 +25,18 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pages_astro import ASTRO_BIN, needs_astro, require_astro
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 DOCS_SITE = REPO_ROOT / "docs-site"
 SURFACE_TS = DOCS_SITE / "src" / "lib" / "agent-surface.ts"
-ASTRO_BIN = DOCS_SITE / "node_modules" / "astro" / "bin" / "astro.mjs"
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 CHANGES = FIXTURES / "changes-five-merges.json"
 MARSHAL = FIXTURES / "marshal-status-two-homes.json"
 PROGRESS = FIXTURES / "herald-progress-records.json"
 SITE_URL = "https://rxm7706.github.io/local-recipes"
 _NODE = shutil.which("node")
-_BUILD_READY = _NODE is not None and ASTRO_BIN.is_file()
 needs_node = pytest.mark.skipif(_NODE is None, reason="node is not on PATH")
-needs_astro = pytest.mark.skipif(
-    not _BUILD_READY, reason="docs-site is not installed: pixi run -e site docs-site-install"
-)
 #: The ten gallery infographics and their families (site.yml's include list), each listed in /llms.txt (Story 43.7).
 _GALLERY = len(
     yaml.safe_load((DOCS_SITE / "src/content/site.yml").read_text(encoding="utf-8"))["infographics"]["include"]
@@ -266,6 +263,7 @@ def _write_inputs(directory: Path, names: tuple[str, ...]) -> Path:
 
 
 def _astro(out: Path, *, status: bool, inputs: Path) -> None:
+    require_astro()
     env = {k: v for k, v in os.environ.items() if k not in ("PYTEST_ADDOPTS", "HERALD_PAGES_REPO_ROOT")}
     env.update(
         {

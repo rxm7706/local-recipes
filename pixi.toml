@@ -3122,17 +3122,26 @@ description = "Story 8.1 (spec-8-1): installs the checked-in nightly-compile tri
 cmd = "python scripts/scribe_install_nightly_trigger.py"
 
 [feature.pyforge-herald.tasks.pyforge-herald-test]
-description = "Run the pyforge.herald test suite"
+description = "Run the pyforge.herald test suite. Herald Story 45.1: runs docs-site-install (npm ci, in the site env) first, because the built-site tests build Astro from docs-site/node_modules; HERALD_DOCS_SITE_REQUIRED makes a missing install fail those tests instead of skipping them."
 cmd = "pytest src/shared/packages/pyforge-herald/tests -q"
+depends-on = [{ task = "docs-site-install", environment = "site" }]
+env = { HERALD_DOCS_SITE_REQUIRED = "1" }
 
+# Herald Story 45.1: no docs-site-install dependency on the gate, on purpose. coverage-gates.yml's matrix step runs
+# the script, not this task, so pr-preflight's reader selects this lane on diffs where nothing selects the install
+# (scripts/coverage_gate.py alone fires every station's gate and not herald's suite job), and a lane whose
+# dependency lane is not in the run never starts: the run hangs. The gate runs herald's tests only when the branch
+# touches a herald module, and then herald's suite job fires too, so the preflight installs docs-site first anyway.
 [feature.pyforge-herald.tasks.pyforge-herald-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (herald)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in herald's own env, against the 80% unit floor. Distinct from pyforge-herald-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
 cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
 env = { COVERAGE_GATES_STATIONS = "herald" }
 
 [feature.pyforge-herald.tasks.pyforge-herald-test-coverage]
-description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-herald. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage."
+description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package named-module coverage evaluate for pyforge-herald. Floors are SEEDED FROM MEASUREMENT and ratchet upward only -- nobody had ever measured this station before 2026-09-07, so a flat 80/70 would have redded the fleet on day one. Fails naming each module under its floor, never a bare percentage. Herald Story 45.1: runs docs-site-install first, as pyforge-herald-test does, because its unit suite takes in tests/meta, where the built-site tests are."
 cmd = "python scripts/run_station_coverage_gate.py --station herald"
+depends-on = [{ task = "docs-site-install", environment = "site" }]
+env = { HERALD_DOCS_SITE_REQUIRED = "1" }
 
 [feature.pyforge-herald.tasks.pyforge-herald-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"

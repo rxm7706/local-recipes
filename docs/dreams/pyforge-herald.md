@@ -116,6 +116,24 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-16 (the built-site tests skip silently) — Found: herald's 25 built-site tests run only where
+  `docs-site/node_modules` already happens to exist.** Steward Story 105.1 named it as residual risk. A diff that
+  touches only herald does not fire `pages.yml`, so `pr-preflight` never selects `docs-site-install`. CI's herald job
+  (`pyforge-station-tests.yml` `herald-test`, `pixi run --frozen -e pyforge-herald pyforge-herald-test`) sets up only
+  herald's environment and never installs docs-site either. Measured 2026-10-16 at `d21af06fbc` through
+  `run_preflight`'s own selection, with an untracked herald probe and no `docs-site/node_modules`: herald's lane ran
+  alone and reported 2033 passed and 30 skipped, 25 of the skips naming the docs-site install (17 through
+  `pages_astro.needs_astro`, 8 through `test_agent_surface_and_changes.py`'s copy of it). CAP-61's success says
+  `pyforge-herald-test` is green, and that green said nothing about the built site. **What it looks like when
+  fixed:** herald's suite tasks depend on `docs-site-install` in the `site` environment, so `pixi run` installs first
+  wherever the task runs. That covers CI's herald job, which sets up `site` beside herald, and the preflight, whose
+  reader selects the install with herald's lane because the job's step runs that task. Under the task a missing
+  install fails the built-site tests (`HERALD_DOCS_SITE_REQUIRED`) and never skips them, and one `needs_astro` serves
+  every built-site test. **Constraints:** a fix under CAP-61 (no CAP, no FR, no flag); `pixi.lock` and
+  `environment.yaml` do not change; the coverage gate takes no install dependency, because CI's coverage leg runs its
+  driver and a preflight lane whose dependency the reader does not select never starts. Asked by the orchestrating
+  session. Owner `spec-pyforge-herald`. → Epic 45 / Story 45.1, specced and fixed 2026-10-16.
+
 - **2026-10-14 (every docs page is empty) — Found: the docs shelf on Pages has published 70 pages (69 and the 404 page) with no body since
   2026-10-08.** Measured on the live site the same day: the Starlight markdown container of `/`, `/how-to/pixi-tasks/`,
   `/explanation/the-detector-framework/` and `/tutorials/getting-started/` holds 0 words, and the first sentence of

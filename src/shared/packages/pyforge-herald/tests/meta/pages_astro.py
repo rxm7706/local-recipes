@@ -2,21 +2,25 @@
 a tree, write a fixture tree, run ``pages-check`` over an artifact, and read what a herald page links and offers. Not a
 test module; the meta tests import it by name.
 
-Building Astro needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``); without them ``needs_astro``
-skips, naming that command. Each build rewrites ``docs-site/public/`` from scratch, as every build does (Story 43.3).
-``pages-check`` (``docs-site/scripts/pages.mts``) needs only node: its herald tests run wherever node does."""
+Building Astro needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``), which herald's suite tasks
+install first (Story 45.1); without them ``needs_astro`` skips a test, naming that command, or fails it under a suite
+task. Each build rewrites ``docs-site/public/`` from scratch, as every build does (Story 43.3). ``pages-check``
+(``docs-site/scripts/pages.mts``) needs only node: its herald tests run wherever node does."""
 
 from __future__ import annotations
 
 import difflib
+import functools
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -31,12 +35,52 @@ SITE_URL = "https://rxm7706.github.io/local-recipes"
 NODE = shutil.which("node")
 RENDER_READY = NODE is not None and ASTRO_BIN.is_file()
 needs_node = pytest.mark.skipif(NODE is None, reason="node is not on PATH")
-#: No CI lane that runs the herald suite installs docs-site (the suite is offline by construction), so these skip
-#: there; CI judges the real artifact through ``pages-check`` in the Pages lane and ``pr-preflight``.
-needs_astro = pytest.mark.skipif(
-    not RENDER_READY,
-    reason="docs-site is not installed (pixi run -e site docs-site-install); pages-check judges the built artifact",
-)
+#: Story 45.1: herald's suite tasks (``pyforge-herald-test``, ``pyforge-herald-test-coverage`` in ``pixi.toml``) run
+#: ``docs-site-install`` before pytest and set this variable, so a built-site test whose install is missing FAILS under
+#: them: a lost dependency is a red test, never a silent skip. CI's herald job and the preflight's herald lane run the
+#: task. Unset (a bare ``pytest``; CI's coverage leg, which runs its driver and not the task), the tests skip.
+DOCS_SITE_REQUIRED_ENV = "HERALD_DOCS_SITE_REQUIRED"
+NOT_INSTALLED = "docs-site is not installed (pixi run -e site docs-site-install)"
+
+
+def _missing_install() -> str:
+    return (
+        f"{NOT_INSTALLED}: Astro's bin ({ASTRO_BIN.relative_to(REPO_ROOT)}) or node (on PATH) is missing. "
+        f"Herald's suite task runs docs-site-install first and sets {DOCS_SITE_REQUIRED_ENV}=1; run the task, or "
+        "the install, then the tests (Story 45.1)."
+    )
+
+
+def require_astro() -> None:
+    """Fail now, naming the install, when Astro cannot run. Every build helper calls it first, so a module fixture that
+    builds reports the cause, never node's stack (Story 45.1)."""
+    if not RENDER_READY:
+        pytest.fail(_missing_install(), pytrace=False)
+
+
+def requires_astro(*, ready: bool, required: bool) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    """The ``needs_astro`` decorator for one state of the install: ``ready`` (node and Astro's bin are present) runs the
+    test; else ``required`` fails it, naming the install, and otherwise it skips, naming the command (Story 45.1).
+
+    A skip comes before the test's fixtures; a required failure comes after them, so a module fixture that builds fails
+    first, through :func:`require_astro`, with the same message."""
+
+    def decorate(test: Callable[..., Any]) -> Callable[..., Any]:
+        if ready:
+            return test
+        if required:
+
+            @functools.wraps(test)  # pytest reads the fixtures from the wrapped signature
+            def missing(*args: Any, **kwargs: Any) -> None:
+                pytest.fail(f"{DOCS_SITE_REQUIRED_ENV}=1 promises the install, but {_missing_install()}", pytrace=False)
+
+            return missing
+        return pytest.mark.skip(reason=f"{NOT_INSTALLED}; pages-check judges the built artifact")(test)
+
+    return decorate
+
+
+needs_astro = requires_astro(ready=RENDER_READY, required=os.environ.get(DOCS_SITE_REQUIRED_ENV) == "1")
 
 
 def write(path: Path, text: str | bytes) -> Path:
@@ -246,6 +290,7 @@ def astro_build(
     records it, so ``pages_check`` reads the same base path), over ``root`` when given, with
     ``pyforge.herald.status_pages`` (``status``) and ``pyforge.herald.ci_surfaces_tile`` (``tile``) as the Guild step
     would export them, and the build inputs from ``inputs`` when given."""
+    require_astro()
     env = {k: v for k, v in node_env().items() if k not in BUILT_FROM_ENV}
     env.update({"PYFORGE_STATUS_PAGES": "1" if status else "0", "PYFORGE_CI_SURFACES_TILE": "1" if tile else "0"})
     env["SITE_URL"] = SITE_URL

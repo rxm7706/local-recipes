@@ -3,11 +3,12 @@
 The tree half runs everywhere: ``docsite/`` is gone (AC1), nothing in the generator names it (AC2), the ``site*``
 tasks are gone and ``pages-check`` is the one build check (AC4), the one-generator flag left the tree with no reader
 (AC5), the bespoke Python under ``docs-site/`` is under 300 lines (AC6), ``AGENTS.md`` cites the dossier where it
-lives (AC9). The built half needs docs-site installed (``pixi run -e site docs-site-install``) and skips naming it
-otherwise: the tracked tree built with the status pages on holds every URL of AC7 and passes ``pages-check``, loads
-no font or script from a CDN (AC8), gives every page one CSP (the CSP decision), carries the artifact build of the
-dossier and the font licences, lists every gallery and family page in ``/llms.txt``, and a second build two days,
-two runs and two commits later differs only in the built-from line (Story 43.5's proof over the whole artifact).
+lives (AC9). The built half needs docs-site installed (``pixi run -e site docs-site-install``), which herald's suite
+task runs first, and otherwise skips naming it, or fails under the task (Story 45.1): the tracked tree built with the
+status pages on holds every URL of AC7 and passes ``pages-check``, loads no font or script from a CDN (AC8), gives
+every page one CSP (the CSP decision), carries the artifact build of the dossier and the font licences, lists every
+gallery and family page in ``/llms.txt``, and a second build two days, two runs and two commits later differs only in
+the built-from line (Story 43.5's proof over the whole artifact).
 Story 43.5's measured-dossier tests moved here from the retired parity test.
 """
 
