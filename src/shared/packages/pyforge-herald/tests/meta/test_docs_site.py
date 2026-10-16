@@ -61,7 +61,8 @@ def test_docs_site_pixi_tasks() -> None:
     assert build["cmd"] == "npm run build"
     assert build["cwd"] == "docs-site"
     # Story 43.7: the sidebar is computed at build from docs/map.yaml (src/lib/site-nav.ts); no generator task.
-    assert build["depends-on"] == ["docs-site-install"]
+    # Steward Story 107.1: a site task names its environment on its dependencies, so pixi finds them from any -e.
+    assert build["depends-on"] == [{"task": "docs-site-install", "environment": "site"}]
     assert "docs-site-sidebar" not in tasks
 
 

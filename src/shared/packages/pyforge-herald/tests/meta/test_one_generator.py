@@ -100,7 +100,7 @@ def test_ac4_the_site_tasks_are_gone_and_pages_check_is_the_one_build_check() ->
     assert tasks["pages-check"] == {
         "description": tasks["pages-check"]["description"],
         "cmd": "node docs-site/scripts/pages.mts check",
-        "depends-on": ["pages-build"],
+        "depends-on": [{"task": "pages-build", "environment": "site"}],  # steward Story 107.1
     }
     assert "docs-site-sidebar" not in tasks
 

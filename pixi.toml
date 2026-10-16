@@ -958,6 +958,10 @@ jinja2 = ">=3.1.6"                # no reader since herald Story 43.7 retired do
 pyyaml = ">=6.0.3"                # docs-site/scripts/verify_claims.py reads docs-site/src/content/dossier/dossier.yml
 nodejs = ">=24.19.0,<27.0,!=25.*"  # Story 27.1: Astro/Starlight docs-site build (same pin as [feature.python.dependencies])
 
+# Every depends-on entry of a site task names environment = "site" (steward Story 107.1, DW-steward-45-1-1): pixi
+# looks a bare dependency up in the environment the run was invoked in, where these tasks do not exist, so
+# `pixi run -e pyforge-guild pr-preflight-lanes` stopped at "could not find the task 'pages-build'". Pinned by
+# src/shared/packages/pyforge-steward/tests/meta/test_pr_preflight_lanes_resolve_under_pixi.py.
 [feature.site.tasks.docs-site-install]
 description = "Install docs-site npm dependencies (npm ci in docs-site/)."
 cmd = "npm ci"
@@ -967,17 +971,17 @@ cwd = "docs-site"
 description = "Build the Pages site with Astro to docs-site/build/site/ (pages-build also sets the site URL and the build time)."
 cmd = "npm run build"
 cwd = "docs-site"
-depends-on = ["docs-site-install"]
+depends-on = [{ task = "docs-site-install", environment = "site" }]
 
 [feature.site.tasks.pages-build]
 description = "Build the GitHub Pages artifact: the one generator, docs-site/ (herald Story 43.7)."
 cmd = "node docs-site/scripts/pages.mts build"
-depends-on = ["docs-site-install"]
+depends-on = [{ task = "docs-site-install", environment = "site" }]
 
 [feature.site.tasks.pages-check]
 description = "Build and verify the GitHub Pages artifact: the one build check (herald Story 43.7)."
 cmd = "node docs-site/scripts/pages.mts check"
-depends-on = ["pages-build"]
+depends-on = [{ task = "pages-build", environment = "site" }]
 
 [feature.site.tasks.docs-site-validate-links]
 description = "Story 27.4 (spec-pyforge-herald CAP-52 D5): upstream validate-doc-links.js over docs/ — dead links exit 1."
@@ -990,11 +994,11 @@ cmd = "node docs-site/scripts/validate-sidebar-order.js"
 [feature.site.tasks.docs-site-validate-sidebar]
 description = "Story 27.4: sidebar-order validator then the docs/map.yaml check (every quadrant page mapped once, a sections list; herald Story 43.7)."
 cmd = "node docs-site/scripts/nav-check.mts"
-depends-on = ["docs-site-install", "docs-site-validate-sidebar-order"]
+depends-on = [{ task = "docs-site-install", environment = "site" }, { task = "docs-site-validate-sidebar-order", environment = "site" }]
 
 [feature.site.tasks.docs-site-validate]
 description = "Story 27.4: vendored BMAD doc link + sidebar validators and the docs/map.yaml check."
-depends-on = ["docs-site-validate-links", "docs-site-validate-sidebar"]
+depends-on = [{ task = "docs-site-validate-links", environment = "site" }, { task = "docs-site-validate-sidebar", environment = "site" }]
 
 [environments]
 # default-env: pyforge-guild

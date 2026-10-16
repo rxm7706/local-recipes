@@ -42,8 +42,15 @@ def test_docs_site_validate_pixi_tasks_registered() -> None:
     bundle = tasks["docs-site-validate"]
     assert links["cmd"] == "node docs-site/scripts/validate-doc-links.js"
     assert sidebar["cmd"] == "node docs-site/scripts/nav-check.mts"  # Story 43.7: the map check, in the generator's TS
-    assert sidebar["depends-on"] == ["docs-site-install", "docs-site-validate-sidebar-order"]
-    assert bundle["depends-on"] == ["docs-site-validate-links", "docs-site-validate-sidebar"]
+    # Steward Story 107.1: a site task names its environment on its dependencies, so pixi finds them from any -e.
+    assert sidebar["depends-on"] == [
+        {"task": "docs-site-install", "environment": "site"},
+        {"task": "docs-site-validate-sidebar-order", "environment": "site"},
+    ]
+    assert bundle["depends-on"] == [
+        {"task": "docs-site-validate-links", "environment": "site"},
+        {"task": "docs-site-validate-sidebar", "environment": "site"},
+    ]
 
 
 def test_pages_build_runs_docs_site_validate() -> None:
