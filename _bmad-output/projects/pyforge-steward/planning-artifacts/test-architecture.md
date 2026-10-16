@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 7d2793c67003d836
-story_count: 384
-test_file_count: 133
+source_fingerprint: 1fa8b483082790ac
+story_count: 385
+test_file_count: 136
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 384
-- **Epics parsed:** 104
-- **Test files inventoried:** 133 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 385
+- **Epics parsed:** 105
+- **Test files inventoried:** 136 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7d2793c67003d836`
+- **Source fingerprint:** `1fa8b483082790ac`
 
 ## Risk Assessment
 
@@ -140,6 +140,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 57: One pixi env for the platform image (spec-platform-image-one-pixi-env)
 - Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 - Epic 99: Every CI surface the operator can pause is declared once, switched by one convention, visible in one place and judged (spec-pyforge-steward CAP-166)
+- Epic 105: The preflight never runs two docs-site lanes at once (fix under spec-pyforge-steward CAP-159; no CAP)
 
 ## Test Inventory
 
@@ -156,6 +157,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_pages_workflow.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_preflight_docs_site_lanes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
@@ -190,14 +192,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_navigation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_views.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deck_drift_duty.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_build.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_dry_run.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_ledger_refusal.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_profile_plugins.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_estate.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_estate_realize.py` | unit | none observed |
@@ -221,7 +218,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_export_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_flag_states.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_release.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_release_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py` | unit | none observed |
@@ -230,6 +233,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_docs_site_mutex.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py` | unit | none observed |
@@ -667,6 +671,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.6 | A touched-scope preflight leaves the other lanes to CI, and `verify-deferred`... | none observed |
 | 103.7 | `steward ci status` reads no runs for a retired row, so a landing records the... | none observed |
 | 104.1 | cfe-regression-net runs when a script its tests load changes | none observed |
+| 105.1 | The preflight never runs two docs-site lanes at once | none observed |
 
 ## Quality Gates
 

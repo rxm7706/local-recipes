@@ -1872,6 +1872,25 @@ Drift — orphaned between stations.
   `conda_build_config.yaml`) stays out of the filter, because it would run the lane on every recipe PR; the CI-surfaces
   registry row is unchanged. Operator ask in session ("Widen cfe-regression-net's path filter to the scripts its tests
   load"). Owner `spec-pyforge-steward`. → Epic 104 / Story 104.1, specced and fixed 2026-10-14.
+- **2026-10-15 (the preflight runs two docs-site lanes at once)** — **Found: a full-scope `pr-preflight` reds herald's
+  suite, because two of its lanes use one `docs-site/` tree at the same time.** `docs-site-install` is `npm ci`, which
+  deletes `docs-site/node_modules` and installs it again. Herald's built-site tests run `astro build` in `docs-site/`
+  (`tests/meta/pages_astro.py`'s `astro_build`), and every Astro build rewrites `docs-site/public/`
+  (`populate-public`). Since herald Story 43.7 (#2240) Astro is the one Pages generator, so those tests run wherever
+  docs-site is installed. On 2026-10-15, with both lanes selected, two herald tests failed with `[UNRESOLVED_ENTRY]
+  Cannot resolve entry module astro/entrypoints/prerender`; the same suite run alone passed 2058. `pages-build` and
+  `pages-check` write and read `docs-site/public/` and `docs-site/build/` too, so they collide with herald's builds
+  the same way. Story 88.1 orders a task after its own dependencies, but nothing orders two lanes that share the tree
+  without depending on each other; Story 71.3's mutex serializes only lanes whose CI jobs share a service container.
+  CI is unaffected, because each job has its own runner. **What it looks like when fixed:** the lanes that install
+  into, read from or build in `docs-site/` share one mutex, so the preflight never runs two of them at once. Every
+  other lane keeps its concurrency, and a lane that also holds a service mutex takes both in one fixed order. The
+  set is declared once, and a test derives it from `pixi.toml`, the docs-site scripts' imports and herald's tests.
+  **Constraints:** a `fix` under CAP-159, whose intent already says concurrent lanes share no mutable state (no CAP,
+  no `SPEC.md` change, no flag); the lanes CI selects, the journal, the exit codes and `pixi.toml` do not change, and
+  the one workflow edit is Story 98.1's own rule (steward's station-tests job runs when the `docs-site/` scripts its
+  new test reads change); the two validators that read only `docs/`, with node builtins, stay concurrent.
+  Orchestrating session's brief, 2026-10-15. Owner `spec-pyforge-steward`. → Epic 105 / Story 105.1, specced 2026-10-15.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
