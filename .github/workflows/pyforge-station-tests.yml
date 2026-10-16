@@ -374,6 +374,7 @@ jobs:
             .claude/skills
             .cursor/environment.json
             .github/workflows
+            .gitignore
             .pre-commit-config.yaml
             AGENTS.md
             CLAUDE.md

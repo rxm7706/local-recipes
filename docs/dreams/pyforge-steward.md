@@ -1892,6 +1892,26 @@ Drift — orphaned between stations.
   new test reads change); the two validators that read only `docs/`, with node builtins, stay concurrent.
   Orchestrating session's brief, 2026-10-15. Owner `spec-pyforge-steward`. → Epic 105 / Story 105.1, specced 2026-10-15.
 
+- **2026-10-16 (the two mypy lanes share one cache) — Found: two lanes in different environments write one mypy
+  cache, though CAP-159 says concurrent lanes share no mutable state.** Since atlas Story 31.1 (#2221),
+  `pr-preflight-lanes` runs the `mypy` task twice, in `pyforge-guild` and in `pyforge-foundry-full`, and the preflight
+  runs the two at the same time; CI's `lint-types` job runs both, one after the other, in one checkout. Both run
+  `scripts/lint_types.py mypy`, which runs `mypy -p pyforge.<station>` from each package directory with no cache dir,
+  so both read and write `<package>/.mypy_cache` (mypy 2.4's SQLite cache). The two environments resolve third-party
+  imports differently: the Guild has no Vizro, Dagster, Kedro or OpenLineage and reads them as `Any`. Steward Story
+  103.5's review (nit 5) and atlas's 2026-10-15 retrospective (`DW-atlas-retro-2026-10-15-2`) named it. Measured at
+  `f44a99ba0c` (16 cores, mypy 2.4.0 in both): the two lanes run at once 8 times (5 cold, 3 warm), 8 more with a
+  planted error only foundry-full can see (a `dagster.AssetKey` assigned to an `int`), and 10 times on atlas alone with
+  that plant, never changed a verdict and never broke the cache, because mypy re-checks a module whose dependencies the
+  other environment resolved differently. The cost is churn: each lane rewrites the other's entries, so the two warm
+  lanes take 8–11 s together against 3 s each on a cache of their own. **What it looks like when fixed:** each
+  environment keeps its own cache, `<package>/.mypy_cache/<environment>/`, keyed on `PIXI_ENVIRONMENT_NAME`; the two
+  lanes stay parallel, share nothing they write, and each reads its own warm cache. **Constraints:** a fix under
+  CAP-159, with no CAP and no flag. The change is in `scripts/lint_types.py`, the task both lanes run, not in the
+  preflight runner, so CI's two steps separate too. No `pixi.toml` or `.gitignore` change (`.mypy_cache/` is already
+  ignored at any depth), no workflow change beyond Story 98.1's trigger rule, and no verdict or lane moves. Owner `spec-pyforge-steward`. → Epic 106 / Story 106.1,
+  specced 2026-10-16.
+
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
 Steward rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-steward]]` banners. Exempted chains (Guild unifying-strategy; foundry regenerate / capability-ledger / cutover) keep their folders with `fold-exemption`.
