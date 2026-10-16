@@ -4924,6 +4924,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-15 — atlas's 2026-10-15 retrospective
   status: open
+  story: promoted to steward Story 106.1 (a fix under spec-pyforge-steward:CAP-159, Epic 106, minted 2026-10-16; spec `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-106-1-the-two-mypy-lanes-keep-separate-caches.md`): one mypy cache per environment, `<package>/.mypy_cache/<environment>/`; close when 106.1 lands, citing its merge.
 
 ### DW-atlas-retro-2026-10-15-3: A local pr-preflight on a loaded host fails lanes on timeouts, and its journal cannot tell that from a real red.
 

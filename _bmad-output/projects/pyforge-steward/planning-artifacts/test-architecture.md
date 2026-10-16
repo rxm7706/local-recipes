@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 7d2793c67003d836
-story_count: 384
-test_file_count: 133
+source_fingerprint: b76c969f3856c5d3
+story_count: 385
+test_file_count: 136
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 384
-- **Epics parsed:** 104
-- **Test files inventoried:** 133 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 385
+- **Epics parsed:** 105
+- **Test files inventoried:** 136 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7d2793c67003d836`
+- **Source fingerprint:** `b76c969f3856c5d3`
 
 ## Risk Assessment
 
@@ -131,6 +131,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 101: The `platform-ci-local` stubs leak no process, and the holder scan takes seconds (fix under CAP-152)
 - Epic 103: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167, CAP-5 and CAP-159; one CAP-159 feature)
 - Epic 104: The CFE regression lane runs when what its tests load changes (fix under spec-pyforge-steward CAP-159; no CAP)
+- Epic 106: The two `mypy` lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP)
 
 ### Low-risk epics
 
@@ -152,6 +153,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_django_tables.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_lint_types_mypy_cache_per_environment.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_marp_in_guild_env_story_63_8.py` | meta | 63.8 |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
@@ -190,14 +192,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_navigation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_views.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deck_drift_duty.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_build.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_dry_run.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_ledger_refusal.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_perimeter.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_profile_plugins.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_estate.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_estate_realize.py` | unit | none observed |
@@ -218,10 +215,17 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_plaintext_secret_scan.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_revoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_mypy_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_lint_types_not_yet_clean.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_duty_flag_states.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_export.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_export_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_pages_flag_states.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_release.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_pages_release_flag_states.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_env_sync.py` | unit | none observed |
@@ -667,6 +671,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 103.6 | A touched-scope preflight leaves the other lanes to CI, and `verify-deferred`... | none observed |
 | 103.7 | `steward ci status` reads no runs for a retired row, so a landing records the... | none observed |
 | 104.1 | cfe-regression-net runs when a script its tests load changes | none observed |
+| 106.1 | The two `mypy` lanes keep separate caches | none observed |
 
 ## Quality Gates
 

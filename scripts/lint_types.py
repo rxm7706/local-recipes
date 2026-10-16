@@ -5,7 +5,8 @@
     python scripts/lint_types.py ruff            # ruff check   src + tests, per package
     python scripts/lint_types.py ruff-format     # ruff format --check
     python scripts/lint_types.py ruff-format --fix
-    python scripts/lint_types.py mypy            # mypy -p pyforge.<station>, cwd = the package
+    python scripts/lint_types.py mypy            # mypy -p pyforge.<station>, cwd = the package,
+                                                 # one cache per environment
 
 Why a runner and not three shell lines: each package carries its OWN
 ``[tool.ruff]`` / ``[tool.mypy]`` in its ``pyproject.toml`` (py314 targets for
@@ -15,6 +16,17 @@ Why a runner and not three shell lines: each package carries its OWN
 are given when run from inside that package. The CI lane
 (``.github/workflows/lint-types.yml``) and the ``pr-preflight`` leg call the
 pixi tasks that call this script verbatim, so local and runner cannot diverge.
+
+Each environment keeps its own mypy cache (steward Story 106.1, ``spec-pyforge-steward``
+CAP-159). ``pr-preflight`` runs the ``mypy`` task in ``pyforge-guild`` and in
+``pyforge-foundry-full`` at the same time (atlas Story 31.1), and CI's ``lint-types`` job
+runs both in one checkout. The two environments resolve third-party imports differently,
+so with mypy's default ``.mypy_cache`` each run rewrote the other's entries. The ``mypy``
+verb passes ``--cache-dir <package>/.mypy_cache/<environment>``: the environment is
+``PIXI_ENVIRONMENT_NAME``, else the basename of ``CONDA_PREFIX``, else of ``sys.prefix``.
+The path stays under ``.mypy_cache/``, which ``.gitignore`` and the tree walkers already
+skip. A command-line ``--cache-dir`` outranks ``MYPY_CACHE_DIR`` and the config file, so
+neither can put two environments back on one cache.
 
 Django packages not yet clean for a verb are listed in ``NOT_YET_CLEAN``; that
 map only shrinks as each station's fix story lands (Story 93.1).
@@ -27,10 +39,12 @@ EXIT  0 clean · 1 findings (the tool's own non-zero) · 2 could-not-run
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
 import tomllib
+from collections.abc import Mapping
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,6 +81,24 @@ def packages() -> list[Path]:
     return pyforge_packages()
 
 
+def mypy_cache_env(environ: Mapping[str, str] | None = None) -> str:
+    """The environment a mypy run's cache is keyed on (Story 106.1).
+
+    ``PIXI_ENVIRONMENT_NAME`` (``pixi run -e <env>`` sets it, over any inherited value), else
+    the basename of ``CONDA_PREFIX``, else the basename of ``sys.prefix``.
+    """
+    env = os.environ if environ is None else environ
+    name = env.get("PIXI_ENVIRONMENT_NAME", "").strip()
+    if not name:
+        name = Path(env.get("CONDA_PREFIX", "").strip()).name
+    return name or Path(sys.prefix).name
+
+
+def mypy_cache_dir(pkg: Path, environ: Mapping[str, str] | None = None) -> Path:
+    """``<package>/.mypy_cache/<environment>``: one mypy cache per package per environment."""
+    return pkg / ".mypy_cache" / mypy_cache_env(environ)
+
+
 def has_ruff_table(pkg: Path) -> bool:
     data = tomllib.loads((pkg / "pyproject.toml").read_text(encoding="utf-8"))
     return "ruff" in data.get("tool", {})
@@ -88,7 +120,7 @@ def _validate_not_yet_clean(django: list[Path]) -> str | None:
 
 
 def _run(argv: list[str], *, cwd: Path) -> int:
-    proc = subprocess.run(argv, cwd=cwd)
+    proc = subprocess.run(argv, check=False, cwd=cwd)
     return proc.returncode
 
 
@@ -155,6 +187,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         pkgs = pyforge
 
+    if args.verb == "mypy":
+        print(f"[lint-types] mypy cache  <package>/.mypy_cache/{mypy_cache_env()}/")
+
     worst = 0
     for pkg in pkgs:
         pkg_name = pkg.name
@@ -178,7 +213,10 @@ def main(argv: list[str] | None = None) -> int:
             import_name = next(
                 d.name for d in (pkg / "src" / "pyforge").iterdir() if d.is_dir() and not d.name.startswith("_")
             )
-            rc = _run(["mypy", "-p", f"pyforge.{import_name}"], cwd=pkg)
+            rc = _run(
+                ["mypy", "--cache-dir", str(mypy_cache_dir(pkg)), "-p", f"pyforge.{import_name}"],
+                cwd=pkg,
+            )
 
         print(_status_line(args.verb, pkg_name, rc))
         worst = _record_worst(worst, pkg_name, args.verb, rc)
