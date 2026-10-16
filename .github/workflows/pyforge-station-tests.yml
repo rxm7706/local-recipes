@@ -585,8 +585,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      # Herald Story 45.1: pyforge-herald-test depends on docs-site-install (npm ci in the site env), so its
-      # built-site tests build Astro here instead of skipping; setting up `site` beside herald caches that env.
+      # Herald Story 45.1: the last step runs pyforge-herald-test-built, docs-site-install (npm ci in the site env)
+      # then herald's suite, so its built-site tests build Astro here instead of skipping; setting up `site` beside
+      # herald caches that env. pyforge-herald-test itself stays npm-free for the SBOM laptop gate (fnd:CAP-13).
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           environments: pyforge-herald site
@@ -602,7 +603,10 @@ jobs:
       # dependency -- this station's own skf-frontmatter validator script
       # is meant to be runnable standalone via uv).
       - uses: astral-sh/setup-uv@v7
-      - run: pixi run --frozen -e pyforge-herald pyforge-herald-test
+      # HERALD_DOCS_SITE_REQUIRED: a built-site test whose install is missing fails here, never skips.
+      - run: pixi run --frozen -e pyforge-herald pyforge-herald-test-built
+        env:
+          HERALD_DOCS_SITE_REQUIRED: "1"
 
   marshal-test:
     # ci-surfaces: pyforge-station-tests.marshal-test

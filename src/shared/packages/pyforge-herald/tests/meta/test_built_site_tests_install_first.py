@@ -5,15 +5,18 @@ The built-site tests (``pages_astro.needs_astro``: ``test_one_generator.py``, ``
 installed it, so on a fresh worktree and on every CI runner the 25 tests skipped and said nothing (steward Story
 105.1's residual risk). These tests pin the fix where it can regress:
 
-* herald's suite tasks depend on ``docs-site-install`` in the ``site`` environment, so ``pixi run`` installs first,
-  and they set ``HERALD_DOCS_SITE_REQUIRED``, under which a missing install fails a built-site test;
-* the coverage-gate task takes no such dependency (CI's coverage leg runs its driver, not the task, so the preflight's
-  reader can select the gate's lane without the install's, and that lane would never start);
-* CI's herald job runs the task by name with the ``site`` environment set up;
+* ``pyforge-herald-test`` stays npm-free, and so do ``pyforge-station-tests`` and the SBOM laptop gate, which run it
+  from the SBOM alone (fnd:CAP-13; the operator's ruling on the independent review);
+* ``pyforge-herald-test-built`` runs ``docs-site-install`` in the ``site`` environment and then that suite;
+  ``pyforge-herald-test-coverage`` installs first too, and sets ``HERALD_DOCS_SITE_REQUIRED``;
+* the coverage-gate task takes no install dependency (CI's coverage leg runs its driver, not the task, so the
+  preflight's reader can select the gate's lane without the install's, and that lane would never start);
+* CI's herald job runs ``pyforge-herald-test-built`` with ``HERALD_DOCS_SITE_REQUIRED=1`` and the ``site`` environment
+  set up;
 * ``needs_astro`` fails, never skips, when the install is required and missing, and pytest reports that as a failure;
   a build helper a module fixture calls fails first, naming the install rather than node's stack.
 
-The preflight half (a herald-only diff selects the install beside herald's lane) is ``test_preflight_pages_lane.py``'s.
+The preflight half (a herald-only diff runs the install, then herald's lane) is ``test_preflight_pages_lane.py``'s.
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import pages_astro
 import pytest
@@ -33,26 +37,76 @@ from pages_astro import DOCS_SITE_REQUIRED_ENV, NOT_INSTALLED, requires_astro
 REPO_ROOT = Path(__file__).resolve().parents[6]
 META = Path(__file__).resolve().parent
 INSTALL = {"task": "docs-site-install", "environment": "site"}
-SUITE_TASKS = ("pyforge-herald-test", "pyforge-herald-test-coverage")
+SUITE = {"task": "pyforge-herald-test", "environment": "pyforge-herald"}
 STATION_TESTS = REPO_ROOT / ".github" / "workflows" / "pyforge-station-tests.yml"
 
 
+def _pixi() -> dict[str, Any]:
+    return tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+
+
 def _herald_tasks() -> dict[str, dict]:
-    pixi = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
-    return pixi["feature"]["pyforge-herald"]["tasks"]
+    return _pixi()["feature"]["pyforge-herald"]["tasks"]
 
 
-@pytest.mark.parametrize("name", SUITE_TASKS)
-def test_each_suite_task_installs_docs_site_first_and_requires_the_install(name: str) -> None:
-    task = _herald_tasks()[name]
-    assert task["depends-on"] == [INSTALL], name
-    assert task["env"][DOCS_SITE_REQUIRED_ENV] == "1", name
+def _closure_touches_site(pixi: dict[str, Any], root: str) -> list[str]:
+    """Every task in ``root``'s ``depends-on`` closure that runs in the ``site`` environment or is a ``site`` task."""
+    features = {name: feature for name, feature in pixi["feature"].items() if isinstance(feature.get("tasks"), dict)}
+    site_tasks = set(pixi["feature"]["site"]["tasks"])
+    found: list[str] = []
+    seen: set[str] = set()
+    stack = [root]
+    while stack:
+        name = stack.pop()
+        if name in seen:
+            continue
+        seen.add(name)
+        task = next((f["tasks"][name] for f in features.values() if name in f["tasks"]), None)
+        for dep in (task or {}).get("depends-on", []) if isinstance(task, dict) else []:
+            dep_name = dep if isinstance(dep, str) else dep["task"]
+            if dep_name in site_tasks or (isinstance(dep, dict) and dep.get("environment") == "site"):
+                found.append(f"{name} -> {dep_name}")
+            stack.append(dep_name)
+    return found
+
+
+def test_the_plain_suite_task_stays_npm_free() -> None:
+    task = _herald_tasks()["pyforge-herald-test"]
+    assert "depends-on" not in task
+    assert DOCS_SITE_REQUIRED_ENV not in task.get("env", {})
+
+
+@pytest.mark.parametrize("aggregate", ["pyforge-station-tests", "sbom-laptop-gate"])
+def test_the_station_suites_and_the_laptop_gate_never_reach_the_site_environment(aggregate: str) -> None:
+    """fnd:CAP-13: the laptop gate runs the station suites from the SBOM alone, and ``feature:site`` is won't-do in
+    ``docs/foundry/sbom-gaps.md``, so neither aggregate's closure may run a task in ``site`` (npm ci)."""
+    assert _closure_touches_site(_pixi(), aggregate) == []
+
+
+def test_the_closure_check_sees_the_site_environment() -> None:
+    """A blindness guard: the same walk finds the install under the built task and the Pages check."""
+    assert _closure_touches_site(_pixi(), "pyforge-herald-test-built") == [
+        "pyforge-herald-test-built -> docs-site-install"
+    ]
+    assert _closure_touches_site(_pixi(), "pr-preflight-lanes")
+
+
+def test_the_built_task_installs_then_runs_the_suite() -> None:
+    """Cmd-less, so pixi runs its two dependencies in the order they are declared: the install, then the suite."""
+    task = _herald_tasks()["pyforge-herald-test-built"]
+    assert "cmd" not in task
+    assert task["depends-on"] == [INSTALL, SUITE]
+
+
+def test_the_coverage_report_installs_first_and_requires_the_install() -> None:
+    task = _herald_tasks()["pyforge-herald-test-coverage"]
+    assert task["depends-on"] == [INSTALL]
+    assert task["env"][DOCS_SITE_REQUIRED_ENV] == "1"
 
 
 def test_the_install_is_npm_ci_in_docs_site() -> None:
     """What the dependency runs: the one install every docs-site task uses (``cwd`` docs-site, ``npm ci``)."""
-    pixi = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
-    install = pixi["feature"]["site"]["tasks"]["docs-site-install"]
+    install = _pixi()["feature"]["site"]["tasks"]["docs-site-install"]
     assert install["cmd"] == "npm ci"
     assert install["cwd"] == "docs-site"
 
@@ -60,20 +114,23 @@ def test_the_install_is_npm_ci_in_docs_site() -> None:
 def test_the_coverage_gate_takes_no_install_dependency() -> None:
     """CI's coverage leg runs ``scripts/coverage_gates_ci.py``, not this task, so pr-preflight selects the gate's lane on
     a diff that selects nothing else of herald's (``scripts/coverage_gate.py`` alone fires every station's gate). A lane
-    whose dependency lane is not in the run never starts, and the run never ends; the suite task carries the install."""
+    whose dependency lane is not in the run never starts, and the run never ends (DW-steward-103-6-1)."""
     gate = _herald_tasks()["pyforge-herald-coverage-gate"]
     assert "depends-on" not in gate
     assert DOCS_SITE_REQUIRED_ENV not in gate.get("env", {})
 
 
-def test_ci_s_herald_job_runs_the_task_with_the_site_environment() -> None:
+def test_ci_s_herald_job_runs_the_built_task_strictly_with_the_site_environment() -> None:
     job = yaml.safe_load(STATION_TESTS.read_text(encoding="utf-8"))["jobs"]["herald-test"]
     setups = [step for step in job["steps"] if str(step.get("uses", "")).startswith("prefix-dev/setup-pixi@")]
     assert len(setups) == 1
     assert {"pyforge-herald", "site"} <= set(str(setups[0]["with"]["environments"]).split())
-    runs = [str(step.get("run", "")).strip() for step in job["steps"]]
-    # By task name, so pixi runs the dependency; a bare pytest would skip it.
-    assert "pixi run --frozen -e pyforge-herald pyforge-herald-test" in runs
+    runs = [step for step in job["steps"] if "run" in step and "pyforge-herald-test" in str(step["run"])]
+    # By task name, so pixi runs the install first; the variable turns a missing install into failures.
+    assert [str(step["run"]).strip() for step in runs] == [
+        "pixi run --frozen -e pyforge-herald pyforge-herald-test-built"
+    ]
+    assert runs[0]["env"][DOCS_SITE_REQUIRED_ENV] == "1"
 
 
 def _decorated(**state: bool):

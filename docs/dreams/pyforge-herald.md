@@ -132,7 +132,12 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   every built-site test. **Constraints:** a fix under CAP-61 (no CAP, no FR, no flag); `pixi.lock` and
   `environment.yaml` do not change; the coverage gate takes no install dependency, because CI's coverage leg runs its
   driver and a preflight lane whose dependency the reader does not select never starts. Asked by the orchestrating
-  session. Owner `spec-pyforge-herald`. → Epic 45 / Story 45.1, specced and fixed 2026-10-16.
+  session. Owner `spec-pyforge-herald`. → Epic 45 / Story 45.1, specced and fixed 2026-10-16. **Amended the same day
+  (the independent review; the operator's ruling):** the SBOM laptop gate stays npm-free (fnd:CAP-13), so
+  `pyforge-herald-test`, which `pyforge-station-tests` and the gate run, keeps no dependency. A separate
+  `pyforge-herald-test-built` (the install, then the suite) is what CI's herald job runs, with
+  `HERALD_DOCS_SITE_REQUIRED=1`. `pr-preflight-lanes` declares the install before the station suites, and a touched run
+  keeps it beside any kept docs-site lane. Done 2026-10-16.
 
 - **2026-10-14 (every docs page is empty) — Found: the docs shelf on Pages has published 70 pages (69 and the 404 page) with no body since
   2026-10-08.** Measured on the live site the same day: the Starlight markdown container of `/`, `/how-to/pixi-tasks/`,

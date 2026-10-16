@@ -272,6 +272,25 @@ def _platform_status(
     return out
 
 
+def _with_dependencies(chosen: list[tuple[str, str]], lanes: list[Lane]) -> list[tuple[str, str]]:
+    """``chosen`` and every lane they depend on, dependencies first in the lane list's order (herald Story 45.1's
+    review). Each lane runs with ``--skip-deps``, so a lane it depends on runs as a row of its own before it; a
+    ``--lane`` filter that ran the lane alone dropped them (``pages-build`` without ``docs-site-install``). A chosen
+    lane the list does not hold keeps its place after them."""
+    by_key = {(lane.task, lane.environment): lane for lane in lanes}
+    needed: set[tuple[str, str]] = set()
+    stack = list(chosen)
+    while stack:
+        key = stack.pop()
+        if key in needed:
+            continue
+        needed.add(key)
+        if key in by_key:
+            stack.extend(by_key[key].depends_on)
+    ordered = [key for key in by_key if key in needed]
+    return ordered + [key for key in dict.fromkeys(chosen) if key not in by_key]
+
+
 def run_verify(
     deps: VerifyDeps,
     *,
@@ -435,12 +454,13 @@ def run_verify(
         selection = None
 
     if selection is not None:
-        for lane_verdict in selection.verdicts:
-            if not lane_verdict.selected:
-                continue
-            lane = Lane(lane_verdict.task, lane_verdict.environment, ())
-            if lane_filter and lane.task != lane_filter:
-                continue
+        chosen = [
+            (verdict.task, verdict.environment)
+            for verdict in selection.verdicts
+            if verdict.selected and (not lane_filter or verdict.task == lane_filter)
+        ]
+        for task, environment in _with_dependencies(chosen, lanes):
+            lane = Lane(task, environment, ())
             pause = pauses.get(lane.task)
             if pause and not ignore_ci_pauses:
                 switch, since = pause

@@ -6,11 +6,7 @@ each task does, and fails when the declared set misses a task or names one more:
 
 * **it runs in the tree:** its ``cwd`` is ``docs-site/`` (``npm ci``, ``npm run build``), or it runs npm or astro
   on a ``docs-site/`` path;
-* **it needs the tree's install:** its own ``depends-on`` names a task of the first kind, an aggregate without a
-  ``cmd`` expanded to its own, as the preflight builds a lane's edges (``pyforge-herald-test`` and
-  ``pyforge-herald-test-coverage`` depend on ``docs-site-install`` since herald Story 45.1). A dependency with a
-  ``cmd`` is a lane of its own whose needs are its own, so a task that reaches the install only through another
-  lane (``sbom-laptop-gate``, through ``pyforge-station-tests`` and herald's suite) is not in the set;
+* **it needs the tree's install:** its ``depends-on`` closure reaches a task of the first kind;
 * **it imports an npm package:** it runs a ``docs-site/`` script whose import closure (relative imports followed)
   names a package, which node reads from ``docs-site/node_modules``;
 * **it spawns npm or astro:** it runs a ``docs-site/`` script whose import closure takes ``node:child_process`` and
@@ -115,22 +111,6 @@ def _closure(name: str, tasks: dict[str, dict[str, Any]]) -> set[str]:
     return seen
 
 
-def _lane_deps(name: str, tasks: dict[str, dict[str, Any]]) -> set[str]:
-    """The tasks a task's lane waits on: its own ``depends-on``, each dependency without a ``cmd`` (an aggregate)
-    expanded to its own, as ``preflight`` builds a lane's edges. The closure through a dependency that has a ``cmd``
-    stops there: that dependency is a lane of its own (herald Story 45.1)."""
-    seen: set[str] = set()
-    stack = list(_dep_names(tasks[name]))
-    while stack:
-        dep = stack.pop()
-        if dep in seen or dep not in tasks:
-            continue
-        seen.add(dep)
-        if "cmd" not in tasks[dep]:
-            stack.extend(_dep_names(tasks[dep]))
-    return seen
-
-
 def _resolve(importer: Path, specifier: str) -> Path:
     base = (importer.parent / specifier).resolve()
     for candidate in (base, *(base.with_name(base.name + s) for s in SCRIPT_SUFFIXES)):
@@ -222,7 +202,7 @@ def derive(pixi: dict[str, Any] | None = None) -> dict[str, set[str]]:
     every = _tasks(_pixi() if pixi is None else pixi)
     tasks = {name: task for name, task in every.items() if "cmd" in task}
     in_tree = {name for name, task in tasks.items() if _runs_in_the_tree(task)}
-    needs_install = {name for name in tasks if _lane_deps(name, every) & in_tree}
+    needs_install = {name for name in tasks if _closure(name, every) & in_tree}
     imports_package = {
         name
         for name, task in tasks.items()
@@ -260,19 +240,6 @@ def test_each_rule_sees_the_tasks_it_exists_for() -> None:
     assert "docs-site-validate-sidebar" in rules["imports_package"]
     assert {"pages-build", "pages-check"} <= rules["spawns_tool"]
     assert {"pyforge-herald-test", "pyforge-herald-coverage-gate"} <= rules["herald"]
-    # Herald Story 45.1: herald's suite tasks depend on the install, so the install rule sees them too.
-    assert {"pyforge-herald-test", "pyforge-herald-test-coverage"} <= rules["needs_install"]
-
-
-def test_a_task_that_reaches_the_install_only_through_another_lane_is_not_derived() -> None:
-    """Herald Story 45.1: sbom-laptop-gate waits on herald's suite (through the cmd-less pyforge-station-tests), whose
-    task depends on docs-site-install, and its own command never touches docs-site/. The install rule follows a lane's
-    own edges, so it stays out; the whole closure would have pulled it in."""
-    tasks = _tasks(_pixi())
-    assert "docs-site-install" in _closure("sbom-laptop-gate", tasks)  # the closure does reach the install
-    assert "docs-site-install" not in _lane_deps("sbom-laptop-gate", tasks)
-    assert "sbom-laptop-gate" not in set().union(*derive().values())
-    assert _lane_deps("pyforge-herald-test", tasks) == {"docs-site-install"}
 
 
 def test_a_build_through_a_docs_site_script_is_seen_without_its_install_dependency() -> None:

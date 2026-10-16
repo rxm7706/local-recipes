@@ -638,12 +638,14 @@ verify_commands = [
 ]
 
 "45" = [  # herald's built-site tests install docs-site first, in preflight and CI (fix under CAP-61; no CAP, no flag;
-  # Story 45.1), added 2026-10-16. The default surface, restated because a declared entry replaces it outright, plus
-  # pixi.toml (herald's suite tasks gain the install dependency and the required variable), steward's station-tests
-  # workflow (the herald job sets up the site environment), steward's docs-site lane meta test (its install rule
-  # follows a lane's own edges) and selection test (its oracle reads that herald's job runs the install), the
-  # regenerated pixi-tasks page (with its docs/map.yaml stamp) and TEA matrix, and every Spec memlog a reconcile
-  # names. pixi.lock and environment.yaml stay unchanged; the preflight's code does not move.
+  # Story 45.1), added 2026-10-16 and widened by its review fixes the same day. The default surface, restated because a
+  # declared entry replaces it outright, plus pixi.toml (the cmd-less pyforge-herald-test-built, the coverage report's
+  # install, pr-preflight-lanes' install leg), steward's station-tests workflow (the herald job's site environment and
+  # strict step), steward's preflight (the touched cut keeps a selected install beside a kept docs-site lane; the
+  # collect-only fallback skips dependencies) and estate verify (a lane's dependencies first) with their tests,
+  # steward's selection oracle, the steward deferred-work rows the review asked for, the regenerated pixi-tasks page
+  # (with its docs/map.yaml stamp) and TEA matrix, and every Spec memlog a reconcile names (spec-python-foundry-cutover:
+  # the laptop gate stays npm-free). pixi.lock and environment.yaml stay unchanged.
   "src/shared/packages/pyforge-herald/**",
   "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
   "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
@@ -651,8 +653,13 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "pixi.toml",
   ".github/workflows/pyforge-station-tests.yml",
-  "src/shared/packages/pyforge-steward/tests/meta/test_preflight_docs_site_lanes.py",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py",
+  "src/shared/packages/pyforge-steward/src/pyforge/steward/estate_verify.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py",
   "src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py",
+  "src/shared/packages/pyforge-steward/tests/unit/test_estate_verify.py",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
   "docs/how-to/pixi-tasks.md",
   "docs/map.yaml",
   "_bmad-output/projects/pyforge-herald/planning-artifacts/marshal-policy.toml",

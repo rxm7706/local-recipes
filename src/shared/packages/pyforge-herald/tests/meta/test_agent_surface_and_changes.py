@@ -5,11 +5,11 @@ Two halves, as Story 43.2's parity test splits them:
 * **The model** runs wherever ``node`` does: ``docs-site/src/lib/agent-surface.ts`` (node builtins only, imported
   with node's type stripping, no ``node_modules``) over the fixtures -- the input shapes and their refusals, the
   feed, the facts union, the latest progress record per station, the Lane 1 rule.
-* **The built site** needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``), which herald's suite
-  task installs first; without them ``pages_astro.needs_astro`` skips naming the install, or fails under the task
-  (Story 45.1). It builds Astro into a scratch directory with the inputs present, partly present and absent, and
-  with ``pyforge.herald.status_pages`` on and off (AC1-AC7). Since Story 43.7 every surface is emitted on every build;
-  ``pages-check``'s judging of them is ``test_pages_artifact.py``'s.
+* **The built site** needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``), which
+  ``pyforge-herald-test-built`` installs first; without them ``pages_astro.needs_astro`` skips naming the install, or
+  fails under ``HERALD_DOCS_SITE_REQUIRED`` (Story 45.1). It builds Astro into a scratch directory with the inputs
+  present, partly present and absent, and with ``pyforge.herald.status_pages`` on and off (AC1-AC7). Since Story 43.7
+  every surface is emitted on every build; ``pages-check``'s judging of them is ``test_pages_artifact.py``'s.
 """
 
 from __future__ import annotations

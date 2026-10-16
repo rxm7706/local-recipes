@@ -58,8 +58,9 @@ DOCS_SITE_VALIDATE = {"docs-site-validate-links", "docs-site-validate-sidebar-or
 PAGES_CHECK_LEAVES = {"pages-check", "pages-build", "docs-site-install"}
 GATES = {f"pyforge-{s}-coverage-gate" for s in STATIONS}
 NO_CI_COUNTERPART = {"docs-map-render-test", "docs-gen-test"}
-# Herald Story 45.1: herald's job runs pyforge-herald-test, whose depends-on runs docs-site-install first, so a herald
-# job that fires runs the install too (the reader selects every lane in the closure of the task a step runs).
+# Herald Story 45.1: herald's job runs pyforge-herald-test-built, whose depends-on runs docs-site-install and then
+# pyforge-herald-test, so a herald job that fires runs the install too (the reader selects every lane in the closure
+# of the task a step runs).
 HERALD_JOB_INSTALL = {"docs-site-install"}
 ALWAYS_ON = SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC
 
@@ -302,7 +303,8 @@ def test_marshal_selection_journals_the_workflow_and_rule_that_skipped_each_lane
 
 def test_pixi_toml_triggers_lint_and_station_lanes_not_pages(tmp_path: Path) -> None:
     """``pixi.toml`` is not a ``pages.yml`` path (Story 102.2); it no longer selects pages-check. It fires herald's job,
-    whose suite task depends on docs-site-install (herald Story 45.1), so the install is selected and the build is not."""
+    whose step runs docs-site-install before herald's suite (herald Story 45.1), so the install is selected and the
+    build is not."""
     repo = make_repo(tmp_path, {"pixi.toml": (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8") + "\n# touched\n"})
     chosen = selected_tasks(select(repo))
     assert ALWAYS_ON <= chosen
@@ -497,7 +499,7 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
             if out.get(key) == "true":
                 chosen.add(lane)
         if out.get("herald") == "true":
-            chosen |= HERALD_JOB_INSTALL  # the job's pyforge-herald-test runs its depends-on first (herald 45.1)
+            chosen |= HERALD_JOB_INSTALL  # the job runs pyforge-herald-test-built: the install, then the suite (45.1)
     if _oracle_fires(repo, "coverage-gates.yml", changed):
         out = _oracle_outputs(repo, "coverage-gates.yml", tmp_path)
         chosen |= {gate(s) for s in json.loads(out["stations"])}

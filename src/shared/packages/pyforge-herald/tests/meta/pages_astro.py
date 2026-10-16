@@ -2,10 +2,11 @@
 a tree, write a fixture tree, run ``pages-check`` over an artifact, and read what a herald page links and offers. Not a
 test module; the meta tests import it by name.
 
-Building Astro needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``), which herald's suite tasks
-install first (Story 45.1); without them ``needs_astro`` skips a test, naming that command, or fails it under a suite
-task. Each build rewrites ``docs-site/public/`` from scratch, as every build does (Story 43.3). ``pages-check``
-(``docs-site/scripts/pages.mts``) needs only node: its herald tests run wherever node does."""
+Building Astro needs docs-site's ``node_modules`` (``pixi run -e site docs-site-install``), which
+``pyforge-herald-test-built`` installs first (Story 45.1); without them ``needs_astro`` skips a test, naming that
+command, or fails it under ``HERALD_DOCS_SITE_REQUIRED``. Each build rewrites ``docs-site/public/`` from scratch, as
+every build does (Story 43.3). ``pages-check`` (``docs-site/scripts/pages.mts``) needs only node: its herald tests run
+wherever node does."""
 
 from __future__ import annotations
 
@@ -35,10 +36,11 @@ SITE_URL = "https://rxm7706.github.io/local-recipes"
 NODE = shutil.which("node")
 RENDER_READY = NODE is not None and ASTRO_BIN.is_file()
 needs_node = pytest.mark.skipif(NODE is None, reason="node is not on PATH")
-#: Story 45.1: herald's suite tasks (``pyforge-herald-test``, ``pyforge-herald-test-coverage`` in ``pixi.toml``) run
-#: ``docs-site-install`` before pytest and set this variable, so a built-site test whose install is missing FAILS under
-#: them: a lost dependency is a red test, never a silent skip. CI's herald job and the preflight's herald lane run the
-#: task. Unset (a bare ``pytest``; CI's coverage leg, which runs its driver and not the task), the tests skip.
+#: Story 45.1: CI's herald job runs ``pyforge-herald-test-built`` (``docs-site-install``, then ``pyforge-herald-test``)
+#: with this variable set, and ``pyforge-herald-test-coverage`` sets it beside its own install dependency, so a
+#: built-site test whose install is missing FAILS there: a lost install is a red test, never a silent skip. Unset (the
+#: plain ``pyforge-herald-test``, which ``pyforge-station-tests`` and the SBOM laptop gate run npm-free; a bare
+#: ``pytest``; CI's coverage leg, which runs its driver), the tests skip.
 DOCS_SITE_REQUIRED_ENV = "HERALD_DOCS_SITE_REQUIRED"
 NOT_INSTALLED = "docs-site is not installed (pixi run -e site docs-site-install)"
 
@@ -46,8 +48,8 @@ NOT_INSTALLED = "docs-site is not installed (pixi run -e site docs-site-install)
 def _missing_install() -> str:
     return (
         f"{NOT_INSTALLED}: Astro's bin ({ASTRO_BIN.relative_to(REPO_ROOT)}) or node (on PATH) is missing. "
-        f"Herald's suite task runs docs-site-install first and sets {DOCS_SITE_REQUIRED_ENV}=1; run the task, or "
-        "the install, then the tests (Story 45.1)."
+        "pyforge-herald-test-built runs docs-site-install first (CI sets "
+        f"{DOCS_SITE_REQUIRED_ENV}=1 on it); run it, or the install, then the tests (Story 45.1)."
     )
 
 

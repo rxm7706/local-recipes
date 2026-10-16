@@ -119,6 +119,7 @@ def _run_reduced_lane_via_preflight(
     override: psr.SuiteLaneOverride,
     task: str,
     task_cmd: str | None = None,
+    seen: list[list[str]] | None = None,
 ) -> tuple[int, dict]:
     coord = preflight._RunCoordinator(
         repo_root=repo,
@@ -139,6 +140,8 @@ def _run_reduced_lane_via_preflight(
     resolved_task_cmd = task_cmd or ""
 
     def _direct_pixi_argv(_coord, _ctx, argv, log_handle):
+        if seen is not None:
+            seen.append(list(argv))
         if argv[-1] == "--collect-only":
             assert resolved_task_cmd
             parsed = psr._parse_single_pytest(resolved_task_cmd)
@@ -243,6 +246,7 @@ def test_doctor_shape_single_complement_no_tests_selected(tmp_path: Path) -> Non
     assert segments and len(segments) == 1
     assert segments[0].label == "gate-dirs-complement"
     override = psr.SuiteLaneOverride(segments=tuple(segments), journal={"suite_reduction": True})
+    seen: list[list[str]] = []
     code, journal = _run_reduced_lane_via_preflight(
         repo,
         station="doctorish",
@@ -250,10 +254,22 @@ def test_doctor_shape_single_complement_no_tests_selected(tmp_path: Path) -> Non
         override=override,
         task="pyforge-doctorish-test",
         task_cmd=task_cmd,
+        seen=seen,
     )
     assert code == 0
     assert journal["suite_reduction_task_collect_exit"] == 0
     assert journal["suite_reduction_segments"][0]["outcome"] == "no-tests-selected"
+    # Herald Story 45.1's review: the task's collect-only fallback skips its dependencies, which ran as lanes.
+    assert seen[-1] == [
+        "pixi",
+        "run",
+        "--frozen",
+        "--skip-deps",
+        "-e",
+        "pyforge-doctorish",
+        "pyforge-doctorish-test",
+        "--collect-only",
+    ]
 
 
 def test_all_segments_no_tests_and_task_collects_nothing_reds(tmp_path: Path) -> None:
