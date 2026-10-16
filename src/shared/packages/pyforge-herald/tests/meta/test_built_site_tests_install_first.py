@@ -109,6 +109,9 @@ def test_the_install_is_npm_ci_in_docs_site() -> None:
     install = _pixi()["feature"]["site"]["tasks"]["docs-site-install"]
     assert install["cmd"] == "npm ci"
     assert install["cwd"] == "docs-site"
+    # Ready when a preflight run starts: with a dependency of its own, herald could take the first docs-site turn
+    # (45.1 re-review, nit 2) and run before the install.
+    assert "depends-on" not in install
 
 
 def test_the_coverage_gate_takes_no_install_dependency() -> None:

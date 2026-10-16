@@ -229,7 +229,9 @@ Type / Effort / Deps: fix / S / none.
 
 **Residual risk:**
 - **The order in a full run rests on declaration.** Herald's lane has no edge to the install; the install's leg in
-  `pr-preflight-lanes` makes it the first docs-site lane declared. AC5's two tests fail if the leg moves or goes. A red
+  `pr-preflight-lanes` makes it the first docs-site lane declared, and it has no `depends-on`, so it is ready when the
+  run starts. AC5's two tests fail if the leg moves or goes, and `test_the_install_is_npm_ci_in_docs_site` fails if the
+  install gains a dependency (then herald could take the first docs-site turn). A red
   install no longer blocks herald's lane, which then runs against whatever the tree holds (and the run is red anyway).
 - **Local `pyforge-herald-test` and `pyforge-station-tests` still skip the 25 without an install,** by the ruling.
   `pyforge-herald-test-built` is the local way to run them.
