@@ -859,21 +859,27 @@ def _skip_lane_on_red_stop(coord: _RunCoordinator) -> bool:
     return coord.stop_on_red.is_set() and not coord.keep_going
 
 
-def _run_order(
-    lane: Lane,
+def _next_lane(
+    ready: Sequence[Lane],
     lanes: Sequence[Lane],
     pending: dict[LaneKey, Lane],
-    keys: tuple[str, ...],
-) -> tuple[bool, int]:
-    """The order ready lanes start in: first a lane that holds a mutex and that pending lanes depend on, then
-    declaration order (Story 105.1's review).
+    docs_turn: int | None,
+) -> Lane:
+    """The ready lane that starts next (Story 105.1's review and re-review).
 
-    Lanes that share a mutex run one at a time, so which one starts first decides what the others see:
-    ``docs-site-install`` then runs before ``pyforge-herald-test``, and herald's built-site tests read this run's
-    install, never a stale one or none at all (a fresh worktree). A lane that holds no mutex keeps its declared
-    place, as before.
+    Every lane outside :data:`DOCS_SITE_TASKS` keeps its declared turn, its index in ``lanes``. The docs-site lanes,
+    which run one at a time, trade turns among themselves only: the next docs-site turn (``docs_turn``, the declared
+    index of the next docs-site lane in declaration order) goes to the ready docs-site lane that pending lanes depend
+    on, else the first one declared. So ``docs-site-install``, then ``pages-build``, take the turns of the docs-site
+    lanes declared before them, and herald's built-site tests read this run's install, never a stale one or none at
+    all (a fresh worktree). At ``--jobs 1`` every other lane runs at its declared position.
     """
-    return (not (bool(keys) and _needed_by_pending_dependent(lane, pending)), lanes.index(lane))
+    turns = [(lanes.index(lane), lane) for lane in ready if lane.task not in DOCS_SITE_TASKS]
+    docs = [lane for lane in ready if lane.task in DOCS_SITE_TASKS]
+    if docs:
+        first = min(docs, key=lambda lane: (not _needed_by_pending_dependent(lane, pending), lanes.index(lane)))
+        turns.append((lanes.index(first) if docs_turn is None else docs_turn, first))
+    return min(turns, key=lambda turn: turn[0])[1]
 
 
 def _blocked_lane_result(lane: Lane, blocker: tuple[str, str | None], *, keep_going: bool) -> LaneResult:
@@ -1208,6 +1214,9 @@ def run_preflight(
     results_by_key: dict[LaneKey, LaneResult] = {}
     pending: dict[LaneKey, Lane] = {_lane_key(lane): lane for lane in lanes}
     completed: dict[LaneKey, LaneResult] = {}
+    # Story 105.1: the declared turns of the docs-site lanes, which they trade among themselves (_next_lane).
+    docs_turns = [index for index, lane in enumerate(lanes) if lane.task in DOCS_SITE_TASKS]
+    docs_started = 0
     try:
         with ThreadPoolExecutor(max_workers=worker_count) as pool:
             futures: dict[Future[LaneResult], Lane] = {}
@@ -1249,12 +1258,12 @@ def run_preflight(
                         ready_candidates.append(candidate)
                     if not ready_candidates:
                         break
-                    ready_candidates.sort(
-                        key=lambda lane: _run_order(lane, lanes, pending, mutex_keys[_lane_key(lane)])
-                    )
-                    ready = ready_candidates[0]
+                    docs_turn = docs_turns[docs_started] if docs_started < len(docs_turns) else None
+                    ready = _next_lane(ready_candidates, lanes, pending, docs_turn)
                     key = _lane_key(ready)
                     del pending[key]
+                    if ready.task in DOCS_SITE_TASKS:
+                        docs_started += 1
                     fut = pool.submit(
                         _run_lane_in_pool,
                         coord,

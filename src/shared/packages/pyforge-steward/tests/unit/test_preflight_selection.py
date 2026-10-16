@@ -761,10 +761,11 @@ def test_run_preflight_with_no_base_ref_runs_every_lane(tmp_path: Path) -> None:
     assert code == preflight.EXIT_OK
     declared = [lane.task for lane in lanes]
     assert sorted(ran) == sorted(declared)
-    # Story 105.1's review: a docs-site lane that pending lanes wait on (docs-site-install) starts first, and every
-    # lane outside the docs-site set keeps its declared order.
-    outside = [task for task in declared if task not in preflight.DOCS_SITE_TASKS]
-    assert [task for task in ran if task not in preflight.DOCS_SITE_TASKS] == outside
+    # Story 105.1's review and re-review: every lane outside the docs-site set runs at its declared position, and the
+    # docs-site lanes trade turns among themselves, docs-site-install first.
+    for position, task in enumerate(declared):
+        if task not in preflight.DOCS_SITE_TASKS:
+            assert ran[position] == task, (position, task, ran)
     docs_site = [task for task in ran if task in preflight.DOCS_SITE_TASKS]
     assert docs_site[0] == "docs-site-install", docs_site
     record = _run_journal_record(repo)

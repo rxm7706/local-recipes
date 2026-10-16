@@ -33,6 +33,8 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from pyforge.steward import preflight
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
@@ -51,8 +53,9 @@ _SPECIFIERS = (
     re.compile(r"""\bimport\(\s*['"]([^'"]+)['"]\s*\)"""),
     re.compile(r"""\brequire\(\s*['"]([^'"]+)['"]\s*\)"""),
 )
-# A quoted npm, npx, pnpm or astro command name (``spawnSync('npm', ...)``), or astro's own bin path.
-_SPAWNED_TOOL = re.compile(r"""['"](?:npm|npx|pnpm|astro)['"]|astro/bin/astro\.mjs""")
+# npm, npx, pnpm or astro as the first word of a quoted or backticked string -- ``spawnSync('npm', [...])``,
+# ``execSync('npm run build')``, ``spawnSync(`npx`, ...)`` -- or astro's own bin path.
+_SPAWNED_TOOL = re.compile(r"""['"`](?:npm|npx|pnpm|astro)(?:\s[^'"`]*)?['"`]|astro/bin/astro\.mjs""")
 
 
 def _pixi() -> dict[str, Any]:
@@ -231,7 +234,9 @@ def test_each_rule_sees_the_tasks_it_exists_for() -> None:
     """A blindness guard: each rule finds at least the tasks it was written for on 2026-10-15."""
     rules = derive()
     assert {"docs-site-install", "docs-site-build"} <= rules["in_tree"]
-    assert {"pages-build", "pages-check", "docs-site-validate-sidebar"} <= rules["needs_install"]
+    assert "docs-site-validate-sidebar" in rules["needs_install"]
+    # Either rule may carry the Pages lanes: the install dependency, or the build pages.mts spawns (re-review nit).
+    assert {"pages-build", "pages-check"} <= rules["needs_install"] | rules["spawns_tool"]
     assert "docs-site-validate-sidebar" in rules["imports_package"]
     assert {"pages-build", "pages-check"} <= rules["spawns_tool"]
     assert {"pyforge-herald-test", "pyforge-herald-coverage-gate"} <= rules["herald"]
@@ -242,7 +247,7 @@ def test_a_build_through_a_docs_site_script_is_seen_without_its_install_dependen
     (and pages-check) in the derived set, and a new task that runs pages.mts with no depends-on is caught."""
     planted = copy.deepcopy(_pixi())
     site = planted["feature"]["site"]["tasks"]
-    del site["pages-build"]["depends-on"]
+    site["pages-build"].pop("depends-on", None)
     site["pages-preview"] = "node docs-site/scripts/pages.mts build"
     rules = derive(planted)
     derived = set().union(*rules.values())
@@ -250,6 +255,45 @@ def test_a_build_through_a_docs_site_script_is_seen_without_its_install_dependen
     assert "pages-build" not in rules["needs_install"]
     assert {"pages-build", "pages-check", "pages-preview"} <= derived
     assert derived - preflight.DOCS_SITE_TASKS == {"pages-preview"}  # the equality test above would fail on it
+
+
+@pytest.mark.parametrize(
+    ("source", "spawns"),
+    [
+        ("import { spawnSync } from 'node:child_process';\nspawnSync('npm', ['run', 'build']);\n", True),
+        ("import { execSync } from 'node:child_process';\nexecSync('npm run build', { cwd: 'docs-site' });\n", True),
+        ("import { spawnSync } from 'node:child_process';\nspawnSync(`npm`, ['run', 'build']);\n", True),
+        ('import cp from "node:child_process";\ncp.execFileSync("astro", ["build"]);\n', True),
+        (
+            "import { spawnSync } from 'node:child_process';\nspawnSync('node', ['docs-site/node_modules/astro/bin/astro.mjs']);\n",
+            True,
+        ),
+        ("import { spawnSync } from 'node:child_process';\nspawnSync('git', ['status']);\n", False),
+        (
+            "import { spawnSync } from 'node:child_process';\n// npm run build happens elsewhere\nspawnSync('git', ['log']);\n",
+            False,
+        ),
+        ("import fs from 'node:fs';\nconst tool = 'npm';\nfs.writeFileSync('x', tool);\n", False),
+    ],
+    ids=[
+        "spawnSync-argv",
+        "execSync-string",
+        "backtick",
+        "execFileSync",
+        "astro-bin",
+        "git",
+        "npm-in-comment",
+        "no-child-process",
+    ],
+)
+def test_the_spawn_rule_reads_every_form_a_node_script_runs_a_tool_in(
+    tmp_path: Path, source: str, spawns: bool
+) -> None:
+    """Re-review nit: the tool may be an argv's first entry or the first word of a command string, quoted or
+    backticked; a script that imports child_process for something else, or only names npm, does not match."""
+    script = tmp_path / "script.mts"
+    script.write_text(source, encoding="utf-8")
+    assert spawns_tool(script) is spawns
 
 
 def test_the_import_scan_reads_nav_checks_yaml_import() -> None:

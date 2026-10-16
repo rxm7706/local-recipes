@@ -271,18 +271,18 @@ def test_a_lane_releases_every_mutex_it_took_when_it_fails(tmp_path: Path) -> No
 
 
 class _RacyLocks(dict[str, threading.Lock]):
-    """A lock map that holds the race window open: a membership check waits until both threads have checked, and a
-    ``setdefault`` pauses between its check and its store. An unguarded check-then-set, or an unguarded
-    ``setdefault``, then stores two locks for one key; ``mutex_lock``'s guard stores one."""
+    """A lock map that holds the race window open: a membership check, and a ``setdefault``, each pause between the
+    check and the store. Two threads then both find the key missing and both store a lock, unless a guard keeps the
+    second out: any guarded form (``setdefault`` or check-then-set) stores one lock, and any unguarded form stores two.
+    The test pins AC4's property, not the shipped implementation (re-review nit)."""
 
     def __init__(self) -> None:
         super().__init__()
         self.stored: list[threading.Lock] = []
-        self._both_checked = threading.Barrier(2, timeout=5)
 
     def __contains__(self, key: object) -> bool:
         found = super().__contains__(key)
-        self._both_checked.wait()
+        time.sleep(0.1)  # a second thread checks inside this window unless a guard keeps it out
         return found
 
     def __setitem__(self, key: str, value: threading.Lock) -> None:
@@ -348,9 +348,11 @@ def test_the_install_starts_before_herald_s_suite(tmp_path: Path) -> None:
         assert runs.rows["pages-build"][1] <= runs.rows["pyforge-herald-test"][0], (jobs, runs.rows)
 
 
-def test_only_a_lane_holding_a_mutex_jumps_the_declared_order(tmp_path: Path) -> None:
-    """With one slot, a keyless lane that a pending lane waits on keeps its declared place (``a``, then ``b``, then
-    ``c``), as before; a docs-site lane that a pending lane waits on (``docs-site-install``) starts first."""
+def test_the_docs_site_lanes_trade_turns_and_every_other_lane_keeps_its_position(tmp_path: Path) -> None:
+    """Re-review should-fix: with one slot, a keyless lane that a pending lane waits on keeps its declared place
+    (``a``, ``b``, ``c``), and the docs-site lanes trade turns only among themselves. ``docs-site-install`` takes the
+    turn of ``pyforge-herald-test`` (declared before it), ``pages-build`` the next docs-site turn, and herald the one
+    after; ``a`` and ``b``, outside the set, start at their declared positions 0 and 2."""
     started: list[str] = []
 
     def run_ctx(ctx: preflight.LaneRunContext) -> int:
@@ -366,14 +368,24 @@ def test_only_a_lane_holding_a_mutex_jumps_the_declared_order(tmp_path: Path) ->
     )
     assert started == ["a", "b", "c"]
     started.clear()
-    _write(tmp_path / "pixi.toml", _pixi(["a", "pages-build"], {"pages-build": ["docs-site-install"]}))
+    _write(
+        tmp_path / "pixi.toml",
+        _pixi(
+            ["a", "pyforge-herald-test", "b", "pages-check"],
+            {"pages-check": ["pages-build"], "pages-build": ["docs-site-install"]},
+        ),
+    )
+    lanes = preflight.list_preflight_lanes(tomllib.loads(_read(tmp_path / "pixi.toml")), invoking_env=INV)
+    declared = [lane.task for lane in lanes]
+    assert declared == ["a", "pyforge-herald-test", "b", "docs-site-install", "pages-build", "pages-check"]
     assert (
         preflight.run_preflight(
             tmp_path, invoking_env=INV, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx
         )
         == preflight.EXIT_OK
     )
-    assert started == ["docs-site-install", "a", "pages-build"]
+    assert started == ["a", "docs-site-install", "b", "pages-build", "pyforge-herald-test", "pages-check"]
+    assert [started.index(task) for task in ("a", "b")] == [declared.index("a"), declared.index("b")]
 
 
 def test_after_a_red_stop_no_lane_starts_even_one_pending_lanes_depend_on(tmp_path: Path) -> None:

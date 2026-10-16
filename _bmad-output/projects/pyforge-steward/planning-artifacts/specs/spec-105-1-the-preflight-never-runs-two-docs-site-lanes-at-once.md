@@ -80,8 +80,10 @@ any service key.
   - its `depends-on` closure reaches such a task;
   - it runs a `docs-site/` script whose import closure, relative imports followed, names an npm package;
   - it runs a `docs-site/` script whose import closure takes `node:child_process` and names npm, npx, pnpm or astro
-    as a command (`pages.mts` runs `spawnSync('npm', ['run', 'build'])`). `pages-build` and `pages-check` match this
-    rule on their own, so the set does not hang on their install dependency. *(Added by the review, 2026-10-15.)*
+    as the first word of a quoted or backticked string: `spawnSync('npm', ['run', 'build'])` (what `pages.mts` runs),
+    `execSync('npm run build')`, `` spawnSync(`npx`, ...) ``, or astro's own `astro/bin/astro.mjs`. `pages-build` and
+    `pages-check` match this rule on their own, so the set does not hang on their install dependency. *(Added by the
+    review, 2026-10-15; the string and backtick forms by the re-review.)*
   - it runs herald's suite, while some herald test calls `astro_build`.
 
   The same test checks that steward's station-tests job fires on every docs-site file an import closure visits, and
@@ -105,18 +107,30 @@ any service key.
   - So neither the deferral nor the lock can deadlock against a pending dependency.
   - On a red stop, a deferred lane is a lane that never started: `cancelled`, exit 0, 0 s and no `cancelled_by`,
     as Story 71.10 states.
-- **A docs-site lane that pending lanes wait on starts first** *(added by the review, should-fix 2)*.
-  - Ready lanes start in `_run_order`: first a lane that holds a mutex and that pending lanes depend on, then
-    declaration order.
-  - So `docs-site-install` (`pages-build` waits on it) starts before `pyforge-herald-test` (nothing waits on it),
-    then `pages-build`, then herald.
+- **The docs-site lanes trade turns among themselves** *(added by the review, should-fix 2; scoped by the
+  re-review)*.
+  - `_next_lane` picks the ready lane that starts next.
+  - A lane outside the docs-site set keeps its declared turn, its index in the lane list.
+  - The docs-site lanes run one at a time, so they share the docs-site set's declared turns. The next docs-site turn
+    goes to the ready docs-site lane that pending lanes depend on, else to the first one declared.
+  - So `docs-site-install` (`pages-build` waits on it) takes the turn of `pyforge-herald-test`, the first docs-site
+    lane declared. `pages-build` takes the next docs-site turn, and herald the one after.
   - Herald's built-site tests therefore read this run's install. That is never a stale one after a
     `package-lock.json` change, and never none at all on a fresh worktree (measured under Verification run).
-  - A lane that holds no mutex keeps its declared place, as before. So `test_preflight_lane_identity.py`'s `--jobs 1`
-    stop test still runs `a`@inv before `a`@other.
-  - `test_preflight_selection.py::test_run_preflight_with_no_base_ref_runs_every_lane` is restated. It asserts that
-    lanes outside the docs-site set keep their declared order and that `docs-site-install` is the first docs-site
-    lane, where it asserted that the whole serial order equals the declared order.
+  - **Positions.** At `--jobs 1` on the shipped lane list (36 lanes, the re-review's `order_probe.py`), every lane
+    outside the set runs at its declared position. Only four docs-site lanes change place, each into another
+    docs-site turn:
+    - `docs-site-install` 30 → 16;
+    - `pages-build` 31 → 24;
+    - `pyforge-herald-test` 16 → 30;
+    - `pyforge-herald-coverage-gate` 24 → 31.
+  - **The rule before the re-review.** The review's fix put a needed mutex holder ahead of every ready lane. That
+    moved `ruff`, `mypy` and `detectors-ci` back two places, and a red `npm ci` at `--jobs 1` then cancelled 35 lanes.
+  - **Pinned by** `test_preflight_lane_identity.py`'s `--jobs 1` stop test, which still runs `a`@inv before
+    `a`@other.
+  - **Restated test.** `test_preflight_selection.py::test_run_preflight_with_no_base_ref_runs_every_lane` asserts
+    that every lane outside the docs-site set runs at its declared position, and that `docs-site-install` is the
+    first docs-site lane. It used to assert that the whole serial order equals the declared order.
 - **A red stop starts no lane** *(added by the review)*.
   - `_skip_lane_on_red_stop(coord)` is true for every lane once a red lane has stopped a run without `--keep-going`.
   - After the stop the pool drains what is running and the run ends, so no pending lane ever starts.
@@ -157,6 +171,13 @@ any service key.
 - **Needed-first for every lane** (the review's first suggestion). It would also reorder lanes that share nothing,
   for example `test_preflight_lane_identity.py`'s `--jobs 1` stop test, whose `a`@other would then run before
   `a`@inv. Only lanes that run one at a time need the order.
+- **Needed-first for every mutex holder, over every ready lane** (the review fix, `6b622f2b36`). It moved lanes that
+  share nothing with the promoted lane. At `--jobs 1`, `docs-site-install` and `pages-build` ran before `ruff`,
+  `mypy` and `detectors-ci`, and a red `npm ci` cancelled 35 lanes before any lint, type or suite lane reported.
+  The re-review scoped the promotion to the docs-site lanes' own turns.
+- **Deferring herald until the install's own turn** (to keep the install at position 30). The lanes outside the set
+  would then move up one or two places, and a red `npm ci` would still cancel herald and herald's gate, which ran
+  before it until the reorder. No order that runs the install before herald keeps both properties.
 
 Ledger key: `105-1-the-preflight-never-runs-two-docs-site-lanes-at-once`.
 Type / Effort / Deps: fix / S / none.
@@ -234,8 +255,11 @@ and herald's tests.
   beside it. It passes with the same counts it has alone (2058 passed, 5 skipped at `38ec9a2d25`), and the run exits 0.
 - **AC11: the install runs first.** With `pyforge-herald-test` declared before `pages-check` → `pages-build` →
   `docs-site-install`, at `--jobs 1` and at `--jobs 8`, `docs-site-install` and then `pages-build` end before herald
-  starts. With one slot, keyless lanes keep their declared order, while a docs-site lane that a pending lane waits on
-  goes first *(review should-fix 2)*.
+  starts *(review should-fix 2)*.
+  - With one slot, every lane outside the set starts at its declared position: `a` at 0 and `b` at 2 in
+    `a, pyforge-herald-test, b, docs-site-install, pages-build, pages-check`.
+  - The docs-site lanes take the docs-site turns in the order `docs-site-install`, `pages-build`, herald,
+    `pages-check` *(re-review)*.
 - **AC12: a red stop starts nothing.** Herald, holding the docs-site key, goes red while `docs-site-install` (which
   `pages-build` waits on) is deferred. The install never starts and is journaled `cancelled`, exit 0, 0 s, with no
   `cancelled_by`. Herald's own dependent is `cancelled_by` herald *(review nit)*.
@@ -268,9 +292,21 @@ and herald's tests.
 
 **Residual risk:**
 - **The docs-site lanes now run one after another.** On the reference host the Pages chain (install, build, check,
-  sidebar) takes about 12 s alone and 23 s under a full-scope run's load. Herald's suite now starts about 9 s later,
-  behind the install and the build. In every measured full-scope run steward's suite (718-808 s) stays the critical
-  path.
+  sidebar) takes about 12 s alone.
+  - In the full-scope run `c340e80d`, made after the review's reorder (`6b622f2b36`), the chain ran at the start
+    under peak load and took 43.9 s: install 3.3-20.1, build 20.1-43.8, check 424.9-427.6, sidebar 427.6-428.2.
+  - Herald's suite started at 43.8 s, 40.5 s after the install.
+  - Steward's suite (727.2 s) stayed the critical path, as in every measured full-scope run.
+  - Under the re-review's scoped order, the install starts at herald's declared turn instead of first. Its
+    timing in a pool run is not re-measured here.
+- **At `--jobs 1`, a red `npm ci` stops the run at the docs-site set's first turn** (the re-review's probe):
+  - **The scoped order:** 17 lanes start and 19 are cancelled. These are exactly the lanes declared after position
+    16, a subset of the 35 the review's order cancelled.
+  - **Before the reorder (`9ef2b206e4`):** a red install cancelled 5 lanes, but herald (position 16) ran before the
+    install it should read.
+  - **A red herald:** now cancels 5 lanes, where it cancelled 19.
+  - **A red `ruff`:** cancels the same 35 as before.
+  - **Who this affects:** only a serial run. No task, hook or workflow passes `--jobs 1`.
 - **Herald's suite and herald's coverage gate run one after the other** on a herald-touching branch (measured
   2026-10-15, review should-fix 3). On a committed herald diff, the gate runs herald's unit suite under coverage and
   the station lane is reduced to the tests the gate does not run.
@@ -288,7 +324,9 @@ and herald's tests.
   installs docs-site. A run whose diff fires `pages.yml` installs first (AC11).
 - **A new task that writes `docs-site/` through a non-node script** (for example a Python script) with no install
   dependency matches no rule. A reviewer adds it to the set with its reason. The meta test's docstring names the
-  rules, so the gap is visible. A node script that spawns npm or astro is caught by the spawn rule.
+  rules, so the gap is visible. A node script is caught by the spawn rule when npm, npx, pnpm or astro is the first
+  word of a quoted or backticked string in its import closure (an argv entry or a command string). A tool name built
+  at run time, for example from a variable, is not.
 - `pyforge-herald-test-coverage` is not a preflight lane today; it is in the set because it runs the same tests.
 
 ## I/O & Edge-Case Matrix
@@ -304,6 +342,8 @@ and herald's tests.
 | red stop while a lane that pending lanes wait on is ready (`docs-site-install`) | started after the stop, killed at once by `register_proc`, `cancelled_by` the red lane | never started (Story 71.10); its dependents never start |
 | fresh worktree (no `docs-site/node_modules`), herald and the Pages chain selected | herald first: 25 built-site tests skip (2033 passed, 30 skipped) | install first: herald 2058 passed, 5 skipped |
 | a diff that changes `docs-site/package-lock.json` | herald could test against the old install | the install runs before herald |
+| `--jobs 1`, every lane ok | declared order | every lane outside the set at its declared position; four docs-site lanes trade docs-site turns |
+| `--jobs 1`, `docs-site-install` red | 5 cancelled (herald had already run, against the old install) | 19 cancelled: the lanes declared after the first docs-site turn |
 | herald-touching committed branch: herald suite and herald gate | concurrent; the gate's built-site tests race the install (17 skip) | one after the other (about 14 s start delay) |
 | `docs-site-validate-links`, `-sidebar-order` | concurrent | concurrent (builtins only, read `docs/`) |
 | two threads ask for one key's lock at once | two locks possible (unguarded check-then-set) | one lock, one stored |
@@ -451,6 +491,51 @@ verdict is read from its exit code.
     `ad-citation-check`, `flag-gate-check` and `spec-surface-check` (no drift).
 - **Not done here.** No commit and no stamp. Both probes were removed, and Postgres is down again.
 
+## Verification run (2026-10-16, re-review)
+
+Run on `5c10bcafc4`, with the re-review unit staged. Every verdict is read from its exit code.
+
+- **The order probe.** I adapted the re-review's `order_probe.py` to `_next_lane` as `scratchpad/rr2/order_probe2.py`.
+  It uses the shipped 36-lane list and the real service keys, with an injected runner.
+  - At `--jobs 1`, every lane outside the docs-site set runs at its declared position.
+  - Only four docs-site lanes change place, each into a docs-site turn: install 30 → 16, `pages-build` 31 → 24,
+    herald 16 → 30, herald's gate 24 → 31. No dependency is violated, and `--jobs 16` runs each lane once.
+  - At `--jobs 1` with stop on red, each order (scoped / `9ef2b206e4` / `6b622f2b36`) cancels:
+
+    | Red lane | Scoped | `9ef2b206e4` | `6b622f2b36` |
+    |---|---|---|---|
+    | `docs-site-install` | 19 | 5 | 35 |
+    | `pyforge-herald-test` | 5 | 19 | 17 |
+    | `ruff` | 35 | 35 | 33 |
+
+  - Every lane is journaled, and no lane starts after the red one.
+- **A fresh worktree, scoped order** (`docs-site/node_modules` removed; the proof driver at `--jobs 16`). Journal
+  `b0b0020b`, exit 0. `docs-site-install` ran 0.4-3.2, `pages-build` 3.2-9.1 and herald 9.1-144.4, with 2058 passed and
+  5 skipped.
+- **Mutations.** Each was restored byte for byte, and the tree was unchanged after.
+
+  | Mutation | Result |
+  |---|---|
+  | `6b622f2b36`'s rule (a needed docs-site lane over every ready lane) | fails the trade-turns test and the restated selection test |
+  | declaration order only | fails those two and the install-before-herald test |
+  | the old spawn pattern | fails the `execSync`-string and backtick cases |
+  | a correct guarded check-then-set | **passes** the lock test |
+  | an unguarded check-then-set | fails it |
+  | an unguarded `setdefault` | fails it |
+  | `pages-build`'s install dependency dropped from the real `pixi.toml` | the meta test passes, 16 of 16 (no `KeyError`; the guard accepts the spawn rule) |
+- **Tests.** The story's three test files: 42 passed. With `test_preflight_selection.py`: 125 passed.
+  `-k preflight`: 361 passed.
+- **Gates.**
+  - `pixi run --frozen -e pyforge-guild lint-types`: exit 0.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test`: exit 0, 2841 passed, 2 skipped.
+  - The steward coverage gate (`COVERAGE_GATES_STATIONS=steward python scripts/coverage_gates_ci.py --paths-file
+    <the branch's committed and staged paths> --suites unit`): exit 0, 2841 passed, `preflight.py` at 94%.
+  - `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`, `deferred-work-check`,
+    `ledger-regression-check`, `story-status-check`, `chain-currency-sweep-check`, `ad-citation-check`,
+    `flag-gate-check`, `spec-surface-check`, `tea-playwright-check` and `ci_surface_gates.py --check`: each exit 0,
+    run after this section was written.
+- **Not done here.** No commit and no stamp. The probe was removed.
+
 ## Review (2026-10-15)
 
 The independent review of `9ef2b206e4` (merge `bf92dfc0d9`) returned **PASS**, with three should-fix findings and four
@@ -468,7 +553,8 @@ Every finding is resolved on the same branch, as one staged unit.
   - **Finding:** ready lanes were ordered by `lanes.index`, so `pyforge-herald-test` always ran before
     `docs-site-install`. On a fresh worktree, herald's 25 built-site tests still skipped silently, and a
     `package-lock.json` change was tested against a stale install.
-  - **Resolution:** `_run_order` (Approach), narrowed to lanes that hold a mutex. AC11's tests cover it, and the
+  - **Resolution:** `_run_order`, narrowed to lanes that hold a mutex (the re-review then scoped it to the docs-site
+    lanes' own turns as `_next_lane`; see Approach). AC11's tests cover it, and the
     fresh-worktree run below measures it.
 - **3 (should-fix): the cost of serializing herald's suite and gate was not measured.**
   - **Resolution:** measured, and recorded in Residual risk, in the I/O matrix and in the steward memlog.
@@ -499,3 +585,12 @@ Every finding is resolved on the same branch, as one staged unit.
   - the lock-map test (AC4).
 
   AC8 notes the one restated order assertion. `docs-site/src/lib/status.ts` leaves `steward_paths`.
+- 2026-10-15 (re-review, NOT RESOLVED: one should-fix, four nits; scratchpad `rereview-105-1.md`). Changes:
+  - `_run_order` becomes `_next_lane`: the docs-site lanes trade turns among themselves, and every other lane keeps
+    its declared position (Approach; AC11 restated).
+  - The restated selection assertion now checks declared positions.
+  - The spawn rule reads command strings and backticks (`execSync('npm run build')`, `` `npx` ``).
+  - The planted test uses `.pop("depends-on", None)`, and the rule guard accepts either rule for the Pages lanes.
+  - The lock-map test holds its window open with a sleep, so a correct guarded check-then-set passes.
+  - Residual risk quotes `c340e80d`, and names the `--jobs 1` cost of a red `npm ci`.
+  - The status stays `done`.
