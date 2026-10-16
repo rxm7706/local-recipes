@@ -247,7 +247,7 @@ def test_a_lane_the_stop_keeps_from_starting_names_its_twin(tmp_path: Path) -> N
     coord.stop_on_red.set()
     ran: list[preflight.LaneRunContext] = []
     result = preflight._run_lane_in_pool(  # noqa: SLF001
-        coord, preflight.Lane("a", OTHER), tmp_path / "scratch", None, lambda ctx: ran.append(ctx) or 0, False, {}
+        coord, preflight.Lane("a", OTHER), tmp_path / "scratch", (), lambda ctx: ran.append(ctx) or 0, False, {}
     )
     assert ran == []
     assert (result.task, result.environment, result.status) == ("a", OTHER, "cancelled")
@@ -275,7 +275,7 @@ def test_a_lane_stopped_while_it_waits_for_its_service_names_its_twin(
     """Review fix: the pool's second stop check (after the service lock) journals the twin that stopped the run."""
     coord = _coordinator(tmp_path)
     service = _SignallingLock()
-    monkeypatch.setattr(coord, "service_lock", lambda _key: service)
+    monkeypatch.setattr(coord, "mutex_lock", lambda _key: service)
     service.lock.acquire()  # the twin holds the shared service container
     ran: list[preflight.LaneRunContext] = []
     results: list[preflight.LaneResult] = []
@@ -286,7 +286,7 @@ def test_a_lane_stopped_while_it_waits_for_its_service_names_its_twin(
                 coord,
                 preflight.Lane("a", OTHER),
                 tmp_path / "scratch",
-                "services:postgres",
+                ("services:postgres",),
                 lambda ctx: ran.append(ctx) or 0,
                 False,
                 {},

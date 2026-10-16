@@ -380,6 +380,8 @@ jobs:
             _bmad
             '_bmad-output/projects/*/README.md'
             '_bmad-output/projects/*/planning-artifacts/*'
+            docs-site/scripts
+            docs-site/src/lib
             docs-site/src/lib/status.ts
             docs/404.md
             docs/dreams
