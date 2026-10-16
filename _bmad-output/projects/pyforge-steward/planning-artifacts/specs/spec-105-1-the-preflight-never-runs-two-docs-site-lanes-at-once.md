@@ -2,7 +2,7 @@
 title: '105.1: The preflight never runs two docs-site lanes at once'
 type: 'fix'
 created: '2026-10-15'
-status: 'in-review'
+status: 'done'
 baseline_revision: '38ec9a2d2530636edaa8c08d117fd520a534ae09'
 flag-exempt: detector-or-gate   # a fix needs no flag (spec-feature-flag-governance Q1: flagging a fix keeps the bug reachable); and pr-preflight is a gate, so a flag-OFF run would report a silent green (Q2's gate exemption), the rule doctor 34.7 and 35.1 followed
 review_loop_iteration: 0

@@ -47,7 +47,7 @@ development_status:
   103-6-a-touched-scope-preflight-leaves-the-other-lanes-to-ci-and-verify-deferred-catches-up: done
   103-7-steward-ci-status-reads-no-runs-for-a-retired-row-so-a-landing-records-the-ci-pauses: done
   104-1-cfe-regression-net-runs-when-a-script-its-tests-load-changes: done
-  105-1-the-preflight-never-runs-two-docs-site-lanes-at-once: in-progress
+  105-1-the-preflight-never-runs-two-docs-site-lanes-at-once: done
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done
@@ -413,7 +413,7 @@ development_status:
   epic-103-retrospective: optional
   epic-104: done
   epic-104-retrospective: optional
-  epic-105: in-progress
+  epic-105: done
   epic-105-retrospective: optional
   epic-11: done
   epic-11-retrospective: optional
