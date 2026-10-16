@@ -396,3 +396,7 @@ atlas's producer calls the retired verbs
   `origin/main` (Story 99.5), so this was a latent defect, fixed here as healed tissue in a module this story's
   review fixes already edit: an absent or blank twin now matches no lane. Test:
   `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py::test_a_row_without_a_local_twin_matches_no_lane`.
+- 2026-10-15 (PR #2240 CI): `test_pages_duty.py::test_write_fleet_status_stamps_head_commit_time` asserted the string
+  `2026-10-14T01:56:19+00:00`, but the CI runner's newer git renders a UTC committer offset of `%cI` as `Z`. The
+  production code is unchanged (local and CI both read their own git, and herald's board prints the stamp as given);
+  the test now compares instants (`datetime.fromisoformat`) and checks `generated_at` equals the stamp git gave.

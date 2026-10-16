@@ -641,9 +641,13 @@ def test_write_fleet_status_stamps_head_commit_time(tmp_path: Path) -> None:
         ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "ledgers"],
     ):
         subprocess.run(argv, cwd=tmp_path, check=True, capture_output=True, env={**os.environ, **env})
-    assert pages_duty.head_commit_time(tmp_path) == "2026-10-14T01:56:19+00:00"
+    # git renders a UTC committer offset as `+00:00` or, on newer releases (the CI runner), as `Z`;
+    # the stamp is the same instant either way, so compare instants, not spellings.
+    expected = datetime(2026, 10, 14, 1, 56, 19, tzinfo=timezone.utc)
+    stamp = pages_duty.head_commit_time(tmp_path)
+    assert stamp is not None and datetime.fromisoformat(stamp) == expected
     document = json.loads(pages_duty.write_fleet_status(tmp_path).read_text(encoding="utf-8"))
-    assert document["generated_at"] == "2026-10-14T01:56:19+00:00"
+    assert document["generated_at"] == stamp
     assert "next_running" not in document["stations"][0]
     assert pages_duty.head_commit_time(tmp_path / "not-a-repo") is None
 
