@@ -1918,23 +1918,25 @@ Drift — orphaned between stations.
   loops without a pause. Probed at `2ca62dbca0` with a fixture lane `a` that depends on `b` and a selection of `a`
   alone, the run spun 8 s on one core (7.96 s user time) until SIGINT; a touched run whose fast-core task depends on a
   deferred lane did the same. Herald Story 45.1's review reproduced it with a scratch `depends-on`. It is latent on the
-  shipped graph (45.1's review found no one-path diff or pause combination that reaches it), but a `depends-on` on a
-  lane the reader matches by command line, a CI pause on a dependency alone, or a dependency on a fast-core task would
-  reach it (`DW-steward-103-6-1`, `DW-steward-103-6-2`). (2) `pixi run -e pyforge-guild pr-preflight-lanes`, the
-  serial reference Story 71.1 kept, stops before any lane runs. Pixi 0.81.0 looks a bare `depends-on` up in the
-  environment the run was invoked in, so `pages-check@site`'s bare `pages-build` is looked up in `pyforge-guild`, where
-  the `site` feature's tasks do not exist: "could not find the task 'pages-build'" (`DW-steward-45-1-1`). The runner
-  itself is unaffected, because it gives a bare dependency its dependent's environment. **What it looks like when
-  fixed:** a selected lane brings the lanes it depends on, transitively, as `pixi run` itself does, a paused dependency
-  included, since its dependent's CI job runs it through `pixi run`. Each lane pulled in is named on stderr and in the
-  journal. A run in which a lane still depends on a lane outside it refuses with exit 2 before any install, naming the
-  lane and the dependency, so the scheduler never meets one. Every `site` task names `site` on its own dependencies, so
-  `pixi run -e pyforge-guild pr-preflight-lanes` resolves all 36 of its tasks; a steward test reads `pixi.toml` the way
-  pixi does and fails naming every task it cannot find. **Constraints:** a fix under CAP-159, with no CAP, no flag and
-  no `SPEC.md` change. The lanes CI's rules select and the exit codes do not change, the journal changes only
-  additively, and the scheduler loop is not restructured. The `pixi.toml` edit changes no dependency, version or lock,
-  and the preflight's lane graph stays as it is. Orchestrating session's brief, 2026-10-16. Owner
-  `spec-pyforge-steward`. → Epic 107 / Story 107.1, specced 2026-10-16.
+  shipped graph (45.1's review found no one-path diff or pause combination that reaches it). CI's selection leaves a
+  dependency out only where nothing in CI runs it with the lane: a step that runs `pixi run <task>` selects the task's
+  whole `depends-on` closure, so a strand needs a lane CI's reader matches by its command line (coverage-gates.yml runs
+  `python scripts/coverage_gates_ci.py`, not the gate task), a dependency on a fast-core detector, or a lane no CI step
+  runs (`DW-steward-103-6-1`, `DW-steward-103-6-2`). (2) `pixi run -e pyforge-guild pr-preflight-lanes`, the serial
+  reference Story 71.1 kept, stops before any lane runs. Pixi 0.81.0 looks a bare `depends-on` up in the environment
+  the run was invoked in, so `pages-check@site`'s bare `pages-build` is looked up in `pyforge-guild`, where the `site`
+  feature's tasks do not exist: "could not find the task 'pages-build'" (`DW-steward-45-1-1`). The runner itself is
+  unaffected, because it gives a bare dependency its dependent's environment. **What it looks like when fixed:** a run
+  in which a lane depends on a lane outside it refuses with exit 2 before any install, naming the lane, why it runs,
+  the dependency, that nothing in CI runs the lane with it, and the fixes (make the CI step run `pixi run <task>`, or
+  drop the `depends-on`), so the scheduler never meets one. The run is never widened: pulling the dependency in would
+  run locally what CI does not, and could turn CI's red into a local green. Every `site` task names `site` on its own
+  dependencies, so `pixi run -e pyforge-guild pr-preflight-lanes` resolves all 36 of its tasks; a steward test reads
+  `pixi.toml` the way pixi does and fails naming every task it cannot find. **Constraints:** a fix under CAP-159, with
+  no CAP, no flag and no `SPEC.md` change. The lanes CI's rules select, the journal and the exit codes do not change,
+  and the scheduler loop is not restructured. The `pixi.toml` edit changes no dependency, version or lock, and the
+  preflight's lane graph stays as it is. Orchestrating session's brief, 2026-10-16; revised the same day by its review
+  ruling (refuse, never pull in). Owner `spec-pyforge-steward`. → Epic 107 / Story 107.1, specced 2026-10-16.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

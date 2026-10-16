@@ -5,7 +5,7 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 5342c0ca27ecd0b2
+source_fingerprint: 1c22315ad5cbf6b9
 story_count: 387
 test_file_count: 140
 coverage_target_unit: ">=80%"
@@ -24,7 +24,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Test files inventoried:** 140 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5342c0ca27ecd0b2`
+- **Source fingerprint:** `1c22315ad5cbf6b9`
 
 ## Risk Assessment
 
@@ -132,7 +132,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 103: Steward's CI, estate and environment reports say what is true (fixes under CAP-166, CAP-167, CAP-5 and CAP-159; one CAP-159 feature)
 - Epic 104: The CFE regression lane runs when what its tests load changes (fix under spec-pyforge-steward CAP-159; no CAP)
 - Epic 106: The two `mypy` lanes keep separate caches (fix under spec-pyforge-steward CAP-159; no CAP)
-- Epic 107: A preflight lane runs with its dependencies (fix under spec-pyforge-steward CAP-159; no CAP)
+- Epic 107: The preflight refuses a stranded lane, and its serial reference resolves under pixi (fix under spec-pyforge-steward CAP-159; no CAP)
 
 ### Low-risk epics
 
@@ -238,13 +238,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_ci.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
-| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_dependency_closure.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_docs_site_mutex.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_inherited_pytest_addopts.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_lane_identity.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scope.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_stranded_lane.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_verify_deferred.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py` | unit | none observed |
@@ -679,7 +679,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 104.1 | cfe-regression-net runs when a script its tests load changes | none observed |
 | 105.1 | The preflight never runs two docs-site lanes at once | none observed |
 | 106.1 | The two `mypy` lanes keep separate caches | none observed |
-| 107.1 | A preflight lane runs with its dependencies, in the runner and under pixi run | none observed |
+| 107.1 | A stranded preflight lane is refused, and pr-preflight-lanes resolves under pixi | none observed |
 
 ## Quality Gates
 

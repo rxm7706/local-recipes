@@ -115,9 +115,11 @@ def test_the_install_is_npm_ci_in_docs_site() -> None:
 
 
 def test_the_coverage_gate_takes_no_install_dependency() -> None:
-    """CI's coverage leg runs ``scripts/coverage_gates_ci.py``, not this task, so pr-preflight selects the gate's lane on
-    a diff that selects nothing else of herald's (``scripts/coverage_gate.py`` alone fires every station's gate). A lane
-    whose dependency lane is not in the run never starts, and the run never ends (DW-steward-103-6-1)."""
+    """CI's coverage leg runs ``scripts/coverage_gates_ci.py``, not this task, so CI never runs the install with the
+    gate, and pr-preflight selects the gate's lane on a diff that selects nothing else of herald's
+    (``scripts/coverage_gate.py`` alone fires every station's gate). A dependency here would strand the lane on such a
+    diff, and the preflight refuses that run with exit 2 before any install (steward Story 107.1; before it, the run
+    never ended, DW-steward-103-6-1)."""
     gate = _herald_tasks()["pyforge-herald-coverage-gate"]
     assert "depends-on" not in gate
     assert DOCS_SITE_REQUIRED_ENV not in gate.get("env", {})

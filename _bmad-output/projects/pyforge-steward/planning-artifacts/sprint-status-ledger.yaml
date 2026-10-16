@@ -49,7 +49,7 @@ development_status:
   104-1-cfe-regression-net-runs-when-a-script-its-tests-load-changes: done
   105-1-the-preflight-never-runs-two-docs-site-lanes-at-once: done
   106-1-the-two-mypy-lanes-keep-separate-caches: done
-  107-1-a-preflight-lane-runs-with-its-dependencies-in-the-runner-and-under-pixi-run: backlog
+  107-1-a-stranded-preflight-lane-is-refused-and-pr-preflight-lanes-resolves-under-pixi: backlog
   11-1-langflow-joins-as-a-pluggable-app: done
   11-2-db-gpt-joins-via-its-configured-integration-pattern: done
   11-3-async-work-never-blocks-django: done

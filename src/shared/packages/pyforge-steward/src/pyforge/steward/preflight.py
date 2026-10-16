@@ -16,9 +16,8 @@ changes, the five fast-core detectors in place of ``detectors-ci`` and lint and 
 changed, and journals every other lane as deferred: CI arbitrates it. ``PYFORGE_PREFLIGHT_SCOPE`` chooses the
 scope, or, unset, the flag ``pyforge.steward.preflight_ci_arbitrates``; ``main`` resolves it, so
 ``run_preflight`` defaults to ``full``. ``steward preflight verify-deferred`` is the catch-up.
-A selected lane brings the lanes it depends on, as ``pixi run`` does, and a run in which a lane still depends on a
-lane outside it refuses before any install (Story 107.1; :func:`close_over_dependencies`,
-:func:`stranded_dependencies`), so no lane ever waits on a dependency nobody runs.
+A run in which a lane depends on a lane outside it refuses before any install (Story 107.1;
+:func:`stranded_dependencies`): such a lane would never start, and nothing in CI runs it with that dependency.
 Not a steward CLI duty — ``main()`` owns the exit code (AD-8).
 """
 
@@ -37,7 +36,6 @@ import threading
 import time
 import tomllib
 import uuid
-from collections import deque
 from collections.abc import Callable, Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass, field
@@ -321,43 +319,6 @@ def list_preflight_lanes(
     return [lanes_by_key[key] for key in order]
 
 
-@dataclass(frozen=True)
-class DependencyClosure:
-    """The lanes a run chose, closed over ``depends-on`` (Story 107.1)."""
-
-    lanes: tuple[Lane, ...]  # what runs, in run order
-    pulled_in: tuple[tuple[Lane, LaneKey], ...] = ()  # each lane the closure added, and the lane that needs it
-
-
-def close_over_dependencies(run_lanes: Sequence[Lane], all_lanes: Sequence[Lane]) -> DependencyClosure:
-    """Add every lane the chosen lanes depend on, transitively, as ``pixi run`` runs a task's dependencies (Story 107.1).
-
-    ``all_lanes`` is the whole lane list in declaration order (:func:`list_preflight_lanes`); ``run_lanes`` are the
-    lanes a run chose from it. A dependency missing from ``run_lanes`` is pulled in, named with the first lane, in run
-    order, that needs it. With nothing pulled in, ``run_lanes`` comes back as it was, order included; otherwise the
-    lanes come back in declaration order, which puts every dependency before the lanes that need it. A dependency
-    that is not in ``all_lanes`` stays out, for :func:`stranded_dependencies` to refuse.
-    """
-    by_key = {_lane_key(lane): lane for lane in all_lanes}
-    chosen = {_lane_key(lane) for lane in run_lanes}
-    needed_by: dict[LaneKey, LaneKey] = {}
-    queue = deque(run_lanes)
-    while queue:
-        lane = queue.popleft()
-        for dep_key in lane.depends_on:
-            if dep_key in chosen or dep_key in needed_by or dep_key not in by_key:
-                continue
-            needed_by[dep_key] = _lane_key(lane)
-            queue.append(by_key[dep_key])
-    if not needed_by:
-        return DependencyClosure(lanes=tuple(run_lanes))
-    keep = chosen | needed_by.keys()
-    return DependencyClosure(
-        lanes=tuple(lane for lane in all_lanes if _lane_key(lane) in keep),
-        pulled_in=tuple((lane, needed_by[_lane_key(lane)]) for lane in all_lanes if _lane_key(lane) in needed_by),
-    )
-
-
 def stranded_dependencies(lanes: Sequence[Lane]) -> tuple[tuple[Lane, tuple[LaneKey, ...]], ...]:
     """Each lane of ``lanes`` that depends on a lane outside them, with those dependencies (Story 107.1).
 
@@ -373,11 +334,38 @@ def stranded_dependencies(lanes: Sequence[Lane]) -> tuple[tuple[Lane, tuple[Lane
     return tuple(stranded)
 
 
-def _pulled_in_reason(lane: Lane, needed_by: LaneKey, paused_keys: set[LaneKey] | frozenset[LaneKey]) -> str:
-    reason = f"{lane_label(*needed_by)} depends on it"
-    if _lane_key(lane) in paused_keys:
-        reason += ", paused in CI, where its dependent's job runs it through pixi run"
-    return reason
+NO_CI_COUNTERPART = "no CI counterpart"  # how preflight_ci's verdict reason opens for a lane no CI step runs
+
+
+def stranded_lane_message(lane: Lane, missing: Sequence[LaneKey], why: str, *, fast_core: bool) -> list[str]:
+    """The refusal's lines for one stranded lane (Story 107.1): the lane, why it runs, each missing dependency, what
+    CI does with it, and the fixes.
+
+    The preflight runs each lane with ``pixi run --skip-deps``, so a lane runs with a dependency only when that
+    dependency is a lane of the run. It never pulls a missing one in: a CI step that runs ``pixi run <task>`` selects
+    every lane of the task's ``depends-on`` closure with it (``preflight_ci._step_matches``), so CI's selection leaves
+    a dependency out only when nothing in CI runs it with the lane -- a lane the reader matched by its command line,
+    a fast-core detector, a lane no CI step runs -- and running it here could turn CI's red into a local green.
+    """
+    name = lane_label(lane.task, lane.environment)
+    deps = ", ".join(lane_label(*key) for key in missing)
+    lines = [f"{name} runs ({why}) but depends on {deps}, which this run does not run"]
+    if fast_core:
+        lines.append(
+            f"  CI runs {lane.task} inside detectors-ci (scripts/detectors.py), never as `pixi run {lane.task}`, "
+            f"so never with {deps}"
+        )
+        lines.append(f"  fix: drop {lane.task}'s depends-on, or take {lane.task} out of FAST_CORE_TASKS")
+        return lines
+    if why.startswith(NO_CI_COUNTERPART):
+        lines.append(f"  no CI step runs {lane.task}, so CI never runs it, with {deps} or without")
+    else:
+        lines.append(
+            f"  CI runs {lane.task}'s command without {deps}: the step that selects it runs the command, "
+            f"not `pixi run {lane.task}`, which is what runs a task's dependencies"
+        )
+    lines.append(f"  fix: make the CI step run `pixi run {lane.task}`, or drop {lane.task}'s depends-on")
+    return lines
 
 
 @dataclass(frozen=True)
@@ -410,8 +398,7 @@ def touched_cut(
 ) -> TouchedCut:
     """Keep the lanes the diff touches and defer the rest: CI arbitrates them (Story 103.6).
 
-    ``lanes`` are what a full run would run (the selection, after the CI pause filter, closed over its dependencies:
-    :func:`close_over_dependencies`), in run order. A lane is
+    ``lanes`` are what a full run would run (the selection, after the CI pause filter), in run order. A lane is
     kept when ``preflight_ci.touch_verdict`` says the diff changes its station package, a path its command
     names, or Python under ``src/`` for a lint-and-types lane; a kept lane brings the lanes it depends on, and a kept
     docs-site lane brings a selected ``docs-site-install``, which it reads (herald Story 45.1).
@@ -1098,9 +1085,8 @@ def run_preflight(
     """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130.
 
     ``scope`` is ``full`` (every selected lane) or ``touched`` (Story 103.6: see :func:`touched_cut`);
-    ``scope_source`` says what chose it, for the run's stdout. The selected lanes bring the lanes they depend on
-    (Story 107.1: :func:`close_over_dependencies`), and a lane still stranded after the cut refuses the run with
-    ``EXIT_CONFIG`` before any install (:func:`stranded_dependencies`).
+    ``scope_source`` says what chose it, for the run's stdout. A run in which a lane depends on a lane outside it
+    returns ``EXIT_CONFIG`` before any install (Story 107.1: :func:`stranded_dependencies`).
     """
     if scope not in SCOPES:
         print(f"preflight: scope {scope!r} is not one of {', '.join(SCOPES)}", file=sys.stderr)
@@ -1122,10 +1108,8 @@ def run_preflight(
     resolution = preflight_ci.resolve_ci_vars(repo_root, flag_on=flag_on)
     var_lookup = resolution.lookup if flag_on else None
     selection = preflight_ci.select_lanes(repo_root, lanes, pixi_data, var_lookup=var_lookup)
-    all_lanes = lanes
     paused_lanes: list[preflight_ci.PausedLane] = []
     paused_results: list[LaneResult] = []
-    paused_keys: set[LaneKey] = set()
     if flag_on:
         surface_paused = preflight_ci.list_paused_ci_surfaces(repo_root, resolution)
         lane_paused = preflight_ci.discover_paused_lanes(repo_root, lanes, pixi_data, resolution)
@@ -1161,19 +1145,6 @@ def run_preflight(
         lanes = run_lanes
     else:
         lanes = [lane for lane in lanes if selection.is_selected(lane)]
-    # Story 107.1: a selected lane brings the lanes it depends on, as pixi run does -- a paused one too, which then
-    # runs and loses its paused not-run row. Nothing pulled in leaves the run set, its order and the journal as they were.
-    closure = close_over_dependencies(lanes, all_lanes)
-    lanes = list(closure.lanes)
-    pulled_in: list[dict[str, str]] = []
-    for lane, needed_by in closure.pulled_in:
-        reason = _pulled_in_reason(lane, needed_by, paused_keys)
-        pulled_in.append({"lane": lane.task, "environment": lane.environment, "reason": reason})
-        print(f"preflight: pulled in {lane_label(lane.task, lane.environment)}: {reason}", file=sys.stderr)
-    if closure.pulled_in:
-        pulled_keys = {_lane_key(lane) for lane, _ in closure.pulled_in}
-        paused_results = [result for result in paused_results if (result.task, result.environment) not in pulled_keys]
-    pulled_in_journal: dict[str, Any] = {"pulled_in": pulled_in} if pulled_in else {}
     skipped_count = len(selection.verdicts) - len(lanes)
     cut: TouchedCut | None = None
     if scope == SCOPE_TOUCHED:
@@ -1198,16 +1169,24 @@ def run_preflight(
         file=sys.stderr,
     )
     _print_scope(scope, scope_source, cut)
-    # Story 107.1: a lane whose dependency is not in the run would never start and never be blocked, and the pool
-    # would loop with nothing in flight. After the closure only the touched cut's fast core can leave one.
+    # Story 107.1: a lane whose dependency is not in the run would never start and never be blocked, and the pool would
+    # loop with nothing in flight. Nothing in CI runs such a lane with that dependency, so the run is refused, never
+    # widened: before any install or lane starts, naming each lane, why it runs, what it misses and the fixes.
     stranded = stranded_dependencies(lanes)
     if stranded:
+        selected = {
+            (verdict.task, verdict.environment): verdict.reason for verdict in selection.verdicts if verdict.selected
+        }
+        cut_reasons = dict(cut.reasons) if cut is not None else {}
+        fast_core_keys = {_lane_key(lane) for lane in cut.fast_core} if cut is not None else set()
         for lane, missing in stranded:
-            print(
-                f"preflight: {lane_label(lane.task, lane.environment)} depends on "
-                f"{', '.join(lane_label(*key) for key in missing)}, which this run does not run",
-                file=sys.stderr,
-            )
+            key = _lane_key(lane)
+            if key in fast_core_keys:
+                why = cut_reasons[key]
+            else:
+                why = selected.get(key, "paused in CI, run by --ignore-ci-pauses")
+            for line in stranded_lane_message(lane, missing, why, fast_core=key in fast_core_keys):
+                print(f"preflight: {line}", file=sys.stderr)
         print("preflight: refusing the run before any install or lane starts", file=sys.stderr)
         return EXIT_CONFIG
 
@@ -1437,7 +1416,7 @@ def run_preflight(
                 "invoking_environment": env,
                 "mode": scope,
                 "deferred": _deferred_journal(deferred),
-                "selection": {**selection.to_journal(), **pulled_in_journal},
+                "selection": selection.to_journal(),
                 "lanes": [_lane_result_dict(r) for r in ordered],
             },
         )
@@ -1491,7 +1470,6 @@ def run_preflight(
             "deferred": _deferred_journal(deferred),
             "selection": {
                 **selection.to_journal(),
-                **pulled_in_journal,
                 **({"ci_var_source": resolution.source} if flag_on else {}),
                 **(
                     {

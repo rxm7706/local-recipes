@@ -3134,11 +3134,13 @@ description = "Herald Story 45.1: docs-site-install (npm ci in the site env), th
 depends-on = [{ task = "docs-site-install", environment = "site" }, { task = "pyforge-herald-test", environment = "pyforge-herald" }]
 
 # Herald Story 45.1: no docs-site-install dependency on the gate, on purpose. coverage-gates.yml's matrix step runs
-# the script, not this task, so pr-preflight's reader selects this lane on diffs where nothing selects the install
-# (scripts/coverage_gate.py alone fires every station's gate and not herald's suite job), and a lane whose
-# dependency lane is not in the run never starts: the run hangs (DW-steward-103-6-1). The gate runs herald's tests
-# only when the branch touches a herald module; herald's suite job then fires too, and the preflight runs the install
-# first (a kept docs-site lane brings it; it is declared before the station suites in pr-preflight-lanes).
+# the script, not this task, so CI never runs the install with the gate, and pr-preflight's reader selects this lane
+# on diffs where nothing selects the install (scripts/coverage_gate.py alone fires every station's gate and not
+# herald's suite job). A depends-on here would strand the lane on those diffs, and the preflight refuses such a run
+# with exit 2 before any install (steward Story 107.1; before it, the run hung, DW-steward-103-6-1). The gate runs
+# herald's tests only when the branch touches a herald module; herald's suite job then fires too, and the preflight
+# runs the install first (a kept docs-site lane brings it; it is declared before the station suites in
+# pr-preflight-lanes).
 [feature.pyforge-herald.tasks.pyforge-herald-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (herald)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in herald's own env, against the 80% unit floor. Distinct from pyforge-herald-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
 cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
