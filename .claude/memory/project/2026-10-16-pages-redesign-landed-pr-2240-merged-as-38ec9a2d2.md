@@ -1,0 +1,8 @@
+---
+name: "2026-10-16-pages-redesign-landed-pr-2240-merged-as-38ec9a2d2"
+description: "2026-10-16 Pages redesign LANDED: PR #2240 merged as 38ec9a2d25 (Merge pyforge-herald/43-7 into main) - 14 stories done…"
+metadata:
+  type: project
+---
+
+2026-10-16 Pages redesign LANDED: PR #2240 merged as 38ec9a2d25 (Merge pyforge-herald/43-7 into main) - 14 stories done in one PR (herald 42.1, 42.3, 43.2-43.7; steward 102.3-102.5; doctor 48.2 + 34.7 minted in-PR for the first flag retirement; atlas 30.2); docsite/ retired, Astro is the one generator, pyforge.herald.pages_one_generator retired; Pages builds read the dev flag overlay (operator ruling) so the redesign is live. Theme contract: Starlight --sl-* variables filled by docs-site/src/styles/theme.css (swap that file or a Starlight theme plugin to re-theme). cfe-regression-net unpaused (ci-canary + test-linux stay paused to their 2026-11-01 review). Operator-owned open items: DW-herald-42-1-1 absolute Lane 1 URL in docs-site/src/content/site.yml; DW-steward-43-6-1 Guild steps for changes.json / marshal-status.json / herald-progress.json; DW-steward-43-7-1 drop jinja2 from the site env at the next estate refresh; DW-steward-102-4-1 resume kedro-viz-publish then dispatch pages.yml (102.4 AC7 present-half); DW-steward-102-5-1 none of the four protected-refs rulesets exist live on GitHub; DW-herald-102-3-1 steward Design decks still say steward deploy dashboard; 102.5 AC3 first release-asset upload record; 43.5 'Measured on' wording; PLOTLY_CONFIG showLink/showEditInChartStudio keys plotly 7.1 no longer recognises. Follow-up: local pr-preflight races herald-test Astro builds against the pages-check lane's npm ci over docs-site/node_modules (CI is unaffected, separate runners).
