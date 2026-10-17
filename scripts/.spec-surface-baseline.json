@@ -29,7 +29,7 @@
  },
  "pyforge-atlas/spec-pyforge-atlas": {
   "files": {
-   ".github/workflows/kedro-viz-publish.yml": "78abc895cdc981a725835f5f0f4aa852c9717a36",
+   ".github/workflows/kedro-viz-publish.yml": "c383c350c920ed6ebce752fcdd72debdbb9e7b6a",
    "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "910994a72ec6275c8a7334970a47a0942610a480",
    "conf/conda-forge-packaging-inventory-operations.local.env.example": "e55c099b03392fa21a2ebd9aec433a0252024656",
    "conf/conda-forge-packaging-inventory-operations_curated_groups.json": "07c799631537e1ff4e9b3c81770ad2082a0060fb",
@@ -451,7 +451,8 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py": "eaecd6b3452ebdfdb4fabdeb56078b0629f00bcc",
    "src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py": "35ff93a11060b204221449f66be27e9a493434ab",
    "src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py": "97b0389f9bf8b38ea137ed392a88ef66115e10a1",
-   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "7779e337148b9a85b42138b1e17f84a00afaaee9",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "27c35a6d3a378cbc5c2e947ccfb80f2e0e844a0d",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_publish_build.py": "fb0d28e09e3d82aa808d2cfdbf7fa38705046f37",
    "src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py": "3d125025c4d36199adf755756d18143b79f95341",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/conftest.py": "af847b31c74c2defe05554bd07d938a370676b84",
@@ -468,10 +469,11 @@
    "src/shared/packages/pyforge-atlas/tests/unit/views/test_registry.py": "3b3736ec02453ab6993a14c7c126f1cdd861ae7f",
    "src/shared/packages/pyforge-atlas/tests/unit/views/test_render.py": "eeb9218f655cda98fd3b76e617dcae0913ececa8",
    "src/shared/packages/pyforge-atlas/tests/unit/views/test_widgets.py": "84b5babd21eaac060955736ea4dcdd0ff578c376",
-   "src/shared/packages/pyforge-atlas/tools/bootstrap.py": "21566865c44e8cf30cd0a60e8375e1caf14616e0",
+   "src/shared/packages/pyforge-atlas/tools/bootstrap.py": "8561bbd582ba7be8c7bf9ff947c5eca3063819b0",
    "src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py": "6ec4e32e04a5774c48afb6a985d086f87e2c1dff",
    "src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py": "59341fbe218e53bd75582559fce817b37707cf40",
    "src/shared/packages/pyforge-atlas/tools/print_viz_export_flag.py": "b0b46b0abd88d283aee0c9b591b7bca738c782ae",
+   "src/shared/packages/pyforge-atlas/tools/viz_build_check.py": "63c434a530c26f0cd5a0805c0ecddf3ef46d1aef",
    "src/shared/packages/pyforge-atlas/tools/viz_manifest.py": "438f9544a2c2cf116a809e2ad4d35a6182e6d020",
    "src/shared/packages/pyforge-atlas/tools/viz_publish_finish.py": "b033814ae7383719126c3e1b325066d321bb0264",
    "src/shared/packages/pyforge-atlas/tools/vizro_static_export.py": "0f401d062436f90674008ce7648be13c9e09fe6f",
@@ -483,7 +485,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "8090c482c83e47e429c6c2bb541a97740865249e"
+  "memlog": "717b74e0ab3b2abbe28d1d14f2308ca3ada1ee55"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
@@ -548,9 +550,9 @@
  "pyforge-doctor/spec-pixi-candidate-currency": {
   "files": {
    "pixi.lock": "50012883b4ffff7a71e14ecf3652c885f050b76e",
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649"
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461"
   },
-  "memlog": "ea3e6c03fd72520494a458647552ffa7ca7f241a"
+  "memlog": "cb82829db7a9614e52b757dec98a15b819cd2a78"
  },
  "pyforge-doctor/spec-pyforge-doctor": {
   "files": {
@@ -586,7 +588,7 @@
    "docs/how-to/ocp-cluster-bringup.md": "5ea5280ff7a623932860118e4b811de1cfe39506",
    "docs/how-to/one-chain-station-ops.md": "9ab588ab903bb5073ffcca1064044c9e921565d2",
    "docs/how-to/pause-ci.md": "f6188fe4d2cbbb25861c34e34b3e139715106320",
-   "docs/how-to/pixi-tasks.md": "590aa8ff42f07705ea5df89405266098ee6724f0",
+   "docs/how-to/pixi-tasks.md": "33b00ca336a99bc0e2a08e81d0d212fad6f62da6",
    "docs/how-to/presentation-deck.md": "ff4c81ada758eaa1801721e865f1715ebd92501c",
    "docs/how-to/purge-preserved-refs.md": "d398c6312bbaebc754e4ec6bacd30b0e6ebc8caf",
    "docs/how-to/recipe-testing-and-builds.md": "558bf19fae242667f02575630f78b2dec39f21d0",
@@ -599,7 +601,7 @@
    "docs/how-to/track-upstream-todos.md": "7a014743c99a267591f736aeb0e62f1763b89f9d",
    "docs/how-to/troubleshoot-bmad-agent-loops.md": "5cafb00243b95e5616910c5b404095b9305b8691",
    "docs/how-to/troubleshooting-recipe-builds.md": "74ae1f42e23b84bbdbfbd9e2b5eec92898e6bd96",
-   "docs/map.yaml": "ea3446241792bbbb63c93eeeeab0d697a72ffb7a",
+   "docs/map.yaml": "40aa3cfa059d79c818fb7d3a30ad430cd6bcdc05",
    "docs/tutorials/README.md": "a4cf8a6bb251adc83cb88349e2d6803c4269f9d2",
    "docs/tutorials/getting-started.md": "9512c037ee900086236de08a42ec8fa22e3274b2",
    "docs/tutorials/local-platform-development.md": "c49d337b890409a759da01286a581b3fd1bda840",
@@ -814,7 +816,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "c69a4a609a7fee7c6b38a09c22ddba09aa80e7dd"
+  "memlog": "f4b1341b380efd433ced9cd9b31de606afde323d"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -842,15 +844,15 @@
  },
  "pyforge-herald/spec-deck-family-currency": {
   "files": {
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649"
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461"
   },
-  "memlog": "e458dfa7763535b812327dc3c84b88aae10c5e68"
+  "memlog": "264fce7109d16bf8e615740b3c31ebc893f1ae82"
  },
  "pyforge-herald/spec-deck-family-lockstep": {
   "files": {
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649"
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461"
   },
-  "memlog": "af9ddf0d5ccec415973716e3ebe130bc2e60439b"
+  "memlog": "e3c1ab8426067fbb4d8bc9d0fc99060b5b70a2eb"
  },
  "pyforge-herald/spec-deck-visual-qa": {
   "files": {},
@@ -2833,9 +2835,9 @@
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
    ".gitignore": "1c7759a1196f04f821334dbb5f2c622b221ae4a7",
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649"
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461"
   },
-  "memlog": "e31b1b7ead48667f164e78763c39c48b86c6d1e5"
+  "memlog": "bfde7003c80da7a9782fc0781b01bfc6fb6aae5a"
  },
  "pyforge-marshal/spec-adaptive-model-tiering": {
   "files": {},
@@ -3049,7 +3051,7 @@
  },
  "pyforge-marshal/spec-pyforge-core": {
   "files": {
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649",
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__init__.py": "f634eebb7d280de9667527361cb160b786242fd0",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/__main__.py": "52923d5b2ec955c7f91f434f710d7d166bcd8398",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/a2a/__init__.py": "6e4e889a697045d42285cb7615b54816b190f198",
@@ -3719,7 +3721,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "5830b7cdf49896393963e0aa863da85a95b6d2f4"
+  "memlog": "17c227684d5ef77d1bd49bd396f7c671adab8a58"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3780,7 +3782,7 @@
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "36c7872706225d8d1e2af89ced2c0b3c4cdd667f",
    "environment.yaml": "34f7aaaa937c5504f212bf2487b614a365a1d1eb",
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649",
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -4334,7 +4336,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "ab464d1818e0d9326a5cf166455792f17e54e2ff"
+  "memlog": "d3f77b07189a2185a784af8db39b9d3b96989b4e"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -5746,7 +5748,7 @@
    "evals/review-catches-planted-defect/probes/mutated-probe.json": "9c3cce3d62357f08ef5fd76a625312997778f7ad",
    "evals/review-catches-planted-defect/scoring-policy.json": "18b8ff32419ccef507e68c659ed789fca0461102",
    "evals/review-catches-planted-defect/test_driver.py": "385da3656b300393ec549ff40377bb1df25540b0",
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649",
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461",
    "recipes/bmad-eval-quality/LICENSE": "55625f964b7ddb4580e8e3612d553a6cada606f7",
    "recipes/bmad-eval-quality/build.bat": "79dcc2ecf4d78df61c2799cc5fb9be9fb988eae8",
    "recipes/bmad-eval-quality/build.sh": "aa8925aaf5b98492d41cf6a5389f9ee150dce298",
@@ -6094,7 +6096,7 @@
    "tests/scripts/test_sbom_laptop_gate.py": "17d297323c89d535797124bd9ca4527f1d15bd2e",
    "tests/scripts/test_upstream_todos_check.py": "8240b5199d8799ff828c0de3ec1a9b83e8df0ccf"
   },
-  "memlog": "9ca4a43f5af907e9e7a56c465f7c6db0a3e4406f"
+  "memlog": "15ffc39021264bba1126745bda08fdfe1d392734"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
@@ -6143,7 +6145,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "34f7aaaa937c5504f212bf2487b614a365a1d1eb",
-   "pixi.toml": "5fd2d66b201ce27bf8e9cf8df87530b57de84649",
+   "pixi.toml": "817c1eaed4af69603863b4b115f43d107ac8f461",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -7104,7 +7106,8 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py": "eaecd6b3452ebdfdb4fabdeb56078b0629f00bcc",
    "src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py": "35ff93a11060b204221449f66be27e9a493434ab",
    "src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py": "97b0389f9bf8b38ea137ed392a88ef66115e10a1",
-   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "7779e337148b9a85b42138b1e17f84a00afaaee9",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_export_artifact.py": "27c35a6d3a378cbc5c2e947ccfb80f2e0e844a0d",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_viz_publish_build.py": "fb0d28e09e3d82aa808d2cfdbf7fa38705046f37",
    "src/shared/packages/pyforge-atlas/tests/unit/test_vizro_static_boards.py": "3d125025c4d36199adf755756d18143b79f95341",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/conftest.py": "af847b31c74c2defe05554bd07d938a370676b84",
@@ -7121,11 +7124,12 @@
    "src/shared/packages/pyforge-atlas/tests/unit/views/test_registry.py": "3b3736ec02453ab6993a14c7c126f1cdd861ae7f",
    "src/shared/packages/pyforge-atlas/tests/unit/views/test_render.py": "eeb9218f655cda98fd3b76e617dcae0913ececa8",
    "src/shared/packages/pyforge-atlas/tests/unit/views/test_widgets.py": "84b5babd21eaac060955736ea4dcdd0ff578c376",
-   "src/shared/packages/pyforge-atlas/tools/bootstrap.py": "21566865c44e8cf30cd0a60e8375e1caf14616e0",
+   "src/shared/packages/pyforge-atlas/tools/bootstrap.py": "8561bbd582ba7be8c7bf9ff947c5eca3063819b0",
    "src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py": "6ec4e32e04a5774c48afb6a985d086f87e2c1dff",
    "src/shared/packages/pyforge-atlas/tools/live_artifactory_transport.py": "f80ce80f6bc448b9d38ec6ffd6e8a3e937260b80",
    "src/shared/packages/pyforge-atlas/tools/normalize_viz_build.py": "59341fbe218e53bd75582559fce817b37707cf40",
    "src/shared/packages/pyforge-atlas/tools/print_viz_export_flag.py": "b0b46b0abd88d283aee0c9b591b7bca738c782ae",
+   "src/shared/packages/pyforge-atlas/tools/viz_build_check.py": "63c434a530c26f0cd5a0805c0ecddf3ef46d1aef",
    "src/shared/packages/pyforge-atlas/tools/viz_manifest.py": "438f9544a2c2cf116a809e2ad4d35a6182e6d020",
    "src/shared/packages/pyforge-atlas/tools/viz_publish_finish.py": "b033814ae7383719126c3e1b325066d321bb0264",
    "src/shared/packages/pyforge-atlas/tools/vizro_static_export.py": "0f401d062436f90674008ce7648be13c9e09fe6f",
@@ -7237,7 +7241,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "aede0573470f60e2a5b7c8260cbc5c53d8621f94"
+  "memlog": "821931bd888a89ba55ca74a97ff236ba36642449"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},

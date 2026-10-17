@@ -100,45 +100,29 @@ jobs:
           locked: true
           cache: true
 
-      # `kedro viz build` resolves the WHOLE catalog, and two entries declare
-      # `credentials:` (catalog.yml: `pypi_bigquery_downloads_raw` ->
-      # `bigquery_adc`, `vcs_github_api_raw` -> `github_token`). Those live in
-      # `conf/local/credentials.yml`, which `pyforge-atlas/.gitignore` excludes
-      # via `conf/**/*credentials*` -- deliberately, and that rule is what keeps
-      # real credentials out of the tree and out of the image. So a runner has
-      # no credentials file at all and the build died with
-      # "Unable to find credentials 'bigquery_adc'" the first time this
-      # workflow ever fired (atlas 13.1 was the first push to touch
-      # `pipelines/**`, this workflow's only path trigger).
+      # `kedro viz build` resolves the WHOLE catalog, and every entry that declares
+      # `credentials:` needs its key in `conf/local/credentials.yml`, which
+      # `pyforge-atlas/.gitignore` excludes via `conf/**/*credentials*` --
+      # deliberately, and that rule is what keeps real credentials out of the tree
+      # and out of the image. So a runner has no credentials file at all.
       #
-      # Both entries are `api.APIDataset`-family, whose `credentials` is an auth
-      # pair -- viz only INTROSPECTS the DAG, it never loads through them. So
-      # obviously-fake pairs are sufficient and nothing here is a secret. Shapes
-      # mirror `pyforge-atlas/tests/catalog/conftest.py::STUB_CREDENTIALS`,
-      # which is the project's existing stub vocabulary; keep them in step.
+      # The stub comes from the one list `tools/bootstrap.py` holds
+      # (`CREDENTIAL_KEYS`, the eight keys `conf/base/catalog.yml` names, each
+      # written `{}`), never from a list kept here: the two-key list this step used
+      # to carry drifted from the catalog's eight (atlas Story 27.2 added six) and
+      # run 39002722593 died with "Unable to find credentials 'gitlab_token'"
+      # (atlas Story 32.1). `{}` is enough for every key, `api.APIDataset`-family
+      # included: viz only INTROSPECTS the DAG and never loads through a
+      # credential (measured 2026-10-17, kedro-viz 12.5.0: an all-`{}` stub and an
+      # all-pair stub both build). Nothing here is a secret.
+      # `tests/unit/test_viz_publish_build.py` fails when the catalog names a key
+      # that list lacks, or when a step here carries a key list again.
       #
-      # Guarded on absence so this can never clobber a real file if the workflow
-      # is ever run somewhere a developer's `conf/local/` is populated.
+      # `--credentials-only` writes the stub only when the file is absent or empty
+      # (no store directories), so it can never clobber a real file if the
+      # workflow is ever run somewhere a developer's `conf/local/` is populated.
       - name: Materialize stub credentials for offline catalog resolution
-        run: |
-          set -euo pipefail
-          CRED=src/shared/packages/pyforge-atlas/conf/local/credentials.yml
-          if [ -e "$CRED" ]; then
-            echo "$CRED already exists — leaving it untouched."
-            exit 0
-          fi
-          cat > "$CRED" <<'YAML'
-          # STUB credentials, written by .github/workflows/kedro-viz-publish.yml.
-          # Not secrets. `kedro viz build` only introspects the DAG; it never
-          # loads through these. Shapes mirror tests/catalog/conftest.py.
-          bigquery_adc:
-            - service-account
-            - stub-adc
-          github_token:
-            - x-access-token
-            - stub-token
-          YAML
-          echo "wrote stub $CRED"
+        run: pixi run --frozen -e pyforge-atlas python src/shared/packages/pyforge-atlas/tools/bootstrap.py --credentials-only
 
       - name: Build + normalize + stage the real DAG's kedro-viz export
         run: pixi run -e pyforge-atlas viz-publish-stage
