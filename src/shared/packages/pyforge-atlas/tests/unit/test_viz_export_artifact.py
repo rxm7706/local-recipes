@@ -137,7 +137,9 @@ def test_ac5_ci_surfaces_kedro_viz_publish_switch() -> None:
     row = next(r for r in rows if r["id"] == "kedro-viz-publish")
     assert row["switch"] == "PAUSE_KEDRO_VIZ_PUBLISH"
     assert row["switch_class"] == "pause"
-    assert row["state"] == "paused-manually"
+    # AC5 left the state as the story found it; moving it from paused-manually to live is the operator's step the
+    # spec names (done 2026-10-16, with the workflow re-enabled), so either state is valid, and nothing else is.
+    assert row["state"] in {"paused-manually", "live"}
 
 
 def test_ac6_readme_names_artifact_and_manifest() -> None:

@@ -37,13 +37,8 @@ surfaces:
   gate: false
   switch: PAUSE_CI_CANARY
   switch_class: pause
-  state: paused
+  state: live
   owner: pyforge-steward
-  paused_since: '2026-10-15'
-  paused_by: t
-  reason: 'operator 2026-10-15: all Docker CI builds off to cut wall time while the
-    Pages chain lands'
-  review_by: '2026-11-01'
 - id: coverage-gates
   workflow: .github/workflows/coverage-gates.yml
   kind: workflow
@@ -92,10 +87,8 @@ surfaces:
   gate: false
   switch: PAUSE_KEDRO_VIZ_PUBLISH
   switch_class: pause
-  state: paused-manually
+  state: live
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
-  review_by: '2026-11-01'
 - id: lint-types
   workflow: .github/workflows/lint-types.yml
   kind: workflow
@@ -219,10 +212,8 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: paused-manually
+  state: live
   owner: pyforge-steward
-  reason: not recorded (asked 2026-10-12)
-  review_by: '2026-11-01'
 - id: test-linux
   workflow: .github/workflows/test-linux.yml
   kind: workflow
@@ -230,13 +221,7 @@ surfaces:
   gate: false
   switch: null
   switch_class: pause
-  state: paused-manually
-  paused_since: '2026-10-15'
-  paused_by: t
-  reason: 'operator 2026-10-15: all Docker CI builds off to cut wall time while the
-    Pages chain lands (recipe builds run in conda-forge Docker images); the workflow
-    has no switch, so it is disabled with gh workflow disable'
-  review_by: '2026-11-01'
+  state: live
   owner: pyforge-steward
 - id: test-macos
   workflow: .github/workflows/test-macos.yml
@@ -264,11 +249,7 @@ surfaces:
   gate: false
   switch: PAUSE_CONTAINER_BUILDS
   switch_class: pause
-  state: paused
-  paused_since: '2026-10-04'
-  paused_by: operator
-  reason: save runner time during the burn-down landings
-  review_by: '2026-11-01'
+  state: live
   owner: pyforge-steward
   local_twin: pyforge-steward-guild-image-build
   canary: ci-canary.station-tests.guild-container
@@ -280,12 +261,7 @@ surfaces:
   gate: false
   switch: PAUSE_PLATFORM_CONTAINER_BUILDS
   switch_class: pause
-  state: paused
-  paused_since: '2026-10-09'
-  paused_by: operator
-  reason: save runner time during platform container burn-down; separate from guild-container
-    pause
-  review_by: '2026-11-01'
+  state: live
   owner: pyforge-steward
   local_twin: platform-ci-local --images --container
   canary: ci-canary.platform-ci.container
@@ -299,12 +275,7 @@ surfaces:
   gate: false
   switch: PAUSE_PLATFORM_CONTAINER_BUILDS
   switch_class: pause
-  state: paused
-  paused_since: '2026-10-09'
-  paused_by: operator
-  reason: save runner time during platform container burn-down; separate from guild-container
-    pause
-  review_by: '2026-11-01'
+  state: live
   owner: pyforge-steward
   local_twin: platform-ci-local --images
   canary: ci-canary.platform-ci.container-dbgpt
@@ -467,6 +438,36 @@ surfaces:
   state: live
   owner: pyforge-steward
   dispatch: pause-only
+- id: kedro-viz-publish.changes
+  workflow: .github/workflows/kedro-viz-publish.yml
+  job: changes
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: kedro-viz-publish.publish
+  workflow: .github/workflows/kedro-viz-publish.yml
+  job: publish
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
+- id: kedro-viz-publish.vizro
+  workflow: .github/workflows/kedro-viz-publish.yml
+  job: vizro
+  kind: ci-job
+  cost: low
+  gate: false
+  switch: null
+  switch_class: pause
+  state: live
+  owner: pyforge-steward
 - id: detectors.scripts-suite
   workflow: .github/workflows/detectors.yml
   job: scripts-suite

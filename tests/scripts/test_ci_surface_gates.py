@@ -544,10 +544,20 @@ def test_live_extra_disabled_workflow_exits_one(tmp_path: Path) -> None:
 
 
 def test_live_paused_manually_row_but_active_exits_one(tmp_path: Path) -> None:
+    # The live registry may hold no paused-manually row (the operator resumed every surface on 2026-10-16),
+    # so the test marks test-all paused-manually in a copy of it.
+    data = yaml.safe_load(REGISTRY_PATH.read_text())
+    row = next(r for r in data["surfaces"] if r.get("id") == "test-all")
+    row["state"] = "paused-manually"
+    row["reason"] = "fixture: registry says paused-manually, GitHub says active"
+    registry_path = tmp_path / "ci-surfaces.yaml"
+    registry_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
     workflows = [{"path": "test-all.yml", "state": "active"}]
     fixture_path = tmp_path / "workflows_active_mismatch.json"
     fixture_path.write_text(json.dumps({"workflows": workflows}), encoding="utf-8")
-    proc = _run_detector("--check", "--live", "--fixture-workflows", str(fixture_path))
+    proc = _run_detector(
+        "--check", "--live", "--registry", str(registry_path), "--fixture-workflows", str(fixture_path)
+    )
     assert proc.returncode == 1
     assert "test-all" in proc.stdout + proc.stderr
 
