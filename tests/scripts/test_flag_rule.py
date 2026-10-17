@@ -5,9 +5,9 @@ One test per acceptance-criteria row and per I/O-matrix row of the story spec, p
 pins the roster as the one declared source of the exemption list.
 
 The suite runs from ``pyforge-guild`` (``pixi run -e pyforge-guild python -m pytest
-tests/scripts/test_flag_rule.py -q``) and from ``pyforge-ci`` (the ``scripts-suite`` /
-``pyforge-doctor-scripts-test`` lane), where PyYAML arrives transitively. ``pytest.importorskip("yaml")``
-mirrors ``test_docs_gen_common.py`` and only guards the case where that transitive dependency drops out.
+tests/scripts/test_flag_rule.py -q``), and in CI from ``scripts-lib-test`` (the ``scripts-suite`` lane's
+``pyforge-guild`` step). ``pyforge-ci`` is stdlib-only (steward Story 103.3), so ``pytest.importorskip("yaml")``
+skips the file there under ``pyforge-doctor-scripts-test``; it mirrors ``test_docs_gen_common.py``.
 """
 
 from __future__ import annotations

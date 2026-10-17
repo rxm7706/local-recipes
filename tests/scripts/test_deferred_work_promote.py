@@ -35,6 +35,10 @@ from pathlib import Path
 
 import pytest
 
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+pytest.importorskip("yaml")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROMOTER = REPO_ROOT / "scripts" / "deferred_work_promote.py"
 BASELINE_SCRIPT = REPO_ROOT / "scripts" / "deferred_work_baseline.py"
@@ -240,9 +244,8 @@ def _subprocess_env() -> dict[str, str]:
     """The patched promoter's `REPO_ROOT` is the FIXTURE repo, so its own
     best-effort `sys.path` insertion (`<REPO_ROOT>/src/shared/packages/
     pyforge-{doctor,core}/src`) finds nothing there. Point the child at the
-    real source trees instead -- the `pyforge-ci` env that runs this suite
-    in CI installs neither package (pure-stdlib by design), and the
-    `local-recipes` env only passes because it has them in site-packages."""
+    real source trees instead, so it imports this checkout's packages whether
+    or not the env running the suite installs them."""
     env = dict(os.environ)
     srcs = [str(REPO_ROOT / "src" / "shared" / "packages" / pkg / "src") for pkg in ("pyforge-doctor", "pyforge-core")]
     env["PYTHONPATH"] = os.pathsep.join(srcs + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))

@@ -26,13 +26,14 @@ import pytest
 
 # docs_map_render.py imports pyforge.doctor.sources.docs_currency for schema
 # validation + the shared render/splice functions, which pulls in jsonschema
-# transitively. `pyforge-ci` -- the lean, deliberately dependency-free env
-# that also runs this whole `tests/scripts` directory (Story 6.2's own
-# design goal for its sibling test in this same file) -- does not carry
-# jsonschema. Skip cleanly there rather than erroring at collection; real
-# coverage runs from the `docs-map-render-test` guild-tasks task (an env
+# and PyYAML. `pyforge-ci` -- the stdlib-only env that also runs this whole
+# `tests/scripts` directory (steward Story 103.3; the definition is the
+# comment above `pyforge-ci` in pixi.toml) -- carries neither. Skip cleanly
+# there rather than erroring at collection; real coverage runs from the
+# `docs-map-render-test` and `scripts-lib-test` guild-tasks tasks (an env
 # that has pyforge-doctor's jsonschema/pyyaml run-deps), wired into
 # pr-preflight beside pyforge-doctor-scripts-test.
+pytest.importorskip("yaml")
 jsonschema = pytest.importorskip("jsonschema")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

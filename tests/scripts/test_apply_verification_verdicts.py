@@ -28,6 +28,10 @@ from pathlib import Path
 
 import pytest
 
+# `pyforge.doctor.sources.chain` imports PyYAML. Guarding it first makes this file skip in the stdlib-only pyforge-ci
+# (steward Story 103.3) whatever the collection order, even after test_detectors_doctor_sources.py has put Doctor's
+# source on sys.path.
+pytest.importorskip("yaml")
 pytest.importorskip("pyforge.doctor.sources.chain")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

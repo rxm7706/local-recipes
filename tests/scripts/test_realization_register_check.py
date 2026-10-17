@@ -6,9 +6,11 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 from pyforge.testing_kit.flags import flag_states
 
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+yaml = pytest.importorskip("yaml")
 pytest.importorskip("jsonschema")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

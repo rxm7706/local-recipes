@@ -889,3 +889,15 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: low
   promoted: 2026-10-12 — recorded by hand from the story spec's Review Triage Log
   status: open
+
+### DW-warden-103-3-1: `test_warden_keeps_1_for_policy_and_2_for_error` runs in no CI step, so warden's exit-code domain is never checked against doctor's
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say.md`
+  summary: `tests/scripts/test_exit_code_domains_are_declared.py::test_warden_keeps_1_for_policy_and_2_for_error` guards `pyforge.warden.verdict` with an in-test `pytest.importorskip`. Its comment says it "runs for real in `pyforge-warden`", but nothing runs `tests/scripts` there: the Detectors `scripts-suite` job's environments are `pyforge-ci`, `pyforge-doctor` and `pyforge-guild`, and none of them carries `pyforge-warden`. So the one test that pins warden's `{0, 1, 2}` domain (the domain doctor's `{0, 2}` is documented as a subset of) only ever skips. Steward Story 103.3 runs the file in `scripts-lib-test` (pyforge-guild), where its doctor test runs, and pins `pyforge.warden` in `tests/scripts/test_pyforge_ci_is_stdlib_only.py`'s `PINNED_EXCEPTIONS` against this row. Follow-up, warden's call: run the file (or the test) in a `pyforge-warden` step, or move the assertion into warden's own suite (`pyforge-warden-test`), and drop the pin.
+  evidence: Steward Story 103.3 re-review of `570690b7de`, nit 4 (2026-10-17). `tests/scripts/test_exit_code_domains_are_declared.py:57`-`:61` (the test and its `importorskip`); `pixi run --frozen -e pyforge-guild python -c "import importlib.util; print(importlib.util.find_spec('pyforge.warden'))"` prints `None` (read at `570690b7de`); `grep -rn test_exit_code_domains .github/workflows pixi.toml` names no step before this story. In `pyforge-guild` the file runs 10 passed, 1 skipped (this test).
+  location: tests/scripts/test_exit_code_domains_are_declared.py:57
+  origin: steward Story 103.3 independent re-review, 2026-10-17 (nit 4; no implementation)
+  owner: warden
+  severity: low
+  promoted: 2026-10-17 — recorded with steward Story 103.3's re-review fixes
+  status: open

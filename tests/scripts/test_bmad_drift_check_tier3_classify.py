@@ -15,6 +15,10 @@ from pathlib import Path
 
 import pytest
 
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+pytest.importorskip("yaml")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "bmad_drift_check.py"
 DOCTOR_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
@@ -31,7 +35,7 @@ META_TEST = (
 if str(DOCTOR_SRC) not in sys.path:
     sys.path.insert(0, str(DOCTOR_SRC))
 
-from pyforge.doctor.sources import factory
+from pyforge.doctor.sources import factory  # noqa: E402  (sys.path must be set up first)
 
 
 def _load(name: str, path: Path):

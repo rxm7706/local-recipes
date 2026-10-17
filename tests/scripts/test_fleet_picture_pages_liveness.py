@@ -10,6 +10,10 @@ from pathlib import Path
 
 import pytest
 
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+pytest.importorskip("yaml")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FLEET_PICTURE = REPO_ROOT / "scripts" / "fleet_picture.py"
 

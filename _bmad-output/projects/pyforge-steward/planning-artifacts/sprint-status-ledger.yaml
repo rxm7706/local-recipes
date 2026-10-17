@@ -41,7 +41,7 @@ development_status:
   102-5-configure-pages-is-authoritative-on-every-host-and-the-artifact-ships-as-a-release-asset: done
   103-1-steward-ci-status-reports-the-master-switch-and-every-surface-it-pauses: done
   103-2-estate-reconcile-writes-the-bmad-suite-floors-from-the-batch-not-the-network: done
-  103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say: backlog
+  103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say: done
   103-4-the-ci-surface-gates-tests-write-their-fixtures-under-tmp-path: done
   103-5-the-preflight-keys-each-lane-by-its-task-and-its-environment: done
   103-6-a-touched-scope-preflight-leaves-the-other-lanes-to-ci-and-verify-deferred-catches-up: done
@@ -411,7 +411,7 @@ development_status:
   epic-101-retrospective: optional
   epic-102: done
   epic-102-retrospective: optional
-  epic-103: in-progress
+  epic-103: done
   epic-103-retrospective: optional
   epic-104: done
   epic-104-retrospective: optional

@@ -3101,3 +3101,15 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-10-15 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-doctor-103-3-1: `scripts/detectors.py` maps a detector to the first task whose `cmd` contains its file name, so any task that names `tests/scripts/test_<detector>.py` inline captures that detector
+
+- source_spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-103-3-pyforge-ci-is-stdlib-only-as-its-tasks-say.md`
+  summary: `discover()` picks a detector's pixi task with `next((t for t, c in tasks.items() if path.name in c and "--json" not in c), None)`, a substring test. `test_flag_gate_check.py` contains `flag_gate_check.py`, so a task earlier in feature order whose `cmd` lists `tests/scripts/test_flag_gate_check.py` becomes `flag_gate_check`'s task, and `detectors-ci` runs that task (a pytest run) as the detector's verdict. With steward Story 103.3's `scripts-lib-test` files written inline, six detectors were captured: `bmad_loop_baseline_drift_check`, `cfe_rebuild_guard_check`, `ci_surface_gates`, `failure_catalog_check`, `flag_gate_check`, `upstream_todos_check`. Story 103.3 moved its list into a pytest argument file and pinned only its own library tasks (`tests/scripts/test_pyforge_ci_is_stdlib_only.py::test_no_detector_maps_to_a_library_task`); any other task can still capture a detector. In the live tree at `b1270318ed` all 28 detectors map to their own tasks. Follow-up: match on a path boundary (`(?<![\w])<name>`, or the `scripts/<name>` relative path) and add a `discover()` test with a task that names `tests/scripts/test_<detector>.py`.
+  evidence: Story 103.3 independent review of `b1270318ed`, out-of-surface defect (b), confirmed latent: with the 32 files inline in `scripts-lib-test`'s `cmd` (a mutated copy), `discover()` maps the six detectors above to `scripts-lib-test`; the builder saw the same six, and `test_flag_gate_check.py::test_the_registry_discovers_the_gate_as_a_repo_detector_with_its_pixi_task` failed (`assert 'scripts-lib-test' == 'flag-gate-check'`). `scripts/detectors.py:166`-`:167`. `spec-surface-check` names no governor for the file (`scripts/spec_surface_allowlist.txt`: "the detector REGISTRY itself — governs the others, governed by none"); Doctor's ledger already owns the registry's task mapping (`DW-FU-6-9-3`).
+  location: scripts/detectors.py:166 (`discover`)
+  owner: doctor (the detector registry; no Spec surface governs the file)
+  origin: steward Story 103.3 independent review, 2026-10-17 (out-of-surface defect b; no implementation)
+  severity: low
+  promoted: 2026-10-17 — recorded with steward Story 103.3's review fixes
+  status: open

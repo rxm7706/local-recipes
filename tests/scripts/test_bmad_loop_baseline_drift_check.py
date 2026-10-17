@@ -19,6 +19,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+pytest.importorskip("yaml")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DETECTOR_PATH = REPO_ROOT / "scripts" / "bmad_loop_baseline_drift_check.py"
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "baseline_drift"

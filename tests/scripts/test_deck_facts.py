@@ -23,14 +23,17 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 import tomllib
-import yaml
+
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+yaml = pytest.importorskip("yaml")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPTS_DIR = REPO_ROOT / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-import deck_facts
+import deck_facts  # noqa: E402  (sys.path must be set up first)
 
 _REAL_GROUNDTRUTH = deck_facts.groundtruth  # captured before any fixture patches it
 

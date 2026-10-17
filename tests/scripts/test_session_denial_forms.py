@@ -1,7 +1,8 @@
 """Story 85.6 — every backticked command in session_denials reasons resolves.
 
-Runs under ``pixi run -e pyforge-ci pyforge-doctor-scripts-test`` (stdlib-only),
-like ``tests/scripts/test_pre_shell_hook.py``.
+Builds the station parsers from source, and steward's needs PyYAML and mason's
+``packaging``; ``pyforge-ci`` is stdlib-only (steward Story 103.3), so the file
+skips there and runs under ``pixi run -e pyforge-guild scripts-lib-test``.
 """
 
 from __future__ import annotations
@@ -20,6 +21,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+pytest.importorskip("yaml")
+pytest.importorskip("packaging")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ROSTER = REPO_ROOT / "docs" / "governance" / "guild-roster.json"
