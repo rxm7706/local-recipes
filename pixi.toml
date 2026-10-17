@@ -1041,12 +1041,14 @@ gcloud = ["python", "spec-kit", "gcloud-sdk"]
 #   - The code it runs is stdlib-only. Every test that runs, rather than skips, in its tasks
 #     (`pyforge-deps-test`, `pyforge-doctor-scripts-test`) imports only the standard library, `pytest`,
 #     and the in-repo `pyforge-core` and `pyforge-testing-kit` sources that tests/scripts/conftest.py
-#     puts on sys.path. A tests/scripts file that needs any other library guards it (a module-level
-#     `pytest.importorskip`; for one of the runtime libraries below, a guard inside a test also counts),
+#     puts on sys.path. Any other library, the other pyforge station packages included, is a library
+#     like PyYAML: a tests/scripts file that needs one guards it (at module level, or inside a test),
 #     skips here, and runs in `scripts-lib-test` (pyforge-guild) or `pyforge-doctor-aggregate-scripts-test`
-#     (pyforge-doctor). The one exception is a library neither of those envs declares: today `apscheduler`,
-#     whose three tests in tests/scripts/test_scribe_install_nightly_trigger.py skip in every scripts-suite
-#     step (scribe's DW-scribe-103-3-1).
+#     (pyforge-doctor). The exceptions are libraries neither of those envs declares, each pinned with its
+#     owner's row in test_pyforge_ci_is_stdlib_only.py's PINNED_EXCEPTIONS: `apscheduler` (the three
+#     apscheduler tests in test_scribe_install_nightly_trigger.py; scribe's DW-scribe-103-3-1) and
+#     `pyforge.warden` (test_exit_code_domains_are_declared.py's warden test; warden's DW-warden-103-3-1).
+#     Their tests skip in every scripts-suite step.
 #   - No runtime library is importable here: none of yaml, jsonschema, ruamel, mcp, pydantic, httpx or
 #     openfeature. That is why it composes `python` but not the `spec-kit` feature, whose `mcp` brings
 #     jsonschema, PyYAML, pydantic and httpx in; every other env that composes `python` composes it.
@@ -1369,7 +1371,7 @@ cmd = "pytest tests/scripts/test_docs_gen_common.py tests/scripts/test_docs_pixi
 # `test_flag_gate_check.py` contains `flag_gate_check.py`. A new file guarded this way goes on that list, or
 # tests/scripts/test_pyforge_ci_is_stdlib_only.py reds.
 [feature.guild-tasks.tasks.scripts-lib-test]
-description = "steward Story 103.3 (spec-pyforge-steward CAP-5): the tests/scripts files that need a library pyforge-ci does not carry (PyYAML, jsonschema, ruamel.yaml, openfeature; requests and packaging where a script needs them), listed in tests/scripts/scripts-lib-test.txt and run in pyforge-guild, which declares them, with tests/scripts/test_pyforge_ci_is_stdlib_only.py checking every library they guard imports here. In pyforge-ci, which is stdlib-only, each file skips on its pytest.importorskip. The Detectors scripts-suite job and pr-preflight call this task verbatim."
+description = "steward Story 103.3 (spec-pyforge-steward CAP-5): the tests/scripts files that need a library pyforge-ci does not carry (PyYAML, jsonschema, ruamel.yaml, openfeature, the doctor and scribe station packages; requests and packaging where a script needs them), listed in tests/scripts/scripts-lib-test.txt and run in pyforge-guild, which declares them, with tests/scripts/test_pyforge_ci_is_stdlib_only.py checking every library they guard imports here. In pyforge-ci, which is stdlib-only, each file skips on its pytest.importorskip. The Detectors scripts-suite job and pr-preflight call this task verbatim."
 cmd = "python -m pytest @tests/scripts/scripts-lib-test.txt -q"
 
 [feature.guild-tasks.tasks.pixi-currency-staleness-check]

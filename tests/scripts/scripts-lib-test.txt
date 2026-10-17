@@ -1,4 +1,5 @@
 tests/scripts/test_bmad_drift_check_tier3_classify.py
+tests/scripts/test_bmad_estate_check.py
 tests/scripts/test_bmad_loop_baseline_drift_check.py
 tests/scripts/test_build_pixi_mirror.py
 tests/scripts/test_cfe_rebuild_guard_check.py
@@ -13,6 +14,7 @@ tests/scripts/test_docs_map_render.py
 tests/scripts/test_docs_pixi_tasks.py
 tests/scripts/test_docs_skills_catalog.py
 tests/scripts/test_docs_station_cli.py
+tests/scripts/test_exit_code_domains_are_declared.py
 tests/scripts/test_failure_catalog_check.py
 tests/scripts/test_flag_gate_check.py
 tests/scripts/test_flag_inventory.py

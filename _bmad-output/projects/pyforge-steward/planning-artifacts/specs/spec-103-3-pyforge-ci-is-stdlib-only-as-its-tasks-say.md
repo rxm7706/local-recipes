@@ -278,6 +278,11 @@ Type / Effort / Deps: fix / M / none.
   task runs) runs in CI for `scripts-lib-test` only, from `pyforge-guild`. Its `pyforge-doctor` half asserts only when
   the file is run in `pyforge-doctor`: the aggregate task's command is Doctor's and lists its two files (Boundaries:
   never edit Doctor's tasks' commands).
+- (Added at re-review.) A possible follow-up for that doctor half: a static check that bites in CI, mapping every
+  module the aggregate's files guard to a package `[feature.pyforge-doctor.dependencies]` declares. Not built here.
+- (Added at re-review.) Two guards no library env can satisfy are pinned, not run: `apscheduler`
+  (`DW-scribe-103-3-1`) and `pyforge.warden` (`DW-warden-103-3-1`). Their four tests skip in every `scripts-suite` step
+  until their owners act.
 
 ## I/O & Edge-Case Matrix
 
@@ -483,6 +488,32 @@ Review pass 1 fixes (2026-10-17, on `40afdc3cf1`; exit codes read directly):
   - M11 / M11b (`yaml` / `openfeature` blocked in `pyforge-guild`):
     `test_every_module_a_library_task_file_guards_imports_where_the_task_runs[scripts-lib-test]`.
 
+Re-review fixes (2026-10-17, on `570690b7de`; exit codes read directly):
+- Files: `tests/scripts/test_pyforge_ci_is_stdlib_only.py` (36 tests), `tests/scripts/scripts-lib-test.txt` (36 files:
+  adds `test_bmad_estate_check.py` and `test_exit_code_domains_are_declared.py`), `pixi.toml` (definition and
+  `scripts-lib-test` description text only), `docs/how-to/pixi-tasks.md` and `docs/map.yaml` (regenerated), the warden
+  ledger (`DW-warden-103-3-1`), nine memlog entries, nine scoped stamps.
+- `test_pyforge_ci_is_stdlib_only.py`: 34 passed, 2 skipped in each of `pyforge-ci`, `pyforge-guild` and
+  `pyforge-doctor`.
+- `pyforge-doctor-scripts-test` in `pyforge-ci` 0: 774 passed, 64 skipped, 0 failed, 0 errors. Aggregate 0: 59 passed.
+  `scripts-lib-test` 0: 976 passed, 3 skipped (the pinned warden test, and the guard test's `pyforge-ci` and
+  `pyforge-doctor` assertions), 65 s; `test_bmad_estate_check.py`'s five tests and
+  `test_doctor_projects_fail_to_2_and_never_uses_1` pass there. AC8: 0 of the 1618 baseline node ids lost.
+- Mutations on a `git archive` copy of the staged tree (controls 34 passed, 2 skipped in `pyforge-ci` and
+  `pyforge-guild`), each failing the named test:
+  - R-M9b (the step commented out) and M9 (removed): `test_every_library_task_is_a_scripts_suite_step_in_its_environment`
+    (and `test_a_commented_out_step_reads_as_absent`);
+  - R-M14, R-M16, R-M17 (`boto3`), R-M18 (`test_bmad_estate_check.py` off the list), R-M19
+    (`test_exit_code_domains_are_declared.py` off the list), R-M20 (the `apscheduler` pin removed), and pass 1's M3b,
+    M4, M8: `test_every_guarded_file_runs_in_a_library_task`;
+  - R-M21 (the warden pin removed), run in `pyforge-guild` where `scripts-lib-test` runs it: the mirror
+    `…[scripts-lib-test]` (in `pyforge-ci` it survives, as the file is covered and the mirror is guild's);
+  - R-M22 (the pinned guard gone from its file) and R-M23 (the row's id gone from the definition):
+    `test_every_pinned_exception_still_guards_its_library_and_has_its_row`;
+  - R-M24 (`_library` exempting every `pyforge.*` again): four tests, among them
+    `test_the_live_tree_has_guarded_files_to_check` and `…[a-pyforge-station-package]`;
+  - M1, M7, M10, M11 (`yaml` blocked in `pyforge-guild`), M11c (`pyforge.scribe` blocked there): as before.
+
 ## Review Triage Log
 
 ### 2026-10-17 — Review pass 1 (independent review of `b1270318ed`)
@@ -510,6 +541,26 @@ Review pass 1 fixes (2026-10-17, on `40afdc3cf1`; exit codes read directly):
   - `[defer]` (a) `estate_reconcile.py:113-121` passes the Dream path positionally, so the `env-matrix` generator exits
     2 unreported: `DW-steward-103-3-2`. (b) `scripts/detectors.py:166-167` matches a detector to its task by
     substring: `DW-doctor-103-3-1` (no Spec surface governs the file; Doctor's ledger owns the registry's mapping).
+
+### 2026-10-17 — Re-review of `570690b7de`
+- verdict: RESOLVED — the six pass-1 findings fixed; five non-blocking nits, the last round
+- findings:
+  - `[nit]` `[patch]` `_scripts_suite_steps` matched comment lines, so a commented-out step passed (R-M9b). Fixed: only
+    a `run:` line counts.
+  - `[nit]` `[patch]` two guard shapes went unseen: a module-level `pytest.skip(..., allow_module_level=True)` under an
+    ImportError handler (R-M14), and an in-test `find_spec`-then-`pytest.skip` (R-M16). Fixed: a `pytest.skip` reached
+    from an ImportError handler, or from an `if` whose condition tests a library, is a guard on that library (module
+    level when it passes `allow_module_level=True` at import).
+  - `[nit]` `[patch]` the in-test rule covered only the runtime libraries (R-M17, `boto3`). Fixed: a guard on any
+    library, in a file no library task runs, reds unless `PINNED_EXCEPTIONS` pins it, and a test keeps each pin
+    honest (the file still guards it, the owner's ledger has the row, the definition names it).
+  - `[nit]` `[patch]` `_library` exempted every `pyforge.*` package, wider than the definition. Fixed: only the in-repo
+    `pyforge.core` and `pyforge.testing_kit` are exempt. `test_bmad_estate_check.py` (its two `pyforge.scribe` tests
+    pass in `pyforge-guild`) and `test_exit_code_domains_are_declared.py` (its doctor test runs there) join
+    `scripts-lib-test.txt`; `pyforge-guild` has no `pyforge.warden`, so its warden test is pinned against the new
+    warden-owned `DW-warden-103-3-1`.
+  - `[nit]` `[defer]` the mirror's doctor half never runs in CI: a static check is named as a possible follow-up in
+    Residual risk; not built (coordinator's ruling).
 
 ## Spec Change Log
 
@@ -566,3 +617,9 @@ Review pass 1 fixes (2026-10-17, on `40afdc3cf1`; exit codes read directly):
   description say what the task now runs; Residual risk records the serial cost and the mirror's doctor half. New
   rows: `DW-steward-103-3-2`, `DW-doctor-103-3-1`, `DW-scribe-103-3-1`. All scoped stamps re-taken after the merge.
   Status stays `in-review`.
+- 2026-10-17 (re-review fixes, on `570690b7de`): the Review Triage Log's second pass. The guard test reads only
+  `run:` steps, sees a `pytest.skip` reached on a missing library, flags any unpinned library guarded inside a test,
+  pins `apscheduler` and `pyforge.warden` with their owners' rows, and exempts only the in-repo core and testing kit;
+  `scripts-lib-test.txt` adds `test_bmad_estate_check.py` and `test_exit_code_domains_are_declared.py`; the
+  definition in `pixi.toml` names both pinned exceptions and treats the other pyforge station packages as libraries;
+  new row `DW-warden-103-3-1`. Status stays `in-review`.

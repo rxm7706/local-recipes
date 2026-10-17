@@ -159,9 +159,29 @@ def _const_str(node: ast.AST) -> str | None:
     return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None
 
 
+#: The in-repo sources ``tests/scripts/conftest.py`` puts on ``sys.path``, which the definition allows beside the
+#: standard library. Every other ``pyforge.*`` package (doctor, scribe, warden, ...) is a library like any other.
+_IN_REPO_SOURCES = (("pyforge", "core"), ("pyforge", "testing_kit"))
+
+#: The guards no library task's environment can satisfy, each pinned to its owner's deferred-work row:
+#: ``file -> (module, owning project, DW id)``. The definition in ``pixi.toml`` names each one. A guard on any other
+#: library, in a file no library task runs, reds this file, and so does a pin that no longer matches a guard.
+PINNED_EXCEPTIONS: dict[str, tuple[str, str, str]] = {
+    "test_scribe_install_nightly_trigger.py": ("apscheduler", "pyforge-scribe", "DW-scribe-103-3-1"),
+    "test_exit_code_domains_are_declared.py": ("pyforge.warden", "pyforge-warden", "DW-warden-103-3-1"),
+}
+
+
 def _library(module: str) -> bool:
-    top = module.split(".")[0]
-    return top not in sys.stdlib_module_names and top != "pyforge"
+    parts = module.split(".")
+    if parts[0] in sys.stdlib_module_names or parts == ["pyforge"]:
+        return False
+    return tuple(parts[:2]) not in _IN_REPO_SOURCES
+
+
+def _pinned(name: str, module: str) -> bool:
+    pin = PINNED_EXCEPTIONS.get(name)
+    return pin is not None and (module == pin[0] or module.startswith(pin[0] + "."))
 
 
 def _without_defs(node: ast.AST, *, into_functions: bool) -> list[ast.AST]:
@@ -185,44 +205,88 @@ class _Guards:
         self.tree = ast.parse(source)
         self.pytest_names = {"pytest"}
         self.importorskip_names: set[str] = set()
+        self.skip_names: set[str] = set()
         for node in ast.walk(self.tree):
             if isinstance(node, ast.Import):
                 self.pytest_names |= {a.asname for a in node.names if a.name == "pytest" and a.asname}
             elif isinstance(node, ast.ImportFrom) and node.module == "pytest":
                 self.importorskip_names |= {a.asname or a.name for a in node.names if a.name == "importorskip"}
+                self.skip_names |= {a.asname or a.name for a in node.names if a.name == "skip"}
         self.flag_modules = self._try_import_flags()
+
+    @staticmethod
+    def _catches_import_error(node: ast.Try) -> bool:
+        caught = {
+            (h.type.id if isinstance(h.type, ast.Name) else getattr(h.type, "attr", ""))
+            for h in node.handlers
+            if h.type is not None
+        } | ({"BaseException"} if any(h.type is None for h in node.handlers) else set())
+        return bool(caught & _SKIP_EXCEPTIONS)
+
+    @staticmethod
+    def _try_imports(node: ast.Try) -> tuple[set[str], set[str]]:
+        """The library modules a ``try`` body imports, and the names its imports bind."""
+        modules: set[str] = set()
+        bound: set[str] = set()
+        for stmt in node.body:
+            if isinstance(stmt, ast.Import):
+                for alias in stmt.names:
+                    modules.add(alias.name)
+                    bound.add(alias.asname or alias.name.split(".")[0])
+            elif isinstance(stmt, ast.ImportFrom) and stmt.module and stmt.level == 0:
+                modules.add(stmt.module)
+                bound |= {a.asname or a.name for a in stmt.names}
+        return {m for m in modules if _library(m)}, bound
 
     def _try_import_flags(self) -> dict[str, set[str]]:
         """``try: import x`` blocks that catch the ImportError: each name the block binds (the import itself, or a
         ``_HAS_X = True``-style flag in the body or handler) mapped to the library modules it imports."""
         flags: dict[str, set[str]] = {}
         for node in ast.walk(self.tree):
-            if not isinstance(node, ast.Try):
+            if not isinstance(node, ast.Try) or not self._catches_import_error(node):
                 continue
-            caught = {
-                (h.type.id if isinstance(h.type, ast.Name) else getattr(h.type, "attr", ""))
-                for h in node.handlers
-                if h.type is not None
-            } | ({"BaseException"} if any(h.type is None for h in node.handlers) else set())
-            if not caught & _SKIP_EXCEPTIONS:
-                continue
-            modules: set[str] = set()
-            bound: set[str] = set()
-            for stmt in node.body:
-                if isinstance(stmt, ast.Import):
-                    for alias in stmt.names:
-                        modules.add(alias.name)
-                        bound.add(alias.asname or alias.name.split(".")[0])
-                elif isinstance(stmt, ast.ImportFrom) and stmt.module and stmt.level == 0:
-                    modules.add(stmt.module)
-                    bound |= {a.asname or a.name for a in stmt.names}
+            modules, bound = self._try_imports(node)
             for stmt in [*node.body, *(s for h in node.handlers for s in h.body)]:
                 if isinstance(stmt, ast.Assign):
                     bound |= {t.id for t in stmt.targets if isinstance(t, ast.Name)}
-            modules = {m for m in modules if _library(m)}
             for name in bound if modules else ():
                 flags.setdefault(name, set()).update(modules)
         return flags
+
+    def _is_skip(self, node: ast.AST, *, module_level: bool) -> bool:
+        """A ``pytest.skip(...)`` call (or a bare ``skip`` imported from pytest); with ``module_level``, only one that
+        passes ``allow_module_level=True``, the form that skips a whole file at import."""
+        if not isinstance(node, ast.Call):
+            return False
+        func = node.func
+        named = (
+            isinstance(func, ast.Attribute)
+            and func.attr == "skip"
+            and isinstance(func.value, ast.Name)
+            and func.value.id in self.pytest_names
+        ) or (isinstance(func, ast.Name) and func.id in self.skip_names)
+        if not named or not module_level:
+            return named
+        return any(
+            k.arg == "allow_module_level" and isinstance(k.value, ast.Constant) and bool(k.value.value)
+            for k in node.keywords
+        )
+
+    def _skips_on_import_failure(self, nodes: list[ast.AST], *, module_level: bool) -> set[str]:
+        """The library modules whose absence reaches a skip: a ``try: import x`` whose ImportError handler calls
+        ``pytest.skip``, or an ``if`` whose condition tests a library (``find_spec`` / ``import_module`` of a string,
+        or a ``try: import`` flag) and whose body calls ``pytest.skip``."""
+        found: set[str] = set()
+        for node in nodes:
+            if isinstance(node, ast.Try) and self._catches_import_error(node):
+                handlers = [n for h in node.handlers for n in _without_defs(h, into_functions=not module_level)]
+                if any(self._is_skip(n, module_level=module_level) for n in handlers):
+                    found |= self._try_imports(node)[0]
+            elif isinstance(node, ast.If):
+                body = [n for s in node.body for n in [s, *_without_defs(s, into_functions=not module_level)]]
+                if any(self._is_skip(n, module_level=module_level) for n in body):
+                    found |= self._condition_modules(node.test)
+        return found
 
     def _importorskip(self, node: ast.AST) -> str | None:
         if not isinstance(node, ast.Call) or not node.args:
@@ -236,15 +300,11 @@ class _Guards:
         ) or (isinstance(func, ast.Name) and func.id in self.importorskip_names)
         return _const_str(node.args[0]) if named else None
 
-    def _skipif_modules(self, node: ast.AST) -> set[str]:
-        """The library modules a ``pytest.mark.skipif(<condition>, ...)`` call's condition tests: a ``find_spec`` /
-        ``import_module`` of a string, or a name a ``try: import`` block binds."""
-        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "skipif"):
-            return set()
-        if not node.args:
-            return set()
+    def _condition_modules(self, condition: ast.AST) -> set[str]:
+        """The library modules a condition tests: a ``find_spec`` / ``import_module`` of a string, or a name a
+        ``try: import`` block binds."""
         found: set[str] = set()
-        for sub in ast.walk(node.args[0]):
+        for sub in ast.walk(condition):
             if isinstance(sub, ast.Call) and sub.args:
                 callee = sub.func.attr if isinstance(sub.func, ast.Attribute) else getattr(sub.func, "id", "")
                 if callee in ("find_spec", "import_module") and (module := _const_str(sub.args[0])):
@@ -253,12 +313,21 @@ class _Guards:
                 found |= self.flag_modules.get(sub.id, set())
         return {m for m in found if _library(m)}
 
+    def _skipif_modules(self, node: ast.AST) -> set[str]:
+        """The library modules a ``pytest.mark.skipif(<condition>, ...)`` call's condition tests."""
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "skipif"):
+            return set()
+        return self._condition_modules(node.args[0]) if node.args else set()
+
     def module_level(self) -> list[str]:
         """The library modules whose absence skips the whole file: an ``importorskip`` that runs at import (at the
         top level, or inside a module-level ``if`` / ``try`` / ``with`` block or class body; a bare ``importorskip``
-        imported from pytest counts), and a module-level ``pytestmark`` ``skipif``."""
-        guarded: list[str] = []
-        for node in _without_defs(self.tree, into_functions=False):
+        imported from pytest counts), a module-level ``pytestmark`` ``skipif``, and a ``pytest.skip(...,
+        allow_module_level=True)`` reached when a library is missing (an ImportError handler, or an ``if`` on a
+        ``find_spec``)."""
+        at_import = _without_defs(self.tree, into_functions=False)
+        guarded: list[str] = sorted(self._skips_on_import_failure(at_import, module_level=True))
+        for node in at_import:
             module = self._importorskip(node)
             if module is not None and _library(module):
                 guarded.append(module)
@@ -277,9 +346,11 @@ class _Guards:
 
     def anywhere(self) -> list[str]:
         """Every library module any guard in the file names, inside a test or not: ``importorskip`` calls, ``skipif``
-        marks, and ``openfeature`` for a file that uses ``flag_provider`` or ``flag_states``."""
-        guarded: set[str] = set(self.module_level())
-        for node in _without_defs(self.tree, into_functions=True):
+        marks, a ``pytest.skip`` reached when a library is missing (an ImportError handler, or an ``if`` on a
+        ``find_spec``), and ``openfeature`` for a file that uses ``flag_provider`` or ``flag_states``."""
+        everything = _without_defs(self.tree, into_functions=True)
+        guarded: set[str] = set(self.module_level()) | self._skips_on_import_failure(everything, module_level=False)
+        for node in everything:
             module = self._importorskip(node)
             if module is not None and _library(module):
                 guarded.add(module)
@@ -291,13 +362,15 @@ class _Guards:
 
 
 def module_level_library_guards(source: str) -> list[str]:
-    """The non-stdlib, non-``pyforge`` modules whose absence skips the whole file."""
+    """The library modules (not the standard library, not the in-repo core / testing-kit sources) whose absence skips
+    the whole file."""
     return _Guards(source).module_level()
 
 
-def runtime_library_guards_in_tests(source: str) -> list[str]:
-    """The definition's runtime libraries the file guards anywhere, inside a test function included."""
-    return [m for m in _Guards(source).anywhere() if m.split(".")[0] in RUNTIME_LIBRARIES]
+def library_guards_in_tests(source: str) -> list[str]:
+    """The library modules the file guards only inside its tests (a module-level guard is not repeated here)."""
+    guards = _Guards(source)
+    return sorted(set(guards.anywhere()) - set(guards.module_level()))
 
 
 def library_task_cmds(manifest: dict[str, Any]) -> dict[str, str]:
@@ -327,9 +400,8 @@ def library_task_files(manifest: dict[str, Any], root: Path = REPO_ROOT) -> dict
 def library_split_problems(
     manifest: dict[str, Any], sources: dict[str, str], present: set[str], root: Path = REPO_ROOT
 ) -> list[str]:
-    """One problem per guarded file no library task runs (a module-level guard on any library, or a guard inside a
-    test on one of the definition's runtime libraries), per missing task or argument file, and per named file that is
-    gone."""
+    """One problem per guarded file no library task runs (a guard on any library, at module level or inside a test,
+    that ``PINNED_EXCEPTIONS`` does not pin), per missing task or argument file, and per named file that is gone."""
     named = library_task_files(manifest, root)
     problems = [f"library task {task} is not declared in pixi.toml" for task in LIBRARY_TASKS if task not in named]
     for task, cmd in sorted(library_task_cmds(manifest).items()):
@@ -343,13 +415,13 @@ def library_split_problems(
     for name in sorted(sources):
         if name in covered:
             continue
-        guards = module_level_library_guards(sources[name])
+        guards = [m for m in module_level_library_guards(sources[name]) if not _pinned(name, m)]
         if guards:
             problems.append(
                 f"tests/scripts/{name} guards {guards} at module level, so it skips in {ENV}, but no library task "
                 f"({tasks}) runs it -- add it to tests/scripts/scripts-lib-test.txt"
             )
-        elif in_tests := runtime_library_guards_in_tests(sources[name]):
+        elif in_tests := [m for m in library_guards_in_tests(sources[name]) if not _pinned(name, m)]:
             problems.append(
                 f"tests/scripts/{name} guards {in_tests} inside its tests, so they skip in {ENV}, but no library task "
                 f"({tasks}) runs it -- add it to tests/scripts/scripts-lib-test.txt"
@@ -376,8 +448,13 @@ def test_the_live_tree_has_guarded_files_to_check() -> None:
     assert "test_apply_verification_verdicts.py" in guarded
     # test_detectors_doctor_sources.py guards inside a helper, not at module level: its stdlib tests run in pyforge-ci.
     assert "test_detectors_doctor_sources.py" not in guarded
-    assert runtime_library_guards_in_tests(sources["test_detectors_doctor_sources.py"]) == ["jsonschema", "yaml"]
-    assert runtime_library_guards_in_tests(sources["test_worktree_sweep.py"]) == ["openfeature"]
+    assert library_guards_in_tests(sources["test_detectors_doctor_sources.py"]) == [
+        "jsonschema",
+        "pyforge.doctor.sources.__main__",
+        "yaml",
+    ]
+    assert library_guards_in_tests(sources["test_worktree_sweep.py"]) == ["openfeature"]
+    assert library_guards_in_tests(sources["test_bmad_estate_check.py"]) == ["pyforge.scribe"]
     assert "test_pyforge_ci_is_stdlib_only.py" not in guarded
 
 
@@ -396,10 +473,24 @@ def test_a_guarded_file_no_task_runs_is_named() -> None:
         "def test_x(flag_provider):\n    assert flag_provider\n",
         'import pytest\n\n@pytest.mark.skipif(__import__("importlib").util.find_spec("yaml") is None, reason="x")\n'
         "def test_x():\n    pass\n",
+        "import importlib.util\nimport pytest\n\ndef test_x():\n"
+        '    if importlib.util.find_spec("yaml") is None:\n        pytest.skip("no yaml")\n',
+        "import pytest\n\ndef test_x():\n    try:\n        import jsonschema\n    except ImportError:\n"
+        '        pytest.skip("no jsonschema")\n',
+        'import pytest\n\ndef test_x():\n    pytest.importorskip("boto3")\n',
+        'import pytest\n\ndef test_x():\n    pytest.importorskip("pyforge.warden.verdict")\n',
     ],
-    ids=["importorskip-in-a-test", "flag-provider-fixture", "skipif-on-find-spec"],
+    ids=[
+        "importorskip-in-a-test",
+        "flag-provider-fixture",
+        "skipif-on-find-spec",
+        "find-spec-then-skip",
+        "import-error-then-skip",
+        "a-non-runtime-library",
+        "a-pyforge-station-package",
+    ],
 )
-def test_a_runtime_library_guarded_inside_a_test_no_task_runs_is_named(source: str) -> None:
+def test_a_library_guarded_inside_a_test_no_task_runs_is_named(source: str) -> None:
     sources = _live_sources()
     sources["test_new_in_test_guard.py"] = source
     problems = library_split_problems(_manifest(), sources, set(sources))
@@ -437,38 +528,107 @@ def test_a_file_named_only_by_a_preflight_only_task_is_not_covered() -> None:
             'pytestmark = [pytest.mark.skipif(importlib.util.find_spec("httpx") is None, reason="x")]\n',
             ["httpx"],
         ),
+        (
+            "import pytest\ntry:\n    import yaml\nexcept ImportError:\n"
+            '    pytest.skip("no yaml", allow_module_level=True)\n',
+            ["yaml"],
+        ),
+        (
+            "import importlib.util\nfrom pytest import skip\n"
+            'if importlib.util.find_spec("ruamel.yaml") is None:\n    skip("x", allow_module_level=True)\n',
+            ["ruamel.yaml"],
+        ),
     ],
-    ids=["in-an-if", "in-a-try", "from-pytest-import", "pytest-alias", "pytestmark-try-flag", "pytestmark-find-spec"],
+    ids=[
+        "in-an-if",
+        "in-a-try",
+        "from-pytest-import",
+        "pytest-alias",
+        "pytestmark-try-flag",
+        "pytestmark-find-spec",
+        "import-error-skip-module",
+        "find-spec-skip-module",
+    ],
 )
 def test_module_level_guards_in_every_form_are_seen(source: str, expected: list[str]) -> None:
     assert module_level_library_guards(source) == expected
 
 
-def test_a_guard_inside_a_function_or_on_a_stdlib_or_pyforge_module_is_not_a_module_level_guard() -> None:
+def test_a_guard_inside_a_function_or_on_a_stdlib_or_in_repo_core_module_is_not_a_module_level_guard() -> None:
     source = (
         "import pytest\n"
         'pytest.importorskip("tomllib")\n'
-        'pytest.importorskip("pyforge.doctor.sources.chain")\n'
+        'pytest.importorskip("pyforge.core.roster")\n'
+        'pytest.importorskip("pyforge.testing_kit.flags")\n'
         "def helper():\n"
         '    return pytest.importorskip("yaml")\n'
     )
     assert module_level_library_guards(source) == []
-    assert runtime_library_guards_in_tests(source) == ["yaml"]
+    assert library_guards_in_tests(source) == ["yaml"]
+    # Every other pyforge package is a library: the definition allows only the in-repo core and testing kit.
+    assert module_level_library_guards('import pytest\npytest.importorskip("pyforge.doctor.sources.chain")\n') == [
+        "pyforge.doctor.sources.chain"
+    ]
     assert module_level_library_guards('import pytest\nyaml = pytest.importorskip("yaml")\n') == ["yaml"]
 
 
-def _scripts_suite_steps(root: Path = REPO_ROOT) -> set[tuple[str, str]]:
-    """``(task, environment)`` for each ``pixi run --frozen -e <env> <task>`` step of the Detectors ``scripts-suite``
-    job, read as text (this file stays stdlib-only, so no YAML parser)."""
-    text = (root / ".github" / "workflows" / "detectors.yml").read_text(encoding="utf-8")
+_RUN_STEP = re.compile(r"^[ \t]+(?:-[ \t]+)?run:[ \t]*pixi run --frozen -e (?P<env>\S+) (?P<task>\S+)[ \t]*$", re.M)
+
+
+def _scripts_suite_steps(text: str) -> set[tuple[str, str]]:
+    """``(task, environment)`` for each ``run: pixi run --frozen -e <env> <task>`` step of the Detectors
+    ``scripts-suite`` job, read as text (this file stays stdlib-only, so no YAML parser). Only a ``run:`` line counts,
+    so a commented-out step reads as absent."""
     job = re.search(r"^  scripts-suite:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n)", text, re.M | re.S)
     body = job.group(1) if job else ""
-    return {(m["task"], m["env"]) for m in re.finditer(r"pixi run --frozen -e (?P<env>\S+) (?P<task>\S+)", body)}
+    return {(m["task"], m["env"]) for m in _RUN_STEP.finditer(body)}
+
+
+def _detectors_workflow() -> str:
+    return (REPO_ROOT / ".github" / "workflows" / "detectors.yml").read_text(encoding="utf-8")
 
 
 def test_every_library_task_is_a_scripts_suite_step_in_its_environment() -> None:
-    steps = _scripts_suite_steps()
+    steps = _scripts_suite_steps(_detectors_workflow())
     assert {(task, env) for task, env in LIBRARY_TASKS.items()} <= steps, steps
+
+
+def test_a_commented_out_step_reads_as_absent() -> None:
+    text = _detectors_workflow()
+    live = "        run: pixi run --frozen -e pyforge-guild scripts-lib-test\n"
+    assert live in text
+    assert ("scripts-lib-test", "pyforge-guild") not in _scripts_suite_steps(
+        text.replace(live, "        # " + live.lstrip())
+    )
+
+
+def test_every_pinned_exception_still_guards_its_library_and_has_its_row() -> None:
+    """A pin is honest: its file exists and still guards the pinned library, its owner's ledger carries the row, and
+    the definition in ``pixi.toml`` names the row."""
+    sources = _live_sources()
+    definition = (REPO_ROOT / "pixi.toml").read_text(encoding="utf-8")
+    problems = []
+    for name, (module, project, row) in sorted(PINNED_EXCEPTIONS.items()):
+        if name not in sources or not any(_pinned(name, m) for m in _Guards(sources[name]).anywhere()):
+            problems.append(f"{name} no longer guards {module}: drop its pin")
+        ledger = REPO_ROOT / "_bmad-output" / "projects" / project / "planning-artifacts" / "deferred-work-ledger.md"
+        if f"### {row}:" not in (ledger.read_text(encoding="utf-8") if ledger.is_file() else ""):
+            problems.append(f"{row} is not a row in {ledger.relative_to(REPO_ROOT)}")
+        if row not in definition:
+            problems.append(f"the pyforge-ci definition in pixi.toml does not name {row}")
+    assert problems == []
+
+
+def test_an_unpinned_guard_in_a_pinned_file_is_still_named() -> None:
+    """A pin covers its one library: another library guarded in the same file still needs a library task."""
+    sources = _live_sources()
+    sources["test_scribe_install_nightly_trigger.py"] += '\n\ndef test_more():\n    pytest.importorskip("boto3")\n'
+    problems = library_split_problems(_manifest(), sources, set(sources))
+    assert problems == [
+        "tests/scripts/test_scribe_install_nightly_trigger.py guards ['boto3'] inside its tests, so they skip in "
+        f"{ENV}, but no library task ({', '.join(sorted(LIBRARY_TASKS))}) runs it -- add it to "
+        "tests/scripts/scripts-lib-test.txt"
+    ]
 
 
 @pytest.mark.parametrize("task", sorted(LIBRARY_TASKS))
@@ -483,6 +643,8 @@ def test_every_module_a_library_task_file_guards_imports_where_the_task_runs(tas
     missing = []
     for name in sorted(library_task_files(_manifest())[task]):
         for module in _Guards(sources[name]).anywhere():
+            if _pinned(name, module):
+                continue
             try:
                 found = importlib.util.find_spec(module) is not None
             except ModuleNotFoundError:
