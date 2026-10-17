@@ -9,6 +9,7 @@ import pytest
 
 pytest.importorskip("jsonschema")
 pytest.importorskip("yaml")
+pytest.importorskip("packaging")  # pin_policy_lib.py parses the pins with it (steward Story 103.3)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = REPO_ROOT / "scripts"
@@ -17,8 +18,8 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures" / "pin_policy"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-import pin_policy_check as check_mod
-import pin_policy_lib as lib
+import pin_policy_check as check_mod  # noqa: E402  (sys.path must be set up first)
+import pin_policy_lib as lib  # noqa: E402
 
 
 def _load_check_source() -> str:

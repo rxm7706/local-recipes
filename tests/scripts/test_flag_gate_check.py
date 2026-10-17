@@ -7,8 +7,9 @@ against a fixture repo written under ``tmp_path`` (its own roster, baseline, tre
 tests pin only the properties that hold whatever stories the tree carries.
 
 The suite runs from ``pyforge-guild`` (``pixi run -e pyforge-guild python -m pytest
-tests/scripts/test_flag_gate_check.py -q``) and from ``pyforge-ci`` (the ``scripts-suite`` lane), where PyYAML
-arrives transitively; ``pytest.importorskip("yaml")`` mirrors ``test_flag_rule.py``.
+tests/scripts/test_flag_gate_check.py -q``), and in CI from ``scripts-lib-test`` (the ``scripts-suite`` lane's
+``pyforge-guild`` step). ``pyforge-ci`` is stdlib-only (steward Story 103.3), so ``pytest.importorskip("yaml")``
+skips the file there; it mirrors ``test_flag_rule.py``.
 """
 
 from __future__ import annotations

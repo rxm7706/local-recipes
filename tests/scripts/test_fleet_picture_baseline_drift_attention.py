@@ -14,6 +14,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+pytest.importorskip("yaml")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FLEET_PATH = REPO_ROOT / "scripts" / "fleet_picture.py"
 DETECTOR_PATH = REPO_ROOT / "scripts" / "bmad_loop_baseline_drift_check.py"
@@ -192,8 +198,8 @@ def test_needs_lines_sanitize_control_chars():
     lines = mod._baseline_drift_needs_lines(
         [
             _unrecovered_finding(
-                story=f"evil\nsecond-line\x1bstory",
-                run=f"run\rid",
+                story="evil\nsecond-line\x1bstory",
+                run="run\rid",
             )
         ]
     )
@@ -208,7 +214,7 @@ def test_needs_lines_sanitize_control_chars():
 def test_needs_lines_sanitize_unicode_line_separators():
     mod = _load_fleet()
     lines = mod._baseline_drift_needs_lines(
-        [_unrecovered_finding(story=f"evil\u2028second-line\u2029tail")]
+        [_unrecovered_finding(story="evil\u2028second-line\u2029tail")]
     )
     assert len(lines) == 1
     assert "\u2028" not in lines[0]

@@ -7,8 +7,10 @@ so no test depends on which stories the live tree carries; the live-tree tests p
 tree carries (eight reports, and the header counts agreeing with the gate).
 
 The suite runs from ``pyforge-guild`` (``pixi run -e pyforge-guild python -m pytest
-tests/scripts/test_flag_inventory.py -q``) and from ``pyforge-ci`` (the ``scripts-suite`` lane): Doctor's join is
-stdlib-only and loads from this checkout's source tree when ``pyforge.doctor`` is not installed.
+tests/scripts/test_flag_inventory.py -q``), and in CI from ``scripts-lib-test`` (the ``scripts-suite`` lane's
+``pyforge-guild`` step). The scripts need PyYAML, which ``pyforge-ci`` (stdlib-only, steward Story 103.3) does not
+carry, so the file skips there. Doctor's join loads from this checkout's source tree when ``pyforge.doctor`` is not
+installed.
 """
 
 from __future__ import annotations
@@ -1003,7 +1005,7 @@ def test_the_join_loads_from_this_checkouts_source_tree_in_an_interpreter_that_h
     import yaml
 
     # `-S`: no site-packages processing, so an editable install of pyforge-doctor is invisible. Only PyYAML's
-    # directory is added back (the scripts need it), as the lean `pyforge-ci` environment has it.
+    # directory is added back (the scripts need it).
     script = (
         "import sys\n"
         f"sys.path.append({str(Path(yaml.__file__).resolve().parent.parent)!r})\n"

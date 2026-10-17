@@ -257,10 +257,13 @@ def test_doctor_source_tasks_include_bmad_output_hygiene_and_a_matching_pixi_tas
 def _doctor_dispatch():
     """Doctor's dispatch table, or a skip naming what is missing. It imports every source module and Doctor's
     run-deps (`pyforge.core`, `jsonschema`, `yaml`). The Detectors `scripts-suite` job's first step runs this file in
-    `pyforge-ci`, which declares none of them (Story 38.5); but its `python` feature pulls `jsonschema` and `yaml` in
-    through `spec-kit`, and `tests/scripts/conftest.py` puts `pyforge-core` on `sys.path`, so these tests run there too
-    (found in Story 47.1). Its second step, and `pr-preflight`, run the file again through
-    `pyforge-doctor-aggregate-scripts-test` in `pyforge-doctor`, where Doctor's run-deps are declared (Story 39.1)."""
+    `pyforge-ci`, which is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+    `pixi.toml`), so these tests skip there and name the library. `tests/scripts/conftest.py` puts `pyforge-core` on
+    `sys.path`, and the file's other tests import only the stdlib, so they run there too. The job's
+    `pyforge-doctor-aggregate-scripts-test` step, and `pr-preflight`, run the file again in `pyforge-doctor`, where
+    Doctor's run-deps are declared (Story 39.1)."""
+    pytest.importorskip("yaml")
+    pytest.importorskip("jsonschema")
     return pytest.importorskip("pyforge.doctor.sources.__main__").DISPATCH
 
 

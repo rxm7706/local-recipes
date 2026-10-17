@@ -8,8 +8,10 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+yaml = pytest.importorskip("yaml")
 pytest.importorskip("jsonschema")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

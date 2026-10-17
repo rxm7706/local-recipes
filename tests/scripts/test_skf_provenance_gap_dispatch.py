@@ -7,6 +7,12 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
+# pyforge-ci is stdlib-only (steward Story 103.3; the definition is the comment above `pyforge-ci` in
+# pixi.toml), so this file skips there and runs in scripts-lib-test, in pyforge-guild.
+pytest.importorskip("yaml")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = REPO_ROOT / "_bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py"
 

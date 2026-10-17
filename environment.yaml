@@ -12,8 +12,8 @@ dependencies:
 - nodejs >=24.19.0,<27.0,!=25.*
 - pnpm >=12.4.1
 - bmad-method >=6.12.2
-- spec-kit >=1.2.0
 - truststore >=0.10.5
+- spec-kit >=1.2.0
 - conda >=26.5.0
 - conda-libmamba-solver >=24.9.0
 - conda-build >=25.3.1

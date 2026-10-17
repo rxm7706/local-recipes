@@ -74,14 +74,14 @@ Everything runs through pixi environments. Nothing here is installed globally.
 
 | Environment    | Composed of (features)                                | Use it for |
 |----------------|-------------------------------------------------------|------------|
-| `local-recipes`| python + build + grayskull + conda-smithy + local-recipes | **Default.** Everything: recipe tooling, data stack, ML/LLM, docs, web, agents |
-| `build`        | python + build                                        | Minimal conda-build/rattler-build runs |
-| `linux`        | linux + python                                        | Docker-driven staged-recipes builds (`build-linux`) |
-| `osx` / `win`  | os feature + python + build                           | Native macOS / Windows staged-recipes builds |
-| `grayskull`    | python + grayskull                                    | Recipe generation only (`pypi`, `cran` tasks) |
-| `conda-smithy` | python + conda-smithy + shellcheck                    | Recipe linting only (`lint` task) |
-| `vuln-db`      | python + vuln-db                                      | AppThreat multi-source CVE DB + SBOM work (kept out of local-recipes to stay lean) |
-| `gcloud`       | python + gcloud-sdk                                   | One-time `gcloud auth application-default login`; linux/macOS only |
+| `local-recipes`| python + spec-kit + build + grayskull + conda-smithy + local-recipes | **Default.** Everything: recipe tooling, data stack, ML/LLM, docs, web, agents |
+| `build`        | python + spec-kit + build                             | Minimal conda-build/rattler-build runs |
+| `linux`        | linux + python + spec-kit                             | Docker-driven staged-recipes builds (`build-linux`) |
+| `osx` / `win`  | os feature + python + spec-kit + build                | Native macOS / Windows staged-recipes builds |
+| `grayskull`    | python + spec-kit + grayskull + crm                   | Recipe generation only (`pypi`, `cran` tasks) |
+| `conda-smithy` | python + spec-kit + conda-smithy + shellcheck         | Recipe linting only (`lint` task) |
+| `vuln-db`      | python + spec-kit + vuln-db                           | AppThreat multi-source CVE DB + SBOM work (kept out of local-recipes to stay lean) |
+| `gcloud`       | python + spec-kit + gcloud-sdk                        | One-time `gcloud auth application-default login`; linux/macOS only |
 | `pyforge-warden`| pyforge-warden (no-default-feature)                  | Lean env for the built `pyforge-warden` package (`src/shared/packages/pyforge-warden` path dep -> conda pkg + run-deps + pytest; test-oracles py-rattler / py-rattler-build / conda-build). Multi-axis dependency-compliance gate; CLI `warden` (`warden-scan` task), gate `pyforge-warden-test`. Spec: `archive/docs/specs/pyforge-warden.md` |
 | `pyforge-atlas`| pyforge-atlas (no-default-feature)                    | Lean env for the `pyforge.atlas` Kedro pipeline member (`src/shared/packages/pyforge-atlas` path dep -> built conda pkg + kedro/kedro-datasets/kedro-dagster/pyforge-warden run-deps + pytest/hatchling/python-build + **kedro-viz** + duckdb-server on linux-64 — the CAP-19 HTTP/Arrow face, raised only by the `query-plane-boot` task). Loop worktrees materialize THIS env; gates: `kedro-test`, `kedro-catalog-check`, `dagster-dryrun`, `viz` |
 | `pyforge-herald`| pyforge-herald (no-default-feature)                  | Lean env for the built `pyforge-herald` package (`src/shared/packages/pyforge-herald` path dep -> conda pkg + **mcp** run-dep + pytest/hatchling/python-build). Herald is the Design<->Code bridge; `mcp` is its Story-1.2 primary transport. Spec: `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/` |
@@ -90,7 +90,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-scribe`| pyforge-scribe (no-default-feature)                  | Lean env for the built `pyforge-scribe` package (`src/shared/packages/pyforge-scribe` path dep -> conda pkg + pytest/hatchling/python-build). Knowledge/narration station; inherits the `src/sentinel/` knowledge-graph lineage. Spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/` |
 | `pyforge-core` | pyforge-core (no-default-feature)                     | Lean env for the built `pyforge-core` package (`src/shared/packages/pyforge-core` path dep -> conda pkg + pytest/hatchling/python-build). Pure-stdlib shared leaf (Story 14.1, `pyforge-scribe` mirror); a real run-dependency of six sibling stations' own envs (atlas, herald, marshal, scribe, steward, warden — see each `[feature.pyforge-<station>.dependencies]`). Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/` |
 | `pyforge-testing-kit` | pyforge-testing-kit (no-default-feature)         | Lean env for the built `pyforge-testing-kit` package (`src/shared/packages/pyforge-testing-kit` path dep -> conda pkg + pytest/hatchling/python-build). Own-leaf shared test mocks (Story 19.2 / FR-130 / Q-26); stdlib-only; test-time path dep of pyforge-marshal + pyforge-doctor feature envs (not a station runtime run-dep). Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-19-2-the-shared-test-support-kit.md` |
-| `pyforge-ci` | python + pyforge-ci (no-default-feature) | Lean CI env for wheel/sdist/.conda publish without the fat `local-recipes` download |
+| `pyforge-ci` | python + pyforge-ci (no-default-feature; **not** spec-kit) | Lean CI env for wheel/sdist/.conda publish without the fat `local-recipes` download. **Stdlib-only** (steward Story 103.3; the definition is the comment above `pyforge-ci = …` in `pixi.toml`): no runtime library — PyYAML, jsonschema, ruamel.yaml, mcp, pydantic, httpx, openfeature — is importable there, so it does not compose the `spec-kit` feature |
 | `pyforge-container` | eight station features (no-default-feature) | Whole-Guild image env: marshal+steward+atlas+warden+doctor+mason+herald+scribe in one `pixi install` |
 | `dbgpt-sidecar` | dbgpt-sidecar (no-default-feature) | **`python 3.12.*`.** Container-only sidecar: `dbgpt-app` + siblings; NOT composed onto python-agent-platform (disjoint FastAPI ranges) |
 | `platform-ci-test` | platform-ci-test (no-default-feature) | **`python 3.12.*`.** Slim conda-only env for Platform CI's `test` job (psycopg3 vs image psycopg2). No langflow/dbgpt. Install: `pixi install -e platform-ci-test` |
@@ -123,7 +123,8 @@ Everything runs through pixi environments. Nothing here is installed globally.
 
 ## 1. Core runtime & package management
 
-Available in every environment (the `python` feature + workspace `[dependencies]`).
+Available in every environment that composes the `python` feature (+ workspace `[dependencies]`); `spec-kit`
+is in its own `spec-kit` feature, which every one of those environments composes except `pyforge-ci`.
 
 - **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
 - **pixi** (>=0.80.0) — the package/environment manager itself, available *inside*
@@ -153,6 +154,9 @@ Available in every environment (the `python` feature + workspace `[dependencies]
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
 - **spec-kit** (>=1.2.0) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
+  In its own `spec-kit` feature (steward Story 103.3), composed right after `python`
+  by every environment that composes `python` except `pyforge-ci`: through `mcp` it
+  brings PyYAML, jsonschema, pydantic and httpx, which `pyforge-ci`, stdlib-only, must not carry.
 
 ## 1a. Station manifest mirrors (general Python utilities)
 

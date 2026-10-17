@@ -40,9 +40,15 @@ gitpython = ">=3.2.0"            # Pythonic Git wrapper for complex repo interac
 nodejs = ">=24.19.0,<27.0,!=25.*"  # Pin to LTS version -- allows the 24.x and 26.x LTS lines; excludes 25.x (Node's odd/non-LTS release)
 pnpm = ">=12.4.1"                 # Fast disk-efficient Node package manager (moved here from `local-recipes`, Story 67.1: one declaration, reaching the laptop SBOM)
 bmad-method = ">=6.12.2"          # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=1.2.0"             # Spec-kit for spec-driven development
 truststore = ">=0.10.5"           # OS trust store for corporate CA / JFrog TLS
 # Estate pin holds: docs/governance/pin-policy.yaml — render upgrade: python scripts/pin_policy_check.py --render-command
+
+# spec-kit has its own feature (steward Story 103.3, spec-pyforge-steward CAP-5): through `mcp` it brings
+# jsonschema, PyYAML, pydantic, httpx and 33 more packages (linux-64), which `pyforge-ci` must not carry (see the
+# stdlib-only definition above `pyforge-ci = …` in [environments]). Every environment that composes `python`
+# composes `spec-kit` right after it, except `pyforge-ci`.
+[feature.spec-kit.dependencies]
+spec-kit = ">=1.2.0"             # Spec-kit for spec-driven development
 
 [feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
@@ -648,9 +654,9 @@ cmd = "steward --version && steward keys audit --drift"
 # Story 7.3) needs a REAL `steward` binary on PATH -- it subprocess-invokes
 # `container-gates secrets-scan`, which itself subprocess-invokes `steward
 # keys audit --secrets`, against synthetic fixture trees. That rules out
-# `pyforge-ci` (deliberately zero runtime deps, mirrors why
-# `pyforge-doctor-scripts-test` lives there for its stdlib-only target) --
-# this task lives in the one env that actually builds+installs `steward`.
+# `pyforge-ci` (stdlib-only, as the comment above `pyforge-ci = …` in
+# [environments] defines it; it installs no station CLI) -- this task lives in
+# the one env that actually builds+installs `steward`.
 [feature.pyforge-steward.tasks.pyforge-steward-container-gates-test]
 description = "scripts/container-gates's secrets-scan subcommand (Story 7.3; needs a real `steward` binary on PATH)."
 cmd = "pytest tests/scripts/test_container_gates.py -q"
@@ -816,7 +822,6 @@ hatchling = ">=1.32.4"            # Python build backend (conda + wheel/sdist)
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend
 pytest = ">=9.1.1"                # test runner
 pytest-xdist = ">=3.8.0"          # parallel test execution (Story 71.5; test-runner plugin only)
-"ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator import in tests/scripts/test_failure_catalog_check.py
 pixi-build-python = ">=0.8.7"     # pixi build backend -> .conda from the hatchling wheel
 pixi-build-rattler-build = ">=0.4.7"  # pixi build backend -> recipe-driven .conda
 twine = ">=7.0.0"                 # PyPI upload
@@ -828,23 +833,29 @@ twine = ">=7.0.0"                 # PyPI upload
 # mirrored into pixi.toml [package.run-dependencies].
 #
 # It lives in `pyforge-ci` on purpose: the check is pure stdlib (ast + tomllib),
-# so running it in the leanest env in the repo — which carries no runtime
-# libraries at all — is the standing proof that it never needs the very
+# so running it in `pyforge-ci` — stdlib-only, with no runtime library
+# importable (the definition is the comment above `pyforge-ci = …` in
+# [environments]) — is the standing proof that it never needs the very
 # dependencies it audits. A check that needed them installed would be circular.
 # It also discovers packages by glob, so a new `pyforge-*` package is covered the
 # day it lands with nobody having to remember. Runs in ~0.4s.
 [feature.pyforge-ci.tasks.pyforge-deps-test]
-description = "Dependency-completeness + wheel/.conda manifest parity for every pyforge-* package (pure stdlib; no runtime deps required)"
+description = "Dependency-completeness + wheel/.conda manifest parity for every pyforge-* package (pure stdlib; runs in pyforge-ci, which is stdlib-only as its env comment in pixi.toml defines)"
 cmd = "python -m pytest tests/packaging -q"
 
 # `scripts/detectors.py`'s `_doctor_sources()` (Story 6.2) reads
 # `pyforge.doctor.sources.REGISTRY` directly from source (sys.path insertion,
 # no built package needed) -- both it and `pyforge.doctor.models` are pure
-# stdlib, so this fits the same lean env as `pyforge-deps-test` above. Lives
-# here, not under `pyforge-doctor-test`, because the thing under test is the
-# repo-root detector CLI, not the pyforge-doctor package itself.
+# stdlib, so this fits the same stdlib-only env as `pyforge-deps-test` above.
+# Lives here, not under `pyforge-doctor-test`, because the thing under test is
+# the repo-root detector CLI, not the pyforge-doctor package itself. It runs the
+# whole tests/scripts directory: what runs here imports only the stdlib, pytest
+# and the in-repo pyforge-core / pyforge-testing-kit sources, and every file
+# that needs a library skips on its module-level `pytest.importorskip` and runs
+# in `scripts-lib-test` (pyforge-guild) or `pyforge-doctor-aggregate-scripts-test`
+# (steward Story 103.3; the definition is the comment above `pyforge-ci = …`).
 [feature.pyforge-ci.tasks.pyforge-doctor-scripts-test]
-description = "scripts/detectors.py's Doctor-registry integration (Story 6.2; pure stdlib, no runtime deps required)"
+description = "tests/scripts in pyforge-ci, which is stdlib-only (its env comment in pixi.toml defines it): what runs here imports only the stdlib, pytest and the in-repo pyforge-core / pyforge-testing-kit sources, and a file that needs a library skips and runs in scripts-lib-test or pyforge-doctor-aggregate-scripts-test (steward Story 103.3). Began as scripts/detectors.py's Doctor-registry integration (Story 6.2)."
 cmd = "python -m pytest tests/scripts -q -n auto --dist loadgroup"
 
 # --- pyforge-guild: the Guild's session environment (steward Story 63.1, spec-pyforge-steward CAP-5) ---
@@ -1007,23 +1018,43 @@ depends-on = [{ task = "docs-site-validate-links", environment = "site" }, { tas
 # to activate by default when entering this repository. Change the value to any
 # environment name defined below. If omitted, the first environment key is used.
 # linux only needs Python to run build-locally.py. Everything else happens in Docker.
-linux = ["linux", "python"]
+linux = ["linux", "python", "spec-kit"]
 # osx and win do run natively on the machine, so we need the build deps too
-osx = ["osx", "python", "build"]
-win = ["win", "python", "build"]
-build = ["python", "build"]
-grayskull = ["python", "grayskull", "crm"]
-conda-smithy = ["python", "conda-smithy", "shellcheck"]
-local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
-pyforge-guild = { features = ["python", "pyforge-guild", "guild-tasks", "openfeature-file-eval"], no-default-feature = true }
-default = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, gitpython, nodejs, pnpm, bmad-method, spec-kit, truststore
-vuln-db = ["python", "vuln-db"]
-gcloud = ["python", "gcloud-sdk"]
+osx = ["osx", "python", "spec-kit", "build"]
+win = ["win", "python", "spec-kit", "build"]
+build = ["python", "spec-kit", "build"]
+grayskull = ["python", "spec-kit", "grayskull", "crm"]
+conda-smithy = ["python", "spec-kit", "conda-smithy", "shellcheck"]
+local-recipes = ["python", "spec-kit", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
+pyforge-guild = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "openfeature-file-eval"], no-default-feature = true }
+default = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, gitpython, nodejs, pnpm, bmad-method, truststore; the spec-kit feature follows it (steward Story 103.3)
+vuln-db = ["python", "spec-kit", "vuln-db"]
+gcloud = ["python", "spec-kit", "gcloud-sdk"]
 # pyforge-ci — the LEAN CI environment. feature.python gives pixi, bmad-method,
-# nodejs, gh, gitpython, spec-kit + truststore; feature.pyforge-ci adds everything
+# nodejs, gh, gitpython + truststore; feature.pyforge-ci adds everything
 # needed to BUILD and PUBLISH: wheel + sdist + .conda, to PyPI and conda-forge.
 # no-default-feature keeps the fat default [dependencies] out; both features are
 # referenced BY NAME, never by copied pins, so this tracks them automatically.
+#
+# STDLIB-ONLY (steward Story 103.3; operator ruling 2026-10-14, "yes stdlib only"). This is the one
+# definition; every other mention of pyforge-ci being stdlib-only points here.
+#   - The code it runs is stdlib-only. Every test that runs, rather than skips, in its tasks
+#     (`pyforge-deps-test`, `pyforge-doctor-scripts-test`) imports only the standard library, `pytest`,
+#     and the in-repo `pyforge-core` and `pyforge-testing-kit` sources that tests/scripts/conftest.py
+#     puts on sys.path. A tests/scripts file that needs any other library guards it with a module-level
+#     `pytest.importorskip`, skips here, and runs in `scripts-lib-test` (pyforge-guild) or
+#     `pyforge-doctor-aggregate-scripts-test` (pyforge-doctor).
+#   - No runtime library is importable here: none of yaml, jsonschema, ruamel, mcp, pydantic, httpx or
+#     openfeature. That is why it composes `python` but not the `spec-kit` feature, whose `mcp` brings
+#     jsonschema, PyYAML, pydantic and httpx in; every other env that composes `python` composes it.
+#   - What it still carries, each a decision: the `python` feature's binaries and CLIs (python, pixi, gh,
+#     nodejs, pnpm, bmad-method); that feature's `gitpython` (with gitdb, smmap) and `truststore`, shared
+#     by all 14 envs that compose it and imported by no test here; and its own build, test and upload
+#     tools (hatchling, python-build, pytest, pytest-xdist, twine, pixi-build-python,
+#     pixi-build-rattler-build) with the Python libraries they bring (packaging, requests, urllib3, rich,
+#     keyring, docutils and the rest of twine's tree). A test may not rely on those libraries.
+#   tests/scripts/test_pyforge_ci_is_stdlib_only.py pins the composition, the importable set and the
+#   library tasks.
 #
 # Why it exists: CI should always have pixi, but the only env exposing the tooling
 # was local-recipes at 1102 packages / ~9.8 GB — a download per Pages deploy against
@@ -1111,13 +1142,13 @@ pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge
 # conda-smithy capping py-rattler <0.26 / conda <26.3. grayskull's own unversioned dependency still
 # brings conda-recipe-manager in, resolved to 0.5.0 (the last with no click cap); current crm and
 # feedrattler stay in the `grayskull` env.
-pyforge-foundry-full = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull"], no-default-feature = true }
+pyforge-foundry-full = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull"], no-default-feature = true }
 # pyforge-foundry-full-stack (Story 67.1): the SBOM plus the platform's local stack -- the
 # platform-limited pieces (`platform-dev`'s PostgreSQL 17 / pgvector / redis-server,
 # `platform-object-storage`) layered on top, the way `pyforge-scribe-pg` layers `scribe-pg`. It
 # solves on linux-64 only, the one platform `platform-object-storage` declares (macOS laptops get
 # no layer env yet); the SBOM itself keeps osx-arm64 and win-64.
-pyforge-foundry-full-stack = { features = ["python", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage"], no-default-feature = true }
+pyforge-foundry-full-stack = { features = ["python", "spec-kit", "pyforge-guild", "guild-tasks", "pyforge-core", "pyforge-testing-kit", "pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe", "build", "grayskull", "platform-dev", "platform-object-storage"], no-default-feature = true }
 # platform-dev (AD-16, Story 11.1): composes `platform-dev` (postgresql/
 # pgvector/redis-server/k8s CLIs) ONTO `python-agent-platform` (langflow/
 # dbgpt/django) so this ONE env is the full local Tier-1 dev baseline --
@@ -1317,8 +1348,22 @@ description = "Generator: regenerates docs/reference/station-cheat-sheet.md from
 cmd = "python scripts/docs_station_cli.py"
 
 [feature.guild-tasks.tasks.docs-gen-test]
-description = "tests/scripts/test_docs_{gen_common,pixi_tasks,environments,detectors,skills_catalog,station_cli}.py — the five Story 30.3 doc generators plus their shared _docs_gen_common.py plumbing (spec-pyforge-doctor CAP-84). Lives here, not folded into pyforge-doctor-scripts-test (pyforge-ci), similar reason as docs-map-render-test: these import PyYAML (via _docs_gen_common), not a declared pyforge-ci dependency (each file skips cleanly there via pytest.importorskip if that ever stops being transitively available)."
+description = "tests/scripts/test_docs_{gen_common,pixi_tasks,environments,detectors,skills_catalog,station_cli}.py — the five Story 30.3 doc generators plus their shared _docs_gen_common.py plumbing (spec-pyforge-doctor CAP-84). Lives here, not folded into pyforge-doctor-scripts-test (pyforge-ci), similar reason as docs-map-render-test: these import PyYAML (via _docs_gen_common), which pyforge-ci, stdlib-only, does not carry (each file skips cleanly there via pytest.importorskip; scripts-lib-test runs them in CI)."
 cmd = "pytest tests/scripts/test_docs_gen_common.py tests/scripts/test_docs_pixi_tasks.py tests/scripts/test_docs_environments.py tests/scripts/test_docs_detectors.py tests/scripts/test_docs_skills_catalog.py tests/scripts/test_docs_station_cli.py -q"
+
+# steward Story 103.3 (spec-pyforge-steward CAP-5): the tests/scripts files that need a library `pyforge-ci` does
+# not carry. `pyforge-ci` is stdlib-only (the definition is the comment above `pyforge-ci = …` in [environments]), so
+# each of these files guards its libraries with a module-level `pytest.importorskip` and skips there; this task runs
+# them where those libraries are declared. The Detectors `scripts-suite` job and pr-preflight call it verbatim.
+# tests/scripts/test_detectors_doctor_sources.py is the one library-needing file not listed: its stdlib tests run in
+# `pyforge-ci`, and `pyforge-doctor-aggregate-scripts-test` runs it whole in `pyforge-doctor`. The files are listed one
+# per line in tests/scripts/scripts-lib-test.txt, which pytest reads as an argument file (`@path`), not in `cmd`:
+# scripts/detectors.py maps a detector to the first task whose `cmd` contains its file name, and
+# `test_flag_gate_check.py` contains `flag_gate_check.py`. A new file guarded this way goes on that list, or
+# tests/scripts/test_pyforge_ci_is_stdlib_only.py reds.
+[feature.guild-tasks.tasks.scripts-lib-test]
+description = "steward Story 103.3 (spec-pyforge-steward CAP-5): the tests/scripts files that need a library pyforge-ci does not carry (PyYAML, jsonschema, ruamel.yaml; requests and packaging where a script needs them), listed in tests/scripts/scripts-lib-test.txt and run in pyforge-guild, which declares them. In pyforge-ci, which is stdlib-only, each file skips on its module-level pytest.importorskip. The Detectors scripts-suite job and pr-preflight call this task verbatim."
+cmd = "python -m pytest @tests/scripts/scripts-lib-test.txt -q"
 
 [feature.guild-tasks.tasks.pixi-currency-staleness-check]
 description = "Detector: the Dream's four pixi dependency ledgers have not fallen behind pixi.toml's own commit history (Story 21.7, spec-pixi-candidate-currency CAP-4). Warn-only, read-only, fail-open — advisory ledger staleness, never a second PR gate. Contract: spec-21-7-the-pixi-candidate-ledgers-get-their-staleness-check."
@@ -1621,8 +1666,8 @@ Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivale
 
 NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
 
-Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) was the first docsite preflight leg (replaced 2026-10-10 by herald Story 27.5, spec-pyforge-herald CAP-52 / D8): `pages-check` (`-e site`) mirrors the `pages-check` step of `pages.yml` and is selected only when that workflow's own `paths` fire (steward Story 71.2); `site-check` retired 2026-10-15 with `docsite/` (herald Story 43.7), and `pages-check` is the one build check. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, not a declared `pyforge-ci` dependency (each test file skips cleanly there via `pytest.importorskip` if that ever stops being transitively available), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs node and docs-site's npm install (the map check reads YAML; herald Story 43.7), no build; steward Story 71.2 selects it from `docsite-check.yml`'s `paths` alongside `pages-check`. Eleventh leg added 2026-10-14 (atlas Story 31.1, spec-pyforge-atlas CAP-20 / spec-pyforge-steward CAP-153): `{ task = "mypy", environment = "pyforge-foundry-full" }` — the same `mypy` task CI's `lint-types.yml` runs after Guild `lint-types`, so atlas is checked against real Vizro/Dagster/Kedro/Bokeh types before push. Twelfth leg added 2026-10-16 (herald Story 45.1): `{ task = "docs-site-install", environment = "site" }`, declared before `pyforge-station-tests` so that, among the docs-site lanes that run one at a time (steward Story 105.1), the install takes the first turn and herald's built-site tests read this run's install. pr-preflight selects it when herald's job or pages.yml fires (herald's job runs `pyforge-herald-test-built`), and a touched run keeps it beside any kept docs-site lane. `pyforge-herald-test` itself stays npm-free, because `pyforge-station-tests` and the SBOM laptop gate run it (fnd:CAP-13)."""
-depends-on = ["lint-types", { task = "mypy", environment = "pyforge-foundry-full" }, "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", { task = "docs-site-install", environment = "site" }, "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "pages-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
+Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) was the first docsite preflight leg (replaced 2026-10-10 by herald Story 27.5, spec-pyforge-herald CAP-52 / D8): `pages-check` (`-e site`) mirrors the `pages-check` step of `pages.yml` and is selected only when that workflow's own `paths` fire (steward Story 71.2); `site-check` retired 2026-10-15 with `docsite/` (herald Story 43.7), and `pages-check` is the one build check. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, stdlib-only as its env comment in pixi.toml defines; `pyforge-doctor-scripts-test` covers the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, which `pyforge-ci` does not carry (each test file skips cleanly there via `pytest.importorskip`), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs node and docs-site's npm install (the map check reads YAML; herald Story 43.7), no build; steward Story 71.2 selects it from `docsite-check.yml`'s `paths` alongside `pages-check`. Eleventh leg added 2026-10-14 (atlas Story 31.1, spec-pyforge-atlas CAP-20 / spec-pyforge-steward CAP-153): `{ task = "mypy", environment = "pyforge-foundry-full" }` — the same `mypy` task CI's `lint-types.yml` runs after Guild `lint-types`, so atlas is checked against real Vizro/Dagster/Kedro/Bokeh types before push. Twelfth leg added 2026-10-16 (herald Story 45.1): `{ task = "docs-site-install", environment = "site" }`, declared before `pyforge-station-tests` so that, among the docs-site lanes that run one at a time (steward Story 105.1), the install takes the first turn and herald's built-site tests read this run's install. pr-preflight selects it when herald's job or pages.yml fires (herald's job runs `pyforge-herald-test-built`), and a touched run keeps it beside any kept docs-site lane. `pyforge-herald-test` itself stays npm-free, because `pyforge-station-tests` and the SBOM laptop gate run it (fnd:CAP-13). Thirteenth leg added 2026-10-17 (steward Story 103.3, spec-pyforge-steward CAP-5): `scripts-lib-test` -- `pyforge-ci` became stdlib-only (the `spec-kit` feature left it), so the `tests/scripts` files that need PyYAML, jsonschema or ruamel.yaml skip in `pyforge-doctor-scripts-test`, and the Detectors `scripts-suite` job's third step runs them in `pyforge-guild`; this leg runs the same task, so they are not left only ever skipping locally."""
+depends-on = ["lint-types", { task = "mypy", environment = "pyforge-foundry-full" }, "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "scripts-lib-test", { task = "docs-site-install", environment = "site" }, "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "pages-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
 
 [feature.guild-tasks.tasks.pr-preflight]
 description = "Story 71.1 (spec-pyforge-steward CAP-159): run pr-preflight-lanes serially, journal each lane's wall time and exit code to .steward/preflight-runs.jsonl, stop on the first red leg — same lanes and verdict as pr-preflight-lanes. The pre-push hook still calls pixi run --frozen -e pyforge-guild pr-preflight."
@@ -3065,7 +3110,7 @@ description = "Run the pyforge.doctor test suite (pytest-xdist, 4 workers; the 5
 cmd = "env PYTEST_XDIST_AUTO_NUM_WORKERS=4 pytest src/shared/packages/pyforge-doctor/tests -q -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py && pytest src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py -q"
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-aggregate-scripts-test]
-description = "Story 39.1 (spec-pyforge-doctor; follows Story 38.5; Story 41.1 added the second file): tests/scripts/test_detectors_doctor_sources.py and tests/scripts/test_apply_verification_verdicts.py where Doctor's run-deps (jsonschema, pyyaml, pyforge-core) are installed. The aggregate tests load Doctor's dispatch table and the verdict-writer tests import its citation predicate, so both skip under pyforge-doctor-scripts-test (pyforge-ci, stdlib-only by design) and this is where they run. The Detectors scripts-suite job and pr-preflight call this task verbatim."
+description = "Story 39.1 (spec-pyforge-doctor; follows Story 38.5; Story 41.1 added the second file): tests/scripts/test_detectors_doctor_sources.py and tests/scripts/test_apply_verification_verdicts.py where Doctor's run-deps (jsonschema, pyyaml, pyforge-core) are installed. The aggregate tests load Doctor's dispatch table and the verdict-writer tests import its citation predicate, so both skip under pyforge-doctor-scripts-test (pyforge-ci, stdlib-only as its env comment in pixi.toml defines; steward Story 103.3) and this is where they run. The Detectors scripts-suite job and pr-preflight call this task verbatim."
 cmd = "python -m pytest tests/scripts/test_detectors_doctor_sources.py tests/scripts/test_apply_verification_verdicts.py -q"
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-coverage-gate]

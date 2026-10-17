@@ -2,7 +2,7 @@
 title: "103.3: `pyforge-ci` is stdlib-only, as its tasks say"
 type: 'fix'
 created: '2026-10-14'
-status: 'ready-for-dev'
+status: 'in-review'
 baseline_revision: '846d8383f5b4a1f86cbb09f6fd8ae8616b34950f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -321,7 +321,164 @@ Type / Effort / Deps: fix / M / none.
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — expected: exit 0 after the memlog entries and the scoped stamps (AC10).
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
+## Auto Run Result
+
+Status: in-review (implemented by hand on the chain branch `chain-steward-103-3-pyforge-ci-stdlib-2026-10-17`, cut
+from `05fed5cb19`; the adversarial review is a separate session)
+
+Summary: `spec-kit` has its own feature, composed right after `python` by the 13 other environments that compose
+`python`, and not by `pyforge-ci`; `ruamel.yaml` left the `pyforge-ci` feature. Nothing the definition names imports in
+`pyforge-ci`. The 33 `tests/scripts` files that need a library guard it at module level and skip there; 32 run in the
+new `scripts-lib-test` (pyforge-guild), the 33rd (`test_detectors_doctor_sources.py`) in the doctor aggregate step.
+
+Files changed:
+- `pixi.toml` — `[feature.spec-kit.dependencies]` (the `spec-kit` line unchanged, a comment above it); the 13
+  environments compose `spec-kit` after `python`; `ruamel.yaml` out of `[feature.pyforge-ci.dependencies]`; the
+  stdlib-only definition in the `pyforge-ci` env comment; the six claims, the `default` env comment and the
+  `docs-gen-test` description point to it; new `[feature.guild-tasks.tasks.scripts-lib-test]`; `pr-preflight-lanes`
+  gains the leg (after `docs-gen-test`) and its thirteenth-leg paragraph
+- `pixi.lock` — `pixi lock` only: 188 lines removed, all in the `pyforge-ci` environment
+- `environment.yaml`, `docs/how-to/pixi-tasks.md`, `docs/map.yaml`, `docs/reference/environments.md` — regenerated
+- `docs/dreams/pyforge-unifying-strategy.md` — its measured Pixi environment matrix regenerated
+  (`pixi_env_matrix.py --update --dream …`: the lock digest, and `pyforge-ci` 146 → 106); see the Spec Change Log
+- `docs/reference/library-llms-full.md` — the environment table names the `spec-kit` feature (and `grayskull`'s `crm`,
+  which it already composed); the `pyforge-ci` row and the `spec-kit` entry say `pyforge-ci` does not compose it
+- `.github/workflows/detectors.yml` — `scripts-suite`: comments, `setup-pixi` installs `pyforge-guild`, third step
+  `pixi run --frozen -e pyforge-guild scripts-lib-test`
+- `tests/scripts/scripts-lib-test.txt` (new) — the 32 files, one per line, read by pytest as an argument file
+- `tests/scripts/test_pyforge_ci_is_stdlib_only.py` (new) — 14 tests, stdlib + pytest
+- `tests/scripts/` guards (module-level `pytest.importorskip`, each library the file or its script needs, measured by
+  blocking each candidate import in `pyforge-guild` and reading which tests stop passing):
+  - added `yaml`: `test_bmad_drift_check_tier3_classify.py`, `test_bmad_loop_baseline_drift_check.py`,
+    `test_cfe_rebuild_guard_check.py`, `test_deck_facts.py`, `test_deferred_work_intake.py`,
+    `test_deferred_work_promote.py`, `test_fleet_picture_baseline_drift_attention.py`, `test_fleet_picture_ci_pauses.py`,
+    `test_fleet_picture_pages_liveness.py`, `test_lint_types_gate.py`, `test_pixi_env_matrix.py`,
+    `test_skf_provenance_gap_dispatch.py`, `test_workflow_push_tag_filters.py`, `test_ci_surface_gates.py` (beside its
+    `jsonschema`), `test_realization_register_check.py` (beside its `jsonschema`), `test_docs_map_render.py` (beside its
+    `jsonschema`); `yaml` + `requests`: `test_build_pixi_mirror.py`; `yaml` + `ruamel.yaml`:
+    `test_failure_catalog_check.py`; `yaml` + `packaging`: `test_session_denial_forms.py` (steward's parser needs PyYAML,
+    mason's `packaging`); `packaging` beside the existing `jsonschema` + `yaml`: `test_pin_policy_check.py`,
+    `test_pin_policy_restore.py`
+  - already guarded, no guard change: the six `docs-gen-test` files, `test_flag_gate_check.py`,
+    `test_flag_inventory.py`, `test_flag_rule.py` (docstrings corrected: PyYAML no longer "arrives transitively"),
+    `test_sbom_laptop_gate.py`, `test_upstream_todos_check.py`
+  - `test_detectors_doctor_sources.py` — `_doctor_dispatch` guards `yaml` and `jsonschema` first; docstring;
+    `test_apply_verification_verdicts.py` — `pytest.importorskip("yaml")` before its `pyforge.doctor.sources.chain`
+    guard, so it skips in either collection order
+  - stale docstrings and comments in `test_deferred_work_promote.py`, `test_docs_gen_common.py`,
+    `test_docs_map_render.py`, `test_flag_inventory.py`, `test_session_denial_forms.py`; pre-existing E402 / F541 in
+    `test_bmad_drift_check_tier3_classify.py`, `test_deck_facts.py`, `test_pin_policy_check.py`,
+    `test_fleet_picture_baseline_drift_attention.py`
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` — `scripts-lib-test` is an always-on lane
+  (the `scripts-suite` job has no paths filter)
+- Memlogs and scoped stamps: see Verification below
+
+Measurements (linux-64 unless named; exit codes read directly, 2026-10-17):
+- AC2: `pixi lock` then `pixi lock --check` 0. `pyforge-ci` loses exactly the spec-kit-only packages and
+  `ruamel.yaml` / `ruamel.yaml.clib` and gains nothing: linux-64 146 → 106 (the 40 Intent lists), osx-arm64 135 → 92,
+  win-64 130 → 86 (on those two `cffi`, `cryptography`, `pycparser`, and on win-64 `pywin32`, were reachable only through
+  `spec-kit`). The other 35 environments: `pixi list --frozen --json -e <env>` before (a `git archive` of `05fed5cb19`)
+  and after, compared by name, version and build, identical; the lock's per-environment, per-platform package URLs
+  (86 pairs) identical outside the three `pyforge-ci` pairs.
+- AC4: `find_spec` of `yaml`, `jsonschema`, `ruamel`, `mcp`, `pydantic`, `httpx`, `openfeature` in `pyforge-ci`: `None`
+  for each. `test_pyforge_ci_is_stdlib_only.py`: 14 passed in `pyforge-ci`; 13 passed, 1 skipped (the env assertion)
+  in `pyforge-guild`.
+- AC5: `pyforge-doctor-scripts-test` in `pyforge-ci` exit 0: 754 passed, 62 skipped, 0 failed, 0 errors. Every guarded
+  file skips with `could not import '<module>'` naming its first missing library. Before the guards (the lock change
+  alone): 76 failed, 9 errors, 852 passed, 44 skipped, across 33 files, each for want of `yaml`.
+- AC6: `scripts-lib-test` in `pyforge-guild` exit 0: 876 passed, 0 skipped. `pyforge-doctor-aggregate-scripts-test`
+  in `pyforge-doctor` exit 0: 59 passed, 0 skipped. Doctor's `test_preflight_mirrors_scripts_suite.py` exit 0
+  (5 passed).
+- AC7: in `pyforge-ci`, `-p no:xdist`, both orders: `test_apply_verification_verdicts.py` skips (`could not import
+  'yaml'`), the four dispatch tests skip (`could not import 'yaml'`), the file's other 19 tests pass; exit 0 both ways.
+- AC8: baseline `pyforge-doctor-scripts-test` in `pyforge-ci` at `05fed5cb19`: 1618 passed, 28 skipped. After, by
+  `--junitxml` node id: step 1 (`pyforge-ci`) 754 passed, step 2 (doctor aggregate) 59, step 3 (`scripts-lib-test`)
+  876; every one of the 1618 baseline node ids passes in at least one step (0 lost).
+- AC3: `pixi run -e pyforge-steward pyforge steward estate reconcile` exit 3 ("spec-surface-check failed after scoped
+  stamps (exit 2)", expected before this story's memlog entries). It regenerated `environment.yaml` (`spec-kit` now
+  listed after `truststore`, by feature order), `docs/how-to/pixi-tasks.md`, `docs/map.yaml` and
+  `docs/reference/environments.md`; its other generators (library floors, bmad-estate catalog, env matrix,
+  `generate-bmad-suite` from the journal's batch) wrote nothing. It did not change `.steward/estate-refresh/2026-10-14.json`
+  or `recipes/bmad-suite/recipe.yaml` (Story 103.2 landed). It did append a generic memlog event to
+  `spec-pyforge-doctor`, `spec-pyforge-marshal` and `spec-pyforge-unifying-strategy`, `git add` three generated files
+  and stamp the baseline: the memlog events and the stamp were reverted, and this story's own entries and stamps
+  written last. Its eight `GATING_CHECKS`, run one by one as it runs them: all exit 0. `docs_pixi_tasks.py --check` 0,
+  `docs_environments.py --check` 0, `pixi project export conda-environment -e build` byte-identical to
+  `environment.yaml`.
+- AC10 / station: `pyforge-steward-test` exit 0 (2882 passed, 2 skipped). `pixi run --frozen -e pyforge-guild
+  pyforge-station-tests` exit 0: core 2484, testing-kit 95, atlas 2355 + 103, doctor 3785 + 4, herald 2049,
+  marshal 13170, mason 1622 + 12, scribe 428, steward 2882, warden 2440 passed, 0 failed. The steward coverage gate
+  (`coverage_gates_ci.py --paths-file <staged paths> --suites unit`, `COVERAGE_GATES_STATIONS=steward`, steward env)
+  exit 0: no touched steward source module. `lint-types` 0.
+- Memlog entries (`uv run _bmad/scripts/memlog.py append`, citing `pyforge-steward:CAP-5`) on the nine Specs
+  `spec-surface-check` names: `spec-pixi-candidate-currency`, `spec-pyforge-doctor`, `spec-deck-family-currency`,
+  `spec-deck-family-lockstep`, `spec-pyforge-pages`, `spec-pyforge-core`, `spec-pyforge-marshal`,
+  `spec-pyforge-steward`, `spec-pyforge-unifying-strategy`; then `git add`, one scoped `--write-baseline --spec` each
+  (all exit 0), and `spec-surface-check` exit 0, re-run after the last governed edit.
+- Detectors: `detectors-ci` 0; `chain-completeness-check`, `dream-chain-check`, `dreams-hygiene-check`,
+  `deferred-work-check`, `ledger-regression-check`, `story-status-check`, `flag-gate-check`,
+  `chain-currency-sweep-check`, `tea-playwright-check` 0; `ci_surface_gates.py --check` 0; `llms-full-check` 0;
+  `pyforge-deps-test` in `pyforge-ci` 0 (130 passed, 3 skipped). `pixi_env_matrix.py --check` 0 after the regeneration
+  (it was the one new `detectors-ci` warning, `pixi-env-matrix-stale`). `pr-preflight` is the orchestrator's to run.
+
+Mutations (AC9 and the guard's other rules), each on a `git archive` copy of the staged tree with `pyforge-ci`'s
+interpreter and `PIXI_ENVIRONMENT_NAME=pyforge-ci`, never in the worktree:
+- control: 14 passed;
+- `spec-kit` back in `[feature.python.dependencies]`: `test_the_composition_keeps_pyforge_ci_stdlib_only` fails;
+- `pyforge-ci` composing `spec-kit`: the same test fails;
+- `build` composing `python` without `spec-kit`: the same test fails;
+- a new `tests/scripts` file with a module-level `pytest.importorskip("yaml")` in no library task:
+  `test_every_guarded_file_runs_in_a_library_task` fails (and the two exact-list self-tests);
+- `ruamel.yaml` back in the `pyforge-ci` feature: `test_the_composition_keeps_pyforge_ci_stdlib_only` fails;
+- `test_deck_facts.py` dropped from `scripts-lib-test.txt`: `test_every_guarded_file_runs_in_a_library_task` fails;
+- `scripts-lib-test` listing its files inline in `cmd`: `test_no_detector_maps_to_a_library_task` fails;
+- a `yaml` package importable in `pyforge-ci` (a stub on `PYTHONPATH`): `test_no_runtime_library_is_importable_in_pyforge_ci`
+  fails;
+- `test_deck_facts.py`'s guard replaced by a bare `import yaml`: that file errors at collection in `pyforge-ci`;
+- `scripts-lib-test` dropped from `pr-preflight-lanes`' `depends-on`: doctor's
+  `test_every_scripts_suite_step_is_a_pr_preflight_leg` fails.
+
 ## Spec Change Log
 
 - 2026-10-14: minted from `DW-doctor-47-1-1` and the operator's ruling "yes stdlib only" (2026-10-14). `type: fix`,
   no flag, no CAP. Bound to `spec-pyforge-steward` CAP-5.
+- 2026-10-17 (implementation, at `05fed5cb19`): drift from `846d8383f5` and deviations, each with its reason.
+  - Line drift. The six claims sit at `pixi.toml:651-652`, `:830-832`, `:837`, `:840-847`, `:1624` (was `:1638`) and
+    `:3068` (was `:3078`); the `pyforge-ci` env comment at `:1020-1034` (was `:1039-1050`), `pyforge-ci = …` at `:1035`
+    (was `:1051`), the `default` env at `:1019` (was `:1035`); `_doctor_dispatch` at
+    `tests/scripts/test_detectors_doctor_sources.py:257`. `detectors.yml`'s comments and the
+    `test_apply_verification_verdicts.py:31` guard did not move.
+  - Count drift. The baseline `pyforge-ci` run passes 1618 tests, not 1554. A 33rd file needs a library:
+    `tests/scripts/test_fleet_picture_pages_liveness.py` (doctor Story 48.2, landed after `846d8383f5`). It is guarded
+    and listed, so `scripts-lib-test` runs 32 files, not 31. `pyforge-ci`'s package counts match the Intent (146 → 106 on
+    linux-64).
+  - `scripts-lib-test` reads its files from a pytest argument file, `tests/scripts/scripts-lib-test.txt`
+    (`python -m pytest @tests/scripts/scripts-lib-test.txt -q`), not from a list in `cmd`. With the list inline,
+    `scripts/detectors.py`'s `discover()`, which maps a detector to the first task whose `cmd` contains its file name,
+    mapped six detectors (`bmad_loop_baseline_drift_check`, `cfe_rebuild_guard_check`, `ci_surface_gates`,
+    `failure_catalog_check`, `flag_gate_check`, `upstream_todos_check`) to `scripts-lib-test`, because
+    `test_flag_gate_check.py` contains `flag_gate_check.py`; `test_flag_gate_check.py`'s registry test caught it.
+    `scripts/detectors.py` is outside this story's surface and unchanged; the guard test resolves `@path` arguments
+    and gains a fifth rule: no detector maps to a library task.
+  - The guards name `requests` (`test_build_pixi_mirror.py`) and `packaging` (`test_session_denial_forms.py`, the two
+    pin-policy files) beside PyYAML, because blocking each in `pyforge-guild` fails those tests (AC5: each library the
+    file or its script needs). Both stay in `pyforge-ci` through the tools' trees, so those guards do not decide the skip
+    there.
+  - `test_session_denial_forms.py` skips whole in `pyforge-ci`: one of its 17 tests needs PyYAML (steward's parser) and
+    `packaging` (mason's), and AC5 asks for a module-level guard; its 17 tests run in `scripts-lib-test`.
+  - The definition says `gitpython` brings `gitdb` and `smmap`, not `typing_extensions`: `typing-extensions` is one of
+    the 40 packages that leave `pyforge-ci`, so only `spec-kit`'s tree brought it.
+  - `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py`, outside the Surface line, changes:
+    its oracle lists the always-on lanes, and the new `scripts-suite` step makes `scripts-lib-test` one.
+  - Healed tissue in touched files: test docstrings that said PyYAML "arrives transitively" in `pyforge-ci`, or that
+    called a file stdlib-only, corrected; pre-existing E402 / F541 fixed in four touched test files.
+  - AC3's reconcile run exits 3 before this story's memlog entries; see the Auto Run Result for what it wrote and
+    what was reverted. `DW-steward-103-3-1` stays open: today the bare run did not rewrite the journal, but it still
+    appends a memlog event naming the 2026-10-14 journal, stages generated files and stamps the baseline.
+  - `DW-doctor-47-1-1` closes at landing, citing the merge, as Binding says; not edited here.
+  - The Dream's measured environment matrix (`docs/dreams/pyforge-unifying-strategy.md`) is regenerated by hand with
+    `python scripts/pixi_env_matrix.py --update --dream docs/dreams/pyforge-unifying-strategy.md`: the lock change made
+    it stale (`detectors-ci`'s `bmad-drift` warned `pixi-env-matrix-stale`), and `estate reconcile`'s own `env-matrix`
+    generator did not rewrite it, because it passes the Dream path positionally
+    (`estate_reconcile.py` `_build_generators`), which `pixi_env_matrix.py` refuses with exit 2 ("unrecognized
+    arguments"). That generator defect is outside this story's surface and is not fixed here.
